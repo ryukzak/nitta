@@ -1,0 +1,5 @@
+.DS_Store
+/.stack-work
+*.refactored.hs
+/dist
+/resource/data.json
