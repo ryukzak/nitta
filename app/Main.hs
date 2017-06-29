@@ -13,31 +13,64 @@ import qualified Data.Map     as M
 import           Data.Maybe   (fromMaybe)
 import qualified FB           as FB
 import           FRAM
+import           NITTA
 
 main = do
-  let fram0 = DPU (def { memoryState=fromList [ (addr, def) | addr <- [0..1] ]
-                       } :: FRAM Int String (Key Int) Int)
-  let Just fram1 = evaluate fram0 (FB.reg "a" ["b"])
+  let fram00 = fram
+  let Just fram01 = evaluate fram00 (FB.framInput 0 ["a0"])
+  let Just fram02 = evaluate fram01 (FB.framOutput 0 "b0")
+  let Just fram1 = evaluate fram02 (FB.reg "a" ["b"])
+  -- putStrLn $ show $ variants fram1
   let fram2 = step fram1 (Push "a") 1 2
   let Just fram3 = evaluate fram2 (FB.reg "c" ["d", "e"])
   let fram4 = step fram3 (Push "c") 5 6
   let fram5 = step fram4 (Pull ["e"]) 8 10
   let fram6 = step fram5 (Pull ["b"]) 12 13
   let fram7 = step fram6 (Pull ["d"]) 15 17
+  -- putStrLn $ show $ variants fram7
+  let fram8 = step fram7 (Pull ["a0"]) 20 20
+  let fram9 = step fram8 (Push "b0") 25 26
+  printDPU fram9
   return ()
-  -- printDPU fram7
 
-  --
-  -- print $ (variants fram4 :: [(Action String, Times Int)])
-  --
+fram = DPU (def { memoryState=fromList [ (addr, def) | addr <- [0..10] ]
+                } :: FRAM Int String (Key Int) Int)
+
+alg = [ FB.framInput 0 ["a"]
+      , FB.reg "a" ["b"]
+      , FB.framOutput 0 "b"
+      ]
+
+test = let ni0 = def{ dpus=M.fromList
+                           [ ("fram1", fram)
+                           , ("fram2", fram)
+                           ] } :: NITTA String (Key Int) String Int
+           dvs = delegationVariants ni0
+           Just ni1 = foldl (\(Just s) n -> evaluate s n) (Just ni0) alg
+           ni2 = foldl (\s (fb, dpu) -> delegate fb dpu s) ni1 [ (alg !! 0, "fram1")
+                                                               , (alg !! 1, "fram2")
+                                                               , (alg !! 2, "fram1")
+                                                               ]
+       -- in nittaVariants ni2
+           ni3 = nittaStep ni2 Transport{ pullFrom="fram1"
+                                        , pullAt=Moment 0 1
+                                        , push=M.fromList [ ("a", Just ("fram2", Moment 0 1)) ]
+                                        }
+           ni4 = nittaStep ni3 Transport{ pullFrom="fram2"
+                                        , pullAt=Moment 5 1
+                                        , push=M.fromList [ ("b", Just ("fram1", Moment 5 1)) ]
+                                        }
+       in nittaVariants ni4
+
+
 
 
 printDPU dpu = do
-  putStrLn (show dpu ++ "\n")
+  let p = proc dpu
   putStrLn $ concat $ take 6 $ repeat "0123456789"
-  mapM_ putStrLn $ map show $ reverse $ steps $ process dpu
-  mapM_ putStrLn $ map show $ reverse $ relations $ process dpu
-  dumpSteps $ process dpu
+  mapM_ putStrLn $ map show $ reverse $ steps p
+  mapM_ putStrLn $ map show $ reverse $ relations p
+  dumpSteps p
   putStrLn "------------------------------------------------------------"
 
 

@@ -1,21 +1,71 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE LambdaCase                #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE TupleSections             #-}
 
 module Base where
 import           Control.Monad.State
 import           Data.Default
+import           Data.List           (find, intersect, partition)
 import qualified Data.List           as L
+import qualified Data.Map            as M
+import           Data.Maybe          (fromMaybe, isJust)
 import           FB
+import qualified FB
 
 
-data Times t
-  = Times
-  { duration  :: t
-  , available :: (t, t)
+class DPUClass dpu key var time | dpu -> key var time where
+  evaluate :: dpu -> FB var -> Maybe dpu
+  variants :: dpu -> [(Interaction var, TimeConstrain time)]
+  step :: dpu -> Interaction var -> time -> time -> dpu
+  proc :: dpu -> Process var key time
+
+evaluate' (Just dpu) fb = evaluate
+
+
+
+
+data DPU key var time where
+  DPU :: (DPUClass dpu key var time) => dpu -> DPU key var time
+
+instance DPUClass (DPU key var time) key var time where
+  evaluate (DPU dpu) fb = fmap DPU $ evaluate dpu fb
+  variants (DPU dpu) = variants dpu
+  step (DPU dpu) act begin end = DPU $ step dpu act begin end
+  proc (DPU dpu) = proc dpu
+
+
+data TimeConstrain t
+  = TimeConstrain
+  { tcDuration :: t
+  , tcFrom     :: t
+  , tcTo       :: t
   } deriving (Show, Eq)
+
+-- rename to Event
+data Moment t
+  = Moment
+  { eStart    :: t
+  , eDuration :: t
+  } deriving (Show, Eq)
+
+
+data Transport title var time = Transport
+  { pullFrom :: title
+  , pullAt   :: time
+  , push     :: M.Map var (Maybe (title, time))
+                      -- Nothing значит либо, операция ещё не распределена,
+                      -- либо DPU не может его принять.
+  } deriving (Show, Eq)
+
+
+
 
 
 data Interaction var
@@ -30,16 +80,21 @@ _        << _                 = False
 (Pull a) \\ (Pull b) = Pull (a L.\\ b)
 
 
+instance Vars (Interaction var) var where
+  variables (Push var)  = [var]
+  variables (Pull vars) = vars
 
-data Process var key time mid sig
+
+data Process var key time
   = Process
     { tick      :: time
     , keySeed   :: key
-    , steps     :: [Step key time var mid sig]
+    , steps     :: [Step key time var]
     , relations :: [Relation key]
     } deriving (Show)
 
-instance (Default key, Default time) => Default (Process var key time mid sig) where
+
+instance (Default key, Default time) => Default (Process var key time) where
   def = Process { tick=def
                 , keySeed=def
                 , steps=[]
@@ -50,16 +105,16 @@ data Relation key = Seq [key]
                   | Vertical key key
                   deriving (Show, Eq)
 
-data Step key time var mid sig
+data Step key time var
   = Step
     { key  :: key
-    , desc :: Desc var mid sig
     , time :: StepTime time
+    , desc :: StepInfo var
     }
 
 instance ( Num time, Enum time
-         , Show key, Show time, Show var, Show mid, Show sig
-         ) => Show (Step key time var mid sig) where
+         , Show key, Show time, Show var
+         ) => Show (Step key time var) where
   show Step{..} = case time of
     Event a      -> ['.'|_<-[0..a-1]] ++ "+"             ++ suf
     Interval a b -> ['.'|_<-[0..a-1]] ++ ['='|_<-[a..b]] ++ suf
@@ -75,9 +130,8 @@ data StepTime t = Event t
 class Timeline a where
   chart :: a -> String
 
-instance (Show key, Show var, Show mid, Show sig, Show time
-         , Num time
-         ) => Timeline (Step key time var mid sig) where
+instance (Show key, Show var, Show time, Num time
+         ) => Timeline (Step key time var) where
   chart Step{..} = concat
     [ "["
     , "'" ++ show key ++ "', "
@@ -109,42 +163,56 @@ data Key i = Atom i
 instance (Default i) => Default (Key i) where
   def = Atom def
 
-a@(Atom _) +++ b@(Atom _) = Composite [a, b]
-a@(Atom _) +++ (Composite b) = Composite (a : b)
-(Composite a) +++ b@(Atom _) = Composite (a ++ [b])
-(Composite a) +++ (Composite b) = Composite (a ++ b)
+instance Enum i => Enum (Key i) where
+  toEnum i = Atom $ toEnum i
+  fromEnum (Atom i) = fromEnum i
 
 
 modifyProcess p state = runState state p
 
 add desc time = do
-  p@Process{ keySeed=key@(Atom seed), .. } <- get
-  put p { keySeed=Atom (seed + 1)
-        , steps=(Step key desc time) : steps
+  p@Process{ keySeed=key, .. } <- get
+  put p { keySeed=succ key
+        , steps=(Step key time desc) : steps
         }
   return key
 
 relation r = do
   p@Process{..} <- get
-  put p { relations=r : relations
-        }
+  put p{ relations=r : relations }
 
 setTime t = do
   p <- get
   put p{ tick=t }
 
 
-data Desc var mid sig
-  = Compiler String
-  | FunctionBlock FB
-  | Interaction (Interaction var)
-  | Middle mid
-  | Signal sig
+data StepInfo var  where
+  Compiler :: String -> StepInfo var
+  FunctionBlock :: FB var -> StepInfo var
+  Interaction :: (Interaction var) -> StepInfo var
+  Middle :: (Show mid) => mid -> StepInfo var
+  Signal :: (Show sig) => sig -> StepInfo var
 
-instance (Show var, Show mid, Show sig
-         ) => Show (Desc var mid sig) where
+instance (Show var
+         ) => Show (StepInfo var) where
   show (Compiler s)       = s
   show (FunctionBlock fb) = show fb
   show (Interaction i)    = show i
   show (Middle m)         = show m
   show (Signal sig)       = "signal: " ++ show sig
+
+
+-- data StepInfo var mid sig
+  -- = Compiler String
+  -- | FunctionBlock FB
+  -- | Interaction (Interaction var)
+  -- | Middle mid
+  -- | Signal sig
+
+-- instance (Show var, Show mid, Show sig
+         -- ) => Show (StepInfo var mid sig) where
+  -- show (Compiler s)       = s
+  -- show (FunctionBlock fb) = show fb
+  -- show (Interaction i)    = show i
+  -- show (Middle m)         = show m
+  -- show (Signal sig)       = "signal: " ++ show sig

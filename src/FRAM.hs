@@ -9,59 +9,35 @@
 
 module FRAM where
 
+import           Base
+import           Control.Monad.State
+import           Data.Default
 import           Data.Dynamic          (Dynamic, Typeable, fromDynamic, toDyn)
+import           Data.Generics.Aliases (orElse)
+import           Data.List             (find, sortBy)
 import qualified Data.List             as L
 import           Data.Map              (Map, fromList, lookup, (!))
 import qualified Data.Map              as M
-
-import           Control.Monad.State
-import           Data.Default
-import           Data.Generics.Aliases (orElse)
-import           Data.List             (find, sortBy)
 import           Data.Maybe            (catMaybes, fromMaybe, isNothing)
-import           Debug.Trace
 import           FB                    (FB (..), unbox)
 import qualified FB
 
-import           Base
-
-
-
-
-
-
-
-data DPU var time where
-  DPU :: DPUClass dpu var time => dpu -> DPU var time
-
-instance DPUClass (DPU var time) var time where
-  evaluate (DPU dpu) fb = fmap DPU $ evaluate dpu fb
-  variants (DPU dpu) = variants dpu
-  step (DPU dpu) act begin end = DPU $ step dpu act begin end
-
-
--- data Process
-
-
-
-class DPUClass dpu var time | dpu -> var time where
-  evaluate :: dpu -> FB -> Maybe dpu
-  variants :: dpu -> [(Interaction var, Times time)]
-  step :: dpu -> Interaction var -> time -> time -> dpu
 
 
 data FRAM addr var key time = FRAM
   { lastSave    :: Maybe addr
   , memoryState :: Map addr (Cell var key time)
   , remains     :: [MC var key time]
-  , process     :: Process var key time () (Signal addr)
+  , process     :: Process var key time
   } deriving Show
 
 
-instance ( Typeable var, Eq var, Num i
+instance ( Typeable var, Eq var
          , Typeable addr, Ord addr, Show addr
          , Bounded time, Num time, Ord time
-         ) => DPUClass (FRAM addr var (Key i) time) var time where
+         , Enum key
+         ) => DPUClass (FRAM addr var key time) key var time where
+  proc = process
   evaluate dpu@FRAM { process=process@Process {..}, .. } fb
     | Just (FB.Reg a b) <- unbox fb =
         let (key, process') = modifyProcess process $ addEval fb tick
@@ -87,15 +63,22 @@ instance ( Typeable var, Eq var, Num i
              }
         Nothing -> error "Memory cell already locked or not exist!"
 
-  -- | Just fb'@(FB.FRAMInput addr v) <- unbox fb
-  -- = case M.lookup addr memoryState of
-      -- Just cell@Cell { next=Nothing } -> Just $ dpu
-        -- { memoryState=M.insert addr (cell { final=justMC [Push v] }) memoryState
-        -- , process=snd $ modifyProcess process $ do
-            -- addEval
-            -- addMap addr fb tick
-        -- }
-      -- Nothing -> error "Memory cell already locked."
+    | Just (FB.FRAMOutput addr v) <- unbox fb
+    = case M.lookup addr memoryState of
+        Just cell@Cell { final=Nothing } ->
+          let (keys, process') = modifyProcess process $ do
+                k1 <- addEval fb tick
+                k2 <- addMap addr fb tick
+                return [k1, k2]
+              mc = MC [Push v] def { fb=fb
+                                   , compilerLevel=keys
+                                   }
+          in Just dpu
+             { memoryState=M.insert addr (cell { final=Just mc }) memoryState
+             , process=process'
+             }
+        Nothing -> error "Memory cell already locked or not exist!"
+
     | otherwise = Nothing
 
 
@@ -109,9 +92,9 @@ instance ( Typeable var, Eq var, Num i
       fromRemain
         | Nothing <- freeCell memoryState = []
         | otherwise = map ((\x -> (x, time x Nothing)) . head . actions) remains
-      time (Pull _) addr | addr == lastSave = Times 1 (1, maxBound)
-      time (Pull _) _    = Times 1 (0, maxBound)
-      time (Push _) _    = Times 1 (1, maxBound)
+      time (Pull _) addr | addr == lastSave = TimeConstrain 1 1 maxBound
+      time (Pull _) _    = TimeConstrain 1 0 maxBound
+      time (Push _) _    = TimeConstrain 1 1 maxBound
 
 
   step dpu@FRAM{ process=process@Process{..}, .. } act begin end
@@ -163,11 +146,11 @@ instance ( Typeable var, Eq var, Num i
 
       makeStepWork p rd@Cntx{..} (x:xs) addr =
         let ((m, ls), p') = modifyProcess p $ do
-              m <- add (Interaction act) (Interval tick end)
+              m <- add (Interaction act) (Interval begin end)
               l1 <- add (Signal $ act2Signal addr act) (Interval begin end)
               ls <- if tick < begin
                 then do
-                  l2 <- add (Signal Nop) (Interval tick (begin - 1))
+                  l2 <- add (Signal nop) (Interval tick (begin - 1))
                   -- relation $ Seq [l1, l2]
                   relation $ Vertical m l1
                   relation $ Vertical m l2
@@ -226,7 +209,7 @@ instance Default (Cell v i t) where
 
 data MC var key time = MC
   { actions :: [Interaction var]
-  , cntx    :: Context key time
+  , cntx    :: Context key var time
   }
 
 instance (Show var) => Show (MC var key time) where
@@ -238,13 +221,13 @@ instance (Eq var) => Eq (MC var key time) where
 
 
 
-data Context key time = Cntx
-  { fb                                      :: FB
+data Context key var time = Cntx
+  { fb                                      :: FB var
   , compilerLevel, middleLevel, signalLevel :: [key]
   , workBegin                               :: Maybe time
   }
 
-instance Default (Context key time) where
+instance Default (Context key var time) where
   def = Cntx undefined [] [] [] Nothing
 
 
@@ -280,6 +263,8 @@ data Signal addr
   | Save addr
   deriving (Show, Eq)
 
+nop :: Signal Int
+nop = Nop
 
 
 
