@@ -3,11 +3,11 @@
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TupleSections             #-}
+{-# LANGUAGE UndecidableInstances      #-}
 
 module Base where
 import           Control.Monad.State
@@ -16,29 +16,66 @@ import           Data.List           (find, intersect, partition)
 import qualified Data.List           as L
 import qualified Data.Map            as M
 import           Data.Maybe          (fromMaybe, isJust)
+import           Data.Typeable       (Typeable, cast, typeOf)
 import           FB
 import qualified FB
 
 
-class DPUClass dpu key var time | dpu -> key var time where
+
+
+class ( Num t, Bounded t, Ord t ) => Time t
+instance ( Num t, Bounded t, Ord t ) => Time t
+
+class ( Typeable v, Eq v, Ord v ) => Var v
+instance ( Typeable v, Eq v, Ord v ) => Var v
+
+class PUClass dpu    variant action var time key
+            | dpu -> variant action var time key where
   evaluate :: dpu -> FB var -> Maybe dpu
-  variants :: dpu -> [(Interaction var, TimeConstrain time)]
-  step :: dpu -> Interaction var -> time -> time -> dpu
-  proc :: dpu -> Process var key time
-
-evaluate' (Just dpu) fb = evaluate
+  variants :: dpu -> [variant]
+  step     :: dpu -> action -> dpu
+  process  :: dpu -> Process var key time
 
 
+data PU variant action v t k where
+  PU :: (PUClass dpu variant action v t k) => dpu -> PU variant action v t k
+
+instance PUClass (PU variant action var time key)
+                     variant action var time key where
+  evaluate (PU dpu) fb = PU <$> evaluate dpu fb
+  variants (PU dpu) = variants dpu
+  step (PU dpu) act = PU $ step dpu act
+  process (PU dpu) = process dpu
 
 
-data DPU key var time where
-  DPU :: (DPUClass dpu key var time) => dpu -> DPU key var time
 
-instance DPUClass (DPU key var time) key var time where
-  evaluate (DPU dpu) fb = fmap DPU $ evaluate dpu fb
-  variants (DPU dpu) = variants dpu
-  step (DPU dpu) act begin end = DPU $ step dpu act begin end
-  proc (DPU dpu) = proc dpu
+
+
+
+
+
+
+-- class DPUClass dpu key var time | dpu -> key var time where
+  -- evaluate :: dpu -> FB var -> Maybe dpu
+  -- variants :: dpu -> [(Interaction var, TimeConstrain time)]
+  -- step :: dpu -> Interaction var -> time -> time -> dpu
+  -- proc :: dpu -> Process var key time
+
+
+
+
+type Variant var time = (Interaction var, TimeConstrain time)
+type Action var time = (Interaction var, Moment time)
+
+
+-- data DPU key var time where
+  -- DPU :: (DPUClass dpu key var time) => dpu -> DPU key var time
+
+-- instance DPUClass (DPU key var time) key var time where
+  -- evaluate (DPU dpu) fb = DPU <$> evaluate dpu fb
+  -- variants (DPU dpu) = variants dpu
+  -- step (DPU dpu) act begin end = DPU $ step dpu act begin end
+  -- proc (DPU dpu) = proc dpu
 
 
 data TimeConstrain t
@@ -142,17 +179,8 @@ instance (Show key, Show var, Show time, Num time
     ]
 
 instance (Show t, Num t) => Timeline (StepTime t) where
-  chart (Event t) = "new Date(" ++ year t ++  "), new Date(" ++ year t ++  ")"
-  chart (Interval a b) = "new Date(" ++ year a ++  "), new Date(" ++ year (b + 1) ++  ")"
--- instance (Show t) => Timeline (StepTime t) where
---   chart (Event t) = "new Date('" ++ year t ++  "-01-01'), new Date('" ++ year t ++  "-02-01')"
---   chart (Interval a b) = "new Date('" ++ year a ++  "-01-01'), new Date('" ++ year b ++  "-01-01')"
-
-year x = show x -- zeros ++ x'
-  -- where
-    -- x' = show x
-    -- zeros = take (4 - length x') $ repeat '0'
-
+  chart (Event t) = "new Date(" ++ show t ++  "), new Date(" ++ show t ++  ")"
+  chart (Interval a b) = "new Date(" ++ show a ++  "), new Date(" ++ show (b + 1) ++  ")"
 
 
 
@@ -173,7 +201,7 @@ modifyProcess p state = runState state p
 add desc time = do
   p@Process{ keySeed=key, .. } <- get
   put p { keySeed=succ key
-        , steps=(Step key time desc) : steps
+        , steps=Step key time desc : steps
         }
   return key
 
@@ -189,7 +217,7 @@ setTime t = do
 data StepInfo var  where
   Compiler :: String -> StepInfo var
   FunctionBlock :: FB var -> StepInfo var
-  Interaction :: (Interaction var) -> StepInfo var
+  Interaction :: Interaction var -> StepInfo var
   Middle :: (Show mid) => mid -> StepInfo var
   Signal :: (Show sig) => sig -> StepInfo var
 
@@ -201,18 +229,3 @@ instance (Show var
   show (Middle m)         = show m
   show (Signal sig)       = "signal: " ++ show sig
 
-
--- data StepInfo var mid sig
-  -- = Compiler String
-  -- | FunctionBlock FB
-  -- | Interaction (Interaction var)
-  -- | Middle mid
-  -- | Signal sig
-
--- instance (Show var, Show mid, Show sig
-         -- ) => Show (StepInfo var mid sig) where
-  -- show (Compiler s)       = s
-  -- show (FunctionBlock fb) = show fb
-  -- show (Interaction i)    = show i
-  -- show (Middle m)         = show m
-  -- show (Signal sig)       = "signal: " ++ show sig

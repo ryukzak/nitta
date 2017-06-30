@@ -1,11 +1,11 @@
--- {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RecordWildCards        #-}
--- {-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE UndecidableInstances   #-}
+
 
 module FRAM where
 
@@ -24,33 +24,44 @@ import qualified FB
 
 
 
-data FRAM addr var key time = FRAM
-  { lastSave    :: Maybe addr
-  , memoryState :: Map addr (Cell var key time)
-  , remains     :: [MC var key time]
-  , process     :: Process var key time
+
+class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a ) => Addr a
+instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a ) => Addr a
+
+
+data FRAM a variant action v t key = FRAM
+  { frLastSave :: Maybe a
+  , frMemory   :: Map a (Cell v key t)
+  , frRemains  :: [MC v key t]
+  , frProcess  :: Process v key t
   } deriving Show
 
+instance ( Addr a, Enum key, Var v, Time t
+         , Default t, Default key
+         ) => Default (FRAM a variant action v t key) where
+  def = FRAM { frLastSave=Nothing
+             , frMemory=fromList [ (addr, def) | addr <- [0..19] ]
+             , frRemains=[]
+             , frProcess=def
+             }
 
-instance ( Typeable var, Eq var
-         , Typeable addr, Ord addr, Show addr
-         , Bounded time, Num time, Ord time
-         , Enum key
-         ) => DPUClass (FRAM addr var key time) key var time where
-  proc = process
-  evaluate dpu@FRAM { process=process@Process {..}, .. } fb
+instance ( Addr a, Enum key, Var v, Time t
+         ) => PUClass (FRAM a
+                        (Variant v t) (Action v t) v t key
+                      ) (Variant v t) (Action v t) v t key where
+  evaluate dpu@FRAM{ frProcess=p@Process{..}, .. } fb
     | Just (FB.Reg a b) <- unbox fb =
-        let (key, process') = modifyProcess process $ addEval fb tick
+        let (key, p') = modifyProcess p $ addEval fb tick
             mc = MC [Push a, Pull b] def { fb=fb, compilerLevel=[key] }
         in Just $ dpu
-           { remains=mc : remains
-           , process=process'
+           { frRemains=mc : frRemains
+           , frProcess=p'
            }
 
     | Just (FB.FRAMInput addr v) <- unbox fb
-    = case M.lookup addr memoryState of
+    = case M.lookup addr frMemory of
         Just cell@Cell { next=Nothing } ->
-          let (keys, process') = modifyProcess process $ do
+          let (keys, p') = modifyProcess p $ do
                 k1 <- addEval fb tick
                 k2 <- addMap addr fb tick
                 return [k1, k2]
@@ -58,15 +69,15 @@ instance ( Typeable var, Eq var
                                    , compilerLevel=keys
                                    }
           in Just dpu
-             { memoryState=M.insert addr (cell { next=Just mc }) memoryState
-             , process=process'
+             { frMemory=M.insert addr (cell { next=Just mc }) frMemory
+             , frProcess=p'
              }
         Nothing -> error "Memory cell already locked or not exist!"
 
     | Just (FB.FRAMOutput addr v) <- unbox fb
-    = case M.lookup addr memoryState of
+    = case M.lookup addr frMemory of
         Just cell@Cell { final=Nothing } ->
-          let (keys, process') = modifyProcess process $ do
+          let (keys, p') = modifyProcess p $ do
                 k1 <- addEval fb tick
                 k2 <- addMap addr fb tick
                 return [k1, k2]
@@ -74,60 +85,57 @@ instance ( Typeable var, Eq var
                                    , compilerLevel=keys
                                    }
           in Just dpu
-             { memoryState=M.insert addr (cell { final=Just mc }) memoryState
-             , process=process'
+             { frMemory=M.insert addr (cell { final=Just mc }) frMemory
+             , frProcess=p'
              }
         Nothing -> error "Memory cell already locked or not exist!"
 
     | otherwise = Nothing
 
-
-
-  variants dpu@FRAM {..} = fromCells ++ fromRemain
+  variants dpu@FRAM{..} = fromCells ++ fromRemain
     where
       fromCells = [ (v, time v $ Just addr)
-                  | (addr, cell) <- M.assocs memoryState
+                  | (addr, cell) <- M.assocs frMemory
                   , v <- cell2acts cell
                   ]
       fromRemain
-        | Nothing <- freeCell memoryState = []
-        | otherwise = map ((\x -> (x, time x Nothing)) . head . actions) remains
-      time (Pull _) addr | addr == lastSave = TimeConstrain 1 1 maxBound
+        | Nothing <- freeCell frMemory = []
+        | otherwise = map ((\x -> (x, time x Nothing)) . head . actions) frRemains
+      time (Pull _) addr | addr == frLastSave = TimeConstrain 1 1 maxBound
       time (Pull _) _    = TimeConstrain 1 0 maxBound
       time (Push _) _    = TimeConstrain 1 1 maxBound
 
-
-  step dpu@FRAM{ process=process@Process{..}, .. } act begin end
-    | Just (addr, cell) <- find (any (<< act) . cell2acts . snd) $ M.assocs memoryState
+  step dpu@FRAM{ frProcess=p@Process{..}, .. } (act, Moment{..})
+    | Just (addr, cell) <- find (any (<< act) . cell2acts . snd) $ M.assocs frMemory
     = case cell of
         Cell { next=Just mc@MC{ cntx=Cntx{..}, actions=(x:_) } } | x << act ->
-            let (p', mc') = doAction process mc addr
-            in dpu { memoryState=M.insert addr (cell { next=mc' }) memoryState
-                   , process=p'
-                   }
+            let (p', mc') = doAction p mc addr
+            in dpu{ frMemory=M.insert addr (cell { next=mc' }) frMemory
+                  , frProcess=p'
+                  }
 
         Cell { queue=lst@(_:_) }
           | Just mc@MC{ cntx=Cntx{..}, .. } <- find ((<< act) . head . actions) lst ->
             let queue' = filter (/= mc) lst
-                (p', mc') = doAction process mc addr
-            in dpu { memoryState=M.insert addr (cell { next=mc', queue=queue' }) memoryState
-                   , process=p'
-                   }
+                (p', mc') = doAction p mc addr
+            in dpu{ frMemory=M.insert addr (cell { next=mc', queue=queue' }) frMemory
+                  , frProcess=p'
+                  }
 
         Cell { final=Just mc@MC{ cntx=Cntx{..}, actions=(x:_) } } | x << act ->
-            let (p', mc') = doAction process mc addr
-            in dpu { memoryState=M.insert addr (cell { final=mc' }) memoryState
-                   , process=p'
-                   }
+            let (p', mc') = doAction p mc addr
+            in dpu{ frMemory=M.insert addr (cell { final=mc' }) frMemory
+                  , frProcess=p'
+                  }
 
-    | Just mc@MC { cntx=rd@Cntx{..}, .. } <- find ((<< act) . head . actions) remains
-    = case freeCell memoryState of
+    | Just mc@MC { cntx=rd@Cntx{..}, .. } <- find ((<< act) . head . actions) frRemains
+    = case freeCell frMemory of
         Just (addr, cell) ->
-          let (p', mc') = addMapToCell process mc addr
+          let (p', mc') = addMapToCell p mc addr
               (p'', mc'') = doAction p' mc' addr
-          in dpu { memoryState=M.insert addr (cell { next=mc'' }) memoryState
-                 , process=p''
-                 , remains=filter (/= mc) remains
+          in dpu { frMemory=M.insert addr (cell { next=mc'' }) frMemory
+                 , frProcess=p''
+                 , frRemains=filter (/= mc) frRemains
                  }
         Nothing -> error "Can't find free cell!"
 
@@ -146,11 +154,11 @@ instance ( Typeable var, Eq var
 
       makeStepWork p rd@Cntx{..} (x:xs) addr =
         let ((m, ls), p') = modifyProcess p $ do
-              m <- add (Interaction act) (Interval begin end)
-              l1 <- add (Signal $ act2Signal addr act) (Interval begin end)
-              ls <- if tick < begin
+              m <- add (Interaction act) (Interval eStart eDuration)
+              l1 <- add (Signal $ act2Signal addr act) (Interval eStart eDuration)
+              ls <- if tick < eStart
                 then do
-                  l2 <- add (Signal nop) (Interval tick (begin - 1))
+                  l2 <- add (Signal nop) (Interval tick (eStart - 1))
                   -- relation $ Seq [l1, l2]
                   relation $ Vertical m l1
                   relation $ Vertical m l2
@@ -158,7 +166,7 @@ instance ( Typeable var, Eq var
                 else do
                   relation $ Vertical m l1
                   return [l1]
-              setTime (end + 1)
+              setTime (eStart + eDuration)
               return (m, ls)
             rd' = rd { middleLevel=m : middleLevel
                      , workBegin=workBegin `orElse` Just tick
@@ -167,7 +175,7 @@ instance ( Typeable var, Eq var
         in (p', rd', if x == act then xs else (x \\ act) : xs)
 
       finish p Cntx{..} = snd $ modifyProcess p $ do
-        h <- add (FunctionBlock fb) (Interval (fromMaybe undefined workBegin) end)
+        h <- add (FunctionBlock fb) (Interval (fromMaybe undefined workBegin) (eStart + eDuration))
         mapM_ (relation . Vertical h) compilerLevel
         mapM_ (relation . Vertical h) middleLevel
         -- relation $ Seq compilerLevel
@@ -177,6 +185,7 @@ instance ( Typeable var, Eq var
       act2Signal addr (Pull _) = Save addr
       act2Signal addr (Push _) = Load addr
 
+  process = frProcess
 
 
 
@@ -185,14 +194,16 @@ instance ( Typeable var, Eq var
 
 
 
-instance (Enum addr, Num addr, Ord addr
-         , Default time, Default key
-         ) => Default (FRAM addr var key time) where
-  def = FRAM { lastSave=Nothing
-             , memoryState=fromList [ (addr, def) | addr <- [0..19] ]
-             , remains=[]
-             , process=def
-             }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -242,7 +253,7 @@ addEval fb tick = add (Compiler ("FRAM: evaluate " ++ show fb)) (Event tick)
 
 
 cell2acts Cell { next=Just MC { actions=x:_ } } = [x]
-cell2acts Cell { queue=mcs } | length mcs > 0 = map (head . actions) mcs
+cell2acts Cell { queue=mcs } | not $ null mcs = map (head . actions) mcs
 cell2acts Cell { final=Just MC {actions=x:_ } } = [x]
 cell2acts _ = []
 

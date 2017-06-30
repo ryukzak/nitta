@@ -22,18 +22,30 @@ import           FB
 import qualified FB
 
 
-data NITTA title key var time = NITTA
+data NITTA title variant action var time key = NITTA
   { niRemains :: [FB var]
   , delegated :: [FB var]
-  , dpus      :: M.Map title (DPU key var time)
+  , dpus      :: M.Map title (PU (Variant var time) (Action var time) var time key)
   } -- deriving(Show)
 
-instance Default (NITTA title key var time) where
+instance Default (NITTA title variant action var time key) where
   def = NITTA def def def
 
-instance DPUClass (NITTA title key var time) key var time where
-  evaluate ni@NITTA{..} fb = Just ni{ niRemains=fb : niRemains }
+
+-- instance DPUClass (NITTA title key var time) key var time where
+  -- evaluate ni@NITTA{..} fb = Just ni{ niRemains=fb : niRemains }
   -- variants = nittaVariants
+
+instance
+  ( Ord title, Enum key, Var v, Time t
+  ) => PUClass
+  (NITTA title
+    (Transport title v (TimeConstrain t)) (Transport title v (Moment t)) v t key
+  ) (Transport title v (TimeConstrain t)) (Transport title v (Moment t)) v t key where
+  evaluate ni@NITTA{..} fb = Just ni{ niRemains=fb : niRemains }
+  variants = nittaVariants
+  step = nittaStep
+  process = undefined
 
 
 
@@ -86,16 +98,7 @@ delegationVariants NITTA{..} = concatMap delegationVariants' niRemains
       in (fb, dpuTitle, vs)
 
 
-
-
-
-
-
-
-
-
 -- only for delegated FB
-
 availableVars NITTA{..} =
   let fbs = niRemains ++ delegated
       alg = foldl
@@ -104,16 +107,14 @@ availableVars NITTA{..} =
         $ concat $ map dependency fbs
   in concat $ map snd $ filter (not . null . snd) $ M.assocs alg
 
-
-
 -- step :: dpu -> Interaction var -> time -> time -> dpu
 -- nittaStep :: NITTA title key var time -> Transport title var time -> NITTA title key var time
-nittaStep ni@NITTA{..} Transport{ pullAt=Moment start duration, ..} =
+nittaStep ni@NITTA{..} Transport{..} =
   ni{ dpus=foldl (\s n -> n s) dpus steps }
   where
-    pullStep = M.adjust (\dpu -> step dpu pullVars start (start + duration)) pullFrom
-    pushStep (var, (dpuTitle, (Moment start duration))) =
-      M.adjust (\dpu -> step dpu (Push var) start (start + duration)) dpuTitle
+    pullStep = M.adjust (\dpu -> step dpu (pullVars, pullAt)) pullFrom
+    pushStep (var, (dpuTitle, pushAt)) =
+      M.adjust (\dpu -> step dpu ((Push var), pushAt)) dpuTitle
     pushSteps = map pushStep $ M.assocs push'
     steps = pullStep : pushSteps
 
