@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE KindSignatures            #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RecordWildCards           #-}
@@ -22,30 +23,23 @@ import           FB
 import qualified FB
 
 
-data NITTA title variant action var time key = NITTA
-  { niRemains :: [FB var]
-  , delegated :: [FB var]
-  , dpus      :: M.Map title (PU (Variant var time) (Action var time) var time key)
-  } -- deriving(Show)
+data NITTA title (variant :: * -> * -> *) (action :: * -> * -> *) v t k where
+  NITTA ::
+    { niRemains :: [FB v]
+    , delegated :: [FB v]
+    , dpus      :: M.Map title (PU (Action TimeConstrain) (Action Moment) v t k)
+    } -> NITTA title variant action v t k
 
 instance Default (NITTA title variant action var time key) where
   def = NITTA def def def
 
-
--- instance DPUClass (NITTA title key var time) key var time where
-  -- evaluate ni@NITTA{..} fb = Just ni{ niRemains=fb : niRemains }
-  -- variants = nittaVariants
-
-instance
-  ( Ord title, Enum key, Var v, Time t
-  ) => PUClass
-  (NITTA title
-    (Transport title v (TimeConstrain t)) (Transport title v (Moment t)) v t key
-  ) (Transport title v (TimeConstrain t)) (Transport title v (Moment t)) v t key where
+instance ( Ord title, Enum key, Var v, Time t
+         ) => PUClass
+         (NITTA title) (Transport TimeConstrain title) (Transport Moment title) v t key where
   evaluate ni@NITTA{..} fb = Just ni{ niRemains=fb : niRemains }
-  variants = nittaVariants
-  step = nittaStep
-  process = undefined
+  -- variants = nittaVariants
+  -- step = nittaStep
+  -- process = undefined
 
 
 
@@ -53,7 +47,8 @@ nittaVariants nitta@NITTA{..} = justTransport
   where
     avs = availableVars nitta
 
-    dpuVariants = concat $ map (\(title, d) -> zip (repeat title) $ variants d) $ M.assocs dpus
+    dpuVariants = concat $ map (\(title, d) -> zip (repeat title) $ map act $ variants d)
+                  $ M.assocs dpus
     -- если pull есть в DPU, то он точно есть в alg.
     (pulls, pushs) = partition (\case { (_, (Pull _, _)) -> True; _ -> False }) dpuVariants
     justTransport =

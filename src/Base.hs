@@ -29,19 +29,19 @@ instance ( Num t, Bounded t, Ord t ) => Time t
 class ( Typeable v, Eq v, Ord v ) => Var v
 instance ( Typeable v, Eq v, Ord v ) => Var v
 
-class PUClass dpu    variant action var time key
-            | dpu -> variant action var time key where
-  evaluate :: dpu -> FB var -> Maybe dpu
-  variants :: dpu -> [variant]
-  step     :: dpu -> action -> dpu
-  process  :: dpu -> Process var key time
+class PUClass dpu variant action var time key
+            -- | dpu -> variant action
+            where
+  evaluate :: dpu variant action var time key -> FB var -> Maybe (dpu variant action var time key)
+  variants :: dpu variant action var time key -> [variant var time]
+  step     :: dpu variant action var time key -> action var time -> dpu variant action var time key
+  process  :: dpu variant action var time key -> Process var key time
 
 
 data PU variant action v t k where
-  PU :: (PUClass dpu variant action v t k) => dpu -> PU variant action v t k
+  PU :: (PUClass dpu variant action v t k) => dpu variant action v t k -> PU variant action v t k
 
-instance PUClass (PU variant action var time key)
-                     variant action var time key where
+instance PUClass PU variant action var time key where
   evaluate (PU dpu) fb = PU <$> evaluate dpu fb
   variants (PU dpu) = variants dpu
   step (PU dpu) act = PU $ step dpu act
@@ -50,22 +50,22 @@ instance PUClass (PU variant action var time key)
 
 
 
+data Transport mtime title var time = Transport
+  { pullFrom :: title
+  , pullAt   :: time
+  , push     :: M.Map var (Maybe (title, mtime time))
+                      -- Nothing значит либо, операция ещё не распределена,
+                      -- либо DPU не может его принять.
+  } deriving (Show, Eq)
 
 
 
+-- type TransportVariant title v t = (Transport title v (TimeConstrain t))
+-- type TransportAction title v t = (Transport title v (Moment t))
 
-
--- class DPUClass dpu key var time | dpu -> key var time where
-  -- evaluate :: dpu -> FB var -> Maybe dpu
-  -- variants :: dpu -> [(Interaction var, TimeConstrain time)]
-  -- step :: dpu -> Interaction var -> time -> time -> dpu
-  -- proc :: dpu -> Process var key time
-
-
-
-
-type Variant var time = (Interaction var, TimeConstrain time)
-type Action var time = (Interaction var, Moment time)
+data Action mtime v t = Action { act :: (v, mtime t) }
+-- type Variant v t = (Interaction v, TimeConstrain t)
+-- type Action v t = (Interaction v, Moment t)
 
 
 -- data DPU key var time where
@@ -92,14 +92,6 @@ data Moment t
   , eDuration :: t
   } deriving (Show, Eq)
 
-
-data Transport title var time = Transport
-  { pullFrom :: title
-  , pullAt   :: time
-  , push     :: M.Map var (Maybe (title, time))
-                      -- Nothing значит либо, операция ещё не распределена,
-                      -- либо DPU не может его принять.
-  } deriving (Show, Eq)
 
 
 
