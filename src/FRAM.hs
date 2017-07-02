@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE KindSignatures         #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE UndecidableInstances   #-}
@@ -14,7 +15,8 @@ import           Control.Monad.State
 import           Data.Default
 import           Data.Dynamic          (Dynamic, Typeable, fromDynamic, toDyn)
 import           Data.Generics.Aliases (orElse)
-import           Data.List             (find, sortBy)
+import qualified Data.Graph            as G
+import           Data.List             (find, intersect, partition, sortBy)
 import qualified Data.List             as L
 import           Data.Map              (Map, fromList, lookup, (!))
 import qualified Data.Map              as M
@@ -29,26 +31,26 @@ class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a ) => Addr a
 instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a ) => Addr a
 
 
-data FRAM a variant action v t key = FRAM
+data FRAM a (variant :: * -> * -> *) (action :: * -> * -> *) (step :: * -> * -> * -> *) v t k = FRAM
   { frLastSave :: Maybe a
-  , frMemory   :: Map a (Cell v key t)
-  , frRemains  :: [MC v key t]
-  , frProcess  :: Process v key t
+  , frMemory   :: Map a (Cell v t k)
+  , frRemains  :: [MC v t k]
+  , frProcess  :: Process step v t k
   } deriving Show
 
-instance ( Addr a, Enum key, Var v, Time t
-         , Default t, Default key
-         ) => Default (FRAM a variant action v t key) where
+
+
+instance ( Addr a, Key k, Enum k, Var v, Time t
+         , Default t, Default k
+         ) => Default (FRAM a variant action step v t k) where
   def = FRAM { frLastSave=Nothing
              , frMemory=fromList [ (addr, def) | addr <- [0..19] ]
              , frRemains=[]
              , frProcess=def
              }
 
-instance ( Addr a, Enum key, Var v, Time t
-         ) => PUClass (FRAM a
-                        (Variant v t) (Action v t) v t key
-                      ) (Variant v t) (Action v t) v t key where
+instance ( Addr a, Key k, Var v, Time t
+         ) => PUClass (FRAM a) PuVariant PuAction PuStep v t k where
   evaluate dpu@FRAM{ frProcess=p@Process{..}, .. } fb
     | Just (FB.Reg a b) <- unbox fb =
         let (key, p') = modifyProcess p $ addEval fb tick
@@ -94,41 +96,42 @@ instance ( Addr a, Enum key, Var v, Time t
 
   variants dpu@FRAM{..} = fromCells ++ fromRemain
     where
-      fromCells = [ (v, time v $ Just addr)
+      fromCells = [ Interaction v (constrain v $ Just addr)
                   | (addr, cell) <- M.assocs frMemory
                   , v <- cell2acts cell
                   ]
       fromRemain
         | Nothing <- freeCell frMemory = []
-        | otherwise = map ((\x -> (x, time x Nothing)) . head . actions) frRemains
-      time (Pull _) addr | addr == frLastSave = TimeConstrain 1 1 maxBound
-      time (Pull _) _    = TimeConstrain 1 0 maxBound
-      time (Push _) _    = TimeConstrain 1 1 maxBound
+        | otherwise = map ((\x -> Interaction x (constrain x Nothing)) . head . actions) frRemains
+      constrain (Pull _) addr | addr == frLastSave = TimeConstrain 1 1 maxBound
+      constrain (Pull _) _    = TimeConstrain 1 0 maxBound
+      constrain (Push _) _    = TimeConstrain 1 1 maxBound
 
-  step dpu@FRAM{ frProcess=p@Process{..}, .. } (act, Moment{..})
-    | Just (addr, cell) <- find (any (<< act) . cell2acts . snd) $ M.assocs frMemory
+  step dpu@FRAM{ frProcess=p@Process{..}, .. } Interaction{ at=at@Event{..}, .. }
+    | tick > eStart = error "You can't start work yesterday:)"
+    | Just (addr, cell) <- find (any (<< effect) . cell2acts . snd) $ M.assocs frMemory
     = case cell of
-        Cell { next=Just mc@MC{ cntx=Cntx{..}, actions=(x:_) } } | x << act ->
+        Cell { next=Just mc@MC{ cntx=Cntx{..}, actions=(x:_) } } | x << effect ->
             let (p', mc') = doAction p mc addr
             in dpu{ frMemory=M.insert addr (cell { next=mc' }) frMemory
                   , frProcess=p'
                   }
 
         Cell { queue=lst@(_:_) }
-          | Just mc@MC{ cntx=Cntx{..}, .. } <- find ((<< act) . head . actions) lst ->
+          | Just mc@MC{ cntx=Cntx{..}, .. } <- find ((<< effect) . head . actions) lst ->
             let queue' = filter (/= mc) lst
                 (p', mc') = doAction p mc addr
             in dpu{ frMemory=M.insert addr (cell { next=mc', queue=queue' }) frMemory
                   , frProcess=p'
                   }
 
-        Cell { final=Just mc@MC{ cntx=Cntx{..}, actions=(x:_) } } | x << act ->
+        Cell { final=Just mc@MC{ cntx=Cntx{..}, actions=(x:_) } } | x << effect ->
             let (p', mc') = doAction p mc addr
             in dpu{ frMemory=M.insert addr (cell { final=mc' }) frMemory
                   , frProcess=p'
                   }
 
-    | Just mc@MC { cntx=rd@Cntx{..}, .. } <- find ((<< act) . head . actions) frRemains
+    | Just mc@MC { cntx=rd@Cntx{..}, .. } <- find ((<< effect) . head . actions) frRemains
     = case freeCell frMemory of
         Just (addr, cell) ->
           let (p', mc') = addMapToCell p mc addr
@@ -154,11 +157,11 @@ instance ( Addr a, Enum key, Var v, Time t
 
       makeStepWork p rd@Cntx{..} (x:xs) addr =
         let ((m, ls), p') = modifyProcess p $ do
-              m <- add (Interaction act) (Interval eStart eDuration)
-              l1 <- add (Signal $ act2Signal addr act) (Interval eStart eDuration)
+              m <- add (Effect effect) at
+              l1 <- add (Signal $ act2Signal addr effect) at
               ls <- if tick < eStart
                 then do
-                  l2 <- add (Signal nop) (Interval tick (eStart - 1))
+                  l2 <- add (Signal nop) $ Event tick (eStart - tick)
                   -- relation $ Seq [l1, l2]
                   relation $ Vertical m l1
                   relation $ Vertical m l2
@@ -169,13 +172,15 @@ instance ( Addr a, Enum key, Var v, Time t
               setTime (eStart + eDuration)
               return (m, ls)
             rd' = rd { middleLevel=m : middleLevel
-                     , workBegin=workBegin `orElse` Just tick
+                     , workBegin=workBegin `orElse` Just eStart
                      , signalLevel=ls ++ signalLevel
                      }
-        in (p', rd', if x == act then xs else (x \\ act) : xs)
+        in (p', rd', if x == effect then xs else (x \\ effect) : xs)
 
       finish p Cntx{..} = snd $ modifyProcess p $ do
-        h <- add (FunctionBlock fb) (Interval (fromMaybe undefined workBegin) (eStart + eDuration))
+        let start = (fromMaybe undefined workBegin)
+        let duration = (eStart + eDuration) - start
+        h <- add (FunctionBlock fb) (Event start duration)
         mapM_ (relation . Vertical h) compilerLevel
         mapM_ (relation . Vertical h) middleLevel
         -- relation $ Seq compilerLevel
@@ -185,7 +190,7 @@ instance ( Addr a, Enum key, Var v, Time t
       act2Signal addr (Pull _) = Save addr
       act2Signal addr (Push _) = Load addr
 
-  process = frProcess
+  process = sortPuSteps . frProcess
 
 
 
@@ -193,49 +198,55 @@ instance ( Addr a, Enum key, Var v, Time t
 
 
 
+sortPuSteps p@Process{..} =
+  let hierarchy = foldl (\m (Vertical a b) -> M.adjust (b :) a m)
+                      (M.fromList [(k, []) | k <- map key steps])
+                      [x | x@(Vertical _ _) <- relations]
+      (graph, v2k, k2v) = G.graphFromEdges $ map (\(a, b) -> ((), a, b)) $ M.assocs hierarchy
+      steps' = sortBy (\Step{ key=a } Step{ key=b } ->
+                       case (k2v a, k2v b) of
+                         (Just a', Just b') ->
+                           let ab = G.path graph a' b'
+                               ba = G.path graph b' a'
+                           in if ab || ba then if ab then LT
+                                                     else GT
+                              else compare a b
+                         _ -> compare a b
+                   ) steps
+  in p{ steps=steps' }
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-data Cell var key time = Cell
-  { next  :: Maybe (MC var key time)
-  , queue :: [MC var key time]
-  , final :: Maybe (MC var key time)
+data Cell v t k = Cell
+  { next  :: Maybe (MC v t k)
+  , queue :: [MC v t k]
+  , final :: Maybe (MC v t k)
   } deriving (Show)
 
-instance Default (Cell v i t) where
+instance Default (Cell v t k) where
   def = Cell Nothing [] Nothing
 
 
 
-data MC var key time = MC
-  { actions :: [Interaction var]
-  , cntx    :: Context key var time
+data MC v t k = MC
+  { actions :: [Effect v]
+  , cntx    :: Context v t k
   }
 
-instance (Show var) => Show (MC var key time) where
+instance (Show v) => Show (MC v t k) where
   show MC {..} = show actions
 
-instance (Eq var) => Eq (MC var key time) where
+instance (Eq v) => Eq (MC v t k) where
   MC { actions=a } == MC { actions=b } = a == b
 
 
 
 
-data Context key var time = Cntx
-  { fb                                      :: FB var
-  , compilerLevel, middleLevel, signalLevel :: [key]
-  , workBegin                               :: Maybe time
+data Context v t k = Cntx
+  { fb                                      :: FB v
+  , compilerLevel, middleLevel, signalLevel :: [k]
+  , workBegin                               :: Maybe t
   }
 
 instance Default (Context key var time) where
@@ -246,11 +257,9 @@ instance Default (Context key var time) where
 
 
 
-addMap addr fb tick = add (Compiler ("FRAM: map " ++ show fb ++ " on " ++ show addr)) (Event tick)
+addMap addr fb tick = add (Compiler ("FRAM: map " ++ show fb ++ " on " ++ show addr)) (Event tick 0)
 
-addEval fb tick = add (Compiler ("FRAM: evaluate " ++ show fb)) (Event tick)
-
-
+addEval fb tick = add (Compiler ("FRAM: evaluate " ++ show fb)) (Event tick 0)
 
 cell2acts Cell { next=Just MC { actions=x:_ } } = [x]
 cell2acts Cell { queue=mcs } | not $ null mcs = map (head . actions) mcs
@@ -276,6 +285,3 @@ data Signal addr
 
 nop :: Signal Int
 nop = Nop
-
-
-

@@ -20,28 +20,31 @@ import           Data.Typeable       (Typeable, cast, typeOf)
 import           FB
 import qualified FB
 
-
-
-
 class ( Num t, Bounded t, Ord t ) => Time t
 instance ( Num t, Bounded t, Ord t ) => Time t
 
-class ( Typeable v, Eq v, Ord v ) => Var v
-instance ( Typeable v, Eq v, Ord v ) => Var v
+class ( Typeable v, Eq v, Ord v, Show v ) => Var v
+instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
 
-class PUClass dpu variant action var time key
-            -- | dpu -> variant action
-            where
-  evaluate :: dpu variant action var time key -> FB var -> Maybe (dpu variant action var time key)
-  variants :: dpu variant action var time key -> [variant var time]
-  step     :: dpu variant action var time key -> action var time -> dpu variant action var time key
-  process  :: dpu variant action var time key -> Process var key time
+class ( Ord k, Enum k ) => Key k
+instance ( Ord k, Enum k ) => Key k
 
 
-data PU variant action v t k where
-  PU :: (PUClass dpu variant action v t k) => dpu variant action v t k -> PU variant action v t k
 
-instance PUClass PU variant action var time key where
+-- v - var; t - time; k - key
+class PUClass dpu variant action step v t k where
+  evaluate :: dpu variant action step v t k -> FB v -> Maybe (dpu variant action step v t k)
+  variants :: dpu variant action step v t k -> [variant v t]
+  step     :: dpu variant action step v t k -> action v t -> dpu variant action step v t k
+  process  :: dpu variant action step v t k -> Process step v t k
+
+
+
+data PU variant action step v t k where
+  PU :: (PUClass dpu variant action step v t k
+        ) => dpu variant action step v t k -> PU variant action step v t k
+
+instance PUClass PU variant action step v t k where
   evaluate (PU dpu) fb = PU <$> evaluate dpu fb
   variants (PU dpu) = variants dpu
   step (PU dpu) act = PU $ step dpu act
@@ -49,55 +52,24 @@ instance PUClass PU variant action var time key where
 
 
 
-
-data Transport mtime title var time = Transport
+data Transport title mtime var time = Transport
   { pullFrom :: title
-  , pullAt   :: time
+  , pullAt   :: mtime time
   , push     :: M.Map var (Maybe (title, mtime time))
                       -- Nothing значит либо, операция ещё не распределена,
                       -- либо DPU не может его принять.
   } deriving (Show, Eq)
+type NiVariant title = Transport title TimeConstrain
+type NiAction title = Transport title Event
 
 
+data Interaction mtime v t = Interaction { effect :: Effect v
+                                         , at     :: mtime t
+                                         }
+type PuVariant = Interaction TimeConstrain
+type PuAction = Interaction Event
 
--- type TransportVariant title v t = (Transport title v (TimeConstrain t))
--- type TransportAction title v t = (Transport title v (Moment t))
-
-data Action mtime v t = Action { act :: (v, mtime t) }
--- type Variant v t = (Interaction v, TimeConstrain t)
--- type Action v t = (Interaction v, Moment t)
-
-
--- data DPU key var time where
-  -- DPU :: (DPUClass dpu key var time) => dpu -> DPU key var time
-
--- instance DPUClass (DPU key var time) key var time where
-  -- evaluate (DPU dpu) fb = DPU <$> evaluate dpu fb
-  -- variants (DPU dpu) = variants dpu
-  -- step (DPU dpu) act begin end = DPU $ step dpu act begin end
-  -- proc (DPU dpu) = proc dpu
-
-
-data TimeConstrain t
-  = TimeConstrain
-  { tcDuration :: t
-  , tcFrom     :: t
-  , tcTo       :: t
-  } deriving (Show, Eq)
-
--- rename to Event
-data Moment t
-  = Moment
-  { eStart    :: t
-  , eDuration :: t
-  } deriving (Show, Eq)
-
-
-
-
-
-
-data Interaction var
+data Effect var
   = Push var
   | Pull [var]
   deriving (Show, Eq)
@@ -108,94 +80,153 @@ _        << _                 = False
 
 (Pull a) \\ (Pull b) = Pull (a L.\\ b)
 
-
-instance Vars (Interaction var) var where
+instance Vars (Effect var) var where
   variables (Push var)  = [var]
   variables (Pull vars) = vars
 
 
-data Process var key time
+
+data TimeConstrain t
+  = TimeConstrain
+  { tcDuration :: t
+  , tcFrom     :: t
+  , tcTo       :: t
+  } deriving (Show, Eq)
+
+data Event t
+  = Event
+  { eStart    :: t
+  , eDuration :: t
+  } deriving (Show, Eq)
+
+
+
+data Process step v t k
   = Process
-    { tick      :: time
-    , keySeed   :: key
-    , steps     :: [Step key time var]
-    , relations :: [Relation key]
+    { tick      :: t
+    , nextStep  :: k
+    , steps     :: [step v t k]
+    , relations :: [Relation k]
     } deriving (Show)
 
-
-instance (Default key, Default time) => Default (Process var key time) where
+instance (Default k, Default t) => Default (Process step v t k) where
   def = Process { tick=def
-                , keySeed=def
+                , nextStep=def
                 , steps=[]
                 , relations=[]
                 }
+
+
+
+data Step info v t k =
+  Step { time :: Event t
+       , info :: info v
+       , key  :: k
+       } deriving (Show)
+
+instance (Default k) => Default (Step info v t k) where
+  def = Step undefined undefined def
+
+-- instance Enum k => Enum (Step info v t k) where
+  -- toEnum i = Step (toEnum i) undefined undefined
+  -- fromEnum Step{..} = fromEnum key
+
+
+
+data NestedStep info nId nInfo v t k
+  = NStep { nTime :: Event t
+          , nInfo :: info v
+          , nKey  :: k
+          }
+  | Nested { nId    :: nId
+           , nested :: nInfo v t k
+           , nKey   :: k
+           } deriving (Show)
+
+instance (Default k) => Default (NestedStep info nId nInfo v t k) where
+  def = NStep undefined undefined def
+
+-- instance Enum k => Enum (NestedStep info nId nInfo v t k) where
+  -- toEnum i = NStep (toEnum i) undefined undefined
+  -- fromEnum NStep{..}  = fromEnum nKey
+  -- fromEnum Nested{..} = fromEnum nKey
+
+class Level a where
+  level :: a -> String
+
+instance Level (PuInfo v) where
+  level (Compiler s)       = "Compiler"
+  level (FunctionBlock fb) = "FunctionBlock"
+  level (Effect i)         = "Effect"
+  level (Middle m)         = "Middle"
+  level (Signal sig)       = "Signal"
+
+
+data PuInfo v where
+  Compiler :: String -> PuInfo v
+  FunctionBlock :: FB v -> PuInfo v
+  Effect :: Effect v -> PuInfo v
+  Middle :: (Show mid) => mid -> PuInfo v
+  Signal :: (Show sig) => sig -> PuInfo v
+type PuStep = Step PuInfo
+
+instance (Show v) => Show (PuInfo v) where
+  show (Compiler s)       = s
+  show (FunctionBlock fb) = show fb
+  show (Effect i)         = show i
+  show (Middle m)         = show m
+  show (Signal sig)       = "signal: " ++ show sig
+
+instance Level (NiInfo v) where
+  level (NiCompiler s)   = "NiCompiler"
+  level (NiTransport fb) = "NiTransport"
+  level (NiSignal i)     = "NiSignal"
+
+
+
+
+data NiInfo v where
+  NiCompiler :: String -> NiInfo v
+  NiTransport :: [v] -> NiInfo v
+  NiSignal :: (Show sig) => sig -> NiInfo v
+type NiStep title = NestedStep NiInfo title (Step PuInfo)
+
+instance (Show v) => Show (NiInfo v) where
+  show (NiCompiler s)  = s
+  show (NiTransport m) = show m
+  show (NiSignal sig)  = "signal: " ++ show sig
+
+
+
 
 data Relation key = Seq [key]
                   | Vertical key key
                   deriving (Show, Eq)
 
-data Step key time var
-  = Step
-    { key  :: key
-    , time :: StepTime time
-    , desc :: StepInfo var
-    }
-
-instance ( Num time, Enum time
-         , Show key, Show time, Show var
-         ) => Show (Step key time var) where
-  show Step{..} = case time of
-    Event a      -> ['.'|_<-[0..a-1]] ++ "+"             ++ suf
-    Interval a b -> ['.'|_<-[0..a-1]] ++ ['='|_<-[a..b]] ++ suf
-    where suf = "\t\t: " ++ show key ++ " " ++ show desc
-
-
-
-data StepTime t = Event t
-                | Interval t t
-                deriving (Eq, Show)
-
-
-class Timeline a where
-  chart :: a -> String
-
-instance (Show key, Show var, Show time, Num time
-         ) => Timeline (Step key time var) where
-  chart Step{..} = concat
-    [ "["
-    , "'" ++ show key ++ "', "
-    , "'" ++ show desc ++ "', "
-    , "null, "
-    , chart time
-    , "]"
-    ]
-
-instance (Show t, Num t) => Timeline (StepTime t) where
-  chart (Event t) = "new Date(" ++ show t ++  "), new Date(" ++ show t ++  ")"
-  chart (Interval a b) = "new Date(" ++ show a ++  "), new Date(" ++ show (b + 1) ++  ")"
-
-
-
-data Key i = Atom i
-           | Composite [Key i]
-           deriving (Show, Eq, Ord)
-
-instance (Default i) => Default (Key i) where
-  def = Atom def
-
-instance Enum i => Enum (Key i) where
-  toEnum i = Atom $ toEnum i
-  fromEnum (Atom i) = fromEnum i
-
 
 modifyProcess p state = runState state p
 
-add desc time = do
-  p@Process{ keySeed=key, .. } <- get
-  put p { keySeed=succ key
-        , steps=Step key time desc : steps
+
+add' st = do
+  p@Process{ nextStep=key, .. } <- get
+  put p { nextStep=succ key
+        , steps=st key : steps
         }
   return key
+
+add desc time = do
+  p@Process{ nextStep=key, .. } <- get
+  put p { nextStep=succ key
+        , steps=Step time desc key : steps
+        }
+  return key
+
+-- add' desc time = do
+  -- p@Process{ nextStep=key, .. } <- get
+  -- put p { nextStep=succ key
+        -- , steps=Step key time desc : steps
+        -- }
+  -- return key
 
 relation r = do
   p@Process{..} <- get
@@ -204,20 +235,3 @@ relation r = do
 setTime t = do
   p <- get
   put p{ tick=t }
-
-
-data StepInfo var  where
-  Compiler :: String -> StepInfo var
-  FunctionBlock :: FB var -> StepInfo var
-  Interaction :: Interaction var -> StepInfo var
-  Middle :: (Show mid) => mid -> StepInfo var
-  Signal :: (Show sig) => sig -> StepInfo var
-
-instance (Show var
-         ) => Show (StepInfo var) where
-  show (Compiler s)       = s
-  show (FunctionBlock fb) = show fb
-  show (Interaction i)    = show i
-  show (Middle m)         = show m
-  show (Signal sig)       = "signal: " ++ show sig
-
