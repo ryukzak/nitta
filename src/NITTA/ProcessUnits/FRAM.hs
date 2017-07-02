@@ -7,10 +7,8 @@
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE UndecidableInstances   #-}
 
+module NITTA.ProcessUnits.FRAM where
 
-module FRAM where
-
-import           Base
 import           Control.Monad.State
 import           Data.Default
 import           Data.Dynamic          (Dynamic, Typeable, fromDynamic, toDyn)
@@ -21,14 +19,11 @@ import qualified Data.List             as L
 import           Data.Map              (Map, fromList, lookup, (!))
 import qualified Data.Map              as M
 import           Data.Maybe            (catMaybes, fromMaybe, isNothing)
-import           FB                    (FB (..), unbox)
-import qualified FB
+import           NITTA.Base
+import           NITTA.FunctionBlocks
+import qualified NITTA.FunctionBlocks  as FB
+import           NITTA.ProcessUnits
 
-
-
-
-class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a ) => Addr a
-instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a ) => Addr a
 
 
 data FRAM a (variant :: * -> * -> *) (action :: * -> * -> *) (step :: * -> * -> * -> *) v t k = FRAM
@@ -157,11 +152,11 @@ instance ( Addr a, Key k, Var v, Time t
 
       makeStepWork p rd@Cntx{..} (x:xs) addr =
         let ((m, ls), p') = modifyProcess p $ do
-              m <- add (Effect effect) at
-              l1 <- add (Signal $ act2Signal addr effect) at
+              m <- add' (Effect effect) at
+              l1 <- add' (Signal $ act2Signal addr effect) at
               ls <- if tick < eStart
                 then do
-                  l2 <- add (Signal nop) $ Event tick (eStart - tick)
+                  l2 <- add' (Signal nop) $ Event tick (eStart - tick)
                   -- relation $ Seq [l1, l2]
                   relation $ Vertical m l1
                   relation $ Vertical m l2
@@ -180,10 +175,9 @@ instance ( Addr a, Key k, Var v, Time t
       finish p Cntx{..} = snd $ modifyProcess p $ do
         let start = (fromMaybe undefined workBegin)
         let duration = (eStart + eDuration) - start
-        h <- add (FunctionBlock fb) (Event start duration)
+        h <- add' (FunctionBlock fb) (Event start duration)
         mapM_ (relation . Vertical h) compilerLevel
         mapM_ (relation . Vertical h) middleLevel
-        -- relation $ Seq compilerLevel
         relation $ Seq middleLevel
         relation $ Seq signalLevel
 
@@ -257,9 +251,9 @@ instance Default (Context key var time) where
 
 
 
-addMap addr fb tick = add (Compiler ("FRAM: map " ++ show fb ++ " on " ++ show addr)) (Event tick 0)
+addMap addr fb tick = add' (Compiler ("FRAM: map " ++ show fb ++ " on " ++ show addr)) (Event tick 0)
 
-addEval fb tick = add (Compiler ("FRAM: evaluate " ++ show fb)) (Event tick 0)
+addEval fb tick = add' (Compiler ("FRAM: evaluate " ++ show fb)) (Event tick 0)
 
 cell2acts Cell { next=Just MC { actions=x:_ } } = [x]
 cell2acts Cell { queue=mcs } | not $ null mcs = map (head . actions) mcs

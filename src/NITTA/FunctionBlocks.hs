@@ -5,34 +5,39 @@
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TupleSections             #-}
+{-# LANGUAGE UndecidableInstances      #-}
 
-module FB where
+module NITTA.FunctionBlocks where
 
 import           Data.Dynamic  (Dynamic, fromDynamic, toDyn)
 import           Data.Typeable (Typeable, cast, typeOf)
 
+
+
+class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a ) => Addr a
+instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a ) => Addr a
+
+
+
 class Vars a var | a -> var where
   variables :: a -> [var]
 
-class ( Show fb
-      , Typeable fb
-      , Eq fb
-      , Ord fb
-      , Vars fb var
+
+
+class ( Show fb, Typeable fb, Eq fb, Ord fb, Vars fb var
       ) => FBClass fb var | fb -> var where
   dependency :: fb ->[(var, var)]
 
 data FB var where
-  FB :: ( FBClass fb var
-        ) => fb -> FB var
-
-instance Vars (FB var) var where
-  variables (FB fb) = variables fb
+  FB :: ( FBClass fb var ) => fb -> FB var
 
 instance (Typeable var) => FBClass (FB var) var where
   dependency (FB fb) = dependency fb
 
 instance Show (FB var) where show (FB x) = show x
+
+instance Vars (FB var) var where
+  variables (FB fb) = variables fb
 
 instance Eq (FB var) where
   FB a == FB b = Just a == cast b
@@ -42,67 +47,46 @@ instance Ord (FB var) where
     Just b' -> a `compare` b'
     Nothing -> typeOf a `compare` typeOf b
 
-
 unbox (FB x) = fromDynamic $ toDyn x
+
+
+
+----------------------------------------
 
 
 
 -- data Loop v = Loop [v] v deriving (Show, Typeable, Eq, Ord)
 
+
+
 data FRAMInput addr v = FRAMInput addr [v] deriving (Show, Typeable, Eq, Ord)
+framInput (addr :: Int) vs = FB $ FRAMInput addr vs
+
 instance Vars (FRAMInput addr var) var where
   variables (FRAMInput _ vs) = vs
 instance (Show addr, Eq addr, Ord addr, Typeable addr
          , Typeable var, Show var, Eq var, Ord var
          ) => FBClass (FRAMInput addr var) var where
   dependency _ = []
-framInput (addr :: Int) vs = FB $ FB.FRAMInput addr vs
+
 
 
 data FRAMOutput addr v = FRAMOutput addr v deriving (Show, Typeable, Eq, Ord)
-instance Vars (FRAMOutput addr var) var where
+framOutput (addr :: Int) v = FB $ FRAMOutput addr v
+
+instance Vars (FRAMOutput addr v) v where
   variables (FRAMOutput _ v) = [v]
 instance (Show addr, Eq addr, Ord addr, Typeable addr
          , Typeable var, Show var, Eq var, Ord var
          ) => FBClass (FRAMOutput addr var) var where
   dependency _ = []
-framOutput (addr :: Int) v = FB $ FB.FRAMOutput addr v
 
 
 
 data Reg v = Reg v [v] deriving (Show, Typeable, Eq, Ord)
+reg a b = FB $ Reg a b
+
 instance Vars (Reg var) var where
   variables (Reg a b) = a : b
 instance (Typeable var, Show var, Eq var, Ord var) => FBClass (Reg var) var where
   dependency (Reg a b) = map (, a) b
-reg a b = FB $ Reg a b
-
-
-
-
-
-
-
--- class (Typeable a) => FunctionBlock a where
-  -- box :: a -> Dynamic
-  -- box = toDyn
-
--- instance FunctionBlock FB where box (FB x) = toDyn x
--- instance (Typeable v) => FunctionBlock (Reg v)
-
---unbox :: forall fb. FB -> fb
--- unbox (FB x) = fromDynamic (box x)
--- test = let
--- test fb | Just (Reg a b) <- fromDynamic fb = a + sum b + 1
-
--- wrap = let fb = reg 1 [2,3]
-           -- in test $ box fb
-
--- data Input v = Input v deriving Show
--- data Output v = Output v deriving Show
-
--- class FBFamily v where
-  -- data FB' v :: *
-
---  box :: FB' v -> Dynamic
-

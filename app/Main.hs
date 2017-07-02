@@ -6,17 +6,19 @@
 
 module Main where
 
-import           Base
 import           Data.Default
 import           Data.Dynamic
-import qualified Data.Graph   as G
-import           Data.List    (find, groupBy, sortBy)
-import           Data.Map     (fromList)
-import qualified Data.Map     as M
-import           Data.Maybe   (fromMaybe)
-import qualified FB           as FB
-import           FRAM
-import           NITTA
+import qualified Data.Graph              as G
+import           Data.List               (find, groupBy, sortBy)
+import           Data.Map                (fromList)
+import qualified Data.Map                as M
+import           Data.Maybe              (fromMaybe)
+import           NITTA.Base
+import qualified NITTA.FunctionBlocks    as FB
+import           NITTA.NITTA
+import           NITTA.ProcessUnits
+import           NITTA.ProcessUnits.FRAM
+
 
 main = do
   let fram00 = fram

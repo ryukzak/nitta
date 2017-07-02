@@ -10,18 +10,54 @@
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TupleSections             #-}
 
-module NITTA where
+module NITTA.NITTA where
 
-import           Base
 import           Control.Monad.State
 import           Data.Default
-import qualified Data.Graph          as G
-import           Data.List           (find, intersect, partition, sortBy)
-import qualified Data.List           as L
-import qualified Data.Map            as M
-import           Data.Maybe          (fromMaybe, isJust)
-import           FB
-import qualified FB
+import qualified Data.Graph           as G
+import           Data.List            (find, intersect, partition, sortBy)
+import qualified Data.List            as L
+import qualified Data.Map             as M
+import           Data.Maybe           (fromMaybe, isJust)
+import           NITTA.Base
+import           NITTA.FunctionBlocks
+import qualified NITTA.FunctionBlocks as FB
+import           NITTA.ProcessUnits
+
+
+
+
+data Transport title mt v t = Transport
+  { pullFrom :: title
+  , pullAt   :: mt t
+  , push     :: M.Map v (Maybe (title, mt t))
+                      -- Nothing значит либо, операция ещё не распределена,
+                      -- либо DPU не может его принять.
+  } deriving (Show, Eq)
+type NiVariant title = Transport title TimeConstrain
+type NiAction title = Transport title Event
+
+
+
+
+data NiInfo v where
+  NiCompiler :: String -> NiInfo v
+  NiTransport :: [v] -> NiInfo v
+  NiSignal :: (Show sig) => sig -> NiInfo v
+type NiStep title = NestedStep NiInfo title (Step PuInfo)
+
+instance (Show v) => Show (NiInfo v) where
+  show (NiCompiler s)  = s
+  show (NiTransport m) = show m
+  show (NiSignal sig)  = "signal: " ++ show sig
+
+instance Level (NiInfo v) where
+  level (NiCompiler s)   = "NiCompiler"
+  level (NiTransport fb) = "NiTransport"
+  level (NiSignal i)     = "NiSignal"
+
+
+
 
 data NITTA title (variant :: * -> * -> *) (action :: * -> * -> *) (step :: * -> * -> * -> *) v t k =
   NITTA
@@ -33,9 +69,7 @@ data NITTA title (variant :: * -> * -> *) (action :: * -> * -> *) (step :: * -> 
 
 
 
-
-
-instance (Default k, Default t) => Default (NITTA title variant action step v t k) where
+instance (Key k, Time t) => Default (NITTA title variant action step v t k) where
   def = NITTA def def def def
 
 instance ( Ord title, Key k, Enum k, Var v, Time t
@@ -49,18 +83,8 @@ instance ( Ord title, Key k, Enum k, Var v, Time t
                      | (puTitle, pu) <- sortBy (\a b -> fst a `compare` fst b) $ M.assocs niPus
                      ,  step <- steps $ process pu
                      ]
-      mapM (\(puTitle, step) -> add' (Nested puTitle step)) $ subSteps
+      mapM (\(puTitle, step) -> add (Nested puTitle step)) $ subSteps
     in p'{ steps=reverse steps' }
-
-
-
-
-
-    --p{ steps=steps ++ subProcess }
-    -- modifyProcess p
-
-
-            -- map (\(k, v) -> Nested ) $ M.assocs niPus
 
 
 
@@ -127,7 +151,7 @@ availableVars NITTA{..} =
 nittaStep ni@NITTA{..} Transport{..} = ni
   { niPus=foldl (\s n -> n s) niPus steps
   , niProcess=snd $ modifyProcess niProcess $ do
-      add' $ NStep pullAt (NiTransport pullVars)
+      add $ NStep pullAt (NiTransport pullVars)
   }
   where
     pullStep = M.adjust (\dpu -> step dpu $ Interaction (Pull pullVars) pullAt) pullFrom
