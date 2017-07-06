@@ -9,6 +9,7 @@
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TupleSections             #-}
+{-# LANGUAGE TypeFamilies              #-}
 
 module NITTA.NITTA where
 
@@ -19,6 +20,7 @@ import           Data.List            (find, intersect, partition, sortBy)
 import qualified Data.List            as L
 import qualified Data.Map             as M
 import           Data.Maybe           (fromMaybe, isJust)
+import           Data.Typeable
 import           NITTA.Base
 import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks as FB
@@ -65,15 +67,24 @@ data NITTA title (variant :: * -> * -> *) (action :: * -> * -> *) (step :: * -> 
     , niDelegated :: [FB v]
     , niPus       :: M.Map title (PU PuVariant PuAction PuStep v t k)
     , niProcess   :: Process step v t k
+    , niWires     :: M.Map Int (title, S)
     }
 
 
 
 instance (Key k, Time t) => Default (NITTA title variant action step v t k) where
-  def = NITTA def def def def
+  def = NITTA def def def def def
 
-instance ( Ord title, Key k, Enum k, Var v, Time t
+instance ( Ord title, Key k, Enum k, Var v, Time t, Typeable title
          ) => PUClass (NITTA title) (NiVariant title) (NiAction title) (NiStep title) v t k where
+
+  data Signals (NITTA title) = Wire Int
+
+  signal' NITTA{..} (Wire i) t =
+    let (puTitle, s) = niWires M.! i
+        pu = niPus M.! puTitle
+    in case pu of PU pu -> signal pu s t
+
   evaluate ni@NITTA{..} fb = Just ni{ niRemains=fb : niRemains }
   variants = nittaVariants
   step = nittaStep

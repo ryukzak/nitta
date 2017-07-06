@@ -65,3 +65,10 @@ instance (Var v) => Show (PuInfo v) where
   show (Effect i)         = show i
   show (Middle m)         = show m
   show (Signal sig)       = "signal: " ++ show sig
+
+
+signalAt t Process{..} = case L.find (\Step{ time=Event{..}, info=Signal _ } ->
+                                    eStart <= t && t <= eStart + eDuration
+                                 ) steps of
+                       Just Step{ time=Event{..}, info=Signal a } -> show a
+                       Nothing -> error "Time not come... We need nop value here..."

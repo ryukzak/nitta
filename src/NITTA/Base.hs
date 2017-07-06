@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes       #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
@@ -6,6 +7,7 @@
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TupleSections             #-}
+{-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
 
 module NITTA.Base where
@@ -33,14 +35,25 @@ class ( Default k, Ord k, Enum k, Show k ) => Key k
 instance ( Default k, Ord k, Enum k, Show k ) => Key k
 
 
-
+data Value = X | V Int | B Bool
 
 -- v - var; t - time; k - key
-class PUClass pu variant action step v t k where
+class (Typeable (Signals pu)) => PUClass pu variant action step v t k where
   evaluate :: pu variant action step v t k -> FB v -> Maybe (pu variant action step v t k)
   variants :: pu variant action step v t k -> [variant v t]
   step     :: pu variant action step v t k -> action v t -> pu variant action step v t k
   process  :: pu variant action step v t k -> Process step v t k
+
+  data Signals pu :: *
+  signal :: pu variant action step v t k -> S -> t -> Value
+  signal' :: pu variant action step v t k -> Signals pu -> t -> Value
+
+  signal pu (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
+                    in signal' pu s'
+
+
+data S where
+  S :: Typeable (Signals a) => Signals a -> S
 
 
 data PU variant action step v t k where
@@ -52,6 +65,8 @@ instance PUClass PU variant action step v t k where
   variants (PU pu) = variants pu
   step (PU pu) act = PU $ step pu act
   process (PU pu) = process pu
+  data Signals PU
+  signal' = error ""
 
 
 
@@ -152,3 +167,5 @@ relation r = do
 setTime t = do
   p <- get
   put p{ tick=t }
+
+whatsHappen t = filter (\Step{ time=Event{..} } -> eStart <= t && t <= eStart + eDuration)

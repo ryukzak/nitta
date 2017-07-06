@@ -5,6 +5,8 @@
 {-# LANGUAGE KindSignatures         #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
 
 module NITTA.ProcessUnits.FRAM where
@@ -19,6 +21,7 @@ import qualified Data.List             as L
 import           Data.Map              (Map, fromList, lookup, (!))
 import qualified Data.Map              as M
 import           Data.Maybe            (catMaybes, fromMaybe, isNothing)
+import           Data.Typeable         (cast)
 import           NITTA.Base
 import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks  as FB
@@ -44,8 +47,25 @@ instance ( Addr a, Key k, Enum k, Var v, Time t
              , frProcess=def
              }
 
+
+
+signalValue (ADDR _) Nop         = X
+signalValue _ Nop                = B False
+signalValue (ADDR _) (Load addr) = V 0 -- TODO
+signalValue OE       (Load addr) = B True
+signalValue WR       (Load addr) = B False
+signalValue (ADDR _) (Save addr) = V 0 -- TODO
+signalValue OE       (Save addr) = B False
+signalValue WR       (Save addr) = B True
+
+
 instance ( Addr a, Key k, Var v, Time t
          ) => PUClass (FRAM a) PuVariant PuAction PuStep v t k where
+  data Signals (FRAM a) = OE | WR | ADDR a
+    deriving (Typeable)
+
+  signal' fr@FRAM{..} s t = X -- signalValue s $ info $ signalAt t frProcess
+
   evaluate dpu@FRAM{ frProcess=p@Process{..}, .. } fb
     | Just (FB.Reg a b) <- unbox fb =
         let (key, p') = modifyProcess p $ addEval fb tick
