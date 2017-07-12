@@ -29,18 +29,49 @@ import           NITTA.ProcessUnits
 
 
 
-data FRAM a (variant :: * -> * -> *) (action :: * -> * -> *) (step :: * -> * -> * -> *) v t k = FRAM
+data FRAM a ty v t = FRAM
   { frLastSave :: Maybe a
-  , frMemory   :: Map a (Cell v t k)
-  , frRemains  :: [MC v t k]
-  , frProcess  :: Process step v t k
-  } deriving Show
+  , frMemory   :: Map a (Cell v t)
+  , frRemains  :: [MC v t]
+  , frProcess  :: Process v t
+  } deriving (Show)
+
+data Cell v t = Cell
+  { next  :: Maybe (MC v t)
+  , queue :: [MC v t]
+  , final :: Maybe (MC v t)
+  } deriving (Show)
+
+instance Default (Cell v t) where
+  def = Cell Nothing [] Nothing
+
+data MC v t = MC
+  { actions :: [Effect v]
+  , cntx    :: Context v t
+  }
+
+instance (Show v) => Show (MC v t) where
+  show MC {..} = show actions
+
+instance (Eq v) => Eq (MC v t) where
+  MC { actions=a } == MC { actions=b } = a == b
+
+data Context v t = Cntx
+  { fb                                      :: FB v
+  , compilerLevel, middleLevel, signalLevel :: [ProcessUid]
+  , workBegin                               :: Maybe t
+  }
+
+instance Default (Context var time) where
+  def = Cntx undefined [] [] [] Nothing
 
 
 
-instance ( Addr a, Key k, Enum k, Var v, Time t
-         , Default t, Default k
-         ) => Default (FRAM a variant action step v t k) where
+
+
+instance ( Addr a, Var v, Time t
+         , Default t
+         ) => Default (FRAM a ty v t) where
   def = FRAM { frLastSave=Nothing
              , frMemory=fromList [ (addr, def) | addr <- [0..19] ]
              , frRemains=[]
@@ -49,28 +80,42 @@ instance ( Addr a, Key k, Enum k, Var v, Time t
 
 
 
-signalValue (ADDR _) Nop         = X
-signalValue _ Nop                = B False
-signalValue (ADDR _) (Load addr) = V 0 -- TODO
-signalValue OE       (Load addr) = B True
-signalValue WR       (Load addr) = B False
-signalValue (ADDR _) (Save addr) = V 0 -- TODO
-signalValue OE       (Save addr) = B False
-signalValue WR       (Save addr) = B True
 
 
-instance ( Addr a, Key k, Var v, Time t
-         ) => PUClass (FRAM a) PuVariant PuAction PuStep v t k where
+
+instance ( Addr a, Var v, Time t ) => ProcessInfo (Instruction (FRAM a) v t)
+
+
+
+instance ( Addr a, Var v, Time t
+         ) => PUClass (FRAM a) Passive v t where
   data Signals (FRAM a) = OE | WR | ADDR a
     deriving (Typeable)
 
-  signal' fr@FRAM{..} s t = X -- signalValue s $ info $ signalAt t frProcess
+  data Instruction (FRAM a) v t
+    = Nop
+    | Load a
+    | Save a
+    deriving (Show)
 
-  evaluate dpu@FRAM{ frProcess=p@Process{..}, .. } fb
+  signal' fr@FRAM{..} s t =
+    let (i:[]) :: [Instruction (FRAM a) v t] = infoAt t $ steps frProcess
+    in value i s
+    where
+      value  Nop        (ADDR _) = X
+      value  Nop         _       = B False
+      value (Load addr) (ADDR _) = V 0 -- TODO
+      value (Load addr)  OE      = B True
+      value (Load addr)  WR      = B False
+      value (Save addr) (ADDR _) = V 0 -- TODO
+      value (Save addr)  OE      = B False
+      value (Save addr)  WR      = B True
+
+  evaluate fr@FRAM{ frProcess=p@Process{..}, .. } fb
     | Just (FB.Reg a b) <- unbox fb =
-        let (key, p') = modifyProcess p $ addEval fb tick
+        let (key, p') = modifyProcess p $ evaluateFB fb tick
             mc = MC [Push a, Pull b] def { fb=fb, compilerLevel=[key] }
-        in Just $ dpu
+        in Just $ fr
            { frRemains=mc : frRemains
            , frProcess=p'
            }
@@ -79,14 +124,14 @@ instance ( Addr a, Key k, Var v, Time t
     = case M.lookup addr frMemory of
         Just cell@Cell { next=Nothing } ->
           let (keys, p') = modifyProcess p $ do
-                k1 <- addEval fb tick
-                k2 <- addMap addr fb tick
+                k1 <- evaluateFB fb tick
+                k2 <- mapFB addr fb tick
                 return [k1, k2]
               mc = MC [Pull v] def { fb=fb
                                    , compilerLevel=keys
                                    }
-          in Just dpu
-             { frMemory=M.insert addr (cell { next=Just mc }) frMemory
+          in Just fr
+             { frMemory=M.insert addr cell{ next=Just mc } frMemory
              , frProcess=p'
              }
         Nothing -> error "Memory cell already locked or not exist!"
@@ -95,14 +140,14 @@ instance ( Addr a, Key k, Var v, Time t
     = case M.lookup addr frMemory of
         Just cell@Cell { final=Nothing } ->
           let (keys, p') = modifyProcess p $ do
-                k1 <- addEval fb tick
-                k2 <- addMap addr fb tick
+                k1 <- evaluateFB fb tick
+                k2 <- mapFB addr fb tick
                 return [k1, k2]
               mc = MC [Push v] def { fb=fb
                                    , compilerLevel=keys
                                    }
-          in Just dpu
-             { frMemory=M.insert addr (cell { final=Just mc }) frMemory
+          in Just fr
+             { frMemory=M.insert addr cell{ final=Just mc } frMemory
              , frProcess=p'
              }
         Nothing -> error "Memory cell already locked or not exist!"
@@ -111,42 +156,42 @@ instance ( Addr a, Key k, Var v, Time t
 
   variants dpu@FRAM{..} = fromCells ++ fromRemain
     where
-      fromCells = [ Interaction v (constrain v $ Just addr)
+      fromCells = [ PUVar v $ constrain v $ Just addr
                   | (addr, cell) <- M.assocs frMemory
                   , v <- cell2acts cell
                   ]
       fromRemain
         | Nothing <- freeCell frMemory = []
-        | otherwise = map ((\x -> Interaction x (constrain x Nothing)) . head . actions) frRemains
+        | otherwise = map ((\x -> PUVar x $ constrain x Nothing) . head . actions) frRemains
       constrain (Pull _) addr | addr == frLastSave = TimeConstrain 1 1 maxBound
       constrain (Pull _) _    = TimeConstrain 1 0 maxBound
       constrain (Push _) _    = TimeConstrain 1 1 maxBound
 
-  step dpu@FRAM{ frProcess=p@Process{..}, .. } Interaction{ at=at@Event{..}, .. }
+  step dpu@FRAM{ frProcess=p@Process{..}, .. } (PUAct{ aAt=at@Event{..}, .. })
     | tick > eStart = error "You can't start work yesterday:)"
-    | Just (addr, cell) <- find (any (<< effect) . cell2acts . snd) $ M.assocs frMemory
+    | Just (addr, cell) <- find (any (<< aEffect) . cell2acts . snd) $ M.assocs frMemory
     = case cell of
-        Cell { next=Just mc@MC{ cntx=Cntx{..}, actions=(x:_) } } | x << effect ->
+        Cell { next=Just mc@MC{ cntx=Cntx{..}, actions=(x:_) } } | x << aEffect ->
             let (p', mc') = doAction p mc addr
             in dpu{ frMemory=M.insert addr (cell { next=mc' }) frMemory
                   , frProcess=p'
                   }
 
         Cell { queue=lst@(_:_) }
-          | Just mc@MC{ cntx=Cntx{..}, .. } <- find ((<< effect) . head . actions) lst ->
+          | Just mc@MC{ cntx=Cntx{..}, .. } <- find ((<< aEffect) . head . actions) lst ->
             let queue' = filter (/= mc) lst
                 (p', mc') = doAction p mc addr
             in dpu{ frMemory=M.insert addr (cell { next=mc', queue=queue' }) frMemory
                   , frProcess=p'
                   }
 
-        Cell { final=Just mc@MC{ cntx=Cntx{..}, actions=(x:_) } } | x << effect ->
+        Cell { final=Just mc@MC{ cntx=Cntx{..}, actions=(x:_) } } | x << aEffect ->
             let (p', mc') = doAction p mc addr
             in dpu{ frMemory=M.insert addr (cell { final=mc' }) frMemory
                   , frProcess=p'
                   }
 
-    | Just mc@MC { cntx=rd@Cntx{..}, .. } <- find ((<< effect) . head . actions) frRemains
+    | Just mc@MC { cntx=rd@Cntx{..}, .. } <- find ((<< aEffect) . head . actions) frRemains
     = case freeCell frMemory of
         Just (addr, cell) ->
           let (p', mc') = addMapToCell p mc addr
@@ -160,7 +205,7 @@ instance ( Addr a, Key k, Var v, Time t
     | otherwise = error "Can't found selected action!"
     where
       addMapToCell p mc@MC{ cntx=cntx@Cntx{..} } addr =
-        let (c, p') = modifyProcess p $ addMap addr fb tick
+        let (c, p') = modifyProcess p $ mapFB addr fb tick
         in (p', mc{ cntx=cntx{ compilerLevel=c : compilerLevel } })
 
       doAction p mc@MC{ cntx=rd@Cntx{ .. }, .. } addr  =
@@ -172,14 +217,12 @@ instance ( Addr a, Key k, Var v, Time t
 
       makeStepWork p rd@Cntx{..} (x:xs) addr =
         let ((m, ls), p') = modifyProcess p $ do
-              m <- add' (Effect effect) at
-              l1 <- add' (Signal $ act2Signal addr effect) at
+              m <- add at aEffect
+              l1 <- add at $ act2Signal addr aEffect
               ls <- if tick < eStart
                 then do
-                  l2 <- add' (Signal nop) $ Event tick (eStart - tick)
-                  -- relation $ Seq [l1, l2]
-                  relation $ Vertical m l1
-                  relation $ Vertical m l2
+                  l2 <- add (Event tick (eStart - tick)) nop
+                  relation $ Seq [l1, l2]
                   return [l1, l2]
                 else do
                   relation $ Vertical m l1
@@ -190,19 +233,21 @@ instance ( Addr a, Key k, Var v, Time t
                      , workBegin=workBegin `orElse` Just eStart
                      , signalLevel=ls ++ signalLevel
                      }
-        in (p', rd', if x == effect then xs else (x \\ effect) : xs)
+        in (p', rd', if x == aEffect then xs else (x \\ aEffect) : xs)
 
       finish p Cntx{..} = snd $ modifyProcess p $ do
         let start = (fromMaybe undefined workBegin)
         let duration = (eStart + eDuration) - start
-        h <- add' (FunctionBlock fb) (Event start duration)
+        h <- add (Event start duration) fb
         mapM_ (relation . Vertical h) compilerLevel
         mapM_ (relation . Vertical h) middleLevel
-        relation $ Seq middleLevel
-        relation $ Seq signalLevel
 
+      act2Signal :: a -> Effect v -> Instruction (FRAM a) v t
       act2Signal addr (Pull _) = Save addr
       act2Signal addr (Push _) = Load addr
+      nop :: Instruction (FRAM a) v t
+      nop = Nop
+
 
   process = sortPuSteps . frProcess
 
@@ -214,10 +259,10 @@ instance ( Addr a, Key k, Var v, Time t
 
 sortPuSteps p@Process{..} =
   let hierarchy = foldl (\m (Vertical a b) -> M.adjust (b :) a m)
-                      (M.fromList [(k, []) | k <- map key steps])
+                      (M.fromList [(k, []) | k <- map uid steps])
                       [x | x@(Vertical _ _) <- relations]
       (graph, v2k, k2v) = G.graphFromEdges $ map (\(a, b) -> ((), a, b)) $ M.assocs hierarchy
-      steps' = sortBy (\Step{ key=a } Step{ key=b } ->
+      steps' = sortBy (\Step{ uid=a } Step{ uid=b } ->
                        case (k2v a, k2v b) of
                          (Just a', Just b') ->
                            let ab = G.path graph a' b'
@@ -232,54 +277,16 @@ sortPuSteps p@Process{..} =
 
 
 
-data Cell v t k = Cell
-  { next  :: Maybe (MC v t k)
-  , queue :: [MC v t k]
-  , final :: Maybe (MC v t k)
-  } deriving (Show)
-
-instance Default (Cell v t k) where
-  def = Cell Nothing [] Nothing
 
 
+mapFB addr fb t = add (Event t 0) ("FRAM: map " ++ show fb ++ " to " ++ show addr)
+evaluateFB fb t = add (Event t 0) ("FRAM: evaluate " ++ show fb)
 
-data MC v t k = MC
-  { actions :: [Effect v]
-  , cntx    :: Context v t k
-  }
-
-instance (Show v) => Show (MC v t k) where
-  show MC {..} = show actions
-
-instance (Eq v) => Eq (MC v t k) where
-  MC { actions=a } == MC { actions=b } = a == b
-
-
-
-
-data Context v t k = Cntx
-  { fb                                      :: FB v
-  , compilerLevel, middleLevel, signalLevel :: [k]
-  , workBegin                               :: Maybe t
-  }
-
-instance Default (Context key var time) where
-  def = Cntx undefined [] [] [] Nothing
-
-
-
-
-
-
-addMap addr fb tick = add' (Compiler ("FRAM: map " ++ show fb ++ " on " ++ show addr)) (Event tick 0)
-
-addEval fb tick = add' (Compiler ("FRAM: evaluate " ++ show fb)) (Event tick 0)
 
 cell2acts Cell { next=Just MC { actions=x:_ } } = [x]
 cell2acts Cell { queue=mcs } | not $ null mcs = map (head . actions) mcs
 cell2acts Cell { final=Just MC {actions=x:_ } } = [x]
 cell2acts _ = []
-
 
 freeCell memory =
   let cells = filter (isNothing . next . snd) $ M.assocs memory
@@ -291,11 +298,3 @@ freeCell memory =
                                   , maybe 0 (length . actions) mc
                                   ]
 
-data Signal addr
-  = Nop
-  | Load addr
-  | Save addr
-  deriving (Show, Eq)
-
-nop :: Signal Int
-nop = Nop

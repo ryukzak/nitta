@@ -21,15 +21,15 @@
                  var i = chart.getSelection()[0].row;
                  console.log(i);
 
-                 var dt = mkDataTable(chart, [
-                     ['Atom 0', 'FRAM: evaluate Reg "a" ["b"]', null, new Date(0), new Date(0)],
-                     ['Atom 1', 'FRAM: map Reg "a" ["b"] on 0', null, new Date(0), new Date(0)],
-                     ['Atom 2', 'Push "a"', null, new Date(0), new Date(2)],
-                     ['Atom 3', 'signal: Load 0', null, new Date(0), new Date(2)],
-                     ['Atom 4', 'Pull ["b"]', null, new Date(2), new Date(14)],
-                     ['Atom 7', 'Reg "a" ["b"]', null, new Date(0), new Date(14)],
-                 ]);
-                 chart.draw(dt);
+                 /* var dt = mkDataTable(chart, [
+                  *     ['Atom 0', 'FRAM: evaluate Reg "a" ["b"]', null, new Date(0), new Date(0)],
+                  *     ['Atom 1', 'FRAM: map Reg "a" ["b"] on 0', null, new Date(0), new Date(0)],
+                  *     ['Atom 2', 'Push "a"', null, new Date(0), new Date(2)],
+                  *     ['Atom 3', 'signal: Load 0', null, new Date(0), new Date(2)],
+                  *     ['Atom 4', 'Pull ["b"]', null, new Date(2), new Date(14)],
+                  *     ['Atom 7', 'Reg "a" ["b"]', null, new Date(0), new Date(14)],
+                  * ]);
+                  * chart.draw(dt);*/
 
              }
              dataTable.addColumn({ type: 'string', id: 'Term' });

@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE AllowAmbiguousTypes       #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -6,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE LambdaCase       #-}
 {-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
@@ -17,36 +19,83 @@ import           Data.Default
 import           Data.List            (find, intersect, partition)
 import qualified Data.List            as L
 import qualified Data.Map             as M
-import           Data.Maybe           (fromMaybe, isJust)
+import           Data.Maybe           (fromMaybe, isJust, catMaybes)
 import           Data.Typeable        (Typeable, cast, typeOf)
 import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks as FB
 
 
+type ProcessUid = Int
 
-
-class ( Default t, Num t, Bounded t, Ord t, Show t ) => Time t
-instance ( Default t, Num t, Bounded t, Ord t, Show t ) => Time t
+class ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t ) => Time t
+instance ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t ) => Time t
 
 class ( Typeable v, Eq v, Ord v, Show v ) => Var v
 instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
 
-class ( Default k, Ord k, Enum k, Show k ) => Key k
-instance ( Default k, Ord k, Enum k, Show k ) => Key k
+data Value = X | V Int | B Bool | Broken
+  deriving (Show)
+
+X +++ v = v
+v +++ X = v
+_ +++ _ = Broken
 
 
-data Value = X | V Int | B Bool
 
--- v - var; t - time; k - key
-class (Typeable (Signals pu)) => PUClass pu variant action step v t k where
-  evaluate :: pu variant action step v t k -> FB v -> Maybe (pu variant action step v t k)
-  variants :: pu variant action step v t k -> [variant v t]
-  step     :: pu variant action step v t k -> action v t -> pu variant action step v t k
-  process  :: pu variant action step v t k -> Process step v t k
 
+
+
+data Effect v
+  = Push v
+  | Pull [v]
+  deriving (Show, Eq)
+
+
+
+
+
+data Passive
+
+class PUType t where
+  data Variant t :: * -> * -> *
+  data Action t :: * -> * -> *
+
+
+
+data Interaction mt v t = Interaction { effect :: Effect v
+                                      , at     :: mt t
+                                      } deriving (Show)
+
+instance PUType Passive where
+  data Variant Passive v t
+    = PUVar
+    { vEffect :: Effect v
+    , vAt :: TimeConstrain t
+    } deriving (Show)
+  data Action Passive v t
+    = PUAct
+    { aEffect :: Effect v
+    , aAt :: Event t
+    } deriving (Show)
+
+
+
+
+
+class ( Typeable (Signals pu)
+      , ProcessInfo (Instruction pu v t)
+      ) => PUClass pu ty v t where
+  evaluate :: pu ty v t -> FB v -> Maybe (pu ty v t)
+  variants :: pu ty v t -> [Variant ty v t]
+  step     :: pu ty v t -> Action ty v t -> pu ty v t
+
+  process :: pu ty v t -> Process v t
+
+  data Instruction pu v t :: *
+    
   data Signals pu :: *
-  signal :: pu variant action step v t k -> S -> t -> Value
-  signal' :: pu variant action step v t k -> Signals pu -> t -> Value
+  signal :: pu ty v t -> S -> t -> Value
+  signal' :: pu ty v t -> Signals pu -> t -> Value
 
   signal pu (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
                     in signal' pu s'
@@ -56,16 +105,35 @@ data S where
   S :: Typeable (Signals a) => Signals a -> S
 
 
-data PU variant action step v t k where
-  PU :: (PUClass pu variant action step v t k
-        ) => pu variant action step v t k -> PU variant action step v t k
 
-instance PUClass PU variant action step v t k where
+
+
+data PU ty v t where
+  PU :: ( PUClass pu ty v t
+        ) => pu ty v t -> PU ty v t
+
+
+
+deriving instance Show (Instruction PU v t) 
+instance ( Var v, Time t ) => ProcessInfo (Instruction PU v t)
+
+instance ( Var v, Time t ) => PUClass PU Passive v t where
   evaluate (PU pu) fb = PU <$> evaluate pu fb
   variants (PU pu) = variants pu
   step (PU pu) act = PU $ step pu act
   process (PU pu) = process pu
-  data Signals PU
+    -- let p@Process{..} = process pu
+    -- in Process{ tick=tick
+              -- , nextUid=def
+              -- , steps=map (\st@Step{..} -> st{ key=genericKey key }) steps
+              -- , relations=map (\case
+                                  -- (Seq lst) -> Seq $ map genericKey lst
+                                  -- (Vertical a b) -> Vertical (genericKey a) (genericKey b)
+                              -- ) relations
+              -- }
+  data Signals PU = Signals ()
+  data Instruction PU v t
+    
   signal' = error ""
 
 
@@ -87,78 +155,63 @@ data Event t
 
 
 
-data Process step v t k
+data Process v t
   = Process
     { tick      :: t
-    , nextStep  :: k
-    , steps     :: [step v t k]
-    , relations :: [Relation k]
+    , nextUid   :: ProcessUid
+    , steps     :: [Step v t]
+    , relations :: [Relation]
     } deriving (Show)
 
-instance (Key k, Time t) => Default (Process step v t k) where
+instance (Time t) => Default (Process v t) where
   def = Process { tick=def
-                , nextStep=def
+                , nextUid=def
                 , steps=[]
                 , relations=[]
                 }
 
 
+class ( Show i, Typeable i ) => ProcessInfo i
+instance ProcessInfo ()
+
+instance ProcessInfo String
+instance (Var v) => ProcessInfo (FB v)
+instance (Var v) => ProcessInfo (Effect v)
+  
+
+data Step v t where
+  Step :: ( ProcessInfo info ) =>
+    { uid  :: ProcessUid
+    , time :: Event t
+    , info :: info
+    } -> Step v t
 
 
-data Step info v t k =
-  Step { time :: Event t
-       , info :: info v
-       , key  :: k
-       } deriving (Show)
-
-instance (Key k) => Default (Step info v t k) where
-  def = Step undefined undefined def
-
-
-data NestedStep info nId nInfo v t k
-  = NStep { nTime :: Event t
-          , nInfo :: info v
-          , nKey  :: k
-          }
-  | Nested { nId    :: nId
-           , nested :: nInfo v t k
-           , nKey   :: k
-           } deriving (Show)
-
-instance (Key k) => Default (NestedStep info nId nInfo v t k) where
-  def = NStep undefined undefined def
+instance Default (Step v t) where
+  def = Step def undefined ()
+  
+deriving instance ( Show v, Show t ) => Show (Step v t)
 
 
 
 
-class Level a where
-  level :: a -> String
 
 
 
-
-data Relation key = Seq [key]
-                  | Vertical key key
+data Relation = Seq [ProcessUid]
+                  | Vertical ProcessUid ProcessUid
                   deriving (Show, Eq)
-
 
 
 
 modifyProcess p state = runState state p
 
-add st = do
-  p@Process{ nextStep=key, .. } <- get
-  put p { nextStep=succ key
-        , steps=st key : steps
+add time info = do
+  p@Process{..} <- get
+  put p { nextUid=succ nextUid
+        , steps=Step nextUid time info : steps
         }
-  return key
-
-add' desc time = do
-  p@Process{ nextStep=key, .. } <- get
-  put p { nextStep=succ key
-        , steps=Step time desc key : steps
-        }
-  return key
+  return nextUid
 
 relation r = do
   p@Process{..} <- get
@@ -169,3 +222,4 @@ setTime t = do
   put p{ tick=t }
 
 whatsHappen t = filter (\Step{ time=Event{..} } -> eStart <= t && t <= eStart + eDuration)
+infoAt t = catMaybes . map (\Step{..} -> cast info) . whatsHappen t
