@@ -9,13 +9,14 @@
 
 module NITTA.FunctionBlocks where
 
+import           Data.Bits
 import           Data.Dynamic  (Dynamic, fromDynamic, toDyn)
 import           Data.Typeable (Typeable, cast, typeOf)
 
 
 
-class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a ) => Addr a
-instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a ) => Addr a
+class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
+instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 
 
 

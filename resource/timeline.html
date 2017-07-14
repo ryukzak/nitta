@@ -1,0 +1,120 @@
+<!-- <!DOCTYPE HTML>
+     <html>
+     <head>
+     <title>Timeline | Basic demo</title>
+
+     <style type="text/css">
+     body, html {
+     font-family: sans-serif;
+     }
+     </style>
+     <script type="text/javascript" src="data.json"></script>        
+     <script src="http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js"></script>
+     <script src="vendor/vis.min.js"></script>
+     <link href="vendor/vis.min.css" rel="stylesheet" type="text/css" />
+     </head>
+     <body>
+     <div id="visualization"></div>
+
+     <script type="text/javascript">
+     // DOM element where the Timeline will be attached
+     var container = document.getElementById('visualization');
+
+
+     // Create a DataSet (allows two way data-binding)
+     var groups = new vis.DataSet(groups_data);
+     var items = new vis.DataSet(items_data);
+
+     // Configuration for the Timeline
+     var options = {
+     groupOrder: 'content'
+     };
+
+     // Create a Timeline
+     var timeline = new vis.Timeline(container, items, options);
+     </script>
+     </body>
+     </html>
+   -->
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Timeline | Nested Groups example</title>
+
+        <style>
+         body, html {
+             font-family: arial, sans-serif;
+             font-size: 11pt;
+         }
+
+         #visualization {
+             box-sizing: border-box;
+             width: 100%;
+             height: 300px;
+         }
+        </style>
+
+        <script type="text/javascript" src="data.json"></script>
+
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js"></script>
+        <script src="vendor/vis.min.js"></script>
+        <link href="vendor/vis.min.css" rel="stylesheet" type="text/css" />
+    </head>
+    <body>
+        <div id="visualization"></div>
+
+        <script>
+         var now = moment().minutes(0).seconds(0).milliseconds(0);
+         var itemCount = 60;
+
+         // create a data set with groups
+         var groups = new vis.DataSet(groups_data);
+
+         var items = new vis.DataSet(items_data);
+         
+         // create visualization
+         var container = document.getElementById('visualization');
+         var options = {
+             groupOrder: 'content',  // groupOrder can be a property name or a sorting function
+             timeAxis: {scale: 'millisecond', step: 1}
+         };
+
+         var timeline = new vis.Timeline(container, items, groups, options);
+
+         timeline.on('select', function (prop) {
+             var item = prop.items[0];
+
+             for (var i = 0; i < items_data.length; i += 1) {
+                 if (items_data[i].id == item) {
+                     items_data[i].style = "background-color: Salmon;";
+                 } else {
+                     items_data[i].style = undefined;
+                 }
+             }
+
+             for (var i = 0; i < relations_data.length; i += 1) {
+                 var rel = relations_data[i];
+                 if (rel.type == "Vertical") {
+                     if (rel.a == item) {
+                         items_data[rel.b].style = "background-color: Chartreuse;";
+                     } else if (rel.b == item) {
+                         items_data[rel.a].style = "background-color: SkyBlue;";
+                     }
+                 }
+             }
+
+             timeline.setItems(new vis.DataSet(items_data));
+         });
+        </script>
+    </body>
+</html>

@@ -12,6 +12,7 @@
 module NITTA.ProcessUnits.FRAM where
 
 import           Control.Monad.State
+import           Data.Bits
 import           Data.Default
 import           Data.Dynamic          (Dynamic, Typeable, fromDynamic, toDyn)
 import           Data.Generics.Aliases (orElse)
@@ -73,23 +74,23 @@ instance ( Addr a, Var v, Time t
          , Default t
          ) => Default (FRAM a ty v t) where
   def = FRAM { frLastSave=Nothing
-             , frMemory=fromList [ (addr, def) | addr <- [0..19] ]
+             , frMemory=fromList [ (addr, def) | addr <- [0..36] ]
              , frRemains=[]
              , frProcess=def
              }
 
 
 
-
-
-
-instance ( Addr a, Var v, Time t ) => ProcessInfo (Instruction (FRAM a) v t)
+instance (Addr a) => Verilog (Instruction (FRAM a) v t) where
+  verilog Nop      = "/* Nop  */ oe <= 0; wr <= 0; addr <= 0;"
+  verilog (Load a) = "/* Load */ oe <= 1; wr <= 0; addr <= " ++ show a ++ ";"
+  verilog (Save a) = "/* Save */ oe <= 0; wr <= 1; addr <= " ++ show a ++ "; value_i <= 42;"
 
 
 
 instance ( Addr a, Var v, Time t
          ) => PUClass (FRAM a) Passive v t where
-  data Signals (FRAM a) = OE | WR | ADDR a
+  data Signals (FRAM a) = OE | WR | ADDR Int
     deriving (Typeable)
 
   data Instruction (FRAM a) v t
@@ -99,15 +100,18 @@ instance ( Addr a, Var v, Time t
     deriving (Show)
 
   signal' fr@FRAM{..} s t =
-    let (i:[]) :: [Instruction (FRAM a) v t] = infoAt t $ steps frProcess
+    let i = case infoAt t $ steps frProcess of
+          []                                     -> Nop
+          ((i:[]) :: [Instruction (FRAM a) v t]) -> i
+          x                                      -> error $ show x
     in value i s
     where
       value  Nop        (ADDR _) = X
       value  Nop         _       = B False
-      value (Load addr) (ADDR _) = V 0 -- TODO
+      value (Load addr) (ADDR b) = B $ testBit addr b
       value (Load addr)  OE      = B True
       value (Load addr)  WR      = B False
-      value (Save addr) (ADDR _) = V 0 -- TODO
+      value (Save addr) (ADDR b) = B $ testBit addr b
       value (Save addr)  OE      = B False
       value (Save addr)  WR      = B True
 
@@ -154,7 +158,7 @@ instance ( Addr a, Var v, Time t
 
     | otherwise = Nothing
 
-  variants dpu@FRAM{..} = fromCells ++ fromRemain
+  variants dpu@FRAM{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
     where
       fromCells = [ PUVar v $ constrain v $ Just addr
                   | (addr, cell) <- M.assocs frMemory
@@ -163,11 +167,11 @@ instance ( Addr a, Var v, Time t
       fromRemain
         | Nothing <- freeCell frMemory = []
         | otherwise = map ((\x -> PUVar x $ constrain x Nothing) . head . actions) frRemains
-      constrain (Pull _) addr | addr == frLastSave = TimeConstrain 1 1 maxBound
-      constrain (Pull _) _    = TimeConstrain 1 0 maxBound
-      constrain (Push _) _    = TimeConstrain 1 1 maxBound
+      constrain (Pull _) addr | addr == frLastSave = TimeConstrain 1 tick maxBound
+      constrain (Pull _) _    = TimeConstrain 1 tick maxBound
+      constrain (Push _) _    = TimeConstrain 1 tick maxBound
 
-  step dpu@FRAM{ frProcess=p@Process{..}, .. } (PUAct{ aAt=at@Event{..}, .. })
+  step dpu@FRAM{ frProcess=p@Process{..}, .. } (act@PUAct{ aAt=at@Event{..}, .. })
     | tick > eStart = error "You can't start work yesterday:)"
     | Just (addr, cell) <- find (any (<< aEffect) . cell2acts . snd) $ M.assocs frMemory
     = case cell of
@@ -202,7 +206,7 @@ instance ( Addr a, Var v, Time t
                  }
         Nothing -> error "Can't find free cell!"
 
-    | otherwise = error "Can't found selected action!"
+    | otherwise = error ("Can't found selected action: " ++ show act ++ (show $ variants dpu))
     where
       addMapToCell p mc@MC{ cntx=cntx@Cntx{..} } addr =
         let (c, p') = modifyProcess p $ mapFB addr fb tick
@@ -222,11 +226,9 @@ instance ( Addr a, Var v, Time t
               ls <- if tick < eStart
                 then do
                   l2 <- add (Event tick (eStart - tick)) nop
-                  relation $ Seq [l1, l2]
                   return [l1, l2]
-                else do
-                  relation $ Vertical m l1
-                  return [l1]
+                else return [l1]
+              mapM_ (relation . Vertical m) ls
               setTime (eStart + eDuration)
               return (m, ls)
             rd' = rd { middleLevel=m : middleLevel
@@ -243,8 +245,8 @@ instance ( Addr a, Var v, Time t
         mapM_ (relation . Vertical h) middleLevel
 
       act2Signal :: a -> Effect v -> Instruction (FRAM a) v t
-      act2Signal addr (Pull _) = Save addr
-      act2Signal addr (Push _) = Load addr
+      act2Signal addr (Pull _) = Load addr
+      act2Signal addr (Push _) = Save addr
       nop :: Instruction (FRAM a) v t
       nop = Nop
 
@@ -279,8 +281,8 @@ sortPuSteps p@Process{..} =
 
 
 
-mapFB addr fb t = add (Event t 0) ("FRAM: map " ++ show fb ++ " to " ++ show addr)
-evaluateFB fb t = add (Event t 0) ("FRAM: evaluate " ++ show fb)
+mapFB addr fb t = add (Event t 0) ("Bind " ++ show fb ++ " to cell " ++ show addr)
+evaluateFB fb t = add (Event t 0) ("Bind " ++ show fb)
 
 
 cell2acts Cell { next=Just MC { actions=x:_ } } = [x]

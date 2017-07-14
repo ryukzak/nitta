@@ -7,7 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
@@ -25,7 +25,6 @@ import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks as FB
 
 
-type ProcessUid = Int
 
 class ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t ) => Time t
 instance ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t ) => Time t
@@ -33,17 +32,17 @@ instance ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t ) => Time t
 class ( Typeable v, Eq v, Ord v, Show v ) => Var v
 instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
 
+type ProcessUid = Int
+
 data Value = X | V Int | B Bool | Broken
-  deriving (Show)
+instance Show Value where
+  show X = "x"
+  show (B True) = "1"
+  show (B False) = "0"
 
 X +++ v = v
 v +++ X = v
 _ +++ _ = Broken
-
-
-
-
-
 
 data Effect v
   = Push v
@@ -53,19 +52,11 @@ data Effect v
 
 
 
-
-data Passive
-
 class PUType t where
   data Variant t :: * -> * -> *
   data Action t :: * -> * -> *
 
-
-
-data Interaction mt v t = Interaction { effect :: Effect v
-                                      , at     :: mt t
-                                      } deriving (Show)
-
+data Passive
 instance PUType Passive where
   data Variant Passive v t
     = PUVar
@@ -78,12 +69,27 @@ instance PUType Passive where
     , aAt :: Event t
     } deriving (Show)
 
+data Network title
+instance PUType (Network title) where
+  data Variant (Network title) v t
+    = NetworkVariant
+    { vPullFrom :: title
+    , vPullAt   :: TimeConstrain t
+    , vPush     :: M.Map v (Maybe (title, TimeConstrain t))
+    }
+  data Action (Network title) v t
+    = NetworkAction
+    { aPullFrom :: title
+    , aPullAt   :: Event t
+    , aPush     :: M.Map v (Maybe (title, Event t))
+    }
 
 
 
 
 class ( Typeable (Signals pu)
       , ProcessInfo (Instruction pu v t)
+      , Verilog (Instruction pu v t)
       ) => PUClass pu ty v t where
   evaluate :: pu ty v t -> FB v -> Maybe (pu ty v t)
   variants :: pu ty v t -> [Variant ty v t]
@@ -95,11 +101,9 @@ class ( Typeable (Signals pu)
     
   data Signals pu :: *
   signal :: pu ty v t -> S -> t -> Value
-  signal' :: pu ty v t -> Signals pu -> t -> Value
-
   signal pu (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
                     in signal' pu s'
-
+  signal' :: pu ty v t -> Signals pu -> t -> Value
 
 data S where
   S :: Typeable (Signals a) => Signals a -> S
@@ -111,29 +115,16 @@ data S where
 data PU ty v t where
   PU :: ( PUClass pu ty v t
         ) => pu ty v t -> PU ty v t
-
-
-
-deriving instance Show (Instruction PU v t) 
-instance ( Var v, Time t ) => ProcessInfo (Instruction PU v t)
-
+deriving instance Show (Instruction PU v t)
+instance Verilog (Instruction PU v t) where
+  verilog _ = ""
 instance ( Var v, Time t ) => PUClass PU Passive v t where
   evaluate (PU pu) fb = PU <$> evaluate pu fb
   variants (PU pu) = variants pu
   step (PU pu) act = PU $ step pu act
   process (PU pu) = process pu
-    -- let p@Process{..} = process pu
-    -- in Process{ tick=tick
-              -- , nextUid=def
-              -- , steps=map (\st@Step{..} -> st{ key=genericKey key }) steps
-              -- , relations=map (\case
-                                  -- (Seq lst) -> Seq $ map genericKey lst
-                                  -- (Vertical a b) -> Vertical (genericKey a) (genericKey b)
-                              -- ) relations
-              -- }
   data Signals PU = Signals ()
   data Instruction PU v t
-    
   signal' = error ""
 
 
@@ -162,22 +153,12 @@ data Process v t
     , steps     :: [Step v t]
     , relations :: [Relation]
     } deriving (Show)
-
 instance (Time t) => Default (Process v t) where
   def = Process { tick=def
                 , nextUid=def
                 , steps=[]
                 , relations=[]
                 }
-
-
-class ( Show i, Typeable i ) => ProcessInfo i
-instance ProcessInfo ()
-
-instance ProcessInfo String
-instance (Var v) => ProcessInfo (FB v)
-instance (Var v) => ProcessInfo (Effect v)
-  
 
 data Step v t where
   Step :: ( ProcessInfo info ) =>
@@ -186,21 +167,52 @@ data Step v t where
     , info :: info
     } -> Step v t
 
-
+deriving instance ( Show v, Show t ) => Show (Step v t)
 instance Default (Step v t) where
   def = Step def undefined ()
-  
-deriving instance ( Show v, Show t ) => Show (Step v t)
-
-
-
-
-
-
 
 data Relation = Seq [ProcessUid]
                   | Vertical ProcessUid ProcessUid
                   deriving (Show, Eq)
+
+
+
+
+class ( Show i, Typeable i ) => ProcessInfo i where
+  level :: i -> String
+  level = show . typeOf
+  
+instance ProcessInfo ()
+instance ProcessInfo String where
+  level _ = "Info"
+instance {-# OVERLAPS #-}
+  ( Typeable pu, Var v, Time t, Show (Instruction pu v t)
+  ) => ProcessInfo (Instruction pu v t) where
+  level _ = "Instruction"
+instance (Var v) => ProcessInfo (FB v) where
+  level _ = "Function block"
+instance (Var v) => ProcessInfo (Effect v) where
+  level _ = "Effect"
+
+
+data Nested title v t where
+  Nested :: ( ProcessInfo info ) =>
+    { nestedUid  :: ProcessUid
+    , nestedTitle :: title
+    , nestedInfo :: info
+    } -> Nested title v t
+deriving instance ( Show title ) => Show (Nested title v t)
+instance ( Typeable title
+         , Show title
+         , Var v, Time t
+         ) => ProcessInfo (Nested title v t)
+
+
+
+
+class Verilog e where
+  verilog :: e -> String
+
 
 
 
@@ -221,5 +233,7 @@ setTime t = do
   p <- get
   put p{ tick=t }
 
-whatsHappen t = filter (\Step{ time=Event{..} } -> eStart <= t && t <= eStart + eDuration)
+whatsHappen t = filter (\Step{ time=Event{..} } -> eStart <= t && t < eStart + eDuration)
 infoAt t = catMaybes . map (\Step{..} -> cast info) . whatsHappen t
+
+

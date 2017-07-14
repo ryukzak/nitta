@@ -3,3 +3,5 @@
 *.refactored.hs
 /dist
 /resource/data.json
+*.vcd
+a.out

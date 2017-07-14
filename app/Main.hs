@@ -1,19 +1,29 @@
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE OverloadedStrings      #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE StandaloneDeriving     #-}
 
 module Main where
 
+import           Control.Monad
+import           Data.Aeson
+import           Data.Aeson.Encoding
+import           Data.Array
+import qualified Data.ByteString.Lazy    as BS
 import           Data.Default
 import qualified Data.Graph              as G
-import           Data.List               (find, groupBy, sortBy)
+import           Data.List               (find, groupBy, nub, sortBy, takeWhile)
 import           Data.Map                (fromList)
 import qualified Data.Map                as M
-import           Data.Maybe              (fromMaybe)
+import           Data.Maybe              (catMaybes, fromMaybe)
+import qualified Data.Text               as T
 import           Data.Typeable           (cast, typeOf)
+import           GHC.Generics
 import           NITTA.Base
 import           NITTA.BusNetwork
 import qualified NITTA.FunctionBlocks    as FB
@@ -21,60 +31,163 @@ import           NITTA.ProcessUnits
 import           NITTA.ProcessUnits.FRAM
 
 
+eval pu fbs =
+  let Just pu' = foldl (\(Just s) n -> evaluate s n) (Just pu) fbs
+  in pu'
+
+doSteps pu acts = foldl (\s n -> step s n) pu acts
+
+
+
+
+
 main = do
-  let fram00 = fram
-  let Just fram01 = evaluate fram00 (FB.framInput 0 ["a0"])
-  let Just fram02 = evaluate fram01 (FB.framOutput 0 "b0")
-  let Just fram1 = evaluate fram02 (FB.reg "a" ["b"])
-  -- putStrLn $ show $ variants fram1
-  let fram2 = step fram1 $ PUAct (Push "a") $ Event 1 2
-  let Just fram3 = evaluate fram2 (FB.reg "c" ["d", "e"])
-  let fram4 = step fram3 $ PUAct (Push "c") $ Event 5 2
-  let fram5 = step fram4 $ PUAct (Pull ["e"]) $ Event 8 2
-  let fram6 = step fram5 $ PUAct (Pull ["b"]) $ Event 12 2
-  let fram7 = step fram6 $ PUAct (Pull ["d"]) $ Event 15 2
-  -- putStrLn $ show $ variants fram7
-  let fram8 = step fram7 $ PUAct (Pull ["a0"]) $ Event 20 2
-  let fram9 = step fram8 $ PUAct (Push "b0") $ Event 25 2
-  printDPU fram9
-  print "ni"
+  let fram0 = eval fram [ FB.framOutput 0 "a" -- save 0main
+                        , FB.framInput 0 ["a'"] -- load 0
+                        , FB.reg "b" ["b'"]
+                        , FB.reg "c" ["c'", "c''"]
+                        ]
+  let fram1 = doSteps fram0 [ PUAct (Pull ["a'"])  $ Event 1  2
+                            , PUAct (Push "c")     $ Event 5  2
+                            , PUAct (Push "a")     $ Event 10 2
+                            , PUAct (Pull ["c'"])  $ Event 15 2
+                            , PUAct (Push "b")     $ Event 20 2
+                            , PUAct (Pull ["c''"]) $ Event 25 2
+                            , PUAct (Pull ["b'"])  $ Event 30 2
+                            ]
+  -- printDPU fram1
+
+  let veri = concat $ concat $ catMaybes
+        $ map (\Step{..} -> case (cast info :: Maybe (Instruction (FRAM Int) String Int)) of
+                  Just info' -> let v = "#2" ++ verilog info' ++ "\n"
+                                in Just $ take (eDuration time) $ repeat v
+                  _          -> Nothing
+                  )
+        $ steps $ process fram1
+
   -- mapM_ putStrLn $ map show $ reverse $ steps $ process test
+
+
+
+  -- dumpSteps $ process test
+  -- putStrLn veri
+  writeFile "hdl/dpu_fram_tb_process.v" veri
+  test <- foldM (\s _ -> naiveStep s) bindedNet $ take 6 $ repeat 0
   dumpSteps $ process test
+
+  -- mapM_ putStrLn $ map show $ steps $ process test -- $ niPus test M.! "fram1"
+
+  let v = verilog test
+  writeFile "hdl/fram_net_tb_process.v" v
+  putStrLn v
+
   return ()
+
+
+deriving instance Show (Variant (Network String) String Int)
+deriving instance Show (Action (Network String) String Int)
+
+naiveStep pu@BusNetwork{..} = do
+  let vars = variants pu
+  when (length vars == 0) $ error "No variants!"
+  -- mapM_ putStrLn $ map ((++) "" . show) vars
+  -- putStrLn "-----------------------------"
+  let act = v2a $ head vars
+  -- putStrLn $ show act
+  -- putStrLn "============================="
+  return $ step pu act
+  where
+    -- mostly mad implementation
+    v2a NetworkVariant{ vPullAt=TimeConstrain{..}, ..} = NetworkAction
+      { aPullFrom=vPullFrom
+      , aPullAt=Event tcFrom tcDuration
+      , aPush=M.map (fmap $ \(title, TimeConstrain{..}) ->
+                        (title, Event pushStartAt tcDuration)
+                    ) vPush
+      }
+      where
+        pushStartAt = tcFrom + tcDuration
+
+
+
+
+
+
+
 
 fram = PU (def { frMemory=fromList [ (addr, def) | addr <- [0..10] ]
                } :: FRAM Int Passive String Int)
 
-alg = [ FB.framInput 0 ["a"]
-      , FB.reg "a" ["b"]
-      , FB.framOutput 0 "b"
-      ]
 
-test = let ni0 = def{ niPus=M.fromList
-                           [ ("fram1", fram)
-                           , ("fram2", fram)
-                           ]
-                    } :: BusNetwork String (Network String) String Int
-           dvs = delegationVariants ni0
-           Just ni1 = foldl (\(Just s) n -> evaluate s n) (Just ni0) alg
-           ni2 = foldl (\s (fb, dpu) -> delegate fb dpu s) ni1 [ (alg !! 0, "fram1")
-                                                               , (alg !! 1, "fram2")
-                                                               , (alg !! 2, "fram1")
-                                                               ]
-           ni3 = step ni2 $ NetworkAction "fram1" (Event 0 1) $ M.fromList
-                   [ ("a", Just ("fram2", Event 0 1)) ]
-           ni4 = step ni3 $ NetworkAction "fram2" (Event 5 1) $M.fromList
-                   [ ("b", Just ("fram1", Event 5 1)) ]
-       in ni4
+
+
+net = busNetwork
+  [ ("fram1", fram)
+  , ("fram2", fram)
+  ]
+  $ array (0, 15) [ (15, [("fram1", S $ (OE :: Signals (FRAM Int)))])
+                  , (14, [("fram1", S $ (WR :: Signals (FRAM Int)))])
+                  , (13, [])
+                  , (12, [])
+
+                  , (11, [("fram1", S $ (ADDR 3 :: Signals (FRAM Int)))])
+                  , (10, [("fram1", S $ (ADDR 2 :: Signals (FRAM Int)))])
+                  , ( 9, [("fram1", S $ (ADDR 1 :: Signals (FRAM Int)))])
+                  , ( 8, [("fram1", S $ (ADDR 0 :: Signals (FRAM Int)))])
+
+                  , ( 7, [("fram2", S $ (OE :: Signals (FRAM Int)))])
+                  , ( 6, [("fram2", S $ (WR :: Signals (FRAM Int)))])
+                  , ( 5, [])
+                  , ( 4, [])
+
+                  , ( 3, [("fram2", S $ (ADDR 3 :: Signals (FRAM Int)))])
+                  , ( 2, [("fram2", S $ (ADDR 2 :: Signals (FRAM Int)))])
+                  , ( 1, [("fram2", S $ (ADDR 1 :: Signals (FRAM Int)))])
+                  , ( 0, [("fram2", S $ (ADDR 0 :: Signals (FRAM Int)))])
+                  ]
+
+
+bindedNet =
+  let alg = [ FB.framInput 3 [ "a" ]
+            , FB.framInput 8 [ "b"
+                             , "c"
+                             ]
+            , FB.reg "a" ["x"]
+            , FB.reg "b" ["y"]
+            , FB.reg "c" ["z"]
+            , FB.framOutput 0 "x"
+            , FB.framOutput 1 "y"
+            , FB.framOutput 2 "z"
+            ]
+      ni0 = eval (net :: BusNetwork String (Network String) String Int) alg
+      ni1 = foldl (\s (fb, dpu) -> delegate fb dpu s) ni0 [ (alg !! 0, "fram1")
+                                                          , (alg !! 1, "fram1")
+                                                          , (alg !! 2, "fram2")
+                                                          , (alg !! 3, "fram2")
+                                                          , (alg !! 4, "fram2")
+                                                          , (alg !! 5, "fram1")
+                                                          , (alg !! 6, "fram1")
+                                                          , (alg !! 7, "fram1")
+                                                          ]
+  in ni1
+
+
+test = doSteps bindedNet [ NetworkAction "fram1" (Event 0 1) $ M.fromList
+                           [ ("a", Just ("fram2", Event 1 1)) ]
+                         , NetworkAction "fram1" (Event 1 1) $ M.fromList
+                           [ ("b", Just ("fram2", Event 2 1)) ]
+                         , NetworkAction "fram1" (Event 2 1) $ M.fromList
+                           [ ("c", Just ("fram2", Event 3 1)) ]
+                         ]
 
 
 
 
 printDPU dpu = do
   let p = process dpu
-  putStrLn $ concat $ take 6 $ repeat "0123456789"
-  mapM_ putStrLn $ map show $ reverse $ steps p
-  mapM_ putStrLn $ map show $ reverse $ relations p
+  -- putStrLn $ concat $ take 6 $ repeat "0123456789"
+  -- mapM_ putStrLn $ map show $ reverse $ steps p
+  -- mapM_ putStrLn $ map show $ reverse $ relations p
   dumpSteps p
   putStrLn "------------------------------------------------------------"
 
@@ -82,68 +195,60 @@ printDPU dpu = do
 
 
 
-class TimeLines a where
-  timeLines :: a -> [TimeLineRow]
 
-timeScale = 10
-
-data TimeLineRow
-  = TimeLineRow
-  { rowKey    :: String
-  , originKey :: Int
-  , title     :: String
-  , begin     :: Int
-  , end       :: Int
-  } deriving (Eq)
-
-instance Show TimeLineRow where
-  show TimeLineRow{..} = concat [
-    "['", rowKey, "', ",
-    "'", title, "', ",
-    "null, ",
-    "new Date(", show begin, "), ",
-    "new Date(", show end, ")]"
-    ]
-
-
-instance ( Var v ) => TimeLines (Process v Int) where
-  timeLines p = map step2row $ steps
-    $ distributeMomentEvents stepIsMoment stepMove stepStartAt p
+instance ToJSON (Step String Int) where
+  toJSON st@Step{ time=Event{..}, ..} =
+    object $ [ "id" .= uid
+             , "start" .= eStart
+             , "content" .= show' info
+             , "group" .= group info
+             , "title" .= show st
+             ] ++ case eDuration of
+                    0 -> [ "type" .= ("point" :: String) ]
+                    x -> [ "end" .= (eStart + eDuration) ]
     where
-      step2row Step{..} = uncurry (TimeLineRow (key info) uid (show info)) $ interval time
-      key i
+      show' i
         | Just (Nested _ title i' :: Nested String String Int) <- cast i =
-            show title ++ ":" ++ (show $ typeOf i')  -- FIXME
-        | otherwise = show $ typeOf i
-
-stepIsMoment Step{ time=time@Event{..} } = eDuration == 0
-stepMove st@Step{ time=time } t' = st{ time=time{ eStart=t' } }
-stepStartAt Step{ time=Event{ eStart=t } } = (t, ())
+            show i'
+        | otherwise = show i
 
 
 
-distributeMomentEvents isMoment move startAt p@Process{..} =
-  p{ steps=snd $ foldr
-     (\step (eOffset, rs) ->
-        if isMoment step
-        then let eStart = startAt step
-                 eOffset' = M.alter (offsetUpd $ fst eStart) eStart eOffset
-                 eStart' = eOffset' M.! eStart
-             in (eOffset', (move step eStart') : rs)
-        else (eOffset, step : rs))
-     (M.fromList [], []) steps
-   }
+instance ToJSON Relation where
+  toJSON (Vertical a b) =
+    object [ "type" .= ("Vertical" :: String)
+           , "a" .= a
+           , "b" .= b
+           ]
 
-offsetUpd _ (Just x) = Just (x + 1)
-offsetUpd x Nothing  = Just (timeScale * x)
+data Group = Group { id :: String, nestedGroups :: [String] }
+  deriving (Eq, Ord)
+instance ToJSON Group where
+  toJSON (Group g [])     = object $ [ "id" .= g ]
+  toJSON (Group g nested) = object $ [ "id" .= g, "nestedGroups" .= nested, "showNested" .= False ]
 
-interval (Event a d) | d == 0 = (a, a + 1)
-interval (Event a d) = (timeScale * a, timeScale * (a + d))
+
 
 
 dumpSteps p@Process{..} = do
-  let tl = timeLines p
-  let steps = "data = [\n" ++ concat (map (\e -> "    " ++ show e ++ ",\n") tl) ++ "];\n"
-  let dump = steps -- ++ hierarchy'
-  putStrLn dump
-  writeFile "resource/data.json" dump
+  let groups0 = nub $ map (\Step{..} -> (group info, upperGroup info)) steps
+  let groups = map (\g -> Group g $ nub [ng | (ng, Just ug) <- groups0, ug == g])
+                   $ map fst groups0
+  BS.writeFile "resource/data.json" $ BS.concat [
+    "relations_data = ", encode relations, ";\n",
+    "groups_data = ", encode groups, ";\n",
+    "items_data = ", encode steps, ";\n"
+    ]
+
+group i
+    | Just (Nested _ title i' :: Nested String String Int) <- cast i =
+        title ++ "/" ++ level i'
+    | otherwise = level i
+
+upperGroup i =
+  case cast i of
+    Just (Nested _ _ i' :: Nested String String Int) ->
+      case cast i' of
+        Just (_ :: FB.FB String) -> Nothing
+        _                        -> Just $ (takeWhile (/= '/') (group i)) ++ "/Function block"
+    _ -> Nothing
