@@ -81,6 +81,11 @@
          var groups = new vis.DataSet(groups_data);
 
          var items = new vis.DataSet(items_data);
+         items_dict = {};
+         for (var i = 0; i < items_data.length; i += 1) {
+             items_dict[items_data[i].id] = items_data[i];
+         }
+         
          
          // create visualization
          var container = document.getElementById('visualization');
@@ -90,6 +95,7 @@
          };
 
          var timeline = new vis.Timeline(container, items, groups, options);
+         timeline.setItems(new vis.DataSet(items_data));
 
          timeline.on('select', function (prop) {
              var item = prop.items[0];
@@ -106,9 +112,9 @@
                  var rel = relations_data[i];
                  if (rel.type == "Vertical") {
                      if (rel.a == item) {
-                         items_data[rel.b].style = "background-color: Chartreuse;";
+                         items_dict[rel.b].style = "background-color: Chartreuse;";
                      } else if (rel.b == item) {
-                         items_data[rel.a].style = "background-color: SkyBlue;";
+                         items_dict[rel.a].style = "background-color: SkyBlue;";
                      }
                  }
              }

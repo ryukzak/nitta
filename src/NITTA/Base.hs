@@ -76,20 +76,19 @@ instance PUType (Network title) where
     { vPullFrom :: title
     , vPullAt   :: TimeConstrain t
     , vPush     :: M.Map v (Maybe (title, TimeConstrain t))
-    }
+    } deriving (Show)
   data Action (Network title) v t
     = NetworkAction
     { aPullFrom :: title
     , aPullAt   :: Event t
     , aPush     :: M.Map v (Maybe (title, Event t))
-    }
+    } deriving (Show)
 
 
 
 
 class ( Typeable (Signals pu)
       , ProcessInfo (Instruction pu v t)
-      , Verilog (Instruction pu v t)
       ) => PUClass pu ty v t where
   evaluate :: pu ty v t -> FB v -> Maybe (pu ty v t)
   variants :: pu ty v t -> [Variant ty v t]
@@ -116,8 +115,6 @@ data PU ty v t where
   PU :: ( PUClass pu ty v t
         ) => pu ty v t -> PU ty v t
 deriving instance Show (Instruction PU v t)
-instance Verilog (Instruction PU v t) where
-  verilog _ = ""
 instance ( Var v, Time t ) => PUClass PU Passive v t where
   evaluate (PU pu) fb = PU <$> evaluate pu fb
   variants (PU pu) = variants pu
@@ -126,6 +123,14 @@ instance ( Var v, Time t ) => PUClass PU Passive v t where
   data Signals PU = Signals ()
   data Instruction PU v t
   signal' = error ""
+
+-- instance ( Var v, Time t ) => TestBench PU Passive v t where
+  -- testBench (PU pu) = testBench pu
+  -- fileName (PU pu) = fileName pu
+  -- processFileName (PU pu) = processFileName pu
+
+
+  
 
 
 
@@ -210,8 +215,15 @@ instance ( Typeable title
 
 
 
-class Verilog e where
-  verilog :: e -> String
+class ( PUClass pu ty v t ) => TestBench pu ty v t where
+  testBench :: (pu ty v t) -> String
+
+  fileName :: (pu ty v t) -> String
+  processFileName :: (pu ty v t) -> String
+
+  writeTestBench :: (pu ty v t) -> IO ()
+  writeTestBench pu =
+    writeFile (processFileName pu) $ testBench pu
 
 
 

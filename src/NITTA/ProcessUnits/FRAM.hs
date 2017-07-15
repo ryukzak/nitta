@@ -81,10 +81,27 @@ instance ( Addr a, Var v, Time t
 
 
 
-instance (Addr a) => Verilog (Instruction (FRAM a) v t) where
-  verilog Nop      = "/* Nop  */ oe <= 0; wr <= 0; addr <= 0;"
-  verilog (Load a) = "/* Load */ oe <= 1; wr <= 0; addr <= " ++ show a ++ ";"
-  verilog (Save a) = "/* Save */ oe <= 0; wr <= 1; addr <= " ++ show a ++ "; value_i <= 42;"
+instance ( Addr a, Var v, Time t, Enum t
+         ) => TestBench (FRAM a) Passive v t where
+  fileName _ = "hdl/dpu_fram_tb."
+  processFileName _ = "hdl/dpu_fram_tb.process.v"
+
+  testBench fram@FRAM{ frProcess=Process{..}, ..} =
+    let signalValues t = map (\signal -> signal' fram signal t)
+                           [ OE, WR, ADDR 3, ADDR 2, ADDR 1, ADDR 0 ]
+        values = map ((\[oe, wr, a3, a2, a1, a0] ->
+                         "oe <= b'" ++ oe
+                         ++ "; wr <= b'" ++ wr
+                         ++ "; addr[3] <= b'" ++ a3
+                         ++ "; addr[2] <= b'" ++ a2
+                         ++ "; addr[1] <= b'" ++ a1
+                         ++ "; addr[0] <= b'" ++ a0 ++ ";"
+                     ) . (map show) . signalValues) [ 0 .. tick + 1 ]
+    in concatMap (++ " @(negedge clk);\n") values
+
+
+
+
 
 
 

@@ -47,27 +47,16 @@ busNetwork pus wires = BusNetwork [] [] [] (M.fromList pus) def wires
 
 
 
-
-
-instance (Show title) => Verilog (Instruction (BusNetwork title) v t) where
-  verilog = undefined
-  -- verilog Nop      = "oe <= 0; wr <= 0; addr <= 0;"
-  -- verilog (Load a) = "oe <= 1; wr <= 0; addr <= "++ show a ++";"
-  -- verilog (Save a) = "oe <= 0; wr <= 1; addr <= "++ show a ++";"
-
-
-
-
 instance ( Typeable title, Ord title, Show title, Var v, Time t, Ix t
-         ) => Verilog (BusNetwork title (Network title) v t) where
-  verilog bn@BusNetwork{ niProcess=Process{..}, ..} =
+         ) => TestBench (BusNetwork title) (Network title) v t where
+  fileName _ = "hdl/fram_net_tb.v"
+  processFileName _ = "hdl/fram_net_tb.process.v"
+
+  testBench bn@BusNetwork{ niProcess=Process{..}, ..} =
     let wires = map Wire $ reverse $ range $ bounds niWires
         signalValues t = map (\w -> signal' bn w t) wires
         values = map (concat . (map show) . signalValues) $ range (0, tick + 1)
     in concatMap (\v -> "wires <= 'b" ++ v ++ "; @(negedge clk);\n" ) values
-
-
-
 
 
 

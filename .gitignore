@@ -5,3 +5,4 @@
 /resource/data.json
 *.vcd
 a.out
+*.process.v
