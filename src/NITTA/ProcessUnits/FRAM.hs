@@ -132,7 +132,7 @@ instance ( Addr a, Var v, Time t
       value (Save addr)  OE      = B False
       value (Save addr)  WR      = B True
 
-  evaluate fr@FRAM{ frProcess=p@Process{..}, .. } fb
+  bind fr@FRAM{ frProcess=p@Process{..}, .. } fb
     | Just (FB.Reg a b) <- unbox fb =
         let (key, p') = modifyProcess p $ evaluateFB fb tick
             mc = MC [Push a, Pull b] def { fb=fb, compilerLevel=[key] }

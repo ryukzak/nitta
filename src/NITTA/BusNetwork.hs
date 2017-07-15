@@ -35,13 +35,13 @@ import           NITTA.ProcessUnits
 data BusNetwork title ty v t =
   BusNetwork
     { niRemains            :: [FB v]
-    , niDelegated          :: [FB v]
     , niForwardedVariables :: [v]
+    , niBinded             :: M.Map title [FB v]
     , niPus                :: M.Map title (PU Passive v t)
     , niProcess            :: Process v t
     , niWires              :: Array Int [(title, S)]
     }
-busNetwork pus wires = BusNetwork [] [] [] (M.fromList pus) def wires
+busNetwork pus wires = BusNetwork [] [] (M.fromList []) (M.fromList pus) def wires
 
 
 
@@ -74,7 +74,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
                             in case pu of
                                  PU pu -> signal pu s t
 
-  evaluate ni@BusNetwork{..} fb = Just ni{ niRemains=fb : niRemains }
+  bind ni@BusNetwork{..} fb = Just ni{ niRemains=fb : niRemains }
 
   variants = nittaVariants
 
@@ -154,7 +154,7 @@ nittaVariants bn@BusNetwork{..} = concat $
                          , pushVar == v
                          ]
     availableVars =
-        let functionalBlocks = niRemains ++ niDelegated
+        let functionalBlocks = niRemains ++ (concat $ M.elems niBinded)
             alg = foldl
               (\dict (a, b) -> M.adjust ((:) b) a dict)
               (M.fromList [(v, []) | v <- concatMap variables functionalBlocks])
@@ -167,39 +167,34 @@ nittaVariants bn@BusNetwork{..} = concat $
 
 
 
-
-
-
-
--- [[("a",Just ("fram2",TimeConstrain {tcDuration = 1, tcFrom = 0, tcTo = 9223372036854775807}))]]
-
--- [
---   [("b",Just ("fram2",TimeConstrain {tcDuration = 1, tcFrom = 0, tcTo = 9223372036854775807}))],
---   [("c",Just ("fram2",TimeConstrain {tcDuration = 1, tcFrom = 0, tcTo = 9223372036854775807}))]
---   ]
-
-
-
-
-
-delegatable fb dpu = isJust $ evaluate dpu fb
-
-delegate fb dpuTitle ni@BusNetwork{..} = ni
-  { niPus=M.adjust (\dpu -> fromMaybe undefined $ evaluate dpu fb) dpuTitle niPus
-  , niRemains=filter (/= fb) niRemains
-  , niDelegated=fb : niDelegated
-  }
-
-delegationVariants BusNetwork{..} = concatMap delegationVariants' niRemains
+bindVariants BusNetwork{..} =
+  map (\fb -> (fb, bindVariants' fb)) niRemains
   where
-    delegationVariants' fb =
-      map (uncurry $ variantsAfterDelegation fb) $ M.assocs niPus
-    variantsAfterDelegation fb dpuTitle dpu =
-      let act `variantOf` fb = not $ null (variables act `intersect` variables fb)
-          vs = case evaluate dpu fb of
-            -- try to reuse dpu'
-            Just dpu' -> filter (\(PUVar act _) -> act `variantOf` fb)  $ variants dpu'
-            Nothing   -> []
-      in (fb, dpuTitle, vs)
+    bindVariants' fb =
+      [ puTitle -- , newVariants pu fb)
+      | (puTitle, pu) <- sortByLoad $ M.assocs niPus
+      , not $ selfTransport fb puTitle niBinded
+      ]
 
+    sortByLoad = sortBy (\(a, _) (b, _) -> load a `compare` load b)
+    load = length . binded
+
+    selfTransport fb puTitle niBinded =
+      not $ null $ variables fb `intersect` (concatMap variables $ binded puTitle)
+
+    binded puTitle | puTitle `M.member` niBinded = niBinded M.! puTitle
+                   | otherwise = []
+
+
+
+subBind fb puTitle ni@BusNetwork{ niProcess=p@Process{..}, ..} = ni
+  { niPus=M.adjust (\dpu -> fromMaybe undefined $ bind dpu fb) puTitle niPus
+  , niBinded=M.alter (\v -> case v of
+                         Just fbs -> Just $ fb : fbs
+                         Nothing  -> Just [fb]
+                     ) puTitle niBinded
+  , niProcess=snd $ modifyProcess p $
+      add (Event tick 0) $ "Bind " ++ show fb ++ " to " ++ puTitle
+  , niRemains=filter (/= fb) niRemains
+  }
 

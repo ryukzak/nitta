@@ -90,7 +90,7 @@ instance PUType (Network title) where
 class ( Typeable (Signals pu)
       , ProcessInfo (Instruction pu v t)
       ) => PUClass pu ty v t where
-  evaluate :: pu ty v t -> FB v -> Maybe (pu ty v t)
+  bind :: pu ty v t -> FB v -> Maybe (pu ty v t)
   variants :: pu ty v t -> [Variant ty v t]
   step     :: pu ty v t -> Action ty v t -> pu ty v t
 
@@ -116,7 +116,7 @@ data PU ty v t where
         ) => pu ty v t -> PU ty v t
 deriving instance Show (Instruction PU v t)
 instance ( Var v, Time t ) => PUClass PU Passive v t where
-  evaluate (PU pu) fb = PU <$> evaluate pu fb
+  bind (PU pu) fb = PU <$> bind pu fb
   variants (PU pu) = variants pu
   step (PU pu) act = PU $ step pu act
   process (PU pu) = process pu
@@ -189,7 +189,7 @@ class ( Show i, Typeable i ) => ProcessInfo i where
   
 instance ProcessInfo ()
 instance ProcessInfo String where
-  level _ = "Info"
+  level _ = "Compiler"
 instance {-# OVERLAPS #-}
   ( Typeable pu, Var v, Time t, Show (Instruction pu v t)
   ) => ProcessInfo (Instruction pu v t) where
