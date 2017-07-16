@@ -1,4 +1,4 @@
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+-- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -102,7 +102,6 @@ main = do
                             -- ]
   -- writeTestBench fram1
 
-  test <- foldM (\s _ -> naive s) net' $ take 20 $ repeat ()
-  -- test <- foldM (\s _ -> naiveStep s) bindedNet $ take 6 $ repeat ()
+  let test = foldl (\s _ -> naive s) net' $ take 20 $ repeat ()
   timeline "resource/data.json" test
   writeTestBench test

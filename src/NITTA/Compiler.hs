@@ -23,27 +23,24 @@ import           NITTA.FunctionBlocks
 
 
 
+
 naive net = do
   if null $ practicalVariants $ variants net
     then if null $ bindVariants net
-         then return net
-         else return $ naiveBind net
+         then net
+         else autoBind net
     else naiveStep net
 
 
-practicalVariants = filter (\NetworkVariant{..} ->
-                                   not $ null $ filter isJust $ M.elems vPush
-                                )
 
-naiveStep pu@BusNetwork{..} = do
-  let vars = variants pu
-  when (length vars == 0) $ error "No variants!"
-  -- mapM_ putStrLn $ map ((++) "" . show) vars
-  -- putStrLn "-----------------------------"
-  let act = v2a $ head $ practicalVariants vars
-  -- putStrLn $ show act
-  -- putStrLn "============================="
-  return $ step pu act
+
+practicalVariants = filter
+  (\NetworkVariant{..} -> not $ null $ filter isJust $ M.elems vPush)
+
+naiveStep pu@BusNetwork{..} =
+  case practicalVariants $ variants pu of
+    v:_ -> step pu (v2a v)
+    _   -> error "No variants!"
   where
     -- mostly mad implementation
     v2a NetworkVariant{ vPullAt=TimeConstrain{..}, ..} = NetworkAction
@@ -55,6 +52,8 @@ naiveStep pu@BusNetwork{..} = do
       }
       where
         pushStartAt = tcFrom + tcDuration
+
+
 
 
 data BindVariant title v = BindVariant
@@ -78,23 +77,23 @@ instance Ord BindPriority where
 
 
 
-naiveBind net@BusNetwork{..} =
-  let vars = reverse $ sortBy (\a b -> priority a `compare` priority b)
-                   $ map (\(fb, titles) -> prioritize $ BindVariant fb titles Nothing) bvs
 
-      (BindVariant fb puTitle _):_ =
-        trace ("---------"++ show (restlessVariables)
-               ++ "\n" ++ (concatMap (\v -> show v ++ "\n") vars))
-        vars
-  in --trace ("bind " ++ show fb ++ " on " ++ puTitle) $
-     subBind fb puTitle net
+autoBind net@BusNetwork{..} =
+  let prioritized = sortBV $ map mkBV bVars
+  in case trace' prioritized of
+      (BindVariant fb puTitle _):_ -> subBind fb puTitle net
+      _                            -> error "Bind variants is over!"
   where
-    bvs = bindVariants net
-    fb2pus = foldl (\m (fb, puTitle) -> M.alter (\case
-                                                    Just puTitles -> Just $ puTitle : puTitles
-                                                    Nothing -> Just [puTitle]
-                                                ) fb m
-                   ) (M.fromList []) bvs
+    bVars = bindVariants net
+    mkBV (fb, titles) = prioritize $ BindVariant fb titles Nothing
+    sortBV = reverse . sortBy (\a b -> priority a `compare` priority b)
+
+    mergedBVars = foldl (\m (fb, puTitle) -> M.alter
+                          (\case
+                              Just puTitles -> Just $ puTitle : puTitles
+                              Nothing -> Just [puTitle]
+                          ) fb m
+                   ) (M.fromList []) bVars
 
     prioritize bv@BindVariant{..}
       | dependency fb == []
@@ -103,19 +102,16 @@ naiveBind net@BusNetwork{..} =
       = bv{ priority=Just $ Input $ sum $ map (length . variables) pulls}
 
       | Just (variable, tcFrom) <- find (\(v, _) -> v `elem` variables fb) restlessVariables
-      -- | not $ null ((map fst restlessVariables) `intersect` variables fb)
-      -- , let vs = variantsAfterBind bv
-      -- , 0 <= (length $ trace ("Restless variants: " ++ show vs) vs)
       = bv{ priority=Just $ Restless tcFrom }
 
-      | length (fb2pus M.! fb) == 1
+      | length (mergedBVars M.! fb) == 1
       = bv{ priority=Just Exclusive }
 
       | otherwise = bv
 
-    restlessVariables = [ (v, tcFrom)
+    restlessVariables = [ (variable, tcFrom)
       | NetworkVariant{ vPullAt=TimeConstrain{..}, ..} <- variants net
-      , (v, Nothing) <- M.assocs vPush
+      , (variable, Nothing) <- M.assocs vPush
       ]
 
     variantsAfterBind BindVariant{..} = case bind (niPus M.! puTitle) fb of
@@ -124,3 +120,5 @@ naiveBind net@BusNetwork{..} =
       where
         act `variantOf` fb = not $ null (variables act `intersect` variables fb)
 
+    trace' vs = trace ("---------"++ show (restlessVariables)
+               ++ "\n" ++ (concatMap (\v -> show v ++ "\n") vs)) vs

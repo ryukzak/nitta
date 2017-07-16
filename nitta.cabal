@@ -19,7 +19,6 @@ library
                      , NITTA.FunctionBlocks
                      , NITTA.BusNetwork
                      , NITTA.Timeline
-                     , NITTA.ProcessUnits
                      , NITTA.Compiler
                      , NITTA.ProcessUnits.FRAM
   build-depends:       base >= 4.7 && < 5

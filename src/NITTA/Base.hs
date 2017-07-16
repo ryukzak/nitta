@@ -44,13 +44,24 @@ X +++ v = v
 v +++ X = v
 _ +++ _ = Broken
 
+
+
+
 data Effect v
   = Push v
   | Pull [v]
   deriving (Show, Eq)
+
 instance Vars (Effect v) v where
   variables (Push var)  = [var]
   variables (Pull vars) = vars
+
+(Push a) << (Push b) | a == b = True
+(Pull a) << (Pull b)          = all (`elem` a) b
+_        << _                 = False
+
+(Pull a) \\ (Pull b) = Pull (a L.\\ b)
+
 
 
 
@@ -73,6 +84,7 @@ instance PUType Passive where
 
 instance Vars (Variant Passive v t) v where
   variables PUVar{..} = variables vEffect
+  
 isPull (PUVar (Pull _) _) = True
 isPull _                  = False
 isPush (PUVar (Push _) _) = True
