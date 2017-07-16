@@ -25,32 +25,31 @@ import           NITTA.Timeline
 
 
 fram = PU fram'
-fram' = def{ frMemory=fromList [ (addr, def) | addr <- [0..10] ]
-           } :: FRAM Int Passive String Int
+fram' = def :: FRAM Passive String Int
 
 net = busNetwork
   [ ("fram1", fram)
   , ("fram2", fram)
   ]
-  $ array (0, 15) [ (15, [("fram1", S $ (OE :: Signals (FRAM Int)))])
-                  , (14, [("fram1", S $ (WR :: Signals (FRAM Int)))])
+  $ array (0, 15) [ (15, [("fram1", S $ (OE :: Signals FRAM))])
+                  , (14, [("fram1", S $ (WR :: Signals FRAM))])
                   , (13, [])
                   , (12, [])
 
-                  , (11, [("fram1", S $ (ADDR 3 :: Signals (FRAM Int)))])
-                  , (10, [("fram1", S $ (ADDR 2 :: Signals (FRAM Int)))])
-                  , ( 9, [("fram1", S $ (ADDR 1 :: Signals (FRAM Int)))])
-                  , ( 8, [("fram1", S $ (ADDR 0 :: Signals (FRAM Int)))])
+                  , (11, [("fram1", S $ (ADDR 3 :: Signals FRAM))])
+                  , (10, [("fram1", S $ (ADDR 2 :: Signals FRAM))])
+                  , ( 9, [("fram1", S $ (ADDR 1 :: Signals FRAM))])
+                  , ( 8, [("fram1", S $ (ADDR 0 :: Signals FRAM))])
 
-                  , ( 7, [("fram2", S $ (OE :: Signals (FRAM Int)))])
-                  , ( 6, [("fram2", S $ (WR :: Signals (FRAM Int)))])
+                  , ( 7, [("fram2", S $ (OE :: Signals FRAM))])
+                  , ( 6, [("fram2", S $ (WR :: Signals FRAM))])
                   , ( 5, [])
                   , ( 4, [])
 
-                  , ( 3, [("fram2", S $ (ADDR 3 :: Signals (FRAM Int)))])
-                  , ( 2, [("fram2", S $ (ADDR 2 :: Signals (FRAM Int)))])
-                  , ( 1, [("fram2", S $ (ADDR 1 :: Signals (FRAM Int)))])
-                  , ( 0, [("fram2", S $ (ADDR 0 :: Signals (FRAM Int)))])
+                  , ( 3, [("fram2", S $ (ADDR 3 :: Signals FRAM))])
+                  , ( 2, [("fram2", S $ (ADDR 2 :: Signals FRAM))])
+                  , ( 1, [("fram2", S $ (ADDR 1 :: Signals FRAM))])
+                  , ( 0, [("fram2", S $ (ADDR 0 :: Signals FRAM))])
                   ]
 
 alg = [ FB.framInput 3 [ "a" ]
@@ -63,6 +62,8 @@ alg = [ FB.framInput 3 [ "a" ]
       , FB.reg "c" ["z"]
       , FB.framOutput 0 "x"
       , FB.framOutput 1 "y"
+      , FB.loop "g" ["f"]
+      , FB.reg "f" ["g"]
       ]
 
 net' = eval (net :: BusNetwork String (Network String) String Int) alg

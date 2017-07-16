@@ -81,8 +81,34 @@
          var groups = new vis.DataSet(groups_data);
 
          var items = new vis.DataSet(items_data);
-         items_dict = {};
-         for (var i = 0; i < items_data.length; i += 1) {
+         var items_dict = {};
+         var time_end = 0;
+         var original_length = items_data.length;
+         for (var i = 0; i < original_length; i += 1) {
+             if (items_data[i].end > time_end) time_end = items_data[i].end;
+             if (items_data[i].inside_out) {
+                 item = items_data[i];
+                 var a = {};
+                 var b = {};
+                 Object.keys(item).forEach(function (key) {
+                     a[key] = item[key];
+                     b[key] = item[key];
+                 });
+                 a.inside_out = false;
+                 b.inside_out = false;
+                 a.id += 0.1;
+                 b.id += 0.2;
+                 a.start = 0;
+                 a.end = item.start + 1;
+                 b.start = item.end - 1;
+                 b.end = time_end; // incorrect value, fix after current for
+                 items_data[i] = a;
+                 items_data.push(b);
+             }
+             items_dict[items_data[i].id] = items_data[i];
+         }
+         for (; i < items_data.length; i += 1) {
+             items_data[i].end = time_end;
              items_dict[items_data[i].id] = items_data[i];
          }
          
@@ -98,10 +124,10 @@
          timeline.setItems(new vis.DataSet(items_data));
 
          timeline.on('select', function (prop) {
-             var item = prop.items[0];
+             var item = prop.items[0].toFixed();
 
              for (var i = 0; i < items_data.length; i += 1) {
-                 if (items_data[i].id == item) {
+                 if (items_data[i].id.toFixed() == item) {
                      items_data[i].style = "background-color: Salmon;";
                  } else {
                      items_data[i].style = undefined;
@@ -112,9 +138,19 @@
                  var rel = relations_data[i];
                  if (rel.type == "Vertical") {
                      if (rel.a == item) {
-                         items_dict[rel.b].style = "background-color: Chartreuse;";
+                         if (rel.b in items_dict) {
+                             items_dict[rel.b].style = "background-color: Chartreuse;";
+                         } else {
+                             items_dict[rel.b + 0.1].style = "background-color: Chartreuse;";
+                             items_dict[rel.b + 0.2].style = "background-color: Chartreuse;";
+                         }
                      } else if (rel.b == item) {
-                         items_dict[rel.a].style = "background-color: SkyBlue;";
+                         if (rel.a in items_dict) {
+                             items_dict[rel.a].style = "background-color: Chartreuse;";
+                         } else {
+                             items_dict[rel.a + 0.1].style = "background-color: SkyBlue;";
+                             items_dict[rel.a + 0.2].style = "background-color: SkyBlue;";
+                         }
                      }
                  }
              }

@@ -20,6 +20,7 @@ import           Debug.Trace
 import           NITTA.Base
 import           NITTA.BusNetwork
 import           NITTA.FunctionBlocks
+import           NITTA.Types
 
 
 

@@ -22,15 +22,12 @@ import qualified Data.Map             as M
 import           Data.Maybe           (fromMaybe, isJust, catMaybes)
 import           Data.Typeable        (Typeable, cast, typeOf)
 import           NITTA.FunctionBlocks
+import           NITTA.Types
 import qualified NITTA.FunctionBlocks as FB
 
 
 
-class ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t ) => Time t
-instance ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t ) => Time t
 
-class ( Typeable v, Eq v, Ord v, Show v ) => Var v
-instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
 
 type ProcessUid = Int
 

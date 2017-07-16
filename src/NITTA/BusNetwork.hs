@@ -27,6 +27,7 @@ import           Debug.Trace
 import           NITTA.Base
 import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks as FB
+import           NITTA.Types
 
 
 

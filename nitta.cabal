@@ -20,6 +20,7 @@ library
                      , NITTA.BusNetwork
                      , NITTA.Timeline
                      , NITTA.Compiler
+                     , NITTA.Types
                      , NITTA.ProcessUnits.FRAM
   build-depends:       base >= 4.7 && < 5
                      , containers

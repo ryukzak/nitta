@@ -24,10 +24,17 @@ instance ToJSON (Step String Int) where
              , "content" .= show' info
              , "group" .= group info
              , "title" .= show st
-             ] ++ case eDuration of
-                    0 -> [ "type" .= ("point" :: String) ]
-                    x -> [ "end" .= (eStart + eDuration) ]
+             , "inside_out" .= isInsideOut info
+             ]
+    ++ case eDuration of
+         0 -> [ "type" .= ("point" :: String) ]
+         x -> [ "end" .= (eStart + eDuration) ]
     where
+      isInsideOut i
+        | Just (Nested _ title i' :: Nested String String Int) <- cast i
+        , Just (fb :: FB String) <- cast i'
+        = insideOut fb
+        | otherwise = False
       show' i
         | Just (Nested _ title i' :: Nested String String Int) <- cast i =
             show i'

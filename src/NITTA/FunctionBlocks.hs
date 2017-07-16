@@ -12,6 +12,7 @@ module NITTA.FunctionBlocks where
 import           Data.Bits
 import           Data.Dynamic  (Dynamic, fromDynamic, toDyn)
 import           Data.Typeable (Typeable, cast, typeOf)
+import           NITTA.Types
 
 
 
@@ -20,20 +21,19 @@ instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 
 
 
-class Vars a var | a -> var where
-  variables :: a -> [var]
-
-
 
 class ( Show fb, Typeable fb, Eq fb, Ord fb, Vars fb var
       ) => FBClass fb var | fb -> var where
-  dependency :: fb ->[(var, var)]
+  dependency :: fb -> [(var, var)]
+  insideOut :: fb -> Bool
+  insideOut _ = False
 
 data FB var where
   FB :: ( FBClass fb var ) => fb -> FB var
 
 instance (Typeable var) => FBClass (FB var) var where
   dependency (FB fb) = dependency fb
+  insideOut (FB fb) = insideOut fb
 
 instance Show (FB var) where show (FB x) = show x
 
@@ -56,7 +56,6 @@ unbox (FB x) = fromDynamic $ toDyn x
 
 
 
--- data Loop v = Loop [v] v deriving (Show, Typeable, Eq, Ord)
 
 
 
@@ -91,3 +90,15 @@ instance Vars (Reg var) var where
   variables (Reg a b) = a : b
 instance (Typeable var, Show var, Eq var, Ord var) => FBClass (Reg var) var where
   dependency (Reg a b) = map (, a) b
+
+
+
+data Loop v = Loop v [v] deriving (Typeable, Show, Eq, Ord)
+loop a b = FB $ Loop a b
+
+instance Vars (Loop v) v where
+  variables (Loop a b) = a : b
+
+instance ( Var v ) => FBClass (Loop v) v where
+  dependency (Loop a b) = []
+  insideOut _ = True
