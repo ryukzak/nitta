@@ -48,7 +48,9 @@ data Effect v
   = Push v
   | Pull [v]
   deriving (Show, Eq)
-
+instance Vars (Effect v) v where
+  variables (Push var)  = [var]
+  variables (Pull vars) = vars
 
 
 
@@ -68,6 +70,15 @@ instance PUType Passive where
     { aEffect :: Effect v
     , aAt :: Event t
     } deriving (Show)
+
+instance Vars (Variant Passive v t) v where
+  variables PUVar{..} = variables vEffect
+isPull (PUVar (Pull _) _) = True
+isPull _                  = False
+isPush (PUVar (Push _) _) = True
+isPush _                  = False
+
+
 
 data Network title
 instance PUType (Network title) where

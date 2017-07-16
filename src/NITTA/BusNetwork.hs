@@ -138,7 +138,7 @@ nittaVariants bn@BusNetwork{..} = concat $
     [ NetworkVariant fromPu pullAt $ M.fromList pushs
     | pushs <- sequence $ map pushVariantsFor pullVars
     , let pushTo = catMaybes $ map (fmap fst . snd) pushs
-    , not $ null pushTo
+    -- , not $ null pushTo
     , length (nub pushTo) == length pushTo
     ]
   | (fromPu, variants) <- puVariants
@@ -168,11 +168,12 @@ nittaVariants bn@BusNetwork{..} = concat $
 
 
 bindVariants BusNetwork{..} =
-  map (\fb -> (fb, bindVariants' fb)) niRemains
+  concatMap (\fb -> bindVariants' fb) niRemains
   where
     bindVariants' fb =
-      [ puTitle -- , newVariants pu fb)
+      [ (fb, puTitle) -- , newVariants pu fb)
       | (puTitle, pu) <- sortByLoad $ M.assocs niPus
+      , isJust $ bind pu fb
       , not $ selfTransport fb puTitle niBinded
       ]
 

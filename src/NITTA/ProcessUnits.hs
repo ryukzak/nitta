@@ -30,9 +30,6 @@ _        << _                 = False
 
 (Pull a) \\ (Pull b) = Pull (a L.\\ b)
 
-instance Vars (Effect v) v where
-  variables (Push var)  = [var]
-  variables (Pull vars) = vars
 
 
 

@@ -1,4 +1,4 @@
--- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -15,24 +15,13 @@ module Main where
 import           Control.Monad
 import           Data.Array              (array)
 import           Data.Default
--- import           Data.List               (find, groupBy, intersect, nub,
-                                          -- partition, sortBy, takeWhile)
 import           Data.Map                (fromList)
-import qualified Data.Map                as M
-import           Data.Maybe              (catMaybes, fromMaybe, isNothing)
-import qualified Data.Text               as T
-import           Data.Typeable           (cast, typeOf)
-import           Debug.Trace
-import           GHC.Generics
 import           NITTA.Base
 import           NITTA.BusNetwork
 import           NITTA.Compiler
-import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks    as FB
-import           NITTA.ProcessUnits
 import           NITTA.ProcessUnits.FRAM
 import           NITTA.Timeline
-
 
 
 fram = PU fram'
@@ -65,15 +54,15 @@ net = busNetwork
                   ]
 
 alg = [ FB.framInput 3 [ "a" ]
+      , FB.framOutput 2 "z"
+      , FB.reg "a" ["x"]
       , FB.framInput 8 [ "b"
                        , "c"
                        ]
-      , FB.reg "a" ["x"]
       , FB.reg "b" ["y"]
       , FB.reg "c" ["z"]
       , FB.framOutput 0 "x"
       , FB.framOutput 1 "y"
-      , FB.framOutput 2 "z"
       ]
 
 net' = eval (net :: BusNetwork String (Network String) String Int) alg
@@ -113,7 +102,7 @@ main = do
                             -- ]
   -- writeTestBench fram1
 
-  test <- foldM (\s _ -> naive s) net' $ take 14 $ repeat ()
+  test <- foldM (\s _ -> naive s) net' $ take 20 $ repeat ()
   -- test <- foldM (\s _ -> naiveStep s) bindedNet $ take 6 $ repeat ()
   timeline "resource/data.json" test
   writeTestBench test
