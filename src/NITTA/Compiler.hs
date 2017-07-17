@@ -26,11 +26,13 @@ import           NITTA.Types
 
 
 naive net = do
-  if null $ practicalVariants $ variants net
-    then if null $ bindVariants net
-         then net
+  if 2 < length (practicalVariants $ variants net)
+    then naiveStep net
+    else if null $ bindVariants net
+         then if null $ practicalVariants $ variants net
+              then naiveStep net
+              else net
          else autoBind net
-    else naiveStep net
 
 
 
@@ -75,6 +77,10 @@ instance Ord BindPriority where
   (Restless _) `compare` (Input    _) = LT
   (Restless a) `compare` (Restless b) = b `compare` a -- чем меньше, тем лучше
   (Restless _) `compare`  _           = GT
+  Exclusive `compare` Exclusive = EQ
+  Exclusive `compare` _ = LT
+  a `compare`  b           = error (show a ++ "  " ++ show b)
+
 
 
 

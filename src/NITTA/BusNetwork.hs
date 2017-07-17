@@ -1,4 +1,4 @@
-i{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
@@ -41,19 +41,6 @@ data BusNetwork title ty v t =
 busNetwork pus wires = BusNetwork [] [] (M.fromList []) (M.fromList pus) def wires
 
 
-
-
-
-instance ( Typeable title, Ord title, Show title, Var v, Time t, Ix t
-         ) => TestBench (BusNetwork title) (Network title) v t where
-  fileName _ = "hdl/fram_net_tb.v"
-  processFileName _ = "hdl/fram_net_tb.process.v"
-
-  testBench bn@BusNetwork{ niProcess=Process{..}, ..} =
-    let wires = map Wire $ reverse $ range $ bounds niWires
-        signalValues t = map (\w -> signal' bn w t) wires
-        values = map (concat . (map show) . signalValues) $ range (0, tick + 1)
-    in concatMap (\v -> "wires <= 'b" ++ v ++ "; @(negedge clk);\n" ) values
 
 
 
@@ -196,3 +183,17 @@ subBind fb puTitle ni@BusNetwork{ niProcess=p@Process{..}, ..} = ni
   , niRemains=filter (/= fb) niRemains
   }
 
+
+
+--------------------------------------------------------------------------
+
+-- instance ( Typeable title, Ord title, Show title, Var v, Time t, Ix t
+         -- ) => TestBench (BusNetwork title) (Network title) v t where
+  -- fileName _ = "hdl/fram_net_tb.v"
+  -- processFileName _ = "hdl/fram_net_tb.process.v"
+
+  -- testBench bn@BusNetwork{ niProcess=Process{..}, ..} =
+    -- let wires = map Wire $ reverse $ range $ bounds niWires
+        -- signalValues t = map (\w -> signal' bn w t) wires
+        -- values = map (concat . (map show) . signalValues) $ range (0, tick + 1)
+    -- in concatMap (\v -> "wires <= 'b" ++ v ++ "; @(negedge clk);\n" ) values

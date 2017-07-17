@@ -64,12 +64,12 @@ module fram_net_tb();
         end  
         wires <= 0; clk <= 0;
 
-
         @(negedge rst);
 
 `include "fram_net_tb_process.v"
-        
-        #20 $finish;
+
+        repeat(4) @(posedge clk); $finish;
+
 	   end
 
 endmodule

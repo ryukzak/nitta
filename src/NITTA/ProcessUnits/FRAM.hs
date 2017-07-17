@@ -296,3 +296,52 @@ freeCell memory =
     load (_, Cell _ mcs mc) = sum [ sum $ map (length . actions) mcs
                                   , maybe 0 (length . actions) mc
                                   ]
+
+---------------------------------------------------
+
+instance ( Time t
+         ) => TestBench FRAM Passive String t where
+
+  fileName _ = "hdl/dpu_fram_tb"
+
+  testControl fram@FRAM{ frProcess=Process{..}, ..} =
+    concatMap (\t -> input t ++ "\n"
+                     ++ showSignals (signalsAt t) ++ " @(negedge clk)\n"
+              ) [ 0 .. tick + 1 ]
+    where
+      signalsAt time = map (\sig -> signal' fram sig time)
+                       [ OE, WR, ADDR 3, ADDR 2, ADDR 1, ADDR 0 ]
+      showSignals = (\[oe, wr, a3, a2, a1, a0] ->
+                         "oe <= 'b" ++ oe
+                         ++ "; wr <= 'b" ++ wr
+                         ++ "; addr[3] <= 'b" ++ a3
+                         ++ "; addr[2] <= 'b" ++ a2
+                         ++ "; addr[1] <= 'b" ++ a1
+                         ++ "; addr[0] <= 'b" ++ a0 ++ ";"
+                    ) . map show
+      input time = case infoAt time steps of
+        [Push v]
+          | v `M.member` values ->
+            "value_i <= " ++ show (values M.! v) ++ ";"
+        (_ :: [Effect String]) -> "/* input placeholder */"
+
+  testAsserts fram@FRAM{ frProcess=Process{..}, ..} =
+    concatMap (\t -> "@(posedge clk) " ++ assert t ++ "$display(\"%h  %h  %h\", fram.bank[0], fram.bank[1], fram.bank[2]);\n"
+              ) [ 0 .. tick + 1 ]
+    where
+      assert time = case infoAt time steps of
+        [Pull (v:_)]
+          | v `M.member` values ->
+            "ctrl <= " ++ show (values M.! v) ++ ";"
+            -- "$display(value_o, " ++ show (values M.! v) ++ ");"
+        (_ :: [Effect String]) ->
+          "ctrl <= 0;"
+  -- "/* assert placeholder */"
+
+
+
+values = M.fromList [ ("a", 0xFF0A), ("x", 0xFF0A)
+                    , ("b", 0xFF0B), ("y", 0xFF0B)
+                    , ("c", 0xFF0C), ("z", 0xFF0C)
+                    , ("f", 0xFF0F), ("g", 0xFF0F)
+                    ]

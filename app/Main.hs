@@ -15,7 +15,9 @@ module Main where
 import           Control.Monad
 import           Data.Array              (array)
 import           Data.Default
-import           Data.Map                (fromList)
+import           Data.Map                (fromList, (!))
+import           Data.Maybe
+import           Data.Typeable
 import           NITTA.Base
 import           NITTA.BusNetwork
 import           NITTA.Compiler
@@ -54,6 +56,8 @@ net = busNetwork
 
 alg = [ FB.framInput 3 [ "a" ]
       , FB.framOutput 2 "z"
+      , FB.loop "g" ["f"]
+      , FB.reg "f" ["g"]
       , FB.reg "a" ["x"]
       , FB.framInput 8 [ "b"
                        , "c"
@@ -62,8 +66,6 @@ alg = [ FB.framInput 3 [ "a" ]
       , FB.reg "c" ["z"]
       , FB.framOutput 0 "x"
       , FB.framOutput 1 "y"
-      , FB.loop "g" ["f"]
-      , FB.reg "f" ["g"]
       ]
 
 net' = eval (net :: BusNetwork String (Network String) String Int) alg
@@ -89,20 +91,24 @@ doSteps pu acts = foldl (\s n -> step s n) pu acts
 
 main = do
   -- let fram0 = eval fram' [ FB.framOutput 0 "a" -- save 0main
-                         -- , FB.framInput 0 ["a'"] -- load 0
-                         -- , FB.reg "b" ["b'"]
-                         -- , FB.reg "c" ["c'", "c''"]
-                         -- ]
-  -- let fram1 = doSteps fram0 [ PUAct (Pull ["a'"])  $ Event 1  2
-                            -- , PUAct (Push "c")     $ Event 5  2
-                            -- , PUAct (Push "a")     $ Event 10 2
-                            -- , PUAct (Pull ["c'"])  $ Event 15 2
-                            -- , PUAct (Push "b")     $ Event 20 2
-                            -- , PUAct (Pull ["c''"]) $ Event 25 2
-                            -- , PUAct (Pull ["b'"])  $ Event 30 2
-                            -- ]
-  -- writeTestBench fram1
+  --                        , FB.framInput 0 ["a'"] -- load 0
+  --                        , FB.reg "b" ["b'"]
+  --                        , FB.reg "c" ["c'", "c''"]
+  --                        ]
+  -- let fram1 = doSteps fram0 [ PUAct (Push "b")     $ Event 0  1
+  -- --                           , PUAct (Pull ["c''"]) $ Event 2 1
+  -- --                           -- , PUAct (Pull ["a'"])  $ Event 0  1
+  -- --                           -- , PUAct (Pull ["c'"])  $ Event 8 1
+  -- --                           -- , PUAct (Push "a")     $ Event 10 2
+  -- --                           -- , PUAct (Push "b")     $ Event 20 2
+  -- --                           -- , PUAct (Pull ["b'"])  $ Event 30 2
+  --                           ]
+  -- mapM_ (putStrLn . show) $ variants fram1
+  -- -- writeTestBench fram1
 
-  let test = foldl (\s _ -> naive s) net' $ take 20 $ repeat ()
+  let test = foldl (\s _ -> naive s) net' $ take 30 $ repeat ()
   timeline "resource/data.json" test
-  writeTestBench test
+  writeTestBench (getPU "fram1" test :: FRAM Passive String Int)
+
+getPU puTitle net = case niPus net ! puTitle of
+  PU pu -> fromMaybe undefined $ cast pu

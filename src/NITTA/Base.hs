@@ -133,6 +133,7 @@ data S where
 
 data PU ty v t where
   PU :: ( PUClass pu ty v t
+        , Typeable (pu ty v t)
         ) => pu ty v t -> PU ty v t
 deriving instance Show (Instruction PU v t)
 instance ( Var v, Time t ) => PUClass PU Passive v t where
@@ -236,14 +237,15 @@ instance ( Typeable title
 
 
 class ( PUClass pu ty v t ) => TestBench pu ty v t where
-  testBench :: (pu ty v t) -> String
+  testControl :: (pu ty v t) -> String
+  testAsserts :: (pu ty v t) -> String
 
   fileName :: (pu ty v t) -> String
-  processFileName :: (pu ty v t) -> String
 
   writeTestBench :: (pu ty v t) -> IO ()
-  writeTestBench pu =
-    writeFile (processFileName pu) $ testBench pu
+  writeTestBench pu = do
+    writeFile (fileName pu ++ ".control.v") $ testControl pu
+    writeFile (fileName pu ++ ".asserts.v") $ testAsserts pu
 
 
 
