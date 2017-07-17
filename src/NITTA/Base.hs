@@ -57,7 +57,7 @@ instance Vars (Effect v) v where
 (Pull a) << (Pull b)          = all (`elem` a) b
 _        << _                 = False
 
-(Pull a) \\ (Pull b) = Pull (a L.\\ b)
+(Pull a) \\\ (Pull b) = Pull (a L.\\ b)
 
 
 

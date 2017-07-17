@@ -213,7 +213,7 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
         in (p', mc{ effect=ef : effect
                   , instruction=instrs ++ instruction
                   , workBegin=workBegin `orElse` Just eStart
-                  , actions=if x == aEffect then xs else (x \\ aEffect) : xs
+                  , actions=if x == aEffect then xs else (x \\\ aEffect) : xs
                   })
 
       finish p MicroCode{..} = snd $ modifyProcess p $ do

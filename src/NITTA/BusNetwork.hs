@@ -1,3 +1,4 @@
+i{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
@@ -17,16 +18,12 @@ module NITTA.BusNetwork where
 import           Control.Monad.State
 import           Data.Array
 import           Data.Default
-import qualified Data.Graph           as G
-import           Data.List            (find, intersect, nub, partition, sortBy)
-import qualified Data.List            as L
+import           Data.List            (intersect, nub, sortBy, (\\))
 import qualified Data.Map             as M
 import           Data.Maybe           (catMaybes, fromMaybe, isJust)
 import           Data.Typeable
-import           Debug.Trace
 import           NITTA.Base
 import           NITTA.FunctionBlocks
-import qualified NITTA.FunctionBlocks as FB
 import           NITTA.Types
 
 
@@ -70,15 +67,14 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
 
   signal' BusNetwork{..} (Wire i) t = foldl (+++) X $ map (uncurry subSignal) $ niWires!i
     where
-      subSignal puTitle s = let pu = niPus M.! puTitle
-                            in case pu of
+      subSignal puTitle s = case niPus M.! puTitle of
                                  PU pu -> signal pu s t
 
   bind ni@BusNetwork{..} fb = Just ni{ niRemains=fb : niRemains }
 
   variants = nittaVariants
 
-  step ni@BusNetwork{..} act@NetworkAction{..} = ni
+  step ni@BusNetwork{..} NetworkAction{..} = ni
     { niPus=foldl (\s n -> n s) niPus steps
     , niProcess=snd $ modifyProcess niProcess $ do
         mapM_ (\(v, (title, _)) -> add (Event transportStartAt transportDuration)
@@ -102,7 +98,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
       pullVars = M.keys push'
 
 
-  process ni@BusNetwork{..} = let
+  process BusNetwork{..} = let
     transportKey = M.fromList
       [ (variable, uid)
       | (Just (Transport variable _ _ :: Instruction (BusNetwork title) v t), uid)
@@ -116,7 +112,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
     where
       addSubProcess transportKey (puTitle, pu) = do
         let subSteps = steps $ process pu
-        uids' <- foldM (\dict step@Step{..} -> do
+        uids' <- foldM (\dict Step{..} -> do
                            uid' <- add time (Nested uid puTitle info :: Nested title v t)
                            case cast info of
                              Just (fb :: FB v) ->
@@ -129,11 +125,12 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
         let subRelations = relations $ process pu
         mapM (\r -> relation $ case r of
                  Vertical a b -> Vertical (uids' M.! a) (uids' M.! b)
+                 _            -> error $ "Unknown relation " ++ show r
              ) subRelations
 
 
 
-nittaVariants bn@BusNetwork{..} = concat $
+nittaVariants BusNetwork{..} = concat $
   [
     [ NetworkVariant fromPu pullAt $ M.fromList pushs
     | pushs <- sequence $ map pushVariantsFor pullVars
@@ -141,16 +138,16 @@ nittaVariants bn@BusNetwork{..} = concat $
     -- , not $ null pushTo
     , length (nub pushTo) == length pushTo
     ]
-  | (fromPu, variants) <- puVariants
-  , PUVar (Pull pullVars) pullAt <- variants
+  | (fromPu, vars) <- puVariants
+  , PUVar (Pull pullVars) pullAt <- vars
   ]
   where
     pushVariantsFor v | v `notElem` availableVars = [(v, Nothing)]
     pushVariantsFor v = (v, Nothing) : pushVariantsFor' v
 
     pushVariantsFor' v = [ (v, Just (pushTo, pushAt))
-                         | (pushTo, variants) <- puVariants
-                         , PUVar (Push pushVar) pushAt <- variants
+                         | (pushTo, vars) <- puVariants
+                         , PUVar (Push pushVar) pushAt <- vars
                          , pushVar == v
                          ]
     availableVars =
@@ -158,10 +155,10 @@ nittaVariants bn@BusNetwork{..} = concat $
             alg = foldl
               (\dict (a, b) -> M.adjust ((:) b) a dict)
               (M.fromList [(v, []) | v <- concatMap variables functionalBlocks])
-              $ filter (\(a, b) -> b `notElem` niForwardedVariables)
+              $ filter (\(_a, b) -> b `notElem` niForwardedVariables)
               $ concatMap dependency functionalBlocks
             notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
-        in notBlockedVariables L.\\ niForwardedVariables
+        in notBlockedVariables \\ niForwardedVariables
 
     puVariants = M.assocs $ M.map variants niPus
 
@@ -174,13 +171,13 @@ bindVariants BusNetwork{..} =
       [ (fb, puTitle) -- , newVariants pu fb)
       | (puTitle, pu) <- sortByLoad $ M.assocs niPus
       , isJust $ bind pu fb
-      , not $ selfTransport fb puTitle niBinded
+      , not $ selfTransport fb puTitle
       ]
 
     sortByLoad = sortBy (\(a, _) (b, _) -> load a `compare` load b)
     load = length . binded
 
-    selfTransport fb puTitle niBinded =
+    selfTransport fb puTitle =
       not $ null $ variables fb `intersect` (concatMap variables $ binded puTitle)
 
     binded puTitle | puTitle `M.member` niBinded = niBinded M.! puTitle
