@@ -22,7 +22,6 @@ import           Data.List            (intersect, nub, sortBy, (\\))
 import qualified Data.Map             as M
 import           Data.Maybe           (catMaybes, fromMaybe, isJust)
 import           Data.Typeable
-import           Debug.Trace
 import           NITTA.Base
 import           NITTA.FunctionBlocks
 import           NITTA.Types
@@ -68,6 +67,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
         mapM_ (\(v, (title, _)) -> add (Event transportStartAt transportDuration)
                 (Transport v aPullFrom title :: Instruction (BusNetwork title) v t))
                 $ M.assocs push'
+        add (Event transportStartAt (transportDuration - 1)) $ Pull pullVars
         setTime $ transportStartAt + transportDuration
     , niForwardedVariables=pullVars ++ niForwardedVariables
     }
@@ -126,7 +126,6 @@ nittaVariants BusNetwork{..} = concat $
     , length (nub pushTo) == length pushTo
     ]
   | (fromPu, vars) <- puVariants
-  -- | (fromPu, vars) <- trace ("puVariants: " ++ show puVariants) puVariants
   , PUVar (Pull pullVars) pullAt <- vars
   ]
   where
@@ -188,13 +187,26 @@ subBind fb puTitle ni@BusNetwork{ niProcess=p@Process{..}, ..} = ni
 
 --------------------------------------------------------------------------
 
--- instance ( Typeable title, Ord title, Show title, Var v, Time t, Ix t
-         -- ) => TestBench (BusNetwork title) (Network title) v t where
-  -- fileName _ = "hdl/fram_net_tb.v"
-  -- processFileName _ = "hdl/fram_net_tb.process.v"
+instance ( Typeable title, Ord title, Show title, Var v, Time t, Ix t
+         ) => TestBench (BusNetwork title) (Network title) v t where
+  fileName _ = "hdl/fram_net_tb"
 
-  -- testBench bn@BusNetwork{ niProcess=Process{..}, ..} =
-    -- let wires = map Wire $ reverse $ range $ bounds niWires
-        -- signalValues t = map (\w -> signal' bn w t) wires
-        -- values = map (concat . (map show) . signalValues) $ range (0, tick + 1)
-    -- in concatMap (\v -> "wires <= 'b" ++ v ++ "; @(negedge clk);\n" ) values
+  testControl bn@BusNetwork{ niProcess=Process{..}, ..} _values =
+    concatMap (\t -> showSignals (signalsAt t) ++ " @(negedge clk)\n"
+              ) [ 0 .. tick + 1 ]
+    where
+      wires = map Wire $ reverse $ range $ bounds niWires
+      signalsAt t = map (\w -> signal' bn w t) wires
+
+      showSignals = (\ss -> "wires <= 'b" ++ ss ++ ";"
+                    ) . concat . map show
+
+  testAsserts BusNetwork{ niProcess=Process{..}, ..} values =
+    concatMap (\t -> "@(posedge clk); #1; " ++ assert t ++ "\n"
+              ) [ 0 .. tick + 1 ]
+    where
+      assert time = case infoAt time steps of
+        [Pull (v : _)]
+          | v `M.member` values ->
+            "if ( !(dp_data == " ++ show (values M.! v) ++ ") ) $display(\"Assertion failed!\", dp_data, " ++ show (values M.! v) ++ ");"
+        (_ :: [Effect v]) -> "/* assert placeholder */"

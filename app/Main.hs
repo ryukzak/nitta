@@ -90,25 +90,43 @@ eval pu fbs =
 doSteps pu acts = foldl (\s n -> step s n) pu acts
 
 main = do
-  let fram0 = eval fram' [ FB.framOutput 0 "a" -- save 0main
-                         , FB.framInput 0 ["a'"] -- load 0
-                         , FB.reg "b" ["b'"]
-                         , FB.loop "c" ["c'"]
-                         ]
-  let fram1 = doSteps fram0 [ PUAct (Pull ["a'"]) $ Event 0 1
-                            , PUAct (Push "a")    $ Event 2 1
-                            , PUAct (Pull ["c'"]) $ Event 4 1
-                            , PUAct (Push "b")    $ Event 6 1
-                            , PUAct (Push "c")    $ Event 8 1
-                            , PUAct (Pull ["b'"]) $ Event 10 1
-                            ]
-  mapM_ (putStrLn . show) $ take 3 $ elems $ frMemory fram1
-  mapM_ (putStrLn . show) $ variants fram1
-  -- -- writeTestBench fram1
+  -- let fram0 = eval fram' [ FB.framOutput 0 "a" -- save 0main
+  --                        , FB.framInput 0 ["a'"] -- load 0
+  --                        , FB.reg "b" ["b'"]
+  --                        , FB.loop "c" ["c'"]
+  --                        ]
+  -- let fram1 = doSteps fram0 [ PUAct (Pull ["a'"]) $ Event 0 1
+  --                           , PUAct (Push "a")    $ Event 2 1
+  --                           , PUAct (Pull ["c'"]) $ Event 4 1
+  --                           , PUAct (Push "b")    $ Event 6 1
+  --                           , PUAct (Push "c")    $ Event 8 1
+  --                           , PUAct (Pull ["b'"]) $ Event 10 1
+  --                           ]
+  -- mapM_ (putStrLn . show) $ take 3 $ elems $ frMemory fram1
+  -- mapM_ (putStrLn . show) $ variants fram1
+  -- writeTestBench fram1
 
   test <- foldM (\s _ -> naive s) net' $ take 40 $ repeat ()
   timeline "resource/data.json" test
-  writeTestBench (getPU "fram1" test :: FRAM Passive String Int)
+  -- writeTestBench (getPU "fram1" test :: FRAM Passive String Int)
+    -- [ ("a", 0xFF0A), ("x", 0xFF0A)
+    -- , ("b", 0xFF0B), ("y", 0xFF0B)
+    -- , ("c", 0xFF0C), ("z", 0xFF0C)
+    -- , ("f", 0xFF0F), ("g", 0xFF0F)
+    -- ]
+  writeTestBench test
+    [ ("a", 0x00B3)
+    , ("b", 0x00B4)
+    , ("c", 0x00B4)
+
+    , ("x", 0x00B3)
+    , ("y", 0x00B4)
+    , ("z", 0x00B4)
+
+    , ("f", 0x00B0)
+    , ("g", 0x00B0)
+    ]
+
 
 getPU puTitle net = case niPus net ! puTitle of
   PU pu -> fromMaybe undefined $ cast pu

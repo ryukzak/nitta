@@ -19,6 +19,8 @@ module fram_net_tb();
    wire [W-1:0] value_o;
    wire [WA-1:0] attr_o;
    reg  [32:0]        i;
+   reg [15:0]         time_offset;
+   
    
    reg [WS-1:0]        wires;
 
@@ -59,17 +61,40 @@ module fram_net_tb();
         $dumpvars(0, fram_net_tb);
 
         for ( i = 0; i < 10; i = i + 1) begin
-           fram1.bank[i] <= 8'hA0 + i + 1;
-           fram2.bank[i] <= 8'hB0 + i + 1;
+           fram1.bank[i] <= 8'hA0 + i;
+           fram2.bank[i] <= 8'hB0 + i;
         end  
         wires <= 0; clk <= 0;
 
         @(negedge rst);
+        
+`include "fram_net_tb.control.v"
+        
+        repeat(4) @(posedge clk); $finish;
 
-`include "fram_net_tb_process.v"
+	   end
+
+   initial
+	   begin
+        @(negedge rst);     
+
+`include "fram_net_tb.asserts.v"
 
         repeat(4) @(posedge clk); $finish;
 
 	   end
 
+   initial
+	   begin
+        @(negedge rst);     
+        time_offset <= 0;
+        repeat(40) 
+          begin
+             @(posedge clk);
+             time_offset <= time_offset + 1;
+          end
+
+	   end
+
+   
 endmodule

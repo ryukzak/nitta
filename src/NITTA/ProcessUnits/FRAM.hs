@@ -19,7 +19,6 @@ import qualified Data.Graph            as G
 import           Data.List             (find, minimumBy, sortBy)
 import qualified Data.Map              as M
 import           Data.Maybe
-import           Debug.Trace
 import           NITTA.Base
 import           NITTA.FunctionBlocks
 import           NITTA.Types
@@ -143,7 +142,6 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
   variants FRAM{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
     where
       fromCells = [ PUVar v $ constrain cell v
-                  -- $ trace ("> " ++ show tick ++ "\t" ++ (show $ lastWrite cell))
                   | (_addr, cell) <- assocs frMemory
                   , v <- cell2acts cell
                   ]
@@ -175,8 +173,7 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
         Cell{ input=Def mc@MicroCode{ actions=act : _ } } | act << aEffect ->
             let (p', mc') = doAction addr p0 mc
                 cell' = updateLastWrite (tick p') cell
-                -- cell'' = case mc' of
-                cell'' = case trace (show mc') mc' of
+                cell'' = case mc' of
                   Nothing -> cell'{ input=UsedOrBlocked }
                   Just mc''@MicroCode{ actions=Pull _ : _ } -> cell'{ input=Def mc'' }
                   Just mc''@MicroCode{ actions=Push _ : _ }
@@ -308,13 +305,12 @@ availableCell frMemory pred =
 
 ---------------------------------------------------
 
-instance ( Time t
-         ) => TestBench FRAM Passive String t where
 
+instance ( Var v, Time t ) => TestBench FRAM Passive v t where
   fileName _ = "hdl/dpu_fram_tb"
 
-  testControl fram@FRAM{ frProcess=Process{..}, ..} =
-    concatMap (\t -> input t ++ "\n"
+  testControl fram@FRAM{ frProcess=Process{..}, ..} values =
+    concatMap (\t -> passiveInputValue t steps values ++ "\n"
                      ++ showSignals (signalsAt t) ++ " @(negedge clk)\n"
               ) [ 0 .. tick + 1 ]
     where
@@ -328,13 +324,8 @@ instance ( Time t
                          ++ "; addr[1] <= 'b" ++ a1
                          ++ "; addr[0] <= 'b" ++ a0 ++ ";"
                     ) . map show
-      input time = case infoAt time steps of
-        [Push v]
-          | v `M.member` values ->
-            "value_i <= " ++ show (values M.! v) ++ ";"
-        (_ :: [Effect String]) -> "/* input placeholder */"
 
-  testAsserts fram@FRAM{ frProcess=Process{..}, ..} =
+  testAsserts fram@FRAM{ frProcess=Process{..}, ..} values =
     concatMap (\t -> "@(posedge clk); #1; " ++ assert t ++ "\n"
                 -- ++ "$display(\"%h  %h  %h\", fram.bank[0], fram.bank[1], fram.bank[2]);\n"
               ) [ 0 .. tick + 1 ]
@@ -342,19 +333,5 @@ instance ( Time t
       assert time = case infoAt time steps of
         [Pull (v:_)]
           | v `M.member` values ->
-            -- "ctrl <= " ++ show (values M.! v) ++ "; if ( !(value_o == ctrl) ) $display(\"Assertion failed!\", value_o, ctrl);"
             "if ( !(value_o == " ++ show (values M.! v) ++ ") ) $display(\"Assertion failed!\", value_o, " ++ show (values M.! v) ++ ");"
-
-
-            -- "$display(\"%H %H\", value_o, ctrl);"
-            -- "if ( !(value_o == " ++ show (values M.! v) ++ ") ) $display(\"Assertion failed!\", "
-            -- ++ show (values M.! v) ++ ", value_o);"
-        (_ :: [Effect String]) -> "/* assert placeholder */"
-
-
-
-values = M.fromList [ ("a", 0xFF0A), ("x", 0xFF0A)
-                    , ("b", 0xFF0B), ("y", 0xFF0B)
-                    , ("c", 0xFF0C), ("z", 0xFF0C)
-                    , ("f", 0xFF0F), ("g", 0xFF0F)
-                    ]
+        (_ :: [Effect v]) -> "/* assert placeholder */"

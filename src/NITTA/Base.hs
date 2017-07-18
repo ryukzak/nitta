@@ -236,16 +236,22 @@ instance ( Typeable title
 
 
 
-class ( PUClass pu ty v t ) => TestBench pu ty v t where
-  testControl :: (pu ty v t) -> String
-  testAsserts :: (pu ty v t) -> String
-
+class ( PUClass pu ty v t, Var v ) => TestBench pu ty v t where
   fileName :: (pu ty v t) -> String
 
-  writeTestBench :: (pu ty v t) -> IO ()
-  writeTestBench pu = do
-    writeFile (fileName pu ++ ".control.v") $ testControl pu
-    writeFile (fileName pu ++ ".asserts.v") $ testAsserts pu
+  -- showSignalsAt :: pu ty v t -> t -> String
+  testControl :: pu ty v t -> M.Map v Int -> String
+  testAsserts :: pu ty v t -> M.Map v Int -> String
+
+  writeTestBench :: pu ty v t -> [(v, Int)] -> IO ()
+  writeTestBench pu values = do
+    writeFile (fileName pu ++ ".control.v") $ testControl pu $ M.fromList values
+    writeFile (fileName pu ++ ".asserts.v") $ testAsserts pu $ M.fromList values
+
+passiveInputValue :: ( Var v, Time t ) => t -> [Step v t] -> M.Map v Int -> String
+passiveInputValue time steps values = case infoAt time steps of
+  [Push v] | v `M.member` values -> "value_i <= " ++ show (values M.! v) ++ ";"
+  (_ :: [Effect v]) -> "/* input placeholder */"
 
 
 
