@@ -13,10 +13,8 @@ module dpu_fram_tb();
    wire [WA-1:0] attr_o;
 
    reg [32:0]    i;
-   reg [32:0]    ctrl;
    reg           x;
    
-
    dpu_fram fram(.dp_clk(clk),
 	               .dp_addr(addr),
 

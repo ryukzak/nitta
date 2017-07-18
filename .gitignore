@@ -5,4 +5,5 @@
 /resource/data.json
 *.vcd
 a.out
-*.process.v
+*.control.v
+*.asserts.v

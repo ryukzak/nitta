@@ -66,7 +66,6 @@
 
         <script type="text/javascript" src="data.json"></script>
 
-        <script src="http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js"></script>
         <script src="vendor/vis.min.js"></script>
         <link href="vendor/vis.min.css" rel="stylesheet" type="text/css" />
     </head>
@@ -74,9 +73,6 @@
         <div id="visualization"></div>
 
         <script>
-         var now = moment().minutes(0).seconds(0).milliseconds(0);
-         var itemCount = 60;
-
          // create a data set with groups
          var groups = new vis.DataSet(groups_data);
 

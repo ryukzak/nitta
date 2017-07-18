@@ -13,7 +13,7 @@
 module Main where
 
 import           Control.Monad
-import           Data.Array              (array)
+import           Data.Array              (array, elems)
 import           Data.Default
 import           Data.Map                (fromList, (!))
 import           Data.Maybe
@@ -55,17 +55,17 @@ net = busNetwork
                   ]
 
 alg = [ FB.framInput 3 [ "a" ]
-      , FB.framOutput 2 "z"
-      , FB.loop "g" ["f"]
-      , FB.reg "f" ["g"]
-      , FB.reg "a" ["x"]
-      , FB.framInput 8 [ "b"
+      , FB.framInput 4 [ "b"
                        , "c"
                        ]
+      , FB.reg "a" ["x"]
       , FB.reg "b" ["y"]
       , FB.reg "c" ["z"]
-      , FB.framOutput 0 "x"
-      , FB.framOutput 1 "y"
+      , FB.framOutput 5 "x"
+      , FB.framOutput 6 "y"
+      , FB.framOutput 7 "z"
+      , FB.loop "g" ["f"]
+      , FB.reg "f" ["g"]
       ]
 
 net' = eval (net :: BusNetwork String (Network String) String Int) alg
@@ -90,23 +90,23 @@ eval pu fbs =
 doSteps pu acts = foldl (\s n -> step s n) pu acts
 
 main = do
-  -- let fram0 = eval fram' [ FB.framOutput 0 "a" -- save 0main
-  --                        , FB.framInput 0 ["a'"] -- load 0
-  --                        , FB.reg "b" ["b'"]
-  --                        , FB.reg "c" ["c'", "c''"]
-  --                        ]
-  -- let fram1 = doSteps fram0 [ PUAct (Push "b")     $ Event 0  1
-  -- --                           , PUAct (Pull ["c''"]) $ Event 2 1
-  -- --                           -- , PUAct (Pull ["a'"])  $ Event 0  1
-  -- --                           -- , PUAct (Pull ["c'"])  $ Event 8 1
-  -- --                           -- , PUAct (Push "a")     $ Event 10 2
-  -- --                           -- , PUAct (Push "b")     $ Event 20 2
-  -- --                           -- , PUAct (Pull ["b'"])  $ Event 30 2
-  --                           ]
-  -- mapM_ (putStrLn . show) $ variants fram1
+  let fram0 = eval fram' [ FB.framOutput 0 "a" -- save 0main
+                         , FB.framInput 0 ["a'"] -- load 0
+                         , FB.reg "b" ["b'"]
+                         , FB.loop "c" ["c'"]
+                         ]
+  let fram1 = doSteps fram0 [ PUAct (Pull ["a'"]) $ Event 0 1
+                            , PUAct (Push "a")    $ Event 2 1
+                            , PUAct (Pull ["c'"]) $ Event 4 1
+                            , PUAct (Push "b")    $ Event 6 1
+                            , PUAct (Push "c")    $ Event 8 1
+                            , PUAct (Pull ["b'"]) $ Event 10 1
+                            ]
+  mapM_ (putStrLn . show) $ take 3 $ elems $ frMemory fram1
+  mapM_ (putStrLn . show) $ variants fram1
   -- -- writeTestBench fram1
 
-  let test = foldl (\s _ -> naive s) net' $ take 30 $ repeat ()
+  test <- foldM (\s _ -> naive s) net' $ take 40 $ repeat ()
   timeline "resource/data.json" test
   writeTestBench (getPU "fram1" test :: FRAM Passive String Int)
 

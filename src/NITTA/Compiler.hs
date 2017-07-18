@@ -23,16 +23,30 @@ import           NITTA.FunctionBlocks
 import           NITTA.Types
 
 
+-- naive net = do
+--   if null $ practicalVariants $ variants net
+--     then if null $ bindVariants net
+--          then return net
+--          else return $ autoBind net
+--     else return $ naiveStep net
 
-
+threshhold = 2
 naive net = do
-  if 2 < length (practicalVariants $ variants net)
-    then naiveStep net
-    else if null $ bindVariants net
-         then if null $ practicalVariants $ variants net
-              then naiveStep net
-              else net
-         else autoBind net
+  let vs = practicalVariants $ variants net
+  let bvs = bindVariants net
+  -- putStrLn "-----------------------------------"
+  -- mapM_ (putStrLn . show) vs
+  -- mapM_ (putStrLn . show) bvs
+  if length vs >= threshhold
+    then if null vs
+         then return net
+         else return $ naiveStep net
+    else if null bvs
+         then if null vs
+              then return net
+              else return $ naiveStep net
+         else return $ autoBind net
+
 
 
 
@@ -41,10 +55,11 @@ practicalVariants = filter
   (\NetworkVariant{..} -> not $ null $ filter isJust $ M.elems vPush)
 
 naiveStep pu@BusNetwork{..} =
-  case practicalVariants $ variants pu of
+  case sortBy (\a b -> start a `compare` start b) $ practicalVariants $ variants pu of
     v:_ -> step pu (v2a v)
     _   -> error "No variants!"
   where
+    start = tcFrom . vPullAt
     -- mostly mad implementation
     v2a NetworkVariant{ vPullAt=TimeConstrain{..}, ..} = NetworkAction
       { aPullFrom=vPullFrom
@@ -79,7 +94,6 @@ instance Ord BindPriority where
   (Restless _) `compare`  _           = GT
   Exclusive `compare` Exclusive = EQ
   Exclusive `compare` _ = LT
-  a `compare`  b           = error (show a ++ "  " ++ show b)
 
 
 

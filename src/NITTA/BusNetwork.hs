@@ -22,6 +22,7 @@ import           Data.List            (intersect, nub, sortBy, (\\))
 import qualified Data.Map             as M
 import           Data.Maybe           (catMaybes, fromMaybe, isJust)
 import           Data.Typeable
+import           Debug.Trace
 import           NITTA.Base
 import           NITTA.FunctionBlocks
 import           NITTA.Types
@@ -122,10 +123,10 @@ nittaVariants BusNetwork{..} = concat $
     [ NetworkVariant fromPu pullAt $ M.fromList pushs
     | pushs <- sequence $ map pushVariantsFor pullVars
     , let pushTo = catMaybes $ map (fmap fst . snd) pushs
-    -- , not $ null pushTo
     , length (nub pushTo) == length pushTo
     ]
   | (fromPu, vars) <- puVariants
+  -- | (fromPu, vars) <- trace ("puVariants: " ++ show puVariants) puVariants
   , PUVar (Pull pullVars) pullAt <- vars
   ]
   where
