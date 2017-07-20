@@ -17,7 +17,7 @@ module NITTA.Base where
 import System.Exit
 import           Control.Monad.State
 import           Data.Default
-import           Data.List            (find, intersect, partition)
+import           Data.List            (find, intersect, partition, isSubsequenceOf)
 import qualified Data.List            as L
 import qualified Data.Map             as M
 import           Data.Maybe           (fromMaybe, isJust, catMaybes)
@@ -255,7 +255,11 @@ passiveInputValue time steps values = case infoAt time steps of
   (_ :: [Effect v]) -> "/* input placeholder */"
 
 
-evalTestBench pu = do
+testBench pu values = do
+  writeTestBench pu values
+  runTestBench pu
+
+runTestBench pu = do
   let fn = fileName pu
   (compileExitCode, compileOut, compileErr) <- readProcessWithExitCode "iverilog" [ fn ++ ".v"
                                                             , fn ++ ".tb.v"
@@ -265,15 +269,14 @@ evalTestBench pu = do
     putStrLn $ "stderr:\n" ++ compileErr
     die "Verilog compilation failed!"
 
-  (simExitCode, simOut, simErr) <- readProcessWithExitCode "hdl/a.out" [] []
-  when (simExitCode /= ExitSuccess) $ do
+  (ExitSuccess, simOut, simErr) <- readProcessWithExitCode "./a.out" [] []
+  -- Yep, we can't stop simulation with bad ExitCode...
+  when ("FAIL" `isSubsequenceOf` simOut) $ do
     putStrLn $ "stdout:\n" ++ simOut
     putStrLn $ "stderr:\n" ++ simErr
-    die "Simulation failed!"
+    -- die "Simulation failed!"
   
-  case simExitCode of
-    ExitSuccess -> return True
-    _ -> return False
+  return $ not ("FAIL" `isSubsequenceOf` simOut)
 
 
 modifyProcess p state = runState state p
@@ -295,5 +298,5 @@ setTime t = do
 
 whatsHappen t = filter (\Step{ time=Event{..} } -> eStart <= t && t < eStart + eDuration)
 infoAt t = catMaybes . map (\Step{..} -> cast info) . whatsHappen t
-
-
+filterSteps :: Typeable a => [Step v t] -> [(Step v t, a)]
+filterSteps = catMaybes . map (\step@Step{..} -> fmap (step, ) $ cast info)

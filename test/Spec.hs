@@ -1,45 +1,42 @@
+{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 import           Control.Monad
-import           Control.Monad.Trans.Class
-import           Control.Monad.Trans.State
 import           Data.Default
-import           Data.List                 (elem, intersect, notElem, nub,
-                                            union)
-import           Data.Maybe                (catMaybes)
-import           Data.Set                  (fromList)
+import           Data.List               (intersect, notElem, nub, union)
+import qualified Data.List               as L
+import           Data.Maybe              (catMaybes)
+import           Data.Set                (fromList, (\\))
 import           Data.Typeable
--- import           Debug.Trace
 import           NITTA.Base
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.FRAM
+import           NITTA.Timeline
 import           NITTA.Types
-import           System.Random             (next)
-import           Test.Hspec
 import           Test.QuickCheck
-import           Test.QuickCheck.Arbitrary
-import           Test.QuickCheck.Gen       hiding (listOf, vectorOf)
 import           Test.QuickCheck.Monadic
 
 
-
-addr = choose (0, 35 :: Int)
+addrGen = choose (0, framSize - 1)
 forPull = resize 3 $ listOf1 $ vectorOf 3 (elements ['a'..'z'])
 forPush = vectorOf 3 (elements ['a'..'z'])
 
+uniqVars fb = let vs = variables fb
+              in length vs == length (nub vs)
+
 instance Arbitrary (FRAMInput String) where
-  arbitrary = FRAMInput <$> addr <*> forPull
+  arbitrary = suchThat (FRAMInput <$> addrGen <*> forPull) uniqVars
 
 instance Arbitrary (FRAMOutput String) where
-  arbitrary = FRAMOutput <$> addr <*> forPush
+  arbitrary = suchThat (FRAMOutput <$> addrGen <*> forPush) uniqVars
 
 instance Arbitrary (Loop String) where
-  arbitrary = Loop <$> forPush <*> forPull
+  arbitrary = suchThat (Loop <$> forPush <*> forPull) uniqVars
 
 instance Arbitrary (Reg String) where
-  arbitrary = Reg <$> forPush <*> forPull
+  arbitrary = suchThat (Reg <$> forPush <*> forPull) uniqVars
 
 
 
@@ -50,49 +47,62 @@ data ST = ST { acc           :: [FB String]
              , forOutput     :: [Int]
              , numberOfLoops :: Int
              , usedVariables :: [String]
+             , values        :: [(String, Int)]
              } deriving (Show)
 
-instance {-# OVERLAPPING #-} Arbitrary [FB String] where
-  arbitrary = acc <$> do
+instance {-# OVERLAPPING #-} Arbitrary ([FB String], [(String, Int)]) where
+  arbitrary = (\ST{..} -> (acc, values)) <$> do
       size <- sized pure -- getSize
       n <- choose (0, size)
-      foldM maker (ST [] [] [] 0 []) [ 0..n ]
+      foldM maker (ST [] [] [] 0 [] []) [ 0..n ]
     where
-      maker st@ST{..} _ =
-        nextState <$> suchThat (oneof [ FB <$> (arbitrary :: Gen (FRAMInput String))
-                                      , FB <$> (arbitrary :: Gen (FRAMOutput String))
-                                      , FB <$> (arbitrary :: Gen (Loop String))
-                                      , FB <$> (arbitrary :: Gen (Reg String))
-                                      ]
-                               ) check
+      maker st0@ST{..} _ = nextState st0 <$> do
+        fb <- suchThat (oneof [ FB <$> (arbitrary :: Gen (FRAMInput String))
+                              , FB <$> (arbitrary :: Gen (FRAMOutput String))
+                              , FB <$> (arbitrary :: Gen (Loop String))
+                              , FB <$> (arbitrary :: Gen (Reg String))
+                              ]
+                       ) check
+        v <- choose (0 :: Int, 0xFF)
+        return (fb, v)
         where
-          nextState fb = specificUpdate fb st
+          nextState st (fb, v) = specificUpdate fb v st
             { acc=fb : acc
             , usedVariables=variables fb ++ usedVariables
             }
-          specificUpdate (FB fb) st
-            | Just (FRAMInput addr (_ :: [String])) <- cast fb = st{ forInput=addr : forInput }
-            | Just (FRAMOutput addr (_ :: String)) <- cast fb = st{ forOutput=addr : forOutput }
-            | Just (Loop _ _ :: Loop String) <- cast fb = st{ numberOfLoops=numberOfLoops + 1 }
-            | otherwise = st
+          specificUpdate (FB fb) value st
+            | Just (FRAMInput addr vs) <- cast fb = st{ forInput=addr : forInput
+                                                      , values=[ (v, 0x0A00 + addr)
+                                                               | v <- vs
+                                                               ] ++ values
+                                                      }
+            | Just (FRAMOutput addr v) <- cast fb = st{ forOutput=addr : forOutput
+                                                      , values=(v, 0x0A00 + addr) : values
+                                                      }
+            | Just (Loop a _bs) <- cast fb = st{ numberOfLoops=numberOfLoops + 1
+                                               , values=(a, value) : values
+                                               -- bs check making with independently with TestBench
+                                              }
+            | Just (Reg a bs) <- cast fb = st{ values=(a, value) : [(b, value) | b <- bs] ++ values
+                                             }
+            | otherwise = error $ "Bad FB: " ++ show fb
           check fb0@(FB fb)
             | not $ null (variables fb0 `intersect` usedVariables) = False
-            | Just (FRAMInput addr (_ :: [String])) <- cast fb =
-                addr `notElem` forInput && (length forInput) + numberOfLoops < 36
-            | Just (FRAMOutput addr (_ :: String)) <- cast fb =
-                addr `notElem` forOutput && (length forOutput) + numberOfLoops < 36
-            | Just (Loop _ _ :: Loop String) <- cast fb =
-                length (nub $ forOutput `union` forInput) + numberOfLoops < 36
-            | otherwise = True
+            | Just (Reg _ _ :: Reg String) <- cast fb = True
+            | not (length (nub $ forOutput `union` forInput) + numberOfLoops < framSize) = False
+            | Just (FRAMInput addr (_ :: [String])) <- cast fb = addr `notElem` forInput
+            | Just (FRAMOutput addr (_ :: String)) <- cast fb = addr `notElem` forOutput
+            | otherwise = True -- for Loop
 
 
 
 
-prop_simPassivePu alg = monadicIO $ do
+
+prop_simPassivePu :: ([FB String], [(String, Int)]) -> Property
+prop_simPassivePu (alg, values) = monadicIO $ do
   assert $ prop_passivePu alg
   let pu = naive (def :: FRAM Passive String Int) alg
-  run $ writeTestBench pu []
-  res <- run $ evalTestBench pu
+  res <- run $ testBench pu values
   assert res
 
 prop_passivePu alg =
@@ -108,10 +118,8 @@ prop_passivePu alg =
          , fromList alg == fromList alg'
          ]
 
-
-
-naive pu alg =
-  let Just bindedPu = foldl (\(Just s) n -> bind s n) (Just pu) alg
+naive pu0 alg =
+  let Just bindedPu = foldl (\(Just s) n -> bind s n) (Just pu0) alg
   in naive' bindedPu
   where
     naive' pu
@@ -122,5 +130,25 @@ naive pu alg =
 
 
 
+main = do
+  -- let vars = concatMap variables alg
+  -- let pu = naive (def :: FRAM Passive String Int) alg
+  -- let steps' = steps $ process $ pu
+  -- let vars' = concatMap variables $ catMaybes
+              -- $ map (\Step{..} -> (cast info :: Maybe (Effect String))) steps'
+  -- let alg' = catMaybes $ map (\Step{..} -> (cast info :: Maybe (FB String))) steps'
+  -- timeline "resource/data.json" pu
+  -- putStrLn $ show (fromList vars \\ fromList vars')
+  -- putStrLn $ show (fromList alg \\ fromList alg')
+  -- putStrLn $ show (length (nub vars') == length vars')
+  -- putStrLn $ show (length (nub alg') == length alg')
+  -- putStrLn $ show (vars' L.\\ nub vars')
 
-main = verboseCheck prop_simPassivePu
+
+
+  quickCheck prop_simPassivePu
+  -- quickCheckWith stdArgs { maxSuccess=1000
+                         -- }  prop_simPassivePu
+
+  -- verboseCheckWith stdArgs { maxSuccess=100
+                           -- }  prop_simPassivePu

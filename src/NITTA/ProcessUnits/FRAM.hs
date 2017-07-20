@@ -12,6 +12,7 @@
 module NITTA.ProcessUnits.FRAM
   ( FRAM(..)
   , Signals(..)
+  , framSize
   ) where
 
 import           Data.Array
@@ -22,7 +23,8 @@ import qualified Data.Graph            as G
 import           Data.List             (find, minimumBy, sortBy)
 import qualified Data.Map              as M
 import           Data.Maybe
--- import           Debug.Trace
+import           Data.Typeable
+import           Debug.Trace
 import           NITTA.Base
 import           NITTA.FunctionBlocks
 import           NITTA.Types
@@ -63,7 +65,7 @@ microcode = MicroCode [] [] [] Nothing
 
 
 instance ( Var v, Time t ) => Default (FRAM ty v t) where
-  def = FRAM { frMemory=listArray (0, 35) $ repeat def
+  def = FRAM { frMemory=listArray (0, framSize - 1) $ repeat def
              , frRemains=[]
              , frProcess=def
              }
@@ -80,6 +82,7 @@ instance ( Eq v ) => Eq (MicroCode v t) where
 
 
 
+framSize = 16 :: Int
 
 type I v t = Instruction FRAM v t
 
@@ -162,7 +165,8 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
 
   step fr@FRAM{ frProcess=p0@Process{ tick=tick0 }, .. } act0@PUAct{ aAt=at@Event{..}, .. }
     | tick0 > eStart = error "You can't start work yesterday:)"
-    | Just mc@MicroCode{ bindTo=bindTo } <- find ((<< aEffect) . head . actions) frRemains
+
+    | Just mc@MicroCode{ bindTo=bindTo } <- bindBefore frRemains
     = case availableCell frMemory (isJust . bindTo mc) of
         Just (addr, cell) ->
           let (key, p') = modifyProcess p0 $ bindFB2Cell addr (fb mc) tick0
@@ -225,6 +229,15 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
 
     | otherwise = error $ "Can't found selected action: " ++ show act0 ++ show (variants fr)
     where
+      bindBefore remains
+        | Just mc <- find ((<< aEffect) . head . actions) remains
+        = case filter (\MicroCode{ fb=FB fb } ->
+                          isJust (cast fb :: Maybe (Loop v))
+                      ) remains of
+            m : _ -> Just m
+            _     -> Just mc
+        | otherwise = Nothing
+
       updateLastWrite t cell | Push _ <- aEffect = cell{ lastWrite=Just t }
                              | otherwise = cell{ lastWrite=Nothing }
 
@@ -336,9 +349,36 @@ instance ( Var v, Time t ) => TestBench FRAM Passive v t where
   testAsserts FRAM{ frProcess=Process{..}, ..} values =
     concatMap (\t -> "@(posedge clk); #1; " ++ assert t ++ "\n"
               ) [ 0 .. tick + 1 ]
+    ++ outputAssert
     where
       assert time = case infoAt time steps of
         [Pull (v:_)]
-          | v `M.member` values ->
-            "if ( !(value_o == " ++ show (values M.! v) ++ ") ) $display(\"Assertion failed!\", value_o, " ++ show (values M.! v) ++ ");"
+          | v `M.member` values -> checkBus (values M.! v)
+          | [FB fb :: FB v] <- infoAt time steps
+          , Just (Loop _ _ :: Loop v) <- cast fb
+          , [Load addr :: I v t] <- infoAt time steps
+          -> checkBus (0x0A00 + addr)
         (_ :: [Effect v]) -> "/* assert placeholder */"
+      outputAssert = "\n\n@(posedge clk);\n" ++ loopsOutput ++ outputs
+      loopsOutput = concat
+        [ checkBank addr (values M.! a)
+        | (Step{ time=Event{..}, .. }, (FB fb :: FB v)) <- filterSteps steps
+        , let fb' = cast fb :: Maybe (Loop v)
+        , isJust fb'
+        , let Just (Loop a _b) = fb'
+        , a `M.member` values
+        , let Save addr : _ = infoAt (eStart + eDuration - 1) steps :: [I v t]
+        ]
+      outputs = concat
+        [ checkBank addr (values M.! v)
+        | (Step{ time=Event{..}, .. }, (FB fb :: FB v)) <- filterSteps steps
+        , let fb' = cast fb :: Maybe (FRAMOutput v)
+        , isJust fb'
+        , let Just (FRAMOutput addr v) = fb'
+        , v `M.member` values
+        ]
+
+      checkBus v = "if ( !(value_o == " ++ show v ++ ") ) "
+        ++ "$display(\"FAIL Bus assertion failed! %h %h\", value_o, " ++ show v ++ ");"
+      checkBank addr v = "if ( !(fram.bank[" ++ show addr ++ "] == " ++ show v ++ ") ) "
+        ++ "$display(\"FAIL Bank assertion failed! %h %h\", value_o, " ++ show v ++ ");\n"

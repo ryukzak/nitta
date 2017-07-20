@@ -41,11 +41,14 @@ module dpu_fram_tb();
         $dumpvars(0, dpu_fram_tb);
         addr <= 0; wr <= 0; oe <= 0; value_i <= 0;
 
-        for ( i = 0; i < 36; i = i + 1) begin
-           fram.bank[i] <= 8'hA00 + i;
+        for ( i = 0; i < 16; i = i + 1) begin
+           fram.bank[i] <= 32'h0A00 + i;
         end  
 
         @(negedge rst);
+        for ( i = 0; i < 16; i = i + 1) begin
+           $display("fram.display(%d) = %h", i, fram.bank[i]);
+        end  
         
 `include "hdl/dpu_fram.tb.control.v"
         

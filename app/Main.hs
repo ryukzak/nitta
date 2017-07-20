@@ -91,7 +91,7 @@ eval pu fbs =
 doSteps pu acts = foldl (\s n -> step s n) pu acts
 
 
-alg0 = [FB (Reg "aa" ["ab"]),FB (FRAMOutput 9 "ac"),FB (Loop "ad" ["ae"]),FB (Reg "af" ["ag"]),FB (Reg "ah" ["ai"]),FB (FRAMInput 26 ["aj"]),FB (Loop "ak" ["al"]),FB (FRAMOutput 16 "am"),FB (Loop "an" ["ao"]),FB (FRAMOutput 18 "ap"),FB (FRAMInput 3 ["aq"]),FB (FRAMInput 14 ["ar"]),FB (Reg "as" ["at"]),FB (FRAMOutput 1 "au"),FB (Reg "av" ["aw"]),FB (Reg "ax" ["ay"]),FB (FRAMInput 33 ["az"]),FB (Loop "ba" ["bb"]),FB (Reg "bc" ["bd"]),FB (FRAMInput 30 ["be"]),FB (FRAMOutput 35 "bf"),FB (Reg "bg" ["bh"]),FB (FRAMOutput 4 "bi"),FB (Loop "bj" ["bk"]),FB (Loop "bl" ["bm"]),FB (FRAMInput 2 ["bn"]),FB (Reg "bo" ["bp"]),FB (Loop "bq" ["br"]),FB (FRAMInput 7 ["bs"]),FB (Loop "bt" ["bu"]),FB (Loop "bv" ["bw"]),FB (FRAMInput 13 ["bx"]),FB (FRAMOutput 34 "by"),FB (FRAMOutput 25 "bz"),FB (Reg "ca" ["cb"]),FB (Reg "cc" ["cd"]),FB (Loop "ce" ["cf"]),FB (FRAMInput 12 ["cg"])]
+
 
 
 naive0 pu alg =
@@ -127,13 +127,22 @@ main = do
 
   test <- foldM (\s _ -> naive s) net' $ take 40 $ repeat ()
   timeline "resource/data.json" test
-  writeTestBench (getPU "fram1" test :: FRAM Passive String Int)
-    [ ("a", 0xFF0A), ("x", 0xFF0A)
-    , ("b", 0xFF0B), ("y", 0xFF0B)
-    , ("c", 0xFF0C), ("z", 0xFF0C)
-    , ("f", 0xFF0F), ("g", 0xFF0F)
+  -- testBench (getPU "fram1" test :: FRAM Passive String Int)
+    -- [ ("a", 0xFF0A), ("x", 0xFF0A)
+    -- , ("b", 0xFF0B), ("y", 0xFF0B)
+    -- , ("c", 0xFF0C), ("z", 0xFF0C)
+    -- , ("f", 0xFF0F), ("g", 0xFF0F)
+    -- ]
+
+  testBench (getPU "fram2" test :: FRAM Passive String Int)
+    [ ("a", 0x0A03), ("x", 0xFF0A)
+    , ("b", 0x0A04), ("y", 0xFF0B)
+    , ("c", 0x0A04), ("z", 0xFF0C)
+    , ("f", 0x0A00) -- потому что Loop должен попасть по адресу 0, так как он свободен.
+    , ("g", 0xFF0F)
     ]
-  evalTestBench (getPU "fram1" test :: FRAM Passive String Int)
+
+
   -- writeTestBench test
   --   [ ("a", 0x00B3)
   --   , ("b", 0x00B4)
