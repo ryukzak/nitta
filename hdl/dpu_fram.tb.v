@@ -47,7 +47,7 @@ module dpu_fram_tb();
 
         @(negedge rst);
         
-`include "dpu_fram_tb.control.v"
+`include "hdl/dpu_fram.tb.control.v"
         
         repeat(4) @(posedge clk); $finish;
 
@@ -57,7 +57,7 @@ module dpu_fram_tb();
 	   begin
         @(negedge rst);     
 
-`include "dpu_fram_tb.asserts.v"
+`include "hdl/dpu_fram.tb.asserts.v"
 
         repeat(4) @(posedge clk); $finish;
 

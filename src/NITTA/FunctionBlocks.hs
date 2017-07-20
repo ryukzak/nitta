@@ -32,7 +32,7 @@ class ( Show fb, Typeable fb, Eq fb, Ord fb, Vars fb var
   isCritical _ = False
 
 data FB var where
-  FB :: ( FBClass fb var ) => fb -> FB var
+  FB :: ( FBClass fb var, Typeable fb ) => fb -> FB var
 
 instance (Typeable var) => FBClass (FB var) var where
   dependency (FB fb) = dependency fb

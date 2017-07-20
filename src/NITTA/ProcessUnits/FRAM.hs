@@ -22,7 +22,7 @@ import qualified Data.Graph            as G
 import           Data.List             (find, minimumBy, sortBy)
 import qualified Data.Map              as M
 import           Data.Maybe
-import           Debug.Trace
+-- import           Debug.Trace
 import           NITTA.Base
 import           NITTA.FunctionBlocks
 import           NITTA.Types
@@ -315,7 +315,7 @@ availableCell frMemory appropriate =
 
 
 instance ( Var v, Time t ) => TestBench FRAM Passive v t where
-  fileName _ = "hdl/dpu_fram_tb"
+  fileName _ = "hdl/dpu_fram"
 
   testControl fram@FRAM{ frProcess=Process{..}, ..} values =
     concatMap (\t -> passiveInputValue t steps values ++ "\n"

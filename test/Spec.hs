@@ -1,142 +1,99 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 import           Control.Monad
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.State
 import           Data.Default
-import           Data.List                 (elem, notElem, nub, union)
+import           Data.List                 (elem, intersect, notElem, nub,
+                                            union)
 import           Data.Maybe                (catMaybes)
 import           Data.Set                  (fromList)
 import           Data.Typeable
-import           Debug.Trace
+-- import           Debug.Trace
 import           NITTA.Base
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.FRAM
 import           NITTA.Types
 import           System.Random             (next)
 import           Test.Hspec
-import           Test.QuickCheck           hiding (listOf, vectorOf)
+import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary
 import           Test.QuickCheck.Gen       hiding (listOf, vectorOf)
+import           Test.QuickCheck.Monadic
+
+
+
+addr = choose (0, 35 :: Int)
+forPull = resize 3 $ listOf1 $ vectorOf 3 (elements ['a'..'z'])
+forPush = vectorOf 3 (elements ['a'..'z'])
+
+instance Arbitrary (FRAMInput String) where
+  arbitrary = FRAMInput <$> addr <*> forPull
+
+instance Arbitrary (FRAMOutput String) where
+  arbitrary = FRAMOutput <$> addr <*> forPush
+
+instance Arbitrary (Loop String) where
+  arbitrary = Loop <$> forPush <*> forPull
+
+instance Arbitrary (Reg String) where
+  arbitrary = Reg <$> forPush <*> forPull
 
 
 
 
 
-listOf gen = do
-  size <- lift $ sized pure -- getSize
-  n <- lift $ choose (0, size)
-  vectorOf n gen
-vectorOf k gen = sequence [ gen | _ <- [1..k] ]
-oneOf gens = do
-  i <- lift $ choose (0, length gens - 1)
-  gens !! i
-
-
-
-data AlgMaker = AlgMaker
-  { vars       :: [String]
-  , inputAddr  :: [Int]
-  , outputAddr :: [Int]
-  , loopNumber :: Int
-  } deriving(Show)
-
-instance Default AlgMaker where
-  def = AlgMaker
-    { vars=[[a, b] | a <- ['a' .. 'z'], b <- ['a' .. 'z']]
-    , inputAddr=[]
-    , outputAddr=[]
-    , loopNumber=0
-    }
-
-variable = do
-  st@AlgMaker{ vars=v : vs} <- get
-  put st{ vars=vs }
-  return v
-
-
-useForInput addr = modify $ \st@AlgMaker{..} -> st{ inputAddr=addr : inputAddr }
-useForOutput addr = modify $ \st@AlgMaker{..} -> st{ outputAddr=addr : outputAddr }
-
-framInputGen = do
-  AlgMaker{..} <- get
-  addr <- lift $ suchThat (choose (0, 35)) (`notElem` inputAddr)
-  useForInput addr
-  v <- variable
-  return $ framInput addr [v]
-
-framOutputGen = do
-  AlgMaker{..} <- get
-  addr <- lift $ suchThat (choose (0, 35)) (`notElem` outputAddr)
-  useForOutput addr
-  v <- variable
-  return $ framOutput addr v
-
-regGen = do
-  a <- variable
-  b <- variable
-  return $ reg a [b]
-
-loopGen = do
-  a <- variable
-  b <- variable
-  modify $ \st@AlgMaker{..} -> st{ loopNumber=loopNumber + 1 }
-  return $ loop a [b]
-
-
-
-
-
-
-
-
-genAlg gen = evalStateT gen def
-
+data ST = ST { acc           :: [FB String]
+             , forInput      :: [Int]
+             , forOutput     :: [Int]
+             , numberOfLoops :: Int
+             , usedVariables :: [String]
+             } deriving (Show)
 
 instance {-# OVERLAPPING #-} Arbitrary [FB String] where
-  arbitrary = genAlg $ framFB
+  arbitrary = acc <$> do
+      size <- sized pure -- getSize
+      n <- choose (0, size)
+      foldM maker (ST [] [] [] 0 []) [ 0..n ]
+    where
+      maker st@ST{..} _ =
+        nextState <$> suchThat (oneof [ FB <$> (arbitrary :: Gen (FRAMInput String))
+                                      , FB <$> (arbitrary :: Gen (FRAMOutput String))
+                                      , FB <$> (arbitrary :: Gen (Loop String))
+                                      , FB <$> (arbitrary :: Gen (Reg String))
+                                      ]
+                               ) check
+        where
+          nextState fb = specificUpdate fb st
+            { acc=fb : acc
+            , usedVariables=variables fb ++ usedVariables
+            }
+          specificUpdate (FB fb) st
+            | Just (FRAMInput addr (_ :: [String])) <- cast fb = st{ forInput=addr : forInput }
+            | Just (FRAMOutput addr (_ :: String)) <- cast fb = st{ forOutput=addr : forOutput }
+            | Just (Loop _ _ :: Loop String) <- cast fb = st{ numberOfLoops=numberOfLoops + 1 }
+            | otherwise = st
+          check fb0@(FB fb)
+            | not $ null (variables fb0 `intersect` usedVariables) = False
+            | Just (FRAMInput addr (_ :: [String])) <- cast fb =
+                addr `notElem` forInput && (length forInput) + numberOfLoops < 36
+            | Just (FRAMOutput addr (_ :: String)) <- cast fb =
+                addr `notElem` forOutput && (length forOutput) + numberOfLoops < 36
+            | Just (Loop _ _ :: Loop String) <- cast fb =
+                length (nub $ forOutput `union` forInput) + numberOfLoops < 36
+            | otherwise = True
 
 
-framFB = do
-    size <- lift $ sized pure -- getSize
-    n <- lift $ choose (0, size)
-    sequence [gen | _ <- [0..n]]
-      where
-        gen = do
-          AlgMaker{..} <- get
-          let usedAddr = nub (inputAddr `union` outputAddr)
-          if (length usedAddr) + loopNumber < 36
-            then oneOf [ framInputGen, framOutputGen, regGen, loopGen ]
-            else oneOf [ regGen ]
 
 
-
-
-
-
-
-
--- listOf gen = do
---   size <- lift $ sized pure -- getSize
---   n <- lift $ choose (0, size)
---   vectorOf n gen
--- vectorOf k gen = sequence [ gen | _ <- [1..k] ]
-
-
-
-
-
-
-
-  -- AlgMaker{..} <- get
-
-  -- let usedAddr = nub (inputAddr `union` outputAddr)
-  -- if (length usedAddr) - loopNumber < 36
-  --   then
-  --   -- modify $ \st@AlgMaker{..} -> st{ loopNumber=loopNumber + 1 }
-  -- else
-
+prop_simPassivePu alg = monadicIO $ do
+  assert $ prop_passivePu alg
+  let pu = naive (def :: FRAM Passive String Int) alg
+  run $ writeTestBench pu []
+  res <- run $ evalTestBench pu
+  assert res
 
 prop_passivePu alg =
   let vars = concatMap variables alg
@@ -151,6 +108,8 @@ prop_passivePu alg =
          , fromList alg == fromList alg'
          ]
 
+
+
 naive pu alg =
   let Just bindedPu = foldl (\(Just s) n -> bind s n) (Just pu) alg
   in naive' bindedPu
@@ -164,4 +123,4 @@ naive pu alg =
 
 
 
-main = verboseCheck prop_passivePu
+main = verboseCheck prop_simPassivePu

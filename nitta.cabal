@@ -24,6 +24,7 @@ library
                      , NITTA.ProcessUnits.FRAM
   build-depends:       base >= 4.7 && < 5
                      , containers
+                     , process
                      , bytestring
                      , data-default
                      , mtl
@@ -46,6 +47,7 @@ executable nitta-exe
                      , bytestring
                      , nitta
                      , hspec
+                     , process
                      , data-default
                      , containers
                      , mtl
@@ -69,6 +71,7 @@ test-suite nitta-test
                      , hspec
                      , bytestring
                      , data-default
+                     , process
                      , random
                      , text
                      , containers

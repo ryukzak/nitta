@@ -14,6 +14,7 @@
 
 module NITTA.Base where
 
+import System.Exit
 import           Control.Monad.State
 import           Data.Default
 import           Data.List            (find, intersect, partition)
@@ -24,7 +25,7 @@ import           Data.Typeable        (Typeable, cast, typeOf)
 import           NITTA.FunctionBlocks
 import           NITTA.Types
 import qualified NITTA.FunctionBlocks as FB
-
+import System.Process
 
 
 
@@ -245,8 +246,8 @@ class ( PUClass pu ty v t, Var v ) => TestBench pu ty v t where
 
   writeTestBench :: pu ty v t -> [(v, Int)] -> IO ()
   writeTestBench pu values = do
-    writeFile (fileName pu ++ ".control.v") $ testControl pu $ M.fromList values
-    writeFile (fileName pu ++ ".asserts.v") $ testAsserts pu $ M.fromList values
+    writeFile (fileName pu ++ ".tb.control.v") $ testControl pu $ M.fromList values
+    writeFile (fileName pu ++ ".tb.asserts.v") $ testAsserts pu $ M.fromList values
 
 passiveInputValue :: ( Var v, Time t ) => t -> [Step v t] -> M.Map v Int -> String
 passiveInputValue time steps values = case infoAt time steps of
@@ -254,6 +255,25 @@ passiveInputValue time steps values = case infoAt time steps of
   (_ :: [Effect v]) -> "/* input placeholder */"
 
 
+evalTestBench pu = do
+  let fn = fileName pu
+  (compileExitCode, compileOut, compileErr) <- readProcessWithExitCode "iverilog" [ fn ++ ".v"
+                                                            , fn ++ ".tb.v"
+                                                            ] []
+  when (compileExitCode /= ExitSuccess) $ do
+    putStrLn $ "stdout:\n" ++ compileOut
+    putStrLn $ "stderr:\n" ++ compileErr
+    die "Verilog compilation failed!"
+
+  (simExitCode, simOut, simErr) <- readProcessWithExitCode "hdl/a.out" [] []
+  when (simExitCode /= ExitSuccess) $ do
+    putStrLn $ "stdout:\n" ++ simOut
+    putStrLn $ "stderr:\n" ++ simErr
+    die "Simulation failed!"
+  
+  case simExitCode of
+    ExitSuccess -> return True
+    _ -> return False
 
 
 modifyProcess p state = runState state p

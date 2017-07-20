@@ -121,18 +121,19 @@ main = do
   -- mapM_ (putStrLn . show) $ variants fram1
   -- writeTestBench fram1
 
-  let fram = naive0 (def:: FRAM Passive String Int) alg0
-  timeline "resource/data.json" fram
+  -- let fram = naive0 (def:: FRAM Passive String Int) alg0
+  -- timeline "resource/data.json" fram
 
 
-  -- test <- foldM (\s _ -> naive s) net' $ take 40 $ repeat ()
-  -- timeline "resource/data.json" test
-  -- writeTestBench (getPU "fram1" test :: FRAM Passive String Int)
-    -- [ ("a", 0xFF0A), ("x", 0xFF0A)
-    -- , ("b", 0xFF0B), ("y", 0xFF0B)
-    -- , ("c", 0xFF0C), ("z", 0xFF0C)
-    -- , ("f", 0xFF0F), ("g", 0xFF0F)
-    -- ]
+  test <- foldM (\s _ -> naive s) net' $ take 40 $ repeat ()
+  timeline "resource/data.json" test
+  writeTestBench (getPU "fram1" test :: FRAM Passive String Int)
+    [ ("a", 0xFF0A), ("x", 0xFF0A)
+    , ("b", 0xFF0B), ("y", 0xFF0B)
+    , ("c", 0xFF0C), ("z", 0xFF0C)
+    , ("f", 0xFF0F), ("g", 0xFF0F)
+    ]
+  evalTestBench (getPU "fram1" test :: FRAM Passive String Int)
   -- writeTestBench test
   --   [ ("a", 0x00B3)
   --   , ("b", 0x00B4)

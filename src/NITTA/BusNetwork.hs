@@ -189,7 +189,7 @@ subBind fb puTitle ni@BusNetwork{ niProcess=p@Process{..}, ..} = ni
 
 instance ( Typeable title, Ord title, Show title, Var v, Time t, Ix t
          ) => TestBench (BusNetwork title) (Network title) v t where
-  fileName _ = "hdl/fram_net_tb"
+  fileName _ = "hdl/fram_net"
 
   testControl bn@BusNetwork{ niProcess=Process{..}, ..} _values =
     concatMap (\t -> showSignals (signalsAt t) ++ " @(negedge clk)\n"
