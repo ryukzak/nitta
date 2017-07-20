@@ -41,8 +41,8 @@ module dpu_fram_tb();
         $dumpvars(0, dpu_fram_tb);
         addr <= 0; wr <= 0; oe <= 0; value_i <= 0;
 
-        for ( i = 0; i < 10; i = i + 1) begin
-           fram.bank[i] <= 8'hA0 + i;
+        for ( i = 0; i < 36; i = i + 1) begin
+           fram.bank[i] <= 8'hA00 + i;
         end  
 
         @(negedge rst);

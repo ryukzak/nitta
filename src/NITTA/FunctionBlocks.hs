@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE UndecidableInstances      #-}
 
@@ -27,6 +28,8 @@ class ( Show fb, Typeable fb, Eq fb, Ord fb, Vars fb var
   dependency :: fb -> [(var, var)]
   insideOut :: fb -> Bool
   insideOut _ = False
+  isCritical :: fb -> Bool
+  isCritical _ = False
 
 data FB var where
   FB :: ( FBClass fb var ) => fb -> FB var
@@ -34,8 +37,9 @@ data FB var where
 instance (Typeable var) => FBClass (FB var) var where
   dependency (FB fb) = dependency fb
   insideOut (FB fb) = insideOut fb
+  isCritical (FB fb) = isCritical fb
 
-instance Show (FB var) where show (FB x) = show x
+deriving instance Show (FB var) --  where show (FB x) = show x
 
 instance Vars (FB var) var where
   variables (FB fb) = variables fb
@@ -59,27 +63,28 @@ unbox (FB x) = fromDynamic $ toDyn x
 
 
 
-data FRAMInput addr v = FRAMInput addr [v] deriving (Show, Typeable, Eq, Ord)
-framInput (addr :: Int) vs = FB $ FRAMInput addr vs
+data FRAMInput v = FRAMInput Int [v] deriving (Show, Typeable, Eq, Ord)
+framInput addr vs = FB $ FRAMInput addr vs
 
-instance Vars (FRAMInput addr var) var where
+instance Vars (FRAMInput var) var where
   variables (FRAMInput _ vs) = vs
-instance (Show addr, Eq addr, Ord addr, Typeable addr
-         , Typeable var, Show var, Eq var, Ord var
-         ) => FBClass (FRAMInput addr var) var where
+instance ( Typeable var, Show var, Eq var, Ord var
+         ) => FBClass (FRAMInput var) var where
   dependency _ = []
+  isCritical _ = True
 
 
 
-data FRAMOutput addr v = FRAMOutput addr v deriving (Show, Typeable, Eq, Ord)
-framOutput (addr :: Int) v = FB $ FRAMOutput addr v
 
-instance Vars (FRAMOutput addr v) v where
+data FRAMOutput v = FRAMOutput Int v deriving (Show, Typeable, Eq, Ord)
+framOutput addr v = FB $ FRAMOutput addr v
+
+instance Vars (FRAMOutput v) v where
   variables (FRAMOutput _ v) = [v]
-instance (Show addr, Eq addr, Ord addr, Typeable addr
-         , Typeable var, Show var, Eq var, Ord var
-         ) => FBClass (FRAMOutput addr var) var where
+instance ( Typeable var, Show var, Eq var, Ord var
+         ) => FBClass (FRAMOutput var) var where
   dependency _ = []
+  isCritical _ = True
 
 
 

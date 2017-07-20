@@ -1,4 +1,4 @@
--- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -9,7 +9,10 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module NITTA.ProcessUnits.FRAM where
+module NITTA.ProcessUnits.FRAM
+  ( FRAM(..)
+  , Signals(..)
+  ) where
 
 import           Data.Array
 import           Data.Bits
@@ -19,6 +22,7 @@ import qualified Data.Graph            as G
 import           Data.List             (find, minimumBy, sortBy)
 import qualified Data.Map              as M
 import           Data.Maybe
+import           Debug.Trace
 import           NITTA.Base
 import           NITTA.FunctionBlocks
 import           NITTA.Types
@@ -147,7 +151,9 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
                   ]
       fromRemain = [ PUVar act $ constrain cell act
                    | mc@MicroCode { actions=act:_, bindTo=bindTo } <- frRemains
-                   , let Just (_addr, cell) = availableCell frMemory (isJust . bindTo mc)
+                   , let aCell = availableCell frMemory (isJust . bindTo mc)
+                   , isJust aCell
+                   , let Just (_addr, cell) = aCell
                    ]
       constrain Cell{..} (Pull _)
         | lastWrite == Just tick = TimeConstrain 1 (tick + 1) maxBound
@@ -160,7 +166,7 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
     = case availableCell frMemory (isJust . bindTo mc) of
         Just (addr, cell) ->
           let (key, p') = modifyProcess p0 $ bindFB2Cell addr (fb mc) tick0
-              Just cell' = bindTo mc{ compiler=key : (compiler mc) } cell
+              Just cell' = bindTo mc{ compiler=key : compiler mc } cell
               fr' = fr{ frRemains=filter (/= mc) frRemains
                       , frMemory=frMemory // [(addr, cell')]
                       , frProcess=p'
@@ -177,8 +183,9 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
                   Nothing -> cell'{ input=UsedOrBlocked }
                   Just mc''@MicroCode{ actions=Pull _ : _ } -> cell'{ input=Def mc'' }
                   Just mc''@MicroCode{ actions=Push _ : _ }
-                    | (output cell') == UsedOrBlocked ->
+                    | output cell' == UsedOrBlocked ->
                         cell'{ input=UsedOrBlocked, output=Def mc'' }
+                  _ -> error "FRAM internal error after input process."
             in fr{ frMemory=frMemory // [(addr, cell'')]
                  , frProcess=p'
                  }
@@ -204,7 +211,7 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
                    , frProcess=p'
                    }
         Cell{ output=Def mc@MicroCode{ actions=act : _ } } | act << aEffect ->
-            let (p', mc') = doAction addr p0 mc
+            let (p', _mc') = doAction addr p0 mc
                 -- Вот тут есть потенциальная проблема которую не совсем ясно как можно решить,
                 -- а именно, если output происходит в последний такт вычислительного цикла
                 -- а input с него происходит в первый такт вычислительного цикла.
@@ -292,14 +299,15 @@ cell2acts Cell{ output=Def MicroCode{actions=x:_ } } = [x]
 cell2acts _ = []
 
 
-availableCell frMemory pred =
-  case filter (\(addr, cell) -> isNothing (current cell) && pred cell) $ assocs frMemory of
+availableCell frMemory appropriate =
+  case filter (\(_addr, cell) -> appropriate cell) $ assocs frMemory of
     []    -> Nothing
-    cells -> Just $ minimumBy (\a b -> (load a) `compare` (load b)) cells
+    cells -> Just $ minimumBy (\a b -> load a `compare` load b) cells
   where
     load (_addr, Cell{..}) = sum [ 2 * length queue
                                  , if input == Undef then -1 else 0
                                  , if output == Undef then -1 else 0
+                                 , if isNothing current then -1 else 1
                                  ]
 
 
@@ -325,9 +333,8 @@ instance ( Var v, Time t ) => TestBench FRAM Passive v t where
                          ++ "; addr[0] <= 'b" ++ a0 ++ ";"
                     ) . map show
 
-  testAsserts fram@FRAM{ frProcess=Process{..}, ..} values =
+  testAsserts FRAM{ frProcess=Process{..}, ..} values =
     concatMap (\t -> "@(posedge clk); #1; " ++ assert t ++ "\n"
-                -- ++ "$display(\"%h  %h  %h\", fram.bank[0], fram.bank[1], fram.bank[2]);\n"
               ) [ 0 .. tick + 1 ]
     where
       assert time = case infoAt time steps of

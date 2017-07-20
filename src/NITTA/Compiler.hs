@@ -84,9 +84,13 @@ data BindPriority
   = Exclusive
   | Restless Int
   | Input Int
+  -- Must be binded before a other, because otherwise can cause runtime error.
+  | Critical
   deriving (Show, Eq)
 
 instance Ord BindPriority where
+  Critical `compare` _ = GT
+  _ `compare` Critical = LT
   (Input    a) `compare` (Input    b) = a `compare` b -- чем больше, тем лучше
   (Input    _) `compare`  _           = GT
   (Restless _) `compare` (Input    _) = LT
@@ -117,6 +121,8 @@ autoBind net@BusNetwork{..} =
                    ) (M.fromList []) bVars
 
     prioritize bv@BindVariant{..}
+      -- | isCritical fb = bv{ priority=Just Critical}
+
       | dependency fb == []
       , pulls <- filter isPull $ variantsAfterBind bv
       , length pulls > 0

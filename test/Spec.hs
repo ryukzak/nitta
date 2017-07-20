@@ -1,51 +1,167 @@
-{-# LANGUAGE FlexibleContexts #-}
-import           Base
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RecordWildCards   #-}
+import           Control.Monad
+import           Control.Monad.Trans.Class
+import           Control.Monad.Trans.State
 import           Data.Default
-import           Data.Map     (fromList)
-import           FRAM
+import           Data.List                 (elem, notElem, nub, union)
+import           Data.Maybe                (catMaybes)
+import           Data.Set                  (fromList)
+import           Data.Typeable
+import           Debug.Trace
+import           NITTA.Base
+import           NITTA.FunctionBlocks
+import           NITTA.ProcessUnits.FRAM
+import           NITTA.Types
+import           System.Random             (next)
 import           Test.Hspec
-
-main = hspec $ do
-  return ()
-  -- let busy = def { actions=MC [Pull [1]] def }
-  -- let with_queue = def { actions=[MC [Pull [2]] def] }
-  -- let with_queue' = def { actions=[MC [Pull [2] def], MC [Push 2] def] }
-  -- let only_final = def { final=MC [Pull [3]] def }
-  -- let free = def
-  -- describe "Testing freeCell" $ do
-    -- it "find free cell in memory" $ do
-      -- (freeCell $ fromList [ (0, busy), (1, free)]) `shouldBe` Just (1, free)
-    -- it "find mostly unloaded free cell in memory" $ do
-      -- (freeCell $ fromList [ (0, with_queue), (1, only_final), (3, free)]) `shouldBe` Just (3, free)
-    -- it "can't find free cell in memory" $ do
-      -- (freeCell $ fromList [ (0, busy) ]) `shouldBe` Nothing
-
-  -- describe "FRAM action variants" $ do
-    -- it "no variants" $ do
-      -- variants def `shouldBe` ([] :: [(Interaction Int, Times Int)])
-    -- it "only one cell" $ do
-      -- let vars cells = map fst $ ( variants def { memoryState=fromList cells } :: [(Interaction Int, Times Int)] )
-      -- vars [ (0, busy)                                   ] `shouldBe` [ Pull [1]                     ]
-      -- vars [            (1, with_queue)                  ] `shouldBe` [ Pull [2]                     ]
-      -- vars [            (1, with_queue')                 ] `shouldBe` [           Pull [2], Push 2   ]
-      -- vars [                             (2, only_final) ] `shouldBe` [                     Pull [3] ]
-      -- vars [            (1, with_queue), (2, only_final) ] `shouldBe` [           Pull [2], Pull [3] ]
-      -- vars [ (0, busy), (1, with_queue), (2, only_final) ] `shouldBe` [ Pull [1], Pull [2], Pull [3] ]
-    -- it "only remains" $ do
-      -- let vars mcs = map fst $ ( variants def { remains=mcs } :: [(Interaction Int, Times Int)] )
-      -- vars [ MC [Pull [4], Push 5]                ] `shouldBe` [Pull [4]          ]
-      -- vars [ MC [Pull [4], Push 5], MC [Pull [6]] ] `shouldBe` [Pull [4], Pull [6]]
-    -- it "cell and remain" $ do
-      -- let vars cells remains = map fst $ ( variants def
-                                           -- { memoryState=fromList cells
-                                           -- , remains=remains
-                                           -- } :: [(Interaction Int, Times Int)] )
-      -- vars [ (0, busy) ] [ MC [Pull [4], Push 5] ] `shouldBe` [ Pull [1], Pull [4] ]
+import           Test.QuickCheck           hiding (listOf, vectorOf)
+import           Test.QuickCheck.Arbitrary
+import           Test.QuickCheck.Gen       hiding (listOf, vectorOf)
 
 
 
-    -- it "one of the cells have next" $ do
-      -- variants def `shouldBe` ([] :: [Action String])
-    -- it "one of the cells have last" $ do
-      -- variants def `shouldBe` ([] :: [Action String])
 
+
+listOf gen = do
+  size <- lift $ sized pure -- getSize
+  n <- lift $ choose (0, size)
+  vectorOf n gen
+vectorOf k gen = sequence [ gen | _ <- [1..k] ]
+oneOf gens = do
+  i <- lift $ choose (0, length gens - 1)
+  gens !! i
+
+
+
+data AlgMaker = AlgMaker
+  { vars       :: [String]
+  , inputAddr  :: [Int]
+  , outputAddr :: [Int]
+  , loopNumber :: Int
+  } deriving(Show)
+
+instance Default AlgMaker where
+  def = AlgMaker
+    { vars=[[a, b] | a <- ['a' .. 'z'], b <- ['a' .. 'z']]
+    , inputAddr=[]
+    , outputAddr=[]
+    , loopNumber=0
+    }
+
+variable = do
+  st@AlgMaker{ vars=v : vs} <- get
+  put st{ vars=vs }
+  return v
+
+
+useForInput addr = modify $ \st@AlgMaker{..} -> st{ inputAddr=addr : inputAddr }
+useForOutput addr = modify $ \st@AlgMaker{..} -> st{ outputAddr=addr : outputAddr }
+
+framInputGen = do
+  AlgMaker{..} <- get
+  addr <- lift $ suchThat (choose (0, 35)) (`notElem` inputAddr)
+  useForInput addr
+  v <- variable
+  return $ framInput addr [v]
+
+framOutputGen = do
+  AlgMaker{..} <- get
+  addr <- lift $ suchThat (choose (0, 35)) (`notElem` outputAddr)
+  useForOutput addr
+  v <- variable
+  return $ framOutput addr v
+
+regGen = do
+  a <- variable
+  b <- variable
+  return $ reg a [b]
+
+loopGen = do
+  a <- variable
+  b <- variable
+  modify $ \st@AlgMaker{..} -> st{ loopNumber=loopNumber + 1 }
+  return $ loop a [b]
+
+
+
+
+
+
+
+
+genAlg gen = evalStateT gen def
+
+
+instance {-# OVERLAPPING #-} Arbitrary [FB String] where
+  arbitrary = genAlg $ framFB
+
+
+framFB = do
+    size <- lift $ sized pure -- getSize
+    n <- lift $ choose (0, size)
+    sequence [gen | _ <- [0..n]]
+      where
+        gen = do
+          AlgMaker{..} <- get
+          let usedAddr = nub (inputAddr `union` outputAddr)
+          if (length usedAddr) + loopNumber < 36
+            then oneOf [ framInputGen, framOutputGen, regGen, loopGen ]
+            else oneOf [ regGen ]
+
+
+
+
+
+
+
+
+-- listOf gen = do
+--   size <- lift $ sized pure -- getSize
+--   n <- lift $ choose (0, size)
+--   vectorOf n gen
+-- vectorOf k gen = sequence [ gen | _ <- [1..k] ]
+
+
+
+
+
+
+
+  -- AlgMaker{..} <- get
+
+  -- let usedAddr = nub (inputAddr `union` outputAddr)
+  -- if (length usedAddr) - loopNumber < 36
+  --   then
+  --   -- modify $ \st@AlgMaker{..} -> st{ loopNumber=loopNumber + 1 }
+  -- else
+
+
+prop_passivePu alg =
+  let vars = concatMap variables alg
+      pu = naive (def :: FRAM Passive String Int) alg
+      steps' = steps $ process $ pu
+      vars' = concatMap variables $ catMaybes
+              $ map (\Step{..} -> (cast info :: Maybe (Effect String))) steps'
+      alg' = catMaybes $ map (\Step{..} -> (cast info :: Maybe (FB String))) steps'
+  in and [ fromList vars == fromList vars'
+         , length (nub vars') == length vars'
+         , length (nub alg') == length alg'
+         , fromList alg == fromList alg'
+         ]
+
+naive pu alg =
+  let Just bindedPu = foldl (\(Just s) n -> bind s n) (Just pu) alg
+  in naive' bindedPu
+  where
+    naive' pu
+      | PUVar{ vAt=TimeConstrain{..}, .. }:_ <- variants pu =
+          naive' $ step pu (PUAct vEffect $ Event tcFrom tcDuration)
+      | otherwise = pu
+
+
+
+
+
+main = verboseCheck prop_passivePu

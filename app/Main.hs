@@ -21,6 +21,7 @@ import           Data.Typeable
 import           NITTA.Base
 import           NITTA.BusNetwork
 import           NITTA.Compiler
+import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks    as FB
 import           NITTA.ProcessUnits.FRAM
 import           NITTA.Timeline
@@ -89,6 +90,20 @@ eval pu fbs =
   in pu'
 doSteps pu acts = foldl (\s n -> step s n) pu acts
 
+
+alg0 = [FB (Reg "aa" ["ab"]),FB (FRAMOutput 9 "ac"),FB (Loop "ad" ["ae"]),FB (Reg "af" ["ag"]),FB (Reg "ah" ["ai"]),FB (FRAMInput 26 ["aj"]),FB (Loop "ak" ["al"]),FB (FRAMOutput 16 "am"),FB (Loop "an" ["ao"]),FB (FRAMOutput 18 "ap"),FB (FRAMInput 3 ["aq"]),FB (FRAMInput 14 ["ar"]),FB (Reg "as" ["at"]),FB (FRAMOutput 1 "au"),FB (Reg "av" ["aw"]),FB (Reg "ax" ["ay"]),FB (FRAMInput 33 ["az"]),FB (Loop "ba" ["bb"]),FB (Reg "bc" ["bd"]),FB (FRAMInput 30 ["be"]),FB (FRAMOutput 35 "bf"),FB (Reg "bg" ["bh"]),FB (FRAMOutput 4 "bi"),FB (Loop "bj" ["bk"]),FB (Loop "bl" ["bm"]),FB (FRAMInput 2 ["bn"]),FB (Reg "bo" ["bp"]),FB (Loop "bq" ["br"]),FB (FRAMInput 7 ["bs"]),FB (Loop "bt" ["bu"]),FB (Loop "bv" ["bw"]),FB (FRAMInput 13 ["bx"]),FB (FRAMOutput 34 "by"),FB (FRAMOutput 25 "bz"),FB (Reg "ca" ["cb"]),FB (Reg "cc" ["cd"]),FB (Loop "ce" ["cf"]),FB (FRAMInput 12 ["cg"])]
+
+
+naive0 pu alg =
+  let Just bindedPu = foldl (\(Just s) n -> bind s n) (Just pu) alg
+  in naive' bindedPu
+  where
+    naive' pu
+      | PUVar{ vAt=TimeConstrain{..}, .. }:_ <- variants pu =
+          naive' $ step pu (PUAct vEffect $ Event tcFrom tcDuration)
+      | otherwise = pu
+
+
 main = do
   -- let fram0 = eval fram' [ FB.framOutput 0 "a" -- save 0main
   --                        , FB.framInput 0 ["a'"] -- load 0
@@ -106,26 +121,30 @@ main = do
   -- mapM_ (putStrLn . show) $ variants fram1
   -- writeTestBench fram1
 
-  test <- foldM (\s _ -> naive s) net' $ take 40 $ repeat ()
-  timeline "resource/data.json" test
+  let fram = naive0 (def:: FRAM Passive String Int) alg0
+  timeline "resource/data.json" fram
+
+
+  -- test <- foldM (\s _ -> naive s) net' $ take 40 $ repeat ()
+  -- timeline "resource/data.json" test
   -- writeTestBench (getPU "fram1" test :: FRAM Passive String Int)
     -- [ ("a", 0xFF0A), ("x", 0xFF0A)
     -- , ("b", 0xFF0B), ("y", 0xFF0B)
     -- , ("c", 0xFF0C), ("z", 0xFF0C)
     -- , ("f", 0xFF0F), ("g", 0xFF0F)
     -- ]
-  writeTestBench test
-    [ ("a", 0x00B3)
-    , ("b", 0x00B4)
-    , ("c", 0x00B4)
+  -- writeTestBench test
+  --   [ ("a", 0x00B3)
+  --   , ("b", 0x00B4)
+  --   , ("c", 0x00B4)
 
-    , ("x", 0x00B3)
-    , ("y", 0x00B4)
-    , ("z", 0x00B4)
+  --   , ("x", 0x00B3)
+  --   , ("y", 0x00B4)
+  --   , ("z", 0x00B4)
 
-    , ("f", 0x00B0)
-    , ("g", 0x00B0)
-    ]
+  --   , ("f", 0x00B0)
+  --   , ("g", 0x00B0)
+  --   ]
 
 
 getPU puTitle net = case niPus net ! puTitle of
