@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections        #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
@@ -12,6 +13,7 @@ import           Control.Monad
 import           Data.Default
 import           Data.List                (intersect, notElem, nub, union)
 import           Data.Typeable
+import           NITTA.Base
 import           NITTA.FunctionBlocks
 import           NITTA.FunctionBlocksSpec ()
 import           NITTA.ProcessUnits.FRAM
@@ -20,6 +22,7 @@ import           NITTA.Types
 import           Test.QuickCheck
 
 type FramAlg = Alg FRAM String Int
+type FramProcess = (Alg FRAM String Int, FRAM Passive String Int)
 
 data ST = ST { acc           :: [FB String]
              , forInput      :: [Int]
@@ -29,7 +32,15 @@ data ST = ST { acc           :: [FB String]
              , values        :: [(String, Int)]
              } deriving (Show)
 
-instance {-# OVERLAPPING #-} Arbitrary FramAlg where
+
+instance {-# OVERLAPPING #-} Arbitrary FramProcess where
+  arbitrary = do
+    alg <- arbitrary
+    pu <- naiveGen def (algFB alg)
+    return (alg, pu)
+
+
+instance Arbitrary FramAlg where
   arbitrary = (\ST{..} -> Alg acc values def) <$> suchThat (do
       size <- sized pure -- getSize
       n <- choose (0, size)

@@ -21,7 +21,7 @@ import           NITTA.Timeline
 import           NITTA.Types
 import           Test.QuickCheck
 
-
+-- alg = [FB (Loop "tos" ["mzz"])]
 main = do
   -- let vars = concatMap variables alg
   -- let pu = bindAllAndNaiveSteps (def :: FRAM Passive String Int) alg
@@ -38,9 +38,14 @@ main = do
   -- timeline "resource/data.json" pu
   -- testBench pu [("wue",88),("rgc",254),("pfg",254)]
 
-  quickCheck (prop_completeWorkPassivePu :: FramAlg -> Bool)
-  quickCheck (prop_simulatePassivePu :: FramAlg -> Property)
+  quickCheck (prop_formalCompletnessNaive :: FramAlg -> Bool)
+  quickCheck (prop_simulationNaive :: FramAlg -> Property)
+  verboseCheck (prop_formalCompletness :: FramProcess -> Bool)
+  -- quickCheck (prop_simulation :: FramProcess -> Property)
+
   -- quickCheckWith stdArgs { maxSuccess=10000
                          -- } (prop_completeWorkPassivePu :: FramAlg -> Bool)
   -- quickCheckWith stdArgs { maxSuccess=10000
                            -- } (prop_simulatePassivePu :: FramAlg -> Property)
+
+

@@ -332,7 +332,7 @@ availableCell FRAM{..} mc@MicroCode{ fb=FB fb, ..} =
   case filter (\(_addr, cell@Cell{..}) ->
                  ( frAllowBlockingInput
                    || isNothing (cast fb :: Maybe (Reg String)) -- fixme
-                   || input /= Undef
+                   || (input == UsedOrBlocked)
                  ) && isJust (bindTo mc cell)
               ) $
        -- map (\x@(_addr, cell@Cell{..}) ->
@@ -345,6 +345,7 @@ availableCell FRAM{..} mc@MicroCode{ fb=FB fb, ..} =
     []    -> Nothing
     cells -> Just $ minimumBy (\a b -> load a `compare` load b) cells
   where
+    usedInputs = not $ null $ filter (\Cell{..} -> input == UsedOrBlocked) $ elems frMemory
     load (_addr, Cell{..}) = sum [ 2 * length queue
                                  , if input == Undef then -1 else 0
                                  , if output == Undef then -1 else 0

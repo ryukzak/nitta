@@ -33,11 +33,13 @@ bindAllAndNaiveSteps pu0 alg =
   in naive' bindedPu
   where
     naive' pu
-      | PUVar{ vAt=TimeConstrain{..}, .. }:_ <- variants pu =
+      | var:_ <- variants pu =
           naive'
           -- $ trace (concatMap ((++ "\n") . show) $ elems $ frMemory pu)
-          $ step pu (PUAct vEffect $ Event tcFrom tcDuration)
+          $ step pu $ puVar2puAct var
       | otherwise = pu
+
+puVar2puAct PUVar{ vAt=TimeConstrain{..}, .. } = PUAct vEffect $ Event tcFrom tcDuration
 
 
 
