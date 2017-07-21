@@ -23,7 +23,7 @@ instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 
 
 
-class ( Show fb, Typeable fb, Eq fb, Ord fb, Vars fb var
+class ( Show fb, Eq fb, Ord fb, Vars fb var
       ) => FBClass fb var | fb -> var where
   dependency :: fb -> [(var, var)]
   insideOut :: fb -> Bool
@@ -31,10 +31,10 @@ class ( Show fb, Typeable fb, Eq fb, Ord fb, Vars fb var
   isCritical :: fb -> Bool
   isCritical _ = False
 
-data FB var where
-  FB :: ( FBClass fb var, Typeable fb ) => fb -> FB var
+data FB v where
+  FB :: ( FBClass fb v, Typeable fb, Typeable v ) => fb -> FB v
 
-instance (Typeable var) => FBClass (FB var) var where
+instance (Typeable v) => FBClass (FB v) v where
   dependency (FB fb) = dependency fb
   insideOut (FB fb) = insideOut fb
   isCritical (FB fb) = isCritical fb

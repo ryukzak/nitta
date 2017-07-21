@@ -69,7 +69,8 @@ alg = [ FB.framInput 3 [ "a" ]
       , FB.reg "f" ["g"]
       ]
 
-net' = eval (net :: BusNetwork String (Network String) String Int) alg
+net' = let Just pu' = bindAll (net :: BusNetwork String (Network String) String Int) alg
+       in pu'
 
 bindedNet =
   let ni1 = foldl (\s (fb, dpu) -> subBind fb dpu s) net' [ (alg !! 0, "fram1")
@@ -84,24 +85,6 @@ bindedNet =
   in ni1
 
 ---------------------------------------------------------------------------------
-
-eval pu fbs =
-  let Just pu' = foldl (\(Just s) n -> bind s n) (Just pu) fbs
-  in pu'
-doSteps pu acts = foldl (\s n -> step s n) pu acts
-
-
-
-
-
-naive0 pu alg =
-  let Just bindedPu = foldl (\(Just s) n -> bind s n) (Just pu) alg
-  in naive' bindedPu
-  where
-    naive' pu
-      | PUVar{ vAt=TimeConstrain{..}, .. }:_ <- variants pu =
-          naive' $ step pu (PUAct vEffect $ Event tcFrom tcDuration)
-      | otherwise = pu
 
 
 main = do

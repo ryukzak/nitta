@@ -66,6 +66,9 @@ test-suite nitta-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
+  other-modules:       NITTA.ProcessUnits.FRAMSpec
+                     , NITTA.FunctionBlocksSpec
+                     , NITTA.ProcessUnitsSpec
   build-depends:       base
                      , nitta
                      , hspec

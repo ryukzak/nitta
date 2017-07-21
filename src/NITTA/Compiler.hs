@@ -23,12 +23,19 @@ import           NITTA.FunctionBlocks
 import           NITTA.Types
 
 
--- naive net = do
---   if null $ practicalVariants $ variants net
---     then if null $ bindVariants net
---          then return net
---          else return $ autoBind net
---     else return $ naiveStep net
+bindAll pu alg = foldl (\(Just s) n -> bind s n) (Just pu) alg
+manualSteps pu acts = foldl (\pu' act -> step pu' act) pu acts
+
+bindAllAndNaiveSteps pu0 alg =
+  let Just bindedPu = bindAll pu0 alg
+  in naive' bindedPu
+  where
+    naive' pu
+      | PUVar{ vAt=TimeConstrain{..}, .. }:_ <- variants pu =
+          naive' $ step pu (PUAct vEffect $ Event tcFrom tcDuration)
+      | otherwise = pu
+
+
 
 threshhold = 2
 naive net = do

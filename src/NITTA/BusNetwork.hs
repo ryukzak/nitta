@@ -67,7 +67,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
         mapM_ (\(v, (title, _)) -> add (Event transportStartAt transportDuration)
                 (Transport v aPullFrom title :: Instruction (BusNetwork title) v t))
                 $ M.assocs push'
-        add (Event transportStartAt (transportDuration - 1)) $ Pull pullVars
+        _ <- add (Event transportStartAt (transportDuration - 1)) $ Pull pullVars
         setTime $ transportStartAt + transportDuration
     , niForwardedVariables=pullVars ++ niForwardedVariables
     }
