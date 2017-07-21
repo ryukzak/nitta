@@ -13,13 +13,15 @@
 module NITTA.Compiler where
 
 import           Control.Monad
-import           Data.List            (find, intersect, partition, sortBy)
-import qualified Data.Map             as M
-import           Data.Maybe           (isJust)
+import           Data.Array              (elems)
+import           Data.List               (find, intersect, partition, sortBy)
+import qualified Data.Map                as M
+import           Data.Maybe              (isJust)
 import           Debug.Trace
 import           NITTA.Base
 import           NITTA.BusNetwork
 import           NITTA.FunctionBlocks
+import           NITTA.ProcessUnits.FRAM
 import           NITTA.Types
 
 
@@ -32,7 +34,9 @@ bindAllAndNaiveSteps pu0 alg =
   where
     naive' pu
       | PUVar{ vAt=TimeConstrain{..}, .. }:_ <- variants pu =
-          naive' $ step pu (PUAct vEffect $ Event tcFrom tcDuration)
+          naive'
+          -- $ trace (concatMap ((++ "\n") . show) $ elems $ frMemory pu)
+          $ step pu (PUAct vEffect $ Event tcFrom tcDuration)
       | otherwise = pu
 
 

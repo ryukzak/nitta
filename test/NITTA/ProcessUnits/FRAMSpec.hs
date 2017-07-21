@@ -30,10 +30,11 @@ data ST = ST { acc           :: [FB String]
              } deriving (Show)
 
 instance {-# OVERLAPPING #-} Arbitrary FramAlg where
-  arbitrary = (\ST{..} -> Alg acc values def) <$> do
+  arbitrary = (\ST{..} -> Alg acc values def) <$> suchThat (do
       size <- sized pure -- getSize
       n <- choose (0, size)
-      foldM maker (ST [] [] [] 0 [] []) [ 0..n ]
+      foldM maker (ST [] [] [] 0 [] []) [ 0..n ])
+              (\ST{..} -> (length forInput + numberOfLoops) > 0)
     where
       maker st0@ST{..} _ = nextState st0 <$> do
         fb <- suchThat (oneof [ FB <$> (arbitrary :: Gen (FRAMInput String))

@@ -62,7 +62,7 @@ data Cell v t = Cell
 
 
 data MicroCode v t where
-  MicroCode :: --(FBClass fb v)
+  MicroCode :: --(FBClass fb v) =>
     { compiler, effect, instruction :: [ProcessUid]
     , workBegin                     :: Maybe t
     , fb                            :: FB v
@@ -125,7 +125,7 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
 
   bind fr@FRAM{ frProcess=p@Process{..}, .. } fb
     | Just (Reg a b) <- unbox fb =
-        let bindToCell _ Cell{ input=UsedOrBlocked, output=UsedOrBlocked} = Nothing
+        let bindToCell _ Cell{ output=UsedOrBlocked } = Nothing
             bindToCell mc cell@Cell{ queue=q } = Just $ cell{ queue=mc : q }
             ( mc', fr' ) = bind' $ microcode fb [ Push a, Pull b ] bindToCell
         in Just fr'{ frRemains=mc' : frRemains }
@@ -163,8 +163,8 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
   variants fr@FRAM{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
     where
       fromCells = [ PUVar v $ constrain cell v
-                  | (_addr, cell) <- assocs frMemory
-                  , v <- cell2acts cell
+                  | (_addr, cell@Cell{..}) <- assocs frMemory
+                  , v <- cell2acts (frAllowBlockingInput || null fromRemain) cell
                   ]
       fromRemain = [ PUVar act $ constrain cell act
                    | mc@MicroCode { actions=act:_ } <- frRemains
@@ -193,7 +193,8 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
              step fr' act0
         Nothing -> error $ "Can't find available cell for: " ++ show fb ++ "!"
 
-    | Just (addr, cell) <- find (any (<< aEffect) . cell2acts . snd) $ assocs frMemory
+    --                                                        ____ - не есть гуд
+    | Just (addr, cell) <- find (any (<< aEffect) . cell2acts True . snd) $ assocs frMemory
     = case cell of
         Cell{ input=Def mc@MicroCode{ actions=act : _ } } | act << aEffect ->
             let (p', mc') = doAction addr p0 mc
@@ -320,11 +321,11 @@ bindFB2Cell addr fb t = add (Event t 0) ("Bind " ++ show fb ++ " to cell " ++ sh
 bindFB fb t = add (Event t 0) ("Bind " ++ show fb)
 
 
-cell2acts Cell{ input=Def MicroCode{ actions=x:_ } } = [x]
-cell2acts Cell{ current=Just MicroCode{ actions=x:_ } } = [x]
-cell2acts Cell{ queue=mcs@(_:_) } = map (head . actions) mcs
-cell2acts Cell{ output=Def MicroCode{actions=x:_ } } = [x]
-cell2acts _ = []
+cell2acts _allowOutput Cell{ input=Def MicroCode{ actions=x:_ } }    = [x]
+cell2acts _allowOutput Cell{ current=Just MicroCode{ actions=x:_ } } = [x]
+cell2acts _allowOutput Cell{ queue=mcs@(_:_) }                       = map (head . actions) mcs
+cell2acts True         Cell{ output=Def MicroCode{actions=x:_ } }    = [x]
+cell2acts _ _ = []
 
 
 availableCell FRAM{..} mc@MicroCode{ fb=FB fb, ..} =
@@ -333,7 +334,14 @@ availableCell FRAM{..} mc@MicroCode{ fb=FB fb, ..} =
                    || isNothing (cast fb :: Maybe (Reg String)) -- fixme
                    || input /= Undef
                  ) && isJust (bindTo mc cell)
-              ) $ assocs frMemory of
+              ) $
+       -- map (\x@(_addr, cell@Cell{..}) ->
+       --        trace ( show frAllowBlockingInput ++ " | "
+       --                ++ show (isNothing (cast fb :: Maybe (Reg String))) ++ " | "
+       --                ++ show (input /= Undef) ++ " | "
+       --                ++ show (isJust (bindTo mc cell)) ++ " | " ++ show fb ++ " | " ++ show cell
+       --              ) x) $
+       assocs frMemory of
     []    -> Nothing
     cells -> Just $ minimumBy (\a b -> load a `compare` load b) cells
   where
@@ -401,4 +409,5 @@ instance ( Var v, Time t ) => TestBench FRAM Passive v t where
       checkBus v = "if ( !(value_o == " ++ show v ++ ") ) "
         ++ "$display(\"FAIL Bus assertion failed! %h %h\", value_o, " ++ show v ++ ");"
       checkBank addr v = "if ( !(fram.bank[" ++ show addr ++ "] == " ++ show v ++ ") ) "
-        ++ "$display(\"FAIL Bank assertion failed! %h %h\", value_o, " ++ show v ++ ");\n"
+        ++ "$display(\"FAIL Bank[%d] assertion failed! %h %h\", "
+        ++ show addr ++ ", value_o, " ++ show v ++ ");\n"
