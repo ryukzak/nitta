@@ -1,3 +1,4 @@
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -9,8 +10,8 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module NITTA.ProcessUnits.FRAM
-  ( FRAM(..)
+module NITTA.ProcessUnits.Fram
+  ( Fram(..)
   , Signals(..)
   , framSize
   ) where
@@ -24,27 +25,31 @@ import           Data.List             (find, intersect, minimumBy, nub, sortBy)
 import qualified Data.Map              as M
 import           Data.Maybe
 import           Data.Typeable
-import           Debug.Trace
-import           NITTA.Base
 import           NITTA.FunctionBlocks
+import           NITTA.TestBench
 import           NITTA.Types
+import           NITTA.Utils
 import           Prelude               hiding (last)
 
+-- import           Debug.Trace
 
 
 
 
-data FRAM ty v t = FRAM
+data Fram ty v t = Fram
   { frMemory             :: Array Int (Cell v t)
   , frRemains            :: [MicroCode v t]
   , frProcess            :: Process v t
   , frAllowBlockingInput :: Bool
   } deriving (Show)
 
--- remainLoops :: Typeable v => FRAM ty v t -> [MicroCode v t]
-remainLoops FRAM{..} =
-  -- FIXME type cast
-  filter (\MicroCode{ fb=FB f } -> isJust $ (cast f :: Maybe (Loop String))) frRemains
+remainLoops Fram{..} = filter (isJust . getLoop) frRemains
+  where
+    getLoop :: Typeable v => MicroCode v t -> Maybe (Loop v)
+    getLoop MicroCode{ fb=FB fb } = cast fb
+
+
+
 
 data IOState v t = Undef
                  | Def (MicroCode v t)
@@ -73,8 +78,8 @@ data MicroCode v t where
 microcode = MicroCode [] [] [] Nothing
 
 
-instance ( Var v, Time t ) => Default (FRAM ty v t) where
-  def = FRAM { frMemory=listArray (0, framSize - 1) $ repeat def
+instance ( Var v, Time t ) => Default (Fram ty v t) where
+  def = Fram { frMemory=listArray (0, framSize - 1) $ repeat def
              , frRemains=[]
              , frProcess=def
              , frAllowBlockingInput=False
@@ -94,19 +99,19 @@ instance ( Eq v ) => Eq (MicroCode v t) where
 
 framSize = 16 :: Int
 
-type I v t = Instruction FRAM v t
+type I v t = Instruction Fram v t
 
-instance ( Var v, Time t ) => PUClass FRAM Passive v t where
+instance ( Var v, Time t ) => PUClass Fram Passive v t where
 
-  data Signals FRAM = OE | WR | ADDR Int
+  data Signals Fram = OE | WR | ADDR Int
 
-  data Instruction FRAM v t
+  data Instruction Fram v t
     = Nop
     | Load Int
     | Save Int
     deriving (Show)
 
-  signal' FRAM{..} sig time =
+  signal' Fram{..} sig time =
     let instruction = case infoAt time $ steps frProcess of
           ([] :: [I v t]) -> Nop
           [i]             -> i
@@ -123,12 +128,12 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
       value (Save    _)  OE      = B False
       value (Save    _)  WR      = B True
 
-  bind fr@FRAM{ frProcess=p@Process{..}, .. } fb
+  bind fr@Fram{ frProcess=p@Process{..}, .. } fb
     | Just (Reg a b) <- unbox fb =
         let bindToCell _ Cell{ output=UsedOrBlocked } = Nothing
             bindToCell mc cell@Cell{ queue=q } = Just $ cell{ queue=mc : q }
             ( mc', fr' ) = bind' $ microcode fb [ Push a, Pull b ] bindToCell
-        in Just fr'{ frRemains=mc' : frRemains }
+        in Right fr'{ frRemains=mc' : frRemains }
     | Just (Loop a b) <- unbox fb =
         let bindToCell mc cell@Cell{ input=Undef, output=Undef }
               | ioUses < framSize = Just cell{ input=Def mc
@@ -136,20 +141,20 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
                                              }
             bindToCell _ _        = Nothing
             ( mc', fr' ) = bind' $ microcode fb [ Pull b, Push a ] bindToCell
-        in Just fr'{ frRemains=mc' : frRemains }
-    | Just (FRAMInput addr v) <- unbox fb =
+        in Right fr'{ frRemains=mc' : frRemains }
+    | Just (FramInput addr v) <- unbox fb =
         let bindToCell mc cell@Cell{ input=Undef } = Just cell{ input=Def mc }
             bindToCell _ _                         = Nothing
             ( mc', fr' ) = bind' $ microcode fb [ Pull v ] bindToCell
             Just cell' = bindToCell mc' $ frMemory ! addr
-        in Just fr'{ frMemory=frMemory // [(addr, cell')] }
-    | Just (FRAMOutput addr v) <- unbox fb =
+        in Right fr'{ frMemory=frMemory // [(addr, cell')] }
+    | Just (FramOutput addr v) <- unbox fb =
         let bindToCell mc cell@Cell{ output=Undef } = Just cell{ output=Def mc }
             bindToCell _ _                          = Nothing
             ( mc', fr' ) = bind' $ microcode fb [ Push v ] bindToCell
             Just cell' = bindToCell mc' $ frMemory ! addr
-        in Just fr'{ frMemory=frMemory // [(addr, cell')] }
-    | otherwise = Nothing
+        in Right fr'{ frMemory=frMemory // [(addr, cell')] }
+    | otherwise = Left "no"
       where
         forInput = map fst $ filter ((/= Undef) . input . snd) $ assocs frMemory
         forOutput = map fst $ filter ((/= Undef) . output . snd) $ assocs frMemory
@@ -160,7 +165,7 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
               mc' = mc{ compiler=key : compiler mc }
           in ( mc', fr{ frProcess=p' } )
 
-  variants fr@FRAM{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
+  variants fr@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
     where
       fromCells = [ PUVar v $ constrain cell v
                   | (_addr, cell@Cell{..}) <- assocs frMemory
@@ -177,7 +182,7 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
         | otherwise              = TimeConstrain 1 tick maxBound
       constrain _cell (Push _) = TimeConstrain 1 tick maxBound
 
-  step fr@FRAM{ frProcess=p0@Process{ tick=tick0 }, .. } act0@PUAct{ aAt=at@Event{..}, .. }
+  step fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@PUAct{ aAt=at@Event{..}, .. }
     | tick0 > eStart = error "You can't start work yesterday:)"
 
     | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< aEffect) . head . actions) frRemains
@@ -205,7 +210,7 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
                   Just mc''@MicroCode{ actions=Push _ : _ }
                     | output cell' == UsedOrBlocked ->
                         cell'{ input=UsedOrBlocked, output=Def mc'' }
-                  _ -> error "FRAM internal error after input process."
+                  _ -> error "Fram internal error after input process."
             in fr{ frMemory=frMemory // [(addr, cell'')]
                  , frProcess=p'
                  }
@@ -241,7 +246,7 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
             in fr{ frMemory=frMemory // [(addr, cell')]
                  , frProcess=p'
                  }
-        _ -> error "Internal FRAM error, step"
+        _ -> error "Internal Fram error, step"
 
     | otherwise = error $ "Can't found selected action: " ++ show act0 ++ show (variants fr)
     where
@@ -263,7 +268,7 @@ instance ( Var v, Time t ) => PUClass FRAM Passive v t where
            then (finish p' mc', Nothing)
            else (p', Just mc')
 
-      mkWork _addr _p MicroCode{ actions=[] } = error "FRAM internal error, mkWork"
+      mkWork _addr _p MicroCode{ actions=[] } = error "Fram internal error, mkWork"
       mkWork addr p mc@MicroCode{ actions=x:xs, ..} =
         let ((ef, instrs), p') = modifyProcess p $ do
               e <- add at aEffect
@@ -328,10 +333,10 @@ cell2acts True         Cell{ output=Def MicroCode{actions=x:_ } }    = [x]
 cell2acts _ _ = []
 
 
-availableCell FRAM{..} mc@MicroCode{ fb=FB fb, ..} =
+availableCell Fram{..} mc@MicroCode{..} =
   case filter (\(_addr, cell@Cell{..}) ->
                  ( frAllowBlockingInput
-                   || isNothing (cast fb :: Maybe (Reg String)) -- fixme
+                   || isNothing (getReg mc)
                    || (input == UsedOrBlocked)
                  ) && isJust (bindTo mc cell)
               ) $
@@ -345,6 +350,8 @@ availableCell FRAM{..} mc@MicroCode{ fb=FB fb, ..} =
     []    -> Nothing
     cells -> Just $ minimumBy (\a b -> load a `compare` load b) cells
   where
+    getReg :: Typeable v => MicroCode v t -> Maybe (Reg v)
+    getReg MicroCode{ fb=FB fb } = cast fb
     usedInputs = not $ null $ filter (\Cell{..} -> input == UsedOrBlocked) $ elems frMemory
     load (_addr, Cell{..}) = sum [ 2 * length queue
                                  , if input == Undef then -1 else 0
@@ -356,10 +363,10 @@ availableCell FRAM{..} mc@MicroCode{ fb=FB fb, ..} =
 ---------------------------------------------------
 
 
-instance ( Var v, Time t ) => TestBench FRAM Passive v t where
+instance ( Var v, Time t ) => TestBench Fram Passive v t where
   fileName _ = "hdl/dpu_fram"
 
-  testControl fram@FRAM{ frProcess=Process{..}, ..} values =
+  testControl fram@Fram{ frProcess=Process{..}, ..} values =
     concatMap (\t -> passiveInputValue t steps values ++ "\n"
                      ++ showSignals (signalsAt t) ++ " @(negedge clk)\n"
               ) [ 0 .. tick + 1 ]
@@ -375,7 +382,7 @@ instance ( Var v, Time t ) => TestBench FRAM Passive v t where
                          ++ "; addr[0] <= 'b" ++ a0 ++ ";"
                     ) . map show
 
-  testAsserts FRAM{ frProcess=Process{..}, ..} values =
+  testAsserts Fram{ frProcess=Process{..}, ..} values =
     concatMap (\t -> "@(posedge clk); #1; " ++ assert t ++ "\n"
               ) [ 0 .. tick + 1 ]
     ++ outputAssert
@@ -401,9 +408,9 @@ instance ( Var v, Time t ) => TestBench FRAM Passive v t where
       outputs = concat
         [ checkBank addr (values M.! v)
         | (Step{ time=Event{..}, .. }, (FB fb :: FB v)) <- filterSteps steps
-        , let fb' = cast fb :: Maybe (FRAMOutput v)
+        , let fb' = cast fb :: Maybe (FramOutput v)
         , isJust fb'
-        , let Just (FRAMOutput addr v) = fb'
+        , let Just (FramOutput addr v) = fb'
         , v `M.member` values
         ]
 

@@ -18,13 +18,15 @@ module NITTA.BusNetwork where
 import           Control.Monad.State
 import           Data.Array
 import           Data.Default
-import           Data.List            (intersect, nub, sortBy, (\\))
-import qualified Data.Map             as M
-import           Data.Maybe           (catMaybes, fromMaybe, isJust)
+import           Data.Either
+import           Data.List           (intersect, nub, sortBy, (\\))
+import qualified Data.Map            as M
+import           Data.Maybe          (catMaybes, fromMaybe, isJust)
 import           Data.Typeable
-import           NITTA.Base
-import           NITTA.FunctionBlocks
+import           NITTA.TestBench
 import           NITTA.Types
+import           NITTA.Utils
+
 
 
 
@@ -57,7 +59,10 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
       subSignal puTitle s = case niPus M.! puTitle of
                                  PU pu -> signal pu s t
 
-  bind ni@BusNetwork{..} fb = Just ni{ niRemains=fb : niRemains }
+  bind bn@BusNetwork{..} fb
+    | any (\pu -> isRight $ bind pu fb) $ M.elems niPus
+    = Right bn{ niRemains=fb : niRemains }
+  bind _bn _fb = Left "no"
 
   variants = nittaVariants
 
@@ -157,7 +162,7 @@ bindVariants BusNetwork{..} =
     bindVariants' fb =
       [ (fb, puTitle) -- , newVariants pu fb)
       | (puTitle, pu) <- sortByLoad $ M.assocs niPus
-      , isJust $ bind pu fb
+      , isRight $ bind pu fb
       , not $ selfTransport fb puTitle
       ]
 
@@ -173,7 +178,7 @@ bindVariants BusNetwork{..} =
 
 
 subBind fb puTitle ni@BusNetwork{ niProcess=p@Process{..}, ..} = ni
-  { niPus=M.adjust (\dpu -> fromMaybe undefined $ bind dpu fb) puTitle niPus
+  { niPus=M.adjust (\dpu -> fromRight undefined $ bind dpu fb) puTitle niPus
   , niBinded=M.alter (\v -> case v of
                          Just fbs -> Just $ fb : fbs
                          Nothing  -> Just [fb]

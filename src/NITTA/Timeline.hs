@@ -12,8 +12,9 @@ import           Data.Aeson
 import qualified Data.ByteString.Lazy as BS
 import           Data.List            (find, groupBy, nub, sortBy, takeWhile)
 import           Data.Typeable        (cast, typeOf)
-import           NITTA.Base
 import           NITTA.FunctionBlocks
+import           NITTA.Types
+import           NITTA.Utils
 
 
 

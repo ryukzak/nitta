@@ -11,14 +11,14 @@ import           Data.List                   (nub)
 import           Data.Maybe
 import           Data.Set                    (fromList, (\\))
 import           Data.Typeable
-import           NITTA.Base
 import           NITTA.Compiler
 import           NITTA.FunctionBlocks
-import           NITTA.ProcessUnits.FRAM
-import           NITTA.ProcessUnits.FRAMSpec
+import           NITTA.ProcessUnits.Fram
+import           NITTA.ProcessUnits.FramSpec
 import           NITTA.ProcessUnitsSpec
 import           NITTA.Timeline
 import           NITTA.Types
+import           NITTA.Utils
 import           Test.QuickCheck
 
 -- alg = [FB (Loop "tos" ["mzz"])]
@@ -40,7 +40,8 @@ main = do
 
   quickCheck (prop_formalCompletnessNaive :: FramAlg -> Bool)
   quickCheck (prop_simulationNaive :: FramAlg -> Property)
-  verboseCheck (prop_formalCompletness :: FramProcess -> Bool)
+
+  -- verboseCheck (prop_formalCompletness :: FramProcess -> Bool)
   -- quickCheck (prop_simulation :: FramProcess -> Property)
 
   -- quickCheckWith stdArgs { maxSuccess=10000

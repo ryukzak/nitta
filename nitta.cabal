@@ -15,13 +15,14 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     NITTA.Base
+  exposed-modules:     NITTA.Utils
                      , NITTA.FunctionBlocks
                      , NITTA.BusNetwork
                      , NITTA.Timeline
                      , NITTA.Compiler
                      , NITTA.Types
-                     , NITTA.ProcessUnits.FRAM
+                     , NITTA.TestBench
+                     , NITTA.ProcessUnits.Fram
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , process
@@ -66,7 +67,7 @@ test-suite nitta-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       NITTA.ProcessUnits.FRAMSpec
+  other-modules:       NITTA.ProcessUnits.FramSpec
                      , NITTA.FunctionBlocksSpec
                      , NITTA.ProcessUnitsSpec
   build-depends:       base

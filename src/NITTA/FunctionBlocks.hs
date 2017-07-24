@@ -23,34 +23,6 @@ instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 
 
 
-class ( Show fb, Eq fb, Ord fb, Vars fb var
-      ) => FBClass fb var | fb -> var where
-  dependency :: fb -> [(var, var)]
-  insideOut :: fb -> Bool
-  insideOut _ = False
-  isCritical :: fb -> Bool
-  isCritical _ = False
-
-data FB v where
-  FB :: ( FBClass fb v, Typeable fb, Typeable v ) => fb -> FB v
-
-instance (Typeable v) => FBClass (FB v) v where
-  dependency (FB fb) = dependency fb
-  insideOut (FB fb) = insideOut fb
-  isCritical (FB fb) = isCritical fb
-
-deriving instance Show (FB var) --  where show (FB x) = show x
-
-instance Vars (FB var) var where
-  variables (FB fb) = variables fb
-
-instance Eq (FB var) where
-  FB a == FB b = Just a == cast b
-
-instance Ord (FB var) where
-  FB a `compare` FB b = case cast b of
-    Just b' -> a `compare` b'
-    Nothing -> typeOf a `compare` typeOf b
 
 unbox (FB x) = fromDynamic $ toDyn x
 
@@ -63,26 +35,24 @@ unbox (FB x) = fromDynamic $ toDyn x
 
 
 
-data FRAMInput v = FRAMInput Int [v] deriving (Show, Typeable, Eq, Ord)
-framInput addr vs = FB $ FRAMInput addr vs
+data FramInput v = FramInput Int [v] deriving (Show, Typeable, Eq, Ord)
+framInput addr vs = FB $ FramInput addr vs
 
-instance Vars (FRAMInput var) var where
-  variables (FRAMInput _ vs) = vs
-instance ( Typeable var, Show var, Eq var, Ord var
-         ) => FBClass (FRAMInput var) var where
+instance Vars (FramInput v) v where
+  variables (FramInput _ vs) = vs
+instance ( Var v ) => FBClass FramInput v where
   dependency _ = []
   isCritical _ = True
 
 
 
 
-data FRAMOutput v = FRAMOutput Int v deriving (Show, Typeable, Eq, Ord)
-framOutput addr v = FB $ FRAMOutput addr v
+data FramOutput v = FramOutput Int v deriving (Show, Typeable, Eq, Ord)
+framOutput addr v = FB $ FramOutput addr v
 
-instance Vars (FRAMOutput v) v where
-  variables (FRAMOutput _ v) = [v]
-instance ( Typeable var, Show var, Eq var, Ord var
-         ) => FBClass (FRAMOutput var) var where
+instance Vars (FramOutput v) v where
+  variables (FramOutput _ v) = [v]
+instance ( Var v ) => FBClass FramOutput v where
   dependency _ = []
   isCritical _ = True
 
@@ -91,9 +61,9 @@ instance ( Typeable var, Show var, Eq var, Ord var
 data Reg v = Reg v [v] deriving (Show, Typeable, Eq, Ord)
 reg a b = FB $ Reg a b
 
-instance Vars (Reg var) var where
+instance Vars (Reg v) v where
   variables (Reg a b) = a : b
-instance (Typeable var, Show var, Eq var, Ord var) => FBClass (Reg var) var where
+instance ( Var v ) => FBClass Reg v where
   dependency (Reg a b) = map (, a) b
 
 
@@ -104,6 +74,6 @@ loop a b = FB $ Loop a b
 instance Vars (Loop v) v where
   variables (Loop a b) = a : b
 
-instance ( Var v ) => FBClass (Loop v) v where
+instance ( Var v ) => FBClass Loop v where
   dependency (Loop a b) = []
   insideOut _ = True

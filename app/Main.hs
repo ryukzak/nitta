@@ -18,41 +18,43 @@ import           Data.Default
 import           Data.Map                (fromList, (!))
 import           Data.Maybe
 import           Data.Typeable
-import           NITTA.Base
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks    as FB
-import           NITTA.ProcessUnits.FRAM
+import           NITTA.ProcessUnits.Fram
+import           NITTA.TestBench
 import           NITTA.Timeline
+import           NITTA.Types
+import           NITTA.Utils
 
 
 fram = PU fram'
-fram' = def :: FRAM Passive String Int
+fram' = def :: Fram Passive String Int
 
 net = busNetwork
   [ ("fram1", fram)
   , ("fram2", fram)
   ]
-  $ array (0, 15) [ (15, [("fram1", S $ (OE :: Signals FRAM))])
-                  , (14, [("fram1", S $ (WR :: Signals FRAM))])
+  $ array (0, 15) [ (15, [("fram1", S $ (OE :: Signals Fram))])
+                  , (14, [("fram1", S $ (WR :: Signals Fram))])
                   , (13, [])
                   , (12, [])
 
-                  , (11, [("fram1", S $ (ADDR 3 :: Signals FRAM))])
-                  , (10, [("fram1", S $ (ADDR 2 :: Signals FRAM))])
-                  , ( 9, [("fram1", S $ (ADDR 1 :: Signals FRAM))])
-                  , ( 8, [("fram1", S $ (ADDR 0 :: Signals FRAM))])
+                  , (11, [("fram1", S $ (ADDR 3 :: Signals Fram))])
+                  , (10, [("fram1", S $ (ADDR 2 :: Signals Fram))])
+                  , ( 9, [("fram1", S $ (ADDR 1 :: Signals Fram))])
+                  , ( 8, [("fram1", S $ (ADDR 0 :: Signals Fram))])
 
-                  , ( 7, [("fram2", S $ (OE :: Signals FRAM))])
-                  , ( 6, [("fram2", S $ (WR :: Signals FRAM))])
+                  , ( 7, [("fram2", S $ (OE :: Signals Fram))])
+                  , ( 6, [("fram2", S $ (WR :: Signals Fram))])
                   , ( 5, [])
                   , ( 4, [])
 
-                  , ( 3, [("fram2", S $ (ADDR 3 :: Signals FRAM))])
-                  , ( 2, [("fram2", S $ (ADDR 2 :: Signals FRAM))])
-                  , ( 1, [("fram2", S $ (ADDR 1 :: Signals FRAM))])
-                  , ( 0, [("fram2", S $ (ADDR 0 :: Signals FRAM))])
+                  , ( 3, [("fram2", S $ (ADDR 3 :: Signals Fram))])
+                  , ( 2, [("fram2", S $ (ADDR 2 :: Signals Fram))])
+                  , ( 1, [("fram2", S $ (ADDR 1 :: Signals Fram))])
+                  , ( 0, [("fram2", S $ (ADDR 0 :: Signals Fram))])
                   ]
 
 alg = [ FB.framInput 3 [ "a" ]
@@ -69,7 +71,7 @@ alg = [ FB.framInput 3 [ "a" ]
       , FB.reg "f" ["g"]
       ]
 
-net' = let Just pu' = bindAll (net :: BusNetwork String (Network String) String Int) alg
+net' = let Right pu' = bindAll (net :: BusNetwork String (Network String) String Int) alg
        in pu'
 
 bindedNet =
@@ -104,20 +106,20 @@ main = do
   -- mapM_ (putStrLn . show) $ variants fram1
   -- writeTestBench fram1
 
-  -- let fram = naive0 (def:: FRAM Passive String Int) alg0
+  -- let fram = naive0 (def:: Fram Passive String Int) alg0
   -- timeline "resource/data.json" fram
 
 
   test <- foldM (\s _ -> naive s) net' $ take 40 $ repeat ()
   timeline "resource/data.json" test
-  -- testBench (getPU "fram1" test :: FRAM Passive String Int)
+  -- testBench (getPU "fram1" test :: Fram Passive String Int)
     -- [ ("a", 0xFF0A), ("x", 0xFF0A)
     -- , ("b", 0xFF0B), ("y", 0xFF0B)
     -- , ("c", 0xFF0C), ("z", 0xFF0C)
     -- , ("f", 0xFF0F), ("g", 0xFF0F)
     -- ]
 
-  testBench (getPU "fram2" test :: FRAM Passive String Int)
+  testBench (getPU "fram2" test :: Fram Passive String Int)
     [ ("a", 0x0A03), ("x", 0xFF0A)
     , ("b", 0x0A04), ("y", 0xFF0B)
     , ("c", 0x0A04), ("z", 0xFF0C)

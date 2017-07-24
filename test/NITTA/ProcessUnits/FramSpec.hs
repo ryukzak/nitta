@@ -7,22 +7,21 @@
 {-# LANGUAGE StandaloneDeriving   #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module NITTA.ProcessUnits.FRAMSpec where
+module NITTA.ProcessUnits.FramSpec where
 
 import           Control.Monad
 import           Data.Default
 import           Data.List                (intersect, notElem, nub, union)
 import           Data.Typeable
-import           NITTA.Base
 import           NITTA.FunctionBlocks
 import           NITTA.FunctionBlocksSpec ()
-import           NITTA.ProcessUnits.FRAM
+import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnitsSpec
 import           NITTA.Types
 import           Test.QuickCheck
 
-type FramAlg = Alg FRAM String Int
-type FramProcess = (Alg FRAM String Int, FRAM Passive String Int)
+type FramAlg = Alg Fram String Int
+type FramProcess = (Alg Fram String Int, Fram Passive String Int)
 
 data ST = ST { acc           :: [FB String]
              , forInput      :: [Int]
@@ -48,8 +47,8 @@ instance Arbitrary FramAlg where
               (\ST{..} -> (length forInput + numberOfLoops) > 0)
     where
       maker st0@ST{..} _ = nextState st0 <$> do
-        fb <- suchThat (oneof [ FB <$> (arbitrary :: Gen (FRAMInput String))
-                              , FB <$> (arbitrary :: Gen (FRAMOutput String))
+        fb <- suchThat (oneof [ FB <$> (arbitrary :: Gen (FramInput String))
+                              , FB <$> (arbitrary :: Gen (FramOutput String))
                               , FB <$> (arbitrary :: Gen (Loop String))
                               , FB <$> (arbitrary :: Gen (Reg String))
                               ]
@@ -62,12 +61,12 @@ instance Arbitrary FramAlg where
             , usedVariables=variables fb ++ usedVariables
             }
           specificUpdate (FB fb) value st
-            | Just (FRAMInput addr vs) <- cast fb = st{ forInput=addr : forInput
+            | Just (FramInput addr vs) <- cast fb = st{ forInput=addr : forInput
                                                       , values=[ (v, 0x0A00 + addr)
                                                                | v <- vs
                                                                ] ++ values
                                                       }
-            | Just (FRAMOutput addr v) <- cast fb = st{ forOutput=addr : forOutput
+            | Just (FramOutput addr v) <- cast fb = st{ forOutput=addr : forOutput
                                                       , values=(v, 0x0A00 + addr) : values
                                                       }
             | Just (Loop a _bs) <- cast fb = st{ numberOfLoops=numberOfLoops + 1
@@ -81,6 +80,6 @@ instance Arbitrary FramAlg where
             | not $ null (variables fb0 `intersect` usedVariables) = False
             | Just (Reg _ _ :: Reg String) <- cast fb = True
             | not (length (nub $ forOutput `union` forInput) + numberOfLoops < framSize) = False
-            | Just (FRAMInput addr (_ :: [String])) <- cast fb = addr `notElem` forInput
-            | Just (FRAMOutput addr (_ :: String)) <- cast fb = addr `notElem` forOutput
+            | Just (FramInput addr (_ :: [String])) <- cast fb = addr `notElem` forInput
+            | Just (FramOutput addr (_ :: String)) <- cast fb = addr `notElem` forOutput
             | otherwise = True -- for Loop

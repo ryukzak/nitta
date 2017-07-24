@@ -14,22 +14,23 @@ module NITTA.Compiler where
 
 import           Control.Monad
 import           Data.Array              (elems)
+import           Data.Either
 import           Data.List               (find, intersect, partition, sortBy)
 import qualified Data.Map                as M
 import           Data.Maybe              (isJust)
 import           Debug.Trace
-import           NITTA.Base
 import           NITTA.BusNetwork
 import           NITTA.FunctionBlocks
-import           NITTA.ProcessUnits.FRAM
+import           NITTA.ProcessUnits.Fram
 import           NITTA.Types
+import           NITTA.Utils
 
 
-bindAll pu alg = foldl (\(Just s) n -> bind s n) (Just pu) alg
+bindAll pu alg = foldl (\(Right s) n -> bind s n) (Right pu) alg
 manualSteps pu acts = foldl (\pu' act -> step pu' act) pu acts
 
 bindAllAndNaiveSteps pu0 alg =
-  let Just bindedPu = bindAll pu0 alg
+  let Right bindedPu = bindAll pu0 alg
   in naive' bindedPu
   where
     naive' pu
@@ -155,8 +156,8 @@ autoBind net@BusNetwork{..} =
       ]
 
     variantsAfterBind BindVariant{..} = case bind (niPus M.! puTitle) fb of
-      Just pu' -> filter (\(PUVar act _) -> act `variantOf` fb)  $ variants pu'
-      Nothing  -> []
+      Right pu' -> filter (\(PUVar act _) -> act `variantOf` fb)  $ variants pu'
+      _  -> []
       where
         act `variantOf` fb = not $ null (variables act `intersect` variables fb)
 

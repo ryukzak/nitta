@@ -15,14 +15,13 @@ module NITTA.ProcessUnitsSpec
   , Alg(..)
   ) where
 
-import           Data.List               (nub, (\\))
+import           Data.List               (nub)
 import           Data.Maybe              (catMaybes)
 import           Data.Set                (fromList)
 import           Data.Typeable
 import           Debug.Trace
-import           NITTA.Base
 import           NITTA.Compiler
-import           NITTA.FunctionBlocks
+import           NITTA.TestBench
 import           NITTA.Types
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
@@ -92,7 +91,7 @@ naiveGen pu alg = do
           i <- choose (0, length alg - 1)
           let fb = alg !! i
           let alg' = [ x | x <- alg, x /= fb ]
-          let Just pu' = bind pu fb
+          let Right pu' = bind pu fb
           trace ("bind: " ++ show fb) $ naiveGen pu' alg'
     _ | null vars && null alg -> return pu
     _ -> naiveGen pu alg

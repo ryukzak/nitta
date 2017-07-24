@@ -8,7 +8,7 @@ module NITTA.FunctionBlocksSpec where
 
 import           Data.List               (nub)
 import           NITTA.FunctionBlocks
-import           NITTA.ProcessUnits.FRAM
+import           NITTA.ProcessUnits.Fram
 import           NITTA.Types
 import           Test.QuickCheck
 
@@ -21,11 +21,11 @@ uniqVars fb = let vs = variables fb
               in length vs == length (nub vs)
 
 
-instance Arbitrary (FRAMInput String) where
-  arbitrary = suchThat (FRAMInput <$> addrGen <*> forPull) uniqVars
+instance Arbitrary (FramInput String) where
+  arbitrary = suchThat (FramInput <$> addrGen <*> forPull) uniqVars
 
-instance Arbitrary (FRAMOutput String) where
-  arbitrary = suchThat (FRAMOutput <$> addrGen <*> forPush) uniqVars
+instance Arbitrary (FramOutput String) where
+  arbitrary = suchThat (FramOutput <$> addrGen <*> forPush) uniqVars
 
 instance Arbitrary (Loop String) where
   arbitrary = suchThat (Loop <$> forPush <*> forPull) uniqVars
