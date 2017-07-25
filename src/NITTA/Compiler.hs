@@ -26,12 +26,14 @@ import           NITTA.Types
 import           NITTA.Utils
 
 
-bindAll pu alg = foldl (\(Right s) n -> bind s n) (Right pu) alg
+bindAll pu alg = fromRight undefined $ foldl nextBind (Right pu) alg
+  where
+    nextBind (Right s) n = bind s n
+    nextBind (Left s) n  = error $ s ++ " before " ++ show n
+
 manualSteps pu acts = foldl (\pu' act -> step pu' act) pu acts
 
-bindAllAndNaiveSteps pu0 alg =
-  let Right bindedPu = bindAll pu0 alg
-  in naive' bindedPu
+bindAllAndNaiveSteps pu0 alg = naive' $ bindAll pu0 alg
   where
     naive' pu
       | var:_ <- variants pu =

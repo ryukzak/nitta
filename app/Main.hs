@@ -71,8 +71,8 @@ alg = [ FB.framInput 3 [ "a" ]
       , FB.reg "f" ["g"]
       ]
 
-net' = let Right pu' = bindAll (net :: BusNetwork String (Network String) String Int) alg
-       in pu'
+net' = bindAll (net :: BusNetwork String (Network String) String Int) alg
+
 
 bindedNet =
   let ni1 = foldl (\s (fb, dpu) -> subBind fb dpu s) net' [ (alg !! 0, "fram1")

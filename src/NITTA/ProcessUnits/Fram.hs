@@ -19,9 +19,10 @@ module NITTA.ProcessUnits.Fram
 import           Data.Array
 import           Data.Bits
 import           Data.Default
+import           Data.Either
 import           Data.Generics.Aliases (orElse)
 import qualified Data.Graph            as G
-import           Data.List             (find, intersect, minimumBy, nub, sortBy)
+import           Data.List             (find, minimumBy, sortBy)
 import qualified Data.Map              as M
 import           Data.Maybe
 import           Data.Typeable
@@ -31,7 +32,8 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Prelude               hiding (last)
 
--- import           Debug.Trace
+import           Debug.Trace
+
 
 
 
@@ -43,11 +45,21 @@ data Fram ty v t = Fram
   , frAllowBlockingInput :: Bool
   } deriving (Show)
 
-remainLoops Fram{..} = filter (isJust . getLoop) frRemains
-  where
-    getLoop :: Typeable v => MicroCode v t -> Maybe (Loop v)
-    getLoop MicroCode{ fb=FB fb } = cast fb
 
+remains get Fram{..} = filter (isJust . get) frRemains
+
+remainLoops fr = remains get fr
+  where get :: Typeable v => MicroCode v t -> Maybe (Loop v)
+        get MicroCode{ fb=FB fb } = cast fb
+
+remainRegs fr = remains getReg fr
+
+getReg :: Typeable v => MicroCode v t -> Maybe (Reg v)
+getReg MicroCode{ fb=FB fb' } = cast fb'
+
+ioUses fr@Fram{..} =
+  (length $ filter (\Cell{..} -> input /= Undef || output /= Undef) $ elems frMemory)
+  + length (remainLoops fr)
 
 
 
@@ -61,7 +73,7 @@ data Cell v t = Cell
   { input     :: IOState v t -- Pull
   , current   :: Maybe (MicroCode v t)
   , output    :: IOState v t -- Push
-  , queue     :: [MicroCode v t] -- [Push, Pull]
+  -- , queue     :: [MicroCode v t] -- [Push, Pull]
   , lastWrite :: Maybe t
   } deriving (Show)
 
@@ -72,7 +84,7 @@ data MicroCode v t where
     , workBegin                     :: Maybe t
     , fb                            :: FB v
     , actions                       :: [Effect v]
-    , bindTo                        :: MicroCode v t -> Cell v t -> Maybe (Cell v t)
+    , bindTo                        :: MicroCode v t -> Cell v t -> Either String (Cell v t)
     } -> MicroCode v t
 
 microcode = MicroCode [] [] [] Nothing
@@ -82,11 +94,11 @@ instance ( Var v, Time t ) => Default (Fram ty v t) where
   def = Fram { frMemory=listArray (0, framSize - 1) $ repeat def
              , frRemains=[]
              , frProcess=def
-             , frAllowBlockingInput=False
+             , frAllowBlockingInput=True
              }
 
 instance Default (Cell v t) where
-  def = Cell Undef Nothing Undef [] Nothing
+  def = Cell Undef Nothing Undef Nothing
 
 instance ( Show v ) => Show (MicroCode v t) where
   show MicroCode{..} = show actions ++ " " ++ show fb
@@ -95,7 +107,8 @@ instance ( Eq v ) => Eq (MicroCode v t) where
   MicroCode{ actions=a } == MicroCode{ actions=b } = a == b
 
 
-
+memoryBusy = "All memory already busy."
+cellUsedOrBlocked = "Memory cell is blocked."
 
 framSize = 16 :: Int
 
@@ -130,35 +143,50 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
 
   bind fr@Fram{ frProcess=p@Process{..}, .. } fb
     | Just (Reg a b) <- unbox fb =
-        let bindToCell _ Cell{ output=UsedOrBlocked } = Nothing
-            bindToCell mc cell@Cell{ queue=q } = Just $ cell{ queue=mc : q }
-            ( mc', fr' ) = bind' $ microcode fb [ Push a, Pull b ] bindToCell
-        in Right fr'{ frRemains=mc' : frRemains }
+        if ( ( not $ null $ remainLoops fr )
+             || ( any (\Cell{..} -> input /= Undef && output /= UsedOrBlocked) $ elems frMemory )
+           )
+        then let bindToCell _ Cell{ output=UsedOrBlocked } = Left cellUsedOrBlocked
+                 bindToCell _ Cell{ current=Just _ } = Left cellUsedOrBlocked
+                 bindToCell mc cell@Cell{ input=Undef, current=Nothing }
+                   | frAllowBlockingInput = Right $ cell{ current=Just mc }
+                 bindToCell mc cell@Cell{ input=UsedOrBlocked
+                                        , current=Nothing } = Right $ cell{ current=Just mc }
+                 bindToCell _ _ = Left cellUsedOrBlocked
+                 ( mc', fr' ) = bind' $ microcode fb [ Push a, Pull b ] bindToCell
+             in Right fr'{ frRemains=mc' : frRemains }
+        else Left memoryBusy
+
     | Just (Loop a b) <- unbox fb =
-        let bindToCell mc cell@Cell{ input=Undef, output=Undef }
-              | ioUses < framSize = Just cell{ input=Def mc
-                                             , output=UsedOrBlocked
-                                             }
-            bindToCell _ _        = Nothing
-            ( mc', fr' ) = bind' $ microcode fb [ Pull b, Push a ] bindToCell
-        in Right fr'{ frRemains=mc' : frRemains }
+        if trace ("ioUses: " ++ show (ioUses fr)) $ ioUses fr < framSize
+        then let bindToCell mc cell@Cell{ input=Undef, output=Undef } =
+                   Right cell{ input=Def mc
+                             , output=UsedOrBlocked
+                             }
+                 bindToCell _ cell = Left $ "Cell busy loop use: " ++ show cell
+                 ( mc', fr' ) = bind' $ microcode fb [ Pull b, Push a ] bindToCell
+             in Right fr'{ frRemains=mc' : frRemains }
+        else Left memoryBusy
+
     | Just (FramInput addr v) <- unbox fb =
-        let bindToCell mc cell@Cell{ input=Undef } = Just cell{ input=Def mc }
-            bindToCell _ _                         = Nothing
+        let bindToCell mc cell@Cell{ input=Undef }
+              | ioUses fr < framSize = Right cell{ input=Def mc }
+            bindToCell _ _                         = Left cellUsedOrBlocked
             ( mc', fr' ) = bind' $ microcode fb [ Pull v ] bindToCell
-            Just cell' = bindToCell mc' $ frMemory ! addr
-        in Right fr'{ frMemory=frMemory // [(addr, cell')] }
+        in fmap (\cell' -> fr'{ frMemory=frMemory // [(addr, cell')] })
+           $ bindToCell mc' $ frMemory ! addr
+
     | Just (FramOutput addr v) <- unbox fb =
-        let bindToCell mc cell@Cell{ output=Undef } = Just cell{ output=Def mc }
-            bindToCell _ _                          = Nothing
+        let bindToCell mc cell@Cell{ output=Undef }
+              | ioUses fr < framSize = Right cell{ output=Def mc }
+            bindToCell _ _                          = Left cellUsedOrBlocked
             ( mc', fr' ) = bind' $ microcode fb [ Push v ] bindToCell
-            Just cell' = bindToCell mc' $ frMemory ! addr
-        in Right fr'{ frMemory=frMemory // [(addr, cell')] }
-    | otherwise = Left "no"
+        in fmap (\cell' -> fr'{ frMemory=frMemory // [(addr, cell')] })
+          $ bindToCell mc' $ frMemory ! addr
+
+    | otherwise = Left "Unknown functional block."
+
       where
-        forInput = map fst $ filter ((/= Undef) . input . snd) $ assocs frMemory
-        forOutput = map fst $ filter ((/= Undef) . output . snd) $ assocs frMemory
-        ioUses = length (nub $ forInput `intersect` forOutput) + length (remainLoops fr)
 
         bind' mc =
           let (key, p') = modifyProcess p $ bindFB fb tick
@@ -169,14 +197,18 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
     where
       fromCells = [ PUVar v $ constrain cell v
                   | (_addr, cell@Cell{..}) <- assocs frMemory
-                  , v <- cell2acts (frAllowBlockingInput || null fromRemain) cell
+                  , v <- cell2acts allowOutput cell
                   ]
       fromRemain = [ PUVar act $ constrain cell act
                    | mc@MicroCode { actions=act:_ } <- frRemains
                    , let aCell = availableCell fr mc
+                   -- allowReg?
                    , isJust aCell
                    , let Just (_addr, cell) = aCell
                    ]
+      allowOutput = (frAllowBlockingInput || null fromRemain)
+        && ((null $ remainRegs fr) || framSize - numberOfCellForReg > 1)
+      numberOfCellForReg = length $ filter (\Cell{..} -> output == UsedOrBlocked) $ elems frMemory
       constrain Cell{..} (Pull _)
         | lastWrite == Just tick = TimeConstrain 1 (tick + 1) maxBound
         | otherwise              = TimeConstrain 1 tick maxBound
@@ -189,16 +221,15 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
     = case availableCell fr mc of
         Just (addr, cell) ->
           let (key, p') = modifyProcess p0 $ bindFB2Cell addr fb tick0
-              Just cell' = bindTo mc{ compiler=key : compiler } cell
+              Right cell' = bindTo mc{ compiler=key : compiler } cell
               fr' = fr{ frRemains=filter (/= mc) frRemains
                       , frMemory=frMemory // [(addr, cell')]
                       , frProcess=p'
                       }
-         in -- trace (show fb ++ " --> " ++ show cell') $
+         in trace (show fb ++ " --> " ++ show addr) $
              step fr' act0
         Nothing -> error $ "Can't find available cell for: " ++ show fb ++ "!"
 
-    --                                                        ____ - не есть гуд
     | Just (addr, cell) <- find (any (<< aEffect) . cell2acts True . snd) $ assocs frMemory
     = case cell of
         Cell{ input=Def mc@MicroCode{ actions=act : _ } } | act << aEffect ->
@@ -218,23 +249,25 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
             let (p', mc') = doAction addr p0 mc
                 cell' = updateLastWrite (tick p') cell
                 cell'' = cell'{ input=UsedOrBlocked
-                              , current=mc'
+                              , current=
+                                  trace (show mc ++  " --> " ++ show mc' ++ " @ " ++ show addr)
+                                  mc'
                               }
             in fr{ frMemory=frMemory // [(addr, cell'')]
                  , frProcess=p'
                  }
-        Cell{ queue=mcs }
-          | not $ null mcs
-          , Just mc@MicroCode{..} <- find ((<< aEffect) . head . actions) mcs ->
-              let (p', mc') = doAction addr p0 mc
-                  cell' = updateLastWrite (tick p') cell
-                  cell'' = cell'{ input=UsedOrBlocked
-                                , current=mc'
-                                , queue=filter (/= mc) mcs
-                                }
-              in fr{ frMemory=frMemory // [(addr, cell'')]
-                   , frProcess=p'
-                   }
+        -- Cell{ queue=mcs }
+        --   | not $ null mcs
+        --   , Just mc@MicroCode{..} <- find ((<< aEffect) . head . actions) mcs ->
+        --       let (p', mc') = doAction addr p0 mc
+        --           cell' = updateLastWrite (tick p') cell
+        --           cell'' = cell'{ input=UsedOrBlocked
+        --                         , current=mc'
+        --                         , queue=filter (/= mc) mcs
+        --                         }
+        --       in fr{ frMemory=frMemory // [(addr, cell'')]
+        --            , frProcess=p'
+        --            }
         Cell{ output=Def mc@MicroCode{ actions=act : _ } } | act << aEffect ->
             let (p', _mc') = doAction addr p0 mc
                 -- Вот тут есть потенциальная проблема которую не совсем ясно как можно решить,
@@ -248,7 +281,11 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
                  }
         _ -> error "Internal Fram error, step"
 
-    | otherwise = error $ "Can't found selected action: " ++ show act0 ++ show (variants fr)
+    | otherwise = error $ "Can't found selected action: " ++ show act0
+                  ++ " tick: " ++ show (tick p0) ++ "\n"
+                  ++ "available variants: \n" ++ concatMap ((++ "\n") . show) (variants fr)
+                  ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
+                  ++ "remains:\n" ++ concatMap ((++ "\n") . show) frRemains
     where
       -- bindBefore remains = find ((<< aEffect) . head . actions) remains
         -- | Just mc <- find ((<< aEffect) . head . actions) remains
@@ -328,17 +365,21 @@ bindFB fb t = add (Event t 0) ("Bind " ++ show fb)
 
 cell2acts _allowOutput Cell{ input=Def MicroCode{ actions=x:_ } }    = [x]
 cell2acts _allowOutput Cell{ current=Just MicroCode{ actions=x:_ } } = [x]
-cell2acts _allowOutput Cell{ queue=mcs@(_:_) }                       = map (head . actions) mcs
+-- cell2acts _allowOutput Cell{ queue=mcs@(_:_) }                       = map (head . actions) mcs
 cell2acts True         Cell{ output=Def MicroCode{actions=x:_ } }    = [x]
-cell2acts _ _ = []
+cell2acts _ _                                                        = []
 
 
-availableCell Fram{..} mc@MicroCode{..} =
+availableCell fr@Fram{..} mc@MicroCode{..} =
   case filter (\(_addr, cell@Cell{..}) ->
                  ( frAllowBlockingInput
                    || isNothing (getReg mc)
                    || (input == UsedOrBlocked)
-                 ) && isJust (bindTo mc cell)
+                 ) && isRight (bindTo mc cell)
+                 && (isNothing (getReg mc)
+                     || null (remainLoops fr)
+                     || framSize - ioUses fr > 1
+                    )
               ) $
        -- map (\x@(_addr, cell@Cell{..}) ->
        --        trace ( show frAllowBlockingInput ++ " | "
@@ -350,14 +391,16 @@ availableCell Fram{..} mc@MicroCode{..} =
     []    -> Nothing
     cells -> Just $ minimumBy (\a b -> load a `compare` load b) cells
   where
-    getReg :: Typeable v => MicroCode v t -> Maybe (Reg v)
-    getReg MicroCode{ fb=FB fb } = cast fb
-    usedInputs = not $ null $ filter (\Cell{..} -> input == UsedOrBlocked) $ elems frMemory
-    load (_addr, Cell{..}) = sum [ 2 * length queue
-                                 , if input == Undef then -1 else 0
+    -- getReg :: Typeable v => MicroCode v t -> Maybe (Reg v)
+    -- getReg MicroCode{ fb=FB fb' } = cast fb'
+    -- usedInputs = not $ null $ filter (\Cell{..} -> input == UsedOrBlocked) $ elems frMemory
+    load (_addr, Cell{..}) = sum [ if input == UsedOrBlocked then -2 else 0
                                  , if output == Undef then -1 else 0
-                                 , if isNothing current then -1 else 1
-                                 ]
+                                 ] :: Int
+    -- load (_addr, Cell{..}) = sum [ if input == Undef then -1 else 0
+                                 -- , if output == Undef then -1 else 0
+                                 -- , if isNothing current then -1 else 1
+                                 -- ] :: Int
 
 
 ---------------------------------------------------

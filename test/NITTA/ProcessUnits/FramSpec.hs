@@ -11,7 +11,8 @@ module NITTA.ProcessUnits.FramSpec where
 
 import           Control.Monad
 import           Data.Default
-import           Data.List                (intersect, notElem, nub, union)
+import           Data.List                (intersect, notElem, nub, sortBy,
+                                           union)
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.FunctionBlocksSpec ()
@@ -20,8 +21,14 @@ import           NITTA.ProcessUnitsSpec
 import           NITTA.Types
 import           Test.QuickCheck
 
-type FramAlg = Alg Fram String Int
-type FramProcess = (Alg Fram String Int, Fram Passive String Int)
+type FramIdealAlg = Alg Fram String Int
+
+
+data FramAlg = FramAlg{ framAlg :: FramIdealAlg }
+
+instance Show FramAlg where
+  show = show . framAlg
+
 
 data ST = ST { acc           :: [FB String]
              , forInput      :: [Int]
@@ -32,29 +39,40 @@ data ST = ST { acc           :: [FB String]
              } deriving (Show)
 
 
-instance {-# OVERLAPPING #-} Arbitrary FramProcess where
-  arbitrary = do
-    alg <- arbitrary
-    pu <- naiveGen def (algFB alg)
-    return (alg, pu)
-
-
 instance Arbitrary FramAlg where
-  arbitrary = (\ST{..} -> Alg acc values def) <$> suchThat (do
-      size <- sized pure -- getSize
-      n <- choose (0, size)
-      foldM maker (ST [] [] [] 0 [] []) [ 0..n ])
-              (\ST{..} -> (length forInput + numberOfLoops) > 0)
-    where
-      maker st0@ST{..} _ = nextState st0 <$> do
-        fb <- suchThat (oneof [ FB <$> (arbitrary :: Gen (FramInput String))
-                              , FB <$> (arbitrary :: Gen (FramOutput String))
-                              , FB <$> (arbitrary :: Gen (Loop String))
-                              , FB <$> (arbitrary :: Gen (Reg String))
-                              ]
-                       ) check
-        v <- choose (0 :: Int, 0xFF)
-        return (fb, v)
+  arbitrary = do
+    ST{..} <- framAlgGen False (const True)
+    (pu', alg') <- naiveGen def acc
+    return $ FramAlg $ Alg alg' values pu'
+
+
+instance Arbitrary FramIdealAlg where
+  arbitrary = do
+    ST{..} <- framAlgGen True (\ST{..} -> (length forInput + numberOfLoops) > 0)
+    return $ Alg (sortBy compareFB acc) values def{ frAllowBlockingInput=False }
+      where
+        compareFB (FB a) (FB b)
+          | Just (_ :: Reg String) <- cast a = GT
+          | Just (_ :: Reg String) <- cast b = LT
+          | otherwise = EQ
+
+
+framAlgGen checkCellUsage generalPred =
+  suchThat (do
+               size <- sized pure -- getSize
+               n <- choose (0, size)
+               foldM maker (ST [] [] [] 0 [] []) [ 0..n ]
+           ) generalPred
+  where
+    maker st0@ST{..} _ = nextState st0 <$> do
+      fb <- suchThat (oneof [ FB <$> (arbitrary :: Gen (FramInput String))
+                            , FB <$> (arbitrary :: Gen (FramOutput String))
+                            , FB <$> (arbitrary :: Gen (Loop String))
+                            , FB <$> (arbitrary :: Gen (Reg String))
+                            ]
+                     ) check
+      v <- choose (0 :: Int, 0xFF)
+      return (fb, v)
         where
           nextState st (fb, v) = specificUpdate fb v st
             { acc=fb : acc
@@ -79,6 +97,7 @@ instance Arbitrary FramAlg where
           check fb0@(FB fb)
             | not $ null (variables fb0 `intersect` usedVariables) = False
             | Just (Reg _ _ :: Reg String) <- cast fb = True
+            | not checkCellUsage = True
             | not (length (nub $ forOutput `union` forInput) + numberOfLoops < framSize) = False
             | Just (FramInput addr (_ :: [String])) <- cast fb = addr `notElem` forInput
             | Just (FramOutput addr (_ :: String)) <- cast fb = addr `notElem` forOutput

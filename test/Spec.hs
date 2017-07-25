@@ -11,7 +11,7 @@ import           Data.List                   (nub)
 import           Data.Maybe
 import           Data.Set                    (fromList, (\\))
 import           Data.Typeable
-import           NITTA.Compiler
+import qualified NITTA.Compiler              as C
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnits.FramSpec
@@ -38,10 +38,19 @@ main = do
   -- timeline "resource/data.json" pu
   -- testBench pu [("wue",88),("rgc",254),("pfg",254)]
 
-  quickCheck (prop_formalCompletnessNaive :: FramAlg -> Bool)
-  quickCheck (prop_simulationNaive :: FramAlg -> Property)
+  -- quickCheck (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealAlg -> Bool)
+  -- quickCheck (prop_formalCompletness . framAlg :: FramAlg -> Bool)
 
-  -- verboseCheck (prop_formalCompletness :: FramProcess -> Bool)
+
+
+  quickCheckWith stdArgs { maxSuccess=10000 }
+    (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealAlg -> Bool)
+  quickCheckWith stdArgs { maxSuccess=10000 }
+    (prop_formalCompletness . framAlg :: FramAlg -> Bool)
+
+  -- quickCheck (prop_simulationNaive :: FramAlg -> Property)
+
+  -- quickCheck (prop_formalCompletness :: FramProcess -> Bool)
   -- quickCheck (prop_simulation :: FramProcess -> Property)
 
   -- quickCheckWith stdArgs { maxSuccess=10000
