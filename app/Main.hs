@@ -29,8 +29,7 @@ import           NITTA.Types
 import           NITTA.Utils
 
 
-fram = PU fram'
-fram' = def :: Fram Passive String Int
+fram = PU (def :: Fram Passive String Int)
 
 net = busNetwork
   [ ("fram1", fram)
@@ -73,43 +72,22 @@ alg = [ FB.framInput 3 [ "a" ]
 
 net' = bindAll (net :: BusNetwork String (Network String) String Int) alg
 
-
-bindedNet =
-  let ni1 = foldl (\s (fb, dpu) -> subBind fb dpu s) net' [ (alg !! 0, "fram1")
-                                                          , (alg !! 1, "fram1")
-                                                          , (alg !! 2, "fram2")
-                                                          , (alg !! 3, "fram2")
-                                                          , (alg !! 4, "fram2")
-                                                          , (alg !! 5, "fram1")
-                                                          , (alg !! 6, "fram1")
-                                                          , (alg !! 7, "fram1")
-                                                          ]
-  in ni1
+-- bindedNet =
+--   let ni1 = foldl (\s (fb, dpu) -> subBind fb dpu s) net' [ (alg !! 0, "fram1")
+--                                                           , (alg !! 1, "fram1")
+--                                                           , (alg !! 2, "fram2")
+--                                                           , (alg !! 3, "fram2")
+--                                                           , (alg !! 4, "fram2")
+--                                                           , (alg !! 5, "fram1")
+--                                                           , (alg !! 6, "fram1")
+--                                                           , (alg !! 7, "fram1")
+--                                                           ]
+--   in ni1
 
 ---------------------------------------------------------------------------------
 
 
 main = do
-  -- let fram0 = eval fram' [ FB.framOutput 0 "a" -- save 0main
-  --                        , FB.framInput 0 ["a'"] -- load 0
-  --                        , FB.reg "b" ["b'"]
-  --                        , FB.loop "c" ["c'"]
-  --                        ]
-  -- let fram1 = doSteps fram0 [ PUAct (Pull ["a'"]) $ Event 0 1
-  --                           , PUAct (Push "a")    $ Event 2 1
-  --                           , PUAct (Pull ["c'"]) $ Event 4 1
-  --                           , PUAct (Push "b")    $ Event 6 1
-  --                           , PUAct (Push "c")    $ Event 8 1
-  --                           , PUAct (Pull ["b'"]) $ Event 10 1
-  --                           ]
-  -- mapM_ (putStrLn . show) $ take 3 $ elems $ frMemory fram1
-  -- mapM_ (putStrLn . show) $ variants fram1
-  -- writeTestBench fram1
-
-  -- let fram = naive0 (def:: Fram Passive String Int) alg0
-  -- timeline "resource/data.json" fram
-
-
   test <- foldM (\s _ -> naive s) net' $ take 40 $ repeat ()
   timeline "resource/data.json" test
   -- testBench (getPU "fram1" test :: Fram Passive String Int)
@@ -142,5 +120,5 @@ main = do
   --   ]
 
 
-getPU puTitle net = case niPus net ! puTitle of
+getPU puTitle net = case bnPus net ! puTitle of
   PU pu -> fromMaybe undefined $ cast pu

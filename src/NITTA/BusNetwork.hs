@@ -33,12 +33,12 @@ import           NITTA.Utils
 
 data BusNetwork title ty v t =
   BusNetwork
-    { niRemains            :: [FB v]
-    , niForwardedVariables :: [v]
-    , niBinded             :: M.Map title [FB v]
-    , niPus                :: M.Map title (PU Passive v t)
-    , niProcess            :: Process v t
-    , niWires              :: Array Int [(title, S)]
+    { bnRemains            :: [FB v]
+    , bnForwardedVariables :: [v]
+    , bnBinded             :: M.Map title [FB v]
+    , bnPus                :: M.Map title (PU Passive v t)
+    , bnProcess            :: Process v t
+    , bnWires              :: Array Int [(title, S)]
     }
 busNetwork pus wires = BusNetwork [] [] (M.fromList []) (M.fromList pus) def wires
 
@@ -54,40 +54,40 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
 
   data Signals (BusNetwork title) = Wire Int
 
-  signal' BusNetwork{..} (Wire i) t = foldl (+++) X $ map (uncurry subSignal) $ niWires!i
+  signal' BusNetwork{..} (Wire i) t = foldl (+++) X $ map (uncurry subSignal) $ bnWires ! i
     where
-      subSignal puTitle s = case niPus M.! puTitle of
+      subSignal puTitle s = case bnPus M.! puTitle of
                                  PU pu -> signal pu s t
 
-  bind bn@BusNetwork{..} fb
-    | any (\pu -> isRight $ bind pu fb) $ M.elems niPus
-    = Right bn{ niRemains=fb : niRemains }
-  bind _bn _fb = Left "no"
+  bind fb bn@BusNetwork{..}
+    | any (\pu -> isRight $ bind fb pu) $ M.elems bnPus
+    = Right bn{ bnRemains=fb : bnRemains }
+  bind _fb _bn = Left "no"
 
-  variants = nittaVariants
+  options = nittaOptions
 
-  step ni@BusNetwork{..} NetworkAction{..} = ni
-    { niPus=foldl (\s n -> n s) niPus steps
-    , niProcess=snd $ modifyProcess niProcess $ do
+  step ni@BusNetwork{..} TransportAct{..} = ni
+    { bnPus=foldl (\s n -> n s) bnPus steps
+    , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add (Event transportStartAt transportDuration)
-                (Transport v aPullFrom title :: Instruction (BusNetwork title) v t))
+                (Transport v taPullFrom title :: Instruction (BusNetwork title) v t))
                 $ M.assocs push'
         _ <- add (Event transportStartAt (transportDuration - 1)) $ Pull pullVars
         setTime $ transportStartAt + transportDuration
-    , niForwardedVariables=pullVars ++ niForwardedVariables
+    , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
     where
-      transportStartAt = eStart aPullAt
+      transportStartAt = eStart taPullAt
       transportDuration = maximum $
         map ((\Event{..} -> (eStart - transportStartAt) + eDuration) . snd) $ M.elems push'
 
-      pullStep = M.adjust (\dpu -> step dpu $ PUAct (Pull pullVars) aPullAt) aPullFrom
+      pullStep = M.adjust (\dpu -> step dpu $ EffectAct (Pull pullVars) taPullAt) taPullFrom
       pushStep (var, (dpuTitle, pushAt)) =
-        M.adjust (\dpu -> step dpu $ PUAct (Push var) pushAt) dpuTitle
+        M.adjust (\dpu -> step dpu $ EffectAct (Push var) pushAt) dpuTitle
       pushSteps = map pushStep $ M.assocs push'
       steps = pullStep : pushSteps
 
-      push' = M.map (fromMaybe undefined) $ M.filter isJust aPush
+      push' = M.map (fromMaybe undefined) $ M.filter isJust taPush
       pullVars = M.keys push'
 
 
@@ -95,10 +95,10 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
     transportKey = M.fromList
       [ (variable, uid)
       | (Just (Transport variable _ _ :: Instruction (BusNetwork title) v t), uid)
-        <- map (\Step{..} -> (cast info, uid)) $ steps niProcess
+        <- map (\Step{..} -> (cast info, uid)) $ steps bnProcess
       ]
-    p'@Process{ steps=steps' } = snd $ modifyProcess niProcess $ do
-      let pus = sortBy (\a b -> fst a `compare` fst b) $ M.assocs niPus
+    p'@Process{ steps=steps' } = snd $ modifyProcess bnProcess $ do
+      let pus = sortBy (\a b -> fst a `compare` fst b) $ M.assocs bnPus
       mapM (addSubProcess transportKey) pus
 
     in p'{ steps=reverse steps' }
@@ -123,46 +123,46 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
 
 
 
-nittaVariants BusNetwork{..} = concat $
+nittaOptions BusNetwork{..} = concat $
   [
-    [ NetworkVariant fromPu pullAt $ M.fromList pushs
-    | pushs <- sequence $ map pushVariantsFor pullVars
+    [ TransportOpt fromPu pullAt $ M.fromList pushs
+    | pushs <- sequence $ map pushOptionsFor pullVars
     , let pushTo = catMaybes $ map (fmap fst . snd) pushs
     , length (nub pushTo) == length pushTo
     ]
-  | (fromPu, vars) <- puVariants
-  , PUVar (Pull pullVars) pullAt <- vars
+  | (fromPu, vars) <- puOptions
+  , EffectOpt (Pull pullVars) pullAt <- vars
   ]
   where
-    pushVariantsFor v | v `notElem` availableVars = [(v, Nothing)]
-    pushVariantsFor v = (v, Nothing) : pushVariantsFor' v
+    pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
+    pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
 
-    pushVariantsFor' v = [ (v, Just (pushTo, pushAt))
-                         | (pushTo, vars) <- puVariants
-                         , PUVar (Push pushVar) pushAt <- vars
+    pushOptionsFor' v = [ (v, Just (pushTo, pushAt))
+                         | (pushTo, vars) <- puOptions
+                         , EffectOpt (Push pushVar) pushAt <- vars
                          , pushVar == v
                          ]
     availableVars =
-        let functionalBlocks = niRemains ++ (concat $ M.elems niBinded)
+        let functionalBlocks = bnRemains ++ (concat $ M.elems bnBinded)
             alg = foldl
               (\dict (a, b) -> M.adjust ((:) b) a dict)
               (M.fromList [(v, []) | v <- concatMap variables functionalBlocks])
-              $ filter (\(_a, b) -> b `notElem` niForwardedVariables)
+              $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
               $ concatMap dependency functionalBlocks
             notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
-        in notBlockedVariables \\ niForwardedVariables
+        in notBlockedVariables \\ bnForwardedVariables
 
-    puVariants = M.assocs $ M.map variants niPus
+    puOptions = M.assocs $ M.map options bnPus
 
 
 
-bindVariants BusNetwork{..} =
-  concatMap (\fb -> bindVariants' fb) niRemains
+bindingOptions BusNetwork{..} =
+  concatMap (\fb -> bindVariants' fb) bnRemains
   where
     bindVariants' fb =
       [ (fb, puTitle) -- , newVariants pu fb)
-      | (puTitle, pu) <- sortByLoad $ M.assocs niPus
-      , isRight $ bind pu fb
+      | (puTitle, pu) <- sortByLoad $ M.assocs bnPus
+      , isRight $ bind fb pu
       , not $ selfTransport fb puTitle
       ]
 
@@ -172,20 +172,20 @@ bindVariants BusNetwork{..} =
     selfTransport fb puTitle =
       not $ null $ variables fb `intersect` (concatMap variables $ binded puTitle)
 
-    binded puTitle | puTitle `M.member` niBinded = niBinded M.! puTitle
+    binded puTitle | puTitle `M.member` bnBinded = bnBinded M.! puTitle
                    | otherwise = []
 
 
 
-subBind fb puTitle ni@BusNetwork{ niProcess=p@Process{..}, ..} = ni
-  { niPus=M.adjust (\dpu -> fromRight undefined $ bind dpu fb) puTitle niPus
-  , niBinded=M.alter (\v -> case v of
+subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
+  { bnPus=M.adjust (\pu -> fromRight undefined $ bind fb pu) puTitle bnPus
+  , bnBinded=M.alter (\v -> case v of
                          Just fbs -> Just $ fb : fbs
                          Nothing  -> Just [fb]
-                     ) puTitle niBinded
-  , niProcess=snd $ modifyProcess p $
+                     ) puTitle bnBinded
+  , bnProcess=snd $ modifyProcess p $
       add (Event tick 0) $ "Bind " ++ show fb ++ " to " ++ puTitle
-  , niRemains=filter (/= fb) niRemains
+  , bnRemains=filter (/= fb) bnRemains
   }
 
 
@@ -196,17 +196,17 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t, Ix t
          ) => TestBench (BusNetwork title) (Network title) v t where
   fileName _ = "hdl/fram_net"
 
-  testControl bn@BusNetwork{ niProcess=Process{..}, ..} _values =
+  testControl bn@BusNetwork{ bnProcess=Process{..}, ..} _values =
     concatMap (\t -> showSignals (signalsAt t) ++ " @(negedge clk)\n"
               ) [ 0 .. tick + 1 ]
     where
-      wires = map Wire $ reverse $ range $ bounds niWires
+      wires = map Wire $ reverse $ range $ bounds bnWires
       signalsAt t = map (\w -> signal' bn w t) wires
 
       showSignals = (\ss -> "wires <= 'b" ++ ss ++ ";"
                     ) . concat . map show
 
-  testAsserts BusNetwork{ niProcess=Process{..}, ..} values =
+  testAsserts BusNetwork{ bnProcess=Process{..}, ..} values =
     concatMap (\t -> "@(posedge clk); #1; " ++ assert t ++ "\n"
               ) [ 0 .. tick + 1 ]
     where

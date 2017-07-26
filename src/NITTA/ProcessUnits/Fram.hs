@@ -145,7 +145,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
       value (Save    _)  OE      = B False
       value (Save    _)  WR      = B True
 
-  bind fr@Fram{ frProcess=p@Process{..}, .. } fb
+  bind fb fr@Fram{ frProcess=p@Process{..}, .. }
     | Just (Reg a b) <- unbox fb =
         if placeForRegExist fr
         then let bindToCell _ Cell{ output=UsedOrBlocked } = Left "Can't bind Reg to Fram"
@@ -202,13 +202,13 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
               mc' = mc{ compiler=key : compiler mc }
           in ( mc', fr{ frProcess=p' } )
 
-  variants fr@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
+  options fr@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
     where
-      fromCells = [ PUVar v $ constrain cell v
+      fromCells = [ EffectOpt v $ constrain cell v
                   | (_addr, cell@Cell{..}) <- assocs frMemory
                   , v <- cell2acts allowOutput cell
                   ]
-      fromRemain = [ PUVar act $ constrain cell act
+      fromRemain = [ EffectOpt act $ constrain cell act
                    | mc@MicroCode { actions=act:_ } <- frRemains
                    , let aCell = availableCell fr mc
                    , isJust aCell
@@ -222,10 +222,10 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
         | otherwise              = TimeConstrain 1 tick maxBound
       constrain _cell (Push _) = TimeConstrain 1 tick maxBound
 
-  step fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@PUAct{ aAt=at@Event{..}, .. }
+  step fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@EffectAct{ eaAt=at@Event{..}, .. }
     | tick0 > eStart = error "You can't start work yesterday:)"
 
-    | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< aEffect) . head . actions) frRemains
+    | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< eaEffect) . head . actions) frRemains
     = case availableCell fr mc of
         Just (addr, cell) ->
           let (key, p') = modifyProcess p0 $ bindFB2Cell addr fb tick0
@@ -238,9 +238,9 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
             step fr' act0
         Nothing -> error $ "Can't find available cell for: " ++ show fb ++ "!"
 
-    | Just (addr, cell) <- find (any (<< aEffect) . cell2acts True . snd) $ assocs frMemory
+    | Just (addr, cell) <- find (any (<< eaEffect) . cell2acts True . snd) $ assocs frMemory
     = case cell of
-        Cell{ input=Def mc@MicroCode{ actions=act : _ } } | act << aEffect ->
+        Cell{ input=Def mc@MicroCode{ actions=act : _ } } | act << eaEffect ->
             let (p', mc') = doAction addr p0 mc
                 cell' = updateLastWrite (tick p') cell
                 cell'' = case mc' of
@@ -253,7 +253,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
             in fr{ frMemory=frMemory // [(addr, cell'')]
                  , frProcess=p'
                  }
-        Cell{ current=Just mc@MicroCode{ actions=act : _ } } | act << aEffect ->
+        Cell{ current=Just mc@MicroCode{ actions=act : _ } } | act << eaEffect ->
             let (p', mc') = doAction addr p0 mc
                 cell' = updateLastWrite (tick p') cell
                 cell'' = cell'{ input=UsedOrBlocked
@@ -264,7 +264,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
             in fr{ frMemory=frMemory // [(addr, cell'')]
                  , frProcess=p'
                  }
-        Cell{ output=Def mc@MicroCode{ actions=act : _ } } | act << aEffect ->
+        Cell{ output=Def mc@MicroCode{ actions=act : _ } } | act << eaEffect ->
             let (p', _mc') = doAction addr p0 mc
                 -- Вот тут есть потенциальная проблема которую не совсем ясно как можно решить,
                 -- а именно, если output происходит в последний такт вычислительного цикла
@@ -279,11 +279,11 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
 
     | otherwise = error $ "Can't found selected action: " ++ show act0
                   ++ " tick: " ++ show (tick p0) ++ "\n"
-                  ++ "available variants: \n" ++ concatMap ((++ "\n") . show) (variants fr)
+                  ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options fr)
                   ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
                   ++ "remains:\n" ++ concatMap ((++ "\n") . show) frRemains
     where
-      updateLastWrite t cell | Push _ <- aEffect = cell{ lastWrite=Just t }
+      updateLastWrite t cell | Push _ <- eaEffect = cell{ lastWrite=Just t }
                              | otherwise = cell{ lastWrite=Nothing }
 
       doAction addr p mc@MicroCode{..} =
@@ -295,8 +295,8 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
       mkWork _addr _p MicroCode{ actions=[] } = error "Fram internal error, mkWork"
       mkWork addr p mc@MicroCode{ actions=x:xs, ..} =
         let ((ef, instrs), p') = modifyProcess p $ do
-              e <- add at aEffect
-              i1 <- add at $ act2Signal addr aEffect
+              e <- add at eaEffect
+              i1 <- add at $ act2Signal addr eaEffect
               is <- if tick0 < eStart
                 then do
                   i2 <- add (Event tick0 (eStart - tick0)) nop
@@ -308,7 +308,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
         in (p', mc{ effect=ef : effect
                   , instruction=instrs ++ instruction
                   , workBegin=workBegin `orElse` Just eStart
-                  , actions=if x == aEffect then xs else (x \\\ aEffect) : xs
+                  , actions=if x == eaEffect then xs else (x \\\ eaEffect) : xs
                   })
 
       finish p MicroCode{..} = snd $ modifyProcess p $ do
@@ -316,6 +316,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
         let duration = (eStart + eDuration) - start
         h <- add (Event start duration) (fb :: FB v) -- fb
         mapM_ (relation . Vertical h) compiler
+        mapM_ (relation . Vertical h) effect
         mapM_ (relation . Vertical h) instruction
 
       act2Signal addr (Pull _) = Load addr :: I v t
@@ -403,11 +404,11 @@ instance ( Var v, Time t ) => TestBench Fram Passive v t where
     where
       assert time = case infoAt time steps of
         [Pull (v:_)]
-          | v `M.member` values -> checkBus (values M.! v)
+          | v `M.member` values -> checkBus v $ values M.! v
           | [FB fb :: FB v] <- infoAt time steps
           , Just (Loop _ _ :: Loop v) <- cast fb
           , [Load addr :: I v t] <- infoAt time steps
-          -> checkBus (0x0A00 + addr)
+          -> checkBus v (0x0A00 + addr)
         (_ :: [Effect v]) -> "/* assert placeholder */"
       outputAssert = "\n\n@(posedge clk);\n" ++ loopsOutput ++ outputs
       loopsOutput = concat
@@ -428,8 +429,10 @@ instance ( Var v, Time t ) => TestBench Fram Passive v t where
         , v `M.member` values
         ]
 
-      checkBus v = "if ( !(value_o == " ++ show v ++ ") ) "
-        ++ "$display(\"FAIL Bus assertion failed! %h %h\", value_o, " ++ show v ++ ");"
+      checkBus var value = "if ( !(value_o == " ++ show value ++ ") ) "
+        ++ "$display(\"FAIL Bus assertion failed (" ++ (filter ('\"' /=) $ show var)
+        ++ ")! got: %h expect: %h\", value_o, "
+        ++ show value ++ ");"
       checkBank addr v = "if ( !(fram.bank[" ++ show addr ++ "] == " ++ show v ++ ") ) "
         ++ "$display(\"FAIL Bank[%d] assertion failed! %h %h\", "
         ++ show addr ++ ", value_o, " ++ show v ++ ");\n"

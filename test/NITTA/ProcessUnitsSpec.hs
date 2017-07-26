@@ -78,35 +78,35 @@ naiveGen pu alg = naiveGen' pu alg []
 
 naiveGen' pu alg passedAlg = do
   s1 <- choose (0 :: Int, 1)
-  let vars =
+  let opts =
         -- trace ("vars: " ++ show (variants pu) ++ "\n"
         --         ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs $ frMemory pu)
         --         ++ "remains:\n" ++ concatMap ((++ "\n") . show) (frRemains pu)
         --       ) $
-        variants pu
+        options pu
   case s1 of
-    0 | not $ null vars -> do
-          i <- choose (0, length vars - 1)
-          let var = vars !! i
-          let vs = variables var
-          var' <- if isPull var
+    0 | not $ null opts -> do
+          i <- choose (0, length opts - 1)
+          let opt = opts !! i
+          let vs = variables opt
+          opt' <- if isPull opt
                   then do
                     vs' <- suchThat (sublistOf vs) (not . null)
-                    return $ var{ vEffect=Pull vs' }
-                  else return var
+                    return $ opt{ eoEffect=Pull vs' }
+                  else return opt
           let pu' =
-                -- trace ("step: " ++ show var' ++ " vs: " ++ show vs
+                -- trace ("step: " ++ show opts' ++ " vs: " ++ show vs
                        -- ++ " tick: " ++ show (tick $ process pu)) $
-                  step pu $ C.puVar2puAct var'
+                  step pu $ C.effectVar2act opt'
           naiveGen' pu' alg passedAlg
     1 | not $ null alg -> do
           i <- choose (0, length alg - 1)
           let fb = alg !! i
           let alg' = [ x | x <- alg, x /= fb ]
-          case bind pu fb of
+          case bind fb pu of
             Right pu' -> --trace ("bind: " ++ show fb) $
                          naiveGen' pu' alg' (fb : passedAlg)
             Left _r -> --trace ("skip: " ++ show fb ++ " reason: " ++ show r) $
                       naiveGen' pu alg' passedAlg
-    _ | null vars && null alg -> return (pu, passedAlg)
+    _ | null opts && null alg -> return (pu, passedAlg)
     _ -> naiveGen' pu alg passedAlg

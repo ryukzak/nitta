@@ -28,28 +28,28 @@ import           NITTA.Utils
 
 bindAll pu alg = fromRight undefined $ foldl nextBind (Right pu) alg
   where
-    nextBind (Right s) n = bind s n
-    nextBind (Left r) n  = error r
+    nextBind (Right pu') fb = bind fb pu'
+    nextBind (Left r) _     = error r
 
 manualSteps pu acts = foldl (\pu' act -> step pu' act) pu acts
 
 bindAllAndNaiveSteps pu0 alg = naive' $ bindAll pu0 alg
   where
     naive' pu
-      | var:_ <- variants pu =
+      | var:_ <- options pu =
           naive'
           -- $ trace (concatMap ((++ "\n") . show) $ elems $ frMemory pu)
-          $ step pu $ puVar2puAct var
+          $ step pu $ effectVar2act var
       | otherwise = pu
 
-puVar2puAct PUVar{ vAt=TimeConstrain{..}, .. } = PUAct vEffect $ Event tcFrom tcDuration
+effectVar2act EffectOpt{ eoAt=TimeConstrain{..}, .. } = EffectAct eoEffect $ Event tcFrom tcDuration
 
 
 
 threshhold = 2
 naive net = do
-  let vs = practicalVariants $ variants net
-  let bvs = bindVariants net
+  let vs = practicalOptions $ options net
+  let bvs = bindingOptions net
   -- putStrLn "-----------------------------------"
   -- mapM_ (putStrLn . show) vs
   -- mapM_ (putStrLn . show) bvs
@@ -67,22 +67,22 @@ naive net = do
 
 
 
-practicalVariants = filter
-  (\NetworkVariant{..} -> not $ null $ filter isJust $ M.elems vPush)
+practicalOptions = filter
+  (\TransportOpt{..} -> not $ null $ filter isJust $ M.elems toPush)
 
 naiveStep pu@BusNetwork{..} =
-  case sortBy (\a b -> start a `compare` start b) $ practicalVariants $ variants pu of
+  case sortBy (\a b -> start a `compare` start b) $ practicalOptions $ options pu of
     v:_ -> step pu (v2a v)
     _   -> error "No variants!"
   where
-    start = tcFrom . vPullAt
+    start = tcFrom . toPullAt
     -- mostly mad implementation
-    v2a NetworkVariant{ vPullAt=TimeConstrain{..}, ..} = NetworkAction
-      { aPullFrom=vPullFrom
-      , aPullAt=Event tcFrom tcDuration
-      , aPush=M.map (fmap $ \(title, TimeConstrain{..}) ->
-                        (title, Event pushStartAt tcDuration)
-                    ) vPush
+    v2a TransportOpt{ toPullAt=TimeConstrain{..}, ..} = TransportAct
+      { taPullFrom=toPullFrom
+      , taPullAt=Event tcFrom tcDuration
+      , taPush=M.map (fmap $ \(title, TimeConstrain{..}) ->
+                         (title, Event pushStartAt tcDuration)
+                     ) toPush
       }
       where
         pushStartAt = tcFrom + tcDuration
@@ -90,7 +90,7 @@ naiveStep pu@BusNetwork{..} =
 
 
 
-data BindVariant title v = BindVariant
+data BindOption title v = BindOption
   { fb       :: FB v
   , puTitle  :: title
   , priority :: Maybe BindPriority
@@ -120,48 +120,48 @@ instance Ord BindPriority where
 
 
 autoBind net@BusNetwork{..} =
-  let prioritized = sortBV $ map mkBV bVars
+  let prioritized = sortBV $ map mkBV bOpts
   in case trace' prioritized of
-      (BindVariant fb puTitle _):_ -> subBind fb puTitle net
-      _                            -> error "Bind variants is over!"
+      (BindOption fb puTitle _):_ -> subBind fb puTitle net
+      _                           -> error "Bind variants is over!"
   where
-    bVars = bindVariants net
-    mkBV (fb, titles) = prioritize $ BindVariant fb titles Nothing
+    bOpts = bindingOptions net
+    mkBV (fb, titles) = prioritize $ BindOption fb titles Nothing
     sortBV = reverse . sortBy (\a b -> priority a `compare` priority b)
 
-    mergedBVars = foldl (\m (fb, puTitle) -> M.alter
+    mergedBOpts = foldl (\m (fb, puTitle) -> M.alter
                           (\case
                               Just puTitles -> Just $ puTitle : puTitles
                               Nothing -> Just [puTitle]
                           ) fb m
-                   ) (M.fromList []) bVars
+                   ) (M.fromList []) bOpts
 
-    prioritize bv@BindVariant{..}
-      -- | isCritical fb = bv{ priority=Just Critical}
+    prioritize bv@BindOption{..}
+      | isCritical fb = bv{ priority=Just Critical }
 
       | dependency fb == []
-      , pulls <- filter isPull $ variantsAfterBind bv
+      , pulls <- filter isPull $ optionsAfterBind bv
       , length pulls > 0
       = bv{ priority=Just $ Input $ sum $ map (length . variables) pulls}
 
       | Just (variable, tcFrom) <- find (\(v, _) -> v `elem` variables fb) restlessVariables
       = bv{ priority=Just $ Restless tcFrom }
 
-      | length (mergedBVars M.! fb) == 1
+      | length (mergedBOpts M.! fb) == 1
       = bv{ priority=Just Exclusive }
 
       | otherwise = bv
 
     restlessVariables = [ (variable, tcFrom)
-      | NetworkVariant{ vPullAt=TimeConstrain{..}, ..} <- variants net
-      , (variable, Nothing) <- M.assocs vPush
+      | TransportOpt{ toPullAt=TimeConstrain{..}, ..} <- options net
+      , (variable, Nothing) <- M.assocs toPush
       ]
 
-    variantsAfterBind BindVariant{..} = case bind (niPus M.! puTitle) fb of
-      Right pu' -> filter (\(PUVar act _) -> act `variantOf` fb)  $ variants pu'
+    optionsAfterBind BindOption{..} = case bind fb $ bnPus M.! puTitle of
+      Right pu' -> filter (\(EffectOpt act _) -> act `optionOf` fb) $ options pu'
       _  -> []
       where
-        act `variantOf` fb = not $ null (variables act `intersect` variables fb)
+        act `optionOf` fb = not $ null (variables act `intersect` variables fb)
 
     trace' vs = trace ("---------"++ show (restlessVariables)
                ++ "\n" ++ (concatMap (\v -> show v ++ "\n") vs)) vs

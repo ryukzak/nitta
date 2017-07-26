@@ -31,10 +31,10 @@ import           System.Process
 
 
 
-isPull (PUVar (Pull _) _) = True
-isPull _                  = False
-isPush (PUVar (Push _) _) = True
-isPush _                  = False
+isPull (EffectOpt (Pull _) _) = True
+isPull _                      = False
+isPush (EffectOpt (Push _) _) = True
+isPush _                      = False
 
 
 

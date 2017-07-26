@@ -161,7 +161,7 @@ instance ( Typeable title
 
 
 class PUType t where
-  data Variant t :: * -> * -> *
+  data Option t :: * -> * -> *
   data Action t :: * -> * -> *
 
 
@@ -169,40 +169,40 @@ class PUType t where
 data Passive
 
 instance PUType Passive where
-  data Variant Passive v t
-    = PUVar
-    { vEffect :: Effect v
-    , vAt :: TimeConstrain t
+  data Option Passive v t
+    = EffectOpt
+    { eoEffect :: Effect v
+    , eoAt :: TimeConstrain t
     } deriving (Show)
   data Action Passive v t
-    = PUAct
-    { aEffect :: Effect v
-    , aAt :: Event t
+    = EffectAct
+    { eaEffect :: Effect v
+    , eaAt :: Event t
     } deriving (Show)
 
-instance Vars (Variant Passive v t) v where
-  variables PUVar{..} = variables vEffect
+instance Vars (Option Passive v t) v where
+  variables EffectOpt{..} = variables eoEffect
 
 
 
 data Network title
 
 instance PUType (Network title) where
-  data Variant (Network title) v t
-    = NetworkVariant
-    { vPullFrom :: title
-    , vPullAt   :: TimeConstrain t
-    , vPush     :: M.Map v (Maybe (title, TimeConstrain t))
+  data Option (Network title) v t
+    = TransportOpt
+    { toPullFrom :: title
+    , toPullAt   :: TimeConstrain t
+    , toPush     :: M.Map v (Maybe (title, TimeConstrain t))
     } deriving (Show)
   data Action (Network title) v t
-    = NetworkAction
-    { aPullFrom :: title
-    , aPullAt   :: Event t
-    , aPush     :: M.Map v (Maybe (title, Event t))
+    = TransportAct
+    { taPullFrom :: title
+    , taPullAt   :: Event t
+    , taPush     :: M.Map v (Maybe (title, Event t))
     } deriving (Show)
 
-instance Vars (Variant (Network title) v t) v where
-  variables NetworkVariant{..} = M.keys vPush
+instance Vars (Option (Network title) v t) v where
+  variables TransportOpt{..} = M.keys toPush
 
 
 
@@ -245,8 +245,8 @@ _ \\\ _ = error "Only for Pulls"
 class ( Typeable (Signals pu)
       , ProcessInfo (Instruction pu v t)
       ) => PUClass pu ty v t where
-  bind :: pu ty v t -> FB v -> Either String (pu ty v t)
-  variants :: pu ty v t -> [Variant ty v t]
+  bind :: FB v -> pu ty v t -> Either String (pu ty v t)
+  options :: pu ty v t -> [Option ty v t]
   step     :: pu ty v t -> Action ty v t -> pu ty v t
 
   process :: pu ty v t -> Process v t
@@ -273,8 +273,8 @@ data PU ty v t where
 deriving instance Show (Instruction PU v t)
 
 instance ( Var v, Time t ) => PUClass PU Passive v t where
-  bind (PU pu) fb = PU <$> bind pu fb
-  variants (PU pu) = variants pu
+  bind fb (PU pu) = PU <$> bind fb pu
+  options (PU pu) = options pu
   step (PU pu) act = PU $ step pu act
   process (PU pu) = process pu
   data Signals PU = Signals ()
