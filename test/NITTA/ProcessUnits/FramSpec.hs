@@ -21,6 +21,8 @@ import           NITTA.ProcessUnitsSpec
 import           NITTA.Types
 import           Test.QuickCheck
 
+import           Debug.Trace
+
 type FramIdealAlg = Alg Fram String Int
 
 
@@ -94,11 +96,15 @@ framAlgGen checkCellUsage generalPred =
             | Just (Reg a bs) <- cast fb = st{ values=(a, value) : [(b, value) | b <- bs] ++ values
                                              }
             | otherwise = error $ "Bad FB: " ++ show fb
+          -- check fb = trace ("check ioUses: " ++ show ioUses
+                            -- ++ " checkCellUsage: " ++ show checkCellUsage
+                           -- ) $ check' fb
           check fb0@(FB fb)
             | not $ null (variables fb0 `intersect` usedVariables) = False
             | Just (Reg _ _ :: Reg String) <- cast fb = True
             | not checkCellUsage = True
-            | not (length (nub $ forOutput `union` forInput) + numberOfLoops < framSize) = False
+            | not (ioUses < framSize) = False
             | Just (FramInput addr (_ :: [String])) <- cast fb = addr `notElem` forInput
             | Just (FramOutput addr (_ :: String)) <- cast fb = addr `notElem` forOutput
             | otherwise = True -- for Loop
+          ioUses = length (nub $ forInput `union` forOutput) + numberOfLoops

@@ -38,24 +38,20 @@ main = do
   -- timeline "resource/data.json" pu
   -- testBench pu [("wue",88),("rgc",254),("pfg",254)]
 
-  -- quickCheck (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealAlg -> Bool)
-  -- quickCheck (prop_formalCompletness . framAlg :: FramAlg -> Bool)
+  quickCheck (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealAlg -> Bool)
+  quickCheck (prop_formalCompletness . framAlg :: FramAlg -> Bool)
 
+  quickCheck ((\alg -> do
+                  let x = bindAllAndNaiveSteps alg
+                  prop_simulation x
+              ) :: FramIdealAlg -> Property)
 
+  quickCheck ((\alg -> do
+                  let x = framAlg alg
+                  prop_simulation x
+              ) :: FramAlg -> Property)
 
-  quickCheckWith stdArgs { maxSuccess=10000 }
-    (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealAlg -> Bool)
-  quickCheckWith stdArgs { maxSuccess=10000 }
-    (prop_formalCompletness . framAlg :: FramAlg -> Bool)
-
-  -- quickCheck (prop_simulationNaive :: FramAlg -> Property)
-
-  -- quickCheck (prop_formalCompletness :: FramProcess -> Bool)
-  -- quickCheck (prop_simulation :: FramProcess -> Property)
-
-  -- quickCheckWith stdArgs { maxSuccess=10000
-                         -- } (prop_completeWorkPassivePu :: FramAlg -> Bool)
-  -- quickCheckWith stdArgs { maxSuccess=10000
-                           -- } (prop_simulatePassivePu :: FramAlg -> Property)
-
-
+  -- quickCheckWith stdArgs { maxSuccess=10000 }
+    -- (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealAlg -> Bool)
+  -- quickCheckWith stdArgs { maxSuccess=10000 }
+    -- (prop_formalCompletness . framAlg :: FramAlg -> Bool)

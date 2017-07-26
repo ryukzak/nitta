@@ -29,7 +29,7 @@ import           NITTA.Utils
 bindAll pu alg = fromRight undefined $ foldl nextBind (Right pu) alg
   where
     nextBind (Right s) n = bind s n
-    nextBind (Left s) n  = error $ s ++ " before " ++ show n
+    nextBind (Left r) n  = error r
 
 manualSteps pu acts = foldl (\pu' act -> step pu' act) pu acts
 

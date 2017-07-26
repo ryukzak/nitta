@@ -7,29 +7,22 @@
 {-# LANGUAGE StandaloneDeriving   #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module NITTA.ProcessUnitsSpec
-  -- ( prop_simulationNaive
-  -- , prop_simulation
-  -- , prop_formalCompletnessNaive
-  -- , prop_formalCompletness
-  -- , naiveGen
-  -- , Alg(..)
-  -- )
-where
+module NITTA.ProcessUnitsSpec where
 
 import           Data.Array
 import           Data.List               (nub)
 import           Data.Maybe              (catMaybes)
-import           Data.Set                (fromList)
 import           Data.Set                (fromList, (\\))
 import           Data.Typeable
-import           Debug.Trace
 import qualified NITTA.Compiler          as C
 import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
 import           NITTA.Types
+import           NITTA.Utils
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
+
+import           Debug.Trace
 
 
 data Alg pu v t = Alg
@@ -45,28 +38,10 @@ instance ( Show v, Show t, Show (pu Passive v t) ) => Show (Alg pu v t) where
 
 
 
-prop_simulationNaive (Alg alg values pu) =
-  simulation (C.bindAllAndNaiveSteps pu alg) values
-
-prop_simulation (Alg _alg values _, pu) =
-  simulation pu values
-
-
-simulation pu values = monadicIO $ do
+prop_simulation (Alg _alg values pu) = monadicIO $ do
   res <- run $ testBench pu values
   assert res
 
-
-
-
--- prop_formalCompletnessNaive (Alg alg _values pu) =
-  -- formalCompletness (bindAllAndNaiveSteps pu alg) alg
-
--- prop_formalCompletness ((Alg alg _values _), pu) =
-  -- formalCompletness pu alg
-
-bindAllAndNaiveSteps (Alg alg values pu) =
-  Alg alg values (C.bindAllAndNaiveSteps pu alg)
 
 
 prop_formalCompletness (Alg alg _values pu) =
@@ -94,6 +69,10 @@ prop_formalCompletness (Alg alg _values pu) =
 
 
 
+bindAllAndNaiveSteps (Alg alg values pu) =
+  Alg alg values (C.bindAllAndNaiveSteps pu alg)
+
+
 
 naiveGen pu alg = naiveGen' pu alg []
 
@@ -108,19 +87,26 @@ naiveGen' pu alg passedAlg = do
   case s1 of
     0 | not $ null vars -> do
           i <- choose (0, length vars - 1)
+          let var = vars !! i
+          let vs = variables var
+          var' <- if isPull var
+                  then do
+                    vs' <- suchThat (sublistOf vs) (not . null)
+                    return $ var{ vEffect=Pull vs' }
+                  else return var
           let pu' =
-                trace ("step: " ++ show (vars !! i)
-                       ++ " tick: " ++ show (tick $ process pu)) $
-                step pu $ C.puVar2puAct $ vars !! i
+                -- trace ("step: " ++ show var' ++ " vs: " ++ show vs
+                       -- ++ " tick: " ++ show (tick $ process pu)) $
+                  step pu $ C.puVar2puAct var'
           naiveGen' pu' alg passedAlg
     1 | not $ null alg -> do
           i <- choose (0, length alg - 1)
           let fb = alg !! i
           let alg' = [ x | x <- alg, x /= fb ]
           case bind pu fb of
-            Right pu' -> trace ("bind: " ++ show fb) $
+            Right pu' -> --trace ("bind: " ++ show fb) $
                          naiveGen' pu' alg' (fb : passedAlg)
-            Left r -> trace ("skip: " ++ show fb ++ " reason: " ++ show r) $
+            Left _r -> --trace ("skip: " ++ show fb ++ " reason: " ++ show r) $
                       naiveGen' pu alg' passedAlg
     _ | null vars && null alg -> return (pu, passedAlg)
     _ -> naiveGen' pu alg passedAlg
