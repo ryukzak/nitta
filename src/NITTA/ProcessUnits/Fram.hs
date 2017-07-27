@@ -162,7 +162,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
              in Right fr'{ frRemains=mc' : frRemains }
         else Left "Can't bind Reg to Fram, place for Reg don't exist."
 
-    | Just (Loop a b) <- unbox fb =
+    | Just (Loop bs a) <- unbox fb =
         if -- trace ("ioUses: " ++ show (ioUses fr)) $
            ioUses fr < framSize
         then let bindToCell mc cell@Cell{ input=Undef, output=Undef } =
@@ -170,7 +170,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
                              , output=UsedOrBlocked
                              }
                  bindToCell _ cell = Left $ "Can't bind Loop to Fram Cell: " ++ show cell
-                 ( mc', fr' ) = bind' $ microcode fb [ Pull b, Push a ] bindToCell
+                 ( mc', fr' ) = bind' $ microcode fb [ Pull bs, Push a ] bindToCell
              in Right fr'{ frRemains=mc' : frRemains }
         else Left "Can't bind Loop to Fram, all IO cell already busy."
 
@@ -416,7 +416,7 @@ instance ( Var v, Time t ) => TestBench Fram Passive v t where
         | (Step{ time=Event{..}, .. }, FB fb :: FB v) <- filterSteps steps
         , let fb' = cast fb :: Maybe (Loop v)
         , isJust fb'
-        , let Just (Loop a _b) = fb'
+        , let Just (Loop _bs a) = fb'
         , a `M.member` values
         , let Save addr : _ = infoAt (eStart + eDuration - 1) steps :: [I v t]
         ]

@@ -66,7 +66,7 @@ alg = [ FB.framInput 3 [ "a" ]
       , FB.framOutput 5 "x"
       , FB.framOutput 6 "y"
       , FB.framOutput 7 "z"
-      , FB.loop "g" ["f"]
+      , FB.loop ["f"] "g"
       , FB.reg "f" ["g"]
       ]
 

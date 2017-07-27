@@ -89,10 +89,10 @@ framAlgGen checkCellUsage generalPred =
             | Just (FramOutput addr v) <- cast fb = st{ forOutput=addr : forOutput
                                                       , values=(v, 0x0A00 + addr) : values
                                                       }
-            | Just (Loop a _bs) <- cast fb = st{ numberOfLoops=numberOfLoops + 1
+            | Just (Loop _bs a) <- cast fb = st{ numberOfLoops=numberOfLoops + 1
                                                , values=(a, value) : values
-                                               -- bs check making with independently with TestBench
-                                              }
+                                                 -- bs check making with independently with TestBench
+                                               }
             | Just (Reg a bs) <- cast fb = st{ values=(a, value) : [(b, value) | b <- bs] ++ values
                                              }
             | otherwise = error $ "Bad FB: " ++ show fb

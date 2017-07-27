@@ -28,7 +28,7 @@ instance Arbitrary (FramOutput String) where
   arbitrary = suchThat (FramOutput <$> addrGen <*> forPush) uniqVars
 
 instance Arbitrary (Loop String) where
-  arbitrary = suchThat (Loop <$> forPush <*> forPull) uniqVars
+  arbitrary = suchThat (Loop <$> forPull <*> forPush ) uniqVars
 
 instance Arbitrary (Reg String) where
   arbitrary = suchThat (Reg <$> forPush <*> forPull) uniqVars

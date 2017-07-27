@@ -68,12 +68,12 @@ instance ( Var v ) => FBClass Reg v where
 
 
 
-data Loop v = Loop v [v] deriving (Typeable, Show, Eq, Ord)
-loop a b = FB $ Loop a b
+data Loop v = Loop [v] v deriving (Typeable, Show, Eq, Ord)
+loop bs a = FB $ Loop bs a
 
 instance Vars (Loop v) v where
-  variables (Loop a b) = a : b
+  variables (Loop bs a) = a : bs
 
 instance ( Var v ) => FBClass Loop v where
-  dependency (Loop a b) = []
+  dependency _ = []
   insideOut _ = True
