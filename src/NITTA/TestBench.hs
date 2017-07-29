@@ -29,23 +29,47 @@ import           NITTA.Utils
 import           System.Exit
 import           System.Process
 
+import           Debug.Trace
 
-class ( PUClass pu ty v t, Var v ) => TestBench pu ty v t where
-  fileName :: (pu ty v t) -> String
 
-  -- showSignalsAt :: pu ty v t -> t -> String
-  testControl :: pu ty v t -> M.Map v Int -> String
-  testAsserts :: pu ty v t -> M.Map v Int -> String
 
-  writeTestBench :: pu ty v t -> [(v, Int)] -> IO ()
+
+
+
+
+class TestBenchFiles pu where
+  fileName :: pu -> String
+
+
+
+
+
+class ( TestBenchFiles (pu ty v t)
+      , Typeable (pu ty v t)
+      , Var v
+      ) => TestBench pu ty v t x where
+  testSignals :: pu ty v t -> SimulationContext v x -> String
+  testInputs :: pu ty v t -> SimulationContext v x -> String
+  testOutputs :: pu ty v t -> SimulationContext v x -> String
+
+  simulate :: pu ty v t -> [(v, x)] -> SimulationContext v x
+  simulate pu values = simulateContext pu $ M.fromList $ map (\(v, x) -> ((v, 0), x)) values
+
+  simulateContext :: pu ty v t -> SimulationContext v x -> SimulationContext v x
+
+
+  writeTestBench :: pu ty v t -> [(v, x)] -> IO ()
   writeTestBench pu values = do
-    writeFile (fileName pu ++ ".tb.control.v") $ testControl pu $ M.fromList values
-    writeFile (fileName pu ++ ".tb.asserts.v") $ testAsserts pu $ M.fromList values
+    let cntx = simulate pu values
+    let fn = fileName pu
+    writeFile (fn ++ ".tb.signals.v") $ testSignals pu cntx
+    writeFile (fn ++ ".tb.inputs.v") $ testInputs pu cntx
+    writeFile (fn ++ ".tb.outputs.v") $ testOutputs pu cntx
 
-passiveInputValue :: ( Var v, Time t ) => t -> [Step v t] -> M.Map v Int -> String
-passiveInputValue time steps values = case infoAt time steps of
-  [Push v] | v `M.member` values -> "value_i <= " ++ show (values M.! v) ++ ";"
-  (_ :: [Effect v]) -> "/* input placeholder */"
+-- passiveInputValue :: ( Var v, Time t ) => t -> [Step v t] -> M.Map v Int -> String
+-- passiveInputValue time steps values = case infoAt time steps of
+--   [Push v] | v `M.member` values -> "value_i <= " ++ show (values M.! v) ++ ";"
+--   (_ :: [Effect v]) -> "/* input placeholder */"
 
 
 testBench pu values = do

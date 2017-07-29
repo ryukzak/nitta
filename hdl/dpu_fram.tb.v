@@ -50,7 +50,7 @@ module dpu_fram_tb();
            $display("fram.display(%d) = %h", i, fram.bank[i]);
         end  
         
-`include "hdl/dpu_fram.tb.control.v"
+`include "hdl/dpu_fram.tb.signals.v"
         
         repeat(4) @(posedge clk); $finish;
 
@@ -60,10 +60,21 @@ module dpu_fram_tb();
 	   begin
         @(negedge rst);     
 
-`include "hdl/dpu_fram.tb.asserts.v"
+`include "hdl/dpu_fram.tb.outputs.v"
 
         repeat(4) @(posedge clk); $finish;
 
 	   end
+
+   initial
+	   begin
+        @(negedge rst);     
+
+`include "hdl/dpu_fram.tb.inputs.v"
+
+        repeat(4) @(posedge clk); $finish;
+
+	   end
+
    
 endmodule

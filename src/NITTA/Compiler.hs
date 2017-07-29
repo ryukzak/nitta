@@ -137,7 +137,8 @@ autoBind net@BusNetwork{..} =
                    ) (M.fromList []) bOpts
 
     prioritize bv@BindOption{..}
-      | isCritical fb = bv{ priority=Just Critical }
+      -- В настоящий момент данная операци приводит к тому, что часть FB перестают быть вычислимыми.
+      -- | isCritical fb = bv{ priority=Just Critical }
 
       | dependency fb == []
       , pulls <- filter isPull $ optionsAfterBind bv

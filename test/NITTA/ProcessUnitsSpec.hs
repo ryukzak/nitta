@@ -17,6 +17,7 @@ import           Data.Typeable
 import qualified NITTA.Compiler          as C
 import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
+import           NITTA.Timeline
 import           NITTA.Types
 import           NITTA.Utils
 import           Test.QuickCheck
@@ -40,6 +41,7 @@ instance ( Show v, Show t, Show (pu Passive v t) ) => Show (Alg pu v t) where
 
 prop_simulation (Alg _alg values pu) = monadicIO $ do
   res <- run $ testBench pu values
+  run $   timeline "resource/data.json" pu
   assert res
 
 

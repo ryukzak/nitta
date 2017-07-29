@@ -23,8 +23,8 @@ instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 
 
 
-
-unbox (FB x) = fromDynamic $ toDyn x
+unbox :: ( Typeable v, Typeable (fb v) ) => FB v -> Maybe (fb v)
+unbox (FB x) = cast x
 
 
 

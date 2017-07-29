@@ -56,10 +56,24 @@ setTime t = do
   p <- get
   put p{ tick=t }
 
-whatsHappen t = filter (\Step{ time=Event{..} } -> eStart <= t && t < eStart + eDuration)
-infoAt t = catMaybes . map (\Step{..} -> cast info) . whatsHappen t
-filterSteps :: Typeable a => [Step v t] -> [(Step v t, a)]
-filterSteps = catMaybes . map (\step@Step{..} -> fmap (step, ) $ cast info)
+
+
+whatsHappen t Process{..} =
+  filter (\Step{ time=Event{..} } -> eStart <= t && t < eStart + eDuration) steps
+
+infoAt :: ( Time t
+          , Typeable (info v)
+          ) => t -> Process v t -> [info v]
+infoAt t p = catMaybes $ map (\Step{..} -> cast info) $ whatsHappen t p
+
+filterSteps :: ( Typeable (info v)
+               ) => Process v t -> [(Step v t, info v)]
+filterSteps = catMaybes . map (\step@Step{..} -> fmap (step, ) $ cast info) . steps
+findStep v =
+  find (\(_, info) -> v `elem` variables info) . filterSteps
+
+
+stepStart Step{ time=Event{..} } = eStart
 
 
 

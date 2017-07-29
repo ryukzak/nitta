@@ -41,17 +41,16 @@ main = do
   quickCheck (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealAlg -> Bool)
   quickCheck (prop_formalCompletness . framAlg :: FramAlg -> Bool)
 
-  quickCheck ((\alg -> do
-                  let x = bindAllAndNaiveSteps alg
-                  prop_simulation x
-              ) :: FramIdealAlg -> Property)
+  quickCheck (prop_simulation . bindAllAndNaiveSteps :: FramIdealAlg -> Property)
+  quickCheck (prop_simulation . framAlg :: FramAlg -> Property)
 
-  quickCheck ((\alg -> do
-                  let x = framAlg alg
-                  prop_simulation x
-              ) :: FramAlg -> Property)
+  -- quickCheckWith stdArgs { maxSuccess=1 } ((\alg -> do
+                                               -- let x = bindAllAndNaiveSteps alg
+                                               -- prop_simulation x
+                                           -- ) :: FramIdealAlg -> Property)
 
-  -- quickCheckWith stdArgs { maxSuccess=10000 }
+
+  -- quickCheckWith stdArgs { maxSuccess=1 }
     -- (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealAlg -> Bool)
   -- quickCheckWith stdArgs { maxSuccess=10000 }
     -- (prop_formalCompletness . framAlg :: FramAlg -> Bool)

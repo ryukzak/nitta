@@ -13,7 +13,6 @@ import           Control.Monad
 import           Data.Default
 import           Data.List                (intersect, notElem, nub, sortBy,
                                            union)
-import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.FunctionBlocksSpec ()
 import           NITTA.ProcessUnits.Fram
@@ -21,7 +20,8 @@ import           NITTA.ProcessUnitsSpec
 import           NITTA.Types
 import           Test.QuickCheck
 
-import           Debug.Trace
+-- import           Debug.Trace
+
 
 type FramIdealAlg = Alg Fram String Int
 
@@ -53,9 +53,9 @@ instance Arbitrary FramIdealAlg where
     ST{..} <- framAlgGen True (\ST{..} -> (length forInput + numberOfLoops) > 0)
     return $ Alg (sortBy compareFB acc) values def{ frAllowBlockingInput=False }
       where
-        compareFB (FB a) (FB b)
-          | Just (_ :: Reg String) <- cast a = GT
-          | Just (_ :: Reg String) <- cast b = LT
+        compareFB a b
+          | Just (Reg _ _) <- unbox a = GT
+          | Just (Reg _ _) <- unbox b = LT
           | otherwise = EQ
 
 
@@ -80,31 +80,22 @@ framAlgGen checkCellUsage generalPred =
             { acc=fb : acc
             , usedVariables=variables fb ++ usedVariables
             }
-          specificUpdate (FB fb) value st
-            | Just (FramInput addr vs) <- cast fb = st{ forInput=addr : forInput
-                                                      , values=[ (v, 0x0A00 + addr)
-                                                               | v <- vs
-                                                               ] ++ values
-                                                      }
-            | Just (FramOutput addr v) <- cast fb = st{ forOutput=addr : forOutput
-                                                      , values=(v, 0x0A00 + addr) : values
-                                                      }
-            | Just (Loop _bs a) <- cast fb = st{ numberOfLoops=numberOfLoops + 1
-                                               , values=(a, value) : values
-                                                 -- bs check making with independently with TestBench
-                                               }
-            | Just (Reg a bs) <- cast fb = st{ values=(a, value) : [(b, value) | b <- bs] ++ values
-                                             }
+          specificUpdate fb value st
+            | Just (FramInput addr _vs) <- unbox fb = st{ forInput=addr : forInput }
+            | Just (FramOutput addr v) <- unbox fb = st{ forOutput=addr : forOutput
+                                                       , values=(v, value) : values
+                                                       }
+            | Just (Loop _bs a) <- unbox fb = st{ numberOfLoops=numberOfLoops + 1
+                                                , values=(a, value) : values
+                                                }
+            | Just (Reg a _bs) <- unbox fb = st{ values=(a, value) : values }
             | otherwise = error $ "Bad FB: " ++ show fb
-          -- check fb = trace ("check ioUses: " ++ show ioUses
-                            -- ++ " checkCellUsage: " ++ show checkCellUsage
-                           -- ) $ check' fb
-          check fb0@(FB fb)
-            | not $ null (variables fb0 `intersect` usedVariables) = False
-            | Just (Reg _ _ :: Reg String) <- cast fb = True
+          check fb
+            | not $ null (variables fb `intersect` usedVariables) = False
+            | Just (Reg _ _ :: Reg String) <- unbox fb = True
             | not checkCellUsage = True
-            | not (ioUses < framSize) = False
-            | Just (FramInput addr (_ :: [String])) <- cast fb = addr `notElem` forInput
-            | Just (FramOutput addr (_ :: String)) <- cast fb = addr `notElem` forOutput
+            | not (algIoUses < framSize) = False
+            | Just (FramInput addr _) <- unbox fb = addr `notElem` forInput
+            | Just (FramOutput addr _) <- unbox fb = addr `notElem` forOutput
             | otherwise = True -- for Loop
-          ioUses = length (nub $ forInput `union` forOutput) + numberOfLoops
+          algIoUses = length (nub $ forInput `union` forOutput) + numberOfLoops

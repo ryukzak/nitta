@@ -15,7 +15,7 @@ module Main where
 import           Control.Monad
 import           Data.Array              (array, elems)
 import           Data.Default
-import           Data.Map                (fromList, (!))
+import           Data.Map                (assocs, fromList, (!))
 import           Data.Maybe
 import           Data.Typeable
 import           NITTA.BusNetwork
@@ -72,52 +72,16 @@ alg = [ FB.framInput 3 [ "a" ]
 
 net' = bindAll (net :: BusNetwork String (Network String) String Int) alg
 
--- bindedNet =
---   let ni1 = foldl (\s (fb, dpu) -> subBind fb dpu s) net' [ (alg !! 0, "fram1")
---                                                           , (alg !! 1, "fram1")
---                                                           , (alg !! 2, "fram2")
---                                                           , (alg !! 3, "fram2")
---                                                           , (alg !! 4, "fram2")
---                                                           , (alg !! 5, "fram1")
---                                                           , (alg !! 6, "fram1")
---                                                           , (alg !! 7, "fram1")
---                                                           ]
---   in ni1
-
 ---------------------------------------------------------------------------------
-
 
 main = do
   test <- foldM (\s _ -> naive s) net' $ take 40 $ repeat ()
   timeline "resource/data.json" test
-  -- testBench (getPU "fram1" test :: Fram Passive String Int)
-    -- [ ("a", 0xFF0A), ("x", 0xFF0A)
-    -- , ("b", 0xFF0B), ("y", 0xFF0B)
-    -- , ("c", 0xFF0C), ("z", 0xFF0C)
-    -- , ("f", 0xFF0F), ("g", 0xFF0F)
-    -- ]
+  mapM_ (putStrLn . show) $ steps $ process (getPU "fram2" test :: Fram Passive String Int)
 
-  testBench (getPU "fram2" test :: Fram Passive String Int)
-    [ ("a", 0x0A03), ("x", 0xFF0A)
-    , ("b", 0x0A04), ("y", 0xFF0B)
-    , ("c", 0x0A04), ("z", 0xFF0C)
-    , ("f", 0x0A00) -- потому что Loop должен попасть по адресу 0, так как он свободен.
-    , ("g", 0xFF0F)
-    ]
-
-
-  -- writeTestBench test
-  --   [ ("a", 0x00B3)
-  --   , ("b", 0x00B4)
-  --   , ("c", 0x00B4)
-
-  --   , ("x", 0x00B3)
-  --   , ("y", 0x00B4)
-  --   , ("z", 0x00B4)
-
-  --   , ("f", 0x00B0)
-  --   , ("g", 0x00B0)
-  --   ]
+  -- let cntx = simulate test ([] :: [(String, Int)])
+  -- mapM_ (putStrLn . ("> " ++) . show) $ assocs cntx
+  testBench test ([] :: [(String, Int)])
 
 
 getPU puTitle net = case bnPus net ! puTitle of

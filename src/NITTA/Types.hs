@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 {-# LANGUAGE FlexibleContexts       #-}
@@ -18,7 +19,7 @@ import qualified Data.List     as L
 import qualified Data.Map      as M
 import           Data.Maybe
 import           Data.Typeable
-
+import           Data.Functor.Const
 
 
 class ( Show (fb v), Eq (fb v), Ord (fb v), Vars (fb v) v, Typeable (fb v)
@@ -53,12 +54,18 @@ instance Ord (FB v) where
 
 
 
-class ( Typeable v, Eq v, Ord v, Show v ) => Var v
-instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
+class ( Typeable v, Eq v, Ord v, Show v
+      -- , ToString v
+      ) => Var v
+instance ( Typeable v, Eq v, Ord v, Show v
+         -- , ToString v
+         ) => Var v
 
 class Vars a v | a -> v where
   variables :: a -> [v]
 
+-- class ToString a where toString :: a -> String
+-- instance ToString String where toString s = s
 
 
 
@@ -101,22 +108,19 @@ instance (Time t) => Default (Process v t) where
 
 
 data Step v t where
-  Step :: ( ProcessInfo info ) =>
+  Step :: ( ProcessInfo (info v) ) =>
     { uid  :: ProcessUid
     , time :: Event t
-    , info :: info
+    , info :: info v
     } -> Step v t
 
 deriving instance ( Show v, Show t ) => Show (Step v t)
 
-instance Default (Step v t) where
-  def = Step def undefined ()
 
 
 
-data Relation = Seq [ProcessUid]
-                  | Vertical ProcessUid ProcessUid
-                  deriving (Show, Eq)
+data Relation = Vertical ProcessUid ProcessUid
+              deriving (Show, Eq)
 
 
 
@@ -124,14 +128,12 @@ class ( Show i, Typeable i ) => ProcessInfo i where
   level :: i -> String
   level = show . typeOf
 
-instance ProcessInfo ()
-
-instance ProcessInfo String where
+instance ( Var v ) => ProcessInfo (Const String v) where
   level _ = "Compiler"
 
 instance {-# OVERLAPS #-}
-  ( Typeable pu, Var v, Time t, Show (Instruction pu v t)
-  ) => ProcessInfo (Instruction pu v t) where
+  ( Typeable pu, Var v, Show (Instruction pu v)
+  ) => ProcessInfo (Instruction pu v) where
   level _ = "Instruction"
 
 instance (Var v) => ProcessInfo (FB v) where
@@ -143,19 +145,19 @@ instance (Var v) => ProcessInfo (Effect v) where
 
 
 
-data Nested title v t where
+data Nested title v where
   Nested :: ( ProcessInfo info ) =>
     { nestedUid  :: ProcessUid
     , nestedTitle :: title
     , nestedInfo :: info
-    } -> Nested title v t
+    } -> Nested title v
 
-deriving instance ( Show title ) => Show (Nested title v t)
+deriving instance ( Show title ) => Show (Nested title v)
 
 instance ( Typeable title
          , Show title
-         , Var v, Time t
-         ) => ProcessInfo (Nested title v t)
+         , Var v
+         ) => ProcessInfo (Nested title v)
 
 
 
@@ -243,7 +245,7 @@ _ \\\ _ = error "Only for Pulls"
 
 
 class ( Typeable (Signals pu)
-      , ProcessInfo (Instruction pu v t)
+      , ProcessInfo (Instruction pu v)
       ) => PUClass pu ty v t where
   bind :: FB v -> pu ty v t -> Either String (pu ty v t)
   options :: pu ty v t -> [Option ty v t]
@@ -251,13 +253,17 @@ class ( Typeable (Signals pu)
 
   process :: pu ty v t -> Process v t
 
-  data Instruction pu v t :: *
+  data Instruction pu v :: *
 
   data Signals pu :: *
   signal :: pu ty v t -> S -> t -> Value
   signal pu (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
                     in signal' pu s'
   signal' :: pu ty v t -> Signals pu -> t -> Value
+
+  varValue :: pu ty v t -> SimulationContext v Int -> (v, Int) -> Int
+  variableValue :: FB v -> pu ty v t -> SimulationContext v Int -> (v, Int) -> Int
+  
 
 data S where
   S :: Typeable (Signals a) => Signals a -> S
@@ -270,7 +276,7 @@ data PU ty v t where
         , Typeable (pu ty v t)
         ) => pu ty v t -> PU ty v t
         
-deriving instance Show (Instruction PU v t)
+deriving instance Show (Instruction PU v)
 
 instance ( Var v, Time t ) => PUClass PU Passive v t where
   bind fb (PU pu) = PU <$> bind fb pu
@@ -278,5 +284,12 @@ instance ( Var v, Time t ) => PUClass PU Passive v t where
   step (PU pu) act = PU $ step pu act
   process (PU pu) = process pu
   data Signals PU = Signals ()
-  data Instruction PU v t
+  data Instruction PU v
   signal' = error ""
+
+  varValue (PU pu) cntx vi = varValue pu cntx vi
+  variableValue fb (PU pu) cntx vi = variableValue fb pu cntx vi
+
+
+type SimulationContext v x = M.Map (v, Int) x
+

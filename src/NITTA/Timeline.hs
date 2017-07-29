@@ -32,12 +32,12 @@ instance ToJSON (Step String Int) where
          x -> [ "end" .= (eStart + eDuration) ]
     where
       isInsideOut i
-        | Just (Nested _ title i' :: Nested String String Int) <- cast i
+        | Just (Nested _ title i' :: Nested String String) <- cast i
         , Just (fb :: FB String) <- cast i'
         = insideOut fb
         | otherwise = False
       show' i
-        | Just (Nested _ title i' :: Nested String String Int) <- cast i =
+        | Just (Nested _ title i' :: Nested String String) <- cast i =
             show i'
         | otherwise = show i
 
@@ -70,14 +70,14 @@ timeline filename pu = do
 
 
 group i
-    | Just (Nested _ title i' :: Nested String String Int) <- cast i =
+    | Just (Nested _ title i' :: Nested String String) <- cast i =
         title ++ "/" ++ level i'
     | otherwise = level i
 
 upperGroup i =
   case cast i of
-    Just (Nested _ _ i' :: Nested String String Int) ->
+    Just (Nested _ _ i' :: Nested String String) ->
       case cast i' of
         Just (_ :: FB String) -> Nothing
-        _                        -> Just $ (takeWhile (/= '/') (group i)) ++ "/Function block"
+        _                     -> Just $ (takeWhile (/= '/') (group i)) ++ "/Function block"
     _ -> Nothing

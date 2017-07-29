@@ -19,14 +19,16 @@ import           Control.Monad.State
 import           Data.Array
 import           Data.Default
 import           Data.Either
-import           Data.List           (intersect, nub, sortBy, (\\))
-import qualified Data.Map            as M
-import           Data.Maybe          (catMaybes, fromMaybe, isJust)
+import           Data.Functor.Const
+import           Data.List               (find, intersect, nub, sortBy, (\\))
+import qualified Data.Map                as M
+import           Data.Maybe              (catMaybes, fromMaybe, isJust)
 import           Data.Typeable
+-- import           NITTA.FunctionBlocks    (unbox)
+import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
-
 
 
 
@@ -44,12 +46,13 @@ busNetwork pus wires = BusNetwork [] [] (M.fromList []) (M.fromList pus) def wir
 
 
 
+type II title v = Instruction (BusNetwork title) v
 
 
 instance ( Typeable title, Ord title, Show title, Var v, Time t
          ) => PUClass (BusNetwork title) (Network title) v t where
 
-  data Instruction (BusNetwork title) v t = Transport v title title
+  data Instruction (BusNetwork title) v = Transport v title title
     deriving (Typeable, Show)
 
   data Signals (BusNetwork title) = Wire Int
@@ -70,7 +73,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
     { bnPus=foldl (\s n -> n s) bnPus steps
     , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add (Event transportStartAt transportDuration)
-                (Transport v taPullFrom title :: Instruction (BusNetwork title) v t))
+                (Transport v taPullFrom title))
                 $ M.assocs push'
         _ <- add (Event transportStartAt (transportDuration - 1)) $ Pull pullVars
         setTime $ transportStartAt + transportDuration
@@ -94,8 +97,8 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
   process BusNetwork{..} = let
     transportKey = M.fromList
       [ (variable, uid)
-      | (Just (Transport variable _ _ :: Instruction (BusNetwork title) v t), uid)
-        <- map (\Step{..} -> (cast info, uid)) $ steps bnProcess
+      | (Just (Transport variable _ (_ :: v)), uid)
+          <- map (\Step{..} -> (cast info, uid)) $ steps bnProcess
       ]
     p'@Process{ steps=steps' } = snd $ modifyProcess bnProcess $ do
       let pus = sortBy (\a b -> fst a `compare` fst b) $ M.assocs bnPus
@@ -106,7 +109,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
       addSubProcess transportKey (puTitle, pu) = do
         let subSteps = steps $ process pu
         uids' <- foldM (\dict Step{..} -> do
-                           uid' <- add time (Nested uid puTitle info :: Nested title v t)
+                           uid' <- add time $ Nested uid puTitle info
                            case cast info of
                              Just (fb :: FB v) ->
                                mapM_ (\v -> when (v `M.member` transportKey)
@@ -114,12 +117,23 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
                                      ) $ variables fb
                              Nothing -> return ()
                            return $ M.insert uid uid' dict
-                       ) def subSteps
+                       ) M.empty subSteps
         let subRelations = relations $ process pu
         mapM (\r -> relation $ case r of
                  Vertical a b -> Vertical (uids' M.! a) (uids' M.! b)
-                 _            -> error $ "Unknown relation " ++ show r
              ) subRelations
+
+  variableValue _fb bn cntx vi = varValue bn cntx vi
+
+  varValue bn@BusNetwork{..} cntx vi@(v, _) =
+    let Just (_, Transport _ src _) =
+          find (\(_, Transport v' _ _) -> v == v') $ filterSteps $ process bn
+    in varValue (bnPus M.! src) cntx vi
+
+
+
+
+
 
 
 
@@ -184,7 +198,7 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
                          Nothing  -> Just [fb]
                      ) puTitle bnBinded
   , bnProcess=snd $ modifyProcess p $
-      add (Event tick 0) $ "Bind " ++ show fb ++ " to " ++ puTitle
+      add (Event tick 0) $ Const $ "Bind " ++ show fb ++ " to " ++ puTitle
   , bnRemains=filter (/= fb) bnRemains
   }
 
@@ -192,26 +206,47 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
 
 --------------------------------------------------------------------------
 
-instance ( Typeable title, Ord title, Show title, Var v, Time t, Ix t
-         ) => TestBench (BusNetwork title) (Network title) v t where
+instance TestBenchFiles (BusNetwork title (Network title) v t) where
   fileName _ = "hdl/fram_net"
 
-  testControl bn@BusNetwork{ bnProcess=Process{..}, ..} _values =
-    concatMap (\t -> showSignals (signalsAt t) ++ " @(negedge clk)\n"
-              ) [ 0 .. tick + 1 ]
+instance ( Typeable title, Ord title, Show title, Var v, Time t, Ix t
+         , TestBenchFiles (BusNetwork title (Network title) v t)
+         ) => TestBench (BusNetwork title) (Network title) v t Int where
+
+  testSignals bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx =
+    concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
     where
       wires = map Wire $ reverse $ range $ bounds bnWires
       signalsAt t = map (\w -> signal' bn w t) wires
 
-      showSignals = (\ss -> "wires <= 'b" ++ ss ++ ";"
-                    ) . concat . map show
+      showSignals = (\ss -> "wires <= 'b" ++ ss ++ ";" ) . concat . map show
 
-  testAsserts BusNetwork{ bnProcess=Process{..}, ..} values =
-    concatMap (\t -> "@(posedge clk); #1; " ++ assert t ++ "\n"
-              ) [ 0 .. tick + 1 ]
+  simulateContext bn@BusNetwork{..} cntx =
+    let transports =
+          [ transport
+          | (_, transport) <-
+              sortBy (\(a,_) (b,_) -> stepStart a `compare` stepStart b)
+              $ filterSteps $ process bn
+          ]
+    in foldl ( \cntx' (Transport v src _dst) ->
+                 M.insert (v, 0) (varValue (bnPus M.! src) cntx' (v, 0)) cntx'
+             ) cntx transports
+
+  testInputs _ _ = ""
+
+  testOutputs BusNetwork{ bnProcess=p@Process{..}, ..} cntx =
+    concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. tick + 1 ]
     where
-      assert time = case infoAt time steps of
+      assert time = case infoAt time p of
         [Pull (v : _)]
-          | v `M.member` values ->
-            "if ( !(dp_data == " ++ show (values M.! v) ++ ") ) $display(\"Assertion failed!\", dp_data, " ++ show (values M.! v) ++ ");"
-        (_ :: [Effect v]) -> "/* assert placeholder */"
+          | (v, 0) `M.member` cntx -> concat
+            [ "if ( !(dp_data == " ++ show (cntx M.! (v, 0)) ++ ") ) "
+            ,   "$display("
+            ,     "\""
+            ,       "FAIL wrong value of " ++ show' v ++ " the bus failed "
+            ,       "(got: %h expect: %h)!"
+            ,     "\", "
+            , "dp_data, " ++ show (cntx M.! (v, 0)) ++ ");"
+            ]
+        _ -> "/* assert placeholder */"
+      show' s = filter (/= '\"') $ show s
