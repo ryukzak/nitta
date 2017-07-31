@@ -70,6 +70,40 @@ alg = [ FB.framInput 3 [ "a" ]
       , FB.reg "f" ["g"]
       ]
 
+
+data Program v
+  = Statement (FB v)
+  | DataFlow [Program v]
+  | Switch
+    { conduction :: v
+    , inputs     :: [v]
+    , outputs    :: [v]
+    , branchs    :: [(Int, Program v)]
+    }
+  deriving ( Show )
+
+instance ( Var v ) => Vars (Program v) v where
+  variables (DataFlow ps)  = concatMap variables ps
+  variables (Statement fb) = variables fb
+  variables Switch{..}     = conduction : inputs ++ outputs
+
+program = DataFlow
+  [ Statement $ FB.framInput 3 [ "a" ]
+  , Statement $ FB.framInput 4 [ "b" , "c" ]
+  , Statement $ FB.reg "a" ["x"]
+  , Statement $ FB.reg "b" ["y"]
+  , Statement $ FB.reg "c" ["z"]
+  , Statement $ FB.framOutput 5 "x"
+  , Statement $ FB.framOutput 6 "y"
+  , Switch "x" ["z"] []
+    [ (0, Statement $ FB.framOutput 10 "z")
+    , (1, Statement $ FB.framOutput 11 "z")
+    ]
+  , Statement $ FB.loop ["f"] "g"
+  , Statement $ FB.reg "f" ["g"]
+  ]
+
+
 net' = bindAll (net :: BusNetwork String (Network String) String Int) alg
 
 ---------------------------------------------------------------------------------
