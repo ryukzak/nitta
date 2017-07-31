@@ -369,8 +369,6 @@ sortPuSteps p@Process{..} =
 
 
 bindFB2Cell addr fb t = add (Event t 0) $ Const $ "Bind " ++ show fb ++ " to cell " ++ show addr
--- bindFB :: (Var v, Time t) => FB v -> t -> State (Process v t) Int
-bindFB fb t = add (Event t 0) $ Const $ "Bind " ++ show fb
 
 
 cell2acts _allowOutput Cell{ input=Def MicroCode{ actions=x:_ } }    = [x]

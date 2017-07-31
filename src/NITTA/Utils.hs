@@ -16,6 +16,7 @@ module NITTA.Utils where
 
 import           Control.Monad.State
 import           Data.Default
+import           Data.Functor.Const
 import           Data.List            (find, intersect, isSubsequenceOf,
                                        partition)
 import qualified Data.List            as L
@@ -27,7 +28,6 @@ import qualified NITTA.FunctionBlocks as FB
 import           NITTA.Types
 import           System.Exit
 import           System.Process
-
 
 
 
@@ -55,6 +55,8 @@ relation r = do
 setTime t = do
   p <- get
   put p{ tick=t }
+
+bindFB fb t = add (Event t 0) $ Const $ "Bind " ++ show fb
 
 
 

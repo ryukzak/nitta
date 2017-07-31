@@ -3,6 +3,7 @@
 {-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE TupleSections             #-}
@@ -77,3 +78,21 @@ instance Vars (Loop v) v where
 instance ( Var v ) => FBClass Loop v where
   dependency _ = []
   insideOut _ = True
+
+
+
+
+data Mux v = Mux
+  { mSelect :: v
+  , mInputs :: [v]
+  , mOutput :: [v]
+  } deriving (Typeable, Show, Eq, Ord)
+mux s as bs = FB $ Mux s as bs
+
+instance Vars (Mux v) v where
+  variables Mux{..} = mSelect : mInputs ++ mOutput
+
+instance ( Var v ) => FBClass Mux v where
+  dependency Mux{..} = [ (o, mSelect) | o <- mOutput ]
+                       ++ [ (o, i) | o <- mOutput, i <- mInputs ]
+  insideOut _ = False
