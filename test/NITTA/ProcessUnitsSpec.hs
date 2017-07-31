@@ -26,44 +26,44 @@ import           Test.QuickCheck.Monadic
 import           Debug.Trace
 
 
-data Alg pu v t = Alg
-  { algFB     :: [FB v]
-  , algValues :: [(v, Int)]
-  , algPu     :: pu Passive v t
+data DataFlow pu v t = DataFlow
+  { dfFB     :: [FB v]
+  , dfValues :: [(v, Int)]
+  , dfPU     :: pu Passive v t
   }
 
-instance ( Show v, Show t, Show (pu Passive v t) ) => Show (Alg pu v t) where
-  show Alg{..} = "alg = [\n" ++ concatMap (\x -> "  " ++ show x ++ ",\n") algFB  ++ "  ]\n"
-    ++ "Values: " ++ show algValues
+instance ( Show v, Show t, Show (pu Passive v t) ) => Show (DataFlow pu v t) where
+  show DataFlow{..} = "data flow = [\n" ++ concatMap (\x -> "  " ++ show x ++ ",\n") dfFB  ++ "  ]\n"
+    ++ "Values: " ++ show dfValues
 
 
 
 
-prop_simulation (Alg _alg values pu) = monadicIO $ do
+prop_simulation (DataFlow _df values pu) = monadicIO $ do
   res <- run $ testBench pu values
   run $   timeline "resource/data.json" pu
   assert res
 
 
 
-prop_formalCompletness (Alg alg _values pu) =
-  let vars = concatMap variables alg
+prop_formalCompletness (DataFlow df _values pu) =
+  let vars = concatMap variables df
       steps' = steps $ process pu
       vars' = concatMap variables $ catMaybes
               $ map (\Step{..} -> (cast info :: Maybe (Effect String))) steps'
-      alg' = catMaybes $ map (\Step{..} -> (cast info :: Maybe (FB String))) steps'
+      df' = catMaybes $ map (\Step{..} -> (cast info :: Maybe (FB String))) steps'
   in if and
         [ --trace (">>" ++ show (vars \\ vars')) $
           fromList vars == fromList vars'
         , length (nub vars') == length vars'
-        , length (nub alg') == length alg'
+        , length (nub df') == length df'
         , --trace (">>" ++ show (alg \\ alg')) $
-          fromList alg == fromList alg'
+          fromList df == fromList df'
         ]
      then True
      else
        trace ( "vars: " ++ show (fromList vars \\ fromList vars') ++ "\n"
-             ++ "fbs: " ++ show (fromList alg \\ fromList alg') ++ "\n"
+             ++ "fbs: " ++ show (fromList df \\ fromList df') ++ "\n"
              ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs $ frMemory pu)
              ++ "remains:\n" ++ concatMap ((++ "\n") . show) (frRemains pu)
              )
@@ -71,14 +71,14 @@ prop_formalCompletness (Alg alg _values pu) =
 
 
 
-bindAllAndNaiveSteps (Alg alg values pu) =
-  Alg alg values (C.bindAllAndNaiveSteps pu alg)
+bindAllAndNaiveSteps (DataFlow df values pu) =
+  DataFlow df values (C.bindAllAndNaiveSteps pu df)
 
 
 
-naiveGen pu alg = naiveGen' pu alg []
+naiveGen pu df = naiveGen' pu df []
 
-naiveGen' pu alg passedAlg = do
+naiveGen' pu df passedDF = do
   s1 <- choose (0 :: Int, 1)
   let opts =
         -- trace ("vars: " ++ show (variants pu) ++ "\n"
@@ -100,15 +100,15 @@ naiveGen' pu alg passedAlg = do
                 -- trace ("step: " ++ show opts' ++ " vs: " ++ show vs
                        -- ++ " tick: " ++ show (tick $ process pu)) $
                   step pu $ C.effectVar2act opt'
-          naiveGen' pu' alg passedAlg
-    1 | not $ null alg -> do
-          i <- choose (0, length alg - 1)
-          let fb = alg !! i
-          let alg' = [ x | x <- alg, x /= fb ]
+          naiveGen' pu' df passedDF
+    1 | not $ null df -> do
+          i <- choose (0, length df - 1)
+          let fb = df !! i
+          let df' = [ x | x <- df, x /= fb ]
           case bind fb pu of
             Right pu' -> --trace ("bind: " ++ show fb) $
-                         naiveGen' pu' alg' (fb : passedAlg)
+                         naiveGen' pu' df' (fb : passedDF)
             Left _r -> --trace ("skip: " ++ show fb ++ " reason: " ++ show r) $
-                      naiveGen' pu alg' passedAlg
-    _ | null opts && null alg -> return (pu, passedAlg)
-    _ -> naiveGen' pu alg passedAlg
+                      naiveGen' pu df' passedDF
+    _ | null opts && null df -> return (pu, passedDF)
+    _ -> naiveGen' pu df passedDF

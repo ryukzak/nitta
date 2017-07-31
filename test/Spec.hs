@@ -21,28 +21,14 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Test.QuickCheck
 
--- alg = [FB (Loop "tos" ["mzz"])]
+
+
 main = do
-  -- let vars = concatMap variables alg
-  -- let pu = bindAllAndNaiveSteps (def :: FRAM Passive String Int) alg
-  -- let steps' = steps $ process $ pu
-  -- let vars' = concatMap variables $ catMaybes
-              -- $ map (\Step{..} -> (cast info :: Maybe (Effect String))) steps'
-  -- let alg' = catMaybes $ map (\Step{..} -> (cast info :: Maybe (FB String))) steps'
-  -- putStrLn $ show (fromList vars \\ fromList vars')
-  -- putStrLn $ show (fromList alg \\ fromList alg')
-  -- putStrLn $ show (length (nub vars') == length vars')
-  -- putStrLn $ show (length (nub alg') == length alg')
-  -- mapM_ (putStrLn . show) $ elems $ frMemory pu
-  -- mapM_ (putStrLn . show) $ frRemains pu
-  -- timeline "resource/data.json" pu
-  -- testBench pu [("wue",88),("rgc",254),("pfg",254)]
+  quickCheck (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealDataFlow -> Bool)
+  quickCheck (prop_formalCompletness . framDataFlow :: FramDataFlow -> Bool)
 
-  quickCheck (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealAlg -> Bool)
-  quickCheck (prop_formalCompletness . framAlg :: FramAlg -> Bool)
-
-  quickCheck (prop_simulation . bindAllAndNaiveSteps :: FramIdealAlg -> Property)
-  quickCheck (prop_simulation . framAlg :: FramAlg -> Property)
+  quickCheck (prop_simulation . bindAllAndNaiveSteps :: FramIdealDataFlow -> Property)
+  quickCheck (prop_simulation . framDataFlow :: FramDataFlow -> Property)
 
   -- quickCheckWith stdArgs { maxSuccess=1 } ((\alg -> do
                                                -- let x = bindAllAndNaiveSteps alg

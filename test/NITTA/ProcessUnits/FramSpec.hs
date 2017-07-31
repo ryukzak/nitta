@@ -23,13 +23,13 @@ import           Test.QuickCheck
 -- import           Debug.Trace
 
 
-type FramIdealAlg = Alg Fram String Int
+type FramIdealDataFlow = DataFlow Fram String Int
 
 
-data FramAlg = FramAlg{ framAlg :: FramIdealAlg }
+data FramDataFlow = FramDataFlow{ framDataFlow :: FramIdealDataFlow }
 
-instance Show FramAlg where
-  show = show . framAlg
+instance Show FramDataFlow where
+  show = show . framDataFlow
 
 
 data ST = ST { acc           :: [FB String]
@@ -41,17 +41,17 @@ data ST = ST { acc           :: [FB String]
              } deriving (Show)
 
 
-instance Arbitrary FramAlg where
+instance Arbitrary FramDataFlow where
   arbitrary = do
-    ST{..} <- framAlgGen False (const True)
-    (pu', alg') <- naiveGen def acc
-    return $ FramAlg $ Alg alg' values pu'
+    ST{..} <- framDataFlowGen False (const True)
+    (pu', df') <- naiveGen def acc
+    return $ FramDataFlow $ DataFlow df' values pu'
 
 
-instance Arbitrary FramIdealAlg where
+instance Arbitrary FramIdealDataFlow where
   arbitrary = do
-    ST{..} <- framAlgGen True (\ST{..} -> (length forInput + numberOfLoops) > 0)
-    return $ Alg (sortBy compareFB acc) values def{ frAllowBlockingInput=False }
+    ST{..} <- framDataFlowGen True (\ST{..} -> (length forInput + numberOfLoops) > 0)
+    return $ DataFlow (sortBy compareFB acc) values def{ frAllowBlockingInput=False }
       where
         compareFB a b
           | Just (Reg _ _) <- unbox a = GT
@@ -59,7 +59,7 @@ instance Arbitrary FramIdealAlg where
           | otherwise = EQ
 
 
-framAlgGen checkCellUsage generalPred =
+framDataFlowGen checkCellUsage generalPred =
   suchThat (do
                size <- sized pure -- getSize
                n <- choose (0, size)
@@ -94,8 +94,8 @@ framAlgGen checkCellUsage generalPred =
             | not $ null (variables fb `intersect` usedVariables) = False
             | Just (Reg _ _ :: Reg String) <- unbox fb = True
             | not checkCellUsage = True
-            | not (algIoUses < framSize) = False
+            | not (dfIoUses < framSize) = False
             | Just (FramInput addr _) <- unbox fb = addr `notElem` forInput
             | Just (FramOutput addr _) <- unbox fb = addr `notElem` forOutput
             | otherwise = True -- for Loop
-          algIoUses = length (nub $ forInput `union` forOutput) + numberOfLoops
+          dfIoUses = length (nub $ forInput `union` forOutput) + numberOfLoops
