@@ -202,7 +202,6 @@ instance PUType (Network title) where
     , taPullAt   :: Event t
     , taPush     :: M.Map v (Maybe (title, Event t))
     } deriving (Show)
-
 instance Vars (Option (Network title) v t) v where
   variables TransportOpt{..} = M.keys toPush
 

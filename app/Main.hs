@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections          #-}
 -- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
@@ -71,45 +72,34 @@ alg = [ FB.framInput 3 [ "a" ]
       ]
 
 
-data Program v
-  = Statement (FB v)
-  | DataFlow [Program v]
-  | Switch
-    { conduction :: v
-    , inputs     :: [v]
-    , outputs    :: [v]
-    , branchs    :: [(Int, Program v)]
-    }
-  deriving ( Show )
-
-instance ( Var v ) => Vars (Program v) v where
-  variables (DataFlow ps)  = concatMap variables ps
-  variables (Statement fb) = variables fb
-  variables Switch{..}     = conduction : inputs ++ outputs
 
 program = DataFlow
-  [ Statement $ FB.framInput 3 [ "a" ]
-  , Statement $ FB.framInput 4 [ "b" , "c" ]
-  , Statement $ FB.reg "a" ["x"]
-  , Statement $ FB.reg "b" ["y"]
-  , Statement $ FB.reg "c" ["z"]
-  , Statement $ FB.framOutput 5 "x"
-  , Statement $ FB.framOutput 6 "y"
-  , Switch "x" ["z"] []
-    [ (0, Statement $ FB.framOutput 10 "z")
-    , (1, Statement $ FB.framOutput 11 "z")
+  [ Statement $ FB.framInput 0 [ "cond" ]
+  , Statement $ FB.framInput 1 [ "x1", "x2" ]
+  , Statement $ FB.framOutput 2 "cond"
+
+  -- , Statement $ FB.reg "x1" ["y1"]
+  -- , Statement $ FB.framOutput 10 "y1"
+  -- , Statement $ FB.reg "x2" ["y2"]
+  -- , Statement $ FB.framOutput 11 "y2"
+
+  , Switch "cond" ["x1", "x2"] []
+    [ (0, DataFlow [ Statement $ FB.reg "x1" ["y1"], Statement $ FB.framOutput 10 "y1" ])
+    , (1, DataFlow [ Statement $ FB.reg "x2" ["y2"], Statement $ FB.framOutput 11 "y2" ])
     ]
-  , Statement $ FB.loop ["f"] "g"
-  , Statement $ FB.reg "f" ["g"]
+
   ]
 
-
 net' = bindAll (net :: BusNetwork String (Network String) String Int) alg
+net'' = bindAll (net :: BusNetwork String (Network String) String Int) $ functionalBlocks program
 
 ---------------------------------------------------------------------------------
 
 main = do
-  test <- foldM (\s _ -> naive s) net' $ take 40 $ repeat ()
+  let cf = mkControlFlow program
+  let cm = ControlModel cf id []
+  -- let (test, cm') = naive net'' cm
+  let (test, cm') = foldl (\(n, c) _ -> naive n c) (net'', cm) (take 40 $ repeat ())
   timeline "resource/data.json" test
   mapM_ (putStrLn . show) $ steps $ process (getPU "fram2" test :: Fram Passive String Int)
 

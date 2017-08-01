@@ -49,6 +49,7 @@ busNetwork pus wires = BusNetwork [] [] (M.fromList []) (M.fromList pus) def wir
 type II title v = Instruction (BusNetwork title) v
 
 
+
 instance ( Typeable title, Ord title, Show title, Var v, Time t
          ) => PUClass (BusNetwork title) (Network title) v t where
 
@@ -67,15 +68,44 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
     = Right bn{ bnRemains=fb : bnRemains }
   bind _fb _bn = Left "no"
 
-  options = nittaOptions
+  options BusNetwork{..} = concat $
+    [
+      [ TransportOpt fromPu pullAt $ M.fromList pushs
+      | pushs <- sequence $ map pushOptionsFor pullVars
+      , let pushTo = catMaybes $ map (fmap fst . snd) pushs
+      , length (nub pushTo) == length pushTo
+      ]
+    | (fromPu, vars) <- puOptions
+    , EffectOpt (Pull pullVars) pullAt <- vars
+    ]
+    where
+      pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
+      pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
 
-  step ni@BusNetwork{..} TransportAct{..} = ni
+      pushOptionsFor' v = [ (v, Just (pushTo, pushAt))
+                          | (pushTo, vars) <- puOptions
+                          , EffectOpt (Push pushVar) pushAt <- vars
+                          , pushVar == v
+                          ]
+      availableVars =
+        let functionalBlocks = bnRemains ++ (concat $ M.elems bnBinded)
+            alg = foldl
+                  (\dict (a, b) -> M.adjust ((:) b) a dict)
+                  (M.fromList [(v, []) | v <- concatMap variables functionalBlocks])
+                  $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
+                  $ concatMap dependency functionalBlocks
+            notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
+        in notBlockedVariables \\ bnForwardedVariables
+
+      puOptions = M.assocs $ M.map options bnPus
+
+  step ni@BusNetwork{..} act@TransportAct{..} = ni
     { bnPus=foldl (\s n -> n s) bnPus steps
     , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add (Event transportStartAt transportDuration)
                 (Transport v taPullFrom title))
                 $ M.assocs push'
-        _ <- add (Event transportStartAt (transportDuration - 1)) $ Pull pullVars
+        _ <- add (Event transportStartAt transportDuration) $ Const $ show act -- $ Pull pullVars
         setTime $ transportStartAt + transportDuration
     , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
@@ -133,40 +163,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
 
 
 
-
-
-
-
-nittaOptions BusNetwork{..} = concat $
-  [
-    [ TransportOpt fromPu pullAt $ M.fromList pushs
-    | pushs <- sequence $ map pushOptionsFor pullVars
-    , let pushTo = catMaybes $ map (fmap fst . snd) pushs
-    , length (nub pushTo) == length pushTo
-    ]
-  | (fromPu, vars) <- puOptions
-  , EffectOpt (Pull pullVars) pullAt <- vars
-  ]
-  where
-    pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
-    pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
-
-    pushOptionsFor' v = [ (v, Just (pushTo, pushAt))
-                         | (pushTo, vars) <- puOptions
-                         , EffectOpt (Push pushVar) pushAt <- vars
-                         , pushVar == v
-                         ]
-    availableVars =
-        let functionalBlocks = bnRemains ++ (concat $ M.elems bnBinded)
-            alg = foldl
-              (\dict (a, b) -> M.adjust ((:) b) a dict)
-              (M.fromList [(v, []) | v <- concatMap variables functionalBlocks])
-              $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
-              $ concatMap dependency functionalBlocks
-            notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
-        in notBlockedVariables \\ bnForwardedVariables
-
-    puOptions = M.assocs $ M.map options bnPus
+----------------------------------------------------------------------
 
 
 
@@ -201,6 +198,9 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
       add (Event tick 0) $ Const $ "Bind " ++ show fb ++ " to " ++ puTitle
   , bnRemains=filter (/= fb) bnRemains
   }
+
+
+
 
 
 
