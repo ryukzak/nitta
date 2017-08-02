@@ -18,7 +18,7 @@ import           NITTA.Utils
 
 
 
-instance ToJSON (Step String Int) where
+instance ( ToJSON t, Time t ) => ToJSON (Step String t) where
   toJSON st@Step{ time=Event{..}, ..} =
     object $ [ "id" .= uid
              , "start" .= eStart
@@ -47,6 +47,9 @@ instance ToJSON Relation where
            , "a" .= a
            , "b" .= b
            ]
+
+instance ( ToJSON t ) => ToJSON (SplitTime t) where
+  toJSON (Time t) = toJSON t
 
 data Group = Group { id :: String, nestedGroups :: [String] }
   deriving (Eq, Ord)

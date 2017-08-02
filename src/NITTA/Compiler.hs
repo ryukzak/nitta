@@ -18,7 +18,7 @@ import           Data.Either
 import           Data.List               (find, intersect, nub, partition,
                                           sortBy, (\\))
 import qualified Data.Map                as M
-import           Data.Maybe              (isJust)
+import           Data.Maybe              (catMaybes, isJust)
 import           Debug.Trace
 import           NITTA.BusNetwork
 import           NITTA.FunctionBlocks
@@ -49,8 +49,6 @@ effectVar2act EffectOpt{ eoAt=TimeConstrain{..}, .. } = EffectAct eoEffect $ Eve
 
 
 
--- data SplitTime tag = Single Int
-                   -- | Splited SplitTime tag
 
 data Program v
   = Statement (FB v)
@@ -124,10 +122,8 @@ currentCotrolFlow cm = controlFlow $ (currentPlace cm) cm
 
 
 controlFlowOptions cm
-  = let cf' = trace (show $ currentCotrolFlow cm) $ currentCotrolFlow cm
-        tmp = controlOptions' cf'
-        x = filter (`notElem` usedVariables cm) tmp
-    in x
+  = let cf = currentCotrolFlow cm
+    in filter (`notElem` usedVariables cm) $ controlOptions' cf
   where
     controlOptions' (Atom v)     = [v]
     controlOptions' (Split v vs _) = [v] --  : vs
@@ -147,22 +143,15 @@ controlStep cm@ControlModel{..} v
 
 
 
--- splitVariants cm@ControlModel{..} = place cm
-
+timeSplitOptions controlModel availableVars
+  = let splits = filter isSplit $ (\(Parallel ss) -> ss) $ currentCotrolFlow controlModel
+    in filter isAvalilable splits
+  where
+    isAvalilable (Split c vs _) = all (`elem` availableVars) $ c : vs
 
 
 -- splitProcess v = undefined
 
--- Текущее состояние с точки зрения ControlFlow - определяет текущей положение в алгоритме,
--- в том числе и способ описания времени.
--- Описание текущего момента времени - беда.
-
-
--- dataFlow (DataFlow ps)  = concat dataFlow ps
--- dataFlow Switch{..}     = []
--- dataFlow (Statement fb) = [ variables ]
-
--- currentDataFlow =
 
 
 
@@ -174,14 +163,18 @@ instance ( Var v ) => Vars (Program v) v where
 
 
 
+
+
 threshhold = 2
 
 naive net controlModel
   = let opts = sensibleOptions $ filterByControlModel $ options net
         bindOpts = bindingOptions net
-    in case trace (concatMap ((">"++) . (++"\n") . show) $ controlFlowOptions controlModel)
+    in case -- trace (concatMap ((">"++) . (++"\n") . show) $ controlFlowOptions controlModel)
             (opts, bindOpts) of
-         ([], [])   -> (net, controlModel)
+         ([], [])   -> --trace ("timeSplitOptions: "
+                         --     ++ show (timeSplitOptions controlModel availableVars))
+                       (net, controlModel)
          (_ : _, _) | length opts >= threshhold -> afterStep
          (_, _ : _) -> (autoBind net, controlModel)
          (_ : _, _) -> afterStep
@@ -194,8 +187,8 @@ naive net controlModel
                                                              else Nothing)
                                           ) $ M.assocs toPush
                 }) opts
-
-    afterStep -- pu@BusNetwork{..} cm
+    availableVars = nub $ concatMap (M.keys . toPush) $ options net
+    afterStep
       = case sortBy (\a b -> start a `compare` start b) $ sensibleOptions $ options net of
         v:_ -> let act = option2action v
                    cm' = controlModelStep controlModel
@@ -259,8 +252,8 @@ instance Ord BindPriority where
 autoBind net@BusNetwork{..} =
   let prioritized = sortBV $ map mkBV bOpts
   in case trace' prioritized of
-      (BindOption fb puTitle _):_ -> subBind fb puTitle net
-      _                           -> error "Bind variants is over!"
+      (BindOption fb puTitle _) : _ -> subBind fb puTitle net
+      _                             -> error "Bind variants is over!"
   where
     bOpts = bindingOptions net
     mkBV (fb, titles) = prioritize $ BindOption fb titles Nothing
@@ -283,7 +276,8 @@ autoBind net@BusNetwork{..} =
       = bv{ priority=Just $ Input $ sum $ map (length . variables) pulls}
 
       | Just (variable, tcFrom) <- find (\(v, _) -> v `elem` variables fb) restlessVariables
-      = bv{ priority=Just $ Restless tcFrom }
+      = bv{ priority=Just $ Restless $ fromEnum tcFrom }
+      -- = bv{ priority=Just $ Restless ((\(Time t) -> t) tcFrom) }
 
       | length (mergedBOpts M.! fb) == 1
       = bv{ priority=Just Exclusive }

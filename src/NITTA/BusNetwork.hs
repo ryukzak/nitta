@@ -209,7 +209,7 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
 instance TestBenchFiles (BusNetwork title (Network title) v t) where
   fileName _ = "hdl/fram_net"
 
-instance ( Typeable title, Ord title, Show title, Var v, Time t, Ix t
+instance ( Typeable title, Ord title, Show title, Var v, Time t
          , TestBenchFiles (BusNetwork title (Network title) v t)
          ) => TestBench (BusNetwork title) (Network title) v t Int where
 

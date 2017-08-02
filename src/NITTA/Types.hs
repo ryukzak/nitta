@@ -22,6 +22,35 @@ import           Data.Typeable
 import           Data.Functor.Const
 
 
+
+data SplitTime t
+  = Time t
+  deriving ( Show, Eq, Ord, Typeable )
+
+instance ( Default t ) => Default (SplitTime t) where
+  def = Time def
+
+instance ( Enum t ) => Enum (SplitTime t) where
+  toEnum i = Time $ toEnum i
+  fromEnum (Time i) = fromEnum i
+
+instance ( Num t ) => Bounded (SplitTime t) where
+  minBound = 0
+  maxBound = 1000
+
+instance ( Num t ) => Num (SplitTime t) where
+  (Time a) + (Time b) = Time (a + b)
+  (Time a) * (Time b) = Time (a * b)
+  negate (Time t) = Time $ negate t
+  abs (Time t) = Time $ abs t
+  signum (Time t) = Time $ signum t
+  fromInteger = Time . fromInteger
+
+
+
+
+
+
 class ( Show (fb v), Eq (fb v), Ord (fb v), Vars (fb v) v, Typeable (fb v)
       ) => FBClass fb v where
   dependency :: fb v -> [(v, v)]
