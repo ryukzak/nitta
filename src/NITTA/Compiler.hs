@@ -13,9 +13,9 @@
 
 module NITTA.Compiler where
 
--- import           Control.Lens
 import           Control.Monad
 import           Data.Array              (elems)
+import           Data.Default
 import           Data.Either
 import           Data.List               (find, intersect, nub, partition,
                                           sortBy, (\\))
@@ -74,8 +74,6 @@ isParallel _            = False
 class WithFunctionalBlocks a v | a -> v where
   functionalBlocks :: a -> [FB v]
 
-
-
 instance WithFunctionalBlocks (Program v) v where
   functionalBlocks (Statement fb) = [fb]
   functionalBlocks (DataFlow ss)  = concatMap functionalBlocks ss
@@ -91,7 +89,7 @@ mkControlFlow (Statement fb) = Parallel $ map Atom $ variables fb
 mkControlFlow s@Switch{..}
   = let inputs = inputsOfFBs $ functionalBlocks s
         branchs' = map (\(k, prog) -> SplitBranch
-                         { sTag=show conduction ++ " = " ++ show k
+                         { sTag=Just $ show conduction ++ " = " ++ show k
                          , sForceInputs= --trace ("#" ++ show inputs ++ " "
                                                -- ++ show (variables prog)
                                               -- ) $
@@ -114,43 +112,49 @@ mkControlFlow (DataFlow ss)
 
 
 
-instance ( Var v ) => Show (ControlModel v) where
-  show ControlModel{..} = "cf: " ++ show controlFlow
-                          ++ " used: " ++ show usedVariables
-                          ++ " tag: " ++ currentTag
 
 currentPlace ControlModel{..} = foldr (\get s -> get s) controlFlow currentPlace'
 
 
 
-data SplitBranch v
-  = SplitBranch
-  { sTag         :: String
-  , sForceInputs :: [v]
-  , sControlFlow :: ControlFlow v
-  } deriving ( Show, Eq )
 
-data ControlFlow v
+data ControlModel tag v
+  = ControlModel
+    { controlFlow   :: ControlFlow tag v
+    , currentPlace' :: [ ControlFlow tag v -> ControlFlow tag v ]
+    , usedVariables :: [v]
+    }
+
+instance Default (ControlModel tag v) where
+  def = ControlModel undefined [] []
+
+data ControlFlow tag v
   = Atom v
-  | Parallel [ControlFlow v]
+  | Parallel [ControlFlow tag v]
   | Split{ cond         :: v
          , inputs       :: [v]
-         , splitOptions :: [SplitBranch v]
+         , splitOptions :: [SplitBranch tag v]
          }
   deriving ( Show, Eq )
 
-instance ( Var v ) => Vars (ControlFlow v) v where
+data SplitBranch tag v
+  = SplitBranch
+  { sTag         :: Maybe tag
+  , sForceInputs :: [v]
+  , sControlFlow :: ControlFlow tag v
+  } deriving ( Show, Eq )
+
+
+
+instance ( Var v ) => Vars (ControlFlow tag v) v where
   variables (Atom v)       = [v]
   variables (Parallel cfs) = concatMap variables cfs
   variables Split{..}      = cond : concatMap (variables . sControlFlow) splitOptions
 
-data ControlModel v
-  = ControlModel
-    { controlFlow   :: ControlFlow v
-    , currentPlace' :: [ ControlFlow v -> ControlFlow v ]
-    , currentTag    :: String
-    , usedVariables :: [v]
-    }
+instance ( Var v, Show tag ) => Show (ControlModel tag v) where
+  show ControlModel{..} = "cf: " ++ show controlFlow
+                          ++ " used: " ++ show usedVariables
+
 
 
 
@@ -217,8 +221,8 @@ data Forks tag v t
   }
   | Fork
   { net          :: BusNetwork String (Network String) v t
-  , controlModel :: ControlModel v
-  , timeTag      :: tag
+  , controlModel :: ControlModel tag v
+  , timeTag      :: Maybe tag
   , forceInputs  :: [v]
   }
 
@@ -240,9 +244,8 @@ splitProcess f@Fork{..} s@(Split cond is branchs)
   = let ControlModel{..} = controlModel
         t = tick $ process net
         f : fs = map (\SplitBranch{..} -> Fork
-                       { net=updTime net $ setTag sTag t
+                       { net=updTime net t{ tag=sTag }
                        , controlModel=controlModel{ currentPlace'=selectSplit sTag : currentPlace'
-                                                  , currentTag=sTag
                                                   }
                        , timeTag=sTag
                        , forceInputs=sForceInputs
@@ -273,17 +276,16 @@ naive !f@Forks{..}
         t = maximum $ map (tick . process . net) $ current' : completed
         parallelSteps = concatMap
           (\Fork{ net=n
-                , timeTag=tag
+                , timeTag=forkTag
                 } -> filter (\Step{ time=Event{..} } ->
-                               trace ("@ " ++ show tag ++ " " ++ show eStart) $ case eStart of
-                                TaggetTime tag' _ -> tag == tag'
-                                _                 -> False
+                               trace ("@ " ++ show forkTag ++ " " ++ show eStart) $
+                               forkTag == (tag eStart)
                             ) $ steps $ process n
           ) completed
     in case (isOver current', remains) of
          (True, r:rs) -> f{ current=r, remains=rs, completed=current' : completed }
          (True, _)    -> let net''@BusNetwork{ bnProcess=p }
-                               = updTime net' $ setTag (timeTag merge) t
+                               = updTime net' t{ tag=timeTag merge }
                          in merge{ net=net''{ bnProcess=snd $ modifyProcess p $ do
                                                 mapM_ (\Step{..} -> add time info)
                                                   $ trace (">" ++ show parallelSteps) parallelSteps

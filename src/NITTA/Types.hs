@@ -23,51 +23,45 @@ import           Data.Functor.Const
 
 
 
-data SplitTime t
-  = Time t
-  | TaggetTime String t
-  deriving ( Show, Eq, Typeable )
+data TaggetTime tag t
+  = TaggetTime
+  { tag :: Maybe tag
+  , clock :: t
+  } deriving ( Show, Typeable )
 
-instance ( Ord t ) => Ord (SplitTime t) where
-  (Time a) `compare` (Time b) = a `compare` b
-  (TaggetTime _ a) `compare` (Time b) = a `compare` b
-  (Time a) `compare` (TaggetTime _ b) = a `compare` b
+instance ( Eq t ) => Eq (TaggetTime tag t) where
+  (TaggetTime _ a) == (TaggetTime _ b) = a == b
+instance ( Ord t ) => Ord (TaggetTime tag t) where
   (TaggetTime _ a) `compare` (TaggetTime _ b) = a `compare` b
 
-instance ( Default t ) => Default (SplitTime t) where
-  def = Time def
+instance ( Default t ) => Default (TaggetTime tag t) where
+  def = TaggetTime Nothing def
 
-instance ( Enum t ) => Enum (SplitTime t) where
-  toEnum i = Time $ toEnum i
-  fromEnum (Time i) = fromEnum i
+instance ( Enum t ) => Enum (TaggetTime tag t) where
+  toEnum i = TaggetTime Nothing $ toEnum i
   fromEnum (TaggetTime _ i) = fromEnum i
 
-instance ( Num t ) => Bounded (SplitTime t) where
-  minBound = 0
-  maxBound = 1000
+instance ( Num t ) => Bounded (TaggetTime tag t) where
+  minBound = TaggetTime Nothing 0
+  maxBound = TaggetTime Nothing 1000
 
-instance ( Num t ) => Num (SplitTime t) where
-  (Time a) + (Time b) = Time (a + b)
-  (TaggetTime tag a) + (Time b) = TaggetTime tag (a + b)
-  (TaggetTime tag a) + (TaggetTime tag' b) | tag == tag' = TaggetTime tag (a + b)
-  (Time a) + (TaggetTime tag b) = TaggetTime tag (a + b)
+instance ( Num t, Show tag, Eq tag ) => Num (TaggetTime tag t) where
+  (TaggetTime Nothing a) + (TaggetTime Nothing b) = TaggetTime Nothing (a + b)
+  (TaggetTime (Just tag) a) + (TaggetTime Nothing b) = TaggetTime (Just tag) (a + b)
+  (TaggetTime Nothing a) + (TaggetTime (Just tag) b) = TaggetTime (Just tag) (a + b)
+  (TaggetTime tag_a a) + (TaggetTime tag_b b)
+    | tag_a == tag_b = TaggetTime tag_a (a + b)
+    | otherwise = error $ "Not equal time tag! " ++ show tag_a ++ " " ++ show tag_b
+  fromInteger = TaggetTime Nothing . fromInteger
+  negate t = t{ clock=negate $ clock t }
+  (*) = undefined
+  abs = undefined
+  signum = undefined
 
-  (Time a) * (Time b) = Time (a * b)
-  negate (Time t) = Time $ negate t
-  abs (Time t) = Time $ abs t
-  signum (Time t) = Time $ signum t
-  fromInteger = Time . fromInteger
-
-mkTime "" i = Time i
-mkTime s i = TaggetTime s i
-
-setTag "" (Time t) = Time t
-setTag "" (TaggetTime _ t) = Time t
-setTag tag (Time t) = TaggetTime tag t
-setTag tag (TaggetTime _ t) = TaggetTime tag t
-
-getTimeTag (Time _) = ""
-getTimeTag (TaggetTime tag _) = tag
+  
+-- setTag Nothing (TaggetTime _ t) = TaggetTime Nothing t
+-- setTag (Just tag) (TaggetTime _ t) = TaggetTime (Just tag) t
+-- getTag (TaggetTime tag _) = tag
 
 
 class ( Show (fb v), Eq (fb v), Ord (fb v), Vars (fb v) v, Typeable (fb v)

@@ -29,7 +29,7 @@ import           NITTA.Timeline
 import           NITTA.Types
 import           NITTA.Utils
 
-type T = SplitTime Int
+type T = TaggetTime String Int
 
 fram = PU (def :: Fram Passive String T)
 
@@ -97,10 +97,7 @@ net'' = bindAll (net0 :: BusNetwork String (Network String) String T) $ function
 ---------------------------------------------------------------------------------
 
 main = do
-  let cf = mkControlFlow program
-  let cm = ControlModel cf [] "" []
-
-  let compiler = Fork net'' cm [] []
+  let compiler = Fork net'' (def{ controlFlow=mkControlFlow program }) Nothing []
   let Fork{ net=pu
           , controlModel=cm'
           } = foldl (\comp _ -> naive comp) compiler (take 15 $ repeat ())

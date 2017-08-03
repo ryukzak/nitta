@@ -48,8 +48,7 @@ instance ToJSON Relation where
            , "b" .= b
            ]
 
-instance ( ToJSON t ) => ToJSON (SplitTime t) where
-  toJSON (Time t)           = toJSON t
+instance ( ToJSON t ) => ToJSON (TaggetTime tag t) where
   toJSON (TaggetTime tag t) = toJSON t
 
 data Group = Group { id :: String, nestedGroups :: [String] }
