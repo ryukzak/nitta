@@ -33,7 +33,7 @@ type T = SplitTime Int
 
 fram = PU (def :: Fram Passive String T)
 
-net = busNetwork
+net0 = busNetwork
   [ ("fram1", fram)
   , ("fram2", fram)
   ]
@@ -84,32 +84,41 @@ program = DataFlow
   -- , Statement $ FB.reg "x2" ["y2"]
   -- , Statement $ FB.framOutput 11 "y2"
 
-  , Switch "cond" ["x1", "x2"] []
+  , Switch "cond"
     [ (0, DataFlow [ Statement $ FB.reg "x1" ["y1"], Statement $ FB.framOutput 10 "y1" ])
     , (1, DataFlow [ Statement $ FB.reg "x2" ["y2"], Statement $ FB.framOutput 11 "y2" ])
     ]
 
   ]
 
-net' = bindAll (net :: BusNetwork String (Network String) String T) alg
-net'' = bindAll (net :: BusNetwork String (Network String) String T) $ functionalBlocks program
+net' = bindAll (net0 :: BusNetwork String (Network String) String T) alg
+net'' = bindAll (net0 :: BusNetwork String (Network String) String T) $ functionalBlocks program
 
 ---------------------------------------------------------------------------------
 
 main = do
   let cf = mkControlFlow program
-  let cm = ControlModel cf id []
-  -- let (test, cm') = naive net'' cm
+  let cm = ControlModel cf [] "" []
 
-  let (test, cm') = foldl (\(n, c) _ -> naive n c) (net'', cm) (take 40 $ repeat ())
-  timeline "resource/data.json" test
+  let compiler = Fork net'' cm [] []
+  let Fork{ net=pu
+          , controlModel=cm'
+          } = foldl (\comp _ -> naive comp) compiler (take 15 $ repeat ())
+  -- let Forks{ current=Fork{ net=pu
+                         -- , controlModel=cm'
+                         -- }
+           -- } = foldl (\comp _ -> naive comp) compiler (take 15 $ repeat ())
+  timeline "resource/data.json" pu
+  -- print $ (getPU "fram2" pu :: Fram Passive String T)
   mapM_ (putStrLn . show)
-    $ steps $ process (getPU "fram2" test :: Fram Passive String T)
-
-  -- let cntx = simulate test ([] :: [(String, Int)])
-  -- mapM_ (putStrLn . ("> " ++) . show) $ assocs cntx
-  testBench test ([] :: [(String, Int)])
+    $ steps $ process (getPU "fram2" pu :: Fram Passive String T)
 
 
-getPU puTitle net = case bnPus net ! puTitle of
+
+    -- $ steps $ process pu -- (getPU "fram2" pu :: Fram Passive String T)
+
+  testBench pu ([] :: [(String, Int)])
+
+
+getPU puTitle net0 = case bnPus net0 ! puTitle of
   PU pu -> fromMaybe undefined $ cast pu

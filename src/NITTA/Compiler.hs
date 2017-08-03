@@ -1,4 +1,6 @@
+{-# LANGUAGE PartialTypeSignatures  #-}
 -- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# LANGUAGE BangPatterns           #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -20,6 +22,8 @@ import           Data.List               (find, intersect, nub, partition,
 import qualified Data.Map                as M
 import           Data.Maybe              (catMaybes, isJust)
 import           Debug.Trace
+
+import           Data.Typeable
 import           NITTA.BusNetwork
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.Fram
@@ -55,8 +59,6 @@ data Program v
   | DataFlow [Program v]
   | Switch
     { conduction :: v
-    , inputs     :: [v]
-    , outputs    :: [v]
     , branchs    :: [(Int, Program v)]
     }
   deriving ( Show )
@@ -82,19 +84,24 @@ instance WithFunctionalBlocks (Program v) v where
 
 
 
-data ControlFlow v
-  = Atom v
-  | Parallel [ControlFlow v]
-  | Split v [v] [ControlFlow v]
-  deriving ( Show, Eq )
-
-
 isSplit (Split _ _ _) = True
 isSplit _             = False
 
 mkControlFlow (Statement fb) = Parallel $ map Atom $ variables fb
-mkControlFlow Switch{..}
-  = Split conduction inputs $ map (mkControlFlow . snd) branchs
+mkControlFlow s@Switch{..}
+  = let inputs = inputsOfFBs $ functionalBlocks s
+        branchs' = map (\(k, prog) -> SplitBranch
+                         { sTag=show conduction ++ " = " ++ show k
+                         , sForceInputs= --trace ("#" ++ show inputs ++ " "
+                                               -- ++ show (variables prog)
+                                              -- ) $
+                                        inputs \\ variables prog
+                         , sControlFlow=mkControlFlow prog
+                         }
+                       ) branchs
+  in Split conduction inputs $ branchs'
+
+
 mkControlFlow (DataFlow ss)
   = let cf = map mkControlFlow ss
         parallel = filter isParallel cf
@@ -106,23 +113,59 @@ mkControlFlow (DataFlow ss)
 
 
 
+
+instance ( Var v ) => Show (ControlModel v) where
+  show ControlModel{..} = "cf: " ++ show controlFlow
+                          ++ " used: " ++ show usedVariables
+                          ++ " tag: " ++ currentTag
+
+currentPlace ControlModel{..} = foldr (\get s -> get s) controlFlow currentPlace'
+
+
+
+data SplitBranch v
+  = SplitBranch
+  { sTag         :: String
+  , sForceInputs :: [v]
+  , sControlFlow :: ControlFlow v
+  } deriving ( Show, Eq )
+
+data ControlFlow v
+  = Atom v
+  | Parallel [ControlFlow v]
+  | Split{ cond         :: v
+         , inputs       :: [v]
+         , splitOptions :: [SplitBranch v]
+         }
+  deriving ( Show, Eq )
+
+instance ( Var v ) => Vars (ControlFlow v) v where
+  variables (Atom v)       = [v]
+  variables (Parallel cfs) = concatMap variables cfs
+  variables Split{..}      = cond : concatMap (variables . sControlFlow) splitOptions
+
 data ControlModel v
   = ControlModel
     { controlFlow   :: ControlFlow v
-    , currentPlace  :: ControlModel v -> ControlModel v
+    , currentPlace' :: [ ControlFlow v -> ControlFlow v ]
+    , currentTag    :: String
     , usedVariables :: [v]
     }
 
-instance ( Var v ) => Show (ControlModel v) where
-  show ControlModel{..} = "cf: " ++ show controlFlow ++ " used: " ++ show usedVariables
 
-currentCotrolFlow cm = controlFlow $ (currentPlace cm) cm
+
+
+selectSplit tag (Parallel cfs)
+  = let splits = filter isSplit cfs
+        Just splitOpts = find (any ((== tag) . sTag)) $ map splitOptions splits
+        Just branch = find ((== tag) . sTag) splitOpts
+    in sControlFlow branch
 
 
 
 
 controlFlowOptions cm
-  = let cf = currentCotrolFlow cm
+  = let cf = currentPlace cm
     in filter (`notElem` usedVariables cm) $ controlOptions' cf
   where
     controlOptions' (Atom v)     = [v]
@@ -135,65 +178,142 @@ controlFlowOptions cm
 
 controlStep cm@ControlModel{..} v
   | let opts = controlFlowOptions cm
-  , v `elem` opts
+  -- , v `elem` opts --
   = if length opts == 1
-    then cm{ usedVariables=v : usedVariables, currentPlace=id }
+    then cm{ usedVariables=v : usedVariables } --, currentPlace'=[] }
     else cm{ usedVariables=v : usedVariables }
   | otherwise = error $ "Wrong control step: " ++ show v
+                ++ " opts: " ++ show (controlFlowOptions cm)
 
 
 
 timeSplitOptions controlModel availableVars
-  = let splits = filter isSplit $ (\(Parallel ss) -> ss) $ currentCotrolFlow controlModel
+  = let splits = filter isSplit $ (\(Parallel ss) -> ss) $ currentPlace controlModel
     in filter isAvalilable splits
   where
     isAvalilable (Split c vs _) = all (`elem` availableVars) $ c : vs
 
 
--- splitProcess v = undefined
 
+inputsOfFBs fbs
+  = let deps0 = (M.fromList [(v, []) | v <- concatMap variables fbs])
+        deps = foldl (\dict (a, b) -> M.adjust ((:) b) a dict) deps0 $ concatMap dependency fbs
+    in map fst $ filter (null . snd) $ M.assocs deps
+
+-- outputsOfFBs fbs
+--   = let deps0 = (M.fromList [(v, []) | v <- concatMap variables fbs])
+--         deps = foldl (\dict (a, b) -> M.adjust ((:) b) a dict) deps0 $ concatMap dependency fbs
+--     in filter (\a -> all (not . (a `elem`)) deps) $ M.keys deps
+
+
+
+
+data Forks tag v t
+  = Forks
+  { current   :: Forks tag v t
+  , remains   :: [ Forks tag v t ]
+  , completed :: [ Forks tag v t ]
+  , merge     :: Forks tag v t
+  }
+  | Fork
+  { net          :: BusNetwork String (Network String) v t
+  , controlModel :: ControlModel v
+  , timeTag      :: tag
+  , forceInputs  :: [v]
+  }
 
 
 
 instance ( Var v ) => Vars (Program v) v where
   variables (DataFlow ps)  = concatMap variables ps
   variables (Statement fb) = variables fb
-  variables Switch{..}     = conduction : inputs ++ outputs
+  -- fixme -- outputs and internal transfers...
+  variables s@Switch{..}   = conduction : inputsOfFBs (functionalBlocks s)
 
 
+updTime bn@BusNetwork{..} t
+  = bn{ bnProcess=snd $ modifyProcess bnProcess $ setTime t }
 
 
+splitProcess Forks{} _ = error "Can split only single process."
+splitProcess f@Fork{..} s@(Split cond is branchs)
+  = let ControlModel{..} = controlModel
+        t = tick $ process net
+        f : fs = map (\SplitBranch{..} -> Fork
+                       { net=updTime net $ setTag sTag t
+                       , controlModel=controlModel{ currentPlace'=selectSplit sTag : currentPlace'
+                                                  , currentTag=sTag
+                                                  }
+                       , timeTag=sTag
+                       , forceInputs=sForceInputs
+                       }
+                     ) branchs
+        usedVariables' = nub $ concatMap (variables . sControlFlow) branchs
+    in Forks{ current=f
+            , remains=fs
+            , completed=[]
+            , merge=f{ controlModel=controlModel
+                                    { usedVariables=usedVariables' ++ usedVariables
+                                    }
+                     }
+            }
 
 
 threshhold = 2
 
-naive net controlModel
-  = let opts = sensibleOptions $ filterByControlModel $ options net
+isOver Forks{..} = isOver current && null remains
+isOver Fork{..}
+  = let opts = sensibleOptions $ filterByControlModel controlModel $ options net
         bindOpts = bindingOptions net
-    in case -- trace (concatMap ((">"++) . (++"\n") . show) $ controlFlowOptions controlModel)
-            (opts, bindOpts) of
-         ([], [])   -> --trace ("timeSplitOptions: "
-                         --     ++ show (timeSplitOptions controlModel availableVars))
-                       (net, controlModel)
-         (_ : _, _) | length opts >= threshhold -> afterStep
-         (_, _ : _) -> (autoBind net, controlModel)
-         (_ : _, _) -> afterStep
+    in null opts && null bindOpts
+
+
+naive !f@Forks{..}
+  = let current'@Fork{ net=net' } = naive current
+        t = maximum $ map (tick . process . net) $ current' : completed
+        parallelSteps = concatMap
+          (\Fork{ net=n
+                , timeTag=tag
+                } -> filter (\Step{ time=Event{..} } ->
+                               trace ("@ " ++ show tag ++ " " ++ show eStart) $ case eStart of
+                                TaggetTime tag' _ -> tag == tag'
+                                _                 -> False
+                            ) $ steps $ process n
+          ) completed
+    in case (isOver current', remains) of
+         (True, r:rs) -> f{ current=r, remains=rs, completed=current' : completed }
+         (True, _)    -> let net''@BusNetwork{ bnProcess=p }
+                               = updTime net' $ setTag (timeTag merge) t
+                         in merge{ net=net''{ bnProcess=snd $ modifyProcess p $ do
+                                                mapM_ (\Step{..} -> add time info)
+                                                  $ trace (">" ++ show parallelSteps) parallelSteps
+                                            }
+                                 }
+         (False, _)   -> f{ current=current' }
+
+
+naive !f@Fork{..}
+  = let opts = sensibleOptions $ filterByControlModel controlModel $ options net
+        bindOpts = bindingOptions net
+        splits = timeSplitOptions controlModel availableVars
+    in case (splits, opts, bindOpts) of
+         ([], [], [])    -> trace "over" f
+         (_, _o : _, _)  | length opts >= threshhold -> afterStep
+         (_bo, _, _ : _) -> f{ net=autoBind net }
+         (_, _o : _, _)  -> afterStep
+         (s : _, _, _)   -> trace ("split: " ++ show s) $ splitProcess f s
   where
-    filterByControlModel opts
-      = let cfOpts = controlFlowOptions controlModel
-        in map (\t@TransportOpt{..} -> t
-                 { toPush=M.fromList $ map (\(v, desc) -> (v, if v `elem` cfOpts
-                                                             then desc
-                                                             else Nothing)
-                                          ) $ M.assocs toPush
-                }) opts
     availableVars = nub $ concatMap (M.keys . toPush) $ options net
     afterStep
-      = case sortBy (\a b -> start a `compare` start b) $ sensibleOptions $ options net of
+      = case sortBy (\a b -> start a `compare` start b)
+             $ sensibleOptions $ filterByControlModel controlModel $ options net of
         v:_ -> let act = option2action v
                    cm' = controlModelStep controlModel
                          $ map fst $ filter (isJust . snd) $ M.assocs $ taPush act
-               in (step net act, cm')
+               in trace ("step: " ++ show act)
+                  f{ net=step net act
+                   , controlModel=cm'
+                   }
         _   -> error "No variants!"
     controlModelStep cm (v:[]) = controlStep cm v
     controlModelStep cm (v:vs) = controlModelStep (controlStep cm v) vs
@@ -201,20 +321,39 @@ naive net controlModel
     -- mostly mad implementation
     option2action TransportOpt{ toPullAt=TimeConstrain{..}, ..}
       = TransportAct
+      -- = trace (">" ++ show forceInputs) $ TransportAct
         { taPullFrom=toPullFrom
         , taPullAt=Event tcFrom tcDuration
-        , taPush=M.map (fmap $ \(title, TimeConstrain{..}) ->
-                                 (title, Event pushStartAt tcDuration)
-                       ) toPush
+        , taPush=M.fromList $ map (\(v, o) -> ( v
+                                              , case o of
+                                                  Just o' -> Just $ tc2e o'
+                                                  Nothing | v `elem` forceInputs -> Just $ tc2e opt
+                                                  _ -> tc2e <$> o
+                                              )
+                            ) $ M.assocs toPush
         }
       where
+        tc2e (title, TimeConstrain{..}) = (title, Event pushStartAt tcDuration)
         pushStartAt = tcFrom + tcDuration
+        (_, event) : _ = catMaybes $ M.elems toPush
+        opt = ("", event)
+
+
+
+filterByControlModel controlModel opts
+  = let cfOpts = controlFlowOptions controlModel
+    in map (\t@TransportOpt{..} -> t
+             { toPush=M.fromList $ map (\(v, desc) -> (v, if v `elem` cfOpts
+                                                          then desc
+                                                          else Nothing)
+                                       ) $ M.assocs toPush
+             }) opts
+
 
 
 
 sensibleOptions = filter $
   \TransportOpt{..} -> not $ null $ filter isJust $ M.elems toPush
-
 
 
 
@@ -251,8 +390,9 @@ instance Ord BindPriority where
 
 autoBind net@BusNetwork{..} =
   let prioritized = sortBV $ map mkBV bOpts
-  in case trace' prioritized of
-      (BindOption fb puTitle _) : _ -> subBind fb puTitle net
+  in case prioritized of
+      (BindOption fb puTitle _) : _ -> trace ("bind: " ++ show fb ++ " " ++ show puTitle) $
+                                       subBind fb puTitle net
       _                             -> error "Bind variants is over!"
   where
     bOpts = bindingOptions net

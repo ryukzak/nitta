@@ -25,7 +25,14 @@ import           Data.Functor.Const
 
 data SplitTime t
   = Time t
-  deriving ( Show, Eq, Ord, Typeable )
+  | TaggetTime String t
+  deriving ( Show, Eq, Typeable )
+
+instance ( Ord t ) => Ord (SplitTime t) where
+  (Time a) `compare` (Time b) = a `compare` b
+  (TaggetTime _ a) `compare` (Time b) = a `compare` b
+  (Time a) `compare` (TaggetTime _ b) = a `compare` b
+  (TaggetTime _ a) `compare` (TaggetTime _ b) = a `compare` b
 
 instance ( Default t ) => Default (SplitTime t) where
   def = Time def
@@ -33,6 +40,7 @@ instance ( Default t ) => Default (SplitTime t) where
 instance ( Enum t ) => Enum (SplitTime t) where
   toEnum i = Time $ toEnum i
   fromEnum (Time i) = fromEnum i
+  fromEnum (TaggetTime _ i) = fromEnum i
 
 instance ( Num t ) => Bounded (SplitTime t) where
   minBound = 0
@@ -40,15 +48,26 @@ instance ( Num t ) => Bounded (SplitTime t) where
 
 instance ( Num t ) => Num (SplitTime t) where
   (Time a) + (Time b) = Time (a + b)
+  (TaggetTime tag a) + (Time b) = TaggetTime tag (a + b)
+  (TaggetTime tag a) + (TaggetTime tag' b) | tag == tag' = TaggetTime tag (a + b)
+  (Time a) + (TaggetTime tag b) = TaggetTime tag (a + b)
+
   (Time a) * (Time b) = Time (a * b)
   negate (Time t) = Time $ negate t
   abs (Time t) = Time $ abs t
   signum (Time t) = Time $ signum t
   fromInteger = Time . fromInteger
 
+mkTime "" i = Time i
+mkTime s i = TaggetTime s i
 
+setTag "" (Time t) = Time t
+setTag "" (TaggetTime _ t) = Time t
+setTag tag (Time t) = TaggetTime tag t
+setTag tag (TaggetTime _ t) = TaggetTime tag t
 
-
+getTimeTag (Time _) = ""
+getTimeTag (TaggetTime tag _) = tag
 
 
 class ( Show (fb v), Eq (fb v), Ord (fb v), Vars (fb v) v, Typeable (fb v)
@@ -298,7 +317,6 @@ data S where
 
 
 
-
 data PU ty v t where
   PU :: ( PUClass pu ty v t
         , Typeable (pu ty v t)
@@ -311,12 +329,56 @@ instance ( Var v, Time t ) => PUClass PU Passive v t where
   options (PU pu) = options pu
   step (PU pu) act = PU $ step pu act
   process (PU pu) = process pu
-  data Signals PU = Signals ()
+  data Signals PU
   data Instruction PU v
   signal' = error ""
 
   varValue (PU pu) cntx vi = varValue pu cntx vi
   variableValue fb (PU pu) cntx vi = variableValue fb pu cntx vi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- instance ( PUClass PU (Network title) v t
+--          , Var v, Time t, Typeable tag
+--          ) => PUClass (ForkablePU tag) (Network title) v t where
+--   bind _ Forks{ forks=[] } = Left "All process over."
+--   bind fb f@Forks{ forks=pu : pus }
+--     = (\pu' -> f{ forks=pu' : pus }) <$> bind fb pu
+
+--   options Forks{ forks=[] } = error "All process over."
+--   options Forks{ forks=pu : _ } = options pu
+
+--   step Forks{ forks=[] } _ = error "All process over."
+--   step f@Forks{ forks=pu : pus } act = f{ forks=step pu act : pus }
+
+--   -- FIXME
+--   process Forks{ forks=[] } = error "All process over."
+--   process Forks{ forks=pu : _ } = process pu
+
+--   data Signals (ForkablePU tag)
+--   data Instruction (ForkablePU tag) v
+--   signal' = undefined
+--   varValue _ _ _ = undefined
+--   variableValue _ _ _ _ = undefined
+
+
+
+
+
 
 
 type SimulationContext v x = M.Map (v, Int) x

@@ -11,10 +11,10 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module NITTA.ProcessUnits.Fram
-  -- ( Fram(..)
-  -- , Signals(..)
-  -- , framSize
-  -- )
+  ( Fram(..)
+  , Signals(..)
+  , framSize
+  )
 where
 
 import           Data.Array
@@ -34,7 +34,7 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Prelude               hiding (last)
 
--- import           Debug.Trace
+import           Debug.Trace
 
 
 
@@ -117,8 +117,6 @@ instance ( Eq v ) => Eq (MicroCode v t) where
 
 
 framSize = 16 :: Int
-
-type I v = Instruction Fram v
 
 instance ( Var v, Time t ) => PUClass Fram Passive v t where
 
@@ -225,7 +223,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
       constrain _cell (Push _) = TimeConstrain 1 tick maxBound
 
   step fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@EffectAct{ eaAt=at@Event{..}, .. }
-    | tick0 > eStart = error "You can't start work yesterday:)"
+    | tick0 > eStart = error $ "You can't start work yesterday:)" ++ show tick0 ++ " " ++ show eStart
 
     | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< eaEffect) . head . actions) frRemains
     = case availableCell fr mc of
@@ -290,9 +288,10 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
 
       doAction addr p mc@MicroCode{..} =
         let (p', mc'@MicroCode{ actions=acts' }) = mkWork addr p mc
-        in if null acts'
-           then (finish p' mc', Nothing)
-           else (p', Just mc')
+            result = if null acts'
+              then (finish p' mc', Nothing)
+              else (p', Just mc')
+        in result
 
       mkWork _addr _p MicroCode{ actions=[] } = error "Fram internal error, mkWork"
       mkWork addr p mc@MicroCode{ actions=x:xs, ..} =
@@ -316,7 +315,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
       finish p MicroCode{..} = snd $ modifyProcess p $ do
         let start = fromMaybe (error "workBegin field is empty!") workBegin
         let duration = (eStart + eDuration) - start
-        h <- add (Event start duration) fb
+        h <- add (Event start duration) $ trace (">> " ++ show fb) fb
         mapM_ (relation . Vertical h) compiler
         mapM_ (relation . Vertical h) effect
         mapM_ (relation . Vertical h) instruction

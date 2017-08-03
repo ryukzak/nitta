@@ -42,6 +42,8 @@ data BusNetwork title ty v t =
     , bnProcess            :: Process v t
     , bnWires              :: Array Int [(title, S)]
     }
+-- deriving instance (Show title, Show ty, Show v, Show t, Show (PU Passive v t)) =>
+-- Show( BusNetwork title ty v t )
 busNetwork pus wires = BusNetwork [] [] (M.fromList []) (M.fromList pus) def wires
 
 
@@ -113,7 +115,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
       transportStartAt = eStart taPullAt
       transportDuration = maximum $
         map ((\Event{..} -> (eStart - transportStartAt) + eDuration) . snd) $ M.elems push'
-
+      -- if puTitle not exist - skip it...
       pullStep = M.adjust (\dpu -> step dpu $ EffectAct (Pull pullVars) taPullAt) taPullFrom
       pushStep (var, (dpuTitle, pushAt)) =
         M.adjust (\dpu -> step dpu $ EffectAct (Push var) pushAt) dpuTitle
@@ -168,7 +170,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
 
 
 bindingOptions BusNetwork{..} =
-  concatMap (\fb -> bindVariants' fb) bnRemains
+  concatMap bindVariants' bnRemains
   where
     bindVariants' fb =
       [ (fb, puTitle) -- , newVariants pu fb)
