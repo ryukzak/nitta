@@ -90,10 +90,7 @@ mkControlFlow s@Switch{..}
   = let inputs = inputsOfFBs $ functionalBlocks s
         branchs' = map (\(k, prog) -> SplitBranch
                          { sTag=Just $ show conduction ++ " = " ++ show k
-                         , sForceInputs= --trace ("#" ++ show inputs ++ " "
-                                               -- ++ show (variables prog)
-                                              -- ) $
-                                        inputs \\ variables prog
+                         , sForceInputs=inputs \\ variables prog
                          , sControlFlow=mkControlFlow prog
                          }
                        ) branchs
@@ -113,20 +110,16 @@ mkControlFlow (DataFlow ss)
 
 
 
-currentPlace ControlModel{..} = foldr (\get s -> get s) controlFlow currentPlace'
-
-
 
 
 data ControlModel tag v
   = ControlModel
     { controlFlow   :: ControlFlow tag v
-    , currentPlace' :: [ ControlFlow tag v -> ControlFlow tag v ]
     , usedVariables :: [v]
     }
 
 instance Default (ControlModel tag v) where
-  def = ControlModel undefined [] []
+  def = ControlModel undefined []
 
 data ControlFlow tag v
   = Atom v
@@ -168,9 +161,8 @@ selectSplit tag (Parallel cfs)
 
 
 
-controlFlowOptions cm
-  = let cf = currentPlace cm
-    in filter (`notElem` usedVariables cm) $ controlOptions' cf
+controlFlowOptions cm@ControlModel{..}
+  = filter (`notElem` usedVariables) $ controlOptions' controlFlow
   where
     controlOptions' (Atom v)     = [v]
     controlOptions' (Split v vs _) = [v] --  : vs
@@ -180,19 +172,12 @@ controlFlowOptions cm
       | otherwise
       = error $ "Bad controlFlow: " ++ show cf
 
-controlStep cm@ControlModel{..} v
-  | let opts = controlFlowOptions cm
-  -- , v `elem` opts --
-  = if length opts == 1
-    then cm{ usedVariables=v : usedVariables } --, currentPlace'=[] }
-    else cm{ usedVariables=v : usedVariables }
-  | otherwise = error $ "Wrong control step: " ++ show v
-                ++ " opts: " ++ show (controlFlowOptions cm)
+controlStep cm@ControlModel{..} v = cm{ usedVariables=v : usedVariables }
 
 
 
-timeSplitOptions controlModel availableVars
-  = let splits = filter isSplit $ (\(Parallel ss) -> ss) $ currentPlace controlModel
+timeSplitOptions controlModel@ControlModel{..} availableVars
+  = let splits = filter isSplit $ (\(Parallel ss) -> ss) $ controlFlow
     in filter isAvalilable splits
   where
     isAvalilable (Split c vs _) = all (`elem` availableVars) $ c : vs
@@ -235,18 +220,14 @@ instance ( Var v ) => Vars (Program v) v where
   variables s@Switch{..}   = conduction : inputsOfFBs (functionalBlocks s)
 
 
-updTime bn@BusNetwork{..} t
-  = bn{ bnProcess=snd $ modifyProcess bnProcess $ setTime t }
-
 
 splitProcess Forks{} _ = error "Can split only single process."
 splitProcess f@Fork{..} s@(Split cond is branchs)
   = let ControlModel{..} = controlModel
         t = tick $ process net
         f : fs = map (\SplitBranch{..} -> Fork
-                       { net=updTime net t{ tag=sTag }
-                       , controlModel=controlModel{ currentPlace'=selectSplit sTag : currentPlace'
-                                                  }
+                       { net=setTime t{ tag=sTag } net
+                       , controlModel=controlModel{ controlFlow=sControlFlow }
                        , timeTag=sTag
                        , forceInputs=sForceInputs
                        }
@@ -277,18 +258,15 @@ naive !f@Forks{..}
         parallelSteps = concatMap
           (\Fork{ net=n
                 , timeTag=forkTag
-                } -> filter (\Step{ time=Event{..} } ->
-                               trace ("@ " ++ show forkTag ++ " " ++ show eStart) $
-                               forkTag == (tag eStart)
+                } -> filter (\step@Step{ time=Event{..} } -> forkTag == (tag eStart)
                             ) $ steps $ process n
           ) completed
     in case (isOver current', remains) of
          (True, r:rs) -> f{ current=r, remains=rs, completed=current' : completed }
          (True, _)    -> let net''@BusNetwork{ bnProcess=p }
-                               = updTime net' t{ tag=timeTag merge }
+                               = setTime t{ tag=timeTag merge } net'
                          in merge{ net=net''{ bnProcess=snd $ modifyProcess p $ do
-                                                mapM_ (\Step{..} -> add time info)
-                                                  $ trace (">" ++ show parallelSteps) parallelSteps
+                                                mapM_ (\Step{..} -> add time info) parallelSteps
                                             }
                                  }
          (False, _)   -> f{ current=current' }

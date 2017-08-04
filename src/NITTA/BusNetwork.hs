@@ -30,6 +30,7 @@ import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
 
+-- import           Debug.Trace
 
 
 
@@ -108,7 +109,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
                 (Transport v taPullFrom title))
                 $ M.assocs push'
         _ <- add (Event transportStartAt transportDuration) $ Const $ show act -- $ Pull pullVars
-        setTime $ transportStartAt + transportDuration
+        setProcessTime $ transportStartAt + transportDuration
     , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
     where
@@ -154,6 +155,10 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
         mapM (\r -> relation $ case r of
                  Vertical a b -> Vertical (uids' M.! a) (uids' M.! b)
              ) subRelations
+
+  setTime t bn@BusNetwork{..} = bn{ bnProcess=bnProcess{ tick=t }
+                                  , bnPus=M.map (setTime t) bnPus
+                                  }
 
   variableValue _fb bn cntx vi = varValue bn cntx vi
 

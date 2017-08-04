@@ -223,7 +223,8 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
       constrain _cell (Push _) = TimeConstrain 1 tick maxBound
 
   step fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@EffectAct{ eaAt=at@Event{..}, .. }
-    | tick0 > eStart = error $ "You can't start work yesterday:)" ++ show tick0 ++ " " ++ show eStart
+    | tick0 > eStart
+    = error $ "You can't start work yesterday:)" ++ show tick0 ++ " " ++ show eStart
 
     | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< eaEffect) . head . actions) frRemains
     = case availableCell fr mc of
@@ -304,7 +305,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
                   return [ i1, i2 ]
                 else return [ i1 ]
               mapM_ (relation . Vertical ef) instrs
-              setTime (eStart + eDuration)
+              setProcessTime (eStart + eDuration)
               return (e, is)
         in (p', mc{ effect=ef : effect
                   , instruction=instrs ++ instruction
@@ -325,6 +326,8 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
       nop = Nop
 
   process = sortPuSteps . frProcess
+  setTime t fr@Fram{..} = fr{ frProcess=frProcess{ tick=t } }
+
 
   -- varValue :: pu ty v t -> SimulationContext v x -> (v, Int) -> x
   varValue pu cntx vi@(v, _)

@@ -293,6 +293,7 @@ class ( Typeable (Signals pu)
   step     :: pu ty v t -> Action ty v t -> pu ty v t
 
   process :: pu ty v t -> Process v t
+  setTime :: t -> pu ty v t -> pu ty v t
 
   data Instruction pu v :: *
 
@@ -304,7 +305,7 @@ class ( Typeable (Signals pu)
 
   varValue :: pu ty v t -> SimulationContext v Int -> (v, Int) -> Int
   variableValue :: FB v -> pu ty v t -> SimulationContext v Int -> (v, Int) -> Int
-  
+
 
 data S where
   S :: Typeable (Signals a) => Signals a -> S
@@ -323,6 +324,8 @@ instance ( Var v, Time t ) => PUClass PU Passive v t where
   options (PU pu) = options pu
   step (PU pu) act = PU $ step pu act
   process (PU pu) = process pu
+  setTime t (PU pu) = PU $ setTime t pu
+
   data Signals PU
   data Instruction PU v
   signal' = error ""
@@ -330,49 +333,7 @@ instance ( Var v, Time t ) => PUClass PU Passive v t where
   varValue (PU pu) cntx vi = varValue pu cntx vi
   variableValue fb (PU pu) cntx vi = variableValue fb pu cntx vi
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
--- instance ( PUClass PU (Network title) v t
---          , Var v, Time t, Typeable tag
---          ) => PUClass (ForkablePU tag) (Network title) v t where
---   bind _ Forks{ forks=[] } = Left "All process over."
---   bind fb f@Forks{ forks=pu : pus }
---     = (\pu' -> f{ forks=pu' : pus }) <$> bind fb pu
-
---   options Forks{ forks=[] } = error "All process over."
---   options Forks{ forks=pu : _ } = options pu
-
---   step Forks{ forks=[] } _ = error "All process over."
---   step f@Forks{ forks=pu : pus } act = f{ forks=step pu act : pus }
-
---   -- FIXME
---   process Forks{ forks=[] } = error "All process over."
---   process Forks{ forks=pu : _ } = process pu
-
---   data Signals (ForkablePU tag)
---   data Instruction (ForkablePU tag) v
---   signal' = undefined
---   varValue _ _ _ = undefined
---   variableValue _ _ _ _ = undefined
-
-
-
-
-
+  
 
 
 type SimulationContext v x = M.Map (v, Int) x

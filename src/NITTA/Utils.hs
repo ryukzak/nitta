@@ -52,7 +52,7 @@ relation r = do
   p@Process{..} <- get
   put p{ relations=r : relations }
 
-setTime t = do
+setProcessTime t = do
   p <- get
   put p{ tick=t }
 

@@ -18,7 +18,10 @@ import           NITTA.Utils
 
 
 
-instance ( ToJSON t, Time t ) => ToJSON (Step String t) where
+instance ( Time (TaggetTime tag t)
+         , ToJSON (TaggetTime tag t)
+         , ToJSON tag
+         ) => ToJSON (Step String (TaggetTime tag t)) where
   toJSON st@Step{ time=Event{..}, ..} =
     object $ [ "id" .= uid
              , "start" .= eStart
@@ -26,6 +29,7 @@ instance ( ToJSON t, Time t ) => ToJSON (Step String t) where
              , "group" .= group info
              , "title" .= show st
              , "inside_out" .= isInsideOut info
+             , "time_tag" .= tag eStart
              ]
     ++ case eDuration of
          0 -> [ "type" .= ("point" :: String) ]
