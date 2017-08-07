@@ -23,7 +23,7 @@ import           Test.QuickCheck
 -- import           Debug.Trace
 
 
-type FramIdealDataFlow = DataFlow Fram String Int
+type FramIdealDataFlow = DataFlow (Fram String Int) String Int
 
 
 data FramDataFlow = FramDataFlow{ framDataFlow :: FramIdealDataFlow }
@@ -54,8 +54,8 @@ instance Arbitrary FramIdealDataFlow where
     return $ DataFlow (sortBy compareFB acc) values def{ frAllowBlockingInput=False }
       where
         compareFB a b
-          | Just (Reg _ _) <- unbox a = GT
-          | Just (Reg _ _) <- unbox b = LT
+          | Just (Reg _ _) <- castFB a = GT
+          | Just (Reg _ _) <- castFB b = LT
           | otherwise = EQ
 
 
@@ -81,21 +81,21 @@ framDataFlowGen checkCellUsage generalPred =
             , usedVariables=variables fb ++ usedVariables
             }
           specificUpdate fb value st
-            | Just (FramInput addr _vs) <- unbox fb = st{ forInput=addr : forInput }
-            | Just (FramOutput addr v) <- unbox fb = st{ forOutput=addr : forOutput
-                                                       , values=(v, value) : values
-                                                       }
-            | Just (Loop _bs a) <- unbox fb = st{ numberOfLoops=numberOfLoops + 1
-                                                , values=(a, value) : values
-                                                }
-            | Just (Reg a _bs) <- unbox fb = st{ values=(a, value) : values }
+            | Just (FramInput addr _vs) <- castFB fb = st{ forInput=addr : forInput }
+            | Just (FramOutput addr v) <- castFB fb = st{ forOutput=addr : forOutput
+                                                        , values=(v, value) : values
+                                                        }
+            | Just (Loop _bs a) <- castFB fb = st{ numberOfLoops=numberOfLoops + 1
+                                                 , values=(a, value) : values
+                                                 }
+            | Just (Reg a _bs) <- castFB fb = st{ values=(a, value) : values }
             | otherwise = error $ "Bad FB: " ++ show fb
           check fb
             | not $ null (variables fb `intersect` usedVariables) = False
-            | Just (Reg _ _ :: Reg String) <- unbox fb = True
+            | Just (Reg _ _ :: Reg String) <- castFB fb = True
             | not checkCellUsage = True
             | not (dfIoUses < framSize) = False
-            | Just (FramInput addr _) <- unbox fb = addr `notElem` forInput
-            | Just (FramOutput addr _) <- unbox fb = addr `notElem` forOutput
+            | Just (FramInput addr _) <- castFB fb = addr `notElem` forInput
+            | Just (FramOutput addr _) <- castFB fb = addr `notElem` forOutput
             | otherwise = True -- for Loop
           dfIoUses = length (nub $ forInput `union` forOutput) + numberOfLoops

@@ -11,9 +11,7 @@ module NITTA.ProcessUnitsSpec where
 
 import           Data.Array
 import           Data.List               (nub)
-import           Data.Maybe              (catMaybes)
 import           Data.Set                (fromList, (\\))
-import           Data.Typeable
 import qualified NITTA.Compiler          as C
 import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
@@ -29,10 +27,10 @@ import           Debug.Trace
 data DataFlow pu v t = DataFlow
   { dfFB     :: [FB v]
   , dfValues :: [(v, Int)]
-  , dfPU     :: pu Passive v t
+  , dfPU     :: pu
   }
 
-instance ( Show v, Show t, Show (pu Passive v t) ) => Show (DataFlow pu v t) where
+instance ( Show v, Show t, Show pu ) => Show (DataFlow pu v t) where
   show DataFlow{..} = "data flow = [\n" ++ concatMap (\x -> "  " ++ show x ++ ",\n") dfFB  ++ "  ]\n"
     ++ "Values: " ++ show dfValues
 
@@ -41,17 +39,16 @@ instance ( Show v, Show t, Show (pu Passive v t) ) => Show (DataFlow pu v t) whe
 
 prop_simulation (DataFlow _df values pu) = monadicIO $ do
   res <- run $ testBench pu values
-  run $   timeline "resource/data.json" pu
+  run $ timeline "resource/data.json" pu
   assert res
 
 
 
 prop_formalCompletness (DataFlow df _values pu) =
   let vars = concatMap variables df
-      steps' = steps $ process pu
-      vars' = concatMap variables $ catMaybes
-              $ map (\Step{..} -> (cast info :: Maybe (Effect String))) steps'
-      df' = catMaybes $ map (\Step{..} -> (cast info :: Maybe (FB String))) steps'
+      p = process pu
+      vars' = concatMap variables $ getEffects p
+      df' = getFBs p
   in if and
         [ --trace (">>" ++ show (vars \\ vars')) $
           fromList vars == fromList vars'

@@ -1,15 +1,17 @@
-{-# LANGUAGE TupleSections          #-}
--- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE Rank2Types             #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE TupleSections          #-}
 {-# LANGUAGE UndecidableInstances   #-}
+
+-- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module Main where
 
@@ -21,6 +23,7 @@ import           Data.Maybe
 import           Data.Typeable
 import           NITTA.BusNetwork
 import           NITTA.Compiler
+import           NITTA.Flows
 import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks    as FB
 import           NITTA.ProcessUnits.Fram
@@ -31,31 +34,32 @@ import           NITTA.Utils
 
 type T = TaggetTime String Int
 
-fram = PU (def :: Fram Passive String T)
+fram = PU (def :: Fram String T)
+
 
 net0 = busNetwork
   [ ("fram1", fram)
   , ("fram2", fram)
   ]
-  $ array (0, 15) [ (15, [("fram1", S $ (OE :: Signals Fram))])
-                  , (14, [("fram1", S $ (WR :: Signals Fram))])
+  $ array (0, 15) [ (15, [("fram1", S $ (OE :: Signals (Fram String T)))])
+                  , (14, [("fram1", S $ (WR :: Signals (Fram String T)))])
                   , (13, [])
                   , (12, [])
 
-                  , (11, [("fram1", S $ (ADDR 3 :: Signals Fram))])
-                  , (10, [("fram1", S $ (ADDR 2 :: Signals Fram))])
-                  , ( 9, [("fram1", S $ (ADDR 1 :: Signals Fram))])
-                  , ( 8, [("fram1", S $ (ADDR 0 :: Signals Fram))])
+                  , (11, [("fram1", S $ (ADDR 3 :: Signals (Fram String T)))])
+                  , (10, [("fram1", S $ (ADDR 2 :: Signals (Fram String T)))])
+                  , ( 9, [("fram1", S $ (ADDR 1 :: Signals (Fram String T)))])
+                  , ( 8, [("fram1", S $ (ADDR 0 :: Signals (Fram String T)))])
 
-                  , ( 7, [("fram2", S $ (OE :: Signals Fram))])
-                  , ( 6, [("fram2", S $ (WR :: Signals Fram))])
+                  , ( 7, [("fram2", S $ (OE :: Signals (Fram String T)))])
+                  , ( 6, [("fram2", S $ (WR :: Signals (Fram String T)))])
                   , ( 5, [])
                   , ( 4, [])
 
-                  , ( 3, [("fram2", S $ (ADDR 3 :: Signals Fram))])
-                  , ( 2, [("fram2", S $ (ADDR 2 :: Signals Fram))])
-                  , ( 1, [("fram2", S $ (ADDR 1 :: Signals Fram))])
-                  , ( 0, [("fram2", S $ (ADDR 0 :: Signals Fram))])
+                  , ( 3, [("fram2", S $ (ADDR 3 :: Signals (Fram String T)))])
+                  , ( 2, [("fram2", S $ (ADDR 2 :: Signals (Fram String T)))])
+                  , ( 1, [("fram2", S $ (ADDR 1 :: Signals (Fram String T)))])
+                  , ( 0, [("fram2", S $ (ADDR 0 :: Signals (Fram String T)))])
                   ]
 
 alg = [ FB.framInput 3 [ "a" ]
@@ -91,8 +95,16 @@ program = DataFlow
 
   ]
 
-net' = bindAll (net0 :: BusNetwork String (Network String) String T) alg
-net'' = bindAll (net0 :: BusNetwork String (Network String) String T) $ functionalBlocks program
+-- type GBusNetwork title v t
+  -- = forall spu. ( Typeable spu
+                -- , PUClass (BusNetwork title spu) Passive v t
+                -- ) => BusNetwork String spu (Network String) String T
+
+net' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) alg
+net'' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) $ functionalBlocks program
+-- net''' = bindAll (net0 :: GBusNetwork String String T) alg
+
+
 
 ---------------------------------------------------------------------------------
 
@@ -106,16 +118,15 @@ main = do
                          -- }
            -- } = foldl (\comp _ -> naive comp) compiler (take 15 $ repeat ())
   timeline "resource/data.json" pu
-  -- print $ (getPU "fram2" pu :: Fram Passive String T)
-  mapM_ (putStrLn . show)
-    $ steps $ process (getPU "fram2" pu :: Fram Passive String T)
+  -- print $ (getPU "fram2" pu :: Fram String T)
+  -- mapM_ (putStrLn . show)
+    -- $ steps $ process (getPU "fram2" pu :: Fram String T)
 
-
-
-    -- $ steps $ process pu -- (getPU "fram2" pu :: Fram Passive String T)
-
+  -- don't work as expected...
   testBench pu ([] :: [(String, Int)])
 
 
-getPU puTitle net0 = case bnPus net0 ! puTitle of
-  PU pu -> fromMaybe undefined $ cast pu
+getPU puTitle net0
+  = case bnPus net0 ! puTitle of
+      PU pu | Just pu' <- cast pu -> pu'
+

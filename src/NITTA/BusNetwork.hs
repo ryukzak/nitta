@@ -1,4 +1,3 @@
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
@@ -7,11 +6,14 @@
 {-# LANGUAGE KindSignatures            #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE Rank2Types                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE UndecidableInstances      #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.BusNetwork where
 
@@ -19,12 +21,10 @@ import           Control.Monad.State
 import           Data.Array
 import           Data.Default
 import           Data.Either
-import           Data.Functor.Const
-import           Data.List               (find, intersect, nub, sortBy, (\\))
+import           Data.List               (intersect, nub, sortBy, (\\))
 import qualified Data.Map                as M
 import           Data.Maybe              (catMaybes, fromMaybe, isJust)
 import           Data.Typeable
--- import           NITTA.FunctionBlocks    (unbox)
 import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
 import           NITTA.Types
@@ -32,39 +32,29 @@ import           NITTA.Utils
 
 -- import           Debug.Trace
 
+class ( Typeable v, Eq v, Ord v, Show v ) => Title v
+instance ( Typeable v, Eq v, Ord v, Show v ) => Title v
 
 
-data BusNetwork title ty v t =
+
+data BusNetwork title spu v t =
   BusNetwork
     { bnRemains            :: [FB v]
     , bnForwardedVariables :: [v]
     , bnBinded             :: M.Map title [FB v]
-    , bnPus                :: M.Map title (PU Passive v t)
+    , bnPus                :: M.Map title spu
     , bnProcess            :: Process v t
     , bnWires              :: Array Int [(title, S)]
     }
--- deriving instance (Show title, Show ty, Show v, Show t, Show (PU Passive v t)) =>
--- Show( BusNetwork title ty v t )
+
 busNetwork pus wires = BusNetwork [] [] (M.fromList []) (M.fromList pus) def wires
 
 
 
-type II title v = Instruction (BusNetwork title) v
-
-
-
-instance ( Typeable title, Ord title, Show title, Var v, Time t
-         ) => PUClass (BusNetwork title) (Network title) v t where
-
-  data Instruction (BusNetwork title) v = Transport v title title
-    deriving (Typeable, Show)
-
-  data Signals (BusNetwork title) = Wire Int
-
-  signal' BusNetwork{..} (Wire i) t = foldl (+++) X $ map (uncurry subSignal) $ bnWires ! i
-    where
-      subSignal puTitle s = case bnPus M.! puTitle of
-                                 PU pu -> signal pu s t
+instance ( Title title, Var v, Time t
+         , Typeable (PU Passive v t)
+         , PUClass Passive (PU Passive v t) v t
+         ) => PUClass (Network title) (BusNetwork title (PU Passive v t) v t) v t where
 
   bind fb bn@BusNetwork{..}
     | any (\pu -> isRight $ bind fb pu) $ M.elems bnPus
@@ -91,12 +81,12 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
                           , pushVar == v
                           ]
       availableVars =
-        let functionalBlocks = bnRemains ++ (concat $ M.elems bnBinded)
+        let fbs = bnRemains ++ (concat $ M.elems bnBinded)
             alg = foldl
                   (\dict (a, b) -> M.adjust ((:) b) a dict)
-                  (M.fromList [(v, []) | v <- concatMap variables functionalBlocks])
+                  (M.fromList [(v, []) | v <- concatMap variables fbs])
                   $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
-                  $ concatMap dependency functionalBlocks
+                  $ concatMap dependency fbs
             notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
         in notBlockedVariables \\ bnForwardedVariables
 
@@ -105,10 +95,12 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
   step ni@BusNetwork{..} act@TransportAct{..} = ni
     { bnPus=foldl (\s n -> n s) bnPus steps
     , bnProcess=snd $ modifyProcess bnProcess $ do
-        mapM_ (\(v, (title, _)) -> add (Event transportStartAt transportDuration)
-                (Transport v taPullFrom title))
-                $ M.assocs push'
-        _ <- add (Event transportStartAt transportDuration) $ Const $ show act -- $ Pull pullVars
+        mapM_ (\(v, (title, _)) -> add
+                (Event transportStartAt transportDuration)
+                (InstructionStep
+                  $ (Transport v taPullFrom title :: Instruction (BusNetwork title (PU Passive v t) v t)))
+              ) $ M.assocs push'
+        _ <- add (Event transportStartAt transportDuration) $ InfoStep $ show act -- $ Pull pullVars
         setProcessTime $ transportStartAt + transportDuration
     , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
@@ -127,11 +119,13 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
       pullVars = M.keys push'
 
 
-  process BusNetwork{..} = let
+  process pu@BusNetwork{..} = let
     transportKey = M.fromList
-      [ (variable, uid)
-      | (Just (Transport variable _ (_ :: v)), uid)
-          <- map (\Step{..} -> (cast info, uid)) $ steps bnProcess
+      [ (v, uid st)
+      | st <- steps bnProcess
+      , let instr = getInstruction (proxy pu) st
+      , isJust instr
+      , let (Just (Transport v _ _)) = instr
       ]
     p'@Process{ steps=steps' } = snd $ modifyProcess bnProcess $ do
       let pus = sortBy (\a b -> fst a `compare` fst b) $ M.assocs bnPus
@@ -139,19 +133,18 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
 
     in p'{ steps=reverse steps' }
     where
-      addSubProcess transportKey (puTitle, pu) = do
-        let subSteps = steps $ process pu
+      addSubProcess transportKey (puTitle, pu') = do
+        let subSteps = steps $ process pu'
         uids' <- foldM (\dict Step{..} -> do
-                           uid' <- add time $ Nested uid puTitle info
-                           case cast info of
-                             Just (fb :: FB v) ->
-                               mapM_ (\v -> when (v `M.member` transportKey)
-                                         $ relation $ Vertical (transportKey M.! v) uid'
-                                     ) $ variables fb
-                             Nothing -> return ()
+                           uid' <- add time $ NestedStep puTitle info
+                           when (isFB info) $ do
+                             let FBStep fb = info
+                             mapM_ (\v -> when (v `M.member` transportKey)
+                                          $ relation $ Vertical (transportKey M.! v) uid'
+                                   ) $ variables fb
                            return $ M.insert uid uid' dict
                        ) M.empty subSteps
-        let subRelations = relations $ process pu
+        let subRelations = relations $ process pu'
         mapM (\r -> relation $ case r of
                  Vertical a b -> Vertical (uids' M.! a) (uids' M.! b)
              ) subRelations
@@ -160,13 +153,39 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
                                   , bnPus=M.map (setTime t) bnPus
                                   }
 
+
+
+instance ( Title title, Var v, Time t
+         ) => Controllable (BusNetwork title (PU Passive v t) v t) t where
+
+  data Instruction (BusNetwork title (PU Passive v t) v t)
+    = Transport v title title
+    deriving (Typeable, Show)
+
+  data Signals (BusNetwork title (PU Passive v t) v t) = Wire Int
+
+  signal' BusNetwork{..} (Wire i) t = foldl (+++) X $ map (uncurry subSignal) $ bnWires ! i
+    where
+      subSignal puTitle s = case bnPus M.! puTitle of
+        PU pu' -> signal (pu') s t
+
+
+
+instance ( PUClass (Network title) (BusNetwork title (PU Passive v t) v t) v t
+         , Similatable (PU Passive v t) v Int
+         , Typeable title, Typeable (PU Passive v t)
+         , Ord title, Show title
+         , Var v, Time t
+         ) => Similatable (BusNetwork title (PU Passive v t) v t) v Int where
+
   variableValue _fb bn cntx vi = varValue bn cntx vi
 
   varValue bn@BusNetwork{..} cntx vi@(v, _) =
-    let Just (_, Transport _ src _) =
-          find (\(_, Transport v' _ _) -> v == v') $ filterSteps $ process bn
+    let [Transport _ src _] =
+          filter (\(Transport v' _ _) -> v == v')
+          $ catMaybes $ map (getInstruction $ proxy bn)
+          $ steps bnProcess
     in varValue (bnPus M.! src) cntx vi
-
 
 
 
@@ -202,7 +221,7 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
                          Nothing  -> Just [fb]
                      ) puTitle bnBinded
   , bnProcess=snd $ modifyProcess p $
-      add (Event tick 0) $ Const $ "Bind " ++ show fb ++ " to " ++ puTitle
+      add (Event tick 0) $ InfoStep $ "Bind " ++ show fb ++ " to " ++ puTitle
   , bnRemains=filter (/= fb) bnRemains
   }
 
@@ -213,47 +232,50 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
 
 --------------------------------------------------------------------------
 
-instance TestBenchFiles (BusNetwork title (Network title) v t) where
-  fileName _ = "hdl/fram_net"
+instance TestBenchRun (BusNetwork title spu v t) where
+  buildArgs _ = [ "hdl/dpu_fram.v"
+                , "hdl/fram_net.tb.v"
+                ]
+
+
 
 instance ( Typeable title, Ord title, Show title, Var v, Time t
-         , TestBenchFiles (BusNetwork title (Network title) v t)
-         ) => TestBench (BusNetwork title) (Network title) v t Int where
+         , Typeable (PU Passive v t)
+         , PUClass Passive (PU Passive v t) v t
+         , Similatable (PU Passive v t) v Int
+         ) => TestBench (BusNetwork title (PU Passive v t) v t) v Int where
 
-  testSignals bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx =
-    concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
+  components _ =
+    [ ( "hdl/fram_net_signals.v", testSignals )
+    , ( "hdl/fram_net_outputs.v", testOutputs )
+    ]
     where
-      wires = map Wire $ reverse $ range $ bounds bnWires
-      signalsAt t = map (\w -> signal' bn w t) wires
+      testSignals bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx
+        = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
+        where
+          wires = map Wire $ reverse $ range $ bounds bnWires
+          signalsAt t = map (\w -> signal' bn w t) wires
+          showSignals = (\ss -> "wires <= 'b" ++ ss ++ ";" ) . concat . map show
 
-      showSignals = (\ss -> "wires <= 'b" ++ ss ++ ";" ) . concat . map show
+      testOutputs BusNetwork{ bnProcess=p@Process{..}, ..} cntx
+        = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. tick + 1 ]
+        where
+          assert time = case effectAt time p of
+            Just (Pull (v : _))
+              | (v, 0) `M.member` cntx -> concat
+                [ "if ( !(dp_data == " ++ show (cntx M.! (v, 0)) ++ ") ) "
+                ,   "$display("
+                ,     "\""
+                ,       "FAIL wrong value of " ++ show' v ++ " the bus failed "
+                ,       "(got: %h expect: %h)!"
+                ,     "\", "
+                , "dp_data, " ++ show (cntx M.! (v, 0)) ++ ");"
+                ]
+            _ -> "/* assert placeholder */"
+          show' s = filter (/= '\"') $ show s
 
   simulateContext bn@BusNetwork{..} cntx =
-    let transports =
-          [ transport
-          | (_, transport) <-
-              sortBy (\(a,_) (b,_) -> stepStart a `compare` stepStart b)
-              $ filterSteps $ process bn
-          ]
+    let transports = getInstructions (proxy bn) bnProcess
     in foldl ( \cntx' (Transport v src _dst) ->
                  M.insert (v, 0) (varValue (bnPus M.! src) cntx' (v, 0)) cntx'
              ) cntx transports
-
-  testInputs _ _ = ""
-
-  testOutputs BusNetwork{ bnProcess=p@Process{..}, ..} cntx =
-    concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. tick + 1 ]
-    where
-      assert time = case infoAt time p of
-        [Pull (v : _)]
-          | (v, 0) `M.member` cntx -> concat
-            [ "if ( !(dp_data == " ++ show (cntx M.! (v, 0)) ++ ") ) "
-            ,   "$display("
-            ,     "\""
-            ,       "FAIL wrong value of " ++ show' v ++ " the bus failed "
-            ,       "(got: %h expect: %h)!"
-            ,     "\", "
-            , "dp_data, " ++ show (cntx M.! (v, 0)) ++ ");"
-            ]
-        _ -> "/* assert placeholder */"
-      show' s = filter (/= '\"') $ show s

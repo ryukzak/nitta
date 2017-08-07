@@ -22,6 +22,7 @@ library
                      , NITTA.Compiler
                      , NITTA.Types
                      , NITTA.TestBench
+                     , NITTA.Flows
                      , NITTA.ProcessUnits.Fram
   build-depends:       base >= 4.7 && < 5
                      , containers

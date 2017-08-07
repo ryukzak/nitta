@@ -1,42 +1,39 @@
-{-# LANGUAGE PartialTypeSignatures  #-}
--- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 {-# LANGUAGE BangPatterns           #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE PartialTypeSignatures  #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.Compiler where
+module NITTA.Compiler
+  ( naive
+  , bindAll
+  , bindAllAndNaiveSteps
+  , effectVar2act
+  )
+where
 
-import           Control.Monad
-import           Data.Array              (elems)
-import           Data.Default
-import           Data.Either
-import           Data.List               (find, intersect, nub, partition,
-                                          sortBy, (\\))
-import qualified Data.Map                as M
-import           Data.Maybe              (catMaybes, isJust)
-import           Debug.Trace
-
-import           Data.Typeable
+import           Data.List        (find, intersect, nub, sortBy)
+import qualified Data.Map         as M
+import           Data.Maybe       (catMaybes, isJust)
 import           NITTA.BusNetwork
-import           NITTA.FunctionBlocks
-import           NITTA.ProcessUnits.Fram
+import           NITTA.Flows
 import           NITTA.Types
 import           NITTA.Utils
+
+import           Debug.Trace
 
 
 bindAll pu alg = fromRight undefined $ foldl nextBind (Right pu) alg
   where
     nextBind (Right pu') fb = bind fb pu'
     nextBind (Left r) _     = error r
-
-manualSteps pu acts = foldl (\pu' act -> step pu' act) pu acts
 
 bindAllAndNaiveSteps pu0 alg = naive' $ bindAll pu0 alg
   where
@@ -47,182 +44,21 @@ bindAllAndNaiveSteps pu0 alg = naive' $ bindAll pu0 alg
           $ step pu $ effectVar2act var
       | otherwise = pu
 
+-- manualSteps pu acts = foldl (\pu' act -> step pu' act) pu acts
+
 effectVar2act EffectOpt{ eoAt=TimeConstrain{..}, .. } = EffectAct eoEffect $ Event tcFrom tcDuration
 
 
 
 
-
-
-data Program v
-  = Statement (FB v)
-  | DataFlow [Program v]
-  | Switch
-    { conduction :: v
-    , branchs    :: [(Int, Program v)]
-    }
-  deriving ( Show )
-
-isSwitch Switch{} = True
-isSwitch _        = False
-
-isParallel (Parallel _) = True
-isParallel _            = False
-
-
-
-class WithFunctionalBlocks a v | a -> v where
-  functionalBlocks :: a -> [FB v]
-
-instance WithFunctionalBlocks (Program v) v where
-  functionalBlocks (Statement fb) = [fb]
-  functionalBlocks (DataFlow ss)  = concatMap functionalBlocks ss
-  functionalBlocks Switch{..}     = concatMap (functionalBlocks . snd) branchs
-
-
-
-
-isSplit (Split _ _ _) = True
-isSplit _             = False
-
-mkControlFlow (Statement fb) = Parallel $ map Atom $ variables fb
-mkControlFlow s@Switch{..}
-  = let inputs = inputsOfFBs $ functionalBlocks s
-        branchs' = map (\(k, prog) -> SplitBranch
-                         { sTag=Just $ show conduction ++ " = " ++ show k
-                         , sForceInputs=inputs \\ variables prog
-                         , sControlFlow=mkControlFlow prog
-                         }
-                       ) branchs
-  in Split conduction inputs $ branchs'
-
-
-mkControlFlow (DataFlow ss)
-  = let cf = map mkControlFlow ss
-        parallel = filter isParallel cf
-        parallel' = nub $ concatMap (\(Parallel xs) -> xs) parallel
-        withInputs = parallel' ++ nub (filter (not . isParallel) cf)
-        inputsVariables = nub $ map Atom $ concatMap (\(Split _ vs _) -> vs)
-                          $ filter isSplit withInputs
-    in Parallel $ withInputs \\ inputsVariables
-
-
-
-
-
-
-
-data ControlModel tag v
-  = ControlModel
-    { controlFlow   :: ControlFlow tag v
-    , usedVariables :: [v]
-    }
-
-instance Default (ControlModel tag v) where
-  def = ControlModel undefined []
-
-data ControlFlow tag v
-  = Atom v
-  | Parallel [ControlFlow tag v]
-  | Split{ cond         :: v
-         , inputs       :: [v]
-         , splitOptions :: [SplitBranch tag v]
-         }
-  deriving ( Show, Eq )
-
-data SplitBranch tag v
-  = SplitBranch
-  { sTag         :: Maybe tag
-  , sForceInputs :: [v]
-  , sControlFlow :: ControlFlow tag v
-  } deriving ( Show, Eq )
-
-
-
-instance ( Var v ) => Vars (ControlFlow tag v) v where
-  variables (Atom v)       = [v]
-  variables (Parallel cfs) = concatMap variables cfs
-  variables Split{..}      = cond : concatMap (variables . sControlFlow) splitOptions
-
-instance ( Var v, Show tag ) => Show (ControlModel tag v) where
-  show ControlModel{..} = "cf: " ++ show controlFlow
-                          ++ " used: " ++ show usedVariables
-
-
-
-
-
-selectSplit tag (Parallel cfs)
-  = let splits = filter isSplit cfs
-        Just splitOpts = find (any ((== tag) . sTag)) $ map splitOptions splits
-        Just branch = find ((== tag) . sTag) splitOpts
-    in sControlFlow branch
-
-
-
-
-controlFlowOptions cm@ControlModel{..}
-  = filter (`notElem` usedVariables) $ controlOptions' controlFlow
-  where
-    controlOptions' (Atom v)     = [v]
-    controlOptions' (Split v vs _) = [v] --  : vs
-    controlOptions' cf@(Parallel cfs)
-      | length (filter isParallel cfs) == 0
-      = concatMap controlOptions' cfs
-      | otherwise
-      = error $ "Bad controlFlow: " ++ show cf
-
-controlStep cm@ControlModel{..} v = cm{ usedVariables=v : usedVariables }
-
-
-
-timeSplitOptions controlModel@ControlModel{..} availableVars
+timeSplitOptions ControlModel{..} availableVars
   = let splits = filter isSplit $ (\(Parallel ss) -> ss) $ controlFlow
     in filter isAvalilable splits
   where
     isAvalilable (Split c vs _) = all (`elem` availableVars) $ c : vs
+    isAvalilable _              = error "selectSplit internal error."
 
-
-
-inputsOfFBs fbs
-  = let deps0 = (M.fromList [(v, []) | v <- concatMap variables fbs])
-        deps = foldl (\dict (a, b) -> M.adjust ((:) b) a dict) deps0 $ concatMap dependency fbs
-    in map fst $ filter (null . snd) $ M.assocs deps
-
--- outputsOfFBs fbs
---   = let deps0 = (M.fromList [(v, []) | v <- concatMap variables fbs])
---         deps = foldl (\dict (a, b) -> M.adjust ((:) b) a dict) deps0 $ concatMap dependency fbs
---     in filter (\a -> all (not . (a `elem`)) deps) $ M.keys deps
-
-
-
-
-data Forks tag v t
-  = Forks
-  { current   :: Forks tag v t
-  , remains   :: [ Forks tag v t ]
-  , completed :: [ Forks tag v t ]
-  , merge     :: Forks tag v t
-  }
-  | Fork
-  { net          :: BusNetwork String (Network String) v t
-  , controlModel :: ControlModel tag v
-  , timeTag      :: Maybe tag
-  , forceInputs  :: [v]
-  }
-
-
-
-instance ( Var v ) => Vars (Program v) v where
-  variables (DataFlow ps)  = concatMap variables ps
-  variables (Statement fb) = variables fb
-  -- fixme -- outputs and internal transfers...
-  variables s@Switch{..}   = conduction : inputsOfFBs (functionalBlocks s)
-
-
-
-splitProcess Forks{} _ = error "Can split only single process."
-splitProcess f@Fork{..} s@(Split cond is branchs)
+splitProcess Fork{..} (Split _cond _is branchs)
   = let ControlModel{..} = controlModel
         t = tick $ process net
         f : fs = map (\SplitBranch{..} -> Fork
@@ -241,6 +77,9 @@ splitProcess f@Fork{..} s@(Split cond is branchs)
                                     }
                      }
             }
+splitProcess _ _ = error "Can't split process."
+
+
 
 
 threshhold = 2
@@ -258,7 +97,7 @@ naive !f@Forks{..}
         parallelSteps = concatMap
           (\Fork{ net=n
                 , timeTag=forkTag
-                } -> filter (\step@Step{ time=Event{..} } -> forkTag == (tag eStart)
+                } -> filter (\Step{ time=Event{..} } -> forkTag == (tag eStart)
                             ) $ steps $ process n
           ) completed
     in case (isOver current', remains) of
@@ -288,15 +127,13 @@ naive !f@Fork{..}
       = case sortBy (\a b -> start a `compare` start b)
              $ sensibleOptions $ filterByControlModel controlModel $ options net of
         v:_ -> let act = option2action v
-                   cm' = controlModelStep controlModel
+                   cm' = foldl controlModelStep controlModel
                          $ map fst $ filter (isJust . snd) $ M.assocs $ taPush act
                in trace ("step: " ++ show act)
                   f{ net=step net act
                    , controlModel=cm'
                    }
         _   -> error "No variants!"
-    controlModelStep cm (v:[]) = controlStep cm v
-    controlModelStep cm (v:vs) = controlModelStep (controlStep cm v) vs
     start = tcFrom . toPullAt
     -- mostly mad implementation
     option2action TransportOpt{ toPullAt=TimeConstrain{..}, ..}
@@ -313,15 +150,14 @@ naive !f@Fork{..}
                             ) $ M.assocs toPush
         }
       where
-        tc2e (title, TimeConstrain{..}) = (title, Event pushStartAt tcDuration)
-        pushStartAt = tcFrom + tcDuration
+        tc2e (title, TimeConstrain{ tcDuration=dur}) = (title, Event (tcFrom + tcDuration) dur)
         (_, event) : _ = catMaybes $ M.elems toPush
         opt = ("", event)
 
 
 
 filterByControlModel controlModel opts
-  = let cfOpts = controlFlowOptions controlModel
+  = let cfOpts = controlModelOptions controlModel
     in map (\t@TransportOpt{..} -> t
              { toPush=M.fromList $ map (\(v, desc) -> (v, if v `elem` cfOpts
                                                           then desc
@@ -331,11 +167,8 @@ filterByControlModel controlModel opts
 
 
 
-
 sensibleOptions = filter $
   \TransportOpt{..} -> not $ null $ filter isJust $ M.elems toPush
-
-
 
 
 
@@ -395,9 +228,8 @@ autoBind net@BusNetwork{..} =
       , length pulls > 0
       = bv{ priority=Just $ Input $ sum $ map (length . variables) pulls}
 
-      | Just (variable, tcFrom) <- find (\(v, _) -> v `elem` variables fb) restlessVariables
+      | Just (_variable, tcFrom) <- find (\(v, _) -> v `elem` variables fb) restlessVariables
       = bv{ priority=Just $ Restless $ fromEnum tcFrom }
-      -- = bv{ priority=Just $ Restless ((\(Time t) -> t) tcFrom) }
 
       | length (mergedBOpts M.! fb) == 1
       = bv{ priority=Just Exclusive }
@@ -413,7 +245,7 @@ autoBind net@BusNetwork{..} =
       Right pu' -> filter (\(EffectOpt act _) -> act `optionOf` fb) $ options pu'
       _  -> []
       where
-        act `optionOf` fb = not $ null (variables act `intersect` variables fb)
+        act `optionOf` fb' = not $ null (variables act `intersect` variables fb')
 
-    trace' vs = trace ("---------"++ show (restlessVariables)
-               ++ "\n" ++ (concatMap (\v -> show v ++ "\n") vs)) vs
+    -- trace' vs = trace ("---------"++ show (restlessVariables)
+               -- ++ "\n" ++ (concatMap (\v -> show v ++ "\n") vs)) vs

@@ -2,6 +2,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
@@ -34,42 +35,26 @@ import           Debug.Trace
 
 
 
+class TestBenchRun pu where
+  buildArgs :: pu -> [String]
 
 
-
-class TestBenchFiles pu where
-  fileName :: pu -> String
-
-
-
-
-
-class ( TestBenchFiles (pu ty v t)
-      , Typeable (pu ty v t)
+class ( Typeable pu
+      , TestBenchRun pu
       , Var v
-      ) => TestBench pu ty v t x where
-  testSignals :: pu ty v t -> SimulationContext v x -> String
-  testInputs :: pu ty v t -> SimulationContext v x -> String
-  testOutputs :: pu ty v t -> SimulationContext v x -> String
+      ) => TestBench pu v x | pu -> v, pu -> x where
+  components :: pu -> [(String, pu -> SimulationContext v x -> String)]
 
-  simulate :: pu ty v t -> [(v, x)] -> SimulationContext v x
+  simulate :: pu -> [(v, x)] -> SimulationContext v x
   simulate pu values = simulateContext pu $ M.fromList $ map (\(v, x) -> ((v, 0), x)) values
 
-  simulateContext :: pu ty v t -> SimulationContext v x -> SimulationContext v x
+  simulateContext :: pu -> SimulationContext v x -> SimulationContext v x
 
-
-  writeTestBench :: pu ty v t -> [(v, x)] -> IO ()
+  writeTestBench :: pu -> [(v, x)] -> IO ()
   writeTestBench pu values = do
     let cntx = simulate pu values
-    let fn = fileName pu
-    writeFile (fn ++ ".tb.signals.v") $ testSignals pu cntx
-    writeFile (fn ++ ".tb.inputs.v") $ testInputs pu cntx
-    writeFile (fn ++ ".tb.outputs.v") $ testOutputs pu cntx
+    mapM_ (\(fn, gen) -> writeFile fn (gen pu cntx)) $ components pu
 
--- passiveInputValue :: ( Var v, Time t ) => t -> [Step v t] -> M.Map v Int -> String
--- passiveInputValue time steps values = case infoAt time steps of
---   [Push v] | v `M.member` values -> "value_i <= " ++ show (values M.! v) ++ ";"
---   (_ :: [Effect v]) -> "/* input placeholder */"
 
 
 testBench pu values = do
@@ -77,10 +62,8 @@ testBench pu values = do
   runTestBench pu
 
 runTestBench pu = do
-  let fn = fileName pu
-  (compileExitCode, compileOut, compileErr) <- readProcessWithExitCode "iverilog" [ fn ++ ".v"
-                                                            , fn ++ ".tb.v"
-                                                            ] []
+  (compileExitCode, compileOut, compileErr) <-
+    readProcessWithExitCode "iverilog" (buildArgs pu)[]
   when (compileExitCode /= ExitSuccess) $ do
     putStrLn $ "stdout:\n" ++ compileOut
     putStrLn $ "stderr:\n" ++ compileErr

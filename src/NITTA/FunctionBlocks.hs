@@ -22,18 +22,12 @@ class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 
 
-
-
-unbox :: ( Typeable v, Typeable (fb v) ) => FB v -> Maybe (fb v)
-unbox (FB x) = cast x
+castFB :: ( Typeable v, Typeable (fb v) ) => FB v -> Maybe (fb v)
+castFB (FB x) = cast x
 
 
 
 ----------------------------------------
-
-
-
-
 
 
 data FramInput v = FramInput Int [v] deriving (Show, Typeable, Eq, Ord)

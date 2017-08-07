@@ -1,31 +1,29 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
-
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Types where
 
-
 import           Data.Default
+-- import           Data.Functor.Const
 import qualified Data.List     as L
 import qualified Data.Map      as M
 import           Data.Maybe
 import           Data.Typeable
-import           Data.Functor.Const
 
 
 
 data TaggetTime tag t
   = TaggetTime
-  { tag :: Maybe tag
+  { tag   :: Maybe tag
   , clock :: t
   } deriving ( Show, Typeable )
 
@@ -58,7 +56,7 @@ instance ( Num t, Show tag, Eq tag ) => Num (TaggetTime tag t) where
   abs = undefined
   signum = undefined
 
-  
+
 -- setTag Nothing (TaggetTime _ t) = TaggetTime Nothing t
 -- setTag (Just tag) (TaggetTime _ t) = TaggetTime (Just tag) t
 -- getTag (TaggetTime tag _) = tag
@@ -71,6 +69,9 @@ class ( Show (fb v), Eq (fb v), Ord (fb v), Vars (fb v) v, Typeable (fb v)
   insideOut _ = False
   isCritical :: fb v -> Bool
   isCritical _ = False
+
+class WithFunctionalBlocks a v | a -> v where
+  functionalBlocks :: a -> [FB v]
 
 data FB v where
   FB :: ( FBClass fb v, Typeable (fb v) ) => fb v -> FB v
@@ -138,7 +139,7 @@ data Process v t
     , nextUid   :: ProcessUid
     , steps     :: [Step v t]
     , relations :: [Relation]
-    } deriving (Show)
+    } deriving ( Show )
 
 instance (Time t) => Default (Process v t) where
   def = Process { tick=def
@@ -150,56 +151,39 @@ instance (Time t) => Default (Process v t) where
 
 
 data Step v t where
-  Step :: ( ProcessInfo (info v) ) =>
+  Step ::
     { uid  :: ProcessUid
     , time :: Event t
-    , info :: info v
+    , info :: StepInfo v
     } -> Step v t
+  deriving ( Show )
 
-deriving instance ( Show v, Show t ) => Show (Step v t)
 
+data StepInfo v where
+  FBStep :: FB v -> StepInfo v
+  InfoStep :: String -> StepInfo v
+  EffectStep :: Effect v -> StepInfo v
+  InstructionStep :: ( Show (Instruction pu)
+                     , Typeable (Instruction pu)
+                     ) => Instruction pu -> StepInfo v
+  NestedStep :: ( Eq title, Show title, Ord title
+                ) => title -> StepInfo v -> StepInfo v
+
+
+
+
+deriving instance ( Var v ) => Show (StepInfo v)
+
+level (FBStep _)          = "Function block"
+level (InfoStep _)        = "Info"
+level (EffectStep _)      = "Effect"
+level (InstructionStep _) = "Instruction"
+level (NestedStep _ _)    = "Nested"
 
 
 
 data Relation = Vertical ProcessUid ProcessUid
               deriving (Show, Eq)
-
-
-
-class ( Show i, Typeable i ) => ProcessInfo i where
-  level :: i -> String
-  level = show . typeOf
-
-instance ( Var v ) => ProcessInfo (Const String v) where
-  level _ = "Compiler"
-
-instance {-# OVERLAPS #-}
-  ( Typeable pu, Var v, Show (Instruction pu v)
-  ) => ProcessInfo (Instruction pu v) where
-  level _ = "Instruction"
-
-instance (Var v) => ProcessInfo (FB v) where
-  level _ = "Function block"
-
-instance (Var v) => ProcessInfo (Effect v) where
-  level _ = "Effect"
-
-
-
-
-data Nested title v where
-  Nested :: ( ProcessInfo info ) =>
-    { nestedUid  :: ProcessUid
-    , nestedTitle :: title
-    , nestedInfo :: info
-    } -> Nested title v
-
-deriving instance ( Show title ) => Show (Nested title v)
-
-instance ( Typeable title
-         , Show title
-         , Var v
-         ) => ProcessInfo (Nested title v)
 
 
 
@@ -286,25 +270,32 @@ _ \\\ _ = error "Only for Pulls"
 
 
 class ( Typeable (Signals pu)
-      , ProcessInfo (Instruction pu v)
-      ) => PUClass pu ty v t where
-  bind :: FB v -> pu ty v t -> Either String (pu ty v t)
-  options :: pu ty v t -> [Option ty v t]
-  step     :: pu ty v t -> Action ty v t -> pu ty v t
+      , Typeable (Instruction pu)
+      ) => PUClass ty pu v t | pu -> ty, pu -> v, pu -> t where
+  bind :: FB v -> pu -> Either String pu
+  options :: pu -> [Option ty v t]
+  -- rename to select
+  step     :: pu -> Action ty v t -> pu
 
-  process :: pu ty v t -> Process v t
-  setTime :: t -> pu ty v t -> pu ty v t
+  process :: pu -> Process v t
+  setTime :: t -> pu -> pu
 
-  data Instruction pu v :: *
+class ( Typeable pu ) => Controllable pu t | pu -> t where
+  data Instruction pu :: *
 
   data Signals pu :: *
-  signal :: pu ty v t -> S -> t -> Value
+  signal :: pu -> S -> t -> Value
   signal pu (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
                     in signal' pu s'
-  signal' :: pu ty v t -> Signals pu -> t -> Value
+  signal' :: pu -> Signals pu -> t -> Value
 
-  varValue :: pu ty v t -> SimulationContext v Int -> (v, Int) -> Int
-  variableValue :: FB v -> pu ty v t -> SimulationContext v Int -> (v, Int) -> Int
+  proxy :: pu -> Proxy pu
+  proxy _ = Proxy
+
+class Similatable pu v x | pu -> v, pu -> x where
+  varValue :: pu -> SimulationContext v x -> (v, x) -> x
+  variableValue :: FB v -> pu -> SimulationContext v x -> (v, x) -> x
+
 
 
 data S where
@@ -313,27 +304,32 @@ data S where
 
 
 data PU ty v t where
-  PU :: ( PUClass pu ty v t
-        , Typeable (pu ty v t)
-        ) => pu ty v t -> PU ty v t
-        
-deriving instance Show (Instruction PU v)
+  PU :: ( PUClass ty pu v t
+        , Typeable pu
+        , Similatable pu v Int
+        , Controllable pu t
+        ) => pu -> PU ty v t
 
-instance ( Var v, Time t ) => PUClass PU Passive v t where
+-- deriving instance Show (Instruction (PU Passive v t))
+
+instance ( Var v, Time t ) => PUClass Passive (PU Passive v t) v t where
   bind fb (PU pu) = PU <$> bind fb pu
   options (PU pu) = options pu
   step (PU pu) act = PU $ step pu act
   process (PU pu) = process pu
   setTime t (PU pu) = PU $ setTime t pu
 
-  data Signals PU
-  data Instruction PU v
-  signal' = error ""
+  -- fixme - вынести в другой класс, который для pu не будет реализовываться.
+  -- data Instruction (PU Passive v t)
+  -- data Signals (PU Passive v t)
+  -- signal' = error ""
 
+instance ( PUClass Passive (PU Passive v t) v t
+         ) => Similatable (PU Passive v t) v Int where
   varValue (PU pu) cntx vi = varValue pu cntx vi
   variableValue fb (PU pu) cntx vi = variableValue fb pu cntx vi
 
-  
+
 
 
 type SimulationContext v x = M.Map (v, Int) x

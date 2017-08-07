@@ -18,32 +18,30 @@ import           NITTA.Utils
 
 
 
-instance ( Time (TaggetTime tag t)
-         , ToJSON (TaggetTime tag t)
-         , ToJSON tag
-         ) => ToJSON (Step String (TaggetTime tag t)) where
+instance ( Time t
+         , ToJSON t
+--       , ToJSON (TaggetTime tag t)
+--       , ToJSON tag
+         ) => ToJSON (Step String t) where
   toJSON st@Step{ time=Event{..}, ..} =
     object $ [ "id" .= uid
              , "start" .= eStart
              , "content" .= show' info
              , "group" .= group info
              , "title" .= show st
-             , "inside_out" .= isInsideOut info
-             , "time_tag" .= tag eStart
+             , "inside_out" .= isInsideOut st
+             -- , "time_tag" .= tag eStart
              ]
     ++ case eDuration of
          0 -> [ "type" .= ("point" :: String) ]
          x -> [ "end" .= (eStart + eDuration) ]
     where
       isInsideOut i
-        | Just (Nested _ title i' :: Nested String String) <- cast i
-        , Just (fb :: FB String) <- cast i'
-        = insideOut fb
+        | Just fb <- getFB st = insideOut fb
         | otherwise = False
-      show' i
-        | Just (Nested _ title i' :: Nested String String) <- cast i =
-            show i'
-        | otherwise = show i
+      show' (NestedStep _ i) = show i
+      show' i                = show i
+
 
 instance ToJSON Relation where
   toJSON (Vertical a b) =
@@ -76,15 +74,11 @@ timeline filename pu = do
 
 
 
-group i
-    | Just (Nested _ title i' :: Nested String String) <- cast i =
-        title ++ "/" ++ level i'
-    | otherwise = level i
+group (NestedStep title i) = show title ++ "/" ++ level i
+group i                    = level i
 
-upperGroup i =
-  case cast i of
-    Just (Nested _ _ i' :: Nested String String) ->
-      case cast i' of
-        Just (_ :: FB String) -> Nothing
-        _                     -> Just $ (takeWhile (/= '/') (group i)) ++ "/Function block"
-    _ -> Nothing
+
+upperGroup (NestedStep _ i)
+  | isFB i = Nothing
+  | otherwise = Just $ (takeWhile (/= '/') (group i)) ++ "/Function block"
+upperGroup _ = Nothing

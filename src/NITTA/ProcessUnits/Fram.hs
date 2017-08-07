@@ -1,14 +1,15 @@
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
+
+{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
@@ -21,12 +22,12 @@ import           Data.Array
 import           Data.Bits
 import           Data.Default
 import           Data.Either
-import           Data.Functor.Const
 import           Data.Generics.Aliases (orElse)
 import qualified Data.Graph            as G
 import           Data.List             (find, minimumBy, sortBy)
 import qualified Data.Map              as M
 import           Data.Maybe
+import           Data.Proxy
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.TestBench
@@ -34,12 +35,10 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Prelude               hiding (last)
 
-import           Debug.Trace
+-- import           Debug.Trace
 
 
-
-
-data Fram ty v t = Fram
+data Fram v t = Fram
   { frMemory             :: Array Int (Cell v t)
   , frRemains            :: [MicroCode v t]
   , frProcess            :: Process v t
@@ -88,7 +87,7 @@ data Cell v t = Cell
 
 
 data MicroCode v t where
-  MicroCode :: --(FBClass fb v) =>
+  MicroCode ::
     { compiler, effect, instruction :: [ProcessUid]
     , workBegin                     :: Maybe t
     , fb                            :: FB v
@@ -99,7 +98,7 @@ data MicroCode v t where
 microcode = MicroCode [] [] [] Nothing
 
 
-instance ( Var v, Time t ) => Default (Fram ty v t) where
+instance ( Var v, Time t ) => Default (Fram v t) where
   def = Fram { frMemory=listArray (0, framSize - 1) $ repeat def
              , frRemains=[]
              , frProcess=def
@@ -118,35 +117,12 @@ instance ( Eq v ) => Eq (MicroCode v t) where
 
 framSize = 16 :: Int
 
-instance ( Var v, Time t ) => PUClass Fram Passive v t where
 
-  data Signals Fram = OE | WR | ADDR Int
 
-  data Instruction Fram v
-    = Nop
-    | Load Int
-    | Save Int
-    deriving (Show)
-
-  signal' Fram{..} sig time =
-    let instruction = case infoAt time frProcess of
-          []  -> Nop
-          [i] -> i
-          is  -> error $ "Ambiguously instruction at "
-                 ++ show time ++ ": " ++ show is
-    in value instruction sig
-    where
-      value  Nop        (ADDR _) = X
-      value  Nop         _       = B False
-      value (Load addr) (ADDR b) = B $ testBit addr b
-      value (Load    _)  OE      = B True
-      value (Load    _)  WR      = B False
-      value (Save addr) (ADDR b) = B $ testBit addr b
-      value (Save    _)  OE      = B False
-      value (Save    _)  WR      = B True
+instance ( Var v, Time t ) => PUClass Passive (Fram v t) v t where
 
   bind fb fr@Fram{ frProcess=p@Process{..}, .. }
-    | Just (Reg a b) <- unbox fb =
+    | Just (Reg a b) <- castFB fb =
         if placeForRegExist fr
         then let bindToCell _ Cell{ output=UsedOrBlocked } = Left "Can't bind Reg to Fram"
                  bindToCell _ Cell{ current=Just _ } = Left "Can't bind Reg to Fram"
@@ -162,7 +138,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
              in Right fr'{ frRemains=mc' : frRemains }
         else Left "Can't bind Reg to Fram, place for Reg don't exist."
 
-    | Just (Loop bs a) <- unbox fb =
+    | Just (Loop bs a) <- castFB fb =
         if -- trace ("ioUses: " ++ show (ioUses fr)) $
            ioUses fr < framSize
         then let bindToCell mc cell@Cell{ input=Undef, output=Undef } =
@@ -174,7 +150,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
              in Right fr'{ frRemains=mc' : frRemains }
         else Left "Can't bind Loop to Fram, all IO cell already busy."
 
-    | Just (FramInput addr v) <- unbox fb =
+    | Just (FramInput addr v) <- castFB fb =
         let bindToCell mc cell@Cell{ input=Undef, .. }
               | ioUses fr < framSize || (ioUses fr == framSize && output /= Undef)
               = Right cell{ input=Def mc }
@@ -185,7 +161,7 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
         in fmap (\cell' -> fr'{ frMemory=frMemory // [(addr, cell')]
                               }) $ bindToCell mc' $ frMemory ! addr
 
-    | Just (FramOutput addr v) <- unbox fb =
+    | Just (FramOutput addr v) <- castFB fb =
         let bindToCell mc cell@Cell{ output=Undef, .. }
               | ioUses fr < framSize || (ioUses fr == framSize && input /= Undef)
               = Right cell{ output=Def mc }
@@ -297,11 +273,13 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
       mkWork _addr _p MicroCode{ actions=[] } = error "Fram internal error, mkWork"
       mkWork addr p mc@MicroCode{ actions=x:xs, ..} =
         let ((ef, instrs), p') = modifyProcess p $ do
-              e <- add at eaEffect
-              i1 <- add at $ act2Signal addr eaEffect
+              e <- add at $ EffectStep eaEffect
+              i1 <- add at $ InstructionStep
+                $ (act2Instruction addr eaEffect :: Instruction (Fram v t))
               is <- if tick0 < eStart
                 then do
-                  i2 <- add (Event tick0 (eStart - tick0)) nop
+                  i2 <- add (Event tick0 (eStart - tick0))
+                    $ InstructionStep (Nop :: Instruction (Fram v t))
                   return [ i1, i2 ]
                 else return [ i1 ]
               mapM_ (relation . Vertical ef) instrs
@@ -316,29 +294,66 @@ instance ( Var v, Time t ) => PUClass Fram Passive v t where
       finish p MicroCode{..} = snd $ modifyProcess p $ do
         let start = fromMaybe (error "workBegin field is empty!") workBegin
         let duration = (eStart + eDuration) - start
-        h <- add (Event start duration) $ trace (">> " ++ show fb) fb
+        h <- add (Event start duration) $ FBStep fb
         mapM_ (relation . Vertical h) compiler
         mapM_ (relation . Vertical h) effect
         mapM_ (relation . Vertical h) instruction
 
-      act2Signal addr (Pull _) = Load addr
-      act2Signal addr (Push _) = Save addr
-      nop = Nop
+      act2Instruction addr (Pull _) = Load addr
+      act2Instruction addr (Push _) = Save addr
 
   process = sortPuSteps . frProcess
   setTime t fr@Fram{..} = fr{ frProcess=frProcess{ tick=t } }
 
 
-  -- varValue :: pu ty v t -> SimulationContext v x -> (v, Int) -> x
-  varValue pu cntx vi@(v, _)
-    | Just (_, fb :: FB v) <- findStep v $ process pu = variableValue fb pu cntx vi
-    | otherwise = error $ "can't find varValue for: " ++ show v
 
-  variableValue (FB fb) Fram{..} cntx (v, i)
+
+instance ( Var v, Time t ) => Controllable (Fram v t) t where
+
+  data Signals (Fram v t) = OE | WR | ADDR Int
+
+  data Instruction (Fram v t)
+    = Nop
+    | Load Int
+    | Save Int
+    deriving (Show)
+
+  signal' Fram{..} sig time =
+    let instruction = case catMaybes $ map (getInstruction (Proxy :: Proxy (Fram v t)))
+                           $ whatsHappen time frProcess of
+          [] -> Nop
+          [i] -> i
+          is -> error $ "Ambiguously instruction at "
+                      ++ show time ++ ": " ++ show is
+    in value instruction sig
+    where
+      value  Nop        (ADDR _) = X
+      value  Nop         _       = B False
+      value (Load addr) (ADDR b) = B $ testBit addr b
+      value (Load    _)  OE      = B True
+      value (Load    _)  WR      = B False
+      value (Save addr) (ADDR b) = B $ testBit addr b
+      value (Save    _)  OE      = B False
+      value (Save    _)  WR      = B True
+
+
+
+
+instance ( PUClass Passive (Fram v t) v t
+         , Time t
+         , Var v
+         ) => Similatable (Fram v t) v Int where
+  varValue pu cntx vi@(v, _)
+    | [fb] <- filter (elem v . variables) $ catMaybes $ map getFB $ steps $ process pu
+    = variableValue fb pu cntx vi
+    | otherwise = error $ "can't find varValue for: " ++ show v ++ " "
+                  ++ show (catMaybes $ map getFB $ steps $ process pu)
+
+  variableValue (FB fb) pu@Fram{..} cntx (v, i)
     | Just (Loop _bs a) <- cast fb, a == v = cntx M.! (v, i)
 
     | Just (Loop bs _a) <- cast fb, v `elem` bs, i == 0
-    = addr2value $ findAddress v frProcess
+    = addr2value $ findAddress v pu
 
     | Just (Reg a _bs) <- cast fb, a == v = cntx M.! (v, i)
     | Just (Reg a bs) <- cast fb, v `elem` bs = cntx M.! (a, i)
@@ -370,7 +385,7 @@ sortPuSteps p@Process{..} =
   in p{ steps=steps' }
 
 
-bindFB2Cell addr fb t = add (Event t 0) $ Const $ "Bind " ++ show fb ++ " to cell " ++ show addr
+bindFB2Cell addr fb t = add (Event t 0) $ InfoStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
 
 
 cell2acts _allowOutput Cell{ input=Def MicroCode{ actions=x:_ } }    = [x]
@@ -400,89 +415,23 @@ availableCell fr@Fram{..} mc@MicroCode{..} =
 
 ---------------------------------------------------
 
+instance TestBenchRun (Fram v t) where
+  buildArgs _ = [ "hdl/dpu_fram.v"
+                , "hdl/dpu_fram.tb.v"
+                ]
 
+instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
 
-
-
-
-
-instance TestBenchFiles (Fram Passive v t) where
-  fileName _ = "hdl/dpu_fram"
-
-
-
-instance ( Var v, Time t ) => TestBench Fram Passive v t Int where
-
-  testSignals fram@Fram{ frProcess=Process{..}, ..} _cntx =
-    concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
-    where
-      signalsAt time = map (\sig -> signal' fram sig time)
-                       [ OE, WR, ADDR 3, ADDR 2, ADDR 1, ADDR 0 ]
-      showSignals = (\[oe, wr, a3, a2, a1, a0] ->
-                         "oe <= 'b" ++ oe
-                         ++ "; wr <= 'b" ++ wr
-                         ++ "; addr[3] <= 'b" ++ a3
-                         ++ "; addr[2] <= 'b" ++ a2
-                         ++ "; addr[1] <= 'b" ++ a1
-                         ++ "; addr[0] <= 'b" ++ a0 ++ ";"
-                    ) . map show
-
-  testInputs Fram{ frProcess=p@Process{..}, ..} cntx =
-    concatMap ( (++ " @(negedge clk);\n") . busState ) [ 0 .. tick + 1 ]
-    where
-      busState t = case infoAt t p of
-        [Push v] -> "value_i <= " ++ show (cntx M.! (v, 0)) ++ ";"
-        _        -> "/* NO INPUT */"
-
-  testOutputs Fram{ frProcess=p@Process{..}, ..} cntx =
-    concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. tick + 1 ]
-    ++ bankCheck
-    where
-      busState t = case infoAt t p of
-        [Pull (v : _)] -> checkBus v $ cntx M.! (v, 0)
-        _              -> "/* NO OUTPUT */"
-
-      checkBus v value = concat
-        [ "if ( !( value_o == " ++ show value ++ " ) ) "
-        ,   "$display("
-        ,     "\""
-        ,       "FAIL wrong value of " ++ show' v ++ " on the bus! "
-        ,       "(got: %h expect: %h)"
-        ,     "\","
-        ,     "value_o, " ++ show value
-        ,   ");"
-        ]
-
-      bankCheck = "\n\n@(posedge clk);\n"
-        ++ concat [ checkBank addr v (cntx M.! (v, 0))
-                  | (Step{ time=Event{..}, .. }, fb@(FB _)) <- filterSteps p
-                  , let addr_v = outputStep fb
-                  , isJust addr_v
-                  , let Just (addr, v) = addr_v
-                  ]
-
-      outputStep fb
-        | Just (Loop _bs a) <- unbox fb = Just (findAddress a p, a)
-        | Just (FramOutput addr a) <- unbox fb = Just (addr, a)
-        | otherwise = Nothing
-
-      checkBank addr v value = concat
-        [ "if ( !( fram.bank[" ++ show addr ++ "] == " ++ show value ++ " ) ) "
-        ,   "$display("
-        ,     "\""
-        ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
-        ,       "(got: %h expect: %h)"
-        ,     "\","
-        ,     "value_o, " ++ show value
-        ,   ");"
-        ]
-      show' s = filter (/= '\"') $ show s
+  components _ =
+    [ ( "hdl/dpu_fram_inputs.v", testInputs )
+    , ( "hdl/dpu_fram_signals.v", testSignals )
+    , ( "hdl/dpu_fram_outputs.v", testOutputs )
+    ]
 
   simulateContext fr@Fram{ frProcess=p@Process{..}, .. } cntx =
     let vs =
           [ v
-          | (_, eff :: Effect v) <- sortBy (\(a,_) (b,_) -> stepStart a `compare` stepStart b)
-                                    $ filterSteps p
+          | eff <- getEffects p
           , v <- variables eff
           ]
     in foldl ( \cntx' v ->
@@ -493,34 +442,85 @@ instance ( Var v, Time t ) => TestBench Fram Passive v t Int where
 
 
 
-
-
-findAddress v p@Process{..} =
-  case findStep v p of
-    Just (Step{ time=Event{..} }, _ :: Effect v) ->
-      case infoAt eStart p of
-        [Load addr] -> addr
-        [Save addr] -> addr
-        _ -> error $ "Can't find instruction for effect of variable: " ++ show v
-    _ -> error $ "Can't find effect for variable: " ++ show v
-
-
-
--- firstOutput =
---   let addr = findAddress v frProcess
---       saves = sortBy (\a b -> stepStart a `compare` stepStart b)
---               $ map fst $ filter (\(_, info :: I String Int) ->
---                                     case info of
---                                       Save addr' -> addr == addr'
---                                       _          -> False
---                                  ) $ filterSteps $ steps frProcess
---       lastSave = saves !! (length saves - 2) -- предпоследний, последний - output
---       [Push v' :: Effect String] = infoAt (stepStart lastSave) $ steps frProcess
---   in if length saves == 1
---      then -- trace (">> " ++ show addr ++ " | " ++ show (addr2value addr)) $
---        addr2value addr
---      else -- trace ("> " ++ show addr ++ " | " ++ show lastSave ++ " | " ++ v') $
---        cntx M.! (v', 0)
+testSignals fram@Fram{ frProcess=Process{..}, ..} _cntx
+  = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
+  where
+    signalsAt time = map (\sig -> signal' fram sig time)
+                     [ OE, WR, ADDR 3, ADDR 2, ADDR 1, ADDR 0 ]
+    showSignals = (\[oe, wr, a3, a2, a1, a0] ->
+                      "oe <= 'b" ++ oe
+                      ++ "; wr <= 'b" ++ wr
+                      ++ "; addr[3] <= 'b" ++ a3
+                      ++ "; addr[2] <= 'b" ++ a2
+                      ++ "; addr[1] <= 'b" ++ a1
+                      ++ "; addr[0] <= 'b" ++ a0 ++ ";"
+                  ) . map show
 
 
 
+testInputs Fram{ frProcess=p@Process{..}, ..} cntx
+  = concatMap ( (++ " @(negedge clk);\n") . busState ) [ 0 .. tick + 1 ]
+  where
+    busState t
+      | Just (Push v) <- effectAt t p = "value_i <= " ++ show (cntx M.! (v, 0)) ++ ";"
+      | otherwise = "/* NO INPUT */"
+
+testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
+  = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. tick + 1 ] ++ bankCheck
+  where
+    busState t
+      | Just (Pull (v : _)) <- effectAt t p
+      = checkBus v $ cntx M.! (v, 0)
+      | otherwise
+      = "/* NO OUTPUT */"
+
+    checkBus v value = concat
+      [ "if ( !( value_o == " ++ show value ++ " ) ) "
+      ,   "$display("
+      ,     "\""
+      ,       "FAIL wrong value of " ++ show' v ++ " on the bus! "
+      ,       "(got: %h expect: %h)"
+      ,     "\","
+      ,     "value_o, " ++ show value
+      ,   ");"
+      ]
+
+    bankCheck = "\n\n@(posedge clk);\n"
+      ++ concat [ checkBank addr v (cntx M.! (v, 0))
+                | Step{ time=Event{..}, info=FBStep fb, .. } <- filter (isFB . info) steps
+                , let addr_v = outputStep fb
+                , isJust addr_v
+                , let Just (addr, v) = addr_v
+                ]
+
+    outputStep fb
+      | Just (Loop _bs a) <- castFB fb = Just (findAddress a pu, a)
+      | Just (FramOutput addr a) <- castFB fb = Just (addr, a)
+      | otherwise = Nothing
+
+    checkBank addr v value = concat
+      [ "if ( !( fram.bank[" ++ show addr ++ "] == " ++ show value ++ " ) ) "
+      ,   "$display("
+      ,     "\""
+      ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
+      ,       "(got: %h expect: %h)"
+      ,     "\","
+      ,     "value_o, " ++ show value
+      ,   ");"
+      ]
+    show' s = filter (/= '\"') $ show s
+
+
+
+findAddress v pu@Fram{ frProcess=p@Process{..} }
+  | [ Step{ time=Event t _ }
+    ] <- filter ( \st -> isEffect (info st)
+                         && (\Step{ info=EffectStep eff } -> v `elem` variables eff) st
+                ) steps
+  , [ i ] <- catMaybes $ map (getInstruction (proxy pu)) $ whatsHappen t p
+  = case i of
+      Load addr -> addr
+      Save addr -> addr
+      _         -> err
+  | otherwise = err
+    where err = error $ "Can't find instruction for effect of variable: " ++ show v
