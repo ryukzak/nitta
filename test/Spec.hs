@@ -24,10 +24,10 @@ import           Test.QuickCheck
 
 
 main = do
-  quickCheck (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealDataFlow -> Bool)
+  quickCheck (prop_formalCompletness . bindAllAndNaiveSelects :: FramIdealDataFlow -> Bool)
   quickCheck (prop_formalCompletness . framDataFlow :: FramDataFlow -> Bool)
 
-  quickCheck (prop_simulation . bindAllAndNaiveSteps :: FramIdealDataFlow -> Property)
+  quickCheck (prop_simulation . bindAllAndNaiveSelects :: FramIdealDataFlow -> Property)
   quickCheck (prop_simulation . framDataFlow :: FramDataFlow -> Property)
 
   -- quickCheckWith stdArgs { maxSuccess=1 } ((\alg -> do

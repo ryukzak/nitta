@@ -92,7 +92,7 @@ instance ( Title title, Var v, Time t
 
       puOptions = M.assocs $ M.map options bnPus
 
-  step ni@BusNetwork{..} act@TransportAct{..} = ni
+  select ni@BusNetwork{..} act@TransportAct{..} = ni
     { bnPus=foldl (\s n -> n s) bnPus steps
     , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add
@@ -109,9 +109,9 @@ instance ( Title title, Var v, Time t
       transportDuration = maximum $
         map ((\Event{..} -> (eStart - transportStartAt) + eDuration) . snd) $ M.elems push'
       -- if puTitle not exist - skip it...
-      pullStep = M.adjust (\dpu -> step dpu $ EffectAct (Pull pullVars) taPullAt) taPullFrom
+      pullStep = M.adjust (\dpu -> select dpu $ EffectAct (Pull pullVars) taPullAt) taPullFrom
       pushStep (var, (dpuTitle, pushAt)) =
-        M.adjust (\dpu -> step dpu $ EffectAct (Push var) pushAt) dpuTitle
+        M.adjust (\dpu -> select dpu $ EffectAct (Push var) pushAt) dpuTitle
       pushSteps = map pushStep $ M.assocs push'
       steps = pullStep : pushSteps
 

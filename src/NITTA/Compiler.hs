@@ -14,7 +14,7 @@
 module NITTA.Compiler
   ( naive
   , bindAll
-  , bindAllAndNaiveSteps
+  , bindAllAndNaiveSelects
   , effectVar2act
   )
 where
@@ -35,13 +35,13 @@ bindAll pu alg = fromRight undefined $ foldl nextBind (Right pu) alg
     nextBind (Right pu') fb = bind fb pu'
     nextBind (Left r) _     = error r
 
-bindAllAndNaiveSteps pu0 alg = naive' $ bindAll pu0 alg
+bindAllAndNaiveSelects pu0 alg = naive' $ bindAll pu0 alg
   where
     naive' pu
       | var:_ <- options pu =
           naive'
           -- $ trace (concatMap ((++ "\n") . show) $ elems $ frMemory pu)
-          $ step pu $ effectVar2act var
+          $ select pu $ effectVar2act var
       | otherwise = pu
 
 -- manualSteps pu acts = foldl (\pu' act -> step pu' act) pu acts
@@ -130,7 +130,7 @@ naive !f@Fork{..}
                    cm' = foldl controlModelStep controlModel
                          $ map fst $ filter (isJust . snd) $ M.assocs $ taPush act
                in trace ("step: " ++ show act)
-                  f{ net=step net act
+                  f{ net=select net act
                    , controlModel=cm'
                    }
         _   -> error "No variants!"

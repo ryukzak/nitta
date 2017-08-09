@@ -56,6 +56,11 @@ setProcessTime t = do
   p <- get
   put p{ tick=t }
 
+processTime :: State (Process v t) t
+processTime = do
+  Process{..} <- get
+  return tick
+
 bindFB fb t = add (Event t 0) $ InfoStep $ "Bind " ++ show fb
 
 

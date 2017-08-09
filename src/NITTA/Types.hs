@@ -210,6 +210,8 @@ instance PUType Passive where
 
 instance Vars (Option Passive v t) v where
   variables EffectOpt{..} = variables eoEffect
+instance Vars (Action Passive v t) v where
+  variables EffectAct{..} = variables eaEffect
 
 
 
@@ -274,8 +276,7 @@ class ( Typeable (Signals pu)
       ) => PUClass ty pu v t | pu -> ty, pu -> v, pu -> t where
   bind :: FB v -> pu -> Either String pu
   options :: pu -> [Option ty v t]
-  -- rename to select
-  step     :: pu -> Action ty v t -> pu
+  select :: pu -> Action ty v t -> pu
 
   process :: pu -> Process v t
   setTime :: t -> pu -> pu
@@ -315,14 +316,10 @@ data PU ty v t where
 instance ( Var v, Time t ) => PUClass Passive (PU Passive v t) v t where
   bind fb (PU pu) = PU <$> bind fb pu
   options (PU pu) = options pu
-  step (PU pu) act = PU $ step pu act
+  select (PU pu) act = PU $ select pu act
   process (PU pu) = process pu
   setTime t (PU pu) = PU $ setTime t pu
 
-  -- fixme - вынести в другой класс, который для pu не будет реализовываться.
-  -- data Instruction (PU Passive v t)
-  -- data Signals (PU Passive v t)
-  -- signal' = error ""
 
 instance ( PUClass Passive (PU Passive v t) v t
          ) => Similatable (PU Passive v t) v Int where

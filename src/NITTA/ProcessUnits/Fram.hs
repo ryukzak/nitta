@@ -198,7 +198,7 @@ instance ( Var v, Time t ) => PUClass Passive (Fram v t) v t where
         | otherwise              = TimeConstrain 1 tick maxBound
       constrain _cell (Push _) = TimeConstrain 1 tick maxBound
 
-  step fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@EffectAct{ eaAt=at@Event{..}, .. }
+  select fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@EffectAct{ eaAt=at@Event{..}, .. }
     | tick0 > eStart
     = error $ "You can't start work yesterday:)" ++ show tick0 ++ " " ++ show eStart
 
@@ -212,7 +212,7 @@ instance ( Var v, Time t ) => PUClass Passive (Fram v t) v t where
                       , frProcess=p'
                       }
          in --trace (show fb ++ " --> " ++ show addr) $
-            step fr' act0
+            select fr' act0
         Nothing -> error $ "Can't find available cell for: " ++ show fb ++ "!"
 
     | Just (addr, cell) <- find (any (<< eaEffect) . cell2acts True . snd) $ assocs frMemory
