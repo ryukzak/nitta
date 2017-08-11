@@ -97,7 +97,7 @@ naive !f@Forks{..}
         parallelSteps = concatMap
           (\Fork{ net=n
                 , timeTag=forkTag
-                } -> filter (\Step{ time=Event{..} } -> forkTag == (tag eStart)
+                } -> filter (\Step{ sTime=Event{..} } -> forkTag == (tag eStart)
                             ) $ steps $ process n
           ) completed
     in case (isOver current', remains) of
@@ -105,7 +105,7 @@ naive !f@Forks{..}
          (True, _)    -> let net''@BusNetwork{ bnProcess=p }
                                = setTime t{ tag=timeTag merge } net'
                          in merge{ net=net''{ bnProcess=snd $ modifyProcess p $ do
-                                                mapM_ (\Step{..} -> add time info) parallelSteps
+                                                mapM_ (\Step{..} -> add sTime sDesc) parallelSteps
                                             }
                                  }
          (False, _)   -> f{ current=current' }

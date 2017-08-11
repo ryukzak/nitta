@@ -65,20 +65,20 @@ bindFB fb t = add (Event t 0) $ InfoStep $ "Bind " ++ show fb
 
 
 
-stepStart Step{ time=Event{..} } = eStart
+stepStart Step{ sTime=Event{..} } = eStart
 
 
 whatsHappen t Process{..} =
-  filter (\Step{ time=Event{..} } -> eStart <= t && t < eStart + eDuration) steps
+  filter (\Step{ sTime=Event{..} } -> eStart <= t && t < eStart + eDuration) steps
 
 
 isFB (FBStep _)                = True
 isFB (NestedStep _ (FBStep _)) = True
 isFB _                         = False
 
-getFB Step{ info=FBStep fb }                = Just fb
-getFB Step{ info=NestedStep _ (FBStep fb) } = Just fb
-getFB _                                     = Nothing
+getFB Step{ sDesc=FBStep fb }                = Just fb
+getFB Step{ sDesc=NestedStep _ (FBStep fb) } = Just fb
+getFB _                                      = Nothing
 
 getFBs p = catMaybes $ map getFB
            $ sortBy (\a b -> stepStart a `compare` stepStart b)
@@ -88,9 +88,9 @@ getFBs p = catMaybes $ map getFB
 isEffect (EffectStep _) = True
 isEffect _              = False
 
-getEffect Step{ info=EffectStep eff }                = Just eff
-getEffect Step{ info=NestedStep _ (EffectStep eff) } = Just eff
-getEffect _                                          = Nothing
+getEffect Step{ sDesc=EffectStep eff }                = Just eff
+getEffect Step{ sDesc=NestedStep _ (EffectStep eff) } = Just eff
+getEffect _                                           = Nothing
 
 getEffects p = catMaybes $ map getEffect
                $ sortBy (\a b -> stepStart a `compare` stepStart b)
@@ -98,7 +98,7 @@ getEffects p = catMaybes $ map getEffect
 
 effectAt t p
   | [eff] <- catMaybes $ map getEffect $ whatsHappen t p = Just eff
-  |otherwise = Nothing
+  | otherwise = Nothing
 
 
 isInfo (InfoStep _) = True
@@ -109,13 +109,30 @@ isInstruction (InstructionStep _) = True
 isInstruction _                   = False
 
 getInstruction :: ( Typeable pu ) => Proxy pu -> Step v t -> Maybe (Instruction pu)
-getInstruction _ Step{ info=InstructionStep instr } = cast instr
-getInstruction _ _                                  = Nothing
+getInstruction _ Step{ sDesc=InstructionStep instr } = cast instr
+getInstruction _ _                                   = Nothing
 
 getInstructions proxy' p = catMaybes $ map (getInstruction $ proxy')
                            $ sortBy (\a b -> stepStart a `compare` stepStart b)
                            $ steps p
 
+instructionAt proxy t p
+  | [instr] <- catMaybes $ map (getInstruction proxy) $ whatsHappen t p
+  = Just instr
+  | otherwise = Nothing
+
+
+-- instance ( PUClass ty pu v t
+--          , ByInstruction pu
+--          , Default (Instruction pu)
+--          , Controllable pu
+--          , Var v, Time t
+--          ) => ByTime pu t where
+--   signalAt pu sig t
+--     = let instr = case instructionAt (proxy pu) t (process pu) of
+--                     Just i  -> i
+--                     Nothing -> def
+--       in signalFor instr sig
 
 
 inputsOfFBs fbs

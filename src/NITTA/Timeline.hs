@@ -23,11 +23,11 @@ instance ( Time t
 --       , ToJSON (TaggetTime tag t)
 --       , ToJSON tag
          ) => ToJSON (Step String t) where
-  toJSON st@Step{ time=Event{..}, ..} =
-    object $ [ "id" .= uid
+  toJSON st@Step{ sTime=Event{..}, ..} =
+    object $ [ "id" .= sKey
              , "start" .= eStart
-             , "content" .= show' info
-             , "group" .= group info
+             , "content" .= show' sDesc
+             , "group" .= group sDesc
              , "title" .= show st
              , "inside_out" .= isInsideOut st
              -- , "time_tag" .= tag eStart
@@ -63,7 +63,7 @@ instance ToJSON Group where
 
 timeline filename pu = do
   let Process{..} = process pu
-  let groups0 = nub $ map (\Step{..} -> (group info, upperGroup info)) $ steps
+  let groups0 = nub $ map (\Step{..} -> (group sDesc, upperGroup sDesc)) $ steps
   let groups = map (\g -> Group g $ nub [ng | (ng, Just ug) <- groups0, ug == g])
                    $ map fst groups0
   BS.writeFile filename $ BS.concat [

@@ -152,9 +152,9 @@ instance (Time t) => Default (Process v t) where
 
 data Step v t where
   Step ::
-    { uid  :: ProcessUid
-    , time :: Event t
-    , info :: StepInfo v
+    { sKey  :: ProcessUid
+    , sTime :: Event t
+    , sDesc :: StepInfo v
     } -> Step v t
   deriving ( Show )
 
@@ -281,17 +281,33 @@ class ( Typeable (Signals pu)
   process :: pu -> Process v t
   setTime :: t -> pu -> pu
 
-class ( Typeable pu ) => Controllable pu t | pu -> t where
+class ( Typeable pu ) => Controllable pu where
   data Instruction pu :: *
-
   data Signals pu :: *
-  signal :: pu -> S -> t -> Value
-  signal pu (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
-                    in signal' pu s'
-  signal' :: pu -> Signals pu -> t -> Value
+
+  -- идея конечно хороша и крассива, но на практике не реализуема, так как:
+  -- - исключает параллелизм инсрукций (что особенно актуально для Net.
+  -- signalValue :: Instruction pu -> Signals pu -> Value
 
   proxy :: pu -> Proxy pu
   proxy _ = Proxy
+
+
+class ByTime pu t | pu -> t where
+  signalAt :: pu -> Signals pu -> t -> Value
+
+
+
+gsignalAt pu (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
+                     in signalAt pu s'
+
+class ByInstruction pu where
+  signalFor :: Instruction pu -> Signals pu -> Value
+
+gsignalFor instr (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
+                         in signalFor instr s'
+
+
 
 class Similatable pu v x | pu -> v, pu -> x where
   varValue :: pu -> SimulationContext v x -> (v, x) -> x
@@ -308,7 +324,8 @@ data PU ty v t where
   PU :: ( PUClass ty pu v t
         , Typeable pu
         , Similatable pu v Int
-        , Controllable pu t
+        , Controllable pu
+        , ByTime pu t
         ) => pu -> PU ty v t
 
 -- deriving instance Show (Instruction (PU Passive v t))

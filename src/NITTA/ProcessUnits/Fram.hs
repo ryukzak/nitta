@@ -306,9 +306,10 @@ instance ( Var v, Time t ) => PUClass Passive (Fram v t) v t where
   setTime t fr@Fram{..} = fr{ frProcess=frProcess{ tick=t } }
 
 
+instance Default (Instruction (Fram v t)) where
+  def = Nop
 
-
-instance ( Var v, Time t ) => Controllable (Fram v t) t where
+instance ( Var v, Time t ) => Controllable (Fram v t) where
 
   data Signals (Fram v t) = OE | WR | ADDR Int
 
@@ -318,24 +319,25 @@ instance ( Var v, Time t ) => Controllable (Fram v t) t where
     | Save Int
     deriving (Show)
 
-  signal' Fram{..} sig time =
+instance ( Var v, Time t ) => ByTime (Fram v t) t where
+  signalAt Fram{..} sig time =
     let instruction = case catMaybes $ map (getInstruction (Proxy :: Proxy (Fram v t)))
                            $ whatsHappen time frProcess of
           [] -> Nop
           [i] -> i
           is -> error $ "Ambiguously instruction at "
                       ++ show time ++ ": " ++ show is
-    in value instruction sig
-    where
-      value  Nop        (ADDR _) = X
-      value  Nop         _       = B False
-      value (Load addr) (ADDR b) = B $ testBit addr b
-      value (Load    _)  OE      = B True
-      value (Load    _)  WR      = B False
-      value (Save addr) (ADDR b) = B $ testBit addr b
-      value (Save    _)  OE      = B False
-      value (Save    _)  WR      = B True
+    in signalFor instruction sig
 
+instance ( Var v, Time t ) => ByInstruction (Fram v t) where
+  signalFor  Nop        (ADDR _) = X
+  signalFor  Nop         _       = B False
+  signalFor (Load addr) (ADDR b) = B $ testBit addr b
+  signalFor (Load    _)  OE      = B True
+  signalFor (Load    _)  WR      = B False
+  signalFor (Save addr) (ADDR b) = B $ testBit addr b
+  signalFor (Save    _)  OE      = B False
+  signalFor (Save    _)  WR      = B True
 
 
 
@@ -369,10 +371,10 @@ instance ( PUClass Passive (Fram v t) v t
 
 sortPuSteps p@Process{..} =
   let hierarchy = foldl (\m (Vertical a b) -> M.adjust (b :) a m)
-                      (M.fromList [(k, []) | k <- map uid steps])
+                      (M.fromList [(k, []) | k <- map sKey steps])
                       [x | x@(Vertical _ _) <- relations]
       (graph, _v2k, k2v) = G.graphFromEdges $ map (\(a, b) -> ((), a, b)) $ M.assocs hierarchy
-      steps' = sortBy (\Step{ uid=a } Step{ uid=b } ->
+      steps' = sortBy (\Step{ sKey=a } Step{ sKey=b } ->
                        case (k2v a, k2v b) of
                          (Just a', Just b') ->
                            let ab = G.path graph a' b'
@@ -445,7 +447,7 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
 testSignals fram@Fram{ frProcess=Process{..}, ..} _cntx
   = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
   where
-    signalsAt time = map (\sig -> signal' fram sig time)
+    signalsAt time = map (\sig -> signalAt fram sig time)
                      [ OE, WR, ADDR 3, ADDR 2, ADDR 1, ADDR 0 ]
     showSignals = (\[oe, wr, a3, a2, a1, a0] ->
                       "oe <= 'b" ++ oe
@@ -487,7 +489,7 @@ testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
     bankCheck = "\n\n@(posedge clk);\n"
       ++ concat [ checkBank addr v (cntx M.! (v, 0))
-                | Step{ time=Event{..}, info=FBStep fb, .. } <- filter (isFB . info) steps
+                | Step{ sTime=Event{..}, sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
                 , let addr_v = outputStep fb
                 , isJust addr_v
                 , let Just (addr, v) = addr_v
@@ -513,9 +515,9 @@ testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
 
 findAddress v pu@Fram{ frProcess=p@Process{..} }
-  | [ Step{ time=Event t _ }
-    ] <- filter ( \st -> isEffect (info st)
-                         && (\Step{ info=EffectStep eff } -> v `elem` variables eff) st
+  | [ Step{ sTime=Event t _ }
+    ] <- filter ( \st -> isEffect (sDesc st)
+                         && (\Step{ sDesc=EffectStep eff } -> v `elem` variables eff) st
                 ) steps
   , [ i ] <- catMaybes $ map (getInstruction (proxy pu)) $ whatsHappen t p
   = case i of

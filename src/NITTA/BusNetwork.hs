@@ -121,7 +121,7 @@ instance ( Title title, Var v, Time t
 
   process pu@BusNetwork{..} = let
     transportKey = M.fromList
-      [ (v, uid st)
+      [ (v, sKey st)
       | st <- steps bnProcess
       , let instr = getInstruction (proxy pu) st
       , isJust instr
@@ -136,13 +136,13 @@ instance ( Title title, Var v, Time t
       addSubProcess transportKey (puTitle, pu') = do
         let subSteps = steps $ process pu'
         uids' <- foldM (\dict Step{..} -> do
-                           uid' <- add time $ NestedStep puTitle info
-                           when (isFB info) $ do
-                             let FBStep fb = info
+                           k <- add sTime $ NestedStep puTitle sDesc
+                           when (isFB sDesc) $ do
+                             let FBStep fb = sDesc
                              mapM_ (\v -> when (v `M.member` transportKey)
-                                          $ relation $ Vertical (transportKey M.! v) uid'
+                                          $ relation $ Vertical (transportKey M.! v) k
                                    ) $ variables fb
-                           return $ M.insert uid uid' dict
+                           return $ M.insert sKey k dict
                        ) M.empty subSteps
         let subRelations = relations $ process pu'
         mapM (\r -> relation $ case r of
@@ -155,8 +155,14 @@ instance ( Title title, Var v, Time t
 
 
 
+
+-- Сигналы - есть у всех управляемых ПУ.
+
+
+
+
 instance ( Title title, Var v, Time t
-         ) => Controllable (BusNetwork title (PU Passive v t) v t) t where
+         ) => Controllable (BusNetwork title (PU Passive v t) v t) where
 
   data Instruction (BusNetwork title (PU Passive v t) v t)
     = Transport v title title
@@ -164,10 +170,14 @@ instance ( Title title, Var v, Time t
 
   data Signals (BusNetwork title (PU Passive v t) v t) = Wire Int
 
-  signal' BusNetwork{..} (Wire i) t = foldl (+++) X $ map (uncurry subSignal) $ bnWires ! i
+
+
+instance ( Title title, Var v, Time t
+         ) => ByTime (BusNetwork title (PU Passive v t) v t) t where
+  signalAt BusNetwork{..} (Wire i) t = foldl (+++) X $ map (uncurry subSignal) $ bnWires ! i
     where
       subSignal puTitle s = case bnPus M.! puTitle of
-        PU pu' -> signal (pu') s t
+        PU pu' -> gsignalAt pu' s t
 
 
 
@@ -254,7 +264,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
         = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
         where
           wires = map Wire $ reverse $ range $ bounds bnWires
-          signalsAt t = map (\w -> signal' bn w t) wires
+          signalsAt t = map (\w -> signalAt bn w t) wires
           showSignals = (\ss -> "wires <= 'b" ++ ss ++ ";" ) . concat . map show
 
       testOutputs BusNetwork{ bnProcess=p@Process{..}, ..} cntx
