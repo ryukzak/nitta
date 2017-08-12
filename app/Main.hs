@@ -1,3 +1,4 @@
+{-# LANGUAGE Arrows                 #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -62,6 +63,14 @@ net0 = busNetwork
                   , ( 0, [("fram2", S $ (ADDR 0 :: Signals (Fram String T)))])
                   ]
 
+
+
+
+
+-- algA = proc _ -> do
+  -- x <- (arr (\() -> 11)) -< ()
+  -- returnA -< x
+
 alg = [ FB.framInput 3 [ "a" ]
       , FB.framInput 4 [ "b"
                        , "c"
@@ -102,7 +111,6 @@ program = DataFlow
 
 net' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) alg
 net'' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) $ functionalBlocks program
--- net''' = bindAll (net0 :: GBusNetwork String String T) alg
 
 
 

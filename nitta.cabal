@@ -34,6 +34,7 @@ library
                      , random
                      , transformers
                      , lens
+                     , arrows
                      , array
                      , aeson
                      , text

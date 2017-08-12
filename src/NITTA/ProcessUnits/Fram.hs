@@ -6,6 +6,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
@@ -43,7 +44,8 @@ data Fram v t = Fram
   , frRemains            :: [MicroCode v t]
   , frProcess            :: Process v t
   , frAllowBlockingInput :: Bool
-  } deriving (Show)
+  }
+deriving instance ( Variable v, Time t ) => Show (Fram v t)
 
 
 remainLoops fr = remains getLoop fr
@@ -75,7 +77,9 @@ placeForRegExist fr@Fram{ frAllowBlockingInput=False, ..} =
 data IOState v t = Undef
                  | Def (MicroCode v t)
                  | UsedOrBlocked
-  deriving (Show, Eq)
+deriving instance ( Variable v, Time t ) => Show (IOState v t)
+deriving instance ( Variable v, Time t ) => Eq (IOState v t)
+
 
 
 data Cell v t = Cell
@@ -83,14 +87,15 @@ data Cell v t = Cell
   , current   :: Maybe (MicroCode v t)
   , output    :: IOState v t -- Push
   , lastWrite :: Maybe t
-  } deriving (Show)
+  }
+deriving instance ( Variable v, Time t ) => Show (Cell v t)
 
 
 data MicroCode v t where
   MicroCode ::
     { compiler, effect, instruction :: [ProcessUid]
     , workBegin                     :: Maybe t
-    , fb                            :: FB v
+    , fb                            :: FB (Parcel v)
     , actions                       :: [Effect v]
     , bindTo                        :: MicroCode v t -> Cell v t -> Either String (Cell v t)
     } -> MicroCode v t
@@ -98,7 +103,7 @@ data MicroCode v t where
 microcode = MicroCode [] [] [] Nothing
 
 
-instance ( Var v, Time t ) => Default (Fram v t) where
+instance ( Variable v, Time t ) => Default (Fram v t) where
   def = Fram { frMemory=listArray (0, framSize - 1) $ repeat def
              , frRemains=[]
              , frProcess=def
@@ -108,10 +113,10 @@ instance ( Var v, Time t ) => Default (Fram v t) where
 instance Default (Cell v t) where
   def = Cell Undef Nothing Undef Nothing
 
-instance ( Show v ) => Show (MicroCode v t) where
+instance ( Variable v ) => Show (MicroCode v t) where
   show MicroCode{..} = show actions ++ " " ++ show fb
 
-instance ( Eq v ) => Eq (MicroCode v t) where
+instance ( Variable v ) => Eq (MicroCode v t) where
   MicroCode{ actions=a } == MicroCode{ actions=b } = a == b
 
 
@@ -119,10 +124,10 @@ framSize = 16 :: Int
 
 
 
-instance ( Var v, Time t ) => PUClass Passive (Fram v t) v t where
+instance ( Variable v, Time t ) => PUClass Passive (Fram v t) v t where
 
   bind fb fr@Fram{ frProcess=p@Process{..}, .. }
-    | Just (Reg a b) <- castFB fb =
+    | Just (Reg (IP a) (OP b)) <- castFB fb =
         if placeForRegExist fr
         then let bindToCell _ Cell{ output=UsedOrBlocked } = Left "Can't bind Reg to Fram"
                  bindToCell _ Cell{ current=Just _ } = Left "Can't bind Reg to Fram"
@@ -138,7 +143,7 @@ instance ( Var v, Time t ) => PUClass Passive (Fram v t) v t where
              in Right fr'{ frRemains=mc' : frRemains }
         else Left "Can't bind Reg to Fram, place for Reg don't exist."
 
-    | Just (Loop bs a) <- castFB fb =
+    | Just (Loop (OP bs) (IP a)) <- castFB fb =
         if -- trace ("ioUses: " ++ show (ioUses fr)) $
            ioUses fr < framSize
         then let bindToCell mc cell@Cell{ input=Undef, output=Undef } =
@@ -150,7 +155,7 @@ instance ( Var v, Time t ) => PUClass Passive (Fram v t) v t where
              in Right fr'{ frRemains=mc' : frRemains }
         else Left "Can't bind Loop to Fram, all IO cell already busy."
 
-    | Just (FramInput addr v) <- castFB fb =
+    | Just (FramInput addr (OP v)) <- castFB fb =
         let bindToCell mc cell@Cell{ input=Undef, .. }
               | ioUses fr < framSize || (ioUses fr == framSize && output /= Undef)
               = Right cell{ input=Def mc }
@@ -161,7 +166,7 @@ instance ( Var v, Time t ) => PUClass Passive (Fram v t) v t where
         in fmap (\cell' -> fr'{ frMemory=frMemory // [(addr, cell')]
                               }) $ bindToCell mc' $ frMemory ! addr
 
-    | Just (FramOutput addr v) <- castFB fb =
+    | Just (FramOutput addr (IP v)) <- castFB fb =
         let bindToCell mc cell@Cell{ output=Undef, .. }
               | ioUses fr < framSize || (ioUses fr == framSize && input /= Undef)
               = Right cell{ output=Def mc }
@@ -309,7 +314,7 @@ instance ( Var v, Time t ) => PUClass Passive (Fram v t) v t where
 instance Default (Instruction (Fram v t)) where
   def = Nop
 
-instance ( Var v, Time t ) => Controllable (Fram v t) where
+instance ( Variable v, Time t ) => Controllable (Fram v t) where
 
   data Signals (Fram v t) = OE | WR | ADDR Int
 
@@ -319,7 +324,7 @@ instance ( Var v, Time t ) => Controllable (Fram v t) where
     | Save Int
     deriving (Show)
 
-instance ( Var v, Time t ) => ByTime (Fram v t) t where
+instance ( Variable v, Time t ) => ByTime (Fram v t) t where
   signalAt Fram{..} sig time =
     let instruction = case catMaybes $ map (getInstruction (Proxy :: Proxy (Fram v t)))
                            $ whatsHappen time frProcess of
@@ -329,7 +334,7 @@ instance ( Var v, Time t ) => ByTime (Fram v t) t where
                       ++ show time ++ ": " ++ show is
     in signalFor instruction sig
 
-instance ( Var v, Time t ) => ByInstruction (Fram v t) where
+instance ( Variable v, Time t ) => ByInstruction (Fram v t) where
   signalFor  Nop        (ADDR _) = X
   signalFor  Nop         _       = B False
   signalFor (Load addr) (ADDR b) = B $ testBit addr b
@@ -343,25 +348,26 @@ instance ( Var v, Time t ) => ByInstruction (Fram v t) where
 
 instance ( PUClass Passive (Fram v t) v t
          , Time t
-         , Var v
+         , Variable v
          ) => Similatable (Fram v t) v Int where
   varValue pu cntx vi@(v, _)
-    | [fb] <- filter (elem v . variables) $ catMaybes $ map getFB $ steps $ process pu
+    | [fb] <- filter (elem v . (\(FB fb) -> variables fb))
+      $ catMaybes $ map getFB $ steps $ process pu
     = variableValue fb pu cntx vi
     | otherwise = error $ "can't find varValue for: " ++ show v ++ " "
                   ++ show (catMaybes $ map getFB $ steps $ process pu)
 
   variableValue (FB fb) pu@Fram{..} cntx (v, i)
-    | Just (Loop _bs a) <- cast fb, a == v = cntx M.! (v, i)
+    | Just (Loop _bs (IP a)) <- cast fb, a == v = cntx M.! (v, i)
 
-    | Just (Loop bs _a) <- cast fb, v `elem` bs, i == 0
+    | Just (Loop (OP bs) _a) <- cast fb, v `elem` bs, i == 0
     = addr2value $ findAddress v pu
 
-    | Just (Reg a _bs) <- cast fb, a == v = cntx M.! (v, i)
-    | Just (Reg a bs) <- cast fb, v `elem` bs = cntx M.! (a, i)
+    | Just (Reg (IP a) _bs) <- cast fb, a == v = cntx M.! (v, i)
+    | Just (Reg (IP a) (OP bs)) <- cast fb, v `elem` bs = cntx M.! (a, i)
 
-    | Just (FramInput addr bs) <- cast fb, i == 0, v `elem` bs = addr2value addr
-    | Just (FramOutput _addr b) <- cast fb, v == b = cntx M.! (v, i)
+    | Just (FramInput addr (OP bs)) <- cast fb, i == 0, v `elem` bs = addr2value addr
+    | Just (FramOutput _addr (IP a)) <- cast fb, v == a = cntx M.! (v, i)
 
     | otherwise = error $ "Can't simulate " ++ show fb
     where
@@ -417,100 +423,100 @@ availableCell fr@Fram{..} mc@MicroCode{..} =
 
 ---------------------------------------------------
 
-instance TestBenchRun (Fram v t) where
-  buildArgs _ = [ "hdl/dpu_fram.v"
-                , "hdl/dpu_fram.tb.v"
-                ]
+-- instance TestBenchRun (Fram v t) where
+--   buildArgs _ = [ "hdl/dpu_fram.v"
+--                 , "hdl/dpu_fram.tb.v"
+--                 ]
 
-instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
+-- instance ( Variable v, Time t ) => TestBench (Fram v t) v Int where
 
-  components _ =
-    [ ( "hdl/dpu_fram_inputs.v", testInputs )
-    , ( "hdl/dpu_fram_signals.v", testSignals )
-    , ( "hdl/dpu_fram_outputs.v", testOutputs )
-    ]
+--   components _ =
+--     [ ( "hdl/dpu_fram_inputs.v", testInputs )
+--     , ( "hdl/dpu_fram_signals.v", testSignals )
+--     , ( "hdl/dpu_fram_outputs.v", testOutputs )
+--     ]
 
-  simulateContext fr@Fram{ frProcess=p@Process{..}, .. } cntx =
-    let vs =
-          [ v
-          | eff <- getEffects p
-          , v <- variables eff
-          ]
-    in foldl ( \cntx' v ->
-                 M.insert (v, 0)
-                          (varValue fr cntx' (v, 0))
-                          cntx'
-             ) cntx vs
-
-
-
-testSignals fram@Fram{ frProcess=Process{..}, ..} _cntx
-  = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
-  where
-    signalsAt time = map (\sig -> signalAt fram sig time)
-                     [ OE, WR, ADDR 3, ADDR 2, ADDR 1, ADDR 0 ]
-    showSignals = (\[oe, wr, a3, a2, a1, a0] ->
-                      "oe <= 'b" ++ oe
-                      ++ "; wr <= 'b" ++ wr
-                      ++ "; addr[3] <= 'b" ++ a3
-                      ++ "; addr[2] <= 'b" ++ a2
-                      ++ "; addr[1] <= 'b" ++ a1
-                      ++ "; addr[0] <= 'b" ++ a0 ++ ";"
-                  ) . map show
+--   simulateContext fr@Fram{ frProcess=p@Process{..}, .. } cntx =
+--     let vs =
+--           [ v
+--           | eff <- getEffects p
+--           , v <- variables eff
+--           ]
+--     in foldl ( \cntx' v ->
+--                  M.insert (v, 0)
+--                           (varValue fr cntx' (v, 0))
+--                           cntx'
+--              ) cntx vs
 
 
 
-testInputs Fram{ frProcess=p@Process{..}, ..} cntx
-  = concatMap ( (++ " @(negedge clk);\n") . busState ) [ 0 .. tick + 1 ]
-  where
-    busState t
-      | Just (Push v) <- effectAt t p = "value_i <= " ++ show (cntx M.! (v, 0)) ++ ";"
-      | otherwise = "/* NO INPUT */"
+-- testSignals fram@Fram{ frProcess=Process{..}, ..} _cntx
+--   = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
+--   where
+--     signalsAt time = map (\sig -> signalAt fram sig time)
+--                      [ OE, WR, ADDR 3, ADDR 2, ADDR 1, ADDR 0 ]
+--     showSignals = (\[oe, wr, a3, a2, a1, a0] ->
+--                       "oe <= 'b" ++ oe
+--                       ++ "; wr <= 'b" ++ wr
+--                       ++ "; addr[3] <= 'b" ++ a3
+--                       ++ "; addr[2] <= 'b" ++ a2
+--                       ++ "; addr[1] <= 'b" ++ a1
+--                       ++ "; addr[0] <= 'b" ++ a0 ++ ";"
+--                   ) . map show
 
-testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
-  = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. tick + 1 ] ++ bankCheck
-  where
-    busState t
-      | Just (Pull (v : _)) <- effectAt t p
-      = checkBus v $ cntx M.! (v, 0)
-      | otherwise
-      = "/* NO OUTPUT */"
 
-    checkBus v value = concat
-      [ "if ( !( value_o == " ++ show value ++ " ) ) "
-      ,   "$display("
-      ,     "\""
-      ,       "FAIL wrong value of " ++ show' v ++ " on the bus! "
-      ,       "(got: %h expect: %h)"
-      ,     "\","
-      ,     "value_o, " ++ show value
-      ,   ");"
-      ]
 
-    bankCheck = "\n\n@(posedge clk);\n"
-      ++ concat [ checkBank addr v (cntx M.! (v, 0))
-                | Step{ sTime=Event{..}, sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
-                , let addr_v = outputStep fb
-                , isJust addr_v
-                , let Just (addr, v) = addr_v
-                ]
+-- testInputs Fram{ frProcess=p@Process{..}, ..} cntx
+--   = concatMap ( (++ " @(negedge clk);\n") . busState ) [ 0 .. tick + 1 ]
+--   where
+--     busState t
+--       | Just (Push v) <- effectAt t p = "value_i <= " ++ show (cntx M.! (v, 0)) ++ ";"
+--       | otherwise = "/* NO INPUT */"
 
-    outputStep fb
-      | Just (Loop _bs a) <- castFB fb = Just (findAddress a pu, a)
-      | Just (FramOutput addr a) <- castFB fb = Just (addr, a)
-      | otherwise = Nothing
+-- testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
+--   = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. tick + 1 ] ++ bankCheck
+--   where
+--     busState t
+--       | Just (Pull (v : _)) <- effectAt t p
+--       = checkBus v $ cntx M.! (v, 0)
+--       | otherwise
+--       = "/* NO OUTPUT */"
 
-    checkBank addr v value = concat
-      [ "if ( !( fram.bank[" ++ show addr ++ "] == " ++ show value ++ " ) ) "
-      ,   "$display("
-      ,     "\""
-      ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
-      ,       "(got: %h expect: %h)"
-      ,     "\","
-      ,     "value_o, " ++ show value
-      ,   ");"
-      ]
-    show' s = filter (/= '\"') $ show s
+--     checkBus v value = concat
+--       [ "if ( !( value_o == " ++ show value ++ " ) ) "
+--       ,   "$display("
+--       ,     "\""
+--       ,       "FAIL wrong value of " ++ show' v ++ " on the bus! "
+--       ,       "(got: %h expect: %h)"
+--       ,     "\","
+--       ,     "value_o, " ++ show value
+--       ,   ");"
+--       ]
+
+--     bankCheck = "\n\n@(posedge clk);\n"
+--       ++ concat [ checkBank addr v (cntx M.! (v, 0))
+--                 | Step{ sTime=Event{..}, sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
+--                 , let addr_v = outputStep fb
+--                 , isJust addr_v
+--                 , let Just (addr, v) = addr_v
+--                 ]
+
+--     outputStep fb
+--       | Just (Loop _bs a) <- castFB fb = Just (findAddress a pu, a)
+--       | Just (FramOutput addr a) <- castFB fb = Just (addr, a)
+--       | otherwise = Nothing
+
+--     checkBank addr v value = concat
+--       [ "if ( !( fram.bank[" ++ show addr ++ "] == " ++ show value ++ " ) ) "
+--       ,   "$display("
+--       ,     "\""
+--       ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
+--       ,       "(got: %h expect: %h)"
+--       ,     "\","
+--       ,     "value_o, " ++ show value
+--       ,   ");"
+--       ]
+--     show' s = filter (/= '\"') $ show s
 
 
 
