@@ -32,7 +32,7 @@ instance Show FramDataFlow where
   show = show . framDataFlow
 
 
-data ST = ST { acc           :: [FB String]
+data ST = ST { acc           :: [FB Parcel String]
              , forInput      :: [Int]
              , forOutput     :: [Int]
              , numberOfLoops :: Int
@@ -67,10 +67,10 @@ framDataFlowGen checkCellUsage generalPred =
            ) generalPred
   where
     maker st0@ST{..} _ = nextState st0 <$> do
-      fb <- suchThat (oneof [ FB <$> (arbitrary :: Gen (FramInput String))
-                            , FB <$> (arbitrary :: Gen (FramOutput String))
-                            , FB <$> (arbitrary :: Gen (Loop String))
-                            , FB <$> (arbitrary :: Gen (Reg String))
+      fb <- suchThat (oneof [ FB <$> (arbitrary :: Gen (FramInput Parcel String))
+                            , FB <$> (arbitrary :: Gen (FramOutput Parcel String))
+                            , FB <$> (arbitrary :: Gen (Loop Parcel String))
+                            , FB <$> (arbitrary :: Gen (Reg Parcel String))
                             ]
                      ) check
       v <- choose (0 :: Int, 0xFF)
@@ -82,17 +82,17 @@ framDataFlowGen checkCellUsage generalPred =
             }
           specificUpdate fb value st
             | Just (FramInput addr _vs) <- castFB fb = st{ forInput=addr : forInput }
-            | Just (FramOutput addr v) <- castFB fb = st{ forOutput=addr : forOutput
-                                                        , values=(v, value) : values
-                                                        }
-            | Just (Loop _bs a) <- castFB fb = st{ numberOfLoops=numberOfLoops + 1
-                                                 , values=(a, value) : values
-                                                 }
-            | Just (Reg a _bs) <- castFB fb = st{ values=(a, value) : values }
+            | Just (FramOutput addr (I v)) <- castFB fb = st{ forOutput=addr : forOutput
+                                                            , values=(v, value) : values
+                                                            }
+            | Just (Loop _bs (I a)) <- castFB fb = st{ numberOfLoops=numberOfLoops + 1
+                                                     , values=(a, value) : values
+                                                     }
+            | Just (Reg (I a) _bs) <- castFB fb = st{ values=(a, value) : values }
             | otherwise = error $ "Bad FB: " ++ show fb
           check fb
             | not $ null (variables fb `intersect` usedVariables) = False
-            | Just (Reg _ _ :: Reg String) <- castFB fb = True
+            | Just (Reg _ _ :: Reg Parcel String) <- castFB fb = True
             | not checkCellUsage = True
             | not (dfIoUses < framSize) = False
             | Just (FramInput addr _) <- castFB fb = addr `notElem` forInput

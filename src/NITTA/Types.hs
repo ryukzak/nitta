@@ -13,7 +13,6 @@
 module NITTA.Types where
 
 import           Data.Default
--- import           Data.Functor.Const
 import qualified Data.List     as L
 import qualified Data.Map      as M
 import           Data.Maybe
@@ -57,52 +56,26 @@ instance ( Num t, Show tag, Eq tag ) => Num (TaggetTime tag t) where
   signum = undefined
 
 
--- setTag Nothing (TaggetTime _ t) = TaggetTime Nothing t
--- setTag (Just tag) (TaggetTime _ t) = TaggetTime (Just tag) t
--- getTag (TaggetTime tag _) = tag
-
-
-class ( Show (fb v), Eq (fb v), Ord (fb v), Variables (fb v) v, Typeable (fb v)
-      ) => FBClass fb v where
-  dependency :: fb v -> [(v, v)]
-  insideOut :: fb v -> Bool
+class ( Typeable fb
+      , Eq fb
+      -- , Ord fb
+      -- , Var v
+      ) => FBClass fb v | fb -> v where
+  dependency :: fb -> [(v, v)]
+  insideOut :: fb -> Bool
   insideOut _ = False
-  isCritical :: fb v -> Bool
+  isCritical :: fb -> Bool
   isCritical _ = False
 
-class WithFunctionalBlocks a v | a -> v where
-  functionalBlocks :: a -> [FB v]
-
-data FB v where
-  FB :: ( FBClass fb v, Typeable (fb v) ) => fb v -> FB v
-
-instance (Typeable v) => FBClass FB v where
-  dependency (FB fb) = dependency fb
-  insideOut (FB fb) = insideOut fb
-  isCritical (FB fb) = isCritical fb
-
-deriving instance Show (FB v) --  where show (FB x) = show x
-
-instance Variables (FB v) v where
-  variables (FB fb) = variables fb
-
--- instance {-# OVERLAP #-} ( Variable v ) => Variables (FB (Parcel v)) v where
-  -- variables (FB fb) = variables fb
-
-instance Eq (FB v) where
-  FB a == FB b = Just a == cast b
-
-instance Ord (FB v) where
-  FB a `compare` FB b = case cast b of
-    Just b' -> a `compare` b'
-    Nothing -> typeOf a `compare` typeOf b
+class WithFunctionalBlocks x io v | x -> io, x -> v where
+  functionalBlocks :: x -> [FB io v]
 
 
 
 
 
-class Variables a v | a -> v where
-  variables :: a -> [v]
+class Variables x v | x -> v where
+  variables :: x -> [v]
 
 -- class ToString a where toString :: a -> String
 -- instance ToString String where toString s = s
@@ -137,7 +110,6 @@ data Process v t
     , steps     :: [Step v t]
     , relations :: [Relation]
     }
-deriving instance ( Variable v, Time t ) => Show ( Process v t )
 
 
 instance (Time t) => Default (Process v t) where
@@ -156,11 +128,8 @@ data Step v t where
     , sDesc :: StepInfo v
     } -> Step v t
 
-deriving instance ( Variable v, Time t ) => Show ( Step v t )
-
-
 data StepInfo v where
-  FBStep :: FB (Parcel v) -> StepInfo v
+  FBStep :: FB Parcel v -> StepInfo v
   InfoStep :: String -> StepInfo v
   EffectStep :: Effect v -> StepInfo v
   InstructionStep :: ( Show (Instruction pu)
@@ -169,10 +138,13 @@ data StepInfo v where
   NestedStep :: ( Eq title, Show title, Ord title
                 ) => title -> StepInfo v -> StepInfo v
 
+deriving instance ( Var v, Time t ) => Show ( Process v t )
+deriving instance ( Var v, Time t ) => Show ( Step v t )
+deriving instance ( Var v ) => Show (StepInfo v)
 
 
 
-deriving instance ( Variable v ) => Show (StepInfo v)
+
 
 level (FBStep _)          = "Function block"
 level (InfoStep _)        = "Info"
@@ -208,12 +180,12 @@ instance PUType Passive where
     , eaAt :: Event t
     }
 
-deriving instance ( Variable v, Time t ) => Show (Option Passive v t)
-deriving instance ( Variable v, Time t ) => Show (Action Passive v t)
+deriving instance ( Var v, Time t ) => Show (Option Passive v t)
+deriving instance ( Var v, Time t ) => Show (Action Passive v t)
 
-instance ( Variable v ) => Variables (Option Passive v t) v where
+instance ( Var v ) => Variables (Option Passive v t) v where
   variables EffectOpt{..} = variables eoEffect
-instance ( Variable v ) => Variables (Action Passive v t) v where
+instance ( Var v ) => Variables (Action Passive v t) v where
   variables EffectAct{..} = variables eaEffect
 
 
@@ -263,7 +235,7 @@ data Effect v
 -- deriving instance ( Variable v ) => Eq (Effect v)
 -- deriving instance ( Variable v ) => Ord (Effect v)
 
-instance ( Variable v ) => Variables (Effect v) v where
+instance ( Var v ) => Variables (Effect v) v where
   variables (Push i) = [i]
   variables (Pull o) = o
 
@@ -288,7 +260,7 @@ _ \\\ _ = error "Only for Pulls"
 class ( Typeable (Signals pu)
       , Typeable (Instruction pu)
       ) => PUClass ty pu v t | pu -> ty, pu -> v, pu -> t where
-  bind :: FB (Parcel v) -> pu -> Either String pu
+  bind :: FB Parcel v -> pu -> Either String pu
   options :: pu -> [Option ty v t]
   select :: pu -> Action ty v t -> pu
 
@@ -325,7 +297,7 @@ gsignalFor instr (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
 
 class Similatable pu v x | pu -> v, pu -> x where
   varValue :: pu -> SimulationContext v x -> (v, x) -> x
-  variableValue :: FB (Parcel v) -> pu -> SimulationContext v x -> (v, x) -> x
+  variableValue :: FB Parcel v -> pu -> SimulationContext v x -> (v, x) -> x
 
 
 
@@ -342,9 +314,8 @@ data PU ty v t where
         , ByTime pu t
         ) => pu -> PU ty v t
 
--- deriving instance Show (Instruction (PU Passive v t))
 
-instance ( Variable v, Time t ) => PUClass Passive (PU Passive v t) v t where
+instance ( Var v, Time t ) => PUClass Passive (PU Passive v t) v t where
   bind fb (PU pu) = PU <$> bind fb pu
   options (PU pu) = options pu
   select (PU pu) act = PU $ select pu act
@@ -365,47 +336,61 @@ type SimulationContext v x = M.Map (v, Int) x
 
 
 
+class IOTypeFamily io where
+  data I io :: * -> *
+  data O io :: * -> *
+
+class ( Show (I io v), Variables (I io v) v, Eq (I io v) -- , Ord (I io v)
+      , Show (O io v), Variables (O io v) v, Eq (O io v) -- , Ord (O io v)
+      , Typeable io, Var v
+      ) => IOType io v
+instance ( Show (I io v), Variables (I io v) v, Eq (I io v) -- , Ord (I io v)
+         , Show (O io v), Variables (O io v) v, Eq (O io v) -- , Ord (O io v)
+         , Typeable io, Var v
+         ) => IOType io v
 
 
-class VariableFamily v where
-  data I v :: *
-  data O v :: *
 
+class ( Typeable v, Eq v, Ord v, Show v ) => Var v
+instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
 
-class ( Typeable v, Eq v, Ord v, Show v
-      -- , ToString v
-      ) => VarInner v
-instance ( Typeable v, Eq v, Ord v, Show v
-         -- , ToString v
-         ) => VarInner v
+data Parcel = Parcel
 
-class ( Show (I v), Show (O v)
-      , Eq (I v), Eq (O v)
-      , Ord (I v), Ord (O v)
-      , Variables (I v) v, Variables (O v) v
-      , VarInner v
-      ) => Variable v
-instance ( Show (I v), Show (O v)
-      , Eq (I v), Eq (O v)
-      , Ord (I v), Ord (O v)
-      , Variables (I v) v, Variables (O v) v
-      , VarInner v
-      ) => Variable v
-
-
--- deriving instance ( Var v ) => Show (I v)
--- deriving instance ( Var v ) => Show (O v)
-
-data Parcel v = Parcel v
-
-instance ( Variable v ) => VariableFamily ( Parcel v ) where
-  data I (Parcel v) = IP v  -- Incoming Parcel
+instance IOTypeFamily Parcel where
+  data I Parcel v = I v  -- Incoming Parcel
     deriving (Show, Eq, Ord)
-  data O (Parcel v) = OP [v]  -- Outgoing Parcel
+  data O Parcel v = O [v]  -- Outgoing Parcel
     deriving (Show, Eq, Ord)
 
-instance Variables (I (Parcel v)) v where
-  variables (IP v) = [v]
+instance Variables (I Parcel v) v where
+  variables (I v) = [v]
+instance Variables (O Parcel v) v where
+  variables (O v) = v
 
-instance Variables (O (Parcel v)) v where
-  variables (OP v) = v
+
+
+
+
+data FB box v where
+  FB :: ( FBClass fb v
+        , Show fb
+        , Variables fb v
+        , IOType io v
+        ) => fb -> FB io v
+
+instance ( IOType box v, Var v ) => FBClass (FB box v) v where
+  dependency (FB fb) = dependency fb
+  insideOut (FB fb) = insideOut fb
+  isCritical (FB fb) = isCritical fb
+
+deriving instance ( Show v ) => Show (FB box v)
+
+instance Variables (FB Parcel v) v where
+  variables (FB fb) = variables fb
+
+instance Eq (FB box v) where
+  FB a == FB b = Just a == cast b
+
+instance ( Variables (FB box v) v, Var v ) => Ord (FB box v) where
+  a `compare` b = variables a `compare` variables b
+

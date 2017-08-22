@@ -14,21 +14,21 @@ import           Test.QuickCheck
 
 
 addrGen = choose (0, framSize - 1)
-forPull = resize 3 $ listOf1 $ vectorOf 3 (elements ['a'..'z'])
-forPush = vectorOf 3 (elements ['a'..'z'])
+forPull = O <$> (resize 3 $ listOf1 $ vectorOf 3 $ elements ['a'..'z'])
+forPush = I <$> vectorOf 3 (elements ['a'..'z'])
 
 uniqVars fb = let vs = variables fb
               in length vs == length (nub vs)
 
 
-instance Arbitrary (FramInput String) where
+instance Arbitrary (FramInput Parcel String) where
   arbitrary = suchThat (FramInput <$> addrGen <*> forPull) uniqVars
 
-instance Arbitrary (FramOutput String) where
+instance Arbitrary (FramOutput Parcel String) where
   arbitrary = suchThat (FramOutput <$> addrGen <*> forPush) uniqVars
 
-instance Arbitrary (Loop String) where
+instance Arbitrary (Loop Parcel String) where
   arbitrary = suchThat (Loop <$> forPull <*> forPush ) uniqVars
 
-instance Arbitrary (Reg String) where
+instance Arbitrary (Reg Parcel String) where
   arbitrary = suchThat (Reg <$> forPush <*> forPull) uniqVars

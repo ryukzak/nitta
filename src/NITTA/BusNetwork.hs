@@ -30,7 +30,7 @@ import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
 
--- import           Debug.Trace
+import           Debug.Trace
 
 class ( Typeable v, Eq v, Ord v, Show v ) => Title v
 instance ( Typeable v, Eq v, Ord v, Show v ) => Title v
@@ -39,9 +39,9 @@ instance ( Typeable v, Eq v, Ord v, Show v ) => Title v
 
 data BusNetwork title spu v t =
   BusNetwork
-    { bnRemains            :: [FB v]
+    { bnRemains            :: [FB Parcel v]
     , bnForwardedVariables :: [v]
-    , bnBinded             :: M.Map title [FB v]
+    , bnBinded             :: M.Map title [FB Parcel v]
     , bnPus                :: M.Map title spu
     , bnProcess            :: Process v t
     , bnWires              :: Array Int [(title, S)]
@@ -52,7 +52,6 @@ busNetwork pus wires = BusNetwork [] [] (M.fromList []) (M.fromList pus) def wir
 
 
 instance ( Title title, Var v, Time t
-         , Typeable (PU Passive v t)
          , PUClass Passive (PU Passive v t) v t
          ) => PUClass (Network title) (BusNetwork title (PU Passive v t) v t) v t where
 
@@ -61,16 +60,18 @@ instance ( Title title, Var v, Time t
     = Right bn{ bnRemains=fb : bnRemains }
   bind _fb _bn = Left "no"
 
-  options BusNetwork{..} = concat $
-    [
-      [ TransportOpt fromPu pullAt $ M.fromList pushs
-      | pushs <- sequence $ map pushOptionsFor pullVars
-      , let pushTo = catMaybes $ map (fmap fst . snd) pushs
-      , length (nub pushTo) == length pushTo
-      ]
-    | (fromPu, vars) <- puOptions
-    , EffectOpt (Pull pullVars) pullAt <- vars
-    ]
+  options BusNetwork{..} =
+    let x = concat
+          [
+            [ TransportOpt fromPu pullAt $ M.fromList pushs
+            | pushs <- sequence $ map pushOptionsFor pullVars
+            , let pushTo = catMaybes $ map (fmap fst . snd) pushs
+            , length (nub pushTo) == length pushTo
+            ]
+          | (fromPu, vars) <- puOptions
+          , EffectOpt (Pull pullVars) pullAt <- vars
+          ]
+    in trace ("BusNetwork options: " ++ show x) x
     where
       pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
       pushOptionsFor v = (v, Nothing) : pushOptionsFor' v

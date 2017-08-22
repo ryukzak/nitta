@@ -41,7 +41,7 @@ class TestBenchRun pu where
 
 class ( Typeable pu
       , TestBenchRun pu
-      , Variable v
+      , Var v
       ) => TestBench pu v x | pu -> v, pu -> x where
   components :: pu -> [(String, pu -> SimulationContext v x -> String)]
 

@@ -30,7 +30,7 @@ import           NITTA.Utils
 
 
 data Program v
-  = Statement (FB v)
+  = Statement (FB Parcel v)
   | DataFlow [Program v]
   | Switch
     { conduction :: v
@@ -38,13 +38,13 @@ data Program v
     }
   deriving ( Show )
 
-instance ( Var v ) => Vars (Program v) v where
+instance ( Var v ) => Variables (Program v) v where
   variables (DataFlow ps)  = concatMap variables ps
   variables (Statement fb) = variables fb
   -- fixme -- outputs and internal transfers...
   variables s@Switch{..}   = conduction : inputsOfFBs (functionalBlocks s)
 
-instance WithFunctionalBlocks (Program v) v where
+instance WithFunctionalBlocks (Program v) Parcel v where
   functionalBlocks (Statement fb) = [fb]
   functionalBlocks (DataFlow ss)  = concatMap functionalBlocks ss
   functionalBlocks Switch{..}     = concatMap (functionalBlocks . snd) branchs
@@ -127,7 +127,7 @@ data SplitBranch tag v
   , sControlFlow :: ControlFlow tag v
   } deriving ( Show, Eq )
 
-instance ( Var v ) => Vars (ControlFlow tag v) v where
+instance ( Var v ) => Variables (ControlFlow tag v) v where
   variables (Atom v)       = [v]
   variables (Parallel cfs) = concatMap variables cfs
   variables Split{..}      = cond : concatMap (variables . sControlFlow) splitOptions

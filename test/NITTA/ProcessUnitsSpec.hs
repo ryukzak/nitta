@@ -25,7 +25,7 @@ import           Debug.Trace
 
 
 data DataFlow pu v t = DataFlow
-  { dfFB     :: [FB v]
+  { dfFB     :: [FB Parcel v]
   , dfValues :: [(v, Int)]
   , dfPU     :: pu
   }

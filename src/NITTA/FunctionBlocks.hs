@@ -30,7 +30,7 @@ class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 
 
-castFB :: ( Typeable v, Typeable (fb v) ) => FB v -> Maybe (fb v)
+castFB :: ( Typeable v, Typeable (fb io v) ) => FB io v -> Maybe (fb io v)
 castFB (FB x) = cast x
 
 
@@ -38,64 +38,72 @@ castFB (FB x) = cast x
 ----------------------------------------
 
 
-
-
-data FramInput v = FramInput Int (O v) deriving ( Typeable )
-deriving instance ( Variable v ) => Show (FramInput v)
-deriving instance ( Variable v ) => Eq (FramInput v)
-deriving instance ( Variable v ) => Ord (FramInput v)
+data FramInput io v = FramInput Int (O io v) deriving ( Typeable )
+deriving instance IOType io v => Show (FramInput io v)
+deriving instance IOType io v => Eq (FramInput io v)
+-- deriving instance ( IOType io v ) => Ord (FramInput io v)
 framInput addr vs = FB $ FramInput addr vs
 
-instance ( Variable v ) => Variables ( FramInput v ) v where
+instance IOType io v => Variables ( FramInput io v ) v where
   variables (FramInput _ o) = variables o
-instance ( Variable v ) => FBClass FramInput v where
+instance IOType io v => FBClass (FramInput io v) v where
   dependency _ = []
   isCritical _ = True
 
 
 
 
-data FramOutput v = FramOutput Int (I v) deriving (Typeable)
-deriving instance ( Variable v ) => Show (FramOutput v)
-deriving instance ( Variable v ) => Eq (FramOutput v)
-deriving instance ( Variable v ) => Ord (FramOutput v)
+
+data FramOutput io v = FramOutput Int (I io v) deriving ( Typeable )
+deriving instance IOType io v => Show (FramOutput io v)
+deriving instance IOType io v => Eq (FramOutput io v)
+-- deriving instance ( Var v ) => Ord (FramOutput v)
 framOutput addr v = FB $ FramOutput addr v
 
-instance ( Variable v ) => Variables (FramOutput v) v where
+instance IOType io v => Variables (FramOutput io v) v where
   variables (FramOutput _ i) = variables i
-instance ( Variable v ) => FBClass FramOutput v where
+instance IOType io v => FBClass (FramOutput io v) v where
   dependency _ = []
   isCritical _ = True
 
 
 
-data Reg v = Reg (I v) (O v) deriving (Typeable)
-deriving instance ( Variable v ) => Show (Reg v)
-deriving instance ( Variable v ) => Eq (Reg v)
-deriving instance ( Variable v ) => Ord (Reg v)
+data Reg io v = Reg (I io v) (O io v) deriving ( Typeable )
+deriving instance IOType io v => Show (Reg io v)
+deriving instance IOType io v => Eq (Reg io v)
+-- deriving instance ( Var v ) => Ord (Reg v)
 reg a b = FB $ Reg a b
 
-instance ( Variable v ) =>  Variables (Reg v) v where
+instance IOType io v => Variables (Reg io v) v where
   variables (Reg a b) = variables a ++ variables b
-instance ( Variable v ) => FBClass Reg v where
+instance IOType io v => FBClass (Reg io v) v where
   dependency (Reg i o) = [ (a, b) | a <- variables i
                                   , b <- variables o
                                   ]
 
 
 
-data Loop v = Loop (O v) (I v) deriving (Typeable)
-deriving instance ( Variable v ) => Show (Loop v)
-deriving instance ( Variable v ) => Eq (Loop v)
-deriving instance ( Variable v ) => Ord (Loop v)
+data Loop io v = Loop (O io v) (I io v) deriving ( Typeable )
+deriving instance IOType io v => Show (Loop io v)
+deriving instance IOType io v => Eq (Loop io v)
+-- deriving instance ( Var v ) => Ord (Loop v)
 loop bs a = FB $ Loop bs a
 
-instance ( Variable v ) =>  Variables (Loop v) v where
+instance IOType io v => Variables (Loop io v) v where
   variables (Loop b a) = variables a ++ variables b
-
-instance ( Variable v ) => FBClass Loop v where
+instance IOType io v => FBClass (Loop io v) v where
   dependency _ = []
   insideOut _ = True
+
+
+
+
+
+
+
+
+
+
 
 
 

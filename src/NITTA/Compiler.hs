@@ -173,7 +173,7 @@ sensibleOptions = filter $
 
 
 data BindOption title v = BindOption
-  { fb       :: FB v
+  { fb       :: FB Parcel v
   , puTitle  :: title
   , priority :: Maybe BindPriority
   } deriving (Show)
