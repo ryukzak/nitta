@@ -77,7 +77,7 @@ reg a b = FB $ Reg a b
 instance IOType io v => Variables (Reg io v) v where
   variables (Reg a b) = variables a ++ variables b
 instance IOType io v => FBClass (Reg io v) v where
-  dependency (Reg i o) = [ (a, b) | a <- variables i
+  dependency (Reg i o) = [ (b, a) | a <- variables i
                                   , b <- variables o
                                   ]
 

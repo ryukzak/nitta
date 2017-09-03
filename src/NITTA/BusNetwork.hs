@@ -65,13 +65,14 @@ instance ( Title title, Var v, Time t
           [
             [ TransportOpt fromPu pullAt $ M.fromList pushs
             | pushs <- sequence $ map pushOptionsFor pullVars
-            , let pushTo = catMaybes $ map (fmap fst . snd) pushs
+            , let pushTo = catMaybes $ map (fmap fst . snd) $ trace ("pushs: " ++ show pushs) pushs
             , length (nub pushTo) == length pushTo
             ]
-          | (fromPu, vars) <- puOptions
-          , EffectOpt (Pull pullVars) pullAt <- vars
+          | (fromPu, opts) <- puOptions
+          , EffectOpt (Pull pullVars) pullAt <-
+            trace ("puOptions: " ++ concatMap ((++"\n") . show) puOptions) opts
           ]
-    in trace ("BusNetwork options: " ++ show x) x
+    in trace ("BusNetwork options: " ++ show x ++ "\n" ++ "availableVars: " ++ show availableVars) x
     where
       pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
       pushOptionsFor v = (v, Nothing) : pushOptionsFor' v

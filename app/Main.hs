@@ -71,43 +71,37 @@ net0 = busNetwork
   -- x <- (arr (\() -> 11)) -< ()
   -- returnA -< x
 
-alg = [ FB.framInput 3 [ "a" ]
-      , FB.framInput 4 [ "b"
-                       , "c"
-                       ]
-      , FB.reg "a" ["x"]
-      , FB.reg "b" ["y"]
-      , FB.reg "c" ["z"]
-      , FB.framOutput 5 "x"
-      , FB.framOutput 6 "y"
-      , FB.framOutput 7 "z"
-      , FB.loop ["f"] "g"
-      , FB.reg "f" ["g"]
+alg = [ FB.framInput 3 $ O ["a"]
+      , FB.framInput 4 $ O [ "b"
+                           , "c"
+                           ]
+      , FB.reg (I "a") $ O ["x"]
+      , FB.reg (I "b") $ O ["y"]
+      , FB.reg (I "c") $ O ["z"]
+      , FB.framOutput 5 $ I "x"
+      , FB.framOutput 6 $ I "y"
+      , FB.framOutput 7 $ I "z"
+      , FB.loop (O ["f"]) $ I "g"
+      , FB.reg (I "f") $ O ["g"]
       ]
 
 
 
 program = DataFlow
-  [ Statement $ FB.framInput 0 [ "cond", "cond'" ]
-  , Statement $ FB.framInput 1 [ "x1", "x2" ]
-  , Statement $ FB.framOutput 2 "cond'"
+  [ Statement $ FB.framInput 0 $ O [ "cond", "cond'" ]
+  , Statement $ FB.framInput 1 $ O [ "x1", "x2" ]
+  , Statement $ FB.framOutput 2 $ I "cond'"
 
-  -- , Statement $ FB.reg "x1" ["y1"]
-  -- , Statement $ FB.framOutput 10 "y1"
-  -- , Statement $ FB.reg "x2" ["y2"]
-  -- , Statement $ FB.framOutput 11 "y2"
+  -- , Statement $ FB.reg (I "x1") $ O ["y1"]
+  -- , Statement $ FB.framOutput 10 $ I "y1"
+  -- , Statement $ FB.reg (I "x2") $ O ["y2"]
+  -- , Statement $ FB.framOutput 11 $ I "y2"
 
   , Switch "cond"
-    [ (0, DataFlow [ Statement $ FB.reg "x1" ["y1"], Statement $ FB.framOutput 10 "y1" ])
-    , (1, DataFlow [ Statement $ FB.reg "x2" ["y2"], Statement $ FB.framOutput 11 "y2" ])
+    [ (0, DataFlow [ Statement $ FB.reg (I "x1") $ O ["y1"], Statement $ FB.framOutput 10 $ I "y1" ])
+    , (1, DataFlow [ Statement $ FB.reg (I "x2") $ O ["y2"], Statement $ FB.framOutput 11 $ I "y2" ])
     ]
-
   ]
-
--- type GBusNetwork title v t
-  -- = forall spu. ( Typeable spu
-                -- , PUClass (BusNetwork title spu) Passive v t
-                -- ) => BusNetwork String spu (Network String) String T
 
 net' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) alg
 net'' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) $ functionalBlocks program
@@ -117,7 +111,8 @@ net'' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) $ fun
 ---------------------------------------------------------------------------------
 
 main = do
-  let compiler = Fork net'' (def{ controlFlow=mkControlFlow program }) Nothing []
+  let compiler = Fork net' (def{ controlFlow=mkControlFlow $ DataFlow $ map Statement alg }) Nothing []
+  -- let compiler = Fork net'' (def{ controlFlow=mkControlFlow program }) Nothing []
   let Fork{ net=pu
           , controlModel=cm'
           } = foldl (\comp _ -> naive comp) compiler (take 15 $ repeat ())
