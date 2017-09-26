@@ -27,6 +27,7 @@ import           Data.Typeable        (Typeable, cast, typeOf)
 import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks as FB
 import           NITTA.Types
+import           Numeric              (readInt)
 import           System.Exit
 import           System.Process
 
@@ -153,3 +154,12 @@ fromLeft a _        = a
 fromRight :: b -> Either a b -> b
 fromRight _ (Right b) = b
 fromRight b _         = b
+
+
+
+values2dump vs = concatMap (show . readBin) $ groupBy4 $ concatMap show vs
+  where
+    groupBy4 [] = []
+    groupBy4 xs = (take 4 xs) : (groupBy4 $ drop 4 xs)
+    readBin :: String -> Int
+    readBin = fst . head . readInt 2 (`elem` "x01") (\x -> case x of '1' -> 1; _ -> 0 )

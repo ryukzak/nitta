@@ -34,9 +34,9 @@ instance ( Time t
              ]
     ++ case eDuration of
          0 -> [ "type" .= ("point" :: String) ]
-         x -> [ "end" .= (eStart + eDuration) ]
+         _ -> [ "end" .= (eStart + eDuration) ]
     where
-      isInsideOut i
+      isInsideOut _
         | Just fb <- getFB st = insideOut fb
         | otherwise = False
       show' (NestedStep _ i) = show i

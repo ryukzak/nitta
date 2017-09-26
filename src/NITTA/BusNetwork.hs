@@ -171,6 +171,7 @@ instance ( Title title, Var v, Time t
     deriving (Typeable, Show)
 
   data Signals (BusNetwork title (PU Passive v t) v t) = Wire Int
+    deriving (Show, Eq, Ord)
 
 
 
@@ -184,11 +185,11 @@ instance ( Title title, Var v, Time t
 
 
 instance ( PUClass (Network title) (BusNetwork title (PU Passive v t) v t) v t
-         , Similatable (PU Passive v t) v Int
+         , Simulatable (PU Passive v t) v Int
          , Typeable title, Typeable (PU Passive v t)
          , Ord title, Show title
          , Var v, Time t
-         ) => Similatable (BusNetwork title (PU Passive v t) v t) v Int where
+         ) => Simulatable (BusNetwork title (PU Passive v t) v t) v Int where
 
   variableValue _fb bn cntx vi = varValue bn cntx vi
 
@@ -254,20 +255,28 @@ instance TestBenchRun (BusNetwork title spu v t) where
 instance ( Typeable title, Ord title, Show title, Var v, Time t
          , Typeable (PU Passive v t)
          , PUClass Passive (PU Passive v t) v t
-         , Similatable (PU Passive v t) v Int
+         , Simulatable (PU Passive v t) v Int
          ) => TestBench (BusNetwork title (PU Passive v t) v t) v Int where
 
   components _ =
-    [ ( "hdl/fram_net_signals.v", testSignals )
-    , ( "hdl/fram_net_outputs.v", testOutputs )
+    [ ( "hdl/fram_net_outputs.v", testOutputs )
+    , ( "hdl/duml.list", dump )
+    -- , ( "hdl/fram_net_signals.v", testSignals )
     ]
     where
-      testSignals bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx
-        = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
+
+      dump bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx
+        = unlines $ map ( values2dump . signalsAt ) [ 0 .. tick + 1 ]
         where
           wires = map Wire $ reverse $ range $ bounds bnWires
           signalsAt t = map (\w -> signalAt bn w t) wires
-          showSignals = (\ss -> "wires <= 'b" ++ ss ++ ";" ) . concat . map show
+
+      -- testSignals bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx
+      --   = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
+      --   where
+      --     wires = map Wire $ reverse $ range $ bounds bnWires
+      --     signalsAt t = map (\w -> signalAt bn w t) wires
+      --     showSignals = (\ss -> "wires <= 'b" ++ ss ++ ";" ) . concat . map show
 
       testOutputs BusNetwork{ bnProcess=p@Process{..}, ..} cntx
         = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. tick + 1 ]

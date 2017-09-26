@@ -123,16 +123,18 @@ instance IOType io v => FBClass (Loop io v) v where
 
 
 
--- data BAdd v = BAdd v v [v]
---   deriving (Typeable, Show, Eq, Ord)
--- bAdd a b cs = FB $ bAdd a b cs
 
--- instance Variables (BAdd v) v where
---   variables (BAdd a b cs) = a : b : cs
+data Add io v = Add (I io v) (I io v) (O io v) deriving ( Typeable )
+deriving instance IOType io v => Show (Add io v)
+deriving instance IOType io v => Eq (Add io v)
+-- add a b c = FB $ Add a b c
 
--- instance ( Var v ) => FBClass BAdd v where
---   dependency (BAdd a b cs) = [ (c, a) | c <- cs ] ++ [ (c, b) | c <- cs ]
-
+instance IOType io v => Variables (Add io v) v where
+  variables (Add a b c) = variables a ++ variables b ++ variables c
+instance IOType io v => FBClass (Add io v) v where
+  dependency (Add a b c) = [ (y, x) | x <- variables a ++ variables b
+                                    , y <- variables c
+                                    ]
 
 
 

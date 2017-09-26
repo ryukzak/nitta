@@ -21,22 +21,11 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Test.QuickCheck
 
-
+qc g = quickCheckWith stdArgs{ maxSuccess=10 } g
 
 main = do
-  quickCheck (prop_formalCompletness . bindAllAndNaiveSelects :: FramIdealDataFlow -> Bool)
-  quickCheck (prop_formalCompletness . framDataFlow :: FramDataFlow -> Bool)
+  qc (prop_formalCompletness . bindAllAndNaiveSelects :: FramIdealDataFlow -> Bool)
+  qc (prop_formalCompletness . framDataFlow :: FramDataFlow -> Bool)
 
-  quickCheck (prop_simulation . bindAllAndNaiveSelects :: FramIdealDataFlow -> Property)
-  quickCheck (prop_simulation . framDataFlow :: FramDataFlow -> Property)
-
-  -- quickCheckWith stdArgs { maxSuccess=1 } ((\alg -> do
-                                               -- let x = bindAllAndNaiveSteps alg
-                                               -- prop_simulation x
-                                           -- ) :: FramIdealAlg -> Property)
-
-
-  -- quickCheckWith stdArgs { maxSuccess=1 }
-    -- (prop_formalCompletness . bindAllAndNaiveSteps :: FramIdealAlg -> Bool)
-  -- quickCheckWith stdArgs { maxSuccess=10000 }
-    -- (prop_formalCompletness . framAlg :: FramAlg -> Bool)
+  qc (prop_simulation . bindAllAndNaiveSelects :: FramIdealDataFlow -> Property)
+  qc (prop_simulation . framDataFlow :: FramDataFlow -> Property)

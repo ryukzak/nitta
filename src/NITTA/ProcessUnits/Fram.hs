@@ -314,7 +314,11 @@ instance Default (Instruction (Fram v t)) where
 
 instance ( Var v, Time t ) => Controllable (Fram v t) where
 
-  data Signals (Fram v t) = OE | WR | ADDR Int
+  data Signals (Fram v t) 
+    = OE 
+    | WR 
+    | ADDR Int
+    deriving (Show, Eq, Ord)
 
   data Instruction (Fram v t)
     = Nop
@@ -347,7 +351,7 @@ instance ( Var v, Time t ) => ByInstruction (Fram v t) where
 instance ( PUClass Passive (Fram v t) v t
          , Time t
          , Var v
-         ) => Similatable (Fram v t) v Int where
+         ) => Simulatable (Fram v t) v Int where
   varValue pu cntx vi@(v, _)
     | [fb] <- filter (elem v . (\(FB fb) -> variables fb))
       $ catMaybes $ map getFB $ steps $ process pu

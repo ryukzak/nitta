@@ -140,10 +140,13 @@ data StepInfo v where
 
 deriving instance ( Var v, Time t ) => Show ( Process v t )
 deriving instance ( Var v, Time t ) => Show ( Step v t )
-deriving instance ( Var v ) => Show (StepInfo v)
-
-
-
+instance ( Var v ) => Show (StepInfo v) where
+  show (FBStep (FB fb))            = show fb
+  show (InfoStep s)                = s
+  show (EffectStep (Pull v))       = "↓" ++ show v
+  show (EffectStep (Push v))       = "↑" ++ show v
+  show (InstructionStep instr)     = show instr
+  show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
 
 
 level (FBStep _)          = "Function block"
@@ -295,23 +298,44 @@ gsignalFor instr (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
 
 
 
-class Similatable pu v x | pu -> v, pu -> x where
+class Simulatable pu v x | pu -> v, pu -> x where
   varValue :: pu -> SimulationContext v x -> (v, x) -> x
   variableValue :: FB Parcel v -> pu -> SimulationContext v x -> (v, x) -> x
 
 
 
 data S where
-  S :: Typeable (Signals a) => Signals a -> S
+  S :: ( Typeable (Signals pu), Ord (Signals pu), Show (Signals pu) ) => Signals pu -> S
 
+data GenericSignals
+  = Clk
+  | Data
+  | Value
+  | DataAttr
+  | ValueAttr
+  deriving (Show, Eq, Ord)
+
+-- deriving instance Show (Signals pu) => Show (Link pu)
+-- deriving instance Eq (Signals pu) => Eq (Link pu)
+-- deriving instance Ord (Signals pu) => Ord (Link pu)
+
+
+class ( Typeable pu, Ord (Signals pu)) => Synthesis pu where
+  moduleInstance :: pu -> String -> [(String, String)] -> String
+  moduleName :: pu -> String
+  moduleDefinition :: pu -> String
 
 
 data PU ty v t where
   PU :: ( PUClass ty pu v t
         , Typeable pu
-        , Similatable pu v Int
+        , Simulatable pu v Int
         , Controllable pu
+        , Synthesis pu
         , ByTime pu t
+        , Ord (Signals pu)
+        , Show (Signals pu)
+        , Typeable (Signals pu)
         ) => pu -> PU ty v t
 
 
@@ -324,7 +348,7 @@ instance ( Var v, Time t ) => PUClass Passive (PU Passive v t) v t where
 
 
 instance ( PUClass Passive (PU Passive v t) v t
-         ) => Similatable (PU Passive v t) v Int where
+         ) => Simulatable (PU Passive v t) v Int where
   varValue (PU pu) cntx vi = varValue pu cntx vi
   variableValue fb (PU pu) cntx vi = variableValue fb pu cntx vi
 
