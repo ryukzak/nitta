@@ -63,8 +63,10 @@ testBench pu values = do
   runTestBench pu
 
 runTestBench pu = do
+  let args = L.nub $ buildArgs pu
+  putStrLn $ "iverilog " ++ show args
   (compileExitCode, compileOut, compileErr) <-
-    readProcessWithExitCode "iverilog" (buildArgs pu)[]
+    readProcessWithExitCode "iverilog" args []
   when (compileExitCode /= ExitSuccess) $ do
     putStrLn $ "stdout:\n" ++ compileOut
     putStrLn $ "stderr:\n" ++ compileErr

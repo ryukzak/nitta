@@ -19,13 +19,13 @@ import           Control.Monad.State
 import           Data.Default
 import           Data.Either
 import           Data.List            (find, intersect, (\\))
+import qualified Data.Map             as M
 import           Data.Maybe
 import           Data.Typeable
-import           NITTA.FunctionBlocks 
+import           NITTA.FunctionBlocks
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
-import qualified Data.Map              as M
 
 
 -- Lens -------------------------------------------------------------------
@@ -47,10 +47,10 @@ instance HasAt (Step v t) (Event t) where
 
 class HasTime a b | a -> b where
   time :: Lens' a b
-  
+
 instance HasTime (Process v t) t where
   time = lens tick $ \s v -> s{ tick=v }
-  
+
 
 -- at = time?
 
@@ -105,7 +105,7 @@ instance ( Time t, Var v, Default st ) => Default (SerialPU st Parcel v t) where
     , spuProcess = def
     , spuState   = def
     }
-  
+
 data CurrentJob io v t
   = CurrentJob
   { cFB    :: FB io v
@@ -122,13 +122,13 @@ class ( Typeable st
   schedule :: st -> Action Passive v t -> (st, State (Process v t) [ProcessUid])
 
 
-    
+
 instance ( SerialPUState st Parcel v t
          ) => PUClass Passive (SerialPU st Parcel v t) v t where
 
   bind fb pu@SerialPU{..}
-    -- Используется def, так как выбор функции выполняется на уровне SerialPU, а не SerialPUState. 
-    = case fb `bindToState` (def :: st) of 
+    -- Используется def, так как выбор функции выполняется на уровне SerialPU, а не SerialPUState.
+    = case fb `bindToState` (def :: st) of
         Right _ -> let (key, spuProcess') = modifyProcess spuProcess $ bindFB fb (spuProcess^.time)
                    in Right pu{ spuRemain=(fb, key) : spuRemain
                               , spuProcess=spuProcess'
@@ -172,7 +172,7 @@ instance ( SerialPUState st Parcel v t
 
   process = spuProcess
   setTime t pu@SerialPU{..} = pu{ spuProcess=spuProcess{ tick=t } }
-      
+
 
 instance ( Var v, Time t
          , ByInstruction (SerialPU st Parcel v t)
@@ -218,10 +218,10 @@ instance ( Var v, Time t
   schedule st@Accum{ acIn=vs } act
     | not $ null $ vs `intersect` variables act
     = let st' = st{ acIn=vs \\ variables act }
-          work = serialSchedule (Proxy :: Proxy (Accum v t)) act 
+          work = serialSchedule (Proxy :: Proxy (Accum v t)) act
             $ if length vs == 2
-              then Init 
-              else Load
+              then Init False
+              else Load False
       in (st', work)
 
 
@@ -231,19 +231,33 @@ instance ( Var v, Time t ) => Controllable (Accum v t) where
   data Signals (Accum v t) = OE | INIT | LOAD | NEG deriving ( Show, Eq, Ord )
   data Instruction (Accum v t)
     = Nop
-    | Init
-    | Load
+    | Init Bool
+    | Load Bool
     | Out
     deriving (Show)
 
-instance ( Controllable (Accum v t) ) => Default (Instruction (Accum v t)) where 
+instance ( Controllable (Accum v t) ) => Default (Instruction (Accum v t)) where
   def = Nop
-    
+
 instance ( Var v, Time t ) => ByInstruction (Accum v t) where
-  signalFor  Nop        _ = X
-  signalFor  _        _   = X
+  signalFor  Nop     NEG  = X
+  signalFor  Nop     _    = B False
+
+  signalFor (Init _) INIT = B True
+  signalFor (Init _) LOAD = B False
+  signalFor (Init _) OE   = B False
+  signalFor (Init n) NEG  = B n
+
+  signalFor (Load _) INIT = B False
+  signalFor (Load _) LOAD = B True
+  signalFor (Load _) OE   = B False
+  signalFor (Load n) NEG  = B n
 
 
+  signalFor  Out     INIT = B False
+  signalFor  Out     LOAD = B False
+  signalFor  Out     OE   = B True
+  signalFor  Out     NEG  = X
 
 instance ( PUClass Passive (Accum v t) v t
          , Time t
@@ -259,9 +273,9 @@ instance ( PUClass Passive (Accum v t) v t
   variableValue (FB fb) pu@SerialPU{..} cntx (v, i)
     | Just (Add (I a) _ _) <- cast fb, a == v = cntx M.! (v, i)
     | Just (Add _ (I b) _) <- cast fb, b == v = cntx M.! (v, i)
-    | Just (Add (I a) (I b) (O cs)) <- cast fb, v `elem` cs = (cntx M.! (a, i)) + (cntx M.! (b, i))      
+    | Just (Add (I a) (I b) (O cs)) <- cast fb, v `elem` cs = (cntx M.! (a, i)) + (cntx M.! (b, i))
     | otherwise = error $ "Can't simulate " ++ show fb
-  
+
 
 -- Internals ----------------------------------------------------------
 

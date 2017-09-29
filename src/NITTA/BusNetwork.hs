@@ -24,11 +24,14 @@ import           Data.Either
 import           Data.List               (intersect, nub, sortBy, (\\))
 import qualified Data.Map                as M
 import           Data.Maybe              (catMaybes, fromMaybe, isJust)
+import           Data.Proxy
+import qualified Data.String.Utils       as S
 import           Data.Typeable
 import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
+import           Text.StringTemplate
 
 import           Debug.Trace
 
@@ -245,10 +248,100 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
 
 --------------------------------------------------------------------------
 
-instance TestBenchRun (BusNetwork title spu v t) where
-  buildArgs _ = [ "hdl/dpu_fram.v"
-                , "hdl/fram_net.tb.v"
-                ]
+instance ( Time t, Var v
+         , Ord (Signals (BusNetwork String (PU Passive v t) v t))
+         ) => Synthesis (BusNetwork String (PU Passive v t) v t) where
+  moduleName BusNetwork{..} = (S.join "_" $ M.keys bnPus) ++ "_net"
+
+  moduleInstance _ _ _ = undefined
+
+  moduleDefinition pu@BusNetwork{..}
+    = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
+      in renderST [ "module $moduleName$("
+                  , "    pu_clk,"
+                  , "    pu_rst"
+                  , "    );"
+                  , ""
+                  , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
+                  , "parameter DATA_WIDTH = 32;"
+                  , "parameter ATTR_WIDTH = 4;"
+                  , ""
+                  , "input pu_clk;"
+                  , "input pu_rst;"
+                  , ""
+                  , "// Sub module instances"
+                  , "wire [MICROCODE_WIDTH-1:0] control_bus;"
+                  , "wire [DATA_WIDTH-1:0] data_bus;"
+                  , "wire [ATTR_WIDTH-1:0] attr_bus;"
+                  , "", ""
+                  , "pu_simple_control"
+                  , "    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
+                  , "     , .PROGRAM_DUMP( \"hdl/gen/$moduleName$.dump\" )"
+                  , "     , .PROGRAM_SIZE( $program_size$ )"
+                  , "     ) control_unit"
+                  , "    ( .pu_clk( pu_clk ), .pu_rst( pu_rst ), .pu_control_bus( control_bus ) );"
+                  , ""
+                  , "", ""
+                  , "$instances$"
+                  , "", ""
+                  , "assign { data_bus, attr_bus } = "
+                  , "$valueRegs$;"
+                  , ""
+                  , "endmodule"
+                  , ""
+                  ]
+                  [ ( "moduleName", moduleName pu )
+                  , ( "microCodeWidth", show $ snd (bounds bnWires) + 1 )
+                  , ( "instances", S.join "\n\n" instances)
+                  , ( "valueRegs", S.join "| \n" $ map (\(d, a) -> "    { " ++ d ++ ", " ++ a ++ " } ") valuesRegs )
+                  , ( "program_size", show ((fromEnum $ tick bnProcess) + 1) )
+                  ]
+    where
+      valueData t = t ++ "_value"
+      valueAttr t = t ++ "_value_attr"
+      regInstance title = renderST [ "wire [DATA_WIDTH-1:0] $Value$;"
+                                   , "wire [ATTR_WIDTH-1:0] $ValueAttr$;"
+                                   ]
+                                   [ ("Value", valueData title)
+                                   , ("ValueAttr", valueAttr title)
+                                   ]
+
+      renderInstance insts regs [] = ( reverse insts, reverse regs )
+      renderInstance insts regs ((title, PU spu) : xs)
+        = let inst = moduleInstance spu title (cntx title spu Proxy)
+              insts' = inst : (regInstance title) : insts
+              regs' = (valueData title, valueAttr title) : regs
+          in renderInstance insts' regs' xs
+      cntx :: ( Typeable pu, Show (Signals pu)
+              ) => String -> pu -> Proxy (Signals pu) -> [(String, String)]
+      cntx title spu p
+        = [ ( "Clk", "pu_clk" )
+          , ( "Data", "data_bus" )
+          , ( "DataAttr", "attr_bus" )
+          , ( "Value", valueData title )
+          , ( "ValueAttr", valueAttr title )
+          ] ++ (catMaybes $ map foo $ [ (i, s)
+                                      | (i, ds) <- assocs bnWires
+                                      , (title', s) <- ds
+                                      , title' == title
+                                      ])
+        where
+          foo (i, S s)
+            | Just s' <- cast s
+            = Just ( S.replace " " "_" $ show (s' `asProxyTypeOf` p)
+                   , "control_bus[ " ++ show i ++ " ]"
+                   )
+          foo _ = Nothing
+
+
+instance ( Synthesis (BusNetwork title (PU Passive v t) v t)
+         ) => TestBenchRun (BusNetwork title (PU Passive v t) v t) where
+  buildArgs pu
+    = map (("hdl/" ++) . (++ ".v") . (\(PU pu) -> moduleName pu)) (M.elems $ bnPus pu)
+    ++ [ "hdl/gen/" ++ moduleName pu ++ ".v"
+       , "hdl/pu_simple_control.v"
+       , "hdl/net_tb.v"  -- TODO: autogeneration.
+       ]
 
 
 
@@ -256,15 +349,16 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
          , Typeable (PU Passive v t)
          , PUClass Passive (PU Passive v t) v t
          , Simulatable (PU Passive v t) v Int
+         , Synthesis (BusNetwork title (PU Passive v t) v t)
          ) => TestBench (BusNetwork title (PU Passive v t) v t) v Int where
 
-  components _ =
-    [ ( "hdl/fram_net_outputs.v", testOutputs )
-    , ( "hdl/duml.list", dump )
+  components pu =
+    [ ( "hdl/gen/" ++ moduleName pu ++ "_assertions.v", testOutputs )
+    , ( "hdl/gen/" ++ moduleName pu ++ ".dump", dump )
+    , ( "hdl/gen/" ++ moduleName pu ++ ".v", \pu _ -> moduleDefinition pu )
     -- , ( "hdl/fram_net_signals.v", testSignals )
     ]
     where
-
       dump bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx
         = unlines $ map ( values2dump . signalsAt ) [ 0 .. tick + 1 ]
         where

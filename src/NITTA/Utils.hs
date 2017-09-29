@@ -30,6 +30,7 @@ import           NITTA.Types
 import           Numeric              (readInt)
 import           System.Exit
 import           System.Process
+import           Text.StringTemplate
 
 
 isPull (EffectOpt (Pull _) _) = True
@@ -163,3 +164,6 @@ values2dump vs = concatMap (show . readBin) $ groupBy4 $ concatMap show vs
     groupBy4 xs = (take 4 xs) : (groupBy4 $ drop 4 xs)
     readBin :: String -> Int
     readBin = fst . head . readInt 2 (`elem` "x01") (\x -> case x of '1' -> 1; _ -> 0 )
+
+
+renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st

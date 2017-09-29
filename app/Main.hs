@@ -73,7 +73,7 @@ instance ( Time t, Var v ) => Synthesis (Fram v t) where
 instance ( Time t, Var v ) => Synthesis (A.Accum v t) where
   moduleInstance pu name cntx
     = render $ setManyAttrib (("name", name) : cntx) $ newSTMP $ unlines
-    [ "$moduleName$ $name$ ("
+    [ "dpu_accum $name$ ("
     , "    .dp_clk( $Clk$ ),"
     , ""
     , "    .dp_init( $INIT$ ),"
@@ -91,92 +91,6 @@ instance ( Time t, Var v ) => Synthesis (A.Accum v t) where
   moduleDefinition = undefined
 
 
-
-renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
-
-instance ( Time t, Var v
-         , Ord (Signals (BusNetwork String (PU Passive v t) v t))
-         ) => Synthesis (BusNetwork String (PU Passive v t) v t) where
-  moduleName BusNetwork{..} = (S.join "_" $ M.keys bnPus) ++ "_net"
-
-  moduleInstance pu _ _ = undefined
-
-  moduleDefinition pu@BusNetwork{..}
-    = let (instances, valuesRegs) = renderInstance [] [] $ assocs bnPus
-      in renderST [ "module $moduleName$("
-                  , "    pu_clk,"
-                  , "    pu_rst"
-                  , "    );"
-                  , ""
-                  , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
-                  , "parameter DATA_WIDTH = 32;"
-                  , "parameter ATTR_WIDTH = 4;"
-                  , ""
-                  , "input pu_clk;"
-                  , "input pu_rst;"
-                  , ""
-                  , "// Sub module instances"
-                  , "wire [MICROCODE_WIDTH-1:0] control_bus;"
-                  , "wire [DATA_WIDTH-1:0] data_bus;"
-                  , "wire [ATTR_WIDTH-1:0] attr_bus;"
-                  , "", ""
-                  , "pu_simple_control"
-                  , "    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
-                  , "     , .PROGRAM_DUMP( \"dump.list\" )"
-                  , "     , .PROGRAM_SIZE( 200 )"
-                  , "     ) control_unit"
-                  , "    ( .pu_clk( pu_clk ), .pu_rst( pu_rst ), .pu_control_bus( control_bus ) );"
-                  , ""
-                  , "", ""
-                  , "$instances$"
-                  , "", ""
-                  , "assign { data_bus, attr_bus } = "
-                  , "$valueRegs$;"
-                  , ""
-                  , "endmodule"
-                  , ""
-                  ]
-                  [ ( "moduleName", moduleName pu )
-                  , ( "microCodeWidth", show $ snd (A.bounds bnWires) + 1 )
-                  , ( "instances", S.join "\n\n" instances)
-                  , ( "valueRegs", S.join "| \n" $ map (\(d, a) -> "    { " ++ d ++ ", " ++ a ++ " } ") valuesRegs )
-                  ]
-
-    where
-      valueData t = t ++ "_value"
-      valueAttr t = t ++ "_value_attr"
-      regInstance title = renderST [ "wire [DATA_WIDTH-1:0] $Value$;"
-                                   , "wire [ATTR_WIDTH-1:0] $ValueAttr$;"
-                                   ]
-                                   [ ("Value", valueData title)
-                                   , ("ValueAttr", valueAttr title)
-                                   ]
-
-      renderInstance insts regs [] = ( reverse insts, reverse regs )
-      renderInstance insts regs ((title, PU spu) : xs)
-        = let inst = moduleInstance spu title (cntx title spu Proxy)
-              insts' = inst : (regInstance title) : insts
-              regs' = (valueData title, valueAttr title) : regs
-          in renderInstance insts' regs' xs
-      cntx :: ( Typeable pu, Show (Signals pu) ) => String -> pu -> Proxy (Signals pu) -> [(String, String)]
-      cntx title spu p
-        = [ ( "Clk", "pu_clk" )
-          , ( "Data", "data_bus" )
-          , ( "DataAttr", "attr_bus" )
-          , ( "Value", valueData title )
-          , ( "ValueAttr", valueAttr title )
-          ] ++ (catMaybes $ map foo $ [ (i, s)
-                                      | (i, ds) <- A.assocs bnWires
-                                      , (title', s) <- ds
-                                      , title' == title
-                                      ])
-        where
-          foo (i, S s)
-            | Just s' <- cast s
-            = Just ( show (s' `asProxyTypeOf` p)
-                   , "control_bus[ " ++ show i ++ " ]"
-                   )
-          foo _ = Nothing
 
 
 net0 = busNetwork
@@ -227,10 +141,24 @@ net0 = busNetwork
 --       , FB.reg (I "f") $ O ["g"]
 --       ]
 
-alg = [ FB.framInput 3 $ O [ "a" ]
-      , FB.framInput 4 $ O [ "b" ]
+-- alg = [ FB.framInput 3 $ O ["a", "a'"]
+--       , FB.framInput 4 $ O [ "b"
+--                            , "c"
+--                            ]
+--       , FB.reg (I "a") $ O ["x"]
+--       , FB.reg (I "b") $ O ["y"]
+--       , FB.reg (I "c") $ O ["z"]
+--       , FB.framOutput 5 $ I "x"
+--       , FB.framOutput 6 $ I "y"
+--       , FB.framOutput 7 $ I "z"
+--       , FB.loop (O ["f"]) $ I "g"
+--       , FB.reg (I "f") $ O ["g"]
+--       ]
+
+alg = [ FB.framInput 1 $ O [ "a" ]
+      , FB.framInput 2 $ O [ "b" ]
       , FB $ Add (I "a") (I "b") (O ["sum"])
-      , FB.framOutput 8 $ I "sum"
+      , FB.framOutput 0 $ I "sum"
       ]
 
 
@@ -256,9 +184,6 @@ net'' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) $ fun
 ---------------------------------------------------------------------------------
 
 main = do
-  putStrLn $ moduleDefinition net'
-
-
   let compiler = Fork net' (def{ controlFlow=mkControlFlow $ DataFlow $ map Statement alg }) Nothing []
   -- let compiler = Fork net'' (def{ controlFlow=mkControlFlow program }) Nothing []
   let Fork{ net=pu
@@ -274,9 +199,11 @@ main = do
     -- $ steps $ process (getPU "fram2" pu :: Fram String T)
 
   -- testBench pu ([] :: [(String, Int)])
-  writeTestBench pu ([] :: [(String, Int)])
-  putStrLn $ moduleDefinition net'
+  -- writeTestBench pu ([] :: [(String, Int)])
+  writeFile (moduleFile $ moduleName pu) $ moduleDefinition net'
+  testBench pu ([] :: [(String, Int)])
 
+moduleFile name = "hdl/" ++ name ++ ".v"
 
 getPU puTitle net0
   = case bnPus net0 ! puTitle of
