@@ -32,6 +32,11 @@ import           System.Exit
 import           System.Process
 import           Text.StringTemplate
 
+import           Debug.Trace
+
+
+-- v (@@) str = trace str v
+
 
 isPull (EffectOpt (Pull _) _) = True
 isPull _                      = False
@@ -92,15 +97,21 @@ isEffect _              = False
 
 getEffect Step{ sDesc=EffectStep eff }                = Just eff
 getEffect Step{ sDesc=NestedStep _ (EffectStep eff) } = Just eff
-getEffect _                                           = Nothing
+getEffect s                                           = -- trace (">>" ++ show s)
+                                                        Nothing
 
 getEffects p = catMaybes $ map getEffect
                $ sortBy (\a b -> stepStart a `compare` stepStart b)
                $ steps p
 
 effectAt t p
-  | [eff] <- catMaybes $ map getEffect $ whatsHappen t p = Just eff
+  | [eff] <- catMaybes $ map getEffect $ -- trace (">" ++ show (whatsHappen t p)) $
+                                         whatsHappen t p = Just eff
   | otherwise = Nothing
+
+effectsAt t p = catMaybes $ map getEffect $ -- trace (">" ++ show (whatsHappen t p)) $
+                                            whatsHappen t p
+
 
 
 isInfo (InfoStep _) = True

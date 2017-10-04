@@ -9,3 +9,6 @@ a.out
 *.inputs.v
 *.outputs.v
 *.tix
+*.prof
+hdl/gen/*
+.vscode/*

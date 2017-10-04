@@ -27,6 +27,8 @@ import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
 
+import           Debug.Trace
+
 
 -- Lens -------------------------------------------------------------------
 
@@ -123,7 +125,7 @@ class ( Typeable st
 
 
 
-instance ( SerialPUState st Parcel v t
+instance ( SerialPUState st Parcel v t, Show st
          ) => PUClass Passive (SerialPU st Parcel v t) v t where
 
   bind fb pu@SerialPU{..}
@@ -152,6 +154,8 @@ instance ( SerialPUState st Parcel v t
                              }
               } act
   select pu@SerialPU{ spuCurrent=Just cur, .. } act
+   | tick spuProcess > act ^. start = error $ "Time wrap! Time: " ++ show (tick spuProcess) ++ " Act start at: " ++ show (act ^. start)
+   | otherwise
     = let (spuState', work) = schedule spuState act
           (steps, spuProcess') = modifyProcess spuProcess work
           cur' = cur{ cSteps=steps ++ cSteps cur }
@@ -159,7 +163,9 @@ instance ( SerialPUState st Parcel v t
                   , spuProcess=spuProcess'
                   , spuCurrent=Just cur
                   }
-      in case stateOptions spuState' (spuProcess^.time) of
+          nextOptions = stateOptions spuState' (spuProcess' ^. time)
+      in -- trace ("SerialPU:" ++ show act ++ " " ++ (show $ tick spuProcess)) $
+         case nextOptions of
            [] -> pu'{ spuCurrent=Nothing
                     , spuProcess=finish spuProcess' cur'
                     }
@@ -205,23 +211,27 @@ instance ( Var v, Time t
     | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[a, b], acOut = cs }
     | otherwise = Left $ "Unknown functional block or : " ++ show fb
 
-  stateOptions Accum{ acIn=[], acOut=vs } now
-    = [EffectOpt (Pull vs) $ TimeConstrain 1 now maxBound]
-  stateOptions Accum{ acIn=vs } now
+  stateOptions Accum{ acIn=vs@(_:_) } now
+    | length vs == 2
+    = map (\v -> EffectOpt (Push v) $ TimeConstrain 2 now maxBound) vs
+    | otherwise
     = map (\v -> EffectOpt (Push v) $ TimeConstrain 1 now maxBound) vs
+  stateOptions Accum{ acOut=vs@(_:_) } now
+    = [ EffectOpt (Pull vs) $ TimeConstrain 1 (now + 2) maxBound ]
+  stateOptions _ _ = []
 
-  schedule st@Accum{ acIn=[], acOut=vs } act
-    | not $ null $ vs `intersect` variables act
-    = let st' = st{ acIn=vs \\ variables act }
-          work = serialSchedule (Proxy :: Proxy (Accum v t)) act Out
-      in (st', work)
-  schedule st@Accum{ acIn=vs } act
+  schedule st@Accum{ acIn=vs@(_:_) } act
     | not $ null $ vs `intersect` variables act
     = let st' = st{ acIn=vs \\ variables act }
           work = serialSchedule (Proxy :: Proxy (Accum v t)) act
             $ if length vs == 2
               then Init False
               else Load False
+      in (st', work)
+  schedule st@Accum{ acIn=[], acOut=vs } act
+    | not $ null $ vs `intersect` variables act
+    = let st' = st{ acOut=vs \\ variables act }
+          work = serialSchedule (Proxy :: Proxy (Accum v t)) act Out
       in (st', work)
 
 
@@ -244,7 +254,7 @@ instance ( Var v, Time t ) => ByInstruction (Accum v t) where
   signalFor  Nop     _    = B False
 
   signalFor (Init _) INIT = B True
-  signalFor (Init _) LOAD = B False
+  signalFor (Init _) LOAD = B True
   signalFor (Init _) OE   = B False
   signalFor (Init n) NEG  = B n
 
@@ -265,10 +275,12 @@ instance ( PUClass Passive (Accum v t) v t
          ) => Simulatable (Accum v t) v Int where
   varValue pu cntx vi@(v, _)
     | [fb] <- filter (elem v . (\(FB fb) -> variables fb))
-      $ catMaybes $ map getFB $ steps $ process pu
+      $ trace (">>" ++ show fbs) fbs
     = variableValue fb pu cntx vi
     | otherwise = error $ "can't find varValue for: " ++ show v ++ " "
                   ++ show (catMaybes $ map getFB $ steps $ process pu)
+    where
+      fbs = catMaybes $ map getFB $ steps $ process pu
 
   variableValue (FB fb) pu@SerialPU{..} cntx (v, i)
     | Just (Add (I a) _ _) <- cast fb, a == v = cntx M.! (v, i)

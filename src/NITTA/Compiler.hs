@@ -116,11 +116,11 @@ naive !f@Fork{..}
         bindOpts = bindingOptions net
         splits = timeSplitOptions controlModel availableVars
     in case (splits, opts, bindOpts) of
-         ([], [], [])    -> trace "over" f
+         ([], [], [])    -> f -- trace "over" f
          (_, _o : _, _)  | length opts >= threshhold -> afterStep
          (_bo, _, _ : _) -> f{ net=autoBind net }
          (_, _o : _, _)  -> afterStep
-         (s : _, _, _)   -> trace ("split: " ++ show s) $ splitProcess f s
+         (s : _, _, _)   -> splitProcess f s -- trace ("split: " ++ show s) $ splitProcess f s
   where
     availableVars = nub $ concatMap (M.keys . toPush) $ options net
     afterStep
@@ -136,23 +136,32 @@ naive !f@Fork{..}
         _   -> error "No variants!"
     start = tcFrom . toPullAt
     -- mostly mad implementation
-    option2action TransportOpt{ toPullAt=TimeConstrain{..}, ..}
-      = TransportAct
-      -- = trace (">" ++ show forceInputs) $ TransportAct
-        { taPullFrom=toPullFrom
-        , taPullAt=Event tcFrom tcDuration
-        , taPush=M.fromList $ map (\(v, o) -> ( v
-                                              , case o of
-                                                  Just o' -> Just $ tc2e o'
-                                                  Nothing | v `elem` forceInputs -> Just $ tc2e opt
-                                                  _ -> tc2e <$> o
-                                              )
-                            ) $ M.assocs toPush
-        }
+    option2action opt0@TransportOpt{..}
+      = let pushTimeConstrains = map snd $ catMaybes $ M.elems toPush
+
+            pullStart    = maximum $ map tcFrom     $ toPullAt : pushTimeConstrains
+            pullDuration = maximum $ map tcDuration $ toPullAt : pushTimeConstrains
+
+            mkEvent (from, TimeConstrain{..}) = Just (from, Event (pullStart+1) tcDuration)
+            pushs = map (\(var, timeConstrain) -> (var, maybe Nothing mkEvent timeConstrain) ) $ M.assocs toPush
+
+            act = TransportAct{ taPullFrom=toPullFrom
+                              , taPullAt=Event pullStart pullDuration
+                              , taPush=M.fromList pushs
+                              }
+              -- map (\(v, o) -> ( v
+              --                       , case o of
+              --                         Just o' -> Just $ timeConstrain2event o'
+              --                         Nothing | v `elem` forceInputs -> Just $ timeConstrain2event opt
+              --                         _ -> timeConstrain2event <$> o
+              --                       )
+              --           ) $ M.assocs toPush
+        in trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act)
+           act
       where
-        tc2e (title, TimeConstrain{ tcDuration=dur}) = (title, Event (tcFrom + tcDuration) dur)
-        (_, event) : _ = catMaybes $ M.elems toPush
-        opt = ("", event)
+        -- timeConstrain2event (title, TimeConstrain{ tcFrom=from, tcDuration=dur }) = (title, Event (from + tcDuration) dur)
+        -- (_, event) : _ = catMaybes $ M.elems toPush
+        -- opt = ("", event)
 
 
 

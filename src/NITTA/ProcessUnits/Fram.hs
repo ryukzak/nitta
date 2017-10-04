@@ -36,7 +36,7 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Prelude               hiding (last)
 
--- import           Debug.Trace
+import           Debug.Trace
 
 
 data Fram v t = Fram
@@ -203,7 +203,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
 
   select fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@EffectAct{ eaAt=at@Event{..}, .. }
     | tick0 > eStart
-    = error $ "You can't start work yesterday:)" ++ show tick0 ++ " " ++ show eStart
+    = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show eStart
 
     | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< eaEffect) . head . actions) frRemains
     = case availableCell fr mc of
@@ -314,9 +314,9 @@ instance Default (Instruction (Fram v t)) where
 
 instance ( Var v, Time t ) => Controllable (Fram v t) where
 
-  data Signals (Fram v t) 
-    = OE 
-    | WR 
+  data Signals (Fram v t)
+    = OE
+    | WR
     | ADDR Int
     deriving (Show, Eq, Ord)
 
@@ -353,11 +353,13 @@ instance ( PUClass Passive (Fram v t) v t
          , Var v
          ) => Simulatable (Fram v t) v Int where
   varValue pu cntx vi@(v, _)
-    | [fb] <- filter (elem v . (\(FB fb) -> variables fb))
-      $ catMaybes $ map getFB $ steps $ process pu
-    = variableValue fb pu cntx vi
+    | [fb] <- filter (elem v . (\(FB fb) -> variables fb)) fbs
+    = variableValue (trace (">>> " ++ show vi ++ " " ++ show fb ++ " " ++ show cntx) fb) pu cntx vi
     | otherwise = error $ "can't find varValue for: " ++ show v ++ " "
-                  ++ show (catMaybes $ map getFB $ steps $ process pu)
+                  ++ show cntx ++ " "
+                  ++ show fbs
+    where
+      fbs = catMaybes $ map getFB $ steps $ process pu
 
   variableValue (FB fb) pu@Fram{..} cntx (v, i)
     | Just (Loop _bs (I a)) <- cast fb, a == v = cntx M.! (v, i)
@@ -373,8 +375,7 @@ instance ( PUClass Passive (Fram v t) v t
 
     | otherwise = error $ "Can't simulate " ++ show fb
     where
-      addr2value addr = 0x0A00 + addr -- must be coordinated with test bench initialization
-
+      addr2value addr = 0x1000 + addr -- must be coordinated with test bench initialization
 
 
 sortPuSteps p@Process{..} =

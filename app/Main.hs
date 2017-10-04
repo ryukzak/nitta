@@ -49,7 +49,7 @@ accum = PU (def :: A.Accum String T)
 
 instance ( Time t, Var v ) => Synthesis (Fram v t) where
   moduleInstance pu name cntx
-    = render $ setManyAttrib (("name", name) : cntx) $ trace (">>>" ++ show cntx) $ newSTMP $ unlines
+    = render $ setManyAttrib (("name", name) : cntx) $ newSTMP $ unlines
       [ "dpu_fram $name$ ("
       , "    .dp_clk( $Clk$ ),"
       , "    .dp_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } ),"
@@ -63,7 +63,7 @@ instance ( Time t, Var v ) => Synthesis (Fram v t) where
       , "    .dp_attr_o( $ValueAttr$ ) "
       , ");"
       , "integer $name$_i;"
-      , "initial for ( $name$_i = 0; $name$_i < 16; $name$_i = $name$_i + 1) $name$.bank[$name$_i] <= 32'h0A00 + $name$_i;"
+      , "initial for ( $name$_i = 0; $name$_i < 16; $name$_i = $name$_i + 1) $name$.bank[$name$_i] <= 32'h1000 + $name$_i;"
       ]
   moduleName _ = "dpu_fram"
   moduleDefinition = undefined
@@ -86,6 +86,7 @@ instance ( Time t, Var v ) => Synthesis (A.Accum v t) where
     , "    .dp_value( $Value$ ),"
     , "    .dp_vattr( $ValueAttr$ )"
     , ");"
+    , "initial $name$.acc <= 0;"
     ]
   moduleName _ = "dpu_accum"
   moduleDefinition = undefined
@@ -122,26 +123,10 @@ net0 = busNetwork
                   , ( 2, [("fram2", S $ (ADDR 2 :: Signals (Fram String T)))])
                   , ( 1, [("fram2", S $ (ADDR 1 :: Signals (Fram String T)))])
                   , ( 0, [("fram2", S $ (ADDR 0 :: Signals (Fram String T)))])
-
                   ]
 
--- alg = [ FB.framInput 3 $ O ["a", "a'"]
---       , FB.framInput 4 $ O [ "b", "b'"
---                            , "c"
---                            ]
---       , FB.reg (I "a") $ O ["x"]
---       , FB.reg (I "b") $ O ["y"]
---       , FB.reg (I "c") $ O ["z"]
---       , FB.framOutput 5 $ I "x"
---       , FB.framOutput 6 $ I "y"
---       , FB.framOutput 7 $ I "z"
---       , FB.add (I "a'") (I "b'") (O ["sum"])
---       , FB.framOutput 8 $ I "sum"
---       , FB.loop (O ["f"]) $ I "g"
---       , FB.reg (I "f") $ O ["g"]
---       ]
 
--- alg = [ FB.framInput 3 $ O ["a", "a'"]
+-- alg = [ FB.framInput 3 $ O ["a"]
 --       , FB.framInput 4 $ O [ "b"
 --                            , "c"
 --                            ]
@@ -155,11 +140,31 @@ net0 = busNetwork
 --       , FB.reg (I "f") $ O ["g"]
 --       ]
 
-alg = [ FB.framInput 1 $ O [ "a" ]
-      , FB.framInput 2 $ O [ "b" ]
-      , FB $ Add (I "a") (I "b") (O ["sum"])
+alg = [ FB.framInput 3 $ O [ "a"
+                           , "d"
+                           ]
+      , FB.framInput 4 $ O [ "b"
+                           , "c"
+                           , "e"
+                           ]
+      , FB.reg (I "a") $ O ["x"]
+      , FB.reg (I "b") $ O ["y"]
+      , FB.reg (I "c") $ O ["z"]
+      , FB.framOutput 5 $ I "x"
+      , FB.framOutput 6 $ I "y"
+      , FB.framOutput 7 $ I "z"
       , FB.framOutput 0 $ I "sum"
+      , FB.loop (O ["f"]) $ I "g"
+      , FB.reg (I "f") $ O ["g"]
+      , FB $ Add (I "d") (I "e") (O ["sum"])
       ]
+
+
+-- alg = [ FB.framInput 1 $ O [ "a" ]
+--       , FB.framInput 2 $ O [ "b" ]
+--       , FB $ Add (I "a") (I "b") (O ["sum"])
+--       , FB.framOutput 0 $ I "sum"
+--       ]
 
 
 -- program = DataFlow
@@ -188,7 +193,7 @@ main = do
   -- let compiler = Fork net'' (def{ controlFlow=mkControlFlow program }) Nothing []
   let Fork{ net=pu
           , controlModel=cm'
-          } = foldl (\comp _ -> naive comp) compiler (take 15 $ repeat ())
+          } = foldl (\comp _ -> naive comp) compiler (take 25 $ repeat ())
   -- let Forks{ current=Fork{ net=pu
                          -- , controlModel=cm'
                          -- }
@@ -200,10 +205,7 @@ main = do
 
   -- testBench pu ([] :: [(String, Int)])
   -- writeTestBench pu ([] :: [(String, Int)])
-  writeFile (moduleFile $ moduleName pu) $ moduleDefinition net'
   testBench pu ([] :: [(String, Int)])
-
-moduleFile name = "hdl/" ++ name ++ ".v"
 
 getPU puTitle net0
   = case bnPus net0 ! puTitle of

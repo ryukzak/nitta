@@ -68,14 +68,16 @@ instance ( Title title, Var v, Time t
           [
             [ TransportOpt fromPu pullAt $ M.fromList pushs
             | pushs <- sequence $ map pushOptionsFor pullVars
-            , let pushTo = catMaybes $ map (fmap fst . snd) $ trace ("pushs: " ++ show pushs) pushs
+            , let pushTo = catMaybes $ map (fmap fst . snd) pushs -- $ trace ("pushs: " ++ show pushs) pushs
             , length (nub pushTo) == length pushTo
             ]
           | (fromPu, opts) <- puOptions
           , EffectOpt (Pull pullVars) pullAt <-
-            trace ("puOptions: " ++ concatMap ((++"\n") . show) puOptions) opts
+            -- trace ("puOptions: \n" ++ concatMap ((++"\n") . ("  "++) . show) puOptions)
+            opts
           ]
-    in trace ("BusNetwork options: " ++ show x ++ "\n" ++ "availableVars: " ++ show availableVars) x
+    in -- trace ("BusNetwork options: \n" ++ concatMap ((++"\n") . ("  "++) . show) x)
+       x
     where
       pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
       pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
@@ -277,7 +279,7 @@ instance ( Time t, Var v
                   , "pu_simple_control"
                   , "    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
                   , "     , .PROGRAM_DUMP( \"hdl/gen/$moduleName$.dump\" )"
-                  , "     , .PROGRAM_SIZE( $program_size$ )"
+                  , "     , .PROGRAM_SIZE( $program_size$ + 1 )" -- TODO - принять решения по поводу размерности программы.
                   , "     ) control_unit"
                   , "    ( .pu_clk( pu_clk ), .pu_rst( pu_rst ), .pu_control_bus( control_bus ) );"
                   , ""
@@ -294,7 +296,7 @@ instance ( Time t, Var v
                   , ( "microCodeWidth", show $ snd (bounds bnWires) + 1 )
                   , ( "instances", S.join "\n\n" instances)
                   , ( "valueRegs", S.join "| \n" $ map (\(d, a) -> "    { " ++ d ++ ", " ++ a ++ " } ") valuesRegs )
-                  , ( "program_size", show ((fromEnum $ tick bnProcess) + 1) )
+                  , ( "program_size", show $ fromEnum $ tick bnProcess )
                   ]
     where
       valueData t = t ++ "_value"
@@ -353,44 +355,48 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
          ) => TestBench (BusNetwork title (PU Passive v t) v t) v Int where
 
   components pu =
-    [ ( "hdl/gen/" ++ moduleName pu ++ "_assertions.v", testOutputs )
+    [ ( "hdl/gen/" ++ moduleName pu ++ "_assertions.v", assertions )
     , ( "hdl/gen/" ++ moduleName pu ++ ".dump", dump )
     , ( "hdl/gen/" ++ moduleName pu ++ ".v", \pu _ -> moduleDefinition pu )
-    -- , ( "hdl/fram_net_signals.v", testSignals )
     ]
     where
       dump bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx
-        = unlines $ map ( values2dump . signalsAt ) [ 0 .. tick + 1 ]
+        = unlines $ map ( values2dump . signalsAt ) ticks
         where
+          -- первый элемент - nop по всем линиям. Устанавливается по умолчанию и говорит о том, что процессор не работает.
+          -- далее в линейном виде идёт программный код.
+          ticks = (tick : [ 0 .. tick - 1 ])
           wires = map Wire $ reverse $ range $ bounds bnWires
           signalsAt t = map (\w -> signalAt bn w t) wires
 
-      -- testSignals bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx
-      --   = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
-      --   where
-      --     wires = map Wire $ reverse $ range $ bounds bnWires
-      --     signalsAt t = map (\w -> signalAt bn w t) wires
-      --     showSignals = (\ss -> "wires <= 'b" ++ ss ++ ";" ) . concat . map show
-
-      testOutputs BusNetwork{ bnProcess=p@Process{..}, ..} cntx
-        = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. tick + 1 ]
+      assertions pu@BusNetwork{ bnProcess=Process{..}, ..} cntx
+        = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. tick - 1 ]
         where
-          assert time = case effectAt time p of
-            Just (Pull (v : _))
-              | (v, 0) `M.member` cntx -> concat
-                [ "if ( !(dp_data == " ++ show (cntx M.! (v, 0)) ++ ") ) "
-                ,   "$display("
-                ,     "\""
-                ,       "FAIL wrong value of " ++ show' v ++ " the bus failed "
-                ,       "(got: %h expect: %h)!"
-                ,     "\", "
-                , "dp_data, " ++ show (cntx M.! (v, 0)) ++ ");"
-                ]
-            _ -> "/* assert placeholder */"
+          p = process pu
+          assert time
+            = let pulls = filter (\e -> case e of (Pull _) -> True; _ -> False) $ effectsAt time p
+              in trace ("++" ++ show pulls ++ show cntx) $ case pulls of
+                [(Pull (v:_))]
+                  | (v, 0) `M.member` cntx -> concat
+                    [ "if ( !( net.data_bus == " ++ show (cntx M.! (v, 0)) ++ ") ) "
+                    ,   "$display("
+                    ,     "\""
+                    ,       "FAIL wrong value of " ++ show' v ++ " the bus failed "
+                    ,       "(got: %h expect: %h)!"
+                    ,     "\", "
+                    , "net.data_bus, " ++ show (cntx M.! (v, 0)) ++ "); else $display(\"%d Correct value: %h\", net.control_unit.program_counter, net.data_bus);"
+                    ]
+                [] -> "$display(\"%d\", net.control_unit.program_counter); /* nothing to check */"
+                x -> "$display(\"%d\", net.control_unit.program_counter); /* don't have expected datafor: " ++ show x ++ "*/"
           show' s = filter (/= '\"') $ show s
 
   simulateContext bn@BusNetwork{..} cntx =
     let transports = getInstructions (proxy bn) bnProcess
-    in foldl ( \cntx' (Transport v src _dst) ->
-                 M.insert (v, 0) (varValue (bnPus M.! src) cntx' (v, 0)) cntx'
-             ) cntx transports
+
+    in foldl ( \cntx' (Transport v src _dst) -> trace ("> " ++ show v ++ "@" ++ show src ++ " " ++ show cntx') $
+                                                M.insert
+                (v, 0)
+                (varValue (bnPus M.! src) cntx' (v, 0))
+                cntx'
+             ) cntx $ trace (">>>>" ++ concatMap ((++ "\n") . show) (steps bnProcess))
+             transports

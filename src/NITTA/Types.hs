@@ -13,9 +13,10 @@
 module NITTA.Types where
 
 import           Data.Default
-import qualified Data.List     as L
-import qualified Data.Map      as M
+import qualified Data.List         as L
+import qualified Data.Map          as M
 import           Data.Maybe
+import qualified Data.String.Utils as S
 import           Data.Typeable
 
 
@@ -24,7 +25,11 @@ data TaggetTime tag t
   = TaggetTime
   { tag   :: Maybe tag
   , clock :: t
-  } deriving ( Show, Typeable )
+  } deriving ( Typeable )
+
+instance ( Time t, Show tag ) => Show (TaggetTime tag t) where
+  show (TaggetTime Nothing t)    = show t
+  show (TaggetTime (Just tag) t) = show t ++ ":" ++ show tag
 
 instance ( Eq t ) => Eq (TaggetTime tag t) where
   (TaggetTime _ a) == (TaggetTime _ b) = a == b
@@ -207,13 +212,16 @@ instance PUType (Network title) where
     { taPullFrom :: title
     , taPullAt   :: Event t
     , taPush     :: M.Map v (Maybe (title, Event t))
-    } deriving (Show)
+    } -- deriving (Show)
 instance Variables (Option (Network title) v t) v where
   variables TransportOpt{..} = M.keys toPush
 
-
-
-
+instance ( Show title, Time t, Var v ) => Show (Action (Network title) v t) where
+  show TransportAct{..} = show taPullFrom ++ " -> " ++ S.join "; " pushs
+    where
+      pushs = catMaybes $ map foo $ M.assocs taPush
+      foo (v, Just (title, Event{..})) = Just (show v ++ "@" ++ show title ++ " (" ++ show eStart ++ ", " ++ show (eStart + eDuration) ++ ")")
+      foo _ = Nothing
 
 data Value = X | B Bool | Broken
 
