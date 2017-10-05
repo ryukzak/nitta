@@ -31,6 +31,7 @@ import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
+import           Numeric.Interval        (inf, singleton, sup, width, (...))
 import           Text.StringTemplate
 
 import           Debug.Trace
@@ -71,12 +72,13 @@ instance ( Title title, Var v, Time t
             , let pushTo = catMaybes $ map (fmap fst . snd) pushs --  $ trace ("pushs: " ++ show pushs) pushs
             , length (nub pushTo) == length pushTo
             ]
-          | (fromPu, opts) <- puOptions
+          | (fromPu, opts) <-
+            trace ("puOptions: \n" ++ concatMap ((++"\n") . (" " ++) . show) puOptions)
+            puOptions
           , EffectOpt (Pull pullVars) pullAt <-
-            -- trace ("puOptions: \n" ++ concatMap ((++"\n") . ("  "++) . show) puOptions)
             opts
           ]
-    in -- trace ("BusNetwork options: \n" ++ concatMap ((++"\n") . ("  "++) . show) x)
+    in trace ("BusNetwork options: \n" ++ concatMap ((++"\n") . ("  "++) . show) x)
        x
     where
       pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
@@ -103,18 +105,19 @@ instance ( Title title, Var v, Time t
     { bnPus=foldl (\s n -> n s) bnPus steps
     , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add
-                (Event transportStartAt transportDuration)
+                (trace ("1> " ++ show transportStartAt ++ " ... " ++ show transportEndAt) $ transportStartAt ... transportEndAt)
                 (InstructionStep
                   $ (Transport v taPullFrom title :: Instruction (BusNetwork title (PU Passive v t) v t)))
               ) $ M.assocs push'
-        _ <- add (Event transportStartAt transportDuration) $ InfoStep $ show act --   $ Pull pullVars
+        _ <- add (transportStartAt ... transportEndAt) $ InfoStep $ show act --   $ Pull pullVars
         setProcessTime $ transportStartAt + transportDuration
     , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
     where
-      transportStartAt = eStart taPullAt
+      transportStartAt = inf taPullAt
       transportDuration = maximum $
-        map ((\Event{..} -> (eStart - transportStartAt) + eDuration) . snd) $ M.elems push'
+        map ((\event -> ((inf event) - transportStartAt) + (width event)) . snd) $ M.elems push'
+      transportEndAt = transportStartAt + transportDuration
       -- if puTitle not exist - skip it...
       pullStep = M.adjust (\dpu -> select dpu $ EffectAct (Pull pullVars) taPullAt) taPullFrom
       pushStep (var, (dpuTitle, pushAt)) =
@@ -239,7 +242,7 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
                          Nothing  -> Just [fb]
                      ) puTitle bnBinded
   , bnProcess=snd $ modifyProcess p $
-      add (Event tick 0) $ InfoStep $ "Bind " ++ show fb ++ " to " ++ puTitle
+      add (singleton tick) $ InfoStep $ "Bind " ++ show fb ++ " to " ++ puTitle
   , bnRemains=filter (/= fb) bnRemains
   }
 

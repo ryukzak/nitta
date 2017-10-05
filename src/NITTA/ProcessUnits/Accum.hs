@@ -14,7 +14,7 @@
 module NITTA.ProcessUnits.Accum where
 
 
-import           Control.Lens         hiding (at, from)
+import           Control.Lens         hiding (at, from, (...))
 import           Control.Monad.State
 import           Data.Default
 import           Data.Either
@@ -26,6 +26,7 @@ import           NITTA.FunctionBlocks
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
+import           Numeric.Interval     (inf, singleton, sup, width, (...))
 
 import           Debug.Trace
 
@@ -56,9 +57,9 @@ instance HasTime (Process v t) t where
 
 -- at = time?
 
-instance HasDur (Step v t) t where
-  dur = lens (eDuration . sTime) $ \st v -> st{ sTime=st & sTime & dur .~ v }
-instance HasDur (Action Passive v t) t where
+instance ( Time t ) => HasDur (Step v t) t where
+  dur = lens (width . sTime) undefined  -- $ \st v -> st{ sTime=st & sTime & dur .~ v }
+instance ( Time t ) => HasDur (Action Passive v t) t where
   dur = at . dur
 
 
@@ -71,10 +72,10 @@ class HasStart a b | a -> b where
 instance HasStart (CurrentJob io v t) t where
   start = lens cStart $ \c s -> c{ cStart=s }
 instance HasStart (Step v t) t where
-  start = lens (eStart . sTime) $ \st v -> st{ sTime=st & sTime & leftBound .~ v }
+  start = lens (inf . sTime) undefined -- \st v -> st{ sTime=st & sTime & leftBound .~ v }
 instance HasStart (Action Passive v t) t where
-  start = at . leftBound
-  -- start = lens (eStart . eaAt) $ \s v -> s{ eaAt=(eaAt s) & start .~ v }
+  -- start = at . to inf
+  start = lens (inf . eaAt) undefined --  \s v -> s{ eaAt=(eaAt s) & start .~ v }
 
 
 
@@ -144,7 +145,7 @@ instance ( SerialPUState st Parcel v t, Show st
     = select pu{ spuState=spuState'
                , spuCurrent=Just CurrentJob
                              { cFB=fb
-                             , cStart=eStart $ eaAt act
+                             , cStart=inf $ eaAt act
                              , cSteps=[ compilerKey ]
                              }
               } act
@@ -167,8 +168,7 @@ instance ( SerialPUState st Parcel v t, Show st
            _  -> pu'
     where
       finish p cur@CurrentJob{..} = snd $ modifyProcess p $ do
-        let duration = act^.at.leftBound + act^.at.dur - cur^.start
-        h <- add (Event cStart duration) $ FBStep cFB
+        h <- add (cStart ... (act^.at.leftBound + act^.at.dur)) $ FBStep cFB
         mapM_ (relation . Vertical h) cSteps
 
   process = spuProcess
@@ -208,11 +208,11 @@ instance ( Var v, Time t
 
   stateOptions Accum{ acIn=vs@(_:_) } now
     | length vs == 2
-    = map (\v -> EffectOpt (Push v) $ TimeConstrain 2 now maxBound) vs
+    = map (\v -> EffectOpt (Push v) $ TimeConstrain (now ... maxBound) (singleton 2)) vs
     | otherwise
-    = map (\v -> EffectOpt (Push v) $ TimeConstrain 1 now maxBound) vs
+    = map (\v -> EffectOpt (Push v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
   stateOptions Accum{ acOut=vs@(_:_) } now
-    = [ EffectOpt (Pull vs) $ TimeConstrain 1 (now + 2) maxBound ]
+    = [ EffectOpt (Pull vs) $ TimeConstrain ((now + 2) ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
   schedule st@Accum{ acIn=vs@(_:_) } act
@@ -292,7 +292,7 @@ serialSchedule puProxy act instr = do
   i <- modelInstruction puProxy (act^.at) instr
   is <- if now < act^.start
         then do
-            ni <- modelInstruction puProxy (Event now (act^.start - now)) def
+            ni <- modelInstruction puProxy (now ... (act^.start)) def
             return [i, ni]
         else return [i]
   mapM_ (relation . Vertical e) is

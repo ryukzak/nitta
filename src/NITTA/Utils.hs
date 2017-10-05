@@ -28,6 +28,8 @@ import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks as FB
 import           NITTA.Types
 import           Numeric              (readInt)
+import           Numeric.Interval     (inf, singleton, sup, (...))
+import qualified Numeric.Interval     as I
 import           System.Exit
 import           System.Process
 import           Text.StringTemplate
@@ -68,15 +70,16 @@ processTime = do
   Process{..} <- get
   return tick
 
-bindFB fb t = add (Event t 0) $ InfoStep $ "Bind " ++ show fb
+bindFB fb t = add (singleton t) $ InfoStep $ "Bind " ++ show fb
 
 
 
-stepStart Step{ sTime=Event{..} } = eStart
+stepStart Step{..} = inf sTime
 
 
 whatsHappen t Process{..} =
-  filter (\Step{ sTime=Event{..} } -> eStart <= t && t < eStart + eDuration) steps
+  -- FIXME
+  filter (\Step{..} -> inf sTime <= t && t < sup sTime) steps
 
 
 isFB (FBStep _)                = True

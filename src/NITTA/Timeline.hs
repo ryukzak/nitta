@@ -12,10 +12,11 @@ import           Data.Aeson
 import qualified Data.ByteString.Lazy as BS
 import           Data.List            (find, groupBy, nub, sortBy, takeWhile)
 import           Data.Typeable        (cast, typeOf)
+import           Debug.Trace
 import           NITTA.FunctionBlocks
 import           NITTA.Types
 import           NITTA.Utils
-
+import           Numeric.Interval     (inf, sup, width)
 
 
 instance ( Time t
@@ -23,18 +24,18 @@ instance ( Time t
 --       , ToJSON (TaggedTime tag t)
 --       , ToJSON tag
          ) => ToJSON (Step String t) where
-  toJSON st@Step{ sTime=Event{..}, ..} =
+  toJSON st@Step{..} =
     object $ [ "id" .= sKey
-             , "start" .= eStart
+             , "start" .= inf (trace (show st) sTime)
              , "content" .= show' sDesc
              , "group" .= group sDesc
              , "title" .= show st
              , "inside_out" .= isInsideOut st
              -- , "time_tag" .= tag eStart
              ]
-    ++ case eDuration of
+    ++ case width sTime of
          0 -> [ "type" .= ("point" :: String) ]
-         _ -> [ "end" .= (eStart + eDuration) ]
+         _ -> [ "end" .= (sup sTime) ]
     where
       isInsideOut _
         | Just fb <- getFB st = insideOut fb

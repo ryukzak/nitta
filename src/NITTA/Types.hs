@@ -12,20 +12,26 @@
 
 module NITTA.Types where
 
-import           Control.Lens
+import           Control.Lens      hiding ((...))
 import           Data.Default
 import qualified Data.List         as L
 import qualified Data.Map          as M
 import           Data.Maybe
 import qualified Data.String.Utils as S
 import           Data.Typeable
+import           Numeric.Interval  hiding (elem)
+
 
 
 class HasLeftBound a b | a -> b where
   leftBound :: Lens' a b
-
 class HasRightBound a b | a -> b where
   rightBound :: Lens' a b
+
+
+class HasAvailable a b | a -> b where
+  available :: Lens' a b
+
 
 class HasDur a b | a -> b where
   dur :: Lens' a b
@@ -50,29 +56,31 @@ instance ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => T
 -- | Тип данных для описания требований к событиям во времени. Интервал значений - замкнутый.
 data TimeConstrain t
   = TimeConstrain
-  { tcDuration :: t -- ^ TODO: Не понятно можно ли изменять длительность и если да - то в каких пределах.
-  , tcFrom     :: t
-  , tcTo       :: t
+  { tcAvailable :: Interval t -- ^ Интервал, в рамках которого можно выполнить операцию.
+  , tcDuration  :: Interval t -- ^ Интервал допустимой длительности операции.
   } deriving ( Show, Eq )
 
-instance HasLeftBound (TimeConstrain t) t where
-  leftBound = lens tcFrom $ \e s -> e{ tcFrom=s }
-instance HasRightBound (TimeConstrain t) t where
-  rightBound = lens tcTo $ \e s -> e{ tcTo=s }
-instance HasDur (TimeConstrain t) t where
+-- instance HasLeftBound (TimeConstrain t) t where
+--   leftBound = lens tcFrom $ \e s -> e{ tcFrom=s }
+-- instance HasRightBound (TimeConstrain t) t where
+--   rightBound = lens tcTo $ \e s -> e{ tcTo=s }
+instance HasAvailable (TimeConstrain t) (Interval t) where
+  available = lens tcAvailable $ \e s -> e{ tcAvailable=s }
+instance HasDur (TimeConstrain t) (Interval t) where
   dur = lens tcDuration $ \e s -> e{ tcDuration=s }
 
 
-data Event t
-  = Event
-  { eStart    :: t
-  , eDuration :: t
-  } deriving ( Show, Eq )
+type Event t = Interval t
+-- data Event t
+--   = Event
+--   { eStart    :: t
+--   , eDuration :: t
+--   } deriving ( Show, Eq )
 
-instance HasLeftBound (Event t) t where
-  leftBound = lens eStart $ \e s -> e{ eStart=s }
-instance HasDur (Event t) t where
-  dur = lens eDuration $ \e s -> e{ eDuration=s }
+instance ( Time t ) =>  HasLeftBound (Event t) t where
+  leftBound = lens inf $ \e s -> s ... sup e
+instance ( Time t ) => HasDur (Event t) t where
+  dur = lens width $ \e s -> inf e ... (inf e + s)
 
 
 
@@ -281,10 +289,10 @@ instance Variables (Option (Network title) v t) v where
   variables TransportOpt{..} = M.keys toPush
 
 instance ( Show title, Time t, Var v ) => Show (Action (Network title) v t) where
-  show TransportAct{..} = show taPullFrom ++ " -> " ++ S.join "; " pushs
+  show TransportAct{..} = show taPullFrom ++ "@(" ++ show taPullAt ++ ") -> " ++ S.join "; " pushs
     where
       pushs = catMaybes $ map foo $ M.assocs taPush
-      foo (v, Just (title, Event{..})) = Just (show v ++ "@" ++ show title ++ " (" ++ show eStart ++ ", " ++ show (eStart + eDuration) ++ ")")
+      foo (v, Just (title, event)) = Just (show v ++ "@" ++ show title ++ " (" ++ show event ++ ")")
       foo _ = Nothing
 
 data Value = X | B Bool | Broken

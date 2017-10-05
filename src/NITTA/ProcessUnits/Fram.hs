@@ -34,6 +34,7 @@ import           NITTA.FunctionBlocks
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
+import           Numeric.Interval      (inf, singleton, sup, (...))
 import           Prelude               hiding (last)
 
 import           Debug.Trace
@@ -197,13 +198,13 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
         && ( null (remainRegs fr) || framSize - numberOfCellForReg > 1 )
       numberOfCellForReg = length $ filter (\Cell{..} -> output == UsedOrBlocked) $ elems frMemory
       constrain Cell{..} (Pull _)
-        | lastWrite == Just tick = TimeConstrain 1 (tick + 1) maxBound
-        | otherwise              = TimeConstrain 1 tick maxBound
-      constrain _cell (Push _) = TimeConstrain 1 tick maxBound
+        | lastWrite == Just tick = TimeConstrain ((tick + 1) ... maxBound) (1 ... maxBound)
+        | otherwise              = TimeConstrain (tick ... maxBound) (1 ... maxBound)
+      constrain _cell (Push _) = TimeConstrain (tick ... maxBound) (1 ... maxBound)
 
-  select fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@EffectAct{ eaAt=at@Event{..}, .. }
-    | tick0 > eStart
-    = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show eStart
+  select fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@EffectAct{ eaAt=at, .. }
+    | tick0 > inf at
+    = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show (inf at)
 
     | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< eaEffect) . head . actions) frRemains
     = case availableCell fr mc of
@@ -279,25 +280,24 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
               e <- add at $ EffectStep eaEffect
               i1 <- add at $ InstructionStep
                 $ (act2Instruction addr eaEffect :: Instruction (Fram v t))
-              is <- if tick0 < eStart
+              is <- if tick0 < (inf at)
                 then do
-                  i2 <- add (Event tick0 (eStart - tick0))
+                  i2 <- add (tick0 ... (inf at))
                     $ InstructionStep (Nop :: Instruction (Fram v t))
                   return [ i1, i2 ]
                 else return [ i1 ]
               mapM_ (relation . Vertical ef) instrs
-              setProcessTime (eStart + eDuration)
+              setProcessTime $ sup at
               return (e, is)
         in (p', mc{ effect=ef : effect
                   , instruction=instrs ++ instruction
-                  , workBegin=workBegin `orElse` Just eStart
+                  , workBegin=workBegin `orElse` Just (inf at)
                   , actions=if x == eaEffect then xs else (x \\\ eaEffect) : xs
                   })
 
       finish p MicroCode{..} = snd $ modifyProcess p $ do
         let start = fromMaybe (error "workBegin field is empty!") workBegin
-        let duration = (eStart + eDuration) - start
-        h <- add (Event start duration) $ FBStep fb
+        h <- add (start ... sup at) $ FBStep fb
         mapM_ (relation . Vertical h) compiler
         mapM_ (relation . Vertical h) effect
         mapM_ (relation . Vertical h) instruction
@@ -396,7 +396,7 @@ sortPuSteps p@Process{..} =
   in p{ steps=steps' }
 
 
-bindFB2Cell addr fb t = add (Event t 0) $ InfoStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
+bindFB2Cell addr fb t = add (singleton t) $ InfoStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
 
 
 cell2acts _allowOutput Cell{ input=Def MicroCode{ actions=x:_ } }    = [x]
@@ -498,7 +498,7 @@ testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
     bankCheck = "\n\n@(posedge clk);\n"
       ++ concat [ checkBank addr v (cntx M.! (v, 0))
-                | Step{ sTime=Event{..}, sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
+                | Step{ sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
                 , let addr_v = outputStep fb
                 , isJust addr_v
                 , let Just (addr, v) = addr_v
@@ -524,14 +524,18 @@ testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
 
 findAddress v pu@Fram{ frProcess=p@Process{..} }
-  | [ Step{ sTime=Event t _ }
+  | [ Step{..}
     ] <- filter ( \st -> isEffect (sDesc st)
                          && (\Step{ sDesc=EffectStep eff } -> v `elem` variables eff) st
                 ) steps
-  , [ i ] <- catMaybes $ map (getInstruction (proxy pu)) $ whatsHappen t p
-  = case i of
-      Load addr -> addr
-      Save addr -> addr
-      _         -> err
+  , instructions <- catMaybes $ map (getInstruction (proxy pu)) $ whatsHappen (inf sTime) p
+  , is <- catMaybes $ map (\i -> case i of
+                  Load addr -> Just addr
+                  Save addr -> Just addr
+                  _         -> Nothing
+        ) $ trace ("--" ++ show sTime ++ " " ++ show instructions)instructions
+  = if length is == 1 then head is
+                      else err
   | otherwise = err
     where err = error $ "Can't find instruction for effect of variable: " ++ show v
+
