@@ -12,6 +12,7 @@
 
 module NITTA.Types where
 
+import           Control.Lens
 import           Data.Default
 import qualified Data.List         as L
 import qualified Data.Map          as M
@@ -20,88 +21,151 @@ import qualified Data.String.Utils as S
 import           Data.Typeable
 
 
+class HasLeftBound a b | a -> b where
+  leftBound :: Lens' a b
 
-data TaggetTime tag t
-  = TaggetTime
-  { tag   :: Maybe tag
+class HasRightBound a b | a -> b where
+  rightBound :: Lens' a b
+
+class HasDur a b | a -> b where
+  dur :: Lens' a b
+
+
+
+-- | Описание классов идентификатора переменной.
+class ( Typeable v, Eq v, Ord v, Show v ) => Var v
+instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
+
+class Variables x v | x -> v where
+  -- | Получить список переменных, связанных с экземпляром класса.
+  variables :: x -> [v]
+
+
+
+-- | Описание классов координаты во времени.
+class ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
+instance ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
+
+
+-- | Тип данных для описания требований к событиям во времени. Интервал значений - замкнутый.
+data TimeConstrain t
+  = TimeConstrain
+  { tcDuration :: t -- ^ TODO: Не понятно можно ли изменять длительность и если да - то в каких пределах.
+  , tcFrom     :: t
+  , tcTo       :: t
+  } deriving ( Show, Eq )
+
+instance HasLeftBound (TimeConstrain t) t where
+  leftBound = lens tcFrom $ \e s -> e{ tcFrom=s }
+instance HasRightBound (TimeConstrain t) t where
+  rightBound = lens tcTo $ \e s -> e{ tcTo=s }
+instance HasDur (TimeConstrain t) t where
+  dur = lens tcDuration $ \e s -> e{ tcDuration=s }
+
+
+data Event t
+  = Event
+  { eStart    :: t
+  , eDuration :: t
+  } deriving ( Show, Eq )
+
+instance HasLeftBound (Event t) t where
+  leftBound = lens eStart $ \e s -> e{ eStart=s }
+instance HasDur (Event t) t where
+  dur = lens eDuration $ \e s -> e{ eDuration=s }
+
+
+
+
+
+
+
+
+-- |Изначально, для описания времени пользовался тип Int. Время отсчитывалось с 0, было линейным и совпадало с ячеками памяти.
+-- К сожалению, этого недостаточно для описании вычислительного процесса с ветвлениями, по этому было принято решение
+-- теги к описанию времени.
+data TaggedTime tag t
+  = TaggedTime
+  { -- | Позволяет идентифицировать  ветку вычислительного процесса. Ветки образуютсяв следствии ветвления и циклов.
+    tag   :: Maybe tag
   , clock :: t
   } deriving ( Typeable )
 
-instance ( Time t, Show tag ) => Show (TaggetTime tag t) where
-  show (TaggetTime Nothing t)    = show t
-  show (TaggetTime (Just tag) t) = show t ++ ":" ++ show tag
+instance ( Default t ) => Default (TaggedTime tag t) where
+  def = TaggedTime Nothing def
 
-instance ( Eq t ) => Eq (TaggetTime tag t) where
-  (TaggetTime _ a) == (TaggetTime _ b) = a == b
-instance ( Ord t ) => Ord (TaggetTime tag t) where
-  (TaggetTime _ a) `compare` (TaggetTime _ b) = a `compare` b
+instance ( Time t, Show tag ) => Show (TaggedTime tag t) where
+  show (TaggedTime tag t) = show t ++ maybe "" (("!" ++) . show) tag
+instance {-# OVERLAPS #-} ( Time t ) => Show (TaggedTime String t) where
+  show (TaggedTime tag t) = show t ++ maybe "" ("!" ++) tag
 
-instance ( Default t ) => Default (TaggetTime tag t) where
-  def = TaggetTime Nothing def
+instance ( Eq t ) => Eq (TaggedTime tag t) where
+  (TaggedTime _ a) == (TaggedTime _ b) = a == b
+instance ( Ord t ) => Ord (TaggedTime tag t) where
+  (TaggedTime _ a) `compare` (TaggedTime _ b) = a `compare` b
 
-instance ( Enum t ) => Enum (TaggetTime tag t) where
-  toEnum i = TaggetTime Nothing $ toEnum i
-  fromEnum (TaggetTime _ i) = fromEnum i
-
-instance ( Num t ) => Bounded (TaggetTime tag t) where
-  minBound = TaggetTime Nothing 0
-  maxBound = TaggetTime Nothing 1000
-
-instance ( Num t, Show tag, Eq tag ) => Num (TaggetTime tag t) where
-  (TaggetTime Nothing a) + (TaggetTime Nothing b) = TaggetTime Nothing (a + b)
-  (TaggetTime (Just tag) a) + (TaggetTime Nothing b) = TaggetTime (Just tag) (a + b)
-  (TaggetTime Nothing a) + (TaggetTime (Just tag) b) = TaggetTime (Just tag) (a + b)
-  (TaggetTime tag_a a) + (TaggetTime tag_b b)
-    | tag_a == tag_b = TaggetTime tag_a (a + b)
+instance ( Enum t ) => Enum (TaggedTime tag t) where
+  toEnum i = TaggedTime Nothing $ toEnum i
+  fromEnum (TaggedTime _ i) = fromEnum i
+instance ( Num t ) => Bounded (TaggedTime tag t) where
+  minBound = TaggedTime Nothing 0
+  maxBound = TaggedTime Nothing 1000
+instance ( Num t, Show tag, Eq tag ) => Num (TaggedTime tag t) where
+  (TaggedTime Nothing a) + (TaggedTime Nothing b) = TaggedTime Nothing (a + b)
+  (TaggedTime (Just tag) a) + (TaggedTime Nothing b) = TaggedTime (Just tag) (a + b)
+  (TaggedTime Nothing a) + (TaggedTime (Just tag) b) = TaggedTime (Just tag) (a + b)
+  (TaggedTime tag_a a) + (TaggedTime tag_b b)
+    | tag_a == tag_b = TaggedTime tag_a (a + b)
     | otherwise = error $ "Not equal time tag! " ++ show tag_a ++ " " ++ show tag_b
-  fromInteger = TaggetTime Nothing . fromInteger
+  fromInteger = TaggedTime Nothing . fromInteger
   negate t = t{ clock=negate $ clock t }
   (*) = undefined
   abs = undefined
   signum = undefined
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- | Класс для функциональных блоков. Описывает все необходмые для работы компилятора свойства.
 class ( Typeable fb
       , Eq fb
-      -- , Ord fb
-      -- , Var v
-      ) => FBClass fb v | fb -> v where
+      ) => FunctionalBlock fb v | fb -> v where
+  -- | Возвращает зависимости между аргументами функционального блока. Формат: (заблокированное, требуемое).
   dependency :: fb -> [(v, v)]
+  -- | Необходимость "выворачивания" функций при визуализации вычислительного процесса
+  -- (начинается вместе с циклом, потом преравыется и заканчивается с циклом).
   insideOut :: fb -> Bool
   insideOut _ = False
+  -- | Информация для приоритизации функций в процессе диспетчеризации.
+  -- TODO: необходимо обобщить.
   isCritical :: fb -> Bool
   isCritical _ = False
 
+
 class WithFunctionalBlocks x io v | x -> io, x -> v where
+  -- | Получить список связанных функциональных блоков.
   functionalBlocks :: x -> [FB io v]
 
 
 
 
 
-class Variables x v | x -> v where
-  variables :: x -> [v]
-
--- class ToString a where toString :: a -> String
--- instance ToString String where toString s = s
 
 
-
-class ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
-instance ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
-
-data TimeConstrain t
-  = TimeConstrain
-  { tcDuration :: t
-  , tcFrom     :: t
-  , tcTo       :: t
-  } deriving (Show, Eq)
-
-data Event t
-  = Event
-  { eStart    :: t
-  , eDuration :: t
-  } deriving (Show, Eq)
 
 
 
@@ -383,8 +447,6 @@ instance ( Show (I io v), Variables (I io v) v, Eq (I io v) -- , Ord (I io v)
 
 
 
-class ( Typeable v, Eq v, Ord v, Show v ) => Var v
-instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
 
 data Parcel = Parcel
 
@@ -404,13 +466,13 @@ instance Variables (O Parcel v) v where
 
 
 data FB box v where
-  FB :: ( FBClass fb v
+  FB :: ( FunctionalBlock fb v
         , Show fb
         , Variables fb v
         , IOType io v
         ) => fb -> FB io v
 
-instance ( IOType box v, Var v ) => FBClass (FB box v) v where
+instance ( IOType box v, Var v ) => FunctionalBlock (FB box v) v where
   dependency (FB fb) = dependency fb
   insideOut (FB fb) = insideOut fb
   isCritical (FB fb) = isCritical fb

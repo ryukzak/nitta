@@ -56,11 +56,6 @@ instance HasTime (Process v t) t where
 
 -- at = time?
 
-class HasDur a b | a -> b where
-  dur :: Lens' a b
-
-instance HasDur (Event t) t where
-  dur = lens eDuration $ \e s -> e{ eDuration=s }
 instance HasDur (Step v t) t where
   dur = lens (eDuration . sTime) $ \st v -> st{ sTime=st & sTime & dur .~ v }
 instance HasDur (Action Passive v t) t where
@@ -71,14 +66,14 @@ instance HasDur (Action Passive v t) t where
 class HasStart a b | a -> b where
   start :: Lens' a b
 
-instance HasStart (Event t) t where
-  start = lens eStart $ \e s -> e{ eStart=s }
+-- instance HasStart (Event t) t where
+--   start = lens eStart $ \e s -> e{ eStart=s }
 instance HasStart (CurrentJob io v t) t where
   start = lens cStart $ \c s -> c{ cStart=s }
 instance HasStart (Step v t) t where
-  start = lens (eStart . sTime) $ \st v -> st{ sTime=st & sTime & start .~ v }
+  start = lens (eStart . sTime) $ \st v -> st{ sTime=st & sTime & leftBound .~ v }
 instance HasStart (Action Passive v t) t where
-  start = at . start
+  start = at . leftBound
   -- start = lens (eStart . eaAt) $ \s v -> s{ eaAt=(eaAt s) & start .~ v }
 
 
@@ -172,7 +167,7 @@ instance ( SerialPUState st Parcel v t, Show st
            _  -> pu'
     where
       finish p cur@CurrentJob{..} = snd $ modifyProcess p $ do
-        let duration = act^.at.start + act^.at.dur - cur^.start
+        let duration = act^.at.leftBound + act^.at.dur - cur^.start
         h <- add (Event cStart duration) $ FBStep cFB
         mapM_ (relation . Vertical h) cSteps
 

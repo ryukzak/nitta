@@ -68,6 +68,7 @@ executable nitta-exe
                      , QuickCheck-GenT
                      , HStringTemplate
                      , MissingH
+                     , intervals
   default-language:    Haskell2010
 
 test-suite nitta-test
@@ -89,6 +90,7 @@ test-suite nitta-test
                      , mtl
                      , syb
                      , lens
+                     , intervals
                      , transformers
                      , array
                      , aeson

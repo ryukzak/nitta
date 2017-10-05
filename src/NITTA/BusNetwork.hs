@@ -68,7 +68,7 @@ instance ( Title title, Var v, Time t
           [
             [ TransportOpt fromPu pullAt $ M.fromList pushs
             | pushs <- sequence $ map pushOptionsFor pullVars
-            , let pushTo = catMaybes $ map (fmap fst . snd) pushs -- $ trace ("pushs: " ++ show pushs) pushs
+            , let pushTo = catMaybes $ map (fmap fst . snd) pushs --  $ trace ("pushs: " ++ show pushs) pushs
             , length (nub pushTo) == length pushTo
             ]
           | (fromPu, opts) <- puOptions
@@ -107,7 +107,7 @@ instance ( Title title, Var v, Time t
                 (InstructionStep
                   $ (Transport v taPullFrom title :: Instruction (BusNetwork title (PU Passive v t) v t)))
               ) $ M.assocs push'
-        _ <- add (Event transportStartAt transportDuration) $ InfoStep $ show act -- $ Pull pullVars
+        _ <- add (Event transportStartAt transportDuration) $ InfoStep $ show act --   $ Pull pullVars
         setProcessTime $ transportStartAt + transportDuration
     , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }

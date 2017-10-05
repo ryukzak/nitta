@@ -40,7 +40,7 @@ bindAllAndNaiveSelects pu0 alg = naive' $ bindAll pu0 alg
     naive' pu
       | var:_ <- options pu =
           naive'
-          -- $ trace (concatMap ((++ "\n") . show) $ elems $ frMemory pu)
+          --   $ trace (concatMap ((++ "\n") . show) $ elems $ frMemory pu)
           $ select pu $ effectVar2act var
       | otherwise = pu
 
@@ -135,33 +135,21 @@ naive !f@Fork{..}
                    }
         _   -> error "No variants!"
     start = tcFrom . toPullAt
-    -- mostly mad implementation
     option2action opt0@TransportOpt{..}
       = let pushTimeConstrains = map snd $ catMaybes $ M.elems toPush
 
             pullStart    = maximum $ map tcFrom     $ toPullAt : pushTimeConstrains
             pullDuration = maximum $ map tcDuration $ toPullAt : pushTimeConstrains
 
-            mkEvent (from, TimeConstrain{..}) = Just (from, Event (pullStart+1) tcDuration)
+            mkEvent (from, TimeConstrain{..}) = Just (from, Event (pullStart + 1) tcDuration)
             pushs = map (\(var, timeConstrain) -> (var, maybe Nothing mkEvent timeConstrain) ) $ M.assocs toPush
 
             act = TransportAct{ taPullFrom=toPullFrom
                               , taPullAt=Event pullStart pullDuration
                               , taPush=M.fromList pushs
                               }
-              -- map (\(v, o) -> ( v
-              --                       , case o of
-              --                         Just o' -> Just $ timeConstrain2event o'
-              --                         Nothing | v `elem` forceInputs -> Just $ timeConstrain2event opt
-              --                         _ -> timeConstrain2event <$> o
-              --                       )
-              --           ) $ M.assocs toPush
         in trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act)
            act
-      where
-        -- timeConstrain2event (title, TimeConstrain{ tcFrom=from, tcDuration=dur }) = (title, Event (from + tcDuration) dur)
-        -- (_, event) : _ = catMaybes $ M.elems toPush
-        -- opt = ("", event)
 
 
 
@@ -230,7 +218,7 @@ autoBind net@BusNetwork{..} =
 
     prioritize bv@BindOption{..}
       -- В настоящий момент данная операци приводит к тому, что часть FB перестают быть вычислимыми.
-      -- | isCritical fb = bv{ priority=Just Critical }
+      --  | isCritical fb = bv{ priority=Just Critical }
 
       | dependency fb == []
       , pulls <- filter isPull $ optionsAfterBind bv

@@ -41,7 +41,7 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Text.StringTemplate
 
-type T = TaggetTime String Int
+type T = TaggedTime String Int
 
 fram = PU (def :: Fram String T)
 accum = PU (def :: A.Accum String T)
@@ -201,7 +201,7 @@ main = do
   timeline "resource/data.json" pu
   -- print $ (getPU "fram2" pu :: Fram String T)
   -- mapM_ (putStrLn . show)
-    -- $ steps $ process (getPU "fram2" pu :: Fram String T)
+    --   $ steps $ process (getPU "fram2" pu :: Fram String T)
 
   -- testBench pu ([] :: [(String, Int)])
   -- writeTestBench pu ([] :: [(String, Int)])

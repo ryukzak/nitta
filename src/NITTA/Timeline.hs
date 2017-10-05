@@ -20,7 +20,7 @@ import           NITTA.Utils
 
 instance ( Time t
          , ToJSON t
---       , ToJSON (TaggetTime tag t)
+--       , ToJSON (TaggedTime tag t)
 --       , ToJSON tag
          ) => ToJSON (Step String t) where
   toJSON st@Step{ sTime=Event{..}, ..} =
@@ -50,8 +50,8 @@ instance ToJSON Relation where
            , "b" .= b
            ]
 
-instance ( ToJSON t ) => ToJSON (TaggetTime tag t) where
-  toJSON (TaggetTime tag t) = toJSON t
+instance ( ToJSON t ) => ToJSON (TaggedTime tag t) where
+  toJSON (TaggedTime tag t) = toJSON t
 
 data Group = Group { id :: String, nestedGroups :: [String] }
   deriving (Eq, Ord)
