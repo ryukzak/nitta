@@ -198,12 +198,12 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
         && ( null (remainRegs fr) || framSize - numberOfCellForReg > 1 )
       numberOfCellForReg = length $ filter (\Cell{..} -> output == UsedOrBlocked) $ elems frMemory
       constrain Cell{..} (Pull _)
-        | lastWrite == Just tick = TimeConstrain ((tick + 1) ... maxBound) (1 ... maxBound)
+        | lastWrite == Just tick = TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)
         | otherwise              = TimeConstrain (tick ... maxBound) (1 ... maxBound)
       constrain _cell (Push _) = TimeConstrain (tick ... maxBound) (1 ... maxBound)
 
   select fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@EffectAct{ eaAt=at, .. }
-    | tick0 > inf at
+    | not $ tick0 <= inf at
     = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show (inf at)
 
     | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< eaEffect) . head . actions) frRemains
@@ -277,17 +277,17 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
       mkWork _addr _p MicroCode{ actions=[] } = error "Fram internal error, mkWork"
       mkWork addr p mc@MicroCode{ actions=x:xs, ..} =
         let ((ef, instrs), p') = modifyProcess p $ do
-              e <- add at $ EffectStep eaEffect
-              i1 <- add at $ InstructionStep
+              e <- add (Activity at) $ EffectStep eaEffect
+              i1 <- add (Activity at) $ InstructionStep
                 $ (act2Instruction addr eaEffect :: Instruction (Fram v t))
               is <- if tick0 < (inf at)
                 then do
-                  i2 <- add (tick0 ... (inf at))
+                  i2 <- add (Activity $ tick0 ... inf at - 1)
                     $ InstructionStep (Nop :: Instruction (Fram v t))
                   return [ i1, i2 ]
                 else return [ i1 ]
               mapM_ (relation . Vertical ef) instrs
-              setProcessTime $ sup at
+              setProcessTime $ sup at + 1
               return (e, is)
         in (p', mc{ effect=ef : effect
                   , instruction=instrs ++ instruction
@@ -297,7 +297,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
 
       finish p MicroCode{..} = snd $ modifyProcess p $ do
         let start = fromMaybe (error "workBegin field is empty!") workBegin
-        h <- add (start ... sup at) $ FBStep fb
+        h <- add (Activity $ start ... sup at) $ FBStep fb
         mapM_ (relation . Vertical h) compiler
         mapM_ (relation . Vertical h) effect
         mapM_ (relation . Vertical h) instruction
@@ -396,7 +396,7 @@ sortPuSteps p@Process{..} =
   in p{ steps=steps' }
 
 
-bindFB2Cell addr fb t = add (singleton t) $ InfoStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
+bindFB2Cell addr fb t = add (Event t) $ InfoStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
 
 
 cell2acts _allowOutput Cell{ input=Def MicroCode{ actions=x:_ } }    = [x]
@@ -524,16 +524,16 @@ testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
 
 findAddress v pu@Fram{ frProcess=p@Process{..} }
-  | [ Step{..}
+  | [ Step{ sTime=Activity timePlace }
     ] <- filter ( \st -> isEffect (sDesc st)
                          && (\Step{ sDesc=EffectStep eff } -> v `elem` variables eff) st
                 ) steps
-  , instructions <- catMaybes $ map (getInstruction (proxy pu)) $ whatsHappen (inf sTime) p
+  , instructions <- catMaybes $ map (getInstruction (proxy pu)) $ whatsHappen (inf timePlace) p
   , is <- catMaybes $ map (\i -> case i of
                   Load addr -> Just addr
                   Save addr -> Just addr
                   _         -> Nothing
-        ) $ trace ("--" ++ show sTime ++ " " ++ show instructions)instructions
+        ) $ trace ("--" ++ show timePlace ++ " " ++ show instructions)instructions
   = if length is == 1 then head is
                       else err
   | otherwise = err

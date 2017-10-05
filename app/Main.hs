@@ -193,7 +193,7 @@ main = do
   -- let compiler = Fork net'' (def{ controlFlow=mkControlFlow program }) Nothing []
   let Fork{ net=pu
           , controlModel=cm'
-          } = foldl (\comp _ -> naive comp) compiler (take 25 $ repeat ())
+          } = foldl (\comp _ -> naive comp) compiler (take 150 $ repeat ())
   -- let Forks{ current=Fork{ net=pu
                          -- , controlModel=cm'
                          -- }
@@ -211,3 +211,10 @@ getPU puTitle net0
   = case bnPus net0 ! puTitle of
       PU pu | Just pu' <- cast pu -> pu'
 
+
+
+-- >opt>TransportOpt {toPullFrom = "fram2", toPullAt = TimeConstrain {tcAvailable = 5 ... 1000, tcDuration = 1 ... 1000}, toPush = fromList [("e",Just ("accum",TimeConstrain {tcAvailable = 6 ... 1000, tcDuration = 1 ... 1}))]}
+-- >act>"fram2"#[5 ... 5] -> "e"@"accum"#[6 ... 6]
+
+-- >opt>TransportOpt {toPullFrom = "fram1", toPullAt = TimeConstrain {tcAvailable = 4 ... 1000, tcDuration = 1 ... 1000}, toPush = fromList [("x",Just ("fram2",TimeConstrain {tcAvailable = 6 ... 1000, tcDuration = 1 ... 1000}))]}
+-- >act>"fram1"#[5 ... 5] -> "x"@"fram2"#[6 ... 6]

@@ -70,16 +70,22 @@ processTime = do
   Process{..} <- get
   return tick
 
-bindFB fb t = add (singleton t) $ InfoStep $ "Bind " ++ show fb
+bindFB fb t = add (Event t) $ InfoStep $ "Bind " ++ show fb
+
+atSameTime a (Activity t) = a `I.elem` t
+atSameTime a (Event t)    = a == t
+
+placeInTimeTag (Activity t) = tag $ inf t
+placeInTimeTag (Event t)    = tag t
 
 
-
-stepStart Step{..} = inf sTime
+stepStart Step{ sTime=Event t }    = t
+stepStart Step{ sTime=Activity t } = inf t
 
 
 whatsHappen t Process{..} =
   -- FIXME
-  filter (\Step{..} -> inf sTime <= t && t < sup sTime) steps
+  filter (\Step{..} -> t `atSameTime` sTime) steps
 
 
 isFB (FBStep _)                = True

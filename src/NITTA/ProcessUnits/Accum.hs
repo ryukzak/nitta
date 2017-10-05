@@ -26,7 +26,8 @@ import           NITTA.FunctionBlocks
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval     (inf, singleton, sup, width, (...))
+import           Numeric.Interval     (Interval, inf, singleton, sup, width,
+                                       (...))
 
 import           Debug.Trace
 
@@ -44,8 +45,8 @@ instance HasAt (Option Passive v t) (TimeConstrain t) where
   at = lens eoAt $ \variant v -> variant{ eoAt=v }
 instance HasAt (Action Passive v t) (Event t) where
   at = lens eaAt $ \variant v -> variant{ eaAt=v }
-instance HasAt (Step v t) (Event t) where
-  at = lens sTime $ \st v -> st{ sTime=v }
+-- instance HasAt (Step v t) (Event t) where
+--   at = lens sTime $ \st v -> st{ sTime=v }
 
 
 class HasTime a b | a -> b where
@@ -57,8 +58,8 @@ instance HasTime (Process v t) t where
 
 -- at = time?
 
-instance ( Time t ) => HasDur (Step v t) t where
-  dur = lens (width . sTime) undefined  -- $ \st v -> st{ sTime=st & sTime & dur .~ v }
+-- instance ( Time t ) => HasDur (Step v t) t where
+--   dur = lens (width . sTime) undefined  -- $ \st v -> st{ sTime=st & sTime & dur .~ v }
 instance ( Time t ) => HasDur (Action Passive v t) t where
   dur = at . dur
 
@@ -71,8 +72,8 @@ class HasStart a b | a -> b where
 --   start = lens eStart $ \e s -> e{ eStart=s }
 instance HasStart (CurrentJob io v t) t where
   start = lens cStart $ \c s -> c{ cStart=s }
-instance HasStart (Step v t) t where
-  start = lens (inf . sTime) undefined -- \st v -> st{ sTime=st & sTime & leftBound .~ v }
+-- instance HasStart (Step v t) t where
+--   start = lens (inf . sTime) undefined -- \st v -> st{ sTime=st & sTime & leftBound .~ v }
 instance HasStart (Action Passive v t) t where
   -- start = at . to inf
   start = lens (inf . eaAt) undefined --  \s v -> s{ eaAt=(eaAt s) & start .~ v }
@@ -150,7 +151,8 @@ instance ( SerialPUState st Parcel v t, Show st
                              }
               } act
   select pu@SerialPU{ spuCurrent=Just cur, .. } act
-   | tick spuProcess > act ^. start = error $ "Time wrap! Time: " ++ show (tick spuProcess) ++ " Act start at: " ++ show (act ^. start)
+   | not $ tick spuProcess <= act^.start
+   = error $ "Time wrap! Time: " ++ show (tick spuProcess) ++ " Act start at: " ++ show (act ^. start)
    | otherwise
     = let (spuState', work) = schedule spuState act
           (steps, spuProcess') = modifyProcess spuProcess work
@@ -168,7 +170,7 @@ instance ( SerialPUState st Parcel v t, Show st
            _  -> pu'
     where
       finish p cur@CurrentJob{..} = snd $ modifyProcess p $ do
-        h <- add (cStart ... (act^.at.leftBound + act^.at.dur)) $ FBStep cFB
+        h <- add (Activity $ cStart ... (act^.at.leftBound + act^.at.dur)) $ FBStep cFB
         mapM_ (relation . Vertical h) cSteps
 
   process = spuProcess
@@ -212,7 +214,7 @@ instance ( Var v, Time t
     | otherwise
     = map (\v -> EffectOpt (Push v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
   stateOptions Accum{ acOut=vs@(_:_) } now
-    = [ EffectOpt (Pull vs) $ TimeConstrain ((now + 2) ... maxBound) (1 ... maxBound) ]
+    = [ EffectOpt (Pull vs) $ TimeConstrain ((now + 1) ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
   schedule st@Accum{ acIn=vs@(_:_) } act
@@ -288,18 +290,18 @@ instance ( PUClass Passive (Accum v t) v t
 
 serialSchedule puProxy act instr = do
   now <- processTime
-  e <- add (act^.at) $ EffectStep (act^.effect)
-  i <- modelInstruction puProxy (act^.at) instr
-  is <- if now < act^.start
+  e <- add (Activity $ eaAt act) $ EffectStep (act^.effect)
+  i <- modelInstruction puProxy (eaAt act) instr
+  is <- if False && now < act^.start
         then do
             ni <- modelInstruction puProxy (now ... (act^.start)) def
             return [i, ni]
         else return [i]
   mapM_ (relation . Vertical e) is
-  setProcessTime (act^.start + act^.dur)
+  setProcessTime $ (sup $ eaAt act) + 1
   return $ e : is
 
 modelInstruction
   :: ( Show (Instruction pu), Typeable pu, Time t
-     ) => Proxy pu -> Event t -> Instruction pu -> State (Process v t) ProcessUid
-modelInstruction _pu at instr = add at $ InstructionStep instr
+     ) => Proxy pu -> Interval t -> Instruction pu -> State (Process v t) ProcessUid
+modelInstruction _pu at instr = add (Activity at) $ InstructionStep instr

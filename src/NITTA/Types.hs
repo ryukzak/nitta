@@ -201,9 +201,14 @@ instance (Time t) => Default (Process v t) where
 data Step v t where
   Step ::
     { sKey  :: ProcessUid
-    , sTime :: Event t
+    , sTime :: PlaceInTime t
     , sDesc :: StepInfo v
     } -> Step v t
+
+data PlaceInTime t
+  = Event t
+  | Activity (Interval t)
+  deriving ( Show )
 
 data StepInfo v where
   FBStep :: FB Parcel v -> StepInfo v
@@ -220,8 +225,8 @@ deriving instance ( Var v, Time t ) => Show ( Step v t )
 instance ( Var v ) => Show (StepInfo v) where
   show (FBStep (FB fb))            = show fb
   show (InfoStep s)                = s
-  show (EffectStep (Pull v))       = "↓" ++ show v
-  show (EffectStep (Push v))       = "↑" ++ show v
+  show (EffectStep (Pull v))       = "V" ++ show v
+  show (EffectStep (Push v))       = "A" ++ show v
   show (InstructionStep instr)     = show instr
   show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
 
@@ -289,10 +294,10 @@ instance Variables (Option (Network title) v t) v where
   variables TransportOpt{..} = M.keys toPush
 
 instance ( Show title, Time t, Var v ) => Show (Action (Network title) v t) where
-  show TransportAct{..} = show taPullFrom ++ "@(" ++ show taPullAt ++ ") -> " ++ S.join "; " pushs
+  show TransportAct{..} = show taPullFrom ++ "#[" ++ show taPullAt ++ "] -> " ++ S.join "; " pushs
     where
       pushs = catMaybes $ map foo $ M.assocs taPush
-      foo (v, Just (title, event)) = Just (show v ++ "@" ++ show title ++ " (" ++ show event ++ ")")
+      foo (v, Just (title, event)) = Just (show v ++ "@" ++ show title ++ "#[" ++ show event ++ "]")
       foo _ = Nothing
 
 data Value = X | B Bool | Broken

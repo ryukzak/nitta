@@ -67,20 +67,21 @@ instance ( Title title, Var v, Time t
   options BusNetwork{..} =
     let x = concat
           [
-            [ TransportOpt fromPu pullAt $ M.fromList pushs
+            [ TransportOpt fromPu (fixPullConstrain pullAt) $ M.fromList pushs
             | pushs <- sequence $ map pushOptionsFor pullVars
             , let pushTo = catMaybes $ map (fmap fst . snd) pushs --  $ trace ("pushs: " ++ show pushs) pushs
             , length (nub pushTo) == length pushTo
             ]
           | (fromPu, opts) <-
-            trace ("puOptions: \n" ++ concatMap ((++"\n") . (" " ++) . show) puOptions)
+            trace ("puOptions: \n" ++ concatMap ((" " ++) . (++ "\n") . show) puOptions)
             puOptions
-          , EffectOpt (Pull pullVars) pullAt <-
-            opts
+          , EffectOpt (Pull pullVars) pullAt <- opts
           ]
-    in trace ("BusNetwork options: \n" ++ concatMap ((++"\n") . ("  "++) . show) x)
+    in -- trace ("BusNetwork options: \n" ++ concatMap ((++"\n") . ("  "++) . show) x)
        x
     where
+      now = tick bnProcess
+      fixPullConstrain tc@TimeConstrain{..} = tc{ tcAvailable=(max now $ inf tcAvailable) ... sup tcAvailable }
       pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
       pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
 
@@ -101,16 +102,19 @@ instance ( Title title, Var v, Time t
 
       puOptions = M.assocs $ M.map options bnPus
 
-  select ni@BusNetwork{..} act@TransportAct{..} = ni
+  select ni@BusNetwork{..} act@TransportAct{..}
+    | not $ tick bnProcess <= (inf taPullAt)
+    = error $ "BusNetwork wraping time! Time: " ++ show (tick bnProcess) ++ " Act start at: " ++ show (inf taPullAt)
+    | otherwise = ni
     { bnPus=foldl (\s n -> n s) bnPus steps
     , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add
-                (trace ("1> " ++ show transportStartAt ++ " ... " ++ show transportEndAt) $ transportStartAt ... transportEndAt)
+                (trace ("1> " ++ show transportStartAt ++ " ... " ++ show transportEndAt) $ Activity $ transportStartAt ... transportEndAt)
                 (InstructionStep
                   $ (Transport v taPullFrom title :: Instruction (BusNetwork title (PU Passive v t) v t)))
               ) $ M.assocs push'
-        _ <- add (transportStartAt ... transportEndAt) $ InfoStep $ show act --   $ Pull pullVars
-        setProcessTime $ transportStartAt + transportDuration
+        _ <- add (Activity $ transportStartAt ... transportEndAt) $ InfoStep $ show act --   $ Pull pullVars
+        setProcessTime $ (sup taPullAt) + 1
     , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
     where
@@ -242,7 +246,7 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
                          Nothing  -> Just [fb]
                      ) puTitle bnBinded
   , bnProcess=snd $ modifyProcess p $
-      add (singleton tick) $ InfoStep $ "Bind " ++ show fb ++ " to " ++ puTitle
+      add (Event tick) $ InfoStep $ "Bind " ++ show fb ++ " to " ++ puTitle
   , bnRemains=filter (/= fb) bnRemains
   }
 
@@ -368,7 +372,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
         where
           -- первый элемент - nop по всем линиям. Устанавливается по умолчанию и говорит о том, что процессор не работает.
           -- далее в линейном виде идёт программный код.
-          ticks = (tick : [ 0 .. tick - 1 ])
+          ticks = [ -1 .. tick ]
           wires = map Wire $ reverse $ range $ bounds bnWires
           signalsAt t = map (\w -> signalAt bn w t) wires
 
@@ -379,12 +383,11 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
           assert time
             = let pulls = filter (\e -> case e of (Pull _) -> True; _ -> False) $ effectsAt time p
               in trace ("++" ++ show pulls ++ show cntx) $ case pulls of
-                [(Pull (v:_))]
-                  | (v, 0) `M.member` cntx -> concat
-                    [ "if ( !( net.data_bus == " ++ show (cntx M.! (v, 0)) ++ ") ) "
+                (Pull (v:_)):_ -> concat
+                    [ "if ( !( net.data_bus == " ++ show (maybe 0 id $ M.lookup (v, 0) cntx) ++ ") ) "
                     ,   "$display("
                     ,     "\""
-                    ,       "FAIL wrong value of " ++ show' v ++ " the bus failed "
+                    ,       "FAIL wrong value of " ++ show' pulls ++ " the bus failed "
                     ,       "(got: %h expect: %h)!"
                     ,     "\", "
                     , "net.data_bus, " ++ show (cntx M.! (v, 0)) ++ "); else $display(\"%d Correct value: %h\", net.control_unit.program_counter, net.data_bus);"

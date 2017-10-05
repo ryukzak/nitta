@@ -26,16 +26,16 @@ instance ( Time t
          ) => ToJSON (Step String t) where
   toJSON st@Step{..} =
     object $ [ "id" .= sKey
-             , "start" .= inf (trace (show st) sTime)
+             , "start" .= (case sTime of Event t -> t; Activity t -> inf t)
              , "content" .= show' sDesc
              , "group" .= group sDesc
              , "title" .= show st
              , "inside_out" .= isInsideOut st
              -- , "time_tag" .= tag eStart
              ]
-    ++ case width sTime of
-         0 -> [ "type" .= ("point" :: String) ]
-         _ -> [ "end" .= (sup sTime) ]
+    ++ case sTime of
+         Event _    -> [ "type" .= ("point" :: String) ]
+         Activity t -> [ "end" .= (sup t + 1) ]
     where
       isInsideOut _
         | Just fb <- getFB st = insideOut fb

@@ -99,7 +99,7 @@ naive !f@Forks{..}
         parallelSteps = concatMap
           (\Fork{ net=n
                 , timeTag=forkTag
-                } -> filter (\Step{..} -> forkTag == (tag $ inf sTime)
+                } -> filter (\Step{..} -> forkTag == (placeInTimeTag sTime)
                             ) $ steps $ process n
           ) completed
     in case (isOver current', remains) of
@@ -139,21 +139,18 @@ naive !f@Fork{..}
     start = (\o -> o^.available.to inf) . toPullAt
     option2action opt0@TransportOpt{..}
       = let pushTimeConstrains = map snd $ catMaybes $ M.elems toPush
-
-            pullStart    = maximum $ map (\o -> o^.available.to inf) $ toPullAt : pushTimeConstrains
+            predictPullStartFromPush o = o^.available.to inf - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
+            pullStart    = maximum $ (toPullAt^.available.to inf) : map predictPullStartFromPush pushTimeConstrains
             pullDuration = maximum $ map (\o -> o^.dur.to inf) $ toPullAt : pushTimeConstrains
-            pullEnd = pullStart + pullDuration
+            pullEnd = pullStart + pullDuration - 1
+            pushStart = pullStart + 1
 
-            mkEvent (from, tc@TimeConstrain{..}) = Just (from,
-
-              trace ("2> " ++ show (pullStart + 1) ++ " ... " ++ show (tc^.dur)) $
-                (pullStart + 1) ... ((pullStart + 1) + tc^.dur.to inf))
+            mkEvent (from, tc@TimeConstrain{..})
+              = Just (from, pushStart ... (pushStart + tc^.dur.to inf - 1))
             pushs = map (\(var, timeConstrain) -> (var, maybe Nothing mkEvent timeConstrain) ) $ M.assocs toPush
 
             act = TransportAct{ taPullFrom=toPullFrom
-                              , taPullAt=
-                                trace ("3> " ++ show pullStart ++ " ... " ++ show (pullEnd))
-                                  (pullStart ... pullEnd)
+                              , taPullAt=pullStart ... pullEnd
                               , taPush=M.fromList pushs
                               }
         in trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act ++ "\n>pullStart>" ++ show (map (\o -> o^.available.to inf) $ toPullAt : pushTimeConstrains) ++ "\n>pullDuration>" ++ show pullDuration)
