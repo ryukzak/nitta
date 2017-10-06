@@ -187,3 +187,13 @@ values2dump vs = concatMap (show . readBin) $ groupBy4 $ concatMap show vs
 
 
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
+
+
+variableValueWithoutFB pu cntx vi@(v, _)
+  | [fb] <- filter (elem v . (\(FB fb) -> variables fb)) fbs
+  = variableValue (trace (">>> " ++ show vi ++ " " ++ show fb ++ " " ++ show cntx) fb) pu cntx vi
+  | otherwise = error $ "can't find varValue for: " ++ show v ++ " "
+                ++ show cntx ++ " "
+                ++ show fbs
+  where
+    fbs = catMaybes $ map getFB $ steps $ process pu

@@ -202,15 +202,12 @@ instance ( PUClass (Network title) (BusNetwork title (PU Passive v t) v t) v t
          , Ord title, Show title
          , Var v, Time t
          ) => Simulatable (BusNetwork title (PU Passive v t) v t) v Int where
-
-  variableValue _fb bn cntx vi = varValue bn cntx vi
-
-  varValue bn@BusNetwork{..} cntx vi@(v, _) =
+  variableValue _fb bn@BusNetwork{..} cntx vi@(v, _) =
     let [Transport _ src _] =
           filter (\(Transport v' _ _) -> v == v')
           $ catMaybes $ map (getInstruction $ proxy bn)
           $ steps bnProcess
-    in varValue (bnPus M.! src) cntx vi
+    in variableValueWithoutFB (bnPus M.! src) cntx vi
 
 
 
@@ -402,7 +399,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
     in foldl ( \cntx' (Transport v src _dst) -> trace ("> " ++ show v ++ "@" ++ show src ++ " " ++ show cntx') $
                                                 M.insert
                 (v, 0)
-                (varValue (bnPus M.! src) cntx' (v, 0))
+                (variableValueWithoutFB (bnPus M.! src) cntx' (v, 0))
                 cntx'
              ) cntx $ trace (">>>>" ++ concatMap ((++ "\n") . show) (steps bnProcess))
              transports

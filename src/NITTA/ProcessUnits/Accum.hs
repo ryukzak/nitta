@@ -216,14 +216,6 @@ instance ( PUClass Passive (Accum v t) v t
          , Time t
          , Var v
          ) => Simulatable (Accum v t) v Int where
-  varValue pu cntx vi@(v, _)
-    | [fb] <- filter (elem v . (\(FB fb) -> variables fb))
-      $ trace (">>" ++ show fbs) fbs
-    = variableValue fb pu cntx vi
-    | otherwise = error $ "can't find varValue for: " ++ show v ++ " "
-                  ++ show (catMaybes $ map getFB $ steps $ process pu)
-    where
-      fbs = catMaybes $ map getFB $ steps $ process pu
 
   variableValue (FB fb) pu@SerialPU{..} cntx (v, i)
     | Just (Add (I a) _ _) <- cast fb, a == v = cntx M.! (v, i)
@@ -236,7 +228,7 @@ instance ( PUClass Passive (Accum v t) v t
 
 serialSchedule puProxy act instr = do
   now <- processTime
-  e <- add (Activity $ eaAt act) $ EffectStep (act^.effect)
+  e <- add (Activity $ eaAt act) $ EffectStep (eaEffect act)
   i <- modelInstruction puProxy (eaAt act) instr
   is <- if False && now < act^.start
         then do

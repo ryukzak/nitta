@@ -19,6 +19,8 @@ module NITTA.ProcessUnits.Fram
   )
 where
 
+
+  -- Как при ветвящемся алгоритме сделать локальный для if statementa Loop? Вероятно, некоторые FB необходимо запретить к ращмещению в тегированном времени.
 import           Data.Array
 import           Data.Bits
 import           Data.Default
@@ -31,6 +33,7 @@ import           Data.Maybe
 import           Data.Proxy
 import           Data.Typeable
 import           NITTA.FunctionBlocks
+import           NITTA.Lens
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
@@ -100,7 +103,8 @@ data MicroCode v t where
     } -> MicroCode v t
 
 microcode = MicroCode [] [] [] Nothing
-
+-- instance HasEffect (MicroCode v t) (Effect v) where
+--   effect = lens _effect $ \a b -> a{ _effect=b }
 
 instance ( Var v, Time t ) => Default (Fram v t) where
   def = Fram { frMemory=listArray (0, framSize - 1) $ repeat def
@@ -221,7 +225,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
 
     | Just (addr, cell) <- find (any (<< eaEffect) . cell2acts True . snd) $ assocs frMemory
     = case cell of
-        Cell{ input=Def mc@MicroCode{ actions=act : _ } } | act << eaEffect ->
+        Cell{ input=Def mc@MicroCode{ actions=act1 : _ } } | act1 << eaEffect ->
             let (p', mc') = doAction addr p0 mc
                 cell' = updateLastWrite (nextTick p') cell
                 cell'' = case mc' of
@@ -234,7 +238,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
             in fr{ frMemory=frMemory // [(addr, cell'')]
                  , frProcess=p'
                  }
-        Cell{ current=Just mc@MicroCode{ actions=act : _ } } | act << eaEffect ->
+        Cell{ current=Just mc@MicroCode{ actions=act1 : _ } } | act1 << eaEffect ->
             let (p', mc') = doAction addr p0 mc
                 cell' = updateLastWrite (nextTick p') cell
                 cell'' = cell'{ input=UsedOrBlocked
@@ -245,7 +249,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
             in fr{ frMemory=frMemory // [(addr, cell'')]
                  , frProcess=p'
                  }
-        Cell{ output=Def mc@MicroCode{ actions=act : _ } } | act << eaEffect ->
+        Cell{ output=Def mc@MicroCode{ actions=act1 : _ } } | act1 << eaEffect ->
             let (p', _mc') = doAction addr p0 mc
                 -- Вот тут есть потенциальная проблема которую не совсем ясно как можно решить,
                 -- а именно, если output происходит в последний такт вычислительного цикла
@@ -295,7 +299,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
                   , actions=if x == eaEffect then xs else (x \\\ eaEffect) : xs
                   })
 
-      finish p MicroCode{..} = snd $ modifyProcess p $ do
+      finish p mc@MicroCode{..} = snd $ modifyProcess p $ do
         let start = fromMaybe (error "workBegin field is empty!") workBegin
         h <- add (Activity $ start ... sup at) $ FBStep fb
         mapM_ (relation . Vertical h) compiler
@@ -352,15 +356,6 @@ instance ( PUClass Passive (Fram v t) v t
          , Time t
          , Var v
          ) => Simulatable (Fram v t) v Int where
-  varValue pu cntx vi@(v, _)
-    | [fb] <- filter (elem v . (\(FB fb) -> variables fb)) fbs
-    = variableValue (trace (">>> " ++ show vi ++ " " ++ show fb ++ " " ++ show cntx) fb) pu cntx vi
-    | otherwise = error $ "can't find varValue for: " ++ show v ++ " "
-                  ++ show cntx ++ " "
-                  ++ show fbs
-    where
-      fbs = catMaybes $ map getFB $ steps $ process pu
-
   variableValue (FB fb) pu@Fram{..} cntx (v, i)
     | Just (Loop _bs (I a)) <- cast fb, a == v = cntx M.! (v, i)
 
@@ -447,7 +442,7 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
           ]
     in foldl ( \cntx' v ->
                  M.insert (v, 0)
-                          (varValue fr cntx' (v, 0))
+                          (variableValueWithoutFB fr cntx' (v, 0))
                           cntx'
              ) cntx vs
 

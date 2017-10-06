@@ -10,17 +10,18 @@
 {-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.Lens where
+module NITTA.Lens ( module NITTA.Lens
+                  , module Control.Lens
+                  ) where
 
-import           Control.Lens      hiding (at, (...))
-import           Data.Default
-import qualified Data.List         as L
-import qualified Data.Map          as M
-import           Data.Maybe
-import qualified Data.String.Utils as S
-import           Data.Typeable
+import           Control.Lens     hiding (at, (...))
 import           NITTA.Types
-import           Numeric.Interval  hiding (elem)
+import           Numeric.Interval hiding (elem)
+
+
+
+
+
 
 
 
@@ -36,6 +37,32 @@ class HasAvailable a b | a -> b where
 class HasDur a b | a -> b where
   dur :: Lens' a b
 
+
+class HasAt a b | a -> b where
+  at :: Lens' a b
+
+
+
+
+
+-- class HasEffect a b | a -> b where
+--   effect :: Lens' a b
+
+-- instance HasEffect (Option Passive v t) (Effect v) where
+--   effect = lens _eoEffect $ \a b -> a{ _eoEffect=b }
+
+-- instance HasEffect (Action Passive v t) (Effect v) where
+--   effect = lens _eaEffect $ \a b -> a{ _eaEffect=b }
+
+
+
+
+
+
+
+
+
+
 instance HasAvailable (TimeConstrain t) (Interval t) where
   available = lens tcAvailable $ \e s -> e{ tcAvailable=s }
 instance HasDur (TimeConstrain t) (Interval t) where
@@ -48,8 +75,6 @@ instance ( Time t ) => HasDur (Interval t) t where
   dur = lens width $ \e s -> inf e ... (inf e + s)
 
 
-class HasAt a b | a -> b where
-  at :: Lens' a b
 
 instance HasAt (Option (Network title) v t) (TimeConstrain t) where
   at = lens toPullAt $ \variant v -> variant{ toPullAt=v }
@@ -76,15 +101,7 @@ instance ( Time t ) => HasDur (Action Passive v t) t where
 class HasStart a b | a -> b where
   start :: Lens' a b
 
--- instance HasStart (CurrentJob io v t) t where
---   start = lens cStart $ \c s -> c{ cStart=s }
 instance HasStart (Action Passive v t) t where
   start = lens (inf . eaAt) undefined --  \s v -> s{ eaAt=(eaAt s) & start .~ v }
 
 
-
-class HasEffect a b | a -> b where
-  effect :: Lens' a b
-
-instance HasEffect (Action Passive v t) (Effect v) where
-  effect = lens eaEffect $ \s v -> s{ eaEffect=v }
