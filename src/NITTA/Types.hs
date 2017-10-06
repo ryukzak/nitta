@@ -25,77 +25,124 @@ import           Numeric.Interval  hiding (elem)
 
 class HasLeftBound a b | a -> b where
   leftBound :: Lens' a b
+
 class HasRightBound a b | a -> b where
   rightBound :: Lens' a b
 
-
 class HasAvailable a b | a -> b where
   available :: Lens' a b
-
 
 class HasDur a b | a -> b where
   dur :: Lens' a b
 
 
 
--- | Описание классов идентификатора переменной.
+-- Переменные и пересылаемые данные ---------------------------------
+
+
+-- | Класс идентификатора переменной.
 class ( Typeable v, Eq v, Ord v, Show v ) => Var v
 instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
 
 class Variables x v | x -> v where
-  -- | Получить список переменных, связанных с экземпляром класса.
+  -- | Получить список идентификаторов связанных переменных.
   variables :: x -> [v]
 
 
 
--- | Описание классов координаты во времени.
+-- | Семейство типов для описания входов/выходов для функциональных блоков.
+-- Необходимо чтобы описание функционального блока можно было использовать для:
+-- - логического описания вычислительного значения (выход из f подаётся на вход g и h);
+-- - фактического (Parcel) описания пересылок (выход из f формирует значения а и b,
+--   значение a загружается в g, значение b загружается в h).
+class IOTypeFamily io where
+  data I io :: * -> * -- ^ Тип для описания загружаемого значения.
+  data O io :: * -> * -- ^ Тип для описания выгружаемого значения
+
+class ( Show (I io v), Variables (I io v) v, Eq (I io v)
+      , Show (O io v), Variables (O io v) v, Eq (O io v)
+      , Typeable io, Var v
+      ) => IOType io v
+instance ( Show (I io v), Variables (I io v) v, Eq (I io v)
+         , Show (O io v), Variables (O io v) v, Eq (O io v)
+         , Typeable io, Var v
+         ) => IOType io v
+
+
+
+-- | Идентификатор типа для описания физически фактических пересылаемых значений.
+data Parcel = Parcel
+
+instance IOTypeFamily Parcel where
+  data I Parcel v = I v -- ^ Загружаемые значения.
+    deriving (Show, Eq, Ord)
+  data O Parcel v = O [v] -- ^ Выгружаемые значения.
+    deriving (Show, Eq, Ord)
+
+instance Variables (I Parcel v) v where
+  variables (I v) = [v]
+instance Variables (O Parcel v) v where
+  variables (O v) = v
+
+
+
+-- | Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
+-- одно взаимодействие, при этом у PU только один канал для взаимодействия.
+data Effect v
+  = Push v   -- ^ Загрузка данных в PU.
+  | Pull [v] -- ^ Выгрузка данных из PU.
+  deriving ( Show, Eq, Ord )
+
+instance ( Var v ) => Variables (Effect v) v where
+  variables (Push i) = [i]
+  variables (Pull o) = o
+
+(Push a) << (Push b) | a == b = True
+(Pull a) << (Pull b)          = all (`elem` a) b
+_        << _                 = False
+
+(Pull a) \\\ (Pull b) = Pull (a L.\\ b)
+_ \\\ _ = error "Only for Pulls"
+
+
+
+-- Время ------------------------------------------------------------
+
+
+-- | Класс координаты во времени.
 class ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
 instance ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
 
-
--- | Тип данных для описания требований к событиям во времени. Интервал значений - замкнутый.
+-- | Описание временных ограничений на активности (Ativity). Используется при описании доступных
+-- опций для планирования вычислительного процесса.
 data TimeConstrain t
   = TimeConstrain
-  { tcAvailable :: Interval t -- ^ Интервал, в рамках которого можно выполнить операцию.
-  , tcDuration  :: Interval t -- ^ Интервал допустимой длительности операции.
+  { tcAvailable :: Interval t -- ^ Замкнутый интервал, в рамках которого можно выполнить активность.
+  , tcDuration  :: Interval t -- ^ Замкнутый интервал допустимой длительности активности.
   } deriving ( Show, Eq )
 
--- instance HasLeftBound (TimeConstrain t) t where
---   leftBound = lens tcFrom $ \e s -> e{ tcFrom=s }
--- instance HasRightBound (TimeConstrain t) t where
---   rightBound = lens tcTo $ \e s -> e{ tcTo=s }
 instance HasAvailable (TimeConstrain t) (Interval t) where
   available = lens tcAvailable $ \e s -> e{ tcAvailable=s }
 instance HasDur (TimeConstrain t) (Interval t) where
   dur = lens tcDuration $ \e s -> e{ tcDuration=s }
 
 
-type Event t = Interval t
--- data Event t
---   = Event
---   { eStart    :: t
---   , eDuration :: t
---   } deriving ( Show, Eq )
-
-instance ( Time t ) =>  HasLeftBound (Event t) t where
+instance ( Time t ) =>  HasLeftBound (Interval t) t where
   leftBound = lens inf $ \e s -> s ... sup e
-instance ( Time t ) => HasDur (Event t) t where
+instance ( Time t ) => HasDur (Interval t) t where
   dur = lens width $ \e s -> inf e ... (inf e + s)
 
 
 
-
-
-
-
-
--- |Изначально, для описания времени пользовался тип Int. Время отсчитывалось с 0, было линейным и совпадало с ячеками памяти.
--- К сожалению, этого недостаточно для описании вычислительного процесса с ветвлениями, по этому было принято решение
--- теги к описанию времени.
+-- | Изначально, для описания времени использовался тип Int. Время отсчитывалось с 0, было линейным
+-- и совпадало с адресами памяти команд. К сожалению, это никуда не годится в случае если:
+-- 1) В вычислительном процессе присутствуют циклы и ветвления.
+-- 2) Вычислитель может включаться, выключаться...
+-- По этому было принято решение добавить тег, идентифицирующий к какой ветку развития
+-- вычислительного процесса относится данная точка.
 data TaggedTime tag t
   = TaggedTime
-  { -- | Позволяет идентифицировать  ветку вычислительного процесса. Ветки образуютсяв следствии ветвления и циклов.
-    tag   :: Maybe tag
+  { tag   :: Maybe tag -- ^ Идентификатор ветки вычислительного процесса.
   , clock :: t
   } deriving ( Typeable )
 
@@ -133,33 +180,29 @@ instance ( Num t, Show tag, Eq tag ) => Num (TaggedTime tag t) where
 
 
 
+-- Функциональные блоки ---------------------------------------------
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
--- | Класс для функциональных блоков. Описывает все необходмые для работы компилятора свойства.
+-- | Класс функциональных блоков. Описывает все необходмые для работы компилятора свойства.
+-- TODO: Разбить на множество мелких классов, чтобы сократить описание функционального блока.
 class ( Typeable fb
       , Eq fb
       ) => FunctionalBlock fb v | fb -> v where
-  -- | Возвращает зависимости между аргументами функционального блока. Формат: (заблокированное, требуемое).
+  -- | Возвращает зависимости между аргументами функционального блока.
+  -- Формат: (заблокированное значение, блокирующее значение).
   dependency :: fb -> [(v, v)]
-  -- | Необходимость "выворачивания" функций при визуализации вычислительного процесса
-  -- (начинается вместе с циклом, потом преравыется и заканчивается с циклом).
+  -- | Необходимость "выворачивания" функций при визуализации вычислительного процесса.
+  -- Выглядит примерно так:
+  -- 1. Начинается вместе с вычислительным циклом.
+  -- 2. Прерывается.
+  -- 3. Возобнавляется и выполняется до конца вычислительного цикла.
   insideOut :: fb -> Bool
   insideOut _ = False
   -- | Информация для приоритизации функций в процессе диспетчеризации.
-  -- TODO: необходимо обобщить.
+  -- Критические функциональные блоки - блоки, жёстко блокирующие внутрении ресурсы PU. Такие блоки
+  -- следует привязывать одними из первых, так как в противном случае требуемые ресурс может быть
+  -- занят другим ФБ, а следовательно заблокировать процесс синтеза.
+  -- TODO: Необходимо обобщить.
   isCritical :: fb -> Bool
   isCritical _ = False
 
@@ -170,81 +213,124 @@ class WithFunctionalBlocks x io v | x -> io, x -> v where
 
 
 
+-- | Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
+data FB box v where
+  FB :: ( FunctionalBlock fb v
+        , Show fb
+        , Variables fb v
+        , IOType io v
+        ) => fb -> FB io v
+deriving instance ( Show v ) => Show (FB box v)
+
+instance ( IOType box v, Var v ) => FunctionalBlock (FB box v) v where
+  dependency (FB fb) = dependency fb
+  insideOut (FB fb) = insideOut fb
+  isCritical (FB fb) = isCritical fb
+
+instance Variables (FB Parcel v) v where
+  variables (FB fb) = variables fb
+
+instance Eq (FB box v) where
+  FB a == FB b = Just a == cast b
+
+instance ( Variables (FB box v) v, Var v ) => Ord (FB box v) where
+  a `compare` b = variables a `compare` variables b
 
 
 
+-- Описание вычислительного процесса --------------------------------
 
 
-
-
-
-type ProcessUid = Int
-
+-- | Описание многоуровневого вычислительного процесса PU. Подход к моделированию вдохновлён
+-- ISO 15926. Имеются следующие варианты использвоания:
+-- 1) Хранение многоуровневого описания вычислительного процесса отдельного PU (одного структурного
+--    элемента процессора).
+-- 2) Формирование многоуровневого описания вычислительного процесса для отдельного PU и входящих в
+--    его состав структурных элементов (Nested). К примеру: вычислительный процесс сети и
+--    подключённых к ней PU. (доступно через функцию process)
 data Process v t
   = Process
-    { tick      :: t
-    , nextUid   :: ProcessUid
-    , steps     :: [Step v t]
-    , relations :: [Relation]
+    { steps     :: [Step v t] -- ^ Список шагов вычислительного процесса.
+
+    , relations :: [Relation] -- ^ Список отношений между шагами вычислительного процесса
+                              --   (отношения описываются через "кортежи" из ProcessUid).
+    , nextTick  :: t          -- ^ Номер первого свободного такта.
+    , nextUid   :: ProcessUid -- ^ Следующий свободный идентификатор шага вычислительного процесса.
     }
 
-
 instance (Time t) => Default (Process v t) where
-  def = Process { tick=def
-                , nextUid=def
-                , steps=[]
-                , relations=[]
-                }
+  def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
 
+type ProcessUid = Int -- ^ Уникальный идентификатор шага вычислительного процесса.
 
-
+-- | Описание шага вычислительного процесса.
 data Step v t where
   Step ::
-    { sKey  :: ProcessUid
-    , sTime :: PlaceInTime t
-    , sDesc :: StepInfo v
+    { sKey  :: ProcessUid    -- ^ Уникальный идентификатор шага.
+    , sTime :: PlaceInTime t -- ^ Описание типа и положения шага во времени.
+    , sDesc :: StepInfo v    -- ^ Описание действия описываемого шага.
     } -> Step v t
 
+-- | Описание положения события во времени и типа события:
 data PlaceInTime t
-  = Event t
-  | Activity (Interval t)
+  = Event t -- ^ Мгновенные события, используются главным образом для описания событий САПР.
+  | Activity ( Interval t ) -- ^ Протяжённые во времени события. Используются замкнутые интервалы.
   deriving ( Show )
 
+-- | Описание события, соответсвующего шага вычислительного процесса. Каждый вариант соответствует
+-- соответствующему отдельному уровню организации вычислительного процесса.
 data StepInfo v where
+  -- | Решения, принятые на уровне САПР.
+  CADStep :: String -> StepInfo v
+  -- | Время работы над функциональным блоком функционального алгоритма.
   FBStep :: FB Parcel v -> StepInfo v
-  InfoStep :: String -> StepInfo v
+  -- | Описание взаимодействий отдельных PU (загрузка/выгрузка данных). Указывается с точки зрения
+  -- управления PU, а не с точки зрения загрузки шины.
   EffectStep :: Effect v -> StepInfo v
+  -- | Описание инструкций, выполняемых конкретным рассматриваемым PU. Список инструкций
+  -- определяется PU.
   InstructionStep :: ( Show (Instruction pu)
                      , Typeable (Instruction pu)
                      ) => Instruction pu -> StepInfo v
+
+  -- | Используется для описания вычислительного процесса вложенных структурных элементов.
+  -- Как правило не хранится в структурах данных, а генерируется автоматически по требованию при
+  -- помощи опроса вложенных структурных элементов.
   NestedStep :: ( Eq title, Show title, Ord title
                 ) => title -> StepInfo v -> StepInfo v
 
 deriving instance ( Var v, Time t ) => Show ( Process v t )
 deriving instance ( Var v, Time t ) => Show ( Step v t )
 instance ( Var v ) => Show (StepInfo v) where
+  show (CADStep s)                 = s
   show (FBStep (FB fb))            = show fb
-  show (InfoStep s)                = s
   show (EffectStep (Pull v))       = "V" ++ show v
   show (EffectStep (Push v))       = "A" ++ show v
   show (InstructionStep instr)     = show instr
   show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
 
 
+-- | Получить строку с название уровня указанного шага вычислительного процесса.
+level (CADStep _)         = "CAD"
 level (FBStep _)          = "Function block"
-level (InfoStep _)        = "Info"
 level (EffectStep _)      = "Effect"
 level (InstructionStep _) = "Instruction"
 level (NestedStep _ _)    = "Nested"
 
 
+-- | Описание отношений между шагами вычисительного процесса.
+data Relation
+  -- | Отношение между шагами вычислительного процесса разных уровней, в котором второй шаг получен
+  -- путём трансляции/детализации первого шага.
+  = Vertical ProcessUid ProcessUid
+  deriving (Show, Eq)
 
-data Relation = Vertical ProcessUid ProcessUid
-              deriving (Show, Eq)
 
 
+-- PU ---------------------------------------------------------------
 
 
+-- Модель поведения PU
 class PUType t where
   data Option t :: * -> * -> *
   data Action t :: * -> * -> *
@@ -262,7 +348,7 @@ instance PUType Passive where
   data Action Passive v t
     = EffectAct
     { eaEffect :: Effect v
-    , eaAt :: Event t
+    , eaAt :: Interval t
     }
 
 deriving instance ( Var v, Time t ) => Show (Option Passive v t)
@@ -272,6 +358,7 @@ instance ( Var v ) => Variables (Option Passive v t) v where
   variables EffectOpt{..} = variables eoEffect
 instance ( Var v ) => Variables (Action Passive v t) v where
   variables EffectAct{..} = variables eaEffect
+
 
 
 
@@ -287,8 +374,8 @@ instance PUType (Network title) where
   data Action (Network title) v t
     = TransportAct
     { taPullFrom :: title
-    , taPullAt   :: Event t
-    , taPush     :: M.Map v (Maybe (title, Event t))
+    , taPullAt   :: Interval t
+    , taPush     :: M.Map v (Maybe (title, Interval t))
     } -- deriving (Show)
 instance Variables (Option (Network title) v t) v where
   variables TransportOpt{..} = M.keys toPush
@@ -300,47 +387,8 @@ instance ( Show title, Time t, Var v ) => Show (Action (Network title) v t) wher
       foo (v, Just (title, event)) = Just (show v ++ "@" ++ show title ++ "#[" ++ show event ++ "]")
       foo _ = Nothing
 
-data Value = X | B Bool | Broken
-
-instance Show Value where
-  show X         = "x"
-  show (B True)  = "1"
-  show (B False) = "0"
-  show Broken    = "B"
-
-X +++ v = v
-v +++ X = v
-_ +++ _ = Broken
 
 
-
-
-data Effect v
-  = Push v
-  | Pull [v]
-  deriving ( Show, Eq, Ord )
--- deriving instance ( Variable v ) => Show (Effect v)
--- deriving instance ( Variable v ) => Eq (Effect v)
--- deriving instance ( Variable v ) => Ord (Effect v)
-
-instance ( Var v ) => Variables (Effect v) v where
-  variables (Push i) = [i]
-  variables (Pull o) = o
-
-
--- (Push a) `subset` (Push b) | a == b = True
--- (Pull a) `subset` (Pull b)
---   = let as = variables a
---         bs = variables b
---     in (length $ bs L.\\ as) == length as - length bs
--- _ `subset` _ = False
-
-(Push a) << (Push b) | a == b = True
-(Pull a) << (Pull b)          = all (`elem` a) b
-_        << _                 = False
-
-(Pull a) \\\ (Pull b) = Pull (a L.\\ b)
-_ \\\ _ = error "Only for Pulls"
 
 
 
@@ -355,60 +403,11 @@ class ( Typeable (Signals pu)
   process :: pu -> Process v t
   setTime :: t -> pu -> pu
 
-class ( Typeable pu ) => Controllable pu where
-  data Instruction pu :: *
-  data Signals pu :: *
-
-  -- идея конечно хороша и крассива, но на практике не реализуема, так как:
-  -- - исключает параллелизм инсрукций (что особенно актуально для Net.
-  -- signalValue :: Instruction pu -> Signals pu -> Value
-
-  proxy :: pu -> Proxy pu
-  proxy _ = Proxy
-
-
-class ByTime pu t | pu -> t where
-  signalAt :: pu -> Signals pu -> t -> Value
 
 
 
-gsignalAt pu (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
-                     in signalAt pu s'
-
-class ByInstruction pu where
-  signalFor :: Instruction pu -> Signals pu -> Value
-
-gsignalFor instr (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
-                         in signalFor instr s'
 
 
-
-class Simulatable pu v x | pu -> v, pu -> x where
-  varValue :: pu -> SimulationContext v x -> (v, x) -> x
-  variableValue :: FB Parcel v -> pu -> SimulationContext v x -> (v, x) -> x
-
-
-
-data S where
-  S :: ( Typeable (Signals pu), Ord (Signals pu), Show (Signals pu) ) => Signals pu -> S
-
-data GenericSignals
-  = Clk
-  | Data
-  | Value
-  | DataAttr
-  | ValueAttr
-  deriving (Show, Eq, Ord)
-
--- deriving instance Show (Signals pu) => Show (Link pu)
--- deriving instance Eq (Signals pu) => Eq (Link pu)
--- deriving instance Ord (Signals pu) => Ord (Link pu)
-
-
-class ( Typeable pu, Ord (Signals pu)) => Synthesis pu where
-  moduleInstance :: pu -> String -> [(String, String)] -> String
-  moduleName :: pu -> String
-  moduleDefinition :: pu -> String
 
 
 data PU ty v t where
@@ -440,64 +439,81 @@ instance ( PUClass Passive (PU Passive v t) v t
 
 
 
+
+
+
+
+
+-- Сигналы и инструкции ---------------------------------------------
+
+
+
+class ( Typeable pu ) => Controllable pu where
+  data Instruction pu :: *
+  data Signals pu :: *
+
+  -- идея конечно хороша и крассива, но на практике не реализуема, так как:
+  -- - исключает параллелизм инсрукций (что особенно актуально для Net.
+  -- signalValue :: Instruction pu -> Signals pu -> Value
+
+  proxy :: pu -> Proxy pu
+  proxy _ = Proxy
+
+
+
+data S where
+  S :: ( Typeable (Signals pu), Ord (Signals pu), Show (Signals pu) ) => Signals pu -> S
+
+
+
+class ByTime pu t | pu -> t where
+  signalAt :: pu -> Signals pu -> t -> Value
+
+
+
+gsignalAt pu (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
+                     in signalAt pu s'
+
+class ByInstruction pu where
+  signalFor :: Instruction pu -> Signals pu -> Value
+
+gsignalFor instr (S s) = let s' = fromMaybe (error "Wrong signal!") $ cast s
+                         in signalFor instr s'
+
+
+
+
+
+data Value = X | B Bool | Broken
+
+instance Show Value where
+  show X         = "x"
+  show (B True)  = "1"
+  show (B False) = "0"
+  show Broken    = "B"
+
+X +++ v = v
+v +++ X = v
+_ +++ _ = Broken
+
+
+
+
+
+
+-- Синтез и тестирование PU -----------------------------------------
+
+
+class Simulatable pu v x | pu -> v, pu -> x where
+  varValue :: pu -> SimulationContext v x -> (v, x) -> x
+  variableValue :: FB Parcel v -> pu -> SimulationContext v x -> (v, x) -> x
+
+
+
 type SimulationContext v x = M.Map (v, Int) x
 
-
-
-
-class IOTypeFamily io where
-  data I io :: * -> *
-  data O io :: * -> *
-
-class ( Show (I io v), Variables (I io v) v, Eq (I io v) -- , Ord (I io v)
-      , Show (O io v), Variables (O io v) v, Eq (O io v) -- , Ord (O io v)
-      , Typeable io, Var v
-      ) => IOType io v
-instance ( Show (I io v), Variables (I io v) v, Eq (I io v) -- , Ord (I io v)
-         , Show (O io v), Variables (O io v) v, Eq (O io v) -- , Ord (O io v)
-         , Typeable io, Var v
-         ) => IOType io v
-
-
-
-
-data Parcel = Parcel
-
-instance IOTypeFamily Parcel where
-  data I Parcel v = I v  -- Incoming Parcel
-    deriving (Show, Eq, Ord)
-  data O Parcel v = O [v]  -- Outgoing Parcel
-    deriving (Show, Eq, Ord)
-
-instance Variables (I Parcel v) v where
-  variables (I v) = [v]
-instance Variables (O Parcel v) v where
-  variables (O v) = v
-
-
-
-
-
-data FB box v where
-  FB :: ( FunctionalBlock fb v
-        , Show fb
-        , Variables fb v
-        , IOType io v
-        ) => fb -> FB io v
-
-instance ( IOType box v, Var v ) => FunctionalBlock (FB box v) v where
-  dependency (FB fb) = dependency fb
-  insideOut (FB fb) = insideOut fb
-  isCritical (FB fb) = isCritical fb
-
-deriving instance ( Show v ) => Show (FB box v)
-
-instance Variables (FB Parcel v) v where
-  variables (FB fb) = variables fb
-
-instance Eq (FB box v) where
-  FB a == FB b = Just a == cast b
-
-instance ( Variables (FB box v) v, Var v ) => Ord (FB box v) where
-  a `compare` b = variables a `compare` variables b
+class ( Typeable pu, Ord (Signals pu)) => Synthesis pu where
+  moduleInstance :: pu -> String -> [(String, String)] -> String
+  moduleName :: pu -> String
+  moduleDefinition :: pu -> String
 

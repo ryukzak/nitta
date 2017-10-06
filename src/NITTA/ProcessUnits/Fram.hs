@@ -178,7 +178,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
     | otherwise = Left $ "Unknown functional block: " ++ show fb
       where
         bind' mc =
-          let (key, p') = modifyProcess p $ bindFB fb tick
+          let (key, p') = modifyProcess p $ bindFB fb nextTick
               mc' = mc{ compiler=key : compiler mc }
           in ( mc', fr{ frProcess=p' } )
 
@@ -198,11 +198,11 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
         && ( null (remainRegs fr) || framSize - numberOfCellForReg > 1 )
       numberOfCellForReg = length $ filter (\Cell{..} -> output == UsedOrBlocked) $ elems frMemory
       constrain Cell{..} (Pull _)
-        | lastWrite == Just tick = TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)
-        | otherwise              = TimeConstrain (tick ... maxBound) (1 ... maxBound)
-      constrain _cell (Push _) = TimeConstrain (tick ... maxBound) (1 ... maxBound)
+        | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
+        | otherwise              = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
+      constrain _cell (Push _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
 
-  select fr@Fram{ frProcess=p0@Process{ tick=tick0 }, .. } act0@EffectAct{ eaAt=at, .. }
+  select fr@Fram{ frProcess=p0@Process{ nextTick=tick0 }, .. } act0@EffectAct{ eaAt=at, .. }
     | not $ tick0 <= inf at
     = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show (inf at)
 
@@ -223,7 +223,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
     = case cell of
         Cell{ input=Def mc@MicroCode{ actions=act : _ } } | act << eaEffect ->
             let (p', mc') = doAction addr p0 mc
-                cell' = updateLastWrite (tick p') cell
+                cell' = updateLastWrite (nextTick p') cell
                 cell'' = case mc' of
                   Nothing -> cell'{ input=UsedOrBlocked }
                   Just mc''@MicroCode{ actions=Pull _ : _ } -> cell'{ input=Def mc'' }
@@ -236,7 +236,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
                  }
         Cell{ current=Just mc@MicroCode{ actions=act : _ } } | act << eaEffect ->
             let (p', mc') = doAction addr p0 mc
-                cell' = updateLastWrite (tick p') cell
+                cell' = updateLastWrite (nextTick p') cell
                 cell'' = cell'{ input=UsedOrBlocked
                               , current=
                                   --trace (show mc ++  " --> " ++ show mc' ++ " @ " ++ show addr)
@@ -259,7 +259,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
         _ -> error "Internal Fram error, step"
 
     | otherwise = error $ "Can't found selected action: " ++ show act0
-                  ++ " tick: " ++ show (tick p0) ++ "\n"
+                  ++ " tick: " ++ show (nextTick p0) ++ "\n"
                   ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options fr)
                   ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
                   ++ "remains:\n" ++ concatMap ((++ "\n") . show) frRemains
@@ -306,7 +306,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
       act2Instruction addr (Push _) = Save addr
 
   process = sortPuSteps . frProcess
-  setTime t fr@Fram{..} = fr{ frProcess=frProcess{ tick=t } }
+  setTime t fr@Fram{..} = fr{ frProcess=frProcess{ nextTick=t } }
 
 
 instance Default (Instruction (Fram v t)) where
@@ -396,7 +396,7 @@ sortPuSteps p@Process{..} =
   in p{ steps=steps' }
 
 
-bindFB2Cell addr fb t = add (Event t) $ InfoStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
+bindFB2Cell addr fb t = add (Event t) $ CADStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
 
 
 cell2acts _allowOutput Cell{ input=Def MicroCode{ actions=x:_ } }    = [x]
@@ -454,7 +454,7 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
 
 
 testSignals fram@Fram{ frProcess=Process{..}, ..} _cntx
-  = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. tick + 1 ]
+  = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. nextTick + 1 ]
   where
     signalsAt time = map (\sig -> signalAt fram sig time)
                      [ OE, WR, ADDR 3, ADDR 2, ADDR 1, ADDR 0 ]
@@ -470,14 +470,14 @@ testSignals fram@Fram{ frProcess=Process{..}, ..} _cntx
 
 
 testInputs Fram{ frProcess=p@Process{..}, ..} cntx
-  = concatMap ( (++ " @(negedge clk);\n") . busState ) [ 0 .. tick + 1 ]
+  = concatMap ( (++ " @(negedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
   where
     busState t
       | Just (Push v) <- effectAt t p = "value_i <= " ++ show (cntx M.! (v, 0)) ++ ";"
       | otherwise = "/* NO INPUT */"
 
 testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
-  = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. tick + 1 ] ++ bankCheck
+  = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
   where
     busState t
       | Just (Pull (v : _)) <- effectAt t p

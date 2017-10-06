@@ -80,7 +80,7 @@ instance ( Title title, Var v, Time t
     in -- trace ("BusNetwork options: \n" ++ concatMap ((++"\n") . ("  "++) . show) x)
        x
     where
-      now = tick bnProcess
+      now = nextTick bnProcess
       fixPullConstrain tc@TimeConstrain{..} = tc{ tcAvailable=(max now $ inf tcAvailable) ... sup tcAvailable }
       pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
       pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
@@ -103,8 +103,8 @@ instance ( Title title, Var v, Time t
       puOptions = M.assocs $ M.map options bnPus
 
   select ni@BusNetwork{..} act@TransportAct{..}
-    | not $ tick bnProcess <= (inf taPullAt)
-    = error $ "BusNetwork wraping time! Time: " ++ show (tick bnProcess) ++ " Act start at: " ++ show (inf taPullAt)
+    | not $ nextTick bnProcess <= (inf taPullAt)
+    = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (inf taPullAt)
     | otherwise = ni
     { bnPus=foldl (\s n -> n s) bnPus steps
     , bnProcess=snd $ modifyProcess bnProcess $ do
@@ -113,7 +113,7 @@ instance ( Title title, Var v, Time t
                 (InstructionStep
                   $ (Transport v taPullFrom title :: Instruction (BusNetwork title (PU Passive v t) v t)))
               ) $ M.assocs push'
-        _ <- add (Activity $ transportStartAt ... transportEndAt) $ InfoStep $ show act --   $ Pull pullVars
+        _ <- add (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act --   $ Pull pullVars
         setProcessTime $ (sup taPullAt) + 1
     , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
@@ -163,7 +163,7 @@ instance ( Title title, Var v, Time t
                  Vertical a b -> Vertical (uids' M.! a) (uids' M.! b)
              ) subRelations
 
-  setTime t bn@BusNetwork{..} = bn{ bnProcess=bnProcess{ tick=t }
+  setTime t bn@BusNetwork{..} = bn{ bnProcess=bnProcess{ nextTick=t }
                                   , bnPus=M.map (setTime t) bnPus
                                   }
 
@@ -246,7 +246,7 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
                          Nothing  -> Just [fb]
                      ) puTitle bnBinded
   , bnProcess=snd $ modifyProcess p $
-      add (Event tick) $ InfoStep $ "Bind " ++ show fb ++ " to " ++ puTitle
+      add (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
   , bnRemains=filter (/= fb) bnRemains
   }
 
@@ -303,7 +303,7 @@ instance ( Time t, Var v
                   , ( "microCodeWidth", show $ snd (bounds bnWires) + 1 )
                   , ( "instances", S.join "\n\n" instances)
                   , ( "valueRegs", S.join "| \n" $ map (\(d, a) -> "    { " ++ d ++ ", " ++ a ++ " } ") valuesRegs )
-                  , ( "program_size", show $ fromEnum $ tick bnProcess )
+                  , ( "program_size", show $ fromEnum $ nextTick bnProcess )
                   ]
     where
       valueData t = t ++ "_value"
@@ -372,12 +372,12 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
         where
           -- первый элемент - nop по всем линиям. Устанавливается по умолчанию и говорит о том, что процессор не работает.
           -- далее в линейном виде идёт программный код.
-          ticks = [ -1 .. tick ]
+          ticks = [ -1 .. nextTick ]
           wires = map Wire $ reverse $ range $ bounds bnWires
           signalsAt t = map (\w -> signalAt bn w t) wires
 
       assertions pu@BusNetwork{ bnProcess=Process{..}, ..} cntx
-        = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. tick - 1 ]
+        = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick - 1 ]
         where
           p = process pu
           assert time

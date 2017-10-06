@@ -37,6 +37,7 @@ library
                      , lens
                      , arrows
                      , array
+                     , intervals
                      , aeson
                      , text
                      , QuickCheck

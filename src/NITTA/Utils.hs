@@ -63,14 +63,14 @@ relation r = do
 
 setProcessTime t = do
   p <- get
-  put p{ tick=t }
+  put p{ nextTick=t }
 
 processTime :: State (Process v t) t
 processTime = do
   Process{..} <- get
-  return tick
+  return nextTick
 
-bindFB fb t = add (Event t) $ InfoStep $ "Bind " ++ show fb
+bindFB fb t = add (Event t) $ CADStep $ "Bind " ++ show fb
 
 atSameTime a (Activity t) = a `I.elem` t
 atSameTime a (Event t)    = a == t
@@ -123,8 +123,8 @@ effectsAt t p = catMaybes $ map getEffect $ -- trace (">" ++ show (whatsHappen t
 
 
 
-isInfo (InfoStep _) = True
-isInfo _            = False
+isInfo (CADStep _) = True
+isInfo _           = False
 
 
 isInstruction (InstructionStep _) = True

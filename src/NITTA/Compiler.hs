@@ -62,7 +62,7 @@ timeSplitOptions ControlModel{..} availableVars
 
 splitProcess Fork{..} (Split _cond _is branchs)
   = let ControlModel{..} = controlModel
-        t = tick $ process net
+        t = nextTick $ process net
         f : fs = map (\SplitBranch{..} -> Fork
                        { net=setTime t{ tag=sTag } net
                        , controlModel=controlModel{ controlFlow=sControlFlow }
@@ -95,7 +95,7 @@ isOver Fork{..}
 
 naive !f@Forks{..}
   = let current'@Fork{ net=net' } = naive current
-        t = maximum $ map (tick . process . net) $ current' : completed
+        t = maximum $ map (nextTick . process . net) $ current' : completed
         parallelSteps = concatMap
           (\Fork{ net=n
                 , timeTag=forkTag

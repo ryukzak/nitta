@@ -39,11 +39,11 @@ class HasAt a b | a -> b where
 
 instance HasAt (Option (Network title) v t) (TimeConstrain t) where
   at = lens toPullAt $ \variant v -> variant{ toPullAt=v }
-instance HasAt (Action (Network title) v t) (Event t) where
+instance HasAt (Action (Network title) v t) (Interval t) where
   at = lens taPullAt $ \variant v -> variant{ taPullAt=v }
 instance HasAt (Option Passive v t) (TimeConstrain t) where
   at = lens eoAt $ \variant v -> variant{ eoAt=v }
-instance HasAt (Action Passive v t) (Event t) where
+instance HasAt (Action Passive v t) (Interval t) where
   at = lens eaAt $ \variant v -> variant{ eaAt=v }
 -- instance HasAt (Step v t) (Event t) where
 --   at = lens sTime $ \st v -> st{ sTime=v }
@@ -53,7 +53,7 @@ class HasTime a b | a -> b where
   time :: Lens' a b
 
 instance HasTime (Process v t) t where
-  time = lens tick $ \s v -> s{ tick=v }
+  time = lens nextTick $ \s v -> s{ nextTick=v }
 
 
 -- at = time?
@@ -151,8 +151,8 @@ instance ( SerialPUState st Parcel v t, Show st
                              }
               } act
   select pu@SerialPU{ spuCurrent=Just cur, .. } act
-   | not $ tick spuProcess <= act^.start
-   = error $ "Time wrap! Time: " ++ show (tick spuProcess) ++ " Act start at: " ++ show (act ^. start)
+   | not $ nextTick spuProcess <= act^.start
+   = error $ "Time wrap! Time: " ++ show (nextTick spuProcess) ++ " Act start at: " ++ show (act ^. start)
    | otherwise
     = let (spuState', work) = schedule spuState act
           (steps, spuProcess') = modifyProcess spuProcess work
@@ -174,7 +174,7 @@ instance ( SerialPUState st Parcel v t, Show st
         mapM_ (relation . Vertical h) cSteps
 
   process = spuProcess
-  setTime t pu@SerialPU{..} = pu{ spuProcess=spuProcess{ tick=t } }
+  setTime t pu@SerialPU{..} = pu{ spuProcess=spuProcess{ nextTick=t } }
 
 
 instance ( Var v, Time t
