@@ -12,7 +12,6 @@
 
 module NITTA.Types where
 
-import           Control.Lens      hiding ((...))
 import           Data.Default
 import qualified Data.List         as L
 import qualified Data.Map          as M
@@ -23,26 +22,14 @@ import           Numeric.Interval  hiding (elem)
 
 
 
-class HasLeftBound a b | a -> b where
-  leftBound :: Lens' a b
-
-class HasRightBound a b | a -> b where
-  rightBound :: Lens' a b
-
-class HasAvailable a b | a -> b where
-  available :: Lens' a b
-
-class HasDur a b | a -> b where
-  dur :: Lens' a b
-
-
-
--- Переменные и пересылаемые данные ---------------------------------
+---------------------------------------------------------------------
+-- * Переменные и пересылаемые данные
 
 
 -- | Класс идентификатора переменной.
 class ( Typeable v, Eq v, Ord v, Show v ) => Var v
 instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
+instance {-# OVERLAPS #-} Var String
 
 class Variables x v | x -> v where
   -- | Получить список идентификаторов связанных переменных.
@@ -56,8 +43,10 @@ class Variables x v | x -> v where
 -- - фактического (Parcel) описания пересылок (выход из f формирует значения а и b,
 --   значение a загружается в g, значение b загружается в h).
 class IOTypeFamily io where
-  data I io :: * -> * -- ^ Тип для описания загружаемого значения.
-  data O io :: * -> * -- ^ Тип для описания выгружаемого значения
+  -- | Тип для описания загружаемого значения.
+  data I io :: * -> *
+  -- | Тип для описания выгружаемого значения.
+  data O io :: * -> *
 
 class ( Show (I io v), Variables (I io v) v, Eq (I io v)
       , Show (O io v), Variables (O io v) v, Eq (O io v)
@@ -106,12 +95,18 @@ _ \\\ _ = error "Only for Pulls"
 
 
 
--- Время ------------------------------------------------------------
+---------------------------------------------------------------------
+-- * Время
 
 
 -- | Класс координаты во времени.
 class ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
 instance ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
+instance {-# OVERLAPS #-} Time Int
+instance {-# OVERLAPS #-} ( Default t, Typeable tag, Typeable t
+                          , Eq tag, Ord t, Num t, Bounded t, Enum t
+                          , Show tag, Show t
+                          ) => Time (TaggedTime tag t)
 
 -- | Описание временных ограничений на активности (Ativity). Используется при описании доступных
 -- опций для планирования вычислительного процесса.
@@ -120,17 +115,6 @@ data TimeConstrain t
   { tcAvailable :: Interval t -- ^ Замкнутый интервал, в рамках которого можно выполнить активность.
   , tcDuration  :: Interval t -- ^ Замкнутый интервал допустимой длительности активности.
   } deriving ( Show, Eq )
-
-instance HasAvailable (TimeConstrain t) (Interval t) where
-  available = lens tcAvailable $ \e s -> e{ tcAvailable=s }
-instance HasDur (TimeConstrain t) (Interval t) where
-  dur = lens tcDuration $ \e s -> e{ tcDuration=s }
-
-
-instance ( Time t ) =>  HasLeftBound (Interval t) t where
-  leftBound = lens inf $ \e s -> s ... sup e
-instance ( Time t ) => HasDur (Interval t) t where
-  dur = lens width $ \e s -> inf e ... (inf e + s)
 
 
 
@@ -180,7 +164,8 @@ instance ( Num t, Show tag, Eq tag ) => Num (TaggedTime tag t) where
 
 
 
--- Функциональные блоки ---------------------------------------------
+---------------------------------------------------------------------
+-- * Функциональные блоки
 
 
 -- | Класс функциональных блоков. Описывает все необходмые для работы компилятора свойства.
@@ -238,7 +223,8 @@ instance ( Variables (FB box v) v, Var v ) => Ord (FB box v) where
 
 
 
--- Описание вычислительного процесса --------------------------------
+---------------------------------------------------------------------
+-- * Описание вычислительного процесса
 
 
 -- | Описание многоуровневого вычислительного процесса PU. Подход к моделированию вдохновлён
@@ -327,7 +313,8 @@ data Relation
 
 
 
--- PU ---------------------------------------------------------------
+---------------------------------------------------------------------
+-- * Вычислительные блоки (PU)
 
 
 -- Модель поведения PU
@@ -438,14 +425,8 @@ instance ( PUClass Passive (PU Passive v t) v t
 
 
 
-
-
-
-
-
-
--- Сигналы и инструкции ---------------------------------------------
-
+---------------------------------------------------------------------
+-- * Сигналы и инструкции
 
 
 class ( Typeable pu ) => Controllable pu where
@@ -501,7 +482,8 @@ _ +++ _ = Broken
 
 
 
--- Синтез и тестирование PU -----------------------------------------
+---------------------------------------------------------------------
+-- * Синтез и тестирование вычислительных блоков
 
 
 class Simulatable pu v x | pu -> v, pu -> x where
@@ -516,4 +498,3 @@ class ( Typeable pu, Ord (Signals pu)) => Synthesis pu where
   moduleInstance :: pu -> String -> [(String, String)] -> String
   moduleName :: pu -> String
   moduleDefinition :: pu -> String
-

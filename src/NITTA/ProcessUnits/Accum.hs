@@ -23,6 +23,7 @@ import qualified Data.Map             as M
 import           Data.Maybe
 import           Data.Typeable
 import           NITTA.FunctionBlocks
+import           NITTA.Lens
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
@@ -30,61 +31,6 @@ import           Numeric.Interval     (Interval, inf, singleton, sup, width,
                                        (...))
 
 import           Debug.Trace
-
-
--- Lens -------------------------------------------------------------------
-
-class HasAt a b | a -> b where
-  at :: Lens' a b
-
-instance HasAt (Option (Network title) v t) (TimeConstrain t) where
-  at = lens toPullAt $ \variant v -> variant{ toPullAt=v }
-instance HasAt (Action (Network title) v t) (Interval t) where
-  at = lens taPullAt $ \variant v -> variant{ taPullAt=v }
-instance HasAt (Option Passive v t) (TimeConstrain t) where
-  at = lens eoAt $ \variant v -> variant{ eoAt=v }
-instance HasAt (Action Passive v t) (Interval t) where
-  at = lens eaAt $ \variant v -> variant{ eaAt=v }
--- instance HasAt (Step v t) (Event t) where
---   at = lens sTime $ \st v -> st{ sTime=v }
-
-
-class HasTime a b | a -> b where
-  time :: Lens' a b
-
-instance HasTime (Process v t) t where
-  time = lens nextTick $ \s v -> s{ nextTick=v }
-
-
--- at = time?
-
--- instance ( Time t ) => HasDur (Step v t) t where
---   dur = lens (width . sTime) undefined  -- $ \st v -> st{ sTime=st & sTime & dur .~ v }
-instance ( Time t ) => HasDur (Action Passive v t) t where
-  dur = at . dur
-
-
-
-class HasStart a b | a -> b where
-  start :: Lens' a b
-
--- instance HasStart (Event t) t where
---   start = lens eStart $ \e s -> e{ eStart=s }
-instance HasStart (CurrentJob io v t) t where
-  start = lens cStart $ \c s -> c{ cStart=s }
--- instance HasStart (Step v t) t where
---   start = lens (inf . sTime) undefined -- \st v -> st{ sTime=st & sTime & leftBound .~ v }
-instance HasStart (Action Passive v t) t where
-  -- start = at . to inf
-  start = lens (inf . eaAt) undefined --  \s v -> s{ eaAt=(eaAt s) & start .~ v }
-
-
-
-class HasEffect a b | a -> b where
-  effect :: Lens' a b
-
-instance HasEffect (Action Passive v t) (Effect v) where
-  effect = lens eaEffect $ \s v -> s{ eaEffect=v }
 
 
 -- Wrapper -------------------------------------------------------------------

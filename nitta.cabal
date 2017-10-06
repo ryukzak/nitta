@@ -25,6 +25,7 @@ library
                      , NITTA.Flows
                      , NITTA.ProcessUnits.Fram
                      , NITTA.ProcessUnits.Accum
+                     , NITTA.Lens
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , process

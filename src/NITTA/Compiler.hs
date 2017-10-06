@@ -24,6 +24,7 @@ import qualified Data.Map         as M
 import           Data.Maybe       (catMaybes, isJust)
 import           NITTA.BusNetwork
 import           NITTA.Flows
+import           NITTA.Lens
 import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval (inf, singleton, sup, (...))
