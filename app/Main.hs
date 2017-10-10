@@ -99,30 +99,30 @@ net0 = busNetwork
   , ("fram2", fram)
   , ("accum", accum)
   ]
-  $ array (0, 19) [ (19, [("accum", S $ (A.NEG  :: Signals (A.Accum String T)))])
-                  , (18, [("accum", S $ (A.LOAD :: Signals (A.Accum String T)))])
-                  , (17, [("accum", S $ (A.INIT :: Signals (A.Accum String T)))])
-                  , (16, [("accum", S $ (A.OE   :: Signals (A.Accum String T)))])
+  $ array (0, 19) [ (19, [("accum", S $ (A.NEG  :: Signal (A.Accum String T)))])
+                  , (18, [("accum", S $ (A.LOAD :: Signal (A.Accum String T)))])
+                  , (17, [("accum", S $ (A.INIT :: Signal (A.Accum String T)))])
+                  , (16, [("accum", S $ (A.OE   :: Signal (A.Accum String T)))])
 
-                  , (15, [("fram1", S $ (OE :: Signals (Fram String T)))])
-                  , (14, [("fram1", S $ (WR :: Signals (Fram String T)))])
+                  , (15, [("fram1", S $ (OE :: Signal (Fram String T)))])
+                  , (14, [("fram1", S $ (WR :: Signal (Fram String T)))])
                   , (13, [])
                   , (12, [])
 
-                  , (11, [("fram1", S $ (ADDR 3 :: Signals (Fram String T)))])
-                  , (10, [("fram1", S $ (ADDR 2 :: Signals (Fram String T)))])
-                  , ( 9, [("fram1", S $ (ADDR 1 :: Signals (Fram String T)))])
-                  , ( 8, [("fram1", S $ (ADDR 0 :: Signals (Fram String T)))])
+                  , (11, [("fram1", S $ (ADDR 3 :: Signal (Fram String T)))])
+                  , (10, [("fram1", S $ (ADDR 2 :: Signal (Fram String T)))])
+                  , ( 9, [("fram1", S $ (ADDR 1 :: Signal (Fram String T)))])
+                  , ( 8, [("fram1", S $ (ADDR 0 :: Signal (Fram String T)))])
 
-                  , ( 7, [("fram2", S $ (OE :: Signals (Fram String T)))])
-                  , ( 6, [("fram2", S $ (WR :: Signals (Fram String T)))])
+                  , ( 7, [("fram2", S $ (OE :: Signal (Fram String T)))])
+                  , ( 6, [("fram2", S $ (WR :: Signal (Fram String T)))])
                   , ( 5, [])
                   , ( 4, [])
 
-                  , ( 3, [("fram2", S $ (ADDR 3 :: Signals (Fram String T)))])
-                  , ( 2, [("fram2", S $ (ADDR 2 :: Signals (Fram String T)))])
-                  , ( 1, [("fram2", S $ (ADDR 1 :: Signals (Fram String T)))])
-                  , ( 0, [("fram2", S $ (ADDR 0 :: Signals (Fram String T)))])
+                  , ( 3, [("fram2", S $ (ADDR 3 :: Signal (Fram String T)))])
+                  , ( 2, [("fram2", S $ (ADDR 2 :: Signal (Fram String T)))])
+                  , ( 1, [("fram2", S $ (ADDR 1 :: Signal (Fram String T)))])
+                  , ( 0, [("fram2", S $ (ADDR 0 :: Signal (Fram String T)))])
                   ]
 
 

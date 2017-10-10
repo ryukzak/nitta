@@ -14,7 +14,7 @@
 
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
-  , Signals(..)
+  , Signal(..)
   , framSize
   )
 where
@@ -318,7 +318,7 @@ instance Default (Instruction (Fram v t)) where
 
 instance ( Var v, Time t ) => Controllable (Fram v t) where
 
-  data Signals (Fram v t)
+  data Signal (Fram v t)
     = OE
     | WR
     | ADDR Int
@@ -330,25 +330,31 @@ instance ( Var v, Time t ) => Controllable (Fram v t) where
     | Save Int
     deriving (Show)
 
-instance ( Var v, Time t ) => ByTime (Fram v t) t where
-  signalAt Fram{..} sig time =
-    let instruction = case catMaybes $ map (getInstruction (Proxy :: Proxy (Fram v t)))
-                           $ whatsHappen time frProcess of
-          [] -> Nop
-          [i] -> i
-          is -> error $ "Ambiguously instruction at "
-                      ++ show time ++ ": " ++ show is
-    in signalFor instruction sig
 
-instance ( Var v, Time t ) => ByInstruction (Fram v t) where
-  signalFor  Nop        (ADDR _) = X
-  signalFor  Nop         _       = B False
-  signalFor (Load addr) (ADDR b) = B $ testBit addr b
-  signalFor (Load    _)  OE      = B True
-  signalFor (Load    _)  WR      = B False
-  signalFor (Save addr) (ADDR b) = B $ testBit addr b
-  signalFor (Save    _)  OE      = B False
-  signalFor (Save    _)  WR      = B True
+
+instance ( Var v, Time t
+         ) => ByTime (Fram v t) t where
+  signalAt pu@Fram{..} time sig =
+    let instruction = case catMaybes $ map (extractInstruction pu)
+                           $ whatsHappen time frProcess of
+          []  -> Nop
+          [i] -> i
+          is  -> error $ "Ambiguously instruction at "
+                       ++ show time ++ ": " ++ show is
+    in decodeInstruction instruction sig
+
+
+instance UnambiguouslyDecode (Fram v t) where
+  decodeInstruction  Nop        (ADDR _) = X
+  decodeInstruction  Nop         _       = B False
+  decodeInstruction (Load addr) (ADDR b) = B $ testBit addr b
+  decodeInstruction (Load    _)  OE      = B True
+  decodeInstruction (Load    _)  WR      = B False
+  decodeInstruction (Save addr) (ADDR b) = B $ testBit addr b
+  decodeInstruction (Save    _)  OE      = B False
+  decodeInstruction (Save    _)  WR      = B True
+
+
 
 
 
@@ -423,15 +429,15 @@ availableCell fr@Fram{..} mc@MicroCode{..} =
 
 instance TestBenchRun (Fram v t) where
   buildArgs _ = [ "hdl/dpu_fram.v"
-                , "hdl/dpu_fram.tb.v"
+                , "hdl/dpu_fram_tb.v"
                 ]
 
 instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
 
   components _ =
-    [ ( "hdl/dpu_fram_inputs.v", testInputs )
-    , ( "hdl/dpu_fram_signals.v", testSignals )
-    , ( "hdl/dpu_fram_outputs.v", testOutputs )
+    [ ( "hdl/gen/dpu_fram_inputs.v", testInputs )
+    , ( "hdl/gen/dpu_fram_signals.v", testSignals )
+    , ( "hdl/gen/dpu_fram_outputs.v", testOutputs )
     ]
 
   simulateContext fr@Fram{ frProcess=p@Process{..}, .. } cntx =
@@ -451,7 +457,7 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
 testSignals fram@Fram{ frProcess=Process{..}, ..} _cntx
   = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. nextTick + 1 ]
   where
-    signalsAt time = map (\sig -> signalAt fram sig time)
+    signalsAt time = map (signalAt fram time)
                      [ OE, WR, ADDR 3, ADDR 2, ADDR 1, ADDR 0 ]
     showSignals = (\[oe, wr, a3, a2, a1, a0] ->
                       "oe <= 'b" ++ oe
@@ -523,12 +529,12 @@ findAddress v pu@Fram{ frProcess=p@Process{..} }
     ] <- filter ( \st -> isEffect (sDesc st)
                          && (\Step{ sDesc=EffectStep eff } -> v `elem` variables eff) st
                 ) steps
-  , instructions <- catMaybes $ map (getInstruction (proxy pu)) $ whatsHappen (inf timePlace) p
+  , instructions <- catMaybes $ map (extractInstruction pu) $ whatsHappen (inf timePlace) p
   , is <- catMaybes $ map (\i -> case i of
                   Load addr -> Just addr
                   Save addr -> Just addr
                   _         -> Nothing
-        ) $ trace ("--" ++ show timePlace ++ " " ++ show instructions)instructions
+        ) instructions
   = if length is == 1 then head is
                       else err
   | otherwise = err

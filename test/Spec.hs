@@ -21,11 +21,41 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Test.QuickCheck
 
-qc g = quickCheckWith stdArgs{ maxSuccess=10 } g
+import           System.Environment
+import           Test.Tasty
+import           Test.Tasty.QuickCheck       as QC
+
+
 
 main = do
-  qc (prop_formalCompletness . bindAllAndNaiveSelects :: FramIdealDataFlow -> Bool)
-  qc (prop_formalCompletness . framDataFlow :: FramDataFlow -> Bool)
+  setEnv "TASTY_QUICKCHECK_TESTS" "5"
+  -- TODO: Это не порядок. Необходимо: 1) распараллелить, 2) в ram fs положить.
+  setEnv "TASTY_NUM_THREADS" "1"
+  defaultMain tests
 
-  qc (prop_simulation . bindAllAndNaiveSelects :: FramIdealDataFlow -> Property)
-  qc (prop_simulation . framDataFlow :: FramDataFlow -> Property)
+tests = testGroup "Tests" [properties]
+
+properties :: TestTree
+properties = testGroup "Properties" [qcProps]
+
+
+qcProps = testGroup "FRAM check"
+  [ QC.testProperty "Сompleteness with a maximum load"
+    (prop_formalCompletness . bindAllAndNaiveSelects :: FramIdealDataFlow -> Bool)
+  , QC.testProperty "Сompleteness with a partial load"
+    (prop_formalCompletness . framDataFlow :: FramDataFlow -> Bool)
+  , QC.testProperty "Simulation with a maximum load"
+    (prop_simulation . bindAllAndNaiveSelects :: FramIdealDataFlow -> Property)
+  , QC.testProperty "Simulation with a partial load"
+    (prop_simulation . framDataFlow :: FramDataFlow -> Property)
+  ]
+
+-- unitTests = testGroup "Unit tests"
+--   [ testCase "List comparison (different length)" $
+--       [1, 2, 3] `compare` [1,2] @?= GT
+
+--   -- the following test does not hold
+--   , testCase "List comparison (same length)" $
+--       [1, 2, 3] `compare` [1,2,2] @?= LT
+--   ]
+

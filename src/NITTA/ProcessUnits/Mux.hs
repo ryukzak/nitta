@@ -58,7 +58,7 @@ muxSize = 16 :: Int
 
 instance ( Var v, Time t ) => PUClass MuxPu Passive v t where
 
-  data Signals MuxPu
+  data Signal MuxPu
     = LOAD
     | SEL
     | MODE Int

@@ -123,16 +123,7 @@ instance ( SerialPUState st Parcel v t, Show st
   setTime t pu@SerialPU{..} = pu{ spuProcess=spuProcess{ nextTick=t } }
 
 
-instance ( Var v, Time t
-         , ByInstruction (SerialPU st Parcel v t)
-         , Default (Instruction (SerialPU st Parcel v t))
-         , Controllable (SerialPU st Parcel v t)
-         ) => ByTime (SerialPU st Parcel v t) t where
-  signalAt pu@SerialPU{..} sig t
-    = let instr = case instructionAt (proxy pu) t spuProcess of
-                    Just i  -> i
-                    Nothing -> def
-      in signalFor instr sig
+
 
 
 
@@ -180,8 +171,11 @@ instance ( Var v, Time t
 
 
 
-instance ( Var v, Time t ) => Controllable (Accum v t) where
-  data Signals (Accum v t) = OE | INIT | LOAD | NEG deriving ( Show, Eq, Ord )
+
+
+instance ( Var v, Time t
+         ) => Controllable (Accum v t) where
+  data Signal (Accum v t) = OE | INIT | LOAD | NEG deriving ( Show, Eq, Ord )
   data Instruction (Accum v t)
     = Nop
     | Init Bool
@@ -189,28 +183,46 @@ instance ( Var v, Time t ) => Controllable (Accum v t) where
     | Out
     deriving (Show)
 
+instance ( Var v, Time t
+         , Default (Instruction (SerialPU st Parcel v t))
+         , Show (Instruction (SerialPU st Parcel v t))
+         , Controllable (SerialPU st Parcel v t)
+         , SerialPUState st Parcel v t
+         , UnambiguouslyDecode (SerialPU st Parcel v t)
+         , Show st
+         ) => ByTime (SerialPU st Parcel v t) t where
+  signalAt pu@SerialPU{..} t sig
+    = let instr = case extractInstructionAt pu t of
+                    Just i  -> i
+                    Nothing -> def
+      in decodeInstruction instr sig
+
+
+instance UnambiguouslyDecode (Accum v t) where
+  decodeInstruction  Nop     NEG  = X
+  decodeInstruction  Nop     _    = B False
+
+  decodeInstruction (Init _) INIT = B True
+  decodeInstruction (Init _) LOAD = B True
+  decodeInstruction (Init _) OE   = B False
+  decodeInstruction (Init n) NEG  = B n
+
+  decodeInstruction (Load _) INIT = B False
+  decodeInstruction (Load _) LOAD = B True
+  decodeInstruction (Load _) OE   = B False
+  decodeInstruction (Load n) NEG  = B n
+
+
+  decodeInstruction  Out     INIT = B False
+  decodeInstruction  Out     LOAD = B False
+  decodeInstruction  Out     OE   = B True
+  decodeInstruction  Out     NEG  = X
+
+
 instance ( Controllable (Accum v t) ) => Default (Instruction (Accum v t)) where
   def = Nop
 
-instance ( Var v, Time t ) => ByInstruction (Accum v t) where
-  signalFor  Nop     NEG  = X
-  signalFor  Nop     _    = B False
-
-  signalFor (Init _) INIT = B True
-  signalFor (Init _) LOAD = B True
-  signalFor (Init _) OE   = B False
-  signalFor (Init n) NEG  = B n
-
-  signalFor (Load _) INIT = B False
-  signalFor (Load _) LOAD = B True
-  signalFor (Load _) OE   = B False
-  signalFor (Load n) NEG  = B n
-
-
-  signalFor  Out     INIT = B False
-  signalFor  Out     LOAD = B False
-  signalFor  Out     OE   = B True
-  signalFor  Out     NEG  = X
+-- instance ( Var v, Time t ) => ByInstruction (Accum v t) where
 
 instance ( PUClass Passive (Accum v t) v t
          , Time t

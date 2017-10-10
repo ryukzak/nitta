@@ -137,7 +137,7 @@ instance ( Title title, Var v, Time t
     transportKey = M.fromList
       [ (v, sKey st)
       | st <- steps bnProcess
-      , let instr = getInstruction (proxy pu) st
+      , let instr = extractInstruction pu st
       , isJust instr
       , let (Just (Transport v _ _)) = instr
       ]
@@ -169,7 +169,6 @@ instance ( Title title, Var v, Time t
 
 
 
-
 -- Сигналы - есть у всех управляемых ПУ.
 
 
@@ -182,17 +181,20 @@ instance ( Title title, Var v, Time t
     = Transport v title title
     deriving (Typeable, Show)
 
-  data Signals (BusNetwork title (PU Passive v t) v t) = Wire Int
+  data Signal (BusNetwork title (PU Passive v t) v t) = Wire Int
     deriving (Show, Eq, Ord)
 
 
 
 instance ( Title title, Var v, Time t
          ) => ByTime (BusNetwork title (PU Passive v t) v t) t where
-  signalAt BusNetwork{..} (Wire i) t = foldl (+++) X $ map (uncurry subSignal) $ bnWires ! i
+  signalAt BusNetwork{..} t (Wire i) = foldl (+++) X $ map (uncurry subSignal) $ bnWires ! i
     where
-      subSignal puTitle s = case bnPus M.! puTitle of
-        PU pu' -> gsignalAt pu' s t
+      subSignal puTitle s = case (bnPus M.! puTitle, s) of
+        (PU pu', S s')
+          | Just s'' <- cast s'
+          -> signalAt pu' t s''
+          | otherwise -> error "Wrong signal!"
 
 
 
@@ -205,7 +207,7 @@ instance ( PUClass (Network title) (BusNetwork title (PU Passive v t) v t) v t
   variableValue _fb bn@BusNetwork{..} cntx vi@(v, _) =
     let [Transport _ src _] =
           filter (\(Transport v' _ _) -> v == v')
-          $ catMaybes $ map (getInstruction $ proxy bn)
+          $ catMaybes $ map (extractInstruction bn)
           $ steps bnProcess
     in variableValueWithoutFB (bnPus M.! src) cntx vi
 
@@ -255,7 +257,7 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
 --------------------------------------------------------------------------
 
 instance ( Time t, Var v
-         , Ord (Signals (BusNetwork String (PU Passive v t) v t))
+         , Ord (Signal (BusNetwork String (PU Passive v t) v t))
          ) => Synthesis (BusNetwork String (PU Passive v t) v t) where
   moduleName BusNetwork{..} = (S.join "_" $ M.keys bnPus) ++ "_net"
 
@@ -318,8 +320,8 @@ instance ( Time t, Var v
               insts' = inst : (regInstance title) : insts
               regs' = (valueData title, valueAttr title) : regs
           in renderInstance insts' regs' xs
-      cntx :: ( Typeable pu, Show (Signals pu)
-              ) => String -> pu -> Proxy (Signals pu) -> [(String, String)]
+      cntx :: ( Typeable pu, Show (Signal pu)
+              ) => String -> pu -> Proxy (Signal pu) -> [(String, String)]
       cntx title spu p
         = [ ( "Clk", "pu_clk" )
           , ( "Data", "data_bus" )
@@ -371,7 +373,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
           -- далее в линейном виде идёт программный код.
           ticks = [ -1 .. nextTick ]
           wires = map Wire $ reverse $ range $ bounds bnWires
-          signalsAt t = map (\w -> signalAt bn w t) wires
+          signalsAt t = map (signalAt bn t) wires
 
       assertions pu@BusNetwork{ bnProcess=Process{..}, ..} cntx
         = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick - 1 ]
@@ -394,12 +396,12 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
           show' s = filter (/= '\"') $ show s
 
   simulateContext bn@BusNetwork{..} cntx =
-    let transports = getInstructions (proxy bn) bnProcess
+    let transports = extractInstructions bn
 
     in foldl ( \cntx' (Transport v src _dst) -> trace ("> " ++ show v ++ "@" ++ show src ++ " " ++ show cntx') $
                                                 M.insert
                 (v, 0)
                 (variableValueWithoutFB (bnPus M.! src) cntx' (v, 0))
                 cntx'
-             ) cntx $ trace (">>>>" ++ concatMap ((++ "\n") . show) (steps bnProcess))
+             ) cntx -- $ trace (">>>>" ++ concatMap ((++ "\n") . show) (steps bnProcess))
              transports

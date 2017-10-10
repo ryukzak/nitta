@@ -96,7 +96,7 @@ naiveGen' pu df passedDF = do
           let pu' =
                 -- trace ("step: " ++ show opts' ++ " vs: " ++ show vs
                        -- ++ " tick: " ++ show (tick $ process pu)) $
-                  select pu $ C.effectVar2act opt'
+                  select pu $ C.effectOpt2act opt'
           naiveGen' pu' df passedDF
     1 | not $ null df -> do
           i <- choose (0, length df - 1)

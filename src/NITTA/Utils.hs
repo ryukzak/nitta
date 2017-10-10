@@ -130,31 +130,26 @@ isInfo _           = False
 isInstruction (InstructionStep _) = True
 isInstruction _                   = False
 
-getInstruction :: ( Typeable pu ) => Proxy pu -> Step v t -> Maybe (Instruction pu)
-getInstruction _ Step{ sDesc=InstructionStep instr } = cast instr
-getInstruction _ _                                   = Nothing
-
-getInstructions proxy' p = catMaybes $ map (getInstruction $ proxy')
-                           $ sortBy (\a b -> stepStart a `compare` stepStart b)
-                           $ steps p
-
-instructionAt proxy t p
-  | [instr] <- catMaybes $ map (getInstruction proxy) $ whatsHappen t p
-  = Just instr
-  | otherwise = Nothing
 
 
--- instance ( PUClass ty pu v t
---          , ByInstruction pu
---          , Default (Instruction pu)
---          , Controllable pu
---          , Var v, Time t
---          ) => ByTime pu t where
---   signalAt pu sig t
---     = let instr = case instructionAt (proxy pu) t (process pu) of
---                     Just i  -> i
---                     Nothing -> def
---       in signalFor instr sig
+extractInstruction :: ( Typeable pu ) => pu -> Step v t -> Maybe (Instruction pu)
+extractInstruction _ Step{ sDesc=InstructionStep instr } = cast instr
+extractInstruction _ _                                   = Nothing
+
+
+extractInstructionAt pu t
+  = let p = process pu
+        is = catMaybes $ map (extractInstruction pu) $ whatsHappen t p
+    in case is of
+      []  -> Nothing
+      [i] -> Just i
+      _   -> error $ "Too many instruction on tick " ++ show is
+
+
+extractInstructions pu = catMaybes $ map (extractInstruction pu)
+                                   $ sortBy (\a b -> stepStart a `compare` stepStart b)
+                                   $ steps $ process pu
+
 
 
 inputsOfFBs fbs
@@ -191,7 +186,8 @@ renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
 
 variableValueWithoutFB pu cntx vi@(v, _)
   | [fb] <- filter (elem v . (\(FB fb) -> variables fb)) fbs
-  = variableValue (trace (">>> " ++ show vi ++ " " ++ show fb ++ " " ++ show cntx) fb) pu cntx vi
+  = variableValue fb pu cntx vi
+  -- = variableValue (trace (">>> " ++ show vi ++ " " ++ show fb ++ " " ++ show cntx) fb) pu cntx vi
   | otherwise = error $ "can't find varValue for: " ++ show v ++ " "
                 ++ show cntx ++ " "
                 ++ show fbs

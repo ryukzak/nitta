@@ -64,7 +64,7 @@ testBench pu values = do
 
 runTestBench pu = do
   let args = L.nub $ buildArgs pu
-  putStrLn $ "iverilog " ++ show args
+  -- putStrLn $ "iverilog " ++ show args
   (compileExitCode, compileOut, compileErr) <-
     readProcessWithExitCode "iverilog" args []
   when (compileExitCode /= ExitSuccess) $ do
@@ -75,8 +75,8 @@ runTestBench pu = do
   (ExitSuccess, simOut, simErr) <- readProcessWithExitCode "./a.out" [] []
   -- Yep, we can't stop simulation with bad ExitCode...
   -- when ("FAIL" `isSubsequenceOf` simOut) $ do
-  putStrLn $ "stdout:\n" ++ simOut
-  putStrLn $ "stderr:\n" ++ simErr
+  -- putStrLn $ "stdout:\n" ++ simOut
+  -- putStrLn $ "stderr:\n" ++ simErr
     -- die "Simulation failed!"
 
   return $ not ("FAIL" `isSubsequenceOf` simOut)

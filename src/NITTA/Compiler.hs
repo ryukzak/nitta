@@ -15,6 +15,7 @@ module NITTA.Compiler
   ( naive
   , bindAll
   , bindAllAndNaiveSelects
+  , effectOpt2act
   )
 where
 
@@ -45,8 +46,10 @@ bindAllAndNaiveSelects pu0 alg = naive' $ bindAll pu0 alg
           --   $ trace (concatMap ((++ "\n") . show) $ elems $ frMemory pu)
           $ select pu $ effectOpt2act var
       | otherwise = pu
-    effectOpt2act EffectOpt{..} = EffectAct eoEffect
-      ((eoAt^.available.to inf) ... (eoAt^.available.to inf + eoAt^.dur.to inf))
+
+
+effectOpt2act EffectOpt{..} = EffectAct eoEffect
+  ((eoAt^.available.to inf) ... (eoAt^.available.to inf + eoAt^.dur.to inf))
 
 -- manualSteps pu acts = foldl (\pu' act -> step pu' act) pu acts
 
