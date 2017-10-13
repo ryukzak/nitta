@@ -47,53 +47,6 @@ fram = PU (def :: Fram String T)
 accum = PU (def :: A.Accum String T)
 
 
-instance ( Time t, Var v ) => Synthesis (Fram v t) where
-  moduleInstance pu name cntx
-    = render $ setManyAttrib (("name", name) : cntx) $ newSTMP $ unlines
-      [ "dpu_fram $name$ ("
-      , "    .dp_clk( $Clk$ ),"
-      , "    .dp_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } ),"
-      , ""
-      , "    .dp_wr( $WR$ ),"
-      , "    .dp_data( $Data$ ),"
-      , "    .dp_attr_i( $DataAttr$ ),"
-      , ""
-      , "    .dp_oe( $OE$ ),"
-      , "    .dp_value( $Value$ ),"
-      , "    .dp_attr_o( $ValueAttr$ ) "
-      , ");"
-      , "integer $name$_i;"
-      , "initial for ( $name$_i = 0; $name$_i < 16; $name$_i = $name$_i + 1) $name$.bank[$name$_i] <= 32'h1000 + $name$_i;"
-      ]
-  moduleName _ = "dpu_fram"
-  moduleDefinition = undefined
-
-
-
-instance ( Time t, Var v ) => Synthesis (A.Accum v t) where
-  moduleInstance pu name cntx
-    = render $ setManyAttrib (("name", name) : cntx) $ newSTMP $ unlines
-    [ "dpu_accum $name$ ("
-    , "    .dp_clk( $Clk$ ),"
-    , ""
-    , "    .dp_init( $INIT$ ),"
-    , "    .dp_load( $LOAD$ ),"
-    , "    .dp_neg( $NEG$ ),"
-    , "    .dp_data( $Data$ ),"
-    , "    .dp_attr( $DataAttr$ ),"
-    , ""
-    , "    .dp_oe( $OE$ ),"
-    , "    .dp_value( $Value$ ),"
-    , "    .dp_vattr( $ValueAttr$ )"
-    , ");"
-    , "initial $name$.acc <= 0;"
-    ]
-  moduleName _ = "dpu_accum"
-  moduleDefinition = undefined
-
-
-
-
 net0 = busNetwork
   [ ("fram1", fram)
   , ("fram2", fram)

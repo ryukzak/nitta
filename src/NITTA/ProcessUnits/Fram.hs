@@ -19,8 +19,9 @@ module NITTA.ProcessUnits.Fram
   )
 where
 
-
-  -- Как при ветвящемся алгоритме сделать локальный для if statementa Loop? Вероятно, некоторые FB необходимо запретить к ращмещению в тегированном времени.
+-- Как при ветвящемся алгоритме сделать локальный для if statementa Loop? Вероятно, некоторые FB
+-- необходимо запретить к ращмещению в тегированном времени. Это не повредит производительности,
+-- так как переиспользования вычислительного блока в таком случае быть не может!
 import           Data.Array
 import           Data.Bits
 import           Data.Default
@@ -39,6 +40,7 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval      (inf, singleton, sup, (...))
 import           Prelude               hiding (last)
+import           Text.StringTemplate
 
 import           Debug.Trace
 
@@ -299,7 +301,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
                   , actions=if x == eaEffect then xs else (x \\\ eaEffect) : xs
                   })
 
-      finish p mc@MicroCode{..} = snd $ modifyProcess p $ do
+      finish p MicroCode{..} = snd $ modifyProcess p $ do
         let start = fromMaybe (error "workBegin field is empty!") workBegin
         h <- add (Activity $ start ... sup at) $ FBStep fb
         mapM_ (relation . Vertical h) compiler
@@ -539,4 +541,27 @@ findAddress v pu@Fram{ frProcess=p@Process{..} }
                       else err
   | otherwise = err
     where err = error $ "Can't find instruction for effect of variable: " ++ show v
+
+
+instance ( Time t, Var v ) => Synthesis (Fram v t) where
+  moduleInstance _pu name cntx
+    = render $ setManyAttrib (("name", name) : cntx) $ newSTMP $ unlines
+      [ "dpu_fram $name$ ("
+      , "    .dp_clk( $Clk$ ),"
+      , "    .dp_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } ),"
+      , ""
+      , "    .dp_wr( $WR$ ),"
+      , "    .dp_data( $Data$ ),"
+      , "    .dp_attr_i( $DataAttr$ ),"
+      , ""
+      , "    .dp_oe( $OE$ ),"
+      , "    .dp_value( $Value$ ),"
+      , "    .dp_attr_o( $ValueAttr$ ) "
+      , ");"
+      , "integer $name$_i;"
+      , "initial for ( $name$_i = 0; $name$_i < 16; $name$_i = $name$_i + 1) $name$.bank[$name$_i] <= 32'h1000 + $name$_i;"
+      ]
+  moduleName _ = "dpu_fram"
+  moduleDefinition = undefined
+
 

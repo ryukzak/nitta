@@ -31,14 +31,13 @@ import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval        (inf, singleton, sup, width, (...))
-import           Text.StringTemplate
+import           Numeric.Interval        (inf, sup, width, (...))
 
-import           Debug.Trace
+-- import           Debug.Trace
+
 
 class ( Typeable v, Eq v, Ord v, Show v ) => Title v
 instance ( Typeable v, Eq v, Ord v, Show v ) => Title v
-
 
 
 data BusNetwork title spu v t =
@@ -73,7 +72,7 @@ instance ( Title title, Var v, Time t
             , length (nub pushTo) == length pushTo
             ]
           | (fromPu, opts) <-
-            trace ("puOptions: \n" ++ concatMap ((" " ++) . (++ "\n") . show) puOptions)
+            -- trace ("puOptions: \n" ++ concatMap ((" " ++) . (++ "\n") . show) puOptions)
             puOptions
           , EffectOpt (Pull pullVars) pullAt <- opts
           ]
@@ -109,7 +108,8 @@ instance ( Title title, Var v, Time t
     { bnPus=foldl (\s n -> n s) bnPus steps
     , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add
-                (trace ("1> " ++ show transportStartAt ++ " ... " ++ show transportEndAt) $ Activity $ transportStartAt ... transportEndAt)
+                -- (trace ("1> " ++ show transportStartAt ++ " ... " ++ show transportEndAt) $
+                (Activity $ transportStartAt ... transportEndAt)
                 (InstructionStep
                   $ (Transport v taPullFrom title :: Instruction (BusNetwork title (PU Passive v t) v t)))
               ) $ M.assocs push'
@@ -322,7 +322,7 @@ instance ( Time t, Var v
           in renderInstance insts' regs' xs
       cntx :: ( Typeable pu, Show (Signal pu)
               ) => String -> pu -> Proxy (Signal pu) -> [(String, String)]
-      cntx title spu p
+      cntx title _spu p
         = [ ( "Clk", "pu_clk" )
           , ( "Data", "data_bus" )
           , ( "DataAttr", "attr_bus" )
@@ -344,9 +344,9 @@ instance ( Time t, Var v
 
 instance ( Synthesis (BusNetwork title (PU Passive v t) v t)
          ) => TestBenchRun (BusNetwork title (PU Passive v t) v t) where
-  buildArgs pu
-    = map (("hdl/" ++) . (++ ".v") . (\(PU pu) -> moduleName pu)) (M.elems $ bnPus pu)
-    ++ [ "hdl/gen/" ++ moduleName pu ++ ".v"
+  buildArgs net
+    = map (("hdl/" ++) . (++ ".v") . (\(PU pu) -> moduleName pu)) (M.elems $ bnPus net)
+    ++ [ "hdl/gen/" ++ moduleName net ++ ".v"
        , "hdl/pu_simple_control.v"
        , "hdl/net_tb.v"  -- TODO: autogeneration.
        ]
@@ -363,25 +363,28 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
   components pu =
     [ ( "hdl/gen/" ++ moduleName pu ++ "_assertions.v", assertions )
     , ( "hdl/gen/" ++ moduleName pu ++ ".dump", dump )
-    , ( "hdl/gen/" ++ moduleName pu ++ ".v", \pu _ -> moduleDefinition pu )
+    , ( "hdl/gen/" ++ moduleName pu ++ ".v", const . moduleDefinition )
     ]
     where
+      puProcess = process pu
+
       dump bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx
         = unlines $ map ( values2dump . signalsAt ) ticks
         where
-          -- первый элемент - nop по всем линиям. Устанавливается по умолчанию и говорит о том, что процессор не работает.
-          -- далее в линейном виде идёт программный код.
+          -- первый элемент - Nop (он же def) по всем линиям. Устанавливается по умолчанию и
+          -- говорит о том, что процессор не работает.
           ticks = [ -1 .. nextTick ]
           wires = map Wire $ reverse $ range $ bounds bnWires
           signalsAt t = map (signalAt bn t) wires
 
-      assertions pu@BusNetwork{ bnProcess=Process{..}, ..} cntx
+      assertions BusNetwork{ bnProcess=Process{..}, ..} cntx
         = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick - 1 ]
         where
-          p = process pu
+          p = puProcess
           assert time
             = let pulls = filter (\e -> case e of (Pull _) -> True; _ -> False) $ effectsAt time p
-              in trace ("++" ++ show pulls ++ show cntx) $ case pulls of
+              in -- trace ("++" ++ show pulls ++ show cntx) $
+              case pulls of
                 (Pull (v:_)):_ -> concat
                     [ "if ( !( net.data_bus == " ++ show (maybe 0 id $ M.lookup (v, 0) cntx) ++ ") ) "
                     ,   "$display("
@@ -398,7 +401,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
   simulateContext bn@BusNetwork{..} cntx =
     let transports = extractInstructions bn
 
-    in foldl ( \cntx' (Transport v src _dst) -> trace ("> " ++ show v ++ "@" ++ show src ++ " " ++ show cntx') $
+    in foldl ( \cntx' (Transport v src _dst) -> -- trace ("> " ++ show v ++ "@" ++ show src ++ " " ++ show cntx') $
                                                 M.insert
                 (v, 0)
                 (variableValueWithoutFB (bnPus M.! src) cntx' (v, 0))

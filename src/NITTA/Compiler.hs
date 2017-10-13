@@ -19,7 +19,6 @@ module NITTA.Compiler
   )
 where
 
-import           Control.Lens     hiding (at, from, (...))
 import           Data.List        (find, intersect, nub, sortBy)
 import qualified Data.Map         as M
 import           Data.Maybe       (catMaybes, isJust)
@@ -28,7 +27,7 @@ import           NITTA.Flows
 import           NITTA.Lens
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval (inf, singleton, sup, (...))
+import           Numeric.Interval ((...))
 
 import           Debug.Trace
 
@@ -49,7 +48,7 @@ bindAllAndNaiveSelects pu0 alg = naive' $ bindAll pu0 alg
 
 
 effectOpt2act EffectOpt{..} = EffectAct eoEffect
-  ((eoAt^.available.to inf) ... (eoAt^.available.to inf + eoAt^.dur.to inf))
+  ((eoAt^.avail.infimum) ... (eoAt^.avail.infimum + eoAt^.dur.infimum))
 
 -- manualSteps pu acts = foldl (\pu' act -> step pu' act) pu acts
 
@@ -140,24 +139,24 @@ naive !f@Fork{..}
                    , controlModel=cm'
                    }
         _   -> error "No variants!"
-    start = (\o -> o^.available.to inf) . toPullAt
+    start = (\o -> o^.avail.infimum) . toPullAt
     option2action opt0@TransportOpt{..}
       = let pushTimeConstrains = map snd $ catMaybes $ M.elems toPush
-            predictPullStartFromPush o = o^.available.to inf - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
-            pullStart    = maximum $ (toPullAt^.available.to inf) : map predictPullStartFromPush pushTimeConstrains
-            pullDuration = maximum $ map (\o -> o^.dur.to inf) $ toPullAt : pushTimeConstrains
+            predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
+            pullStart    = maximum $ (toPullAt^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
+            pullDuration = maximum $ map (\o -> o^.dur.infimum) $ toPullAt : pushTimeConstrains
             pullEnd = pullStart + pullDuration - 1
             pushStart = pullStart + 1
 
             mkEvent (from, tc@TimeConstrain{..})
-              = Just (from, pushStart ... (pushStart + tc^.dur.to inf - 1))
+              = Just (from, pushStart ... (pushStart + tc^.dur.infimum - 1))
             pushs = map (\(var, timeConstrain) -> (var, maybe Nothing mkEvent timeConstrain) ) $ M.assocs toPush
 
             act = TransportAct{ taPullFrom=toPullFrom
                               , taPullAt=pullStart ... pullEnd
                               , taPush=M.fromList pushs
                               }
-        in trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act ++ "\n>pullStart>" ++ show (map (\o -> o^.available.to inf) $ toPullAt : pushTimeConstrains) ++ "\n>pullDuration>" ++ show pullDuration)
+        in trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act ++ "\n>pullStart>" ++ show (map (\o -> o^.avail.infimum) $ toPullAt : pushTimeConstrains) ++ "\n>pullDuration>" ++ show pullDuration)
            act
 
 
@@ -242,7 +241,7 @@ autoBind net@BusNetwork{..} =
 
       | otherwise = bv
 
-    restlessVariables = [ (variable, tc^.available.to inf)
+    restlessVariables = [ (variable, tc^.avail.infimum)
       | TransportOpt{ toPullAt=tc@TimeConstrain{..}, ..} <- options net
       , (variable, Nothing) <- M.assocs toPush
       ]

@@ -50,12 +50,14 @@ isPush _                      = False
 
 modifyProcess p state = runState state p
 
-add time info = do
+add placeInTime info = do
   p@Process{..} <- get
   put p { nextUid=succ nextUid
-        , steps=Step nextUid time info : steps
+        , steps=Step nextUid placeInTime info : steps
         }
   return nextUid
+
+addActivity interval info = add (Activity interval) info
 
 relation r = do
   p@Process{..} <- get
@@ -65,14 +67,14 @@ setProcessTime t = do
   p <- get
   put p{ nextTick=t }
 
-processTime :: State (Process v t) t
-processTime = do
+getProcessTime :: State (Process v t) t
+getProcessTime = do
   Process{..} <- get
   return nextTick
 
 bindFB fb t = add (Event t) $ CADStep $ "Bind " ++ show fb
 
-atSameTime a (Activity t) = a `I.elem` t
+atSameTime a (Activity t) = a `I.member` t
 atSameTime a (Event t)    = a == t
 
 placeInTimeTag (Activity t) = tag $ inf t
@@ -143,7 +145,7 @@ extractInstructionAt pu t
     in case is of
       []  -> Nothing
       [i] -> Just i
-      _   -> error $ "Too many instruction on tick " ++ show is
+      _   -> error $ "Too many instruction on tick." ++ show is
 
 
 extractInstructions pu = catMaybes $ map (extractInstruction pu)
@@ -193,3 +195,7 @@ variableValueWithoutFB pu cntx vi@(v, _)
                 ++ show fbs
   where
     fbs = catMaybes $ map getFB $ steps $ process pu
+
+
+nopFor :: ( Default (Instruction pu) ) => Proxy pu -> Instruction pu
+nopFor _proxy = def

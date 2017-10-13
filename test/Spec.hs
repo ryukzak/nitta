@@ -23,6 +23,7 @@ import           Test.QuickCheck
 
 import           System.Environment
 import           Test.Tasty
+import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck       as QC
 
 
@@ -33,10 +34,10 @@ main = do
   setEnv "TASTY_NUM_THREADS" "1"
   defaultMain tests
 
-tests = testGroup "Tests" [properties]
+tests = testGroup "Tests" [ properties ]
 
 properties :: TestTree
-properties = testGroup "Properties" [qcProps]
+properties = testGroup "Properties" [ qcProps ]
 
 
 qcProps = testGroup "FRAM check"

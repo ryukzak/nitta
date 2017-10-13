@@ -1,133 +1,29 @@
-{-# LANGUAGE AllowAmbiguousTypes    #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE PartialTypeSignatures  #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
--- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.ProcessUnits.Accum where
 
-
-import           Control.Lens         hiding (at, from, (...))
-import           Control.Monad.State
 import           Data.Default
-import           Data.Either
-import           Data.List            (find, intersect, (\\))
-import qualified Data.Map             as M
-import           Data.Maybe
+import           Data.List                   (intersect, (\\))
+import qualified Data.Map                    as M
 import           Data.Typeable
 import           NITTA.FunctionBlocks
-import           NITTA.Lens
-import           NITTA.TestBench
+import           NITTA.ProcessUnits.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval     (Interval, inf, singleton, sup, width,
-                                       (...))
-
-import           Debug.Trace
-
-
--- Wrapper -------------------------------------------------------------------
-
-data SerialPU st io v t
-  = SerialPU
-  { spuRemain  :: [(FB io v, ProcessUid)]
-  , spuCurrent :: Maybe (CurrentJob io v t)
-  , spuProcess :: Process v t
-  , spuState   :: st
-  } deriving ( Show )
-
-instance ( Time t, Var v, Default st ) => Default (SerialPU st Parcel v t) where
-  def = SerialPU
-    { spuRemain  = def
-    , spuCurrent = def
-    , spuProcess = def
-    , spuState   = def
-    }
-
-data CurrentJob io v t
-  = CurrentJob
-  { cFB    :: FB io v
-  , cStart :: t
-  , cSteps :: [ProcessUid]
-  } deriving ( Show )
-
-class ( Typeable st
-      , Default st
-      , Var v, Time t
-      ) => SerialPUState st io v t | st -> io, st -> v, st -> t where
-  bindToState :: FB io v -> st -> Either String st
-  stateOptions :: st -> t -> [Option Passive v t]
-  schedule :: st -> Action Passive v t -> (st, State (Process v t) [ProcessUid])
+import           Numeric.Interval            (singleton, (...))
 
 
 
-instance ( SerialPUState st Parcel v t, Show st
-         ) => PUClass Passive (SerialPU st Parcel v t) v t where
-
-  bind fb pu@SerialPU{..}
-    -- Используется def, так как выбор функции выполняется на уровне SerialPU, а не SerialPUState.
-    = case fb `bindToState` (def :: st) of
-        Right _ -> let (key, spuProcess') = modifyProcess spuProcess $ bindFB fb (spuProcess^.time)
-                   in Right pu{ spuRemain=(fb, key) : spuRemain
-                              , spuProcess=spuProcess'
-                              }
-        Left reason -> Left reason
-
-  options SerialPU{ spuCurrent=Nothing, .. }
-    = concatMap ((\f -> f $ spuProcess^.time) . stateOptions)
-      $ rights $ map (\(fb, _) -> bindToState fb spuState) spuRemain
-  options SerialPU{ spuCurrent=Just _, .. }
-    = stateOptions spuState $ spuProcess^.time
-
-  select pu@SerialPU{ spuCurrent=Nothing, .. } act
-    | Just (fb, compilerKey) <- find (not . null . (variables act `intersect`) . variables . fst) spuRemain
-    , Right spuState' <- bindToState fb spuState
-    = select pu{ spuState=spuState'
-               , spuCurrent=Just CurrentJob
-                             { cFB=fb
-                             , cStart=inf $ eaAt act
-                             , cSteps=[ compilerKey ]
-                             }
-              } act
-  select pu@SerialPU{ spuCurrent=Just cur, .. } act
-   | not $ nextTick spuProcess <= act^.start
-   = error $ "Time wrap! Time: " ++ show (nextTick spuProcess) ++ " Act start at: " ++ show (act ^. start)
-   | otherwise
-    = let (spuState', work) = schedule spuState act
-          (steps, spuProcess') = modifyProcess spuProcess work
-          cur' = cur{ cSteps=steps ++ cSteps cur }
-          pu' = pu{ spuState=spuState'
-                  , spuProcess=spuProcess'
-                  , spuCurrent=Just cur
-                  }
-          nextOptions = stateOptions spuState' (spuProcess' ^. time)
-      in -- trace ("SerialPU:" ++ show act ++ " " ++ (show $ tick spuProcess)) $
-         case nextOptions of
-           [] -> pu'{ spuCurrent=Nothing
-                    , spuProcess=finish spuProcess' cur'
-                    }
-           _  -> pu'
-    where
-      finish p cur@CurrentJob{..} = snd $ modifyProcess p $ do
-        h <- add (Activity $ cStart ... (act^.at.leftBound + act^.at.dur)) $ FBStep cFB
-        mapM_ (relation . Vertical h) cSteps
-
-  process = spuProcess
-  setTime t pu@SerialPU{..} = pu{ spuProcess=spuProcess{ nextTick=t } }
-
-
-
-
-
-
--- Add -----------------------------------------------------------------------
+type Accum v t = SerialPU (AccumState v t) Parcel v t
 
 data AccumState v t = Accum{ acIn :: [v], acOut :: [v] }
   deriving ( Show )
@@ -135,46 +31,43 @@ data AccumState v t = Accum{ acIn :: [v], acOut :: [v] }
 instance Default (AccumState v t) where
   def = Accum def def
 
-type Accum v t = SerialPU (AccumState v t) Parcel v t
 
 
-instance ( Var v, Time t
-         , Controllable (Accum v t)
-         ) => SerialPUState (AccumState v t) Parcel v t where
+instance ( Var v, Time t ) => SerialPUState (AccumState v t) Parcel v t where
+
   bindToState fb ac@Accum{ acIn=[], acOut=[] }
     | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[a, b], acOut = cs }
     | otherwise = Left $ "Unknown functional block or : " ++ show fb
+  bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
+  -- тихая ругань по поводу решения
   stateOptions Accum{ acIn=vs@(_:_) } now
-    | length vs == 2
+    | length vs == 2 -- первый аргумент.
     = map (\v -> EffectOpt (Push v) $ TimeConstrain (now ... maxBound) (singleton 2)) vs
-    | otherwise
+    | otherwise -- второй аргумент
     = map (\v -> EffectOpt (Push v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
-  stateOptions Accum{ acOut=vs@(_:_) } now
-    = [ EffectOpt (Pull vs) $ TimeConstrain ((now + 1) ... maxBound) (1 ... maxBound) ]
+  stateOptions Accum{ acOut=vs@(_:_) } now -- вывод
+    = [ EffectOpt (Pull vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
-  schedule st@Accum{ acIn=vs@(_:_) } act
-    | not $ null $ vs `intersect` variables act
-    = let st' = st{ acIn=vs \\ variables act }
-          work = serialSchedule (Proxy :: Proxy (Accum v t)) act
-            $ if length vs == 2
-              then Init False
-              else Load False
-      in (st', work)
+  -- schedule st@Accum{ acIn=vs@(_:_) } act
+  --   | not $ null $ vs `intersect` variables act
+  --   = let st' = st{ acIn=vs \\ variables act }
+  --         work = serialSchedule (Proxy :: Proxy (Accum v t)) act
+  --           $ if length vs == 2
+  --             then Init False
+  --             else Load False
+  --     in (st', work)
   schedule st@Accum{ acIn=[], acOut=vs } act
     | not $ null $ vs `intersect` variables act
     = let st' = st{ acOut=vs \\ variables act }
           work = serialSchedule (Proxy :: Proxy (Accum v t)) act Out
       in (st', work)
+  schedule _ _ = error "Accum schedule error!"
 
 
 
-
-
-
-instance ( Var v, Time t
-         ) => Controllable (Accum v t) where
+instance Controllable (Accum v t) where
   data Signal (Accum v t) = OE | INIT | LOAD | NEG deriving ( Show, Eq, Ord )
   data Instruction (Accum v t)
     = Nop
@@ -183,20 +76,8 @@ instance ( Var v, Time t
     | Out
     deriving (Show)
 
-instance ( Var v, Time t
-         , Default (Instruction (SerialPU st Parcel v t))
-         , Show (Instruction (SerialPU st Parcel v t))
-         , Controllable (SerialPU st Parcel v t)
-         , SerialPUState st Parcel v t
-         , UnambiguouslyDecode (SerialPU st Parcel v t)
-         , Show st
-         ) => ByTime (SerialPU st Parcel v t) t where
-  signalAt pu@SerialPU{..} t sig
-    = let instr = case extractInstructionAt pu t of
-                    Just i  -> i
-                    Nothing -> def
-      in decodeInstruction instr sig
-
+instance Default (Instruction (Accum v t)) where
+  def = Nop
 
 instance UnambiguouslyDecode (Accum v t) where
   decodeInstruction  Nop     NEG  = X
@@ -212,46 +93,39 @@ instance UnambiguouslyDecode (Accum v t) where
   decodeInstruction (Load _) OE   = B False
   decodeInstruction (Load n) NEG  = B n
 
-
   decodeInstruction  Out     INIT = B False
   decodeInstruction  Out     LOAD = B False
   decodeInstruction  Out     OE   = B True
   decodeInstruction  Out     NEG  = X
 
 
-instance ( Controllable (Accum v t) ) => Default (Instruction (Accum v t)) where
-  def = Nop
 
--- instance ( Var v, Time t ) => ByInstruction (Accum v t) where
-
-instance ( PUClass Passive (Accum v t) v t
-         , Time t
-         , Var v
-         ) => Simulatable (Accum v t) v Int where
-
-  variableValue (FB fb) pu@SerialPU{..} cntx (v, i)
-    | Just (Add (I a) _ _) <- cast fb, a == v = cntx M.! (v, i)
-    | Just (Add _ (I b) _) <- cast fb, b == v = cntx M.! (v, i)
-    | Just (Add (I a) (I b) (O cs)) <- cast fb, v `elem` cs = (cntx M.! (a, i)) + (cntx M.! (b, i))
+instance Simulatable (Accum v t) v Int where
+  variableValue (FB fb) SerialPU{..} cntx (v, i)
+    | Just (Add (I a) _ _) <- cast fb, a == v               = cntx M.! (v, i)
+    | Just (Add _ (I b) _) <- cast fb, b == v               = cntx M.! (v, i)
+    | Just (Add (I a) (I b) (O cs)) <- cast fb, v `elem` cs = cntx M.! (a, i) + cntx M.! (b, i)
     | otherwise = error $ "Can't simulate " ++ show fb
 
 
--- Internals ----------------------------------------------------------
 
-serialSchedule puProxy act instr = do
-  now <- processTime
-  e <- add (Activity $ eaAt act) $ EffectStep (eaEffect act)
-  i <- modelInstruction puProxy (eaAt act) instr
-  is <- if False && now < act^.start
-        then do
-            ni <- modelInstruction puProxy (now ... (act^.start)) def
-            return [i, ni]
-        else return [i]
-  mapM_ (relation . Vertical e) is
-  setProcessTime $ (sup $ eaAt act) + 1
-  return $ e : is
-
-modelInstruction
-  :: ( Show (Instruction pu), Typeable pu, Time t
-     ) => Proxy pu -> Interval t -> Instruction pu -> State (Process v t) ProcessUid
-modelInstruction _pu at instr = add (Activity at) $ InstructionStep instr
+instance Synthesis (Accum v t) where
+  moduleInstance _pu name cntx
+    = renderST
+      [ "dpu_accum $name$ ("
+      , "    .dp_clk( $Clk$ ),"
+      , ""
+      , "    .dp_init( $INIT$ ),"
+      , "    .dp_load( $LOAD$ ),"
+      , "    .dp_neg( $NEG$ ),"
+      , "    .dp_data( $Data$ ),"
+      , "    .dp_attr( $DataAttr$ ),"
+      , ""
+      , "    .dp_oe( $OE$ ),"
+      , "    .dp_value( $Value$ ),"
+      , "    .dp_vattr( $ValueAttr$ )"
+      , ");"
+      , "initial $name$.acc <= 0;"
+      ] $ ("name", name) : cntx
+  moduleName _ = "dpu_accum"
+  moduleDefinition = undefined

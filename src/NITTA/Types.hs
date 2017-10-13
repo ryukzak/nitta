@@ -83,7 +83,7 @@ data Effect v
   | Pull [v] -- ^ Выгрузка данных из PU.
   deriving ( Show, Eq, Ord )
 
-instance ( Var v ) => Variables (Effect v) v where
+instance Variables (Effect v) v where
   variables (Push i) = [i]
   variables (Pull o) = o
 
@@ -221,7 +221,7 @@ instance Variables (FB Parcel v) v where
 instance Eq (FB box v) where
   FB a == FB b = Just a == cast b
 
-instance ( Variables (FB box v) v, Var v ) => Ord (FB box v) where
+instance ( Variables (FB box v) v, Ord v ) => Ord (FB box v) where
   a `compare` b = variables a `compare` variables b
 
 
@@ -359,9 +359,9 @@ instance PUType Passive where
 deriving instance ( Var v, Time t ) => Show (Option Passive v t)
 deriving instance ( Var v, Time t ) => Show (Action Passive v t)
 
-instance ( Var v ) => Variables (Option Passive v t) v where
+instance Variables (Option Passive v t) v where
   variables EffectOpt{..} = variables eoEffect
-instance ( Var v ) => Variables (Action Passive v t) v where
+instance Variables (Action Passive v t) v where
   variables EffectAct{..} = variables eaEffect
 
 
@@ -427,9 +427,14 @@ class ( Typeable (Signal pu)
   -- процесс вложенных структурных элементов.
   process :: pu -> Process v t
   -- | Установать модельное время вычислительного блока.
-  -- FIXME: А зачем оно нужно?
+  --
+  -- FIXME: Необходимо убрать, как метод не обязательный, но генерирующий boiler plate.
+  -- Изначально, данный метод был добавлен для работы в ращеплённом времени, но он: 1) недостаточен,
+  -- 2) может быть реалихован в рамках алгоритма компиляции.
   setTime :: t -> pu -> pu
 
+  -- TODO: Добавить метод skip, для того что бы вычислительный блок мог пропускать отдельный
+  -- переменные (необходимо для ветвления вычислительного процесса).
 
 
 -- | Контейнер для вычислительных узлов (PU). Необходимо для формирования гетерогенных списков.
@@ -463,7 +468,7 @@ instance ( PUClass Passive (PU Passive v t) v t
 
 
 -- | Управляемые вычислительные блоки (по идее, только такие нас и интересуют, но это детали).
-class ( Typeable pu ) => Controllable pu where
+class Controllable pu where
   -- | Инструкции, описывающие работу вычислительного блока. Что именно она описывает - вопрос
   -- открытый и зависит от типа вычислительного блока. Для "оконечных" вычислительных блоков
   -- инструкция в прикладном виде описывает операцию, выполняемую им и одназначно транслируемую
@@ -558,7 +563,7 @@ class Simulatable pu v x | pu -> v, pu -> x where
 
 
 -- | Генерация Verilog кода для структурных элементов процессора NITTA.
-class ( Typeable pu, Ord (Signal pu)) => Synthesis pu where
+class ( Ord (Signal pu)) => Synthesis pu where
   -- | Генерация экземпляр данного модуля (dpu_type dpu_name(...)).
   --
   -- В настоящий момент эта функция не является типо-безопастной и не отличается runtime проверками,
