@@ -18,12 +18,12 @@ wire [INSTRUCTION_SIZE-1:0] control_bus;
    
 pu_control control( .pu_clk(clk),
 
-	                  .pu_jump(jump),	
-	                  .pu_data_in(data_in),
-	                  .pu_attr_in(attr_in),
+                    .pu_jump(jump),  
+                    .pu_data_in(data_in),
+                    .pu_attr_in(attr_in),
 
-	                  .pu_control_bus(control_bus)
-	                  );
+                    .pu_control_bus(control_bus)
+                    );
 
 initial begin
    clk = 1'b0;
@@ -34,8 +34,8 @@ initial begin
 end
 
 initial
-	begin
-	   $dumpfile("test.vcd");
+  begin
+     $dumpfile("test.vcd");
      $dumpvars(0, pu_control_tb);
         
      @(negedge rst); 
@@ -51,6 +51,6 @@ initial
         
      repeat(4) @(posedge clk); $finish;
 
-	end
+  end
    
 endmodule

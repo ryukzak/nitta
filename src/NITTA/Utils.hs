@@ -134,7 +134,7 @@ isInstruction _                   = False
 
 
 
-extractInstruction :: ( Typeable pu ) => pu -> Step v t -> Maybe (Instruction pu)
+extractInstruction :: ( Typeable (Instruction pu) ) => pu -> Step v t -> Maybe (Instruction pu)
 extractInstruction _ Step{ sDesc=InstructionStep instr } = cast instr
 extractInstruction _ _                                   = Nothing
 

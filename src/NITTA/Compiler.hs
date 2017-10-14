@@ -134,7 +134,7 @@ naive !f@Fork{..}
         v:_ -> let act = option2action v
                    cm' = foldl controlModelStep controlModel
                          $ map fst $ filter (isJust . snd) $ M.assocs $ taPush act
-               in trace ("step: " ++ show act)
+               in -- trace ("step: " ++ show act)
                   f{ net=select net act
                    , controlModel=cm'
                    }
@@ -156,7 +156,7 @@ naive !f@Fork{..}
                               , taPullAt=pullStart ... pullEnd
                               , taPush=M.fromList pushs
                               }
-        in trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act ++ "\n>pullStart>" ++ show (map (\o -> o^.avail.infimum) $ toPullAt : pushTimeConstrains) ++ "\n>pullDuration>" ++ show pullDuration)
+        in -- trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act ++ "\n>pullStart>" ++ show (map (\o -> o^.avail.infimum) $ toPullAt : pushTimeConstrains) ++ "\n>pullDuration>" ++ show pullDuration)
            act
 
 
@@ -209,7 +209,7 @@ instance Ord BindPriority where
 autoBind net@BusNetwork{..} =
   let prioritized = sortBV $ map mkBV bOpts
   in case prioritized of
-      (BindOption fb puTitle _) : _ -> trace ("bind: " ++ show fb ++ " " ++ show puTitle) $
+      (BindOption fb puTitle _) : _ -> -- trace ("bind: " ++ show fb ++ " " ++ show puTitle) $
                                        subBind fb puTitle net
       _                             -> error "Bind variants is over!"
   where

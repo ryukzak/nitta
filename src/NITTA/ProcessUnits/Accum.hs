@@ -50,14 +50,14 @@ instance ( Var v, Time t ) => SerialPUState (AccumState v t) Parcel v t where
     = [ EffectOpt (Pull vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
-  -- schedule st@Accum{ acIn=vs@(_:_) } act
-  --   | not $ null $ vs `intersect` variables act
-  --   = let st' = st{ acIn=vs \\ variables act }
-  --         work = serialSchedule (Proxy :: Proxy (Accum v t)) act
-  --           $ if length vs == 2
-  --             then Init False
-  --             else Load False
-  --     in (st', work)
+  schedule st@Accum{ acIn=vs@(_:_) } act
+    | not $ null $ vs `intersect` variables act
+    = let st' = st{ acIn=vs \\ variables act }
+          work = serialSchedule (Proxy :: Proxy (Accum v t)) act
+            $ if length vs == 2
+              then Init False
+              else Load False
+      in (st', work)
   schedule st@Accum{ acIn=[], acOut=vs } act
     | not $ null $ vs `intersect` variables act
     = let st' = st{ acOut=vs \\ variables act }
@@ -112,20 +112,20 @@ instance Simulatable (Accum v t) v Int where
 instance Synthesis (Accum v t) where
   moduleInstance _pu name cntx
     = renderST
-      [ "dpu_accum $name$ ("
-      , "    .dp_clk( $Clk$ ),"
+      [ "pu_accum $name$ ("
+      , "    .clk( $Clk$ ),"
       , ""
-      , "    .dp_init( $INIT$ ),"
-      , "    .dp_load( $LOAD$ ),"
-      , "    .dp_neg( $NEG$ ),"
-      , "    .dp_data( $Data$ ),"
-      , "    .dp_attr( $DataAttr$ ),"
+      , "    .signal_init( $INIT$ ),"
+      , "    .signal_load( $LOAD$ ),"
+      , "    .signal_neg( $NEG$ ),"
+      , "    .data_in( $DataIn$ ),"
+      , "    .attr_in( $AttrIn$ ),"
       , ""
-      , "    .dp_oe( $OE$ ),"
-      , "    .dp_value( $Value$ ),"
-      , "    .dp_vattr( $ValueAttr$ )"
+      , "    .signal_oe( $OE$ ),"
+      , "    .data_out( $DataOut$ ),"
+      , "    .attr_out( $AttrOut$ )"
       , ");"
       , "initial $name$.acc <= 0;"
       ] $ ("name", name) : cntx
-  moduleName _ = "dpu_accum"
+  moduleName _ = "pu_accum"
   moduleDefinition = undefined

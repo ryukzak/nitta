@@ -40,7 +40,6 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval      (inf, singleton, sup, (...))
 import           Prelude               hiding (last)
-import           Text.StringTemplate
 
 import           Debug.Trace
 
@@ -430,16 +429,16 @@ availableCell fr@Fram{..} mc@MicroCode{..} =
 ---------------------------------------------------
 
 instance TestBenchRun (Fram v t) where
-  buildArgs _ = [ "hdl/dpu_fram.v"
-                , "hdl/dpu_fram_tb.v"
+  buildArgs _ = [ "hdl/pu_fram.v"
+                , "hdl/pu_fram_tb.v"
                 ]
 
 instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
 
   components _ =
-    [ ( "hdl/gen/dpu_fram_inputs.v", testInputs )
-    , ( "hdl/gen/dpu_fram_signals.v", testSignals )
-    , ( "hdl/gen/dpu_fram_outputs.v", testOutputs )
+    [ ( "hdl/gen/pu_fram_inputs.v", testInputs )
+    , ( "hdl/gen/pu_fram_signals.v", testSignals )
+    , ( "hdl/gen/pu_fram_outputs.v", testOutputs )
     ]
 
   simulateContext fr@Fram{ frProcess=p@Process{..}, .. } cntx =
@@ -545,23 +544,21 @@ findAddress v pu@Fram{ frProcess=p@Process{..} }
 
 instance ( Time t, Var v ) => Synthesis (Fram v t) where
   moduleInstance _pu name cntx
-    = render $ setManyAttrib (("name", name) : cntx) $ newSTMP $ unlines
-      [ "dpu_fram $name$ ("
-      , "    .dp_clk( $Clk$ ),"
-      , "    .dp_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } ),"
+    = renderST
+      [ "pu_fram $name$ ("
+      , "    .clk( $Clk$ ),"
+      , "    .signal_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } ),"
       , ""
-      , "    .dp_wr( $WR$ ),"
-      , "    .dp_data( $Data$ ),"
-      , "    .dp_attr_i( $DataAttr$ ),"
+      , "    .signal_wr( $WR$ ),"
+      , "    .data_in( $DataIn$ ),"
+      , "    .attr_in( $AttrIn$ ),"
       , ""
-      , "    .dp_oe( $OE$ ),"
-      , "    .dp_value( $Value$ ),"
-      , "    .dp_attr_o( $ValueAttr$ ) "
+      , "    .signal_oe( $OE$ ),"
+      , "    .data_out( $DataOut$ ),"
+      , "    .attr_out( $AttrOut$ ) "
       , ");"
       , "integer $name$_i;"
       , "initial for ( $name$_i = 0; $name$_i < 16; $name$_i = $name$_i + 1) $name$.bank[$name$_i] <= 32'h1000 + $name$_i;"
-      ]
-  moduleName _ = "dpu_fram"
+      ] $ ("name", name) : cntx
+  moduleName _ = "pu_fram"
   moduleDefinition = undefined
-
-

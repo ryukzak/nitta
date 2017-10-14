@@ -13,10 +13,14 @@
 
 
 {-|
-Для многих вычислительных блоков невозможно параллельное выполнение нескольких функций
-из-за особенностей внутреней организации. Для таких блоков сделана специальная обёртка,
-значительно упрощающая процесс их описания.
+В общем случае, вычислительный блок может обладать произвольным поведением, в том числе и выпонять
+несоколько функциональных блоков параллельно. Как правило, это не так, и вычислительный блок может
+выполнять функциональные блоки строго последовательно, один за другим. Для таких вычислительных
+блоков значительная часть реализации модели стало бы идентичной, в связи, с чем с целью повторного
+использования, был реализован данный модуль предоставляющий эту логику в виде обёртки вокруг
+состояния вычислительного блока.
 -}
+
 module NITTA.ProcessUnits.SerialPU
   ( SerialPU (SerialPU)
   , SerialPUState (..)
@@ -32,7 +36,7 @@ import           Data.Typeable
 import           NITTA.Lens
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval    (Interval, (...))
+import           Numeric.Interval    ((...))
 
 
 
@@ -87,10 +91,9 @@ class SerialPUState st io v t | st -> io, st -> v, st -> t where
 
 
 
-instance ( Typeable st
+instance ( Var v, Time t
          , Default st
-         , SerialPUState st Parcel v t, Show st
-         , Var v, Time t
+         , SerialPUState st Parcel v t
          ) => PUClass Passive (SerialPU st Parcel v t) v t where
 
   bind fb pu@SerialPU{..}
@@ -142,7 +145,7 @@ instance ( Typeable st
            _  -> pu'
     where
       finish p CurrentJob{..} = snd $ modifyProcess p $ do
-        h <- add (Activity $ cStart ... (act^.at.infimum + act^.at.dur)) $ FBStep cFB
+        h <- addActivity (cStart ... (act^.at.infimum + act^.at.dur)) $ FBStep cFB
         mapM_ (relation . Vertical h) cSteps
 
   process = spuProcess
@@ -153,9 +156,8 @@ instance ( Typeable st
 instance ( Var v, Time t
          , Default (Instruction (SerialPU st Parcel v t))
          , Show (Instruction (SerialPU st Parcel v t))
-         , Typeable st, Default st, Show st
+         , Typeable st, Default st
          , SerialPUState st Parcel v t
-         , Controllable (SerialPU st Parcel v t)
          , UnambiguouslyDecode (SerialPU st Parcel v t)
          ) => ByTime (SerialPU st Parcel v t) t where
   signalAt pu@SerialPU{..} t sig
@@ -183,7 +185,7 @@ serialSchedule proxy act instr = do
   i <- addActivity (act^.at) $ InstructionStep instr
   is <- if now < act^.at.infimum
         then do
-            ni <- addActivity (now ... act^.at.infimum) $ InstructionStep $ nopFor proxy
+            ni <- addActivity (now ... act^.at.infimum - 1) $ InstructionStep $ nopFor proxy
             return [i, ni]
         else return [i]
   mapM_ (relation . Vertical e) is

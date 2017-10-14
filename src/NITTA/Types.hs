@@ -27,6 +27,10 @@ import           Numeric.Interval  hiding (elem)
 
 
 -- | Класс идентификатора переменной.
+--
+-- TODO: Повидимому именно тут заложена самая страшная мина текущей реализации, а именно -
+-- отсутствие типизации. При этом в настоящий момент совершенно не понятно как и главное где
+-- учитывать типизацию данных ходящих по шине.
 class ( Typeable v, Eq v, Ord v, Show v ) => Var v
 instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
 instance {-# OVERLAPS #-} Var String
@@ -248,7 +252,7 @@ data Process v t
     , nextUid   :: ProcessUid -- ^ Следующий свободный идентификатор шага вычислительного процесса.
     }
 
-instance (Time t) => Default (Process v t) where
+instance ( Default t ) => Default (Process v t) where
   def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
 
 type ProcessUid = Int -- ^ Уникальный идентификатор шага вычислительного процесса.
@@ -289,13 +293,14 @@ data StepInfo v where
   NestedStep :: ( Eq title, Show title, Ord title
                 ) => title -> StepInfo v -> StepInfo v
 
-deriving instance ( Var v, Time t ) => Show ( Process v t )
-deriving instance ( Var v, Time t ) => Show ( Step v t )
-instance ( Var v ) => Show (StepInfo v) where
+deriving instance ( Show v, Show t ) => Show ( Process v t )
+deriving instance ( Show v, Show t ) => Show ( Step v t )
+instance ( Show v ) => Show (StepInfo v) where
   show (CADStep s)                 = s
   show (FBStep (FB fb))            = show fb
-  show (EffectStep (Pull v))       = "V" ++ show v
-  show (EffectStep (Push v))       = "A" ++ show v
+  show (EffectStep eff)            = show eff
+  -- show (EffectStep (Pull v))       = "V" ++ show v
+  -- show (EffectStep (Push v))       = "A" ++ show v
   show (InstructionStep instr)     = show instr
   show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
 
@@ -356,8 +361,8 @@ instance PUType Passive where
     , eaAt :: Interval t -- ^ Положение операции во времени.
     }
 
-deriving instance ( Var v, Time t ) => Show (Option Passive v t)
-deriving instance ( Var v, Time t ) => Show (Action Passive v t)
+deriving instance ( Show v, Show t ) => Show (Option Passive v t)
+deriving instance ( Show v, Show t ) => Show (Action Passive v t)
 
 instance Variables (Option Passive v t) v where
   variables EffectOpt{..} = variables eoEffect
@@ -393,7 +398,7 @@ instance PUType (Network title) where
 instance Variables (Option (Network title) v t) v where
   variables TransportOpt{..} = M.keys toPush
 
-instance ( Show title, Time t, Var v ) => Show (Action (Network title) v t) where
+instance ( Show title, Show t, Show v ) => Show (Action (Network title) v t) where
   show TransportAct{..} = show taPullFrom ++ "#[" ++ show taPullAt ++ "] -> " ++ S.join "; " pushs
     where
       pushs = catMaybes $ map foo $ M.assocs taPush
@@ -412,9 +417,7 @@ instance ( Show title, Time t, Var v ) => Show (Action (Network title) v t) wher
 --       блока. Его модельное время продвигается вперёд, в описании вычислительного процесса
 --       дополняется записями относительно сделанных шагов вычислительного процесса.
 --    4) Повторение, пока список возможных вариантов не станет пустым.
-class ( Typeable (Signal pu)
-      , Typeable (Instruction pu)
-      ) => PUClass ty pu v t | pu -> ty, pu -> v, pu -> t where
+class PUClass ty pu v t | pu -> ty, pu -> v, pu -> t where
   -- | Назначить исполнение функционального блока вычислительному узлу.
   bind :: FB Parcel v -> pu -> Either String pu
   -- | Получить описания всех вариантов развития вычислительного процесса, доступных для
@@ -439,26 +442,22 @@ class ( Typeable (Signal pu)
 
 -- | Контейнер для вычислительных узлов (PU). Необходимо для формирования гетерогенных списков.
 data PU ty v t where
-  PU :: ( PUClass ty pu v t
-        , Typeable pu
-        , Simulatable pu v Int
-        , Controllable pu
-        , Synthesis pu
-        , ByTime pu t
-        , Ord (Signal pu)
+  PU :: ( Typeable pu
         , Show (Signal pu)
-        , Typeable (Signal pu)
+        , PUClass ty pu v t
+        , ByTime pu t
+        , Synthesis pu
+        , Simulatable pu v Int
         ) => pu -> PU ty v t
 
-instance ( Var v, Time t ) => PUClass Passive (PU Passive v t) v t where
+instance PUClass Passive (PU Passive v t) v t where
   bind fb (PU pu) = PU <$> bind fb pu
   options (PU pu) = options pu
   select (PU pu) act = PU $ select pu act
   process (PU pu) = process pu
   setTime t (PU pu) = PU $ setTime t pu
 
-instance ( PUClass Passive (PU Passive v t) v t
-         ) => Simulatable (PU Passive v t) v Int where
+instance Simulatable (PU Passive v t) v Int where
   variableValue fb (PU pu) cntx vi = variableValue fb pu cntx vi
 
 
@@ -563,7 +562,7 @@ class Simulatable pu v x | pu -> v, pu -> x where
 
 
 -- | Генерация Verilog кода для структурных элементов процессора NITTA.
-class ( Ord (Signal pu)) => Synthesis pu where
+class Synthesis pu where
   -- | Генерация экземпляр данного модуля (dpu_type dpu_name(...)).
   --
   -- В настоящий момент эта функция не является типо-безопастной и не отличается runtime проверками,

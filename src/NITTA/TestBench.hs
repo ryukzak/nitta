@@ -74,9 +74,11 @@ runTestBench pu = do
 
   (ExitSuccess, simOut, simErr) <- readProcessWithExitCode "./a.out" [] []
   -- Yep, we can't stop simulation with bad ExitCode...
-  -- when ("FAIL" `isSubsequenceOf` simOut) $ do
-  -- putStrLn $ "stdout:\n" ++ simOut
-  -- putStrLn $ "stderr:\n" ++ simErr
+  if ("FAIL" `isSubsequenceOf` simOut)
+    then do
+      putStrLn $ "stdout:\n" ++ simOut
+      putStrLn $ "stderr:\n" ++ simErr
+    else putStrLn $ "Simulation correct"
     -- die "Simulation failed!"
 
   return $ not ("FAIL" `isSubsequenceOf` simOut)

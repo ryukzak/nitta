@@ -266,19 +266,19 @@ instance ( Time t, Var v
   moduleDefinition pu@BusNetwork{..}
     = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
       in renderST [ "module $moduleName$("
-                  , "    pu_clk,"
-                  , "    pu_rst"
+                  , "    clk,"
+                  , "    rst"
                   , "    );"
                   , ""
                   , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
                   , "parameter DATA_WIDTH = 32;"
                   , "parameter ATTR_WIDTH = 4;"
                   , ""
-                  , "input pu_clk;"
-                  , "input pu_rst;"
+                  , "input clk;"
+                  , "input rst;"
                   , ""
                   , "// Sub module instances"
-                  , "wire [MICROCODE_WIDTH-1:0] control_bus;"
+                  , "wire [MICROCODE_WIDTH-1:0] signals_out;"
                   , "wire [DATA_WIDTH-1:0] data_bus;"
                   , "wire [ATTR_WIDTH-1:0] attr_bus;"
                   , "", ""
@@ -287,13 +287,13 @@ instance ( Time t, Var v
                   , "     , .PROGRAM_DUMP( \"hdl/gen/$moduleName$.dump\" )"
                   , "     , .PROGRAM_SIZE( $program_size$ + 1 )" -- TODO - принять решения по поводу размерности программы.
                   , "     ) control_unit"
-                  , "    ( .pu_clk( pu_clk ), .pu_rst( pu_rst ), .pu_control_bus( control_bus ) );"
+                  , "    ( .clk( clk ), .rst( rst ), .signals_out( signals_out ) );"
                   , ""
                   , "", ""
                   , "$instances$"
                   , "", ""
-                  , "assign { data_bus, attr_bus } = "
-                  , "$valueRegs$;"
+                  , "assign { attr_bus, data_bus } = "
+                  , "$OutputRegs$;"
                   , ""
                   , "endmodule"
                   , ""
@@ -301,33 +301,33 @@ instance ( Time t, Var v
                   [ ( "moduleName", moduleName pu )
                   , ( "microCodeWidth", show $ snd (bounds bnWires) + 1 )
                   , ( "instances", S.join "\n\n" instances)
-                  , ( "valueRegs", S.join "| \n" $ map (\(d, a) -> "    { " ++ d ++ ", " ++ a ++ " } ") valuesRegs )
+                  , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "    { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
                   , ( "program_size", show $ fromEnum $ nextTick bnProcess )
                   ]
     where
-      valueData t = t ++ "_value"
-      valueAttr t = t ++ "_value_attr"
-      regInstance title = renderST [ "wire [DATA_WIDTH-1:0] $Value$;"
-                                   , "wire [ATTR_WIDTH-1:0] $ValueAttr$;"
+      valueData t = t ++ "_data_out"
+      valueAttr t = t ++ "_attr_out"
+      regInstance title = renderST [ "wire [DATA_WIDTH-1:0] $DataOut$;"
+                                   , "wire [ATTR_WIDTH-1:0] $AttrOut$;"
                                    ]
-                                   [ ("Value", valueData title)
-                                   , ("ValueAttr", valueAttr title)
+                                   [ ("DataOut", valueData title)
+                                   , ("AttrOut", valueAttr title)
                                    ]
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
       renderInstance insts regs ((title, PU spu) : xs)
         = let inst = moduleInstance spu title (cntx title spu Proxy)
               insts' = inst : (regInstance title) : insts
-              regs' = (valueData title, valueAttr title) : regs
+              regs' = (valueAttr title, valueData title) : regs
           in renderInstance insts' regs' xs
       cntx :: ( Typeable pu, Show (Signal pu)
               ) => String -> pu -> Proxy (Signal pu) -> [(String, String)]
       cntx title _spu p
-        = [ ( "Clk", "pu_clk" )
-          , ( "Data", "data_bus" )
-          , ( "DataAttr", "attr_bus" )
-          , ( "Value", valueData title )
-          , ( "ValueAttr", valueAttr title )
+        = [ ( "Clk", "clk" )
+          , ( "DataIn", "data_bus" )
+          , ( "AttrIn", "attr_bus" )
+          , ( "DataOut", valueData title )
+          , ( "AttrOut", valueAttr title )
           ] ++ (catMaybes $ map foo $ [ (i, s)
                                       | (i, ds) <- assocs bnWires
                                       , (title', s) <- ds
@@ -337,7 +337,7 @@ instance ( Time t, Var v
           foo (i, S s)
             | Just s' <- cast s
             = Just ( S.replace " " "_" $ show (s' `asProxyTypeOf` p)
-                   , "control_bus[ " ++ show i ++ " ]"
+                   , "signals_out[ " ++ show i ++ " ]"
                    )
           foo _ = Nothing
 
@@ -386,7 +386,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
               in -- trace ("++" ++ show pulls ++ show cntx) $
               case pulls of
                 (Pull (v:_)):_ -> concat
-                    [ "if ( !( net.data_bus == " ++ show (maybe 0 id $ M.lookup (v, 0) cntx) ++ ") ) "
+                    [ "if ( !( net.data_bus === " ++ show (maybe 0 id $ M.lookup (v, 0) cntx) ++ ") ) "
                     ,   "$display("
                     ,     "\""
                     ,       "FAIL wrong value of " ++ show' pulls ++ " the bus failed "

@@ -135,39 +135,19 @@ program = DataFlow $ map Statement alg
 
 
 net' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) alg
-net'' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) $ functionalBlocks program
-
-
+-- net'' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) $ functionalBlocks program
 
 ---------------------------------------------------------------------------------
 
 main = do
   let compiler = Fork net' (def{ controlFlow=mkControlFlow $ DataFlow $ map Statement alg }) Nothing []
-  -- let compiler = Fork net'' (def{ controlFlow=mkControlFlow program }) Nothing []
   let Fork{ net=pu
           , controlModel=cm'
           } = foldl (\comp _ -> naive comp) compiler (take 150 $ repeat ())
-  -- let Forks{ current=Fork{ net=pu
-                         -- , controlModel=cm'
-                         -- }
-           -- } = foldl (\comp _ -> naive comp) compiler (take 15 $ repeat ())
-  timeline "resource/data.json" pu
-  -- print $ (getPU "fram2" pu :: Fram String T)
-  -- mapM_ (putStrLn . show)
-    --   $ steps $ process (getPU "fram2" pu :: Fram String T)
 
-  -- testBench pu ([] :: [(String, Int)])
-  -- writeTestBench pu ([] :: [(String, Int)])
+  timeline "resource/data.json" pu
   testBench pu ([] :: [(String, Int)])
 
 getPU puTitle net0
   = case bnPus net0 ! puTitle of
       PU pu | Just pu' <- cast pu -> pu'
-
-
-
--- >opt>TransportOpt {toPullFrom = "fram2", toPullAt = TimeConstrain {tcAvailable = 5 ... 1000, tcDuration = 1 ... 1000}, toPush = fromList [("e",Just ("accum",TimeConstrain {tcAvailable = 6 ... 1000, tcDuration = 1 ... 1}))]}
--- >act>"fram2"#[5 ... 5] -> "e"@"accum"#[6 ... 6]
-
--- >opt>TransportOpt {toPullFrom = "fram1", toPullAt = TimeConstrain {tcAvailable = 4 ... 1000, tcDuration = 1 ... 1000}, toPush = fromList [("x",Just ("fram2",TimeConstrain {tcAvailable = 6 ... 1000, tcDuration = 1 ... 1000}))]}
--- >act>"fram1"#[5 ... 5] -> "x"@"fram2"#[6 ... 6]
