@@ -344,9 +344,9 @@ instance ( Synthesis (BusNetwork title (PU Passive v t) v t)
          ) => TestBenchRun (BusNetwork title (PU Passive v t) v t) where
   buildArgs net
     = map (("hdl/" ++) . (++ ".v") . (\(PU pu) -> moduleName pu)) (M.elems $ bnPus net)
-    ++ [ "hdl/gen/" ++ moduleName net ++ ".v"
-       , "hdl/pu_simple_control.v"
-       , "hdl/net_tb.v"  -- TODO: autogeneration.
+    ++ [ "hdl/pu_simple_control.v"
+       , "hdl/gen/" ++ moduleName net ++ ".v"
+       , "hdl/gen/" ++ moduleName net ++ "_tb.v"
        ]
 
 
@@ -362,9 +362,51 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
     [ ( "hdl/gen/" ++ moduleName pu ++ "_assertions.v", assertions )
     , ( "hdl/gen/" ++ moduleName pu ++ ".dump", dump )
     , ( "hdl/gen/" ++ moduleName pu ++ ".v", const . moduleDefinition )
+    , ( "hdl/gen/" ++ moduleName pu ++ "_tb.v", const . testBenchDefinition )
     ]
     where
       puProcess = process pu
+      testBenchDefinition net
+        = renderST
+          [ "module $moduleName$_tb();                                                                                 "
+          , "                                                                                                          "
+          , "reg clk, rst;                                                                                             "
+          , "$moduleName$ net                                                                                          "
+          , "  ( .clk(clk)                                                                                             "
+          , "  , .rst(rst)                                                                                             "
+          , "  );                                                                                                      "
+          , "                                                                                                          "
+          , "initial begin                                                                                             "
+          , "  clk = 1'b0;                                                                                             "
+          , "  rst = 1'b1;                                                                                             "
+          , "  repeat(2) #10 clk = ~clk;                                                                               "
+          , "  rst = 1'b0;                                                                                             "
+          , "  forever #10 clk = ~clk;                                                                                 "
+          , "end                                                                                                       "
+          , "                                                                                                          "
+          , "initial                                                                                                   "
+          , "  begin                                                                                                   "
+          , "    \\$dumpfile(\"$moduleName$_tb.vcd\");                                                                 "
+          , "    \\$dumpvars(0, $moduleName$_tb);                                                                      "
+          , "    @(negedge rst);                                                                                       "
+          , "    forever @(posedge clk);                                                                               "
+          , "  end                                                                                                     "
+          , "                                                                                                          "
+          , "  initial                                                                                                 "
+          , "    begin                                                                                                 "
+          , "      // program_counter == 1                                                                             "
+          , "      // на шину управление выставлены значения соответсвующие адресу 0 в памяти пока не снят rst         "
+          , "      @(negedge rst); // Влючение процессора.                                                             "
+          , "      // Сразу после снятия сигнала rst на шину управления выставляются сигналы соответствующие адресу 1. "
+          , "      // После следующего положительного фронта будет получен результат.                                  "
+          , "      `include \"hdl/gen/accum_fram1_fram2_net_assertions.v\"                                             "
+          , "      \\$finish;                                                                                          "
+          , "    end                                                                                                   "
+          , "                                                                                                          "
+          , "endmodule                                                                                                 "
+          ]
+          [ ("moduleName", moduleName net)
+          ]
 
       dump bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx
         = unlines $ map ( values2dump . signalsAt ) ticks
