@@ -72,9 +72,7 @@ stepStart Step{ sTime=Event t }    = t
 stepStart Step{ sTime=Activity t } = I.inf t
 
 
-whatsHappen t Process{..} =
-  -- FIXME
-  filter (\Step{..} -> t `atSameTime` sTime) steps
+whatsHappen t Process{..} = filter (\Step{..} -> t `atSameTime` sTime) steps
 
 
 isFB (FBStep _)                = True

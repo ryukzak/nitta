@@ -11,41 +11,31 @@
 {-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-
 module NITTA.TestBench where
 
 import           Control.Monad.State
 import           Data.List           (isSubsequenceOf)
 import qualified Data.List           as L
 import qualified Data.Map            as M
-import           Data.Typeable       (Typeable)
 import           NITTA.Types
 import           System.Directory
 import           System.Exit
 import           System.Process
 
 
-
 class TestBenchRun pu where
   buildArgs :: pu -> [String]
 
-
-class ( Typeable pu
-      , TestBenchRun pu
-      , Var v
-      ) => TestBench pu v x | pu -> v, pu -> x where
+class TestBench pu v x | pu -> v, pu -> x where
   components :: pu -> [(String, pu -> SimulationContext v x -> String)]
-
-  simulate :: pu -> [(v, x)] -> SimulationContext v x
-  simulate pu values = simulateContext pu $ M.fromList $ map (\(v, x) -> ((v, 0), x)) values
-
   simulateContext :: pu -> SimulationContext v x -> SimulationContext v x
 
-  writeTestBench :: pu -> [(v, x)] -> IO ()
-  writeTestBench pu values = do
-    let cntx = simulate pu values
-    createDirectoryIfMissing True "hdl/gen"
-    mapM_ (\(fn, gen) -> writeFile fn (gen pu cntx)) $ components pu
+simulate pu values = simulateContext pu $ M.fromList $ map (\(v, x) -> ((v, 0), x)) values
+
+writeTestBench pu values = do
+  let cntx = simulate pu values
+  createDirectoryIfMissing True "hdl/gen"
+  mapM_ (\(fn, gen) -> writeFile fn (gen pu cntx)) $ components pu
 
 
 

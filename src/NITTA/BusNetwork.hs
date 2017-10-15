@@ -11,6 +11,9 @@
 {-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
+{-
+TODO: Реализовать PUClass Passive BusNetwork
+-}
 module NITTA.BusNetwork where
 
 import           Control.Monad.State
@@ -31,36 +34,41 @@ import           NITTA.Utils
 import           Numeric.Interval        (inf, width, (...))
 
 
-
+-- | Класс идентификатора вложенного вычислительного блока.
 class ( Typeable v, Eq v, Ord v, Show v ) => Title v
 instance ( Typeable v, Eq v, Ord v, Show v ) => Title v
 
 
-data BusNetwork title spu v t =
+data GBusNetwork title spu v t =
   BusNetwork
-    { bnRemains            :: [FB Parcel v]
+    { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
+      -- вычислительным блокам.
+      bnRemains            :: [FB Parcel v]
+    -- | Список переданных через сеть переменных (используется для понимания готовности).
     , bnForwardedVariables :: [v]
+    -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
     , bnBinded             :: M.Map title [FB Parcel v]
-    , bnPus                :: M.Map title spu
+    -- | Описание вычислительного процесса сети, как элемента процессора.
     , bnProcess            :: Process v t
+    -- | Словарь вложенных вычислительных блоков по именам.
+    , bnPus                :: M.Map title spu
+    -- | Описание сигнальной шины сети и её подключения ко вложенным вычислительным блокам.
     , bnWires              :: Array Int [(title, S)]
     }
-
-busNetwork pus wires = BusNetwork [] [] (M.fromList []) (M.fromList pus) def wires
-
+type BusNetwork title v t = GBusNetwork title (PU Passive v t) v t
+busNetwork pus wires = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wires
 
 
 instance ( Title title, Var v, Time t
-         , PUClass Passive (PU Passive v t) v t
-         ) => PUClass (Network title) (BusNetwork title (PU Passive v t) v t) v t where
+         ) => PUClass (Network title) (BusNetwork title v t) v t where
 
   bind fb bn@BusNetwork{..}
     | any (isRight . bind fb) $ M.elems bnPus
     = Right bn{ bnRemains=fb : bnRemains }
-  bind _fb _bn = Left "no"
+  bind _fb _bn = Left "All sub process units reject the functional block."
 
   options BusNetwork{..} =
-    let x = concat
+    let options' = concat
           [
             [ TransportOpt fromPu (fixPullConstrain pullAt) $ M.fromList pushs
             | pushs <- mapM pushOptionsFor pullVars
@@ -73,10 +81,14 @@ instance ( Title title, Var v, Time t
           , EffectOpt (Pull pullVars) pullAt <- opts
           ]
     in -- trace ("BusNetwork options: \n" ++ concatMap ((++"\n") . ("  "++) . show) x)
-       x
+       options'
     where
       now = nextTick bnProcess
-      fixPullConstrain tc@TimeConstrain{..} = tc{ tcAvailable=max now (tc^.avail.infimum) ... tc^.avail.supremum }
+      fixPullConstrain constrain
+        = let a = max now $ constrain^.avail.infimum
+              b = constrain^.avail.supremum
+          in constrain & avail .~ (a ... b)
+
       pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
       pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
 
@@ -99,13 +111,13 @@ instance ( Title title, Var v, Time t
 
   select ni@BusNetwork{..} act@TransportAct{..}
     | nextTick bnProcess > act^.at.infimum
-    = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (inf taPullAt)
+    = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (act^.at)
     | otherwise = ni
     { bnPus=foldl (\s n -> n s) bnPus steps
     , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add
                 (Activity $ transportStartAt ... transportEndAt)
-                $ InstructionStep (Transport v taPullFrom title :: Instruction (BusNetwork title (PU Passive v t) v t))
+                $ InstructionStep (Transport v taPullFrom title :: Instruction (BusNetwork title v t))
               ) $ M.assocs push'
         _ <- add (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act --   $ Pull pullVars
         setProcessTime $ act^.at.supremum + 1
@@ -163,25 +175,20 @@ instance ( Title title, Var v, Time t
 
 
 
--- Сигналы - есть у всех управляемых ПУ.
 
 
+instance Controllable (BusNetwork title v t) where
 
-
-instance ( Title title, Var v, Time t
-         ) => Controllable (BusNetwork title (PU Passive v t) v t) where
-
-  data Instruction (BusNetwork title (PU Passive v t) v t)
+  data Instruction (BusNetwork title v t)
     = Transport v title title
     deriving (Typeable, Show)
 
-  data Signal (BusNetwork title (PU Passive v t) v t) = Wire Int
+  data Signal (BusNetwork title v t) = Wire Int
     deriving (Show, Eq, Ord)
 
 
 
-instance ( Title title, Var v, Time t
-         ) => ByTime (BusNetwork title (PU Passive v t) v t) t where
+instance ( Title title ) => ByTime (BusNetwork title v t) t where
   signalAt BusNetwork{..} t (Wire i) = foldl (+++) X $ map (uncurry subSignal) $ bnWires ! i
     where
       subSignal puTitle s = case (bnPus M.! puTitle, s) of
@@ -192,12 +199,7 @@ instance ( Title title, Var v, Time t
 
 
 
-instance ( PUClass (Network title) (BusNetwork title (PU Passive v t) v t) v t
-         , Simulatable (PU Passive v t) v Int
-         , Typeable title, Typeable (PU Passive v t)
-         , Ord title, Show title
-         , Var v, Time t
-         ) => Simulatable (BusNetwork title (PU Passive v t) v t) v Int where
+instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v Int where
   variableValue _fb bn@BusNetwork{..} cntx vi@(v, _) =
     let [Transport _ src _] =
           filter (\(Transport v' _ _) -> v == v')
@@ -210,12 +212,18 @@ instance ( PUClass (Network title) (BusNetwork title (PU Passive v t) v t) v t
 ----------------------------------------------------------------------
 
 
-
+-- | Функция позволяет проанализировать сеть и получить наружу варианты для управления привязками
+-- функциональных блоков к вычислительным блокам. В текущем виде место для данной функции не
+-- определено, так как:
+--
+-- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
+--    в себя эти настройки (но не hardcode-ить).
+-- 2. Эти функции должны быть представленны классом типов.
 bindingOptions BusNetwork{..} =
   concatMap bindVariants' bnRemains
   where
     bindVariants' fb =
-      [ (fb, puTitle) -- , newVariants pu fb)
+      [ (fb, puTitle)
       | (puTitle, pu) <- sortByLoad $ M.assocs bnPus
       , isRight $ bind fb pu
       , not $ selfTransport fb puTitle
@@ -244,15 +252,10 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
   }
 
 
-
-
-
-
 --------------------------------------------------------------------------
 
-instance ( Time t, Var v
-         , Ord (Signal (BusNetwork String (PU Passive v t) v t))
-         ) => Synthesis (BusNetwork String (PU Passive v t) v t) where
+
+instance ( Time t ) => Synthesis (BusNetwork String v t) where
   moduleName BusNetwork{..} = S.join "_" (M.keys bnPus) ++ "_net"
 
   moduleInstance _ _ _ = undefined
@@ -263,14 +266,14 @@ instance ( Time t, Var v
                   , "    clk,"
                   , "    rst"
                   , "    );"
-                  , ""
+                  , "      "
                   , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
                   , "parameter DATA_WIDTH = 32;"
                   , "parameter ATTR_WIDTH = 4;"
-                  , ""
+                  , "      "
                   , "input clk;"
                   , "input rst;"
-                  , ""
+                  , "      "
                   , "// Sub module instances"
                   , "wire [MICROCODE_WIDTH-1:0] signals_out;"
                   , "wire [DATA_WIDTH-1:0] data_bus;"
@@ -279,7 +282,7 @@ instance ( Time t, Var v
                   , "pu_simple_control"
                   , "    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
                   , "     , .PROGRAM_DUMP( \"hdl/gen/$moduleName$.dump\" )"
-                  , "     , .PROGRAM_SIZE( $ProgramSize$ )"
+                  , "     , .MEMORY_SIZE( $ProgramSize$ )"
                   , "     ) control_unit"
                   , "    ( .clk( clk ), .rst( rst ), .signals_out( signals_out ) );"
                   , ""
@@ -340,23 +343,19 @@ instance ( Time t, Var v
           foo _ = Nothing
 
 
-instance ( Synthesis (BusNetwork title (PU Passive v t) v t)
-         ) => TestBenchRun (BusNetwork title (PU Passive v t) v t) where
+instance ( Synthesis (BusNetwork title v t) ) => TestBenchRun (BusNetwork title v t) where
   buildArgs net
     = map (("hdl/" ++) . (++ ".v") . (\(PU pu) -> moduleName pu)) (M.elems $ bnPus net)
-    ++ [ "hdl/pu_simple_control.v"
-       , "hdl/gen/" ++ moduleName net ++ ".v"
-       , "hdl/gen/" ++ moduleName net ++ "_tb.v"
-       ]
+      ++ [ "hdl/pu_simple_control.v"
+         , "hdl/gen/" ++ moduleName net ++ ".v"
+         , "hdl/gen/" ++ moduleName net ++ "_tb.v"
+         ]
 
 
 
-instance ( Typeable title, Ord title, Show title, Var v, Time t
-         , Typeable (PU Passive v t)
-         , PUClass Passive (PU Passive v t) v t
-         , Simulatable (PU Passive v t) v Int
-         , Synthesis (BusNetwork title (PU Passive v t) v t)
-         ) => TestBench (BusNetwork title (PU Passive v t) v t) v Int where
+instance ( Title title, Var v, Time t
+         , Synthesis (BusNetwork title v t)
+         ) => TestBench (BusNetwork title v t) v Int where
 
   components pu =
     [ ( "hdl/gen/" ++ moduleName pu ++ "_assertions.v", assertions )

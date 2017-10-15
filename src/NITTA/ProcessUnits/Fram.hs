@@ -11,6 +11,9 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
+{-|
+TODO: Добавить функциональный блок Const.
+-}
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
   , Signal(..)

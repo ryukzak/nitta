@@ -55,9 +55,9 @@ timeSplitOptions ControlModel{..} availableVars
 
 splitProcess Fork{..} (Split _cond _is branchs)
   = let ControlModel{..} = controlModel
-        t = nextTick $ process net
+        t = nextTick $ process topPU
         f : fs = map (\SplitBranch{..} -> Fork
-                       { net=setTime t{ tag=sTag } net
+                       { topPU=setTime t{ tag=sTag } topPU
                        , controlModel=controlModel{ controlFlow=sControlFlow }
                        , timeTag=sTag
                        , forceInputs=sForceInputs
@@ -81,51 +81,51 @@ threshhold = 2
 
 isOver Forks{..} = isOver current && null remains
 isOver Fork{..}
-  = let opts = sensibleOptions $ filterByControlModel controlModel $ options net
-        bindOpts = bindingOptions net
+  = let opts = sensibleOptions $ filterByControlModel controlModel $ options topPU
+        bindOpts = bindingOptions topPU
     in null opts && null bindOpts
 
 
 naive f@Forks{..}
-  = let current'@Fork{ net=net' } = naive current
-        t = maximum $ map (nextTick . process . net) $ current' : completed
+  = let current'@Fork{ topPU=topPU' } = naive current
+        t = maximum $ map (nextTick . process . topPU) $ current' : completed
         parallelSteps = concatMap
-          (\Fork{ net=n
+          (\Fork{ topPU=n
                 , timeTag=forkTag
                 } -> filter (\Step{..} -> forkTag == placeInTimeTag sTime
                             ) $ steps $ process n
           ) completed
     in case (isOver current', remains) of
          (True, r:rs) -> f{ current=r, remains=rs, completed=current' : completed }
-         (True, _)    -> let net''@BusNetwork{ bnProcess=p }
-                               = setTime t{ tag=timeTag merge } net'
-                         in merge{ net=net''{ bnProcess=snd $ modifyProcess p $
-                                                mapM_ (\Step{..} -> add sTime sDesc) parallelSteps
-                                            }
+         (True, _)    -> let topPU''@BusNetwork{ bnProcess=p }
+                               = setTime t{ tag=timeTag merge } topPU'
+                         in merge{ topPU=topPU''{ bnProcess=snd $ modifyProcess p $
+                                                    mapM_ (\Step{..} -> add sTime sDesc) parallelSteps
+                                                }
                                  }
          (False, _)   -> f{ current=current' }
 
 
 naive f@Fork{..}
-  = let opts = sensibleOptions $ filterByControlModel controlModel $ options net
-        bindOpts = bindingOptions net
+  = let opts = sensibleOptions $ filterByControlModel controlModel $ options topPU
+        bindOpts = bindingOptions topPU
         splits = timeSplitOptions controlModel availableVars
     in case (splits, opts, bindOpts) of
          ([], [], [])    -> f -- trace "over" f
          (_, _o : _, _)  | length opts >= threshhold -> afterStep
-         (_bo, _, _ : _) -> f{ net=autoBind net }
+         (_bo, _, _ : _) -> f{ topPU=autoBind topPU }
          (_, _o : _, _)  -> afterStep
          (s : _, _, _)   -> splitProcess f s -- trace ("split: " ++ show s) $ splitProcess f s
   where
-    availableVars = nub $ concatMap (M.keys . toPush) $ options net
+    availableVars = nub $ concatMap (M.keys . toPush) $ options topPU
     afterStep
       = case sortBy (\a b -> start a `compare` start b)
-             $ sensibleOptions $ filterByControlModel controlModel $ options net of
+             $ sensibleOptions $ filterByControlModel controlModel $ options topPU of
         v:_ -> let act = option2action v
                    cm' = foldl controlModelStep controlModel
                          $ map fst $ filter (isJust . snd) $ M.assocs $ taPush act
                in -- trace ("step: " ++ show act)
-                  f{ net=select net act
+                  f{ topPU=select topPU act
                    , controlModel=cm'
                    }
         _   -> error "No variants!"

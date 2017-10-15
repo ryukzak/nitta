@@ -141,11 +141,8 @@ data Forks tag v t
   , merge     :: Forks tag v t
   }
   | Fork
-  { net          :: BusNetwork String (PU Passive v t) v t
+  { topPU        :: BusNetwork String v t
   , controlModel :: ControlModel tag v
   , timeTag      :: Maybe tag
   , forceInputs  :: [v]
   }
-
-
-

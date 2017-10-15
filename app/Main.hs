@@ -1,5 +1,3 @@
--- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
-
 {-# LANGUAGE Arrows                 #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
@@ -13,6 +11,7 @@
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TupleSections          #-}
 {-# LANGUAGE UndecidableInstances   #-}
+-- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module Main where
 
@@ -46,8 +45,7 @@ type T = TaggedTime String Int
 fram = PU (def :: Fram String T)
 accum = PU (def :: A.Accum String T)
 
-
-net0 = busNetwork
+net = busNetwork
   [ ("fram1", fram)
   , ("fram2", fram)
   , ("accum", accum)
@@ -78,21 +76,6 @@ net0 = busNetwork
                   , ( 0, [("fram2", S $ (ADDR 0 :: Signal (Fram String T)))])
                   ]
 
-
--- alg = [ FB.framInput 3 $ O ["a"]
---       , FB.framInput 4 $ O [ "b"
---                            , "c"
---                            ]
---       , FB.reg (I "a") $ O ["x"]
---       , FB.reg (I "b") $ O ["y"]
---       , FB.reg (I "c") $ O ["z"]
---       , FB.framOutput 5 $ I "x"
---       , FB.framOutput 6 $ I "y"
---       , FB.framOutput 7 $ I "z"
---       , FB.loop (O ["f"]) $ I "g"
---       , FB.reg (I "f") $ O ["g"]
---       ]
-
 alg = [ FB.framInput 3 $ O [ "a"
                            , "d"
                            ]
@@ -112,13 +95,26 @@ alg = [ FB.framInput 3 $ O [ "a"
       , FB $ Add (I "d") (I "e") (O ["sum"])
       ]
 
+net' = bindAll (net :: BusNetwork String String T) alg
 
--- alg = [ FB.framInput 1 $ O [ "a" ]
---       , FB.framInput 2 $ O [ "b" ]
---       , FB $ Add (I "a") (I "b") (O ["sum"])
---       , FB.framOutput 0 $ I "sum"
---       ]
+---------------------------------------------------------------------------------
 
+main = do
+  let compiler = Fork net' (def{ controlFlow=mkControlFlow $ DataFlow $ map Statement alg }) Nothing []
+  let Fork{ topPU=pu
+          , controlModel=cm'
+          } = foldl (\comp _ -> naive comp) compiler (take 150 $ repeat ())
+
+  timeline "resource/data.json" pu
+  r <- testBench pu ([] :: [(String, Int)])
+  if r then putStrLn "Success"
+  else putStrLn "Fail"
+
+getPU puTitle net
+  = case bnPus net ! puTitle of
+      PU pu | Just pu' <- cast pu -> pu'
+
+---------------------------------------------------------------------
 
 -- program = DataFlow
 --   [ Statement $ FB.framInput 0 $ O [ "cond", "cond'" ]
@@ -130,26 +126,5 @@ alg = [ FB.framInput 3 $ O [ "a"
 --     , (1, DataFlow [ Statement $ FB.reg (I "x2") $ O ["y2"], Statement $ FB.framOutput 11 $ I "y2" ])
 --     ]
 --   ]
-
-program = DataFlow $ map Statement alg
-
-
-net' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) alg
--- net'' = bindAll (net0 :: BusNetwork String (PU Passive String T) String T) $ functionalBlocks program
-
----------------------------------------------------------------------------------
-
-main = do
-  let compiler = Fork net' (def{ controlFlow=mkControlFlow $ DataFlow $ map Statement alg }) Nothing []
-  let Fork{ net=pu
-          , controlModel=cm'
-          } = foldl (\comp _ -> naive comp) compiler (take 150 $ repeat ())
-
-  timeline "resource/data.json" pu
-  r <- testBench pu ([] :: [(String, Int)])
-  if r then putStrLn "Success"
-  else putStrLn "Fail"
-
-getPU puTitle net0
-  = case bnPus net0 ! puTitle of
-      PU pu | Just pu' <- cast pu -> pu'
+-- program = DataFlow $ map Statement alg
+-- net'' = bindAll (net0 :: BusNetwork String String T) $ functionalBlocks program
