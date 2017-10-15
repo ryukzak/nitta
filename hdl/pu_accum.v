@@ -1,42 +1,27 @@
-module pu_accum (
-    clk,
-    
-    signal_init,
-    signal_load,
-    signal_neg,
+// Работает в дополнительном коде.
+module pu_accum
+  #( parameter DATA_WIDTH = 32
+  ,  parameter ATTR_WIDTH = 4
+  ,  parameter SIGN       = 0
+  ,  parameter OVERFLOW   = 1
+  )
+  ( input  wire                  clk
+  , input  wire                  signal_load
+  , input  wire                  signal_init
+  , input  wire                  signal_neg
+  , input  wire [DATA_WIDTH-1:0] data_in
+  , input  wire [ATTR_WIDTH-1:0] attr_in
 
-    data_in,
-    attr_in,
-
-    signal_oe,
-    data_out,
-    attr_out
+  , input  wire                  signal_oe
+  , output reg  [DATA_WIDTH-1:0] data_out
+  , output reg  [ATTR_WIDTH-1:0] attr_out
 );
-
-parameter DATA_WIDTH     = 32;
-parameter ATTR_WIDTH     = 4; 
-
-parameter SIGN     = 0;
-parameter OVERFLOW = 1;
-
-
-input clk;
-input signal_load, signal_init, signal_neg;
-input [DATA_WIDTH-1:0] data_in;
-input [ATTR_WIDTH-1:0] attr_in;
-
-input signal_oe;
-output [DATA_WIDTH-1:0] data_out;
-output [ATTR_WIDTH-1:0] attr_out;
 
 
 reg [DATA_WIDTH-1:0]   ext_arg;
 reg [DATA_WIDTH-1:0]   int_arg;
-reg [DATA_WIDTH:0]  acc; // +1 на переполнение
+reg [DATA_WIDTH:0]     acc; // +1 на переполнение
 reg overflow;
-
-reg [DATA_WIDTH-1:0] data_out;
-reg [ATTR_WIDTH-1:0] attr_out;
 
 
 always @(posedge clk)

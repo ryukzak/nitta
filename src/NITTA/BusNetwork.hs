@@ -285,7 +285,7 @@ instance ( Time t, Var v
                   , "pu_simple_control"
                   , "    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
                   , "     , .PROGRAM_DUMP( \"hdl/gen/$moduleName$.dump\" )"
-                  , "     , .PROGRAM_SIZE( $program_size$ + 1 )" -- TODO - принять решения по поводу размерности программы.
+                  , "     , .PROGRAM_SIZE( $ProgramSize$ )"
                   , "     ) control_unit"
                   , "    ( .clk( clk ), .rst( rst ), .signals_out( signals_out ) );"
                   , ""
@@ -302,7 +302,11 @@ instance ( Time t, Var v
                   , ( "microCodeWidth", show $ snd (bounds bnWires) + 1 )
                   , ( "instances", S.join "\n\n" instances)
                   , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "    { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
-                  , ( "program_size", show $ fromEnum $ nextTick bnProcess )
+                  , ( "ProgramSize", show $ (fromEnum $ nextTick bnProcess)
+                      + 1 -- 0 адресс программы для простоя процессора
+                      + 1 -- На последнем такте для BusNetwork можно подготовить следующую
+                          -- пересылку, но сама шина может быть занята работой.
+                    )
                   ]
     where
       valueData t = t ++ "_data_out"
@@ -378,7 +382,7 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
           signalsAt t = map (signalAt bn t) wires
 
       assertions BusNetwork{ bnProcess=Process{..}, ..} cntx
-        = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick - 1 ]
+        = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick ]
         where
           p = puProcess
           assert time
