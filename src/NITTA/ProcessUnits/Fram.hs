@@ -9,7 +9,6 @@
 {-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.ProcessUnits.Fram
@@ -31,17 +30,15 @@ import qualified Data.Graph            as G
 import           Data.List             (find, minimumBy, sortBy)
 import qualified Data.Map              as M
 import           Data.Maybe
-import           Data.Proxy
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.Lens
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval      (inf, singleton, sup, (...))
+import           Numeric.Interval      ((...))
 import           Prelude               hiding (last)
 
-import           Debug.Trace
 
 
 data Fram v t = Fram
@@ -53,10 +50,10 @@ data Fram v t = Fram
 deriving instance ( Var v, Time t ) => Show (Fram v t)
 
 
+remains get Fram{..} = filter (isJust . get) frRemains
 remainLoops fr = remains getLoop fr
 remainRegs fr = remains getReg fr
 
-remains get Fram{..} = filter (isJust . get) frRemains
 
 getReg :: Var v => MicroCode v t -> Maybe (Reg Parcel v)
 getReg MicroCode{..} = castFB fb
@@ -148,8 +145,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
         else Left "Can't bind Reg to Fram, place for Reg don't exist."
 
     | Just (Loop (O bs) (I a)) <- castFB fb =
-        if -- trace ("ioUses: " ++ show (ioUses fr)) $
-           ioUses fr < framSize
+        if ioUses fr < framSize
         then let bindToCell mc cell@Cell{ input=Undef, output=Undef } =
                    Right cell{ input=Def mc
                              , output=UsedOrBlocked
@@ -207,9 +203,9 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
         | otherwise              = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
       constrain _cell (Push _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
 
-  select fr@Fram{ frProcess=p0@Process{ nextTick=tick0 }, .. } act0@EffectAct{ eaAt=at, .. }
-    | not $ tick0 <= inf at
-    = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show (inf at)
+  select fr@Fram{ frProcess=p0@Process{ nextTick=tick0 }, .. } act@EffectAct{..}
+    | tick0 > act^.at.infimum
+    = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show (act^.at.infimum)
 
     | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< eaEffect) . head . actions) frRemains
     = case availableCell fr mc of
@@ -220,8 +216,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
                       , frMemory=frMemory // [(addr, cell')]
                       , frProcess=p'
                       }
-         in --trace (show fb ++ " --> " ++ show addr) $
-            select fr' act0
+         in select fr' act
         Nothing -> error $ "Can't find available cell for: " ++ show fb ++ "!"
 
     | Just (addr, cell) <- find (any (<< eaEffect) . cell2acts True . snd) $ assocs frMemory
@@ -243,9 +238,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
             let (p', mc') = doAction addr p0 mc
                 cell' = updateLastWrite (nextTick p') cell
                 cell'' = cell'{ input=UsedOrBlocked
-                              , current=
-                                  --trace (show mc ++  " --> " ++ show mc' ++ " @ " ++ show addr)
-                                  mc'
+                              , current=mc'
                               }
             in fr{ frMemory=frMemory // [(addr, cell'')]
                  , frProcess=p'
@@ -263,7 +256,7 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
                  }
         _ -> error "Internal Fram error, step"
 
-    | otherwise = error $ "Can't found selected action: " ++ show act0
+    | otherwise = error $ "Can't found selected action: " ++ show act
                   ++ " tick: " ++ show (nextTick p0) ++ "\n"
                   ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options fr)
                   ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
@@ -282,27 +275,27 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
       mkWork _addr _p MicroCode{ actions=[] } = error "Fram internal error, mkWork"
       mkWork addr p mc@MicroCode{ actions=x:xs, ..} =
         let ((ef, instrs), p') = modifyProcess p $ do
-              e <- add (Activity at) $ EffectStep eaEffect
-              i1 <- add (Activity at) $ InstructionStep
-                $ (act2Instruction addr eaEffect :: Instruction (Fram v t))
-              is <- if tick0 < (inf at)
+              e <- add (Activity $ act^.at) $ EffectStep eaEffect
+              i1 <- add (Activity $ act^.at)
+                $ InstructionStep (act2Instruction addr eaEffect :: Instruction (Fram v t))
+              is <- if tick0 < act^.at.infimum
                 then do
-                  i2 <- add (Activity $ tick0 ... inf at - 1)
+                  i2 <- add (Activity $ tick0 ... act^.at.infimum - 1)
                     $ InstructionStep (Nop :: Instruction (Fram v t))
                   return [ i1, i2 ]
                 else return [ i1 ]
               mapM_ (relation . Vertical ef) instrs
-              setProcessTime $ sup at + 1
+              setProcessTime $ act^.at.supremum + 1
               return (e, is)
         in (p', mc{ effect=ef : effect
                   , instruction=instrs ++ instruction
-                  , workBegin=workBegin `orElse` Just (inf at)
+                  , workBegin=workBegin `orElse` Just (act^.at.infimum)
                   , actions=if x == eaEffect then xs else (x \\\ eaEffect) : xs
                   })
 
       finish p MicroCode{..} = snd $ modifyProcess p $ do
         let start = fromMaybe (error "workBegin field is empty!") workBegin
-        h <- add (Activity $ start ... sup at) $ FBStep fb
+        h <- add (Activity $ start ... act^.at.supremum) $ FBStep fb
         mapM_ (relation . Vertical h) compiler
         mapM_ (relation . Vertical h) effect
         mapM_ (relation . Vertical h) instruction
@@ -336,8 +329,7 @@ instance ( Var v, Time t ) => Controllable (Fram v t) where
 instance ( Var v, Time t
          ) => ByTime (Fram v t) t where
   signalAt pu@Fram{..} time sig =
-    let instruction = case catMaybes $ map (extractInstruction pu)
-                           $ whatsHappen time frProcess of
+    let instruction = case mapMaybe (extractInstruction pu) $ whatsHappen time frProcess of
           []  -> Nop
           [i] -> i
           is  -> error $ "Ambiguously instruction at "
@@ -530,8 +522,8 @@ findAddress v pu@Fram{ frProcess=p@Process{..} }
     ] <- filter ( \st -> isEffect (sDesc st)
                          && (\Step{ sDesc=EffectStep eff } -> v `elem` variables eff) st
                 ) steps
-  , instructions <- catMaybes $ map (extractInstruction pu) $ whatsHappen (inf timePlace) p
-  , is <- catMaybes $ map (\i -> case i of
+  , instructions <- mapMaybe (extractInstruction pu) $ whatsHappen (timePlace^.infimum) p
+  , is <- mapMaybe (\i -> case i of
                   Load addr -> Just addr
                   Save addr -> Just addr
                   _         -> Nothing

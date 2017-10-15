@@ -4,36 +4,25 @@
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 
 module NITTA.TestBench where
 
 import           Control.Monad.State
-import           Data.Default
-import           Data.List            (find, intersect, isSubsequenceOf,
-                                       partition)
-import qualified Data.List            as L
-import qualified Data.Map             as M
-import           Data.Maybe           (catMaybes, fromMaybe, isJust)
-import           Data.Typeable        (Typeable, cast, typeOf)
-import           NITTA.FunctionBlocks
-import qualified NITTA.FunctionBlocks as FB
+import           Data.List           (isSubsequenceOf)
+import qualified Data.List           as L
+import qualified Data.Map            as M
+import           Data.Typeable       (Typeable)
 import           NITTA.Types
-import           NITTA.Utils
 import           System.Directory
 import           System.Exit
 import           System.Process
-
-import           Debug.Trace
-
 
 
 
@@ -76,11 +65,10 @@ runTestBench pu = do
 
   (ExitSuccess, simOut, simErr) <- readProcessWithExitCode "./a.out" [] []
   -- Yep, we can't stop simulation with bad ExitCode...
-  if ("FAIL" `isSubsequenceOf` simOut)
+  if "FAIL" `isSubsequenceOf` simOut
     then do
       putStrLn $ "stdout:\n" ++ simOut
       putStrLn $ "stderr:\n" ++ simErr
-    else putStrLn $ "Simulation correct"
-    -- die "Simulation failed!"
+    else return () -- putStrLn $ "Simulation correct"
 
   return $ not ("FAIL" `isSubsequenceOf` simOut)

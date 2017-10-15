@@ -50,12 +50,10 @@ prop_formalCompletness (DataFlow df _values pu) =
       vars' = concatMap variables $ getEffects p
       df' = getFBs p
   in if and
-        [ --trace (">>" ++ show (vars \\ vars')) $
-          fromList vars == fromList vars'
+        [ fromList vars == fromList vars'
         , length (nub vars') == length vars'
         , length (nub df') == length df'
-        , --trace (">>" ++ show (alg \\ alg')) $
-          fromList df == fromList df'
+        , fromList df == fromList df'
         ]
      then True
      else
@@ -77,12 +75,7 @@ naiveGen pu df = naiveGen' pu df []
 
 naiveGen' pu df passedDF = do
   s1 <- choose (0 :: Int, 1)
-  let opts =
-        -- trace ("vars: " ++ show (variants pu) ++ "\n"
-        --         ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs $ frMemory pu)
-        --         ++ "remains:\n" ++ concatMap ((++ "\n") . show) (frRemains pu)
-        --       ) $
-        options pu
+  let opts = options pu
   case s1 of
     0 | not $ null opts -> do
           i <- choose (0, length opts - 1)

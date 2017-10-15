@@ -2,26 +2,20 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module Main where
 
-import           Data.Array                  (elems)
 import           Data.Default
-import           Data.List                   (nub)
-import           Data.Maybe
-import           Data.Set                    (fromList, (\\))
-import           Data.Typeable
 import qualified NITTA.Compiler              as C
-import           NITTA.FunctionBlocks
+import qualified NITTA.FunctionBlocks        as FB
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnits.FramSpec
 import           NITTA.ProcessUnitsSpec
-import           NITTA.Timeline
+import           NITTA.TestBench
 import           NITTA.Types
-import           NITTA.Utils
-import           Test.QuickCheck
-
 import           System.Environment
+import           Test.QuickCheck
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck       as QC
@@ -37,10 +31,10 @@ main = do
 tests = testGroup "Tests" [ properties ]
 
 properties :: TestTree
-properties = testGroup "Properties" [ qcProps ]
+properties = testGroup "Properties" [ qcFramProps, huFramTests ]
 
 
-qcProps = testGroup "FRAM check"
+qcFramProps = testGroup "FRAM check"
   [ QC.testProperty "Сompleteness with a maximum load"
     (prop_formalCompletness . bindAllAndNaiveSelects :: FramIdealDataFlow -> Bool)
   , QC.testProperty "Сompleteness with a partial load"
@@ -51,12 +45,18 @@ qcProps = testGroup "FRAM check"
     (prop_simulation . framDataFlow :: FramDataFlow -> Property)
   ]
 
--- unitTests = testGroup "Unit tests"
---   [ testCase "List comparison (different length)" $
---       [1, 2, 3] `compare` [1,2] @?= GT
+huFramTests
+  = let alg = [ FB.reg (I "aa") $ O ["ab"]
+              , FB.framOutput 9 $ I "ac"
+              ]
+        fram = (def :: Fram String Int)
+        fram' = C.bindAllAndNaiveSelects fram alg
+    in testGroup "Unit tests for fram."
+      [ testCase "Simple unit test"
+      $ assert (testBench fram' [("aa", 42), ("ac", 0x1009)])
+      ]
 
---   -- the following test does not hold
---   , testCase "List comparison (same length)" $
---       [1, 2, 3] `compare` [1,2,2] @?= LT
---   ]
+
+
+
 

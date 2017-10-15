@@ -1,13 +1,10 @@
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE LambdaCase             #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE PartialTypeSignatures  #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE StandaloneDeriving     #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Flows
@@ -25,8 +22,6 @@ import           Data.List        (nub, (\\))
 import           NITTA.BusNetwork
 import           NITTA.Types
 import           NITTA.Utils
-
--- import           Debug.Trace
 
 
 data Program v
@@ -78,8 +73,8 @@ isSwitch _        = False
 isParallel (Parallel _) = True
 isParallel _            = False
 
-isSplit (Split _ _ _) = True
-isSplit _             = False
+isSplit Split{} = True
+isSplit _       = False
 
 
 mkControlFlow (Statement fb) = Parallel $ map Atom $ variables fb
@@ -92,7 +87,7 @@ mkControlFlow s@Switch{..}
                          , sControlFlow=mkControlFlow prog
                          }
                        ) branchs
-  in Split conduction inputs $ branchs'
+  in Split conduction inputs branchs'
 
 mkControlFlow (DataFlow ss)
   = let cf = map mkControlFlow ss
@@ -110,7 +105,7 @@ controlModelOptions ControlModel{..}
     controlOptions' (Atom v)     = [v]
     controlOptions' (Split v _ _) = [v] --  : vs
     controlOptions' cf@(Parallel cfs)
-      | length (filter isParallel cfs) == 0
+      | not $ any isParallel cfs
       = concatMap controlOptions' cfs
       | otherwise
       = error $ "Bad controlFlow: " ++ show cf

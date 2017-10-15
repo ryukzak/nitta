@@ -146,7 +146,9 @@ main = do
           } = foldl (\comp _ -> naive comp) compiler (take 150 $ repeat ())
 
   timeline "resource/data.json" pu
-  testBench pu ([] :: [(String, Int)])
+  r <- testBench pu ([] :: [(String, Int)])
+  if r then putStrLn "Success"
+  else putStrLn "Fail"
 
 getPU puTitle net0
   = case bnPus net0 ! puTitle of

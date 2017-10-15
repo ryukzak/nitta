@@ -1,15 +1,11 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE KindSignatures            #-}
-{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE Rank2Types                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
@@ -23,17 +19,17 @@ import           Data.Default
 import           Data.Either
 import           Data.List               (intersect, nub, sortBy, (\\))
 import qualified Data.Map                as M
-import           Data.Maybe              (catMaybes, fromMaybe, isJust)
+import           Data.Maybe              (fromMaybe, isJust, mapMaybe)
 import           Data.Proxy
 import qualified Data.String.Utils       as S
 import           Data.Typeable
+import           NITTA.Lens
 import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval        (inf, sup, width, (...))
+import           Numeric.Interval        (inf, width, (...))
 
--- import           Debug.Trace
 
 
 class ( Typeable v, Eq v, Ord v, Show v ) => Title v
@@ -59,7 +55,7 @@ instance ( Title title, Var v, Time t
          ) => PUClass (Network title) (BusNetwork title (PU Passive v t) v t) v t where
 
   bind fb bn@BusNetwork{..}
-    | any (\pu -> isRight $ bind fb pu) $ M.elems bnPus
+    | any (isRight . bind fb) $ M.elems bnPus
     = Right bn{ bnRemains=fb : bnRemains }
   bind _fb _bn = Left "no"
 
@@ -67,8 +63,8 @@ instance ( Title title, Var v, Time t
     let x = concat
           [
             [ TransportOpt fromPu (fixPullConstrain pullAt) $ M.fromList pushs
-            | pushs <- sequence $ map pushOptionsFor pullVars
-            , let pushTo = catMaybes $ map (fmap fst . snd) pushs --  $ trace ("pushs: " ++ show pushs) pushs
+            | pushs <- mapM pushOptionsFor pullVars
+            , let pushTo = mapMaybe (fmap fst . snd) pushs
             , length (nub pushTo) == length pushTo
             ]
           | (fromPu, opts) <-
@@ -80,7 +76,7 @@ instance ( Title title, Var v, Time t
        x
     where
       now = nextTick bnProcess
-      fixPullConstrain tc@TimeConstrain{..} = tc{ tcAvailable=(max now $ inf tcAvailable) ... sup tcAvailable }
+      fixPullConstrain tc@TimeConstrain{..} = tc{ tcAvailable=max now (tc^.avail.infimum) ... tc^.avail.supremum }
       pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
       pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
 
@@ -90,7 +86,7 @@ instance ( Title title, Var v, Time t
                           , pushVar == v
                           ]
       availableVars =
-        let fbs = bnRemains ++ (concat $ M.elems bnBinded)
+        let fbs = bnRemains ++ concat (M.elems bnBinded)
             alg = foldl
                   (\dict (a, b) -> M.adjust ((:) b) a dict)
                   (M.fromList [(v, []) | v <- concatMap variables fbs])
@@ -102,25 +98,23 @@ instance ( Title title, Var v, Time t
       puOptions = M.assocs $ M.map options bnPus
 
   select ni@BusNetwork{..} act@TransportAct{..}
-    | not $ nextTick bnProcess <= (inf taPullAt)
+    | nextTick bnProcess > act^.at.infimum
     = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (inf taPullAt)
     | otherwise = ni
     { bnPus=foldl (\s n -> n s) bnPus steps
     , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add
-                -- (trace ("1> " ++ show transportStartAt ++ " ... " ++ show transportEndAt) $
                 (Activity $ transportStartAt ... transportEndAt)
-                (InstructionStep
-                  $ (Transport v taPullFrom title :: Instruction (BusNetwork title (PU Passive v t) v t)))
+                $ InstructionStep (Transport v taPullFrom title :: Instruction (BusNetwork title (PU Passive v t) v t))
               ) $ M.assocs push'
         _ <- add (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act --   $ Pull pullVars
-        setProcessTime $ (sup taPullAt) + 1
+        setProcessTime $ act^.at.supremum + 1
     , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
     where
       transportStartAt = inf taPullAt
       transportDuration = maximum $
-        map ((\event -> ((inf event) - transportStartAt) + (width event)) . snd) $ M.elems push'
+        map ((\event -> (inf event - transportStartAt) + width event) . snd) $ M.elems push'
       transportEndAt = transportStartAt + transportDuration
       -- if puTitle not exist - skip it...
       pullStep = M.adjust (\dpu -> select dpu $ EffectAct (Pull pullVars) taPullAt) taPullFrom
@@ -207,7 +201,7 @@ instance ( PUClass (Network title) (BusNetwork title (PU Passive v t) v t) v t
   variableValue _fb bn@BusNetwork{..} cntx vi@(v, _) =
     let [Transport _ src _] =
           filter (\(Transport v' _ _) -> v == v')
-          $ catMaybes $ map (extractInstruction bn)
+          $ mapMaybe (extractInstruction bn)
           $ steps bnProcess
     in variableValueWithoutFB (bnPus M.! src) cntx vi
 
@@ -231,7 +225,7 @@ bindingOptions BusNetwork{..} =
     load = length . binded
 
     selfTransport fb puTitle =
-      not $ null $ variables fb `intersect` (concatMap variables $ binded puTitle)
+      not $ null $ variables fb `intersect` concatMap variables (binded puTitle)
 
     binded puTitle | puTitle `M.member` bnBinded = bnBinded M.! puTitle
                    | otherwise = []
@@ -239,7 +233,7 @@ bindingOptions BusNetwork{..} =
 
 
 subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
-  { bnPus=M.adjust (\pu -> fromRight undefined $ bind fb pu) puTitle bnPus
+  { bnPus=M.adjust (fromRight undefined . bind fb) puTitle bnPus
   , bnBinded=M.alter (\v -> case v of
                          Just fbs -> Just $ fb : fbs
                          Nothing  -> Just [fb]
@@ -259,7 +253,7 @@ subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
 instance ( Time t, Var v
          , Ord (Signal (BusNetwork String (PU Passive v t) v t))
          ) => Synthesis (BusNetwork String (PU Passive v t) v t) where
-  moduleName BusNetwork{..} = (S.join "_" $ M.keys bnPus) ++ "_net"
+  moduleName BusNetwork{..} = S.join "_" (M.keys bnPus) ++ "_net"
 
   moduleInstance _ _ _ = undefined
 
@@ -302,7 +296,7 @@ instance ( Time t, Var v
                   , ( "microCodeWidth", show $ snd (bounds bnWires) + 1 )
                   , ( "instances", S.join "\n\n" instances)
                   , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "    { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
-                  , ( "ProgramSize", show $ (fromEnum $ nextTick bnProcess)
+                  , ( "ProgramSize", show $ fromEnum (nextTick bnProcess)
                       + 1 -- 0 адресс программы для простоя процессора
                       + 1 -- На последнем такте для BusNetwork можно подготовить следующую
                           -- пересылку, но сама шина может быть занята работой.
@@ -321,7 +315,7 @@ instance ( Time t, Var v
       renderInstance insts regs [] = ( reverse insts, reverse regs )
       renderInstance insts regs ((title, PU spu) : xs)
         = let inst = moduleInstance spu title (cntx title spu Proxy)
-              insts' = inst : (regInstance title) : insts
+              insts' = inst : regInstance title : insts
               regs' = (valueAttr title, valueData title) : regs
           in renderInstance insts' regs' xs
       cntx :: ( Typeable pu, Show (Signal pu)
@@ -332,11 +326,11 @@ instance ( Time t, Var v
           , ( "AttrIn", "attr_bus" )
           , ( "DataOut", valueData title )
           , ( "AttrOut", valueAttr title )
-          ] ++ (catMaybes $ map foo $ [ (i, s)
-                                      | (i, ds) <- assocs bnWires
-                                      , (title', s) <- ds
-                                      , title' == title
-                                      ])
+          ] ++ mapMaybe foo [ (i, s)
+                            | (i, ds) <- assocs bnWires
+                            , (title', s) <- ds
+                            , title' == title
+                            ]
         where
           foo (i, S s)
             | Just s' <- cast s
@@ -387,10 +381,9 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
           p = puProcess
           assert time
             = let pulls = filter (\e -> case e of (Pull _) -> True; _ -> False) $ effectsAt time p
-              in -- trace ("++" ++ show pulls ++ show cntx) $
-              case pulls of
-                (Pull (v:_)):_ -> concat
-                    [ "if ( !( net.data_bus === " ++ show (maybe 0 id $ M.lookup (v, 0) cntx) ++ ") ) "
+              in case pulls of
+                Pull (v:_) : _ -> concat
+                    [ "if ( !( net.data_bus === " ++ show (fromMaybe 0 $ M.lookup (v, 0) cntx) ++ ") ) "
                     ,   "$display("
                     ,     "\""
                     ,       "FAIL wrong value of " ++ show' pulls ++ " the bus failed "
@@ -405,10 +398,9 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
   simulateContext bn@BusNetwork{..} cntx =
     let transports = extractInstructions bn
 
-    in foldl ( \cntx' (Transport v src _dst) -> -- trace ("> " ++ show v ++ "@" ++ show src ++ " " ++ show cntx') $
-                                                M.insert
+    in foldl ( \cntx' (Transport v src _dst) -> M.insert
                 (v, 0)
                 (variableValueWithoutFB (bnPus M.! src) cntx' (v, 0))
                 cntx'
-             ) cntx -- $ trace (">>>>" ++ concatMap ((++ "\n") . show) (steps bnProcess))
+             ) cntx
              transports

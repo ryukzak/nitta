@@ -1,14 +1,11 @@
-{-# LANGUAGE BangPatterns           #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE LambdaCase             #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE PartialTypeSignatures  #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE StandaloneDeriving     #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Compiler
@@ -29,8 +26,6 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval ((...))
 
-import           Debug.Trace
-
 
 bindAll pu alg = fromRight undefined $ foldl nextBind (Right pu) alg
   where
@@ -40,10 +35,7 @@ bindAll pu alg = fromRight undefined $ foldl nextBind (Right pu) alg
 bindAllAndNaiveSelects pu0 alg = naive' $ bindAll pu0 alg
   where
     naive' pu
-      | var:_ <- options pu =
-          naive'
-          --   $ trace (concatMap ((++ "\n") . show) $ elems $ frMemory pu)
-          $ select pu $ effectOpt2act var
+      | (var : _) <- options pu = naive' $ select pu $ effectOpt2act var
       | otherwise = pu
 
 
@@ -54,10 +46,8 @@ effectOpt2act EffectOpt{..} = EffectAct eoEffect
 
 
 
-
-
 timeSplitOptions ControlModel{..} availableVars
-  = let splits = filter isSplit $ (\(Parallel ss) -> ss) $ controlFlow
+  = let splits = filter isSplit $ (\(Parallel ss) -> ss) controlFlow
     in filter isAvalilable splits
   where
     isAvalilable (Split c vs _) = all (`elem` availableVars) $ c : vs
@@ -96,27 +86,27 @@ isOver Fork{..}
     in null opts && null bindOpts
 
 
-naive !f@Forks{..}
+naive f@Forks{..}
   = let current'@Fork{ net=net' } = naive current
         t = maximum $ map (nextTick . process . net) $ current' : completed
         parallelSteps = concatMap
           (\Fork{ net=n
                 , timeTag=forkTag
-                } -> filter (\Step{..} -> forkTag == (placeInTimeTag sTime)
+                } -> filter (\Step{..} -> forkTag == placeInTimeTag sTime
                             ) $ steps $ process n
           ) completed
     in case (isOver current', remains) of
          (True, r:rs) -> f{ current=r, remains=rs, completed=current' : completed }
          (True, _)    -> let net''@BusNetwork{ bnProcess=p }
                                = setTime t{ tag=timeTag merge } net'
-                         in merge{ net=net''{ bnProcess=snd $ modifyProcess p $ do
+                         in merge{ net=net''{ bnProcess=snd $ modifyProcess p $
                                                 mapM_ (\Step{..} -> add sTime sDesc) parallelSteps
                                             }
                                  }
          (False, _)   -> f{ current=current' }
 
 
-naive !f@Fork{..}
+naive f@Fork{..}
   = let opts = sensibleOptions $ filterByControlModel controlModel $ options net
         bindOpts = bindingOptions net
         splits = timeSplitOptions controlModel availableVars
@@ -140,7 +130,7 @@ naive !f@Fork{..}
                    }
         _   -> error "No variants!"
     start = (\o -> o^.avail.infimum) . toPullAt
-    option2action opt0@TransportOpt{..}
+    option2action TransportOpt{..}
       = let pushTimeConstrains = map snd $ catMaybes $ M.elems toPush
             predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
             pullStart    = maximum $ (toPullAt^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
@@ -173,7 +163,7 @@ filterByControlModel controlModel opts
 
 
 sensibleOptions = filter $
-  \TransportOpt{..} -> not $ null $ filter isJust $ M.elems toPush
+  \TransportOpt{..} -> any isJust $ M.elems toPush
 
 
 
@@ -209,13 +199,13 @@ instance Ord BindPriority where
 autoBind net@BusNetwork{..} =
   let prioritized = sortBV $ map mkBV bOpts
   in case prioritized of
-      (BindOption fb puTitle _) : _ -> -- trace ("bind: " ++ show fb ++ " " ++ show puTitle) $
+      BindOption fb puTitle _ : _ -> -- trace ("bind: " ++ show fb ++ " " ++ show puTitle) $
                                        subBind fb puTitle net
       _                             -> error "Bind variants is over!"
   where
     bOpts = bindingOptions net
     mkBV (fb, titles) = prioritize $ BindOption fb titles Nothing
-    sortBV = reverse . sortBy (\a b -> priority a `compare` priority b)
+    sortBV = sortBy (flip $ \a b -> priority a `compare` priority b)
 
     mergedBOpts = foldl (\m (fb, puTitle) -> M.alter
                           (\case
@@ -228,9 +218,9 @@ autoBind net@BusNetwork{..} =
       -- В настоящий момент данная операци приводит к тому, что часть FB перестают быть вычислимыми.
       --  | isCritical fb = bv{ priority=Just Critical }
 
-      | dependency fb == []
+      | null (dependency fb)
       , pulls <- filter isPull $ optionsAfterBind bv
-      , length pulls > 0
+      , not (null pulls)
       = bv{ priority=Just $ Input $ sum $ map (length . variables) pulls}
 
       | Just (_variable, tcFrom) <- find (\(v, _) -> v `elem` variables fb) restlessVariables
@@ -251,6 +241,3 @@ autoBind net@BusNetwork{..} =
       _  -> []
       where
         act `optionOf` fb' = not $ null (variables act `intersect` variables fb')
-
-    -- trace' vs = trace ("---------"++ show (restlessVariables)
-               -- ++ "\n" ++ (concatMap (\v -> show v ++ "\n") vs)) vs

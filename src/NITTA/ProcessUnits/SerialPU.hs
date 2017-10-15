@@ -11,7 +11,6 @@
 {-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-
 {-|
 В общем случае, вычислительный блок может обладать произвольным поведением, в том числе и выпонять
 несоколько функциональных блоков параллельно. Как правило, это не так, и вычислительный блок может
@@ -32,6 +31,7 @@ import           Control.Monad.State
 import           Data.Default
 import           Data.Either
 import           Data.List           (find, intersect)
+import           Data.Maybe
 import           Data.Typeable
 import           NITTA.Lens
 import           NITTA.Types
@@ -44,8 +44,8 @@ import           Numeric.Interval    ((...))
 -- | Внешняя обёртка для вычислительных блоков, выполняющих функции последовательно.
 data SerialPU st io v t
   = SerialPU
-  -- | Внутрее состояние вычислительного блока. Конкретное состояние зависит от конкретного типа.
-  { spuState   :: st
+  { -- | Внутрее состояние вычислительного блока. Конкретное состояние зависит от конкретного типа.
+    spuState   :: st
   , spuCurrent :: Maybe (CurrentJob io v t)
   -- | Список привязанных к вычислительному блоку функций, но работа над которыми ещё не началась.
   -- Второе значение - ссылка на шаг вычислительного процесса, описывающий привязку функции
@@ -126,7 +126,7 @@ instance ( Var v, Time t
               } act
     | otherwise = error "Variable not found in binded functional blocks."
   select pu@SerialPU{ spuCurrent=Just cur, .. } act
-   | not $ nextTick spuProcess <= act^.at.infimum
+   | nextTick spuProcess > act^.at.infimum
    = error $ "Time wrap! Time: " ++ show (nextTick spuProcess) ++ " Act start at: " ++ show (act^.at.infimum)
    | otherwise
     = let (spuState', work) = schedule spuState act
@@ -137,8 +137,7 @@ instance ( Var v, Time t
                   , spuCurrent=Just cur
                   }
           nextOptions = stateOptions spuState' (nextTick spuProcess')
-      in -- trace ("SerialPU:" ++ show act ++ " " ++ (show $ tick spuProcess)) $
-         case nextOptions of
+      in case nextOptions of
            [] -> pu'{ spuCurrent=Nothing
                     , spuProcess=finish spuProcess' cur'
                     }
@@ -161,9 +160,7 @@ instance ( Var v, Time t
          , UnambiguouslyDecode (SerialPU st Parcel v t)
          ) => ByTime (SerialPU st Parcel v t) t where
   signalAt pu@SerialPU{..} t sig
-    = let instr = case extractInstructionAt pu t of
-                    Just i  -> i
-                    Nothing -> def
+    = let instr = fromMaybe def $ extractInstructionAt pu t
       in decodeInstruction instr sig
 
 

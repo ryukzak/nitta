@@ -281,8 +281,8 @@ data StepInfo v where
   -- | Описание взаимодействий отдельных PU (загрузка/выгрузка данных). Указывается с точки зрения
   -- управления PU, а не с точки зрения загрузки шины.
   EffectStep :: Effect v -> StepInfo v
-  -- | Описание инструкций, выполняемых конкретным рассматриваемым PU. Список инструкций
-  -- определяется PU.
+  -- | Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
+  -- определяется типом вычислительного блока.
   InstructionStep :: ( Show (Instruction pu)
                      , Typeable (Instruction pu)
                      ) => Instruction pu -> StepInfo v
@@ -401,7 +401,7 @@ instance Variables (Option (Network title) v t) v where
 instance ( Show title, Show t, Show v ) => Show (Action (Network title) v t) where
   show TransportAct{..} = show taPullFrom ++ "#[" ++ show taPullAt ++ "] -> " ++ S.join "; " pushs
     where
-      pushs = catMaybes $ map foo $ M.assocs taPush
+      pushs = mapMaybe foo $ M.assocs taPush
       foo (v, Just (title, event)) = Just (show v ++ "@" ++ show title ++ "#[" ++ show event ++ "]")
       foo _ = Nothing
 
