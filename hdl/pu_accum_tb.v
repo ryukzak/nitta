@@ -24,7 +24,7 @@ pu_accum
 
 initial
   begin
-    $dumpfile("dpu_accum_tb.vcd"); $dumpvars(0, dpu_accum_tb); 
+    $dumpfile("dpu_accum_tb.vcd"); $dumpvars(0, pu_accum_tb); 
     clk <= 1; load <= 0; init <= 0; neg <= 0; oe <= 0; #2
     /*Nop */ load <= 0; init <= 0; neg <= 0; oe <= 0; attr_in <= 0; data_in <= 'h0000; #2
 

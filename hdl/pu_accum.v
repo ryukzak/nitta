@@ -16,8 +16,8 @@ module pu_accum (
 parameter DATA_WIDTH     = 32;
 parameter ATTR_WIDTH     = 4; 
 
-parameter OVERFLOW = 1;
 parameter SIGN     = 0;
+parameter OVERFLOW = 1;
 
 
 input clk;
@@ -47,15 +47,20 @@ always @(posedge clk)
     end else begin 
       overflow = overflow || attr_in[ OVERFLOW ];
       int_arg = acc[DATA_WIDTH:0];
-    end 
-    ext_arg = signal_neg ? -data_in : { attr_in[ SIGN ], data_in };
-  end             
+    end
+    ext_arg = signal_neg ? -data_in : data_in;
+  end
 
-reg carry;
+
+wire [DATA_WIDTH:0]  wacc; // +1 на переполнение
+wire carry;
+
+// https://en.wikipedia.org/wiki/Two%27s_complement#Addition
+assign { carry, wacc[DATA_WIDTH-2:0] } = ext_arg[DATA_WIDTH-2:0] + int_arg[DATA_WIDTH-2:0];
+assign wacc[DATA_WIDTH:DATA_WIDTH-1]   = ext_arg[DATA_WIDTH-1] + int_arg[DATA_WIDTH-1] + carry;
 
 always @(posedge clk) begin
-    { carry, acc[DATA_WIDTH-2:0] } <= ext_arg[DATA_WIDTH-2:0] + int_arg[DATA_WIDTH-2:0];
-    acc[DATA_WIDTH:DATA_WIDTH-1]   <= ext_arg[DATA_WIDTH-1] + int_arg[DATA_WIDTH-1] + carry;
+    acc[DATA_WIDTH:0] <= wacc;
     overflow <= carry ^ acc[DATA_WIDTH];
   end
 
