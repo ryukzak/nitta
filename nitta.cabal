@@ -46,6 +46,7 @@ library
                      , QuickCheck-GenT
                      , HStringTemplate
                      , MissingH
+                     , directory
   default-language:    Haskell2010
 
 executable nitta-exe

@@ -28,6 +28,7 @@ import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks as FB
 import           NITTA.Types
 import           NITTA.Utils
+import           System.Directory
 import           System.Exit
 import           System.Process
 
@@ -54,6 +55,7 @@ class ( Typeable pu
   writeTestBench :: pu -> [(v, x)] -> IO ()
   writeTestBench pu values = do
     let cntx = simulate pu values
+    createDirectoryIfMissing True "hdl/gen"
     mapM_ (\(fn, gen) -> writeFile fn (gen pu cntx)) $ components pu
 
 
