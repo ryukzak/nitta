@@ -11,8 +11,9 @@
 module NITTA.Compiler
   ( naive
   , bindAll
-  , bindAllAndNaiveSelects
-  , effectOpt2act
+  , bindAllAndNaiveSchedule
+  , passiveOption2action
+  , NaiveOpt(..)
   )
 where
 
@@ -26,145 +27,173 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval ((...))
 
-
-bindAll pu alg = fromRight undefined $ foldl nextBind (Right pu) alg
+-- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
+bindAll pu fbs = fromRight (error "Can't bind FB to PU!") $ foldl nextBind (Right pu) fbs
   where
     nextBind (Right pu') fb = bind fb pu'
     nextBind (Left r) _     = error r
 
-bindAllAndNaiveSelects pu0 alg = naive' $ bindAll pu0 alg
+
+
+-- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку и наивным
+-- образом спланировать вычислительный процесса пасивного блока обработки данных (PUClass Passive).
+bindAllAndNaiveSchedule pu0 alg = naiveSchedule $ bindAll pu0 alg
   where
-    naive' pu
-      | (var : _) <- options pu = naive' $ select pu $ effectOpt2act var
+    naiveSchedule pu
+      | var : _ <- options pu = naiveSchedule $ select pu $ passiveOption2action var
       | otherwise = pu
 
+passiveOption2action EffectOpt{..}
+  = let a = eoAt^.avail.infimum
+        b = eoAt^.avail.infimum + eoAt^.dur.infimum
+    in EffectAct eoEffect (a ... b)
 
-effectOpt2act EffectOpt{..} = EffectAct eoEffect
-  ((eoAt^.avail.infimum) ... (eoAt^.avail.infimum + eoAt^.dur.infimum))
+networkOption2action TransportOpt{..}
+  = let pushTimeConstrains = map snd $ catMaybes $ M.elems toPush
+        predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
+        pullStart    = maximum $ (toPullAt^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
+        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ toPullAt : pushTimeConstrains
+        pullEnd = pullStart + pullDuration - 1
+        pushStart = pullStart + 1
 
--- manualSteps pu acts = foldl (\pu' act -> step pu' act) pu acts
+        mkEvent (from, tc@TimeConstrain{..})
+          = Just (from, pushStart ... (pushStart + tc^.dur.infimum - 1))
+        pushs = map (\(var, timeConstrain) -> (var, maybe Nothing mkEvent timeConstrain) ) $ M.assocs toPush
+
+        act = TransportAct{ taPullFrom=toPullFrom
+                          , taPullAt=pullStart ... pullEnd
+                          , taPush=M.fromList pushs
+                          }
+    in -- trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act ++ "\n>pullStart>" ++ show (map (\o -> o^.avail.infimum) $ toPullAt : pushTimeConstrains) ++ "\n>pullDuration>" ++ show pullDuration)
+        act
 
 
 
-timeSplitOptions ControlModel{..} availableVars
-  = let splits = filter isSplit $ (\(Parallel ss) -> ss) controlFlow
-    in filter isAvalilable splits
+
+data NaiveOpt = NaiveOpt
+  { threshhold :: Int
+  }
+
+
+-- | Наивный, но полноценный компилятор.
+naive NaiveOpt{..} branch@Branch{ topPU=pu, ..}
+  = let bOptions = bindingOptions pu
+        cfOptions = branchingOptions controlFlow availableVars
+        dfOptions = dataFlowOptions branch
+    in case () of
+      _ | length dfOptions >= threshhold -> doSchedule dfOptions
+      _ | not $ null bOptions            -> doBind bOptions branch
+      _ | not $ null dfOptions           -> doSchedule dfOptions
+      _ | not $ null cfOptions           -> doBranch branch (head cfOptions)
+      _ -> branch
   where
-    isAvalilable (Split c vs _) = all (`elem` availableVars) $ c : vs
-    isAvalilable _              = error "selectSplit internal error."
+    availableVars = nub $ concatMap (M.keys . toPush) $ options pu
+    start opt = opt^.at.avail.infimum
+    doSchedule dfOptions
+      = case sortBy (\a b -> start a `compare` start b) dfOptions of
+        v : _ -> branch{ topPU=select pu $ networkOption2action v }
+        _     -> error "No variants!"
 
-splitProcess Fork{..} (Split _cond _is branchs)
-  = let ControlModel{..} = controlModel
-        t = nextTick $ process topPU
-        f : fs = map (\SplitBranch{..} -> Fork
-                       { topPU=setTime t{ tag=sTag } topPU
-                       , controlModel=controlModel{ controlFlow=sControlFlow }
-                       , timeTag=sTag
-                       , forceInputs=sForceInputs
-                       }
-                     ) branchs
-        usedVariables' = nub $ concatMap (variables . sControlFlow) branchs
-    in Forks{ current=f
-            , remains=fs
-            , completed=[]
-            , merge=f{ controlModel=controlModel
-                                    { usedVariables=usedVariables' ++ usedVariables
-                                    }
-                     }
-            }
-splitProcess _ _ = error "Can't split process."
+naive no bush@Bush{..}
+  = let bush' = bush{ currentBranch=naive no currentBranch }
+    in if isCurrentBranchOver bush'
+       then finalizeBranch bush'
+       else bush'
 
 
 
-
-threshhold = 2
-
-isOver Forks{..} = isOver current && null remains
-isOver Fork{..}
-  = let opts = sensibleOptions $ filterByControlModel controlModel $ options topPU
-        bindOpts = bindingOptions topPU
-    in null opts && null bindOpts
-
-
-naive f@Forks{..}
-  = let current'@Fork{ topPU=topPU' } = naive current
-        t = maximum $ map (nextTick . process . topPU) $ current' : completed
-        parallelSteps = concatMap
-          (\Fork{ topPU=n
-                , timeTag=forkTag
-                } -> filter (\Step{..} -> forkTag == placeInTimeTag sTime
-                            ) $ steps $ process n
-          ) completed
-    in case (isOver current', remains) of
-         (True, r:rs) -> f{ current=r, remains=rs, completed=current' : completed }
-         (True, _)    -> let topPU''@BusNetwork{ bnProcess=p }
-                               = setTime t{ tag=timeTag merge } topPU'
-                         in merge{ topPU=topPU''{ bnProcess=snd $ modifyProcess p $
-                                                    mapM_ (\Step{..} -> add sTime sDesc) parallelSteps
-                                                }
-                                 }
-         (False, _)   -> f{ current=current' }
-
-
-naive f@Fork{..}
-  = let opts = sensibleOptions $ filterByControlModel controlModel $ options topPU
-        bindOpts = bindingOptions topPU
-        splits = timeSplitOptions controlModel availableVars
-    in case (splits, opts, bindOpts) of
-         ([], [], [])    -> f -- trace "over" f
-         (_, _o : _, _)  | length opts >= threshhold -> afterStep
-         (_bo, _, _ : _) -> f{ topPU=autoBind topPU }
-         (_, _o : _, _)  -> afterStep
-         (s : _, _, _)   -> splitProcess f s -- trace ("split: " ++ show s) $ splitProcess f s
+dataFlowOptions Branch{..} = sensibleOptions $ filterByControlModel controlFlow $ options topPU
   where
-    availableVars = nub $ concatMap (M.keys . toPush) $ options topPU
-    afterStep
-      = case sortBy (\a b -> start a `compare` start b)
-             $ sensibleOptions $ filterByControlModel controlModel $ options topPU of
-        v:_ -> let act = option2action v
-                   cm' = foldl controlModelStep controlModel
-                         $ map fst $ filter (isJust . snd) $ M.assocs $ taPush act
-               in -- trace ("step: " ++ show act)
-                  f{ topPU=select topPU act
-                   , controlModel=cm'
-                   }
-        _   -> error "No variants!"
-    start = (\o -> o^.avail.infimum) . toPullAt
-    option2action TransportOpt{..}
-      = let pushTimeConstrains = map snd $ catMaybes $ M.elems toPush
-            predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
-            pullStart    = maximum $ (toPullAt^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
-            pullDuration = maximum $ map (\o -> o^.dur.infimum) $ toPullAt : pushTimeConstrains
-            pullEnd = pullStart + pullDuration - 1
-            pushStart = pullStart + 1
+    filterByControlModel controlModel opts
+      = let cfOpts = allowByControlFlow controlModel
+        in map (\t@TransportOpt{..} -> t
+                { toPush=M.fromList $ map (\(v, desc) -> (v, if v `elem` cfOpts
+                                                              then desc
+                                                              else Nothing)
+                                          ) $ M.assocs toPush
+                }) opts
+    sensibleOptions = filter $ \TransportOpt{..} -> any isJust $ M.elems toPush
 
-            mkEvent (from, tc@TimeConstrain{..})
-              = Just (from, pushStart ... (pushStart + tc^.dur.infimum - 1))
-            pushs = map (\(var, timeConstrain) -> (var, maybe Nothing mkEvent timeConstrain) ) $ M.assocs toPush
-
-            act = TransportAct{ taPullFrom=toPullFrom
-                              , taPullAt=pullStart ... pullEnd
-                              , taPush=M.fromList pushs
-                              }
-        in -- trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act ++ "\n>pullStart>" ++ show (map (\o -> o^.avail.infimum) $ toPullAt : pushTimeConstrains) ++ "\n>pullDuration>" ++ show pullDuration)
-           act
+dataFlowOptions _ = error "Can't generate dataflow options for BranchingInProgress."
 
 
 
-filterByControlModel controlModel opts
-  = let cfOpts = controlModelOptions controlModel
-    in map (\t@TransportOpt{..} -> t
-             { toPush=M.fromList $ map (\(v, desc) -> (v, if v `elem` cfOpts
-                                                          then desc
-                                                          else Nothing)
-                                       ) $ M.assocs toPush
-             }) opts
+-- * Работа с потоком управления.
+
+
+-- | Получить список вариантов ветвления вычислительного процесса.
+--
+-- Ветвление вычислительного процесса возможно в том случае, если доступнен ключ ветвления
+-- алгоритма и все входные переменные для всех вариантов развития вычислительного процесса.
+branchingOptions (Block cfs) availableVars
+  = [ x
+    | x@Choice{..} <- cfs
+    , all (`elem` availableVars) $ cfCond : cfInputs
+    ]
+branchingOptions _ _ = error "branchingOptions: internal error."
+
+-- | Выполнить ветвление вычислительного процесса. Это действие заключается в замене текущей ветки
+-- вычислительного процесса на кустарник (Bush), в рамках работы с которым необъходимо перебрать
+-- все веточки и в конце собрать обратно в одну ветку.
+doBranch Branch{..} Choice{..}
+  = let now = nextTick $ process topPU
+        branch : branchs = map (\OptionCF{..} -> Branch
+                                  { topPU=setTime now{ tag=ocfTag } topPU
+                                  , controlFlow=oControlFlow
+                                  , branchTag=ocfTag
+                                  , branchInputs=ocfInputs
+                                  }
+                                ) cfOptions
+    in Bush{ currentBranch=branch
+           , remainingBranches=branchs
+           , completedBranches=[]
+           , rootBranch=branch
+           }
+doBranch _ _ = error "Can't split process."
+
+
+-- | Функция применяется к кусту и позволяет определить, осталась ли работа в текущей ветке или нет.
+isCurrentBranchOver Bush{ currentBranch=branch@Branch{..} }
+  = let bOptions = bindingOptions topPU
+        dfOptions = dataFlowOptions branch
+    in null bOptions && null dfOptions
+isCurrentBranchOver _ = False
+
+-- | Функция позволяет выполнить работы по завершению текущей ветки. Есть два варианта:
+--
+-- 1) Сменить ветку на следующую.
+-- 2) Вернуться в выполнение корневой ветки, для чего слить вычислительный процесс всех вариантов
+--    ветвления алгоритма.
+finalizeBranch bush@Bush{ remainingBranches=b:bs, ..}
+  = bush
+    { currentBranch=b
+    , remainingBranches=bs
+    , completedBranches=currentBranch : completedBranches
+    }
+finalizeBranch Bush{..}
+  = let branchs = currentBranch : completedBranches
+        mergeTime = (maximum $ map (nextTick . process . topPU) branchs){ tag=branchTag rootBranch }
+        Branch{ topPU=pu@BusNetwork{..} } = currentBranch
+    in rootBranch
+      { topPU=setTime mergeTime pu
+          { bnProcess=snd $ modifyProcess bnProcess $
+              mapM_ (\Step{..} -> add sTime sDesc) $ concatMap inBranchSteps branchs
+          }
+      }
+  where
+    inBranchSteps Branch{..} = whatsHappenWith branchTag topPU
+    inBranchSteps Bush{}     = error "inBranchSteps: wrong args"
+
+    whatsHappenWith tag pu =
+      [ st | st@Step{..} <- steps $ process pu
+           , tag == placeInTimeTag sTime
+           ]
+
+finalizeBranch Branch{} = error "finalizeBranch: wrong args."
 
 
 
-sensibleOptions = filter $
-  \TransportOpt{..} -> any isJust $ M.elems toPush
-
+-- * Работа с привязкой функциональных блоков к вычислительным блокам.
 
 
 data BindOption title v = BindOption
@@ -194,16 +223,13 @@ instance Ord BindPriority where
 
 
 
-
-
-autoBind net@BusNetwork{..} =
+-- А как эта часть синхронизируется с ControlFlow? Как гарантируется сходимость биндингов?
+doBind bOpts branch@Branch{ topPU=net@BusNetwork{..} } =
   let prioritized = sortBV $ map mkBV bOpts
   in case prioritized of
-      BindOption fb puTitle _ : _ -> -- trace ("bind: " ++ show fb ++ " " ++ show puTitle) $
-                                       subBind fb puTitle net
-      _                             -> error "Bind variants is over!"
+      BindOption fb puTitle _ : _ -> branch{ topPU=subBind fb puTitle net }
+      _                           -> error "Bind variants is over!"
   where
-    bOpts = bindingOptions net
     mkBV (fb, titles) = prioritize $ BindOption fb titles Nothing
     sortBV = sortBy (flip $ \a b -> priority a `compare` priority b)
 
@@ -241,3 +267,4 @@ autoBind net@BusNetwork{..} =
       _  -> []
       where
         act `optionOf` fb' = not $ null (variables act `intersect` variables fb')
+doBind _ _ = error "doBind: internal error."

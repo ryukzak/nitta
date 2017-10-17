@@ -67,7 +67,7 @@ prop_formalCompletness (DataFlow df _values pu) =
 
 
 bindAllAndNaiveSelects (DataFlow df values pu) =
-  DataFlow df values (C.bindAllAndNaiveSelects pu df)
+  DataFlow df values (C.bindAllAndNaiveSchedule pu df)
 
 
 
@@ -89,7 +89,7 @@ naiveGen' pu df passedDF = do
           let pu' =
                 -- trace ("step: " ++ show opts' ++ " vs: " ++ show vs
                        -- ++ " tick: " ++ show (tick $ process pu)) $
-                  select pu $ C.effectOpt2act opt'
+                  select pu $ C.passiveOption2action opt'
           naiveGen' pu' df passedDF
     1 | not $ null df -> do
           i <- choose (0, length df - 1)

@@ -135,7 +135,9 @@ extractInstructions pu = mapMaybe (extractInstruction pu)
                             $ steps $ process pu
 
 
-
+-- | Собрать список переменных подаваемых на вход указанного списка функциональных блоков. При
+-- формировании результата отсеиваются входы, получаемые из функциональных блоков рассматриваемого
+-- списка.
 inputsOfFBs fbs
   = let deps0 = M.fromList [(v, []) | v <- concatMap variables fbs]
         deps = foldl (\dict (a, b) -> M.adjust ((:) b) a dict) deps0 $ concatMap dependency fbs

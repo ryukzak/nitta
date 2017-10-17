@@ -50,81 +50,62 @@ net = busNetwork
   , ("fram2", fram)
   , ("accum", accum)
   ]
-  $ array (0, 19) [ (19, [("accum", S $ (A.NEG  :: Signal (A.Accum String T)))])
-                  , (18, [("accum", S $ (A.LOAD :: Signal (A.Accum String T)))])
-                  , (17, [("accum", S $ (A.INIT :: Signal (A.Accum String T)))])
-                  , (16, [("accum", S $ (A.OE   :: Signal (A.Accum String T)))])
+  $ array (0, 19) [ (19, [("accum", S (A.NEG  :: Signal (A.Accum String T)))])
+                  , (18, [("accum", S (A.LOAD :: Signal (A.Accum String T)))])
+                  , (17, [("accum", S (A.INIT :: Signal (A.Accum String T)))])
+                  , (16, [("accum", S (A.OE   :: Signal (A.Accum String T)))])
 
-                  , (15, [("fram1", S $ (OE :: Signal (Fram String T)))])
-                  , (14, [("fram1", S $ (WR :: Signal (Fram String T)))])
+                  , (15, [("fram1", S (OE :: Signal (Fram String T)))])
+                  , (14, [("fram1", S (WR :: Signal (Fram String T)))])
                   , (13, [])
                   , (12, [])
 
-                  , (11, [("fram1", S $ (ADDR 3 :: Signal (Fram String T)))])
-                  , (10, [("fram1", S $ (ADDR 2 :: Signal (Fram String T)))])
-                  , ( 9, [("fram1", S $ (ADDR 1 :: Signal (Fram String T)))])
-                  , ( 8, [("fram1", S $ (ADDR 0 :: Signal (Fram String T)))])
+                  , (11, [("fram1", S (ADDR 3 :: Signal (Fram String T)))])
+                  , (10, [("fram1", S (ADDR 2 :: Signal (Fram String T)))])
+                  , ( 9, [("fram1", S (ADDR 1 :: Signal (Fram String T)))])
+                  , ( 8, [("fram1", S (ADDR 0 :: Signal (Fram String T)))])
 
-                  , ( 7, [("fram2", S $ (OE :: Signal (Fram String T)))])
-                  , ( 6, [("fram2", S $ (WR :: Signal (Fram String T)))])
+                  , ( 7, [("fram2", S (OE :: Signal (Fram String T)))])
+                  , ( 6, [("fram2", S (WR :: Signal (Fram String T)))])
                   , ( 5, [])
                   , ( 4, [])
 
-                  , ( 3, [("fram2", S $ (ADDR 3 :: Signal (Fram String T)))])
-                  , ( 2, [("fram2", S $ (ADDR 2 :: Signal (Fram String T)))])
-                  , ( 1, [("fram2", S $ (ADDR 1 :: Signal (Fram String T)))])
-                  , ( 0, [("fram2", S $ (ADDR 0 :: Signal (Fram String T)))])
+                  , ( 3, [("fram2", S (ADDR 3 :: Signal (Fram String T)))])
+                  , ( 2, [("fram2", S (ADDR 2 :: Signal (Fram String T)))])
+                  , ( 1, [("fram2", S (ADDR 1 :: Signal (Fram String T)))])
+                  , ( 0, [("fram2", S (ADDR 0 :: Signal (Fram String T)))])
                   ]
 
-alg = [ FB.framInput 3 $ O [ "a"
-                           , "d"
-                           ]
-      , FB.framInput 4 $ O [ "b"
-                           , "c"
-                           , "e"
-                           ]
-      , FB.reg (I "a") $ O ["x"]
-      , FB.reg (I "b") $ O ["y"]
-      , FB.reg (I "c") $ O ["z"]
-      , FB.framOutput 5 $ I "x"
-      , FB.framOutput 6 $ I "y"
-      , FB.framOutput 7 $ I "z"
-      , FB.framOutput 0 $ I "sum"
-      , FB.loop (O ["f"]) $ I "g"
-      , FB.reg (I "f") $ O ["g"]
-      , FB $ Add (I "d") (I "e") (O ["sum"])
-      ]
 
-net' = bindAll (net :: BusNetwork String String T) alg
+dataFlow = Stage
+  [ Actor $ FB.framInput 0 $ O [ "cond", "cond'" ]
+  , Actor $ FB.framInput 1 $ O [ "x1", "x2" ]
+  , Actor $ FB.framOutput 2 $ I "cond'"
+  , Paths "cond"
+    [ (0, Stage [ Actor $ FB.reg (I "x1") $ O ["y1"], Actor $ FB.framOutput 10 $ I "y1" ])
+    , (1, Stage [ Actor $ FB.reg (I "x2") $ O ["y2"], Actor $ FB.framOutput 11 $ I "y2" ])
+    ]
+  ]
+
+net' = bindAll (net :: BusNetwork String String T) $ functionalBlocks dataFlow
+
 
 ---------------------------------------------------------------------------------
 
-main = do
-  let compiler = Fork net' (def{ controlFlow=mkControlFlow $ DataFlow $ map Statement alg }) Nothing []
-  let Fork{ topPU=pu
-          , controlModel=cm'
-          } = foldl (\comp _ -> naive comp) compiler (take 150 $ repeat ())
 
+main = do
+  let compiler = Branch net' (dataFlow2ControlFlow dataFlow) Nothing []
+  let p = foldl (\comp _ -> naive NaiveOpt{ threshhold=2 } comp) compiler (take 50 $ repeat ())
+  let Branch{ topPU=pu } = p
+  -- let BranchingInProgress{ currentBranch=Fork{ topPU=pu } } = p
+
+  -- putStrLn $ show $ graph dataFlow
   timeline "resource/data.json" pu
-  r <- testBench pu ([] :: [(String, Int)])
-  if r then putStrLn "Success"
-  else putStrLn "Fail"
+  -- r <- testBench pu ([] :: [(String, Int)])
+  -- if r then putStrLn "Success"
+  -- else putStrLn "Fail"
+  print "ok"
 
 getPU puTitle net
   = case bnPus net ! puTitle of
       PU pu | Just pu' <- cast pu -> pu'
-
----------------------------------------------------------------------
-
--- program = DataFlow
---   [ Statement $ FB.framInput 0 $ O [ "cond", "cond'" ]
---   , Statement $ FB.framInput 1 $ O [ "x1", "x2" ]
---   , Statement $ FB.framOutput 2 $ I "cond'"
-
---   , Switch "cond"
---     [ (0, DataFlow [ Statement $ FB.reg (I "x1") $ O ["y1"], Statement $ FB.framOutput 10 $ I "y1" ])
---     , (1, DataFlow [ Statement $ FB.reg (I "x2") $ O ["y2"], Statement $ FB.framOutput 11 $ I "y2" ])
---     ]
---   ]
--- program = DataFlow $ map Statement alg
--- net'' = bindAll (net0 :: BusNetwork String String T) $ functionalBlocks program

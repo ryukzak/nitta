@@ -114,8 +114,8 @@ accum_fram1_fram2_netTests
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
         net' = C.bindAll (net :: BusNetwork String String T) alg
-        compiler = F.Fork net' (def{ controlFlow=F.mkControlFlow $ F.DataFlow $ map Statement alg }) Nothing []
-        F.Fork{ topPU=net''
-              } = foldl (\comp _ -> C.naive comp) compiler (take 150 $ repeat ())
+        compiler = F.Fork net' (def{ controlFlow=F.mkControlFlow $ F.Stage $ map Actor alg }) Nothing []
+        F.Branch{ topPU=net''
+                } = foldl (\comp _ -> C.naive comp) compiler (take 150 $ repeat ())
     in testCase "Obscure integration test for net of accum, fram1, fram2"
           $ assert $ testBench net'' ([] :: [(String, Int)])
