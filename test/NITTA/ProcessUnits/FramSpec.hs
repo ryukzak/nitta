@@ -20,7 +20,6 @@ import           NITTA.ProcessUnitsSpec
 import           NITTA.Types
 import           Test.QuickCheck
 
--- import           Debug.Trace
 
 
 type FramIdealDataFlow = DataFlow (Fram String Int) String Int

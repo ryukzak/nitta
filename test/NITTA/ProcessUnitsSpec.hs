@@ -66,7 +66,7 @@ prop_formalCompletness (DataFlow df _values pu) =
 
 
 
-bindAllAndNaiveSelects (DataFlow df values pu) =
+bindAllAndNaiveSchedule (DataFlow df values pu) =
   DataFlow df values (C.bindAllAndNaiveSchedule pu df)
 
 

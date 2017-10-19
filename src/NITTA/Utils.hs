@@ -171,7 +171,7 @@ renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
 
 
 variableValueWithoutFB pu cntx vi@(v, _)
-  | [fb] <- filter (elem v . (\(FB fb) -> variables fb)) fbs
+  | [fb] <- filter (elem v . variables) fbs
   = variableValue fb pu cntx vi
   | otherwise = error $ "can't find varValue for: " ++ show v ++ " "
                 ++ show cntx ++ " "

@@ -180,9 +180,14 @@ instance ( Num t, Show tag, Eq tag ) => Num (TaggedTime tag t) where
 class ( Typeable fb
       , Eq fb
       ) => FunctionalBlock fb v | fb -> v where
+  inputs :: fb -> [v]
+  inputs _ = []
+  outputs :: fb -> [v]
+  outputs _ = []
   -- | Возвращает зависимости между аргументами функционального блока.
   -- Формат: (заблокированное значение, блокирующее значение).
   dependency :: fb -> [(v, v)]
+  dependency _ = []
   -- | Необходимость "выворачивания" функций при визуализации вычислительного процесса.
   -- Выглядит примерно так:
   -- 1. Начинается вместе с вычислительным циклом.
@@ -197,6 +202,7 @@ class ( Typeable fb
   -- TODO: Необходимо обобщить.
   isCritical :: fb -> Bool
   isCritical _ = False
+
 
 
 class WithFunctionalBlocks x io v | x -> io, x -> v where
@@ -218,6 +224,8 @@ instance ( IOType box v, Var v ) => FunctionalBlock (FB box v) v where
   dependency (FB fb) = dependency fb
   insideOut (FB fb) = insideOut fb
   isCritical (FB fb) = isCritical fb
+  inputs (FB fb) = inputs fb
+  outputs (FB fb) = outputs fb
 
 instance Variables (FB Parcel v) v where
   variables (FB fb) = variables fb
@@ -227,6 +235,9 @@ instance Eq (FB box v) where
 
 instance ( Variables (FB box v) v, Ord v ) => Ord (FB box v) where
   a `compare` b = variables a `compare` variables b
+
+instance {-# OVERLAPS #-} FunctionalBlock fb v => Variables fb v where
+  variables fb = inputs fb ++ outputs fb
 
 
 

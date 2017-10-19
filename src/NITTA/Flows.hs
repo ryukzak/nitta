@@ -7,9 +7,13 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
+{-
+TODO: Место для микростатьи по вопросу: как именно соотносятся между собой решения по привязке,
+пересылкам и управлению потоком данных.
+-}
 module NITTA.Flows
   ( DataFlow(..), isPaths
-  , ControlFlow(..), dataFlow2ControlFlow, isChoice, isBlock
+  , ControlFlow(..), dataFlow2controlFlow, isChoice, isBlock
   , OptionCF(..)
   , BranchedProcess(..)
   , allowByControlFlow
@@ -20,6 +24,8 @@ import           Data.List        (nub, (\\))
 import           NITTA.BusNetwork
 import           NITTA.Types
 import           NITTA.Utils
+
+
 
 
 -- * Поток управления и поток данных.
@@ -102,18 +108,18 @@ data OptionCF tag v
   } deriving ( Show, Eq )
 
 
-dataFlow2ControlFlow (Actor fb) = Block $ map Atom $ variables fb
-dataFlow2ControlFlow paths@Paths{..}
-  = let inputs = inputsOfFBs $ functionalBlocks paths
+dataFlow2controlFlow (Actor fb) = Block $ map Atom $ variables fb
+dataFlow2controlFlow paths@Paths{..}
+  = let inputs' = inputsOfFBs $ functionalBlocks paths
         dfPaths' = map (\(key, prog) -> OptionCF
                          { ocfTag=Just $ show dfCond ++ " == " ++ show key
-                         , ocfInputs=inputs \\ variables prog
-                         , oControlFlow=dataFlow2ControlFlow prog
+                         , ocfInputs=inputs' \\ variables prog
+                         , oControlFlow=dataFlow2controlFlow prog
                          }
                        ) dfPaths
-  in Choice dfCond inputs dfPaths'
-dataFlow2ControlFlow (Stage ss)
-  = let cf = map dataFlow2ControlFlow ss
+    in Choice dfCond inputs' dfPaths'
+dataFlow2controlFlow (Stage ss)
+  = let cf = map dataFlow2controlFlow ss
         parallel = filter isBlock cf
         parallel' = nub $ concatMap (\(Block xs) -> xs) parallel
         withInputs = parallel' ++ nub (filter (not . isBlock) cf)

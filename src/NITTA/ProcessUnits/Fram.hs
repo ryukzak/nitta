@@ -43,7 +43,6 @@ import           Numeric.Interval      ((...))
 import           Prelude               hiding (last)
 
 
-
 data Fram v t = Fram
   { frMemory             :: Array Int (Cell v t)
   , frRemains            :: [MicroCode v t]
@@ -437,11 +436,9 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
     ]
 
   simulateContext fr@Fram{ frProcess=p@Process{..}, .. } cntx =
-    let vs =
-          [ v
-          | eff <- getEffects p
-          , v <- variables eff
-          ]
+    let vs = [ v | eff <- getEffects p
+                 , v <- variables eff
+                 ]
     in foldl ( \cntx' v ->
                  M.insert (v, 0)
                           (variableValueWithoutFB fr cntx' (v, 0))

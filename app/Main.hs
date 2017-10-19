@@ -26,7 +26,6 @@ import           Data.Proxy
 import           Data.String.Utils
 import qualified Data.String.Utils        as S
 import           Data.Typeable
-import           Debug.Trace
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.Flows
@@ -94,8 +93,8 @@ net' = bindAll (net :: BusNetwork String String T) $ functionalBlocks dataFlow
 
 
 main = do
-  let compiler = Branch net' (dataFlow2ControlFlow dataFlow) Nothing []
-  let p = foldl (\comp _ -> naive NaiveOpt{ threshhold=2 } comp) compiler (take 50 $ repeat ())
+  let compiler = Branch net' (dataFlow2controlFlow dataFlow) Nothing []
+  let p = foldl (\comp _ -> naive def comp) compiler (take 50 $ repeat ())
   let Branch{ topPU=pu } = p
   -- let BranchingInProgress{ currentBranch=Fork{ topPU=pu } } = p
 

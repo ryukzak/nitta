@@ -17,6 +17,7 @@ module NITTA.Compiler
   )
 where
 
+import           Data.Default
 import           Data.List        (find, intersect, nub, sortBy)
 import qualified Data.Map         as M
 import           Data.Maybe       (catMaybes, isJust)
@@ -26,6 +27,7 @@ import           NITTA.Lens
 import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval ((...))
+
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
 bindAll pu fbs = fromRight (error "Can't bind FB to PU!") $ foldl nextBind (Right pu) fbs
@@ -40,39 +42,21 @@ bindAll pu fbs = fromRight (error "Can't bind FB to PU!") $ foldl nextBind (Righ
 bindAllAndNaiveSchedule pu0 alg = naiveSchedule $ bindAll pu0 alg
   where
     naiveSchedule pu
-      | var : _ <- options pu = naiveSchedule $ select pu $ passiveOption2action var
+      | opt : _ <- options pu = naiveSchedule $ select pu $ passiveOption2action opt
       | otherwise = pu
 
-passiveOption2action EffectOpt{..}
-  = let a = eoAt^.avail.infimum
-        b = eoAt^.avail.infimum + eoAt^.dur.infimum
-    in EffectAct eoEffect (a ... b)
 
-networkOption2action TransportOpt{..}
-  = let pushTimeConstrains = map snd $ catMaybes $ M.elems toPush
-        predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
-        pullStart    = maximum $ (toPullAt^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
-        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ toPullAt : pushTimeConstrains
-        pullEnd = pullStart + pullDuration - 1
-        pushStart = pullStart + 1
-
-        mkEvent (from, tc@TimeConstrain{..})
-          = Just (from, pushStart ... (pushStart + tc^.dur.infimum - 1))
-        pushs = map (\(var, timeConstrain) -> (var, maybe Nothing mkEvent timeConstrain) ) $ M.assocs toPush
-
-        act = TransportAct{ taPullFrom=toPullFrom
-                          , taPullAt=pullStart ... pullEnd
-                          , taPush=M.fromList pushs
-                          }
-    in -- trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act ++ "\n>pullStart>" ++ show (map (\o -> o^.avail.infimum) $ toPullAt : pushTimeConstrains) ++ "\n>pullDuration>" ++ show pullDuration)
-        act
-
-
-
-
+-- | Настройки процесса компиляции.
 data NaiveOpt = NaiveOpt
-  { threshhold :: Int
+  { -- | Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
+    -- привязка функциональных блоков.
+    threshhold :: Int
   }
+
+instance Default NaiveOpt where
+  def = NaiveOpt
+    { threshhold=2
+    }
 
 
 -- | Наивный, но полноценный компилятор.
@@ -120,7 +104,6 @@ dataFlowOptions _ = error "Can't generate dataflow options for BranchingInProgre
 
 -- * Работа с потоком управления.
 
-
 -- | Получить список вариантов ветвления вычислительного процесса.
 --
 -- Ветвление вычислительного процесса возможно в том случае, если доступнен ключ ветвления
@@ -159,6 +142,7 @@ isCurrentBranchOver Bush{ currentBranch=branch@Branch{..} }
     in null bOptions && null dfOptions
 isCurrentBranchOver _ = False
 
+
 -- | Функция позволяет выполнить работы по завершению текущей ветки. Есть два варианта:
 --
 -- 1) Сменить ветку на следующую.
@@ -180,26 +164,16 @@ finalizeBranch Bush{..}
               mapM_ (\Step{..} -> add sTime sDesc) $ concatMap inBranchSteps branchs
           }
       }
-  where
-    inBranchSteps Branch{..} = whatsHappenWith branchTag topPU
-    inBranchSteps Bush{}     = error "inBranchSteps: wrong args"
-
-    whatsHappenWith tag pu =
-      [ st | st@Step{..} <- steps $ process pu
-           , tag == placeInTimeTag sTime
-           ]
-
 finalizeBranch Branch{} = error "finalizeBranch: wrong args."
 
 
 
 -- * Работа с привязкой функциональных блоков к вычислительным блокам.
 
-
 data BindOption title v = BindOption
-  { fb       :: FB Parcel v
-  , puTitle  :: title
-  , priority :: Maybe BindPriority
+  { boFB       :: FB Parcel v
+  , boTitle    :: title
+  , boPriority :: Maybe BindPriority
   } deriving (Show)
 
 data BindPriority
@@ -223,48 +197,103 @@ instance Ord BindPriority where
 
 
 
--- А как эта часть синхронизируется с ControlFlow? Как гарантируется сходимость биндингов?
-doBind bOpts branch@Branch{ topPU=net@BusNetwork{..} } =
-  let prioritized = sortBV $ map mkBV bOpts
-  in case prioritized of
+-- TODO: А как эта часть синхронизируется с ControlFlow? Как гарантируется сходимость биндингов?
+doBind bOptions branch@Branch{ topPU=net@BusNetwork{..} }
+  = case sort' $ map prioritize bOptions of
       BindOption fb puTitle _ : _ -> branch{ topPU=subBind fb puTitle net }
       _                           -> error "Bind variants is over!"
   where
-    mkBV (fb, titles) = prioritize $ BindOption fb titles Nothing
-    sortBV = sortBy (flip $ \a b -> priority a `compare` priority b)
+    prioritize (fb, title) = BindOption{ boFB=fb
+                                       , boTitle=title
+                                       , boPriority=prioritize' net fb title
+                                       }
+    sort' = sortBy (flip $ \a b -> boPriority a `compare` boPriority b)
 
-    mergedBOpts = foldl (\m (fb, puTitle) -> M.alter
-                          (\case
-                              Just puTitles -> Just $ puTitle : puTitles
-                              Nothing -> Just [puTitle]
-                          ) fb m
-                   ) (M.fromList []) bOpts
 
-    prioritize bv@BindOption{..}
+    prioritize' net@BusNetwork{..} fb title
       -- В настоящий момент данная операци приводит к тому, что часть FB перестают быть вычислимыми.
       --  | isCritical fb = bv{ priority=Just Critical }
 
       | null (dependency fb)
-      , pulls <- filter isPull $ optionsAfterBind bv
+      , pulls <- filter isPull $ optionsAfterBind fb pu
       , not (null pulls)
-      = bv{ priority=Just $ Input $ sum $ map (length . variables) pulls}
+      = Just $ Input $ sum $ map (length . variables) pulls
 
-      | Just (_variable, tcFrom) <- find (\(v, _) -> v `elem` variables fb) restlessVariables
-      = bv{ priority=Just $ Restless $ fromEnum tcFrom }
+      | Just (_variable, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ restlessVariables net
+      = Just $ Restless $ fromEnum tcFrom
 
-      | length (mergedBOpts M.! fb) == 1
-      = bv{ priority=Just Exclusive }
+      | length (howManyOptionAllow bOptions M.! fb) == 1
+      = Just Exclusive
 
-      | otherwise = bv
-
-    restlessVariables = [ (variable, tc^.avail.infimum)
-      | TransportOpt{ toPullAt=tc@TimeConstrain{..}, ..} <- options net
-      , (variable, Nothing) <- M.assocs toPush
-      ]
-
-    optionsAfterBind BindOption{..} = case bind fb $ bnPus M.! puTitle of
-      Right pu' -> filter (\(EffectOpt act _) -> act `optionOf` fb) $ options pu'
-      _  -> []
+      | otherwise = Nothing
       where
-        act `optionOf` fb' = not $ null (variables act `intersect` variables fb')
+        pu = bnPus M.! title
+
 doBind _ _ = error "doBind: internal error."
+
+
+-- | Подсчитать, сколько вариантов для привязки функционального блока определено.
+-- Если вариант всего один, может быть стоит его использовать сразу?
+howManyOptionAllow bOptions
+  = foldl ( \st (fb, title) -> M.alter (countOption title) fb st ) (M.fromList []) bOptions
+  where
+    countOption title (Just titles) = Just $ title : titles
+    countOption title Nothing       = Just [ title ]
+
+
+-- | ?
+restlessVariables net@BusNetwork{..}
+  = [ (variable, tc^.avail.infimum)
+    | TransportOpt{ toPullAt=tc@TimeConstrain{..}, ..} <- options net
+    , (variable, Nothing) <- M.assocs toPush
+    ]
+
+
+-- | Оценить, сколько новых вариантов развития вычислительного процесса даёт привязка
+-- функциоанльного блока.
+--
+-- TODO: И какую пользу даёт данная метрика в текущем виде?
+optionsAfterBind fb pu = case bind fb pu of
+  Right pu' -> filter (\(EffectOpt act _) -> act `optionOf` fb) $ options pu'
+  _         -> []
+  where
+    act `optionOf` fb' = not $ null (variables act `intersect` variables fb')
+
+
+
+
+-- * Утилиты
+
+passiveOption2action EffectOpt{..}
+  = let a = eoAt^.avail.infimum
+        b = eoAt^.avail.infimum + eoAt^.dur.infimum
+    in EffectAct eoEffect (a ... b)
+
+networkOption2action TransportOpt{..}
+  = let pushTimeConstrains = map snd $ catMaybes $ M.elems toPush
+        predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
+        pullStart    = maximum $ (toPullAt^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
+        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ toPullAt : pushTimeConstrains
+        pullEnd = pullStart + pullDuration - 1
+        pushStart = pullStart + 1
+
+        mkEvent (from, tc@TimeConstrain{..})
+          = Just (from, pushStart ... (pushStart + tc^.dur.infimum - 1))
+        pushs = map (\(var, timeConstrain) -> (var, maybe Nothing mkEvent timeConstrain) ) $ M.assocs toPush
+
+        act = TransportAct{ taPullFrom=toPullFrom
+                          , taPullAt=pullStart ... pullEnd
+                          , taPush=M.fromList pushs
+                          }
+    in -- trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act ++ "\n>pullStart>" ++ show (map (\o -> o^.avail.infimum) $ toPullAt : pushTimeConstrains) ++ "\n>pullDuration>" ++ show pullDuration)
+        act
+
+
+inBranchSteps Branch{..} = whatsHappenWith branchTag topPU
+inBranchSteps Bush{}     = error "inBranchSteps: wrong args"
+
+
+whatsHappenWith tag pu =
+  [ st | st@Step{..} <- steps $ process pu
+       , tag == placeInTimeTag sTime
+       ]

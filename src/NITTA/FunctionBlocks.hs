@@ -35,10 +35,8 @@ deriving instance IOType io v => Show (FramInput io v)
 deriving instance IOType io v => Eq (FramInput io v)
 framInput addr vs = FB $ FramInput addr vs
 
-instance IOType io v => Variables ( FramInput io v ) v where
-  variables (FramInput _ o) = variables o
 instance IOType io v => FunctionalBlock (FramInput io v) v where
-  dependency _ = []
+  outputs (FramInput _ o) = variables o
   isCritical _ = True
 
 
@@ -50,10 +48,8 @@ deriving instance IOType io v => Show (FramOutput io v)
 deriving instance IOType io v => Eq (FramOutput io v)
 framOutput addr v = FB $ FramOutput addr v
 
-instance IOType io v => Variables (FramOutput io v) v where
-  variables (FramOutput _ i) = variables i
 instance IOType io v => FunctionalBlock (FramOutput io v) v where
-  dependency _ = []
+  inputs (FramOutput _ o) = variables o
   isCritical _ = True
 
 
@@ -63,9 +59,9 @@ deriving instance IOType io v => Show (Reg io v)
 deriving instance IOType io v => Eq (Reg io v)
 reg a b = FB $ Reg a b
 
-instance IOType io v => Variables (Reg io v) v where
-  variables (Reg a b) = variables a ++ variables b
 instance IOType io v => FunctionalBlock (Reg io v) v where
+  inputs  (Reg a _b) = variables a
+  outputs (Reg _a b) = variables b
   dependency (Reg i o) = [ (b, a) | a <- variables i
                                   , b <- variables o
                                   ]
@@ -77,10 +73,9 @@ deriving instance IOType io v => Show (Loop io v)
 deriving instance IOType io v => Eq (Loop io v)
 loop bs a = FB $ Loop bs a
 
-instance IOType io v => Variables (Loop io v) v where
-  variables (Loop b a) = variables a ++ variables b
 instance IOType io v => FunctionalBlock (Loop io v) v where
-  dependency _ = []
+  inputs  (Loop _a b) = variables b
+  outputs (Loop a _b) = variables a
   insideOut _ = True
 
 
@@ -90,9 +85,9 @@ deriving instance IOType io v => Show (Add io v)
 deriving instance IOType io v => Eq (Add io v)
 -- add a b c = FB $ Add a b c
 
-instance IOType io v => Variables (Add io v) v where
-  variables (Add a b c) = variables a ++ variables b ++ variables c
 instance IOType io v => FunctionalBlock (Add io v) v where
+  inputs  (Add  a  b _c) = variables a ++ variables b
+  outputs (Add _a _b  c) = variables c
   dependency (Add a b c) = [ (y, x) | x <- variables a ++ variables b
                                     , y <- variables c
                                     ]
