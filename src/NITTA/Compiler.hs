@@ -9,10 +9,10 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Compiler
-  ( naive
-  , bindAll
+  ( bindAll
   , bindAllAndNaiveSchedule
   , passiveOption2action
+  , naive
   , NaiveOpt(..)
   )
 where
@@ -84,6 +84,9 @@ naive no bush@Bush{..}
        then finalizeBranch bush'
        else bush'
 
+
+
+-- * Работа с потоком данных.
 
 
 dataFlowOptions Branch{..} = sensibleOptions $ filterByControlModel controlFlow $ options topPU
@@ -170,18 +173,45 @@ finalizeBranch Branch{} = error "finalizeBranch: wrong args."
 
 -- * Работа с привязкой функциональных блоков к вычислительным блокам.
 
+
 data BindOption title v = BindOption
   { boFB       :: FB Parcel v
   , boTitle    :: title
   , boPriority :: Maybe BindPriority
   } deriving (Show)
 
+
+
+-- TODO: А как эта часть синхронизируется с ControlFlow? Как гарантируется сходимость биндингов?
+doBind bOptions branch@Branch{ topPU=net@BusNetwork{..} }
+  = case sort' $ map prioritize' bOptions of
+      BindOption fb puTitle _ : _ -> branch{ topPU=subBind fb puTitle net }
+      _                           -> error "Bind variants is over!"
+  where
+    prioritize' (fb, title)
+      = BindOption{ boFB=fb
+                  , boTitle=title
+                  , boPriority=prioritize net (howManyOptionAllow bOptions) fb title
+                  }
+    sort' = sortBy (flip $ \a b -> boPriority a `compare` boPriority b)
+
+doBind _ _ = error "doBind: internal error."
+
+
+
+-- | Приоритеты операции присваивания.
 data BindPriority
-  = Exclusive
+  -- | Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
+  -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
+  = Critical
+  -- | Для данной привязки есть только один вариант.
+  | Exclusive
+  -- | Привязка данного функционального блока может быть активировано только спустя указанное
+  -- колличество тактов.
   | Restless Int
+  -- | Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
+  -- количества пересылок.
   | Input Int
-  -- Must be binded before a other, because otherwise can cause runtime error.
-  | Critical
   deriving (Show, Eq)
 
 instance Ord BindPriority where
@@ -197,39 +227,23 @@ instance Ord BindPriority where
 
 
 
--- TODO: А как эта часть синхронизируется с ControlFlow? Как гарантируется сходимость биндингов?
-doBind bOptions branch@Branch{ topPU=net@BusNetwork{..} }
-  = case sort' $ map prioritize bOptions of
-      BindOption fb puTitle _ : _ -> branch{ topPU=subBind fb puTitle net }
-      _                           -> error "Bind variants is over!"
+-- | Определить приоретет варианта привязки функционального блока.
+prioritize net@BusNetwork{..} optionCount fb title
+  -- В настоящий момент данная операци приводит к тому, что часть FB перестают быть вычислимыми.
+  | isCritical fb                    = Just Critical
+  | length (optionCount M.! fb) == 1 = Just Exclusive
+
+  | pulls <- filter isPull $ optionsAfterBind fb pu
+  , not (null pulls)
+  = Just $ Input $ sum $ map (length . variables) pulls
+
+  | Just (_var, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ waitingTimeOfVariables net
+  = Just $ Restless $ fromEnum tcFrom
+
+  | otherwise = Nothing
   where
-    prioritize (fb, title) = BindOption{ boFB=fb
-                                       , boTitle=title
-                                       , boPriority=prioritize' net fb title
-                                       }
-    sort' = sortBy (flip $ \a b -> boPriority a `compare` boPriority b)
+    pu = bnPus M.! title
 
-
-    prioritize' net@BusNetwork{..} fb title
-      -- В настоящий момент данная операци приводит к тому, что часть FB перестают быть вычислимыми.
-      --  | isCritical fb = bv{ priority=Just Critical }
-
-      | null (dependency fb)
-      , pulls <- filter isPull $ optionsAfterBind fb pu
-      , not (null pulls)
-      = Just $ Input $ sum $ map (length . variables) pulls
-
-      | Just (_variable, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ restlessVariables net
-      = Just $ Restless $ fromEnum tcFrom
-
-      | length (howManyOptionAllow bOptions M.! fb) == 1
-      = Just Exclusive
-
-      | otherwise = Nothing
-      where
-        pu = bnPus M.! title
-
-doBind _ _ = error "doBind: internal error."
 
 
 -- | Подсчитать, сколько вариантов для привязки функционального блока определено.
@@ -241,8 +255,8 @@ howManyOptionAllow bOptions
     countOption title Nothing       = Just [ title ]
 
 
--- | ?
-restlessVariables net@BusNetwork{..}
+-- | Время ожидания переменных.
+waitingTimeOfVariables net@BusNetwork{..}
   = [ (variable, tc^.avail.infimum)
     | TransportOpt{ toPullAt=tc@TimeConstrain{..}, ..} <- options net
     , (variable, Nothing) <- M.assocs toPush
@@ -251,8 +265,6 @@ restlessVariables net@BusNetwork{..}
 
 -- | Оценить, сколько новых вариантов развития вычислительного процесса даёт привязка
 -- функциоанльного блока.
---
--- TODO: И какую пользу даёт данная метрика в текущем виде?
 optionsAfterBind fb pu = case bind fb pu of
   Right pu' -> filter (\(EffectOpt act _) -> act `optionOf` fb) $ options pu'
   _         -> []
