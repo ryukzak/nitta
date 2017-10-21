@@ -137,6 +137,9 @@ data TaggedTime tag t
   , clock :: t
   } deriving ( Typeable )
 
+class ( Eq tag, Show tag, Typeable tag ) => Tag tag
+instance ( Eq tag, Show tag, Typeable tag ) => Tag tag
+
 instance ( Default t ) => Default (TaggedTime tag t) where
   def = TaggedTime Nothing def
 

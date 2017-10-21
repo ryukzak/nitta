@@ -155,11 +155,11 @@ allowByControlFlow block@(Block cfs)
 -- процесса происходит глобально, то и ветвление времени происходит глобально.
 -- Возможное от данного тезиса будет полезно абстрагироваться, если Choice целиком попадает на
 -- отдельную подсеть, но пока до таких вопросов ещё очень далеко.
-data BranchedProcess tag v t
+data BranchedProcess title tag v t
   -- | Описание ветки вычислительного процесса.
   = Branch
   { -- | Вычислительный блок, в рамках которого реализуется весь вычислительный процесс.
-    topPU        :: BusNetwork String v t
+    topPU        :: BusNetwork title v t
     -- | Описание текущего потока управления (в случае если мы находимся в одной из веток
     -- вычислительного процесса, то описывается только её поток управления)
   , controlFlow  :: ControlFlow tag v
@@ -172,11 +172,11 @@ data BranchedProcess tag v t
   -- сходящихся в одну точку по их завершению.
   | Bush
   { -- | Ветка процесса, планируемая в текущий момент времени.
-    currentBranch     :: BranchedProcess tag v t
+    currentBranch     :: BranchedProcess title tag v t
     -- | Ветки процесса, требующие планирования.
-  , remainingBranches :: [ BranchedProcess tag v t ]
+  , remainingBranches :: [ BranchedProcess title tag v t ]
     -- | Спланированные ветки процесса.
-  , completedBranches :: [ BranchedProcess tag v t ]
+  , completedBranches :: [ BranchedProcess title tag v t ]
     -- | Исходная ветка, которая была расщеплена. Используется как база для слияния куста.
-  , rootBranch        :: BranchedProcess tag v t
+  , rootBranch        :: BranchedProcess title tag v t
   }

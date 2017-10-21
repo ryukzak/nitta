@@ -1,11 +1,13 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE LambdaCase             #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE PartialTypeSignatures  #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Compiler
@@ -20,13 +22,14 @@ where
 import           Data.Default
 import           Data.List        (find, intersect, nub, sortBy)
 import qualified Data.Map         as M
-import           Data.Maybe       (catMaybes, isJust)
+import           Data.Maybe       (catMaybes, isJust, mapMaybe)
 import           NITTA.BusNetwork
 import           NITTA.Flows
 import           NITTA.Lens
 import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval ((...))
+
 
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
@@ -46,6 +49,7 @@ bindAllAndNaiveSchedule pu0 alg = naiveSchedule $ bindAll pu0 alg
       | otherwise = pu
 
 
+
 -- | Настройки процесса компиляции.
 data NaiveOpt = NaiveOpt
   { -- | Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
@@ -54,35 +58,124 @@ data NaiveOpt = NaiveOpt
   }
 
 instance Default NaiveOpt where
-  def = NaiveOpt
-    { threshhold=2
-    }
+  def = NaiveOpt{ threshhold=2
+                }
+
+
+
+class DecisionType t where
+  data Option_ t :: *
+  data Decision_ t :: *
+
+class Decision t p | p -> t where
+  options_ :: p -> [Option_ t]
+  desicion_ :: p -> Decision_ t -> p
+
+
+
+data Compiler title tag v t
+
+
+-- | Представление решения компилятора. Необходимо для того, что бы разделить логику принятия
+-- решения и его непосредственного исполнения. Необходимо для:
+--
+-- - тестирования;
+-- - разделения задачи на независимые части;
+-- - реализации интерактивного компилятора.
+instance DecisionType (Compiler title tag v t) where
+  data Option_ (Compiler title tag v t)
+    = CFOption (ControlFlow tag v)
+    | BOption  (FB Parcel v, String)
+    | DFOption (Option (Network title) v t)
+
+  data Decision_ (Compiler title tag v t)
+    = CFDecision (ControlFlow tag v)
+    | BDecision (FB Parcel v, String)
+    | DFDecision (Action (Network title) v t)
+
+getCFOption (CFOption x) = Just x
+getCFOption _            = Nothing
+getBOption (BOption x) = Just x
+getBOption _           = Nothing
+getDFOption (DFOption x) = Just x
+getDFOption _            = Nothing
+
+
+instance ( Tag tag, Time t, Var v
+         ) => Decision (Compiler        String tag v (TaggedTime tag t))
+                       (BranchedProcess String tag v (TaggedTime tag t)) where
+
+  options_ Bush{..} = options_ currentBranch
+  options_ branch@Branch{ topPU=pu, .. }
+    = let bOptions = bindingOptions pu
+          cfOptions = branchOptions branch
+          dfOptions = dataFlowOptions branch
+      in (map DFOption dfOptions ++ map CFOption cfOptions ++ map BOption bOptions)
+
+  desicion_ bush@Bush{..} act = bush{ currentBranch=desicion_ currentBranch act }
+  desicion_ branch@Branch{ topPU=pu, .. } (BDecision (fb, title))
+    = branch{ topPU=subBind fb title pu }
+  desicion_ branch (CFDecision cf)
+    = doBranch branch cf
+  desicion_ branch@Branch{ topPU=pu, .. } (DFDecision act)
+    = branch{ topPU=select pu act }
+
+
+
+branchOptions Branch{ topPU=pu, ..} = branchingOptions controlFlow availableVars
+  where
+    availableVars = nub $ concatMap (M.keys . toPush) $ options pu
+branchOptions _ = undefined
+
+
+
+mkBindDecision Branch{ topPU=net@BusNetwork{..} } bOptions
+  = case sort' $ map prioritize' bOptions of
+      BindOption fb puTitle _ : _ -> BDecision (fb, puTitle)
+      _                           -> error "Bind variants is over!"
+  where
+    prioritize' (fb, title)
+      = BindOption{ boFB=fb
+                  , boTitle=title
+                  , boPriority=prioritize net (howManyOptionAllow bOptions) fb title
+                  }
+    sort' = sortBy (flip $ \a b -> boPriority a `compare` boPriority b)
+mkBindDecision _ _ = undefined
+
 
 
 -- | Наивный, но полноценный компилятор.
-naive NaiveOpt{..} branch@Branch{ topPU=pu, ..}
-  = let bOptions = bindingOptions pu
-        cfOptions = branchingOptions controlFlow availableVars
-        dfOptions = dataFlowOptions branch
-    in case () of
-      _ | length dfOptions >= threshhold -> doSchedule dfOptions
-      _ | not $ null bOptions            -> doBind bOptions branch
-      _ | not $ null dfOptions           -> doSchedule dfOptions
-      _ | not $ null cfOptions           -> doBranch branch (head cfOptions)
-      _ -> branch
-  where
-    availableVars = nub $ concatMap (M.keys . toPush) $ options pu
-    start opt = opt^.at.avail.infimum
-    doSchedule dfOptions
-      = case sortBy (\a b -> start a `compare` start b) dfOptions of
-        v : _ -> branch{ topPU=select pu $ networkOption2action v }
-        _     -> error "No variants!"
+naive NaiveOpt{..} branch@Branch{}
+  = let d = options2desicion_ branch $ options_ branch
+    in case d of
+      Just d' -> desicion_ branch d'
+      Nothing -> branch
 
 naive no bush@Bush{..}
   = let bush' = bush{ currentBranch=naive no currentBranch }
     in if isCurrentBranchOver bush'
        then finalizeBranch bush'
        else bush'
+
+
+-- | Мегафункция принятия решения в процессе компиляции. На вход получает ветку процесса и доступные
+-- опции. Выполняет их приоритезацию и выдаёт победителя в качестве результата. В потенциале может
+-- реализовываться с использованием IO, то есть - решение принемает пользователь.
+options2desicion_ branch opts
+  = let bOptions = mapMaybe getBOption opts
+        cfOptions = mapMaybe getCFOption opts
+        dfOptions = mapMaybe getDFOption opts
+    in case () of
+      _ | length dfOptions >= 2 -> Just $ dfDecision dfOptions
+      _ | not $ null bOptions   -> Just $ mkBindDecision branch bOptions
+      _ | not $ null dfOptions  -> Just $ dfDecision dfOptions
+      _ | not $ null cfOptions  -> Just $ CFDecision $ head cfOptions
+      _ -> Nothing
+  where
+    dfDecision dfOptions = case sortBy (\a b -> start a `compare` start b) dfOptions of
+      v : _ -> DFDecision $ networkOption2action v
+      _     -> error "No variants!"
+    start opt = opt^.at.avail.infimum
 
 
 
@@ -179,23 +272,6 @@ data BindOption title v = BindOption
   , boTitle    :: title
   , boPriority :: Maybe BindPriority
   } deriving (Show)
-
-
-
--- TODO: А как эта часть синхронизируется с ControlFlow? Как гарантируется сходимость биндингов?
-doBind bOptions branch@Branch{ topPU=net@BusNetwork{..} }
-  = case sort' $ map prioritize' bOptions of
-      BindOption fb puTitle _ : _ -> branch{ topPU=subBind fb puTitle net }
-      _                           -> error "Bind variants is over!"
-  where
-    prioritize' (fb, title)
-      = BindOption{ boFB=fb
-                  , boTitle=title
-                  , boPriority=prioritize net (howManyOptionAllow bOptions) fb title
-                  }
-    sort' = sortBy (flip $ \a b -> boPriority a `compare` boPriority b)
-
-doBind _ _ = error "doBind: internal error."
 
 
 
