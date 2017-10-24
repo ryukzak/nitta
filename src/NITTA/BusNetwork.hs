@@ -13,6 +13,21 @@
 
 {-
 TODO: Реализовать PUClass Passive BusNetwork
+Есть как минимум следующие варианты реализации (важно отметить, что они значительно влияют на
+восприятие процессорной архитектуры в целом):
+
+1. Сеть представляется в виде вычислительного блока жадно вычисляющая все функции привязанные к ней.
+Как следствие, она должна содержать в себе некоторый фрагмент компилятора. Наружу, в качестве опций
+выдаются исключительные внешние взаимодействиясети. Соответсвенно любая привязка функционального
+блока может сократить количество вариантов внутри сети, что требует особой обработки при принятие
+решения компилятором. Обвязка для передачи данных реализуется автоматически и рассматривается как
+встроенная часть интерфейса вычислительного блока с сетью. Все сети становятся вложенными друг
+относительно друга.
+2. Все коммуникационные сети представляются  как единое целое, разделённое на домены.
+При биндинге решаются задачи модификации прикладного алгоритма для передачи данных между доменами
+(если надо). Планирование вычислительного процесса производится в рамках отдельных доменов, а также
+относительно пересылок данных между ними, при этом время в сетях должно быть максимально выравнено.
+Любая сетевая структура становится плоской с точки зрения наблюдателя.
 -}
 module NITTA.BusNetwork where
 
@@ -219,37 +234,37 @@ instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v 
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-bindingOptions BusNetwork{..} =
-  concatMap bindVariants' bnRemains
-  where
-    bindVariants' fb =
-      [ (fb, puTitle)
-      | (puTitle, pu) <- sortByLoad $ M.assocs bnPus
-      , isRight $ bind fb pu
-      , not $ selfTransport fb puTitle
-      ]
+instance ( Var v ) => Decision Binding (Binding String v)
+                              (BusNetwork String v t)
+         where
+  options_ _ BusNetwork{..} = concatMap bindVariants' bnRemains
+    where
+      bindVariants' fb =
+        [ BindingOption fb puTitle
+        | (puTitle, pu) <- sortByLoad $ M.assocs bnPus
+        , isRight $ bind fb pu
+        , not $ selfTransport fb puTitle
+        ]
 
-    sortByLoad = sortBy (\(a, _) (b, _) -> load a `compare` load b)
-    load = length . binded
+      sortByLoad = sortBy (\(a, _) (b, _) -> load a `compare` load b)
+      load = length . binded
 
-    selfTransport fb puTitle =
-      not $ null $ variables fb `intersect` concatMap variables (binded puTitle)
+      selfTransport fb puTitle =
+        not $ null $ variables fb `intersect` concatMap variables (binded puTitle)
 
-    binded puTitle | puTitle `M.member` bnBinded = bnBinded M.! puTitle
-                   | otherwise = []
+      binded puTitle | puTitle `M.member` bnBinded = bnBinded M.! puTitle
+                     | otherwise = []
 
-
-
-subBind fb puTitle bn@BusNetwork{ bnProcess=p@Process{..}, ..} = bn
-  { bnPus=M.adjust (fromRight undefined . bind fb) puTitle bnPus
-  , bnBinded=M.alter (\v -> case v of
-                         Just fbs -> Just $ fb : fbs
-                         Nothing  -> Just [fb]
-                     ) puTitle bnBinded
-  , bnProcess=snd $ modifyProcess p $
-      add (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
-  , bnRemains=filter (/= fb) bnRemains
-  }
+  decision_ _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingDecision fb puTitle)
+    = bn{ bnPus=M.adjust (fromRight undefined . bind fb) puTitle bnPus
+        , bnBinded=M.alter (\v -> case v of
+                              Just fbs -> Just $ fb : fbs
+                              Nothing  -> Just [fb]
+                          ) puTitle bnBinded
+        , bnProcess=snd $ modifyProcess p $
+            add (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
+        , bnRemains=filter (/= fb) bnRemains
+        }
 
 
 --------------------------------------------------------------------------

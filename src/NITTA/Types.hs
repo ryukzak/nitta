@@ -10,7 +10,10 @@
 {-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.Types where
+module NITTA.Types
+  ( module NITTA.Types.Poly
+  , module NITTA.Types
+  ) where
 
 import           Data.Default
 import qualified Data.List         as L
@@ -18,6 +21,7 @@ import qualified Data.Map          as M
 import           Data.Maybe
 import qualified Data.String.Utils as S
 import           Data.Typeable
+import           NITTA.Types.Poly
 import           Numeric.Interval  hiding (elem)
 
 
@@ -202,7 +206,9 @@ class ( Typeable fb
   -- Критические функциональные блоки - блоки, жёстко блокирующие внутрении ресурсы PU. Такие блоки
   -- следует привязывать одними из первых, так как в противном случае требуемые ресурс может быть
   -- занят другим ФБ, а следовательно заблокировать процесс синтеза.
-  -- TODO: Необходимо обобщить.
+  --
+  -- TODO: на самом деле это не правильно, так как критичность на самом деле определяется связкой
+  -- fb + pu. К примеру - использование Loop для Accum.
   isCritical :: fb -> Bool
   isCritical _ = False
 
@@ -333,6 +339,24 @@ data Relation
   -- путём трансляции/детализации первого шага.
   = Vertical ProcessUid ProcessUid
   deriving (Show, Eq)
+
+
+
+---------------------------------------------------------------------
+-- * Варианты и решения
+
+
+-- | Решение в области привязки функционального блока к вычислительному. Определяется только для
+-- вычислительных блоков, организующих работу со множеством вложенных блоков, адресуемым по title.
+--
+-- Решение и вариант не имеют существенных отличий.
+data Binding title v
+binding = Proxy :: Proxy Binding
+
+
+instance DecisionType (Binding title v) where
+  data Option_ (Binding title v) = BindingOption (FB Parcel v) title
+  data Decision_ (Binding title v) = BindingDecision (FB Parcel v) title
 
 
 

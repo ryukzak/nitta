@@ -26,6 +26,7 @@ library
                      , NITTA.ProcessUnits.Fram
                      , NITTA.ProcessUnits.Accum
                      , NITTA.Lens
+                     , NITTA.Types.Poly
                      , NITTA.ProcessUnits.SerialPU
   build-depends:       base >= 4.7 && < 5
                      , containers

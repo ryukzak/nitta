@@ -159,6 +159,8 @@ data BranchedProcess title tag v t
   -- | Описание ветки вычислительного процесса.
   = Branch
   { -- | Вычислительный блок, в рамках которого реализуется весь вычислительный процесс.
+    --
+    -- TODO: Убрать hardcode.
     topPU        :: BusNetwork title v t
     -- | Описание текущего потока управления (в случае если мы находимся в одной из веток
     -- вычислительного процесса, то описывается только её поток управления)
@@ -180,3 +182,12 @@ data BranchedProcess title tag v t
     -- | Исходная ветка, которая была расщеплена. Используется как база для слияния куста.
   , rootBranch        :: BranchedProcess title tag v t
   }
+
+
+instance ( Var v ) => Decision Binding (Binding String v)
+                              (BranchedProcess String tag v t)
+         where
+  options_ _ Branch{..} = options_ binding topPU
+  options_ _ _          = undefined
+  decision_ _ branch@Branch{..} act = branch{ topPU=decision_ binding topPU act }
+  decision_ _ _ _ = undefined
