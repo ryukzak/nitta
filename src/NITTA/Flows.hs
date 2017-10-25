@@ -190,4 +190,4 @@ instance ( Var v ) => Decision Binding (Binding String v)
   options_ _ Branch{..} = options_ binding topPU
   options_ _ _          = undefined
   decision_ _ branch@Branch{..} act = branch{ topPU=decision_ binding topPU act }
-  decision_ _ _ _ = undefined
+  decision_ _ _ _                   = undefined

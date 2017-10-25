@@ -23,6 +23,7 @@ import           Data.Default
 import           Data.List        (find, intersect, nub, sortBy)
 import qualified Data.Map         as M
 import           Data.Maybe       (catMaybes, isJust, mapMaybe)
+import           Data.Proxy
 import           NITTA.BusNetwork
 import           NITTA.Flows
 import           NITTA.Lens
@@ -30,7 +31,7 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval ((...))
 
-import           Data.Proxy
+
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
 bindAll pu fbs = fromRight (error "Can't bind FB to PU!") $ foldl nextBind (Right pu) fbs
@@ -62,25 +63,23 @@ instance Default NaiveOpt where
                 }
 
 
+
+---------------------------------------------------------------------
+-- * Представление решения компилятора.
+
+
 data Compiler title tag v t
 compiler = Proxy :: Proxy Compiler
 
 
-
--- | Представление решения компилятора. Необходимо для того, что бы разделить логику принятия
--- решения и его непосредственного исполнения. Необходимо для:
---
--- - тестирования;
--- - разделения задачи на независимые части;
--- - реализации интерактивного компилятора.
 instance DecisionType (Compiler title tag v t) where
   data Option_ (Compiler title tag v t)
-    = CFOption (ControlFlow tag v)
+    = CFOption (Option_ (ControlFlowDecision tag v))
     | BOption  (Option_ (Binding title v))
     | DFOption (Option (Network title) v t)
 
   data Decision_ (Compiler title tag v t)
-    = CFDecision (ControlFlow tag v)
+    = CFDecision (Decision_ (ControlFlowDecision tag v))
     | BDecision (Decision_ (Binding title v))
     | DFDecision (Action (Network title) v t)
 
@@ -91,7 +90,6 @@ getBOption _           = Nothing
 getDFOption (DFOption x) = Just x
 getDFOption _            = Nothing
 
-
 instance ( Tag tag, Time t, Var v
          ) => Decision Compiler (Compiler String tag v (TaggedTime tag t))
                       (BranchedProcess String tag v (TaggedTime tag t))
@@ -99,44 +97,20 @@ instance ( Tag tag, Time t, Var v
   options_ _ Bush{..} = options_ compiler currentBranch
   options_ _ branch
     = map DFOption (dataFlowOptions branch)
-    ++ map CFOption (branchOptions branch)
+    ++ map CFOption (options_ controlFlowDecision branch)
     ++ map BOption (options_ binding branch)
 
-  decision_ _ bush@Bush{..} act = bush{ currentBranch=decision_ compiler currentBranch act }
-  decision_ _ branch (BDecision decision)
-    = decision_ binding branch decision
-  decision_ _ branch (CFDecision cf)
-    = doBranch branch cf
-  decision_ _ branch@Branch{ topPU=pu, .. } (DFDecision act)
-    = branch{ topPU=select pu act }
+  decision_ _ bush@Bush{..} act            = bush{ currentBranch=decision_ compiler currentBranch act }
+  decision_ _ branch (BDecision d)  = decision_ binding branch d
+  decision_ _ branch (CFDecision d) = decision_ controlFlowDecision branch d
+  decision_ _ branch@Branch{ topPU=pu, .. } (DFDecision act) = branch{ topPU=select pu act }
 
 
 
-branchOptions Branch{ topPU=pu, ..} = branchingOptions controlFlow availableVars
-  where
-    availableVars = nub $ concatMap (M.keys . toPush) $ options pu
-branchOptions _ = undefined
+---------------------------------------------------------------------
+-- * Наивный, но полноценный компилятор.
 
 
-
-mkBindDecision Branch{ topPU=net@BusNetwork{..} } bOptions
-  = case sort' $ map prioritize' bOptions of
-      BindOption fb puTitle _ : _ -> BDecision $ BindingDecision fb puTitle
-      _                           -> error "Bind variants is over!"
-  where
-    prioritize' (BindingOption fb title)
-      = BindOption{ boFB=fb
-                  , boTitle=title
-                  , boPriority=prioritize net (howManyOptionAllow bOptions) fb title
-                  }
-    sort' = sortBy (flip $ \a b -> boPriority a `compare` boPriority b)
-mkBindDecision _ _ = undefined
-
-
-
--- | Наивный, но полноценный компилятор.
--- naive :: (Tag tag, Time t, Var v) => NaiveOpt -> BranchedProcess String tag v (TaggedTime tag t)
---                   -> BranchedProcess String tag v (TaggedTime tag t)
 naive NaiveOpt{..} branch@Branch{}
   = let d = options2decision_ branch $ options_ compiler branch
     in case d of
@@ -146,14 +120,14 @@ naive NaiveOpt{..} branch@Branch{}
 naive no bush@Bush{..}
   = let bush' = bush{ currentBranch=naive no currentBranch }
     in if isCurrentBranchOver bush'
-       then finalizeBranch bush'
-       else bush'
+      then finalizeBranch bush'
+      else bush'
+
 
 
 -- | Мегафункция принятия решения в процессе компиляции. На вход получает ветку процесса и доступные
 -- опции. Выполняет их приоритезацию и выдаёт победителя в качестве результата. В потенциале может
 -- реализовываться с использованием IO, то есть - решение принемает пользователь.
--- options2decision_ :: (Tag tag, Time t, Var v) => BranchedProcess String tag v (TaggedTime tag t) -> [Option_ (Compiler String tag v t)] -> Maybe (Decision_ (Compiler String tag v t))
 options2decision_ branch opts
   = let bOptions = mapMaybe getBOption opts
         cfOptions = mapMaybe getCFOption opts
@@ -162,13 +136,59 @@ options2decision_ branch opts
       _ | length dfOptions >= 2 -> Just $ dfDecision dfOptions
       _ | not $ null bOptions   -> Just $ mkBindDecision branch bOptions
       _ | not $ null dfOptions  -> Just $ dfDecision dfOptions
-      _ | not $ null cfOptions  -> Just $ CFDecision $ head cfOptions
+      _ | not $ null cfOptions  -> Just $ CFDecision $ (\(ControlFlowOption cf : _) -> ControlFlowDecision cf) cfOptions
       _ -> Nothing
   where
     dfDecision dfOptions = case sortBy (\a b -> start a `compare` start b) dfOptions of
       v : _ -> DFDecision $ networkOption2action v
       _     -> error "No variants!"
     start opt = opt^.at.avail.infimum
+
+
+
+---------------------------------------------------------------------
+-- * Ветвление алгоритма.
+
+
+data ControlFlowDecision tag v
+controlFlowDecision = Proxy :: Proxy ControlFlowDecision
+
+
+instance DecisionType (ControlFlowDecision tag v) where
+  data Option_ (ControlFlowDecision tag v)
+    = ControlFlowOption (ControlFlow tag v)
+
+  data Decision_ (ControlFlowDecision tag v)
+    = ControlFlowDecision (ControlFlow tag v)
+
+
+instance ( Tag tag, Var v, Time t
+         ) => Decision ControlFlowDecision (ControlFlowDecision tag v)
+                      (BranchedProcess String tag v (TaggedTime tag t))
+         where
+  options_ _ Branch{ topPU=pu, ..} = branchingOptions controlFlow availableVars
+    where
+      availableVars = nub $ concatMap (M.keys . toPush) $ options pu
+  options_ _ _ = undefined
+
+  -- | Выполнить ветвление вычислительного процесса. Это действие заключается в замене текущей ветки
+  -- вычислительного процесса на кустарник (Bush), в рамках работы с которым необъходимо перебрать
+  -- все веточки и в конце собрать обратно в одну ветку.
+  decision_ _ Branch{..} (ControlFlowDecision Choice{..})
+    = let now = nextTick $ process topPU
+          branch : branchs = map (\OptionCF{..} -> Branch
+                                    { topPU=setTime now{ tag=ocfTag } topPU
+                                    , controlFlow=oControlFlow
+                                    , branchTag=ocfTag
+                                    , branchInputs=ocfInputs
+                                    }
+                                  ) cfOptions
+      in Bush{ currentBranch=branch
+            , remainingBranches=branchs
+            , completedBranches=[]
+            , rootBranch=branch
+            }
+  decision_ _ _ _                   = undefined
 
 
 
@@ -198,30 +218,12 @@ dataFlowOptions _ = error "Can't generate dataflow options for BranchingInProgre
 -- Ветвление вычислительного процесса возможно в том случае, если доступнен ключ ветвления
 -- алгоритма и все входные переменные для всех вариантов развития вычислительного процесса.
 branchingOptions (Block cfs) availableVars
-  = [ x
+  = [ ControlFlowOption x
     | x@Choice{..} <- cfs
     , all (`elem` availableVars) $ cfCond : cfInputs
     ]
 branchingOptions _ _ = error "branchingOptions: internal error."
 
--- | Выполнить ветвление вычислительного процесса. Это действие заключается в замене текущей ветки
--- вычислительного процесса на кустарник (Bush), в рамках работы с которым необъходимо перебрать
--- все веточки и в конце собрать обратно в одну ветку.
-doBranch Branch{..} Choice{..}
-  = let now = nextTick $ process topPU
-        branch : branchs = map (\OptionCF{..} -> Branch
-                                  { topPU=setTime now{ tag=ocfTag } topPU
-                                  , controlFlow=oControlFlow
-                                  , branchTag=ocfTag
-                                  , branchInputs=ocfInputs
-                                  }
-                                ) cfOptions
-    in Bush{ currentBranch=branch
-           , remainingBranches=branchs
-           , completedBranches=[]
-           , rootBranch=branch
-           }
-doBranch _ _ = error "Can't split process."
 
 
 -- | Функция применяется к кусту и позволяет определить, осталась ли работа в текущей ветке или нет.
@@ -258,6 +260,20 @@ finalizeBranch Branch{} = error "finalizeBranch: wrong args."
 
 
 -- * Работа с привязкой функциональных блоков к вычислительным блокам.
+
+mkBindDecision Branch{ topPU=net@BusNetwork{..} } bOptions
+  = case sort' $ map prioritize' bOptions of
+      BindOption fb puTitle _ : _ -> BDecision $ BindingDecision fb puTitle
+      _                           -> error "Bind variants is over!"
+  where
+    prioritize' (BindingOption fb title)
+      = BindOption{ boFB=fb
+                  , boTitle=title
+                  , boPriority=prioritize net (howManyOptionAllow bOptions) fb title
+                  }
+    sort' = sortBy (flip $ \a b -> boPriority a `compare` boPriority b)
+mkBindDecision _ _ = undefined
+
 
 
 data BindOption title v = BindOption
