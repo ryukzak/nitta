@@ -74,29 +74,20 @@ type BusNetwork title v t = GBusNetwork title (PU Passive v t) v t
 busNetwork pus wires = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wires
 
 
+
 instance ( Title title, Var v, Time t
-         ) => PUClass (Network title) (BusNetwork title v t) v t where
-
-  bind fb bn@BusNetwork{..}
-    | any (isRight . bind fb) $ M.elems bnPus
-    = Right bn{ bnRemains=fb : bnRemains }
-  bind _fb _bn = Left "All sub process units reject the functional block."
-
-  options BusNetwork{..} =
-    let options' = concat
-          [
-            [ TransportOpt fromPu (fixPullConstrain pullAt) $ M.fromList pushs
-            | pushs <- mapM pushOptionsFor pullVars
-            , let pushTo = mapMaybe (fmap fst . snd) pushs
-            , length (nub pushTo) == length pushTo
-            ]
-          | (fromPu, opts) <-
-            -- trace ("puOptions: \n" ++ concatMap ((" " ++) . (++ "\n") . show) puOptions)
-            puOptions
-          , EffectOpt (Pull pullVars) pullAt <- opts
-          ]
-    in -- trace ("BusNetwork options: \n" ++ concatMap ((++"\n") . ("  "++) . show) x)
-       options'
+         ) => Decision DataFlowDT (DataFlowDT title v t)
+                      (BusNetwork title v t)
+         where
+  options_ _proxy BusNetwork{..}
+    = concat [ [ DataFlowO (fromPu, fixPullConstrain pullAt) $ M.fromList pushs
+               | pushs <- mapM pushOptionsFor pullVars
+               , let pushTo = mapMaybe (fmap fst . snd) pushs
+               , length (nub pushTo) == length pushTo
+               ]
+             | (fromPu, opts) <- puOptions
+             , EffectOpt (Pull pullVars) pullAt <- opts
+             ]
     where
       now = nextTick bnProcess
       fixPullConstrain constrain
@@ -124,7 +115,7 @@ instance ( Title title, Var v, Time t
 
       puOptions = M.assocs $ M.map options bnPus
 
-  select ni@BusNetwork{..} act@TransportAct{..}
+  decision_ _proxy ni@BusNetwork{..} act@DataFlowD{..}
     | nextTick bnProcess > act^.at.infimum
     = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (act^.at)
     | otherwise = ni
@@ -132,27 +123,36 @@ instance ( Title title, Var v, Time t
     , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add
                 (Activity $ transportStartAt ... transportEndAt)
-                $ InstructionStep (Transport v taPullFrom title :: Instruction (BusNetwork title v t))
+                $ InstructionStep (Transport v (fst dfdSource) title :: Instruction (BusNetwork title v t))
               ) $ M.assocs push'
         _ <- add (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act --   $ Pull pullVars
         setProcessTime $ act^.at.supremum + 1
     , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
     where
-      transportStartAt = inf taPullAt
+      transportStartAt = act^.at.infimum
       transportDuration = maximum $
         map ((\event -> (inf event - transportStartAt) + width event) . snd) $ M.elems push'
       transportEndAt = transportStartAt + transportDuration
       -- if puTitle not exist - skip it...
-      pullStep = M.adjust (\dpu -> select dpu $ EffectAct (Pull pullVars) taPullAt) taPullFrom
+      pullStep = M.adjust (\dpu -> select dpu $ EffectAct (Pull pullVars) (act^.at)) (fst dfdSource)
       pushStep (var, (dpuTitle, pushAt)) =
         M.adjust (\dpu -> select dpu $ EffectAct (Push var) pushAt) dpuTitle
       pushSteps = map pushStep $ M.assocs push'
       steps = pullStep : pushSteps
 
-      push' = M.map (fromMaybe undefined) $ M.filter isJust taPush
+      push' = M.map (fromMaybe undefined) $ M.filter isJust dfdTargets
       pullVars = M.keys push'
 
+
+
+instance ( Title title, Var v, Time t
+         ) => PUClass (Network title) (BusNetwork title v t) v t where
+
+  bind fb bn@BusNetwork{..}
+    | any (isRight . bind fb) $ M.elems bnPus
+    = Right bn{ bnRemains=fb : bnRemains }
+  bind _fb _bn = Left "All sub process units reject the functional block."
 
   process pu@BusNetwork{..} = let
     transportKey = M.fromList
@@ -234,13 +234,13 @@ instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v 
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( Var v ) => Decision Binding (Binding String v)
+instance ( Var v ) => Decision BindingDT (BindingDT String v)
                               (BusNetwork String v t)
          where
   options_ _ BusNetwork{..} = concatMap bindVariants' bnRemains
     where
       bindVariants' fb =
-        [ BindingOption fb puTitle
+        [ BindingO fb puTitle
         | (puTitle, pu) <- sortByLoad $ M.assocs bnPus
         , isRight $ bind fb pu
         , not $ selfTransport fb puTitle
@@ -255,7 +255,7 @@ instance ( Var v ) => Decision Binding (Binding String v)
       binded puTitle | puTitle `M.member` bnBinded = bnBinded M.! puTitle
                      | otherwise = []
 
-  decision_ _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingDecision fb puTitle)
+  decision_ _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
     = bn{ bnPus=M.adjust (fromRight undefined . bind fb) puTitle bnPus
         , bnBinded=M.alter (\v -> case v of
                               Just fbs -> Just $ fb : fbs

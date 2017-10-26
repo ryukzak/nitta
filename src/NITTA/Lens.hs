@@ -30,14 +30,14 @@ instance HasAvail (TimeConstrain t) (Interval t) where
 class HasAt a b | a -> b where
   at :: Lens' a b
 
-instance HasAt (Option (Network title) v t) (TimeConstrain t) where
-  at = lens toPullAt $ \variant v -> variant{ toPullAt=v }
-instance HasAt (Action (Network title) v t) (Interval t) where
-  at = lens taPullAt $ \variant v -> variant{ taPullAt=v }
 instance HasAt (Option Passive v t) (TimeConstrain t) where
   at = lens eoAt $ \variant v -> variant{ eoAt=v }
 instance HasAt (Action Passive v t) (Interval t) where
   at = lens eaAt $ \variant v -> variant{ eaAt=v }
+instance HasAt (Option_ (DataFlowDT title v t)) (TimeConstrain t) where
+  at = lens (snd . dfoSource) $ \a@DataFlowO{ dfoSource=(title, _time) } b -> a{ dfoSource=(title, b) }
+instance HasAt (Decision_ (DataFlowDT title v t)) (Interval t) where
+  at = lens (snd . dfdSource) $ \a@DataFlowD{ dfdSource=(title, _time) } b -> a{ dfdSource=(title, b) }
 
 
 

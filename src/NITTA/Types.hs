@@ -16,13 +16,12 @@ module NITTA.Types
   ) where
 
 import           Data.Default
-import qualified Data.List         as L
-import qualified Data.Map          as M
-import           Data.Maybe
-import qualified Data.String.Utils as S
+import qualified Data.List        as L
+import qualified Data.Map         as M
+import           Data.Proxy
 import           Data.Typeable
 import           NITTA.Types.Poly
-import           Numeric.Interval  hiding (elem)
+import           Numeric.Interval hiding (elem)
 
 
 
@@ -350,13 +349,41 @@ data Relation
 -- вычислительных блоков, организующих работу со множеством вложенных блоков, адресуемым по title.
 --
 -- Решение и вариант не имеют существенных отличий.
-data Binding title v
-binding = Proxy :: Proxy Binding
+data BindingDT title v
+binding = Proxy :: Proxy BindingDT
 
 
-instance DecisionType (Binding title v) where
-  data Option_ (Binding title v) = BindingOption (FB Parcel v) title
-  data Decision_ (Binding title v) = BindingDecision (FB Parcel v) title
+instance DecisionType (BindingDT title v) where
+  data Option_ (BindingDT title v) = BindingO (FB Parcel v) title
+  data Decision_ (BindingDT title v) = BindingD (FB Parcel v) title
+
+
+
+data DataFlowEndpointDT v t
+
+
+
+data DataFlowDT title v t
+dataFlowDT = Proxy :: Proxy DataFlowDT
+
+instance DecisionType (DataFlowDT title v t) where
+  data Option_ (DataFlowDT title v t)
+    = DataFlowO
+    { dfoSource     :: (title, TimeConstrain t) -- ^ Источник пересылки.
+    -- | Словарь, описывающий все необходимые пункты назначения для пересылаемого значения.
+    -- Допустима ситация, когда пункт назначения не может принять значение, в таком случае для
+    -- негоне указываются временные ограничения.
+    --
+    -- Примечание: почему title оказался под Maybe? Потому что мы можем, банально, не знать в каком
+    -- PU находится требуемый функциональный блок, так как он может быть ещё непривязан к PU.
+    , dfoTargets    :: M.Map v (Maybe (title, TimeConstrain t))
+    } deriving (Show)
+  data Decision_ (DataFlowDT title v t)
+    = DataFlowD
+    { dfdSource     :: (title, Interval t) -- ^ Источник пересылки.
+    -- | Словарь, описывающий пункты назначения для пересылаемого значения.
+    , dfdTargets    :: M.Map v (Maybe (title, Interval t))
+    } deriving (Show)
 
 
 
@@ -411,37 +438,9 @@ instance Variables (Action Passive v t) v where
 
 -- | Тип организации вычилсительного процесса через организацию пересылки данных между PU. При это
 -- возможна параллельная пересылка одного значения в несколько потребителей.
+--
+-- TODO: удалить.
 data Network title
-
-instance PUType (Network title) where
-  data Option (Network title) v t
-    = TransportOpt
-    { toPullFrom :: title -- ^ Источник пересылки.
-    , toPullAt   :: TimeConstrain t -- ^ Временные ограничения на операцию.
-    -- | Словарь, описывающий все необходимые пункты назначения для пересылаемого значения.
-    -- Допустима ситация, когда пункт назначения не может принять значение, в таком случае для
-    -- негоне указываются временные ограничения.
-    --
-    -- Примечание: почему title оказался под Maybe? Потому что мы можем, банально, не знать в каком
-    -- PU находится требуемый функциональный блок, так как он может быть ещё непривязан к PU.
-    , toPush     :: M.Map v (Maybe (title, TimeConstrain t))
-    } deriving (Show)
-  data Action (Network title) v t
-    = TransportAct
-    { taPullFrom :: title -- ^ Источник пересылки.
-    , taPullAt   :: Interval t -- ^ Положение операции во времени.
-    -- | Словарь, описывающий пункты назначения для пересылаемого значения.
-    , taPush     :: M.Map v (Maybe (title, Interval t))
-    }
-instance Variables (Option (Network title) v t) v where
-  variables TransportOpt{..} = M.keys toPush
-
-instance ( Show title, Show t, Show v ) => Show (Action (Network title) v t) where
-  show TransportAct{..} = show taPullFrom ++ "#[" ++ show taPullAt ++ "] -> " ++ S.join "; " pushs
-    where
-      pushs = mapMaybe foo $ M.assocs taPush
-      foo (v, Just (title, event)) = Just (show v ++ "@" ++ show title ++ "#[" ++ show event ++ "]")
-      foo _ = Nothing
 
 
 

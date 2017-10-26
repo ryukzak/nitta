@@ -19,6 +19,9 @@ module NITTA.Types.Poly where
 import           Data.Proxy
 
 -- | Общий класс для описания варантов и решений.
+--
+-- Инстансы данного класса должны оканчиваться иметь суфикс DT. Например: BindingDT. Конктрукторы
+-- опций должны иметь суфикс O, а решений - D.
 class DecisionType (t :: *) where
   data Option_ t :: *
   data Decision_ t :: *

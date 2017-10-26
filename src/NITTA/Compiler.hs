@@ -68,20 +68,20 @@ instance Default NaiveOpt where
 -- * Представление решения компилятора.
 
 
-data Compiler title tag v t
-compiler = Proxy :: Proxy Compiler
+data CompilerDT title tag v t
+compiler = Proxy :: Proxy CompilerDT
 
 
-instance DecisionType (Compiler title tag v t) where
-  data Option_ (Compiler title tag v t)
-    = CFOption (Option_ (ControlFlowDecision tag v))
-    | BOption  (Option_ (Binding title v))
-    | DFOption (Option (Network title) v t)
+instance DecisionType (CompilerDT title tag v t) where
+  data Option_ (CompilerDT title tag v t)
+    = CFOption (Option_ (ControlFlowDT tag v))
+    | BOption  (Option_ (BindingDT title v))
+    | DFOption (Option_ (DataFlowDT String v t))
 
-  data Decision_ (Compiler title tag v t)
-    = CFDecision (Decision_ (ControlFlowDecision tag v))
-    | BDecision (Decision_ (Binding title v))
-    | DFDecision (Action (Network title) v t)
+  data Decision_ (CompilerDT title tag v t)
+    = CFDecision (Decision_ (ControlFlowDT tag v))
+    | BDecision (Decision_ (BindingDT title v))
+    | DFDecision (Decision_ (DataFlowDT String v t))
 
 getCFOption (CFOption x) = Just x
 getCFOption _            = Nothing
@@ -91,7 +91,7 @@ getDFOption (DFOption x) = Just x
 getDFOption _            = Nothing
 
 instance ( Tag tag, Time t, Var v
-         ) => Decision Compiler (Compiler String tag v (TaggedTime tag t))
+         ) => Decision CompilerDT (CompilerDT String tag v (TaggedTime tag t))
                       (BranchedProcess String tag v (TaggedTime tag t))
          where
   options_ _ Bush{..} = options_ compiler currentBranch
@@ -103,7 +103,8 @@ instance ( Tag tag, Time t, Var v
   decision_ _ bush@Bush{..} act            = bush{ currentBranch=decision_ compiler currentBranch act }
   decision_ _ branch (BDecision d)  = decision_ binding branch d
   decision_ _ branch (CFDecision d) = decision_ controlFlowDecision branch d
-  decision_ _ branch@Branch{ topPU=pu, .. } (DFDecision act) = branch{ topPU=select pu act }
+  decision_ _ branch@Branch{ topPU=pu, .. } (DFDecision act) = branch{ topPU=decision_ dataFlowDT pu act }
+
 
 
 
@@ -136,7 +137,7 @@ options2decision_ branch opts
       _ | length dfOptions >= 2 -> Just $ dfDecision dfOptions
       _ | not $ null bOptions   -> Just $ mkBindDecision branch bOptions
       _ | not $ null dfOptions  -> Just $ dfDecision dfOptions
-      _ | not $ null cfOptions  -> Just $ CFDecision $ (\(ControlFlowOption cf : _) -> ControlFlowDecision cf) cfOptions
+      _ | not $ null cfOptions  -> Just $ CFDecision $ (\(ControlFlowO cf : _) -> ControlFlowD cf) cfOptions
       _ -> Nothing
   where
     dfDecision dfOptions = case sortBy (\a b -> start a `compare` start b) dfOptions of
@@ -150,31 +151,28 @@ options2decision_ branch opts
 -- * Ветвление алгоритма.
 
 
-data ControlFlowDecision tag v
-controlFlowDecision = Proxy :: Proxy ControlFlowDecision
+data ControlFlowDT tag v
+controlFlowDecision = Proxy :: Proxy ControlFlowDT
 
 
-instance DecisionType (ControlFlowDecision tag v) where
-  data Option_ (ControlFlowDecision tag v)
-    = ControlFlowOption (ControlFlow tag v)
-
-  data Decision_ (ControlFlowDecision tag v)
-    = ControlFlowDecision (ControlFlow tag v)
+instance DecisionType (ControlFlowDT tag v) where
+  data Option_ (ControlFlowDT tag v) = ControlFlowO (ControlFlow tag v)
+  data Decision_ (ControlFlowDT tag v) = ControlFlowD (ControlFlow tag v)
 
 
 instance ( Tag tag, Var v, Time t
-         ) => Decision ControlFlowDecision (ControlFlowDecision tag v)
+         ) => Decision ControlFlowDT (ControlFlowDT tag v)
                       (BranchedProcess String tag v (TaggedTime tag t))
          where
   options_ _ Branch{ topPU=pu, ..} = branchingOptions controlFlow availableVars
     where
-      availableVars = nub $ concatMap (M.keys . toPush) $ options pu
+      availableVars = nub $ concatMap (M.keys . dfoTargets) $ options_ dataFlowDT pu
   options_ _ _ = undefined
 
   -- | Выполнить ветвление вычислительного процесса. Это действие заключается в замене текущей ветки
   -- вычислительного процесса на кустарник (Bush), в рамках работы с которым необъходимо перебрать
   -- все веточки и в конце собрать обратно в одну ветку.
-  decision_ _ Branch{..} (ControlFlowDecision Choice{..})
+  decision_ _ Branch{..} (ControlFlowD Choice{..})
     = let now = nextTick $ process topPU
           branch : branchs = map (\OptionCF{..} -> Branch
                                     { topPU=setTime now{ tag=ocfTag } topPU
@@ -195,17 +193,17 @@ instance ( Tag tag, Var v, Time t
 -- * Работа с потоком данных.
 
 
-dataFlowOptions Branch{..} = sensibleOptions $ filterByControlModel controlFlow $ options topPU
+dataFlowOptions Branch{..} = sensibleOptions $ filterByControlModel controlFlow $ options_ dataFlowDT topPU
   where
     filterByControlModel controlModel opts
       = let cfOpts = allowByControlFlow controlModel
-        in map (\t@TransportOpt{..} -> t
-                { toPush=M.fromList $ map (\(v, desc) -> (v, if v `elem` cfOpts
-                                                              then desc
-                                                              else Nothing)
-                                          ) $ M.assocs toPush
+        in map (\t@DataFlowO{..} -> t
+                { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `elem` cfOpts
+                                                                     then desc
+                                                                     else Nothing)
+                                              ) $ M.assocs dfoTargets
                 }) opts
-    sensibleOptions = filter $ \TransportOpt{..} -> any isJust $ M.elems toPush
+    sensibleOptions = filter $ \DataFlowO{..} -> any isJust $ M.elems dfoTargets
 
 dataFlowOptions _ = error "Can't generate dataflow options for BranchingInProgress."
 
@@ -218,7 +216,7 @@ dataFlowOptions _ = error "Can't generate dataflow options for BranchingInProgre
 -- Ветвление вычислительного процесса возможно в том случае, если доступнен ключ ветвления
 -- алгоритма и все входные переменные для всех вариантов развития вычислительного процесса.
 branchingOptions (Block cfs) availableVars
-  = [ ControlFlowOption x
+  = [ ControlFlowO x
     | x@Choice{..} <- cfs
     , all (`elem` availableVars) $ cfCond : cfInputs
     ]
@@ -263,10 +261,10 @@ finalizeBranch Branch{} = error "finalizeBranch: wrong args."
 
 mkBindDecision Branch{ topPU=net@BusNetwork{..} } bOptions
   = case sort' $ map prioritize' bOptions of
-      BindOption fb puTitle _ : _ -> BDecision $ BindingDecision fb puTitle
+      BindOption fb puTitle _ : _ -> BDecision $ BindingD fb puTitle
       _                           -> error "Bind variants is over!"
   where
-    prioritize' (BindingOption fb title)
+    prioritize' (BindingO fb title)
       = BindOption{ boFB=fb
                   , boTitle=title
                   , boPriority=prioritize net (howManyOptionAllow bOptions) fb title
@@ -334,7 +332,7 @@ prioritize net@BusNetwork{..} optionCount fb title
 -- | Подсчитать, сколько вариантов для привязки функционального блока определено.
 -- Если вариант всего один, может быть стоит его использовать сразу?
 howManyOptionAllow bOptions
-  = foldl ( \st (BindingOption fb title) -> M.alter (countOption title) fb st ) (M.fromList []) bOptions
+  = foldl ( \st (BindingO fb title) -> M.alter (countOption title) fb st ) (M.fromList []) bOptions
   where
     countOption title (Just titles) = Just $ title : titles
     countOption title Nothing       = Just [ title ]
@@ -343,8 +341,8 @@ howManyOptionAllow bOptions
 -- | Время ожидания переменных.
 waitingTimeOfVariables net@BusNetwork{..}
   = [ (variable, tc^.avail.infimum)
-    | TransportOpt{ toPullAt=tc@TimeConstrain{..}, ..} <- options net
-    , (variable, Nothing) <- M.assocs toPush
+    | DataFlowO{ dfoSource=(_, tc@TimeConstrain{..}), ..} <- options_ dataFlowDT net
+    , (variable, Nothing) <- M.assocs dfoTargets
     ]
 
 
@@ -366,24 +364,20 @@ passiveOption2action EffectOpt{..}
         b = eoAt^.avail.infimum + eoAt^.dur.infimum
     in EffectAct eoEffect (a ... b)
 
-networkOption2action TransportOpt{..}
-  = let pushTimeConstrains = map snd $ catMaybes $ M.elems toPush
+networkOption2action act@DataFlowO{..}
+  = let pushTimeConstrains = map snd $ catMaybes $ M.elems dfoTargets
         predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
-        pullStart    = maximum $ (toPullAt^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
-        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ toPullAt : pushTimeConstrains
+        pullStart    = maximum $ ((snd dfoSource)^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
+        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ (snd dfoSource) : pushTimeConstrains
         pullEnd = pullStart + pullDuration - 1
         pushStart = pullStart + 1
 
         mkEvent (from, tc@TimeConstrain{..})
           = Just (from, pushStart ... (pushStart + tc^.dur.infimum - 1))
-        pushs = map (\(var, timeConstrain) -> (var, maybe Nothing mkEvent timeConstrain) ) $ M.assocs toPush
-
-        act = TransportAct{ taPullFrom=toPullFrom
-                          , taPullAt=pullStart ... pullEnd
-                          , taPush=M.fromList pushs
-                          }
-    in -- trace (">opt>" ++ show opt0 ++ "\n>act>" ++ show act ++ "\n>pullStart>" ++ show (map (\o -> o^.avail.infimum) $ toPullAt : pushTimeConstrains) ++ "\n>pullDuration>" ++ show pullDuration)
-        act
+        pushs = map (\(var, timeConstrain) -> (var, maybe Nothing mkEvent timeConstrain) ) $ M.assocs dfoTargets
+    in DataFlowD{ dfdSource=( fst dfoSource, pullStart ... pullEnd )
+                , dfdTargets=M.fromList pushs
+                }
 
 
 inBranchSteps Branch{..} = whatsHappenWith branchTag topPU
