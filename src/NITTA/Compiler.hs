@@ -364,7 +364,7 @@ passiveOption2action d@EndpointO{..}
         b = d^.at.avail.infimum + d^.at.dur.infimum
     in EndpointD epoType (a ... b)
 
-networkOption2action act@DataFlowO{..}
+networkOption2action DataFlowO{..}
   = let pushTimeConstrains = map snd $ catMaybes $ M.elems dfoTargets
         predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
         pullStart    = maximum $ ((snd dfoSource)^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains

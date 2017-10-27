@@ -70,7 +70,7 @@ data GBusNetwork title spu v t =
     -- | Описание сигнальной шины сети и её подключения ко вложенным вычислительным блокам.
     , bnWires              :: Array Int [(title, S)]
     }
-type BusNetwork title v t = GBusNetwork title (PU Passive v t) v t
+type BusNetwork title v t = GBusNetwork title (PU v t) v t
 busNetwork pus wires = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wires
 
 
@@ -147,7 +147,7 @@ instance ( Title title, Var v, Time t
 
 
 instance ( Title title, Var v, Time t
-         ) => PUClass (Network title) (BusNetwork title v t) v t where
+         ) => ProcessUnit (BusNetwork title v t) v t where
 
   bind fb bn@BusNetwork{..}
     | any (isRight . bind fb) $ M.elems bnPus

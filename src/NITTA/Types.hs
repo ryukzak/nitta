@@ -370,6 +370,11 @@ instance Variables (EndpointType v) v where
 
 
 
+-- | Тип организации вычислительного процесса через пассивные операции чтения (Pull) данных с
+-- входного регистра и записи (Push) данных на выходной регистр. В один момент времени может быть
+-- произведена только одна операция (вероятно, это искусственное ограничение, навязанное
+-- архитектурой NL3). PU не может самостоятельно принимать решение относительно своих
+-- взаимодействий с окружающим миром, он искючительно выполняет сказанные ему операции.
 data EndpointDT v t
 endpointDT = Proxy :: Proxy EndpointDT
 
@@ -424,59 +429,6 @@ instance DecisionType (DataFlowDT title v t) where
 -- * Вычислительные блоки (PU)
 
 
--- | Тип PU с точки зрения принципов организации вычислительного процесса определяется теми
--- операциями, посредством которых САПР определяет развитие его вычислительного процесса.
--- При этом один PU может реализовывать несколько вариантов, например: организация вычилсительного
--- процесса множества PU объединённых в сеть с точки зрения пересылки данных и сточки зрения
--- внешнего взаимодействия с сетью как с одним PU.
-class PUType t where
-  -- | Вариант развития вычислительного процесса. Может допускать внутрении свободы действий:
-  --
-  --     * выбор конкретных моментов времени в предоставленных вариантах;
-  --     * выбор отдельных деталей (к примеру: когда одно значение надо забрать в два пункта
-  --       назначения, это можно сделать за один раз, так и за два).
-  data Option t :: * -> * -> *
-  data Action t :: * -> * -> *
-
-
-
--- | Тип организации вычислительного процесса через пассивные операции чтения (Pull) данных с
--- входного регистра и записи (Push) данных на выходной регистр. В один момент времени может быть
--- произведена только одна операция (вероятно, это искусственное ограничение, навязанное
--- архитектурой NL3). PU не может самостоятельно принимать решение относительно своих
--- взаимодействий с окружающим миром, он искючительно выполняет сказанные ему операции.
-data Passive
-
-instance PUType Passive where
-  data Option Passive v t
-    = EffectOpt
-    { eoEffect :: Effect v -- ^ Чтение данных из входного регистра PU или запись данных в него.
-    , eoAt :: TimeConstrain t -- ^ Временные ограничения на операцию.
-    }
-  data Action Passive v t
-    = EffectAct
-    { eaEffect :: Effect v -- ^ Выбранная операция для взаимодействия с окружающим миром.
-    , eaAt :: Interval t -- ^ Положение операции во времени.
-    }
-
-deriving instance ( Show v, Show t ) => Show (Option Passive v t)
-deriving instance ( Show v, Show t ) => Show (Action Passive v t)
-
-instance Variables (Option Passive v t) v where
-  variables EffectOpt{..} = variables eoEffect
-instance Variables (Action Passive v t) v where
-  variables EffectAct{..} = variables eaEffect
-
-
-
--- | Тип организации вычилсительного процесса через организацию пересылки данных между PU. При это
--- возможна параллельная пересылка одного значения в несколько потребителей.
---
--- TODO: удалить.
-data Network title
-
-
-
 -- | Базовые функции для организации вычислительного процесса вычислительного блока.
 --
 -- Идеологически, планирование вычислительного процесса производится следующим образом:
@@ -487,7 +439,7 @@ data Network title
 --       блока. Его модельное время продвигается вперёд, в описании вычислительного процесса
 --       дополняется записями относительно сделанных шагов вычислительного процесса.
 --    4) Повторение, пока список возможных вариантов не станет пустым.
-class PUClass ty pu v t | pu -> ty, pu -> v, pu -> t where
+class ProcessUnit pu v t | pu -> v, pu -> t where
   -- | Назначить исполнение функционального блока вычислительному узлу.
   bind :: FB Parcel v -> pu -> Either String pu
   -- | Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
@@ -514,30 +466,30 @@ class PUClass ty pu v t | pu -> ty, pu -> v, pu -> t where
 
 
 -- | Контейнер для вычислительных узлов (PU). Необходимо для формирования гетерогенных списков.
-data PU ty v t where
+data PU v t where
   PU :: ( Typeable pu
         , Show (Signal pu)
-        , PUClass ty pu v t
+        , ProcessUnit pu v t
         , ByTime pu t
         , Synthesis pu
         , Simulatable pu v Int
         , Decision EndpointDT (EndpointDT v t) pu
-        ) => pu -> PU ty v t
+        ) => pu -> PU v t
 
 instance ( Var v, Time t
          ) => Decision EndpointDT (EndpointDT v t)
-                      (PU Passive v t)
+                      (PU v t)
          where
   options_ proxy (PU pu) = options_ proxy pu
   decision_ proxy (PU pu) act = PU $ decision_ proxy pu act
 
 
-instance PUClass Passive (PU Passive v t) v t where
+instance ProcessUnit (PU v t) v t where
   bind fb (PU pu) = PU <$> bind fb pu
   process (PU pu) = process pu
   setTime t (PU pu) = PU $ setTime t pu
 
-instance Simulatable (PU Passive v t) v Int where
+instance Simulatable (PU v t) v Int where
   variableValue fb (PU pu) cntx vi = variableValue fb pu cntx vi
 
 

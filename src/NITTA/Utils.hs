@@ -27,11 +27,6 @@ import           Text.StringTemplate
 
 
 
-isPull (EffectOpt (Pull _) _) = True
-isPull _                      = False
-isPush (EffectOpt (Push _) _) = True
-isPush _                      = False
-
 isTarget (EndpointO (Target _) _) = True
 isTarget _                        = False
 isSource (EndpointO (Source _) _) = True

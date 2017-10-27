@@ -261,7 +261,7 @@ instance ( Var v, Time t
 
 
 
-instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
+instance ( IOType Parcel v, Time t ) => ProcessUnit (Fram v t) v t where
 
   bind fb fr@Fram{ frProcess=p@Process{..}, .. }
     | Just (Reg (I a) (O b)) <- castFB fb =
@@ -365,11 +365,8 @@ instance UnambiguouslyDecode (Fram v t) where
 
 
 
-
-
-instance ( PUClass Passive (Fram v t) v t
-         , Time t
-         , Var v
+instance ( Var v, Time t
+         , ProcessUnit (Fram v t) v t
          ) => Simulatable (Fram v t) v Int where
   variableValue (FB fb) pu@Fram{..} cntx (v, i)
     | Just (Loop _bs (I a)) <- cast fb, a == v = cntx M.! (v, i)

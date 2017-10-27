@@ -141,7 +141,7 @@ instance ( Var v, Time t
 instance ( Var v, Time t
          , Default st
          , SerialPUState st Parcel v t
-         ) => PUClass Passive (SerialPU st Parcel v t) v t where
+         ) => ProcessUnit (SerialPU st Parcel v t) v t where
 
   bind fb pu@SerialPU{..}
     -- Почему делается попытка привязать функцию к нулевому состоянию последовательного вычислителя,
