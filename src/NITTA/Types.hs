@@ -359,9 +359,43 @@ instance DecisionType (BindingDT title v) where
 
 
 
-data DataFlowEndpointDT v t
+data EndpointType v
+  = Source [v] -- ^ Выгрузка данных из PU.
+  | Target v   -- ^ Загрузка данных в PU.
+  deriving ( Show, Eq, Ord )
+
+instance Variables (EndpointType v) v where
+  variables (Source vs) = vs
+  variables (Target v)  = [v]
 
 
+
+data EndpointDT v t
+endpointDT = Proxy :: Proxy EndpointDT
+
+instance DecisionType (EndpointDT v t) where
+  data Option_ (EndpointDT v t)
+    = EndpointO
+    { epoType :: EndpointType v -- ^ Чтение данных из входного регистра PU или запись данных в него.
+    , epoAt :: TimeConstrain t -- ^ Временные ограничения на операцию.
+    } deriving ( Show )
+  data Decision_ (EndpointDT v t)
+    = EndpointD
+    { epdType :: EndpointType v -- ^ Выбранная операция для взаимодействия с окружающим миром.
+    , epdAt :: Interval t -- ^ Положение операции во времени.
+    } deriving ( Show )
+
+instance Variables (Option_ (EndpointDT v t)) v where
+  variables EndpointO{..} = variables epoType
+instance Variables (Decision_ (EndpointDT v t)) v where
+  variables EndpointD{..} = variables epdType
+
+
+
+effect2endpoint (Pull v) = Source v
+effect2endpoint (Push v) = Target v
+endpoint2effect (Source v) = Pull v
+endpoint2effect (Target v) = Push v
 
 data DataFlowDT title v t
 dataFlowDT = Proxy :: Proxy DataFlowDT
@@ -377,14 +411,13 @@ instance DecisionType (DataFlowDT title v t) where
     -- Примечание: почему title оказался под Maybe? Потому что мы можем, банально, не знать в каком
     -- PU находится требуемый функциональный блок, так как он может быть ещё непривязан к PU.
     , dfoTargets    :: M.Map v (Maybe (title, TimeConstrain t))
-    } deriving (Show)
+    } deriving ( Show )
   data Decision_ (DataFlowDT title v t)
     = DataFlowD
     { dfdSource     :: (title, Interval t) -- ^ Источник пересылки.
     -- | Словарь, описывающий пункты назначения для пересылаемого значения.
     , dfdTargets    :: M.Map v (Maybe (title, Interval t))
-    } deriving (Show)
-
+    } deriving ( Show )
 
 
 ---------------------------------------------------------------------
@@ -457,12 +490,6 @@ data Network title
 class PUClass ty pu v t | pu -> ty, pu -> v, pu -> t where
   -- | Назначить исполнение функционального блока вычислительному узлу.
   bind :: FB Parcel v -> pu -> Either String pu
-  -- | Получить описания всех вариантов развития вычислительного процесса, доступных для
-  -- вычислительного блока в его текущем состоянии.
-  options :: pu -> [Option ty v t]
-  -- | Выбор и моделирование конкретного варианта развития вычислительного процесса.
-  select :: pu -> Action ty v t -> pu
-
   -- | Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
   -- процесс вложенных структурных элементов.
   --
@@ -494,12 +521,19 @@ data PU ty v t where
         , ByTime pu t
         , Synthesis pu
         , Simulatable pu v Int
+        , Decision EndpointDT (EndpointDT v t) pu
         ) => pu -> PU ty v t
+
+instance ( Var v, Time t
+         ) => Decision EndpointDT (EndpointDT v t)
+                      (PU Passive v t)
+         where
+  options_ proxy (PU pu) = options_ proxy pu
+  decision_ proxy (PU pu) act = PU $ decision_ proxy pu act
+
 
 instance PUClass Passive (PU Passive v t) v t where
   bind fb (PU pu) = PU <$> bind fb pu
-  options (PU pu) = options pu
-  select (PU pu) act = PU $ select pu act
   process (PU pu) = process pu
   setTime t (PU pu) = PU $ setTime t pu
 

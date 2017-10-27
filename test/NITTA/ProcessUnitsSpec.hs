@@ -75,21 +75,21 @@ naiveGen pu df = naiveGen' pu df []
 
 naiveGen' pu df passedDF = do
   s1 <- choose (0 :: Int, 1)
-  let opts = options pu
+  let opts = options_ endpointDT pu
   case s1 of
     0 | not $ null opts -> do
           i <- choose (0, length opts - 1)
           let opt = opts !! i
           let vs = variables opt
-          opt' <- if isPull opt
+          opt' <- if isSource opt
                   then do
                     vs' <- suchThat (sublistOf vs) (not . null)
-                    return $ opt{ eoEffect=Pull vs' }
+                    return $ opt{ epoType=Source vs' }
                   else return opt
           let pu' =
                 -- trace ("step: " ++ show opts' ++ " vs: " ++ show vs
                        -- ++ " tick: " ++ show (tick $ process pu)) $
-                  select pu $ C.passiveOption2action opt'
+                  decision_ endpointDT pu $ C.passiveOption2action opt'
           naiveGen' pu' df passedDF
     1 | not $ null df -> do
           i <- choose (0, length df - 1)

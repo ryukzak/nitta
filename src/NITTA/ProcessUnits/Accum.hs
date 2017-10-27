@@ -43,17 +43,17 @@ instance ( Var v, Time t ) => SerialPUState (AccumState v t) Parcel v t where
   -- тихая ругань по поводу решения
   stateOptions Accum{ acIn=vs@(_:_) } now
     | length vs == 2 -- первый аргумент.
-    = map (\v -> EffectOpt (Push v) $ TimeConstrain (now ... maxBound) (singleton 2)) vs
+    = map (\v -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 2)) vs
     | otherwise -- второй аргумент
-    = map (\v -> EffectOpt (Push v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
+    = map (\v -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
   stateOptions Accum{ acOut=vs@(_:_) } now -- вывод
-    = [ EffectOpt (Pull vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
+    = [ EndpointO (Source vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
   schedule st@Accum{ acIn=vs@(_:_) } act
     | not $ null $ vs `intersect` variables act
     = let st' = st{ acIn=vs \\ variables act }
-          work = serialSchedule (Proxy :: Proxy (Accum v t)) act
+          work = serialSchedule (Proxy :: Proxy (Accum v t)) ( act)
             $ if length vs == 2
               then Init False
               else Load False
@@ -61,7 +61,7 @@ instance ( Var v, Time t ) => SerialPUState (AccumState v t) Parcel v t where
   schedule st@Accum{ acIn=[], acOut=vs } act
     | not $ null $ vs `intersect` variables act
     = let st' = st{ acOut=vs \\ variables act }
-          work = serialSchedule (Proxy :: Proxy (Accum v t)) act Out
+          work = serialSchedule (Proxy :: Proxy (Accum v t)) ( act) Out
       in (st', work)
   schedule _ _ = error "Accum schedule error!"
 

@@ -46,7 +46,7 @@ bindAll pu fbs = fromRight (error "Can't bind FB to PU!") $ foldl nextBind (Righ
 bindAllAndNaiveSchedule pu0 alg = naiveSchedule $ bindAll pu0 alg
   where
     naiveSchedule pu
-      | opt : _ <- options pu = naiveSchedule $ select pu $ passiveOption2action opt
+      | opt : _ <- options_ endpointDT pu = naiveSchedule $ decision_ endpointDT pu $ passiveOption2action opt
       | otherwise = pu
 
 
@@ -316,7 +316,7 @@ prioritize net@BusNetwork{..} optionCount fb title
   | isCritical fb                    = Just Critical
   | length (optionCount M.! fb) == 1 = Just Exclusive
 
-  | pulls <- filter isPull $ optionsAfterBind fb pu
+  | pulls <- filter isTarget $ optionsAfterBind fb pu
   , not (null pulls)
   = Just $ Input $ sum $ map (length . variables) pulls
 
@@ -349,7 +349,7 @@ waitingTimeOfVariables net@BusNetwork{..}
 -- | Оценить, сколько новых вариантов развития вычислительного процесса даёт привязка
 -- функциоанльного блока.
 optionsAfterBind fb pu = case bind fb pu of
-  Right pu' -> filter (\(EffectOpt act _) -> act `optionOf` fb) $ options pu'
+  Right pu' -> filter (\(EndpointO act _) -> act `optionOf` fb) $ options_ endpointDT pu'
   _         -> []
   where
     act `optionOf` fb' = not $ null (variables act `intersect` variables fb')
@@ -359,10 +359,10 @@ optionsAfterBind fb pu = case bind fb pu of
 
 -- * Утилиты
 
-passiveOption2action EffectOpt{..}
-  = let a = eoAt^.avail.infimum
-        b = eoAt^.avail.infimum + eoAt^.dur.infimum
-    in EffectAct eoEffect (a ... b)
+passiveOption2action d@EndpointO{..}
+  = let a = d^.at.avail.infimum
+        b = d^.at.avail.infimum + d^.at.dur.infimum
+    in EndpointD epoType (a ... b)
 
 networkOption2action act@DataFlowO{..}
   = let pushTimeConstrains = map snd $ catMaybes $ M.elems dfoTargets

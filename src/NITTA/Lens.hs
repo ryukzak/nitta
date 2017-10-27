@@ -3,6 +3,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
@@ -38,6 +39,10 @@ instance HasAt (Option_ (DataFlowDT title v t)) (TimeConstrain t) where
   at = lens (snd . dfoSource) $ \a@DataFlowO{ dfoSource=(title, _time) } b -> a{ dfoSource=(title, b) }
 instance HasAt (Decision_ (DataFlowDT title v t)) (Interval t) where
   at = lens (snd . dfdSource) $ \a@DataFlowD{ dfdSource=(title, _time) } b -> a{ dfdSource=(title, b) }
+instance HasAt (Option_ (EndpointDT v t)) (TimeConstrain t) where
+  at = lens epoAt $ \a@EndpointO{..} b -> a{ epoAt=b }
+instance HasAt (Decision_ (EndpointDT v t)) (Interval t) where
+  at = lens epdAt $ \a@EndpointD{..} b -> a{ epdAt=b }
 
 
 

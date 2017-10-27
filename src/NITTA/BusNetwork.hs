@@ -86,7 +86,7 @@ instance ( Title title, Var v, Time t
                , length (nub pushTo) == length pushTo
                ]
              | (fromPu, opts) <- puOptions
-             , EffectOpt (Pull pullVars) pullAt <- opts
+             , EndpointO (Source pullVars) pullAt <- opts
              ]
     where
       now = nextTick bnProcess
@@ -100,7 +100,7 @@ instance ( Title title, Var v, Time t
 
       pushOptionsFor' v = [ (v, Just (pushTo, pushAt))
                           | (pushTo, vars) <- puOptions
-                          , EffectOpt (Push pushVar) pushAt <- vars
+                          , EndpointO (Target pushVar) pushAt <- vars
                           , pushVar == v
                           ]
       availableVars =
@@ -113,7 +113,7 @@ instance ( Title title, Var v, Time t
             notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
         in notBlockedVariables \\ bnForwardedVariables
 
-      puOptions = M.assocs $ M.map options bnPus
+      puOptions = M.assocs $ M.map (options_ endpointDT) bnPus
 
   decision_ _proxy ni@BusNetwork{..} act@DataFlowD{..}
     | nextTick bnProcess > act^.at.infimum
@@ -135,9 +135,9 @@ instance ( Title title, Var v, Time t
         map ((\event -> (inf event - transportStartAt) + width event) . snd) $ M.elems push'
       transportEndAt = transportStartAt + transportDuration
       -- if puTitle not exist - skip it...
-      pullStep = M.adjust (\dpu -> select dpu $ EffectAct (Pull pullVars) (act^.at)) (fst dfdSource)
+      pullStep = M.adjust (\dpu -> decision_ endpointDT dpu $ EndpointD (Source pullVars) (act^.at)) (fst dfdSource)
       pushStep (var, (dpuTitle, pushAt)) =
-        M.adjust (\dpu -> select dpu $ EffectAct (Push var) pushAt) dpuTitle
+        M.adjust (\dpu -> decision_ endpointDT dpu $ EndpointD (Target var) pushAt) dpuTitle
       pushSteps = map pushStep $ M.assocs push'
       steps = pullStep : pushSteps
 

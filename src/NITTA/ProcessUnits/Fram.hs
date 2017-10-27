@@ -127,6 +127,140 @@ framSize = 16 :: Int
 
 
 
+instance ( Var v, Time t
+         ) => Decision EndpointDT (EndpointDT v t)
+                      (Fram v t)
+         where
+
+  options_ _proxy fr@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
+    where
+      fromCells = [ EndpointO (effect2endpoint v) $ constrain cell v
+                  | (_addr, cell@Cell{..}) <- assocs frMemory
+                  , v <- cell2acts allowOutput cell
+                  ]
+      fromRemain = [ EndpointO (effect2endpoint act) $ constrain cell act
+                   | mc@MicroCode { actions=act:_ } <- frRemains
+                   , let aCell = availableCell fr mc
+                   , isJust aCell
+                   , let Just (_addr, cell) = aCell
+                   ]
+      allowOutput = ( frAllowBlockingInput || null fromRemain )
+        && ( null (remainRegs fr) || framSize - numberOfCellForReg > 1 )
+      numberOfCellForReg = length $ filter (\Cell{..} -> output == UsedOrBlocked) $ elems frMemory
+      constrain Cell{..} (Pull _)
+        | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
+        | otherwise              = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
+      constrain _cell (Push _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
+
+  decision_ proxy fr@Fram{ frProcess=p0@Process{ nextTick=tick0 }, .. } act@EndpointD{..}
+    | tick0 > act^.at.infimum
+    = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show (act^.at.infimum)
+
+    | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< (endpoint2effect epdType)) . head . actions) frRemains
+    = case availableCell fr mc of
+        Just (addr, cell) ->
+          let (key, p') = modifyProcess p0 $ bindFB2Cell addr fb tick0
+              Right cell' = bindTo mc{ compiler=key : compiler } cell
+              fr' = fr{ frRemains=filter (/= mc) frRemains
+                      , frMemory=frMemory // [(addr, cell')]
+                      , frProcess=p'
+                      }
+         in decision_ proxy fr' act
+        Nothing -> error $ "Can't find available cell for: " ++ show fb ++ "!"
+
+    | Just (addr, cell) <- find (any (<< (endpoint2effect epdType)) . cell2acts True . snd) $ assocs frMemory
+    = case cell of
+        Cell{ input=Def mc@MicroCode{ actions=act1 : _ } } | act1 << (endpoint2effect epdType) ->
+            let (p', mc') = doAction addr p0 mc
+                cell' = updateLastWrite (nextTick p') cell
+                cell'' = case mc' of
+                  Nothing -> cell'{ input=UsedOrBlocked }
+                  Just mc''@MicroCode{ actions=Pull _ : _ } -> cell'{ input=Def mc'' }
+                  Just mc''@MicroCode{ actions=Push _ : _ }
+                    | output cell' == UsedOrBlocked ->
+                        cell'{ input=UsedOrBlocked, output=Def mc'' }
+                  _ -> error "Fram internal error after input process."
+            in fr{ frMemory=frMemory // [(addr, cell'')]
+                 , frProcess=p'
+                 }
+        Cell{ current=Just mc@MicroCode{ actions=act1 : _ } } | act1 << (endpoint2effect epdType) ->
+            let (p', mc') = doAction addr p0 mc
+                cell' = updateLastWrite (nextTick p') cell
+                cell'' = cell'{ input=UsedOrBlocked
+                              , current=mc'
+                              }
+            in fr{ frMemory=frMemory // [(addr, cell'')]
+                 , frProcess=p'
+                 }
+        Cell{ output=Def mc@MicroCode{ actions=act1 : _ } } | act1 << (endpoint2effect epdType) ->
+            let (p', _mc') = doAction addr p0 mc
+                -- Вот тут есть потенциальная проблема которую не совсем ясно как можно решить,
+                -- а именно, если output происходит в последний такт вычислительного цикла
+                -- а input с него происходит в первый такт вычислительного цикла.
+                cell' = cell{ input=UsedOrBlocked
+                            , output=UsedOrBlocked
+                            }
+            in fr{ frMemory=frMemory // [(addr, cell')]
+                 , frProcess=p'
+                 }
+        _ -> error "Internal Fram error, step"
+
+    | otherwise = error $ "Can't found selected action: " ++ show act
+                  ++ " tick: " ++ show (nextTick p0) ++ "\n"
+                  ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options_ endpointDT fr)
+                  ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
+                  ++ "remains:\n" ++ concatMap ((++ "\n") . show) frRemains
+    where
+      updateLastWrite t cell | Push _ <- (endpoint2effect epdType) = cell{ lastWrite=Just t }
+                             | otherwise = cell{ lastWrite=Nothing }
+
+      doAction addr p mc@MicroCode{..} =
+        let (p', mc'@MicroCode{ actions=acts' }) = mkWork addr p mc
+            result = if null acts'
+              then (finish p' mc', Nothing)
+              else (p', Just mc')
+        in result
+
+      mkWork _addr _p MicroCode{ actions=[] } = error "Fram internal error, mkWork"
+      mkWork addr p mc@MicroCode{ actions=x:xs, ..} =
+        let ((ef, instrs), p') = modifyProcess p $ do
+              e <- add (Activity $ act^.at) $ EffectStep (endpoint2effect epdType)
+              i1 <- add (Activity $ act^.at)
+                $ InstructionStep (act2Instruction addr (endpoint2effect epdType) :: Instruction (Fram v t))
+              is <- if tick0 < act^.at.infimum
+                then do
+                  i2 <- add (Activity $ tick0 ... act^.at.infimum - 1)
+                    $ InstructionStep (Nop :: Instruction (Fram v t))
+                  return [ i1, i2 ]
+                else return [ i1 ]
+              mapM_ (relation . Vertical ef) instrs
+              setProcessTime $ act^.at.supremum + 1
+              return (e, is)
+        in (p', mc{ effect=ef : effect
+                  , instruction=instrs ++ instruction
+                  , workBegin=workBegin `orElse` Just (act^.at.infimum)
+                  , actions=if x == (endpoint2effect epdType) then xs else (x \\\ (endpoint2effect epdType)) : xs
+                  })
+
+      finish p MicroCode{..} = snd $ modifyProcess p $ do
+        let start = fromMaybe (error "workBegin field is empty!") workBegin
+        h <- add (Activity $ start ... act^.at.supremum) $ FBStep fb
+        mapM_ (relation . Vertical h) compiler
+        mapM_ (relation . Vertical h) effect
+        mapM_ (relation . Vertical h) instruction
+
+      act2Instruction addr (Pull _) = Load addr
+      act2Instruction addr (Push _) = Save addr
+
+
+
+
+
+
+
+
+
+
 instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
 
   bind fb fr@Fram{ frProcess=p@Process{..}, .. }
@@ -184,126 +318,6 @@ instance ( IOType Parcel v, Time t ) => PUClass Passive (Fram v t) v t where
           let (key, p') = modifyProcess p $ bindFB fb nextTick
               mc' = mc{ compiler=key : compiler mc }
           in ( mc', fr{ frProcess=p' } )
-
-  options fr@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
-    where
-      fromCells = [ EffectOpt v $ constrain cell v
-                  | (_addr, cell@Cell{..}) <- assocs frMemory
-                  , v <- cell2acts allowOutput cell
-                  ]
-      fromRemain = [ EffectOpt act $ constrain cell act
-                   | mc@MicroCode { actions=act:_ } <- frRemains
-                   , let aCell = availableCell fr mc
-                   , isJust aCell
-                   , let Just (_addr, cell) = aCell
-                   ]
-      allowOutput = ( frAllowBlockingInput || null fromRemain )
-        && ( null (remainRegs fr) || framSize - numberOfCellForReg > 1 )
-      numberOfCellForReg = length $ filter (\Cell{..} -> output == UsedOrBlocked) $ elems frMemory
-      constrain Cell{..} (Pull _)
-        | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
-        | otherwise              = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
-      constrain _cell (Push _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
-
-  select fr@Fram{ frProcess=p0@Process{ nextTick=tick0 }, .. } act@EffectAct{..}
-    | tick0 > act^.at.infimum
-    = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show (act^.at.infimum)
-
-    | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< eaEffect) . head . actions) frRemains
-    = case availableCell fr mc of
-        Just (addr, cell) ->
-          let (key, p') = modifyProcess p0 $ bindFB2Cell addr fb tick0
-              Right cell' = bindTo mc{ compiler=key : compiler } cell
-              fr' = fr{ frRemains=filter (/= mc) frRemains
-                      , frMemory=frMemory // [(addr, cell')]
-                      , frProcess=p'
-                      }
-         in select fr' act
-        Nothing -> error $ "Can't find available cell for: " ++ show fb ++ "!"
-
-    | Just (addr, cell) <- find (any (<< eaEffect) . cell2acts True . snd) $ assocs frMemory
-    = case cell of
-        Cell{ input=Def mc@MicroCode{ actions=act1 : _ } } | act1 << eaEffect ->
-            let (p', mc') = doAction addr p0 mc
-                cell' = updateLastWrite (nextTick p') cell
-                cell'' = case mc' of
-                  Nothing -> cell'{ input=UsedOrBlocked }
-                  Just mc''@MicroCode{ actions=Pull _ : _ } -> cell'{ input=Def mc'' }
-                  Just mc''@MicroCode{ actions=Push _ : _ }
-                    | output cell' == UsedOrBlocked ->
-                        cell'{ input=UsedOrBlocked, output=Def mc'' }
-                  _ -> error "Fram internal error after input process."
-            in fr{ frMemory=frMemory // [(addr, cell'')]
-                 , frProcess=p'
-                 }
-        Cell{ current=Just mc@MicroCode{ actions=act1 : _ } } | act1 << eaEffect ->
-            let (p', mc') = doAction addr p0 mc
-                cell' = updateLastWrite (nextTick p') cell
-                cell'' = cell'{ input=UsedOrBlocked
-                              , current=mc'
-                              }
-            in fr{ frMemory=frMemory // [(addr, cell'')]
-                 , frProcess=p'
-                 }
-        Cell{ output=Def mc@MicroCode{ actions=act1 : _ } } | act1 << eaEffect ->
-            let (p', _mc') = doAction addr p0 mc
-                -- Вот тут есть потенциальная проблема которую не совсем ясно как можно решить,
-                -- а именно, если output происходит в последний такт вычислительного цикла
-                -- а input с него происходит в первый такт вычислительного цикла.
-                cell' = cell{ input=UsedOrBlocked
-                            , output=UsedOrBlocked
-                            }
-            in fr{ frMemory=frMemory // [(addr, cell')]
-                 , frProcess=p'
-                 }
-        _ -> error "Internal Fram error, step"
-
-    | otherwise = error $ "Can't found selected action: " ++ show act
-                  ++ " tick: " ++ show (nextTick p0) ++ "\n"
-                  ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options fr)
-                  ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
-                  ++ "remains:\n" ++ concatMap ((++ "\n") . show) frRemains
-    where
-      updateLastWrite t cell | Push _ <- eaEffect = cell{ lastWrite=Just t }
-                             | otherwise = cell{ lastWrite=Nothing }
-
-      doAction addr p mc@MicroCode{..} =
-        let (p', mc'@MicroCode{ actions=acts' }) = mkWork addr p mc
-            result = if null acts'
-              then (finish p' mc', Nothing)
-              else (p', Just mc')
-        in result
-
-      mkWork _addr _p MicroCode{ actions=[] } = error "Fram internal error, mkWork"
-      mkWork addr p mc@MicroCode{ actions=x:xs, ..} =
-        let ((ef, instrs), p') = modifyProcess p $ do
-              e <- add (Activity $ act^.at) $ EffectStep eaEffect
-              i1 <- add (Activity $ act^.at)
-                $ InstructionStep (act2Instruction addr eaEffect :: Instruction (Fram v t))
-              is <- if tick0 < act^.at.infimum
-                then do
-                  i2 <- add (Activity $ tick0 ... act^.at.infimum - 1)
-                    $ InstructionStep (Nop :: Instruction (Fram v t))
-                  return [ i1, i2 ]
-                else return [ i1 ]
-              mapM_ (relation . Vertical ef) instrs
-              setProcessTime $ act^.at.supremum + 1
-              return (e, is)
-        in (p', mc{ effect=ef : effect
-                  , instruction=instrs ++ instruction
-                  , workBegin=workBegin `orElse` Just (act^.at.infimum)
-                  , actions=if x == eaEffect then xs else (x \\\ eaEffect) : xs
-                  })
-
-      finish p MicroCode{..} = snd $ modifyProcess p $ do
-        let start = fromMaybe (error "workBegin field is empty!") workBegin
-        h <- add (Activity $ start ... act^.at.supremum) $ FBStep fb
-        mapM_ (relation . Vertical h) compiler
-        mapM_ (relation . Vertical h) effect
-        mapM_ (relation . Vertical h) instruction
-
-      act2Instruction addr (Pull _) = Load addr
-      act2Instruction addr (Push _) = Save addr
 
   process = sortPuSteps . frProcess
   setTime t fr@Fram{..} = fr{ frProcess=frProcess{ nextTick=t } }

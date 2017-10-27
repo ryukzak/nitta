@@ -81,43 +81,32 @@ class SerialPUState st io v t | st -> io, st -> v, st -> t where
   bindToState :: FB io v -> st -> Either String st
   -- | Получить список вариантов развития вычислительного процесса, на основе предоставленного
   -- состояния последовательного вычислительного блока.
-  stateOptions :: st -> t -> [Option Passive v t]
+  stateOptions :: st -> t -> [Option_ (EndpointDT v t)]
   -- | Получить данные для планирования вычислительного процесса состояния. Результат функции:
   --
   -- - состояние после выполнения вычислительного процесса;
   -- - монада State, которая сформирует необходимое описание многоуровневого вычислительного
   --   процессса.
-  schedule :: st -> Action Passive v t -> (st, State (Process v t) [ProcessUid])
+  schedule :: st -> Decision_ (EndpointDT v t) -> (st, State (Process v t) [ProcessUid])
 
 
 
 instance ( Var v, Time t
          , Default st
          , SerialPUState st Parcel v t
-         ) => PUClass Passive (SerialPU st Parcel v t) v t where
-
-  bind fb pu@SerialPU{..}
-    -- Почему делается попытка привязать функцию к нулевому состоянию последовательного вычислителя,
-    -- а не к текущему? Потому что, успешная привязка функции производится к объёртке (помещаем ФБ
-    -- в spuRemain), а не к самому состоянию. Ведь к самому состоянию может быть привязана в один
-    -- момент времени только один функциональный блок.
-    = case fb `bindToState` (def :: st) of
-        Right _ -> let (key, spuProcess') = modifyProcess spuProcess $ bindFB fb $ nextTick spuProcess
-                   in Right pu{ spuRemain=(fb, key) : spuRemain
-                              , spuProcess=spuProcess'
-                              }
-        Left reason -> Left reason
-
-  options SerialPU{ spuCurrent=Nothing, .. }
+         ) => Decision EndpointDT (EndpointDT v t)
+                      (SerialPU st Parcel v t)
+         where
+  options_ _proxy SerialPU{ spuCurrent=Nothing, .. }
     = concatMap ((\f -> f $ nextTick spuProcess) . stateOptions)
       $ rights $ map (\(fb, _) -> bindToState fb spuState) spuRemain
-  options SerialPU{ spuCurrent=Just _, .. }
+  options_ _proxy SerialPU{ spuCurrent=Just _, .. }
     = stateOptions spuState $ nextTick spuProcess
 
-  select pu@SerialPU{ spuCurrent=Nothing, .. } act
+  decision_ proxy pu@SerialPU{ spuCurrent=Nothing, .. } act
     | Just (fb, compilerKey) <- find (not . null . (variables act `intersect`) . variables . fst) spuRemain
     , Right spuState' <- bindToState fb spuState
-    = select pu{ spuState=spuState'
+    = decision_ proxy pu{ spuState=spuState'
                , spuCurrent=Just CurrentJob
                              { cFB=fb
                              , cStart=act^.at.infimum
@@ -125,7 +114,7 @@ instance ( Var v, Time t
                              }
               } act
     | otherwise = error "Variable not found in binded functional blocks."
-  select pu@SerialPU{ spuCurrent=Just cur, .. } act
+  decision_ _proxy pu@SerialPU{ spuCurrent=Just cur, .. } act
    | nextTick spuProcess > act^.at.infimum
    = error $ "Time wrap! Time: " ++ show (nextTick spuProcess) ++ " Act start at: " ++ show (act^.at.infimum)
    | otherwise
@@ -146,6 +135,25 @@ instance ( Var v, Time t
       finish p CurrentJob{..} = snd $ modifyProcess p $ do
         h <- addActivity (cStart ... (act^.at.infimum + act^.at.dur)) $ FBStep cFB
         mapM_ (relation . Vertical h) cSteps
+
+
+
+instance ( Var v, Time t
+         , Default st
+         , SerialPUState st Parcel v t
+         ) => PUClass Passive (SerialPU st Parcel v t) v t where
+
+  bind fb pu@SerialPU{..}
+    -- Почему делается попытка привязать функцию к нулевому состоянию последовательного вычислителя,
+    -- а не к текущему? Потому что, успешная привязка функции производится к объёртке (помещаем ФБ
+    -- в spuRemain), а не к самому состоянию. Ведь к самому состоянию может быть привязана в один
+    -- момент времени только один функциональный блок.
+    = case fb `bindToState` (def :: st) of
+        Right _ -> let (key, spuProcess') = modifyProcess spuProcess $ bindFB fb $ nextTick spuProcess
+                   in Right pu{ spuRemain=(fb, key) : spuRemain
+                              , spuProcess=spuProcess'
+                              }
+        Left reason -> Left reason
 
   process = spuProcess
 
@@ -175,10 +183,10 @@ instance ( Var v, Time t
 
 serialSchedule
   :: ( Show (Instruction pu), Default (Instruction pu), Var v, Time t, Typeable pu )
-  => Proxy pu -> Action Passive v t -> Instruction pu -> State (Process v t) [ProcessUid]
+  => Proxy pu -> Decision_ (EndpointDT v t) -> Instruction pu -> State (Process v t) [ProcessUid]
 serialSchedule proxy act instr = do
   now <- getProcessTime
-  e <- addActivity (act^.at) $ EffectStep $ eaEffect act
+  e <- addActivity (act^.at) $ EffectStep $ endpoint2effect $ epdType act
   i <- addActivity (act^.at) $ InstructionStep instr
   is <- if now < act^.at.infimum
         then do
