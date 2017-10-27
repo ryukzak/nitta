@@ -184,19 +184,19 @@ data BranchedProcess title tag v t
   }
 
 
-instance ( Var v ) => Decision BindingDT (BindingDT String v)
-                              (BranchedProcess String tag v t)
+instance ( Var v ) => DecisionProblem (BindingDT String v)
+                            BindingDT (BranchedProcess String tag v t)
          where
-  options_ _ Branch{..} = options_ binding topPU
-  options_ _ _          = undefined
-  decision_ _ branch@Branch{..} act = branch{ topPU=decision_ binding topPU act }
-  decision_ _ _ _                   = undefined
+  options _ Branch{..} = options binding topPU
+  options _ _          = undefined
+  decision _ branch@Branch{..} act = branch{ topPU=decision binding topPU act }
+  decision _ _ _                   = undefined
 
 instance ( Title title, Var v, Time t
-         ) => Decision DataFlowDT (DataFlowDT title v t)
-                                  (BranchedProcess title tag v t)
+         ) => DecisionProblem (DataFlowDT title v t)
+                   DataFlowDT (BranchedProcess title tag v t)
          where
-  options_ _ Branch{..} = options_ dataFlowDT topPU
-  options_ _ _          = undefined
-  decision_ _ branch@Branch{..} act = branch{ topPU=decision_ dataFlowDT topPU act }
-  decision_ _ _ _                   = undefined
+  options _ Branch{..} = options dataFlowDT topPU
+  options _ _          = undefined
+  decision _ branch@Branch{..} act = branch{ topPU=decision dataFlowDT topPU act }
+  decision _ _ _                   = undefined

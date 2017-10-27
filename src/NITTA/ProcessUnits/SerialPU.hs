@@ -81,32 +81,32 @@ class SerialPUState st io v t | st -> io, st -> v, st -> t where
   bindToState :: FB io v -> st -> Either String st
   -- | Получить список вариантов развития вычислительного процесса, на основе предоставленного
   -- состояния последовательного вычислительного блока.
-  stateOptions :: st -> t -> [Option_ (EndpointDT v t)]
+  stateOptions :: st -> t -> [Option (EndpointDT v t)]
   -- | Получить данные для планирования вычислительного процесса состояния. Результат функции:
   --
   -- - состояние после выполнения вычислительного процесса;
   -- - монада State, которая сформирует необходимое описание многоуровневого вычислительного
   --   процессса.
-  schedule :: st -> Decision_ (EndpointDT v t) -> (st, State (Process v t) [ProcessUid])
+  schedule :: st -> Decision (EndpointDT v t) -> (st, State (Process v t) [ProcessUid])
 
 
 
 instance ( Var v, Time t
          , Default st
          , SerialPUState st Parcel v t
-         ) => Decision EndpointDT (EndpointDT v t)
-                      (SerialPU st Parcel v t)
+         ) => DecisionProblem (EndpointDT v t)
+                   EndpointDT (SerialPU st Parcel v t)
          where
-  options_ _proxy SerialPU{ spuCurrent=Nothing, .. }
+  options _proxy SerialPU{ spuCurrent=Nothing, .. }
     = concatMap ((\f -> f $ nextTick spuProcess) . stateOptions)
       $ rights $ map (\(fb, _) -> bindToState fb spuState) spuRemain
-  options_ _proxy SerialPU{ spuCurrent=Just _, .. }
+  options _proxy SerialPU{ spuCurrent=Just _, .. }
     = stateOptions spuState $ nextTick spuProcess
 
-  decision_ proxy pu@SerialPU{ spuCurrent=Nothing, .. } act
+  decision proxy pu@SerialPU{ spuCurrent=Nothing, .. } act
     | Just (fb, compilerKey) <- find (not . null . (variables act `intersect`) . variables . fst) spuRemain
     , Right spuState' <- bindToState fb spuState
-    = decision_ proxy pu{ spuState=spuState'
+    = decision proxy pu{ spuState=spuState'
                , spuCurrent=Just CurrentJob
                              { cFB=fb
                              , cStart=act^.at.infimum
@@ -114,7 +114,7 @@ instance ( Var v, Time t
                              }
               } act
     | otherwise = error "Variable not found in binded functional blocks."
-  decision_ _proxy pu@SerialPU{ spuCurrent=Just cur, .. } act
+  decision _proxy pu@SerialPU{ spuCurrent=Just cur, .. } act
    | nextTick spuProcess > act^.at.infimum
    = error $ "Time wrap! Time: " ++ show (nextTick spuProcess) ++ " Act start at: " ++ show (act^.at.infimum)
    | otherwise
@@ -183,7 +183,7 @@ instance ( Var v, Time t
 
 serialSchedule
   :: ( Show (Instruction pu), Default (Instruction pu), Var v, Time t, Typeable pu )
-  => Proxy pu -> Decision_ (EndpointDT v t) -> Instruction pu -> State (Process v t) [ProcessUid]
+  => Proxy pu -> Decision (EndpointDT v t) -> Instruction pu -> State (Process v t) [ProcessUid]
 serialSchedule proxy act instr = do
   now <- getProcessTime
   e <- addActivity (act^.at) $ EndpointStep $ epdType act

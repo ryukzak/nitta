@@ -31,13 +31,13 @@ instance HasAvail (TimeConstrain t) (Interval t) where
 class HasAt a b | a -> b where
   at :: Lens' a b
 
-instance HasAt (Option_ (DataFlowDT title v t)) (TimeConstrain t) where
+instance HasAt (Option (DataFlowDT title v t)) (TimeConstrain t) where
   at = lens (snd . dfoSource) $ \a@DataFlowO{ dfoSource=(title, _time) } b -> a{ dfoSource=(title, b) }
-instance HasAt (Decision_ (DataFlowDT title v t)) (Interval t) where
+instance HasAt (Decision (DataFlowDT title v t)) (Interval t) where
   at = lens (snd . dfdSource) $ \a@DataFlowD{ dfdSource=(title, _time) } b -> a{ dfdSource=(title, b) }
-instance HasAt (Option_ (EndpointDT v t)) (TimeConstrain t) where
+instance HasAt (Option (EndpointDT v t)) (TimeConstrain t) where
   at = lens epoAt $ \a@EndpointO{..} b -> a{ epoAt=b }
-instance HasAt (Decision_ (EndpointDT v t)) (Interval t) where
+instance HasAt (Decision (EndpointDT v t)) (Interval t) where
   at = lens epdAt $ \a@EndpointD{..} b -> a{ epdAt=b }
 
 

@@ -75,7 +75,7 @@ naiveGen pu df = naiveGen' pu df []
 
 naiveGen' pu df passedDF = do
   s1 <- choose (0 :: Int, 1)
-  let opts = options_ endpointDT pu
+  let opts = options endpointDT pu
   case s1 of
     0 | not $ null opts -> do
           i <- choose (0, length opts - 1)
@@ -89,7 +89,7 @@ naiveGen' pu df passedDF = do
           let pu' =
                 -- trace ("step: " ++ show opts' ++ " vs: " ++ show vs
                        -- ++ " tick: " ++ show (tick $ process pu)) $
-                  decision_ endpointDT pu $ C.passiveOption2action opt'
+                  decision endpointDT pu $ C.passiveOption2action opt'
           naiveGen' pu' df passedDF
     1 | not $ null df -> do
           i <- choose (0, length df - 1)

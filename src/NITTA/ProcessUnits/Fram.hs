@@ -127,11 +127,11 @@ framSize = 16 :: Int
 
 
 instance ( Var v, Time t
-         ) => Decision EndpointDT (EndpointDT v t)
-                      (Fram v t)
+         ) => DecisionProblem (EndpointDT v t)
+                   EndpointDT (Fram v t)
          where
 
-  options_ _proxy fr@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
+  options _proxy fr@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
     where
       fromCells = [ EndpointO v $ constrain cell v
                   | (_addr, cell@Cell{..}) <- assocs frMemory
@@ -151,7 +151,7 @@ instance ( Var v, Time t
         | otherwise              = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
       constrain _cell (Target _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
 
-  decision_ proxy fr@Fram{ frProcess=p0@Process{ nextTick=tick0 }, .. } act@EndpointD{..}
+  decision proxy fr@Fram{ frProcess=p0@Process{ nextTick=tick0 }, .. } act@EndpointD{..}
     | tick0 > act^.at.infimum
     = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show (act^.at.infimum)
 
@@ -164,7 +164,7 @@ instance ( Var v, Time t
                       , frMemory=frMemory // [(addr, cell')]
                       , frProcess=p'
                       }
-         in decision_ proxy fr' act
+         in decision proxy fr' act
         Nothing -> error $ "Can't find available cell for: " ++ show fb ++ "!"
 
     | Just (addr, cell) <- find (any (<< epdType) . cell2acts True . snd) $ assocs frMemory
@@ -206,7 +206,7 @@ instance ( Var v, Time t
 
     | otherwise = error $ "Can't found selected action: " ++ show act
                   ++ " tick: " ++ show (nextTick p0) ++ "\n"
-                  ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options_ endpointDT fr)
+                  ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options endpointDT fr)
                   ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
                   ++ "remains:\n" ++ concatMap ((++ "\n") . show) frRemains
     where

@@ -76,10 +76,10 @@ busNetwork pus wires = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wir
 
 
 instance ( Title title, Var v, Time t
-         ) => Decision DataFlowDT (DataFlowDT title v t)
-                      (BusNetwork title v t)
+         ) => DecisionProblem (DataFlowDT title v t)
+                   DataFlowDT (BusNetwork title v t)
          where
-  options_ _proxy BusNetwork{..}
+  options _proxy BusNetwork{..}
     = concat [ [ DataFlowO (fromPu, fixPullConstrain pullAt) $ M.fromList pushs
                | pushs <- mapM pushOptionsFor pullVars
                , let pushTo = mapMaybe (fmap fst . snd) pushs
@@ -113,9 +113,9 @@ instance ( Title title, Var v, Time t
             notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
         in notBlockedVariables \\ bnForwardedVariables
 
-      puOptions = M.assocs $ M.map (options_ endpointDT) bnPus
+      puOptions = M.assocs $ M.map (options endpointDT) bnPus
 
-  decision_ _proxy ni@BusNetwork{..} act@DataFlowD{..}
+  decision _proxy ni@BusNetwork{..} act@DataFlowD{..}
     | nextTick bnProcess > act^.at.infimum
     = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (act^.at)
     | otherwise = ni
@@ -135,9 +135,9 @@ instance ( Title title, Var v, Time t
         map ((\event -> (inf event - transportStartAt) + width event) . snd) $ M.elems push'
       transportEndAt = transportStartAt + transportDuration
       -- if puTitle not exist - skip it...
-      pullStep = M.adjust (\dpu -> decision_ endpointDT dpu $ EndpointD (Source pullVars) (act^.at)) (fst dfdSource)
+      pullStep = M.adjust (\dpu -> decision endpointDT dpu $ EndpointD (Source pullVars) (act^.at)) (fst dfdSource)
       pushStep (var, (dpuTitle, pushAt)) =
-        M.adjust (\dpu -> decision_ endpointDT dpu $ EndpointD (Target var) pushAt) dpuTitle
+        M.adjust (\dpu -> decision endpointDT dpu $ EndpointD (Target var) pushAt) dpuTitle
       pushSteps = map pushStep $ M.assocs push'
       steps = pullStep : pushSteps
 
@@ -234,10 +234,10 @@ instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v 
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( Var v ) => Decision BindingDT (BindingDT String v)
-                              (BusNetwork String v t)
+instance ( Var v ) => DecisionProblem (BindingDT String v)
+                            BindingDT (BusNetwork String v t)
          where
-  options_ _ BusNetwork{..} = concatMap bindVariants' bnRemains
+  options _ BusNetwork{..} = concatMap bindVariants' bnRemains
     where
       bindVariants' fb =
         [ BindingO fb puTitle
@@ -255,7 +255,7 @@ instance ( Var v ) => Decision BindingDT (BindingDT String v)
       binded puTitle | puTitle `M.member` bnBinded = bnBinded M.! puTitle
                      | otherwise = []
 
-  decision_ _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
+  decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
     = bn{ bnPus=M.adjust (fromRight undefined . bind fb) puTitle bnPus
         , bnBinded=M.alter (\v -> case v of
                               Just fbs -> Just $ fb : fbs

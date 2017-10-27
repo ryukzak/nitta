@@ -320,23 +320,24 @@ data Relation
 
 ---------------------------------------------------------------------
 -- * Варианты и решения
-
+--
+-- Именно в рамках этих терминов должна риализовываться основная логика процесса синтеза (по
+-- крайней мере программного обеспечения). Используется следующее соглашение: Тип идентифицирующий
+-- варианты и решения заканчивается суфиксом DT, вариант - O, решение - D.
 
 -- | Решение в области привязки функционального блока к вычислительному. Определяется только для
 -- вычислительных блоков, организующих работу со множеством вложенных блоков, адресуемым по title.
---
--- Решение и вариант не имеют существенных отличий.
 data BindingDT title v
 binding = Proxy :: Proxy BindingDT
 
-
 instance DecisionType (BindingDT title v) where
-  data Option_ (BindingDT title v) = BindingO (FB Parcel v) title
-  data Decision_ (BindingDT title v) = BindingD (FB Parcel v) title
+  data Option (BindingDT title v) = BindingO (FB Parcel v) title
+  data Decision (BindingDT title v) = BindingD (FB Parcel v) title
 
 
 -- | Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
--- одно взаимодействие, при этом у PU только один канал для взаимодействия.
+-- одно взаимодействие, при этом у PU только один канал для взаимодействия, что в общем то
+-- ограничение. В перспективе должно быть расширено для работы с конвейра.
 data EndpointType v
   = Source [v] -- ^ Выгрузка данных из PU.
   | Target v   -- ^ Загрузка данных в PU.
@@ -355,39 +356,40 @@ instance Variables (EndpointType v) v where
 
 
 
--- | Тип организации вычислительного процесса через пассивные операции чтения (Pull) данных с
--- входного регистра и записи (Push) данных на выходной регистр. В один момент времени может быть
--- произведена только одна операция (вероятно, это искусственное ограничение, навязанное
--- архитектурой NL3). PU не может самостоятельно принимать решение относительно своих
--- взаимодействий с окружающим миром, он искючительно выполняет сказанные ему операции.
+-- | Решение об спользовании вычислительных блоков в роли источника или пункта назначения данных. В
+--  один момент времени может быть произведена только одна операция (вероятно, это искусственное
+--  ограничение, навязанное архитектурой NL3). PU не может самостоятельно принимать решение
+--  относительно своих взаимодействий с окружающим миром, он искючительно выполняет сказанные ему
+--  операции.
 data EndpointDT v t
 endpointDT = Proxy :: Proxy EndpointDT
 
 instance DecisionType (EndpointDT v t) where
-  data Option_ (EndpointDT v t)
+  data Option (EndpointDT v t)
     = EndpointO
     { epoType :: EndpointType v -- ^ Чтение данных из входного регистра PU или запись данных в него.
     , epoAt :: TimeConstrain t -- ^ Временные ограничения на операцию.
     } deriving ( Show )
-  data Decision_ (EndpointDT v t)
+  data Decision (EndpointDT v t)
     = EndpointD
     { epdType :: EndpointType v -- ^ Выбранная операция для взаимодействия с окружающим миром.
     , epdAt :: Interval t -- ^ Положение операции во времени.
     } deriving ( Show )
 
-instance Variables (Option_ (EndpointDT v t)) v where
+instance Variables (Option (EndpointDT v t)) v where
   variables EndpointO{..} = variables epoType
-instance Variables (Decision_ (EndpointDT v t)) v where
+instance Variables (Decision (EndpointDT v t)) v where
   variables EndpointD{..} = variables epdType
 
 
 
-
+-- | Решения относительно пересылки данных между вычислитльными узлами (реализация прикладного
+-- DataFlow).
 data DataFlowDT title v t
 dataFlowDT = Proxy :: Proxy DataFlowDT
 
 instance DecisionType (DataFlowDT title v t) where
-  data Option_ (DataFlowDT title v t)
+  data Option (DataFlowDT title v t)
     = DataFlowO
     { dfoSource     :: (title, TimeConstrain t) -- ^ Источник пересылки.
     -- | Словарь, описывающий все необходимые пункты назначения для пересылаемого значения.
@@ -398,7 +400,7 @@ instance DecisionType (DataFlowDT title v t) where
     -- PU находится требуемый функциональный блок, так как он может быть ещё непривязан к PU.
     , dfoTargets    :: M.Map v (Maybe (title, TimeConstrain t))
     } deriving ( Show )
-  data Decision_ (DataFlowDT title v t)
+  data Decision (DataFlowDT title v t)
     = DataFlowD
     { dfdSource     :: (title, Interval t) -- ^ Источник пересылки.
     -- | Словарь, описывающий пункты назначения для пересылаемого значения.
@@ -432,6 +434,8 @@ class ProcessUnit pu v t | pu -> v, pu -> t where
   -- | Установить модельное время вычислительного блока.
   --
   -- TODO: Необходимо преобразовать в setTimeTag.
+  --
+  -- История вопроса:
   -- Изначально, данный метод был добавлен для работы в ращеплённом времени, но он: 1) недостаточен,
   -- 2) может быть реализован в рамках алгоритма компиляции.
   --
@@ -455,16 +459,16 @@ data PU v t where
         , ByTime pu t
         , Synthesis pu
         , Simulatable pu v Int
-        , Decision EndpointDT (EndpointDT v t) pu
+        , DecisionProblem (EndpointDT v t)
+               EndpointDT  pu
         ) => pu -> PU v t
 
 instance ( Var v, Time t
-         ) => Decision EndpointDT (EndpointDT v t)
-                      (PU v t)
+         ) => DecisionProblem (EndpointDT v t)
+                   EndpointDT (PU v t)
          where
-  options_ proxy (PU pu) = options_ proxy pu
-  decision_ proxy (PU pu) act = PU $ decision_ proxy pu act
-
+  options proxy (PU pu) = options proxy pu
+  decision proxy (PU pu) act = PU $ decision proxy pu act
 
 instance ProcessUnit (PU v t) v t where
   bind fb (PU pu) = PU <$> bind fb pu
