@@ -12,7 +12,7 @@ module NITTA.ProcessUnitsSpec where
 import           Data.Array
 import           Data.List               (nub)
 import           Data.Set                (fromList, (\\))
-import qualified NITTA.Compiler          as C
+import           NITTA.Compiler
 import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
 import           NITTA.Timeline
@@ -66,8 +66,8 @@ prop_formalCompletness (DataFlow df _values pu) =
 
 
 
-bindAllAndNaiveSchedule (DataFlow df values pu) =
-  DataFlow df values (C.bindAllAndNaiveSchedule pu df)
+bindAllAndNaiveScheduleBranch (DataFlow df values pu) =
+  DataFlow df values (bindAllAndNaiveSchedule pu df)
 
 
 
@@ -86,10 +86,7 @@ naiveGen' pu df passedDF = do
                     vs' <- suchThat (sublistOf vs) (not . null)
                     return $ opt{ epoType=Source vs' }
                   else return opt
-          let pu' =
-                -- trace ("step: " ++ show opts' ++ " vs: " ++ show vs
-                       -- ++ " tick: " ++ show (tick $ process pu)) $
-                  decision endpointDT pu $ C.passiveOption2action opt'
+          let pu' = decision endpointDT pu $ passiveOption2action opt'
           naiveGen' pu' df passedDF
     1 | not $ null df -> do
           i <- choose (0, length df - 1)

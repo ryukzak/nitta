@@ -17,7 +17,6 @@ TODO: Добавить функциональный блок Const.
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
   , Signal(..)
-  , framSize
   )
 where
 
@@ -49,6 +48,7 @@ data Fram v t = Fram
   , frRemains            :: [MicroCode v t]
   , frProcess            :: Process v t
   , frAllowBlockingInput :: Bool
+  , frSize               :: Int
   }
 deriving instance ( Var v, Time t ) => Show (Fram v t)
 
@@ -106,11 +106,14 @@ data MicroCode v t where
 microcode = MicroCode [] [] [] Nothing
 
 instance ( Var v, Time t ) => Default (Fram v t) where
-  def = Fram { frMemory=listArray (0, framSize - 1) $ repeat def
+  def = Fram { frMemory=listArray (0, size - 1) $ repeat def
              , frRemains=[]
              , frProcess=def
              , frAllowBlockingInput=True
+             , frSize=size
              }
+    where
+      size = 16
 
 instance Default (Cell v t) where
   def = Cell Undef Nothing Undef Nothing
@@ -120,9 +123,6 @@ instance ( Var v ) => Show (MicroCode v t) where
 
 instance ( Var v ) => Eq (MicroCode v t) where
   MicroCode{ actions=a } == MicroCode{ actions=b } = a == b
-
-
-framSize = 16 :: Int
 
 
 
@@ -144,7 +144,7 @@ instance ( Var v, Time t
                    , let Just (_addr, cell) = aCell
                    ]
       allowOutput = ( frAllowBlockingInput || null fromRemain )
-        && ( null (remainRegs fr) || framSize - numberOfCellForReg > 1 )
+        && ( null (remainRegs fr) || frSize - numberOfCellForReg > 1 )
       numberOfCellForReg = length $ filter (\Cell{..} -> output == UsedOrBlocked) $ elems frMemory
       constrain Cell{..} (Source _)
         | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
@@ -280,7 +280,7 @@ instance ( IOType Parcel v, Time t ) => ProcessUnit (Fram v t) v t where
         else Left "Can't bind Reg to Fram, place for Reg don't exist."
 
     | Just (Loop (O bs) (I a)) <- castFB fb =
-        if ioUses fr < framSize
+        if ioUses fr < frSize
         then let bindToCell mc cell@Cell{ input=Undef, output=Undef } =
                    Right cell{ input=Def mc
                              , output=UsedOrBlocked
@@ -292,7 +292,7 @@ instance ( IOType Parcel v, Time t ) => ProcessUnit (Fram v t) v t where
 
     | Just (FramInput addr (O v)) <- castFB fb =
         let bindToCell mc cell@Cell{ input=Undef, .. }
-              | ioUses fr < framSize || (ioUses fr == framSize && output /= Undef)
+              | ioUses fr < frSize || (ioUses fr == frSize && output /= Undef)
               = Right cell{ input=Def mc }
 
             bindToCell _ cell = Left $ "Can't bind FramInput (" ++ show fb
@@ -303,7 +303,7 @@ instance ( IOType Parcel v, Time t ) => ProcessUnit (Fram v t) v t where
 
     | Just (FramOutput addr (I v)) <- castFB fb =
         let bindToCell mc cell@Cell{ output=Undef, .. }
-              | ioUses fr < framSize || (ioUses fr == framSize && input /= Undef)
+              | ioUses fr < frSize || (ioUses fr == frSize && input /= Undef)
               = Right cell{ output=Def mc }
             bindToCell _ cell = Left $ "Can't bind FramOutput (" ++ show fb
                                        ++ ") to Fram Cell: " ++ show cell
@@ -422,7 +422,7 @@ availableCell fr@Fram{..} mc@MicroCode{..} =
                       || input == UsedOrBlocked )
                  && ( isNothing (getReg mc)
                       || null (remainLoops fr)
-                      || framSize - ioUses fr > 1 )
+                      || frSize - ioUses fr > 1 )
               ) $ assocs frMemory of
     []    -> Nothing
     cells -> Just $ minimumBy (\a b -> load a `compare` load b) cells
@@ -544,9 +544,11 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
 
 
 instance ( Time t, Var v ) => Synthesis (Fram v t) where
-  moduleInstance _pu name cntx
+  moduleInstance Fram{..} name cntx
     = renderST
-      [ "pu_fram $name$ ("
+      [ "pu_fram "
+      , "    #( .RAM_SIZE( $size$ )"
+      , "     ) $name$ ("
       , "    .clk( $Clk$ ),"
       , "    .signal_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } ),"
       , ""
@@ -559,7 +561,7 @@ instance ( Time t, Var v ) => Synthesis (Fram v t) where
       , "    .attr_out( $AttrOut$ ) "
       , ");"
       , "integer $name$_i;"
-      , "initial for ( $name$_i = 0; $name$_i < 16; $name$_i = $name$_i + 1) $name$.bank[$name$_i] <= 32'h1000 + $name$_i;"
-      ] $ ("name", name) : cntx
+      , "initial for ( $name$_i = 0; $name$_i < $size$; $name$_i = $name$_i + 1) $name$.bank[$name$_i] <= 32'h1000 + $name$_i;"
+      ] $ ("name", name) : ("size", show frSize): cntx
   moduleName _ = "pu_fram"
   moduleDefinition = undefined

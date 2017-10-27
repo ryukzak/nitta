@@ -9,7 +9,7 @@ module Main where
 import           Data.Array                  (array)
 import           Data.Default
 import           NITTA.BusNetwork
-import qualified NITTA.Compiler              as C
+import           NITTA.Compiler
 import           NITTA.Flows                 as F
 import qualified NITTA.FunctionBlocks        as FB
 import qualified NITTA.ProcessUnits.Accum    as A
@@ -40,11 +40,11 @@ main = do
 
 qcFramTests
   = [ QC.testProperty "Сompleteness with a maximum load"
-      (prop_formalCompletness . bindAllAndNaiveSchedule :: FramIdealDataFlow -> Bool)
+      (prop_formalCompletness . bindAllAndNaiveScheduleBranch :: FramIdealDataFlow -> Bool)
     , QC.testProperty "Сompleteness with a partial load"
       (prop_formalCompletness . framDataFlow :: FramDataFlow -> Bool)
     , QC.testProperty "Simulation with a maximum load"
-      (prop_simulation . bindAllAndNaiveSchedule :: FramIdealDataFlow -> Property)
+      (prop_simulation . bindAllAndNaiveScheduleBranch :: FramIdealDataFlow -> Property)
     , QC.testProperty "Simulation with a partial load"
       (prop_simulation . framDataFlow :: FramDataFlow -> Property)
     ]
@@ -54,7 +54,7 @@ huFramTests
               , FB.framOutput 9 $ I "ac"
               ]
         fram = (def :: Fram String Int)
-        fram' = C.bindAllAndNaiveSchedule fram alg
+        fram' = bindAllAndNaiveSchedule fram alg
     in [ testCase "Simple unit test" $ assert (testBench fram' [("aa", 42), ("ac", 0x1009)])
        ]
 
@@ -113,9 +113,9 @@ accum_fram1_fram2_netTests
               , FB.reg (I "f") $ O ["g"]
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
-        net' = C.bindAll (net :: BusNetwork String String T) alg
+        net' = bindAll (net :: BusNetwork String String T) alg
         compiler = F.Branch net' (dataFlow2controlFlow $ F.Stage $ map Actor alg) Nothing []
         F.Branch{ topPU=net''
-                } = foldl (\comp _ -> C.naive def comp) compiler (take 150 $ repeat ())
+                } = foldl (\comp _ -> naive def comp) compiler (take 150 $ repeat ())
     in testCase "Obscure integration test for net of accum, fram1, fram2"
           $ assert $ testBench net'' ([] :: [(String, Int)])

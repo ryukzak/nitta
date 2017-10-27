@@ -14,7 +14,7 @@ import           Data.Default
 import           Data.List                (intersect, notElem, nub, sortBy,
                                            union)
 import           NITTA.FunctionBlocks
-import           NITTA.FunctionBlocksSpec ()
+import           NITTA.FunctionBlocksSpec
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnitsSpec
 import           NITTA.Types
@@ -93,7 +93,7 @@ framDataFlowGen checkCellUsage generalPred =
             | not $ null (variables fb `intersect` usedVariables) = False
             | Just (Reg _ _ :: Reg Parcel String) <- castFB fb = True
             | not checkCellUsage = True
-            | not (dfIoUses < framSize) = False
+            | not (dfIoUses < framDefSize) = False
             | Just (FramInput addr _) <- castFB fb = addr `notElem` forInput
             | Just (FramOutput addr _) <- castFB fb = addr `notElem` forOutput
             | otherwise = True -- for Loop

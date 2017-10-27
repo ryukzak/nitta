@@ -6,14 +6,16 @@
 
 module NITTA.FunctionBlocksSpec where
 
+import           Data.Default
 import           Data.List               (nub)
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.Fram
 import           NITTA.Types
 import           Test.QuickCheck
 
+framDefSize = frSize (def :: Fram String Int)
 
-addrGen = choose (0, framSize - 1)
+addrGen = choose (0, framDefSize - 1)
 forPull = O <$> (resize 3 $ listOf1 $ vectorOf 3 $ elements ['a'..'z'])
 forPush = I <$> vectorOf 3 (elements ['a'..'z'])
 
