@@ -24,6 +24,7 @@ where
 -- Как при ветвящемся алгоритме сделать локальный для if statementa Loop? Вероятно, некоторые FB
 -- необходимо запретить к ращмещению в тегированном времени. Это не повредит производительности,
 -- так как переиспользования вычислительного блока в таком случае быть не может!
+import           Control.Monad         ((>=>))
 import           Data.Array
 import           Data.Bits
 import           Data.Default
@@ -98,13 +99,11 @@ data MicroCode v t where
     { compiler, effect, instruction :: [ProcessUid]
     , workBegin                     :: Maybe t
     , fb                            :: FB Parcel v
-    , actions                       :: [Effect v]
+    , actions                       :: [EndpointType v]
     , bindTo                        :: MicroCode v t -> Cell v t -> Either String (Cell v t)
     } -> MicroCode v t
 
 microcode = MicroCode [] [] [] Nothing
--- instance HasEffect (MicroCode v t) (Effect v) where
---   effect = lens _effect $ \a b -> a{ _effect=b }
 
 instance ( Var v, Time t ) => Default (Fram v t) where
   def = Fram { frMemory=listArray (0, framSize - 1) $ repeat def
@@ -134,11 +133,11 @@ instance ( Var v, Time t
 
   options_ _proxy fr@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
     where
-      fromCells = [ EndpointO (effect2endpoint v) $ constrain cell v
+      fromCells = [ EndpointO v $ constrain cell v
                   | (_addr, cell@Cell{..}) <- assocs frMemory
                   , v <- cell2acts allowOutput cell
                   ]
-      fromRemain = [ EndpointO (effect2endpoint act) $ constrain cell act
+      fromRemain = [ EndpointO act $ constrain cell act
                    | mc@MicroCode { actions=act:_ } <- frRemains
                    , let aCell = availableCell fr mc
                    , isJust aCell
@@ -147,16 +146,16 @@ instance ( Var v, Time t
       allowOutput = ( frAllowBlockingInput || null fromRemain )
         && ( null (remainRegs fr) || framSize - numberOfCellForReg > 1 )
       numberOfCellForReg = length $ filter (\Cell{..} -> output == UsedOrBlocked) $ elems frMemory
-      constrain Cell{..} (Pull _)
+      constrain Cell{..} (Source _)
         | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
         | otherwise              = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
-      constrain _cell (Push _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
+      constrain _cell (Target _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
 
   decision_ proxy fr@Fram{ frProcess=p0@Process{ nextTick=tick0 }, .. } act@EndpointD{..}
     | tick0 > act^.at.infimum
     = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show (act^.at.infimum)
 
-    | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< (endpoint2effect epdType)) . head . actions) frRemains
+    | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< epdType) . head . actions) frRemains
     = case availableCell fr mc of
         Just (addr, cell) ->
           let (key, p') = modifyProcess p0 $ bindFB2Cell addr fb tick0
@@ -168,22 +167,22 @@ instance ( Var v, Time t
          in decision_ proxy fr' act
         Nothing -> error $ "Can't find available cell for: " ++ show fb ++ "!"
 
-    | Just (addr, cell) <- find (any (<< (endpoint2effect epdType)) . cell2acts True . snd) $ assocs frMemory
+    | Just (addr, cell) <- find (any (<< epdType) . cell2acts True . snd) $ assocs frMemory
     = case cell of
-        Cell{ input=Def mc@MicroCode{ actions=act1 : _ } } | act1 << (endpoint2effect epdType) ->
+        Cell{ input=Def mc@MicroCode{ actions=act1 : _ } } | act1 << epdType ->
             let (p', mc') = doAction addr p0 mc
                 cell' = updateLastWrite (nextTick p') cell
                 cell'' = case mc' of
                   Nothing -> cell'{ input=UsedOrBlocked }
-                  Just mc''@MicroCode{ actions=Pull _ : _ } -> cell'{ input=Def mc'' }
-                  Just mc''@MicroCode{ actions=Push _ : _ }
+                  Just mc''@MicroCode{ actions=Source _ : _ } -> cell'{ input=Def mc'' }
+                  Just mc''@MicroCode{ actions=Target _ : _ }
                     | output cell' == UsedOrBlocked ->
                         cell'{ input=UsedOrBlocked, output=Def mc'' }
                   _ -> error "Fram internal error after input process."
             in fr{ frMemory=frMemory // [(addr, cell'')]
                  , frProcess=p'
                  }
-        Cell{ current=Just mc@MicroCode{ actions=act1 : _ } } | act1 << (endpoint2effect epdType) ->
+        Cell{ current=Just mc@MicroCode{ actions=act1 : _ } } | act1 << epdType ->
             let (p', mc') = doAction addr p0 mc
                 cell' = updateLastWrite (nextTick p') cell
                 cell'' = cell'{ input=UsedOrBlocked
@@ -192,7 +191,7 @@ instance ( Var v, Time t
             in fr{ frMemory=frMemory // [(addr, cell'')]
                  , frProcess=p'
                  }
-        Cell{ output=Def mc@MicroCode{ actions=act1 : _ } } | act1 << (endpoint2effect epdType) ->
+        Cell{ output=Def mc@MicroCode{ actions=act1 : _ } } | act1 << epdType ->
             let (p', _mc') = doAction addr p0 mc
                 -- Вот тут есть потенциальная проблема которую не совсем ясно как можно решить,
                 -- а именно, если output происходит в последний такт вычислительного цикла
@@ -211,7 +210,7 @@ instance ( Var v, Time t
                   ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
                   ++ "remains:\n" ++ concatMap ((++ "\n") . show) frRemains
     where
-      updateLastWrite t cell | Push _ <- (endpoint2effect epdType) = cell{ lastWrite=Just t }
+      updateLastWrite t cell | Target _ <- epdType = cell{ lastWrite=Just t }
                              | otherwise = cell{ lastWrite=Nothing }
 
       doAction addr p mc@MicroCode{..} =
@@ -224,9 +223,9 @@ instance ( Var v, Time t
       mkWork _addr _p MicroCode{ actions=[] } = error "Fram internal error, mkWork"
       mkWork addr p mc@MicroCode{ actions=x:xs, ..} =
         let ((ef, instrs), p') = modifyProcess p $ do
-              e <- add (Activity $ act^.at) $ EffectStep (endpoint2effect epdType)
+              e <- add (Activity $ act^.at) $ EndpointStep epdType
               i1 <- add (Activity $ act^.at)
-                $ InstructionStep (act2Instruction addr (endpoint2effect epdType) :: Instruction (Fram v t))
+                $ InstructionStep (act2Instruction addr epdType :: Instruction (Fram v t))
               is <- if tick0 < act^.at.infimum
                 then do
                   i2 <- add (Activity $ tick0 ... act^.at.infimum - 1)
@@ -239,7 +238,7 @@ instance ( Var v, Time t
         in (p', mc{ effect=ef : effect
                   , instruction=instrs ++ instruction
                   , workBegin=workBegin `orElse` Just (act^.at.infimum)
-                  , actions=if x == (endpoint2effect epdType) then xs else (x \\\ (endpoint2effect epdType)) : xs
+                  , actions=if x == epdType then xs else (x \\\ epdType) : xs
                   })
 
       finish p MicroCode{..} = snd $ modifyProcess p $ do
@@ -249,8 +248,8 @@ instance ( Var v, Time t
         mapM_ (relation . Vertical h) effect
         mapM_ (relation . Vertical h) instruction
 
-      act2Instruction addr (Pull _) = Load addr
-      act2Instruction addr (Push _) = Save addr
+      act2Instruction addr (Source _) = Load addr
+      act2Instruction addr (Target _) = Save addr
 
 
 
@@ -276,7 +275,7 @@ instance ( IOType Parcel v, Time t ) => ProcessUnit (Fram v t) v t where
                                         , current=Nothing
                                         } = Right $ cell{ current=Just mc }
                  bindToCell _ _ = Left "Can't bind Reg to Fram"
-                 ( mc', fr' ) = bind' $ microcode fb [ Push a, Pull b ] bindToCell
+                 ( mc', fr' ) = bind' $ microcode fb [ Target a, Source b ] bindToCell
              in Right fr'{ frRemains=mc' : frRemains }
         else Left "Can't bind Reg to Fram, place for Reg don't exist."
 
@@ -287,7 +286,7 @@ instance ( IOType Parcel v, Time t ) => ProcessUnit (Fram v t) v t where
                              , output=UsedOrBlocked
                              }
                  bindToCell _ cell = Left $ "Can't bind Loop to Fram Cell: " ++ show cell
-                 ( mc', fr' ) = bind' $ microcode fb [ Pull bs, Push a ] bindToCell
+                 ( mc', fr' ) = bind' $ microcode fb [ Source bs, Target a ] bindToCell
              in Right fr'{ frRemains=mc' : frRemains }
         else Left "Can't bind Loop to Fram, all IO cell already busy."
 
@@ -298,7 +297,7 @@ instance ( IOType Parcel v, Time t ) => ProcessUnit (Fram v t) v t where
 
             bindToCell _ cell = Left $ "Can't bind FramInput (" ++ show fb
                                        ++ ") to Fram Cell: " ++ show cell
-            ( mc', fr' ) = bind' $ microcode fb [ Pull v ] bindToCell
+            ( mc', fr' ) = bind' $ microcode fb [ Source v ] bindToCell
         in fmap (\cell' -> fr'{ frMemory=frMemory // [(addr, cell')]
                               }) $ bindToCell mc' $ frMemory ! addr
 
@@ -308,7 +307,7 @@ instance ( IOType Parcel v, Time t ) => ProcessUnit (Fram v t) v t where
               = Right cell{ output=Def mc }
             bindToCell _ cell = Left $ "Can't bind FramOutput (" ++ show fb
                                        ++ ") to Fram Cell: " ++ show cell
-            ( mc', fr' ) = bind' $ microcode fb [ Push v ] bindToCell
+            ( mc', fr' ) = bind' $ microcode fb [ Target v ] bindToCell
         in fmap (\cell' -> fr'{ frMemory=frMemory // [(addr, cell')]
                               }) $ bindToCell mc' $ frMemory ! addr
 
@@ -341,6 +340,9 @@ instance ( Var v, Time t ) => Controllable (Fram v t) where
     deriving (Show)
 
 
+getAddr (Load addr) = Just addr
+getAddr (Save addr) = Just addr
+getAddr _           = Nothing
 
 instance ( Var v, Time t
          ) => ByTime (Fram v t) t where
@@ -447,7 +449,7 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
     ]
 
   simulateContext fr@Fram{ frProcess=p@Process{..}, .. } cntx =
-    let vs = [ v | eff <- getEffects p
+    let vs = [ v | eff <- getEndpoints p
                  , v <- variables eff
                  ]
     in foldl ( \cntx' v ->
@@ -478,14 +480,14 @@ testInputs Fram{ frProcess=p@Process{..}, ..} cntx
   = concatMap ( (++ " @(negedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
   where
     busState t
-      | Just (Push v) <- effectAt t p = "value_i <= " ++ show (cntx M.! (v, 0)) ++ ";"
+      | Just (Target v) <- endpointAt t p = "value_i <= " ++ show (cntx M.! (v, 0)) ++ ";"
       | otherwise = "/* NO INPUT */"
 
 testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
   = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
   where
     busState t
-      | Just (Pull (v : _)) <- effectAt t p
+      | Just (Source (v : _)) <- endpointAt t p
       = checkBus v $ cntx M.! (v, 0)
       | otherwise
       = "/* NO OUTPUT */"
@@ -528,21 +530,17 @@ testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
 
 
-findAddress v pu@Fram{ frProcess=p@Process{..} }
-  | [ Step{ sTime=Activity timePlace }
-    ] <- filter ( \st -> isEffect (sDesc st)
-                         && (\Step{ sDesc=EffectStep eff } -> v `elem` variables eff) st
-                ) steps
-  , instructions <- mapMaybe (extractInstruction pu) $ whatsHappen (timePlace^.infimum) p
-  , is <- mapMaybe (\i -> case i of
-                  Load addr -> Just addr
-                  Save addr -> Just addr
-                  _         -> Nothing
-        ) instructions
-  = if length is == 1 then head is
-                      else err
-  | otherwise = err
-    where err = error $ "Can't find instruction for effect of variable: " ++ show v
+findAddress var pu@Fram{ frProcess=p@Process{..} }
+  | [ time ] <- variableSendAt var
+  , [ instr ] <- mapMaybe (extractInstruction pu >=> getAddr) $ whatsHappen (time^.infimum) p
+  = instr
+  | otherwise = error $ "Can't find instruction for effect of variable: " ++ show var
+  where
+    variableSendAt v = [ t | Step{ sTime=Activity t
+                                 , sDesc=EndpointStep endpoints
+                                 } <- steps
+                           , v `elem` variables endpoints
+                           ]
 
 
 instance ( Time t, Var v ) => Synthesis (Fram v t) where

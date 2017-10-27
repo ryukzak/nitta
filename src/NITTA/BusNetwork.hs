@@ -436,9 +436,9 @@ instance ( Title title, Var v, Time t
         where
           p = puProcess
           assert time
-            = let pulls = filter (\e -> case e of (Pull _) -> True; _ -> False) $ effectsAt time p
+            = let pulls = filter (\e -> case e of (Source _) -> True; _ -> False) $ endpointsAt time p
               in case pulls of
-                Pull (v:_) : _ -> concat
+                Source (v:_) : _ -> concat
                     [ "if ( !( net.data_bus === " ++ show (fromMaybe 0 $ M.lookup (v, 0) cntx) ++ ") ) "
                     ,   "$display("
                     ,     "\""

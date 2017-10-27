@@ -83,26 +83,6 @@ instance Variables (O Parcel v) v where
 
 
 
--- | Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
--- одно взаимодействие, при этом у PU только один канал для взаимодействия.
-data Effect v
-  = Push v   -- ^ Загрузка данных в PU.
-  | Pull [v] -- ^ Выгрузка данных из PU.
-  deriving ( Show, Eq, Ord )
-
-instance Variables (Effect v) v where
-  variables (Push i) = [i]
-  variables (Pull o) = o
-
-(Push a) << (Push b) | a == b = True
-(Pull a) << (Pull b)          = all (`elem` a) b
-_        << _                 = False
-
-(Pull a) \\\ (Pull b) = Pull (a L.\\ b)
-_ \\\ _ = error "Only for Pulls"
-
-
-
 ---------------------------------------------------------------------
 -- * Время
 
@@ -254,7 +234,7 @@ instance {-# OVERLAPS #-} FunctionalBlock fb v => Variables fb v where
 
 
 -- | Описание многоуровневого вычислительного процесса PU. Подход к моделированию вдохновлён
--- ISO 15926. Имеются следующие варианты использвоания:
+-- ISO 15926. Имеются следующие варианты использования:
 --
 --     1) Хранение многоуровневого описания вычислительного процесса отдельного PU (одного
 --        структурного элемента процессора).
@@ -297,9 +277,8 @@ data StepInfo v where
   CADStep :: String -> StepInfo v
   -- | Время работы над функциональным блоком функционального алгоритма.
   FBStep :: FB Parcel v -> StepInfo v
-  -- | Описание взаимодействий отдельных PU (загрузка/выгрузка данных). Указывается с точки зрения
-  -- управления PU, а не с точки зрения загрузки шины.
-  EffectStep :: Effect v -> StepInfo v
+  -- | Описание использования вычислительного блока с точки зрения передачи данных.
+  EndpointStep :: EndpointType v -> StepInfo v
   -- | Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
   -- определяется типом вычислительного блока.
   InstructionStep :: ( Show (Instruction pu)
@@ -317,9 +296,7 @@ deriving instance ( Show v, Show t ) => Show ( Step v t )
 instance ( Show v ) => Show (StepInfo v) where
   show (CADStep s)                 = s
   show (FBStep (FB fb))            = show fb
-  show (EffectStep eff)            = show eff
-  -- show (EffectStep (Pull v))       = "V" ++ show v
-  -- show (EffectStep (Push v))       = "A" ++ show v
+  show (EndpointStep eff)          = show eff
   show (InstructionStep instr)     = show instr
   show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
 
@@ -327,7 +304,7 @@ instance ( Show v ) => Show (StepInfo v) where
 -- | Получить строку с название уровня указанного шага вычислительного процесса.
 level (CADStep _)         = "CAD"
 level (FBStep _)          = "Function block"
-level (EffectStep _)      = "Effect"
+level (EndpointStep _)    = "Endpoint"
 level (InstructionStep _) = "Instruction"
 level (NestedStep _ _)    = "Nested"
 
@@ -358,11 +335,19 @@ instance DecisionType (BindingDT title v) where
   data Decision_ (BindingDT title v) = BindingD (FB Parcel v) title
 
 
-
+-- | Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
+-- одно взаимодействие, при этом у PU только один канал для взаимодействия.
 data EndpointType v
   = Source [v] -- ^ Выгрузка данных из PU.
   | Target v   -- ^ Загрузка данных в PU.
   deriving ( Show, Eq, Ord )
+
+(Target a) << (Target b) | a == b = True
+(Source a) << (Source b)          = all (`elem` a) b
+_        << _                 = False
+
+(Source a) \\\ (Source b) = Source (a L.\\ b)
+_ \\\ _ = error "Only for Pulls"
 
 instance Variables (EndpointType v) v where
   variables (Source vs) = vs
@@ -397,10 +382,6 @@ instance Variables (Decision_ (EndpointDT v t)) v where
 
 
 
-effect2endpoint (Pull v) = Source v
-effect2endpoint (Push v) = Target v
-endpoint2effect (Source v) = Pull v
-endpoint2effect (Target v) = Push v
 
 data DataFlowDT title v t
 dataFlowDT = Proxy :: Proxy DataFlowDT
@@ -429,7 +410,8 @@ instance DecisionType (DataFlowDT title v t) where
 -- * Вычислительные блоки (PU)
 
 
--- | Базовые функции для организации вычислительного процесса вычислительного блока.
+-- | Описание вычислительного блока. Используется в совокупности с Decision по интересующим группам
+-- вопросов.
 --
 -- Идеологически, планирование вычислительного процесса производится следующим образом:
 --
@@ -445,13 +427,13 @@ class ProcessUnit pu v t | pu -> v, pu -> t where
   -- | Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
   -- процесс вложенных структурных элементов.
   --
-  -- Результат вычисления данной функции не должен редактироваться!
+  -- Результат вычисления данной функции не должен редактироваться и возкращаться на место!
   process :: pu -> Process v t
-  -- | Установать модельное время вычислительного блока.
+  -- | Установить модельное время вычислительного блока.
   --
-  -- TODO: Необходимо убрать, как метод не обязательный, но генерирующий boiler plate.
+  -- TODO: Необходимо преобразовать в setTimeTag.
   -- Изначально, данный метод был добавлен для работы в ращеплённом времени, но он: 1) недостаточен,
-  -- 2) может быть реалихован в рамках алгоритма компиляции.
+  -- 2) может быть реализован в рамках алгоритма компиляции.
   --
   -- В тоже время, setTime нужен не только для того, чтобы ограничить время, но и для того, что бы
   -- установить тег времени.

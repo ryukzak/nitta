@@ -88,22 +88,19 @@ getFBs p = mapMaybe getFB
            $ steps p
 
 
-isEffect (EffectStep _) = True
-isEffect _              = False
+getEndpoint Step{ sDesc=EndpointStep eff }                = Just eff
+getEndpoint Step{ sDesc=NestedStep _ (EndpointStep eff) } = Just eff
+getEndpoint _                                             = Nothing
 
-getEffect Step{ sDesc=EffectStep eff }                = Just eff
-getEffect Step{ sDesc=NestedStep _ (EffectStep eff) } = Just eff
-getEffect _                                           = Nothing
-
-getEffects p = mapMaybe getEffect
+getEndpoints p = mapMaybe getEndpoint
                $ sortBy (\a b -> stepStart a `compare` stepStart b)
                $ steps p
 
-effectAt t p
-  | [eff] <- mapMaybe getEffect $ whatsHappen t p = Just eff
+endpointAt t p
+  | [eff] <- mapMaybe getEndpoint $ whatsHappen t p = Just eff
   | otherwise = Nothing
 
-effectsAt t p = mapMaybe getEffect $ whatsHappen t p
+endpointsAt t p = mapMaybe getEndpoint $ whatsHappen t p
 
 
 

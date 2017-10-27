@@ -47,7 +47,7 @@ prop_simulation (DataFlow _df values pu) = monadicIO $ do
 prop_formalCompletness (DataFlow df _values pu) =
   let vars = concatMap variables df
       p = process pu
-      vars' = concatMap variables $ getEffects p
+      vars' = concatMap variables $ getEndpoints p
       df' = getFBs p
   in if and
         [ fromList vars == fromList vars'
