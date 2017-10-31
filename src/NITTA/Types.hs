@@ -200,13 +200,13 @@ class WithFunctionalBlocks x io v | x -> io, x -> v where
 
 
 -- | Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
-data FB box v where
+data FB io v where
   FB :: ( FunctionalBlock fb v
         , Show fb
         , Variables fb v
         , IOType io v
         ) => fb -> FB io v
-deriving instance ( Show v ) => Show (FB box v)
+deriving instance ( Show v ) => Show (FB io v)
 
 instance ( IOType box v, Var v ) => FunctionalBlock (FB box v) v where
   dependency (FB fb) = dependency fb
@@ -215,13 +215,13 @@ instance ( IOType box v, Var v ) => FunctionalBlock (FB box v) v where
   inputs (FB fb) = inputs fb
   outputs (FB fb) = outputs fb
 
-instance Variables (FB Parcel v) v where
+instance Variables (FB io v) v where
   variables (FB fb) = variables fb
 
-instance Eq (FB box v) where
+instance Eq (FB io v) where
   FB a == FB b = Just a == cast b
 
-instance ( Variables (FB box v) v, Ord v ) => Ord (FB box v) where
+instance ( Variables (FB io v) v, Ord v ) => Ord (FB io v) where
   a `compare` b = variables a `compare` variables b
 
 instance {-# OVERLAPS #-} FunctionalBlock fb v => Variables fb v where

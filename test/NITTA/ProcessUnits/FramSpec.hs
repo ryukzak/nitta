@@ -1,100 +1,102 @@
-{-# LANGUAGE TupleSections        #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TupleSections         #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE RecordWildCards      #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE StandaloneDeriving   #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module NITTA.ProcessUnits.FramSpec where
 
-import           Control.Monad
-import           Data.Default
-import           Data.List                (intersect, notElem, nub, sortBy,
-                                           union)
+import           Data.Proxy
 import           NITTA.FunctionBlocks
-import           NITTA.FunctionBlocksSpec
+import           NITTA.FunctionBlocksSpec ()
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnitsSpec
 import           NITTA.Types
 import           Test.QuickCheck
 
 
-
-type FramIdealDataFlow = DataFlow (Fram String Int) String Int
-
-
-data FramDataFlow = FramDataFlow{ framDataFlow :: FramIdealDataFlow }
-
-instance Show FramDataFlow where
-  show = show . framDataFlow
+framProxy = Proxy :: Proxy (Fram String Int)
 
 
-data ST = ST { acc           :: [FB Parcel String]
-             , forInput      :: [Int]
-             , forOutput     :: [Int]
-             , numberOfLoops :: Int
-             , usedVariables :: [String]
-             , values        :: [(String, Int)]
-             } deriving (Show)
+
+instance FunctionalBlockSet (Fram String Int) String where
+  data FBSet (Fram String Int) String
+    = FramInput' (FramInput Parcel String)
+    | FramOutput' (FramOutput Parcel String)
+    | Loop' (Loop Parcel String)
+    | Reg' (Reg Parcel String)
+
+  -- TODO: Сделать данную операцию через Generics.
+  fbSetGen = oneof [ FramInput' <$> (arbitrary :: Gen (FramInput Parcel String))
+                   , FramOutput' <$> (arbitrary :: Gen (FramOutput Parcel String))
+                   , Loop' <$> (arbitrary :: Gen (Loop Parcel String))
+                   , Reg' <$> (arbitrary :: Gen (Reg Parcel String))
+                   ]
 
 
-instance Arbitrary FramDataFlow where
-  arbitrary = do
-    ST{..} <- framDataFlowGen False (const True)
-    (pu', df') <- naiveGen def acc
-    return $ FramDataFlow $ DataFlow df' values pu'
+-- TODO: Сделать данную операцию через Generics.
+instance WithFunctionalBlocks (FBSet (Fram String Int) String) Parcel String where
+  functionalBlocks (FramInput' fb)  = [ boxFB fb ]
+  functionalBlocks (FramOutput' fb) = [ boxFB fb ]
+  functionalBlocks (Loop' fb)       = [ boxFB fb ]
+  functionalBlocks (Reg' fb)        = [ boxFB fb ]
 
 
-instance Arbitrary FramIdealDataFlow where
-  arbitrary = do
-    ST{..} <- framDataFlowGen True (\ST{..} -> (length forInput + numberOfLoops) > 0)
-    return $ DataFlow (sortBy compareFB acc) values def{ frAllowBlockingInput=False }
-      where
-        compareFB a b
-          | Just (Reg _ _) <- castFB a = GT
-          | Just (Reg _ _) <- castFB b = LT
-          | otherwise = EQ
 
-
-framDataFlowGen checkCellUsage generalPred =
-  suchThat (do
-               size <- sized pure -- getSize
-               n <- choose (0, size)
-               foldM maker (ST [] [] [] 0 [] []) [ 0..n ]
-           ) generalPred
-  where
-    maker st0@ST{..} _ = nextState st0 <$> do
-      fb <- suchThat (oneof [ FB <$> (arbitrary :: Gen (FramInput Parcel String))
-                            , FB <$> (arbitrary :: Gen (FramOutput Parcel String))
-                            , FB <$> (arbitrary :: Gen (Loop Parcel String))
-                            , FB <$> (arbitrary :: Gen (Reg Parcel String))
-                            ]
-                     ) check
-      v <- choose (0 :: Int, 0xFF)
-      return (fb, v)
-        where
-          nextState st (fb, v) = specificUpdate fb v st
-            { acc=fb : acc
-            , usedVariables=variables fb ++ usedVariables
-            }
-          specificUpdate fb value st
-            | Just (FramInput addr _vs) <- castFB fb = st{ forInput=addr : forInput }
-            | Just (FramOutput addr (I v)) <- castFB fb = st{ forOutput=addr : forOutput
-                                                            , values=(v, value) : values
-                                                            }
-            | Just (Loop _bs (I a)) <- castFB fb = st{ numberOfLoops=numberOfLoops + 1
-                                                     , values=(a, value) : values
-                                                     }
-            | Just (Reg (I a) _bs) <- castFB fb = st{ values=(a, value) : values }
-            | otherwise = error $ "Bad FB: " ++ show fb
-          check fb
-            | not $ null (variables fb `intersect` usedVariables) = False
-            | Just (Reg _ _ :: Reg Parcel String) <- castFB fb = True
-            | not checkCellUsage = True
-            | not (dfIoUses < framDefSize) = False
-            | Just (FramInput addr _) <- castFB fb = addr `notElem` forInput
-            | Just (FramOutput addr _) <- castFB fb = addr `notElem` forOutput
-            | otherwise = True -- for Loop
-          dfIoUses = length (nub $ forInput `union` forOutput) + numberOfLoops
+-- Ниже приведённый код раньше использовался для генерации максимально плотной программы для Fram, с
+-- учётом особенностей внутренней диспетчеризации. Остальная часть алгоритма - в истории.
+--
+-- TODO: Необходимо реимплементировать для новых условий в виде через создание контролируемого
+-- processGen и сортировки / фильтрации алгоритма.
+--
+-- data ST = ST { acc           :: [FB Parcel String]
+--              , forInput      :: [Int]
+--              , forOutput     :: [Int]
+--              , numberOfLoops :: Int
+--              , usedVariables :: [String]
+--              , values        :: [(String, Int)]
+--              } deriving (Show)
+--
+-- framDataFlowGen checkCellUsage generalPred =
+--   suchThat (do
+--                size <- sized pure -- getSize
+--                n <- choose (0, size)
+--                foldM maker (ST [] [] [] 0 [] []) [ 0..n ]
+--            ) generalPred
+--   where
+--     maker st0@ST{..} _ = nextState st0 <$> do
+--       fb <- suchThat (oneof [ FB <$> (arbitrary :: Gen (FramInput Parcel String))
+--                             , FB <$> (arbitrary :: Gen (FramOutput Parcel String))
+--                             , FB <$> (arbitrary :: Gen (Loop Parcel String))
+--                             , FB <$> (arbitrary :: Gen (Reg Parcel String))
+--                             ]
+--                      ) check
+--       v <- choose (0 :: Int, 0xFF)
+--       return (fb, v)
+--         where
+--           nextState st (fb, v) = specificUpdate fb v st
+--             { acc=fb : acc
+--             , usedVariables=variables fb ++ usedVariables
+--             }
+--           specificUpdate fb value st
+--             | Just (FramInput addr _vs) <- castFB fb = st{ forInput=addr : forInput }
+--             | Just (FramOutput addr (I v)) <- castFB fb = st{ forOutput=addr : forOutput
+--                                                             , values=(v, value) : values
+--                                                             }
+--             | Just (Loop _bs (I a)) <- castFB fb = st{ numberOfLoops=numberOfLoops + 1
+--                                                      , values=(a, value) : values
+--                                                      }
+--             | Just (Reg (I a) _bs) <- castFB fb = st{ values=(a, value) : values }
+--             | otherwise = error $ "Bad FB: " ++ show fb
+--           check fb
+--             | not $ null (variables fb `intersect` usedVariables) = False
+--             | Just (Reg _ _ :: Reg Parcel String) <- castFB fb = True
+--             | not checkCellUsage = True
+--             | not (dfIoUses < framDefSize) = False
+--             | Just (FramInput addr _) <- castFB fb = addr `notElem` forInput
+--             | Just (FramOutput addr _) <- castFB fb = addr `notElem` forOutput
+--             | otherwise = True -- for Loop
+--           dfIoUses = length (nub $ forInput `union` forOutput) + numberOfLoops

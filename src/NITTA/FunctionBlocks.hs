@@ -23,8 +23,10 @@ instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 
 
 castFB :: ( Typeable v, Typeable (fb io v) ) => FB io v -> Maybe (fb io v)
-castFB (FB x) = cast x
+castFB (FB fb) = cast fb
 
+boxFB :: ( FunctionalBlock (fb io v) v, Variables (fb io v) v, IOType io v, Show (fb io v) ) => fb io v -> FB io v
+boxFB fb = FB fb
 
 
 ----------------------------------------

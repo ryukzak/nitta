@@ -4,6 +4,9 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+{-
+Данный модуль реализует функции для генерации функциональных блоков.
+-}
 module NITTA.FunctionBlocksSpec where
 
 import           Data.Default
@@ -13,24 +16,26 @@ import           NITTA.ProcessUnits.Fram
 import           NITTA.Types
 import           Test.QuickCheck
 
-framDefSize = frSize (def :: Fram String Int)
 
-addrGen = choose (0, framDefSize - 1)
-forPull = O <$> (resize 3 $ listOf1 $ vectorOf 3 $ elements ['a'..'z'])
-forPush = I <$> vectorOf 3 (elements ['a'..'z'])
+framDefSize = frSize (def :: Fram () ())
+framAddrGen = choose (0, framDefSize - 1)
 
-uniqVars fb = let vs = variables fb
-              in length vs == length (nub vs)
+
+outputVarsGen = O <$> (resize 3 $ listOf1 $ vectorOf 3 $ elements ['a'..'z'])
+inputVarGen = I <$> vectorOf 3 (elements ['a'..'z'])
+
+
+uniqueVars fb = let vs = variables fb in length vs == length (nub vs)
 
 
 instance Arbitrary (FramInput Parcel String) where
-  arbitrary = suchThat (FramInput <$> addrGen <*> forPull) uniqVars
+  arbitrary = suchThat (FramInput <$> framAddrGen <*> outputVarsGen) uniqueVars
 
 instance Arbitrary (FramOutput Parcel String) where
-  arbitrary = suchThat (FramOutput <$> addrGen <*> forPush) uniqVars
+  arbitrary = suchThat (FramOutput <$> framAddrGen <*> inputVarGen) uniqueVars
 
 instance Arbitrary (Loop Parcel String) where
-  arbitrary = suchThat (Loop <$> forPull <*> forPush ) uniqVars
+  arbitrary = suchThat (Loop <$> outputVarsGen <*> inputVarGen) uniqueVars
 
 instance Arbitrary (Reg Parcel String) where
-  arbitrary = suchThat (Reg <$> forPush <*> forPull) uniqVars
+  arbitrary = suchThat (Reg <$> inputVarGen <*> outputVarsGen) uniqueVars

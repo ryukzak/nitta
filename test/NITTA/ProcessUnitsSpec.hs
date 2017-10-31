@@ -1,19 +1,19 @@
-{-# LANGUAGE BangPatterns         #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE RecordWildCards      #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE StandaloneDeriving   #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module NITTA.ProcessUnitsSpec where
 
-import           Data.Array
-import           Data.List               (nub)
+import           Data.Default
+import           Data.List               (intersect, sort)
+import           Data.Proxy
 import           Data.Set                (fromList, (\\))
 import           NITTA.Compiler
-import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
@@ -24,78 +24,93 @@ import           Test.QuickCheck.Monadic
 import           Debug.Trace
 
 
-data DataFlow pu v t = DataFlow
-  { dfFB     :: [FB Parcel v]
-  , dfValues :: [(v, Int)]
-  , dfPU     :: pu
-  }
+-- | Класс для описания систем команд функциональных блоков. Используется для адресации генерации
+-- алгоритмов для вычислительных блоков.
+class FunctionalBlockSet pu v | pu -> v where
+  -- | Тип для представляния системы команд.
+  data FBSet pu v :: *
+  -- | Генератор функционального блока описываемой системы команд.
+  fbSetGen :: Gen (FBSet pu v)
 
-instance ( Show v, Show t, Show pu ) => Show (DataFlow pu v t) where
-  show DataFlow{..} = "data flow = [\n" ++ concatMap (\x -> "  " ++ show x ++ ",\n") dfFB  ++ "  ]\n"
-    ++ "Values: " ++ show dfValues
+instance ( WithFunctionalBlocks (FBSet pu v) Parcel v ) => Variables (FBSet pu v) v where
+  variables fbs = concatMap variables $ functionalBlocks fbs
+
+-- | Данный генератор создаёт список независимых по переменным функциональных блоков.
+instance {-# OVERLAPS #-} ( Eq v, Variables (FBSet pu v) v, FunctionalBlockSet pu v
+                          ) => Arbitrary [FBSet pu v] where
+  arbitrary = onlyUniqueVar <$> listOf1 fbSetGen
+    where
+      onlyUniqueVar = snd . foldl (\(used, fbs) fb -> let vs = variables fb
+                                                      in if not $ null (vs `intersect` used)
+                                                        then ( vs ++ used, fb:fbs )
+                                                        else ( used, fbs ) )
+                                  ([], [])
+
+
+-- В значительной степени служеюная функция, используемая для генерации процесса указанного
+-- вычислительного блока под случайный алгоритм. Возвращает вычислительный блок со спланированым
+-- вычислительным процессом и алгоритм.
+processGen proxy = arbitrary >>= processGen' proxy def
+  where
+    processGen' :: ( DecisionProblem (EndpointDT String Int) EndpointDT pu
+                   , ProcessUnit pu String Int
+                   , WithFunctionalBlocks (FBSet pu String) Parcel String
+                   ) => Proxy pu -> pu -> [FBSet pu String] -> Gen (pu, [FB Parcel String])
+    processGen' _ pu specialAlg = endpointWorkGen pu $ concatMap functionalBlocks specialAlg
 
 
 
+-- | Автоматическое планирование вычислительного процесса, в рамках которого решения принимаются
+-- случайным образом. В случае если какой-либо функциональный блок не может быть привязан к
+-- вычислительному блоку (например по причине закончившихся внутренних ресурсов), то он просто
+-- отбрасывается.
+endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
+  where
+    endpointWorkGen' pu alg passedAlg = do
+      let opts = map Left (options endpointDT pu) ++ map Right alg
+      i <- choose (0 :: Int, length opts - 1)
+      if null opts
+        then return (pu, passedAlg)
+        else case opts !! i of
+          Left o -> do
+            d <- passiveOption2action <$> endpointGen o
+            endpointWorkGen' (decision endpointDT pu d) alg passedAlg
+          Right fb -> let alg' = filter (/= fb) alg
+                      in case bind fb pu of
+                        Right pu' -> endpointWorkGen' pu' alg' (fb : passedAlg)
+                        Left _err -> endpointWorkGen' pu alg' passedAlg
+      where
+        endpointGen o@EndpointO{ epoType=s@Source{} } = do
+          vs' <- suchThat (sublistOf $ variables s) (not . null)
+          return o{ epoType=Source vs' }
+        endpointGen o = return o
 
-prop_simulation (DataFlow _df values pu) = monadicIO $ do
+
+
+-- | Генерация случайных входных данных для заданного алгорима.
+--
+-- TODO: Генерируемые значения должны типизироваться с учётом особенностей вычислительного блока.
+inputsGen (pu, fbs) = do
+  values <- infiniteListOf $ choose (0, 1000)
+  return (pu, fbs, zip (concatMap inputs fbs) values)
+
+
+-- | Проверка вычислительного блока на соответсвие работы аппаратной реализации и его модельного
+-- поведения.
+prop_simulation (pu, _fbs, values) = monadicIO $ do
   res <- run $ testBench pu values
   run $ timeline "resource/data.json" pu
   assert res
 
 
-
-prop_formalCompletness (DataFlow df _values pu) =
-  let vars = concatMap variables df
-      p = process pu
-      vars' = concatMap variables $ getEndpoints p
-      df' = getFBs p
-  in if and
-        [ fromList vars == fromList vars'
-        , length (nub vars') == length vars'
-        , length (nub df') == length df'
-        , fromList df == fromList df'
-        ]
-     then True
-     else
-       trace ( "vars: " ++ show (fromList vars \\ fromList vars') ++ "\n"
-             ++ "fbs: " ++ show (fromList df \\ fromList df') ++ "\n"
-             ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs $ frMemory pu)
-             ++ "remains:\n" ++ concatMap ((++ "\n") . show) (frRemains pu)
-             )
-       False
-
-
-
-bindAllAndNaiveScheduleBranch (DataFlow df values pu) =
-  DataFlow df values (bindAllAndNaiveSchedule pu df)
-
-
-
-naiveGen pu df = naiveGen' pu df []
-
-naiveGen' pu df passedDF = do
-  s1 <- choose (0 :: Int, 1)
-  let opts = options endpointDT pu
-  case s1 of
-    0 | not $ null opts -> do
-          i <- choose (0, length opts - 1)
-          let opt = opts !! i
-          let vs = variables opt
-          opt' <- if isSource opt
-                  then do
-                    vs' <- suchThat (sublistOf vs) (not . null)
-                    return $ opt{ epoType=Source vs' }
-                  else return opt
-          let pu' = decision endpointDT pu $ passiveOption2action opt'
-          naiveGen' pu' df passedDF
-    1 | not $ null df -> do
-          i <- choose (0, length df - 1)
-          let fb = df !! i
-          let df' = [ x | x <- df, x /= fb ]
-          case bind fb pu of
-            Right pu' -> --trace ("bind: " ++ show fb) $
-                         naiveGen' pu' df' (fb : passedDF)
-            Left _r -> --trace ("skip: " ++ show fb ++ " reason: " ++ show r) $
-                      naiveGen' pu df' passedDF
-    _ | null opts && null df -> return (pu, passedDF)
-    _ -> naiveGen' pu df passedDF
+-- | Проверка полноты выполнения работы вычислительного блока.
+prop_completness (pu, fbs)
+  = let p = process pu
+        processVars = sort $ concatMap variables $ getEndpoints p
+        algVars = sort $ concatMap variables fbs
+        processFBs = getFBs p
+    in    processFBs == fbs -- функции в алгоритме соответствуют выполненным функциям в процессе
+       && processVars == algVars -- пересылаемые данные в алгоритме соответствуют пересылаемым данным в процессе
+       || trace ( "vars: " ++ show (fromList algVars \\ fromList processVars) ++ "\n"
+                  ++ "fbs: " ++ show (fromList fbs \\ fromList processFBs) ++ "\n"
+                  ) False

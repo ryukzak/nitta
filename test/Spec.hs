@@ -1,7 +1,8 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module Main where
@@ -19,7 +20,6 @@ import           NITTA.ProcessUnitsSpec
 import           NITTA.TestBench
 import           NITTA.Types
 import           System.Environment
-import           Test.QuickCheck
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck       as QC
@@ -39,14 +39,8 @@ main = do
 
 
 qcFramTests
-  = [ QC.testProperty "Сompleteness with a maximum load"
-      (prop_formalCompletness . bindAllAndNaiveScheduleBranch :: FramIdealDataFlow -> Bool)
-    , QC.testProperty "Сompleteness with a partial load"
-      (prop_formalCompletness . framDataFlow :: FramDataFlow -> Bool)
-    , QC.testProperty "Simulation with a maximum load"
-      (prop_simulation . bindAllAndNaiveScheduleBranch :: FramIdealDataFlow -> Property)
-    , QC.testProperty "Simulation with a partial load"
-      (prop_simulation . framDataFlow :: FramDataFlow -> Property)
+  = [ QC.testProperty "Fram completeness" $ fmap prop_completness $ processGen framProxy
+    , QC.testProperty "Fram simulation" $ fmap prop_simulation $ inputsGen =<< processGen framProxy
     ]
 
 huFramTests

@@ -105,7 +105,7 @@ data MicroCode v t where
 
 microcode = MicroCode [] [] [] Nothing
 
-instance ( Var v, Time t ) => Default (Fram v t) where
+instance ( Default t ) => Default (Fram v t) where
   def = Fram { frMemory=listArray (0, size - 1) $ repeat def
              , frRemains=[]
              , frProcess=def
