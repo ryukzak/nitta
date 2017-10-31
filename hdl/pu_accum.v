@@ -15,7 +15,7 @@ module pu_accum
   , input  wire                  signal_oe
   , output reg  [DATA_WIDTH-1:0] data_out
   , output reg  [ATTR_WIDTH-1:0] attr_out
-);
+  );
 
 
 reg [DATA_WIDTH-1:0]   ext_arg;
