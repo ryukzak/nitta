@@ -93,3 +93,12 @@ instance IOType io v => FunctionalBlock (Add io v) v where
   dependency (Add a b c) = [ (y, x) | x <- variables a ++ variables b
                                     , y <- variables c
                                     ]
+
+
+
+data Constant io v = Constant Int (O io v) deriving ( Typeable )
+deriving instance ( IOType io v ) => Show (Constant io v)
+deriving instance ( IOType io v ) => Eq (Constant io v)
+
+instance ( IOType io v ) => FunctionalBlock (Constant io v) v where
+  outputs (Constant _ o) = variables o

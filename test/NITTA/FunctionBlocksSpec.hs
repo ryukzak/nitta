@@ -39,3 +39,6 @@ instance Arbitrary (Loop Parcel String) where
 
 instance Arbitrary (Reg Parcel String) where
   arbitrary = suchThat (Reg <$> inputVarGen <*> outputVarsGen) uniqueVars
+
+instance Arbitrary (Constant Parcel String) where
+  arbitrary = suchThat (Constant <$> choose (0, 1000) <*> outputVarsGen) uniqueVars

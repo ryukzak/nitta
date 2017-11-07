@@ -13,7 +13,6 @@ import           Data.Proxy
 import           NITTA.FunctionBlocks
 import           NITTA.FunctionBlocksSpec ()
 import           NITTA.ProcessUnits.Fram
-import           NITTA.ProcessUnitsSpec
 import           NITTA.Types
 import           Test.QuickCheck
 
@@ -21,28 +20,14 @@ import           Test.QuickCheck
 framProxy = Proxy :: Proxy (Fram String Int)
 
 
-
-instance FunctionalBlockSet (Fram String Int) String where
-  data FBSet (Fram String Int) String
-    = FramInput' (FramInput Parcel String)
-    | FramOutput' (FramOutput Parcel String)
-    | Loop' (Loop Parcel String)
-    | Reg' (Reg Parcel String)
-
+instance Arbitrary (FSet (Fram String t)) where
   -- TODO: Сделать данную операцию через Generics.
-  fbSetGen = oneof [ FramInput' <$> (arbitrary :: Gen (FramInput Parcel String))
-                   , FramOutput' <$> (arbitrary :: Gen (FramOutput Parcel String))
-                   , Loop' <$> (arbitrary :: Gen (Loop Parcel String))
-                   , Reg' <$> (arbitrary :: Gen (Reg Parcel String))
-                   ]
-
-
--- TODO: Сделать данную операцию через Generics.
-instance WithFunctionalBlocks (FBSet (Fram String Int) String) Parcel String where
-  functionalBlocks (FramInput' fb)  = [ boxFB fb ]
-  functionalBlocks (FramOutput' fb) = [ boxFB fb ]
-  functionalBlocks (Loop' fb)       = [ boxFB fb ]
-  functionalBlocks (Reg' fb)        = [ boxFB fb ]
+  arbitrary = oneof [ FramInput' <$> (arbitrary :: Gen (FramInput Parcel String))
+                    , FramOutput' <$> (arbitrary :: Gen (FramOutput Parcel String))
+                    , Loop' <$> (arbitrary :: Gen (Loop Parcel String))
+                    , Reg' <$> (arbitrary :: Gen (Reg Parcel String))
+                    , Constant' <$> (arbitrary :: Gen (Constant Parcel String))
+                    ]
 
 
 

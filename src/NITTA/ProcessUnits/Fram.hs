@@ -12,28 +12,46 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 {-|
-TODO: Добавить функциональный блок Const.
+Как это не удивительно, но вычислительный блок fram, один из наиболее простых с точки зрения
+аппаратной реализации, имеет крайне сложную поддержку в рамках САПР. Основными причинами является:
+
+- наличие внутренних разнотипных ограниченных ресурсов;
+- внутренний параллелизм.
+
+Одной из интересных проблем данного вычислительного блока явялется то, что сформированный
+вычислительный процесс формирует набор ограничений на будущий вычислительный процесс с точки зрения
+возможности выполнения тех или иных вычислительных блоков. Отсюда фомируются следующие требования к
+модели вычислительного блока:
+
+- функция options работает безопастно. Тоесть, она предоставляет только такие варианты решений, при
+  которых гарантируется, что все загруженные вычислительные блоки смогут быть выполнены вне
+  зависимости от порядка принятия решений.
+- функция decision работает небезопастно с точки зрения функции bind.
+
+
+FIXME: Как при ветвящемся алгоритме сделать локальный для if statementa Loop? Вероятно, некоторые FB
+необходимо запретить к ращмещению в тегированном времени. Это не повредит производительности, так
+как переиспользования вычислительного блока в таком случае быть не может!
 -}
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
+  , FSet(..)
   , Signal(..)
   )
 where
 
--- Как при ветвящемся алгоритме сделать локальный для if statementa Loop? Вероятно, некоторые FB
--- необходимо запретить к ращмещению в тегированном времени. Это не повредит производительности,
--- так как переиспользования вычислительного блока в таком случае быть не может!
 import           Control.Monad         ((>=>))
 import           Data.Array
 import           Data.Bits
 import           Data.Default
 import           Data.Either
+import           Data.Foldable
 import           Data.Generics.Aliases (orElse)
-import qualified Data.Graph            as G
-import           Data.List             (find, minimumBy, sortBy)
+import           Data.List             (find)
 import qualified Data.Map              as M
 import           Data.Maybe
-import           Data.Typeable
+import qualified Data.String.Utils     as S
+import           NITTA.Compiler
 import           NITTA.FunctionBlocks
 import           NITTA.Lens
 import           NITTA.TestBench
@@ -43,86 +61,186 @@ import           Numeric.Interval      ((...))
 import           Prelude               hiding (last)
 
 
+
 data Fram v t = Fram
-  { frMemory             :: Array Int (Cell v t)
-  , frRemains            :: [MicroCode v t]
-  , frProcess            :: Process v t
-  , frAllowBlockingInput :: Bool
-  , frSize               :: Int
-  }
-deriving instance ( Var v, Time t ) => Show (Fram v t)
-
-
-remains get Fram{..} = filter (isJust . get) frRemains
-remainLoops fr = remains getLoop fr
-remainRegs fr = remains getReg fr
-
-
-getReg :: Var v => MicroCode v t -> Maybe (Reg Parcel v)
-getReg MicroCode{..} = castFB fb
-
-getLoop :: Var v => MicroCode v t -> Maybe (Loop Parcel v)
-getLoop MicroCode{..} = castFB fb
-
-
-ioUses fr@Fram{..} =
-  length (filter (\Cell{..} -> input /= Undef || output /= Undef) $ elems frMemory)
-  + length (remainLoops fr)
-
-
-placeForRegExist Fram{ frAllowBlockingInput=True, ..} =
-  any (\Cell{..} -> output /= UsedOrBlocked) $ elems frMemory
-placeForRegExist fr@Fram{ frAllowBlockingInput=False, ..} =
-  any (\Cell{..} -> input /= Undef && output /= UsedOrBlocked) (elems frMemory)
-  || not (null $ remainLoops fr)
-
-
-data IOState v t = Undef
-                 | Def (MicroCode v t)
-                 | UsedOrBlocked
-deriving instance ( Var v, Time t ) => Show (IOState v t)
-deriving instance ( Var v, Time t ) => Eq (IOState v t)
-
-
-
-data Cell v t = Cell
-  { input     :: IOState v t -- Pull
-  , current   :: Maybe (MicroCode v t)
-  , output    :: IOState v t -- Push
-  , lastWrite :: Maybe t
-  }
-deriving instance ( Var v, Time t ) => Show (Cell v t)
-
-
-data MicroCode v t where
-  MicroCode ::
-    { compiler, effect, instruction :: [ProcessUid]
-    , workBegin                     :: Maybe t
-    , fb                            :: FB Parcel v
-    , actions                       :: [EndpointType v]
-    , bindTo                        :: MicroCode v t -> Cell v t -> Either String (Cell v t)
-    } -> MicroCode v t
-
-microcode = MicroCode [] [] [] Nothing
+  { frMemory   :: Array Int (Cell v t)
+  -- | Информация о функциональных блоках, которые необходимо обработать fram-у. Требуют хранения
+  -- дополнительной информации, такой как время привязки функционального блока. Нельзя сразу делать
+  -- привязку к ячейке памяти, так как это будет неэффективно.
+  , frRemains  :: [ (FSet (Fram v t), ProcessUid) ]
+  , frBindedFB :: [ FB Parcel v ]
+  , frProcess  :: Process v t
+  , frSize     :: Int
+  } deriving ( Show )
 
 instance ( Default t ) => Default (Fram v t) where
-  def = Fram { frMemory=listArray (0, size - 1) $ repeat def
+  def = Fram { frMemory=listArray (0, defaultSize - 1) $ cells
+             , frBindedFB=[]
              , frRemains=[]
              , frProcess=def
-             , frAllowBlockingInput=True
-             , frSize=size
+             , frSize=defaultSize
              }
     where
-      size = 16
+      defaultSize = 16
+      cells = map (\(i, c) -> c{ initialValue=0x1000 + i }) $ zip [0..] $ repeat def
+
+instance WithFunctionalBlocks (Fram v t) (FB Parcel v) where
+  functionalBlocks Fram{..} = frBindedFB
+
+
+
+instance FunctionalSet (Fram v t) where
+  data FSet (Fram v t)
+    = FramInput' (FramInput Parcel v)
+    | FramOutput' (FramOutput Parcel v)
+    | Loop' (Loop Parcel v)
+    | Reg' (Reg Parcel v)
+    | Constant' (Constant Parcel v)
+    deriving ( Show, Eq )
+
+instance ( Var v ) => WithFunctionalBlocks (FSet (Fram v t)) (FB Parcel v) where
+  -- TODO: Сделать данную операцию через Generics.
+  functionalBlocks (FramInput' fb)  = [ boxFB fb ]
+  functionalBlocks (FramOutput' fb) = [ boxFB fb ]
+  functionalBlocks (Loop' fb)       = [ boxFB fb ]
+  functionalBlocks (Reg' fb)        = [ boxFB fb ]
+  functionalBlocks (Constant' fb)   = [ boxFB fb ]
+
+instance ( Var v ) => ToFSet (Fram v t) v where
+  toFSet fb0
+    | Just fb@(Constant _ _) <- castFB fb0 = Right $ Constant' fb
+    | Just fb@(Reg _ _) <- castFB fb0 = Right $ Reg' fb
+    | Just fb@(Loop _ _) <- castFB fb0 = Right $ Loop' fb
+    | Just fb@(FramInput _ _) <- castFB fb0 = Right $ FramInput' fb
+    | Just fb@(FramOutput _ _) <- castFB fb0 = Right $ FramOutput' fb
+    | otherwise = Left $ "Fram don't support " ++ show fb0
+
+isReg (Reg' _) = True
+isReg _        = False
+
+
+
+---------------------------------------------------------------------
+
+
+-- | Описание отдельной ячейки памяти.
+data Cell v t = Cell
+  { input        :: IOState v t -- ^ Ячейка позволяет получить значения с предыдущего вычислительного цикла.
+  , current      :: Maybe (Job v t) -- ^ Ячейка в настоящий момент времени используется для работы.
+  , output       :: IOState v t -- ^ Ячейка позволяет передать значение на следующий вычислительный цикл.
+  , lastWrite    :: Maybe t -- ^ Момент последней записи в ячейку (необходим для корректной работы с задержками).
+  , initialValue :: Int -- ^ Значение ячейки после запуска системы (initial секции).
+  } deriving ( Show )
 
 instance Default (Cell v t) where
-  def = Cell Undef Nothing Undef Nothing
+  def = Cell Undef Nothing Undef Nothing 0
 
-instance ( Var v ) => Show (MicroCode v t) where
-  show MicroCode{..} = show actions ++ " " ++ show fb
 
-instance ( Var v ) => Eq (MicroCode v t) where
-  MicroCode{ actions=a } == MicroCode{ actions=b } = a == b
+
+-- | Описание состояния ячейки относительно начала (Input) и конца (Output) вычислительного цикла.
+data IOState v t
+  = Undef -- ^ Ячейка никак не задействована.
+  | Def (Job v t) -- ^ Ячейка будет использоваться для взаимодействия на границе вычислительного цикла.
+  | UsedOrBlocked -- ^ Ячейка либо зарезервирована для использования, либо не может быть использована.
+  deriving ( Show, Eq )
+
+
+
+-- | Данные, необходимые для описания работы вычислительного блока.
+data Job v t
+  = Job { -- | Хранение информации для последующего фиксирования межуровневых взаимосвязей между
+          -- шанами вычислительного процесса.
+          cads, endpoints, instructions :: [ ProcessUid ]
+          -- | Время начала выполнения работы.
+        , startAt                       :: Maybe t
+          -- | Функция, выполняемая в рамках описываемой работы.
+        , functionalBlock               :: FSet (Fram v t)
+          -- | Список действие, которые необходимо выполнить для завершения работы.
+        , actions                       :: [ EndpointType v ]
+        }
+  deriving ( Show, Eq )
+
+instance Default (Job v t) where
+  def = Job def def def def undefined def
+
+
+
+
+-- | Предикат, определяющий время привязки функции к вычислительному блоку. Если возвращается
+-- Nothing - то привязка выполняеся в ленивом режиме, если возвращается Just адрес - то привязка
+-- должна быть выполнена немедленно к указанной ячейки.
+immidiateBindTo (FramInput' (FramInput addr _))   = Just addr
+immidiateBindTo (FramOutput' (FramOutput addr _)) = Just addr
+immidiateBindTo _                                 = Nothing
+
+
+-- | Привязать функцию к указанной ячейке памяти, сформировав описание работы для её выполнения.
+bindToCell cs fb@(FramInput' (FramInput _ (O a))) c@Cell{ input=Undef }
+  = Right c{ input=Def def{ functionalBlock=fb
+                          , cads=cs
+                          , actions=[ Source a ]
+                          }
+           }
+bindToCell cs fb@(FramOutput' (FramOutput _ (I b))) c@Cell{ output=Undef }
+  = Right c{ output=Def def{ functionalBlock=fb
+                           , cads=cs
+                           , actions=[ Target b ]
+                           }
+           }
+bindToCell cs fb@(Reg' (Reg (I a) (O b))) c@Cell{ current=Nothing, .. }
+  | output /= UsedOrBlocked
+  = Right c{ current=Just $ def{ functionalBlock=fb
+                               , cads=cs
+                               , actions=[ Target a, Source b ]
+                               }
+           }
+bindToCell cs fb@(Loop' (Loop (O b) (I a))) c@Cell{ input=Undef, output=Undef }
+  = Right c{ input=Def def{ functionalBlock=fb
+                          , cads=cs
+                          , actions=[ Source b, Target a ]
+                          }
+           }
+-- Всё должно быть хорошо, так как если ячейка ранее использовалась, то input будет заблокирован.
+bindToCell cs fb@(Constant' (Constant x (O b))) c@Cell{ input=Undef, current=Nothing, output=Undef }
+  = Right c{ current=Just $ def{ functionalBlock=fb
+                               , cads=cs
+                               , actions=[ Source b ]
+                               }
+           , input=UsedOrBlocked
+           , output=UsedOrBlocked
+           , initialValue=x
+           }
+bindToCell _ fb cell = Left $ "Can't bind " ++ show fb ++ " to " ++ show cell
+
+
+
+instance ( IOType Parcel v, Var v, Time t, WithFunctionalBlocks (Fram v t) (FB Parcel v) ) => ProcessUnit (Fram v t) v t where
+  bind fb0 pu@Fram{..} = do fb' <- toFSet fb0
+                            pu' <- bind' fb'
+                            if isSchedulingComplete pu'
+                              then Right pu'
+                              else Left "Schedule can't complete stop."
+    where
+      bind' fb | Just addr <- immidiateBindTo fb
+               , let cell = frMemory ! addr
+               , let (cad, frProcess') = modifyProcess frProcess $ bindFB fb0 $ nextTick frProcess
+               , Right cell' <- bindToCell [cad] fb cell
+               = Right pu{ frProcess=frProcess'
+                         , frMemory=frMemory // [(addr, cell')]
+                         , frBindedFB=fb0 : frBindedFB
+                         }
+
+               | Right _ <- bindToCell def fb def
+               , let (cad, frProcess') = modifyProcess frProcess $ bindFB fb0 $ nextTick frProcess
+               = Right pu{ frProcess=frProcess'
+                         , frRemains=(fb, cad) : frRemains
+                         , frBindedFB=fb0 : frBindedFB
+                         }
+
+               | otherwise = Left ""
+
+  process = frProcess
+  setTime t fr@Fram{..} = fr{ frProcess=frProcess{ nextTick=t } }
 
 
 
@@ -133,197 +251,162 @@ instance ( Var v, Time t
 
   options _proxy fr@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
     where
-      fromCells = [ EndpointO v $ constrain cell v
-                  | (_addr, cell@Cell{..}) <- assocs frMemory
-                  , v <- cell2acts allowOutput cell
-                  ]
-      fromRemain = [ EndpointO act $ constrain cell act
-                   | mc@MicroCode { actions=act:_ } <- frRemains
-                   , let aCell = availableCell fr mc
-                   , isJust aCell
-                   , let Just (_addr, cell) = aCell
+      fromRemain = [ EndpointO ep $ constrain c ep
+                   | (fb, cad) <- frRemains
+                   , (c, ep) <- toList $ do
+                       (_addr, cell) <- findCell fr fb
+                       cell' <- bindToCell [cad] fb cell
+                       ep <- cellEndpoints False cell'
+                       return (cell', ep)
                    ]
-      allowOutput = ( frAllowBlockingInput || null fromRemain )
-        && ( null (remainRegs fr) || frSize - numberOfCellForReg > 1 )
+
+      fromCells = [ EndpointO ep $ constrain cell ep
+                  | (_addr, cell@Cell{..}) <- assocs frMemory
+                  , ep <- toList $ cellEndpoints isTargetAllow cell
+                  ]
+
+      -- | Загрузка в память значения на следующий вычислительный цикл не позволяет использовать её
+      -- в качестве регистра на текущем цикле.
+      isTargetAllow = null (filter (isReg . fst) frRemains) && (frSize - numberOfCellForReg > 1)
+      -- | Количество ячеек, которые могут быть использованы для Reg.
       numberOfCellForReg = length $ filter (\Cell{..} -> output == UsedOrBlocked) $ elems frMemory
+
       constrain Cell{..} (Source _)
         | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
         | otherwise              = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
       constrain _cell (Target _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
 
-  decision proxy fr@Fram{ frProcess=p0@Process{ nextTick=tick0 }, .. } act@EndpointD{..}
-    | tick0 > act^.at.infimum
-    = error $ "You can't start work yesterday :) fram time: " ++ show tick0 ++ " action start at: " ++ show (act^.at.infimum)
 
-    | Just mc@MicroCode{ bindTo=bindTo, .. } <- find ((<< epdType) . head . actions) frRemains
-    = case availableCell fr mc of
-        Just (addr, cell) ->
-          let (key, p') = modifyProcess p0 $ bindFB2Cell addr fb tick0
-              Right cell' = bindTo mc{ compiler=key : compiler } cell
-              fr' = fr{ frRemains=filter (/= mc) frRemains
-                      , frMemory=frMemory // [(addr, cell')]
-                      , frProcess=p'
-                      }
-         in decision proxy fr' act
-        Nothing -> error $ "Can't find available cell for: " ++ show fb ++ "!"
+  decision proxy pu@Fram{ frProcess=p@Process{ nextTick=tick0 }, .. } act@EndpointD{..}
+    | isTimeWrap p act = timeWrapError p act
 
-    | Just (addr, cell) <- find (any (<< epdType) . cell2acts True . snd) $ assocs frMemory
+    | Just (fb, cad1) <- find ( anyInAction . variables . fst ) frRemains
+    = either error id $ do
+        (addr, cell) <- findCell pu fb
+
+        let (cad2, p') = modifyProcess p $ bind2CellStep addr fb tick0
+        cell' <- bindToCell [cad1, cad2] fb cell
+        let pu' = pu{ frRemains=filter ((/= fb) . fst) frRemains
+                    , frMemory=frMemory // [(addr, cell')]
+                    , frProcess=p'
+                    }
+        return $ decision proxy pu' act
+
+    | Just (addr, cell) <- find ( any (<< epdType) . cellEndpoints True . snd ) $ assocs frMemory
     = case cell of
-        Cell{ input=Def mc@MicroCode{ actions=act1 : _ } } | act1 << epdType ->
-            let (p', mc') = doAction addr p0 mc
-                cell' = updateLastWrite (nextTick p') cell
-                cell'' = case mc' of
-                  Nothing -> cell'{ input=UsedOrBlocked }
-                  Just mc''@MicroCode{ actions=Source _ : _ } -> cell'{ input=Def mc'' }
-                  Just mc''@MicroCode{ actions=Target _ : _ }
-                    | output cell' == UsedOrBlocked ->
-                        cell'{ input=UsedOrBlocked, output=Def mc'' }
-                  _ -> error "Fram internal error after input process."
-            in fr{ frMemory=frMemory // [(addr, cell'')]
-                 , frProcess=p'
-                 }
-        Cell{ current=Just mc@MicroCode{ actions=act1 : _ } } | act1 << epdType ->
-            let (p', mc') = doAction addr p0 mc
-                cell' = updateLastWrite (nextTick p') cell
-                cell'' = cell'{ input=UsedOrBlocked
-                              , current=mc'
+        Cell{ input=Def job@Job{ actions=a : _ } } | a << epdType
+          ->  let (p', job') = schedule addr job
+                  cell' = updateLastWrite (nextTick p') cell
+                  cell'' = case job' of
+                    Just job''@Job{ actions=Target _ : _, functionalBlock=Loop' _ }
+                      -- Данная ветка работает в случае Loop. "Ручной" перенос работы необходим для
+                      -- сохранения целостности описания вычислительного процесса.
+                      -> cell'{ input=UsedOrBlocked, output=Def job'' }
+                    Just job''@Job{ actions=Source _ : _ } -> cell{ input=Def job'' }
+                    Just _ -> error "Fram internal error after input process."
+                    Nothing -> cell'{ input=UsedOrBlocked }
+              in pu{ frMemory=frMemory // [(addr, cell'')]
+                   , frProcess=p'
+                   }
+        Cell{ current=Just job@Job{ actions=a : _ } } | a << epdType
+          ->  let (p', job') = schedule addr job
+                  cell' = updateLastWrite (nextTick p') cell
+                  cell'' = cell'{ input=UsedOrBlocked
+                                , current=job'
+                                }
+              in pu{ frMemory=frMemory // [(addr, cell'')]
+                   , frProcess=p'
+                   }
+        Cell{ output=Def job@Job{ actions=act1 : _ } } | act1 << epdType
+          ->  let (p', Nothing) = schedule addr job
+                  -- TODO: Вот тут есть потенциальная проблема которую не совсем ясно как можно
+                  -- решить, а именно, если output происходит в последний такт вычислительного цикла
+                  -- а input с него происходит в первый такт вычислительного цикла.
+                  cell' = cell{ input=UsedOrBlocked
+                              , output=UsedOrBlocked
                               }
-            in fr{ frMemory=frMemory // [(addr, cell'')]
-                 , frProcess=p'
-                 }
-        Cell{ output=Def mc@MicroCode{ actions=act1 : _ } } | act1 << epdType ->
-            let (p', _mc') = doAction addr p0 mc
-                -- Вот тут есть потенциальная проблема которую не совсем ясно как можно решить,
-                -- а именно, если output происходит в последний такт вычислительного цикла
-                -- а input с него происходит в первый такт вычислительного цикла.
-                cell' = cell{ input=UsedOrBlocked
-                            , output=UsedOrBlocked
-                            }
-            in fr{ frMemory=frMemory // [(addr, cell')]
-                 , frProcess=p'
-                 }
-        _ -> error "Internal Fram error, step"
+              in pu{ frMemory=frMemory // [(addr, cell')]
+                   , frProcess=p'
+                   }
+        _ -> error "Fram internal decision error."
 
     | otherwise = error $ "Can't found selected action: " ++ show act
-                  ++ " tick: " ++ show (nextTick p0) ++ "\n"
-                  ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options endpointDT fr)
+                  ++ " tick: " ++ show (nextTick p) ++ "\n"
+                  ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options endpointDT pu)
                   ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
                   ++ "remains:\n" ++ concatMap ((++ "\n") . show) frRemains
     where
+      anyInAction = any (`elem` variables act)
+      bind2CellStep addr fb t
+        = add (Event t) $ CADStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
       updateLastWrite t cell | Target _ <- epdType = cell{ lastWrite=Just t }
                              | otherwise = cell{ lastWrite=Nothing }
 
-      doAction addr p mc@MicroCode{..} =
-        let (p', mc'@MicroCode{ actions=acts' }) = mkWork addr p mc
-            result = if null acts'
-              then (finish p' mc', Nothing)
-              else (p', Just mc')
-        in result
+      schedule addr job
+        = let (p', job'@Job{..}) = scheduleWork addr job
+          in if null actions
+            then (finishSchedule p' job', Nothing)
+            else (p', Just job')
 
-      mkWork _addr _p MicroCode{ actions=[] } = error "Fram internal error, mkWork"
-      mkWork addr p mc@MicroCode{ actions=x:xs, ..} =
-        let ((ef, instrs), p') = modifyProcess p $ do
-              e <- add (Activity $ act^.at) $ EndpointStep epdType
-              i1 <- add (Activity $ act^.at)
-                $ InstructionStep (act2Instruction addr epdType :: Instruction (Fram v t))
-              is <- if tick0 < act^.at.infimum
-                then do
-                  i2 <- add (Activity $ tick0 ... act^.at.infimum - 1)
-                    $ InstructionStep (Nop :: Instruction (Fram v t))
-                  return [ i1, i2 ]
-                else return [ i1 ]
-              mapM_ (relation . Vertical ef) instrs
-              setProcessTime $ act^.at.supremum + 1
-              return (e, is)
-        in (p', mc{ effect=ef : effect
-                  , instruction=instrs ++ instruction
-                  , workBegin=workBegin `orElse` Just (act^.at.infimum)
-                  , actions=if x == epdType then xs else (x \\\ epdType) : xs
-                  })
-
-      finish p MicroCode{..} = snd $ modifyProcess p $ do
-        let start = fromMaybe (error "workBegin field is empty!") workBegin
-        h <- add (Activity $ start ... act^.at.supremum) $ FBStep fb
-        mapM_ (relation . Vertical h) compiler
-        mapM_ (relation . Vertical h) effect
-        mapM_ (relation . Vertical h) instruction
+      scheduleWork _addr Job{ actions=[] } = error "Fram:scheudle internal error."
+      scheduleWork addr job@Job{ actions=x:xs, .. }
+        = let ((ep, instrs), p') = modifyProcess p $ do
+                e <- add (Activity $ act^.at) $ EndpointStep $ act^.endType
+                i1 <- addInstr pu (act^.at) $ act2Instruction addr $ act^.endType
+                is <- if tick0 < act^.at.infimum
+                  then do
+                    i2 <- addInstr pu (tick0 ... act^.at.infimum - 1) Nop
+                    return [ i1, i2 ]
+                  else return [ i1 ]
+                mapM_ (relation . Vertical e) instrs
+                setProcessTime $ act^.at.supremum + 1
+                return (e, is)
+          in (p', job{ endpoints=ep : endpoints
+                     , instructions=instrs ++ instructions
+                     , startAt=startAt `orElse` Just (act^.at.infimum)
+                     , actions=if x == act^.endType then xs else (x \\\ (act^.endType)) : xs
+                     })
+      finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
+        let start = fromMaybe (error "startAt field is empty!") startAt
+        h <- add (Activity $ start ... act^.at.supremum) $ FBStep $ fromFSet functionalBlock
+        mapM_ (relation . Vertical h) cads
+        mapM_ (relation . Vertical h) endpoints
+        mapM_ (relation . Vertical h) instructions
 
       act2Instruction addr (Source _) = Load addr
       act2Instruction addr (Target _) = Save addr
 
 
 
+cellEndpoints _allowOutput Cell{ input=Def Job{ actions=x:_ } }    = Right x
+cellEndpoints _allowOutput Cell{ current=Just Job{ actions=x:_ } } = Right x
+cellEndpoints True         Cell{ output=Def Job{actions=x:_ } }    = Right x
+cellEndpoints _ _                                                  = Left undefined
 
 
 
+findCell Fram{..} fb@(Reg' _)
+  = let cs = filter ( isRight . bindToCell [] fb . snd ) $ assocs frMemory
+    in Right $ minimumOn cellLoad cs
+findCell fr (Loop' _)     = findFreeCell fr
+findCell fr (Constant' _) = findFreeCell fr
+findCell _ _               = Left "Not found."
+
+findFreeCell Fram{..}
+  = let cs = filter (\(_, c) -> case c of
+                                  Cell{ input=Undef, current=Nothing, output=Undef } -> True;
+                                  _ -> False
+                    ) $ assocs frMemory
+    in Right $ minimumOn cellLoad cs
+
+cellLoad (_addr, Cell{..}) = sum [ if input == UsedOrBlocked then -2 else 0
+                                 , if output == Undef then -1 else 0
+                                 ] :: Int
 
 
 
+---------------------------------------------------------------------
 
-instance ( IOType Parcel v, Time t ) => ProcessUnit (Fram v t) v t where
-
-  bind fb fr@Fram{ frProcess=p@Process{..}, .. }
-    | Just (Reg (I a) (O b)) <- castFB fb =
-        if placeForRegExist fr
-        then let bindToCell _ Cell{ output=UsedOrBlocked } = Left "Can't bind Reg to Fram"
-                 bindToCell _ Cell{ current=Just _ } = Left "Can't bind Reg to Fram"
-                 bindToCell mc cell@Cell{ input=Undef
-                                        , current=Nothing
-                                        }
-                   | frAllowBlockingInput = Right $ cell{ current=Just mc }
-                 bindToCell mc cell@Cell{ input=UsedOrBlocked
-                                        , current=Nothing
-                                        } = Right $ cell{ current=Just mc }
-                 bindToCell _ _ = Left "Can't bind Reg to Fram"
-                 ( mc', fr' ) = bind' $ microcode fb [ Target a, Source b ] bindToCell
-             in Right fr'{ frRemains=mc' : frRemains }
-        else Left "Can't bind Reg to Fram, place for Reg don't exist."
-
-    | Just (Loop (O bs) (I a)) <- castFB fb =
-        if ioUses fr < frSize
-        then let bindToCell mc cell@Cell{ input=Undef, output=Undef } =
-                   Right cell{ input=Def mc
-                             , output=UsedOrBlocked
-                             }
-                 bindToCell _ cell = Left $ "Can't bind Loop to Fram Cell: " ++ show cell
-                 ( mc', fr' ) = bind' $ microcode fb [ Source bs, Target a ] bindToCell
-             in Right fr'{ frRemains=mc' : frRemains }
-        else Left "Can't bind Loop to Fram, all IO cell already busy."
-
-    | Just (FramInput addr (O v)) <- castFB fb =
-        let bindToCell mc cell@Cell{ input=Undef, .. }
-              | ioUses fr < frSize || (ioUses fr == frSize && output /= Undef)
-              = Right cell{ input=Def mc }
-
-            bindToCell _ cell = Left $ "Can't bind FramInput (" ++ show fb
-                                       ++ ") to Fram Cell: " ++ show cell
-            ( mc', fr' ) = bind' $ microcode fb [ Source v ] bindToCell
-        in fmap (\cell' -> fr'{ frMemory=frMemory // [(addr, cell')]
-                              }) $ bindToCell mc' $ frMemory ! addr
-
-    | Just (FramOutput addr (I v)) <- castFB fb =
-        let bindToCell mc cell@Cell{ output=Undef, .. }
-              | ioUses fr < frSize || (ioUses fr == frSize && input /= Undef)
-              = Right cell{ output=Def mc }
-            bindToCell _ cell = Left $ "Can't bind FramOutput (" ++ show fb
-                                       ++ ") to Fram Cell: " ++ show cell
-            ( mc', fr' ) = bind' $ microcode fb [ Target v ] bindToCell
-        in fmap (\cell' -> fr'{ frMemory=frMemory // [(addr, cell')]
-                              }) $ bindToCell mc' $ frMemory ! addr
-
-    | otherwise = Left $ "Unknown functional block: " ++ show fb
-      where
-        bind' mc =
-          let (key, p') = modifyProcess p $ bindFB fb nextTick
-              mc' = mc{ compiler=key : compiler mc }
-          in ( mc', fr{ frProcess=p' } )
-
-  process = sortPuSteps . frProcess
-  setTime t fr@Fram{..} = fr{ frProcess=frProcess{ nextTick=t } }
-
-
-instance Default (Instruction (Fram v t)) where
-  def = Nop
 
 instance ( Var v, Time t ) => Controllable (Fram v t) where
 
@@ -339,6 +422,8 @@ instance ( Var v, Time t ) => Controllable (Fram v t) where
     | Save Int
     deriving (Show)
 
+instance Default (Instruction (Fram v t)) where
+  def = Nop
 
 getAddr (Load addr) = Just addr
 getAddr (Save addr) = Just addr
@@ -370,66 +455,22 @@ instance UnambiguouslyDecode (Fram v t) where
 instance ( Var v, Time t
          , ProcessUnit (Fram v t) v t
          ) => Simulatable (Fram v t) v Int where
-  variableValue (FB fb) pu@Fram{..} cntx (v, i)
-    | Just (Loop _bs (I a)) <- cast fb, a == v = cntx M.! (v, i)
-
-    | Just (Loop (O bs) _a) <- cast fb, v `elem` bs, i == 0
-    = addr2value $ findAddress v pu
-
-    | Just (Reg (I a) _bs) <- cast fb, a == v = cntx M.! (v, i)
-    | Just (Reg (I a) (O bs)) <- cast fb, v `elem` bs = cntx M.! (a, i)
-
-    | Just (FramInput addr (O bs)) <- cast fb, i == 0, v `elem` bs = addr2value addr
-    | Just (FramOutput _addr (I a)) <- cast fb, v == a = cntx M.! (v, i)
-
-    | otherwise = error $ "Can't simulate " ++ show fb
+  variableValue fb pu@Fram{..} cntx (v, i) = either error id $ do
+    fbs <- toFSet fb
+    return $ variableValue' fbs
     where
       addr2value addr = 0x1000 + addr -- must be coordinated with test bench initialization
+      variableValue' (Constant' (Constant x (O b))) | v `elem` b = x
+      variableValue' (Loop' (Loop _bs (I a))) | a == v = cntx M.! (v, i)
+      variableValue' (Loop' (Loop (O bs) _a)) | v `elem` bs, i == 0 = addr2value $ findAddress v pu
+      variableValue' (Reg' (Reg (I a) _bs)) | a == v = cntx M.! (v, i)
+      variableValue' (Reg' (Reg (I a) (O bs))) | v `elem` bs = cntx M.! (a, i)
 
-
-sortPuSteps p@Process{..} =
-  let hierarchy = foldl (\m (Vertical a b) -> M.adjust (b :) a m)
-                      (M.fromList [(k, []) | k <- map sKey steps])
-                      [x | x@(Vertical _ _) <- relations]
-      (graph, _v2k, k2v) = G.graphFromEdges $ map (\(a, b) -> ((), a, b)) $ M.assocs hierarchy
-      steps' = sortBy (\Step{ sKey=a } Step{ sKey=b } ->
-                       case (k2v a, k2v b) of
-                         (Just a', Just b') ->
-                           let ab = G.path graph a' b'
-                               ba = G.path graph b' a'
-                           in if ab || ba then if ab then LT
-                                                     else GT
-                              else compare a b
-                         _ -> compare a b
-                   ) steps
-  in p{ steps=steps' }
-
-
-bindFB2Cell addr fb t = add (Event t) $ CADStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
-
-
-cell2acts _allowOutput Cell{ input=Def MicroCode{ actions=x:_ } }    = [x]
-cell2acts _allowOutput Cell{ current=Just MicroCode{ actions=x:_ } } = [x]
-cell2acts True         Cell{ output=Def MicroCode{actions=x:_ } }    = [x]
-cell2acts _ _                                                        = []
-
-
-availableCell fr@Fram{..} mc@MicroCode{..} =
-  case filter (\(_addr, cell@Cell{..}) ->
-                 isRight (bindTo mc cell)
-                 && ( frAllowBlockingInput
-                      || isNothing (getReg mc)
-                      || input == UsedOrBlocked )
-                 && ( isNothing (getReg mc)
-                      || null (remainLoops fr)
-                      || frSize - ioUses fr > 1 )
-              ) $ assocs frMemory of
-    []    -> Nothing
-    cells -> Just $ minimumBy (\a b -> load a `compare` load b) cells
-  where
-    load (_addr, Cell{..}) = sum [ if input == UsedOrBlocked then -2 else 0
-                                 , if output == Undef then -1 else 0
-                                 ] :: Int
+      variableValue' (FramInput' (FramInput addr (O bs))) | i == 0, v `elem` bs = addr2value addr
+      variableValue' (FramOutput' (FramOutput _addr (I a))) | v == a = cntx M.! (v, i)
+      variableValue' _ = error $ "Fram can't simulate " ++ show (v, i)
+                              ++ " for " ++ show fb
+                              ++ " in contex " ++ show cntx
 
 
 
@@ -560,8 +601,11 @@ instance ( Time t, Var v ) => Synthesis (Fram v t) where
       , "    .data_out( $DataOut$ ),"
       , "    .attr_out( $AttrOut$ ) "
       , ");"
-      , "integer $name$_i;"
-      , "initial for ( $name$_i = 0; $name$_i < $size$; $name$_i = $name$_i + 1) $name$.bank[$name$_i] <= 32'h1000 + $name$_i;"
-      ] $ ("name", name) : ("size", show frSize): cntx
+      , "initial begin"
+      , S.join "\n"
+          $ map (\(i, Cell{..}) -> "    $name$.bank[" ++ show i ++ "] <= " ++ show initialValue ++ ";")
+          $ assocs frMemory
+      , "end"
+      ] $ ("name", name) : ("size", show frSize) : cntx
   moduleName _ = "pu_fram"
   moduleDefinition = undefined

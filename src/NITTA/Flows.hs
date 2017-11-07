@@ -59,7 +59,7 @@ instance ( Var v ) => Variables (DataFlow v) v where
   -- fixme -- outputs and internal transfers...
   variables s@Paths{..} = dfCond : inputsOfFBs (functionalBlocks s)
 
-instance WithFunctionalBlocks (DataFlow v) Parcel v where
+instance WithFunctionalBlocks (DataFlow v) (FB Parcel v) where
   functionalBlocks (Actor fb) = [fb]
   functionalBlocks (Stage ss) = concatMap functionalBlocks ss
   functionalBlocks Paths{..}  = concatMap (functionalBlocks . snd) dfPaths

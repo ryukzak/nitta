@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 module NITTA.ProcessUnitsSpec where
 
@@ -24,21 +24,11 @@ import           Test.QuickCheck.Monadic
 import           Debug.Trace
 
 
--- | Класс для описания систем команд функциональных блоков. Используется для адресации генерации
--- алгоритмов для вычислительных блоков.
-class FunctionalBlockSet pu v | pu -> v where
-  -- | Тип для представляния системы команд.
-  data FBSet pu v :: *
-  -- | Генератор функционального блока описываемой системы команд.
-  fbSetGen :: Gen (FBSet pu v)
-
-instance ( WithFunctionalBlocks (FBSet pu v) Parcel v ) => Variables (FBSet pu v) v where
-  variables fbs = concatMap variables $ functionalBlocks fbs
-
 -- | Данный генератор создаёт список независимых по переменным функциональных блоков.
-instance {-# OVERLAPS #-} ( Eq v, Variables (FBSet pu v) v, FunctionalBlockSet pu v
-                          ) => Arbitrary [FBSet pu v] where
-  arbitrary = onlyUniqueVar <$> listOf1 fbSetGen
+instance {-# OVERLAPS #-} ( Eq v, Variables (FSet pu) v
+                          , FunctionalSet pu, Arbitrary (FSet pu)
+                          ) => Arbitrary [FSet pu] where
+  arbitrary = onlyUniqueVar <$> listOf1 arbitrary
     where
       onlyUniqueVar = snd . foldl (\(used, fbs) fb -> let vs = variables fb
                                                       in if not $ null (vs `intersect` used)
@@ -54,8 +44,8 @@ processGen proxy = arbitrary >>= processGen' proxy def
   where
     processGen' :: ( DecisionProblem (EndpointDT String Int) EndpointDT pu
                    , ProcessUnit pu String Int
-                   , WithFunctionalBlocks (FBSet pu String) Parcel String
-                   ) => Proxy pu -> pu -> [FBSet pu String] -> Gen (pu, [FB Parcel String])
+                   , WithFunctionalBlocks (FSet pu) (FB Parcel String)
+                   ) => Proxy pu -> pu -> [FSet pu] -> Gen (pu, [FB Parcel String])
     processGen' _ pu specialAlg = endpointWorkGen pu $ concatMap functionalBlocks specialAlg
 
 

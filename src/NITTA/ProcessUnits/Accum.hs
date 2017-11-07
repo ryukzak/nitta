@@ -37,7 +37,7 @@ instance ( Var v, Time t ) => SerialPUState (AccumState v t) Parcel v t where
 
   bindToState fb ac@Accum{ acIn=[], acOut=[] }
     | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[a, b], acOut = cs }
-    | otherwise = Left $ "Unknown functional block or : " ++ show fb
+    | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
   -- тихая ругань по поводу решения

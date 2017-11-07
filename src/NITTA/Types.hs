@@ -102,8 +102,9 @@ data TimeConstrain t
   = TimeConstrain
   { tcAvailable :: Interval t -- ^ Замкнутый интервал, в рамках которого можно выполнить активность.
   , tcDuration  :: Interval t -- ^ Замкнутый интервал допустимой длительности активности.
-  } deriving ( Show, Eq )
-
+  } deriving ( Eq )
+instance ( Show t ) => Show (TimeConstrain t) where
+  show TimeConstrain{..} = show tcAvailable ++ "/P" ++ show tcDuration ++ ""
 
 
 -- | Изначально, для описания времени использовался тип Int. Время отсчитывалось с 0, было линейным
@@ -161,6 +162,27 @@ instance ( Num t, Show tag, Eq tag ) => Num (TaggedTime tag t) where
 -- * Функциональные блоки
 
 
+-- | Семейство типов для описания системы функций вычислительного блока.
+class FunctionalSet pu where
+  -- | Тип для представляния системы команд.
+  data FSet pu :: *
+
+instance ( WithFunctionalBlocks (FSet pu) (FB Parcel v) ) => Variables (FSet pu) v where
+  variables fbs = concatMap variables $ functionalBlocks fbs
+
+
+
+class ToFSet pu v | pu -> v where
+  -- | Преобразование гетерогенного функционального блока в представление системы функций
+  -- вычислительного блока.
+  toFSet :: FB Parcel v -> Either String (FSet pu)
+
+-- | Преобразование из представления системы функций вычислительного блока в гетерогенный
+-- функциональный блок.
+fromFSet f = head $ functionalBlocks f
+
+
+
 -- | Класс функциональных блоков. Описывает все необходмые для работы компилятора свойства.
 -- TODO: Разбить на множество мелких классов, чтобы сократить описание функционального блока.
 class ( Typeable fb
@@ -193,9 +215,9 @@ class ( Typeable fb
 
 
 
-class WithFunctionalBlocks x io v | x -> io, x -> v where
+class WithFunctionalBlocks x fb | x -> fb where
   -- | Получить список связанных функциональных блоков.
-  functionalBlocks :: x -> [FB io v]
+  functionalBlocks :: x -> [fb]
 
 
 
@@ -348,7 +370,7 @@ data EndpointType v
 _        << _                 = False
 
 (Source a) \\\ (Source b) = Source (a L.\\ b)
-_ \\\ _ = error "Only for Pulls"
+a \\\ b = error $ "Can't get sub endpoint for " ++ show a ++ " " ++ show b
 
 instance Variables (EndpointType v) v where
   variables (Source vs) = vs
@@ -369,17 +391,21 @@ instance DecisionType (EndpointDT v t) where
     = EndpointO
     { epoType :: EndpointType v -- ^ Чтение данных из входного регистра PU или запись данных в него.
     , epoAt :: TimeConstrain t -- ^ Временные ограничения на операцию.
-    } deriving ( Show )
+    }
   data Decision (EndpointDT v t)
     = EndpointD
     { epdType :: EndpointType v -- ^ Выбранная операция для взаимодействия с окружающим миром.
     , epdAt :: Interval t -- ^ Положение операции во времени.
-    } deriving ( Show )
+    }
 
 instance Variables (Option (EndpointDT v t)) v where
   variables EndpointO{..} = variables epoType
 instance Variables (Decision (EndpointDT v t)) v where
   variables EndpointD{..} = variables epdType
+instance ( Show v, Show t ) => Show (Option (EndpointDT v t)) where
+  show EndpointO{..} = "option: " ++ show epoType ++ "@(" ++ show epoAt ++ ")"
+instance ( Show v, Show t ) => Show (Decision (EndpointDT v t)) where
+  show EndpointD{..} = "decision: " ++ show epdType ++ "@(" ++ show epdAt ++ ")"
 
 
 

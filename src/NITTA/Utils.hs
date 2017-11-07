@@ -15,11 +15,12 @@ module NITTA.Utils where
 
 import           Control.Monad.State
 import           Data.Default
-import           Data.List           (sortBy)
+import           Data.List           (minimumBy, sortOn)
 import qualified Data.Map            as M
 import           Data.Maybe          (mapMaybe)
 import           Data.Proxy
 import           Data.Typeable       (Typeable, cast)
+import           NITTA.Lens
 import           NITTA.Types
 import           Numeric             (readInt)
 import qualified Numeric.Interval    as I
@@ -83,18 +84,14 @@ getFB Step{ sDesc=FBStep fb }                = Just fb
 getFB Step{ sDesc=NestedStep _ (FBStep fb) } = Just fb
 getFB _                                      = Nothing
 
-getFBs p = mapMaybe getFB
-           $ sortBy (\a b -> stepStart a `compare` stepStart b)
-           $ steps p
+getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
 
 getEndpoint Step{ sDesc=EndpointStep eff }                = Just eff
 getEndpoint Step{ sDesc=NestedStep _ (EndpointStep eff) } = Just eff
 getEndpoint _                                             = Nothing
 
-getEndpoints p = mapMaybe getEndpoint
-               $ sortBy (\a b -> stepStart a `compare` stepStart b)
-               $ steps p
+getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 
 endpointAt t p
   | [eff] <- mapMaybe getEndpoint $ whatsHappen t p = Just eff
@@ -127,9 +124,7 @@ extractInstructionAt pu t
       _   -> error $ "Too many instruction on tick." ++ show is
 
 
-extractInstructions pu = mapMaybe (extractInstruction pu)
-                            $ sortBy (\a b -> stepStart a `compare` stepStart b)
-                            $ steps $ process pu
+extractInstructions pu = mapMaybe (extractInstruction pu) $ sortOn stepStart $ steps $ process pu
 
 
 -- | Собрать список переменных подаваемых на вход указанного списка функциональных блоков. При
@@ -179,3 +174,12 @@ variableValueWithoutFB pu cntx vi@(v, _)
 
 nopFor :: ( Default (Instruction pu) ) => Proxy pu -> Instruction pu
 nopFor _proxy = def
+
+isTimeWrap p act = nextTick p > act^.at.infimum
+timeWrapError p act = error $ "You can't start work yesterday :) fram time: " ++ show (nextTick p) ++ " action start at: " ++ show (act^.at.infimum)
+
+addInstr :: ( Typeable pu, Show (Instruction pu) ) => pu -> I.Interval t -> Instruction pu -> State (Process v t) ProcessUid
+addInstr _pu t i = add (Activity t) $ InstructionStep i
+
+
+minimumOn f = minimumBy (\a b -> f a `compare` f b)

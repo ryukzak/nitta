@@ -13,6 +13,7 @@
 module NITTA.Compiler
   ( bindAll
   , bindAllAndNaiveSchedule
+  , isSchedulingComplete
   , passiveOption2action
   , naive
   , NaiveOpt(..)
@@ -20,7 +21,7 @@ module NITTA.Compiler
 where
 
 import           Data.Default
-import           Data.List        (find, intersect, nub, sortBy)
+import           Data.List        (find, intersect, nub, sort, sortBy, sortOn)
 import qualified Data.Map         as M
 import           Data.Maybe       (catMaybes, isJust, mapMaybe)
 import           Data.Proxy
@@ -30,7 +31,6 @@ import           NITTA.Lens
 import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval ((...))
-
 
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
@@ -49,6 +49,20 @@ bindAllAndNaiveSchedule pu0 alg = naiveSchedule $ bindAll pu0 alg
       | opt : _ <- options endpointDT pu = naiveSchedule $ decision endpointDT pu $ passiveOption2action opt
       | otherwise = pu
 
+
+-- | Проверка является процесс планирования вычислительного процесса полностью завершимым (все
+-- функционаные блоки могут быть выполнены). Данная функция используется для проверки возможности
+-- привязки функционального блока.
+isSchedulingComplete pu
+  = let os = options endpointDT pu
+        d = passiveOption2action $ head os
+        algVars = sort $ concatMap variables $ functionalBlocks pu
+        processVars = sort $ concatMap variables $ getEndpoints $ process pu
+    in if null os
+        then algVars == processVars
+        else isSchedulingComplete $ decision endpointDT pu d
+        -- then trace ("end on: " ++ show processVars ++ " " ++ show algVars) $ algVars == processVars
+        -- else trace ("continue: " ++ show d ++ " " ++ show os) $ isSchedulingComplete $ decision endpointDT pu d
 
 
 -- | Настройки процесса компиляции.
@@ -140,7 +154,7 @@ options2decision branch opts
       _ | not $ null cfOptions  -> Just $ CFDecision $ (\(ControlFlowO cf : _) -> ControlFlowD cf) cfOptions
       _ -> Nothing
   where
-    dfDecision dfOptions = case sortBy (\a b -> start a `compare` start b) dfOptions of
+    dfDecision dfOptions = case sortOn start dfOptions of
       v : _ -> DFDecision $ networkOption2action v
       _     -> error "No variants!"
     start opt = opt^.at.avail.infimum

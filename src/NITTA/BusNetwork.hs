@@ -35,18 +35,17 @@ import           Control.Monad.State
 import           Data.Array
 import           Data.Default
 import           Data.Either
-import           Data.List               (intersect, nub, sortBy, (\\))
-import qualified Data.Map                as M
-import           Data.Maybe              (fromMaybe, isJust, mapMaybe)
+import           Data.List           (intersect, nub, sortOn, (\\))
+import qualified Data.Map            as M
+import           Data.Maybe          (fromMaybe, isJust, mapMaybe)
 import           Data.Proxy
-import qualified Data.String.Utils       as S
+import qualified Data.String.Utils   as S
 import           Data.Typeable
 import           NITTA.Lens
-import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval        (inf, width, (...))
+import           Numeric.Interval    (inf, width, (...))
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
@@ -152,7 +151,16 @@ instance ( Title title, Var v, Time t
   bind fb bn@BusNetwork{..}
     | any (isRight . bind fb) $ M.elems bnPus
     = Right bn{ bnRemains=fb : bnRemains }
-  bind _fb _bn = Left "All sub process units reject the functional block."
+  bind fb BusNetwork{..} = Left $ "All sub process units reject the functional block: " ++ show fb ++ "\n"
+                                ++ rejects
+    where
+      rejects = S.join "\n" $ map showReject $ M.assocs bnPus
+      showReject (title, pu) | Left e <- bind fb pu = "    [" ++ show title ++ "]: " ++ e
+      showReject (title, _) = "    [" ++ show title ++ "]: undefined"
+
+
+
+
 
   process pu@BusNetwork{..} = let
     transportKey = M.fromList
@@ -163,7 +171,7 @@ instance ( Title title, Var v, Time t
       , let (Just (Transport v _ _)) = instr
       ]
     p'@Process{ steps=steps' } = snd $ modifyProcess bnProcess $ do
-      let pus = sortBy (\a b -> fst a `compare` fst b) $ M.assocs bnPus
+      let pus = sortOn fst $ M.assocs bnPus
       mapM (addSubProcess transportKey) pus
 
     in p'{ steps=reverse steps' }
@@ -241,13 +249,10 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
     where
       bindVariants' fb =
         [ BindingO fb puTitle
-        | (puTitle, pu) <- sortByLoad $ M.assocs bnPus
+        | (puTitle, pu) <- sortOn (length . binded . fst) $ M.assocs bnPus
         , isRight $ bind fb pu
         , not $ selfTransport fb puTitle
         ]
-
-      sortByLoad = sortBy (\(a, _) (b, _) -> load a `compare` load b)
-      load = length . binded
 
       selfTransport fb puTitle =
         not $ null $ variables fb `intersect` concatMap variables (binded puTitle)
