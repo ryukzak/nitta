@@ -53,7 +53,7 @@ instance ( Var v, Time t ) => SerialPUState (AccumState v t) Parcel v t where
   schedule st@Accum{ acIn=vs@(_:_) } act
     | not $ null $ vs `intersect` variables act
     = let st' = st{ acIn=vs \\ variables act }
-          work = serialSchedule (Proxy :: Proxy (Accum v t)) ( act)
+          work = serialSchedule (Proxy :: Proxy (Accum v t)) act
             $ if length vs == 2
               then Init False
               else Load False
@@ -61,7 +61,7 @@ instance ( Var v, Time t ) => SerialPUState (AccumState v t) Parcel v t where
   schedule st@Accum{ acIn=[], acOut=vs } act
     | not $ null $ vs `intersect` variables act
     = let st' = st{ acOut=vs \\ variables act }
-          work = serialSchedule (Proxy :: Proxy (Accum v t)) ( act) Out
+          work = serialSchedule (Proxy :: Proxy (Accum v t)) act Out
       in (st', work)
   schedule _ _ = error "Accum schedule error!"
 

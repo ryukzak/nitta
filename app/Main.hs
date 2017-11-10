@@ -1,17 +1,10 @@
-{-# LANGUAGE Arrows                 #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE LambdaCase             #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE Rank2Types             #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE StandaloneDeriving     #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE TupleSections          #-}
-{-# LANGUAGE UndecidableInstances   #-}
--- {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE Rank2Types            #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TupleSections         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Main where
 
@@ -95,7 +88,7 @@ bushExample
           ]
         net' = bindAll (functionalBlocks dataFlow) (net :: BusNetwork String String T)
         initialBranch = Branch net' (dataFlow2controlFlow dataFlow) Nothing []
-        Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch (take 50 $ repeat ())
+        Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
     in pu
 
 
@@ -156,7 +149,7 @@ branchExample
         dataFlow = Stage $ map Actor alg
         net' = bindAll (functionalBlocks dataFlow) (net :: BusNetwork String String T)
         initialBranch = Branch net' (dataFlow2controlFlow dataFlow) Nothing []
-        Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch (take 50 $ repeat ())
+        Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
     in pu
 
 

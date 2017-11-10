@@ -6,7 +6,6 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -95,7 +94,7 @@ data Fram v t = Fram
   } deriving ( Show )
 
 instance ( Default t ) => Default (Fram v t) where
-  def = Fram { frMemory=listArray (0, defaultSize - 1) $ cells
+  def = Fram { frMemory=listArray (0, defaultSize - 1) cells
              , frBindedFB=[]
              , frRemains=[]
              , frProcess=def

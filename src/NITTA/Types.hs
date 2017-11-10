@@ -502,7 +502,7 @@ instance ProcessUnit (PU v t) v t where
   setTime t (PU pu) = PU $ setTime t pu
 
 instance Simulatable (PU v t) v Int where
-  variableValue fb (PU pu) cntx vi = variableValue fb pu cntx vi
+  variableValue fb (PU pu) = variableValue fb pu
 
 
 instance Synthesis (PU v t) where

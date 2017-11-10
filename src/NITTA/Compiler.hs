@@ -1,13 +1,11 @@
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE LambdaCase             #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE PartialTypeSignatures  #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Compiler
@@ -20,6 +18,7 @@ module NITTA.Compiler
   )
 where
 
+import           Control.Arrow    (second)
 import           Data.Default
 import           Data.List        (find, intersect, nub, sort, sortBy, sortOn)
 import qualified Data.Map         as M
@@ -66,7 +65,7 @@ isSchedulingComplete pu
 
 
 -- | Настройки процесса компиляции.
-data NaiveOpt = NaiveOpt
+newtype NaiveOpt = NaiveOpt
   { -- | Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
     -- привязка функциональных блоков.
     threshhold :: Int
@@ -381,14 +380,14 @@ passiveOption2action d@EndpointO{..}
 networkOption2action DataFlowO{..}
   = let pushTimeConstrains = map snd $ catMaybes $ M.elems dfoTargets
         predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
-        pullStart    = maximum $ ((snd dfoSource)^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
-        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ (snd dfoSource) : pushTimeConstrains
+        pullStart    = maximum $ (snd dfoSource^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
+        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd dfoSource : pushTimeConstrains
         pullEnd = pullStart + pullDuration - 1
         pushStart = pullStart + 1
 
         mkEvent (from, tc@TimeConstrain{..})
           = Just (from, pushStart ... (pushStart + tc^.dur.infimum - 1))
-        pushs = map (\(var, timeConstrain) -> (var, maybe Nothing mkEvent timeConstrain) ) $ M.assocs dfoTargets
+        pushs = map (second $ maybe Nothing mkEvent) $ M.assocs dfoTargets
     in DataFlowD{ dfdSource=( fst dfoSource, pullStart ... pullEnd )
                 , dfdTargets=M.fromList pushs
                 }

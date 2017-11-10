@@ -1,7 +1,6 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {-
@@ -21,7 +20,7 @@ framDefSize = frSize (def :: Fram () ())
 framAddrGen = choose (0, framDefSize - 1)
 
 
-outputVarsGen = O <$> (resize 3 $ listOf1 $ vectorOf 3 $ elements ['a'..'z'])
+outputVarsGen = O <$> resize 3 (listOf1 $ vectorOf 3 $ elements ['a'..'z'])
 inputVarGen = I <$> vectorOf 3 (elements ['a'..'z'])
 
 

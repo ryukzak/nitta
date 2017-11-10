@@ -70,7 +70,7 @@ data GBusNetwork title spu v t =
     , bnWires              :: Array Int [(title, S)]
     }
 type BusNetwork title v t = GBusNetwork title (PU v t) v t
-busNetwork pus wires = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wires
+busNetwork pus = BusNetwork [] [] (M.fromList []) def (M.fromList pus)
 
 
 

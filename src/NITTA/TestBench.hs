@@ -13,15 +13,15 @@
 
 module NITTA.TestBench where
 
-import           Control.Monad.State
-import           Data.List           (isSubsequenceOf)
-import qualified Data.List           as L
-import qualified Data.Map            as M
-import           Data.String.Utils   (replace)
+import           Control.Monad     (when)
+import           Data.List         (isSubsequenceOf)
+import qualified Data.List         as L
+import qualified Data.Map          as M
+import           Data.String.Utils (replace)
 import           NITTA.Types
 import           System.Directory
 import           System.Exit
-import           System.FilePath     (joinPath, pathSeparator)
+import           System.FilePath   (joinPath, pathSeparator)
 import           System.Process
 
 
@@ -75,11 +75,10 @@ runTestBench library workdir pu = do
   (simExitCode, simOut, simErr)
     <- readCreateProcessWithExitCode (shell "./a.out"){ cwd=Just workdir } []
   -- Yep, we can't stop simulation with bad ExitCode...
-  if simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut
-    then do
-      putStrLn $ "sim stdout:\n-------------------------\n" ++ simOut
-      putStrLn $ "sim stderr:\n-------------------------\n" ++ simErr
-    else return () -- putStrLn $ "Simulation correct"
+
+  when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut) $ do
+    putStrLn $ "sim stdout:\n-------------------------\n" ++ simOut
+    putStrLn $ "sim stderr:\n-------------------------\n" ++ simErr
 
   return $ not ("FAIL" `isSubsequenceOf` simOut)
 
@@ -90,7 +89,7 @@ createIVerilogProcess library workdir pu
   = let cp = proc "iverilog" iverilogArgs
     in cp { cwd=Just workdir }
   where
-    iverilogArgs = L.nub $ concatMap (args "") $ hardware pu : testEnviroment undefined pu : []
+    iverilogArgs = L.nub $ concatMap (args "") [ hardware pu, testEnviroment undefined pu ]
 
     args p (Project p' subInstances) = concatMap (args $ joinPath [p, p']) subInstances
     args p (Immidiate fn _) = [ joinPath [ p, fn ] ]

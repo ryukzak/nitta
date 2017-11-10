@@ -1,10 +1,9 @@
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 module NITTA.ProcessUnitsSpec where
@@ -107,7 +106,7 @@ prop_completness (pu, fbs0)
         in    processFBs == fbs -- функции в алгоритме соответствуют выполненным функциям в процессе
           && processVars == algVars -- пересылаемые данные в алгоритме соответствуют пересылаемым данным в процессе
           || trace (  "delta vars: " ++ show (algVars \\ processVars) ++ "\n"
-                    ++ "fbs: " ++ (concatMap ((\fb -> (if fb `elem` processFBs then "+" else "-") ++ "\t" ++ show fb ++ "\n" )) fbs) ++ "\n"
+                    ++ "fbs: " ++ concatMap (\fb -> (if fb `elem` processFBs then "+" else "-") ++ "\t" ++ show fb ++ "\n" ) fbs ++ "\n"
                     ++ "fbs: " ++ show processFBs ++ "\n"
                     ++ "algVars: " ++ show algVars ++ "\n"
                     ++ "processVars: " ++ show processVars ++ "\n"
