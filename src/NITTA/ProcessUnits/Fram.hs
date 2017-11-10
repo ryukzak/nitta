@@ -139,6 +139,9 @@ instance ( Var v ) => ToFSet (Fram v t) v where
 isReg (Reg' _) = True
 isReg _        = False
 
+isConstOrLoop (Constant' _) = True
+isConstOrLoop (Loop' _)     = True
+isConstOrLoop _             = False
 
 
 ---------------------------------------------------------------------
@@ -270,12 +273,13 @@ instance ( Var v, Time t
                    EndpointDT (Fram v t)
          where
 
-  options _proxy fr@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
+  options _proxy pu@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
     where
       fromRemain = [ EndpointO ep $ constrain c ep
                    | (fb, cad) <- frRemains
+                   , not (isReg fb) || isSourceBlockAllow
                    , (c, ep) <- toList $ do
-                       (_addr, cell) <- findCell fr fb
+                       (_addr, cell) <- findCell pu fb
                        cell' <- bindToCell [cad] fb cell
                        ep <- cellEndpoints False cell'
                        return (cell', ep)
@@ -283,14 +287,18 @@ instance ( Var v, Time t
 
       fromCells = [ EndpointO ep $ constrain cell ep
                   | (_addr, cell@Cell{..}) <- assocs frMemory
-                  , ep <- toList $ cellEndpoints isTargetAllow cell
+                  , ep <- toList $ cellEndpoints isTargetBlockAllow cell
                   ]
 
       -- | Загрузка в память значения на следующий вычислительный цикл не позволяет использовать её
       -- в качестве регистра на текущем цикле.
-      isTargetAllow = null (filter (isReg . fst) frRemains) && (frSize - numberOfCellForReg > 1)
-      -- | Количество ячеек, которые могут быть использованы для Reg.
-      numberOfCellForReg = length $ filter (\Cell{..} -> output == UsedOrBlocked) $ elems frMemory
+      isTargetBlockAllow = let need = length $ filter (isReg . fst) frRemains
+                               allow = length $ filter (\Cell{..} -> output /= UsedOrBlocked) $ elems frMemory
+                               reserved = length $ filter (isConstOrLoop . fst) frRemains
+                               in need == 0 || allow - reserved > 1
+      isSourceBlockAllow = let reserved = length (filter (isConstOrLoop . fst) frRemains)
+                               allow = length $ filter (\Cell{..} -> input == Undef && output == Undef) $ elems frMemory
+                               in reserved == 0 || reserved < allow
 
       constrain Cell{..} (Source _)
         | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
@@ -403,26 +411,29 @@ instance ( Var v, Time t
 
 
 
-cellEndpoints _allowOutput Cell{ input=Def Job{ actions=x:_ } }    = Right x
-cellEndpoints _allowOutput Cell{ current=Just Job{ actions=x:_ } } = Right x
-cellEndpoints True         Cell{ output=Def Job{actions=x:_ } }    = Right x
-cellEndpoints _ _                                                  = Left undefined
+cellEndpoints _blockAllow Cell{ input=Def Job{ actions=x:_ } }    = Right x
+cellEndpoints _blockAllow Cell{ current=Just Job{ actions=x:_ } } = Right x
+cellEndpoints True        Cell{ output=Def Job{actions=x:_ } }    = Right x
+cellEndpoints _ _                                                 = Left undefined
 
 
 
 findCell Fram{..} fb@(Reg' _)
-  = let cs = filter ( isRight . bindToCell [] fb . snd ) $ assocs frMemory
-    in Right $ minimumOn cellLoad cs
+  | let cs = filter ( isRight . bindToCell [] fb . snd ) $ assocs frMemory
+  , not $ null cs
+  = Right $ minimumOn cellLoad cs
 findCell fr (Loop' _)     = findFreeCell fr
 findCell fr (Constant' _) = findFreeCell fr
 findCell _ _               = Left "Not found."
 
 findFreeCell Fram{..}
-  = let cs = filter (\(_, c) -> case c of
+  | let cs = filter (\(_, c) -> case c of
                                   Cell{ input=Undef, current=Nothing, output=Undef } -> True;
                                   _ -> False
                     ) $ assocs frMemory
-    in Right $ minimumOn cellLoad cs
+  , not $ null cs
+  = Right $ minimumOn cellLoad cs
+findFreeCell _ = Left "Not found."
 
 cellLoad (_addr, Cell{..}) = sum [ if input == UsedOrBlocked then -2 else 0
                                  , if output == Undef then -1 else 0
@@ -501,35 +512,71 @@ instance ( Var v, Time t
 
 ---------------------------------------------------
 
-instance TestBenchRun (Fram v t) where
-  buildArgs _ = [ "hdl/pu_fram.v"
-                , "hdl/pu_fram_tb.v"
-                ]
-
 instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
+  testEnviroment cntx0 pu@Fram{ frProcess=p@Process{..}, .. }
+    = Immidiate (name pu ++ "_tb.v") testBenchImp
+    where
+      cntx = let vs = [ v | eff <- getEndpoints p
+                      , v <- variables eff
+                      ]
+             in foldl ( \cntx' v ->
+                         M.insert (v, 0)
+                                   (variableValueWithoutFB pu cntx' (v, 0))
+                                   cntx'
+                      ) cntx0 vs
 
-  components _ =
-    [ ( "hdl/gen/pu_fram_inputs.v", testInputs )
-    , ( "hdl/gen/pu_fram_signals.v", testSignals )
-    , ( "hdl/gen/pu_fram_outputs.v", testOutputs )
-    ]
+      testBenchImp = renderST
+        [ "module $moduleName$_tb();                                                                                 "
+        , "parameter DATA_WIDTH = 32;                                                                                "
+        , "parameter ATTR_WIDTH = 4;                                                                                 "
+        , "                                                                                                          "
+        , "reg clk, rst, wr, oe;                                                                                     "
+        , "reg [3:0] addr;                                                                                           "
+        , "reg [DATA_WIDTH-1:0]  data_in;                                                                            "
+        , "reg [ATTR_WIDTH-1:0]  attr_in;                                                                            "
+        , "wire [DATA_WIDTH-1:0] data_out;                                                                           "
+        , "wire [ATTR_WIDTH-1:0] attr_out;                                                                           "
+        , "                                                                                                          "
+        , "pu_fram                                                                                                   "
+        , "  #( .RAM_SIZE( 16 )                                                                                      "
+        , "  ,  .DATA_WIDTH( 32 )                                                                                    "
+        , "  ,  .ATTR_WIDTH( 4 )                                                                                     "
+        , "  ) fram (                                                                                                "
+        , "  .clk(clk),                                                                                              "
+        , "  .signal_addr(addr),                                                                                     "
+        , "  .signal_wr(wr),                                                                                         "
+        , "  .data_in(data_in),                                                                                      "
+        , "  .attr_in(attr_in),                                                                                      "
+        , "  .signal_oe(oe),                                                                                         "
+        , "  .data_out(data_out),                                                                                    "
+        , "  .attr_out(attr_out)                                                                                     "
+        , "  );                                                                                                      "
+        , "                                                                                                          "
+        , verilogWorkInitialze
+        , verilogClockGenerator
+        , "                                                                                                          "
+        , "initial                                                                                                   "
+        , "  begin                                                                                                   "
+        , "    \\$dumpfile(\"$moduleName$_tb.vcd\");                                                                 "
+        , "    \\$dumpvars(0, $moduleName$_tb);                                                                      "
+        , "    @(negedge rst);                                                                                       "
+        , "    forever @(posedge clk);                                                                               "
+        , "  end                                                                                                     "
+        , "                                                                                                          "
+        , initial_finish $ controlSignals pu
+        , initial_finish $ testDataInput pu cntx
+        , initial_finish $ testDataOutput pu cntx
+        , "                                                                                                          "
+        , "endmodule                                                                                                 "
+        ]
+        [ ("moduleName", name pu)
+        ]
 
-  simulateContext fr@Fram{ frProcess=p@Process{..}, .. } cntx =
-    let vs = [ v | eff <- getEndpoints p
-                 , v <- variables eff
-                 ]
-    in foldl ( \cntx' v ->
-                 M.insert (v, 0)
-                          (variableValueWithoutFB fr cntx' (v, 0))
-                          cntx'
-             ) cntx vs
 
-
-
-testSignals fram@Fram{ frProcess=Process{..}, ..} _cntx
-  = concatMap ( (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. nextTick + 1 ]
+controlSignals pu@Fram{ frProcess=Process{..}, ..}
+  = concatMap ( ("      " ++) . (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. nextTick + 1 ]
   where
-    signalsAt time = map (signalAt fram time)
+    signalsAt time = map (signalAt pu time)
                      [ OE, WR, ADDR 3, ADDR 2, ADDR 1, ADDR 0 ]
     showSignals = (\[oe, wr, a3, a2, a1, a0] ->
                       "oe <= 'b" ++ oe
@@ -540,17 +587,15 @@ testSignals fram@Fram{ frProcess=Process{..}, ..} _cntx
                       ++ "; addr[0] <= 'b" ++ a0 ++ ";"
                   ) . map show
 
-
-
-testInputs Fram{ frProcess=p@Process{..}, ..} cntx
-  = concatMap ( (++ " @(negedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
+testDataInput Fram{ frProcess=p@Process{..}, ..} cntx
+  = concatMap ( ("      " ++) . (++ " @(negedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
   where
     busState t
-      | Just (Target v) <- endpointAt t p = "value_i <= " ++ show (cntx M.! (v, 0)) ++ ";"
+      | Just (Target v) <- endpointAt t p = "data_in <= " ++ show (cntx M.! (v, 0)) ++ ";"
       | otherwise = "/* NO INPUT */"
 
-testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
-  = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
+testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
+  = concatMap ( ("      @(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
   where
     busState t
       | Just (Source (v : _)) <- endpointAt t p
@@ -559,17 +604,17 @@ testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
       = "/* NO OUTPUT */"
 
     checkBus v value = concat
-      [ "if ( !( value_o == " ++ show value ++ " ) ) "
-      ,   "$display("
+      [ "if ( !( data_out == " ++ show value ++ " ) ) "
+      ,   "\\$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " on the bus! "
       ,       "(got: %h expect: %h)"
       ,     "\","
-      ,     "value_o, " ++ show value
+      ,     "data_out, " ++ show value
       ,   ");"
       ]
 
-    bankCheck = "\n\n@(posedge clk);\n"
+    bankCheck = "\n\n@(posedge clk);"
       ++ concat [ checkBank addr v (cntx M.! (v, 0))
                 | Step{ sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
                 , let addr_v = outputStep fb
@@ -584,12 +629,12 @@ testOutputs pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
     checkBank addr v value = concat
       [ "if ( !( fram.bank[" ++ show addr ++ "] == " ++ show value ++ " ) ) "
-      ,   "$display("
+      ,   "\\$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
       ,       "(got: %h expect: %h)"
       ,     "\","
-      ,     "value_o, " ++ show value
+      ,     "data_out, " ++ show value
       ,   ");"
       ]
     show' s = filter (/= '\"') $ show s
@@ -610,27 +655,27 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
 
 
 instance ( Time t, Var v ) => Synthesis (Fram v t) where
-  moduleInstance Fram{..} name cntx
-    = renderST
-      [ "pu_fram "
-      , "    #( .RAM_SIZE( $size$ )"
-      , "     ) $name$ ("
-      , "    .clk( $Clk$ ),"
-      , "    .signal_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } ),"
-      , ""
-      , "    .signal_wr( $WR$ ),"
-      , "    .data_in( $DataIn$ ),"
-      , "    .attr_in( $AttrIn$ ),"
-      , ""
-      , "    .signal_oe( $OE$ ),"
-      , "    .data_out( $DataOut$ ),"
-      , "    .attr_out( $AttrOut$ ) "
-      , ");"
-      , "initial begin"
-      , S.join "\n"
-          $ map (\(i, Cell{..}) -> "    $name$.bank[" ++ show i ++ "] <= " ++ show initialValue ++ ";")
-          $ assocs frMemory
-      , "end"
-      ] $ ("name", name) : ("size", show frSize) : cntx
-  moduleName _ = "pu_fram"
-  moduleDefinition = undefined
+  name _ = "pu_fram"
+  hardwareInstance Fram{..} n cntx = renderST
+    [ "pu_fram "
+    , "    #( .RAM_SIZE( $size$ )"
+    , "     ) $name$ ("
+    , "    .clk( $Clk$ ),"
+    , "    .signal_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } ),"
+    , ""
+    , "    .signal_wr( $WR$ ),"
+    , "    .data_in( $DataIn$ ),"
+    , "    .attr_in( $AttrIn$ ),"
+    , ""
+    , "    .signal_oe( $OE$ ),"
+    , "    .data_out( $DataOut$ ),"
+    , "    .attr_out( $AttrOut$ ) "
+    , ");"
+    , "initial begin"
+    , S.join "\n"
+        $ map (\(i, Cell{..}) -> "    $name$.bank[" ++ show i ++ "] <= " ++ show initialValue ++ ";")
+        $ assocs frMemory
+    , "end"
+    ] $ ("name", n) : ("size", show frSize) : cntx
+  hardware pu = FromLibrary $ name pu ++ ".v"
+  software _ = Empty

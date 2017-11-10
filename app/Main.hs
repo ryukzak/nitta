@@ -37,6 +37,7 @@ import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
 import           NITTA.Utils
+import           System.FilePath          (joinPath)
 import           Text.StringTemplate
 
 type T = TaggedTime String Int
@@ -92,7 +93,7 @@ bushExample
             , (1, Stage [ Actor $ FB.reg (I "x2") $ O ["y2"], Actor $ FB.framOutput 11 $ I "y2" ])
             ]
           ]
-        net' = bindAll (net :: BusNetwork String String T) $ functionalBlocks dataFlow
+        net' = bindAll (functionalBlocks dataFlow) (net :: BusNetwork String String T)
         initialBranch = Branch net' (dataFlow2controlFlow dataFlow) Nothing []
         Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch (take 50 $ repeat ())
     in pu
@@ -153,7 +154,7 @@ branchExample
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
         dataFlow = Stage $ map Actor alg
-        net' = bindAll (net :: BusNetwork String String T) $ functionalBlocks dataFlow
+        net' = bindAll (functionalBlocks dataFlow) (net :: BusNetwork String String T)
         initialBranch = Branch net' (dataFlow2controlFlow dataFlow) Nothing []
         Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch (take 50 $ repeat ())
     in pu
@@ -164,7 +165,7 @@ branchExample
 
 main = do
   timeline "resource/data.json" branchExample
-  r <- testBench branchExample ([] :: [(String, Int)])
+  r <- testBench ".." (joinPath ["hdl", "gen"]) branchExample ([] :: [(String, Int)])
   if r then putStrLn "Success"
   else putStrLn "Fail"
   print "ok"

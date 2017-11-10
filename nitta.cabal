@@ -30,6 +30,7 @@ library
                      , NITTA.ProcessUnits.SerialPU
   build-depends:       base >= 4.7 && < 5
                      , containers
+                     , filepath
                      , process
                      , bytestring
                      , data-default
@@ -53,12 +54,12 @@ library
 executable nitta-exe
   hs-source-dirs:      app
   main-is:             Main.hs
-  -- ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , bytestring
                      , nitta
                      , hspec
                      , process
+                     , filepath
                      , data-default
                      , containers
                      , mtl
@@ -91,7 +92,9 @@ test-suite nitta-test
                      , process
                      , random
                      , text
+                     , filepath
                      , containers
+                     , atomic-primops
                      , mtl
                      , syb
                      , lens

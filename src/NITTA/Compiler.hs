@@ -34,7 +34,7 @@ import           Numeric.Interval ((...))
 
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
-bindAll pu fbs = fromRight (error "Can't bind FB to PU!") $ foldl nextBind (Right pu) fbs
+bindAll fbs pu = fromRight (error "Can't bind FB to PU!") $ foldl nextBind (Right pu) fbs
   where
     nextBind (Right pu') fb = bind fb pu'
     nextBind (Left r) _     = error r
@@ -43,7 +43,7 @@ bindAll pu fbs = fromRight (error "Can't bind FB to PU!") $ foldl nextBind (Righ
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку и наивным
 -- образом спланировать вычислительный процесса пасивного блока обработки данных (PUClass Passive).
-bindAllAndNaiveSchedule pu0 alg = naiveSchedule $ bindAll pu0 alg
+bindAllAndNaiveSchedule alg pu0 = naiveSchedule $ bindAll alg pu0
   where
     naiveSchedule pu
       | opt : _ <- options endpointDT pu = naiveSchedule $ decision endpointDT pu $ passiveOption2action opt

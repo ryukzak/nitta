@@ -8,6 +8,7 @@
 module Main where
 
 import           Data.Array                  (array)
+import           Data.Atomics.Counter
 import           Data.Default
 import           NITTA.BusNetwork
 import           NITTA.Compiler
@@ -20,36 +21,36 @@ import           NITTA.ProcessUnitsSpec
 import           NITTA.TestBench
 import           NITTA.Types
 import           System.Environment
+import           System.FilePath             (joinPath)
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck       as QC
 
 
 main = do
-  setEnv "TASTY_QUICKCHECK_TESTS" "10"
-  -- TODO: Это не порядок. Необходимо:
-  -- 1) распараллелить (убрать колизии по файлам при симуляции);
-  -- 2) в ram fs положить.
-  setEnv "TASTY_NUM_THREADS" "1"
+  -- Используется для того, что бы раскладывать файлы в разные папки при симуляции.
+  counter <- newCounter 0
+  setEnv "TASTY_QUICKCHECK_TESTS" "100"
+  -- TODO: Положть gen в ram fs, нечего насиловать диск.
   defaultMain $ testGroup "NITTA tests"
     [ testGroup "Fram unittests" huFramTests
-    , testGroup "Fram quickcheck" qcFramTests
+    , testGroup "Fram quickcheck" (qcFramTests counter)
     , testGroup "BusNetwork unittests" [ accum_fram1_fram2_netTests ]
     ]
 
-
-qcFramTests
+qcFramTests counter
   = [ QC.testProperty "Fram completeness" $ fmap prop_completness $ processGen framProxy
-    , QC.testProperty "Fram simulation" $ fmap prop_simulation $ inputsGen =<< processGen framProxy
+    , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram_" counter) $ inputsGen =<< processGen framProxy
     ]
 
 huFramTests
   = let alg = [ FB.reg (I "aa") $ O ["ab"]
               , FB.framOutput 9 $ I "ac"
               ]
-        fram = (def :: Fram String Int)
-        fram' = bindAllAndNaiveSchedule fram alg
-    in [ testCase "Simple unit test" $ assert (testBench fram' [("aa", 42), ("ac", 0x1009)])
+        fram = bindAllAndNaiveSchedule alg (def :: Fram String Int)
+        library = joinPath ["..", ".."]
+        workdir = joinPath ["hdl", "gen", "unittest_fram"]
+    in [ testCase "Simple unit test" $ assert (testBench library workdir fram [("aa", 42), ("ac", 0x1009)])
        ]
 
 
@@ -107,9 +108,11 @@ accum_fram1_fram2_netTests
               , FB.reg (I "f") $ O ["g"]
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
-        net' = bindAll (net :: BusNetwork String String T) alg
+        net' = bindAll alg (net :: BusNetwork String String T)
         compiler = F.Branch net' (dataFlow2controlFlow $ F.Stage $ map Actor alg) Nothing []
         F.Branch{ topPU=net''
                 } = foldl (\comp _ -> naive def comp) compiler (take 150 $ repeat ())
+        library = joinPath ["..", ".."]
+        workdir = joinPath ["hdl", "gen", "unittest_accum_fram1_fram2_net"]
     in testCase "Obscure integration test for net of accum, fram1, fram2"
-          $ assert $ testBench net'' ([] :: [(String, Int)])
+          $ assert $ testBench library workdir net'' ([] :: [(String, Int)])

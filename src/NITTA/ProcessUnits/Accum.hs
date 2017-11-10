@@ -110,7 +110,7 @@ instance Simulatable (Accum v t) v Int where
 
 
 instance Synthesis (Accum v t) where
-  moduleInstance _pu name cntx
+  hardwareInstance _pu n cntx
     = renderST
       [ "pu_accum $name$ ("
       , "    .clk( $Clk$ ),"
@@ -126,6 +126,7 @@ instance Synthesis (Accum v t) where
       , "    .attr_out( $AttrOut$ )"
       , ");"
       , "initial $name$.acc <= 0;"
-      ] $ ("name", name) : cntx
-  moduleName _ = "pu_accum"
-  moduleDefinition = undefined
+      ] $ ("name", n) : cntx
+  name _ = "pu_accum"
+  hardware pu = FromLibrary $ name pu ++ ".v"
+  software _ = Empty

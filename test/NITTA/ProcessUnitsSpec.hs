@@ -9,15 +9,16 @@
 
 module NITTA.ProcessUnitsSpec where
 
+import           Data.Atomics.Counter
 import           Data.Default
-import           Data.List               (intersect, sort)
+import           Data.List               (intersect, sort, (\\))
 import           Data.Proxy
-import           Data.Set                (fromList, (\\))
 import           NITTA.Compiler
 import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
 import           NITTA.Utils
+import           System.FilePath         (joinPath)
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
 
@@ -31,7 +32,7 @@ instance {-# OVERLAPS #-} ( Eq v, Variables (FSet pu) v
   arbitrary = onlyUniqueVar <$> listOf1 arbitrary
     where
       onlyUniqueVar = snd . foldl (\(used, fbs) fb -> let vs = variables fb
-                                                      in if not $ null (vs `intersect` used)
+                                                      in if null (vs `intersect` used)
                                                         then ( vs ++ used, fb:fbs )
                                                         else ( used, fbs ) )
                                   ([], [])
@@ -87,20 +88,28 @@ inputsGen (pu, fbs) = do
 
 -- | Проверка вычислительного блока на соответсвие работы аппаратной реализации и его модельного
 -- поведения.
-prop_simulation (pu, _fbs, values) = monadicIO $ do
-  res <- run $ testBench pu values
+prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
+  i <- run $ incrCounter 1 counter
+  let path = joinPath ["hdl", "gen", n ++ show i]
+  res <- run $ testBench "../.." path pu values
+  run $ timeline (joinPath [path, "data.json"]) pu
   run $ timeline "resource/data.json" pu
   assert res
 
 
--- | Проверка полноты выполнения работы вычислительного блока.
-prop_completness (pu, fbs)
+-- | Формальнаяа проверка полноты выполнения работы вычислительного блока.
+prop_completness (pu, fbs0)
   = let p = process pu
         processVars = sort $ concatMap variables $ getEndpoints p
         algVars = sort $ concatMap variables fbs
-        processFBs = getFBs p
-    in    processFBs == fbs -- функции в алгоритме соответствуют выполненным функциям в процессе
-       && processVars == algVars -- пересылаемые данные в алгоритме соответствуют пересылаемым данным в процессе
-       || trace ( "vars: " ++ show (fromList algVars \\ fromList processVars) ++ "\n"
-                  ++ "fbs: " ++ show (fromList fbs \\ fromList processFBs) ++ "\n"
-                  ) False
+        fbs = sort fbs0
+        processFBs = sort $ getFBs p
+        in    processFBs == fbs -- функции в алгоритме соответствуют выполненным функциям в процессе
+          && processVars == algVars -- пересылаемые данные в алгоритме соответствуют пересылаемым данным в процессе
+          || trace (  "delta vars: " ++ show (algVars \\ processVars) ++ "\n"
+                    ++ "fbs: " ++ (concatMap ((\fb -> (if fb `elem` processFBs then "+" else "-") ++ "\t" ++ show fb ++ "\n" )) fbs) ++ "\n"
+                    ++ "fbs: " ++ show processFBs ++ "\n"
+                    ++ "algVars: " ++ show algVars ++ "\n"
+                    ++ "processVars: " ++ show processVars ++ "\n"
+                    ++ show pu
+                    ) False

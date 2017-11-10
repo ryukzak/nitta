@@ -124,7 +124,7 @@ instance ( Title title, Var v, Time t
                 (Activity $ transportStartAt ... transportEndAt)
                 $ InstructionStep (Transport v (fst dfdSource) title :: Instruction (BusNetwork title v t))
               ) $ M.assocs push'
-        _ <- add (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act --   $ Pull pullVars
+        _ <- add (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act
         setProcessTime $ act^.at.supremum + 1
     , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
@@ -157,10 +157,6 @@ instance ( Title title, Var v, Time t
       rejects = S.join "\n" $ map showReject $ M.assocs bnPus
       showReject (title, pu) | Left e <- bind fb pu = "    [" ++ show title ++ "]: " ++ e
       showReject (title, _) = "    [" ++ show title ++ "]: undefined"
-
-
-
-
 
   process pu@BusNetwork{..} = let
     transportKey = M.fromList
@@ -195,8 +191,6 @@ instance ( Title title, Var v, Time t
   setTime t bn@BusNetwork{..} = bn{ bnProcess=bnProcess{ nextTick=t }
                                   , bnPus=M.map (setTime t) bnPus
                                   }
-
-
 
 
 
@@ -276,56 +270,60 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
 
 
 instance ( Time t ) => Synthesis (BusNetwork String v t) where
-  moduleName BusNetwork{..} = S.join "_" (M.keys bnPus) ++ "_net"
+  name BusNetwork{..} = S.join "_" (M.keys bnPus) ++ "_net"
 
-  moduleInstance _ _ _ = undefined
+  hardwareInstance = undefined
 
-  moduleDefinition pu@BusNetwork{..}
-    = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
-      in renderST [ "module $moduleName$("
-                  , "    clk,"
-                  , "    rst"
-                  , "    );"
-                  , "      "
-                  , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
-                  , "parameter DATA_WIDTH = 32;"
-                  , "parameter ATTR_WIDTH = 4;"
-                  , "      "
-                  , "input clk;"
-                  , "input rst;"
-                  , "      "
-                  , "// Sub module instances"
-                  , "wire [MICROCODE_WIDTH-1:0] signals_out;"
-                  , "wire [DATA_WIDTH-1:0] data_bus;"
-                  , "wire [ATTR_WIDTH-1:0] attr_bus;"
-                  , "", ""
-                  , "pu_simple_control"
-                  , "    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
-                  , "     , .PROGRAM_DUMP( \"hdl/gen/$moduleName$.dump\" )"
-                  , "     , .MEMORY_SIZE( $ProgramSize$ )"
-                  , "     ) control_unit"
-                  , "    ( .clk( clk ), .rst( rst ), .signals_out( signals_out ) );"
-                  , ""
-                  , "", ""
-                  , "$instances$"
-                  , "", ""
-                  , "assign { attr_bus, data_bus } = "
-                  , "$OutputRegs$;"
-                  , ""
-                  , "endmodule"
-                  , ""
-                  ]
-                  [ ( "moduleName", moduleName pu )
-                  , ( "microCodeWidth", show $ snd (bounds bnWires) + 1 )
-                  , ( "instances", S.join "\n\n" instances)
-                  , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "    { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
-                  , ( "ProgramSize", show $ fromEnum (nextTick bnProcess)
-                      + 1 -- 0 адресс программы для простоя процессора
-                      + 1 -- На последнем такте для BusNetwork можно подготовить следующую
-                          -- пересылку, но сама шина может быть занята работой.
-                    )
-                  ]
+  hardware pu@BusNetwork{..} = Project (name pu) $ map hardware (M.elems bnPus)
+                                                ++ [ Immidiate (name pu ++ ".v") iml
+                                                   , FromLibrary "pu_simple_control.v"
+                                                   ]
     where
+      iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
+            in renderST
+              [ "module $moduleName$("
+              , "    clk,"
+              , "    rst"
+              , "    );"
+              , "      "
+              , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
+              , "parameter DATA_WIDTH = 32;"
+              , "parameter ATTR_WIDTH = 4;"
+              , "      "
+              , "input clk;"
+              , "input rst;"
+              , "      "
+              , "// Sub module instances"
+              , "wire [MICROCODE_WIDTH-1:0] signals_out;"
+              , "wire [DATA_WIDTH-1:0] data_bus;"
+              , "wire [ATTR_WIDTH-1:0] attr_bus;"
+              , "", ""
+              , "pu_simple_control"
+              , "    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
+              , "     , .PROGRAM_DUMP( \"\\$path\\$$moduleName$.dump\" )"
+              , "     , .MEMORY_SIZE( $ProgramSize$ )"
+              , "     ) control_unit"
+              , "    ( .clk( clk ), .rst( rst ), .signals_out( signals_out ) );"
+              , ""
+              , "", ""
+              , "$instances$"
+              , "", ""
+              , "assign { attr_bus, data_bus } = "
+              , "$OutputRegs$;"
+              , ""
+              , "endmodule"
+              , ""
+              ]
+              [ ( "moduleName", name pu )
+              , ( "microCodeWidth", show $ snd (bounds bnWires) + 1 )
+              , ( "instances", S.join "\n\n" instances)
+              , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "    { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
+              , ( "ProgramSize", show $ fromEnum (nextTick bnProcess)
+                  + 1 -- 0 адресс программы для простоя процессора
+                  + 1 -- На последнем такте для BusNetwork можно подготовить следующую
+                      -- пересылку, но сама шина может быть занята работой.
+                )
+              ]
       valueData t = t ++ "_data_out"
       valueAttr t = t ++ "_attr_out"
       regInstance title = renderST [ "wire [DATA_WIDTH-1:0] $DataOut$;"
@@ -337,7 +335,7 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
       renderInstance insts regs ((title, PU spu) : xs)
-        = let inst = moduleInstance spu title (cntx title spu Proxy)
+        = let inst = hardwareInstance spu title $ cntx title spu Proxy
               insts' = inst : regInstance title : insts
               regs' = (valueAttr title, valueData title) : regs
           in renderInstance insts' regs' xs
@@ -362,106 +360,74 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
                    )
           foo _ = Nothing
 
-
-instance ( Synthesis (BusNetwork title v t) ) => TestBenchRun (BusNetwork title v t) where
-  buildArgs net
-    = map (("hdl/" ++) . (++ ".v") . (\(PU pu) -> moduleName pu)) (M.elems $ bnPus net)
-      ++ [ "hdl/pu_simple_control.v"
-         , "hdl/gen/" ++ moduleName net ++ ".v"
-         , "hdl/gen/" ++ moduleName net ++ "_tb.v"
-         ]
+  software pu@BusNetwork{ bnProcess=Process{..}, ..}
+    = Project (name pu) $ map software (M.elems bnPus)
+                       ++ [ Immidiate (name pu ++ ".dump") memoryDump ]
+    where
+      memoryDump = unlines $ map ( values2dump . signalsAt ) ticks
+      -- По нулевоу адресу устанавливается команда Nop (он же def) для всех вычислиетльных блоков.
+      -- Именно этот адрес выставляется на сигнальные линии когда поднят сигнал rst.
+      ticks = [ -1 .. nextTick ]
+      wires = map Wire $ reverse $ range $ bounds bnWires
+      signalsAt t = map (signalAt pu t) wires
 
 
 
 instance ( Title title, Var v, Time t
          , Synthesis (BusNetwork title v t)
          ) => TestBench (BusNetwork title v t) v Int where
-
-  components pu =
-    [ ( "hdl/gen/" ++ moduleName pu ++ "_assertions.v", assertions )
-    , ( "hdl/gen/" ++ moduleName pu ++ ".dump", dump )
-    , ( "hdl/gen/" ++ moduleName pu ++ ".v", const . moduleDefinition )
-    , ( "hdl/gen/" ++ moduleName pu ++ "_tb.v", const . testBenchDefinition )
-    ]
+  testEnviroment cntx0 pu@BusNetwork{..} = Immidiate (name pu ++ "_tb.v") testBenchImp
     where
-      puProcess = process pu
-      testBenchDefinition net
-        = renderST
-          [ "module $moduleName$_tb();                                                                                 "
-          , "                                                                                                          "
-          , "reg clk, rst;                                                                                             "
-          , "$moduleName$ net                                                                                          "
-          , "  ( .clk(clk)                                                                                             "
-          , "  , .rst(rst)                                                                                             "
-          , "  );                                                                                                      "
-          , "                                                                                                          "
-          , "initial begin                                                                                             "
-          , "  clk = 1'b0;                                                                                             "
-          , "  rst = 1'b1;                                                                                             "
-          , "  repeat(2) #10 clk = ~clk;                                                                               "
-          , "  rst = 1'b0;                                                                                             "
-          , "  forever #10 clk = ~clk;                                                                                 "
-          , "end                                                                                                       "
-          , "                                                                                                          "
-          , "initial                                                                                                   "
-          , "  begin                                                                                                   "
-          , "    \\$dumpfile(\"$moduleName$_tb.vcd\");                                                                 "
-          , "    \\$dumpvars(0, $moduleName$_tb);                                                                      "
-          , "    @(negedge rst);                                                                                       "
-          , "    forever @(posedge clk);                                                                               "
-          , "  end                                                                                                     "
-          , "                                                                                                          "
-          , "  initial                                                                                                 "
-          , "    begin                                                                                                 "
-          , "      // program_counter == 1                                                                             "
-          , "      // на шину управление выставлены значения соответсвующие адресу 0 в памяти пока не снят rst         "
-          , "      @(negedge rst); // Влючение процессора.                                                             "
-          , "      // Сразу после снятия сигнала rst на шину управления выставляются сигналы соответствующие адресу 1. "
-          , "      // После следующего положительного фронта будет получен результат.                                  "
-          , "      `include \"hdl/gen/accum_fram1_fram2_net_assertions.v\"                                             "
-          , "      \\$finish;                                                                                          "
-          , "    end                                                                                                   "
-          , "                                                                                                          "
-          , "endmodule                                                                                                 "
-          ]
-          [ ("moduleName", moduleName net)
-          ]
+      testBenchImp = renderST
+        [ "module $moduleName$_tb();                                                                                 "
+        , "                                                                                                          "
+        , "reg clk, rst;                                                                                             "
+        , "$moduleName$ net                                                                                          "
+        , "  ( .clk(clk)                                                                                             "
+        , "  , .rst(rst)                                                                                             "
+        , "  );                                                                                                      "
+        , "                                                                                                          "
+        , verilogWorkInitialze
+        , "                                                                                                          "
+        , verilogClockGenerator
+        , "                                                                                                          "
+        , "  initial                                                                                                 "
+        , "    begin                                                                                                 "
+        , "      // program_counter == 1                                                                             "
+        , "      // на шину управление выставлены значения соответсвующие адресу 0 в памяти пока не снят rst         "
+        , "      @(negedge rst); // Влючение процессора.                                                             "
+        , "      // Сразу после снятия сигнала rst на шину управления выставляются сигналы соответствующие адресу 1. "
+        , "      // После следующего положительного фронта будет получен результат.                                  "
+        , assertions
+        , "      \\$finish;                                                                                          "
+        , "    end                                                                                                   "
+        , "                                                                                                          "
+        , "endmodule                                                                                                 "
+        ]
+        [ ("moduleName", name pu)
+        ]
 
-      dump bn@BusNetwork{ bnProcess=Process{..}, ..} _cntx
-        = unlines $ map ( values2dump . signalsAt ) ticks
-        where
-          -- первый элемент - Nop (он же def) по всем линиям. Устанавливается по умолчанию и
-          -- говорит о том, что процессор не работает.
-          ticks = [ -1 .. nextTick ]
-          wires = map Wire $ reverse $ range $ bounds bnWires
-          signalsAt t = map (signalAt bn t) wires
+      cntx' = foldl ( \cntx (Transport v src _dst)
+                        -> M.insert (v, 0)
+                                    (variableValueWithoutFB (bnPus M.! src) cntx (v, 0))
+                                    cntx
+                     ) cntx0 $ extractInstructions pu
 
-      assertions BusNetwork{ bnProcess=Process{..}, ..} cntx
-        = concatMap ( ("@(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick ]
+      p = process pu
+      assertions = concatMap ( ("      @(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick p ]
         where
-          p = puProcess
           assert time
             = let pulls = filter (\e -> case e of (Source _) -> True; _ -> False) $ endpointsAt time p
               in case pulls of
                 Source (v:_) : _ -> concat
-                    [ "if ( !( net.data_bus === " ++ show (fromMaybe 0 $ M.lookup (v, 0) cntx) ++ ") ) "
-                    ,   "$display("
+                    [ "if ( !( net.data_bus === " ++ show (fromMaybe 0 $ M.lookup (v, 0) cntx') ++ ") ) "
+                    ,   "\\$display("
                     ,     "\""
                     ,       "FAIL wrong value of " ++ show' pulls ++ " the bus failed "
                     ,       "(got: %h expect: %h)!"
                     ,     "\", "
-                    , "net.data_bus, " ++ show (cntx M.! (v, 0)) ++ "); else $display(\"%d Correct value: %h\", net.control_unit.program_counter, net.data_bus);"
+                    , "net.data_bus, " ++ show (cntx' M.! (v, 0)) ++ "); else \\$display(\"%d Correct value: %h\", net.control_unit.program_counter, net.data_bus);"
                     ]
-                [] -> "$display(\"%d\", net.control_unit.program_counter); /* nothing to check */"
-                x -> "$display(\"%d\", net.control_unit.program_counter); /* don't have expected datafor: " ++ show x ++ "*/"
+                [] -> "\\$display(\"%d\", net.control_unit.program_counter); /* nothing to check */"
+                x -> "\\$display(\"%d\", net.control_unit.program_counter); /* don't have expected datafor: " ++ show x ++ "*/"
           show' s = filter (/= '\"') $ show s
-
-  simulateContext bn@BusNetwork{..} cntx =
-    let transports = extractInstructions bn
-
-    in foldl ( \cntx' (Transport v src _dst) -> M.insert
-                (v, 0)
-                (variableValueWithoutFB (bnPus M.! src) cntx' (v, 0))
-                cntx'
-             ) cntx
-             transports
