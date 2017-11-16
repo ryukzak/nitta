@@ -52,11 +52,6 @@
 
 TODO: Каким образом необходимо работать со внутренними ресурсами в условиях разветвлённого времени?
 Не получится ли так, что один ресурс будет задействован дважды в разных временных линиях?
-
-TODO: В настоящий момент, при моделировании в TestBench идёт неаккуратная / неэффективная работа со
-временем. К примеру: при загрузке данных - они стоят на шине 2 такта (когда надо 1). Аналогично для
-выхода, значение проверяется два такта (и не понятно почему так получилось). А правильный вопрос
-звучит так, почему все инструкции кратны двум битам (причём, в BusNetwork работает в 1 такт)?
 -}
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
@@ -617,13 +612,14 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
       ,   ");"
       ]
 
-    bankCheck = "\n      @(posedge clk);\n    "
-      ++ concat [ checkBank addr v (cntx M.! (v, 0))
-                | Step{ sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
-                , let addr_v = outputStep fb
-                , isJust addr_v
-                , let Just (addr, v) = addr_v
-                ]
+    bankCheck
+      = "\n      @(posedge clk);\n"
+      ++ unlines [ "  " ++ checkBank addr v (cntx M.! (v, 0))
+                 | Step{ sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
+                 , let addr_v = outputStep fb
+                 , isJust addr_v
+                 , let Just (addr, v) = addr_v
+                 ]
 
     outputStep fb
       | Just (Loop _bs (I a)) <- castFB fb = Just (findAddress a pu, a)

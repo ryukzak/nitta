@@ -37,7 +37,7 @@ instance {-# OVERLAPS #-} ( Eq v, Variables (FSet pu) v
                                   ([], [])
 
 
--- В значительной степени служеюная функция, используемая для генерации процесса указанного
+-- В значительной степени служебная функция, используемая для генерации процесса указанного
 -- вычислительного блока под случайный алгоритм. Возвращает вычислительный блок со спланированым
 -- вычислительным процессом и алгоритм.
 processGen proxy = arbitrary >>= processGen' proxy def
@@ -50,6 +50,8 @@ processGen proxy = arbitrary >>= processGen' proxy def
 
 
 
+data Opt a b = SchedOpt a | BindOpt b
+
 -- | Автоматическое планирование вычислительного процесса, в рамках которого решения принимаются
 -- случайным образом. В случае если какой-либо функциональный блок не может быть привязан к
 -- вычислительному блоку (например по причине закончившихся внутренних ресурсов), то он просто
@@ -57,18 +59,19 @@ processGen proxy = arbitrary >>= processGen' proxy def
 endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
   where
     endpointWorkGen' pu alg passedAlg = do
-      let opts = map Left (options endpointDT pu) ++ map Right alg
+      let opts = map SchedOpt (options endpointDT pu) ++ map BindOpt alg
       i <- choose (0 :: Int, length opts - 1)
       if null opts
         then return (pu, passedAlg)
         else case opts !! i of
-          Left o -> do
+          SchedOpt o -> do
             d <- passiveOption2action <$> endpointGen o
             endpointWorkGen' (decision endpointDT pu d) alg passedAlg
-          Right fb -> let alg' = filter (/= fb) alg
-                      in case bind fb pu of
-                        Right pu' -> endpointWorkGen' pu' alg' (fb : passedAlg)
-                        Left _err -> endpointWorkGen' pu alg' passedAlg
+          BindOpt fb
+            ->  let alg' = filter (/= fb) alg
+                in case bind fb pu of
+                  Right pu' -> endpointWorkGen' pu' alg' (fb : passedAlg)
+                  Left _err -> endpointWorkGen' pu alg' passedAlg
       where
         endpointGen o@EndpointO{ epoType=s@Source{} } = do
           vs' <- suchThat (sublistOf $ variables s) (not . null)

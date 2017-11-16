@@ -374,7 +374,9 @@ optionsAfterBind fb pu = case bind fb pu of
 
 passiveOption2action d@EndpointO{..}
   = let a = d^.at.avail.infimum
-        b = d^.at.avail.infimum + d^.at.dur.infimum
+        -- "-1" - необходимо, что бы не затягивать процесс на лишний такт, так как интервал включает
+        -- граничные значения.
+        b = d^.at.avail.infimum + d^.at.dur.infimum - 1
     in EndpointD epoType (a ... b)
 
 networkOption2action DataFlowO{..}
