@@ -52,6 +52,11 @@
 
 TODO: Каким образом необходимо работать со внутренними ресурсами в условиях разветвлённого времени?
 Не получится ли так, что один ресурс будет задействован дважды в разных временных линиях?
+
+TODO: В настоящий момент, при моделировании в TestBench идёт неаккуратная / неэффективная работа со
+временем. К примеру: при загрузке данных - они стоят на шине 2 такта (когда надо 1). Аналогично для
+выхода, значение проверяется два такта (и не понятно почему так получилось). А правильный вопрос
+звучит так, почему все инструкции кратны двум битам (причём, в BusNetwork работает в 1 такт)?
 -}
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
@@ -536,20 +541,18 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
         , "wire [DATA_WIDTH-1:0] data_out;                                                                           "
         , "wire [ATTR_WIDTH-1:0] attr_out;                                                                           "
         , "                                                                                                          "
-        , "pu_fram                                                                                                   "
-        , "  #( .RAM_SIZE( 16 )                                                                                      "
-        , "  ,  .DATA_WIDTH( 32 )                                                                                    "
-        , "  ,  .ATTR_WIDTH( 4 )                                                                                     "
-        , "  ) fram (                                                                                                "
-        , "  .clk(clk),                                                                                              "
-        , "  .signal_addr(addr),                                                                                     "
-        , "  .signal_wr(wr),                                                                                         "
-        , "  .data_in(data_in),                                                                                      "
-        , "  .attr_in(attr_in),                                                                                      "
-        , "  .signal_oe(oe),                                                                                         "
-        , "  .data_out(data_out),                                                                                    "
-        , "  .attr_out(attr_out)                                                                                     "
-        , "  );                                                                                                      "
+        , hardwareInstance pu "fram" [ ( "Clk", "clk" )
+                                     , ( "ADDR_0", "addr[0]" )  -- FIXME: Нет, это перечисление по адресу есть зло.
+                                     , ( "ADDR_1", "addr[1]" )
+                                     , ( "ADDR_2", "addr[2]" )
+                                     , ( "ADDR_3", "addr[3]" )
+                                     , ( "DataIn", "data_in" )
+                                     , ( "AttrIn", "attr_in" )
+                                     , ( "WR", "wr" )
+                                     , ( "OE", "oe" )
+                                     , ( "DataOut", "data_out" )
+                                     , ( "AttrOut", "attr_out" )
+                                     ]
         , "                                                                                                          "
         , verilogWorkInitialze
         , verilogClockGenerator
@@ -590,7 +593,8 @@ testDataInput Fram{ frProcess=p@Process{..}, ..} cntx
   = concatMap ( ("      " ++) . (++ " @(negedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
   where
     busState t
-      | Just (Target v) <- endpointAt t p = "data_in <= " ++ show (cntx M.! (v, 0)) ++ ";"
+      | Just (Target v) <- endpointAt t p
+       = "data_in <= " ++ show (cntx M.! (v, 0)) ++ ";"
       | otherwise = "/* NO INPUT */"
 
 testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
@@ -603,7 +607,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
       = "/* NO OUTPUT */"
 
     checkBus v value = concat
-      [ "if ( !( data_out == " ++ show value ++ " ) ) "
+      [ "if ( !( data_out === " ++ show value ++ " ) ) "
       ,   "\\$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " on the bus! "
@@ -613,7 +617,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
       ,   ");"
       ]
 
-    bankCheck = "\n\n@(posedge clk);"
+    bankCheck = "\n      @(posedge clk);\n    "
       ++ concat [ checkBank addr v (cntx M.! (v, 0))
                 | Step{ sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
                 , let addr_v = outputStep fb
@@ -626,8 +630,8 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
       | Just (FramOutput addr (I a)) <- castFB fb = Just (addr, a)
       | otherwise = Nothing
 
-    checkBank addr v value = concat
-      [ "if ( !( fram.bank[" ++ show addr ++ "] == " ++ show value ++ " ) ) "
+    checkBank addr v value = concatMap ("    " ++)
+      [ "if ( !( fram.bank[" ++ show addr ++ "] === " ++ show value ++ " ) ) "
       ,   "\\$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
