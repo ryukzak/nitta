@@ -3,31 +3,28 @@
 // Simple SPI master controller with CPOL=0, CPHA=1
 //////////////////////////////////////////////////////////////////////////////////
 
-module spi_slave_driver(
-  input            clk,
-  input            rst,
-  
+module spi_slave_driver 
+  #( parameter DATA_WIDTH = 8
+   )
+  ( input            clk
+  , input            rst
   // system interface
-  input      [7:0] data_in,  // data that master can read from slave
-  output reg       ready,     // transaction is not processed now 
-  output reg [7:0] data_out, // data written to slave in last transaction
-  
+  , input  [DATA_WIDTH-1:0] data_in  // data that master can read from slave
+  , output                  ready    // transaction is not processed now 
+  , output [DATA_WIDTH-1:0] data_out // data written to slave in last transaction
   // SPI iterface
-  output reg       miso,
-  input            mosi,
-  input            sclk,
-  input            cs
+  , output reg       miso
+  , input            mosi
+  , input            sclk
+  , input            cs
   );
 
-reg   [7:0] shiftreg;
-// reg bit_buf;
+reg   [DATA_WIDTH-1:0] shiftreg;
 
 localparam STATE_IDLE = 0; // wait for transaction begin
 localparam STATE_WAIT_SCLK_1 = 1; // wait for SCLK to become 1
 localparam STATE_WAIT_SCLK_0 = 2; // wait for SCLK to become 0
-
 reg   [2:0] state;
-
 
 always @( posedge rst, posedge clk ) begin
   if ( rst ) begin
@@ -52,7 +49,7 @@ always @( posedge rst, posedge clk ) begin
           end
         end
         STATE_WAIT_SCLK_0: begin
-          if ( sclk == 0 ) begin
+          if ( !sclk ) begin
             shiftreg <= { shiftreg[6:0], mosi };
             state <= STATE_WAIT_SCLK_1;
           end
@@ -63,8 +60,6 @@ always @( posedge rst, posedge clk ) begin
   end
 end
 
-always @( posedge clk ) begin
-  { ready, data_out } = { state == STATE_IDLE, shiftreg };
-end
+assign { ready, data_out } = { state == STATE_IDLE, shiftreg };
   
 endmodule
