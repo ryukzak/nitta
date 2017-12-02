@@ -14,7 +14,7 @@ initial
 wire miso, mosi, sclk, cs;
 
 spi_loop dut
-  ( clk, rst, 1'b1, data_in, data_out
+  ( clk, rst, 1'b0, data_in, data_out
   , miso, mosi, sclk, cs
   , miso, mosi, sclk, cs
   );
@@ -29,8 +29,7 @@ initial begin
 end           
 
 always begin
-  repeat (38) 
-  @(posedge clk); 
+  repeat (38) @(posedge clk); 
   data_in <= data_in + 1;
 end
 

@@ -3,7 +3,7 @@ module spi_loop
    )
   ( input clk
   , input rst
-  , input select
+  , input select // 1 - reverse, 0 - direct
   , input [7:0] data_in
   , output reg [7:0] data_out
   
@@ -67,11 +67,12 @@ spi_slave_driver slave (
 );
 
 always @(posedge clk) 
-  //if ( slave_ready ) slave_in <= { slave_out[0], slave_out[1], slave_out[2], slave_out[3], slave_out[4], slave_out[5], slave_out[6], slave_out[7] };
-  if ( slave_ready ) slave_in <= slave_out;
-
+  if ( slave_ready ) begin
+    if ( select ) slave_in <= { slave_out[0], slave_out[1], slave_out[2], slave_out[3], slave_out[4], slave_out[5], slave_out[6], slave_out[7] };
+    else slave_in <= slave_out;
+  end
+  
 always @(posedge clk) 
-	if      ( select && master_ready ) data_out <= master_out;
-	else if ( !select && slave_ready ) data_out <= slave_out;
+  if ( master_ready ) data_out <= master_out;
 
 endmodule
