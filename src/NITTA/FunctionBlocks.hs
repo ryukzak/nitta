@@ -102,3 +102,11 @@ deriving instance ( IOType io v ) => Eq (Constant io v)
 
 instance ( IOType io v ) => FunctionalBlock (Constant io v) v where
   outputs (Constant _ o) = variables o
+
+
+data ShiftL io v = ShiftL (I io v) (O io v) deriving ( Typeable )
+deriving instance ( IOType io v ) => Show (ShiftL io v)
+deriving instance ( IOType io v ) => Eq (ShiftL io v)
+
+instance ( IOType io v ) => FunctionalBlock (ShiftL io v) v where
+  outputs (ShiftL i o) = variables i ++ variables o

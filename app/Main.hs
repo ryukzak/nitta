@@ -26,6 +26,7 @@ import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks     as FB
 import qualified NITTA.ProcessUnits.Accum as A
 import           NITTA.ProcessUnits.Fram
+import qualified NITTA.ProcessUnits.Shift as S
 import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
@@ -96,12 +97,24 @@ bushExample
 branchExample
   = let fram = PU (def :: Fram String T)
         accum = PU (def :: A.Accum String T)
+        shift = PU (def :: S.Shift String T)
         net = busNetwork
           [ ("fram1", fram)
           , ("fram2", fram)
           , ("accum", accum)
+          , ("shift", shift)
           ]
-          $ array (0, 19) [ (19, [("accum", S (A.NEG  :: Signal (A.Accum String T)))])
+          $ array (0, 27) [ (27, [])
+                          , (26, [])
+                          , (25, [("shift", S (S.OE        :: Signal (S.Shift String T)))])
+                          , (24, [("shift", S (S.INIT      :: Signal (S.Shift String T)))])
+
+                          , (23, [("shift", S (S.STEP      :: Signal (S.Shift String T)))])
+                          , (22, [("shift", S (S.MODE      :: Signal (S.Shift String T)))])
+                          , (21, [("shift", S (S.DIRECTION :: Signal (S.Shift String T)))])
+                          , (20, [("shift", S (S.WORK      :: Signal (S.Shift String T)))])
+
+                          , (19, [("accum", S (A.NEG  :: Signal (A.Accum String T)))])
                           , (18, [("accum", S (A.LOAD :: Signal (A.Accum String T)))])
                           , (17, [("accum", S (A.INIT :: Signal (A.Accum String T)))])
                           , (16, [("accum", S (A.OE   :: Signal (A.Accum String T)))])
@@ -143,7 +156,8 @@ branchExample
               , FB $ FB.Constant 42 $ O ["const"]
               , FB.framOutput 9 $ I "const"
               , FB.loop (O ["f"]) $ I "g"
-              , FB.reg (I "f") $ O ["g"]
+              -- , FB.reg (I "f") $ O ["g"]
+              , FB $ FB.ShiftL (I "f") $ O ["g"]
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
         dataFlow = Stage $ map Actor alg
