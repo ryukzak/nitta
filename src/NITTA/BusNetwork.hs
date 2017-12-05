@@ -342,16 +342,18 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
       cntx :: ( Typeable pu, Show (Signal pu)
               ) => String -> pu -> Proxy (Signal pu) -> [(String, String)]
       cntx title _spu p
-        = [ ( "Clk", "clk" )
-          , ( "DataIn", "data_bus" )
-          , ( "AttrIn", "attr_bus" )
-          , ( "DataOut", valueData title )
-          , ( "AttrOut", valueAttr title )
-          ] ++ mapMaybe foo [ (i, s)
-                            | (i, ds) <- assocs bnWires
-                            , (title', s) <- ds
-                            , title' == title
-                            ]
+        = mapMaybe foo [ (i, s) | (i, ds) <- assocs bnWires
+                                , (title', s) <- ds
+                                , title' == title
+                                ]
+        ++  [ ( "DataOut", valueData title )
+            , ( "AttrOut", valueAttr title )
+            , ( "DataIn", "data_bus" )
+            , ( "AttrIn", "attr_bus" )
+            , ( "DATA_WIDTH", "DATA_WIDTH" )
+            , ( "ATTR_WIDTH", "ATTR_WIDTH" )
+            , ( "Clk", "clk" )
+            ]
         where
           foo (i, S s)
             | Just s' <- cast s

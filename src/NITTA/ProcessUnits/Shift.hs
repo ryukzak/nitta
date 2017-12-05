@@ -108,11 +108,10 @@ instance Simulatable (Shift v t) v Int where
 
 
 instance Synthesis (Shift v t) where
-  -- TODO: parameter
   hardwareInstance _pu n cntx
     = renderST
-      [ "pu_shift #( .DATA_WIDTH(DATA_WIDTH)"
-      , "          , .ATTR_WIDTH(ATTR_WIDTH)"
+      [ "pu_shift #( .DATA_WIDTH( $DATA_WIDTH$ )"
+      , "          , .ATTR_WIDTH( $ATTR_WIDTH$ )"
       , "          ) $name$"
       , "  ( .clk( $Clk$ )"
       , "  , .signal_work( $WORK$ ), .signal_direction( $DIRECTION$ )"

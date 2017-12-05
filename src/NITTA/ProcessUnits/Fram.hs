@@ -656,8 +656,9 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
 instance ( Time t, Var v ) => Synthesis (Fram v t) where
   name _ = "pu_fram"
   hardwareInstance Fram{..} n cntx = renderST
-    [ "pu_fram "
-    , "    #( .RAM_SIZE( $size$ )"
+    [ "pu_fram #( .DATA_WIDTH( $DATA_WIDTH$ )"
+    , "         , .ATTR_WIDTH( $ATTR_WIDTH$ )"
+    , "         , .RAM_SIZE( $size$ )"
     , "     ) $name$ ("
     , "    .clk( $Clk$ ),"
     , "    .signal_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } ),"

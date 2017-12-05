@@ -112,7 +112,9 @@ instance Simulatable (Accum v t) v Int where
 instance Synthesis (Accum v t) where
   hardwareInstance _pu n cntx
     = renderST
-      [ "pu_accum $name$ ("
+      [ "pu_accum #( .DATA_WIDTH( $DATA_WIDTH$ )"
+      , "          , .ATTR_WIDTH( $ATTR_WIDTH$ )"
+      , "          ) $name$ ("
       , "    .clk( $Clk$ ),"
       , ""
       , "    .signal_init( $INIT$ ),"
