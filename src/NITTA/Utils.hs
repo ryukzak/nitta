@@ -22,7 +22,7 @@ import           Data.Proxy
 import           Data.Typeable       (Typeable, cast)
 import           NITTA.Lens
 import           NITTA.Types
-import           Numeric             (readInt)
+import           Numeric             (readInt, showHex)
 import qualified Numeric.Interval    as I
 import           Text.StringTemplate
 
@@ -151,7 +151,11 @@ fromRight b _         = b
 
 
 
-values2dump vs = concatMap (show . readBin) $ groupBy4 $ concatMap show vs
+values2dump vs
+  = let vs' = concatMap show vs
+        x = length vs' `mod` 4
+        vs'' = if x == 0 then vs' else  replicate (4 - x) '0' ++ vs'
+    in concatMap (\e -> showHex (readBin e) "") $ groupBy4 vs''
   where
     groupBy4 [] = []
     groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)

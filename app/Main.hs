@@ -104,9 +104,7 @@ branchExample
           , ("accum", accum)
           , ("shift", shift)
           ]
-          $ array (0, 27) [ (27, [])
-                          , (26, [])
-                          , (25, [("shift", S (S.OE        :: Signal (S.Shift String T)))])
+          $ array (0, 25) [ (25, [("shift", S (S.OE        :: Signal (S.Shift String T)))])
                           , (24, [("shift", S (S.INIT      :: Signal (S.Shift String T)))])
 
                           , (23, [("shift", S (S.STEP      :: Signal (S.Shift String T)))])

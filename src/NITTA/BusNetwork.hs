@@ -70,10 +70,7 @@ data GBusNetwork title spu v t =
     , bnWires              :: Array Int [(title, S)]
     }
 type BusNetwork title v t = GBusNetwork title (PU v t) v t
-busNetwork pus wires
-  | let (a, b) = bounds wires in a /= 0 || length [a..b] `mod` 4 /= 0
-  = error "Busnetwork wires size."
-  | otherwise = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wires
+busNetwork pus wires = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wires
 
 
 
