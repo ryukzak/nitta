@@ -175,6 +175,4 @@ main = do
   else putStrLn "Fail"
   print "ok"
 
-getPU puTitle net
-  = case bnPus net ! puTitle of
-      PU pu | Just pu' <- cast pu -> pu'
+getPU puTitle net = maybe (error "Wrong PU type!") id $ castPU $ bnPus net ! puTitle

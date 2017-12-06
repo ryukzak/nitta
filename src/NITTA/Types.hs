@@ -504,12 +504,22 @@ instance ProcessUnit (PU v t) v t where
 instance Simulatable (PU v t) v Int where
   variableValue fb (PU pu) = variableValue fb pu
 
-
 instance Synthesis (PU v t) where
   name (PU pu) = name pu
   hardwareInstance (PU pu) = hardwareInstance pu
   hardware (PU pu) = hardware pu
   software (PU pu) = software pu
+
+castPU :: ( Typeable pu
+          , Show (Signal pu)
+          , ProcessUnit pu v t
+          , ByTime pu t
+          , Synthesis pu
+          , Simulatable pu v Int
+          , DecisionProblem (EndpointDT v t)
+                 EndpointDT  pu
+          ) => PU v t -> Maybe pu
+castPU (PU pu) = cast pu
 
 ---------------------------------------------------------------------
 -- * Сигналы и инструкции
