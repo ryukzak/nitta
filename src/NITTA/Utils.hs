@@ -141,15 +141,6 @@ inputsOfFBs fbs
 --     in filter (\a -> all (not . (a `elem`)) deps) $ M.keys deps
 
 
-fromLeft :: a -> Either a b -> a
-fromLeft _ (Left a) = a
-fromLeft a _        = a
-
-fromRight :: b -> Either a b -> b
-fromRight _ (Right b) = b
-fromRight b _         = b
-
-
 
 values2dump vs = concatMap (show . readBin) $ groupBy4 $ concatMap show vs
   where
