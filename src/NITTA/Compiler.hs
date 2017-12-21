@@ -20,6 +20,7 @@ where
 
 import           Control.Arrow    (second)
 import           Data.Default
+import           Data.Either
 import           Data.List        (find, intersect, nub, sort, sortBy, sortOn)
 import qualified Data.Map         as M
 import           Data.Maybe       (catMaybes, isJust, mapMaybe)
