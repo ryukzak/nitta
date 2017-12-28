@@ -21,6 +21,7 @@ module NITTA.Flows
 where
 
 import           Data.List        (nub, (\\))
+import           Data.Typeable
 import           NITTA.BusNetwork
 import           NITTA.Types
 import           NITTA.Utils
@@ -192,7 +193,7 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
   decision _ branch@Branch{..} act = branch{ topPU=decision binding topPU act }
   decision _ _ _                   = undefined
 
-instance ( Title title, Var v, Time t
+instance ( Typeable title, Ord title, Show title, Var v, Time t
          ) => DecisionProblem (DataFlowDT title v t)
                    DataFlowDT (BranchedProcess title tag v t)
          where

@@ -221,12 +221,19 @@ class WithFunctionalBlocks x fb | x -> fb where
 
 
 
+type FunSimCntx v x = M.Map (v, Int) x
+class FunctionSimulation fb v x | fb -> v where
+  simulate :: FunSimCntx v x -> Int -> fb -> FunSimCntx v x
+
+
+
 -- | Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
 data FB io v where
   FB :: ( FunctionalBlock fb v
         , Show fb
         , Variables fb v
         , IOType io v
+        , FunctionSimulation fb v Int
         ) => fb -> FB io v
 deriving instance ( Show v ) => Show (FB io v)
 
@@ -249,6 +256,8 @@ instance ( Variables (FB io v) v, Ord v ) => Ord (FB io v) where
 instance {-# OVERLAPS #-} FunctionalBlock fb v => Variables fb v where
   variables fb = inputs fb ++ outputs fb
 
+instance FunctionSimulation (FB Parcel v) v Int where
+  simulate cntx step (FB fb) = simulate cntx step fb
 
 
 ---------------------------------------------------------------------
