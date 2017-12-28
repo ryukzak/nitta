@@ -26,7 +26,6 @@ localparam SCLK_COUNTER_WIDTH = $clog2(SCLK_HALFPERIOD);
 
 reg   [BIT_COUNTER_WIDTH-1:0] bit_count;
 reg   [SCLK_COUNTER_WIDTH-1:0] sclk_count;
-reg   [DATA_WIDTH:0] shiftreg;
 
 localparam STATE_IDLE        = 0;
 localparam STATE_WAIT_SCLK_1 = 1;
