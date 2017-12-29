@@ -45,7 +45,7 @@ spi_master_driver master (
 pu_spi slave (
   .clk(clk)
 , .rst(rst)
-, .data_in(slave_in)
+//, .data_in(slave_in)
 , .data_out(slave_out)
 , .ready(ready)
 , .miso(slave_spi_miso)
@@ -65,41 +65,30 @@ initial
     rst = 1;                     @(posedge clk);
     rst = 0;                     @(posedge clk);
 
-    master_in = 8'h55; slave_in = 8'h55; @(posedge clk);
+    master_in = 8'h11; slave_in = 8'h55; @(posedge clk);
     start_transaction = 1;               @(posedge clk);
     start_transaction = 0;               @(posedge clk);
 
-    repeat(16) @(posedge clk);
+    repeat(18) @(posedge clk);
 
     master_in = 8'h22; slave_in = 8'h33; @(posedge clk);
     start_transaction = 1;               @(posedge clk);
     start_transaction = 0;               @(posedge clk);
 
-    // repeat(16) @(posedge clk);
+    repeat(18) @(posedge clk);
 
-    // master_in = 3;               @(posedge clk);
-    // start_transaction = 1;       @(posedge clk);
-    // start_transaction = 0;       @(posedge clk);
+    master_in = 8'h33; slave_in = 8'h33; @(posedge clk);
+    start_transaction = 1;               @(posedge clk);
+    start_transaction = 0;               @(posedge clk);
 
-    // repeat(16) @(posedge clk);
+    repeat(18) @(posedge clk);
 
-    // master_in = 4;               @(posedge clk);
-    // start_transaction = 1;       @(posedge clk);
-    // start_transaction = 0;       @(posedge clk);
-
-    // repeat(16) @(posedge clk);
-
-    // master_in = 5;               @(posedge clk);
-    // start_transaction = 1;       @(posedge clk);
-    // start_transaction = 0;       @(posedge clk);
-
-    // repeat(16) @(posedge clk);
-
-    // master_in = 6;               @(posedge clk);
-    // start_transaction = 1;       @(posedge clk);
-    // start_transaction = 0;       @(posedge clk);
+    master_in = 8'h44; slave_in = 8'h33; @(posedge clk);
+    start_transaction = 1;               @(posedge clk);
+    start_transaction = 0;               @(posedge clk);
 
     repeat(35) @(posedge clk); $finish;
+
   end
 
 
@@ -111,7 +100,3 @@ initial
   end 
 
 endmodule
-
-//  iverilog -o puspi  pu_buffer.v pu_spi.v pu_spi_tb.v spi_master_driver.v spi_slave_driver.v
-//  vvp puspi
-//  gtkwave pu_spi_tb.vcd

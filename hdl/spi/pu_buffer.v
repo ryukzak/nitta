@@ -28,13 +28,13 @@ always @(posedge clk or posedge rst) begin
   end
   else begin
     if ( ready ) begin
-      case (state)
-        STATE_START_READY:  begin         
+      case ( state )
+        STATE_START_READY: begin         
           time_buffer <= memory [ addres ]; // Save in the first line
           memory [ addres + 1 ] <= data_in;	// Write in the second line
           state <= STATE_STOP_READY;
         end
-        STATE_STOP_READY:   begin
+        STATE_STOP_READY: begin
           data_out <= time_buffer;
           state <= STATE_START_READY;
         end 
