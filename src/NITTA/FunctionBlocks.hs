@@ -36,6 +36,34 @@ boxFB :: ( FunctionalBlock (fb io v) v
 boxFB = FB
 
 
+
+-- ^ Симмулировать алгоритм
+simulateAlg vs fbs
+  = let initSt = M.fromList [ ((k, 0), v :: Int) | (k, v) <- vs ]
+        fbs' = fbSort vs fbs
+        inner st [] n = inner st fbs' (n + 1)
+        inner st (f:fs) n = let st' = simulate st n f
+                            in st' : inner st' fs n
+    in inner initSt fbs' 0
+
+
+-- данную функцию можно рассматривать исключительно как условно работающий прототип.
+fbSort vs = fbSort' (map fst vs)
+fbSort' _ [] = []
+fbSort' vs fbs
+  = let now = getNow
+        vs' = concatMap outputs now ++ vs
+        after = filter (not . (`elem` now)) fbs
+    in now ++ fbSort' vs' after
+  where
+    allow fb = not (insideOut fb) && null [ b | (b, a) <- dependency fb, not $ a `elem` vs ]
+    getNow
+      | let fbs' = filter allow fbs, not $ null fbs' = fbs'
+      | let fbs' = filter (\fb -> null [ b | (b, a) <- dependency fb, not $ a `elem` vs ]) fbs
+      , not $ null fbs' = fbs'
+      | otherwise = error "Can't sort functions for simulation!"
+
+
 ----------------------------------------
 
 

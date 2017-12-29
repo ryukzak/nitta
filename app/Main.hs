@@ -33,6 +33,7 @@ import           NITTA.Types
 import           NITTA.Utils
 import           System.FilePath          (joinPath)
 import           Text.StringTemplate
+import           Debug.Trace
 
 type T = TaggedTime String Int
 
@@ -170,7 +171,7 @@ branchExample
 
 main = do
   -- branchMain
-  simulateMain
+  simulateMain 10
 
 
 branchMain = do
@@ -181,18 +182,14 @@ branchMain = do
   print "ok"
 
 
-simulateMain = do
-  let salg = [ FB $ FB.Constant 2 $ O ["a"]
-             , FB $ FB.Add (I "a") (I "b") (O ["c"])
-             , FB $ FB.Loop (O ["b"]) (I "c")
-             ] :: [FB Parcel String]
-  let st = M.fromList ([(("b", 0), 0)] :: [((String, Int), Int)])
-  let st' = foldl (\cntx f -> simulate cntx 0 f) st salg
-  let st'' = foldl (\cntx f -> simulate cntx 1 f) st' salg
-  putStrLn $ show st
-  putStrLn $ show st'
-  putStrLn $ show st''
+simulateMain n = do
+  mapM_ putStrLn $ take n $ map show $ simulateAlg [("b", 0)]
+    [ boxFB $ FB.Constant 2 $ O ["a"]
+    , boxFB $ FB.Add (I "a") (I "b") (O ["c"])
+    , boxFB $ FB.Loop (O ["b"]) (I "c")
+    ]
   print "ok"
+
 
 
 getPU puTitle net = maybe (error "Wrong PU type!") id $ castPU $ bnPus net ! puTitle
