@@ -1,55 +1,172 @@
-module pu_accum_tb();
+`timescale 1 ps/ 1 ps
+module pu_accum_tb
+#(   parameter DATA_WIDTH = 4
+  ,  parameter ATTR_WIDTH = 4
+  ,  parameter SIGN       = 0
+  ,  parameter OVERFLOW   = 1
+)
+(); 
+reg clk 
+,   signal_load
+,   signal_init
+,   signal_neg
+,   signal_oe; 
 
-parameter DATA_WIDTH     = 16; 
-parameter ATTR_WIDTH     = 2;  
+reg [DATA_WIDTH-1:0] data_in;
+reg [ATTR_WIDTH-1:0] attr_in = 0;
 
-reg clk, load, init, neg, oe;
-reg [DATA_WIDTH-1:0]  data_in;
-reg [ATTR_WIDTH-1:0]  attr_in;
 wire [DATA_WIDTH-1:0] data_out;
-wire [ATTR_WIDTH-1:0] attr_out;
 
-pu_accum 
-  #( .DATA_WIDTH( DATA_WIDTH )
-   , .ATTR_WIDTH ( ATTR_WIDTH )
-  ) u (
-  .clk(clk),
-
-  .signal_load(load), .signal_init(init), .signal_neg(neg),
-  .data_in(data_in), .attr_in(attr_in),
-
-  .signal_oe(oe),
-  .data_out(data_out), .attr_out(attr_out)
+pu_accum unit_under_test (
+    .clk(clk),
+    .signal_load(signal_load),
+    .signal_init(signal_init),
+    .signal_neg(signal_neg),
+    .signal_oe(signal_oe),
+    .data_in(data_in),
+    .attr_in(attr_in),
+    .data_out(data_out)
 );
 
-initial
+
+task nop; // nop
+    begin
+        signal_load <= 0;
+        signal_init <= 0;
+        signal_neg  <= 0;
+        signal_oe   <= 0;
+        data_in     <= 0;
+    end
+endtask
+
+task Initialization;
+    input [DATA_WIDTH-1:0] id;
+    begin
+        signal_init <= id;        
+    end
+endtask
+
+task Load;
+    input [DATA_WIDTH-1:0] id;
+    begin
+        signal_load <= id;
+        signal_init = 0;
+        signal_oe   = 0;
+        signal_neg  = 0;
+    end
+endtask
+
+task outputdata;
+    input sig;
+    begin
+        signal_load <= 0;
+        signal_init <= 0;
+        signal_neg  <= 0;
+        signal_oe   <= sig;
+    end
+endtask
+
+task Send_value;
+    input [DATA_WIDTH-1:0] data;
+    begin
+        data_in = data;
+    end
+endtask
+
+task Send_attr_in;
+    input [ATTR_WIDTH-1:0] attr;
+    begin
+        attr_in = attr;
+    end
+endtask
+
+task Send_neg;
+    input x_neg;
+    begin
+        signal_neg = x_neg;
+    end
+endtask
+
+always
+  #5 clk = ~clk;
+
+reg RST;
+
+initial 
   begin
-    $dumpfile("dpu_accum_tb.vcd"); $dumpvars(0, pu_accum_tb); 
-    clk <= 1; load <= 0; init <= 0; neg <= 0; oe <= 0; #2
-    /*Nop */ load <= 0; init <= 0; neg <= 0; oe <= 0; attr_in <= 0; data_in <= 'h0000; #2
+    RST <= 1;
+    $display("Start programm");
+    clk = 0;
 
-    // /*Init*/ load <= 1; init <= 1; neg <= 1; oe <= 0; attr_in <= 0; data_in <= 'h0002; #2
-    // /*Init*/ load <= 1; init <= 1; neg <= 1; oe <= 0; attr_in <= 0; data_in <= 'h0002; #2
-    // /*Load*/ load <= 1; init <= 0; neg <= 1; oe <= 0; attr_in <= 0; data_in <= 'h0003; #2
-    // /*OE  */ load <= 0; init <= 0; neg <= 0; oe <= 1; attr_in <= 0; data_in <= 'h0000; #2
-    // /*Nop */ load <= 0; init <= 0; neg <= 0; oe <= 0; attr_in <= 0; data_in <= 'h0000; #2
+    nop(); @(posedge clk);
+ 
+    RST <= 0;
+    ///////////////////////////////////////////////////////////////
+    nop(); @(posedge clk);
+    ///////////////////////////////////////////////////////////////    
+    // Load(1);            @(posedge clk);
+    // Initialization(1);  repeat (2) @(posedge clk);
+    // Initialization(0);  repeat (2) @(posedge clk);
+    // Send_value(2);      repeat(2)   @(posedge clk); // сложит сам с собой из-за задержки
+    // Send_neg(0);        @(posedge clk);
+    // Send_value(3);      @(posedge clk);
+    // Load(0);            @(posedge clk);
+    // outputdata(0);      @(posedge clk);
+    ///////////////////////////////////////////////////////////////
+    // Load(1);            @(posedge clk);
+    // Initialization(1);  repeat (2) @(posedge clk);
+    // Initialization(0);  repeat (2) @(posedge clk);
+    // Send_value(7);      @(posedge clk);
+    // Send_neg(0);        @(posedge clk);
+    // Send_value(8);      @(posedge clk);
+    // Load(0);            @(posedge clk);
+    // outputdata(1);      @(posedge clk);
+    ////////////////////////////////////////////////////////////////
+    // Load(1);                    @(posedge clk);
+    // Initialization(1);          repeat (2) @(posedge clk);
+    // Initialization(0);          repeat (2) @(posedge clk);
+    // Load(0);                    @(posedge clk);
+    // Load(1);
+    // Send_value(9);              @(posedge clk);
+    // Load(0);                    @(posedge clk);
+    // //Send_Neg(0);              @(posedge clk); // start
+    // Load(1);
+    // Send_value(3);              @(posedge clk);    
+    // Load(0);                    @(posedge clk);
+    // //Send_Neg(0);              @(posedge clk);
+    // outputdata(1);              @(posedge clk);
+    // outputdata(0);              @(posedge clk);
+    // repeat(10) @(posedge clk);
+    ///////////////////////////////////////////////////////////////
+    nop();                            repeat(10) @(posedge clk);
+    outputdata(0);                    repeat(10) @(posedge clk);
+    ///////////////////////////////////////////////////////////////
+    // Load_Data(1);                @(posedge clk);
+    // Initialization (1);          repeat (2) @(posedge clk);
+    // Initialization (0);          repeat (2) @(posedge clk);
+    // Send_Value(5);               repeat(2) @(posedge clk);
+    // Send_Data_Out(1);            @(posedge clk);
+    // Send_Data_Out(0);            @(posedge clk);
+    // Send_Value(1);               repeat(2) @(posedge clk);
+    // Send_Value(data_out);        @(posedge clk);
+    // Send_Data_Out(1);            @(posedge clk);
+    // Load_Data(0);                @(posedge clk);
+    // Send_Data_Out(0);            @(posedge clk);
+    $finish;
+  end  
 
-    // /*Init*/ load <= 1; init <= 1; neg <= 0; oe <= 0; attr_in <= 0; data_in <= 'h0002; #2
-    // /*Init*/ load <= 1; init <= 1; neg <= 0; oe <= 0; attr_in <= 0; data_in <= 'h0002; #2
-    // /*Load*/ load <= 1; init <= 0; neg <= 0; oe <= 0; attr_in <= 0; data_in <= 'h0003; #2
-    // /*OE  */ load <= 0; init <= 0; neg <= 0; oe <= 1; attr_in <= 0; data_in <= 'h0000; #2
-    // /*Nop */ load <= 0; init <= 0; neg <= 0; oe <= 0; attr_in <= 0; data_in <= 'h0000; #2
-  
-    /*Init*/ load <= 1; init <= 1; neg <= 0; oe <= 0; attr_in <= 0; data_in <= 'h7fff; #2
-    /*Init*/ load <= 1; init <= 1; neg <= 0; oe <= 0; attr_in <= 0; data_in <= 'h7fff; #2
-    /*Load*/ load <= 1; init <= 0; neg <= 0; oe <= 0; attr_in <= 0; data_in <= 'h0001; #2
-    /*OE  */ load <= 0; init <= 0; neg <= 0; oe <= 1; attr_in <= 0; data_in <= 'h0000; #2
-    /*OE  */ load <= 0; init <= 0; neg <= 0; oe <= 1; attr_in <= 0; data_in <= 'h0000; #2
-    /*Nop */ load <= 0; init <= 0; neg <= 0; oe <= 0; attr_in <= 0; data_in <= 'h0000; #2
-
-    #6 $finish;
-  end
-
-always #1 clk = !clk;
-
+  initial
+  begin
+    $dumpfile("pu_accum.vcd");
+    $dumpvars(0,pu_accum_tb);
+    $display("finish");
+  end 
+       
 endmodule
+
+// ----------------------------------------------
+// iverilog -o test -I./ -y./ pu_accum.v pu_accum_tb.v
+// vvp test
+// gtkwave bench.vcd
+// iverilog -o test -I./ -y./ bench.v testbench.v && vvp test && gtkwave bench.vcd
+// ----------------------------------------------

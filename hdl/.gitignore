@@ -3,6 +3,7 @@ incremental_db/
 greybox_tmp/
 output_files/
 simulation/
+Simulaton/
 work/
 *.qws
 *_bb.v
@@ -12,3 +13,4 @@ work/
 *.mti
 *.mpf
 *.qip
+*.qsf
