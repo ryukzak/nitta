@@ -17,6 +17,8 @@ import           Data.Bits
 import           Data.Typeable (Typeable, cast)
 import           NITTA.Types
 import qualified Data.Map as M
+import           Data.List (find)
+import           Data.Maybe
 
 
 
@@ -36,32 +38,19 @@ boxFB :: ( FunctionalBlock (fb io v) v
 boxFB = FB
 
 
+out cntx step vs x = return $ foldl (\st v -> M.insert (v, step) x st) cntx vs
+
 
 -- ^ Симмулировать алгоритм
 simulateAlg vs fbs
   = let initSt = M.fromList [ ((k, 0), v :: Int) | (k, v) <- vs ]
-        fbs' = fbSort vs fbs
-        inner st [] n = inner st fbs' (n + 1)
-        inner st (f:fs) n = let st' = simulate st n f
-                            in st' : inner st' fs n
-    in inner initSt fbs' 0
-
-
--- данную функцию можно рассматривать исключительно как условно работающий прототип.
-fbSort vs = fbSort' (map fst vs)
-fbSort' _ [] = []
-fbSort' vs fbs
-  = let now = getNow
-        vs' = concatMap outputs now ++ vs
-        after = filter (not . (`elem` now)) fbs
-    in now ++ fbSort' vs' after
-  where
-    allow fb = not (insideOut fb) && null [ b | (b, a) <- dependency fb, not $ a `elem` vs ]
-    getNow
-      | let fbs' = filter allow fbs, not $ null fbs' = fbs'
-      | let fbs' = filter (\fb -> null [ b | (b, a) <- dependency fb, not $ a `elem` vs ]) fbs
-      , not $ null fbs' = fbs'
-      | otherwise = error "Can't sort functions for simulation!"
+        inner st [] n = inner st fbs (n + 1)
+        inner st fs n
+          = let Just f = find (isJust . simulate st n) fs
+                fs' = filter (/= f) fs
+                Just st' = simulate st n f
+            in st' : inner st' fs' n
+    in inner initSt fbs 0
 
 
 ----------------------------------------
@@ -77,8 +66,6 @@ instance IOType io v => FunctionalBlock (FramInput io v) v where
   isCritical _ = True
 instance FunctionSimulation (FramInput Parcel v) v Int where
   simulate = error "Can't functional simulate FramInput!"
-
-
 
 
 
@@ -107,10 +94,9 @@ instance IOType io v => FunctionalBlock (Reg io v) v where
                                   , b <- variables o
                                   ]
 instance ( Ord v ) => FunctionSimulation (Reg Parcel v) v Int where
-  simulate cntx step (Reg (I a) (O bs))
-    = let a' = cntx M.! (a, step)
-          b' = a'
-      in foldl (\st b -> M.insert (b, step) b' st) cntx bs
+  simulate cntx step (Reg (I a) (O bs)) = do
+    a' <- cntx M.!? (a, step)
+    out cntx step bs a'
 
 
 
@@ -124,16 +110,15 @@ instance IOType io v => FunctionalBlock (Loop io v) v where
   outputs (Loop a _b) = variables a
   insideOut _ = True
 instance ( Ord v ) => FunctionSimulation (Loop Parcel v) v Int where
-  simulate cntx step (Loop (O bs) (I a))
-    = let a' = cntx M.! (a, step)
-      in foldl (\st b -> M.insert (b, step + 1) a' st) cntx bs
+  simulate cntx step (Loop (O bs) (I a)) = do
+    a' <- cntx M.!? (a, step)
+    out cntx (step + 1) bs a'
 
 
 
 data Add io v = Add (I io v) (I io v) (O io v) deriving ( Typeable )
 deriving instance IOType io v => Show (Add io v)
 deriving instance IOType io v => Eq (Add io v)
--- add a b c = FB $ Add a b c
 
 instance IOType io v => FunctionalBlock (Add io v) v where
   inputs  (Add  a  b _c) = variables a ++ variables b
@@ -142,11 +127,11 @@ instance IOType io v => FunctionalBlock (Add io v) v where
                                     , y <- variables c
                                     ]
 instance ( Ord v ) => FunctionSimulation (Add Parcel v) v Int where
-  simulate cntx step (Add (I a) (I b) (O cs))
-    = let a' = cntx M.! (a, step)
-          b' = cntx M.! (b, step)
-          c' = a' + b'
-      in foldl (\st c -> M.insert (c, step) c' st) cntx cs
+  simulate cntx step (Add (I a) (I b) (O cs)) = do
+    a' <- cntx M.!? (a, step)
+    b' <- cntx M.!? (b, step)
+    let c' = a' + b'
+    out cntx step cs c'
 
 
 
@@ -158,7 +143,8 @@ instance ( IOType io v ) => FunctionalBlock (Constant io v) v where
   outputs (Constant _ o) = variables o
 instance ( Ord v ) => FunctionSimulation (Constant Parcel v) v Int where
   simulate cntx step (Constant x (O as))
-    = foldl (\st a -> M.insert (a, step) x st) cntx as
+    = out cntx step as x
+
 
 
 data ShiftL io v = ShiftL (I io v) (O io v) deriving ( Typeable )
@@ -168,7 +154,7 @@ deriving instance ( IOType io v ) => Eq (ShiftL io v)
 instance ( IOType io v ) => FunctionalBlock (ShiftL io v) v where
   outputs (ShiftL i o) = variables i ++ variables o
 instance ( Ord v ) => FunctionSimulation (ShiftL Parcel v) v Int where
-  simulate cntx step (ShiftL (I a) (O bs))
-    = let a' = cntx M.! (a, step)
-          b' = a' `shiftR` 1
-      in foldl (\st b -> M.insert (b, step) b' st) cntx bs
+  simulate cntx step (ShiftL (I a) (O bs)) = do
+    a' <- cntx M.!? (a, step)
+    let b' = a' `shiftR` 1
+    out cntx step bs b'

@@ -223,7 +223,7 @@ class WithFunctionalBlocks x fb | x -> fb where
 
 type FunSimCntx v x = M.Map (v, Int) x
 class FunctionSimulation fb v x | fb -> v where
-  simulate :: FunSimCntx v x -> Int -> fb -> FunSimCntx v x
+  simulate :: FunSimCntx v x -> Int -> fb -> Maybe (FunSimCntx v x)
 
 
 
