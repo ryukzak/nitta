@@ -40,7 +40,7 @@ import           NITTA.Utils
 -- TODO: Сделать визуализацию с явным выделением Stage-ов.
 data DataFlow v
   -- | Актор, вданном случае - функциональноый блок.
-  = Actor (FB Parcel v)
+  = Actor (FB (Parcel v) v)
   -- | Стадия вычислительного процесса. Может иметь произвольное колличество прыжков от
   -- входа к выходу. Важным свойством стадии является возможность параллельного выполнения
   -- всех элементов, входящих в её состав. Исключение - стадия с несколькими вариантами потока
@@ -60,7 +60,7 @@ instance ( Var v ) => Variables (DataFlow v) v where
   -- fixme -- outputs and internal transfers...
   variables s@Paths{..} = dfCond : inputsOfFBs (functionalBlocks s)
 
-instance WithFunctionalBlocks (DataFlow v) (FB Parcel v) where
+instance WithFunctionalBlocks (DataFlow v) (FB (Parcel v) v) where
   functionalBlocks (Actor fb) = [fb]
   functionalBlocks (Stage ss) = concatMap functionalBlocks ss
   functionalBlocks Paths{..}  = concatMap (functionalBlocks . snd) dfPaths

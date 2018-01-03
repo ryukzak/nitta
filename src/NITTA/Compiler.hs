@@ -289,7 +289,7 @@ mkBindDecision _ _ = undefined
 
 
 data BindOption title v = BindOption
-  { boFB       :: FB Parcel v
+  { boFB       :: FB (Parcel v) v
   , boTitle    :: title
   , boPriority :: Maybe BindPriority
   } deriving (Show)

@@ -186,7 +186,7 @@ simulateMain n = do
   mapM_ putStrLn $ take n $ map show $ simulateAlg [("b", 0)]
     [ boxFB $ FB.Constant 2 $ O ["a"]
     , boxFB $ FB.Add (I "a") (I "b") (O ["c"])
-    , boxFB $ FB.Loop (O ["b"]) (I "c")
+    , FB $ FB.Loop (O ["b"]) (I "c")
     ]
   print "ok"
 

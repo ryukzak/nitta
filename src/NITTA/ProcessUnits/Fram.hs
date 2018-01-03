@@ -71,6 +71,7 @@ import           Data.List             (find)
 import qualified Data.Map              as M
 import           Data.Maybe
 import qualified Data.String.Utils     as S
+import           Data.Typeable         (cast)
 import           NITTA.Compiler
 import           NITTA.FunctionBlocks
 import           NITTA.Lens
@@ -88,7 +89,7 @@ data Fram v t = Fram
   -- дополнительной информации, такой как время привязки функционального блока. Нельзя сразу делать
   -- привязку к ячейке памяти, так как это будет неэффективно.
   , frRemains  :: [ (FSet (Fram v t), ProcessUid) ]
-  , frBindedFB :: [ FB Parcel v ]
+  , frBindedFB :: [ FB (Parcel v) v ]
   , frProcess  :: Process v t
   , frSize     :: Int
   } deriving ( Show )
@@ -104,25 +105,25 @@ instance ( Default t ) => Default (Fram v t) where
       defaultSize = 16
       cells = map (\(i, c) -> c{ initialValue=0x1000 + i }) $ zip [0..] $ repeat def
 
-instance WithFunctionalBlocks (Fram v t) (FB Parcel v) where
+instance WithFunctionalBlocks (Fram v t) (FB (Parcel v) v) where
   functionalBlocks Fram{..} = frBindedFB
 
 
 
 instance FunctionalSet (Fram v t) where
   data FSet (Fram v t)
-    = FramInput' (FramInput Parcel v)
-    | FramOutput' (FramOutput Parcel v)
-    | Loop' (Loop Parcel v)
-    | Reg' (Reg Parcel v)
-    | Constant' (Constant Parcel v)
+    = FramInput' (FramInput (Parcel v) v)
+    | FramOutput' (FramOutput (Parcel v) v)
+    | Loop' (Loop (Parcel v))
+    | Reg' (Reg (Parcel v) v)
+    | Constant' (Constant (Parcel v) v)
     deriving ( Show, Eq )
 
-instance ( Var v ) => WithFunctionalBlocks (FSet (Fram v t)) (FB Parcel v) where
+instance ( Var v ) => WithFunctionalBlocks (FSet (Fram v t)) (FB (Parcel v) v) where
   -- TODO: Сделать данную операцию через Generics.
   functionalBlocks (FramInput' fb)  = [ boxFB fb ]
   functionalBlocks (FramOutput' fb) = [ boxFB fb ]
-  functionalBlocks (Loop' fb)       = [ boxFB fb ]
+  functionalBlocks (Loop' fb)       = [ FB fb ]
   functionalBlocks (Reg' fb)        = [ boxFB fb ]
   functionalBlocks (Constant' fb)   = [ boxFB fb ]
 
@@ -130,7 +131,7 @@ instance ( Var v ) => ToFSet (Fram v t) v where
   toFSet fb0
     | Just fb@(Constant _ _) <- castFB fb0 = Right $ Constant' fb
     | Just fb@(Reg _ _) <- castFB fb0 = Right $ Reg' fb
-    | Just fb@(Loop _ _) <- castFB fb0 = Right $ Loop' fb
+    | Just fb@(Loop _ _) <- cast fb0 = Right $ Loop' fb
     | Just fb@(FramInput _ _) <- castFB fb0 = Right $ FramInput' fb
     | Just fb@(FramOutput _ _) <- castFB fb0 = Right $ FramOutput' fb
     | otherwise = Left $ "Fram don't support " ++ show fb0
@@ -237,7 +238,11 @@ bindToCell _ fb cell = Left $ "Can't bind " ++ show fb ++ " to " ++ show cell
 
 
 
-instance ( IOType Parcel v, Var v, Time t, WithFunctionalBlocks (Fram v t) (FB Parcel v) ) => ProcessUnit (Fram v t) v t where
+instance ( IOType (Parcel v) v
+         , Var v
+         , Time t
+         , WithFunctionalBlocks (Fram v t) (FB (Parcel v) v)
+         ) => ProcessUnit (Fram v t) v t where
   bind fb0 pu@Fram{..} = do fb' <- toFSet fb0
                             pu' <- bind' fb'
                             if isSchedulingComplete pu'
@@ -622,7 +627,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
                  ]
 
     outputStep fb
-      | Just (Loop _bs (I a)) <- castFB fb = Just (findAddress a pu, a)
+      | Just (Loop _bs (I a)) <- cast fb = Just (findAddress a pu, a)
       | Just (FramOutput addr (I a)) <- castFB fb = Just (addr, a)
       | otherwise = Nothing
 
