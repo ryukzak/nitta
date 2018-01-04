@@ -14,7 +14,7 @@ module pu_buffer
 reg [DATA_WIDTH-1:0] memory [0:2**BUF_SIZE-1]; 
 reg [DATA_WIDTH-1:0]        time_buffer;
 reg [BUF_SIZE-1:0]          addres;
-reg [2:0]                   state;
+reg                         state;
 reg addr_incremented;
 
 localparam STATE_START_READY  = 0; 
