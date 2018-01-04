@@ -10,10 +10,12 @@ module pu_buffer
   , input       [DATA_WIDTH-1:0]  data_in
   , output reg  [DATA_WIDTH-1:0]  data_out
   );
+  
+localparam ADDR_WIDTH  = $clog2( BUF_SIZE );
 
-reg [DATA_WIDTH-1:0] memory [0:2**BUF_SIZE-1]; 
+reg [DATA_WIDTH-1:0] memory [0:BUF_SIZE-1]; 
 reg [DATA_WIDTH-1:0]        time_buffer;
-reg [BUF_SIZE-1:0]          addres;
+reg [ADDR_WIDTH-1:0]        addres;
 reg                         state;
 reg addr_incremented;
 
