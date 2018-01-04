@@ -1,4 +1,4 @@
-`timescale 1 ms/ 1 ms
+`timescale 1ns/1ps
 module pu_buffer_tb
 #(  
     parameter DATA_WIDTH  = 8
