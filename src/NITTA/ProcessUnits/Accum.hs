@@ -36,7 +36,7 @@ instance Default (AccumState v t) where
 instance ( Var v, Time t ) => SerialPUState (AccumState v t) (Parcel v) v t where
 
   bindToState fb ac@Accum{ acIn=[], acOut=[] }
-    | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[a, b], acOut = cs }
+    | Just (Add (I a) (I b) (O cs)) <- cast fb = Right ac{ acIn=[a, b], acOut = cs }
     | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
@@ -102,9 +102,9 @@ instance UnambiguouslyDecode (Accum v t) where
 
 instance ( Var v ) => Simulatable (Accum v t) v Int where
   variableValue fb SerialPU{..} cntx (v, i)
-    | Just (Add (I a) _ _) <- castFB fb, a == v               = cntx M.! (v, i)
-    | Just (Add _ (I b) _) <- castFB fb, b == v               = cntx M.! (v, i)
-    | Just (Add (I a) (I b) (O cs)) <- castFB fb, v `elem` cs = cntx M.! (a, i) + cntx M.! (b, i)
+    | Just (Add (I a) _ _) <- cast fb, a == v               = cntx M.! (v, i)
+    | Just (Add _ (I b) _) <- cast fb, b == v               = cntx M.! (v, i)
+    | Just (Add (I a) (I b) (O cs)) <- cast fb, v `elem` cs = cntx M.! (a, i) + cntx M.! (b, i)
     | otherwise = error $ "Can't simulate " ++ show fb
 
 

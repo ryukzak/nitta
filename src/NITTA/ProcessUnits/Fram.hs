@@ -112,28 +112,28 @@ instance WithFunctionalBlocks (Fram v t) (FB (Parcel v) v) where
 
 instance FunctionalSet (Fram v t) where
   data FSet (Fram v t)
-    = FramInput' (FramInput (Parcel v) v)
-    | FramOutput' (FramOutput (Parcel v) v)
+    = FramInput' (FramInput (Parcel v))
+    | FramOutput' (FramOutput (Parcel v))
     | Loop' (Loop (Parcel v))
-    | Reg' (Reg (Parcel v) v)
-    | Constant' (Constant (Parcel v) v)
+    | Reg' (Reg (Parcel v))
+    | Constant' (Constant (Parcel v))
     deriving ( Show, Eq )
 
 instance ( Var v ) => WithFunctionalBlocks (FSet (Fram v t)) (FB (Parcel v) v) where
   -- TODO: Сделать данную операцию через Generics.
-  functionalBlocks (FramInput' fb)  = [ boxFB fb ]
-  functionalBlocks (FramOutput' fb) = [ boxFB fb ]
+  functionalBlocks (FramInput' fb)  = [ FB fb ]
+  functionalBlocks (FramOutput' fb) = [ FB fb ]
   functionalBlocks (Loop' fb)       = [ FB fb ]
-  functionalBlocks (Reg' fb)        = [ boxFB fb ]
-  functionalBlocks (Constant' fb)   = [ boxFB fb ]
+  functionalBlocks (Reg' fb)        = [ FB fb ]
+  functionalBlocks (Constant' fb)   = [ FB fb ]
 
 instance ( Var v ) => ToFSet (Fram v t) v where
   toFSet fb0
-    | Just fb@(Constant _ _) <- castFB fb0 = Right $ Constant' fb
-    | Just fb@(Reg _ _) <- castFB fb0 = Right $ Reg' fb
+    | Just fb@(Constant _ _) <- cast fb0 = Right $ Constant' fb
+    | Just fb@(Reg _ _) <- cast fb0 = Right $ Reg' fb
     | Just fb@(Loop _ _) <- cast fb0 = Right $ Loop' fb
-    | Just fb@(FramInput _ _) <- castFB fb0 = Right $ FramInput' fb
-    | Just fb@(FramOutput _ _) <- castFB fb0 = Right $ FramOutput' fb
+    | Just fb@(FramInput _ _) <- cast fb0 = Right $ FramInput' fb
+    | Just fb@(FramOutput _ _) <- cast fb0 = Right $ FramOutput' fb
     | otherwise = Left $ "Fram don't support " ++ show fb0
 
 isReg (Reg' _) = True
@@ -628,7 +628,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
     outputStep fb
       | Just (Loop _bs (I a)) <- cast fb = Just (findAddress a pu, a)
-      | Just (FramOutput addr (I a)) <- castFB fb = Just (addr, a)
+      | Just (FramOutput addr (I a)) <- cast fb = Just (addr, a)
       | otherwise = Nothing
 
     checkBank addr v value = concatMap ("    " ++)

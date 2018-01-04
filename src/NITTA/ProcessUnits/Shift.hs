@@ -37,7 +37,7 @@ instance Default (ShiftState v t) where
 instance ( Var v, Time t ) => SerialPUState (ShiftState v t) (Parcel v) v t where
 
   bindToState fb s@ShiftState{ sIn=Nothing, sOut=[] }
-    | Just (ShiftL (I a) (O cs)) <- castFB fb = Right s{ sIn=Just a, sOut = cs }
+    | Just (ShiftL (I a) (O cs)) <- cast fb = Right s{ sIn=Just a, sOut = cs }
     | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
@@ -102,8 +102,8 @@ instance UnambiguouslyDecode (Shift v t) where
 
 instance ( Var v ) => Simulatable (Shift v t) v Int where
   variableValue fb SerialPU{..} cntx (v, i)
-    | Just (ShiftL (I a) _) <- castFB fb, a == v           = cntx M.! (v, i)
-    | Just (ShiftL (I a) (O cs)) <- castFB fb, v `elem` cs = cntx M.! (a, i) `shiftR` 1
+    | Just (ShiftL (I a) _) <- cast fb, a == v           = cntx M.! (v, i)
+    | Just (ShiftL (I a) (O cs)) <- cast fb, v `elem` cs = cntx M.! (a, i) `shiftR` 1
     | otherwise = error $ "Can't simulate " ++ show fb
 
 

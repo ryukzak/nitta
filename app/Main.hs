@@ -19,6 +19,7 @@ import           Data.Proxy
 import           Data.String.Utils
 import qualified Data.String.Utils        as S
 import           Data.Typeable
+import           Debug.Trace
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.Flows
@@ -33,7 +34,6 @@ import           NITTA.Types
 import           NITTA.Utils
 import           System.FilePath          (joinPath)
 import           Text.StringTemplate
-import           Debug.Trace
 
 type T = TaggedTime String Int
 
@@ -184,8 +184,8 @@ branchMain = do
 
 simulateMain n = do
   mapM_ putStrLn $ take n $ map show $ simulateAlg [("b", 0)]
-    [ boxFB $ FB.Constant 2 $ O ["a"]
-    , boxFB $ FB.Add (I "a") (I "b") (O ["c"])
+    [ FB $ FB.Constant 2 $ O ["a"] :: FB (Parcel String) String
+    , FB $ FB.Add (I "a") (I "b") (O ["c"])
     , FB $ FB.Loop (O ["b"]) (I "c")
     ]
   print "ok"
