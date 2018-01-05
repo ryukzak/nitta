@@ -17,7 +17,7 @@ import           Data.Bits
 import           Data.List     (find)
 import qualified Data.Map      as M
 import           Data.Maybe
-import           Data.Typeable (Typeable, cast)
+import           Data.Typeable
 import           NITTA.Types
 
 
@@ -26,16 +26,7 @@ class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 
 
-castFB :: ( Typeable v, Typeable (fb io v) ) => FB io v -> Maybe (fb io v)
-castFB (FB fb) = cast fb
 
-boxFB :: ( FunctionalBlock (fb io v) v
-         , FunctionSimulation (fb io v) v Int
-         , Variables (fb io v) v
-         , IOType io v
-         , Show (fb io v)
-         ) => fb io v -> FB io v
-boxFB = FB
 
 
 out cntx step vs x = return $ foldl (\st v -> M.insert (v, step) x st) cntx vs
