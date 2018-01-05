@@ -20,7 +20,6 @@ where
 
 import           Control.Arrow    (second)
 import           Data.Default
-import           Data.Either
 import           Data.List        (find, intersect, nub, sort, sortBy, sortOn)
 import qualified Data.Map         as M
 import           Data.Maybe       (catMaybes, isJust, mapMaybe)
@@ -34,7 +33,7 @@ import           Numeric.Interval ((...))
 
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
-bindAll fbs pu = fromRight (error "Can't bind FB to PU!") $ foldl nextBind (Right pu) fbs
+bindAll fbs pu = either (\l -> error $ "Can't bind FB to PU: " ++ show l) id $ foldl nextBind (Right pu) fbs
   where
     nextBind (Right pu') fb = bind fb pu'
     nextBind (Left r) _     = error r

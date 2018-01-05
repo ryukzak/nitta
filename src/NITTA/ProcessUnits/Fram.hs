@@ -128,7 +128,7 @@ instance ( Var v ) => WithFunctionalBlocks (FSet (Fram v t)) (FB (Parcel v) v) w
   functionalBlocks (Constant' fb)   = [ FB fb ]
 
 instance ( Var v ) => ToFSet (Fram v t) v where
-  toFSet fb0
+  toFSet (FB fb0)
     | Just fb@(Constant _ _) <- cast fb0 = Right $ Constant' fb
     | Just fb@(Reg _ _) <- cast fb0 = Right $ Reg' fb
     | Just fb@(Loop _ _) <- cast fb0 = Right $ Loop' fb
@@ -626,7 +626,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
                  , let Just (addr, v) = addr_v
                  ]
 
-    outputStep fb
+    outputStep (FB fb)
       | Just (Loop _bs (I a)) <- cast fb = Just (findAddress a pu, a)
       | Just (FramOutput addr (I a)) <- cast fb = Just (addr, a)
       | otherwise = Nothing

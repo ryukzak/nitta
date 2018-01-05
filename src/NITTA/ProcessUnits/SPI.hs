@@ -24,10 +24,10 @@ import           Numeric.Interval            (singleton, (...))
 
 
 
-type SPI_PU v t = SerialPU (SPI_State v t) Parcel v t
+type SPI_PU v t = SerialPU (SPI_State v t) (Parcel v) v t
 
-data SPI_State v t = SPI_State { spiSend :: ([I Parcel v], [I Parcel v])
-                               , spuReceive :: ([O Parcel v], [O Parcel v])
+data SPI_State v t = SPI_State { spiSend    :: ([I (Parcel v)], [I (Parcel v)])
+                               , spuReceive :: ([O (Parcel v)], [O (Parcel v)])
                                }
   deriving ( Show )
 
@@ -36,7 +36,7 @@ instance Default (SPI_State v t) where
 
 
 
-instance ( Var v, Time t ) => SerialPUState (SPI_State v t) Parcel v t where
+instance ( Var v, Time t ) => SerialPUState (SPI_State v t) (Parcel v) v t where
 
   -- bindToState fb ac@Accum{ acIn=[], acOut=[] }
   --   | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[a, b], acOut = cs }

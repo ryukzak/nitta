@@ -22,11 +22,11 @@ framProxy = Proxy :: Proxy (Fram String Int)
 
 instance Arbitrary (FSet (Fram String t)) where
   -- TODO: Сделать данную операцию через Generics.
-  arbitrary = oneof [ FramInput' <$> (arbitrary :: Gen (FramInput Parcel String))
-                    , FramOutput' <$> (arbitrary :: Gen (FramOutput Parcel String))
-                    , Loop' <$> (arbitrary :: Gen (Loop Parcel String))
-                    , Reg' <$> (arbitrary :: Gen (Reg Parcel String))
-                    , Constant' <$> (arbitrary :: Gen (Constant Parcel String))
+  arbitrary = oneof [ FramInput' <$> (arbitrary :: Gen (FramInput (Parcel String)))
+                    , FramOutput' <$> (arbitrary :: Gen (FramOutput (Parcel String)))
+                    , Loop' <$> (arbitrary :: Gen (Loop (Parcel String)))
+                    , Reg' <$> (arbitrary :: Gen (Reg (Parcel String)))
+                    , Constant' <$> (arbitrary :: Gen (Constant (Parcel String)))
                     ]
 
 
