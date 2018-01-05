@@ -25,6 +25,7 @@ library
                      , NITTA.Flows
                      , NITTA.ProcessUnits.Fram
                      , NITTA.ProcessUnits.SPI
+                     , NITTA.ProcessUnits.Shift
                      , NITTA.ProcessUnits.Accum
                      , NITTA.Lens
                      , NITTA.Types.Poly

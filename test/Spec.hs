@@ -20,6 +20,7 @@ import           NITTA.ProcessUnits.FramSpec
 import           NITTA.ProcessUnitsSpec
 import           NITTA.TestBench
 import           NITTA.Types
+import           NITTA.Utils
 import           System.Environment
 import           System.FilePath             (joinPath)
 import           Test.Tasty
@@ -36,6 +37,7 @@ main = do
     [ testGroup "Fram unittests" huFramTests
     , testGroup "Fram quickcheck" (qcFramTests counter)
     , testGroup "BusNetwork unittests" [ accum_fram1_fram2_netTests ]
+    , testGroup "Utils" [ values2dumpTests ]
     ]
 
 qcFramTests counter
@@ -116,3 +118,10 @@ accum_fram1_fram2_netTests
         workdir = joinPath ["hdl", "gen", "unittest_accum_fram1_fram2_net"]
     in testCase "Obscure integration test for net of accum, fram1, fram2"
           $ assert $ testBench library workdir net'' ([] :: [(String, Int)])
+
+
+values2dumpTests = testCase "values2dump" $ do
+  assertEqual "values2dump: xxxx" "0" $ values2dump [X, X, X, X]
+  assertEqual "values2dump: 0000" "0" $ values2dump [B False, B False, B False, B False]
+  assertEqual "values2dump: 1111" "f" $ values2dump [B True, B True, B True, B True]
+  assertEqual "values2dump: 10111" "17" $ values2dump [B True, B False, B True, B True, B True]

@@ -21,6 +21,7 @@ module NITTA.Flows
 where
 
 import           Data.List        (nub, (\\))
+import           Data.Typeable
 import           NITTA.BusNetwork
 import           NITTA.Types
 import           NITTA.Utils
@@ -39,7 +40,7 @@ import           NITTA.Utils
 -- TODO: Сделать визуализацию с явным выделением Stage-ов.
 data DataFlow v
   -- | Актор, вданном случае - функциональноый блок.
-  = Actor (FB Parcel v)
+  = Actor (FB (Parcel v) v)
   -- | Стадия вычислительного процесса. Может иметь произвольное колличество прыжков от
   -- входа к выходу. Важным свойством стадии является возможность параллельного выполнения
   -- всех элементов, входящих в её состав. Исключение - стадия с несколькими вариантами потока
@@ -59,7 +60,7 @@ instance ( Var v ) => Variables (DataFlow v) v where
   -- fixme -- outputs and internal transfers...
   variables s@Paths{..} = dfCond : inputsOfFBs (functionalBlocks s)
 
-instance WithFunctionalBlocks (DataFlow v) (FB Parcel v) where
+instance WithFunctionalBlocks (DataFlow v) (FB (Parcel v) v) where
   functionalBlocks (Actor fb) = [fb]
   functionalBlocks (Stage ss) = concatMap functionalBlocks ss
   functionalBlocks Paths{..}  = concatMap (functionalBlocks . snd) dfPaths
@@ -192,7 +193,7 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
   decision _ branch@Branch{..} act = branch{ topPU=decision binding topPU act }
   decision _ _ _                   = undefined
 
-instance ( Title title, Var v, Time t
+instance ( Typeable title, Ord title, Show title, Var v, Time t
          ) => DecisionProblem (DataFlowDT title v t)
                    DataFlowDT (BranchedProcess title tag v t)
          where

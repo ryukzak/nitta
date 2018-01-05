@@ -57,11 +57,11 @@ data GBusNetwork title spu v t =
   BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
-      bnRemains            :: [FB Parcel v]
+      bnRemains            :: [FB (Parcel v) v]
     -- | Список переданных через сеть переменных (используется для понимания готовности).
     , bnForwardedVariables :: [v]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded             :: M.Map title [FB Parcel v]
+    , bnBinded             :: M.Map title [FB (Parcel v) v]
     -- | Описание вычислительного процесса сети, как элемента процессора.
     , bnProcess            :: Process v t
     -- | Словарь вложенных вычислительных блоков по именам.
@@ -70,7 +70,7 @@ data GBusNetwork title spu v t =
     , bnWires              :: Array Int [(title, S)]
     }
 type BusNetwork title v t = GBusNetwork title (PU v t) v t
-busNetwork pus = BusNetwork [] [] (M.fromList []) def (M.fromList pus)
+busNetwork pus wires = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wires
 
 
 
@@ -206,13 +206,10 @@ instance Controllable (BusNetwork title v t) where
 
 
 instance ( Title title ) => ByTime (BusNetwork title v t) t where
-  signalAt BusNetwork{..} t (Wire i) = foldl (+++) X $ map (uncurry subSignal) $ bnWires ! i
+  signalAt BusNetwork{..} t (Wire i)
+    = foldl (+++) X $ map (\(title, bs) -> subSignal (bnPus M.! title) bs) $ bnWires ! i
     where
-      subSignal puTitle s = case (bnPus M.! puTitle, s) of
-        (PU pu', S s')
-          | Just s'' <- cast s'
-          -> signalAt pu' t s''
-          | otherwise -> error "Wrong signal!"
+      subSignal (PU pu') (S s) = maybe (error "Wrong signal!") (signalAt pu' t) $ cast s
 
 
 
@@ -342,23 +339,22 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
       cntx :: ( Typeable pu, Show (Signal pu)
               ) => String -> pu -> Proxy (Signal pu) -> [(String, String)]
       cntx title _spu p
-        = [ ( "Clk", "clk" )
-          , ( "DataIn", "data_bus" )
-          , ( "AttrIn", "attr_bus" )
-          , ( "DataOut", valueData title )
-          , ( "AttrOut", valueAttr title )
-          ] ++ mapMaybe foo [ (i, s)
-                            | (i, ds) <- assocs bnWires
-                            , (title', s) <- ds
-                            , title' == title
-                            ]
+        = mapMaybe (uncurry cntxRow) [ (i, s) | (i, ds) <- assocs bnWires
+                                     , (title', s) <- ds
+                                     , title' == title
+                                     ]
+        ++  [ ( "DataOut", valueData title )
+            , ( "AttrOut", valueAttr title )
+            , ( "DataIn", "data_bus" )
+            , ( "AttrIn", "attr_bus" )
+            , ( "DATA_WIDTH", "DATA_WIDTH" )
+            , ( "ATTR_WIDTH", "ATTR_WIDTH" )
+            , ( "Clk", "clk" )
+            ]
         where
-          foo (i, S s)
-            | Just s' <- cast s
-            = Just ( S.replace " " "_" $ show (s' `asProxyTypeOf` p)
-                   , "signals_out[ " ++ show i ++ " ]"
-                   )
-          foo _ = Nothing
+          cntxRow i (S s) = fmap (\s' -> ( S.replace " " "_" $ show (s' `asProxyTypeOf` p)
+                                         , "signals_out[ " ++ show i ++ " ]"
+                                         )) $ cast s
 
   software pu@BusNetwork{ bnProcess=Process{..}, ..}
     = Project (name pu) $ map software (M.elems bnPus)

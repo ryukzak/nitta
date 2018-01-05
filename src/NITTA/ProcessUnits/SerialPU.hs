@@ -55,7 +55,7 @@ data SerialPU st io v t
   , spuProcess :: Process v t
   } deriving ( Show )
 
-instance ( Time t, Var v, Default st ) => Default (SerialPU st Parcel v t) where
+instance ( Time t, Var v, Default st ) => Default (SerialPU st (Parcel v) v t) where
   def = SerialPU def def def def
 
 
@@ -93,9 +93,9 @@ class SerialPUState st io v t | st -> io, st -> v, st -> t where
 
 instance ( Var v, Time t
          , Default st
-         , SerialPUState st Parcel v t
+         , SerialPUState st (Parcel v) v t
          ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (SerialPU st Parcel v t)
+                   EndpointDT (SerialPU st (Parcel v) v t)
          where
   options _proxy SerialPU{ spuCurrent=Nothing, .. }
     = concatMap ((\f -> f $ nextTick spuProcess) . stateOptions)
@@ -140,8 +140,8 @@ instance ( Var v, Time t
 
 instance ( Var v, Time t
          , Default st
-         , SerialPUState st Parcel v t
-         ) => ProcessUnit (SerialPU st Parcel v t) v t where
+         , SerialPUState st (Parcel v) v t
+         ) => ProcessUnit (SerialPU st (Parcel v) v t) v t where
 
   bind fb pu@SerialPU{..}
     -- Почему делается попытка привязать функцию к нулевому состоянию последовательного вычислителя,
@@ -161,12 +161,12 @@ instance ( Var v, Time t
 
 
 instance ( Var v, Time t
-         , Default (Instruction (SerialPU st Parcel v t))
-         , Show (Instruction (SerialPU st Parcel v t))
+         , Default (Instruction (SerialPU st (Parcel v) v t))
+         , Show (Instruction (SerialPU st (Parcel v) v t))
          , Typeable st, Default st
-         , SerialPUState st Parcel v t
-         , UnambiguouslyDecode (SerialPU st Parcel v t)
-         ) => ByTime (SerialPU st Parcel v t) t where
+         , SerialPUState st (Parcel v) v t
+         , UnambiguouslyDecode (SerialPU st (Parcel v) v t)
+         ) => ByTime (SerialPU st (Parcel v) v t) t where
   signalAt pu@SerialPU{..} t sig
     = let instr = fromMaybe def $ extractInstructionAt pu t
       in decodeInstruction instr sig

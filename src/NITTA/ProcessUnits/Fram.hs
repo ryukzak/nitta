@@ -71,6 +71,7 @@ import           Data.List             (find)
 import qualified Data.Map              as M
 import           Data.Maybe
 import qualified Data.String.Utils     as S
+import           Data.Typeable         (cast)
 import           NITTA.Compiler
 import           NITTA.FunctionBlocks
 import           NITTA.Lens
@@ -88,7 +89,7 @@ data Fram v t = Fram
   -- дополнительной информации, такой как время привязки функционального блока. Нельзя сразу делать
   -- привязку к ячейке памяти, так как это будет неэффективно.
   , frRemains  :: [ (FSet (Fram v t), ProcessUid) ]
-  , frBindedFB :: [ FB Parcel v ]
+  , frBindedFB :: [ FB (Parcel v) v ]
   , frProcess  :: Process v t
   , frSize     :: Int
   } deriving ( Show )
@@ -104,35 +105,35 @@ instance ( Default t ) => Default (Fram v t) where
       defaultSize = 16
       cells = map (\(i, c) -> c{ initialValue=0x1000 + i }) $ zip [0..] $ repeat def
 
-instance WithFunctionalBlocks (Fram v t) (FB Parcel v) where
+instance WithFunctionalBlocks (Fram v t) (FB (Parcel v) v) where
   functionalBlocks Fram{..} = frBindedFB
 
 
 
 instance FunctionalSet (Fram v t) where
   data FSet (Fram v t)
-    = FramInput' (FramInput Parcel v)
-    | FramOutput' (FramOutput Parcel v)
-    | Loop' (Loop Parcel v)
-    | Reg' (Reg Parcel v)
-    | Constant' (Constant Parcel v)
+    = FramInput' (FramInput (Parcel v))
+    | FramOutput' (FramOutput (Parcel v))
+    | Loop' (Loop (Parcel v))
+    | Reg' (Reg (Parcel v))
+    | Constant' (Constant (Parcel v))
     deriving ( Show, Eq )
 
-instance ( Var v ) => WithFunctionalBlocks (FSet (Fram v t)) (FB Parcel v) where
+instance ( Var v ) => WithFunctionalBlocks (FSet (Fram v t)) (FB (Parcel v) v) where
   -- TODO: Сделать данную операцию через Generics.
-  functionalBlocks (FramInput' fb)  = [ boxFB fb ]
-  functionalBlocks (FramOutput' fb) = [ boxFB fb ]
-  functionalBlocks (Loop' fb)       = [ boxFB fb ]
-  functionalBlocks (Reg' fb)        = [ boxFB fb ]
-  functionalBlocks (Constant' fb)   = [ boxFB fb ]
+  functionalBlocks (FramInput' fb)  = [ FB fb ]
+  functionalBlocks (FramOutput' fb) = [ FB fb ]
+  functionalBlocks (Loop' fb)       = [ FB fb ]
+  functionalBlocks (Reg' fb)        = [ FB fb ]
+  functionalBlocks (Constant' fb)   = [ FB fb ]
 
 instance ( Var v ) => ToFSet (Fram v t) v where
   toFSet fb0
-    | Just fb@(Constant _ _) <- castFB fb0 = Right $ Constant' fb
-    | Just fb@(Reg _ _) <- castFB fb0 = Right $ Reg' fb
-    | Just fb@(Loop _ _) <- castFB fb0 = Right $ Loop' fb
-    | Just fb@(FramInput _ _) <- castFB fb0 = Right $ FramInput' fb
-    | Just fb@(FramOutput _ _) <- castFB fb0 = Right $ FramOutput' fb
+    | Just fb@(Constant _ _) <- cast fb0 = Right $ Constant' fb
+    | Just fb@(Reg _ _) <- cast fb0 = Right $ Reg' fb
+    | Just fb@(Loop _ _) <- cast fb0 = Right $ Loop' fb
+    | Just fb@(FramInput _ _) <- cast fb0 = Right $ FramInput' fb
+    | Just fb@(FramOutput _ _) <- cast fb0 = Right $ FramOutput' fb
     | otherwise = Left $ "Fram don't support " ++ show fb0
 
 isReg (Reg' _) = True
@@ -237,7 +238,11 @@ bindToCell _ fb cell = Left $ "Can't bind " ++ show fb ++ " to " ++ show cell
 
 
 
-instance ( IOType Parcel v, Var v, Time t, WithFunctionalBlocks (Fram v t) (FB Parcel v) ) => ProcessUnit (Fram v t) v t where
+instance ( IOType (Parcel v) v
+         , Var v
+         , Time t
+         , WithFunctionalBlocks (Fram v t) (FB (Parcel v) v)
+         ) => ProcessUnit (Fram v t) v t where
   bind fb0 pu@Fram{..} = do fb' <- toFSet fb0
                             pu' <- bind' fb'
                             if isSchedulingComplete pu'
@@ -536,20 +541,18 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
         , "wire [DATA_WIDTH-1:0] data_out;                                                                           "
         , "wire [ATTR_WIDTH-1:0] attr_out;                                                                           "
         , "                                                                                                          "
-        , "pu_fram                                                                                                   "
-        , "  #( .RAM_SIZE( 16 )                                                                                      "
-        , "  ,  .DATA_WIDTH( 32 )                                                                                    "
-        , "  ,  .ATTR_WIDTH( 4 )                                                                                     "
-        , "  ) fram (                                                                                                "
-        , "  .clk(clk),                                                                                              "
-        , "  .signal_addr(addr),                                                                                     "
-        , "  .signal_wr(wr),                                                                                         "
-        , "  .data_in(data_in),                                                                                      "
-        , "  .attr_in(attr_in),                                                                                      "
-        , "  .signal_oe(oe),                                                                                         "
-        , "  .data_out(data_out),                                                                                    "
-        , "  .attr_out(attr_out)                                                                                     "
-        , "  );                                                                                                      "
+        , hardwareInstance pu "fram" [ ( "Clk", "clk" )
+                                     , ( "ADDR_0", "addr[0]" )  -- FIXME: Нет, это перечисление по адресу есть зло.
+                                     , ( "ADDR_1", "addr[1]" )
+                                     , ( "ADDR_2", "addr[2]" )
+                                     , ( "ADDR_3", "addr[3]" )
+                                     , ( "DataIn", "data_in" )
+                                     , ( "AttrIn", "attr_in" )
+                                     , ( "WR", "wr" )
+                                     , ( "OE", "oe" )
+                                     , ( "DataOut", "data_out" )
+                                     , ( "AttrOut", "attr_out" )
+                                     ]
         , "                                                                                                          "
         , verilogWorkInitialze
         , verilogClockGenerator
@@ -590,7 +593,8 @@ testDataInput Fram{ frProcess=p@Process{..}, ..} cntx
   = concatMap ( ("      " ++) . (++ " @(negedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
   where
     busState t
-      | Just (Target v) <- endpointAt t p = "data_in <= " ++ show (cntx M.! (v, 0)) ++ ";"
+      | Just (Target v) <- endpointAt t p
+       = "data_in <= " ++ show (cntx M.! (v, 0)) ++ ";"
       | otherwise = "/* NO INPUT */"
 
 testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
@@ -603,7 +607,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
       = "/* NO OUTPUT */"
 
     checkBus v value = concat
-      [ "if ( !( data_out == " ++ show value ++ " ) ) "
+      [ "if ( !( data_out === " ++ show value ++ " ) ) "
       ,   "\\$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " on the bus! "
@@ -613,21 +617,22 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
       ,   ");"
       ]
 
-    bankCheck = "\n\n@(posedge clk);"
-      ++ concat [ checkBank addr v (cntx M.! (v, 0))
-                | Step{ sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
-                , let addr_v = outputStep fb
-                , isJust addr_v
-                , let Just (addr, v) = addr_v
-                ]
+    bankCheck
+      = "\n      @(posedge clk);\n"
+      ++ unlines [ "  " ++ checkBank addr v (cntx M.! (v, 0))
+                 | Step{ sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
+                 , let addr_v = outputStep fb
+                 , isJust addr_v
+                 , let Just (addr, v) = addr_v
+                 ]
 
     outputStep fb
-      | Just (Loop _bs (I a)) <- castFB fb = Just (findAddress a pu, a)
-      | Just (FramOutput addr (I a)) <- castFB fb = Just (addr, a)
+      | Just (Loop _bs (I a)) <- cast fb = Just (findAddress a pu, a)
+      | Just (FramOutput addr (I a)) <- cast fb = Just (addr, a)
       | otherwise = Nothing
 
-    checkBank addr v value = concat
-      [ "if ( !( fram.bank[" ++ show addr ++ "] == " ++ show value ++ " ) ) "
+    checkBank addr v value = concatMap ("    " ++)
+      [ "if ( !( fram.bank[" ++ show addr ++ "] === " ++ show value ++ " ) ) "
       ,   "\\$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
@@ -656,8 +661,9 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
 instance ( Time t, Var v ) => Synthesis (Fram v t) where
   name _ = "pu_fram"
   hardwareInstance Fram{..} n cntx = renderST
-    [ "pu_fram "
-    , "    #( .RAM_SIZE( $size$ )"
+    [ "pu_fram #( .DATA_WIDTH( $DATA_WIDTH$ )"
+    , "         , .ATTR_WIDTH( $ATTR_WIDTH$ )"
+    , "         , .RAM_SIZE( $size$ )"
     , "     ) $name$ ("
     , "    .clk( $Clk$ ),"
     , "    .signal_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } ),"
