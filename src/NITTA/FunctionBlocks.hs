@@ -102,3 +102,19 @@ deriving instance ( IOType io v ) => Eq (Constant io v)
 
 instance ( IOType io v ) => FunctionalBlock (Constant io v) v where
   outputs (Constant _ o) = variables o
+
+
+
+data Send io v = Send (I io v) deriving ( Typeable )
+deriving instance ( IOType io v ) => Show (Send io v)
+deriving instance ( IOType io v ) => Eq (Send io v)
+instance ( IOType io v ) => FunctionalBlock (Send io v) v where
+  inputs (Send i) = variables i
+
+
+
+data Receive io v = Receive (I io v) deriving ( Typeable )
+deriving instance ( IOType io v ) => Show (Receive io v)
+deriving instance ( IOType io v ) => Eq (Receive io v)
+instance ( IOType io v ) => FunctionalBlock (Receive io v) v where
+  outputs (Receive o) = variables o

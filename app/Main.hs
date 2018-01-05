@@ -25,6 +25,7 @@ import           NITTA.Flows
 import           NITTA.FunctionBlocks
 import qualified NITTA.FunctionBlocks     as FB
 import qualified NITTA.ProcessUnits.Accum as A
+import qualified NITTA.ProcessUnits.SPI   as S
 import           NITTA.ProcessUnits.Fram
 import           NITTA.TestBench
 import           NITTA.Timeline
