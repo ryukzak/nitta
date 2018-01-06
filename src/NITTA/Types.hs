@@ -221,9 +221,9 @@ class WithFunctionalBlocks x fb | x -> fb where
 
 
 
-type FunSimCntx v x = M.Map (v, Int) x
+type FunSimCntx v x = M.Map v [x]
 class FunctionSimulation fb v x | fb -> v where
-  simulate :: FunSimCntx v x -> Int -> fb -> Maybe (FunSimCntx v x)
+  simulate :: FunSimCntx v x -> fb -> Maybe (FunSimCntx v x)
 
 
 
@@ -257,7 +257,7 @@ instance {-# OVERLAPS #-} FunctionalBlock fb v => Variables fb v where
   variables fb = inputs fb ++ outputs fb
 
 instance FunctionSimulation (FB (Parcel v) v) v Int where
-  simulate cntx step (FB fb) = simulate cntx step fb
+  simulate cntx (FB fb) = simulate cntx fb
 
 
 ---------------------------------------------------------------------

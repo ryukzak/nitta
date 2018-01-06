@@ -172,7 +172,7 @@ branchExample
 
 main = do
   -- branchMain
-  simulateMain 10
+  simulateMain 3
 
 
 branchMain = do
@@ -184,10 +184,12 @@ branchMain = do
 
 
 simulateMain n = do
-  mapM_ putStrLn $ take n $ map show $ simulateAlg [("b", 0)]
-    [ FB $ FB.Constant 2 $ O ["a"] :: FB (Parcel String) String
-    , FB $ FB.Add (I "a") (I "b") (O ["c"])
-    , FB $ FB.Loop (O ["b"]) (I "c")
+  mapM_ putStrLn $ take n $ map show $ simulateAlg [("b", [0 :: Int]), ("a.receive", [1, 2, 3])]
+    -- [ FB $ FB.Constant 2 $ O ["a"] :: FB (Parcel String) String
+    [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
+    , FB $ FB.Add (I "a") (I "b") (O ["c1", "c2"])
+    , FB $ FB.Loop (O ["b"]) (I "c1")
+    , FB $ FB.Send (I "c2")
     ]
   print "ok"
 

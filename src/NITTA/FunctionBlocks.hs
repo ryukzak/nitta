@@ -26,22 +26,43 @@ class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 
 
+get cntx k = do
+  values <- cntx M.!? k
+  case values of
+    []      -> Nothing
+    value:_ -> Just value
+
+pop cntx k = do
+  value <- cntx `get` k
+  let cntx' = M.adjust tail k cntx
+  return (cntx', value)
+
+push ks v cntx
+  = return $ foldl (\cntx' k -> M.alter (maybe (Just [v]) (Just . (v:))) k cntx') cntx ks
 
 
+-- ^ Симмулировать алгоритм.
+simulateAlg cntx0 fbs
+  = let cntx = M.fromList cntx0
+    in inner cntx [] $ sort cntx fbs
+  where
+    step cntx fs
+      = let f = maybe
+              (error "Can't simulate algorithm, because can't define execution sequence or recived data is over.")
+              id
+              $ find (isJust . simulate cntx) fs
+            fs' = filter (/= f) fs
+            Just cntx' = simulate cntx f
+        in (f, fs', cntx')
 
-out cntx step vs x = return $ foldl (\st v -> M.insert (v, step) x st) cntx vs
+    sort _ [] = []
+    sort cntx fs = let (f, fs', cntx') = step cntx fs
+                   in f : sort cntx' fs'
 
+    inner cntx [] fs0 = cntx : inner cntx fs0 fs0
+    inner cntx fs fs0 = let (_f, fs', cntx') = step cntx fs
+                        in inner cntx' fs' fs0
 
--- ^ Симмулировать алгоритм
-simulateAlg vs fbs
-  = let initSt = M.fromList [ ((k, 0), v :: Int) | (k, v) <- vs ]
-        inner st [] n = inner st fbs (n + 1)
-        inner st fs n
-          = let Just f = find (isJust . simulate st n) fs
-                fs' = filter (/= f) fs
-                Just st' = simulate st n f
-            in st' : inner st' fs' n
-    in inner initSt fbs 0
 
 
 ----------------------------------------
@@ -85,9 +106,9 @@ instance IOType io v => FunctionalBlock (Reg io) v where
                                   , b <- variables o
                                   ]
 instance ( Ord v ) => FunctionSimulation (Reg (Parcel v)) v Int where
-  simulate cntx step (Reg (I a) (O bs)) = do
-    a' <- cntx M.!? (a, step)
-    out cntx step bs a'
+  simulate cntx (Reg (I k1) (O k2)) = do
+    v <- cntx `get` k1
+    push k2 v cntx
 
 
 
@@ -101,9 +122,9 @@ instance ( IOType io v ) => FunctionalBlock (Loop io) v where
   outputs (Loop a _b) = variables a
   insideOut _ = True
 instance ( Ord v ) => FunctionSimulation (Loop (Parcel v)) v Int where
-  simulate cntx step (Loop (O bs) (I a)) = do
-    a' <- cntx M.!? (a, step)
-    out cntx (step + 1) bs a'
+  simulate cntx (Loop (O k1) (I k2)) = do
+    v <- cntx `get` k2
+    push k1 v cntx
 
 
 
@@ -118,11 +139,11 @@ instance IOType io v => FunctionalBlock (Add io) v where
                                     , y <- variables c
                                     ]
 instance ( Ord v ) => FunctionSimulation (Add (Parcel v)) v Int where
-  simulate cntx step (Add (I a) (I b) (O cs)) = do
-    a' <- cntx M.!? (a, step)
-    b' <- cntx M.!? (b, step)
-    let c' = a' + b'
-    out cntx step cs c'
+  simulate cntx (Add (I k1) (I k2) (O k3)) = do
+    v1 <- cntx `get` k1
+    v2 <- cntx `get` k2
+    let v3 = v1 + v2
+    push k3 v3 cntx
 
 
 
@@ -133,8 +154,8 @@ deriving instance ( IOType io v ) => Eq (Constant io)
 instance ( IOType io v ) => FunctionalBlock (Constant io) v where
   outputs (Constant _ o) = variables o
 instance ( Ord v ) => FunctionSimulation (Constant (Parcel v)) v Int where
-  simulate cntx step (Constant x (O as))
-    = out cntx step as x
+  simulate cntx (Constant v (O k))
+    = push k v cntx
 
 
 
@@ -145,10 +166,10 @@ deriving instance ( IOType io v ) => Eq (ShiftL io)
 instance ( IOType io v ) => FunctionalBlock (ShiftL io) v where
   outputs (ShiftL i o) = variables i ++ variables o
 instance ( Ord v ) => FunctionSimulation (ShiftL (Parcel v)) v Int where
-  simulate cntx step (ShiftL (I a) (O bs)) = do
-    a' <- cntx M.!? (a, step)
-    let b' = a' `shiftR` 1
-    out cntx step bs b'
+  simulate cntx (ShiftL (I k1) (O k2)) = do
+    v1 <- cntx `get` k1
+    let v2 = v1 `shiftR` 1
+    push k2 v2 cntx
 
 
 
@@ -157,11 +178,19 @@ deriving instance ( IOType io v ) => Show (Send io)
 deriving instance ( IOType io v ) => Eq (Send io)
 instance ( IOType io v ) => FunctionalBlock (Send io) v where
   inputs (Send i) = variables i
+instance FunctionSimulation (Send (Parcel String)) String Int where
+  simulate cntx (Send (I k)) = do
+    v <- cntx `get` k
+    push [k ++ ".send"] v cntx
 
 
 
-data Receive io = Receive (I io) deriving ( Typeable )
+data Receive io = Receive (O io) deriving ( Typeable )
 deriving instance ( IOType io v ) => Show (Receive io)
 deriving instance ( IOType io v ) => Eq (Receive io)
 instance ( IOType io v ) => FunctionalBlock (Receive io) v where
   outputs (Receive o) = variables o
+instance FunctionSimulation (Receive (Parcel String)) String Int where
+  simulate cntx (Receive (O ks)) = do
+    (cntx', v) <- cntx `pop` (head ks ++ ".receive")
+    push ks v cntx'
