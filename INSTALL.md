@@ -101,9 +101,9 @@ Haskell-библиотеки — готовые решения (модули), �
 
 2. Из директории репозитория выполняем команды:
 
-      - C:\Users\User\repository> git init
+      - C:\Users\User\repository> stack init
 
-      - C:\Users\User\repository> git build
+      - C:\Users\User\repository> stack build
 
 4. Запускаем main (адрес файла будет в выводе stack build).
 
