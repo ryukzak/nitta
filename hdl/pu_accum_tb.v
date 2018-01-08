@@ -141,17 +141,17 @@ initial
     nop();                            repeat(10) @(posedge clk);
     outputdata(0);                    repeat(10) @(posedge clk);
     ///////////////////////////////////////////////////////////////
-    // Load_Data(1);                @(posedge clk);
-    // Initialization (1);          repeat (2) @(posedge clk);
-    // Initialization (0);          repeat (2) @(posedge clk);
-    // Send_Value(5);               repeat(2) @(posedge clk);
-    // Send_Data_Out(1);            @(posedge clk);
-    // Send_Data_Out(0);            @(posedge clk);
-    // Send_Value(1);               repeat(2) @(posedge clk);
-    // Send_Value(data_out);        @(posedge clk);
-    // Send_Data_Out(1);            @(posedge clk);
-    // Load_Data(0);                @(posedge clk);
-    // Send_Data_Out(0);            @(posedge clk);
+    // Load(1);                 @(posedge clk);
+    // Initialization (1);      repeat (2) @(posedge clk);
+    // Initialization (0);      repeat (2) @(posedge clk);
+    // Send_value(5);           repeat(2) @(posedge clk);
+    // outputdata(1);           @(posedge clk);
+    // outputdata(0);           @(posedge clk);
+    // Send_value(1);           repeat(2) @(posedge clk);
+    // Send_value(data_out);    @(posedge clk);
+    // outputdata(1);           @(posedge clk);
+    // Load(0);                	@(posedge clk);
+    // outputdata(0);           @(posedge clk);
     $finish;
   end  
 
