@@ -34,7 +34,7 @@ pu_spi pu_spi_test(
 , .data_in( data_bus )
 , .attr_in( attr_bus )
 
-,	.signal_oe( signals_out[ 13 ] )
+, .signal_oe( signals_out[ 13 ] )
 , .data_out( spi_data_out )
 , .attr_out( spi_attr_out )
 
@@ -55,54 +55,54 @@ end
 
 task Nop;
     begin
-       signals_out[ 12 ] <= 0;
-	   signals_out[ 13 ] <= 0;
-	   nitta_cycle <= 0; 
+      signals_out[ 12 ] <= 0;
+      signals_out[ 13 ] <= 0;
+      nitta_cycle <= 0; 
     end
 endtask
 
 task Send;
-	input [DATA_WIDTH-1:0] data;
+        input [DATA_WIDTH-1:0] data;
     begin
-		data_bus <= data;
-        signals_out[ 12 ] <= 1;
-		signals_out[ 13 ] <= 0;
+      data_bus <= data;
+      signals_out[ 12 ] <= 1;
+      signals_out[ 13 ] <= 0;
     end
 endtask
 
 task Receive;
     begin
       signals_out[ 13 ] <= 1;  
-	  signals_out[ 12 ] <= 0;
+      signals_out[ 12 ] <= 0;
     end
 endtask
 
 initial 
   begin
-	$display("Start");
+    $display("Start");
 
-	clk = 0;       @(posedge clk); 
+    clk = 0;       @(posedge clk); 
 
-	rst = 1;       @(posedge clk); 
-	rst = 0;       @(posedge clk);
+    rst = 1;       @(posedge clk); 
+    rst = 0;       @(posedge clk);
 
-    Nop();		   @(posedge clk);
-	Send(2);       @(posedge clk); @(posedge clk);
+    Nop();           @(posedge clk);
     Send(2);       @(posedge clk); @(posedge clk);
-    Nop();		   @(posedge clk);
-	Receive();     @(posedge clk);@(posedge clk);
-	Send(3);       @(posedge clk); @(posedge clk);
-	Receive();     @(posedge clk);@(posedge clk);
-	Nop();
+    Send(2);       @(posedge clk); @(posedge clk);
+    Nop();           @(posedge clk);
+    Receive();     @(posedge clk);@(posedge clk);
+    Send(3);       @(posedge clk); @(posedge clk);
+    Receive();     @(posedge clk);@(posedge clk);
+    Nop();
 
-	repeat(10) @(posedge clk); $finish;
+    repeat(10) @(posedge clk); $finish;
   end
 
 initial
   begin
-	$dumpfile("pu_spi_tb.vcd");
-	$dumpvars(-1, pu_buffer_tb);
-	$display("finish");
+    $dumpfile("pu_spi_tb.vcd");
+    $dumpvars(-1, pu_buffer_tb);
+    $display("finish");
   end 
 
 endmodule
