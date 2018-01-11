@@ -280,31 +280,32 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
     where
       iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
             in renderST
-              [ "module $moduleName$("
-              , "    clk,"
-              , "    rst"
-              , "    );"
-              , "      "
+              [ "module $moduleName$"
+              , "  ( input clk"
+              , "  , input rst"
+              , "  );"
+              , ""
               , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
               , "parameter DATA_WIDTH = 32;"
               , "parameter ATTR_WIDTH = 4;"
-              , "      "
-              , "input clk;"
-              , "input rst;"
-              , "      "
+              , ""
               , "// Sub module instances"
               , "wire [MICROCODE_WIDTH-1:0] signals_out;"
               , "wire [DATA_WIDTH-1:0] data_bus;"
               , "wire [ATTR_WIDTH-1:0] attr_bus;"
-              , "", ""
-              , "pu_simple_control"
-              , "    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
-              , "     , .PROGRAM_DUMP( \"\\$path\\$$moduleName$.dump\" )"
-              , "     , .MEMORY_SIZE( $ProgramSize$ )"
-              , "     ) control_unit"
-              , "    ( .clk( clk ), .rst( rst ), .signals_out( signals_out ) );"
               , ""
-              , "", ""
+              , "wire nitta_cycle;"
+              , "wire spi_start, spi_stop, spi_mosi, spi_miso, spi_sclk, spi_cs;"
+              , ""
+              , "pu_simple_control #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
+              , "                   , .PROGRAM_DUMP( \"\\$path\\$$moduleName$.dump\" )"
+              , "                   , .MEMORY_SIZE( $ProgramSize$ )"
+              , "                   ) control_unit"
+              , "  ( .clk( clk )"
+              , "  , .rst( rst )"
+              , "  , .signals_out( signals_out )"
+              , "  );"
+              , ""
               , "$instances$"
               , "", ""
               , "assign { attr_bus, data_bus } = "
@@ -316,7 +317,7 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
               [ ( "moduleName", name pu )
               , ( "microCodeWidth", show $ snd (bounds bnWires) + 1 )
               , ( "instances", S.join "\n\n" instances)
-              , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "    { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
+              , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "  { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
               , ( "ProgramSize", show $ fromEnum (nextTick bnProcess)
                   + 1 -- 0 адресс программы для простоя процессора
                   + 1 -- На последнем такте для BusNetwork можно подготовить следующую
@@ -352,6 +353,11 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
             , ( "DATA_WIDTH", "DATA_WIDTH" )
             , ( "ATTR_WIDTH", "ATTR_WIDTH" )
             , ( "Clk", "clk" )
+            , ( "Rst", "rst" )
+            , ( "Cycle", "nitta_cycle" )
+
+            , ( "START", "spi_start" ), ( "STOP", "spi_stop" )
+            , ( "mosi", "spi_mosi" ), ( "miso", "spi_miso" ), ( "sclk", "spi_sclk" ), ( "cs", "spi_cs" )
             ]
         where
           cntxRow i (S s) = fmap (\s' -> ( S.replace " " "_" $ show (s' `asProxyTypeOf` p)

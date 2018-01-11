@@ -149,7 +149,7 @@ instance ( Show v, Show t ) => Synthesis (SPI v t) where
       , "  , .miso( $miso$ )"
       , "  , .sclk( $sclk$ )"
       , "  , .cs( $cs$ )"
-      , ");"
+      , "  );"
       ] $ ("name", n) : cntx
   name _ = "pu_spi"
   hardware pu = FromLibrary $ "spi/" ++ name pu ++ ".v"
