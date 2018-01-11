@@ -27,11 +27,11 @@ reg  spi_cs;
 
 pu_spi pu_spi_test(
 
-	.clk(clk)
-,	.rst(rst)
+  .clk(clk)
+, .rst(rst)
 
-,	.signal_wr( signals_out[ 12 ] )
-,	.data_in( data_bus )
+, .signal_wr( signals_out[ 12 ] )
+, .data_in( data_bus )
 , .attr_in( attr_bus )
 
 ,	.signal_oe( signals_out[ 13 ] )
@@ -56,24 +56,24 @@ end
 task Nop;
     begin
        signals_out[ 12 ] <= 0;
-			 signals_out[ 13 ] <= 0;
-			 nitta_cycle <= 0; 
+	   signals_out[ 13 ] <= 0;
+	   nitta_cycle <= 0; 
     end
 endtask
 
 task Send;
-		input [DATA_WIDTH-1:0] data;
+	input [DATA_WIDTH-1:0] data;
     begin
-			data_bus <= data;
-      signals_out[ 12 ] <= 1;
-			signals_out[ 13 ] <= 0;
+		data_bus <= data;
+        signals_out[ 12 ] <= 1;
+		signals_out[ 13 ] <= 0;
     end
 endtask
 
 task Receive;
     begin
       signals_out[ 13 ] <= 1;  
-			signals_out[ 12 ] <= 0;
+	  signals_out[ 12 ] <= 0;
     end
 endtask
 
@@ -86,10 +86,10 @@ initial
 	rst = 1;       @(posedge clk); 
 	rst = 0;       @(posedge clk);
 
-	Nop();		  	 @(posedge clk);
+    Nop();		   @(posedge clk);
 	Send(2);       @(posedge clk); @(posedge clk);
-  Send(2);       @(posedge clk); @(posedge clk);
-	Nop();		  	 @(posedge clk);
+    Send(2);       @(posedge clk); @(posedge clk);
+    Nop();		   @(posedge clk);
 	Receive();     @(posedge clk);@(posedge clk);
 	Send(3);       @(posedge clk); @(posedge clk);
 	Receive();     @(posedge clk);@(posedge clk);
