@@ -200,6 +200,8 @@ instance Controllable (BusNetwork title v t) where
     = Transport v title title
     deriving (Typeable, Show)
 
+  data Flag (BusNetwork title v t)
+
   data Signal (BusNetwork title v t) = Wire Int
     deriving (Show, Eq, Ord)
 

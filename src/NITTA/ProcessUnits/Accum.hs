@@ -69,6 +69,7 @@ instance ( Var v, Time t ) => SerialPUState (AccumState v t) (Parcel v) v t wher
 
 instance Controllable (Accum v t) where
   data Signal (Accum v t) = OE | INIT | LOAD | NEG deriving ( Show, Eq, Ord )
+  data Flag (Accum v t)
   data Instruction (Accum v t)
     = Nop
     | Init Bool

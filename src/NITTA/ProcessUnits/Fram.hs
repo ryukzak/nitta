@@ -456,6 +456,8 @@ instance ( Var v, Time t ) => Controllable (Fram v t) where
     | ADDR Int
     deriving (Show, Eq, Ord)
 
+  data Flag (Fram v t)
+
   data Instruction (Fram v t)
     = Nop
     | Load Int

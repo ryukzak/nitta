@@ -73,6 +73,7 @@ data Mode      = Logic | Arithmetic deriving ( Show )
 
 instance Controllable (Shift v t) where
   data Signal (Shift v t) = WORK | DIRECTION | MODE | STEP | INIT | OE deriving ( Show, Eq, Ord )
+  data Flag (Shift v t)
   data Instruction (Shift v t)
     = Nop
     | Init
