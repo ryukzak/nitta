@@ -2,7 +2,7 @@ module pu_spi
   #( parameter DATA_WIDTH       = 8
   ,  parameter ATTR_WIDTH       = 4
   ,  parameter VALID            = 1
-  ,  parameter BUFFER_SIZE      = 3
+  ,  parameter BUFFER_SIZE      = 8
    )
   ( input                   clk
   , input                   rst
