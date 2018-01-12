@@ -84,23 +84,23 @@ initial
   clk = 0;       @(posedge clk); 
   rst = 1;       @(posedge clk); 
   rst = 0;       @(posedge clk);
-  Nop();			   @(posedge clk);
+  Nop();         @(posedge clk);
   
   Send(1);   @(posedge clk); @(posedge clk);
-  Nop();	   @(posedge clk);
+  Nop();	 @(posedge clk);
   Send(2);   @(posedge clk); @(posedge clk);
-  Nop();	   @(posedge clk);
+  Nop();	 @(posedge clk);
   Send(3);   @(posedge clk); @(posedge clk);
-  Nop();	   @(posedge clk);
+  Nop();	 @(posedge clk);
   Send(4);   @(posedge clk); @(posedge clk);
-  Nop();	   @(posedge clk);
+  Nop();	 @(posedge clk);
 
   Receive(); @(posedge clk); @(posedge clk); 
-  Nop();	   @(posedge clk);
+  Nop();	 @(posedge clk);
   Receive(); @(posedge clk); @(posedge clk);
-  Nop();		 @(posedge clk);
+  Nop();     @(posedge clk);
   Receive(); @(posedge clk); @(posedge clk);
-  Nop();		 @(posedge clk);
+  Nop();     @(posedge clk);
   Receive(); @(posedge clk); @(posedge clk);
 
   // [!] Reset Buffers / New computational cycle
