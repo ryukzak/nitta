@@ -28,13 +28,13 @@ reg  spi_cs;
 pu_spi pu_spi_test(
 
   .clk(clk)
-,	.rst(rst)
+, .rst(rst)
 
-,	.signal_wr( signals_out[ 12 ] )
-,	.data_in( data_bus )
+, .signal_wr( signals_out[ 12 ] )
+, .data_in( data_bus )
 , .attr_in( attr_bus )
 
-,	.signal_oe( signals_out[ 13 ] )
+, .signal_oe( signals_out[ 13 ] )
 , .data_out( spi_data_out )
 , .attr_out( spi_attr_out )
 
@@ -84,6 +84,7 @@ initial
   clk = 0;       @(posedge clk); 
   rst = 1;       @(posedge clk); 
   rst = 0;       @(posedge clk);
+<<<<<<< HEAD
   Nop();			   @(posedge clk);
 
   Send(1);   @(posedge clk); @(posedge clk);
@@ -91,6 +92,25 @@ initial
 
   Nop();			   @(posedge clk);
 
+=======
+  Nop();         @(posedge clk);
+  
+  Send(1);   @(posedge clk); @(posedge clk);
+  Nop();	 @(posedge clk);
+  Send(2);   @(posedge clk); @(posedge clk);
+  Nop();	 @(posedge clk);
+  Send(3);   @(posedge clk); @(posedge clk);
+  Nop();	 @(posedge clk);
+  Send(4);   @(posedge clk); @(posedge clk);
+  Nop();	 @(posedge clk);
+
+  Receive(); @(posedge clk); @(posedge clk); 
+  Nop();	 @(posedge clk);
+  Receive(); @(posedge clk); @(posedge clk);
+  Nop();     @(posedge clk);
+  Receive(); @(posedge clk); @(posedge clk);
+  Nop();     @(posedge clk);
+>>>>>>> e957c69d74f366ed1811c92ef7cb698efa280534
   Receive(); @(posedge clk); @(posedge clk);
   Send(3);   @(posedge clk); @(posedge clk);
   Receive(); @(posedge clk); @(posedge clk); 
