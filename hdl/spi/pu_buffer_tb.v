@@ -84,7 +84,7 @@ initial
   clk = 0;       @(posedge clk); 
   rst = 1;       @(posedge clk); 
   rst = 0;       @(posedge clk);
-<<<<<<< HEAD
+
   Nop();			   @(posedge clk);
 
   Send(1);   @(posedge clk); @(posedge clk);
@@ -92,7 +92,6 @@ initial
 
   Nop();			   @(posedge clk);
 
-=======
   Nop();         @(posedge clk);
   
   Send(1);   @(posedge clk); @(posedge clk);
@@ -110,7 +109,7 @@ initial
   Nop();     @(posedge clk);
   Receive(); @(posedge clk); @(posedge clk);
   Nop();     @(posedge clk);
->>>>>>> e957c69d74f366ed1811c92ef7cb698efa280534
+
   Receive(); @(posedge clk); @(posedge clk);
   Send(3);   @(posedge clk); @(posedge clk);
   Receive(); @(posedge clk); @(posedge clk); 
