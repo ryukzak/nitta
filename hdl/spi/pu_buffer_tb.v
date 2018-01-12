@@ -28,13 +28,13 @@ reg  spi_cs;
 pu_spi pu_spi_test(
 
   .clk(clk)
-,	.rst(rst)
+, .rst(rst)
 
-,	.signal_wr( signals_out[ 12 ] )
-,	.data_in( data_bus )
+, .signal_wr( signals_out[ 12 ] )
+, .data_in( data_bus )
 , .attr_in( attr_bus )
 
-,	.signal_oe( signals_out[ 13 ] )
+, .signal_oe( signals_out[ 13 ] )
 , .data_out( spi_data_out )
 , .attr_out( spi_attr_out )
 
