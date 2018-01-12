@@ -31,85 +31,46 @@ localparam BUFFER_SIZE_WIDTH = $clog2( BUFFER_SIZE );
 reg  [BUFFER_SIZE_WIDTH-1:0] actual_buffer_sending_size;
 reg  [BUFFER_SIZE_WIDTH-1:0] actual_buffer_receiving_size;
 
-wire [DATA_WIDTH-1:0] data_out_spi;
-reg  [DATA_WIDTH-1:0] data_in_spi;
-wire buffer_full;
-reg flag_wr;
-reg flag_oe;
-reg work_process;
+wire [DATA_WIDTH-1:0] write_data_out;
+reg  [DATA_WIDTH-1:0] write_data_in;
+wire [DATA_WIDTH-1:0] read_data_out;
+reg  [DATA_WIDTH-1:0] read_data_in;
 
-pu_buffer buffer(
+reg  reset;
+
+pu_buffer buffer_read (
   .clk(clk)
-, .rst(rst)
+, .rst(reset)
 , .oe(signal_oe)
+//, .wr(signal_wr)
+, .data_in(read_data_in)
+, .data_out(read_data_out)
+);
+
+pu_buffer buffer_write (
+  .clk(clk)
+, .rst(reset)
+//, .oe(signal_oe)
 , .wr(signal_wr)
-, .data_in(data_in_spi)
-, .data_out(data_out_spi)
-, .buffer_full(buffer_full)
+, .data_in(write_data_in)
+, .data_out(write_data_out) 
 ); 
 
 always @( posedge clk or posedge rst ) begin
   if ( rst ) begin
-    flag_start <= 0;
-    flag_stop  <= 0;
-    actual_buffer_sending_size <= 0; 
-    actual_buffer_receiving_size <= 0;
-    flag_wr <= 0;
-    flag_oe <= 0; 
-    work_process <= 0;
+    reset <= 1;
   end else begin
-    // Пришел сигнал на запись и буфер не заполнен
-    if ( signal_wr && ~buffer_full ) begin
-      data_in_spi <= data_in;
-      if ( flag_start ) begin        
-        actual_buffer_sending_size <= actual_buffer_sending_size + 1;
-      end 
-    end else if ( signal_wr && buffer_full ) begin 
-      // Если буфер заполнен и есть сигнал на запись новых значений
-    end
-  end
-  // Пришел сигнал на чтение и буфер не пуст
-  if ( signal_oe && !(actual_buffer_sending_size == 0) ) begin
-    data_out <= data_out_spi;
-    if ( flag_start ) begin      
-      actual_buffer_receiving_size <= actual_buffer_receiving_size + 1;
-    end
-  end
-end
-
-always @( posedge clk ) begin
-  // Для синхронизации. Работаем по сигналу flag_cycle
-  if ( flag_cycle ) begin
-    work_process <= 1;
-  end
-  if ( work_process ) begin
-    // Тута вся работа
-  end
-end
-
-// Переделать логику. Дописать flag_stop
-always @( posedge clk ) begin
-  if ( signal_wr && signal_oe ) begin
-   // Случай если одновременно Send and Recive
-  end else if ( signal_wr ) begin
-    if ( !flag_wr ) begin
-      flag_start <= 1;
-      flag_oe <= 0;
-      flag_wr <= 1;
-    end else begin
-      flag_start <= 0;
-    end
-  end else if ( signal_oe ) begin
-    if ( !flag_oe ) begin
-      flag_start <= 1;
-      flag_oe <= 1;
-    end else begin
-      flag_start <= 0;
-    end
-  end else begin
-    flag_start <= 0;
-    flag_wr <= 0;
-    flag_oe <= 0;
+    if ( flag_cycle ) begin
+      reset <= 1;
+    end else begin                      // [+] Start work basic transfer cycle
+        if ( signal_oe ) begin          // [?] Logic for reading data
+          data_out <= read_data_out;
+        end
+        if ( signal_wr ) begin          // [!] Logic for writing data
+          write_data_in <= data_in;
+        end    
+      reset <= 0;
+    end                                 // [+] End work basic transfer cycle
   end
 end
 

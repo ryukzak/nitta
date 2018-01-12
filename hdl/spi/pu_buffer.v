@@ -18,6 +18,7 @@ reg [ADDR_WIDTH-1:0]          addres_oe;
 reg [ADDR_WIDTH:0]            addres_wr; // +1 на переполнение
 reg addr_incremented_oe;
 reg addr_incremented_wr;
+integer index;
 
 always @(posedge clk or posedge rst) begin
   if ( rst ) begin
@@ -25,6 +26,9 @@ always @(posedge clk or posedge rst) begin
     addres_wr <= 0;
     addr_incremented_oe <= 0;
     addr_incremented_wr <= 0;
+    for (index = 0; index < BUF_SIZE; index = index + 1) begin
+      memory [ index ] = 0;
+    end
   end
   else begin
     if ( wr ) begin
