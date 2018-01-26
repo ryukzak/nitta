@@ -16,7 +16,6 @@ module NITTA.TestBench where
 import           Control.Monad     (when)
 import           Data.List         (isSubsequenceOf)
 import qualified Data.List         as L
-import qualified Data.Map          as M
 import           Data.String.Utils (replace)
 import           NITTA.Types
 import           System.Directory
@@ -27,7 +26,7 @@ import           System.Process
 
 -- | Для реализующие этот класс вычислительных блоков могут быть сгенерированы testbench-и.
 class TestBench pu v x | pu -> v x where
-  testEnviroment :: SimulationContext v x -> pu -> Implementation
+  testEnviroment :: Cntx v x -> pu -> Implementation
 
 
 -- | Сгенерировать и выполнить testbench.
@@ -55,11 +54,11 @@ writeImplementation _ _ Empty = return ()
 
 
 -- | Записать на диск testbench и все необходимые модули.
-writeTestBench workdir pu values = do
+writeTestBench workdir pu cntx = do
   createDirectoryIfMissing True workdir
   writeImplementation workdir "" $ hardware pu
   writeImplementation workdir "" $ software pu
-  let cntx = M.fromList $ map (\(v, x) -> ((v, 0), x)) values
+  -- let cntx = M.fromList values
   writeImplementation workdir "" $ testEnviroment cntx pu
 
 
@@ -68,6 +67,7 @@ runTestBench library workdir pu = do
   (compileExitCode, compileOut, compileErr)
     <- readCreateProcessWithExitCode (createIVerilogProcess library workdir pu) []
   when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
+    mapM_ (putStrLn . show) $ functionalBlocks pu
     putStrLn $ "compiler stdout:\n-------------------------\n" ++ compileOut
     putStrLn $ "compiler stderr:\n-------------------------\n" ++ compileErr
     die "Verilog compilation failed!"
@@ -77,6 +77,7 @@ runTestBench library workdir pu = do
   -- Yep, we can't stop simulation with bad ExitCode...
 
   when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut) $ do
+    mapM_ (putStrLn . show) $ functionalBlocks pu
     putStrLn $ "sim stdout:\n-------------------------\n" ++ simOut
     putStrLn $ "sim stderr:\n-------------------------\n" ++ simErr
 

@@ -13,7 +13,6 @@ module NITTA.ProcessUnits.Accum where
 
 import           Data.Default
 import           Data.List                   (intersect, (\\))
-import qualified Data.Map                    as M
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.SerialPU
@@ -102,11 +101,9 @@ instance UnambiguouslyDecode (Accum v t) where
 
 
 instance ( Var v ) => Simulatable (Accum v t) v Int where
-  variableValue (FB fb) SerialPU{..} cntx (v, i)
-    | Just (Add (I a) _ _) <- cast fb, a == v               = cntx M.! (v, i)
-    | Just (Add _ (I b) _) <- cast fb, b == v               = cntx M.! (v, i)
-    | Just (Add (I a) (I b) (O cs)) <- cast fb, v `elem` cs = cntx M.! (a, i) + cntx M.! (b, i)
-    | otherwise = error $ "Can't simulate " ++ show fb
+  simulateOn cntx _ (FB fb)
+    | Just (fb' :: Add (Parcel v)) <- cast fb = simulate cntx fb'
+    | otherwise = error $ "Can't simulate " ++ show fb ++ " on Accum."
 
 
 

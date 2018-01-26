@@ -173,21 +173,23 @@ branchExample
 
 
 main = do
-  branchMain
-  -- simulateMain 3
+  -- branchMain
+  simulateMain 3
 
 
 branchMain = do
   timeline "resource/data.json" branchExample
-  r <- testBench ".." (joinPath ["hdl", "gen"]) branchExample ([] :: [(String, Int)])
+  r <- testBench ".." (joinPath ["hdl", "gen"]) branchExample (def{ cntxVars=M.fromList [("g", [0x1003])]
+                                                                  } :: Cntx String Int)
   if r then putStrLn "Success"
   else putStrLn "Fail"
   print "ok"
 
 
 simulateMain n = do
-  mapM_ putStrLn $ take n $ map show $ simulateAlg [("b", [0 :: Int]), ("a.receive", [1, 2, 3])]
-    -- [ FB $ FB.Constant 2 $ O ["a"] :: FB (Parcel String) String
+  mapM_ putStrLn $ take n $ map show $ simulateAlg (def{ cntxVars=M.fromList [("b", [0])]
+                                                       , cntxInputs=M.fromList [("a", [1, 2, 3])]
+                                                       } :: Cntx String Int)
     [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
     , FB $ FB.Add (I "a") (I "b") (O ["c1", "c2"])
     , FB $ FB.Loop (O ["b"]) (I "c1")

@@ -116,11 +116,11 @@ instance UnambiguouslyDecode (SPI v t) where
 
 
 
-instance Simulatable (SPI v t) v Int where
-  variableValue (FB fb) SerialPU{..} _cntx (_v, _i)
-    | otherwise = 0
-    -- | Just (Add (I a) (I b) (O cs)) <- cast fb, v `elem` cs = cntx M.! (a, i) + cntx M.! (b, i)
-    | otherwise = error $ "Can't simulate " ++ show fb
+instance Simulatable (SPI String t) String Int where
+  simulateOn cntx _ (FB fb)
+    | Just (fb' :: Send (Parcel String)) <- cast fb = simulate cntx fb'
+    | Just (fb' :: Receive (Parcel String)) <- cast fb = simulate cntx fb'
+    | otherwise = error $ "Can't simulate " ++ show fb ++ " on SPI."
 
 
 
@@ -152,5 +152,8 @@ instance ( Show v, Show t ) => Synthesis (SPI v t) where
       , "  );"
       ] $ ("name", n) : cntx
   name _ = "pu_spi"
-  hardware pu = FromLibrary $ "spi/" ++ name pu ++ ".v"
+  hardware pu = Project "" [ FromLibrary $ "spi/spi_slave_driver.v"
+                           , FromLibrary $ "spi/pu_buffer.v"
+                           , FromLibrary $ "spi/" ++ name pu ++ ".v"
+                           ]
   software pu = Immidiate "transport.txt" $ show pu

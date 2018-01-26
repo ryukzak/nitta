@@ -35,17 +35,19 @@ import           Control.Monad.State
 import           Data.Array
 import           Data.Default
 import           Data.Either
-import           Data.List           (intersect, nub, sortOn, (\\))
-import qualified Data.Map            as M
-import           Data.Maybe          (fromMaybe, isJust, mapMaybe)
+import           Data.List            (find, intersect, nub, partition, sortOn,
+                                       (\\))
+import qualified Data.Map             as M
+import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
 import           Data.Proxy
-import qualified Data.String.Utils   as S
+import qualified Data.String.Utils    as S
 import           Data.Typeable
+import           NITTA.FunctionBlocks (get')
 import           NITTA.Lens
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval    (inf, width, (...))
+import           Numeric.Interval     (inf, width, (...))
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
@@ -72,6 +74,17 @@ data GBusNetwork title spu v t =
 type BusNetwork title v t = GBusNetwork title (PU v t) v t
 busNetwork pus wires = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wires
 
+
+instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork title v t) (FB (Parcel v) v) where
+  functionalBlocks BusNetwork{..} = sortFBs binded []
+    where
+      binded = bnRemains ++ concat (M.elems bnBinded)
+      sortFBs [] _ = []
+      sortFBs fbs cntx
+        = let (ready, notReady) = partition (\fb -> insideOut fb || all (`elem` cntx) (inputs fb)) fbs
+          in case ready of
+            [] -> error "Cycle in algorithm!"
+            _ -> ready ++ sortFBs (notReady) (concatMap outputs ready ++ cntx)
 
 
 instance ( Title title, Var v, Time t
@@ -216,12 +229,10 @@ instance ( Title title ) => ByTime (BusNetwork title v t) t where
 
 
 instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v Int where
-  variableValue _fb bn@BusNetwork{..} cntx vi@(v, _) =
-    let [Transport _ src _] =
-          filter (\(Transport v' _ _) -> v == v')
-          $ mapMaybe (extractInstruction bn)
-          $ steps bnProcess
-    in variableValueWithoutFB (bnPus M.! src) cntx vi
+  simulateOn cntx BusNetwork{..} fb
+    = let Just (title, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
+          pu = bnPus M.! title
+      in simulateOn cntx pu fb
 
 
 
@@ -411,12 +422,11 @@ instance ( Title title, Var v, Time t
         [ ("moduleName", name pu)
         ]
 
-      cntx' = foldl ( \cntx (Transport v src _dst)
-                        -> M.insert (v, 0)
-                                    (variableValueWithoutFB (bnPus M.! src) cntx (v, 0))
-                                    cntx
-                     ) cntx0 $ extractInstructions pu
+      Just cntx' = foldl ( \(Just cntx) fb -> let c = simulateOn cntx pu fb
+                                              in c
+                          ) (Just cntx0) $ functionalBlocks pu
 
+      p :: Process v t
       p = process pu
       assertions = concatMap ( ("      @(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick p ]
         where
@@ -424,13 +434,13 @@ instance ( Title title, Var v, Time t
             = let pulls = filter (\e -> case e of (Source _) -> True; _ -> False) $ endpointsAt time p
               in case pulls of
                 Source (v:_) : _ -> concat
-                    [ "if ( !( net.data_bus === " ++ show (fromMaybe 0 $ M.lookup (v, 0) cntx') ++ ") ) "
+                    [ "if ( !( net.data_bus === " ++ show (get' cntx' v) ++ ") ) "
                     ,   "\\$display("
                     ,     "\""
                     ,       "FAIL wrong value of " ++ show' pulls ++ " the bus failed "
                     ,       "(got: %h expect: %h)!"
                     ,     "\", "
-                    , "net.data_bus, " ++ show (cntx' M.! (v, 0)) ++ "); else \\$display(\"%d Correct value: %h\", net.control_unit.program_counter, net.data_bus);"
+                    , "net.data_bus, " ++ show (get' cntx' v) ++ "); else \\$display(\"%d Correct value: %h\", net.control_unit.program_counter, net.data_bus);"
                     ]
                 [] -> "\\$display(\"%d\", net.control_unit.program_counter); /* nothing to check */"
                 x -> "\\$display(\"%d\", net.control_unit.program_counter); /* don't have expected datafor: " ++ show x ++ "*/"
