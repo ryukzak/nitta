@@ -127,11 +127,12 @@ instance Simulatable (SPI String t) String Int where
 instance ( Show v, Show t ) => Synthesis (SPI v t) where
   hardwareInstance _pu n cntx
     = renderST
-      [ "pu_spi #( .DATA_WIDTH( $DATA_WIDTH$ )"
-      , "        , .ATTR_WIDTH( $ATTR_WIDTH$ )"
-      , "        ) $name$"
+      [ "pu_slave_spi #( .DATA_WIDTH( $DATA_WIDTH$ )"
+      , "              , .ATTR_WIDTH( $ATTR_WIDTH$ )"
+      , "              ) $name$"
       , "  ( .clk( $Clk$ )"
       , "  , .rst( $Rst$ )"
+      , "  , .signal_cycle( $Cycle$ )"
       , ""
       , "  , .signal_wr( $WR$ )"
       , "  , .data_in( $DataIn$ )"
@@ -141,7 +142,6 @@ instance ( Show v, Show t ) => Synthesis (SPI v t) where
       , "  , .data_out( $DataOut$ )"
       , "  , .attr_out( $AttrOut$ )"
       , ""
-      , "  , .flag_cycle( $Cycle$ )"
       , "  , .flag_start( $START$ )"
       , "  , .flag_stop( $STOP$ )"
       , ""
@@ -151,9 +151,9 @@ instance ( Show v, Show t ) => Synthesis (SPI v t) where
       , "  , .cs( $cs$ )"
       , "  );"
       ] $ ("name", n) : cntx
-  name _ = "pu_spi"
+  name _ = "pu_slave_spi"
   hardware pu = Project "" [ FromLibrary $ "spi/spi_slave_driver.v"
-                           , FromLibrary $ "spi/pu_buffer.v"
+                           , FromLibrary $ "spi/spi_buffer.v"
                            , FromLibrary $ "spi/" ++ name pu ++ ".v"
                            ]
   software pu = Immidiate "transport.txt" $ show pu

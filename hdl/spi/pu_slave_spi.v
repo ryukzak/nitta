@@ -57,4 +57,11 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
   , .ready( spi_ready )
   );
 
+
+always @(posedge clk or posedge rst) begin
+  data_out <= 0;
+  attr_out <= 0;
+end
+
+
 endmodule
