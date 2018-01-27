@@ -128,7 +128,7 @@ instance ( Var v ) => WithFunctionalBlocks (FSet (Fram v t)) (FB (Parcel v) v) w
   functionalBlocks (Constant' fb)   = [ FB fb ]
 
 instance ( Var v ) => ToFSet (Fram v t) v where
-  toFSet fb0
+  toFSet (FB fb0)
     | Just fb@(Constant _ _) <- cast fb0 = Right $ Constant' fb
     | Just fb@(Reg _ _) <- cast fb0 = Right $ Reg' fb
     | Just fb@(Loop _ _) <- cast fb0 = Right $ Loop' fb
@@ -456,6 +456,8 @@ instance ( Var v, Time t ) => Controllable (Fram v t) where
     | ADDR Int
     deriving (Show, Eq, Ord)
 
+  data Flag (Fram v t)
+
   data Instruction (Fram v t)
     = Nop
     | Load Int
@@ -495,44 +497,41 @@ instance UnambiguouslyDecode (Fram v t) where
 instance ( Var v, Time t
          , ProcessUnit (Fram v t) v t
          ) => Simulatable (Fram v t) v Int where
-  variableValue fb pu@Fram{..} cntx (v, i) = either error id $ do
-    fbs <- toFSet fb
-    return $ variableValue' fbs
+  simulateOn cntx@Cntx{..} pu@Fram{..} (FB fb)
+    | Just (Constant x (O k) :: Constant (Parcel v)) <- cast fb = set cntx k x
+    | Just (Loop (O k1@(k:_)) (I k2) :: Loop (Parcel v)) <- cast fb = do
+      let v = maybe (addr2value $ findAddress k pu) id $ cntx `get` k
+      set cntx k1 v
+    | Just (fb' :: Reg (Parcel v)) <- cast fb = simulate cntx fb'
+    | Just (FramInput addr (O k) :: FramInput (Parcel v)) <- cast fb = do
+      let v = maybe (addr2value addr) id $ cntx `get` (head k)
+      set cntx k v
+    | Just (FramOutput addr (I k) :: FramOutput (Parcel v)) <- cast fb = do
+      v <- get cntx k
+      let cntxFram' = M.alter (maybe (Just [v]) (Just . (v:))) (addr, k) cntxFram
+      return cntx{ cntxFram=cntxFram' }
+    | otherwise = error $ "Can't simulate " ++ show fb ++ " on Fram."
     where
       addr2value addr = 0x1000 + addr -- must be coordinated with test bench initialization
-      variableValue' (Constant' (Constant x (O b))) | v `elem` b = x
-      variableValue' (Loop' (Loop _bs (I a))) | a == v = cntx M.! (v, i)
-      variableValue' (Loop' (Loop (O bs) _a)) | v `elem` bs, i == 0 = addr2value $ findAddress v pu
-      variableValue' (Reg' (Reg (I a) _bs)) | a == v = cntx M.! (v, i)
-      variableValue' (Reg' (Reg (I a) (O bs))) | v `elem` bs = cntx M.! (a, i)
-
-      variableValue' (FramInput' (FramInput addr (O bs))) | i == 0, v `elem` bs = addr2value addr
-      variableValue' (FramOutput' (FramOutput _addr (I a))) | v == a = cntx M.! (v, i)
-      variableValue' _ = error $ "Fram can't simulate " ++ show (v, i)
-                              ++ " for " ++ show fb
-                              ++ " in contex " ++ show cntx
 
 
 
 ---------------------------------------------------
 
 instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
-  testEnviroment cntx0 pu@Fram{ frProcess=p@Process{..}, .. }
+  testEnviroment cntx0 pu@Fram{ frProcess=Process{..}, .. }
     = Immidiate (name pu ++ "_tb.v") testBenchImp
     where
-      cntx = let vs = [ v | eff <- getEndpoints p
-                      , v <- variables eff
-                      ]
-             in foldl ( \cntx' v ->
-                         M.insert (v, 0)
-                                   (variableValueWithoutFB pu cntx' (v, 0))
-                                   cntx'
-                      ) cntx0 vs
-
+      Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) (Just cntx0) $ functionalBlocks pu
       testBenchImp = renderST
         [ "module $moduleName$_tb();                                                                                 "
         , "parameter DATA_WIDTH = 32;                                                                                "
         , "parameter ATTR_WIDTH = 4;                                                                                 "
+        , "                                                                                                          "
+        , "/*                                                                                                          "
+        , show cntx -- "                                                                                                          "
+        , show $ functionalBlocks pu -- "                                                                                                          "
+        , "*/                                                                                                          "
         , "                                                                                                          "
         , "reg clk, rst, wr, oe;                                                                                     "
         , "reg [3:0] addr;                                                                                           "
@@ -574,7 +573,6 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
         [ ("moduleName", name pu)
         ]
 
-
 controlSignals pu@Fram{ frProcess=Process{..}, ..}
   = concatMap ( ("      " ++) . (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. nextTick + 1 ]
   where
@@ -589,12 +587,12 @@ controlSignals pu@Fram{ frProcess=Process{..}, ..}
                       ++ "; addr[0] <= 'b" ++ a0 ++ ";"
                   ) . map show
 
-testDataInput Fram{ frProcess=p@Process{..}, ..} cntx
+testDataInput pu@Fram{ frProcess=p@Process{..}, ..} cntx
   = concatMap ( ("      " ++) . (++ " @(negedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
   where
     busState t
       | Just (Target v) <- endpointAt t p
-       = "data_in <= " ++ show (cntx M.! (v, 0)) ++ ";"
+       = "data_in <= " ++ show (maybe (error ("input" ++ show v ++ show (functionalBlocks pu)) ) id (get cntx v)) ++ ";"
       | otherwise = "/* NO INPUT */"
 
 testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
@@ -602,31 +600,31 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
   where
     busState t
       | Just (Source (v : _)) <- endpointAt t p
-      = checkBus v $ cntx M.! (v, 0)
+      = checkBus v $ (maybe (error $ show ("checkBus" ++ show v ++ show cntx) ) show (get cntx v))
       | otherwise
       = "/* NO OUTPUT */"
 
     checkBus v value = concat
-      [ "if ( !( data_out === " ++ show value ++ " ) ) "
+      [ "if ( !( data_out === " ++ value ++ " ) ) "
       ,   "\\$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " on the bus! "
       ,       "(got: %h expect: %h)"
-      ,     "\","
-      ,     "data_out, " ++ show value
+      ,     "\", "
+      ,     "data_out, " ++ value
       ,   ");"
       ]
 
     bankCheck
       = "\n      @(posedge clk);\n"
-      ++ unlines [ "  " ++ checkBank addr v (cntx M.! (v, 0))
+      ++ unlines [ "  " ++ checkBank addr v (maybe (error $ show ("bank" ++ show v ++ show cntx) ) show (get cntx v))
                  | Step{ sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
                  , let addr_v = outputStep fb
                  , isJust addr_v
                  , let Just (addr, v) = addr_v
                  ]
 
-    outputStep fb
+    outputStep (FB fb)
       | Just (Loop _bs (I a)) <- cast fb = Just (findAddress a pu, a)
       | Just (FramOutput addr (I a)) <- cast fb = Just (addr, a)
       | otherwise = Nothing
@@ -664,21 +662,21 @@ instance ( Time t, Var v ) => Synthesis (Fram v t) where
     [ "pu_fram #( .DATA_WIDTH( $DATA_WIDTH$ )"
     , "         , .ATTR_WIDTH( $ATTR_WIDTH$ )"
     , "         , .RAM_SIZE( $size$ )"
-    , "     ) $name$ ("
-    , "    .clk( $Clk$ ),"
-    , "    .signal_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } ),"
+    , "         ) $name$"
+    , "  ( .clk( $Clk$ )"
+    , "  , .signal_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } )"
     , ""
-    , "    .signal_wr( $WR$ ),"
-    , "    .data_in( $DataIn$ ),"
-    , "    .attr_in( $AttrIn$ ),"
+    , "  , .signal_wr( $WR$ )"
+    , "  , .data_in( $DataIn$ )"
+    , "  , .attr_in( $AttrIn$ )"
     , ""
-    , "    .signal_oe( $OE$ ),"
-    , "    .data_out( $DataOut$ ),"
-    , "    .attr_out( $AttrOut$ ) "
-    , ");"
+    , "  , .signal_oe( $OE$ )"
+    , "  , .data_out( $DataOut$ )"
+    , "  , .attr_out( $AttrOut$ )"
+    , "  );"
     , "initial begin"
     , S.join "\n"
-        $ map (\(i, Cell{..}) -> "    $name$.bank[" ++ show i ++ "] <= " ++ show initialValue ++ ";")
+        $ map (\(i, Cell{..}) -> "  $name$.bank[" ++ show i ++ "] <= " ++ show initialValue ++ ";")
         $ assocs frMemory
     , "end"
     ] $ ("name", n) : ("size", show frSize) : cntx

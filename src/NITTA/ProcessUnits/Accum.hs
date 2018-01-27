@@ -13,7 +13,6 @@ module NITTA.ProcessUnits.Accum where
 
 import           Data.Default
 import           Data.List                   (intersect, (\\))
-import qualified Data.Map                    as M
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.SerialPU
@@ -35,7 +34,7 @@ instance Default (AccumState v t) where
 
 instance ( Var v, Time t ) => SerialPUState (AccumState v t) (Parcel v) v t where
 
-  bindToState fb ac@Accum{ acIn=[], acOut=[] }
+  bindToState (FB fb) ac@Accum{ acIn=[], acOut=[] }
     | Just (Add (I a) (I b) (O cs)) <- cast fb = Right ac{ acIn=[a, b], acOut = cs }
     | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
@@ -69,6 +68,7 @@ instance ( Var v, Time t ) => SerialPUState (AccumState v t) (Parcel v) v t wher
 
 instance Controllable (Accum v t) where
   data Signal (Accum v t) = OE | INIT | LOAD | NEG deriving ( Show, Eq, Ord )
+  data Flag (Accum v t)
   data Instruction (Accum v t)
     = Nop
     | Init Bool
@@ -101,11 +101,9 @@ instance UnambiguouslyDecode (Accum v t) where
 
 
 instance ( Var v ) => Simulatable (Accum v t) v Int where
-  variableValue fb SerialPU{..} cntx (v, i)
-    | Just (Add (I a) _ _) <- cast fb, a == v               = cntx M.! (v, i)
-    | Just (Add _ (I b) _) <- cast fb, b == v               = cntx M.! (v, i)
-    | Just (Add (I a) (I b) (O cs)) <- cast fb, v `elem` cs = cntx M.! (a, i) + cntx M.! (b, i)
-    | otherwise = error $ "Can't simulate " ++ show fb
+  simulateOn cntx _ (FB fb)
+    | Just (fb' :: Add (Parcel v)) <- cast fb = simulate cntx fb'
+    | otherwise = error $ "Can't simulate " ++ show fb ++ " on Accum."
 
 
 
@@ -114,19 +112,19 @@ instance Synthesis (Accum v t) where
     = renderST
       [ "pu_accum #( .DATA_WIDTH( $DATA_WIDTH$ )"
       , "          , .ATTR_WIDTH( $ATTR_WIDTH$ )"
-      , "          ) $name$ ("
-      , "    .clk( $Clk$ ),"
+      , "          ) $name$"
+      , "  ( .clk( $Clk$ )"
       , ""
-      , "    .signal_init( $INIT$ ),"
-      , "    .signal_load( $LOAD$ ),"
-      , "    .signal_neg( $NEG$ ),"
-      , "    .data_in( $DataIn$ ),"
-      , "    .attr_in( $AttrIn$ ),"
+      , "  , .signal_init( $INIT$ )"
+      , "  , .signal_load( $LOAD$ )"
+      , "  , .signal_neg( $NEG$ )"
+      , "  , .data_in( $DataIn$ )"
+      , "  , .attr_in( $AttrIn$ )"
       , ""
-      , "    .signal_oe( $OE$ ),"
-      , "    .data_out( $DataOut$ ),"
-      , "    .attr_out( $AttrOut$ )"
-      , ");"
+      , "  , .signal_oe( $OE$ )"
+      , "  , .data_out( $DataOut$ )"
+      , "  , .attr_out( $AttrOut$ )"
+      , "  );"
       , "initial $name$.acc <= 0;"
       ] $ ("name", n) : cntx
   name _ = "pu_accum"

@@ -28,6 +28,7 @@ import qualified NITTA.FunctionBlocks     as FB
 import qualified NITTA.ProcessUnits.Accum as A
 import           NITTA.ProcessUnits.Fram
 import qualified NITTA.ProcessUnits.Shift as S
+import qualified NITTA.ProcessUnits.SPI   as SPI
 import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
@@ -96,14 +97,12 @@ bushExample
 
 -- | Пример работы с единым временем.
 branchExample
-  = let fram = PU (def :: Fram String T)
-        accum = PU (def :: A.Accum String T)
-        shift = PU (def :: S.Shift String T)
-        net = busNetwork
-          [ ("fram1", fram)
-          , ("fram2", fram)
-          , ("accum", accum)
-          , ("shift", shift)
+  = let net = busNetwork
+          [ ("fram1", PU (def :: Fram String T))
+          , ("fram2", PU (def :: Fram String T))
+          , ("accum", PU (def :: A.Accum String T))
+          , ("shift", PU (def :: S.Shift String T))
+          , ("spi", PU (def :: SPI.SPI String T))
           ]
           $ array (0, 25) [ (25, [("shift", S (S.OE        :: Signal (S.Shift String T)))])
                           , (24, [("shift", S (S.INIT      :: Signal (S.Shift String T)))])
@@ -120,8 +119,8 @@ branchExample
 
                           , (15, [("fram1", S (OE :: Signal (Fram String T)))])
                           , (14, [("fram1", S (WR :: Signal (Fram String T)))])
-                          , (13, [])
-                          , (12, [])
+                          , (13, [("spi", S (SPI.OE :: Signal (SPI.SPI String T)))])
+                          , (12, [("spi", S (SPI.WR :: Signal (SPI.SPI String T)))])
 
                           , (11, [("fram1", S (ADDR 3 :: Signal (Fram String T)))])
                           , (10, [("fram1", S (ADDR 2 :: Signal (Fram String T)))])
@@ -138,26 +137,30 @@ branchExample
                           , ( 1, [("fram2", S (ADDR 1 :: Signal (Fram String T)))])
                           , ( 0, [("fram2", S (ADDR 0 :: Signal (Fram String T)))])
                           ]
-        alg = [ FB.framInput 3 $ O [ "a"
-                                   , "d"
-                                   ]
-              , FB.framInput 4 $ O [ "b"
-                                   , "c"
-                                   , "e"
-                                   ]
-              , FB.reg (I "a") $ O ["x"]
-              , FB.reg (I "b") $ O ["y"]
-              , FB.reg (I "c") $ O ["z"]
-              , FB.framOutput 5 $ I "x"
-              , FB.framOutput 6 $ I "y"
-              , FB.framOutput 7 $ I "z"
-              , FB.framOutput 0 $ I "sum"
-              , FB $ FB.Constant 42 $ O ["const"]
-              , FB.framOutput 9 $ I "const"
-              , FB.loop (O ["f"]) $ I "g"
-              -- , FB.reg (I "f") $ O ["g"]
-              , FB $ FB.ShiftL (I "f") $ O ["g"]
-              , FB $ FB.Add (I "d") (I "e") (O ["sum"])
+        -- alg = [ FB.framInput 3 $ O [ "a"
+        --                            , "d"
+        --                            ]
+        --       , FB.framInput 4 $ O [ "b"
+        --                            , "c"
+        --                            , "e"
+        --                            ]
+        --       , FB.reg (I "a") $ O ["x"]
+        --       , FB.reg (I "b") $ O ["y"]
+        --       , FB.reg (I "c") $ O ["z"]
+        --       , FB.framOutput 5 $ I "x"
+        --       , FB.framOutput 6 $ I "y"
+        --       , FB.framOutput 7 $ I "z"
+        --       , FB.framOutput 0 $ I "sum"
+        --       , FB $ FB.Constant 42 $ O ["const"]
+        --       , FB.framOutput 9 $ I "const"
+        --       , FB.loop (O ["f"]) $ I "g"
+        --       -- , FB.reg (I "f") $ O ["g"]
+        --       , FB $ FB.ShiftL (I "f") $ O ["g"]
+        --       , FB $ FB.Add (I "d") (I "e") (O ["sum"])
+        --       ]
+        alg = [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
+              , FB $ FB.Send (I "b")
+              , FB.reg (I "a") $ O ["b"]
               ]
         dataFlow = Stage $ map Actor alg
         net' = bindAll (functionalBlocks dataFlow) (net :: BusNetwork String String T)
@@ -171,22 +174,26 @@ branchExample
 
 main = do
   -- branchMain
-  simulateMain 10
+  simulateMain 3
 
 
 branchMain = do
   timeline "resource/data.json" branchExample
-  r <- testBench ".." (joinPath ["hdl", "gen"]) branchExample ([] :: [(String, Int)])
+  r <- testBench ".." (joinPath ["hdl", "gen"]) branchExample (def{ cntxVars=M.fromList [("g", [0x1003])]
+                                                                  } :: Cntx String Int)
   if r then putStrLn "Success"
   else putStrLn "Fail"
   print "ok"
 
 
 simulateMain n = do
-  mapM_ putStrLn $ take n $ map show $ simulateAlg [("b", 0)]
-    [ FB $ FB.Constant 2 $ O ["a"] :: FB (Parcel String) String
-    , FB $ FB.Add (I "a") (I "b") (O ["c"])
-    , FB $ FB.Loop (O ["b"]) (I "c")
+  mapM_ putStrLn $ take n $ map show $ simulateAlg (def{ cntxVars=M.fromList [("b", [0])]
+                                                       , cntxInputs=M.fromList [("a", [1, 2, 3])]
+                                                       } :: Cntx String Int)
+    [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
+    , FB $ FB.Add (I "a") (I "b") (O ["c1", "c2"])
+    , FB $ FB.Loop (O ["b"]) (I "c1")
+    , FB $ FB.Send (I "c2")
     ]
   print "ok"
 

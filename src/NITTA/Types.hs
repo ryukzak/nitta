@@ -221,9 +221,20 @@ class WithFunctionalBlocks x fb | x -> fb where
 
 
 
-type FunSimCntx v x = M.Map (v, Int) x
+data Cntx v x
+  = Cntx { cntxVars    :: M.Map v [x]
+         , cntxInputs  :: M.Map v [x]
+         , cntxOutputs :: M.Map v [x]
+         , cntxFram    :: M.Map (Int, v) [x]
+         }
+  deriving (Show)
+
+instance Default (Cntx v x) where
+  def = Cntx M.empty M.empty M.empty M.empty
+
+
 class FunctionSimulation fb v x | fb -> v where
-  simulate :: FunSimCntx v x -> Int -> fb -> Maybe (FunSimCntx v x)
+  simulate :: Cntx v x -> fb -> Maybe (Cntx v x)
 
 
 
@@ -257,7 +268,7 @@ instance {-# OVERLAPS #-} FunctionalBlock fb v => Variables fb v where
   variables fb = inputs fb ++ outputs fb
 
 instance FunctionSimulation (FB (Parcel v) v) v Int where
-  simulate cntx step (FB fb) = simulate cntx step fb
+  simulate cntx (FB fb) = simulate cntx fb
 
 
 ---------------------------------------------------------------------
@@ -511,7 +522,7 @@ instance ProcessUnit (PU v t) v t where
   setTime t (PU pu) = PU $ setTime t pu
 
 instance Simulatable (PU v t) v Int where
-  variableValue fb (PU pu) = variableValue fb pu
+  simulateOn cntx (PU pu) fb = simulateOn cntx pu fb
 
 instance Synthesis (PU v t) where
   name (PU pu) = name pu
@@ -550,6 +561,10 @@ class Controllable pu where
   -- аппаратной составляющей, так как нет возможности ни получить полный список сигналов, ни в
   -- принципе узнать их количество (яркий пример - количество битов для адресации сигнала ADDR Int).
   data Signal pu :: *
+  -- | Флаги вычислительного блока. Используются для вывода системной информации из вычислительного
+  -- блока о его внутренних процессах. Используются для синхронизации вычислительного цикла с
+  -- внутренними процессами.
+  data Flag pu :: *
 
 
 -- | Метод, необходимый для управляемых блоков обработки данных. Позволяет узнать значение сигнала
@@ -610,8 +625,6 @@ _ +++ _ = Broken
 -- В качестве ключа используется имя переменной и индекс. Это необходимо для того, что бы
 -- моделировать вычислительный процесс на разных циклах. При этом не очень ясно, модет ли работать
 -- данная конструкция в TaggedTime в принципе.
-type SimulationContext v x = M.Map (v, Int) x
-
 
 -- | Класс предназначенный для симуляции вычислительного процесса. Может использоваться как просто
 -- для моделирования, так и для генерации TestBench-а. Работает только с уже спланированным
@@ -619,13 +632,11 @@ type SimulationContext v x = M.Map (v, Int) x
 -- стороны - это позволяет учитывать внутренее состояние вычислительного блока, что может быть
 -- полезным при работе со значеними по умолчанию).
 class Simulatable pu v x | pu -> v x where
-  variableValue :: FB (Parcel v) v -- ^ Функциональный блок, оперируйщий интересующим значением.
-                -> pu -- ^ Вычислительный блок.
-                -> SimulationContext v x -- ^ Контекст вычислительного процесса, содержащий уже
-                                         -- известные значения переменных.
-                -> (v, Int) -- ^ Описание интересующего значения, где v - идентификатор, а x - номер
-                            -- вычислительного цикла.
-                -> x  -- ^ Значение на шине данных, выставляемое вычислительным блоком по результату.
+  simulateOn :: Cntx v x -- ^ Контекст вычислительного процесса, содержащий уже
+                         -- известные значения переменных.
+             -> pu -- ^ Вычислительный блок.
+             -> FB (Parcel v) v -- ^ Функциональный блок, оперируйщий интересующим значением.
+             -> Maybe (Cntx v x)
 
 
 

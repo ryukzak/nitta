@@ -11,6 +11,7 @@ module NITTA.ProcessUnitsSpec where
 import           Data.Atomics.Counter
 import           Data.Default
 import           Data.List               (intersect, sort, (\\))
+import qualified Data.Map                as M
 import           Data.Proxy
 import           NITTA.Compiler
 import           NITTA.TestBench
@@ -44,8 +45,8 @@ processGen proxy = arbitrary >>= processGen' proxy def
   where
     processGen' :: ( DecisionProblem (EndpointDT String Int) EndpointDT pu
                    , ProcessUnit pu String Int
-                   , WithFunctionalBlocks (FSet pu) (FB Parcel String)
-                   ) => Proxy pu -> pu -> [FSet pu] -> Gen (pu, [FB Parcel String])
+                   , WithFunctionalBlocks (FSet pu) (FB (Parcel String) String)
+                   ) => Proxy pu -> pu -> [FSet pu] -> Gen (pu, [FB (Parcel String) String])
     processGen' _ pu specialAlg = endpointWorkGen pu $ concatMap functionalBlocks specialAlg
 
 
@@ -85,7 +86,8 @@ endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
 -- TODO: Генерируемые значения должны типизироваться с учётом особенностей вычислительного блока.
 inputsGen (pu, fbs) = do
   values <- infiniteListOf $ choose (0, 1000)
-  return (pu, fbs, zip (concatMap inputs fbs) values)
+  let is = concatMap inputs fbs
+  return (pu, fbs, def{ cntxVars=M.fromList $ zip is (map (\x -> [x]) values) })
 
 
 -- | Проверка вычислительного блока на соответсвие работы аппаратной реализации и его модельного

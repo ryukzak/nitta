@@ -157,16 +157,6 @@ values2dump vs
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
 
 
-variableValueWithoutFB pu cntx vi@(v, _)
-  | [fb] <- filter (elem v . variables) fbs
-  = variableValue fb pu cntx vi
-  | otherwise = error $ "can't find varValue for: " ++ show v ++ " "
-                ++ show cntx ++ " "
-                ++ show fbs
-  where
-    fbs = mapMaybe getFB $ steps $ process pu
-
-
 nopFor :: ( Default (Instruction pu) ) => Proxy pu -> Instruction pu
 nopFor _proxy = def
 

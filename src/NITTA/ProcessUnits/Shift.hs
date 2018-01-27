@@ -11,10 +11,8 @@
 
 module NITTA.ProcessUnits.Shift where
 
-import           Data.Bits                   (shiftR)
 import           Data.Default
 import           Data.List                   (intersect, (\\))
-import qualified Data.Map                    as M
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.Lens
@@ -36,7 +34,7 @@ instance Default (ShiftState v t) where
 
 instance ( Var v, Time t ) => SerialPUState (ShiftState v t) (Parcel v) v t where
 
-  bindToState fb s@ShiftState{ sIn=Nothing, sOut=[] }
+  bindToState (FB fb) s@ShiftState{ sIn=Nothing, sOut=[] }
     | Just (ShiftL (I a) (O cs)) <- cast fb = Right s{ sIn=Just a, sOut = cs }
     | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
@@ -73,6 +71,7 @@ data Mode      = Logic | Arithmetic deriving ( Show )
 
 instance Controllable (Shift v t) where
   data Signal (Shift v t) = WORK | DIRECTION | MODE | STEP | INIT | OE deriving ( Show, Eq, Ord )
+  data Flag (Shift v t)
   data Instruction (Shift v t)
     = Nop
     | Init
@@ -101,10 +100,9 @@ instance UnambiguouslyDecode (Shift v t) where
 
 
 instance ( Var v ) => Simulatable (Shift v t) v Int where
-  variableValue fb SerialPU{..} cntx (v, i)
-    | Just (ShiftL (I a) _) <- cast fb, a == v           = cntx M.! (v, i)
-    | Just (ShiftL (I a) (O cs)) <- cast fb, v `elem` cs = cntx M.! (a, i) `shiftR` 1
-    | otherwise = error $ "Can't simulate " ++ show fb
+  simulateOn cntx _ (FB fb)
+    | Just (fb' :: ShiftL (Parcel v)) <- cast fb = simulate cntx fb'
+    | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
 
 
 instance Synthesis (Shift v t) where

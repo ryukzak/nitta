@@ -10,6 +10,7 @@ import           Control.Applicative         ((<$>))
 import           Data.Array                  (array)
 import           Data.Atomics.Counter
 import           Data.Default
+import qualified Data.Map                    as M
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.Flows                 as F
@@ -52,7 +53,8 @@ huFramTests
         fram = bindAllAndNaiveSchedule alg (def :: Fram String Int)
         library = joinPath ["..", ".."]
         workdir = joinPath ["hdl", "gen", "unittest_fram"]
-    in [ testCase "Simple unit test" $ assert (testBench library workdir fram [("aa", 42), ("ac", 0x1009)])
+    in [ testCase "Simple unit test" $ assert (testBench library workdir fram (def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])]
+                                                                                  } :: Cntx String Int))
        ]
 
 
@@ -117,7 +119,8 @@ accum_fram1_fram2_netTests
         library = joinPath ["..", ".."]
         workdir = joinPath ["hdl", "gen", "unittest_accum_fram1_fram2_net"]
     in testCase "Obscure integration test for net of accum, fram1, fram2"
-          $ assert $ testBench library workdir net'' ([] :: [(String, Int)])
+          $ assert $ testBench library workdir net'' (def{ cntxVars=M.fromList [("g", [0x1001])]
+                                                         } :: Cntx String Int)
 
 
 values2dumpTests = testCase "values2dump" $ do
