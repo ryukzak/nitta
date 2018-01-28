@@ -9,13 +9,13 @@ module pu_slave_spi
   , input             signal_cycle
 
   // system interface
-  , input  wire                  signal_wr
-  , input  wire [DATA_WIDTH-1:0] data_in
-  , input  wire [ATTR_WIDTH-1:0] attr_in
+  , input                    signal_wr
+  , input   [DATA_WIDTH-1:0] data_in
+  , input   [ATTR_WIDTH-1:0] attr_in
 
-  , input  wire                  signal_oe
-  , output reg  [DATA_WIDTH-1:0] data_out
-  , output reg  [ATTR_WIDTH-1:0] attr_out
+  , input                    signal_oe
+  , output   [DATA_WIDTH-1:0] data_out
+  , output   [ATTR_WIDTH-1:0] attr_out
 
   , output            flag_start
   , output            flag_stop
@@ -29,13 +29,12 @@ module pu_slave_spi
 
 reg  buffer_rst;
 
-
 wire [SPI_DATA_WIDTH-1:0] spi_data_send;
 wire [SPI_DATA_WIDTH-1:0] spi_data_receive;
 wire spi_ready;
  
 spi_slave_driver #( .DATA_WIDTH( SPI_DATA_WIDTH )
-                  ) spi_driver 
+                  ) spi_driver
   ( .clk( clk )
   , .rst( rst )  
 
@@ -58,33 +57,29 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
   , .spi_ready( spi_ready ) 
   ); 
 
-
-
-wire [DATA_WIDTH-1:0] send_data_out;
-reg  [DATA_WIDTH-1:0] send_data_in;
-wire [DATA_WIDTH-1:0] receive_data_out;
-reg  [DATA_WIDTH-1:0] receive_data_in;
-
-
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
+            , .DATA_WIDTH( DATA_WIDTH )
+            , .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
             ) receive_buffer
   ( .clk( clk )
   , .rst( buffer_rst )
   , .oe( signal_oe )
-  //, .wr( signal_wr )
-  , .data_in( receive_data_in )
-  , .data_out( receive_data_out )
+  , .wr( 1'b0 )
+  , .data_in( data_in )
+  , .data_out( data_out )
   );
 
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
+            , .DATA_WIDTH( DATA_WIDTH )
+            , .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
             ) send_buffer 
   ( .clk( clk )
   , .rst( buffer_rst )
-  //, .oe( signal_oe )
+  , .oe( 1'b0 )
   , .wr( signal_wr )
-  , .data_in( send_data_in )
-  , .data_out( send_data_out ) 
-  ); 
+  , .data_in( data_in )
+  // , .data_out( send_data_out ) 
+  );
 
 always @( posedge clk or posedge rst ) begin
   if ( rst ) begin
@@ -93,17 +88,6 @@ always @( posedge clk or posedge rst ) begin
     if ( signal_cycle ) begin
       buffer_rst <= 1;
     end else begin                      // [+] Start work basic transfer cycle
-      if ( signal_oe ) begin          // [?] Logic for reading data
-        data_out <= receive_data_out;
-        attr_out <= 0;
-      end
-      else begin
-        data_out <= 0;
-        attr_out <= 0;
-      end
-      if ( signal_wr ) begin          // [!] Logic for writing data
-        send_data_in <= data_in;
-      end    
       buffer_rst <= 0;
     end                                 // [+] End work basic transfer cycle
   end

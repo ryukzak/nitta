@@ -29,8 +29,10 @@ reg wr_addr_incremented;
 reg [ADDR_WIDTH-1:0]          spi_address;
 reg spi_addr_incremented;
 reg [SPI_DATA_WIDTH-1:0]        spi_next_word_to_send;
-reg [SPI_DATA_WIDTH-1:0]        spi_debug;
 assign spi_data_send = spi_next_word_to_send;
+
+reg [SPI_DATA_WIDTH-1:0]        spi_debug;
+reg [DATA_WIDTH-1:0]            wr_debug;
 
 localparam STATE_START_READY = 0;
 localparam STATE_STOP_READY  = 1;
@@ -40,17 +42,14 @@ integer index;
 initial begin
   // Вынес, так как данный код либо не синтезируемый, либо очень много места займёт.
   for (index = 0; index < BUF_SIZE; index = index + 1) begin
-    memory[ index ] = 0;
+    memory[ index ] <= 'h1000 + index;
   end
 end
 
 always @(posedge clk or posedge rst) begin
   if ( rst ) begin
     oe_address <= 0;
-    oe_addr_incremented <= 0;
-
     wr_address <= 0;
-    wr_addr_incremented <= 0;
 
     spi_address <= 0;
     spi_addr_incremented <= 0;
@@ -61,14 +60,9 @@ always @(posedge clk or posedge rst) begin
 
     // store data for send
     if ( wr ) begin
-      memory [ wr_address ] <= data_in;
-      wr_addr_incremented = 1;
-      wr_address <= { 1'b0, wr_address[ ADDR_WIDTH-1:0 ]}; 
-    end else begin 
-      if ( wr_addr_incremented ) begin
-        wr_address <= wr_address + 1'b1;
-        wr_addr_incremented = 0;
-      end
+      memory[ wr_address ] <= data_in;
+      wr_address <= wr_address + 1;
+      wr_debug <= data_in;
     end
 
     // send and reseive data by SPI
@@ -94,17 +88,14 @@ always @(posedge clk or posedge rst) begin
 
     // fetch received data
     if ( oe ) begin
-      data_out <= memory [ oe_address ];
-      oe_addr_incremented <= 1;
+      data_out <= memory[ oe_address ];
+      oe_address <= oe_address + 1;
     end else begin
-      if ( oe_addr_incremented ) begin
-        oe_address <= oe_address + 1'b1;
-        oe_addr_incremented = 0;
-      end
+      data_out <= 0;
     end
   end
 end
 
-assign buffer_full = { wr_address [ADDR_WIDTH] };
+assign buffer_full = { wr_address[ ADDR_WIDTH ] };
 
 endmodule
