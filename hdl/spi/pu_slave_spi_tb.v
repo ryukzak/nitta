@@ -58,7 +58,7 @@ pu_slave_spi #( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
   , .cs( cs )
   );
 
-reg [4:0] i;
+integer i;
 
 always begin
   #5 clk = ~clk;
@@ -95,10 +95,10 @@ initial
 
     repeat(35) @(posedge clk); 
   
-    $display("Buffer dump by a words:");
+    $display("Buffers dump receive, transfer, send:");
   	for ( i = 0; i < BUF_SIZE; i = i + 1 )
 	    begin
-        $display("%d -> %h", i, pu.buffer.memory[i]);
+        $display("%d -> %h , %h , %h", i, pu.receive_buffer.memory[i], pu.transfer_buffer.memory[i], pu.send_buffer.memory[i]);
     	end
 
     $finish;
