@@ -1,0 +1,247 @@
+// Copyright (C) 2017  Intel Corporation. All rights reserved.
+// Your use of Intel Corporation's design tools, logic functions 
+// and other software and tools, and its AMPP partner logic 
+// functions, and any output files from any of the foregoing 
+// (including device programming or simulation files), and any 
+// associated documentation or information are expressly subject 
+// to the terms and conditions of the Intel Program License 
+// Subscription Agreement, the Intel Quartus Prime License Agreement,
+// the Intel FPGA IP License Agreement, or other applicable license
+// agreement, including, without limitation, that your use is for
+// the sole purpose of programming logic devices manufactured by
+// Intel and sold by Intel or its authorized distributors.  Please
+// refer to the applicable agreement for further details.
+
+// *****************************************************************************
+// This file contains a Verilog test bench template that is freely editable to  
+// suit user's needs .Comments are provided in each section to help the user    
+// fill out necessary details.                                                  
+// *****************************************************************************
+// Generated on "01/13/2018 17:35:53"
+                                                                                
+// Verilog Test Bench template for design : play
+// 
+// Simulation tool : ModelSim-Altera (Verilog)
+// 
+
+`timescale 1 ps/ 1 ps
+module mul_tb
+#(parameter DATA_WIDTH = 			8,
+  parameter ATTR_WIDTH = 			4,
+  parameter VALID_INVALID_IN = 	0,
+  parameter VALID_INVALID_OUT = 	0
+  );
+  
+reg 	[DATA_WIDTH-1:0] 		data_in;
+reg 								OE;
+reg 								RST;
+reg 								SEL;
+reg 								WR;
+reg 								clk;
+reg 	[ATTR_WIDTH:0] 		attr_in;                                              
+wire 	[DATA_WIDTH-1:0]  	data_out;
+wire 	[ATTR_WIDTH:0]			attr_out;
+
+                          
+play i1 (
+// port map - connection between master ports and signals/registers   
+	.data_in(data_in),
+	.OE(OE),
+	.RST(RST),
+	.WR(WR),
+	.clk(clk),
+	.SEL(SEL),
+	.data_out(data_out),
+	.attr_in(attr_in),
+	.attr_out(attr_out)
+);
+
+
+task send_valid_value;
+	input [DATA_WIDTH-1:0] data;
+	input select;
+	begin
+	SEL = select;
+	data_in = data;
+	attr_in[VALID_INVALID_IN] = 1;
+	end
+	endtask
+	
+	task send_invalid_value;
+	input [DATA_WIDTH-1:0] data;
+	input select;
+	begin
+	SEL = select;
+	data_in = data;
+	attr_in[VALID_INVALID_IN] = 1;
+	end
+	endtask
+
+always
+	 #5 clk = ~clk;
+
+
+initial begin
+	$display("Start programm");
+	clk = 0;
+	RST <=1; repeat(5) @(posedge clk);
+	
+	// Все входа выключены.
+	RST <=0;
+	SEL = 0;
+	WR = 1;
+	
+	send_valid_value(5,0); repeat(10) @(posedge clk);
+	send_valid_value(5,1); repeat(10) @(posedge clk);
+	SEL = 0;
+	#20
+	OE <= 1;  repeat (5) @(posedge clk);
+	//Подключаем валидность и начинаем запись. 
+	
+	OE = 0;
+	send_valid_value(1,0); repeat(10) @(posedge clk);
+	send_valid_value(2,1); repeat(10) @(posedge clk);
+	SEL = 0;
+	#20
+   OE <= 1;  repeat (5) @(posedge clk);
+	
+	OE = 0;
+	send_valid_value(-1,0); repeat(10) @(posedge clk);
+	send_valid_value(-2,1); repeat(10) @(posedge clk);
+	SEL = 0;
+	#20
+	OE <= 1;  repeat (5) @(posedge clk);
+
+	
+	OE = 0;
+	send_valid_value(-2,0); repeat(10) @(posedge clk);
+	send_valid_value(2,1); repeat(10) @(posedge clk);
+	SEL = 0;
+	#20
+	OE <= 1;  repeat (5) @(posedge clk);
+	
+	
+	OE = 0;
+	send_valid_value(3,0); repeat(10) @(posedge clk);
+	send_valid_value(-4,1); repeat(10) @(posedge clk);
+	SEL = 0;
+	#20
+	OE <= 1;  repeat (5) @(posedge clk);
+
+	
+	OE = 0;
+	send_valid_value(100,0); repeat(10) @(posedge clk);
+	send_valid_value(200,1); repeat(10) @(posedge clk);
+	SEL = 0;
+	#20
+	OE <= 1;  repeat (5) @(posedge clk);
+
+	
+	#20 $finish;
+	
+//	// Включаем вход OE и проверяем запись отрицательного числа в доп коде.
+//	
+//	SEL <= 0;
+//	OE <=0;
+//	send_value0(32); repeat(10) @(posedge clk);
+//	SEL <= 1;
+//	send_value1(-5); repeat(10) @(posedge clk);
+//	OE <= 1;  repeat (5) @(posedge clk);
+//	
+//	OE <= 0;
+//	SEL <= 0;
+//	send_value0(32); repeat(10) @(posedge clk);
+//	SEL <= 1;
+//	send_value0(32); repeat(10) @(posedge clk);
+//	OE <= 1;  repeat (5) @(posedge clk);
+//	
+//	// Выключаем валидность
+//	
+//	attr_in[VALID_IN] <= 1;
+//	OE <= 0;
+//	SEL <= 0;
+//	send_value0(32); repeat(10) @(posedge clk);
+//	SEL <= 1;
+//	send_value0(32); repeat(10) @(posedge clk);
+//	OE <= 1;  repeat (5) @(posedge clk);
+//	
+//	// Включаем валидность
+//	
+//	attr_in[VALID_IN] <= 1;
+//	OE <= 0;
+//	SEL <= 0;
+//	send_value0(32); repeat(10) @(posedge clk);
+//	SEL <= 1;
+//	send_value0(32); repeat(10) @(posedge clk);
+//	OE <= 1;  repeat (5) @(posedge clk);
+//	
+//	// отключаем WR
+//	
+//	OE <= 0;
+//	SEL <= 0;
+//	WR <= 0;
+//	send_value0(3); repeat(10) @(posedge clk);
+//	SEL <= 1;
+//	send_value0(1); repeat(10) @(posedge clk);
+//	OE <= 1;  repeat (5) @(posedge clk);
+//	
+//	// включаем WR
+//	
+//	OE <= 0;
+//	SEL <= 0;
+//	WR <= 1;
+//	send_value0(10); repeat(10) @(posedge clk);
+//	SEL <= 1;
+//	send_value0(5); repeat(10) @(posedge clk);
+//	OE <= 1;  repeat (5) @(posedge clk);
+//	
+//
+//	OE <= 0;
+//	SEL <= 0;
+//	WR <= 1;
+//	send_value0(-1); repeat(10) @(posedge clk);
+//	SEL <= 1;
+//	send_value0(-1); repeat(10) @(posedge clk);
+//	OE <= 1;  repeat (5) @(posedge clk);
+//	
+//	OE <= 0;
+//	SEL <= 0;
+//	WR <= 1;
+//	send_value0(16); repeat(10) @(posedge clk);
+//	SEL <= 1;
+//	send_value0(15); repeat(10) @(posedge clk);
+//	OE <= 1;  repeat (5) @(posedge clk);
+//	
+//	OE <= 0;
+//	SEL <= 0;
+//	WR <= 1;
+//	send_value0(-16); repeat(10) @(posedge clk);
+//	SEL <= 1;
+//	send_value0(15); repeat(10) @(posedge clk);
+//	OE <= 1;  repeat (5) @(posedge clk);
+//	
+//	OE <= 0;
+//	SEL <= 0;
+//	WR <= 1;
+//	send_value0(-7); repeat(10) @(posedge clk);
+//	SEL <= 1;
+//	send_value0(13); repeat(10) @(posedge clk);
+//	OE <= 1;  repeat (5) @(posedge clk);
+//	
+//	OE <= 0;
+//	SEL <= 0;
+//	WR <= 1;
+//	send_value0(128); repeat(10) @(posedge clk);
+//	SEL <= 1;
+//	send_value0(2); repeat(10) @(posedge clk);
+//	OE <= 1;  repeat (5) @(posedge clk);
+//	
+//	#5 $finish;
+
+end
+initial begin
+	$dumpfile("mul.vcd");
+	$dumpvars(0,mul_tb);
+	end
+endmodule
+
