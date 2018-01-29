@@ -10,6 +10,7 @@ import           Control.Applicative         ((<$>))
 import           Data.Array                  (array)
 import           Data.Atomics.Counter
 import           Data.Default
+import qualified Data.Map                    as M
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.Flows                 as F
@@ -20,6 +21,7 @@ import           NITTA.ProcessUnits.FramSpec
 import           NITTA.ProcessUnitsSpec
 import           NITTA.TestBench
 import           NITTA.Types
+import           NITTA.Utils
 import           System.Environment
 import           System.FilePath             (joinPath)
 import           Test.Tasty
@@ -36,6 +38,7 @@ main = do
     [ testGroup "Fram unittests" huFramTests
     , testGroup "Fram quickcheck" (qcFramTests counter)
     , testGroup "BusNetwork unittests" [ accum_fram1_fram2_netTests ]
+    , testGroup "Utils" [ values2dumpTests ]
     ]
 
 qcFramTests counter
@@ -50,7 +53,8 @@ huFramTests
         fram = bindAllAndNaiveSchedule alg (def :: Fram String Int)
         library = joinPath ["..", ".."]
         workdir = joinPath ["hdl", "gen", "unittest_fram"]
-    in [ testCase "Simple unit test" $ assert (testBench library workdir fram [("aa", 42), ("ac", 0x1009)])
+    in [ testCase "Simple unit test" $ assert (testBench library workdir fram (def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])]
+                                                                                  } :: Cntx String Int))
        ]
 
 
@@ -115,4 +119,12 @@ accum_fram1_fram2_netTests
         library = joinPath ["..", ".."]
         workdir = joinPath ["hdl", "gen", "unittest_accum_fram1_fram2_net"]
     in testCase "Obscure integration test for net of accum, fram1, fram2"
-          $ assert $ testBench library workdir net'' ([] :: [(String, Int)])
+          $ assert $ testBench library workdir net'' (def{ cntxVars=M.fromList [("g", [0x1001])]
+                                                         } :: Cntx String Int)
+
+
+values2dumpTests = testCase "values2dump" $ do
+  assertEqual "values2dump: xxxx" "0" $ values2dump [X, X, X, X]
+  assertEqual "values2dump: 0000" "0" $ values2dump [B False, B False, B False, B False]
+  assertEqual "values2dump: 1111" "f" $ values2dump [B True, B True, B True, B True]
+  assertEqual "values2dump: 10111" "17" $ values2dump [B True, B False, B True, B True, B True]

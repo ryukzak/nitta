@@ -22,7 +22,7 @@ import           Data.Proxy
 import           Data.Typeable       (Typeable, cast)
 import           NITTA.Lens
 import           NITTA.Types
-import           Numeric             (readInt)
+import           Numeric             (readInt, showHex)
 import qualified Numeric.Interval    as I
 import           Text.StringTemplate
 
@@ -141,17 +141,12 @@ inputsOfFBs fbs
 --     in filter (\a -> all (not . (a `elem`)) deps) $ M.keys deps
 
 
-fromLeft :: a -> Either a b -> a
-fromLeft _ (Left a) = a
-fromLeft a _        = a
 
-fromRight :: b -> Either a b -> b
-fromRight _ (Right b) = b
-fromRight b _         = b
-
-
-
-values2dump vs = concatMap (show . readBin) $ groupBy4 $ concatMap show vs
+values2dump vs
+  = let vs' = concatMap show vs
+        x = length vs' `mod` 4
+        vs'' = if x == 0 then vs' else  replicate (4 - x) '0' ++ vs'
+    in concatMap (\e -> showHex (readBin e) "") $ groupBy4 vs''
   where
     groupBy4 [] = []
     groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)
@@ -160,16 +155,6 @@ values2dump vs = concatMap (show . readBin) $ groupBy4 $ concatMap show vs
 
 
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
-
-
-variableValueWithoutFB pu cntx vi@(v, _)
-  | [fb] <- filter (elem v . variables) fbs
-  = variableValue fb pu cntx vi
-  | otherwise = error $ "can't find varValue for: " ++ show v ++ " "
-                ++ show cntx ++ " "
-                ++ show fbs
-  where
-    fbs = mapMaybe getFB $ steps $ process pu
 
 
 nopFor :: ( Default (Instruction pu) ) => Proxy pu -> Instruction pu

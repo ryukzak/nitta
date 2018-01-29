@@ -27,17 +27,17 @@ inputVarGen = I <$> vectorOf 3 (elements ['a'..'z'])
 uniqueVars fb = let vs = variables fb in length vs == length (nub vs)
 
 
-instance Arbitrary (FramInput Parcel String) where
+instance Arbitrary (FramInput (Parcel String)) where
   arbitrary = suchThat (FramInput <$> framAddrGen <*> outputVarsGen) uniqueVars
 
-instance Arbitrary (FramOutput Parcel String) where
+instance Arbitrary (FramOutput (Parcel String)) where
   arbitrary = suchThat (FramOutput <$> framAddrGen <*> inputVarGen) uniqueVars
 
-instance Arbitrary (Loop Parcel String) where
+instance Arbitrary (Loop (Parcel String)) where
   arbitrary = suchThat (Loop <$> outputVarsGen <*> inputVarGen) uniqueVars
 
-instance Arbitrary (Reg Parcel String) where
+instance Arbitrary (Reg (Parcel String)) where
   arbitrary = suchThat (Reg <$> inputVarGen <*> outputVarsGen) uniqueVars
 
-instance Arbitrary (Constant Parcel String) where
-  arbitrary = suchThat (Constant <$> choose (0, 1000) <*> outputVarsGen) uniqueVars
+instance Arbitrary (Constant (Parcel String)) where
+  arbitrary = suchThat (Constant <$> choose (10, 16) <*> outputVarsGen) uniqueVars

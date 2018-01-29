@@ -11,10 +11,8 @@
 
 module NITTA.ProcessUnits.Shift where
 
-import           Data.Bits                   (shiftR)
 import           Data.Default
 import           Data.List                   (intersect, (\\))
-import qualified Data.Map                    as M
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.Lens
@@ -24,7 +22,7 @@ import           NITTA.Utils
 import           Numeric.Interval            (singleton, (...))
 
 
-type Shift v t = SerialPU (ShiftState v t) Parcel v t
+type Shift v t = SerialPU (ShiftState v t) (Parcel v) v t
 
 data ShiftState v t = ShiftState{ sIn :: Maybe v, sOut :: [v] }
   deriving ( Show )
@@ -34,10 +32,10 @@ instance Default (ShiftState v t) where
 
 
 
-instance ( Var v, Time t ) => SerialPUState (ShiftState v t) Parcel v t where
+instance ( Var v, Time t ) => SerialPUState (ShiftState v t) (Parcel v) v t where
 
-  bindToState fb s@ShiftState{ sIn=Nothing, sOut=[] }
-    | Just (ShiftL (I a) (O cs)) <- castFB fb = Right s{ sIn=Just a, sOut = cs }
+  bindToState (FB fb) s@ShiftState{ sIn=Nothing, sOut=[] }
+    | Just (ShiftL (I a) (O cs)) <- cast fb = Right s{ sIn=Just a, sOut = cs }
     | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
@@ -73,6 +71,7 @@ data Mode      = Logic | Arithmetic deriving ( Show )
 
 instance Controllable (Shift v t) where
   data Signal (Shift v t) = WORK | DIRECTION | MODE | STEP | INIT | OE deriving ( Show, Eq, Ord )
+  data Flag (Shift v t)
   data Instruction (Shift v t)
     = Nop
     | Init
@@ -100,19 +99,17 @@ instance UnambiguouslyDecode (Shift v t) where
 
 
 
-instance Simulatable (Shift v t) v Int where
-  variableValue (FB fb) SerialPU{..} cntx (v, i)
-    | Just (ShiftL (I a) _) <- cast fb, a == v           = cntx M.! (v, i)
-    | Just (ShiftL (I a) (O cs)) <- cast fb, v `elem` cs = cntx M.! (a, i) `shiftR` 1
-    | otherwise = error $ "Can't simulate " ++ show fb
+instance ( Var v ) => Simulatable (Shift v t) v Int where
+  simulateOn cntx _ (FB fb)
+    | Just (fb' :: ShiftL (Parcel v)) <- cast fb = simulate cntx fb'
+    | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
 
 
 instance Synthesis (Shift v t) where
-  -- TODO: parameter
   hardwareInstance _pu n cntx
     = renderST
-      [ "pu_shift #( .DATA_WIDTH(DATA_WIDTH)"
-      , "          , .ATTR_WIDTH(ATTR_WIDTH)"
+      [ "pu_shift #( .DATA_WIDTH( $DATA_WIDTH$ )"
+      , "          , .ATTR_WIDTH( $ATTR_WIDTH$ )"
       , "          ) $name$"
       , "  ( .clk( $Clk$ )"
       , "  , .signal_work( $WORK$ ), .signal_direction( $DIRECTION$ )"

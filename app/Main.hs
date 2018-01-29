@@ -19,6 +19,7 @@ import           Data.Proxy
 import           Data.String.Utils
 import qualified Data.String.Utils        as S
 import           Data.Typeable
+import           Debug.Trace
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.Flows
@@ -27,6 +28,7 @@ import qualified NITTA.FunctionBlocks     as FB
 import qualified NITTA.ProcessUnits.Accum as A
 import           NITTA.ProcessUnits.Fram
 import qualified NITTA.ProcessUnits.Shift as S
+import qualified NITTA.ProcessUnits.SPI   as SPI
 import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
@@ -37,6 +39,48 @@ import           Text.StringTemplate
 type T = TaggedTime String Int
 
 
+nitta :: BusNetwork String String T
+nitta = busNetwork
+  [ ("fram1", PU (def :: Fram String T))
+  , ("fram2", PU (def :: Fram String T))
+  , ("accum", PU (def :: A.Accum String T))
+  , ("shift", PU (def :: S.Shift String T))
+  , ("spi", PU (def :: SPI.SPI String T))
+  ]
+  $ array (0, 25) [ (25, [("shift", S (S.OE        :: Signal (S.Shift String T)))])
+                  , (24, [("shift", S (S.INIT      :: Signal (S.Shift String T)))])
+
+                  , (23, [("shift", S (S.STEP      :: Signal (S.Shift String T)))])
+                  , (22, [("shift", S (S.MODE      :: Signal (S.Shift String T)))])
+                  , (21, [("shift", S (S.DIRECTION :: Signal (S.Shift String T)))])
+                  , (20, [("shift", S (S.WORK      :: Signal (S.Shift String T)))])
+
+                  , (19, [("accum", S (A.NEG  :: Signal (A.Accum String T)))])
+                  , (18, [("accum", S (A.LOAD :: Signal (A.Accum String T)))])
+                  , (17, [("accum", S (A.INIT :: Signal (A.Accum String T)))])
+                  , (16, [("accum", S (A.OE   :: Signal (A.Accum String T)))])
+
+                  , (15, [("fram1", S (OE :: Signal (Fram String T)))])
+                  , (14, [("fram1", S (WR :: Signal (Fram String T)))])
+                  , (13, [("spi", S (SPI.OE :: Signal (SPI.SPI String T)))])
+                  , (12, [("spi", S (SPI.WR :: Signal (SPI.SPI String T)))])
+
+                  , (11, [("fram1", S (ADDR 3 :: Signal (Fram String T)))])
+                  , (10, [("fram1", S (ADDR 2 :: Signal (Fram String T)))])
+                  , ( 9, [("fram1", S (ADDR 1 :: Signal (Fram String T)))])
+                  , ( 8, [("fram1", S (ADDR 0 :: Signal (Fram String T)))])
+
+                  , ( 7, [("fram2", S (OE :: Signal (Fram String T)))])
+                  , ( 6, [("fram2", S (WR :: Signal (Fram String T)))])
+                  , ( 5, [])
+                  , ( 4, [])
+
+                  , ( 3, [("fram2", S (ADDR 3 :: Signal (Fram String T)))])
+                  , ( 2, [("fram2", S (ADDR 2 :: Signal (Fram String T)))])
+                  , ( 1, [("fram2", S (ADDR 1 :: Signal (Fram String T)))])
+                  , ( 0, [("fram2", S (ADDR 0 :: Signal (Fram String T)))])
+                  ]
+
 
 -- | Пример работы с ветвящимся временем.
 --
@@ -45,40 +89,8 @@ type T = TaggedTime String Int
 -- - TODO: генерация машинного кода.
 -- - TODO: генерация аппаратуры.
 -- - TODO: testbench.
-bushExample
-  = let fram = PU (def :: Fram String T)
-        accum = PU (def :: A.Accum String T)
-        net = busNetwork
-          [ ("fram1", fram)
-          , ("fram2", fram)
-          , ("accum", accum)
-          ]
-          $ array (0, 19) [ (19, [("accum", S (A.NEG  :: Signal (A.Accum String T)))])
-                          , (18, [("accum", S (A.LOAD :: Signal (A.Accum String T)))])
-                          , (17, [("accum", S (A.INIT :: Signal (A.Accum String T)))])
-                          , (16, [("accum", S (A.OE   :: Signal (A.Accum String T)))])
-
-                          , (15, [("fram1", S (OE :: Signal (Fram String T)))])
-                          , (14, [("fram1", S (WR :: Signal (Fram String T)))])
-                          , (13, [])
-                          , (12, [])
-
-                          , (11, [("fram1", S (ADDR 3 :: Signal (Fram String T)))])
-                          , (10, [("fram1", S (ADDR 2 :: Signal (Fram String T)))])
-                          , ( 9, [("fram1", S (ADDR 1 :: Signal (Fram String T)))])
-                          , ( 8, [("fram1", S (ADDR 0 :: Signal (Fram String T)))])
-
-                          , ( 7, [("fram2", S (OE :: Signal (Fram String T)))])
-                          , ( 6, [("fram2", S (WR :: Signal (Fram String T)))])
-                          , ( 5, [])
-                          , ( 4, [])
-
-                          , ( 3, [("fram2", S (ADDR 3 :: Signal (Fram String T)))])
-                          , ( 2, [("fram2", S (ADDR 2 :: Signal (Fram String T)))])
-                          , ( 1, [("fram2", S (ADDR 1 :: Signal (Fram String T)))])
-                          , ( 0, [("fram2", S (ADDR 0 :: Signal (Fram String T)))])
-                          ]
-        dataFlow = Stage
+scheduledBush
+  = let dataFlow = Stage
           [ Actor $ FB.framInput 0 $ O [ "cond", "cond'" ]
           , Actor $ FB.framInput 1 $ O [ "x1", "x2" ]
           , Actor $ FB.framOutput 2 $ I "cond'"
@@ -87,59 +99,14 @@ bushExample
             , (1, Stage [ Actor $ FB.reg (I "x2") $ O ["y2"], Actor $ FB.framOutput 11 $ I "y2" ])
             ]
           ]
-        net' = bindAll (functionalBlocks dataFlow) (net :: BusNetwork String String T)
-        initialBranch = Branch net' (dataFlow2controlFlow dataFlow) Nothing []
+        nitta' = bindAll (functionalBlocks dataFlow) nitta
+        initialBranch = Branch nitta' (dataFlow2controlFlow dataFlow) Nothing []
         Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
     in pu
 
-
 -- | Пример работы с единым временем.
-branchExample
-  = let fram = PU (def :: Fram String T)
-        accum = PU (def :: A.Accum String T)
-        shift = PU (def :: S.Shift String T)
-        net = busNetwork
-          [ ("fram1", fram)
-          , ("fram2", fram)
-          , ("accum", accum)
-          , ("shift", shift)
-          ]
-          $ array (0, 27) [ (27, [])
-                          , (26, [])
-                          , (25, [("shift", S (S.OE        :: Signal (S.Shift String T)))])
-                          , (24, [("shift", S (S.INIT      :: Signal (S.Shift String T)))])
-
-                          , (23, [("shift", S (S.STEP      :: Signal (S.Shift String T)))])
-                          , (22, [("shift", S (S.MODE      :: Signal (S.Shift String T)))])
-                          , (21, [("shift", S (S.DIRECTION :: Signal (S.Shift String T)))])
-                          , (20, [("shift", S (S.WORK      :: Signal (S.Shift String T)))])
-
-                          , (19, [("accum", S (A.NEG  :: Signal (A.Accum String T)))])
-                          , (18, [("accum", S (A.LOAD :: Signal (A.Accum String T)))])
-                          , (17, [("accum", S (A.INIT :: Signal (A.Accum String T)))])
-                          , (16, [("accum", S (A.OE   :: Signal (A.Accum String T)))])
-
-                          , (15, [("fram1", S (OE :: Signal (Fram String T)))])
-                          , (14, [("fram1", S (WR :: Signal (Fram String T)))])
-                          , (13, [])
-                          , (12, [])
-
-                          , (11, [("fram1", S (ADDR 3 :: Signal (Fram String T)))])
-                          , (10, [("fram1", S (ADDR 2 :: Signal (Fram String T)))])
-                          , ( 9, [("fram1", S (ADDR 1 :: Signal (Fram String T)))])
-                          , ( 8, [("fram1", S (ADDR 0 :: Signal (Fram String T)))])
-
-                          , ( 7, [("fram2", S (OE :: Signal (Fram String T)))])
-                          , ( 6, [("fram2", S (WR :: Signal (Fram String T)))])
-                          , ( 5, [])
-                          , ( 4, [])
-
-                          , ( 3, [("fram2", S (ADDR 3 :: Signal (Fram String T)))])
-                          , ( 2, [("fram2", S (ADDR 2 :: Signal (Fram String T)))])
-                          , ( 1, [("fram2", S (ADDR 1 :: Signal (Fram String T)))])
-                          , ( 0, [("fram2", S (ADDR 0 :: Signal (Fram String T)))])
-                          ]
-        alg = [ FB.framInput 3 $ O [ "a"
+scheduledBranch
+  = let alg = [ FB.framInput 3 $ O [ "a"
                                    , "d"
                                    ]
               , FB.framInput 4 $ O [ "b"
@@ -160,23 +127,61 @@ branchExample
               , FB $ FB.ShiftL (I "f") $ O ["g"]
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
+        -- alg = [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
+        --       , FB $ FB.Send (I "b")
+        --       , FB.reg (I "a") $ O ["b"]
+        --       ]
         dataFlow = Stage $ map Actor alg
-        net' = bindAll (functionalBlocks dataFlow) (net :: BusNetwork String String T)
-        initialBranch = Branch net' (dataFlow2controlFlow dataFlow) Nothing []
+        nitta' = bindAll (functionalBlocks dataFlow) nitta
+        initialBranch = Branch nitta' (dataFlow2controlFlow dataFlow) Nothing []
         Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
     in pu
 
+-- | Пример работы с единым временем.
+scheduledBranchSPI
+  = let alg = [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
+              , FB $ FB.Send (I "b")
+              , FB.reg (I "a") $ O ["b"]
+              ]
+        dataFlow = Stage $ map Actor alg
+        nitta' = bindAll (functionalBlocks dataFlow) nitta
+        initialBranch = Branch nitta' (dataFlow2controlFlow dataFlow) Nothing []
+        Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
+    in pu
 
 ---------------------------------------------------------------------------------
 
 
 main = do
-  timeline "resource/data.json" branchExample
-  r <- testBench ".." (joinPath ["hdl", "gen"]) branchExample ([] :: [(String, Int)])
+  test scheduledBranch
+    (def{ cntxVars=M.fromList [("g", [0x1003])]
+        } :: Cntx String Int)
+  -- test scheduledBranchSPI
+  --   (def{ cntxVars=M.fromList [("b", [0])]
+  --       , cntxInputs=M.fromList [("a", [1, 2, 3])]
+  --       } :: Cntx String Int)
+  simulateSPI 3
+
+
+test pu cntx = do
+  timeline "resource/data.json" pu
+  r <- testBench ".." (joinPath ["hdl", "gen"]) pu cntx
   if r then putStrLn "Success"
   else putStrLn "Fail"
   print "ok"
 
-getPU puTitle net
-  = case bnPus net ! puTitle of
-      PU pu | Just pu' <- cast pu -> pu'
+
+simulateSPI n = do
+  mapM_ putStrLn $ take n $ map show $ simulateAlg (def{ cntxVars=M.fromList [("b", [0])]
+                                                       , cntxInputs=M.fromList [("a", [1, 2, 3])]
+                                                       } :: Cntx String Int)
+    [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
+    , FB $ FB.Add (I "a") (I "b") (O ["c1", "c2"])
+    , FB $ FB.Loop (O ["b"]) (I "c1")
+    , FB $ FB.Send (I "c2")
+    ]
+  print "ok"
+
+
+
+getPU puTitle net = maybe (error "Wrong PU type!") id $ castPU $ bnPus net ! puTitle

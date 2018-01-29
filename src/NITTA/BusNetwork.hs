@@ -35,17 +35,19 @@ import           Control.Monad.State
 import           Data.Array
 import           Data.Default
 import           Data.Either
-import           Data.List           (intersect, nub, sortOn, (\\))
-import qualified Data.Map            as M
-import           Data.Maybe          (fromMaybe, isJust, mapMaybe)
+import           Data.List            (find, intersect, nub, partition, sortOn,
+                                       (\\))
+import qualified Data.Map             as M
+import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
 import           Data.Proxy
-import qualified Data.String.Utils   as S
+import qualified Data.String.Utils    as S
 import           Data.Typeable
+import           NITTA.FunctionBlocks (get')
 import           NITTA.Lens
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval    (inf, width, (...))
+import           Numeric.Interval     (inf, width, (...))
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
@@ -57,11 +59,11 @@ data GBusNetwork title spu v t =
   BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
-      bnRemains            :: [FB Parcel v]
+      bnRemains            :: [FB (Parcel v) v]
     -- | Список переданных через сеть переменных (используется для понимания готовности).
     , bnForwardedVariables :: [v]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded             :: M.Map title [FB Parcel v]
+    , bnBinded             :: M.Map title [FB (Parcel v) v]
     -- | Описание вычислительного процесса сети, как элемента процессора.
     , bnProcess            :: Process v t
     -- | Словарь вложенных вычислительных блоков по именам.
@@ -70,11 +72,19 @@ data GBusNetwork title spu v t =
     , bnWires              :: Array Int [(title, S)]
     }
 type BusNetwork title v t = GBusNetwork title (PU v t) v t
-busNetwork pus wires
-  | let (a, b) = bounds wires in a /= 0 || length [a..b] `mod` 4 /= 0
-  = error "Busnetwork wires size."
-  | otherwise = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wires
+busNetwork pus wires = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wires
 
+
+instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork title v t) (FB (Parcel v) v) where
+  functionalBlocks BusNetwork{..} = sortFBs binded []
+    where
+      binded = bnRemains ++ concat (M.elems bnBinded)
+      sortFBs [] _ = []
+      sortFBs fbs cntx
+        = let (ready, notReady) = partition (\fb -> insideOut fb || all (`elem` cntx) (inputs fb)) fbs
+          in case ready of
+            [] -> error "Cycle in algorithm!"
+            _ -> ready ++ sortFBs (notReady) (concatMap outputs ready ++ cntx)
 
 
 instance ( Title title, Var v, Time t
@@ -203,29 +213,26 @@ instance Controllable (BusNetwork title v t) where
     = Transport v title title
     deriving (Typeable, Show)
 
+  data Flag (BusNetwork title v t)
+
   data Signal (BusNetwork title v t) = Wire Int
     deriving (Show, Eq, Ord)
 
 
 
 instance ( Title title ) => ByTime (BusNetwork title v t) t where
-  signalAt BusNetwork{..} t (Wire i) = foldl (+++) X $ map (uncurry subSignal) $ bnWires ! i
+  signalAt BusNetwork{..} t (Wire i)
+    = foldl (+++) X $ map (\(title, bs) -> subSignal (bnPus M.! title) bs) $ bnWires ! i
     where
-      subSignal puTitle s = case (bnPus M.! puTitle, s) of
-        (PU pu', S s')
-          | Just s'' <- cast s'
-          -> signalAt pu' t s''
-          | otherwise -> error "Wrong signal!"
+      subSignal (PU pu') (S s) = maybe (error "Wrong signal!") (signalAt pu' t) $ cast s
 
 
 
 instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v Int where
-  variableValue _fb bn@BusNetwork{..} cntx vi@(v, _) =
-    let [Transport _ src _] =
-          filter (\(Transport v' _ _) -> v == v')
-          $ mapMaybe (extractInstruction bn)
-          $ steps bnProcess
-    in variableValueWithoutFB (bnPus M.! src) cntx vi
+  simulateOn cntx BusNetwork{..} fb
+    = let Just (title, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
+          pu = bnPus M.! title
+      in simulateOn cntx pu fb
 
 
 
@@ -284,31 +291,32 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
     where
       iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
             in renderST
-              [ "module $moduleName$("
-              , "    clk,"
-              , "    rst"
-              , "    );"
-              , "      "
+              [ "module $moduleName$"
+              , "  ( input clk"
+              , "  , input rst"
+              , "  );"
+              , ""
               , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
               , "parameter DATA_WIDTH = 32;"
               , "parameter ATTR_WIDTH = 4;"
-              , "      "
-              , "input clk;"
-              , "input rst;"
-              , "      "
+              , ""
               , "// Sub module instances"
               , "wire [MICROCODE_WIDTH-1:0] signals_out;"
               , "wire [DATA_WIDTH-1:0] data_bus;"
               , "wire [ATTR_WIDTH-1:0] attr_bus;"
-              , "", ""
-              , "pu_simple_control"
-              , "    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
-              , "     , .PROGRAM_DUMP( \"\\$path\\$$moduleName$.dump\" )"
-              , "     , .MEMORY_SIZE( $ProgramSize$ )"
-              , "     ) control_unit"
-              , "    ( .clk( clk ), .rst( rst ), .signals_out( signals_out ) );"
               , ""
-              , "", ""
+              , "wire nitta_cycle;"
+              , "wire spi_start, spi_stop, spi_mosi, spi_miso, spi_sclk, spi_cs;"
+              , ""
+              , "pu_simple_control #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
+              , "                   , .PROGRAM_DUMP( \"\\$path\\$$moduleName$.dump\" )"
+              , "                   , .MEMORY_SIZE( $ProgramSize$ )"
+              , "                   ) control_unit"
+              , "  ( .clk( clk )"
+              , "  , .rst( rst )"
+              , "  , .signals_out( signals_out )"
+              , "  );"
+              , ""
               , "$instances$"
               , "", ""
               , "assign { attr_bus, data_bus } = "
@@ -320,7 +328,7 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
               [ ( "moduleName", name pu )
               , ( "microCodeWidth", show $ snd (bounds bnWires) + 1 )
               , ( "instances", S.join "\n\n" instances)
-              , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "    { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
+              , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "  { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
               , ( "ProgramSize", show $ fromEnum (nextTick bnProcess)
                   + 1 -- 0 адресс программы для простоя процессора
                   + 1 -- На последнем такте для BusNetwork можно подготовить следующую
@@ -345,23 +353,27 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
       cntx :: ( Typeable pu, Show (Signal pu)
               ) => String -> pu -> Proxy (Signal pu) -> [(String, String)]
       cntx title _spu p
-        = [ ( "Clk", "clk" )
-          , ( "DataIn", "data_bus" )
-          , ( "AttrIn", "attr_bus" )
-          , ( "DataOut", valueData title )
-          , ( "AttrOut", valueAttr title )
-          ] ++ mapMaybe foo [ (i, s)
-                            | (i, ds) <- assocs bnWires
-                            , (title', s) <- ds
-                            , title' == title
-                            ]
+        = mapMaybe (uncurry cntxRow) [ (i, s) | (i, ds) <- assocs bnWires
+                                     , (title', s) <- ds
+                                     , title' == title
+                                     ]
+        ++  [ ( "DataOut", valueData title )
+            , ( "AttrOut", valueAttr title )
+            , ( "DataIn", "data_bus" )
+            , ( "AttrIn", "attr_bus" )
+            , ( "DATA_WIDTH", "DATA_WIDTH" )
+            , ( "ATTR_WIDTH", "ATTR_WIDTH" )
+            , ( "Clk", "clk" )
+            , ( "Rst", "rst" )
+            , ( "Cycle", "nitta_cycle" )
+
+            , ( "START", "spi_start" ), ( "STOP", "spi_stop" )
+            , ( "mosi", "spi_mosi" ), ( "miso", "spi_miso" ), ( "sclk", "spi_sclk" ), ( "cs", "spi_cs" )
+            ]
         where
-          foo (i, S s)
-            | Just s' <- cast s
-            = Just ( S.replace " " "_" $ show (s' `asProxyTypeOf` p)
-                   , "signals_out[ " ++ show i ++ " ]"
-                   )
-          foo _ = Nothing
+          cntxRow i (S s) = fmap (\s' -> ( S.replace " " "_" $ show (s' `asProxyTypeOf` p)
+                                         , "signals_out[ " ++ show i ++ " ]"
+                                         )) $ cast s
 
   software pu@BusNetwork{ bnProcess=Process{..}, ..}
     = Project (name pu) $ map software (M.elems bnPus)
@@ -410,12 +422,11 @@ instance ( Title title, Var v, Time t
         [ ("moduleName", name pu)
         ]
 
-      cntx' = foldl ( \cntx (Transport v src _dst)
-                        -> M.insert (v, 0)
-                                    (variableValueWithoutFB (bnPus M.! src) cntx (v, 0))
-                                    cntx
-                     ) cntx0 $ extractInstructions pu
+      Just cntx' = foldl ( \(Just cntx) fb -> let c = simulateOn cntx pu fb
+                                              in c
+                          ) (Just cntx0) $ functionalBlocks pu
 
+      p :: Process v t
       p = process pu
       assertions = concatMap ( ("      @(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick p ]
         where
@@ -423,13 +434,13 @@ instance ( Title title, Var v, Time t
             = let pulls = filter (\e -> case e of (Source _) -> True; _ -> False) $ endpointsAt time p
               in case pulls of
                 Source (v:_) : _ -> concat
-                    [ "if ( !( net.data_bus === " ++ show (fromMaybe 0 $ M.lookup (v, 0) cntx') ++ ") ) "
+                    [ "if ( !( net.data_bus === " ++ show (get' cntx' v) ++ ") ) "
                     ,   "\\$display("
                     ,     "\""
                     ,       "FAIL wrong value of " ++ show' pulls ++ " the bus failed "
                     ,       "(got: %h expect: %h)!"
                     ,     "\", "
-                    , "net.data_bus, " ++ show (cntx' M.! (v, 0)) ++ "); else \\$display(\"%d Correct value: %h\", net.control_unit.program_counter, net.data_bus);"
+                    , "net.data_bus, " ++ show (get' cntx' v) ++ "); else \\$display(\"%d Correct value: %h\", net.control_unit.program_counter, net.data_bus);"
                     ]
                 [] -> "\\$display(\"%d\", net.control_unit.program_counter); /* nothing to check */"
                 x -> "\\$display(\"%d\", net.control_unit.program_counter); /* don't have expected datafor: " ++ show x ++ "*/"

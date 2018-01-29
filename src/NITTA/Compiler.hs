@@ -33,7 +33,7 @@ import           Numeric.Interval ((...))
 
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
-bindAll fbs pu = fromRight (error "Can't bind FB to PU!") $ foldl nextBind (Right pu) fbs
+bindAll fbs pu = either (\l -> error $ "Can't bind FB to PU: " ++ show l) id $ foldl nextBind (Right pu) fbs
   where
     nextBind (Right pu') fb = bind fb pu'
     nextBind (Left r) _     = error r
@@ -288,7 +288,7 @@ mkBindDecision _ _ = undefined
 
 
 data BindOption title v = BindOption
-  { boFB       :: FB Parcel v
+  { boFB       :: FB (Parcel v) v
   , boTitle    :: title
   , boPriority :: Maybe BindPriority
   } deriving (Show)

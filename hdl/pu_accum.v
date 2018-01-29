@@ -1,6 +1,5 @@
-// Работает в дополнительном коде.
 module pu_accum
-  #( parameter DATA_WIDTH = 32
+  #( parameter DATA_WIDTH = 4
   ,  parameter ATTR_WIDTH = 4
   ,  parameter SIGN       = 0
   ,  parameter OVERFLOW   = 1
@@ -23,17 +22,15 @@ reg [DATA_WIDTH-1:0]   int_arg;
 reg [DATA_WIDTH:0]     acc; // +1 на переполнение
 reg overflow;
 
-
+// 10 11
 always @(posedge clk)
   if ( signal_load ) begin
     if ( signal_init ) begin
-      overflow = attr_in[ OVERFLOW ];
-      int_arg = 0;
+      int_arg <= 0;
     end else begin 
-      overflow = overflow || attr_in[ OVERFLOW ];
-      int_arg = acc[DATA_WIDTH:0];
+      int_arg <= acc[DATA_WIDTH:0];
     end
-    ext_arg = signal_neg ? -data_in : data_in;
+    ext_arg <= signal_neg ? -data_in : data_in;
   end
 
 
@@ -44,11 +41,20 @@ wire carry;
 assign { carry, wacc[DATA_WIDTH-2:0] } = ext_arg[DATA_WIDTH-2:0] + int_arg[DATA_WIDTH-2:0];
 assign wacc[DATA_WIDTH:DATA_WIDTH-1]   = ext_arg[DATA_WIDTH-1] + int_arg[DATA_WIDTH-1] + carry;
 
-always @(posedge clk) begin
-    acc[DATA_WIDTH:0] <= wacc;
-    overflow <= carry ^ acc[DATA_WIDTH];
-  end
 
+always @(posedge clk) begin
+  acc[DATA_WIDTH:0] <= wacc;
+  
+  if ( signal_load ) begin
+    if ( signal_init ) begin
+      overflow <= attr_in[ OVERFLOW ];           
+    end else begin 
+      overflow <= overflow || attr_in[ OVERFLOW ];
+    end
+  end else begin
+      overflow <= carry ^ wacc[DATA_WIDTH]; 
+  end
+  end
 
 always @(posedge clk)
   if ( ~signal_oe )
