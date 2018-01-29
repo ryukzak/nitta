@@ -11,10 +11,12 @@ NITTA - реконфигурируемая вычислительная плат
 ## Рекомендуемый инструментарий:
 1. Для работы с Haskell-ом:
   - система сборки - https://docs.haskellstack.org/en/stable/README/
+      - Для установки на Windows используйте установочный пакет.
+      - После установки зайдите в каталог проекта nitta и установите рабочее окружение командой `stack setup` и сделайте первую сборку `stack build`.
   - среда разработки - https://code.visualstudio.com с расширениями:
-      - Haskell Syntax Highlighting
-      - Haskelly
-      - Haskero
+      - Haskero (требует установить `intero`, для этого в консоли из папки проекта выполните `stack install intero`);
+      - stylish-haskell (требует установить `stylish-haskell`, для этого в консоли из папки проекта выполните `stack install stylish-haskell`); 
+
 2. Для Verilog-а:
   - симулятор (используется при автоматическом тестировании вычислительных блоков) - 
     http://iverilog.icarus.com
