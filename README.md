@@ -13,6 +13,7 @@ NITTA - реконфигурируемая вычислительная плат
   - система сборки - https://docs.haskellstack.org/en/stable/README/
       - Для установки на Windows используйте установочный пакет.
       - После установки зайдите в каталог проекта nitta и установите рабочее окружение командой `stack setup` и сделайте первую сборку `stack build`.
+      - Подробнее: [INSTALL.md](INSTALL.md)
   - среда разработки - https://code.visualstudio.com с расширениями:
       - Haskero (требует установить `intero`, для этого в консоли из папки проекта выполните `stack install intero`);
       - stylish-haskell (требует установить `stylish-haskell`, для этого в консоли из папки проекта выполните `stack install stylish-haskell`); 
