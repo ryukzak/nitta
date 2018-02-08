@@ -1,8 +1,7 @@
 module pu_mult // INFO: принято что название модуля совпадало с именем файла.
   #( parameter DATA_WIDTH        = 8
    , parameter ATTR_WIDTH        = 4
-   , parameter VALID_INVALID_IN  = 0 // FIXME: Заменить на один параметр под именем INVALID
-   , parameter VALID_INVALID_OUT = 0
+   , parameter INVALID  			= 0 // FIXME: Заменить на один параметр под именем INVALID
    )
   ( input  wire              clk
   , input  wire              rst
@@ -26,19 +25,19 @@ reg                           f;
 reg                           write_multresult;
 reg                           invalid_result;
 reg [DATA_WIDTH-1:0]          data_multresult;
+wire op_1 = operand1[0][DATA_WIDTH-1:DATA_WIDTH/2] ;
+wire op_2 = operand1[1][DATA_WIDTH-1:DATA_WIDTH/2] ;
 
-pu_mult_inner mult_inner
+mult mult_i1
   ( .dataa( operand2[0] )
   , .datab( operand2[1] )
   , .result( mult_result )
   );
   
 always @(posedge clk) begin
-  if ( rst ) begin
+	if ( rst ) begin
     // FIXME: Следует использовать присваивание только одного типа (<=), так как в таком случае кодв целом становится проще.
     // При этом, в рамках одного always блока не стоит делать цепочки вида: b <= a; c <= b;
-    attr_out = 0;
-    data_out = 0;
     operand1[0] = 0;
     operand1[1] = 0;
     operand2[0] = 0;
@@ -48,7 +47,7 @@ always @(posedge clk) begin
     write_multresult <= 0;
     data_multresult <= 0;
     invalid_result <= 0;
-  end else begin // INFO: в таком виде код однозначнее и понятнее синтезатору.
+	end else begin // INFO: в таком виде код однозначнее и понятнее синтезатору.
 
     f <= signal_sel;
     if ( signal_sel == 0 && f == 1 ) begin // INFO: Не смотря на то что функционально оба оператора работают 
@@ -61,37 +60,35 @@ always @(posedge clk) begin
     if ( signal_wr ) begin
       case ( signal_sel )
         0: operand1[0] = data_in[DATA_WIDTH-1:0];
+		  0: inv[0] = ~operand1[0][DATA_WIDTH-1:DATA_WIDTH/2-1];
         1: operand1[1] = data_in[DATA_WIDTH-1:0];
+		  1: inv[1] = ~operand1[1][DATA_WIDTH-1:DATA_WIDTH/2-1];
       endcase
       // FIXME: Почему это не в case? Мне кажется логичнее перенести это туда. 
-      inv[0] = ~operand1[0][DATA_WIDTH-1:DATA_WIDTH/2-1];
-      inv[1] = ~operand1[1][DATA_WIDTH-1:DATA_WIDTH/2-1];
 
       // FIXME: Этот и следующий if в совокупности я не понимаю. Операнды у вас присваиваются одинаково во всех if-ах.
       // invalid_value корректно устанавливается только во втором.
       // Их следует слить воедино.
-      if ( attr_in[VALID_INVALID_IN] == 0 && signal_sel == 1 ) begin
-        operand2[0] = operand1[0];
-        operand2[1] = operand1[1];
-        invalid_value = 1;
-      end
 
-      if ( attr_in[VALID_INVALID_IN] == 1 && signal_sel == 1 ) begin
+      if ( attr_in[INVALID] == 0 && signal_sel == 1 ) begin
         // FIXME: Вынесте эту логику на именованные провода, что бы еёможно было воспринемать.
-        if (((operand1[0][DATA_WIDTH-1:DATA_WIDTH/2] == 0) && (operand1[1][DATA_WIDTH-1:DATA_WIDTH/2] == 0)) || 
-            ((inv[0] == 0) && (inv[1] == 0))||((inv[0] == 0) && (operand1[1][DATA_WIDTH-1:DATA_WIDTH/2] == 0))||
-            ((inv[1] == 0) && (operand1[0][DATA_WIDTH-1:DATA_WIDTH/2] == 0))
-           ) begin  
-          operand2[0] = operand1[0];
-          operand2[1] = operand1[1];
-          invalid_value = 1;
-        end else begin 
-          operand2[0] = operand1[0];
-          operand2[1] = operand1[1];
-          invalid_value = 0;
-        end
-      end
-    end
+			if (((op_1 == 0) && (op_2 == 0)) || ((inv[0] == 0) && (inv[1] == 0))||((inv[0] == 0) && (op_2 == 0))||((inv[1] == 0) && (op_1 == 0))) begin  
+				operand2[0] = operand1[0];
+				operand2[1] = operand1[1];
+				invalid_value = 0;
+				end 
+				else begin 
+				operand2[0] = operand1[0];
+				operand2[1] = operand1[1];
+				invalid_value = 1;
+				end
+			end
+			else if ( attr_in[INVALID] == 1 && signal_sel == 1 ) begin
+				operand2[0] = operand1[0];
+				operand2[1] = operand1[1];
+				invalid_value = 1;
+			end
+	end
 
     if ( write_multresult ) begin
       invalid_result <= invalid_value;
@@ -111,6 +108,8 @@ always @(posedge clk) begin
 end
 
 assign data_out = signal_oe ? data_multresult : 0;
-assign attr_out = signal_oe ? (invalid_result << VALID_INVALID_OUT) | {ATTR_WIDTH{1'b0}} : 0;
+assign attr_out = signal_oe ? ({{(ATTR_WIDTH-1){1'b0}},invalid_result} << INVALID) | {ATTR_WIDTH{1'b0}} : 0;
 
 endmodule
+
+	
