@@ -507,28 +507,30 @@ data PU v t where
         , Simulatable pu v Int
         , DecisionProblem (EndpointDT v t)
                EndpointDT  pu
-        ) => pu -> PU v t
+        ) => { unit :: pu
+             } -> PU v t
+setUnit PU{..} unit' = PU{ unit=unit' } 
 
 instance ( Var v, Time t
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (PU v t)
          where
-  options proxy (PU pu) = options proxy pu
-  decision proxy (PU pu) act = PU $ decision proxy pu act
+  options proxy PU{..} = options proxy unit
+  decision proxy pu@PU{..} act = setUnit pu $ decision proxy unit act
 
 instance ProcessUnit (PU v t) v t where
-  bind fb (PU pu) = PU <$> bind fb pu
-  process (PU pu) = process pu
-  setTime t (PU pu) = PU $ setTime t pu
+  bind fb pu@PU{..} = setUnit pu <$> bind fb unit
+  process PU{..} = process unit
+  setTime t pu@PU{..} = setUnit pu $ setTime t unit
 
 instance Simulatable (PU v t) v Int where
-  simulateOn cntx (PU pu) fb = simulateOn cntx pu fb
+  simulateOn cntx PU{..} fb = simulateOn cntx unit fb
 
 instance Synthesis (PU v t) where
-  name (PU pu) = name pu
-  hardwareInstance (PU pu) = hardwareInstance pu
-  hardware (PU pu) = hardware pu
-  software (PU pu) = software pu
+  name PU{..} = name unit
+  hardwareInstance PU{..} = hardwareInstance unit
+  hardware PU{..} = hardware unit
+  software PU{..} = software unit
 
 castPU :: ( Typeable pu
           , Show (Signal pu)
@@ -539,7 +541,7 @@ castPU :: ( Typeable pu
           , DecisionProblem (EndpointDT v t)
                  EndpointDT  pu
           ) => PU v t -> Maybe pu
-castPU (PU pu) = cast pu
+castPU PU{..} = cast unit
 
 ---------------------------------------------------------------------
 -- * Сигналы и инструкции

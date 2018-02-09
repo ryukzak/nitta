@@ -224,7 +224,7 @@ instance ( Title title ) => ByTime (BusNetwork title v t) t where
   signalAt BusNetwork{..} t (Wire i)
     = foldl (+++) X $ map (\(title, bs) -> subSignal (bnPus M.! title) bs) $ bnWires ! i
     where
-      subSignal (PU pu') (S s) = maybe (error "Wrong signal!") (signalAt pu' t) $ cast s
+      subSignal PU{..} (S s) = maybe (error "Wrong signal!") (signalAt unit t) $ cast s
 
 
 
@@ -345,8 +345,8 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
                                    ]
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
-      renderInstance insts regs ((title, PU spu) : xs)
-        = let inst = hardwareInstance spu title $ cntx title spu Proxy
+      renderInstance insts regs ((title, PU{..}) : xs)
+        = let inst = hardwareInstance unit title $ cntx title unit Proxy
               insts' = inst : regInstance title : insts
               regs' = (valueAttr title, valueData title) : regs
           in renderInstance insts' regs' xs
