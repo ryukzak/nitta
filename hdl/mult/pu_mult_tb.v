@@ -27,59 +27,39 @@
 `timescale 1 ps/ 1 ps
 
 module pu_mult_tb
-#(parameter DATA_WIDTH        = 	32,
-  parameter ATTR_WIDTH        = 	4,
-  parameter INVALID 				= 	0
-  );
+  #( parameter DATA_WIDTH = 32
+   , parameter ATTR_WIDTH = 4
+   , parameter INVALID    = 0
+   );
   
-reg 	[DATA_WIDTH-1:0] 		data_in;
-reg 								signal_oe;
-reg 								rst;
-reg 								signal_sel;
-reg 								signal_wr;
-reg 								clk;
-reg 	[ATTR_WIDTH:0] 		attr_in;                                              
-wire 	[DATA_WIDTH-1:0]  	data_out;
-wire 	[ATTR_WIDTH:0]			attr_out;
+reg  [DATA_WIDTH-1:0] data_in;
+reg                   signal_oe;
+reg                   rst;
+reg                   signal_sel;
+reg                   signal_wr;
+reg                   clk;
+reg  [ATTR_WIDTH:0]   attr_in;                                              
+wire [DATA_WIDTH-1:0] data_out;
+wire [ATTR_WIDTH:0]   attr_out;
 
                           
 pu_mult 
   #( .DATA_WIDTH( DATA_WIDTH )
    , .ATTR_WIDTH( ATTR_WIDTH )
    , .INVALID( INVALID )
-   ) i1 (
-// port map - connection between master ports and signals/registers   
-    .data_in(data_in),
-    .signal_oe(signal_oe),
-    .rst(rst),
-    .signal_wr(signal_wr),
-    .clk(clk),
-    .signal_sel(signal_sel),
-    .data_out(data_out),
-    .attr_in(attr_in),
-    .attr_out(attr_out)
-);
+   ) i1 
+  // port map - connection between master ports and signals/registers   
+  ( .data_in( data_in )
+  , .signal_oe( signal_oe )
+  , .rst( rst )
+  , .signal_wr( signal_wr )
+  , .clk( clk )
+  , .signal_sel( signal_sel )
+  , .data_out( data_out )
+  , .attr_in( attr_in )
+  , .attr_out( attr_out )
+  );
 
-
-task send_valid_value;
-  input [DATA_WIDTH-1:0] data;
-  input select;
-begin
-  signal_sel = select;
-  data_in = data;
-  attr_in[INVALID] = 1;
-end
-endtask
-
-task send_invalid_value;
-  input [DATA_WIDTH-1:0] data;
-  input select;
-begin
-  signal_sel = select;
-  data_in = data;
-  attr_in[INVALID] = 1;
-end
-endtask
 
 initial begin
   clk = 0;
@@ -107,14 +87,11 @@ initial begin
   signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; @(posedge clk);
   
   repeat (20) @(posedge clk);
-  //$finish();
-    
 end
 
 initial begin
-  $dumpfile("mul.vcd");
+  $dumpfile("pu_mult_tb.vcd");
   $dumpvars(0, pu_mult_tb);
 end
 
 endmodule
-
