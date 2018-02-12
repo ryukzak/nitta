@@ -20,7 +20,7 @@ import           Data.String.Utils (replace)
 import           NITTA.Types
 import           System.Directory
 import           System.Exit
-import           System.FilePath   (joinPath, pathSeparator)
+import           System.FilePath.Posix (joinPath, pathSeparator)
 import           System.Process
 
 
@@ -73,7 +73,7 @@ runTestBench library workdir pu = do
     die "Verilog compilation failed!"
 
   (simExitCode, simOut, simErr)
-    <- readCreateProcessWithExitCode (shell "./a.out"){ cwd=Just workdir } []
+    <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just workdir } []
   -- Yep, we can't stop simulation with bad ExitCode...
 
   when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut) $ do

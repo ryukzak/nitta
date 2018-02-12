@@ -18,7 +18,7 @@ import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
 import           NITTA.Utils
-import           System.FilePath         (joinPath)
+import           System.FilePath.Posix   (joinPath)
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
 

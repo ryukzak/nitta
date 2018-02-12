@@ -33,7 +33,7 @@ import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
 import           NITTA.Utils
-import           System.FilePath          (joinPath)
+import           System.FilePath.Posix    (joinPath)
 import           Text.StringTemplate
 
 type T = TaggedTime String Int

@@ -23,7 +23,7 @@ import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
 import           System.Environment
-import           System.FilePath             (joinPath)
+import           System.FilePath.Posix       (joinPath)
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck       as QC
