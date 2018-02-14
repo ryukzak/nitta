@@ -12,9 +12,7 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 {-
-TODO: Реализовать PUClass Passive BusNetwork
-Есть как минимум следующие варианты реализации (важно отметить, что они значительно влияют на
-восприятие процессорной архитектуры в целом):
+Есть следующие подходы к реализации множественных сетей:
 
 1. Сеть представляется в виде вычислительного блока жадно вычисляющая все функции привязанные к ней.
 Как следствие, она должна содержать в себе некоторый фрагмент компилятора. Наружу, в качестве опций
@@ -32,14 +30,13 @@ TODO: Реализовать PUClass Passive BusNetwork
 module NITTA.BusNetwork where
 
 import           Control.Monad.State
-import           Data.Array
+import qualified Data.Array           as A
 import           Data.Default
 import           Data.Either
 import           Data.List            (find, intersect, nub, partition, sortOn,
                                        (\\))
 import qualified Data.Map             as M
 import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
-import           Data.Proxy
 import qualified Data.String.Utils    as S
 import           Data.Typeable
 import           NITTA.FunctionBlocks (get')
@@ -68,12 +65,29 @@ data GBusNetwork title spu v t =
     , bnProcess            :: Process v t
     -- | Словарь вложенных вычислительных блоков по именам.
     , bnPus                :: M.Map title spu
-    -- | Описание сигнальной шины сети и её подключения ко вложенным вычислительным блокам.
-    , bnWires              :: Array Int [(title, S)]
+    -- | Ширина шины управления.
+    , bnSignalBusWidth     :: Int
     }
-type BusNetwork title v t = GBusNetwork title (PU v t) v t
-busNetwork pus wires = BusNetwork [] [] (M.fromList []) def (M.fromList pus) wires
+type BusNetwork title v t = GBusNetwork title (PU LinkId v t) v t
 
+-- TODO: Проверка подключения сигнальных линий.
+busNetwork w pus = BusNetwork [] [] (M.fromList []) def (M.fromList pus') w
+  where
+    pus' = map (\(title, f) ->
+      (title, f NetworkLink{ clk=Name "clk"
+                           , rst=Name "rst"
+                           , cycleStart=Name "cycle"
+                           , dataWidth=Name "32"
+                           , dataIn=Name "data_bus"
+                           , dataOut=Name $ valueData title
+                           , attrWidth=Name "4"
+                           , attrIn=Name "attr_bus"
+                           , attrOut=Name $ valueAttr title
+                           , controlBus= \(Index i) -> Name ("control_bus[" ++ show i ++ "]")
+                           })
+      ) pus
+    valueData t = t ++ "_data_out"
+    valueAttr t = t ++ "_attr_out"
 
 instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork title v t) (FB (Parcel v) v) where
   functionalBlocks BusNetwork{..} = sortFBs binded []
@@ -213,18 +227,23 @@ instance Controllable (BusNetwork title v t) where
     = Transport v title title
     deriving (Typeable, Show)
 
-  data Flag (BusNetwork title v t)
-
-  data Signal (BusNetwork title v t) = Wire Int
-    deriving (Show, Eq, Ord)
+  data Microcode (BusNetwork title v t)
+    = BusNetworkMC (A.Array Int Value)
 
 
 
-instance ( Title title ) => ByTime (BusNetwork title v t) t where
-  signalAt BusNetwork{..} t (Wire i)
-    = foldl (+++) X $ map (\(title, bs) -> subSignal (bnPus M.! title) bs) $ bnWires ! i
+instance {-# OVERLAPS #-}
+         ( Time t
+         ) => ByTime (BusNetwork title v t) t where
+  microcodeAt BusNetwork{..} t
+    = BusNetworkMC $ foldl merge st $ M.elems bnPus
     where
-      subSignal PU{..} (S s) = maybe (error "Wrong signal!") (signalAt unit t) $ cast s
+      st = A.listArray (0, bnSignalBusWidth) $ repeat def
+      merge arr PU{..}
+        = let transmition = transmitToLink (microcodeAt unit t) links
+          in foldl merge' arr transmition
+      merge' arr (Index i, x) = arr A.// [ (i, ((arr A.! i) +++ x)) ]
+      merge' _ _              = error "Wrong link description!"
 
 
 
@@ -279,15 +298,15 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
 --------------------------------------------------------------------------
 
 
-instance ( Time t ) => Synthesis (BusNetwork String v t) where
-  name BusNetwork{..} = S.join "_" (M.keys bnPus) ++ "_net"
+instance ( Time t ) => DefinitionSynthesis (BusNetwork String v t) where
+  moduleName BusNetwork{..} = S.join "_" (M.keys bnPus) ++ "_net"
 
-  hardwareInstance = undefined
-
-  hardware pu@BusNetwork{..} = Project (name pu) $ map hardware (M.elems bnPus)
-                                                ++ [ Immidiate (name pu ++ ".v") iml
-                                                   , FromLibrary "pu_simple_control.v"
-                                                   ]
+  hardware pu@BusNetwork{..}
+    = let pus = map hardware $ M.elems bnPus
+          net = [ Immidiate (moduleName pu ++ ".v") iml
+                , FromLibrary "pu_simple_control.v"
+                ]
+      in Project (moduleName pu) (pus ++ net)
     where
       iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
             in renderST
@@ -301,12 +320,12 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
               , "parameter ATTR_WIDTH = 4;"
               , ""
               , "// Sub module instances"
-              , "wire [MICROCODE_WIDTH-1:0] signals_out;"
+              , "wire [MICROCODE_WIDTH-1:0] control_bus;"
               , "wire [DATA_WIDTH-1:0] data_bus;"
               , "wire [ATTR_WIDTH-1:0] attr_bus;"
               , ""
-              , "wire nitta_cycle;"
-              , "wire spi_start, spi_stop, spi_mosi, spi_miso, spi_sclk, spi_cs;"
+              , "wire cycle;"
+              , "wire start, stop, mosi, miso, sclk, cs;"
               , ""
               , "pu_simple_control #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
               , "                   , .PROGRAM_DUMP( \"\\$path\\$$moduleName$.dump\" )"
@@ -314,7 +333,7 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
               , "                   ) control_unit"
               , "  ( .clk( clk )"
               , "  , .rst( rst )"
-              , "  , .signals_out( signals_out )"
+              , "  , .signals_out( control_bus )"
               , "  );"
               , ""
               , "$instances$"
@@ -325,8 +344,8 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
               , "endmodule"
               , ""
               ]
-              [ ( "moduleName", name pu )
-              , ( "microCodeWidth", show $ snd (bounds bnWires) + 1 )
+              [ ( "moduleName", moduleName pu )
+              , ( "microCodeWidth", show bnSignalBusWidth )
               , ( "instances", S.join "\n\n" instances)
               , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "  { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
               , ( "ProgramSize", show $ fromEnum (nextTick bnProcess)
@@ -346,52 +365,27 @@ instance ( Time t ) => Synthesis (BusNetwork String v t) where
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
       renderInstance insts regs ((title, PU{..}) : xs)
-        = let inst = hardwareInstance unit title $ cntx title unit Proxy
+        = let inst = hardwareInstance unit title networkLink links
               insts' = inst : regInstance title : insts
               regs' = (valueAttr title, valueData title) : regs
           in renderInstance insts' regs' xs
-      cntx :: ( Typeable pu, Show (Signal pu)
-              ) => String -> pu -> Proxy (Signal pu) -> [(String, String)]
-      cntx title _spu p
-        = mapMaybe (uncurry cntxRow) [ (i, s) | (i, ds) <- assocs bnWires
-                                     , (title', s) <- ds
-                                     , title' == title
-                                     ]
-        ++  [ ( "DataOut", valueData title )
-            , ( "AttrOut", valueAttr title )
-            , ( "DataIn", "data_bus" )
-            , ( "AttrIn", "attr_bus" )
-            , ( "DATA_WIDTH", "DATA_WIDTH" )
-            , ( "ATTR_WIDTH", "ATTR_WIDTH" )
-            , ( "Clk", "clk" )
-            , ( "Rst", "rst" )
-            , ( "Cycle", "nitta_cycle" )
-
-            , ( "START", "spi_start" ), ( "STOP", "spi_stop" )
-            , ( "mosi", "spi_mosi" ), ( "miso", "spi_miso" ), ( "sclk", "spi_sclk" ), ( "cs", "spi_cs" )
-            ]
-        where
-          cntxRow i (S s) = fmap (\s' -> ( S.replace " " "_" $ show (s' `asProxyTypeOf` p)
-                                         , "signals_out[ " ++ show i ++ " ]"
-                                         )) $ cast s
 
   software pu@BusNetwork{ bnProcess=Process{..}, ..}
-    = Project (name pu) $ map software (M.elems bnPus)
-                       ++ [ Immidiate (name pu ++ ".dump") memoryDump ]
+    = Project (moduleName pu) $ map software (M.elems bnPus)
+                       ++ [ Immidiate (moduleName pu ++ ".dump") memoryDump ]
     where
-      memoryDump = unlines $ map ( values2dump . signalsAt ) ticks
+      memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) ticks
       -- По нулевоу адресу устанавливается команда Nop (он же def) для всех вычислиетльных блоков.
       -- Именно этот адрес выставляется на сигнальные линии когда поднят сигнал rst.
       ticks = [ -1 .. nextTick ]
-      wires = map Wire $ reverse $ range $ bounds bnWires
-      signalsAt t = map (signalAt pu t) wires
+      values (BusNetworkMC arr) = reverse $ A.elems arr
 
 
 
 instance ( Title title, Var v, Time t
-         , Synthesis (BusNetwork title v t)
+         , DefinitionSynthesis (BusNetwork title v t)
          ) => TestBench (BusNetwork title v t) v Int where
-  testEnviroment cntx0 pu@BusNetwork{..} = Immidiate (name pu ++ "_tb.v") testBenchImp
+  testEnviroment cntx0 pu@BusNetwork{..} = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
     where
       testBenchImp = renderST
         [ "module $moduleName$_tb();                                                                                 "
@@ -419,14 +413,13 @@ instance ( Title title, Var v, Time t
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]
-        [ ("moduleName", name pu)
+        [ ("moduleName", moduleName pu)
         ]
 
       Just cntx' = foldl ( \(Just cntx) fb -> let c = simulateOn cntx pu fb
                                               in c
                           ) (Just cntx0) $ functionalBlocks pu
 
-      p :: Process v t
       p = process pu
       assertions = concatMap ( ("      @(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick p ]
         where

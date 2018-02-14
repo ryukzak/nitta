@@ -7,7 +7,6 @@
 module Main where
 
 import           Control.Applicative         ((<$>))
-import           Data.Array                  (array)
 import           Data.Atomics.Counter
 import           Data.Default
 import qualified Data.Map                    as M
@@ -16,7 +15,7 @@ import           NITTA.Compiler
 import           NITTA.Flows                 as F
 import qualified NITTA.FunctionBlocks        as FB
 import qualified NITTA.ProcessUnits.Accum    as A
-import           NITTA.ProcessUnits.Fram
+import qualified NITTA.ProcessUnits.Fram     as FR
 import           NITTA.ProcessUnits.FramSpec
 import           NITTA.ProcessUnitsSpec
 import           NITTA.TestBench
@@ -50,7 +49,7 @@ huFramTests
   = let alg = [ FB.reg (I "aa") $ O ["ab"]
               , FB.framOutput 9 $ I "ac"
               ]
-        fram = bindAllAndNaiveSchedule alg (def :: Fram String Int)
+        fram = bindAllAndNaiveSchedule alg (def :: FR.Fram String Int)
         library = joinPath ["..", ".."]
         workdir = joinPath ["hdl", "gen", "unittest_fram"]
     in [ testCase "Simple unit test" $ assert (testBench library workdir fram (def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])]
@@ -59,41 +58,13 @@ huFramTests
 
 
 
-type T = TaggedTime String Int
-
 accum_fram1_fram2_netTests
-  = let fram = PU (def :: Fram String T)
-        accum = PU (def :: A.Accum String T)
-        net = busNetwork
-          [ ("fram1", fram)
-          , ("fram2", fram)
-          , ("accum", accum)
+  = let net :: BusNetwork String String (TaggedTime String Int)
+        net = busNetwork 24
+          [ ("fram1", PU def FR.Link{ FR.oe=Index 11, FR.wr=Index 10, FR.addr=map Index [9, 8, 7, 6] })
+          , ("fram2", PU def FR.Link{ FR.oe=Index 5, FR.wr=Index 4, FR.addr=map Index [3, 2, 1, 0] })
+          , ("accum", PU def A.Link{ A.init=Index 18, A.load=Index 19, A.neg=Index 20, A.oe=Index 21 } )
           ]
-          $ array (0, 19) [ (19, [("accum", S (A.NEG  :: Signal (A.Accum String T)))])
-                          , (18, [("accum", S (A.LOAD :: Signal (A.Accum String T)))])
-                          , (17, [("accum", S (A.INIT :: Signal (A.Accum String T)))])
-                          , (16, [("accum", S (A.OE   :: Signal (A.Accum String T)))])
-
-                          , (15, [("fram1", S (OE :: Signal (Fram String T)))])
-                          , (14, [("fram1", S (WR :: Signal (Fram String T)))])
-                          , (13, [])
-                          , (12, [])
-
-                          , (11, [("fram1", S (ADDR 3 :: Signal (Fram String T)))])
-                          , (10, [("fram1", S (ADDR 2 :: Signal (Fram String T)))])
-                          , ( 9, [("fram1", S (ADDR 1 :: Signal (Fram String T)))])
-                          , ( 8, [("fram1", S (ADDR 0 :: Signal (Fram String T)))])
-
-                          , ( 7, [("fram2", S (OE :: Signal (Fram String T)))])
-                          , ( 6, [("fram2", S (WR :: Signal (Fram String T)))])
-                          , ( 5, [])
-                          , ( 4, [])
-
-                          , ( 3, [("fram2", S (ADDR 3 :: Signal (Fram String T)))])
-                          , ( 2, [("fram2", S (ADDR 2 :: Signal (Fram String T)))])
-                          , ( 1, [("fram2", S (ADDR 1 :: Signal (Fram String T)))])
-                          , ( 0, [("fram2", S (ADDR 0 :: Signal (Fram String T)))])
-                          ]
         alg = [ FB.framInput 3 $ O [ "a"
                                    , "d"
                                    ]
@@ -112,7 +83,7 @@ accum_fram1_fram2_netTests
               , FB.reg (I "f") $ O ["g"]
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
-        net' = bindAll alg (net :: BusNetwork String String T)
+        net' = bindAll alg (net :: BusNetwork String String (TaggedTime String Int))
         compiler = F.Branch net' (dataFlow2controlFlow $ F.Stage $ map Actor alg) Nothing []
         F.Branch{ topPU=net''
                 } = foldl (\comp _ -> naive def comp) compiler $ replicate 150 ()

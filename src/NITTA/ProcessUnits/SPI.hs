@@ -49,12 +49,12 @@ instance ( Var v, Time t ) => SerialPUState (SPI_State v t) (Parcel v) v t where
 
     | otherwise = Left $ "Unknown functional block: " ++ show fb
 
-  stateOptions SPI_State{ .. } now = catMaybes [ send spiSend, receive spiReceive ]
+  stateOptions SPI_State{ .. } now = catMaybes [ send' spiSend, receive' spiReceive ]
     where
-      send (_, v:_) = Just $ EndpointO (Target v) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
-      send _ = Nothing
-      receive (_, vs:_) = Just $ EndpointO (Source vs) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
-      receive _ = Nothing
+      send' (_, v:_) = Just $ EndpointO (Target v) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
+      send' _ = Nothing
+      receive' (_, vs:_) = Just $ EndpointO (Source vs) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
+      receive' _ = Nothing
 
   schedule st@SPI_State{ spiSend=(ds, v:rs) } act
     | [v] == variables act
@@ -74,16 +74,10 @@ instance ( Var v, Time t ) => SerialPUState (SPI_State v t) (Parcel v) v t where
 
 
 instance Controllable (SPI v t) where
-  data Signal (SPI v t)
-    = WR -- ^ Запись данных в ВУ. По отрицательному фронту происходит инкрементирование адреса.
-    | OE -- ^ Чтение данных из ВУ. По отрицательному фронту происходит инкрементирование адреса.
-    | CYCLE -- ^ Сигнал о начале вычислительного цикла. Необходим для синхронизации и контроля целостности.
-    deriving ( Show, Eq, Ord )
-  data Flag (SPI v t)
-    = START -- ^ Выходной сигнал о начале цикла передачи данных.
-    | STOP -- ^ Выходной сигнал о конце цикла передачи данных.
-    deriving ( Show, Eq, Ord )
-
+  data Microcode (SPI v t)
+    = Microcode{ wrSignal :: Bool
+               , oeSignal :: Bool
+               } deriving ( Show, Eq, Ord )
   -- | Доступ к входному буферу осуществляется как к очереди. это сделано для
   -- того, что бы сократить колличество сигнальных линий (убрать адрес).
   -- Увеличение адреса производится по негативному фронту сигналов OE и WR для
@@ -109,10 +103,16 @@ instance Controllable (SPI v t) where
 instance Default (Instruction (SPI v t)) where
   def = Nop
 
+instance Default (Microcode (SPI v t)) where
+  def = Microcode{ wrSignal=False
+                 , oeSignal=False
+                 }
+
+
 instance UnambiguouslyDecode (SPI v t) where
-  decodeInstruction Sending   WR = B True
-  decodeInstruction Receiving OE = B True
-  decodeInstruction  _        _  = B False
+  decodeInstruction Nop       = def
+  decodeInstruction Sending   = def{ wrSignal=True }
+  decodeInstruction Receiving = def{ oeSignal=True }
 
 
 
@@ -122,38 +122,49 @@ instance Simulatable (SPI String t) String Int where
     | Just (fb' :: Receive (Parcel String)) <- cast fb = simulate cntx fb'
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on SPI."
 
+instance Connected (SPI v t) i where
+  data Link (SPI v t) i
+    = Link { wr, oe :: i
+           , start, stop, mosi, miso, sclk, cs :: i
+           } deriving ( Show )
+  transmitToLink Microcode{..} Link{..}
+    = [ (wr, B wrSignal)
+      , (oe, B oeSignal)
+      ]
 
 
-instance ( Show v, Show t ) => Synthesis (SPI v t) where
-  hardwareInstance _pu n cntx
-    = renderST
-      [ "pu_slave_spi #( .DATA_WIDTH( $DATA_WIDTH$ )"
-      , "              , .ATTR_WIDTH( $ATTR_WIDTH$ )"
-      , "              ) $name$"
-      , "  ( .clk( $Clk$ )"
-      , "  , .rst( $Rst$ )"
-      , "  , .signal_cycle( $Cycle$ )"
-      , ""
-      , "  , .signal_wr( $WR$ )"
-      , "  , .data_in( $DataIn$ )"
-      , "  , .attr_in( $AttrIn$ )"
-      , ""
-      , "  , .signal_oe( $OE$ )"
-      , "  , .data_out( $DataOut$ )"
-      , "  , .attr_out( $AttrOut$ )"
-      , ""
-      , "  , .flag_start( $START$ )"
-      , "  , .flag_stop( $STOP$ )"
-      , ""
-      , "  , .mosi( $mosi$ )"
-      , "  , .miso( $miso$ )"
-      , "  , .sclk( $sclk$ )"
-      , "  , .cs( $cs$ )"
-      , "  );"
-      ] $ ("name", n) : cntx
-  name _ = "pu_slave_spi"
+
+instance ( Show v, Show t ) => DefinitionSynthesis (SPI v t) where
+  moduleName _ = "pu_slave_spi"
   hardware pu = Project "" [ FromLibrary $ "spi/spi_slave_driver.v"
                            , FromLibrary $ "spi/spi_buffer.v"
-                           , FromLibrary $ "spi/" ++ name pu ++ ".v"
+                           , FromLibrary $ "spi/" ++ moduleName pu ++ ".v"
                            ]
   software pu = Immidiate "transport.txt" $ show pu
+
+instance ( Time t, Var v
+         ) => Synthesis (SPI v t) LinkId where
+  hardwareInstance _ name NetworkLink{..} Link{..} = renderST
+    [ "pu_slave_spi"
+    , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+    , "   ) $name$"
+    , "  ( .clk( " ++ link clk ++ " )"
+    , "  , .rst( " ++ link rst ++ " )"
+    , "  , .signal_cycle( " ++ link cycleStart ++ " )"
+    , "  , .signal_oe( " ++ control oe ++ " )"
+    , "  , .signal_wr( " ++ control wr ++ " )"
+    , "  , .flag_start( " ++ link start ++ " )"
+    , "  , .flag_stop( " ++ link stop ++ " )"
+    , "  , .data_in( " ++ link dataIn ++ " )"
+    , "  , .attr_in( " ++ link attrIn ++ " )"
+    , "  , .data_out( " ++ link dataOut ++ " )"
+    , "  , .attr_out( " ++ link attrOut ++ " )"
+    , "  , .mosi( " ++ link mosi ++ " )"
+    , "  , .miso( " ++ link miso ++ " )"
+    , "  , .sclk( " ++ link sclk ++ " )"
+    , "  , .cs( " ++ link cs ++ " )"
+    , "  );"
+    ] $ ("name", name) : []
+    where
+      control = link . controlBus

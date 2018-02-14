@@ -12,56 +12,82 @@
 
 module NITTA.Types.Network where
 
+import           Data.Default
+import qualified Data.Map         as M
 import           Data.Typeable
 import           NITTA.Types.Base
 import           NITTA.Types.Poly
+import           Numeric.Interval hiding (elem)
 
 
 -- | Контейнер для вычислительных узлов (PU). Необходимо для формирования гетерогенных списков.
-data PU v t where
-  PU :: ( Typeable pu
-        , Show (Signal pu)
-        , ProcessUnit pu v t
-        , ByTime pu t
-        , Synthesis pu
-        , Simulatable pu v Int
+data PU i v t where
+  PU :: ( ByTime pu t
+        , Connected pu i
         , DecisionProblem (EndpointDT v t)
                EndpointDT  pu
+        , Default (Instruction pu)
+        , ProcessUnit pu v t
+        , Show (Instruction pu)
+        , Simulatable pu v Int
+        , Synthesis pu i
+        , Typeable i
+        , Typeable pu
+        , UnambiguouslyDecode pu
         ) => { unit :: pu
-             } -> PU v t
-setUnit PU{..} unit' = PU{ unit=unit' } 
+             , links :: Link pu i
+             , networkLink :: NetworkLink i
+             } -> PU i v t
+
+setUnit PU{..} unit'
+  | Just links' <- cast links = PU{ unit=unit', links=links', networkLink=networkLink }
+  | otherwise = error "setUnit assertion!"
 
 instance ( Var v, Time t
          ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (PU v t)
+                   EndpointDT (PU i v t)
          where
   options proxy PU{..} = options proxy unit
   decision proxy pu@PU{..} act = setUnit pu $ decision proxy unit act
 
-instance ProcessUnit (PU v t) v t where
+instance ProcessUnit (PU i v t) v t where
   bind fb pu@PU{..} = setUnit pu <$> bind fb unit
   process PU{..} = process unit
   setTime t pu@PU{..} = setUnit pu $ setTime t unit
 
-instance Simulatable (PU v t) v Int where
+instance Simulatable (PU i v t) v Int where
   simulateOn cntx PU{..} fb = simulateOn cntx unit fb
 
-instance Synthesis (PU v t) where
-  name PU{..} = name unit
-  hardwareInstance PU{..} = hardwareInstance unit
+instance DefinitionSynthesis (PU i v t) where
+  moduleName PU{..} = moduleName unit
   hardware PU{..} = hardware unit
   software PU{..} = software unit
 
-castPU :: ( Typeable pu
-          , Show (Signal pu)
-          , ProcessUnit pu v t
-          , ByTime pu t
-          , Synthesis pu
-          , Simulatable pu v Int
+castPU :: ( ByTime pu t
+          , Connected pu i
           , DecisionProblem (EndpointDT v t)
-                 EndpointDT  pu
-          ) => PU v t -> Maybe pu
+                EndpointDT  pu
+          , Default (Instruction pu)
+          , DefinitionSynthesis pu
+          , ProcessUnit pu v t
+          , Show (Instruction pu)
+          , Simulatable pu v Int
+          , Synthesis pu i
+          , Typeable i
+          , Typeable pu
+          , UnambiguouslyDecode pu
+          ) => PU i v t -> Maybe pu
 castPU PU{..} = cast unit
+
+
+class Connected pu i where
+  -- | Линии специфичные для подключения вычислительного блока к рабочему окружению: управляющие
+  -- сигналы, флаги, подключения к внешнему миру.
+  data Link pu i :: *
+  -- | Отображение микрокода на сигнальные линии. Необходимо для "сведения" микрокоманд отдельных
+  -- вычислительных блоков в микрокоманды сети.
+  transmitToLink :: Microcode pu -> Link pu i -> [(i, Value)]
+
 
 
 -- | Решения относительно пересылки данных между вычислитльными узлами (реализация прикладного
@@ -87,3 +113,32 @@ instance DecisionType (DataFlowDT title v t) where
     -- | Словарь, описывающий пункты назначения для пересылаемого значения.
     , dfdTargets    :: M.Map v (Maybe (title, Interval t))
     } deriving ( Show )
+
+
+class ( DefinitionSynthesis pu ) => Synthesis pu i where
+  -- | Объявление экземпляра модуля. Используется для генерации процессоров и testbench-ей.
+  --
+  -- Конфигурирование вычислительного блока осуществляется через подаваемы на вход словарь. В
+  -- настоящий момент данная функция не является типо-безопастной и не отличается runtime
+  -- проверками, что конечно никуда не годится.
+  hardwareInstance :: pu -> String -> NetworkLink i -> Link pu i -> String
+
+
+-- | Подключения к сети.
+data NetworkLink i
+  = NetworkLink
+    { clk, rst :: i
+    , dataWidth :: i, attrWidth :: i
+    , dataIn, attrIn :: i
+    , dataOut, attrOut :: i
+    , cycleStart :: i -- ^ Сигнал о начале вычислительного цикла.
+    , controlBus :: i -> i -- ^ Функция позволяющая подставить индекс на шину управления.
+    }
+
+
+data LinkId = Index Int
+            | Name String
+            deriving ( Show, Eq, Ord )
+ 
+link (Index i) = show i
+link (Name n) = n
