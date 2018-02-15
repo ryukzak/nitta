@@ -544,16 +544,16 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
                        , rst=Name "rst"
                        , dataWidth=Name "32"
                        , attrWidth=Name "4"
-                       , dataIn=Name "data_bus"
-                       , attrIn=Name "attr_bus"
+                       , dataIn=Name "data_in"
+                       , attrIn=Name "attr_in"
                        , dataOut=Name "data_out"
                        , attrOut=Name "attr_out"
                        , controlBus=id
                        , cycleStart=Name "cycle"
                        }
-            Link{ oe=Index 0
-                , wr=Index 1
-                , addr=map Index [5, 4, 3, 2]
+            Link{ oe=Name "oe"
+                , wr=Name "wr"
+                , addr=[Name "addr"]
                 }
         , "                                                                                                          "
         , verilogWorkInitialze
@@ -683,6 +683,8 @@ instance ( Time t, Var v
         $ map (\(i, Cell{..}) -> "  $name$.bank[" ++ show i ++ "] <= " ++ show initialValue ++ ";")
         $ assocs frMemory
     , "end"
-    ] $ ("name", name) : ("size", show frSize) : []
+    ] [ ("name", name)
+      , ("size", show frSize)
+      ]
     where
       control = link . controlBus
