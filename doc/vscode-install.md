@@ -2,7 +2,7 @@
 ===========================
 
 Для работы с Haskell необходимо сперва установить
-[haskell-stack](/doc/stack-install).
+[haskell-stack](stack-install.md).
 
 1. Установка редактора.
     1. Заходим на сайт <https://code.visualstudio.com/> и загружаем последнюю
