@@ -2,11 +2,11 @@
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE Rank2Types                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -98,7 +98,7 @@ instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork titl
         = let (ready, notReady) = partition (\fb -> insideOut fb || all (`elem` cntx) (inputs fb)) fbs
           in case ready of
             [] -> error "Cycle in algorithm!"
-            _ -> ready ++ sortFBs (notReady) (concatMap outputs ready ++ cntx)
+            _  -> ready ++ sortFBs notReady (concatMap outputs ready ++ cntx)
 
 
 instance ( Title title, Var v, Time t
@@ -242,7 +242,7 @@ instance {-# OVERLAPS #-}
       merge arr PU{..}
         = let transmition = transmitToLink (microcodeAt unit t) links
           in foldl merge' arr transmition
-      merge' arr (Index i, x) = arr A.// [ (i, ((arr A.! i) +++ x)) ]
+      merge' arr (Index i, x) = arr A.// [ (i, arr A.! i +++ x) ]
       merge' _ _              = error "Wrong link description!"
 
 
@@ -285,10 +285,9 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
 
   decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
     = bn{ bnPus=M.adjust (fromRight undefined . bind fb) puTitle bnPus
-        , bnBinded=M.alter (\v -> case v of
-                              Just fbs -> Just $ fb : fbs
-                              Nothing  -> Just [fb]
-                          ) puTitle bnBinded
+        , bnBinded=M.alter (\case Just fbs -> Just $ fb : fbs
+                                  Nothing  -> Just [fb]
+                           ) puTitle bnBinded
         , bnProcess=snd $ modifyProcess p $
             add (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
         , bnRemains=filter (/= fb) bnRemains
@@ -424,7 +423,7 @@ instance ( Title title, Var v, Time t
       assertions = concatMap ( ("      @(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick p ]
         where
           assert time
-            = let pulls = filter (\e -> case e of (Source _) -> True; _ -> False) $ endpointsAt time p
+            = let pulls = filter (\case (Source _) -> True; _ -> False) $ endpointsAt time p
               in case pulls of
                 Source (v:_) : _ -> concat
                     [ "if ( !( net.data_bus === " ++ show (get' cntx' v) ++ ") ) "

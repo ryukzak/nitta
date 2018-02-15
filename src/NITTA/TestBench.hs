@@ -6,17 +6,16 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.TestBench where
 
-import           Control.Monad     (when)
-import           Data.List         (isSubsequenceOf)
-import qualified Data.List         as L
-import           Data.String.Utils (replace)
+import           Control.Monad         (when)
+import           Data.List             (isSubsequenceOf)
+import qualified Data.List             as L
+import           Data.String.Utils     (replace)
 import           NITTA.Types
 import           System.Directory
 import           System.Exit
@@ -67,7 +66,7 @@ runTestBench library workdir pu = do
   (compileExitCode, compileOut, compileErr)
     <- readCreateProcessWithExitCode (createIVerilogProcess library workdir pu) []
   when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
-    mapM_ (putStrLn . show) $ functionalBlocks pu
+    mapM_ print $ functionalBlocks pu
     putStrLn $ "compiler stdout:\n-------------------------\n" ++ compileOut
     putStrLn $ "compiler stderr:\n-------------------------\n" ++ compileErr
     die "Verilog compilation failed!"
@@ -77,7 +76,7 @@ runTestBench library workdir pu = do
   -- Yep, we can't stop simulation with bad ExitCode...
 
   when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut) $ do
-    mapM_ (putStrLn . show) $ functionalBlocks pu
+    mapM_ print $ functionalBlocks pu
     putStrLn $ "sim stdout:\n-------------------------\n" ++ simOut
     putStrLn $ "sim stderr:\n-------------------------\n" ++ simErr
 
@@ -123,7 +122,7 @@ verilogWorkInitialze = unlines
   ]
 
 
-initial_finish inner = unlines
+initialFinish inner = unlines
   [ "  initial                                                                                                 "
   , "    begin                                                                                                 "
   , inner

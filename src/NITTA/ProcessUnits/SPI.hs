@@ -10,7 +10,9 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 -- slave / master / slave-master?
-module NITTA.ProcessUnits.SPI where
+module NITTA.ProcessUnits.SPI
+  ( Link(..)
+  ) where
 
 import           Data.Default
 import           Data.List                   (sort)
@@ -24,21 +26,20 @@ import           Numeric.Interval            ((...))
 
 
 
-type SPI v t = SerialPU (SPI_State v t) (Parcel v) v t
-
-data SPI_State v t = SPI_State { spiSend    :: ([v], [v])
-                               , spiReceive :: ([[v]], [[v]])
-                               }
+type SPI v t = SerialPU (State v t) (Parcel v) v t
+data State v t = State{ spiSend    :: ([v], [v])
+                      , spiReceive :: ([[v]], [[v]])
+                      }
   deriving ( Show )
 
-instance Default (SPI_State v t) where
-  def = SPI_State def def
+instance Default (State v t) where
+  def = State def def
 
 
 
-instance ( Var v, Time t ) => SerialPUState (SPI_State v t) (Parcel v) v t where
+instance ( Var v, Time t ) => SerialPUState (State v t) (Parcel v) v t where
 
-  bindToState (FB fb) st@SPI_State{ .. }
+  bindToState (FB fb) st@State{ .. }
     | Just (Send (I v)) <- cast fb
     , let (ds, rs) = spiSend
     = Right st{ spiSend=(ds, v:rs) }
@@ -49,20 +50,20 @@ instance ( Var v, Time t ) => SerialPUState (SPI_State v t) (Parcel v) v t where
 
     | otherwise = Left $ "Unknown functional block: " ++ show fb
 
-  stateOptions SPI_State{ .. } now = catMaybes [ send' spiSend, receive' spiReceive ]
+  stateOptions State{ .. } now = catMaybes [ send' spiSend, receive' spiReceive ]
     where
       send' (_, v:_) = Just $ EndpointO (Target v) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
       send' _ = Nothing
       receive' (_, vs:_) = Just $ EndpointO (Source vs) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
       receive' _ = Nothing
 
-  schedule st@SPI_State{ spiSend=(ds, v:rs) } act
+  schedule st@State{ spiSend=(ds, v:rs) } act
     | [v] == variables act
     = let st' = st{ spiSend=(v:ds, rs) }
           work = serialSchedule (Proxy :: Proxy (SPI v t)) act Sending
       in (st', work)
 
-  schedule st@SPI_State{ spiReceive=(ds, vs:rs) } act
+  schedule st@State{ spiReceive=(ds, vs:rs) } act
     -- FIXME: Ошибка, так как с точки зрения опции, передачу данных можно дробить на несколько шагов.
     | sort vs == sort (variables act)
     = let st' = st{ spiReceive=(vs:ds, rs) }
@@ -136,8 +137,8 @@ instance Connected (SPI v t) i where
 
 instance ( Show v, Show t ) => DefinitionSynthesis (SPI v t) where
   moduleName _ = "pu_slave_spi"
-  hardware pu = Project "" [ FromLibrary $ "spi/spi_slave_driver.v"
-                           , FromLibrary $ "spi/spi_buffer.v"
+  hardware pu = Project "" [ FromLibrary "spi/spi_slave_driver.v"
+                           , FromLibrary "spi/spi_buffer.v"
                            , FromLibrary $ "spi/" ++ moduleName pu ++ ".v"
                            ]
   software pu = Immidiate "transport.txt" $ show pu
@@ -165,6 +166,6 @@ instance ( Time t, Var v
     , "  , .sclk( " ++ link sclk ++ " )"
     , "  , .cs( " ++ link cs ++ " )"
     , "  );"
-    ] $ ("name", name) : []
+    ] [("name", name)]
     where
       control = link . controlBus

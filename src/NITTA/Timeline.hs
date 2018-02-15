@@ -5,7 +5,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
-module NITTA.Timeline(timeline) where
+module NITTA.Timeline
+  ( timeline
+  ) where
 
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as BS

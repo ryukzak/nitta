@@ -6,7 +6,6 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -58,8 +57,7 @@ module NITTA.ProcessUnits.Fram
   ( Fram(..)
   , FSet(..)
   , Link(..)
-  )
-where
+  ) where
 
 import           Control.Monad         ((>=>))
 import           Data.Array
@@ -80,7 +78,6 @@ import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval      ((...))
-import           Prelude               hiding (last)
 
 
 
@@ -473,7 +470,7 @@ instance Connected (Fram v t) i where
       ] ++ addrs
     where
       addrs = map (\(linkId, i) -> ( linkId
-                                   , maybe X B $ fmap (\x -> testBit x i) addrSignal
+                                   , maybe X B $ fmap (`testBit` i) addrSignal
                                    )
                   ) $ zip (reverse addr) [0..]
 
@@ -499,15 +496,15 @@ instance ( Var v, Time t
   simulateOn cntx@Cntx{..} pu@Fram{..} (FB fb)
     | Just (Constant x (O k) :: Constant (Parcel v)) <- cast fb = set cntx k x
     | Just (Loop (O k1@(k:_)) (I _k2) :: Loop (Parcel v)) <- cast fb = do
-      let v = maybe (addr2value $ findAddress k pu) id $ cntx `get` k
+      let v = fromMaybe (addr2value $ findAddress k pu) $ cntx `get` k
       set cntx k1 v
     | Just (fb' :: Reg (Parcel v)) <- cast fb = simulate cntx fb'
     | Just (FramInput addr (O k) :: FramInput (Parcel v)) <- cast fb = do
-      let v = maybe (addr2value addr) id $ cntx `get` (head k)
+      let v = fromMaybe (addr2value addr) $ cntx `get` head k
       set cntx k v
     | Just (FramOutput addr (I k) :: FramOutput (Parcel v)) <- cast fb = do
       v <- get cntx k
-      let cntxFram' = M.alter (maybe (Just [v]) (Just . (v:))) (addr, k) cntxFram
+      let cntxFram' = M.alter (Just . maybe [v] (v:)) (addr, k) cntxFram
       return cntx{ cntxFram=cntxFram' }
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Fram."
     where
@@ -567,9 +564,9 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
         , "    forever @(posedge clk);                                                                               "
         , "  end                                                                                                     "
         , "                                                                                                          "
-        , initial_finish $ controlSignals pu
-        , initial_finish $ testDataInput pu cntx
-        , initial_finish $ testDataOutput pu cntx
+        , initialFinish $ controlSignals pu
+        , initialFinish $ testDataInput pu cntx
+        , initialFinish $ testDataOutput pu cntx
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]
@@ -590,7 +587,7 @@ testDataInput pu@Fram{ frProcess=p@Process{..}, ..} cntx
   where
     busState t
       | Just (Target v) <- endpointAt t p
-       = "data_in <= " ++ show (maybe (error ("input" ++ show v ++ show (functionalBlocks pu)) ) id (get cntx v)) ++ ";"
+       = "data_in <= " ++ show (fromMaybe (error ("input" ++ show v ++ show (functionalBlocks pu)) ) $ get cntx v) ++ ";"
       | otherwise = "/* NO INPUT */"
 
 testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
@@ -598,7 +595,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
   where
     busState t
       | Just (Source (v : _)) <- endpointAt t p
-      = checkBus v $ (maybe (error $ show ("checkBus" ++ show v ++ show cntx) ) show (get cntx v))
+      = checkBus v $ maybe (error $ show ("checkBus" ++ show v ++ show cntx) ) show (get cntx v)
       | otherwise
       = "/* NO OUTPUT */"
 

@@ -3,9 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -fno-warn-missing-signatures -Wunused-imports #-}
 
 module Main where
 
@@ -144,4 +142,4 @@ simulateSPI n = do
 
 
 
-getPU puTitle net = maybe (error "Wrong PU type!") id $ castPU $ bnPus net M.! puTitle
+getPU puTitle net = fromMaybe (error "Wrong PU type!") $ castPU $ bnPus net M.! puTitle

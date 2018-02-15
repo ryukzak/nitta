@@ -23,17 +23,17 @@ import           Prelude                     hiding (init)
 
 
 
-type Accum v t = SerialPU (AccumState v t) (Parcel v) v t
+type Accum v t = SerialPU (State v t) (Parcel v) v t
 
-data AccumState v t = Accum{ acIn :: [v], acOut :: [v] }
+data State v t = Accum{ acIn :: [v], acOut :: [v] }
   deriving ( Show )
 
-instance Default (AccumState v t) where
+instance Default (State v t) where
   def = Accum def def
 
 
 
-instance ( Var v, Time t ) => SerialPUState (AccumState v t) (Parcel v) v t where
+instance ( Var v, Time t ) => SerialPUState (State v t) (Parcel v) v t where
 
   bindToState (FB fb) ac@Accum{ acIn=[], acOut=[] }
     | Just (Add (I a) (I b) (O cs)) <- cast fb = Right ac{ acIn=[a, b], acOut = cs }
@@ -140,6 +140,6 @@ instance ( Time t, Var v
     , "  , .attr_out( " ++ link attrOut ++ " )"
     , "  );"
     , "initial $name$.acc <= 0;"
-    ] $ ("name", name) : []
+    ] [("name", name)]
     where
       ctrl = link . controlBus

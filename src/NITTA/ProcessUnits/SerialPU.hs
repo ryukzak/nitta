@@ -26,7 +26,7 @@ module NITTA.ProcessUnits.SerialPU
   , serialSchedule
   ) where
 
-import           Control.Lens        hiding (at, from, (...))
+import           Control.Lens        hiding (at, (...))
 import           Control.Monad.State
 import           Data.Default
 import           Data.Either

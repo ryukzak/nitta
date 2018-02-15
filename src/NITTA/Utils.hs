@@ -3,10 +3,10 @@
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
@@ -169,7 +169,7 @@ values2dump vs
     groupBy4 [] = []
     groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)
     readBin :: String -> Int
-    readBin = fst . head . readInt 2 (`elem` "x01") (\x -> case x of '1' -> 1; _ -> 0 )
+    readBin = fst . head . readInt 2 (`elem` "x01") (\case '1' -> 1; _ -> 0)
 
 
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st

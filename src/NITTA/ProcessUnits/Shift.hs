@@ -23,31 +23,33 @@ import           Numeric.Interval            (singleton, (...))
 import           Prelude                     hiding (init)
 
 
-type Shift v t = SerialPU (ShiftState v t) (Parcel v) v t
+type Shift v t = SerialPU (State v t) (Parcel v) v t
 
-data ShiftState v t = ShiftState{ sIn :: Maybe v, sOut :: [v] }
+data State v t = State{ sIn  :: Maybe v
+                      , sOut :: [v]
+                      }
   deriving ( Show )
 
-instance Default (ShiftState v t) where
-  def = ShiftState def def
+instance Default (State v t) where
+  def = State def def
 
 
 
-instance ( Var v, Time t ) => SerialPUState (ShiftState v t) (Parcel v) v t where
+instance ( Var v, Time t ) => SerialPUState (State v t) (Parcel v) v t where
 
-  bindToState (FB fb) s@ShiftState{ sIn=Nothing, sOut=[] }
+  bindToState (FB fb) s@State{ sIn=Nothing, sOut=[] }
     | Just (ShiftL (I a) (O cs)) <- cast fb = Right s{ sIn=Just a, sOut = cs }
     | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
   -- тихая ругань по поводу решения
-  stateOptions ShiftState{ sIn=Just v } now
+  stateOptions State{ sIn=Just v } now
     = [ EndpointO (Target v) (TimeConstrain (now ... maxBound) (singleton 2)) ]
-  stateOptions ShiftState{ sOut=vs@(_:_) } now -- вывод
+  stateOptions State{ sOut=vs@(_:_) } now -- вывод
     = [ EndpointO (Source vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
-  schedule st@ShiftState{ sIn=Just v } act
+  schedule st@State{ sIn=Just v } act
     | v `elem` variables act
     = let st' = st{ sIn=Nothing }
           work = do
@@ -55,7 +57,7 @@ instance ( Var v, Time t ) => SerialPUState (ShiftState v t) (Parcel v) v t wher
             b <- serialSchedule (Proxy :: Proxy (Shift v t)) act{ epdAt=act^.at.infimum + 1 ... act^.at.supremum } $ Work Right' Bit Logic
             return $ a ++ b
       in (st', work)
-  schedule st@ShiftState{ sOut=vs } act
+  schedule st@State{ sOut=vs } act
     | not $ null $ vs `intersect` variables act
     = let st' = st{ sOut=vs \\ variables act }
           work = serialSchedule (Proxy :: Proxy (Shift v t)) act Out

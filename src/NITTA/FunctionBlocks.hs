@@ -1,14 +1,12 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE Rank2Types                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE StandaloneDeriving        #-}
-{-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
@@ -33,7 +31,7 @@ import           NITTA.Types
 class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
 
-get' cntx k = maybe (error $ "Can't get from cntx." ++ show k) id $ get cntx k
+get' cntx k = fromMaybe (error $ "Can't get from cntx." ++ show k) $ get cntx k
 get Cntx{..} k = do
   values <- cntxVars M.!? k
   case values of
@@ -47,9 +45,9 @@ get Cntx{..} k = do
 -- ks - список ключей в словаре, для которых нужно обновить знаение.
 -- v - новое значение вызодных переменных, которое необходимо записать для всех ключей.
 set cntx@Cntx{..} ks v = do
-  let cntxVars' = foldl (\vars' k -> M.alter (maybe (Just [v]) (Just . (v:))) k vars') cntxVars ks
+  let cntxVars' = foldl (flip $ M.alter (Just . maybe [v] (v:))) cntxVars ks
   return cntx{ cntxVars=cntxVars' }
-set' cntx ks v = maybe (error "Can't set in cntx.") id $ set cntx ks v
+set' cntx ks v = fromMaybe (error "Can't set in cntx.") $ set cntx ks v
 
 receive cntx@Cntx{..} k = do
   values <- cntxInputs M.!? k
@@ -58,7 +56,7 @@ receive cntx@Cntx{..} k = do
   return (cntx{ cntxInputs=cntxInputs' }, value)
 
 send cntx@Cntx{..} k v = do
-  let cntxOutputs' = M.alter (maybe (Just [v]) (Just . (v:))) k cntxOutputs
+  let cntxOutputs' = M.alter (Just . maybe [v] (v:)) k cntxOutputs
   return cntx{ cntxOutputs=cntxOutputs' }
 
 
@@ -70,7 +68,7 @@ send cntx@Cntx{..} k v = do
 -- ks - список ключей в словаре, для которых нужно обновить знаение.
 -- v - новое значение вызодных переменных, которое необходимо записать для всех ключей.
 push ks v cntx
-  = return $ foldl (\cntx' k -> M.alter (maybe (Just [v]) (Just . (v:))) k cntx') cntx ks
+  = return $ foldl (flip $ M.alter (Just . maybe [v] (v:))) cntx ks
 
 
 -- | Симмулировать алгоритм.
@@ -78,10 +76,8 @@ simulateAlg cntx0 fbs
   = inner cntx0 [] $ sort cntx0 fbs
   where
     step cntx fs
-      = let f = maybe
-              (error "Can't simulate algorithm, because can't define execution sequence or recived data is over.")
-              id
-              $ find (isJust . simulate cntx) fs
+      = let err = error "Can't simulate algorithm, because can't define execution sequence or recived data is over."
+            f = fromMaybe err $ find (isJust . simulate cntx) fs
             fs' = filter (/= f) fs
             Just cntx' = simulate cntx f
         in (f, fs', cntx')
@@ -156,7 +152,7 @@ instance ( IOType io v ) => FunctionalBlock (Loop io) v where
   insideOut _ = True
 instance ( Ord v ) => FunctionSimulation (Loop (Parcel v)) v Int where
   simulate cntx (Loop (O k1) (I k2)) = do
-    let (cntx', v) = maybe (cntx, maybe undefined id $ cntx `get` k2) id $ cntx `receive` k2
+    let (cntx', v) = fromMaybe (cntx, fromMaybe undefined $ cntx `get` k2) $ cntx `receive` k2
     set cntx' k1 v
 
 
@@ -206,7 +202,7 @@ instance ( Ord v ) => FunctionSimulation (ShiftL (Parcel v)) v Int where
 
 
 
-data Send io = Send (I io) deriving ( Typeable )
+newtype Send io = Send (I io) deriving ( Typeable )
 deriving instance ( IOType io v ) => Show (Send io)
 deriving instance ( IOType io v ) => Eq (Send io)
 instance ( IOType io v ) => FunctionalBlock (Send io) v where
@@ -218,7 +214,7 @@ instance (Ord v) => FunctionSimulation (Send (Parcel v)) v Int where
 
 
 
-data Receive io = Receive (O io) deriving ( Typeable )
+newtype Receive io = Receive (O io) deriving ( Typeable )
 deriving instance ( IOType io v ) => Show (Receive io)
 deriving instance ( IOType io v ) => Eq (Receive io)
 instance ( IOType io v ) => FunctionalBlock (Receive io) v where

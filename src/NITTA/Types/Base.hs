@@ -65,7 +65,7 @@ instance ( Show (I io), Variables (I io) v, Eq (I io)
 
 
 -- | Идентификатор типа для описания физически фактических пересылаемых значений.
-data Parcel v = Parcel v
+newtype Parcel v = Parcel v
 
 instance Var v => IOTypeFamily (Parcel v) where
   data I (Parcel v) = I v -- ^ Загружаемые значения.

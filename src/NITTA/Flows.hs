@@ -17,8 +17,7 @@ module NITTA.Flows
   , OptionCF(..)
   , BranchedProcess(..)
   , allowByControlFlow
-  )
-where
+  ) where
 
 import           Data.List        (nub, (\\))
 import           Data.Typeable
