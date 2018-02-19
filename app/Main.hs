@@ -16,6 +16,8 @@ import           Data.Proxy
 import qualified Data.String.Utils        as U
 import           Data.Typeable
 import           Debug.Trace
+import           Network.Wai.Handler.Warp
+import           NITTA.API
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.Flows
@@ -111,14 +113,16 @@ scheduledBranchSPI
 
 
 main = do
-  test scheduledBranch
-    (def{ cntxVars=M.fromList []
-        } :: Cntx String Int)
+  -- test scheduledBranch
+  --   (def{ cntxVars=M.fromList []
+  --       } :: Cntx String Int)
   -- test scheduledBranchSPI
   --   (def{ cntxVars=M.fromList [("b", [0])]
   --       , cntxInputs=M.fromList [("a", [1, 2, 3])]
   --       } :: Cntx String Int)
-  simulateSPI 3
+  -- simulateSPI 3
+  putStrLn "Server start on 8080..."
+  run 8080 app
 
 
 test pu cntx = do
