@@ -7,7 +7,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Aleksandr Penskoi
 maintainer:          aleksandr.penskoi@gmail.com
-copyright:           2017 Author name here
+copyright:           2018 Aleksandr Penskoi
 category:            Web
 build-type:          Simple
 extra-source-files:  README.md
@@ -15,105 +15,74 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     NITTA.Utils
-                     , NITTA.FunctionBlocks
+  exposed-modules:     NITTA.API
                      , NITTA.BusNetwork
-                     , NITTA.Timeline
                      , NITTA.Compiler
-                     , NITTA.Types
-                     , NITTA.TestBench
                      , NITTA.Flows
-                     , NITTA.ProcessUnits.Fram
-                     , NITTA.ProcessUnits.SPI
-                     , NITTA.ProcessUnits.Shift
-                     , NITTA.ProcessUnits.Accum
+                     , NITTA.FunctionBlocks
                      , NITTA.Lens
-                     , NITTA.Types.Poly
+                     , NITTA.ProcessUnits.Accum
+                     , NITTA.ProcessUnits.Fram
+                     , NITTA.ProcessUnits.SerialPU
+                     , NITTA.ProcessUnits.Shift
+                     , NITTA.ProcessUnits.SPI
+                     , NITTA.TestBench
+                     , NITTA.Timeline
+                     , NITTA.Types
                      , NITTA.Types.Base
                      , NITTA.Types.Network
-                     , NITTA.ProcessUnits.SerialPU
-  build-depends:       base >= 4.7 && < 5
-                     , containers
-                     , filepath
-                     , process
-                     , bytestring
-                     , data-default
-                     , mtl
-                     , syb
-                     , random
-                     , transformers
-                     , lens
-                     , arrows
+                     , NITTA.Types.Poly
+                     , NITTA.Utils
+  build-depends:       aeson
                      , array
-                     , intervals
-                     , aeson
-                     , text
-                     , QuickCheck
-                     , QuickCheck-GenT
-                     , HStringTemplate
-                     , MissingH
+                     , base
+                     , bytestring
+                     , containers
+                     , data-default
                      , directory
+                     , filepath
+                     , HStringTemplate
+                     , intervals
+                     , lens
+                     , MissingH
+                     , mtl
+                     , process
+                     , servant-server
+                     , syb
   default-language:    Haskell2010
 
 executable nitta-exe
   hs-source-dirs:      app
   main-is:             Main.hs
-  build-depends:       base
-                     , bytestring
-                     , nitta
-                     , hspec
-                     , process
-                     , filepath
-                     , data-default
+  build-depends:       array
+                     , base
                      , containers
-                     , mtl
-                     , random
-                     , syb
-                     , lens
-                     , transformers
-                     , text
-                     , array
-                     , aeson
-                     , QuickCheck
-                     , QuickCheck-GenT
+                     , data-default
+                     , filepath
                      , HStringTemplate
                      , MissingH
-                     , intervals
+                     , nitta
   default-language:    Haskell2010
 
 test-suite nitta-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       NITTA.ProcessUnits.FramSpec
-                     , NITTA.FunctionBlocksSpec
+  other-modules:       NITTA.FunctionBlocksSpec
+                     , NITTA.ProcessUnits.FramSpec
                      , NITTA.ProcessUnitsSpec
-  build-depends:       base
-                     , nitta
-                     , hspec
-                     , bytestring
-                     , data-default
-                     , process
-                     , random
-                     , text
-                     , filepath
+  build-depends:       atomic-primops
+                     , base
                      , containers
-                     , atomic-primops
+                     , data-default
+                     , filepath
                      , mtl
-                     , syb
-                     , lens
-                     , intervals
-                     , transformers
-                     , array
-                     , aeson
+                     , nitta
                      , QuickCheck
                      , QuickCheck-GenT
-                     , HStringTemplate
-                     , MissingH
                      , tasty
-                     , tasty-quickcheck
-                     , HUnit
                      , tasty-hunit
+                     , tasty-quickcheck
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
