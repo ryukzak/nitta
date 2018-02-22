@@ -122,7 +122,7 @@ main = do
   --       } :: Cntx String Int)
   -- simulateSPI 3
   putStrLn "Server start on 8080..."
-  run 8080 app
+  app >>= run 8080
 
 
 test pu cntx = do

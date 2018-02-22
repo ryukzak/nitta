@@ -44,10 +44,14 @@ library
                      , HStringTemplate
                      , intervals
                      , lens
+                     , list-t
                      , MissingH
                      , mtl
                      , process
+                     , servant
                      , servant-server
+                     , stm
+                     , stm-containers 
                      , syb
   default-language:    Haskell2010
 
