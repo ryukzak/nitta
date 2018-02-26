@@ -50,7 +50,6 @@ instance Default Synthesis where
                  , states=[]
                  }
 
-
 type ST = BranchedProcess String String String (TaggedTime String Int)
 
 
@@ -66,21 +65,22 @@ type SynthesisAPI = "synthesis" :>
 synthesisServer state
      = fmap fromList ( liftIO $ atomically $ toList $ M.stream state )
   :<|> getSynthesis state
-  :<|> postSynthesis state
+  :<|> postSynthesis
   :<|> stepsServer state
   where
-    -- FIXME: races
-    postSynthesis _ _ Nothing _ = throwError err400{ errBody = "Parameter `parent` not defined." }
-    postSynthesis _ _ _ Nothing = throwError err400{ errBody = "Parameter `decision` not defined." }
-    postSynthesis state sid (Just pid) (Just did) = do
-      s <- liftIO $ atomically $ M.lookup sid state
-      when ( isJust s ) $ throwError err409{ errBody = "Synthesis already exist." }
-      parent <- liftIO $ atomically $ M.lookup pid state
-      when ( isNothing parent ) $ throwError err404{ errBody = "Parent not found." }
-      liftIO $ atomically $ do
-        let Just parent'@Synthesis{ childs=cs } = parent
-        M.insert parent'{ childs=sid:cs } pid state
-        M.insert def{ parent=Just (pid, did) } sid state
+    postSynthesis _ Nothing _ = throwError err400{ errBody = "Parameter `parent` not defined." }
+    postSynthesis _ _ Nothing = throwError err400{ errBody = "Parameter `decision` not defined." }
+    postSynthesis sid (Just pid) (Just did)
+      = liftIO $ atomically $ postSynthesis' sid pid did
+
+    postSynthesis' sid pid did = do
+      s <- M.lookup sid state
+      when ( isJust s ) $ throwSTM err409{ errBody = "Synthesis already exist." }
+      parent <- M.lookup pid state
+      when ( isNothing parent ) $ throwSTM err404{ errBody = "Parent not found." }
+      let Just parent'@Synthesis{ childs=cs } = parent
+      M.insert parent'{ childs=sid:cs } pid state
+      M.insert def{ parent=Just (pid, did) } sid state
 
 
 
@@ -96,18 +96,24 @@ stepsServer state sid
      = ( reverse . states <$> getSynthesis state sid )
   :<|> ( head . states <$> getSynthesis state sid )
   :<|> ( \step -> (!! step) . states <$> getSynthesis state sid )
-  :<|> ( \step -> do -- FIXME: races
-    s@Synthesis{ .. } <- getSynthesis state sid
-    when (length states > step) $ throwError err409{ errBody = "Steps already exist." }
-    let states' = foldl (\(x:xs) _ -> naive config x : x : xs) states [length states .. step]
-    liftIO $ atomically $ M.insert s{ states=states' } sid state
-    return $ head states' )
+  :<|> postStep
   :<|> ( \_step -> config <$> getSynthesis state sid )
+  where
+    postStep step = liftIO $ atomically $ postStep' step
+    postStep' step = do
+      s@Synthesis{..} <- getSynthesis' state sid
+      when (length states > step) $ throwSTM err409{ errBody = "Steps already exist." }
+      let states' = foldl (\(x:xs) _ -> naive config x : x : xs) states [length states .. step]
+      M.insert s{ states=states' } sid state
+      return $ head states'
 
 
-getSynthesis state sid = do
-  v <- liftIO $ atomically $ M.lookup sid state
-  maybe (throwError err404) return v
+
+getSynthesis state sid = liftIO $ atomically $ getSynthesis' state sid
+getSynthesis' state sid = do
+  v <- M.lookup sid state
+  maybe (throwSTM err404) return v
+
 
 getDecision state sid did = do
   s <- getSynthesis state sid
@@ -115,7 +121,7 @@ getDecision state sid did = do
 
 
 app root = do
-  state :: M.Map String Synthesis <- atomically $ do
+  state <- atomically $ do
     st <- M.new
     M.insert def{ states=[root] } "root" st
     return st
