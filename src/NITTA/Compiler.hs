@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -12,10 +13,12 @@
 module NITTA.Compiler
   ( bindAll
   , bindAllAndNaiveSchedule
+  , compiler
+  , CompilerDT(..)
   , isSchedulingComplete
-  , passiveOption2action
   , naive
   , NaiveOpt(..)
+  , passiveOption2action
   ) where
 
 import           Control.Arrow    (second)
@@ -25,12 +28,14 @@ import           Data.List        (find, intersect, nub, sort, sortBy, sortOn)
 import qualified Data.Map         as M
 import           Data.Maybe       (catMaybes, isJust, mapMaybe)
 import           Data.Proxy
+import           Data.Text        (pack)
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.Flows
 import           NITTA.Lens
 import           NITTA.Types
 import           NITTA.Utils
+import           Numeric.Interval (Interval (..))
 import           Numeric.Interval ((...))
 
 
@@ -93,11 +98,24 @@ instance DecisionType (CompilerDT title tag v t) where
     = CFOption (Option (ControlFlowDT tag v))
     | BOption  (Option (BindingDT title v))
     | DFOption (Option (DataFlowDT String v t))
+    deriving ( Generic )
 
   data Decision (CompilerDT title tag v t)
     = CFDecision (Decision (ControlFlowDT tag v))
     | BDecision (Decision (BindingDT title v))
     | DFDecision (Decision (DataFlowDT String v t))
+
+
+instance ( ToJSON (TimeConstrain t), ToJSON title, ToJSONKey v, ToJSON v, Show v ) => ToJSON (Option (CompilerDT title tag v t))
+instance ( ToJSON (TimeConstrain t), ToJSON title, ToJSONKey v ) => ToJSON (Option (DataFlowDT title v t))
+instance ( ToJSON title, ToJSON v, Show v ) => ToJSON (Option (BindingDT title v))
+instance ToJSON (Option (ControlFlowDT tag v))
+instance ( ToJSON t, Show t ) => ToJSON (TimeConstrain t) where
+  toJSON TimeConstrain{..} = object [ "available" .= tcAvailable
+                                    , "duration" .= tcDuration
+                                    ]
+instance ( Show a ) => ToJSON (Interval a) where
+  toJSON = String . pack . show
 
 getCFOption (CFOption x) = Just x
 getCFOption _            = Nothing
@@ -172,7 +190,7 @@ controlFlowDecision = Proxy :: Proxy ControlFlowDT
 
 
 instance DecisionType (ControlFlowDT tag v) where
-  data Option (ControlFlowDT tag v) = ControlFlowO (ControlFlow tag v)
+  data Option (ControlFlowDT tag v) = ControlFlowO (ControlFlow tag v) deriving ( Generic )
   data Decision (ControlFlowDT tag v) = ControlFlowD (ControlFlow tag v)
 
 

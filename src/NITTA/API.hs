@@ -50,7 +50,8 @@ instance Default Synthesis where
                  , states=[]
                  }
 
-type ST = BranchedProcess String String String (TaggedTime String Int)
+type T = TaggedTime String Int
+type ST = BranchedProcess String String String T
 
 
 
@@ -86,19 +87,22 @@ synthesisServer state
 
 type StepsAPI = "steps" :>
      ( Get '[JSON] [ST]
-  :<|> "last" :> Get '[JSON] ST
+  -- :<|> "last" :> Get '[JSON] ST
   :<|> Capture "step" Int :> Get '[JSON] ST
   :<|> Capture "step" Int :> Post '[JSON] ST
   :<|> Capture "step" Int :> "config" :> Get '[JSON] NaiveOpt
+  :<|> Capture "step" Int :> "options" :> Get '[JSON] [Option (CompilerDT String String String T)]
      )
 
 stepsServer state sid
      = ( reverse . states <$> getSynthesis state sid )
-  :<|> ( head . states <$> getSynthesis state sid )
+  -- :<|> ( head . states <$> getSynthesis state sid )
   :<|> ( \step -> (!! step) . states <$> getSynthesis state sid )
   :<|> postStep
-  :<|> ( \_step -> config <$> getSynthesis state sid )
+  :<|> ( \step -> config <$> getSynthesis state sid )
+  :<|> ( \step -> options compiler . (!! step) . states <$> getSynthesis state sid )
   where
+    -- FIXME: uncatched errors
     postStep step = liftIO $ atomically $ postStep' step
     postStep' step = do
       s@Synthesis{..} <- getSynthesis' state sid

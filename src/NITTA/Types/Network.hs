@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -15,6 +16,7 @@ module NITTA.Types.Network where
 import           Data.Default
 import qualified Data.Map         as M
 import           Data.Typeable
+import           GHC.Generics            (Generic)
 import           NITTA.Types.Base
 import           NITTA.Types.Poly
 import           Numeric.Interval hiding (elem)
@@ -106,7 +108,7 @@ instance DecisionType (DataFlowDT title v t) where
     -- Примечание: почему title оказался под Maybe? Потому что мы можем, банально, не знать в каком
     -- PU находится требуемый функциональный блок, так как он может быть ещё непривязан к PU.
     , dfoTargets    :: M.Map v (Maybe (title, TimeConstrain t))
-    } deriving ( Show )
+    } deriving ( Show, Generic )
   data Decision (DataFlowDT title v t)
     = DataFlowD
     { dfdSource     :: (title, Interval t) -- ^ Источник пересылки.

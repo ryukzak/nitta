@@ -372,7 +372,7 @@ data BindingDT title v
 binding = Proxy :: Proxy BindingDT
 
 instance DecisionType (BindingDT title v) where
-  data Option (BindingDT title v) = BindingO (FB (Parcel v) v) title
+  data Option (BindingDT title v) = BindingO (FB (Parcel v) v) title deriving ( Generic )
   data Decision (BindingDT title v) = BindingD (FB (Parcel v) v) title
 
 
