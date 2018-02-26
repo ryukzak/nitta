@@ -53,6 +53,7 @@ library
                      , stm
                      , stm-containers 
                      , syb
+                     , text
   default-language:    Haskell2010
 
 executable nitta-exe

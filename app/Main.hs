@@ -109,6 +109,32 @@ scheduledBranchSPI
         Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
     in pu
 
+root
+  = let alg = [ FB.framInput 3 $ O [ "a"
+                                   , "d"
+                                   ]
+              , FB.framInput 4 $ O [ "b"
+                                   , "c"
+                                   , "e"
+                                   ]
+              , FB.reg (I "a") $ O ["x"]
+              , FB.reg (I "b") $ O ["y"]
+              , FB.reg (I "c") $ O ["z"]
+              , FB.framOutput 5 $ I "x"
+              , FB.framOutput 6 $ I "y"
+              , FB.framOutput 7 $ I "z"
+              , FB.framOutput 0 $ I "sum"
+              , FB $ FB.Constant 42 $ O ["const"]
+              , FB.framOutput 9 $ I "const"
+              , FB.loop (O ["f"]) $ I "g"
+              , FB $ FB.ShiftL (I "f") $ O ["g"]
+              , FB $ FB.Add (I "d") (I "e") (O ["sum"])
+              ]
+        dataFlow = Stage $ map Actor alg
+        controlFlow = dataFlow2controlFlow dataFlow
+        nitta' = bindAll (functionalBlocks dataFlow) nitta
+    in Branch nitta' controlFlow Nothing []
+
 ---------------------------------------------------------------------------------
 
 
@@ -122,7 +148,7 @@ main = do
   --       } :: Cntx String Int)
   -- simulateSPI 3
   putStrLn "Server start on 8080..."
-  app >>= run 8080
+  app root >>= run 8080
 
 
 test pu cntx = do

@@ -19,6 +19,7 @@ module NITTA.Compiler
   ) where
 
 import           Control.Arrow    (second)
+import           Data.Aeson
 import           Data.Default
 import           Data.List        (find, intersect, nub, sort, sortBy, sortOn)
 import qualified Data.Map         as M
@@ -75,6 +76,7 @@ newtype NaiveOpt = NaiveOpt
 instance Default NaiveOpt where
   def = NaiveOpt{ threshhold=2
                 }
+instance ToJSON NaiveOpt
 
 
 

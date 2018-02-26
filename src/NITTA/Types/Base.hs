@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -17,6 +18,7 @@ import qualified Data.List        as L
 import qualified Data.Map         as M
 import           Data.Proxy
 import           Data.Typeable
+import           GHC.Generics
 import           NITTA.Types.Poly
 import           Numeric.Interval hiding (elem)
 
@@ -116,7 +118,7 @@ data TaggedTime tag t
   = TaggedTime
   { tag   :: Maybe tag -- ^ Идентификатор ветки вычислительного процесса.
   , clock :: t
-  } deriving ( Typeable )
+  } deriving ( Typeable, Generic )
 
 class ( Eq tag, Show tag, Typeable tag ) => Tag tag
 instance ( Eq tag, Show tag, Typeable tag ) => Tag tag

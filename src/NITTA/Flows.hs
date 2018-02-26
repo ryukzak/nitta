@@ -1,6 +1,8 @@
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -19,8 +21,13 @@ module NITTA.Flows
   , allowByControlFlow
   ) where
 
+import           Data.Aeson
+import           Data.Default
 import           Data.List        (nub, (\\))
+import qualified Data.Map         as M
+import           Data.Text        (pack)
 import           Data.Typeable
+import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.Types
 import           NITTA.Utils
@@ -181,7 +188,39 @@ data BranchedProcess title tag v t
   , completedBranches :: [ BranchedProcess title tag v t ]
     -- | Исходная ветка, которая была расщеплена. Используется как база для слияния куста.
   , rootBranch        :: BranchedProcess title tag v t
-  }
+  } deriving ( Generic )
+
+
+instance ( ToJSON title, ToJSONKey title
+         , ToJSON tag, ToJSON t
+         , Show v, ToJSON v, Title title, Time t, Var v
+         ) => ToJSON (BranchedProcess title tag v t)
+
+
+
+instance ( Var v, ToJSONKey title, Time t, Title title, ToJSON title, ToJSON t
+         ) => ToJSON (BusNetwork title v t) where
+  toJSON n@BusNetwork{..}
+             -- , bnSignalBusWidth     :: Int
+    = object [ "width" .= bnSignalBusWidth
+             --   bnRemains            :: [FB (Parcel v) v]
+             , "remain" .= bnRemains
+             -- , bnForwardedVariables :: [v]
+             , "forwardedVariables" .= map (String . pack . show) bnForwardedVariables
+             -- , bnBinded             :: M.Map title [FB (Parcel v) v]
+             , "binds" .= bnBinded
+             -- , bnProcess            :: Process v t
+             , "processLength" .= nextTick (process n)
+             -- , bnPus                :: M.Map title spu
+             , "processUnits" .= M.keys bnPus
+             ]
+
+instance ( Show (FB (Parcel v) v) ) => ToJSON (FB (Parcel v) v) where
+  toJSON = String . pack . show
+
+instance ToJSON (ControlFlow tag v) where
+  toJSON _ = String "Control Flow"
+
 
 
 instance ( Var v ) => DecisionProblem (BindingDT String v)
