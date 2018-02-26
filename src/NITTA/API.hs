@@ -25,6 +25,7 @@ import           Data.Map                    (Map, fromList)
 import           Data.Maybe
 import           GHC.Generics
 import           ListT
+import           NITTA.Compiler
 import           Servant
 import qualified STMContainers.Map           as M
 
@@ -32,23 +33,25 @@ import qualified STMContainers.Map           as M
 data Synthesis
   = Synthesis{ parent :: Maybe (String, Int) -- ^ (name, tick)
              , childs :: [String]
+             , config :: NaiveOpt
              } deriving ( Generic )
 
 instance ToJSON Synthesis
+instance ToJSON NaiveOpt
 
 instance Default Synthesis where
   def = Synthesis{ parent=Nothing
                  , childs=[]
+                 , config=def
                  }
 
 
 type SynthesisAPI
   =    "synthesis" :> Get '[JSON] (Map String Synthesis)
   :<|> "synthesis" :> Capture "sid" String :> Get '[JSON] Synthesis
-  :<|> "synthesis" :> Capture "sid" String
-                   :> QueryParam "parent" String -- FIXME: on servant 13
-                   :> QueryParam "decision" Int
-                   :> PostNoContent '[JSON] ()
+  :<|> "synthesis" :> Capture "sid" String :> QueryParam "parent" String :> QueryParam "decision" Int :> PostNoContent '[JSON] ()
+  :<|> "synthesis" :> Capture "sid" String :> "config" :> Get '[JSON] NaiveOpt
+
 
 server state
   = fmap fromList ( liftIO $ atomically $ toList $ M.stream state )
@@ -56,6 +59,11 @@ server state
     v <- liftIO $ atomically $ M.lookup sid state
     maybe (throwError err404) return v )
   :<|> postSynthesis state
+  :<|> ( \sid -> do
+    v <- liftIO $ atomically $ M.lookup sid state
+    when ( isNothing v) $ throwError err404
+    let Just Synthesis{..} = v
+    return config )
 
 
 postSynthesis _ _ Nothing _ = throwError err400{ errBody = "Parameter parent not defined." }

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -23,6 +24,7 @@ import           Data.List        (find, intersect, nub, sort, sortBy, sortOn)
 import qualified Data.Map         as M
 import           Data.Maybe       (catMaybes, isJust, mapMaybe)
 import           Data.Proxy
+import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.Flows
 import           NITTA.Lens
@@ -68,7 +70,7 @@ newtype NaiveOpt = NaiveOpt
   { -- | Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
     -- привязка функциональных блоков.
     threshhold :: Int
-  }
+  } deriving ( Generic )
 
 instance Default NaiveOpt where
   def = NaiveOpt{ threshhold=2
@@ -386,8 +388,8 @@ networkOption2action DataFlowO{..}
         pullEnd = pullStart + pullDuration - 1
         pushStart = pullStart + 1
 
-        mkEvent (from, tc@TimeConstrain{..})
-          = Just (from, pushStart ... (pushStart + tc^.dur.infimum - 1))
+        mkEvent (from_, tc@TimeConstrain{..})
+          = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs dfoTargets
     in DataFlowD{ dfdSource=( fst dfoSource, pullStart ... pullEnd )
                 , dfdTargets=M.fromList pushs
