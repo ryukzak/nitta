@@ -114,7 +114,7 @@ instance DecisionType (DataFlowDT title v t) where
     { dfdSource     :: (title, Interval t) -- ^ Источник пересылки.
     -- | Словарь, описывающий пункты назначения для пересылаемого значения.
     , dfdTargets    :: M.Map v (Maybe (title, Interval t))
-    } deriving ( Show )
+    } deriving ( Show, Generic )
 
 
 class ( DefinitionSynthesis pu ) => Synthesis pu i where

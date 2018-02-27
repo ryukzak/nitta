@@ -19,6 +19,8 @@ module NITTA.Compiler
   , naive
   , NaiveOpt(..)
   , passiveOption2action
+  , options2decision
+  , option2decision
   ) where
 
 import           Control.Arrow    (second)
@@ -95,21 +97,33 @@ compiler = Proxy :: Proxy CompilerDT
 
 instance DecisionType (CompilerDT title tag v t) where
   data Option (CompilerDT title tag v t)
-    = CFOption (Option (ControlFlowDT tag v))
-    | BOption  (Option (BindingDT title v))
-    | DFOption (Option (DataFlowDT String v t))
+    = ControlFlowOption (Option (ControlFlowDT tag v))
+    | BindingOption  (Option (BindingDT title v))
+    | DataFlowOption (Option (DataFlowDT String v t))
     deriving ( Generic )
 
   data Decision (CompilerDT title tag v t)
     = CFDecision (Decision (ControlFlowDT tag v))
     | BDecision (Decision (BindingDT title v))
     | DFDecision (Decision (DataFlowDT String v t))
+    deriving ( Generic )
+
+
+-- option2decision :: BranchedProcess title tag v t -> Option (CompilerDT title tag v t) -> Decision (CompilerDT title tag v t)
+option2decision st (ControlFlowOption (ControlFlowO o)) = CFDecision $ ControlFlowD o
+option2decision st (BindingOption (BindingO fb title)) = BDecision $ BindingD fb title
+option2decision st (DataFlowOption o) = DFDecision $ networkOption2action o
+
 
 
 instance ( ToJSON (TimeConstrain t), ToJSON title, ToJSONKey v, ToJSON v, Show v ) => ToJSON (Option (CompilerDT title tag v t))
+instance ( ToJSON (TimeConstrain t), ToJSON title, ToJSONKey v, ToJSON v, Show v, Show t ) => ToJSON (Decision (CompilerDT title tag v t))
 instance ( ToJSON (TimeConstrain t), ToJSON title, ToJSONKey v ) => ToJSON (Option (DataFlowDT title v t))
+instance ( ToJSON (TimeConstrain t), ToJSON title, ToJSONKey v, Show t ) => ToJSON (Decision (DataFlowDT title v t))
 instance ( ToJSON title, ToJSON v, Show v ) => ToJSON (Option (BindingDT title v))
+instance ( ToJSON title, ToJSON v, Show v ) => ToJSON (Decision (BindingDT title v))
 instance ToJSON (Option (ControlFlowDT tag v))
+instance ToJSON (Decision (ControlFlowDT tag v))
 instance ( ToJSON t, Show t ) => ToJSON (TimeConstrain t) where
   toJSON TimeConstrain{..} = object [ "available" .= tcAvailable
                                     , "duration" .= tcDuration
@@ -117,12 +131,12 @@ instance ( ToJSON t, Show t ) => ToJSON (TimeConstrain t) where
 instance ( Show a ) => ToJSON (Interval a) where
   toJSON = String . pack . show
 
-getCFOption (CFOption x) = Just x
-getCFOption _            = Nothing
-getBOption (BOption x) = Just x
-getBOption _           = Nothing
-getDFOption (DFOption x) = Just x
-getDFOption _            = Nothing
+getCFOption (ControlFlowOption x) = Just x
+getCFOption _                     = Nothing
+getBOption (BindingOption x) = Just x
+getBOption _                 = Nothing
+getDFOption (DataFlowOption x) = Just x
+getDFOption _                  = Nothing
 
 instance ( Tag tag, Time t, Var v
          ) => DecisionProblem (CompilerDT String tag v (TaggedTime tag t))
@@ -130,9 +144,9 @@ instance ( Tag tag, Time t, Var v
          where
   options _ Bush{..} = options compiler currentBranch
   options _ branch
-    = map DFOption (dataFlowOptions branch)
-    ++ map CFOption (options controlFlowDecision branch)
-    ++ map BOption (options binding branch)
+    = map DataFlowOption (dataFlowOptions branch)
+    ++ map ControlFlowOption (options controlFlowDecision branch)
+    ++ map BindingOption (options binding branch)
 
   decision _ bush@Bush{..} act            = bush{ currentBranch=decision compiler currentBranch act }
   decision _ branch (BDecision d)  = decision binding branch d
@@ -190,9 +204,10 @@ controlFlowDecision = Proxy :: Proxy ControlFlowDT
 
 
 instance DecisionType (ControlFlowDT tag v) where
-  data Option (ControlFlowDT tag v) = ControlFlowO (ControlFlow tag v) deriving ( Generic )
+  data Option (ControlFlowDT tag v) = ControlFlowO (ControlFlow tag v)
+    deriving ( Generic )
   data Decision (ControlFlowDT tag v) = ControlFlowD (ControlFlow tag v)
-
+    deriving ( Generic )
 
 instance ( Tag tag, Var v, Time t
          ) => DecisionProblem (ControlFlowDT tag v)

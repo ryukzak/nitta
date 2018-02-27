@@ -86,27 +86,46 @@ synthesisServer state
 type StepsAPI = "steps" :>
      ( Get '[JSON] [ST]
   -- :<|> "last" :> Get '[JSON] ST
+     -- step - необходимо обеспечить сохранность индексов для разных веток синтеза.
   :<|> Capture "step" Int :> Get '[JSON] ST
-  :<|> Capture "step" Int :> Post '[JSON] ST
+  :<|> Capture "step" Int :> QueryParam "manual" Int :> Post '[JSON] ST
   :<|> Capture "step" Int :> "config" :> Get '[JSON] NaiveOpt
   :<|> Capture "step" Int :> "options" :> Get '[JSON] [Option (CompilerDT String String String T)]
+  :<|> Capture "step" Int :> "decisions" :> Get '[JSON] [Decision (CompilerDT String String String T)]
      )
 
 stepsServer state sid
      = ( reverse . states <$> getSynthesis state sid )
   -- :<|> ( head . states <$> getSynthesis state sid )
-  :<|> ( \step -> (!! step) . states <$> getSynthesis state sid )
+  :<|> getStep
   :<|> postStep
   :<|> ( \_step -> config <$> getSynthesis state sid )
-  :<|> ( \step -> options compiler . (!! step) . states <$> getSynthesis state sid )
+  :<|> ( \step -> options compiler <$> getStep step )
+  :<|> ( \step -> do
+           st <- getStep step
+           return $ map (option2decision st) $ options compiler st )
   where
-    postStep step = liftSTM $ postStep' step
-    postStep' step = do
+    getStep = liftSTM . getStep'
+    getStep' step = do
+      steps <- states <$> getSynthesis' state sid
+      unless (length steps > step) $ throwSTM err409{ errBody="Step not exists." }
+      return $ steps !! step
+    postStep step Nothing = liftSTM $ autoPostStep step
+    postStep step (Just d) = liftSTM $ manualPostStep step d
+    autoPostStep step = do
       s@Synthesis{..} <- getSynthesis' state sid
-      when (length states > step) $ throwSTM err409{ errBody = "Steps already exist." }
+      unless (length states <= step) $ throwSTM err409{ errBody="Steps already exist." }
       let states' = foldl (\(x:xs) _ -> naive config x : x : xs) states [length states .. step]
       M.insert s{ states=states' } sid state
       return $ head states'
+    manualPostStep step d = do
+      s@Synthesis{ states=states@(st:_) } <- getSynthesis' state sid
+      unless (length states == step) $ throwSTM err409{ errBody="Only one manual step at a time." }
+      let d' = ((!! d) . map (option2decision st) . options compiler) st
+      let st' = decision compiler st d'
+      let s' = s{ states=st' : states }
+      M.insert s' sid state
+      return st'
 
 
 liftSTM stm = liftIO (atomically $ catchSTM (Right <$> stm) (return . Left)) >>= either throwError return
