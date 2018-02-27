@@ -1,4 +1,3 @@
-
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -71,8 +70,7 @@ synthesisServer state
   where
     postSynthesis _ Nothing _ = throwError err400{ errBody = "Parameter `parent` not defined." }
     postSynthesis _ _ Nothing = throwError err400{ errBody = "Parameter `decision` not defined." }
-    postSynthesis sid (Just pid) (Just did)
-      = liftIO $ atomically $ postSynthesis' sid pid did
+    postSynthesis sid (Just pid) (Just did) = liftSTM $ postSynthesis' sid pid did
 
     postSynthesis' sid pid did = do
       s <- M.lookup sid state
@@ -99,11 +97,10 @@ stepsServer state sid
   -- :<|> ( head . states <$> getSynthesis state sid )
   :<|> ( \step -> (!! step) . states <$> getSynthesis state sid )
   :<|> postStep
-  :<|> ( \step -> config <$> getSynthesis state sid )
+  :<|> ( \_step -> config <$> getSynthesis state sid )
   :<|> ( \step -> options compiler . (!! step) . states <$> getSynthesis state sid )
   where
-    -- FIXME: uncatched errors
-    postStep step = liftIO $ atomically $ postStep' step
+    postStep step = liftSTM $ postStep' step
     postStep' step = do
       s@Synthesis{..} <- getSynthesis' state sid
       when (length states > step) $ throwSTM err409{ errBody = "Steps already exist." }
@@ -112,6 +109,7 @@ stepsServer state sid
       return $ head states'
 
 
+liftSTM stm = liftIO (atomically $ catchSTM (Right <$> stm) (return . Left)) >>= either throwError return
 
 getSynthesis state sid = liftIO $ atomically $ getSynthesis' state sid
 getSynthesis' state sid = do
