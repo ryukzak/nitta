@@ -25,7 +25,7 @@ import           ListT                  (toList)
 import           NITTA.Compiler
 import           NITTA.Flows
 import           NITTA.Types            hiding (Synthesis)
-import           Prelude                hiding (last)
+import           NITTA.Utils.JSON       ()
 import           Servant
 import qualified STMContainers.Map      as M
 
@@ -39,7 +39,6 @@ data Synthesis
 
 
 instance ToJSON Synthesis
-instance ( ToJSON tag , ToJSON t ) => ToJSON (TaggedTime tag t)
 
 
 instance Default Synthesis where
@@ -101,16 +100,14 @@ stepsServer state sid
   :<|> postStep
   :<|> ( \_step -> config <$> getSynthesis state sid )
   :<|> ( \step -> options compiler <$> getStep step )
-  :<|> ( \step -> do
-           st <- getStep step
-           return $ map (option2decision st) $ options compiler st )
+  :<|> ( \step -> map option2decision . options compiler <$> getStep step )
   where
     getStep = liftSTM . getStep'
     getStep' step = do
       steps <- states <$> getSynthesis' state sid
       unless (length steps > step) $ throwSTM err409{ errBody="Step not exists." }
       return $ steps !! step
-    postStep step Nothing = liftSTM $ autoPostStep step
+    postStep step Nothing  = liftSTM $ autoPostStep step
     postStep step (Just d) = liftSTM $ manualPostStep step d
     autoPostStep step = do
       s@Synthesis{..} <- getSynthesis' state sid
@@ -121,7 +118,7 @@ stepsServer state sid
     manualPostStep step d = do
       s@Synthesis{ states=states@(st:_) } <- getSynthesis' state sid
       unless (length states == step) $ throwSTM err409{ errBody="Only one manual step at a time." }
-      let d' = ((!! d) . map (option2decision st) . options compiler) st
+      let d' = ((!! d) . map option2decision . options compiler) st
       let st' = decision compiler st d'
       let s' = s{ states=st' : states }
       M.insert s' sid state

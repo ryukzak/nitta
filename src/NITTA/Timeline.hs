@@ -14,6 +14,7 @@ import qualified Data.ByteString.Lazy as BS
 import           Data.List            (nub, takeWhile)
 import           NITTA.Types
 import           NITTA.Utils
+import           NITTA.Utils.JSON     ()
 import           Numeric.Interval     (inf, sup)
 
 
@@ -45,9 +46,6 @@ instance ToJSON Relation where
            , "a" .= a
            , "b" .= b
            ]
-
-instance ( ToJSON t ) => ToJSON (TaggedTime tag t) where
-  toJSON (TaggedTime _ t) = toJSON t
 
 data Group = Group String [String]
   deriving (Eq, Ord)

@@ -40,16 +40,16 @@ import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
 import qualified Data.String.Utils    as S
 import           Data.Typeable
 import           NITTA.FunctionBlocks (get')
-import           NITTA.Lens
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
+import           NITTA.Utils.Lens
 import           Numeric.Interval     (inf, width, (...))
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
-class ( Typeable v, Eq v, Ord v, Show v ) => Title v
-instance ( Typeable v, Eq v, Ord v, Show v ) => Title v
+class ( Typeable v, Ord v, Show v ) => Title v
+instance ( Typeable v, Ord v, Show v ) => Title v
 
 
 data GBusNetwork title spu v t =

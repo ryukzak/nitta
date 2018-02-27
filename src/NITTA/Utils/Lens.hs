@@ -10,8 +10,8 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 
-module NITTA.Lens
-  ( module NITTA.Lens
+module NITTA.Utils.Lens
+  ( module NITTA.Utils.Lens
   , module Control.Lens
   ) where
 

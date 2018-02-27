@@ -32,9 +32,9 @@ import           Data.Default
 import           Data.Either
 import           Data.List           (find, intersect)
 import           Data.Typeable
-import           NITTA.Lens
 import           NITTA.Types
 import           NITTA.Utils
+import           NITTA.Utils.Lens
 import           Numeric.Interval    ((...))
 
 

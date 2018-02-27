@@ -73,10 +73,10 @@ import qualified Data.String.Utils     as S
 import           Data.Typeable         (cast)
 import           NITTA.Compiler
 import           NITTA.FunctionBlocks
-import           NITTA.Lens
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
+import           NITTA.Utils.Lens
 import           Numeric.Interval      ((...))
 
 

@@ -14,7 +14,8 @@ module NITTA.Compiler
   ( bindAll
   , bindAllAndNaiveSchedule
   , compiler
-  , CompilerDT(..)
+  , CompilerDT
+  , ControlFlowDT
   , isSchedulingComplete
   , naive
   , NaiveOpt(..)
@@ -24,20 +25,17 @@ module NITTA.Compiler
   ) where
 
 import           Control.Arrow    (second)
-import           Data.Aeson
 import           Data.Default
 import           Data.List        (find, intersect, nub, sort, sortBy, sortOn)
 import qualified Data.Map         as M
 import           Data.Maybe       (catMaybes, isJust, mapMaybe)
 import           Data.Proxy
-import           Data.Text        (pack)
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.Flows
-import           NITTA.Lens
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval (Interval (..))
+import           NITTA.Utils.Lens
 import           Numeric.Interval ((...))
 
 
@@ -83,7 +81,6 @@ newtype NaiveOpt = NaiveOpt
 instance Default NaiveOpt where
   def = NaiveOpt{ threshhold=2
                 }
-instance ToJSON NaiveOpt
 
 
 
@@ -109,27 +106,11 @@ instance DecisionType (CompilerDT title tag v t) where
     deriving ( Generic )
 
 
--- option2decision :: BranchedProcess title tag v t -> Option (CompilerDT title tag v t) -> Decision (CompilerDT title tag v t)
-option2decision st (ControlFlowOption (ControlFlowO o)) = CFDecision $ ControlFlowD o
-option2decision st (BindingOption (BindingO fb title)) = BDecision $ BindingD fb title
-option2decision st (DataFlowOption o) = DFDecision $ networkOption2action o
+option2decision (ControlFlowOption (ControlFlowO o)) = CFDecision $ ControlFlowD o
+option2decision (BindingOption (BindingO fb title)) = BDecision $ BindingD fb title
+option2decision (DataFlowOption o) = DFDecision $ networkOption2action o
 
 
-
-instance ( ToJSON (TimeConstrain t), ToJSON title, ToJSONKey v, ToJSON v, Show v ) => ToJSON (Option (CompilerDT title tag v t))
-instance ( ToJSON (TimeConstrain t), ToJSON title, ToJSONKey v, ToJSON v, Show v, Show t ) => ToJSON (Decision (CompilerDT title tag v t))
-instance ( ToJSON (TimeConstrain t), ToJSON title, ToJSONKey v ) => ToJSON (Option (DataFlowDT title v t))
-instance ( ToJSON (TimeConstrain t), ToJSON title, ToJSONKey v, Show t ) => ToJSON (Decision (DataFlowDT title v t))
-instance ( ToJSON title, ToJSON v, Show v ) => ToJSON (Option (BindingDT title v))
-instance ( ToJSON title, ToJSON v, Show v ) => ToJSON (Decision (BindingDT title v))
-instance ToJSON (Option (ControlFlowDT tag v))
-instance ToJSON (Decision (ControlFlowDT tag v))
-instance ( ToJSON t, Show t ) => ToJSON (TimeConstrain t) where
-  toJSON TimeConstrain{..} = object [ "available" .= tcAvailable
-                                    , "duration" .= tcDuration
-                                    ]
-instance ( Show a ) => ToJSON (Interval a) where
-  toJSON = String . pack . show
 
 getCFOption (ControlFlowOption x) = Just x
 getCFOption _                     = Nothing

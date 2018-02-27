@@ -15,10 +15,10 @@ import           Data.Default
 import           Data.List                   (intersect, (\\))
 import           Data.Typeable
 import           NITTA.FunctionBlocks
-import           NITTA.Lens
 import           NITTA.ProcessUnits.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
+import           NITTA.Utils.Lens
 import           Numeric.Interval            (singleton, (...))
 import           Prelude                     hiding (init)
 

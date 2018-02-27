@@ -33,8 +33,8 @@ import           Numeric.Interval hiding (elem)
 -- TODO: Повидимому именно тут заложена самая страшная мина текущей реализации, а именно -
 -- отсутствие типизации. При этом в настоящий момент совершенно не понятно как и главное где
 -- учитывать типизацию данных ходящих по шине.
-class ( Typeable v, Eq v, Ord v, Show v ) => Var v
-instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
+class ( Typeable v, Ord v, Show v ) => Var v
+instance ( Typeable v, Ord v, Show v ) => Var v
 instance {-# OVERLAPS #-} Var String
 
 class Variables x v | x -> v where

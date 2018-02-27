@@ -20,8 +20,8 @@ import qualified Data.Map            as M
 import           Data.Maybe          (mapMaybe)
 import           Data.Proxy
 import           Data.Typeable       (Typeable, cast)
-import           NITTA.Lens
 import           NITTA.Types
+import           NITTA.Utils.Lens
 import           Numeric             (readInt, showHex)
 import qualified Numeric.Interval    as I
 import           Text.StringTemplate

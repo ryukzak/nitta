@@ -20,7 +20,6 @@ library
                      , NITTA.Compiler
                      , NITTA.Flows
                      , NITTA.FunctionBlocks
-                     , NITTA.Lens
                      , NITTA.ProcessUnits.Accum
                      , NITTA.ProcessUnits.Fram
                      , NITTA.ProcessUnits.SerialPU
@@ -33,6 +32,8 @@ library
                      , NITTA.Types.Network
                      , NITTA.Types.Poly
                      , NITTA.Utils
+                     , NITTA.Utils.JSON
+                     , NITTA.Utils.Lens
   build-depends:       aeson
                      , array
                      , base
