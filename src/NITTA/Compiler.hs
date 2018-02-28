@@ -15,7 +15,6 @@ module NITTA.Compiler
   , bindAllAndNaiveSchedule
   , compiler
   , CompilerDT
-  , ControlFlowDT
   , isSchedulingComplete
   , naive
   , NaiveOpt(..)
@@ -26,7 +25,7 @@ module NITTA.Compiler
 
 import           Control.Arrow    (second)
 import           Data.Default
-import           Data.List        (find, intersect, nub, sort, sortBy, sortOn)
+import           Data.List        (find, intersect, sort, sortBy, sortOn)
 import qualified Data.Map         as M
 import           Data.Maybe       (catMaybes, isJust, mapMaybe)
 import           Data.Proxy
@@ -36,7 +35,7 @@ import           NITTA.Flows
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
-import           Numeric.Interval ((...))
+import           Numeric.Interval (Interval, (...))
 
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
@@ -94,45 +93,50 @@ compiler = Proxy :: Proxy CompilerDT
 
 instance DecisionType (CompilerDT title tag v t) where
   data Option (CompilerDT title tag v t)
-    = ControlFlowOption (Option (ControlFlowDT tag v))
-    | BindingOption  (Option (BindingDT title v))
-    | DataFlowOption (Option (DataFlowDT String v t))
+    = ControlFlowOption (ControlFlow tag v)
+    | BindingOption (FB (Parcel v) v) title
+    | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
     deriving ( Generic )
 
   data Decision (CompilerDT title tag v t)
-    = CFDecision (Decision (ControlFlowDT tag v))
-    | BDecision (Decision (BindingDT title v))
-    | DFDecision (Decision (DataFlowDT String v t))
+    = ControlFlowDecision (ControlFlow tag v)
+    | BindingDecision (FB (Parcel v) v) title
+    | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
     deriving ( Generic )
 
 
-option2decision (ControlFlowOption (ControlFlowO o)) = CFDecision $ ControlFlowD o
-option2decision (BindingOption (BindingO fb title)) = BDecision $ BindingD fb title
-option2decision (DataFlowOption o) = DFDecision $ networkOption2action o
+option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
+option2decision (BindingOption fb title) = BindingDecision fb title
+option2decision (DataFlowOption src trg) = networkOption2action $ DataFlowO src trg
 
 
 
 getCFOption (ControlFlowOption x) = Just x
 getCFOption _                     = Nothing
-getBOption (BindingOption x) = Just x
-getBOption _                 = Nothing
-getDFOption (DataFlowOption x) = Just x
-getDFOption _                  = Nothing
+getBOption (BindingOption fb title) = Just $ BindingO fb title
+getBOption _                        = Nothing
+getDFOption (DataFlowOption s t) = Just $ DataFlowO s t
+getDFOption _                    = Nothing
 
 instance ( Tag tag, Time t, Var v
          ) => DecisionProblem (CompilerDT String tag v (TaggedTime tag t))
                    CompilerDT (BranchedProcess String tag v (TaggedTime tag t))
          where
   options _ Bush{..} = options compiler currentBranch
-  options _ branch
-    = map DataFlowOption (dataFlowOptions branch)
-    ++ map ControlFlowOption (options controlFlowDecision branch)
-    ++ map BindingOption (options binding branch)
+  options _ branch = concat
+    [ map (\(DataFlowO s t) -> DataFlowOption s t) $ dataFlowOptions branch
+    , map (\(ControlFlowO x) -> ControlFlowOption x) $ options controlFlowDecision branch
+    , map (\(BindingO fb title) -> BindingOption fb title) $ options binding branch
+    ]
 
-  decision _ bush@Bush{..} act            = bush{ currentBranch=decision compiler currentBranch act }
-  decision _ branch (BDecision d)  = decision binding branch d
-  decision _ branch (CFDecision d) = decision controlFlowDecision branch d
-  decision _ branch@Branch{ topPU=pu, .. } (DFDecision act) = branch{ topPU=decision dataFlowDT pu act }
+  decision _ bush@Bush{..} act
+    = bush{ currentBranch=decision compiler currentBranch act }
+  decision _ branch (BindingDecision fb title)
+    = decision binding branch $ BindingD fb title
+  decision _ branch (ControlFlowDecision d)
+    = decision controlFlowDecision branch $ ControlFlowD d
+  decision _ branch@Branch{ topPU=pu, .. } (DataFlowDecision src trg)
+    = branch{ topPU=decision dataFlowDT pu $ DataFlowD src trg }
 
 
 
@@ -166,57 +170,13 @@ options2decision branch opts
       _ | length dfOptions >= 2 -> Just $ dfDecision dfOptions
       _ | not $ null bOptions   -> Just $ mkBindDecision branch bOptions
       _ | not $ null dfOptions  -> Just $ dfDecision dfOptions
-      _ | not $ null cfOptions  -> Just $ CFDecision $ (\(ControlFlowO cf : _) -> ControlFlowD cf) cfOptions
+      _ | not $ null cfOptions  -> Just $ ControlFlowDecision $ head cfOptions
       _ -> Nothing
   where
     dfDecision dfOptions = case sortOn start dfOptions of
-      v : _ -> DFDecision $ networkOption2action v
+      v : _ -> networkOption2action v
       _     -> error "No variants!"
     start opt = opt^.at.avail.infimum
-
-
-
----------------------------------------------------------------------
--- * Ветвление алгоритма.
-
-
-data ControlFlowDT tag v
-controlFlowDecision = Proxy :: Proxy ControlFlowDT
-
-
-instance DecisionType (ControlFlowDT tag v) where
-  data Option (ControlFlowDT tag v) = ControlFlowO (ControlFlow tag v)
-    deriving ( Generic )
-  data Decision (ControlFlowDT tag v) = ControlFlowD (ControlFlow tag v)
-    deriving ( Generic )
-
-instance ( Tag tag, Var v, Time t
-         ) => DecisionProblem (ControlFlowDT tag v)
-                ControlFlowDT (BranchedProcess String tag v (TaggedTime tag t))
-         where
-  options _ Branch{ topPU=pu, ..} = branchingOptions controlFlow availableVars
-    where
-      availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT pu
-  options _ _ = undefined
-
-  -- | Выполнить ветвление вычислительного процесса. Это действие заключается в замене текущей ветки
-  -- вычислительного процесса на кустарник (Bush), в рамках работы с которым необъходимо перебрать
-  -- все веточки и в конце собрать обратно в одну ветку.
-  decision _ Branch{..} (ControlFlowD Choice{..})
-    = let now = nextTick $ process topPU
-          branch : branchs = map (\OptionCF{..} -> Branch
-                                    { topPU=setTime now{ tag=ocfTag } topPU
-                                    , controlFlow=oControlFlow
-                                    , branchTag=ocfTag
-                                    , branchInputs=ocfInputs
-                                    }
-                                  ) cfOptions
-      in Bush{ currentBranch=branch
-            , remainingBranches=branchs
-            , completedBranches=[]
-            , rootBranch=branch
-            }
-  decision _ _ _                   = undefined
 
 
 
@@ -240,17 +200,6 @@ dataFlowOptions _ = error "Can't generate dataflow options for BranchingInProgre
 
 
 -- * Работа с потоком управления.
-
--- | Получить список вариантов ветвления вычислительного процесса.
---
--- Ветвление вычислительного процесса возможно в том случае, если доступнен ключ ветвления
--- алгоритма и все входные переменные для всех вариантов развития вычислительного процесса.
-branchingOptions (Block cfs) availableVars
-  = [ ControlFlowO x
-    | x@Choice{..} <- cfs
-    , all (`elem` availableVars) $ cfCond : cfInputs
-    ]
-branchingOptions _ _ = error "branchingOptions: internal error."
 
 
 
@@ -291,7 +240,7 @@ finalizeBranch Branch{} = error "finalizeBranch: wrong args."
 
 mkBindDecision Branch{ topPU=net@BusNetwork{..} } bOptions
   = case sort' $ map prioritize' bOptions of
-      BindOption fb puTitle _ : _ -> BDecision $ BindingD fb puTitle
+      BindOption fb puTitle _ : _ -> BindingDecision fb puTitle
       _                           -> error "Bind variants is over!"
   where
     prioritize' (BindingO fb title)
@@ -396,20 +345,18 @@ passiveOption2action d@EndpointO{..}
         b = d^.at.avail.infimum + d^.at.dur.infimum - 1
     in EndpointD epoType (a ... b)
 
-networkOption2action DataFlowO{..}
-  = let pushTimeConstrains = map snd $ catMaybes $ M.elems dfoTargets
+networkOption2action (DataFlowO src trg)
+  = let pushTimeConstrains = map snd $ catMaybes $ M.elems trg
         predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
-        pullStart    = maximum $ (snd dfoSource^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
-        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd dfoSource : pushTimeConstrains
+        pullStart    = maximum $ (snd src^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
+        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd src : pushTimeConstrains
         pullEnd = pullStart + pullDuration - 1
         pushStart = pullStart + 1
 
         mkEvent (from_, tc@TimeConstrain{..})
           = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
-        pushs = map (second $ maybe Nothing mkEvent) $ M.assocs dfoTargets
-    in DataFlowD{ dfdSource=( fst dfoSource, pullStart ... pullEnd )
-                , dfdTargets=M.fromList pushs
-                }
+        pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
+    in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
 
 
 inBranchSteps Branch{..} = whatsHappenWith branchTag topPU

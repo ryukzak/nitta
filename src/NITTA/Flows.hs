@@ -6,6 +6,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
@@ -14,14 +15,19 @@ TODO: Место для микростатьи по вопросу: как им�
 пересылкам и управлению потоком данных.
 -}
 module NITTA.Flows
-  ( DataFlow(..), isPaths
-  , ControlFlow(..), dataFlow2controlFlow, isChoice, isBlock
-  , OptionCF(..)
+  ( allowByControlFlow
   , BranchedProcess(..)
-  , allowByControlFlow
+  , ControlFlow(..), dataFlow2controlFlow, isChoice, isBlock
+  , controlFlowDecision
+  , ControlFlowDT
+  , DataFlow(..), isPaths
+  , Decision(..)
+  , Option(..)
+  , OptionCF(..)
   ) where
 
 import           Data.List        (nub, (\\))
+import qualified Data.Map         as M
 import           Data.Typeable
 import           GHC.Generics
 import           NITTA.BusNetwork
@@ -207,3 +213,61 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
   options _ _          = undefined
   decision _ branch@Branch{..} act = branch{ topPU=decision dataFlowDT topPU act }
   decision _ _ _                   = undefined
+
+
+
+---------------------------------------------------------------------
+-- * Ветвление алгоритма.
+
+
+data ControlFlowDT tag v
+controlFlowDecision = Proxy :: Proxy ControlFlowDT
+
+
+instance DecisionType (ControlFlowDT tag v) where
+  data Option (ControlFlowDT tag v) = ControlFlowO (ControlFlow tag v)
+    deriving ( Generic )
+  data Decision (ControlFlowDT tag v) = ControlFlowD (ControlFlow tag v)
+    deriving ( Generic )
+
+instance ( Tag tag, Var v, Time t
+         ) => DecisionProblem (ControlFlowDT tag v)
+                ControlFlowDT (BranchedProcess String tag v (TaggedTime tag t))
+         where
+  options _ Branch{ topPU=pu, ..} = branchingOptions controlFlow availableVars
+    where
+      availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT pu
+  options _ _ = undefined
+
+  -- | Выполнить ветвление вычислительного процесса. Это действие заключается в замене текущей ветки
+  -- вычислительного процесса на кустарник (Bush), в рамках работы с которым необъходимо перебрать
+  -- все веточки и в конце собрать обратно в одну ветку.
+  decision _ Branch{..} (ControlFlowD Choice{..})
+    = let now = nextTick $ process topPU
+          branch : branchs = map (\OptionCF{..} -> Branch
+                                    { topPU=setTime now{ tag=ocfTag } topPU
+                                    , controlFlow=oControlFlow
+                                    , branchTag=ocfTag
+                                    , branchInputs=ocfInputs
+                                    }
+                                  ) cfOptions
+      in Bush{ currentBranch=branch
+            , remainingBranches=branchs
+            , completedBranches=[]
+            , rootBranch=branch
+            }
+  decision _ _ _                   = undefined
+
+
+
+-- | Получить список вариантов ветвления вычислительного процесса.
+--
+-- Ветвление вычислительного процесса возможно в том случае, если доступнен ключ ветвления
+-- алгоритма и все входные переменные для всех вариантов развития вычислительного процесса.
+branchingOptions (Block cfs) availableVars
+  = [ ControlFlowO x
+    | x@Choice{..} <- cfs
+    , all (`elem` availableVars) $ cfCond : cfInputs
+    ]
+branchingOptions _ _ = error "branchingOptions: internal error."
+

@@ -97,23 +97,26 @@ class Connected pu i where
 data DataFlowDT title v t
 dataFlowDT = Proxy :: Proxy DataFlowDT
 
+type Source title t = (title, t)
+type Target title v t = M.Map v (Maybe (title, t))
+
 instance DecisionType (DataFlowDT title v t) where
   data Option (DataFlowDT title v t)
     = DataFlowO
-    { dfoSource     :: (title, TimeConstrain t) -- ^ Источник пересылки.
+    { dfoSource     :: Source title (TimeConstrain t) -- ^ Источник пересылки.
     -- | Словарь, описывающий все необходимые пункты назначения для пересылаемого значения.
     -- Допустима ситация, когда пункт назначения не может принять значение, в таком случае для
     -- негоне указываются временные ограничения.
     --
     -- Примечание: почему title оказался под Maybe? Потому что мы можем, банально, не знать в каком
     -- PU находится требуемый функциональный блок, так как он может быть ещё непривязан к PU.
-    , dfoTargets    :: M.Map v (Maybe (title, TimeConstrain t))
+    , dfoTargets    :: Target title v (TimeConstrain t)
     } deriving ( Show, Generic )
   data Decision (DataFlowDT title v t)
     = DataFlowD
-    { dfdSource     :: (title, Interval t) -- ^ Источник пересылки.
+    { dfdSource     :: Source title (Interval t) -- ^ Источник пересылки.
     -- | Словарь, описывающий пункты назначения для пересылаемого значения.
-    , dfdTargets    :: M.Map v (Maybe (title, Interval t))
+    , dfdTargets    :: Target title v (Interval t)
     } deriving ( Show, Generic )
 
 
