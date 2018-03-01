@@ -25,9 +25,9 @@ module NITTA.Compiler
 
 import           Control.Arrow    (second)
 import           Data.Default
-import           Data.List        (find, intersect, sort, sortBy, sortOn)
+import           Data.List        (find, intersect, sort, sortOn)
 import qualified Data.Map         as M
-import           Data.Maybe       (catMaybes, isJust, mapMaybe)
+import           Data.Maybe
 import           Data.Proxy
 import           GHC.Generics
 import           NITTA.BusNetwork
@@ -105,18 +105,22 @@ instance DecisionType (CompilerDT title tag v t) where
     deriving ( Generic )
 
 
+
 option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
 option2decision (BindingOption fb title) = BindingDecision fb title
 option2decision (DataFlowOption src trg) = networkOption2action $ DataFlowO src trg
 
 
+filterBindingOption opts = [ x | x@BindingOption{} <- opts ]
+filterControlFlowOption opts = [ x | x@ControlFlowOption{} <- opts ]
+filterDataFlowOption opts = [ specializeDataFlowOption x | x@DataFlowOption{} <- opts ]
 
-getCFOption (ControlFlowOption x) = Just x
-getCFOption _                     = Nothing
-getBOption (BindingOption fb title) = Just $ BindingO fb title
-getBOption _                        = Nothing
-getDFOption (DataFlowOption s t) = Just $ DataFlowO s t
-getDFOption _                    = Nothing
+specializeDataFlowOption (DataFlowOption s t) = DataFlowO s t
+specializeDataFlowOption _ = error "Can't specialize non DataFlow option!"
+
+generalizeDataFlowOption (DataFlowO s t) = DataFlowOption s t
+generalizeControlFlowOption (ControlFlowO x) = ControlFlowOption x
+generalizeBindingOption (BindingO s t) = BindingOption s t
 
 instance ( Tag tag, Time t, Var v
          ) => DecisionProblem (CompilerDT String tag v (TaggedTime tag t))
@@ -124,9 +128,9 @@ instance ( Tag tag, Time t, Var v
          where
   options _ Bush{..} = options compiler currentBranch
   options _ branch = concat
-    [ map (\(DataFlowO s t) -> DataFlowOption s t) $ dataFlowOptions branch
-    , map (\(ControlFlowO x) -> ControlFlowOption x) $ options controlFlowDecision branch
-    , map (\(BindingO fb title) -> BindingOption fb title) $ options binding branch
+    [ map generalizeDataFlowOption $ dataFlowOptions branch
+    , map generalizeControlFlowOption $ options controlFlowDecision branch
+    , map generalizeBindingOption $ options binding branch
     ]
 
   decision _ bush@Bush{..} act
@@ -137,7 +141,6 @@ instance ( Tag tag, Time t, Var v
     = decision controlFlowDecision branch $ ControlFlowD d
   decision _ branch@Branch{ topPU=pu, .. } (DataFlowDecision src trg)
     = branch{ topPU=decision dataFlowDT pu $ DataFlowD src trg }
-
 
 
 
@@ -158,19 +161,18 @@ naive no bush@Bush{..}
       else bush'
 
 
-
 -- | Мегафункция принятия решения в процессе компиляции. На вход получает ветку процесса и доступные
 -- опции. Выполняет их приоритезацию и выдаёт победителя в качестве результата. В потенциале может
 -- реализовываться с использованием IO, то есть - решение принемает пользователь.
 options2decision branch opts
-  = let bOptions = mapMaybe getBOption opts
-        cfOptions = mapMaybe getCFOption opts
-        dfOptions = mapMaybe getDFOption opts
+  = let bOptions = filterBindingOption opts
+        cfOptions = filterControlFlowOption opts
+        dfOptions = filterDataFlowOption opts
     in case () of
       _ | length dfOptions >= 2 -> Just $ dfDecision dfOptions
-      _ | not $ null bOptions   -> Just $ mkBindDecision branch bOptions
+      _ | not $ null bOptions   -> Just $ option2decision $ fst $ last $ sortOn snd $ zip bOptions $ map (integral . measure opts branch) bOptions
       _ | not $ null dfOptions  -> Just $ dfDecision dfOptions
-      _ | not $ null cfOptions  -> Just $ ControlFlowDecision $ head cfOptions
+      _ | not $ null cfOptions  -> Just $ option2decision $ head cfOptions
       _ -> Nothing
   where
     dfDecision dfOptions = case sortOn start dfOptions of
@@ -181,7 +183,6 @@ options2decision branch opts
 
 
 -- * Работа с потоком данных.
-
 
 dataFlowOptions Branch{..} = sensibleOptions $ filterByControlModel controlFlow $ options dataFlowDT topPU
   where
@@ -235,83 +236,48 @@ finalizeBranch Bush{..}
 finalizeBranch Branch{} = error "finalizeBranch: wrong args."
 
 
+-- data GlobalMetrics
 
--- * Работа с привязкой функциональных блоков к вычислительным блокам.
-
-mkBindDecision Branch{ topPU=net@BusNetwork{..} } bOptions
-  = case sort' $ map prioritize' bOptions of
-      BindOption fb puTitle _ : _ -> BindingDecision fb puTitle
-      _                           -> error "Bind variants is over!"
-  where
-    prioritize' (BindingO fb title)
-      = BindOption{ boFB=fb
-                  , boTitle=title
-                  , boPriority=prioritize net (howManyOptionAllow bOptions) fb title
-                  }
-    sort' = sortBy (flip $ \a b -> boPriority a `compare` boPriority b)
-mkBindDecision _ _ = undefined
-
-
-
-data BindOption title v = BindOption
-  { boFB       :: FB (Parcel v) v
-  , boTitle    :: title
-  , boPriority :: Maybe BindPriority
-  } deriving (Show)
+-- | Метрики для принятия решения компилятором.
+data SpecialMetrics
+  = BindingMetrics -- ^ Решения о привязке функциональных блоков к ВУ.
+    -- | Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
+    -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
+    { critical                             :: Bool
+    -- | Колличество альтернативных привязок для функционального блока.
+    , alternative
+    -- | Привязка данного функционального блока может быть активировано только спустя указанное
+    -- колличество тактов.
+    , restless
+    -- | Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
+    -- количества пересылок.
+    , allowDataFlow :: Int
+    }
+  deriving ( Show, Generic )
 
 
 
--- | Приоритеты операции присваивания.
-data BindPriority
-  -- | Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
-  -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
-  = Critical
-  -- | Для данной привязки есть только один вариант.
-  | Exclusive
-  -- | Привязка данного функционального блока может быть активировано только спустя указанное
-  -- колличество тактов.
-  | Restless Int
-  -- | Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
-  -- количества пересылок.
-  | Input Int
-  deriving (Show, Eq)
-
-instance Ord BindPriority where
-  Critical `compare` _ = GT
-  _ `compare` Critical = LT
-  (Input    a) `compare` (Input    b) = a `compare` b -- чем больше, тем лучше
-  (Input    _) `compare`  _           = GT
-  (Restless _) `compare` (Input    _) = LT
-  (Restless a) `compare` (Restless b) = b `compare` a -- чем меньше, тем лучше
-  (Restless _) `compare`  _           = GT
-  Exclusive `compare` Exclusive = EQ
-  Exclusive `compare` _ = LT
+measure opts Branch{ topPU=net@BusNetwork{..} } (BindingOption fb title) = BindingMetrics
+  { critical=isCritical fb
+  , alternative=length (howManyOptionAllow (filterBindingOption opts) M.! fb)
+  , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind fb (bnPus M.! title)
+  , restless=fromMaybe 0 $ do
+      (_var, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ waitingTimeOfVariables net
+      return $ fromEnum tcFrom
+  }
+measure _ _ _ = undefined
 
 
-
--- | Определить приоретет варианта привязки функционального блока.
-prioritize net@BusNetwork{..} optionCount fb title
-  -- В настоящий момент данная операци приводит к тому, что часть FB перестают быть вычислимыми.
-  | isCritical fb                    = Just Critical
-  | length (optionCount M.! fb) == 1 = Just Exclusive
-
-  | pulls <- filter isTarget $ optionsAfterBind fb pu
-  , not (null pulls)
-  = Just $ Input $ sum $ map (length . variables) pulls
-
-  | Just (_var, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ waitingTimeOfVariables net
-  = Just $ Restless $ fromEnum tcFrom
-
-  | otherwise = Nothing
-  where
-    pu = bnPus M.! title
+integral BindingMetrics{ critical=True } = 2000
+integral BindingMetrics{ alternative=1 } = 100
+integral BindingMetrics{..}              = allowDataFlow * 10 - restless * 2
 
 
 
 -- | Подсчитать, сколько вариантов для привязки функционального блока определено.
 -- Если вариант всего один, может быть стоит его использовать сразу?
 howManyOptionAllow bOptions
-  = foldl ( \st (BindingO fb title) -> M.alter (countOption title) fb st ) (M.fromList []) bOptions
+  = foldl ( \st (BindingOption fb title) -> M.alter (countOption title) fb st ) (M.fromList []) bOptions
   where
     countOption title (Just titles) = Just $ title : titles
     countOption title Nothing       = Just [ title ]
