@@ -19,7 +19,6 @@ module NITTA.Compiler
   , naive
   , NaiveOpt(..)
   , passiveOption2action
-  , options2decision
   , option2decision
   ) where
 
@@ -43,7 +42,6 @@ bindAll fbs pu = either (\l -> error $ "Can't bind FB to PU: " ++ show l) id $ f
   where
     nextBind (Right pu') fb = bind fb pu'
     nextBind (Left r) _     = error r
-
 
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку и наивным
@@ -104,16 +102,9 @@ instance DecisionType (CompilerDT title tag v t) where
     | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
     deriving ( Generic )
 
-
-
-option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
-option2decision (BindingOption fb title) = BindingDecision fb title
-option2decision (DataFlowOption src trg) = networkOption2action $ DataFlowO src trg
-
-
 filterBindingOption opts = [ x | x@BindingOption{} <- opts ]
 filterControlFlowOption opts = [ x | x@ControlFlowOption{} <- opts ]
-filterDataFlowOption opts = [ specializeDataFlowOption x | x@DataFlowOption{} <- opts ]
+filterDataFlowOption opts = [ x | x@DataFlowOption{} <- opts ]
 
 specializeDataFlowOption (DataFlowOption s t) = DataFlowO s t
 specializeDataFlowOption _ = error "Can't specialize non DataFlow option!"
@@ -122,16 +113,29 @@ generalizeDataFlowOption (DataFlowO s t) = DataFlowOption s t
 generalizeControlFlowOption (ControlFlowO x) = ControlFlowOption x
 generalizeBindingOption (BindingO s t) = BindingOption s t
 
+
+
 instance ( Tag tag, Time t, Var v
          ) => DecisionProblem (CompilerDT String tag v (TaggedTime tag t))
                    CompilerDT (BranchedProcess String tag v (TaggedTime tag t))
          where
   options _ Bush{..} = options compiler currentBranch
-  options _ branch = concat
-    [ map generalizeDataFlowOption $ dataFlowOptions branch
+  options _ branch@Branch{..} = concat
+    [ map generalizeDataFlowOption dataFlowOptions
     , map generalizeControlFlowOption $ options controlFlowDecision branch
     , map generalizeBindingOption $ options binding branch
     ]
+    where
+      dataFlowOptions = sensibleOptions $ filterByControlModel controlFlow $ options dataFlowDT topPU
+      filterByControlModel controlModel opts
+        = let cfOpts = allowByControlFlow controlModel
+          in map (\t@DataFlowO{..} -> t
+                  { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `elem` cfOpts
+                                                                      then desc
+                                                                      else Nothing)
+                                                ) $ M.assocs dfoTargets
+                  }) opts
+      sensibleOptions = filter $ \DataFlowO{..} -> any isJust $ M.elems dfoTargets
 
   decision _ bush@Bush{..} act
     = bush{ currentBranch=decision compiler currentBranch act }
@@ -143,16 +147,34 @@ instance ( Tag tag, Time t, Var v
     = branch{ topPU=decision dataFlowDT pu $ DataFlowD src trg }
 
 
+option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
+option2decision (BindingOption fb title) = BindingDecision fb title
+option2decision (DataFlowOption src trg)
+  = let pushTimeConstrains = map snd $ catMaybes $ M.elems trg
+        predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
+        pullStart    = maximum $ (snd src^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
+        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd src : pushTimeConstrains
+        pullEnd = pullStart + pullDuration - 1
+        pushStart = pullStart + 1
+        mkEvent (from_, tc@TimeConstrain{..})
+          = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
+        pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
+    in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
+
+
 
 ---------------------------------------------------------------------
 -- * Наивный, но полноценный компилятор.
 
-
 naive NaiveOpt{..} branch@Branch{}
-  = let d = options2decision branch $ options compiler branch
-    in case d of
-      Just d' -> decision compiler branch d'
-      Nothing -> branch
+  = if null prioritizedOpts
+    then branch
+    else decision compiler branch $ option2decision $ last prioritizedOpts
+  where
+    opts = options compiler branch
+    gm = measureG opts branch
+    measuredOpts = zip opts $ map (integral gm . measure opts branch) opts
+    prioritizedOpts = map fst $ sortOn snd measuredOpts
 
 naive no bush@Bush{..}
   = let bush' = bush{ currentBranch=naive no currentBranch }
@@ -160,55 +182,69 @@ naive no bush@Bush{..}
       then finalizeBranch bush'
       else bush'
 
+data GlobalMetrics
+  = GlobalMetrics
+    { bindingOptions, dataFlowOptions, controlFlowOptions :: Int
+    } deriving ( Show, Generic )
 
--- | Мегафункция принятия решения в процессе компиляции. На вход получает ветку процесса и доступные
--- опции. Выполняет их приоритезацию и выдаёт победителя в качестве результата. В потенциале может
--- реализовываться с использованием IO, то есть - решение принемает пользователь.
-options2decision branch opts
-  = let bOptions = filterBindingOption opts
-        cfOptions = filterControlFlowOption opts
-        dfOptions = filterDataFlowOption opts
-    in case () of
-      _ | length dfOptions >= 2 -> Just $ dfDecision dfOptions
-      _ | not $ null bOptions   -> Just $ option2decision $ fst $ last $ sortOn snd $ zip bOptions $ map (integral . measure opts branch) bOptions
-      _ | not $ null dfOptions  -> Just $ dfDecision dfOptions
-      _ | not $ null cfOptions  -> Just $ option2decision $ head cfOptions
-      _ -> Nothing
-  where
-    dfDecision dfOptions = case sortOn start dfOptions of
-      v : _ -> networkOption2action v
-      _     -> error "No variants!"
-    start opt = opt^.at.avail.infimum
+measureG opts _
+  = GlobalMetrics{ bindingOptions=length $ filterBindingOption opts
+                 , dataFlowOptions=length $ filterDataFlowOption opts
+                 , controlFlowOptions=length $ filterControlFlowOption opts
+                 }
+
+-- | Метрики для принятия решения компилятором.
+data SpecialMetrics
+  = BindingMetrics -- ^ Решения о привязке функциональных блоков к ВУ.
+    -- | Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
+    -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
+    { critical :: Bool
+    -- | Колличество альтернативных привязок для функционального блока.
+    , alternative
+    -- | Привязка данного функционального блока может быть активировано только спустя указанное
+    -- колличество тактов.
+    , restless
+    -- | Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
+    -- количества пересылок.
+    , allowDataFlow :: Int
+    }
+  | DataFlowMetrics { waitTime :: Int }
+  | ControlFlowMetrics
+  deriving ( Show, Generic )
 
 
+measure _ Bush{} _ = error "Can't measure Bush!"
+measure opts Branch{ topPU=net@BusNetwork{..} } (BindingOption fb title) = BindingMetrics
+  { critical=isCritical fb
+  , alternative=length (howManyOptionAllow (filterBindingOption opts) M.! fb)
+  , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind fb (bnPus M.! title)
+  , restless=fromMaybe 0 $ do
+      (_var, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ waitingTimeOfVariables net
+      return $ fromEnum tcFrom
+  }
+measure _ _ ControlFlowOption{} = ControlFlowMetrics
+measure _ _ opt@DataFlowOption{} = DataFlowMetrics
+  { waitTime=fromEnum ((specializeDataFlowOption opt)^.at.avail.infimum)
+  }
 
--- * Работа с потоком данных.
 
-dataFlowOptions Branch{..} = sensibleOptions $ filterByControlModel controlFlow $ options dataFlowDT topPU
-  where
-    filterByControlModel controlModel opts
-      = let cfOpts = allowByControlFlow controlModel
-        in map (\t@DataFlowO{..} -> t
-                { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `elem` cfOpts
-                                                                     then desc
-                                                                     else Nothing)
-                                              ) $ M.assocs dfoTargets
-                }) opts
-    sensibleOptions = filter $ \DataFlowO{..} -> any isJust $ M.elems dfoTargets
-
-dataFlowOptions _ = error "Can't generate dataflow options for BranchingInProgress."
+integral GlobalMetrics{..} DataFlowMetrics{..}
+  | dataFlowOptions >= 2                                   = 10000 + 200 - waitTime
+integral GlobalMetrics{..} BindingMetrics{ critical=True } = 2000
+integral GlobalMetrics{..} BindingMetrics{ alternative=1 } = 500
+integral GlobalMetrics{..} BindingMetrics{..}              = 200 + allowDataFlow * 10 - restless * 2
+integral GlobalMetrics{..} DataFlowMetrics{..}             = 200 - waitTime
+integral GlobalMetrics{..} _                               = 0
 
 
 
 -- * Работа с потоком управления.
 
 
-
 -- | Функция применяется к кусту и позволяет определить, осталась ли работа в текущей ветке или нет.
 isCurrentBranchOver Bush{ currentBranch=branch@Branch{..} }
-  = let bOptions = options binding branch
-        dfOptions = dataFlowOptions branch
-    in null bOptions && null dfOptions
+  | opts <- options compiler branch
+  = null $ filterBindingOption opts ++ filterDataFlowOption opts
 isCurrentBranchOver _ = False
 
 
@@ -234,43 +270,6 @@ finalizeBranch Bush{..}
           }
       }
 finalizeBranch Branch{} = error "finalizeBranch: wrong args."
-
-
--- data GlobalMetrics
-
--- | Метрики для принятия решения компилятором.
-data SpecialMetrics
-  = BindingMetrics -- ^ Решения о привязке функциональных блоков к ВУ.
-    -- | Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
-    -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
-    { critical                             :: Bool
-    -- | Колличество альтернативных привязок для функционального блока.
-    , alternative
-    -- | Привязка данного функционального блока может быть активировано только спустя указанное
-    -- колличество тактов.
-    , restless
-    -- | Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
-    -- количества пересылок.
-    , allowDataFlow :: Int
-    }
-  deriving ( Show, Generic )
-
-
-
-measure opts Branch{ topPU=net@BusNetwork{..} } (BindingOption fb title) = BindingMetrics
-  { critical=isCritical fb
-  , alternative=length (howManyOptionAllow (filterBindingOption opts) M.! fb)
-  , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind fb (bnPus M.! title)
-  , restless=fromMaybe 0 $ do
-      (_var, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ waitingTimeOfVariables net
-      return $ fromEnum tcFrom
-  }
-measure _ _ _ = undefined
-
-
-integral BindingMetrics{ critical=True } = 2000
-integral BindingMetrics{ alternative=1 } = 100
-integral BindingMetrics{..}              = allowDataFlow * 10 - restless * 2
 
 
 
@@ -300,8 +299,6 @@ optionsAfterBind fb pu = case bind fb pu of
     act `optionOf` fb' = not $ null (variables act `intersect` variables fb')
 
 
-
-
 -- * Утилиты
 
 passiveOption2action d@EndpointO{..}
@@ -310,20 +307,6 @@ passiveOption2action d@EndpointO{..}
         -- граничные значения.
         b = d^.at.avail.infimum + d^.at.dur.infimum - 1
     in EndpointD epoType (a ... b)
-
-networkOption2action (DataFlowO src trg)
-  = let pushTimeConstrains = map snd $ catMaybes $ M.elems trg
-        predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
-        pullStart    = maximum $ (snd src^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
-        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd src : pushTimeConstrains
-        pullEnd = pullStart + pullDuration - 1
-        pushStart = pullStart + 1
-
-        mkEvent (from_, tc@TimeConstrain{..})
-          = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
-        pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
-    in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
-
 
 inBranchSteps Branch{..} = whatsHappenWith branchTag topPU
 inBranchSteps Bush{}     = error "inBranchSteps: wrong args"
