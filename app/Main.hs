@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -8,29 +9,35 @@
 module Main where
 
 import           Control.Monad
-import qualified Data.Array               as A
+import qualified Data.Array                  as A
 import           Data.Default
-import qualified Data.Map                 as M
+import qualified Data.Map                    as M
 import           Data.Maybe
+import           Data.Monoid
 import           Data.Proxy
-import qualified Data.String.Utils        as U
+import qualified Data.String.Utils           as U
 import           Data.Typeable
 import           Debug.Trace
 import           Network.Wai.Handler.Warp
+import           Network.Wai.Middleware.Cors (simpleCors)
 import           NITTA.API
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.Flows
-import qualified NITTA.FunctionBlocks     as FB
-import qualified NITTA.ProcessUnits.Accum as A
-import qualified NITTA.ProcessUnits.Fram  as FR
-import qualified NITTA.ProcessUnits.Shift as S
-import qualified NITTA.ProcessUnits.SPI   as SPI
+import qualified NITTA.FunctionBlocks        as FB
+import qualified NITTA.ProcessUnits.Accum    as A
+import qualified NITTA.ProcessUnits.Fram     as FR
+import qualified NITTA.ProcessUnits.Shift    as S
+import qualified NITTA.ProcessUnits.SPI      as SPI
 import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
 import           NITTA.Utils
-import           System.FilePath.Posix    (joinPath)
+import           Servant.JS
+import qualified Servant.JS                  as SJS
+import qualified Servant.JS.Angular          as NG
+import           System.Directory
+import           System.FilePath.Posix       (joinPath, (</>))
 import           Text.StringTemplate
 
 
@@ -147,8 +154,16 @@ main = do
   --       , cntxInputs=M.fromList [("a", [1, 2, 3])]
   --       } :: Cntx String Int)
   -- simulateSPI 3
+  let prefix = "import axios from 'axios';\n\
+                \var api = {}\n\
+                \export default api;"
+  let axios' = axiosWith defAxiosOptions defCommonGeneratorOptions{ urlPrefix="http://localhost:8080"
+                                                                  , SJS.moduleName="api"
+                                                                  }
+  createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
+  writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
   putStrLn "Server start on 8080..."
-  app root >>= run 8080
+  app root >>= run 8080 . simpleCors
 
 
 test pu cntx = do

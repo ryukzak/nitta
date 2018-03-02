@@ -64,10 +64,13 @@ executable nitta-exe
                      , base
                      , containers
                      , data-default
+                     , directory
                      , filepath
                      , HStringTemplate
                      , MissingH
                      , nitta
+                     , servant-js 
+                     , wai-cors
                      , warp
   default-language:    Haskell2010
 
