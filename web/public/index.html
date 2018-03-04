@@ -28,20 +28,8 @@
       You need to enable JavaScript to run this app.
     </noscript>
 
-    <div class="row">
-      <div class="columns">
-        <nav aria-label="You are here:" role="navigation">
-          <ul class="breadcrumbs">
-            <li><a href="#0">Home</a></li>
-            <li><a href="#0">Features</a></li>
-            <li class="disabled">Gene Splicing</li>
-            <li>
-              <span class="show-for-sr">Current: </span> Cloning
-            </li>
-          </ul>
-        </nav>
-        <div id="root"></div>
-      </div>
+    <div class="grid-container">
+      <div id="root"></div>
     </div>
 
     <!--
@@ -57,7 +45,7 @@
     <script src="%PUBLIC_URL%/vendor/jquery.js"></script>
     <script src="%PUBLIC_URL%/vendor/what-input.js"></script>
     <script src="%PUBLIC_URL%/vendor/foundation.min.js"></script>
-    <script type="text/javascript"></script>
+    <script type="text/javascript">$(document).foundation()</script>
 
   </body>
 </html>

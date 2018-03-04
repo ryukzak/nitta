@@ -4,55 +4,94 @@ import api from './gen/nitta-api.js';
 
 class App extends Component {
 
-  constructor () {
+  constructor() {
     super()
-    this.state = { synthesis: [] }
-    this.handleClick = this.handleClick.bind(this)
-    this.handleClick()
+    this.state = { synthesisList: [] 
+                 , path: []
+                 , synthesis: null 
+                 }
+    this.getAllSynthesis = this.getAllSynthesis.bind(this)
+    this.getAllSynthesis()
   }
 
-
-  handleClick () {
+  getAllSynthesis() {
     api.getSynthesis()
-    .then(response => this.setState({ synthesis: response.data }))
+    .then(response => this.setState({ synthesisList: Object.keys(response.data)
+                                    , path: []
+                                    , synthesis: null 
+                                    }))
     .catch(err => console.log(err))
+  }
+
+  getSynthesis(sname) {
+    api.getSynthesisBySid(sname)
+    .then( response => {
+      this.setState({ synthesis: response.data
+                    , path: [ sname ]
+                    })
+    } )
+    .catch( err => console.log(err) )
   }
 
   render() {
     return (
-      <div className='button__container'>
-        <button className='button' onClick={this.handleClick}>Click Me</button>
-        Synthesis:
-        <ul>
-          { Object.keys(this.state.synthesis).map( k => <li key={k}> <Synthesis name={ k } parent={ this } /> </li> ) }
-        </ul>
-        <pre>
-          { this.state.data }
-        </pre>
+      <div>
+        <nav aria-label="You are here:" role="navigation">
+          <ul className="breadcrumbs">
+            <li>Project</li>
+            { this.state.path.map( (v, i) => <li key={ i }> { v } </li> ) }
+          </ul>
+        </nav>        
+
+        <div className="tiny button-group">
+          <a className="button primary" onClick={ this.getAllSynthesis }>Refresh</a>
+          { this.state.synthesisList.map( (sname, i) => 
+            <SynthesisLink key={ i } sname={ sname } onClick={ () => this.getSynthesis(sname) } /> ) }
+        </div>
+
+        <Synthesis data={ this.state.synthesis } app={ this } />
       </div>
-    );
+    )
   }
 }
 
+function SynthesisLink(props) {
+  return (
+    <a className="button tiny secondary" href="#" onClick={ props.onClick }> { props.sname } </a>
+  )
+}
 
+function Synthesis(props) {
+  var data = props.data
+  if (props.data)
+    return (
+      <div>
+        <dl>
+          <dt>Parent:</dt>
+          <dd> { data.parent ? ( <SynthesisLink sname={ data.parent[0] } onClick={ () => props.app.getSynthesis( data.parent[0] ) } />  )
+                             : ( <div> - </div> ) } </dd>
+          <dt>Childs:</dt>
+          <dd> 
+            <div className="tiny button-group">
+              { data.childs.map( (k, i) => <SynthesisLink key={ i } sname={ k } onClick={ () => props.app.getSynthesis(k) }/> ) }
+            </div>
+          </dd>
+          <dt>Config (may vari from step to step):</dt>
+          <dd>
+            <pre>{ JSON.stringify(data.config, null, 2) }</pre>
+          </dd>
+          <dt>States:</dt>
+          <dd>
+            <div className="tiny button-group">
+              { data.states.map( (st, i) => <SynthesisLink key={ i } sname={ i } /> ) }
+            </div>
+          </dd>
+        </dl>
 
-class Synthesis extends Component {
-  constructor (props) {
-    super()
-    this.state = { name: props.name, parent: props.parent }
-    this.handleClick = this.handleClick.bind(this);
-  }
-
-  handleClick () {
-    api.getSynthesisBySid(this.state.name)
-    .then(response => this.state.parent.setState({ data: JSON.stringify(response.data, null, 2) }))
-    .catch(err => console.log(err))
-  }
-  
-  render() {
-    console.log(2, this.props.name)
-    return ( <a onClick={this.handleClick}> { this.props.name } </a> )
-  }
+        <pre> { JSON.stringify(data, null, 2) } </pre>
+      </div>
+    )
+  else return <pre> SYNTHESIS NOT SELECTED </pre>
 }
 
 export default App;
