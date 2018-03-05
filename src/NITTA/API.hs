@@ -33,8 +33,7 @@ import qualified STMContainers.Map      as M
 data Synthesis
   = Synthesis{ parent :: Maybe (String, Int) -- ^ (name, tick)
              , childs :: [String]
-             , config :: NaiveOpt
-             , states :: [BranchedProcess String String String (TaggedTime String Int)]
+             , states :: [ST]
              } deriving ( Generic )
 
 
@@ -44,12 +43,12 @@ instance ToJSON Synthesis
 instance Default Synthesis where
   def = Synthesis{ parent=Nothing
                  , childs=[]
-                 , config=def
                  , states=[]
                  }
 
 type T = TaggedTime String Int
-type ST = BranchedProcess String String String T
+type ST = CompilerStep String String String (TaggedTime String Int)
+instance ToJSON ST
 
 
 
@@ -78,29 +77,31 @@ synthesisServer state
       when ( isNothing parent ) $ throwSTM err404{ errBody = "Parent not found." }
       let Just parent'@Synthesis{ childs=cs } = parent
       M.insert parent'{ childs=sid:cs } pid state
-      M.insert def{ parent=Just (pid, did) } sid state
+      M.insert parent{ parent=Just (pid, did)
+                     -- TODO: crop states by did
+                     } sid state
 
 
 
 type StepsAPI = "steps" :>
      ( Get '[JSON] [ST]
-  -- :<|> "last" :> Get '[JSON] ST
      -- step - необходимо обеспечить сохранность индексов для разных веток синтеза.
   :<|> Capture "step" Int :> Get '[JSON] ST
   :<|> Capture "step" Int :> QueryParam "manual" Int :> Post '[JSON] ST
   :<|> Capture "step" Int :> "config" :> Get '[JSON] NaiveOpt
   :<|> Capture "step" Int :> "options" :> Get '[JSON] [Option (CompilerDT String String String T)]
+  -- :<|> Capture "step" Int :> "options" :> Capture "oid" Int :> "metrics" :> Get '[JSON] [Option (CompilerDT String String String T)]
+  -- :<|> Capture "step" Int :> "options" :> QueryParam "sort" Int :> Get '[JSON] [Option (CompilerDT String String String T)]
   :<|> Capture "step" Int :> "decisions" :> Get '[JSON] [Decision (CompilerDT String String String T)]
      )
 
 stepsServer state sid
      = ( reverse . states <$> getSynthesis state sid )
-  -- :<|> ( head . states <$> getSynthesis state sid )
   :<|> getStep
   :<|> postStep
-  :<|> ( \_step -> config <$> getSynthesis state sid )
-  :<|> ( \step -> options compiler <$> getStep step )
-  :<|> ( \step -> map option2decision . options compiler <$> getStep step )
+  :<|> ( fmap config . getStep )
+  :<|> ( fmap (options compiler) . getStep )
+  :<|> ( fmap (map option2decision . options compiler) <$> getStep )
   where
     getStep = liftSTM . getStep'
     getStep' step = do
@@ -112,7 +113,7 @@ stepsServer state sid
     autoPostStep step = do
       s@Synthesis{..} <- getSynthesis' state sid
       unless (length states <= step) $ throwSTM err409{ errBody="Steps already exist." }
-      let states' = foldl (\(x:xs) _ -> naive config x : x : xs) states [length states .. step]
+      let states' = foldl (\(x:xs) _ -> mkStep x : x : xs) states [length states .. step]
       M.insert s{ states=states' } sid state
       return $ head states'
     manualPostStep step d = do
@@ -123,6 +124,7 @@ stepsServer state sid
       let s' = s{ states=st' : states }
       M.insert s' sid state
       return st'
+    mkStep st = fromMaybe (error "Synthesis is over.") $ naive' st
 
 
 liftSTM stm = liftIO (atomically $ catchSTM (Right <$> stm) (return . Left)) >>= either throwError return

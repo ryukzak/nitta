@@ -163,7 +163,7 @@ main = do
   createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
   writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
   putStrLn "Server start on 8080..."
-  app root >>= run 8080 . simpleCors
+  app def{ state=root } >>= run 8080 . simpleCors
 
 
 test pu cntx = do

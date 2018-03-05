@@ -8,7 +8,8 @@ class App extends Component {
     super()
     this.state = { synthesisList: [] 
                  , path: []
-                 , synthesis: null 
+                 , synthesis: null
+                 , step: null
                  }
     this.getAllSynthesis = this.getAllSynthesis.bind(this)
     this.getAllSynthesis()
@@ -28,10 +29,22 @@ class App extends Component {
     .then( response => {
       this.setState({ synthesis: response.data
                     , path: [ sname ]
+                    , step: null
                     })
     } )
     .catch( err => console.log(err) )
   }
+
+  getStep(sname, did) {
+    api.getSynthesisBySidStepsByStep(sname, did)
+    .then( response => {
+      this.setState({ step: response.data
+                    , path: [ sname, did ]
+                    })
+    } )
+    .catch( err => console.log(err) )
+  }
+
 
   render() {
     return (
@@ -49,7 +62,7 @@ class App extends Component {
             <SynthesisLink key={ i } sname={ sname } onClick={ () => this.getSynthesis(sname) } /> ) }
         </div>
 
-        <Synthesis data={ this.state.synthesis } app={ this } />
+        <View synthesisData={ this.state.synthesis } stepData={ this.state.step } app={ this } />
       </div>
     )
   }
@@ -61,37 +74,44 @@ function SynthesisLink(props) {
   )
 }
 
-function Synthesis(props) {
-  var data = props.data
-  if (props.data)
-    return (
-      <div>
-        <dl>
-          <dt>Parent:</dt>
-          <dd> { data.parent ? ( <SynthesisLink sname={ data.parent[0] } onClick={ () => props.app.getSynthesis( data.parent[0] ) } />  )
-                             : ( <div> - </div> ) } </dd>
-          <dt>Childs:</dt>
-          <dd> 
-            <div className="tiny button-group">
-              { data.childs.map( (k, i) => <SynthesisLink key={ i } sname={ k } onClick={ () => props.app.getSynthesis(k) }/> ) }
-            </div>
-          </dd>
-          <dt>Config (may vari from step to step):</dt>
-          <dd>
-            <pre>{ JSON.stringify(data.config, null, 2) }</pre>
-          </dd>
-          <dt>States:</dt>
-          <dd>
-            <div className="tiny button-group">
-              { data.states.map( (st, i) => <SynthesisLink key={ i } sname={ i } /> ) }
-            </div>
-          </dd>
-        </dl>
-
-        <pre> { JSON.stringify(data, null, 2) } </pre>
-      </div>
-    )
-  else return <pre> SYNTHESIS NOT SELECTED </pre>
+function View(props) {
+  var sdata = props.synthesisData
+  return (
+    <div>
+      { (props.synthesisData)
+        ? <div>
+            <dl>
+              <dt>Parent:</dt>
+              <dd> { sdata.parent ? ( <SynthesisLink sname={ sdata.parent[0] } onClick={ () => props.app.getSynthesis( sdata.parent[0] ) } />  )
+                                 : ( <div> - </div> ) } </dd>
+              <dt>Childs:</dt>
+              <dd> 
+                <div className="tiny button-group">
+                  { sdata.childs.map( (k, i) => <SynthesisLink key={ i } sname={ k } onClick={ () => props.app.getSynthesis(k) }/> ) }
+                </div>
+              </dd>
+              <dt>Config (may vary from step to step):</dt>
+              <dd>
+                <pre>{ JSON.stringify(sdata.config, null, 2) }</pre>
+              </dd>
+              <dt>States:</dt>
+              <dd>
+                <div className="tiny button-group">
+                  { sdata.states.map( (st, i) => <SynthesisLink key={ i } sname={ i } onClick={ () => props.app.getStep(props.app.state.path[0], i) } /> ) }
+                </div>
+              </dd>
+            </dl>
+          </div>
+        : <pre> SYNTHESIS NOT SELECTED </pre>
+      }
+      { ( props.stepData )
+        ? <pre>
+            { JSON.stringify(props.stepData, null, 2) }
+          </pre>
+        : <pre> STEP NOT SELECTED </pre>
+      }
+    </div>
+  )
 }
 
 export default App;

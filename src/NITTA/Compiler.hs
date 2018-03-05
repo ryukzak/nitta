@@ -15,11 +15,13 @@ module NITTA.Compiler
   , bindAllAndNaiveSchedule
   , compiler
   , CompilerDT
+  , CompilerStep(..)
   , isSchedulingComplete
   , naive
+  , naive'
   , NaiveOpt(..)
-  , passiveOption2action
   , option2decision
+  , passiveOption2action
   ) where
 
 import           Control.Arrow    (second)
@@ -138,7 +140,10 @@ instance ( Tag tag, Time t, Var v
       sensibleOptions = filter $ \DataFlowO{..} -> any isJust $ M.elems dfoTargets
 
   decision _ bush@Bush{..} act
-    = bush{ currentBranch=decision compiler currentBranch act }
+    = let bush' = bush{ currentBranch=decision compiler currentBranch act }
+      in if isCurrentBranchOver bush'
+        then finalizeBranch bush'
+        else bush'
   decision _ branch (BindingDecision fb title)
     = decision binding branch $ BindingD fb title
   decision _ branch (ControlFlowDecision d)
@@ -166,21 +171,47 @@ option2decision (DataFlowOption src trg)
 ---------------------------------------------------------------------
 -- * Наивный, но полноценный компилятор.
 
-naive NaiveOpt{..} branch@Branch{}
-  = if null prioritizedOpts
-    then branch
-    else decision compiler branch $ option2decision $ last prioritizedOpts
-  where
-    opts = options compiler branch
-    gm = measureG opts branch
-    measuredOpts = zip opts $ map (integral gm . measure opts branch) opts
-    prioritizedOpts = map fst $ sortOn snd measuredOpts
+data CompilerStep title tag v t
+  = CompilerStep
+    { state        :: BranchedProcess title tag v t
+    , config       :: NaiveOpt
+    , lastDecision :: Maybe (Decision (CompilerDT title tag v t))
+    }
+  deriving ( Generic )
 
-naive no bush@Bush{..}
-  = let bush' = bush{ currentBranch=naive no currentBranch }
-    in if isCurrentBranchOver bush'
-      then finalizeBranch bush'
-      else bush'
+instance Default (CompilerStep title tag v t) where
+  def = CompilerStep{ state=undefined
+                    , config=def
+                    , lastDecision=Nothing
+                    }
+
+
+instance ( Tag tag, Time t, Var v
+         ) => DecisionProblem (CompilerDT String tag v (TaggedTime tag t))
+                   CompilerDT (CompilerStep String tag v (TaggedTime tag t))
+         where
+  options proxy CompilerStep{..} = options proxy state
+  decision proxy st@CompilerStep{..} act = st{ state=decision proxy state act }
+
+naive' st@CompilerStep{..}
+  = if null prioritizedOpts
+    then Nothing
+    else Just st{ state=decision compiler state d
+                , lastDecision=Just d
+                }
+  where
+    opts = options compiler state
+    gm = measureG opts state
+    measuredOpts = zip opts $ map (integral gm . measure opts state) opts
+    prioritizedOpts = map fst $ sortOn snd measuredOpts
+    d = option2decision $ last prioritizedOpts
+
+naive opt branch
+  = let st = CompilerStep branch opt Nothing
+        CompilerStep{ state=st' } = fromMaybe st $ naive' st
+    in st'
+
+
 
 data GlobalMetrics
   = GlobalMetrics
