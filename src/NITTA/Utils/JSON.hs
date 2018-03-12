@@ -96,3 +96,7 @@ instance ( ToJSONKey title, ToJSON title, Title title
              -- , bnPus                :: M.Map title spu
              , "processUnits" .= M.keys bnPus
              ]
+
+
+instance ToJSON SpecialMetrics
+instance ToJSON GlobalMetrics

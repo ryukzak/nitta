@@ -21,7 +21,10 @@ module NITTA.Compiler
   , naive'
   , NaiveOpt(..)
   , option2decision
+  , optionsWithMetrics
   , passiveOption2action
+  , GlobalMetrics(..)
+  , SpecialMetrics(..)
   ) where
 
 import           Control.Arrow    (second)
@@ -193,18 +196,26 @@ instance ( Tag tag, Time t, Var v
   options proxy CompilerStep{..} = options proxy state
   decision proxy st@CompilerStep{..} act = st{ state=decision proxy state act }
 
+
+optionsWithMetrics CompilerStep{..}
+  = sortOn (\(x, _, _, _, _) -> x) $ map measure' opts
+  where
+    opts = options compiler state
+    gm = measureG opts state
+    measure' o
+      = let m = measure opts state o
+        in ( integral gm m, gm, m, o, option2decision o )
+
 naive' st@CompilerStep{..}
-  = if null prioritizedOpts
+  = if null opts
     then Nothing
     else Just st{ state=decision compiler state d
                 , lastDecision=Just d
                 }
   where
-    opts = options compiler state
-    gm = measureG opts state
-    measuredOpts = zip opts $ map (integral gm . measure opts state) opts
-    prioritizedOpts = map fst $ sortOn snd measuredOpts
-    d = option2decision $ last prioritizedOpts
+    opts = optionsWithMetrics st
+    (_, _, _, _, d) = last opts
+
 
 naive opt branch
   = let st = CompilerStep branch opt Nothing

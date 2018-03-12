@@ -77,9 +77,9 @@ synthesisServer state
       when ( isNothing parent ) $ throwSTM err404{ errBody = "Parent not found." }
       let Just parent'@Synthesis{ childs=cs } = parent
       M.insert parent'{ childs=sid:cs } pid state
-      M.insert parent{ parent=Just (pid, did)
-                     -- TODO: crop states by did
-                     } sid state
+      M.insert parent'{ parent=Just (pid, did)
+                      -- TODO: crop states by did
+                      } sid state
 
 
 
@@ -93,6 +93,13 @@ type StepsAPI = "steps" :>
   -- :<|> Capture "step" Int :> "options" :> Capture "oid" Int :> "metrics" :> Get '[JSON] [Option (CompilerDT String String String T)]
   -- :<|> Capture "step" Int :> "options" :> QueryParam "sort" Int :> Get '[JSON] [Option (CompilerDT String String String T)]
   :<|> Capture "step" Int :> "decisions" :> Get '[JSON] [Decision (CompilerDT String String String T)]
+  :<|> Capture "step" Int :> "decisions" :> Get '[JSON] [ ( Int
+                                                          , GlobalMetrics
+                                                          , SpecialMetrics
+                                                          , Option (CompilerDT String String String T)
+                                                          , Decision (CompilerDT String String String T)
+                                                          )
+                                                        ]
      )
 
 stepsServer state sid
@@ -102,6 +109,7 @@ stepsServer state sid
   :<|> ( fmap config . getStep )
   :<|> ( fmap (options compiler) . getStep )
   :<|> ( fmap (map option2decision . options compiler) <$> getStep )
+  :<|> ( fmap optionsWithMetrics <$> getStep )
   where
     getStep = liftSTM . getStep'
     getStep' step = do
