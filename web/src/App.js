@@ -105,9 +105,34 @@ function View(props) {
         : <pre> SYNTHESIS NOT SELECTED </pre>
       }
       { ( props.stepData )
-        ? <pre>
-            { JSON.stringify(props.stepData, null, 2) }
-          </pre>
+        ? <div>
+            <div className="tiny primary button-group">
+              {/* <SynthesisLink sname="fork" onClick={ () => props.app.getStep(props.app.state.path[0]) } /> */}
+              {/* <SynthesisLink sname="root" onClick={ () => props.app.getStep(props.app.state.path[0]) } /> */}
+              {/* <SynthesisLink sname="decisions" onClick={ () => props.app.getStep(props.app.state.path[0]) } /> */}
+              <SynthesisLink sname="options" onClick={ 
+                () => { 
+                  api.getSynthesisBySidStepsByStepOptions( props.app.state.path[0], props.app.state.path[1] )
+                  .then( response => props.app.setState( { step: response.data, path: [ props.app.state.path[0]
+                                                                                      , props.app.state.path[1]
+                                                                                      , "options"
+                                                                                      ] 
+                                                         } ) )
+                } } />
+              <SynthesisLink sname="mk_decision" onClick={ 
+                () => {
+                  api.postSynthesisBySidStepsByStep(props.app.state.path[0], props.app.state.path[1] + 1, -1)
+                  .then( response => { 
+                    props.app.getSynthesis(props.app.state.path[0]) 
+                    props.app.getStep(props.app.state.path[0], props.app.state.path[1] + 1) 
+                  } )
+                  .catch( err => alert(err))
+                } } />
+            </div>
+            <pre>
+              { JSON.stringify(props.stepData, null, 2) }
+            </pre>
+          </div>
         : <pre> STEP NOT SELECTED </pre>
       }
     </div>

@@ -32,7 +32,7 @@ import qualified STMContainers.Map      as M
 
 data Synthesis
   = Synthesis{ parent :: Maybe (String, Int) -- ^ (name, tick)
-             , childs :: [String]
+             , childs :: [String] -- TODO: привязка к шагу процесса синтеза, а не к названию синтеза.
              , states :: [ST]
              } deriving ( Generic )
 
@@ -89,11 +89,11 @@ type StepsAPI = "steps" :>
   :<|> Capture "step" Int :> Get '[JSON] ST
   :<|> Capture "step" Int :> QueryParam "manual" Int :> Post '[JSON] ST
   :<|> Capture "step" Int :> "config" :> Get '[JSON] NaiveOpt
-  :<|> Capture "step" Int :> "options" :> Get '[JSON] [Option (CompilerDT String String String T)]
+  -- :<|> Capture "step" Int :> "options0" :> Get '[JSON] [Option (CompilerDT String String String T)]
   -- :<|> Capture "step" Int :> "options" :> Capture "oid" Int :> "metrics" :> Get '[JSON] [Option (CompilerDT String String String T)]
   -- :<|> Capture "step" Int :> "options" :> QueryParam "sort" Int :> Get '[JSON] [Option (CompilerDT String String String T)]
   :<|> Capture "step" Int :> "decisions" :> Get '[JSON] [Decision (CompilerDT String String String T)]
-  :<|> Capture "step" Int :> "decisions" :> Get '[JSON] [ ( Int
+  :<|> Capture "step" Int :> "options" :> Get '[JSON] [ ( Int
                                                           , GlobalMetrics
                                                           , SpecialMetrics
                                                           , Option (CompilerDT String String String T)
@@ -107,7 +107,7 @@ stepsServer state sid
   :<|> getStep
   :<|> postStep
   :<|> ( fmap config . getStep )
-  :<|> ( fmap (options compiler) . getStep )
+  -- :<|> ( fmap (options compiler) . getStep )
   :<|> ( fmap (map option2decision . options compiler) <$> getStep )
   :<|> ( fmap optionsWithMetrics <$> getStep )
   where
@@ -116,8 +116,9 @@ stepsServer state sid
       steps <- states <$> getSynthesis' state sid
       unless (length steps > step) $ throwSTM err409{ errBody="Step not exists." }
       return $ steps !! step
-    postStep step Nothing  = liftSTM $ autoPostStep step
-    postStep step (Just d) = liftSTM $ manualPostStep step d
+    postStep step Nothing     = liftSTM $ autoPostStep step
+    postStep step (Just (-1)) = liftSTM $ autoPostStep step
+    postStep step (Just d)    = liftSTM $ manualPostStep step d
     autoPostStep step = do
       s@Synthesis{..} <- getSynthesis' state sid
       unless (length states <= step) $ throwSTM err409{ errBody="Steps already exist." }
