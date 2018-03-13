@@ -56,9 +56,8 @@ TODO: Каким образом необходимо работать со вн�
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
   , FSet(..)
-  , Signal(..)
-  )
-where
+  , Link(..)
+  ) where
 
 import           Control.Monad         ((>=>))
 import           Data.Array
@@ -79,7 +78,6 @@ import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval      ((...))
-import           Prelude               hiding (last)
 
 
 
@@ -450,19 +448,32 @@ cellLoad (_addr, Cell{..}) = sum [ if input == UsedOrBlocked then -2 else 0
 
 instance ( Var v, Time t ) => Controllable (Fram v t) where
 
-  data Signal (Fram v t)
-    = OE
-    | WR
-    | ADDR Int
+  data Microcode (Fram v t)
+    = Microcode{ oeSignal :: Bool
+               , wrSignal :: Bool
+               , addrSignal :: Maybe Int
+               }
     deriving (Show, Eq, Ord)
-
-  data Flag (Fram v t)
 
   data Instruction (Fram v t)
     = Nop
     | Load Int
     | Save Int
     deriving (Show)
+
+instance Connected (Fram v t) i where
+  data Link (Fram v t) i
+    = Link { oe, wr :: i, addr :: [i] } deriving ( Show )
+  transmitToLink Microcode{..} Link{..}
+    = [ (oe, B oeSignal)
+      , (wr, B wrSignal)
+      ] ++ addrs
+    where
+      addrs = map (\(linkId, i) -> ( linkId
+                                   , maybe X B $ fmap (`testBit` i) addrSignal
+                                   )
+                  ) $ zip (reverse addr) [0..]
+
 
 instance Default (Instruction (Fram v t)) where
   def = Nop
@@ -471,26 +482,11 @@ getAddr (Load addr) = Just addr
 getAddr (Save addr) = Just addr
 getAddr _           = Nothing
 
-instance ( Var v, Time t
-         ) => ByTime (Fram v t) t where
-  signalAt pu@Fram{..} time sig =
-    let instruction = case mapMaybe (extractInstruction pu) $ whatsHappen time frProcess of
-          []  -> Nop
-          [i] -> i
-          is  -> error $ "Ambiguously instruction at "
-                       ++ show time ++ ": " ++ show is
-    in decodeInstruction instruction sig
-
 
 instance UnambiguouslyDecode (Fram v t) where
-  decodeInstruction  Nop        (ADDR _) = X
-  decodeInstruction  Nop         _       = B False
-  decodeInstruction (Load addr) (ADDR b) = B $ testBit addr b
-  decodeInstruction (Load    _)  OE      = B True
-  decodeInstruction (Load    _)  WR      = B False
-  decodeInstruction (Save addr) (ADDR b) = B $ testBit addr b
-  decodeInstruction (Save    _)  OE      = B False
-  decodeInstruction (Save    _)  WR      = B True
+  decodeInstruction  Nop        = Microcode False False Nothing
+  decodeInstruction (Load addr) = Microcode True False $ Just addr
+  decodeInstruction (Save addr) = Microcode False True $ Just addr
 
 
 
@@ -499,16 +495,16 @@ instance ( Var v, Time t
          ) => Simulatable (Fram v t) v Int where
   simulateOn cntx@Cntx{..} pu@Fram{..} (FB fb)
     | Just (Constant x (O k) :: Constant (Parcel v)) <- cast fb = set cntx k x
-    | Just (Loop (O k1@(k:_)) (I k2) :: Loop (Parcel v)) <- cast fb = do
-      let v = maybe (addr2value $ findAddress k pu) id $ cntx `get` k
+    | Just (Loop (O k1@(k:_)) (I _k2) :: Loop (Parcel v)) <- cast fb = do
+      let v = fromMaybe (addr2value $ findAddress k pu) $ cntx `get` k
       set cntx k1 v
     | Just (fb' :: Reg (Parcel v)) <- cast fb = simulate cntx fb'
     | Just (FramInput addr (O k) :: FramInput (Parcel v)) <- cast fb = do
-      let v = maybe (addr2value addr) id $ cntx `get` (head k)
+      let v = fromMaybe (addr2value addr) $ cntx `get` head k
       set cntx k v
     | Just (FramOutput addr (I k) :: FramOutput (Parcel v)) <- cast fb = do
       v <- get cntx k
-      let cntxFram' = M.alter (maybe (Just [v]) (Just . (v:))) (addr, k) cntxFram
+      let cntxFram' = M.alter (Just . maybe [v] (v:)) (addr, k) cntxFram
       return cntx{ cntxFram=cntxFram' }
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Fram."
     where
@@ -520,7 +516,7 @@ instance ( Var v, Time t
 
 instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
   testEnviroment cntx0 pu@Fram{ frProcess=Process{..}, .. }
-    = Immidiate (name pu ++ "_tb.v") testBenchImp
+    = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
     where
       Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) (Just cntx0) $ functionalBlocks pu
       testBenchImp = renderST
@@ -528,10 +524,10 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
         , "parameter DATA_WIDTH = 32;                                                                                "
         , "parameter ATTR_WIDTH = 4;                                                                                 "
         , "                                                                                                          "
-        , "/*                                                                                                          "
-        , show cntx -- "                                                                                                          "
-        , show $ functionalBlocks pu -- "                                                                                                          "
-        , "*/                                                                                                          "
+        , "/*                                                                                                        "
+        , show cntx
+        , show $ functionalBlocks pu
+        , "*/                                                                                                        "
         , "                                                                                                          "
         , "reg clk, rst, wr, oe;                                                                                     "
         , "reg [3:0] addr;                                                                                           "
@@ -540,18 +536,22 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
         , "wire [DATA_WIDTH-1:0] data_out;                                                                           "
         , "wire [ATTR_WIDTH-1:0] attr_out;                                                                           "
         , "                                                                                                          "
-        , hardwareInstance pu "fram" [ ( "Clk", "clk" )
-                                     , ( "ADDR_0", "addr[0]" )  -- FIXME: Нет, это перечисление по адресу есть зло.
-                                     , ( "ADDR_1", "addr[1]" )
-                                     , ( "ADDR_2", "addr[2]" )
-                                     , ( "ADDR_3", "addr[3]" )
-                                     , ( "DataIn", "data_in" )
-                                     , ( "AttrIn", "attr_in" )
-                                     , ( "WR", "wr" )
-                                     , ( "OE", "oe" )
-                                     , ( "DataOut", "data_out" )
-                                     , ( "AttrOut", "attr_out" )
-                                     ]
+        , hardwareInstance pu "fram"
+            NetworkLink{ clk=Name "clk"
+                       , rst=Name "rst"
+                       , dataWidth=Name "32"
+                       , attrWidth=Name "4"
+                       , dataIn=Name "data_in"
+                       , attrIn=Name "attr_in"
+                       , dataOut=Name "data_out"
+                       , attrOut=Name "attr_out"
+                       , controlBus=id
+                       , cycleStart=Name "cycle"
+                       }
+            Link{ oe=Name "oe"
+                , wr=Name "wr"
+                , addr=[Name "addr"]
+                }
         , "                                                                                                          "
         , verilogWorkInitialze
         , verilogClockGenerator
@@ -564,35 +564,30 @@ instance ( Var v, Time t ) => TestBench (Fram v t) v Int where
         , "    forever @(posedge clk);                                                                               "
         , "  end                                                                                                     "
         , "                                                                                                          "
-        , initial_finish $ controlSignals pu
-        , initial_finish $ testDataInput pu cntx
-        , initial_finish $ testDataOutput pu cntx
+        , initialFinish $ controlSignals pu
+        , initialFinish $ testDataInput pu cntx
+        , initialFinish $ testDataOutput pu cntx
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]
-        [ ("moduleName", name pu)
+        [ ("moduleName", moduleName pu)
         ]
 
 controlSignals pu@Fram{ frProcess=Process{..}, ..}
-  = concatMap ( ("      " ++) . (++ " @(negedge clk)\n") . showSignals . signalsAt ) [ 0 .. nextTick + 1 ]
+  = concatMap ( ("      " ++) . (++ " @(negedge clk)\n") . showMicrocode . microcodeAt pu) [ 0 .. nextTick + 1 ]
   where
-    signalsAt time = map (signalAt pu time)
-                     [ OE, WR, ADDR 3, ADDR 2, ADDR 1, ADDR 0 ]
-    showSignals = (\[oe, wr, a3, a2, a1, a0] ->
-                      "oe <= 'b" ++ oe
-                      ++ "; wr <= 'b" ++ wr
-                      ++ "; addr[3] <= 'b" ++ a3
-                      ++ "; addr[2] <= 'b" ++ a2
-                      ++ "; addr[1] <= 'b" ++ a1
-                      ++ "; addr[0] <= 'b" ++ a0 ++ ";"
-                  ) . map show
+    showMicrocode Microcode{..} = concat
+      [ "oe <= 'b", bool2binstr oeSignal, "; "
+      , "wr <= 'b", bool2binstr wrSignal, "; "
+      , "addr <= ", maybe "0" show addrSignal, "; "
+      ]
 
 testDataInput pu@Fram{ frProcess=p@Process{..}, ..} cntx
   = concatMap ( ("      " ++) . (++ " @(negedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
   where
     busState t
       | Just (Target v) <- endpointAt t p
-       = "data_in <= " ++ show (maybe (error ("input" ++ show v ++ show (functionalBlocks pu)) ) id (get cntx v)) ++ ";"
+       = "data_in <= " ++ show (fromMaybe (error ("input" ++ show v ++ show (functionalBlocks pu)) ) $ get cntx v) ++ ";"
       | otherwise = "/* NO INPUT */"
 
 testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
@@ -600,7 +595,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
   where
     busState t
       | Just (Source (v : _)) <- endpointAt t p
-      = checkBus v $ (maybe (error $ show ("checkBus" ++ show v ++ show cntx) ) show (get cntx v))
+      = checkBus v $ maybe (error $ show ("checkBus" ++ show v ++ show cntx) ) show (get cntx v)
       | otherwise
       = "/* NO OUTPUT */"
 
@@ -656,29 +651,37 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
                            ]
 
 
-instance ( Time t, Var v ) => Synthesis (Fram v t) where
-  name _ = "pu_fram"
-  hardwareInstance Fram{..} n cntx = renderST
-    [ "pu_fram #( .DATA_WIDTH( $DATA_WIDTH$ )"
-    , "         , .ATTR_WIDTH( $ATTR_WIDTH$ )"
-    , "         , .RAM_SIZE( $size$ )"
-    , "         ) $name$"
-    , "  ( .clk( $Clk$ )"
-    , "  , .signal_addr( { $ADDR_3$, $ADDR_2$, $ADDR_1$, $ADDR_0$ } )"
+instance ( Time t, Var v ) => DefinitionSynthesis (Fram v t) where
+  moduleName _ = "pu_fram"
+  hardware pu = FromLibrary $ moduleName pu ++ ".v"
+  software _ = Empty
+
+instance ( Time t, Var v
+         ) => Synthesis (Fram v t) LinkId where
+  hardwareInstance Fram{..} name NetworkLink{..} Link{..} = renderST
+    [ "pu_fram "
+    , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+    , "   , .RAM_SIZE( " ++ show frSize ++ " )"
+    , "   ) " ++ name
+    , "  ( .clk( " ++ link clk ++ " )"
+    , "  , .signal_addr( { " ++ S.join ", " (map control addr) ++ " } )"
     , ""
-    , "  , .signal_wr( $WR$ )"
-    , "  , .data_in( $DataIn$ )"
-    , "  , .attr_in( $AttrIn$ )"
+    , "  , .signal_wr( " ++ control wr ++ " )"
+    , "  , .data_in( " ++ link dataIn ++ " )"
+    , "  , .attr_in( " ++ link attrIn ++ " )"
     , ""
-    , "  , .signal_oe( $OE$ )"
-    , "  , .data_out( $DataOut$ )"
-    , "  , .attr_out( $AttrOut$ )"
+    , "  , .signal_oe( " ++ control oe ++ " )"
+    , "  , .data_out( " ++ link dataOut ++ " )"
+    , "  , .attr_out( " ++ link attrOut ++ " )"
     , "  );"
     , "initial begin"
     , S.join "\n"
         $ map (\(i, Cell{..}) -> "  $name$.bank[" ++ show i ++ "] <= " ++ show initialValue ++ ";")
         $ assocs frMemory
     , "end"
-    ] $ ("name", n) : ("size", show frSize) : cntx
-  hardware pu = FromLibrary $ name pu ++ ".v"
-  software _ = Empty
+    ] [ ("name", name)
+      , ("size", show frSize)
+      ]
+    where
+      control = link . controlBus

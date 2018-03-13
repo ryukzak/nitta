@@ -19,20 +19,21 @@ import           NITTA.ProcessUnits.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval            (singleton, (...))
+import           Prelude                     hiding (init)
 
 
 
-type Accum v t = SerialPU (AccumState v t) (Parcel v) v t
+type Accum v t = SerialPU (State v t) (Parcel v) v t
 
-data AccumState v t = Accum{ acIn :: [v], acOut :: [v] }
+data State v t = Accum{ acIn :: [v], acOut :: [v] }
   deriving ( Show )
 
-instance Default (AccumState v t) where
+instance Default (State v t) where
   def = Accum def def
 
 
 
-instance ( Var v, Time t ) => SerialPUState (AccumState v t) (Parcel v) v t where
+instance ( Var v, Time t ) => SerialPUState (State v t) (Parcel v) v t where
 
   bindToState (FB fb) ac@Accum{ acIn=[], acOut=[] }
     | Just (Add (I a) (I b) (O cs)) <- cast fb = Right ac{ acIn=[a, b], acOut = cs }
@@ -67,8 +68,13 @@ instance ( Var v, Time t ) => SerialPUState (AccumState v t) (Parcel v) v t wher
 
 
 instance Controllable (Accum v t) where
-  data Signal (Accum v t) = OE | INIT | LOAD | NEG deriving ( Show, Eq, Ord )
-  data Flag (Accum v t)
+  data Microcode (Accum v t)
+    = Microcode{ oeSignal :: Bool
+               , initSignal :: Bool
+               , loadSignal :: Bool
+               , negSignal :: Maybe Bool
+               } deriving ( Show, Eq, Ord )
+
   data Instruction (Accum v t)
     = Nop
     | Init Bool
@@ -79,25 +85,18 @@ instance Controllable (Accum v t) where
 instance Default (Instruction (Accum v t)) where
   def = Nop
 
+instance Default (Microcode (Accum v t)) where
+  def = Microcode{ oeSignal=False
+                 , initSignal=False
+                 , loadSignal=False
+                 , negSignal=Nothing
+                 }
+
 instance UnambiguouslyDecode (Accum v t) where
-  decodeInstruction  Nop     NEG  = X
-  decodeInstruction  Nop     _    = B False
-
-  decodeInstruction (Init _) INIT = B True
-  decodeInstruction (Init _) LOAD = B True
-  decodeInstruction (Init _) OE   = B False
-  decodeInstruction (Init n) NEG  = B n
-
-  decodeInstruction (Load _) INIT = B False
-  decodeInstruction (Load _) LOAD = B True
-  decodeInstruction (Load _) OE   = B False
-  decodeInstruction (Load n) NEG  = B n
-
-  decodeInstruction  Out     INIT = B False
-  decodeInstruction  Out     LOAD = B False
-  decodeInstruction  Out     OE   = B True
-  decodeInstruction  Out     NEG  = X
-
+  decodeInstruction Nop        = def
+  decodeInstruction (Init neg) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
+  decodeInstruction (Load neg) = def{ loadSignal=True, negSignal=Just neg }
+  decodeInstruction Out        = def{ oeSignal=True }
 
 
 instance ( Var v ) => Simulatable (Accum v t) v Int where
@@ -106,27 +105,41 @@ instance ( Var v ) => Simulatable (Accum v t) v Int where
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Accum."
 
 
+instance Connected (Accum v t) i where
+  data Link (Accum v t) i
+    = Link { init, load, neg, oe :: i } deriving ( Show )
+  transmitToLink Microcode{..} Link{..}
+    = [ (init, B initSignal)
+      , (load, B loadSignal)
+      , (neg, maybe X B negSignal)
+      , (oe, B oeSignal)
+      ]
 
-instance Synthesis (Accum v t) where
-  hardwareInstance _pu n cntx
-    = renderST
-      [ "pu_accum #( .DATA_WIDTH( $DATA_WIDTH$ )"
-      , "          , .ATTR_WIDTH( $ATTR_WIDTH$ )"
-      , "          ) $name$"
-      , "  ( .clk( $Clk$ )"
-      , ""
-      , "  , .signal_init( $INIT$ )"
-      , "  , .signal_load( $LOAD$ )"
-      , "  , .signal_neg( $NEG$ )"
-      , "  , .data_in( $DataIn$ )"
-      , "  , .attr_in( $AttrIn$ )"
-      , ""
-      , "  , .signal_oe( $OE$ )"
-      , "  , .data_out( $DataOut$ )"
-      , "  , .attr_out( $AttrOut$ )"
-      , "  );"
-      , "initial $name$.acc <= 0;"
-      ] $ ("name", n) : cntx
-  name _ = "pu_accum"
-  hardware pu = FromLibrary $ name pu ++ ".v"
+
+instance DefinitionSynthesis (Accum v t) where
+  moduleName _ = "pu_accum"
+  hardware pu = FromLibrary $ moduleName pu ++ ".v"
   software _ = Empty
+
+
+instance ( Time t, Var v
+         ) => Synthesis (Accum v t) LinkId where
+  hardwareInstance _ name NetworkLink{..} Link{..} = renderST
+    [ "pu_accum "
+    , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+    , "   ) $name$"
+    , "  ( .clk( " ++ link clk ++ " )"
+    , "  , .signal_init( " ++ ctrl init ++ " )"
+    , "  , .signal_load( " ++ ctrl load ++ " )"
+    , "  , .signal_neg( " ++ ctrl neg ++ " )"
+    , "  , .signal_oe( " ++ ctrl oe ++ " )"
+    , "  , .data_in( " ++ link dataIn ++ " )"
+    , "  , .attr_in( " ++ link attrIn ++ " )"
+    , "  , .data_out( " ++ link dataOut ++ " )"
+    , "  , .attr_out( " ++ link attrOut ++ " )"
+    , "  );"
+    , "initial $name$.acc <= 0;"
+    ] [("name", name)]
+    where
+      ctrl = link . controlBus

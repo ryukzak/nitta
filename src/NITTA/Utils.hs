@@ -3,13 +3,13 @@
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TupleSections             #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 module NITTA.Utils where
 
@@ -28,11 +28,29 @@ import           Text.StringTemplate
 
 
 
+instance ( Default (Instruction pu)
+         , Show (Instruction pu)
+         , ProcessUnit pu v t
+         , UnambiguouslyDecode pu
+         , Time t
+         , Typeable pu
+         ) => ByTime pu t where
+  microcodeAt pu t =
+    let instruction = case mapMaybe (extractInstruction pu) $ whatsHappen t (process pu) of
+          []  -> def
+          [i] -> i
+          is  -> error $ "Ambiguously instruction at " ++ show t ++ ": " ++ show is
+    in decodeInstruction instruction
+
+
+
 isTarget (EndpointO (Target _) _) = True
 isTarget _                        = False
 isSource (EndpointO (Source _) _) = True
 isSource _                        = False
 
+bool2binstr True  = "1"
+bool2binstr False = "0"
 
 
 
@@ -151,7 +169,7 @@ values2dump vs
     groupBy4 [] = []
     groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)
     readBin :: String -> Int
-    readBin = fst . head . readInt 2 (`elem` "x01") (\x -> case x of '1' -> 1; _ -> 0 )
+    readBin = fst . head . readInt 2 (`elem` "x01") (\case '1' -> 1; _ -> 0)
 
 
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st

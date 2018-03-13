@@ -10,13 +10,14 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 
-module NITTA.Lens ( module NITTA.Lens
-                  , module Control.Lens
-                  ) where
+module NITTA.Lens
+  ( module NITTA.Lens
+  , module Control.Lens
+  ) where
 
 import           Control.Lens     (Lens', lens, to, (&), (.~), (^.))
 import           NITTA.Types
-import           Numeric.Interval hiding (elem)
+import           Numeric.Interval
 
 
 

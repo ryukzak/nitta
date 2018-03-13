@@ -26,12 +26,11 @@ module NITTA.ProcessUnits.SerialPU
   , serialSchedule
   ) where
 
-import           Control.Lens        hiding (at, from, (...))
+import           Control.Lens        hiding (at, (...))
 import           Control.Monad.State
 import           Data.Default
 import           Data.Either
 import           Data.List           (find, intersect)
-import           Data.Maybe
 import           Data.Typeable
 import           NITTA.Lens
 import           NITTA.Types
@@ -158,19 +157,6 @@ instance ( Var v, Time t
   process = spuProcess
 
   setTime t pu@SerialPU{..} = pu{ spuProcess=spuProcess{ nextTick=t } }
-
-
-instance ( Var v, Time t
-         , Default (Instruction (SerialPU st (Parcel v) v t))
-         , Show (Instruction (SerialPU st (Parcel v) v t))
-         , Typeable st, Default st
-         , SerialPUState st (Parcel v) v t
-         , UnambiguouslyDecode (SerialPU st (Parcel v) v t)
-         ) => ByTime (SerialPU st (Parcel v) v t) t where
-  signalAt pu@SerialPU{..} t sig
-    = let instr = fromMaybe def $ extractInstructionAt pu t
-      in decodeInstruction instr sig
-
 
 
 -- * Утилиты --------------------------------------------------------

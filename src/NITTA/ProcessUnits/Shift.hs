@@ -20,43 +20,44 @@ import           NITTA.ProcessUnits.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval            (singleton, (...))
+import           Prelude                     hiding (init)
 
 
-type Shift v t = SerialPU (ShiftState v t) (Parcel v) v t
+type Shift v t = SerialPU (State v t) (Parcel v) v t
 
-data ShiftState v t = ShiftState{ sIn :: Maybe v, sOut :: [v] }
+data State v t = State{ sIn  :: Maybe v
+                      , sOut :: [v]
+                      }
   deriving ( Show )
 
-instance Default (ShiftState v t) where
-  def = ShiftState def def
+instance Default (State v t) where
+  def = State def def
 
 
 
-instance ( Var v, Time t ) => SerialPUState (ShiftState v t) (Parcel v) v t where
+instance ( Var v, Time t ) => SerialPUState (State v t) (Parcel v) v t where
 
-  bindToState (FB fb) s@ShiftState{ sIn=Nothing, sOut=[] }
+  bindToState (FB fb) s@State{ sIn=Nothing, sOut=[] }
     | Just (ShiftL (I a) (O cs)) <- cast fb = Right s{ sIn=Just a, sOut = cs }
     | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
   -- тихая ругань по поводу решения
-  stateOptions ShiftState{ sIn=Just v } now
+  stateOptions State{ sIn=Just v } now
     = [ EndpointO (Target v) (TimeConstrain (now ... maxBound) (singleton 2)) ]
-  stateOptions ShiftState{ sOut=vs@(_:_) } now -- вывод
+  stateOptions State{ sOut=vs@(_:_) } now -- вывод
     = [ EndpointO (Source vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
-  schedule st@ShiftState{ sIn=Just v } act
+  schedule st@State{ sIn=Just v } act
     | v `elem` variables act
     = let st' = st{ sIn=Nothing }
           work = do
-            -- serialSchedule (Proxy :: Proxy (Shift v t)) (act & at & supremum .~ act^.at.infimum) Init
-            -- serialSchedule (Proxy :: Proxy (Shift v t)) (act & at & infimum .~ (act^.at.infimum + 1)) $ Work Right' Bit Logic
             a <- serialSchedule (Proxy :: Proxy (Shift v t)) act{ epdAt=(act^.at.infimum) ... (act^.at.infimum) } Init
             b <- serialSchedule (Proxy :: Proxy (Shift v t)) act{ epdAt=act^.at.infimum + 1 ... act^.at.supremum } $ Work Right' Bit Logic
             return $ a ++ b
       in (st', work)
-  schedule st@ShiftState{ sOut=vs } act
+  schedule st@State{ sOut=vs } act
     | not $ null $ vs `intersect` variables act
     = let st' = st{ sOut=vs \\ variables act }
           work = serialSchedule (Proxy :: Proxy (Shift v t)) act Out
@@ -65,13 +66,20 @@ instance ( Var v, Time t ) => SerialPUState (ShiftState v t) (Parcel v) v t wher
 
 
 
-data Direction = Left' | Right'     deriving ( Show )
-data StepSize  = Bit   | Byte       deriving ( Show )
-data Mode      = Logic | Arithmetic deriving ( Show )
+data Direction = Left' | Right'     deriving ( Show, Eq )
+data StepSize  = Bit   | Byte       deriving ( Show, Eq )
+data Mode      = Logic | Arithmetic deriving ( Show, Eq )
 
 instance Controllable (Shift v t) where
-  data Signal (Shift v t) = WORK | DIRECTION | MODE | STEP | INIT | OE deriving ( Show, Eq, Ord )
-  data Flag (Shift v t)
+  data Microcode (Shift v t)
+    = Microcode{ workSignal :: Bool
+               , directionSignal :: Bool
+               , modeSignal :: Bool
+               , stepSignal :: Bool
+               , initSignal :: Bool
+               , oeSignal :: Bool
+               } deriving ( Show, Eq, Ord )
+
   data Instruction (Shift v t)
     = Nop
     | Init
@@ -82,21 +90,38 @@ instance Controllable (Shift v t) where
 instance Default (Instruction (Shift v t)) where
   def = Nop
 
+instance Default (Microcode (Shift v t)) where
+  def = Microcode{ workSignal=False
+                 , directionSignal=False
+                 , modeSignal=False
+                 , stepSignal=False
+                 , initSignal=False
+                 , oeSignal=False
+                 }
+
 instance UnambiguouslyDecode (Shift v t) where
-  decodeInstruction Nop  _                     = B False
+  decodeInstruction Nop = def
+  decodeInstruction Init = def{ initSignal=True }
+  decodeInstruction Out = def{ oeSignal=True }
+  decodeInstruction (Work dir step mode)
+    = def{ workSignal=True
+         , directionSignal=dir == Left'
+         , modeSignal=mode == Arithmetic
+         , stepSignal=step == Byte
+         }
 
-  decodeInstruction Init INIT                  = B True
-  decodeInstruction Init _                     = B False
 
-  decodeInstruction (Work _ _ _) WORK          = B True
-  decodeInstruction (Work Left' _ _) DIRECTION = B True
-  decodeInstruction (Work _ Byte _) STEP       = B True
-  decodeInstruction (Work _ _ Arithmetic) MODE = B True
-  decodeInstruction (Work _ _ _) _             = B False
-
-  decodeInstruction  Out     OE                = B True
-  decodeInstruction  Out     _                 = B False
-
+instance Connected (Shift v t) i where
+  data Link (Shift v t) i
+    = Link { work, direction, mode, step, init, oe :: i } deriving ( Show )
+  transmitToLink Microcode{..} Link{..}
+    = [ (work, B workSignal)
+      , (direction, B directionSignal)
+      , (mode, B modeSignal)
+      , (step, B stepSignal)
+      , (init, B initSignal)
+      , (oe, B oeSignal)
+      ]
 
 
 instance ( Var v ) => Simulatable (Shift v t) v Int where
@@ -105,20 +130,26 @@ instance ( Var v ) => Simulatable (Shift v t) v Int where
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
 
 
-instance Synthesis (Shift v t) where
-  hardwareInstance _pu n cntx
-    = renderST
-      [ "pu_shift #( .DATA_WIDTH( $DATA_WIDTH$ )"
-      , "          , .ATTR_WIDTH( $ATTR_WIDTH$ )"
-      , "          ) $name$"
-      , "  ( .clk( $Clk$ )"
-      , "  , .signal_work( $WORK$ ), .signal_direction( $DIRECTION$ )"
-      , "  , .signal_mode( $MODE$ ), .signal_step( $STEP$ )"
-      , "  , .signal_init( $INIT$ ), .signal_oe( $OE$ )"
-      , "  , .data_in( $DataIn$ ), .attr_in( $AttrIn$ )"
-      , "  , .data_out( $DataOut$ ), .attr_out( $AttrOut$ )"
-      , "  );"
-      ] $ ("name", n) : cntx
-  name _ = "pu_shift"
-  hardware pu = FromLibrary $ name pu ++ ".v"
+instance DefinitionSynthesis (Shift v t) where
+  moduleName _ = "pu_shift"
+  hardware pu = FromLibrary $ moduleName pu ++ ".v"
   software _ = Empty
+
+instance ( Time t, Var v
+         ) => Synthesis (Shift v t) LinkId where
+  hardwareInstance _ name NetworkLink{..} Link{..} = renderST
+    [ "pu_shift #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
+    , "          , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+    , "          ) $name$"
+    , "  ( .clk( " ++ link clk ++ " )"
+    , "  , .signal_work( " ++ control work ++ " ), .signal_direction( " ++ control direction ++ " )"
+    , "  , .signal_mode( " ++ control mode ++ " ), .signal_step( " ++ control step ++ " )"
+    , "  , .signal_init( " ++ control init ++ " ), .signal_oe( " ++ control oe ++ " )"
+    , "  , .data_in( " ++ link dataIn ++ " )"
+    , "  , .attr_in( " ++ link attrIn ++ " )"
+    , "  , .data_out( " ++ link dataOut ++ " )"
+    , "  , .attr_out( " ++ link attrOut ++ " )"
+    , "  );"
+    ] [("name", name)]
+    where
+      control = link . controlBus

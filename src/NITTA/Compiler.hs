@@ -15,8 +15,7 @@ module NITTA.Compiler
   , passiveOption2action
   , naive
   , NaiveOpt(..)
-  )
-where
+  ) where
 
 import           Control.Arrow    (second)
 import           Data.Default
