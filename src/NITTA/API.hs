@@ -55,8 +55,8 @@ type SynthesisAPI
      = "synthesis" :> Get '[JSON] (Map String Synthesis)
   :<|> "synthesis" :> Capture "sId" String :>
        ( Get '[JSON] Synthesis
-    :<|> QueryParam' '[Required] "parent" String :>
-         QueryParam' '[Required] "step" Int :>
+    :<|> QueryParam' '[Required] "parentId" String :>
+         QueryParam' '[Required] "stepId" Int :>
          PostNoContent '[JSON] ()
     :<|> StepsAPI
        )
@@ -82,7 +82,7 @@ synthesisServer stm
 
 type StepsAPI
      = "steps" :> Get '[JSON] [ST]
-  :<|> "steps" :> Capture "step" Int :>
+  :<|> "steps" :> Capture "stepId" Int :>
          -- TODO: step - необходимо обеспечить сохранность индексов для разных
          -- веток синтеза.
        ( Get '[JSON] ST

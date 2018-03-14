@@ -27,7 +27,7 @@ class App extends Component {
   }
 
   getSynthesis(sname) {
-    api.getSynthesisBySid(sname)
+    api.getSynthesisBySId(sname)
     .then( response => {
       this.setState({ synthesis: response.data
                     , path: [ sname ]
@@ -38,7 +38,7 @@ class App extends Component {
   }
 
   getStep(sname, did) {
-    api.getSynthesisBySidStepsByStep(sname, did)
+    api.getSynthesisBySIdStepsByStepId(sname, did)
     .then( response => {
       this.setState({ step: response.data
                     , path: [ sname, did ]
@@ -99,7 +99,7 @@ function View(props) {
               <dt>States:</dt>
               <dd>
                 <div className="tiny button-group">
-                  { sdata.states.map( (st, i) => <SynthesisLink key={ i } sname={ i } onClick={ () => props.app.getStep(props.app.state.path[0], i) } /> ) }
+                  { sdata.steps.map( (st, i) => <SynthesisLink key={ i } sname={ i } onClick={ () => props.app.getStep(props.app.state.path[0], i) } /> ) }
                 </div>
               </dd>
             </dl>
@@ -114,7 +114,7 @@ function View(props) {
               {/* <SynthesisLink sname="decisions" onClick={ () => props.app.getStep(props.app.state.path[0]) } /> */}
               <SynthesisLink sname="options" onClick={ 
                 () => { 
-                  api.getSynthesisBySidStepsByStepOptions( props.app.state.path[0], props.app.state.path[1] )
+                  api.getSynthesisBySIdStepsByStepIdOptions( props.app.state.path[0], props.app.state.path[1] )
                   .then( response => props.app.setState( { step: response.data
                                                          , path: [ props.app.state.path[0]
                                                                  , props.app.state.path[1]
@@ -124,7 +124,7 @@ function View(props) {
                 } } />
               <SynthesisLink sname="mk_decision" onClick={ 
                 () => {
-                  api.postSynthesisBySidStepsByStep(props.app.state.path[0], props.app.state.path[1] + 1, -1)
+                  api.postSynthesisBySIdStepsByStepIdAuto(props.app.state.path[0], props.app.state.path[1] + 1)
                   .then( response => { 
                     props.app.getSynthesis(props.app.state.path[0]) 
                     props.app.getStep(props.app.state.path[0], props.app.state.path[1] + 1) 
