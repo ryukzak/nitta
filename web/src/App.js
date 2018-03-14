@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import './App.css';
 import api from './gen/nitta-api.js';
+import ReactTable from 'react-table'
+import 'react-table/react-table.css'
 
 class App extends Component {
 
@@ -113,10 +115,11 @@ function View(props) {
               <SynthesisLink sname="options" onClick={ 
                 () => { 
                   api.getSynthesisBySidStepsByStepOptions( props.app.state.path[0], props.app.state.path[1] )
-                  .then( response => props.app.setState( { step: response.data, path: [ props.app.state.path[0]
-                                                                                      , props.app.state.path[1]
-                                                                                      , "options"
-                                                                                      ] 
+                  .then( response => props.app.setState( { step: response.data
+                                                         , path: [ props.app.state.path[0]
+                                                                 , props.app.state.path[1]
+                                                                 , "options"
+                                                                 ] 
                                                          } ) )
                 } } />
               <SynthesisLink sname="mk_decision" onClick={ 
@@ -129,9 +132,19 @@ function View(props) {
                   .catch( err => alert(err))
                 } } />
             </div>
-            <pre>
-              { JSON.stringify(props.stepData, null, 2) }
-            </pre>
+            { ( props.app.state.path[2] == 'options' )
+              ? <ReactTable columns={ [ { Header: 'Type', accessor: '3.tag' }
+                                      , { Header: 'Description', accessor: '3.contents' }
+                                      , { Header: 'Integral', accessor: "0" }
+                                      // TODO: generators for other metrics.
+                                      ]
+                                    }
+                            data={props.stepData} />
+              : <pre>
+                  { JSON.stringify(props.stepData, null, 2) }
+                </pre>
+
+            }
           </div>
         : <pre> STEP NOT SELECTED </pre>
       }
