@@ -30,16 +30,32 @@ pu_fifo
   .attr_out(attr_out)
 );
 
+initial
+  begin
+    rst <= 1; @(posedge clk); rst <= 0;
+  end
+
 initial 
     begin
       $dumpfile("pu_fifo_tb.vcd");
       $dumpvars(0, pu_fifo_tb);
-      clk <= 0; data_in <= 1; signal_wr <= 1;
+      
+      data_in <= 0; signal_wr <= 0; attr_in <= 0; signal_oe <= 0; @(posedge clk);
+      data_in <= 0; signal_wr <= 0; attr_in <= 0; signal_oe <= 0; @(posedge clk);
 
+      data_in <= 1; signal_wr <= 1; attr_in <= 0; signal_oe <= 0; @(posedge clk);
+      data_in <= 2; signal_wr <= 1; attr_in <= 0; signal_oe <= 0; @(posedge clk);
+
+      data_in <= 0; signal_wr <= 0; attr_in <= 0; signal_oe <= 0; @(posedge clk);
+      data_in <= 3; signal_wr <= 1; attr_in <= 0; signal_oe <= 0; @(posedge clk);
+      
+      data_in <= 0; signal_wr <= 0; attr_in <= 0; signal_oe <= 1; @(posedge clk);      
       #40 $finish;
-
     end
 
-always #1 clk = !clk;
+initial
+  begin
+    forever #1 clk = !clk;
+  end
 
 endmodule

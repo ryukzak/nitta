@@ -17,20 +17,22 @@ module pu_fifo
 reg [DATA_WIDTH-1+ATTR_WIDTH-1:0] fifo_buf [0:FIFO_SIZE-1];            
 reg [FIFO_SIZE-1:0]  fifo_buf_start;    
 reg [FIFO_SIZE-1:0]  fifo_buf_end;
-reg signal_oe_prev = 0;
-reg signal_wr_prev = 0;
 
-always @(posedge clk or posedge rst)
+always @(posedge rst)
+begin
+  fifo_buf_end <= 0;
+  fifo_buf_start <= 0;
+end
+
+always @(posedge clk)
 begin  
-  if ((signal_wr_prev == 0) && (signal_wr == 1)) begin
+  if (signal_wr == 1) begin
     fifo_buf[fifo_buf_end] <= data_in;
     fifo_buf_end <= fifo_buf_end + 1;
   end
-  if ((signal_oe_prev == 0) && (signal_oe == 1)) begin
+  else if (signal_oe == 1) begin
     data_out <= fifo_buf[fifo_buf_start];
     fifo_buf_start <= fifo_buf_start + 1;
   end
-  signal_wr_prev <= signal_wr;
-  signal_oe_prev <= signal_oe;
 end
 endmodule
