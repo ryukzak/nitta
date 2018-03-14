@@ -130,16 +130,17 @@ test pu cntx = do
 
 
 simulateSPI n = do
-  mapM_ putStrLn $ take n $ map show $ FB.simulateAlg (def{ cntxVars=M.fromList [("b", [0])]
-                                                          , cntxInputs=M.fromList [("a", [1, 2, 3])]
-                                                          } :: Cntx String Int)
-    [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
-    , FB $ FB.Add (I "a") (I "b") (O ["c1", "c2"])
-    , FB $ FB.Loop (O ["b"]) (I "c1")
-    , FB $ FB.Send (I "c2")
-    ]
+  let dt = simulate def{ cntxVars=M.fromList [("b", [0])]
+                       , cntxInputs=M.fromList [("a", [1, 2, 3])]
+                       }
+                    [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
+                    , FB $ FB.Add (I "a") (I "b") (O ["c1", "c2"])
+                    , FB $ FB.Loop (O ["b"]) (I "c1")
+                    , FB $ FB.Send (I "c2")
+                    ]
+  mapM_ putStrLn $ take n dt
   print "ok"
 
-
+simulate cntx alg = FB.simulateAlg (cntx :: Cntx String Int) alg
 
 getPU puTitle net = fromMaybe (error "Wrong PU type!") $ castPU $ bnPus net M.! puTitle
