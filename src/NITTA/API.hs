@@ -32,7 +32,7 @@ import qualified STMContainers.Map      as M
 
 data Synthesis
   = Synthesis{ parent :: Maybe (String, Int) -- ^ (name, tick)
-             , childs :: [String] -- TODO: привязка к шагу процесса синтеза, а не к названию синтеза.
+             , childs :: [(String, Int)] -- ^ [(sId, stepId)]
              , steps  :: [ST]
              } deriving ( Generic )
 
@@ -70,13 +70,11 @@ synthesisServer stm
     postSynthesis sId pId stepId = do
       syn <- M.lookup sId stm
       when ( isJust syn ) $ throwSTM err409{ errBody="Synthesis already exist." }
-      parent <- M.lookup pId stm
-      when ( isNothing parent ) $ throwSTM err404{ errBody="Parent not found." }
-      let Just parent'@Synthesis{ childs=cs } = parent
-      M.insert parent'{ childs=sId : cs } pId stm
-      M.insert parent'{ parent=Just ( pId, stepId )
-                      -- TODO: crop steps by stepId
-                      } sId stm
+      p@Synthesis{..} <- getSynthesis' stm pId
+      M.insert p{ childs=(sId, stepId) : childs } pId stm
+      M.insert def{ parent=Just ( pId, stepId )
+                  , steps=steps
+                  } sId stm
 
 
 
@@ -104,7 +102,7 @@ type StepsAPI
        )
 
 stepsServer stm sId
-     = ( reverse . steps <$> getSynthesis stm sId )
+     = ( steps <$> getSynthesis stm sId )
   :<|> \ stepId -> getStep stepId
               :<|> ( \ True -> liftSTM $ autoPostStep stepId )
               :<|> ( liftSTM . manualPostStep stepId )

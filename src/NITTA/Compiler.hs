@@ -198,7 +198,7 @@ instance ( Tag tag, Time t, Var v
 
 
 optionsWithMetrics CompilerStep{..}
-  = sortOn (\(x, _, _, _, _) -> x) $ map measure' opts
+  = reverse $ sortOn (\(x, _, _, _, _) -> x) $ map measure' opts
   where
     opts = options compiler state
     gm = measureG opts state
@@ -214,7 +214,7 @@ naive' st@CompilerStep{..}
                 }
   where
     opts = optionsWithMetrics st
-    (_, _, _, _, d) = last opts
+    (_, _, _, _, d) = head opts
 
 
 naive opt branch

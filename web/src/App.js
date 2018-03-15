@@ -89,7 +89,7 @@ function View(props) {
               <dt>Childs:</dt>
               <dd> 
                 <div className="tiny button-group">
-                  { sdata.childs.map( (k, i) => <SynthesisLink key={ i } sname={ k } onClick={ () => props.app.getSynthesis(k) }/> ) }
+                  { sdata.childs.map( (k, i) => <SynthesisLink key={ i } sname={ k[0] } onClick={ () => props.app.getSynthesis(k[0]) }/> ) }
                 </div>
               </dd>
               <dt>Config (may vary from step to step):</dt>
@@ -109,7 +109,6 @@ function View(props) {
       { ( props.stepData )
         ? <div>
             <div className="tiny primary button-group">
-              {/* <SynthesisLink sname="fork" onClick={ () => props.app.getStep(props.app.state.path[0]) } /> */}
               {/* <SynthesisLink sname="root" onClick={ () => props.app.getStep(props.app.state.path[0]) } /> */}
               {/* <SynthesisLink sname="decisions" onClick={ () => props.app.getStep(props.app.state.path[0]) } /> */}
               <SynthesisLink sname="options" onClick={ 
@@ -121,6 +120,19 @@ function View(props) {
                                                                  , "options"
                                                                  ] 
                                                          } ) )
+                } } />
+              <SynthesisLink sname="fork" onClick={ 
+                () => {
+                  var sId = props.app.state.path[0] + "." + props.app.state.path[1]
+                  while ( props.app.state.synthesisList.indexOf( sId ) >= 0 ) {
+                    sId += "'"
+                  }
+                  api.postSynthesisBySId( sId
+                                        , props.app.state.path[0]
+                                        , props.app.state.path[1] 
+                                        )
+                  props.app.getAllSynthesis()
+                  props.app.getSynthesis( sId )
                 } } />
               <SynthesisLink sname="mk_decision" onClick={ 
                 () => {
