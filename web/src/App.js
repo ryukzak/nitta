@@ -147,7 +147,7 @@ function View(props) {
               ? <div>
                   <div class="grid-x">
                     <div class="cell small-4">
-                      <pre> { JSON.stringify(props.stepData[0][1], null, 2) } </pre>
+                      <pre>{ JSON.stringify(props.stepData[0][1], null, 2) }</pre>
                     </div>
                     <div class="cell small-8">
                       <LineChart data={ [ props.stepData.map( (e, index) => { return { x: index, y: e[0] } }) ] }
@@ -156,12 +156,25 @@ function View(props) {
                     </div>
                   </div>
 
-                  <ReactTable columns={ [ { Header: 'Integral', accessor: "0", maxWidth: 70 }
-                                        , { Header: 'Type', accessor: '2.tag', maxWidth: 200 }
-                                        , { Header: 'Info'
+                  <ReactTable columns={ [ { Header: 'Integral'
+                                          , accessor: "0"
+                                          , maxWidth: 70 
+                                          , Cell: row => 
+                                            <a onClick={ 
+                                              () => {
+                                                api.postSynthesisBySIdStepsByStepId( props.app.state.path[0], props.app.state.path[1] + 1, row.index )
+                                                .then( response => { 
+                                                  props.app.getSynthesis(props.app.state.path[0]) 
+                                                  props.app.getStep(props.app.state.path[0], props.app.state.path[1] + 1) 
+                                                } )
+                                                .catch( err => alert(err))
+                                              } }> { row.value } </a>
+                                          }
+                                        , { Header: 'Description', accessor: '3', Cell: row => <pre> { JSON.stringify(row.value) } </pre>  }
+                                        , { Header: 'Metrics'
                                           , accessor: "2"
-                                          , Cell: props => <pre> { JSON.stringify(props.value) } </pre> 
-                                          } 
+                                          , Cell: row => <pre> { JSON.stringify(row.value) } </pre> 
+                                          }
                                         ]      
                                       }
                               data={props.stepData} />
