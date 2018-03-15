@@ -3,6 +3,7 @@ import './App.css';
 import api from './gen/nitta-api.js';
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
+import {LineChart} from 'react-easy-chart';
 
 class App extends Component {
 
@@ -109,8 +110,6 @@ function View(props) {
       { ( props.stepData )
         ? <div>
             <div className="tiny primary button-group">
-              {/* <SynthesisLink sname="root" onClick={ () => props.app.getStep(props.app.state.path[0]) } /> */}
-              {/* <SynthesisLink sname="decisions" onClick={ () => props.app.getStep(props.app.state.path[0]) } /> */}
               <SynthesisLink sname="options" onClick={ 
                 () => { 
                   api.getSynthesisBySIdStepsByStepIdOptions( props.app.state.path[0], props.app.state.path[1] )
@@ -145,17 +144,31 @@ function View(props) {
                 } } />
             </div>
             { ( props.app.state.path[2] == 'options' )
-              ? <ReactTable columns={ [ { Header: 'Type', accessor: '3.tag' }
-                                      , { Header: 'Description', accessor: '3.contents' }
-                                      , { Header: 'Integral', accessor: "0" }
-                                      // TODO: generators for other metrics.
-                                      ]
-                                    }
-                            data={props.stepData} />
+              ? <div>
+                  <div class="grid-x">
+                    <div class="cell small-4">
+                      <pre> { JSON.stringify(props.stepData[0][1], null, 2) } </pre>
+                    </div>
+                    <div class="cell small-8">
+                      <LineChart data={ [ props.stepData.map( (e, index) => { return { x: index, y: e[0] } }) ] }
+                                 width={750} height={250} 
+                                 axes />
+                    </div>
+                  </div>
+
+                  <ReactTable columns={ [ { Header: 'Integral', accessor: "0", maxWidth: 70 }
+                                        , { Header: 'Type', accessor: '2.tag', maxWidth: 200 }
+                                        , { Header: 'Info'
+                                          , accessor: "2"
+                                          , Cell: props => <pre> { JSON.stringify(props.value) } </pre> 
+                                          } 
+                                        ]      
+                                      }
+                              data={props.stepData} />
+                </div>
               : <pre>
                   { JSON.stringify(props.stepData, null, 2) }
                 </pre>
-
             }
           </div>
         : <pre> STEP NOT SELECTED </pre>
