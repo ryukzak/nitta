@@ -84,9 +84,10 @@ accum_fram1_fram2_netTests
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
         net' = bindAll alg (net :: BusNetwork String String (TaggedTime String Int))
-        compiler = Branch net' (dataFlow2controlFlow $ DFG $ map DFGNode alg) Nothing []
-        Branch{ topPU=net''
-              } = foldl (\comp _ -> naive def comp) compiler $ replicate 150 ()
+        dataFlow = DFG $ map DFGNode alg
+        compiler = Frame net' dataFlow (dataFlow2controlFlow dataFlow) Nothing []
+        Frame{ nitta=net''
+             } = foldl (\comp _ -> naive def comp) compiler $ replicate 150 ()
         library = joinPath ["..", ".."]
         workdir = joinPath ["hdl", "gen", "unittest_accum_fram1_fram2_net"]
     in testCase "Obscure integration test for net of accum, fram1, fram2"

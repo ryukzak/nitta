@@ -16,7 +16,7 @@ TODO: Место для статьи о DFG и CFG. Методах работы 
 -}
 module NITTA.FlowGraph
   ( allowByControlFlow
-  , BranchedProcess(..)
+  , SystemState(..)
   , ControlFlowGraph(..), dataFlow2controlFlow
   , controlFlowDecision
   , ControlFlowDT
@@ -63,7 +63,7 @@ data DataFlowGraph v
     , dfgCases :: [(Int, DataFlowGraph v)] -- ^ таблица соответствия значения ключа
                                            -- перехода и требуемого подграфа.
     }
-  deriving ( Show )
+  deriving ( Show, Generic )
 
 instance ( Var v ) => Variables (DataFlowGraph v) v where
   variables (DFGNode fb)  = variables fb
@@ -164,66 +164,66 @@ allowByControlFlow block@(CFG g)
 
 
 
--- | Описание ветвящегося вычислительного процесса. Из-за того что планирование вычислительного
--- процесса происходит глобально, то и ветвление времени происходит глобально.
--- Возможное от данного тезиса будет полезно абстрагироваться, если Choice целиком попадает на
--- отдельную подсеть, но пока до таких вопросов ещё очень далеко.
-data BranchedProcess title tag v t
-  -- | Описание ветки вычислительного процесса.
-  = Branch
-  { -- | Вычислительный блок, в рамках которого реализуется весь вычислительный процесс.
-    --
-    -- TODO: Убрать hardcode.
-    topPU        :: BusNetwork title v t
-    -- | Описание текущего потока управления (в случае если мы находимся в одной из веток
-    -- вычислительного процесса, то описывается только её поток управления)
-  , controlFlow  :: ControlFlowGraph tag v
-    -- | Тег времени, идентифицирующий данную ветку вычислиельного процесса.
-  , branchTag    :: Maybe tag
-    -- | Входные данные рассматриваемой ветки вычислительного процесса.
-  , branchInputs :: [v]
-  }
-  -- | Куст вычислительного процесса. Процесс расщеплён на множество веток имеющих один корень и
-  -- сходящихся в одну точку по их завершению.
-  | Bush
-  { -- | Ветка процесса, планируемая в текущий момент времени.
-    currentBranch     :: BranchedProcess title tag v t
-    -- | Ветки процесса, требующие планирования.
-  , remainingBranches :: [ BranchedProcess title tag v t ]
-    -- | Спланированные ветки процесса.
-  , completedBranches :: [ BranchedProcess title tag v t ]
-    -- | Исходная ветка, которая была расщеплена. Используется как база для слияния куста.
-  , rootBranch        :: BranchedProcess title tag v t
-  } deriving ( Generic )
-
-
-
-
-
+-- | Для описания текущего состояния вычислительной системы (с учётом алгоритма,
+-- потока управления, "текущего места" исполнения алгоритма, микроархитектуры и
+-- расписния) необходимо работать со стеком. При этом, относительно
+-- программирования, вызов процедуры подменяется входом в подграф DFG. При этом
+-- общая логика развития (синтеза) вычислительного процесса не отличается от
+-- логики работы языков высокого уровня, за тем исключением что тут немного
+-- другая модель вычислений:
+--
+-- - сперва необходимо выполнить всю работу на вершине стека, после чего можно
+--   перейти к работе с нижележайшем кадром;
+-- - новый кадр стека формируется не для вызова подпрограммы, а для выполнения
+--   подграфа (соответствует ветвлению алгоритма);
+-- - так как стек необходим для реализации ветвления алгоритма и при этом
+--   решается задача планирования вычислительного процесса, то необходимо пройти
+--   все возможные варианты развития вычислительного процесса в общем случае,
+--   следовательно, на каждом уровне стека может присутствовать несколько
+--   кадров.
+data SystemState title tag v t
+  = Frame
+    { nitta        :: BusNetwork title v t
+    , dataFlow0    :: DataFlowGraph v
+    , controlFlow0 :: ControlFlowGraph tag v
+    , timeTag      :: Maybe tag
+    , branchInputs :: [v]
+    }
+  | Level
+    { currentBranch     :: SystemState title tag v t
+    , remainingBranches :: [ SystemState title tag v t ]
+    , completedBranches :: [ SystemState title tag v t ]
+    , rootBranch        :: SystemState title tag v t
+    }
+  deriving ( Generic )
 
 instance ( Var v ) => DecisionProblem (BindingDT String v)
-                            BindingDT (BranchedProcess String tag v t)
+                            BindingDT (SystemState String tag v t)
          where
-  options _ Branch{..} = options binding topPU
-  options _ _          = undefined
-  decision _ branch@Branch{..} act = branch{ topPU=decision binding topPU act }
-  decision _ _ _                   = undefined
+  options _ Frame{..} = options binding nitta
+  options _ _         = undefined
+  decision _ branch@Frame{..} act = branch{ nitta=decision binding nitta act }
+  decision _ _ _                  = undefined
 
 instance ( Typeable title, Ord title, Show title, Var v, Time t
          ) => DecisionProblem (DataFlowDT title v t)
-                   DataFlowDT (BranchedProcess title tag v t)
+                   DataFlowDT (SystemState title tag v t)
          where
-  options _ Branch{..} = options dataFlowDT topPU
-  options _ _          = undefined
-  decision _ branch@Branch{..} act = branch{ topPU=decision dataFlowDT topPU act }
+  options _ Frame{..} = options dataFlowDT nitta
+  options _ _         = undefined
+  decision _ branch@Frame{..} act = branch{ nitta=decision dataFlowDT nitta act }
   decision _ _ _                   = undefined
 
 
 
 ---------------------------------------------------------------------
 -- * Ветвление алгоритма.
-
-
+--
+-- Под ветвлением алгоритма понимается возможность выбора одного из подграфов
+-- DFG (DFGSwitch -> dfgCases) в зависимости от данных. При этом выбор подграфа
+-- может осуществляться 1) спекулятивно (мультиплексор), если функциональные
+-- блоки не содаржат побочных эффектов или 2) реальным выбором вычислительного
+-- процесса.
 data ControlFlowDT tag v
 controlFlowDecision = Proxy :: Proxy ControlFlowDT
 
@@ -234,43 +234,38 @@ instance DecisionType (ControlFlowDT tag v) where
   data Decision (ControlFlowDT tag v) = ControlFlowD (ControlFlowGraph tag v)
     deriving ( Generic )
 
-instance ( Tag tag, Var v, Time t
-         ) => DecisionProblem (ControlFlowDT tag v)
-                ControlFlowDT (BranchedProcess String tag v (TaggedTime tag t))
+instance ( Var v, Time t
+         ) => DecisionProblem (ControlFlowDT String v)
+                ControlFlowDT (SystemState String String v (TaggedTime String t))
          where
-  options _ Branch{ topPU=pu, ..} = branchingOptions controlFlow availableVars
+  options _ Frame{ nitta=pu, .. } = branchingOptions (dataFlow2controlFlow dataFlow0) availableVars
     where
       availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT pu
+      branchingOptions (CFG cfs) availableVars
+        = [ ControlFlowO x
+          | x@CFGSwitch{..} <- cfs
+          , all (`elem` availableVars) $ cfgKey : cfgInputs
+          ]
+      branchingOptions _ _ = error "branchingOptions: internal error."
+
+
   options _ _ = undefined
 
   -- | Выполнить ветвление вычислительного процесса. Это действие заключается в замене текущей ветки
-  -- вычислительного процесса на кустарник (Bush), в рамках работы с которым необъходимо перебрать
+  -- вычислительного процесса на кустарник (Frame), в рамках работы с которым необъходимо перебрать
   -- все веточки и в конце собрать обратно в одну ветку.
-  decision _ Branch{..} (ControlFlowD CFGSwitch{..})
-    = let now = nextTick $ process topPU
-          branch : branchs = map (\OptionCF{..} -> Branch
-                                    { topPU=setTime now{ tag=ocfTag } topPU
-                                    , controlFlow=oControlFlow
-                                    , branchTag=ocfTag
+  decision _ Frame{..} (ControlFlowD CFGSwitch{..})
+    = let now = nextTick $ process nitta
+          branch : branchs = map (\OptionCF{..} -> Frame
+                                    { nitta=setTime now{ tag=ocfTag } nitta
+                                    , controlFlow0=oControlFlow
+                                    , timeTag=ocfTag
                                     , branchInputs=ocfInputs
                                     }
                                   ) cfgCases
-      in Bush{ currentBranch=branch
-            , remainingBranches=branchs
-            , completedBranches=[]
-            , rootBranch=branch
-            }
+      in Level{ currentBranch=branch
+              , remainingBranches=branchs
+              , completedBranches=[]
+              , rootBranch=branch
+              }
   decision _ _ _                   = undefined
-
-
-
--- | Получить список вариантов ветвления вычислительного процесса.
---
--- Ветвление вычислительного процесса возможно в том случае, если доступнен ключ ветвления
--- алгоритма и все входные переменные для всех вариантов развития вычислительного процесса.
-branchingOptions (CFG cfs) availableVars
-  = [ ControlFlowO x
-    | x@CFGSwitch{..} <- cfs
-    , all (`elem` availableVars) $ cfgKey : cfgInputs
-    ]
-branchingOptions _ _ = error "branchingOptions: internal error."

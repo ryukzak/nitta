@@ -120,18 +120,18 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
 
-instance ( Tag tag, Time t, Var v
-         ) => DecisionProblem (CompilerDT String tag v (TaggedTime tag t))
-                   CompilerDT (BranchedProcess String tag v (TaggedTime tag t))
+instance ( Time t, Var v
+         ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
+                   CompilerDT (SystemState String String v (TaggedTime String t))
          where
-  options _ Bush{..} = options compiler currentBranch
-  options _ branch@Branch{..} = concat
+  options _ Level{..} = options compiler currentBranch
+  options _ branch@Frame{..} = concat
     [ map generalizeDataFlowOption dataFlowOptions
     , map generalizeControlFlowOption $ options controlFlowDecision branch
     , map generalizeBindingOption $ options binding branch
     ]
     where
-      dataFlowOptions = sensibleOptions $ filterByControlModel controlFlow $ options dataFlowDT topPU
+      dataFlowOptions = sensibleOptions $ filterByControlModel (dataFlow2controlFlow dataFlow0) $ options dataFlowDT nitta
       filterByControlModel controlModel opts
         = let cfOpts = allowByControlFlow controlModel
           in map (\t@DataFlowO{..} -> t
@@ -142,7 +142,7 @@ instance ( Tag tag, Time t, Var v
                   }) opts
       sensibleOptions = filter $ \DataFlowO{..} -> any isJust $ M.elems dfoTargets
 
-  decision _ bush@Bush{..} act
+  decision _ bush@Level{..} act
     = let bush' = bush{ currentBranch=decision compiler currentBranch act }
       in if isCurrentBranchOver bush'
         then finalizeBranch bush'
@@ -151,8 +151,8 @@ instance ( Tag tag, Time t, Var v
     = decision binding branch $ BindingD fb title
   decision _ branch (ControlFlowDecision d)
     = decision controlFlowDecision branch $ ControlFlowD d
-  decision _ branch@Branch{ topPU=pu, .. } (DataFlowDecision src trg)
-    = branch{ topPU=decision dataFlowDT pu $ DataFlowD src trg }
+  decision _ branch@Frame{ nitta=pu, .. } (DataFlowDecision src trg)
+    = branch{ nitta=decision dataFlowDT pu $ DataFlowD src trg }
 
 
 option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
@@ -176,7 +176,7 @@ option2decision (DataFlowOption src trg)
 
 data CompilerStep title tag v t
   = CompilerStep
-    { state        :: BranchedProcess title tag v t
+    { state        :: SystemState title tag v t
     , config       :: NaiveOpt
     , lastDecision :: Maybe (Decision (CompilerDT title tag v t))
     }
@@ -189,9 +189,9 @@ instance Default (CompilerStep title tag v t) where
                     }
 
 
-instance ( Tag tag, Time t, Var v
-         ) => DecisionProblem (CompilerDT String tag v (TaggedTime tag t))
-                   CompilerDT (CompilerStep String tag v (TaggedTime tag t))
+instance ( Time t, Var v
+         ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
+                   CompilerDT (CompilerStep String String v (TaggedTime String t))
          where
   options proxy CompilerStep{..} = options proxy state
   decision proxy st@CompilerStep{..} act = st{ state=decision proxy state act }
@@ -255,8 +255,8 @@ data SpecialMetrics
   deriving ( Show, Generic )
 
 
-measure _ Bush{} _ = error "Can't measure Bush!"
-measure opts Branch{ topPU=net@BusNetwork{..} } (BindingOption fb title) = BindingMetrics
+measure opts Level{..} opt = measure opts currentBranch opt
+measure opts Frame{ nitta=net@BusNetwork{..} } (BindingOption fb title) = BindingMetrics
   { critical=isCritical fb
   , alternative=length (howManyOptionAllow (filterBindingOption opts) M.! fb)
   , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind fb (bnPus M.! title)
@@ -284,7 +284,7 @@ integral GlobalMetrics{..} _                               = 0
 
 
 -- | Функция применяется к кусту и позволяет определить, осталась ли работа в текущей ветке или нет.
-isCurrentBranchOver Bush{ currentBranch=branch@Branch{..} }
+isCurrentBranchOver Level{ currentBranch=branch@Frame{..} }
   | opts <- options compiler branch
   = null $ filterBindingOption opts ++ filterDataFlowOption opts
 isCurrentBranchOver _ = False
@@ -295,23 +295,23 @@ isCurrentBranchOver _ = False
 -- 1) Сменить ветку на следующую.
 -- 2) Вернуться в выполнение корневой ветки, для чего слить вычислительный процесс всех вариантов
 --    ветвления алгоритма.
-finalizeBranch bush@Bush{ remainingBranches=b:bs, ..}
+finalizeBranch bush@Level{ remainingBranches=b:bs, ..}
   = bush
     { currentBranch=b
     , remainingBranches=bs
     , completedBranches=currentBranch : completedBranches
     }
-finalizeBranch Bush{..}
+finalizeBranch Level{..}
   = let branchs = currentBranch : completedBranches
-        mergeTime = (maximum $ map (nextTick . process . topPU) branchs){ tag=branchTag rootBranch }
-        Branch{ topPU=pu@BusNetwork{..} } = currentBranch
+        mergeTime = (maximum $ map (nextTick . process . nitta) branchs){ tag=timeTag rootBranch }
+        Frame{ nitta=pu@BusNetwork{..} } = currentBranch
     in rootBranch
-      { topPU=setTime mergeTime pu
+      { nitta=setTime mergeTime pu
           { bnProcess=snd $ modifyProcess bnProcess $
               mapM_ (\Step{..} -> add sTime sDesc) $ concatMap inBranchSteps branchs
           }
       }
-finalizeBranch Branch{} = error "finalizeBranch: wrong args."
+finalizeBranch Frame{} = error "finalizeBranch: wrong args."
 
 
 
@@ -350,8 +350,8 @@ passiveOption2action d@EndpointO{..}
         b = d^.at.avail.infimum + d^.at.dur.infimum - 1
     in EndpointD epoType (a ... b)
 
-inBranchSteps Branch{..} = whatsHappenWith branchTag topPU
-inBranchSteps Bush{}     = error "inBranchSteps: wrong args"
+inBranchSteps Frame{..} = whatsHappenWith timeTag nitta
+inBranchSteps Level{}   = error "inBranchSteps: wrong args"
 
 
 whatsHappenWith tag pu =

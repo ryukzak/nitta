@@ -46,9 +46,10 @@ instance ( ToJSONKey title, ToJSON title, Title title
          , ToJSON tag
          , ToJSON v, Var v
          , ToJSON t, Time t
-         ) => ToJSON (BranchedProcess title tag v t)
+         ) => ToJSON (SystemState title tag v t)
 instance ToJSON (ControlFlowGraph tag v) where
   toJSON _ = String "Control Flow"
+instance ( ToJSON v, Var v ) => ToJSON (DataFlowGraph v)
 
 
 instance ( ToJSON title

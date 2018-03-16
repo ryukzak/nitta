@@ -41,8 +41,8 @@ import           System.FilePath.Posix       (joinPath, (</>))
 import           Text.StringTemplate
 
 
-nitta :: BusNetwork String String (TaggedTime String Int)
-nitta = busNetwork 24
+microarch :: BusNetwork String String (TaggedTime String Int)
+microarch = busNetwork 24
   [ ("fram1", PU def FR.Link{ FR.oe=Index 11, FR.wr=Index 10, FR.addr=map Index [9, 8, 7, 6] })
   , ("fram2", PU def FR.Link{ FR.oe=Index 5, FR.wr=Index 4, FR.addr=map Index [3, 2, 1, 0] })
   , ("shift", PU def S.Link{ S.work=Index 12, S.direction=Index 13, S.mode=Index 14, S.step=Index 15, S.init=Index 16, S.oe=Index 17 } )
@@ -71,9 +71,9 @@ scheduledBush
             , (1, DFG [ DFGNode $ FB.reg (I "x2") $ O ["y2"], DFGNode $ FB.framOutput 11 $ I "y2" ])
             ]
           ]
-        nitta' = bindAll (functionalBlocks dataFlow) nitta
-        initialBranch = Branch nitta' (dataFlow2controlFlow dataFlow) Nothing []
-        Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
+        microarch' = bindAll (functionalBlocks dataFlow) microarch
+        initialBranch = Frame microarch' dataFlow (dataFlow2controlFlow dataFlow) Nothing []
+        Frame{ nitta=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
     in pu
 
 -- | Пример работы с единым временем.
@@ -99,9 +99,9 @@ scheduledBranch
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
         dataFlow = DFG $ map DFGNode alg
-        nitta' = bindAll (functionalBlocks dataFlow) nitta
-        initialBranch = Branch nitta' (dataFlow2controlFlow dataFlow) Nothing []
-        Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
+        microarch' = bindAll (functionalBlocks dataFlow) microarch
+        initialBranch = Frame microarch' dataFlow (dataFlow2controlFlow dataFlow) Nothing []
+        Frame{ nitta=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
     in pu
 
 -- | Пример работы с единым временем.
@@ -111,9 +111,9 @@ scheduledBranchSPI
               , FB.reg (I "a") $ O ["b"]
               ]
         dataFlow = DFG $ map DFGNode alg
-        nitta' = bindAll (functionalBlocks dataFlow) nitta
-        initialBranch = Branch nitta' (dataFlow2controlFlow dataFlow) Nothing []
-        Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
+        microarch' = bindAll (functionalBlocks dataFlow) microarch
+        initialBranch = Frame microarch' dataFlow (dataFlow2controlFlow dataFlow) Nothing []
+        Frame{ nitta=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
     in pu
 
 root
@@ -139,31 +139,31 @@ root
               ]
         dataFlow = DFG $ map DFGNode alg
         controlFlow = dataFlow2controlFlow dataFlow
-        nitta' = bindAll (functionalBlocks dataFlow) nitta
-    in Branch nitta' controlFlow Nothing []
+        microarch' = bindAll (functionalBlocks dataFlow) microarch
+    in Frame microarch' dataFlow controlFlow Nothing []
 
 ---------------------------------------------------------------------------------
 
 
 main = do
-  -- test scheduledBranch
-  --   (def{ cntxVars=M.fromList []
-  --       } :: Cntx String Int)
+  test scheduledBranch
+    (def{ cntxVars=M.fromList []
+        } :: Cntx String Int)
   -- test scheduledBranchSPI
   --   (def{ cntxVars=M.fromList [("b", [0])]
   --       , cntxInputs=M.fromList [("a", [1, 2, 3])]
   --       } :: Cntx String Int)
   -- simulateSPI 3
-  let prefix = "import axios from 'axios';\n\
-                \var api = {}\n\
-                \export default api;"
-  let axios' = axiosWith defAxiosOptions defCommonGeneratorOptions{ urlPrefix="http://localhost:8080"
-                                                                  , SJS.moduleName="api"
-                                                                  }
-  createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
-  writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
-  putStrLn "Server start on 8080..."
-  app def{ state=root } >>= run 8080 . simpleCors
+  -- let prefix = "import axios from 'axios';\n\
+  --               \var api = {}\n\
+  --               \export default api;"
+  -- let axios' = axiosWith defAxiosOptions defCommonGeneratorOptions{ urlPrefix="http://localhost:8080"
+  --                                                                 , SJS.moduleName="api"
+  --                                                                 }
+  -- createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
+  -- writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
+  -- putStrLn "Server start on 8080..."
+  -- app def{ state=root } >>= run 8080 . simpleCors
 
 
 test pu cntx = do
