@@ -19,7 +19,7 @@ import qualified Data.Map         as M
 import           Data.Text        (pack)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
-import           NITTA.Flows
+import           NITTA.FlowGraph
 import           NITTA.Types
 import           Numeric.Interval
 
@@ -47,7 +47,7 @@ instance ( ToJSONKey title, ToJSON title, Title title
          , ToJSON v, Var v
          , ToJSON t, Time t
          ) => ToJSON (BranchedProcess title tag v t)
-instance ToJSON (ControlFlow tag v) where
+instance ToJSON (ControlFlowGraph tag v) where
   toJSON _ = String "Control Flow"
 
 

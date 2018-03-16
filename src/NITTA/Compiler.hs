@@ -35,7 +35,7 @@ import           Data.Maybe
 import           Data.Proxy
 import           GHC.Generics
 import           NITTA.BusNetwork
-import           NITTA.Flows
+import           NITTA.FlowGraph
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
@@ -96,13 +96,13 @@ compiler = Proxy :: Proxy CompilerDT
 
 instance DecisionType (CompilerDT title tag v t) where
   data Option (CompilerDT title tag v t)
-    = ControlFlowOption (ControlFlow tag v)
+    = ControlFlowOption (ControlFlowGraph tag v)
     | BindingOption (FB (Parcel v) v) title
     | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
     deriving ( Generic )
 
   data Decision (CompilerDT title tag v t)
-    = ControlFlowDecision (ControlFlow tag v)
+    = ControlFlowDecision (ControlFlowGraph tag v)
     | BindingDecision (FB (Parcel v) v) title
     | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
     deriving ( Generic )

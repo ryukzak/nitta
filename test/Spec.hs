@@ -12,7 +12,7 @@ import           Data.Default
 import qualified Data.Map                    as M
 import           NITTA.BusNetwork
 import           NITTA.Compiler
-import           NITTA.Flows                 as F
+import           NITTA.FlowGraph
 import qualified NITTA.FunctionBlocks        as FB
 import qualified NITTA.ProcessUnits.Accum    as A
 import qualified NITTA.ProcessUnits.Fram     as FR
@@ -84,9 +84,9 @@ accum_fram1_fram2_netTests
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
         net' = bindAll alg (net :: BusNetwork String String (TaggedTime String Int))
-        compiler = F.Branch net' (dataFlow2controlFlow $ F.Stage $ map Actor alg) Nothing []
-        F.Branch{ topPU=net''
-                } = foldl (\comp _ -> naive def comp) compiler $ replicate 150 ()
+        compiler = Branch net' (dataFlow2controlFlow $ DFG $ map DFGNode alg) Nothing []
+        Branch{ topPU=net''
+              } = foldl (\comp _ -> naive def comp) compiler $ replicate 150 ()
         library = joinPath ["..", ".."]
         workdir = joinPath ["hdl", "gen", "unittest_accum_fram1_fram2_net"]
     in testCase "Obscure integration test for net of accum, fram1, fram2"

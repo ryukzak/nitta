@@ -23,7 +23,7 @@ import           Data.Maybe
 import           GHC.Generics
 import           ListT                  (toList)
 import           NITTA.Compiler
-import           NITTA.Flows
+import           NITTA.FlowGraph
 import           NITTA.Types            hiding (Synthesis, steps)
 import           NITTA.Utils.JSON       ()
 import           Servant

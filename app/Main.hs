@@ -23,7 +23,7 @@ import           Network.Wai.Middleware.Cors (simpleCors)
 import           NITTA.API
 import           NITTA.BusNetwork
 import           NITTA.Compiler
-import           NITTA.Flows
+import           NITTA.FlowGraph
 import qualified NITTA.FunctionBlocks        as FB
 import qualified NITTA.ProcessUnits.Accum    as A
 import qualified NITTA.ProcessUnits.Fram     as FR
@@ -62,13 +62,13 @@ nitta = busNetwork 24
 -- - TODO: генерация аппаратуры.
 -- - TODO: testbench.
 scheduledBush
-  = let dataFlow = Stage
-          [ Actor $ FB.framInput 0 $ O [ "cond", "cond'" ]
-          , Actor $ FB.framInput 1 $ O [ "x1", "x2" ]
-          , Actor $ FB.framOutput 2 $ I "cond'"
-          , Paths "cond"
-            [ (0, Stage [ Actor $ FB.reg (I "x1") $ O ["y1"], Actor $ FB.framOutput 10 $ I "y1" ])
-            , (1, Stage [ Actor $ FB.reg (I "x2") $ O ["y2"], Actor $ FB.framOutput 11 $ I "y2" ])
+  = let dataFlow = DFG
+          [ DFGNode $ FB.framInput 0 $ O [ "cond", "cond'" ]
+          , DFGNode $ FB.framInput 1 $ O [ "x1", "x2" ]
+          , DFGNode $ FB.framOutput 2 $ I "cond'"
+          , DFGSwitch "cond"
+            [ (0, DFG [ DFGNode $ FB.reg (I "x1") $ O ["y1"], DFGNode $ FB.framOutput 10 $ I "y1" ])
+            , (1, DFG [ DFGNode $ FB.reg (I "x2") $ O ["y2"], DFGNode $ FB.framOutput 11 $ I "y2" ])
             ]
           ]
         nitta' = bindAll (functionalBlocks dataFlow) nitta
@@ -98,7 +98,7 @@ scheduledBranch
               , FB $ FB.ShiftL (I "f") $ O ["g"]
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
-        dataFlow = Stage $ map Actor alg
+        dataFlow = DFG $ map DFGNode alg
         nitta' = bindAll (functionalBlocks dataFlow) nitta
         initialBranch = Branch nitta' (dataFlow2controlFlow dataFlow) Nothing []
         Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
@@ -110,7 +110,7 @@ scheduledBranchSPI
               , FB $ FB.Send (I "b")
               , FB.reg (I "a") $ O ["b"]
               ]
-        dataFlow = Stage $ map Actor alg
+        dataFlow = DFG $ map DFGNode alg
         nitta' = bindAll (functionalBlocks dataFlow) nitta
         initialBranch = Branch nitta' (dataFlow2controlFlow dataFlow) Nothing []
         Branch{ topPU=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
@@ -137,7 +137,7 @@ root
               , FB $ FB.ShiftL (I "f") $ O ["g"]
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
-        dataFlow = Stage $ map Actor alg
+        dataFlow = DFG $ map DFGNode alg
         controlFlow = dataFlow2controlFlow dataFlow
         nitta' = bindAll (functionalBlocks dataFlow) nitta
     in Branch nitta' controlFlow Nothing []

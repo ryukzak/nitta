@@ -11,16 +11,16 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 {-
-TODO: Место для микростатьи по вопросу: как именно соотносятся между собой решения по привязке,
-пересылкам и управлению потоком данных.
+TODO: Место для статьи о DFG и CFG. Методах работы с ними. Математической модели
+для их преобразований.
 -}
-module NITTA.Flows
+module NITTA.FlowGraph
   ( allowByControlFlow
   , BranchedProcess(..)
-  , ControlFlow(..), dataFlow2controlFlow, isChoice, isBlock
+  , ControlFlowGraph(..), dataFlow2controlFlow
   , controlFlowDecision
   , ControlFlowDT
-  , DataFlow(..), isPaths
+  , DataFlowGraph(..)
   , Decision(..)
   , Option(..)
   , OptionCF(..)
@@ -35,76 +35,80 @@ import           NITTA.Types
 import           NITTA.Utils
 
 
-
-
--- * Поток управления и поток данных.
-
-
--- | Структура данных для представления прикладного программного кода.
+-- * Граф потока управления и потока данных.
 --
--- Поток данных представляется в виде графа, описывающего взаимосвязи между функциональными блоками.
--- При этом в графе могут быть "условные фрагменты".
+-- Две параллельно существующие модели алгоритма.
 --
--- TODO: Сделать визуализацию с явным выделением Stage-ов.
-data DataFlow v
-  -- | Актор, вданном случае - функциональноый блок.
-  = Actor (FB (Parcel v) v)
-  -- | Стадия вычислительного процесса. Может иметь произвольное колличество прыжков от
-  -- входа к выходу. Важным свойством стадии является возможность параллельного выполнения
-  -- всех элементов, входящих в её состав. Исключение - стадия с несколькими вариантами потока
-  -- данных.
-  | Stage [DataFlow v]
-  -- Ветвление вычислительного процесса. Осуществляется на основе одного значений. Количество
-  -- вариантов переходов, потенциально, не ограничено.
-  | Paths
-    { dfCond  :: v -- ^ Ключ для перехода.
-    , dfPaths :: [(Int, DataFlow v)] -- ^ Таблица переходов, ключ -> программа в данной ветке.
+-- TODO: Разобраться в необходимости CFG как отдельной сущности, так как по
+-- видимому можно ограничиться DFG с взаимозаменяемыми подграфами.
+--
+-- TODO: Сделать визуализацию DFG & CFG.
+
+
+-- | Граф потока данных.
+--
+-- Поток данных представляется в виде графа, описывающего взаимосвязи между
+-- функциональными блоками (пересылки). При этом в графе могут быть множества
+-- взаимозаменяемых подграфов, соответствующих условному оператору (Switch).
+--
+-- TODO: В случае если функциональные блоки не имеют побочных эффектов, то
+-- множество взаимозаменяемых подграфом можно заменить графом с выборкой
+-- результата через мультиплексор.
+data DataFlowGraph v
+  = DFGNode (FB (Parcel v) v) -- ^ вершина графа, соответствует фунциональному блоку.
+  | DFG [DataFlowGraph v] -- ^ граф, где информация о вершинах хранится внутри
+                          -- функциональных блоков.
+  | DFGSwitch -- ^ множество взаимозаменяемых подграфов.
+    { dfgKey   :: v -- ^ ключ, по которому осуществляется выбор подграфа.
+    , dfgCases :: [(Int, DataFlowGraph v)] -- ^ таблица соответствия значения ключа
+                                           -- перехода и требуемого подграфа.
     }
   deriving ( Show )
 
-instance ( Var v ) => Variables (DataFlow v) v where
-  variables (Actor fb)  = variables fb
-  variables (Stage ps)  = concatMap variables ps
-  -- fixme -- outputs and internal transfers...
-  variables s@Paths{..} = dfCond : inputsOfFBs (functionalBlocks s)
+instance ( Var v ) => Variables (DataFlowGraph v) v where
+  variables (DFGNode fb)  = variables fb
+  variables (DFG g)       = concatMap variables g
+  variables DFGSwitch{..} = dfgKey : concatMap (variables . snd) dfgCases
 
-instance WithFunctionalBlocks (DataFlow v) (FB (Parcel v) v) where
-  functionalBlocks (Actor fb) = [fb]
-  functionalBlocks (Stage ss) = concatMap functionalBlocks ss
-  functionalBlocks Paths{..}  = concatMap (functionalBlocks . snd) dfPaths
-
+instance WithFunctionalBlocks (DataFlowGraph v) (FB (Parcel v) v) where
+  functionalBlocks (DFGNode fb)  = [ fb ]
+  functionalBlocks (DFG g)       = concatMap functionalBlocks g
+  functionalBlocks DFGSwitch{..} = concatMap (functionalBlocks . snd) dfgCases
 
 
 
--- | Структура для описания потока управления с точки зрения пересылок данных.
-data ControlFlow tag v
-  -- | Атомарной операцией является пересылка данных.
-  = Atom v
+-- | Граф потока управления.
+--
+-- Поток управление описывается структура  данных представляется в виде графа,
+-- описывающего взаимосвязи между функциональными блоками (пересылки). При этом
+-- в графе могут быть множества взаимозаменяемых подграфов, соответствующих
+-- условному оператору (Switch).
+data ControlFlowGraph tag v
+  -- | Вершина графа, соответствует пересылаемому значению.
+  = CFGNode v
   -- | Блок операций пересылоккоторые должны быть выполнены группой, при этом реальная
   -- последовательность пересылок указанных в блоке данных не принципиальна.
-  | Block [ControlFlow tag v]
+  | CFG [ControlFlowGraph tag v]
   -- | Блок вариантивного развития вычислительного процесса. Рассматривается как атомарный,
   -- так как иначе не получится обеспечить гарантированное время исполнения и целостность
   -- вычислительного процесса.
-  | Choice{ -- | Ключ выбора варианта развития вычислительного процесса. Принципиальное отличие от
-            -- cfInputs заключается в том, что эта пересылка обязательно перед выбором.
-            --
-            -- При этом не очень понятно, почему она тут, а не в предыдущем блоке?
-            cfCond    :: v
-            -- | Набор входных данных для вариативного развития вычислительного процесса.
-          , cfInputs  :: [v]
-            -- | Варианты ветвления вычилсительного процесса.
-          , cfOptions :: [OptionCF tag v]
-          }
+  | CFGSwitch
+    { -- | Ключ выбора варианта развития вычислительного процесса. Принципиальное отличие от
+      -- cfInputs заключается в том, что эта пересылка обязательно перед выбором.
+      --
+      -- При этом не очень понятно, почему она тут, а не в предыдущем блоке?
+      cfgKey    :: v
+      -- | Набор входных данных для вариативного развития вычислительного процесса.
+    , cfgInputs :: [v]
+      -- | Варианты ветвления вычилсительного процесса.
+    , cfgCases  :: [OptionCF tag v]
+    }
   deriving ( Show, Eq )
 
-instance ( Var v ) => Variables (ControlFlow tag v) v where
-  variables (Atom v)    = [v]
-  variables (Block cfs) = concatMap variables cfs
-  variables Choice{..}  = cfCond : concatMap (variables . oControlFlow) cfOptions
-
-isPaths Paths{} = True
-isPaths _       = False
+instance ( Var v ) => Variables (ControlFlowGraph tag v) v where
+  variables (CFGNode v) = [v]
+  variables (CFG cfs) = concatMap variables cfs
+  variables CFGSwitch{..}  = cfgKey : concatMap (variables . oControlFlow) cfgCases
 
 
 
@@ -113,34 +117,34 @@ data OptionCF tag v
   = OptionCF
   { ocfTag       :: Maybe tag -- ^ Тег ветки времени.
   , ocfInputs    :: [v] -- ^ Входные переменные ветки потока управления.
-  , oControlFlow :: ControlFlow tag v -- ^ Вложенный поток управления.
+  , oControlFlow :: ControlFlowGraph tag v -- ^ Вложенный поток управления.
   } deriving ( Show, Eq )
 
 
-dataFlow2controlFlow (Actor fb) = Block $ map Atom $ variables fb
-dataFlow2controlFlow paths@Paths{..}
+dataFlow2controlFlow (DFGNode fb) = CFG $ map CFGNode $ variables fb
+dataFlow2controlFlow paths@DFGSwitch{..}
   = let inputs' = inputsOfFBs $ functionalBlocks paths
         dfPaths' = map (\(key, prog) -> OptionCF
-                         { ocfTag=Just $ show dfCond ++ " == " ++ show key
+                         { ocfTag=Just $ show dfgKey ++ " == " ++ show key
                          , ocfInputs=inputs' \\ variables prog
                          , oControlFlow=dataFlow2controlFlow prog
                          }
-                       ) dfPaths
-    in Choice dfCond inputs' dfPaths'
-dataFlow2controlFlow (Stage ss)
+                       ) dfgCases
+    in CFGSwitch dfgKey inputs' dfPaths'
+dataFlow2controlFlow (DFG ss)
   = let cf = map dataFlow2controlFlow ss
-        parallel = filter isBlock cf
-        parallel' = nub $ concatMap (\(Block xs) -> xs) parallel
-        withInputs = parallel' ++ nub (filter (not . isBlock) cf)
-        inputsVariables = nub $ map Atom $ concatMap (\(Choice _ vs _) -> vs)
-                          $ filter isChoice withInputs
-    in Block $ withInputs \\ inputsVariables
+        parallel = filter isCFG cf
+        parallel' = nub $ concatMap (\(CFG xs) -> xs) parallel
+        withInputs = parallel' ++ nub (filter (not . isCFG) cf)
+        inputsVariables = nub $ map CFGNode $ concatMap (\CFGSwitch{..} -> cfgInputs)
+                          $ filter isCFGSwitch withInputs
+    in CFG $ withInputs \\ inputsVariables
 
 
-isBlock Block{} = True
-isBlock _       = False
-isChoice Choice{} = True
-isChoice _        = False
+isCFG CFG{} = True
+isCFG _     = False
+isCFGSwitch CFGSwitch{} = True
+isCFGSwitch _           = False
 
 
 
@@ -151,10 +155,10 @@ isChoice _        = False
 -- реализовываться только в случае выбора одной из веток вычислительного процесса. В таком случае
 -- компилятору необходимо осуществлять проверку, можем ли мы с точки зрения потока управления
 -- выполнить ту или иную пересылку данных. Для этого и служит эта фунция.
-allowByControlFlow (Atom v)   = [ v ]
-allowByControlFlow Choice{..} = [ cfCond ]
-allowByControlFlow block@(Block cfs)
-  | not $ any isBlock cfs = concatMap allowByControlFlow cfs
+allowByControlFlow (CFGNode v)   = [ v ]
+allowByControlFlow CFGSwitch{..} = [ cfgKey ]
+allowByControlFlow block@(CFG g)
+  | not $ any isCFG g = concatMap allowByControlFlow g
   | otherwise = error $ "Bad controlFlow: " ++ show block
 
 
@@ -173,7 +177,7 @@ data BranchedProcess title tag v t
     topPU        :: BusNetwork title v t
     -- | Описание текущего потока управления (в случае если мы находимся в одной из веток
     -- вычислительного процесса, то описывается только её поток управления)
-  , controlFlow  :: ControlFlow tag v
+  , controlFlow  :: ControlFlowGraph tag v
     -- | Тег времени, идентифицирующий данную ветку вычислиельного процесса.
   , branchTag    :: Maybe tag
     -- | Входные данные рассматриваемой ветки вычислительного процесса.
@@ -225,9 +229,9 @@ controlFlowDecision = Proxy :: Proxy ControlFlowDT
 
 
 instance DecisionType (ControlFlowDT tag v) where
-  data Option (ControlFlowDT tag v) = ControlFlowO (ControlFlow tag v)
+  data Option (ControlFlowDT tag v) = ControlFlowO (ControlFlowGraph tag v)
     deriving ( Generic )
-  data Decision (ControlFlowDT tag v) = ControlFlowD (ControlFlow tag v)
+  data Decision (ControlFlowDT tag v) = ControlFlowD (ControlFlowGraph tag v)
     deriving ( Generic )
 
 instance ( Tag tag, Var v, Time t
@@ -242,7 +246,7 @@ instance ( Tag tag, Var v, Time t
   -- | Выполнить ветвление вычислительного процесса. Это действие заключается в замене текущей ветки
   -- вычислительного процесса на кустарник (Bush), в рамках работы с которым необъходимо перебрать
   -- все веточки и в конце собрать обратно в одну ветку.
-  decision _ Branch{..} (ControlFlowD Choice{..})
+  decision _ Branch{..} (ControlFlowD CFGSwitch{..})
     = let now = nextTick $ process topPU
           branch : branchs = map (\OptionCF{..} -> Branch
                                     { topPU=setTime now{ tag=ocfTag } topPU
@@ -250,7 +254,7 @@ instance ( Tag tag, Var v, Time t
                                     , branchTag=ocfTag
                                     , branchInputs=ocfInputs
                                     }
-                                  ) cfOptions
+                                  ) cfgCases
       in Bush{ currentBranch=branch
             , remainingBranches=branchs
             , completedBranches=[]
@@ -264,10 +268,9 @@ instance ( Tag tag, Var v, Time t
 --
 -- Ветвление вычислительного процесса возможно в том случае, если доступнен ключ ветвления
 -- алгоритма и все входные переменные для всех вариантов развития вычислительного процесса.
-branchingOptions (Block cfs) availableVars
+branchingOptions (CFG cfs) availableVars
   = [ ControlFlowO x
-    | x@Choice{..} <- cfs
-    , all (`elem` availableVars) $ cfCond : cfInputs
+    | x@CFGSwitch{..} <- cfs
+    , all (`elem` availableVars) $ cfgKey : cfgInputs
     ]
 branchingOptions _ _ = error "branchingOptions: internal error."
-
