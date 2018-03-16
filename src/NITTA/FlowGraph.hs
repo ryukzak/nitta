@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
@@ -15,18 +16,17 @@ TODO: Место для статьи о DFG и CFG. Методах работы 
 для их преобразований.
 -}
 module NITTA.FlowGraph
-  ( allowByControlFlow
-  , SystemState(..)
-  , ControlFlowGraph(..), dataFlow2controlFlow
-  , controlFlowDecision
+  ( controlFlowDecision
   , ControlFlowDT
+  , ControlFlowGraph(..)
   , DataFlowGraph(..)
   , Decision(..)
   , Option(..)
   , OptionCF(..)
+  , SystemState(..)
   ) where
 
-import           Data.List        (nub, (\\))
+import           Data.List        (nub)
 import qualified Data.Map         as M
 import           Data.Typeable
 import           GHC.Generics
@@ -121,48 +121,6 @@ data OptionCF tag v
   } deriving ( Show, Eq )
 
 
-dataFlow2controlFlow (DFGNode fb) = CFG $ map CFGNode $ variables fb
-dataFlow2controlFlow paths@DFGSwitch{..}
-  = let inputs' = inputsOfFBs $ functionalBlocks paths
-        dfPaths' = map (\(key, prog) -> OptionCF
-                         { ocfTag=Just $ show dfgKey ++ " == " ++ show key
-                         , ocfInputs=inputs' \\ variables prog
-                         , oControlFlow=dataFlow2controlFlow prog
-                         }
-                       ) dfgCases
-    in CFGSwitch dfgKey inputs' dfPaths'
-dataFlow2controlFlow (DFG ss)
-  = let cf = map dataFlow2controlFlow ss
-        parallel = filter isCFG cf
-        parallel' = nub $ concatMap (\(CFG xs) -> xs) parallel
-        withInputs = parallel' ++ nub (filter (not . isCFG) cf)
-        inputsVariables = nub $ map CFGNode $ concatMap (\CFGSwitch{..} -> cfgInputs)
-                          $ filter isCFGSwitch withInputs
-    in CFG $ withInputs \\ inputsVariables
-
-
-isCFG CFG{} = True
-isCFG _     = False
-isCFGSwitch CFGSwitch{} = True
-isCFGSwitch _           = False
-
-
-
--- | При моделировании вычислительного процесса вычислительный процесс развивается не только в
--- рамках его потока данных, но и одновременно в рамках потока управления. При этом возможно
--- ситуация, когда какое-то действие допустимо с точки зрения потока данных (один вычислительный
--- блок готов выслать данный, а другой принять данные), но при этом данная пересылка должна
--- реализовываться только в случае выбора одной из веток вычислительного процесса. В таком случае
--- компилятору необходимо осуществлять проверку, можем ли мы с точки зрения потока управления
--- выполнить ту или иную пересылку данных. Для этого и служит эта фунция.
-allowByControlFlow (CFGNode v)   = [ v ]
-allowByControlFlow CFGSwitch{..} = [ cfgKey ]
-allowByControlFlow block@(CFG g)
-  | not $ any isCFG g = concatMap allowByControlFlow g
-  | otherwise = error $ "Bad controlFlow: " ++ show block
-
-
-
 
 -- | Для описания текущего состояния вычислительной системы (с учётом алгоритма,
 -- потока управления, "текущего места" исполнения алгоритма, микроархитектуры и
@@ -184,8 +142,7 @@ allowByControlFlow block@(CFG g)
 data SystemState title tag v t
   = Frame
     { nitta        :: BusNetwork title v t
-    , dataFlow0    :: DataFlowGraph v
-    , controlFlow0 :: ControlFlowGraph tag v
+    , dfg          :: DataFlowGraph v
     , timeTag      :: Maybe tag
     , branchInputs :: [v]
     }
@@ -238,18 +195,14 @@ instance ( Var v, Time t
          ) => DecisionProblem (ControlFlowDT String v)
                 ControlFlowDT (SystemState String String v (TaggedTime String t))
          where
-  options _ Frame{ nitta=pu, .. } = branchingOptions (dataFlow2controlFlow dataFlow0) availableVars
+  options _ Frame{ dfg=DFG g, nitta }
+    = [ ControlFlowO undefined -- g
+      | DFGSwitch{ dfgKey } <- g
+      , all (`elem` availableVars) $ dfgKey : inputsOfFBs (concatMap functionalBlocks g)
+      ]
     where
-      availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT pu
-      branchingOptions (CFG cfs) availableVars
-        = [ ControlFlowO x
-          | x@CFGSwitch{..} <- cfs
-          , all (`elem` availableVars) $ cfgKey : cfgInputs
-          ]
-      branchingOptions _ _ = error "branchingOptions: internal error."
-
-
-  options _ _ = undefined
+      availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT nitta
+  options _ _ = error "DecisionProblem ControlFlowDT: internal error."
 
   -- | Выполнить ветвление вычислительного процесса. Это действие заключается в замене текущей ветки
   -- вычислительного процесса на кустарник (Frame), в рамках работы с которым необъходимо перебрать
@@ -258,7 +211,7 @@ instance ( Var v, Time t
     = let now = nextTick $ process nitta
           branch : branchs = map (\OptionCF{..} -> Frame
                                     { nitta=setTime now{ tag=ocfTag } nitta
-                                    , controlFlow0=oControlFlow
+                                    , dfg=undefined
                                     , timeTag=ocfTag
                                     , branchInputs=ocfInputs
                                     }

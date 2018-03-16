@@ -131,15 +131,18 @@ instance ( Time t, Var v
     , map generalizeBindingOption $ options binding branch
     ]
     where
-      dataFlowOptions = sensibleOptions $ filterByControlModel (dataFlow2controlFlow dataFlow0) $ options dataFlowDT nitta
-      filterByControlModel controlModel opts
-        = let cfOpts = allowByControlFlow controlModel
-          in map (\t@DataFlowO{..} -> t
-                  { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `elem` cfOpts
+      dataFlowOptions = sensibleOptions $ filterByDFG $ options dataFlowDT nitta
+      allowByDFG = allowByDFG' dfg
+      allowByDFG' (DFGNode fb)  = variables fb
+      allowByDFG' (DFG g)       = concatMap allowByDFG' g
+      allowByDFG' DFGSwitch{..} = [ dfgKey ]
+      filterByDFG
+        = map (\t@DataFlowO{..} -> t
+                  { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `elem` allowByDFG
                                                                       then desc
                                                                       else Nothing)
                                                 ) $ M.assocs dfoTargets
-                  }) opts
+                  })
       sensibleOptions = filter $ \DataFlowO{..} -> any isJust $ M.elems dfoTargets
 
   decision _ bush@Level{..} act

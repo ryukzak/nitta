@@ -85,7 +85,7 @@ accum_fram1_fram2_netTests
               ]
         net' = bindAll alg (net :: BusNetwork String String (TaggedTime String Int))
         dataFlow = DFG $ map DFGNode alg
-        compiler = Frame net' dataFlow (dataFlow2controlFlow dataFlow) Nothing []
+        compiler = Frame net' dataFlow Nothing [] :: SystemState String String String (TaggedTime String Int)
         Frame{ nitta=net''
              } = foldl (\comp _ -> naive def comp) compiler $ replicate 150 ()
         library = joinPath ["..", ".."]
