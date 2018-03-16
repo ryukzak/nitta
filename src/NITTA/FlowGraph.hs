@@ -5,7 +5,6 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -18,11 +17,9 @@ TODO: Место для статьи о DFG и CFG. Методах работы 
 module NITTA.FlowGraph
   ( controlFlowDecision
   , ControlFlowDT
-  , ControlFlowGraph(..)
   , DataFlowGraph(..)
   , Decision(..)
   , Option(..)
-  , OptionCF(..)
   , SystemState(..)
   ) where
 
@@ -35,14 +32,9 @@ import           NITTA.Types
 import           NITTA.Utils
 
 
--- * Граф потока управления и потока данных.
+-- * Модифицированый граф потока данных.
 --
--- Две параллельно существующие модели алгоритма.
---
--- TODO: Разобраться в необходимости CFG как отдельной сущности, так как по
--- видимому можно ограничиться DFG с взаимозаменяемыми подграфами.
---
--- TODO: Сделать визуализацию DFG & CFG.
+-- TODO: Сделать визуализацию DFG.
 
 
 -- | Граф потока данных.
@@ -66,60 +58,16 @@ data DataFlowGraph v
   deriving ( Show, Generic )
 
 instance ( Var v ) => Variables (DataFlowGraph v) v where
-  variables (DFGNode fb)  = variables fb
-  variables (DFG g)       = concatMap variables g
-  variables DFGSwitch{..} = dfgKey : concatMap (variables . snd) dfgCases
+  variables (DFGNode fb)                  = variables fb
+  variables (DFG g)                       = concatMap variables g
+  variables DFGSwitch{ dfgKey, dfgCases } = dfgKey : concatMap (variables . snd) dfgCases
 
 instance WithFunctionalBlocks (DataFlowGraph v) (FB (Parcel v) v) where
-  functionalBlocks (DFGNode fb)  = [ fb ]
-  functionalBlocks (DFG g)       = concatMap functionalBlocks g
-  functionalBlocks DFGSwitch{..} = concatMap (functionalBlocks . snd) dfgCases
+  functionalBlocks (DFGNode fb)          = [ fb ]
+  functionalBlocks (DFG g)               = concatMap functionalBlocks g
+  functionalBlocks DFGSwitch{ dfgCases } = concatMap (functionalBlocks . snd) dfgCases
 
-
-
--- | Граф потока управления.
---
--- Поток управление описывается структура  данных представляется в виде графа,
--- описывающего взаимосвязи между функциональными блоками (пересылки). При этом
--- в графе могут быть множества взаимозаменяемых подграфов, соответствующих
--- условному оператору (Switch).
-data ControlFlowGraph tag v
-  -- | Вершина графа, соответствует пересылаемому значению.
-  = CFGNode v
-  -- | Блок операций пересылоккоторые должны быть выполнены группой, при этом реальная
-  -- последовательность пересылок указанных в блоке данных не принципиальна.
-  | CFG [ControlFlowGraph tag v]
-  -- | Блок вариантивного развития вычислительного процесса. Рассматривается как атомарный,
-  -- так как иначе не получится обеспечить гарантированное время исполнения и целостность
-  -- вычислительного процесса.
-  | CFGSwitch
-    { -- | Ключ выбора варианта развития вычислительного процесса. Принципиальное отличие от
-      -- cfInputs заключается в том, что эта пересылка обязательно перед выбором.
-      --
-      -- При этом не очень понятно, почему она тут, а не в предыдущем блоке?
-      cfgKey    :: v
-      -- | Набор входных данных для вариативного развития вычислительного процесса.
-    , cfgInputs :: [v]
-      -- | Варианты ветвления вычилсительного процесса.
-    , cfgCases  :: [OptionCF tag v]
-    }
-  deriving ( Show, Eq )
-
-instance ( Var v ) => Variables (ControlFlowGraph tag v) v where
-  variables (CFGNode v) = [v]
-  variables (CFG cfs) = concatMap variables cfs
-  variables CFGSwitch{..}  = cfgKey : concatMap (variables . oControlFlow) cfgCases
-
-
-
--- | Ветка потока управления.
-data OptionCF tag v
-  = OptionCF
-  { ocfTag       :: Maybe tag -- ^ Тег ветки времени.
-  , ocfInputs    :: [v] -- ^ Входные переменные ветки потока управления.
-  , oControlFlow :: ControlFlowGraph tag v -- ^ Вложенный поток управления.
-  } deriving ( Show, Eq )
-
+dfgInputs g = inputsOfFBs $ functionalBlocks g
 
 
 -- | Для описания текущего состояния вычислительной системы (с учётом алгоритма,
@@ -141,35 +89,34 @@ data OptionCF tag v
 --   кадров.
 data SystemState title tag v t
   = Frame
-    { nitta        :: BusNetwork title v t
-    , dfg          :: DataFlowGraph v
-    , timeTag      :: Maybe tag
-    , branchInputs :: [v]
+    { nitta   :: BusNetwork title v t
+    , dfg     :: DataFlowGraph v
+    , timeTag :: Maybe tag
     }
   | Level
-    { currentBranch     :: SystemState title tag v t
-    , remainingBranches :: [ SystemState title tag v t ]
-    , completedBranches :: [ SystemState title tag v t ]
-    , rootBranch        :: SystemState title tag v t
+    { currentFrame    :: SystemState title tag v t
+    , remainFrames    :: [ SystemState title tag v t ]
+    , completedFrames :: [ SystemState title tag v t ]
+    , initialFrame    :: SystemState title tag v t
     }
   deriving ( Generic )
 
 instance ( Var v ) => DecisionProblem (BindingDT String v)
                             BindingDT (SystemState String tag v t)
          where
-  options _ Frame{..} = options binding nitta
-  options _ _         = undefined
-  decision _ branch@Frame{..} act = branch{ nitta=decision binding nitta act }
-  decision _ _ _                  = undefined
+  options _ Frame{ nitta } = options binding nitta
+  options _ _              = undefined
+  decision _ branch@Frame{ nitta } act = branch{ nitta=decision binding nitta act }
+  decision _ _ _                       = undefined
 
 instance ( Typeable title, Ord title, Show title, Var v, Time t
          ) => DecisionProblem (DataFlowDT title v t)
                    DataFlowDT (SystemState title tag v t)
          where
-  options _ Frame{..} = options dataFlowDT nitta
-  options _ _         = undefined
-  decision _ branch@Frame{..} act = branch{ nitta=decision dataFlowDT nitta act }
-  decision _ _ _                   = undefined
+  options _ Frame{ nitta } = options dataFlowDT nitta
+  options _ _              = undefined
+  decision _ branch@Frame{ nitta } act = branch{ nitta=decision dataFlowDT nitta act }
+  decision _ _ _                       = undefined
 
 
 
@@ -181,44 +128,42 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
 -- может осуществляться 1) спекулятивно (мультиплексор), если функциональные
 -- блоки не содаржат побочных эффектов или 2) реальным выбором вычислительного
 -- процесса.
-data ControlFlowDT tag v
+data ControlFlowDT v
 controlFlowDecision = Proxy :: Proxy ControlFlowDT
 
 
-instance DecisionType (ControlFlowDT tag v) where
-  data Option (ControlFlowDT tag v) = ControlFlowO (ControlFlowGraph tag v)
+instance DecisionType (ControlFlowDT v) where
+  data Option (ControlFlowDT v) = ControlFlowO (DataFlowGraph v) -- DFGSwitch
     deriving ( Generic )
-  data Decision (ControlFlowDT tag v) = ControlFlowD (ControlFlowGraph tag v)
+  data Decision (ControlFlowDT v) = ControlFlowD (DataFlowGraph v)
     deriving ( Generic )
 
 instance ( Var v, Time t
-         ) => DecisionProblem (ControlFlowDT String v)
+         ) => DecisionProblem (ControlFlowDT v)
                 ControlFlowDT (SystemState String String v (TaggedTime String t))
          where
   options _ Frame{ dfg=DFG g, nitta }
-    = [ ControlFlowO undefined -- g
-      | DFGSwitch{ dfgKey } <- g
-      , all (`elem` availableVars) $ dfgKey : inputsOfFBs (concatMap functionalBlocks g)
+    = [ ControlFlowO sg
+      | sg@DFGSwitch{ dfgKey } <- g
+      , all (`elem` availableVars) $ dfgKey : dfgInputs sg
       ]
     where
       availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT nitta
-  options _ _ = error "DecisionProblem ControlFlowDT: internal error."
+  options _ _ = error "ControlFlowDT: options internal error."
 
-  -- | Выполнить ветвление вычислительного процесса. Это действие заключается в замене текущей ветки
-  -- вычислительного процесса на кустарник (Frame), в рамках работы с которым необъходимо перебрать
-  -- все веточки и в конце собрать обратно в одну ветку.
-  decision _ Frame{..} (ControlFlowD CFGSwitch{..})
+  decision _ Frame{ nitta } (ControlFlowD DFGSwitch{ dfgKey, dfgCases })
     = let now = nextTick $ process nitta
-          branch : branchs = map (\OptionCF{..} -> Frame
-                                    { nitta=setTime now{ tag=ocfTag } nitta
-                                    , dfg=undefined
-                                    , timeTag=ocfTag
-                                    , branchInputs=ocfInputs
-                                    }
-                                  ) cfgCases
-      in Level{ currentBranch=branch
-              , remainingBranches=branchs
-              , completedBranches=[]
-              , rootBranch=branch
+          f : fs = map
+            (\( _caseValue, dfg ) -> Frame
+                -- FIXME: wrong time tag
+                { nitta=setTime now{ tag=Just $ show dfgKey } nitta
+                , timeTag=Just $ show dfgKey
+                , dfg
+                }
+            ) dfgCases
+      in Level{ currentFrame=f
+              , remainFrames=fs
+              , completedFrames=[]
+              , initialFrame=f
               }
-  decision _ _ _                   = undefined
+  decision _ _ _ = error "ControlFlowDT: decision internal error."

@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
@@ -96,13 +97,13 @@ compiler = Proxy :: Proxy CompilerDT
 
 instance DecisionType (CompilerDT title tag v t) where
   data Option (CompilerDT title tag v t)
-    = ControlFlowOption (ControlFlowGraph tag v)
+    = ControlFlowOption (DataFlowGraph v)
     | BindingOption (FB (Parcel v) v) title
     | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
     deriving ( Generic )
 
   data Decision (CompilerDT title tag v t)
-    = ControlFlowDecision (ControlFlowGraph tag v)
+    = ControlFlowDecision (DataFlowGraph v)
     | BindingDecision (FB (Parcel v) v) title
     | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
     deriving ( Generic )
@@ -124,7 +125,7 @@ instance ( Time t, Var v
          ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
                    CompilerDT (SystemState String String v (TaggedTime String t))
          where
-  options _ Level{..} = options compiler currentBranch
+  options _ Level{ currentFrame } = options compiler currentFrame
   options _ branch@Frame{..} = concat
     [ map generalizeDataFlowOption dataFlowOptions
     , map generalizeControlFlowOption $ options controlFlowDecision branch
@@ -146,7 +147,7 @@ instance ( Time t, Var v
       sensibleOptions = filter $ \DataFlowO{..} -> any isJust $ M.elems dfoTargets
 
   decision _ bush@Level{..} act
-    = let bush' = bush{ currentBranch=decision compiler currentBranch act }
+    = let bush' = bush{ currentFrame=decision compiler currentFrame act }
       in if isCurrentBranchOver bush'
         then finalizeBranch bush'
         else bush'
@@ -258,7 +259,7 @@ data SpecialMetrics
   deriving ( Show, Generic )
 
 
-measure opts Level{..} opt = measure opts currentBranch opt
+measure opts Level{..} opt = measure opts currentFrame opt
 measure opts Frame{ nitta=net@BusNetwork{..} } (BindingOption fb title) = BindingMetrics
   { critical=isCritical fb
   , alternative=length (howManyOptionAllow (filterBindingOption opts) M.! fb)
@@ -287,8 +288,8 @@ integral GlobalMetrics{..} _                               = 0
 
 
 -- | Функция применяется к кусту и позволяет определить, осталась ли работа в текущей ветке или нет.
-isCurrentBranchOver Level{ currentBranch=branch@Frame{..} }
-  | opts <- options compiler branch
+isCurrentBranchOver Level{ currentFrame=f@Frame{..} }
+  | opts <- options compiler f
   = null $ filterBindingOption opts ++ filterDataFlowOption opts
 isCurrentBranchOver _ = False
 
@@ -298,17 +299,17 @@ isCurrentBranchOver _ = False
 -- 1) Сменить ветку на следующую.
 -- 2) Вернуться в выполнение корневой ветки, для чего слить вычислительный процесс всех вариантов
 --    ветвления алгоритма.
-finalizeBranch bush@Level{ remainingBranches=b:bs, ..}
-  = bush
-    { currentBranch=b
-    , remainingBranches=bs
-    , completedBranches=currentBranch : completedBranches
+finalizeBranch level@Level{ remainFrames=f:fs, currentFrame, completedFrames }
+  = level
+    { currentFrame=f
+    , remainFrames=fs
+    , completedFrames=currentFrame : completedFrames
     }
-finalizeBranch Level{..}
-  = let branchs = currentBranch : completedBranches
-        mergeTime = (maximum $ map (nextTick . process . nitta) branchs){ tag=timeTag rootBranch }
-        Frame{ nitta=pu@BusNetwork{..} } = currentBranch
-    in rootBranch
+finalizeBranch Level{ initialFrame, currentFrame, completedFrames }
+  = let branchs = currentFrame : completedFrames
+        mergeTime = (maximum $ map (nextTick . process . nitta) branchs){ tag=timeTag initialFrame }
+        Frame{ nitta=pu@BusNetwork{..} } = currentFrame
+    in initialFrame
       { nitta=setTime mergeTime pu
           { bnProcess=snd $ modifyProcess bnProcess $
               mapM_ (\Step{..} -> add sTime sDesc) $ concatMap inBranchSteps branchs

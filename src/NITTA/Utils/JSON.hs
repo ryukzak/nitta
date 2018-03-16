@@ -47,8 +47,6 @@ instance ( ToJSONKey title, ToJSON title, Title title
          , ToJSON v, Var v
          , ToJSON t, Time t
          ) => ToJSON (SystemState title tag v t)
-instance ToJSON (ControlFlowGraph tag v) where
-  toJSON _ = String "Control Flow"
 instance ( ToJSON v, Var v ) => ToJSON (DataFlowGraph v)
 
 
@@ -75,8 +73,8 @@ instance ( ToJSON title
          , ToJSON v
          , Var v
          ) => ToJSON (Decision (BindingDT title v))
-instance ToJSON (Option (ControlFlowDT tag v))
-instance ToJSON (Decision (ControlFlowDT tag v))
+instance ( ToJSON v, Var v ) => ToJSON (Option (ControlFlowDT v))
+instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlFlowDT v))
 
 
 instance ( ToJSONKey title, ToJSON title, Title title

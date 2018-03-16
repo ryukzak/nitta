@@ -72,7 +72,7 @@ scheduledBush
             ]
           ]
         microarch' = bindAll (functionalBlocks dataFlow) microarch
-        initialBranch = Frame microarch' dataFlow Nothing [] :: SystemState String String String (TaggedTime String Int)
+        initialBranch = Frame microarch' dataFlow Nothing :: SystemState String String String (TaggedTime String Int)
         Frame{ nitta=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
     in pu
 
@@ -100,7 +100,7 @@ scheduledBranch
               ]
         dataFlow = DFG $ map DFGNode alg
         microarch' = bindAll (functionalBlocks dataFlow) microarch
-        initialBranch = Frame microarch' dataFlow Nothing [] :: SystemState String String String (TaggedTime String Int)
+        initialBranch = Frame microarch' dataFlow Nothing :: SystemState String String String (TaggedTime String Int)
         Frame{ nitta=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
     in pu
 
@@ -112,7 +112,7 @@ scheduledBranchSPI
               ]
         dataFlow = DFG $ map DFGNode alg
         microarch' = bindAll (functionalBlocks dataFlow) microarch
-        initialBranch = Frame microarch' dataFlow Nothing [] :: SystemState String String String (TaggedTime String Int)
+        initialBranch = Frame microarch' dataFlow Nothing :: SystemState String String String (TaggedTime String Int)
         Frame{ nitta=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
     in pu
 
@@ -139,7 +139,7 @@ root
               ]
         dataFlow = DFG $ map DFGNode alg
         microarch' = bindAll (functionalBlocks dataFlow) microarch
-    in Frame microarch' dataFlow Nothing [] :: SystemState String String String (TaggedTime String Int)
+    in Frame microarch' dataFlow Nothing :: SystemState String String String (TaggedTime String Int)
 
 ---------------------------------------------------------------------------------
 
