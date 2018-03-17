@@ -6,7 +6,7 @@ module spi_buffer
 	( input                     clk
 	, input                     rst
 
-	, input						send
+    , input						send
 	, input						receive 
 
 	, input                     wr
