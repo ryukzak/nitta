@@ -160,6 +160,8 @@ function StepView(props) {
       <div className="tiny primary button-group">
         <LinkButton sname="options" onClick={ 
           () => app.getStepOption( path.sId, path.stepId ) } />
+        <LinkButton sname="info" onClick={ 
+          () => app.setPath( path.sId, 'step', path.stepId, 'info' ) } />
         <LinkButton sname="fork" onClick={ 
           () => {
             var sId = path.sId + "." + path.stepId
@@ -182,6 +184,8 @@ function StepView(props) {
       </div>
       { ( path.stepView === 'options' )
         ? <StepOptionView path={ path } app={ app } stepDataOptions={ app.state.stepDataOptions } />
+      : ( path.stepView === 'info' )
+        ? <pre>{ JSON.stringify( app.state.stepData, null, 2) }</pre>
         : <pre>path.stepView = { path.stepView }</pre>
       }
     </div>
@@ -191,6 +195,7 @@ function StepView(props) {
 function StepOptionView(props) {
   var path = props.path
   var stepData = props.stepDataOptions
+  if ( stepData.length == 0 ) return <pre> Process is over. Options not allow. </pre>
   return (
     <div>
       <div class="grid-x">
