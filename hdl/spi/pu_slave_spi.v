@@ -1,31 +1,31 @@
 module pu_slave_spi
-	#( parameter DATA_WIDTH     = 32
-	 , parameter ATTR_WIDTH     = 4
-	 , parameter SPI_DATA_WIDTH = 8
-	 , parameter BUF_SIZE       = 6
-	 )
-	( input             		clk
-	, input             		rst
-	, input             		signal_cycle
+  #( parameter DATA_WIDTH     = 32
+    , parameter ATTR_WIDTH     = 4
+    , parameter SPI_DATA_WIDTH = 8
+    , parameter BUF_SIZE       = 6
+   )
+  (  input             		clk
+   , input             		rst
+   , input             		signal_cycle
 
-	// system interface
-	, input                     signal_wr
-    , input   [DATA_WIDTH-1:0]  data_in
-    , input   [ATTR_WIDTH-1:0]  attr_in
+   // system interface
+   , input                     signal_wr
+   , input   [DATA_WIDTH-1:0]  data_in
+   , input   [ATTR_WIDTH-1:0]  attr_in
 
-	, input                    	signal_oe
-	, output   [DATA_WIDTH-1:0] data_out
-	, output   [ATTR_WIDTH-1:0] attr_out
+   , input                    	signal_oe
+   , output   [DATA_WIDTH-1:0] data_out
+   , output   [ATTR_WIDTH-1:0] attr_out
 
-	, output            flag_start
-	, output            flag_stop
+   , output            flag_start
+   , output            flag_stop
 
-	// SPI interface
-	, input             mosi
-	, output            miso
-	, input             sclk
-	, input             cs
-	);
+   // SPI interface
+   , input             mosi
+   , output            miso
+   , input             sclk
+   , input             cs
+  );
 
 reg  buffer_rst;
 
