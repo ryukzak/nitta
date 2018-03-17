@@ -53,7 +53,7 @@ spi_slave_driver #( .DATA_WIDTH( SPI_DATA_WIDTH )
 	, .cs( cs )
 	);
 
-// Туда сюда [SLAVE <-> NITTA]
+// [SLAVE <-> NITTA]
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
 ) transfer_buffer 
 	( .clk( clk )
@@ -67,7 +67,7 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 	, .data_out_nitta( transfer_data_out_nitta )
 ); 
 
-// Буфер на прием [MASTER -> SLAVE]
+// [MASTER -> SLAVE]
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
 			, .DATA_WIDTH( DATA_WIDTH )
 			, .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
@@ -84,7 +84,7 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 	, .spi_data_receive( spi_data_receive )
 );
 
-// Буфер на передачу [SLAVE -> MASTER]
+// [SLAVE -> MASTER]
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
 			, .DATA_WIDTH( DATA_WIDTH )
 			, .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
