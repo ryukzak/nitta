@@ -3,19 +3,19 @@ module spi_buffer
     , parameter SPI_DATA_WIDTH = 8
     , parameter BUF_SIZE       = 10
    )
-  ( input                     clk
-   , input                     rst
+  ( input                        clk
+   , input                       rst
 
-   , input						send
-   , input						receive 
+   , input						 send
+   , input						 receive 
 
-   , input                     wr
-   , input                     nitta_wr  
+   , input                       wr
+   , input                       nitta_wr  
    , input      [DATA_WIDTH-1:0] data_in
    , input      [DATA_WIDTH-1:0] data_in_nitta
 
-   , input                     oe 
-   , input                     nitta_oe  
+   , input                       oe 
+   , input                       nitta_oe  
    , output reg [DATA_WIDTH-1:0] data_out
    , output reg [DATA_WIDTH-1:0] data_out_nitta
 
