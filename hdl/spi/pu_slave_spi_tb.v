@@ -4,7 +4,7 @@ module pu_slave_spi_tb
    , parameter ATTR_WIDTH      = 4
   ,  parameter SPI_DATA_WIDTH  = 8
   ,  parameter SCLK_HALFPERIOD = 1
-  ,  parameter BUF_SIZE        = 6
+  ,  parameter BUF_SIZE        = 10
   )
   ();
 
@@ -15,6 +15,8 @@ reg  [SPI_DATA_WIDTH-1:0] master_in;
 wire [SPI_DATA_WIDTH-1:0] master_out;
 reg  [SPI_DATA_WIDTH-1:0] slave_in;
 wire [SPI_DATA_WIDTH-1:0] slave_out;
+
+reg [DATA_WIDTH-1:0] pu_spi_data_in;
 
 wire mosi, miso, sclk, cs;
 
@@ -47,7 +49,7 @@ pu_slave_spi #( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
   // , .signal_cycle( cycle )
 
   , .signal_wr( wr )
-  , .data_in( data_in )
+  , .data_in( pu_spi_data_in )
   , .attr_in( attr_in )
 
   , .signal_oe( oe )
@@ -84,67 +86,100 @@ end
 
 initial begin
   @(negedge rst);
-  master_in = 8'h11; slave_in = 8'h55; @(posedge clk);
-  start_transaction = 1;               @(posedge clk);
-  start_transaction = 0;               @(posedge clk);
+
+
+
+  pu_spi_data_in = 32'h99888766; @(posedge clk);
+  wr <= 1;                       @(posedge clk);
+  wr <= 0;                       @(posedge clk);
+
+  pu_spi_data_in = 32'h67564466; @(posedge clk);
+  wr <= 1;                       @(posedge clk);
+  wr <= 0;                       @(posedge clk);
+
+  pu_spi_data_in = 32'h75867857; @(posedge clk);
+  wr <= 1;                       @(posedge clk);
+  wr <= 0;                       @(posedge clk);
+
+  pu_spi_data_in = 32'h54345634; @(posedge clk);
+  wr <= 1;                       @(posedge clk);
+  wr <= 0;                       @(posedge clk);
+
+  oe <= 1;                       @(posedge clk);
+  oe <= 0;                       @(posedge clk);
+
+  oe <= 1;                       @(posedge clk);
+  oe <= 0;                       @(posedge clk);
+
+  oe <= 1;                       @(posedge clk);
+  oe <= 0;                       @(posedge clk);
+
+  oe <= 1;                       @(posedge clk);
+  oe <= 0;                       @(posedge clk);
+
+  repeat(10) @(posedge clk);
+
+  master_in = 8'h11;                                 @(posedge clk);
+  start_transaction = 1;                             @(posedge clk);
+  start_transaction = 0;                             @(posedge clk);
 
   repeat(18) @(posedge clk);
 
-  master_in = 8'h22; slave_in = 8'h33; @(posedge clk);
-  start_transaction = 1;               @(posedge clk);
-  start_transaction = 0;               @(posedge clk);
+  master_in = 8'h22;                                 @(posedge clk);
+  start_transaction = 1;                             @(posedge clk);
+  start_transaction = 0;                             @(posedge clk);
 
   repeat(18) @(posedge clk);
 
-  master_in = 8'h33; slave_in = 8'h33; @(posedge clk);
-  start_transaction = 1;               @(posedge clk);
-  start_transaction = 0;               @(posedge clk);
+  master_in = 8'h33;
+  start_transaction = 1;                             @(posedge clk);
+  start_transaction = 0;                             @(posedge clk);
 
   repeat(18) @(posedge clk);
 
-  master_in = 8'h44; slave_in = 8'h33; @(posedge clk);
-  start_transaction = 1;               @(posedge clk);
-  start_transaction = 0;               @(posedge clk);
+  master_in = 8'h44;
+  start_transaction = 1;                             @(posedge clk);
+  start_transaction = 0;                             @(posedge clk);
+
 
   repeat(35) @(posedge clk); 
 
-  $display("Buffers dump receive, transfer, send:");
+  $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
   for ( i = 0; i < BUF_SIZE; i = i + 1 )
     begin
-      $display("%d -> %h , %h , %h", i, pu.receive_buffer.memory[i], pu.transfer_buffer.memory[i], pu.send_buffer.memory[i]);
+      $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_buffer.memory[i], pu.transfer_buffer.memory_nitta[i], pu.send_buffer.memory[i]);
     end
 
   $finish;
 end
 
+// initial begin
+//   wr <= 0; data_in <= 0; attr_in <= 0;
+//   @(negedge rst);
+//   data_in <= 'h42; attr_in <= 0; wr <= 1; @(posedge clk);
+//   data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
+//   data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
+//   data_in <= 'h43; attr_in <= 0; wr <= 1; @(posedge clk);
+//   data_in <= 'h0; attr_in <= 0; wr <= 1; @(posedge clk);
+//   data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
+//   data_in <= 'h37; attr_in <= 0; wr <= 1; @(posedge clk);
+//   data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
+//   repeat(18) @(posedge clk);
+// end
 
-initial begin
-  wr <= 0; data_in <= 0; attr_in <= 0;
-  @(negedge rst);
-  data_in <= 'h42; attr_in <= 0; wr <= 1; @(posedge clk);
-  data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
-  data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
-  data_in <= 'h43; attr_in <= 0; wr <= 1; @(posedge clk);
-  data_in <= 'h0; attr_in <= 0; wr <= 1; @(posedge clk);
-  data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
-  data_in <= 'h37; attr_in <= 0; wr <= 1; @(posedge clk);
-  data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
-  repeat(18) @(posedge clk);
-end
-
-initial begin
-  oe <= 0;
-  @(negedge rst);
-  oe <= 0; @(posedge clk);
-  oe <= 0; @(posedge clk);
-  oe <= 1; @(posedge clk);
-  oe <= 0; @(posedge clk);
-  oe <= 1; @(posedge clk);
-  oe <= 1; @(posedge clk);
-  oe <= 0; @(posedge clk);
-  oe <= 0; @(posedge clk);
-  repeat(18) @(posedge clk);
-end
+// initial begin
+//   oe <= 0;
+//   @(negedge rst);
+//   oe <= 0; @(posedge clk);
+//   oe <= 0; @(posedge clk);
+//   oe <= 1; @(posedge clk);
+//   oe <= 0; @(posedge clk);
+//   oe <= 1; @(posedge clk);
+//   oe <= 1; @(posedge clk);
+//   oe <= 0; @(posedge clk);
+//   oe <= 0; @(posedge clk);
+//   repeat(18) @(posedge clk);
+// end
 
 
 endmodule
