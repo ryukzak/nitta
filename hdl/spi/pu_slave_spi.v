@@ -4,16 +4,16 @@ module pu_slave_spi
 	 , parameter SPI_DATA_WIDTH = 8
 	 , parameter BUF_SIZE       = 6
 	 )
-	( input             clk
-	, input             rst
-	, input             signal_cycle
+	( input             		clk
+	, input             		rst
+	, input             		signal_cycle
 
 	// system interface
-	, input                    signal_wr
-	, input   [DATA_WIDTH-1:0] data_in
-	, input   [ATTR_WIDTH-1:0] attr_in
+	, input                     signal_wr
+    , input   [DATA_WIDTH-1:0]  data_in
+    , input   [ATTR_WIDTH-1:0]  attr_in
 
-	, input                    signal_oe
+	, input                    	signal_oe
 	, output   [DATA_WIDTH-1:0] data_out
 	, output   [ATTR_WIDTH-1:0] attr_out
 
@@ -39,7 +39,7 @@ wire [DATA_WIDTH-1:0] transfer_data_out_nitta;
 
  
 spi_slave_driver #( .DATA_WIDTH( SPI_DATA_WIDTH )
-									) spi_driver
+) spi_driver
 	( .clk( clk )
 	, .rst( rst )  
 
@@ -55,7 +55,7 @@ spi_slave_driver #( .DATA_WIDTH( SPI_DATA_WIDTH )
 
 // Туда сюда [SLAVE <-> NITTA]
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
-						) transfer_buffer 
+) transfer_buffer 
 	( .clk( clk )
 	, .rst( buffer_rst )
 	, .wr( signal_wr )
@@ -69,9 +69,9 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 
 // Буфер на прием [MASTER -> SLAVE]
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
-						, .DATA_WIDTH( DATA_WIDTH )
-						, .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
-						) receive_buffer
+			, .DATA_WIDTH( DATA_WIDTH )
+			, .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
+) receive_buffer
 	( .clk( clk )
 	, .rst( buffer_rst )
 	, .wr( 1'b0 )
@@ -86,9 +86,9 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 
 // Буфер на передачу [SLAVE -> MASTER]
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
-						, .DATA_WIDTH( DATA_WIDTH )
-						, .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
-						) send_buffer 
+			, .DATA_WIDTH( DATA_WIDTH )
+			, .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
+) send_buffer 
 	( .clk( clk )
 	, .rst( buffer_rst )
 	, .wr( signal_wr_transfer_to_send )
@@ -121,9 +121,5 @@ always @( posedge clk ) begin
 		signal_wr_transfer_to_send <= 0;
 	end
 end
-
-
-
-
 
 endmodule
