@@ -1,10 +1,11 @@
 module pu_fram
   #( parameter RAM_SIZE   = 16
-  ,  parameter DATA_WIDTH = 32
-  ,  parameter ATTR_WIDTH = 4
-  ,  parameter ADDR_WIDTH = $clog2( RAM_SIZE )
-  )
+   , parameter DATA_WIDTH = 32
+   , parameter ATTR_WIDTH = 4
+   , parameter ADDR_WIDTH = $clog2( RAM_SIZE )
+   )
   ( input  wire                  clk
+
   , input  wire [ADDR_WIDTH-1:0] signal_addr
   , input  wire                  signal_wr
   , input  wire [DATA_WIDTH-1:0] data_in
@@ -20,7 +21,7 @@ reg [DATA_WIDTH-1:0] data;
 reg [ATTR_WIDTH-1:0] attr;
 reg [ADDR_WIDTH-1:0] addr;
 reg                  wr;
-   
+
 always @(posedge clk)
   begin
     addr <= signal_addr;
