@@ -32,6 +32,7 @@ class App extends Component {
   }
 
   getSynthesis(sId) {
+    // TODO: Смена синтеза без смены шина. Необходимо для простоты сравнения вариантов винтеза.
     api.getSynthesisBySId(sId)
     .then( response => {
       this.setState({ path: this.root(sId, 'info')

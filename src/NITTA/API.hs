@@ -64,16 +64,16 @@ type SynthesisAPI
 synthesisServer stm
      = fmap fromList ( liftIO $ atomically $ toList $ M.stream stm )
   :<|> \ sId -> getSynthesis stm sId
-           :<|> ( \ pId stepId -> liftSTM $ postSynthesis sId pId stepId )
+           :<|> ( \ pId stepId -> liftSTM $ forktSynthesis sId pId stepId )
            :<|> stepsServer stm sId
   where
-    postSynthesis sId pId stepId = do
+    forktSynthesis sId pId stepId = do
       syn <- M.lookup sId stm
       when ( isJust syn ) $ throwSTM err409{ errBody="Synthesis already exist." }
       p@Synthesis{..} <- getSynthesis' stm pId
       M.insert p{ childs=(sId, stepId) : childs } pId stm
       M.insert def{ parent=Just ( pId, stepId )
-                  , steps=steps
+                  , steps=reverse $ take (stepId + 1) $ reverse steps
                   } sId stm
 
 
@@ -81,8 +81,6 @@ synthesisServer stm
 type StepsAPI
      = "steps" :> Get '[JSON] [ST]
   :<|> "steps" :> Capture "stepId" Int :>
-         -- TODO: step - необходимо обеспечить сохранность индексов для разных
-         -- веток синтеза.
        ( Get '[JSON] ST
          -- Дублирование auto в path - костыль. Проблема в следующем - параметры
          -- и флаги не влияют на имя функции в автоматически генерируемом API
