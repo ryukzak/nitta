@@ -15,7 +15,7 @@ module NITTA.TestBench where
 import           Control.Monad         (when)
 import           Data.List             (isSubsequenceOf)
 import qualified Data.List             as L
-import           Data.String.Utils     (replace)
+import qualified Data.String.Utils     as S
 import           NITTA.Types
 import           System.Directory
 import           System.Exit
@@ -31,6 +31,11 @@ class TestBench pu v x | pu -> v x where
 -- | Сгенерировать и выполнить testbench.
 testBench library workdir pu values = do
   writeTestBench workdir pu values
+  writeFile (joinPath [workdir, "Makefile"]) $ unlines
+    [ "all:"
+    , "\tiverilog " ++ S.join " " (iverilogArgs library pu)
+    , "\t./a.out"
+    ]
   runTestBench library workdir pu
 
 
@@ -43,7 +48,7 @@ testBench library workdir pu values = do
 -- указать его адресс относительно рабочего каталога, что осуществляется путём вставки этого адреса
 -- на место ключа $path$.
 writeImplementation workdir p (Immidiate fn src)
-  = writeFile (joinPath [workdir, p, fn]) $ replace "$path$" (if null p then "" else p ++ [pathSeparator]) src
+  = writeFile (joinPath [workdir, p, fn]) $ S.replace "$path$" (if null p then "" else p ++ [pathSeparator]) src
 writeImplementation workdir p (Project p' subInstances) = do
   let path = joinPath [p, p']
   createDirectoryIfMissing True $ joinPath [ workdir, path ]
@@ -86,11 +91,12 @@ runTestBench library workdir pu = do
 -- | Сгенерировать команду для компиляции icarus verilog-ом вычислительного блока и его тестового
 -- окружения.
 createIVerilogProcess library workdir pu
-  = let cp = proc "iverilog" iverilogArgs
+  = let cp = proc "iverilog" $ iverilogArgs library pu
     in cp { cwd=Just workdir }
-  where
-    iverilogArgs = L.nub $ concatMap (args "") [ hardware pu, testEnviroment undefined pu ]
 
+iverilogArgs library pu
+  = L.nub $ concatMap (args "") [ hardware pu, testEnviroment undefined pu ]
+  where
     args p (Project p' subInstances) = concatMap (args $ joinPath [p, p']) subInstances
     args p (Immidiate fn _) = [ joinPath [ p, fn ] ]
     args _ (FromLibrary fn) = [ joinPath [ library, fn ] ]
