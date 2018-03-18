@@ -73,8 +73,8 @@ instance ( ToJSON title
          , ToJSON v
          , Var v
          ) => ToJSON (Decision (BindingDT title v))
-instance ( ToJSON v, Var v ) => ToJSON (Option (ControlFlowDT v))
-instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlFlowDT v))
+instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
+instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
 
 
 instance ( ToJSONKey title, ToJSON title, Title title

@@ -61,20 +61,23 @@ microarch = busNetwork 24
 -- - TODO: генерация машинного кода.
 -- - TODO: генерация аппаратуры.
 -- - TODO: testbench.
-scheduledBush
-  = let dataFlow = DFG
-          [ DFGNode $ FB.framInput 0 $ O [ "cond", "cond'" ]
-          , DFGNode $ FB.framInput 1 $ O [ "x1", "x2" ]
-          , DFGNode $ FB.framOutput 2 $ I "cond'"
-          , DFGSwitch "cond"
-            [ (0, DFG [ DFGNode $ FB.reg (I "x1") $ O ["y1"], DFGNode $ FB.framOutput 10 $ I "y1" ])
-            , (1, DFG [ DFGNode $ FB.reg (I "x2") $ O ["y2"], DFGNode $ FB.framOutput 11 $ I "y2" ])
-            ]
-          ]
-        microarch' = bindAll (functionalBlocks dataFlow) microarch
-        initialBranch = Frame microarch' dataFlow Nothing :: SystemState String String String (TaggedTime String Int)
-        Frame{ nitta=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
-    in pu
+synthesisedLevel
+  = let g = DFG [ node $ FB.FramInput 3 $ O [ "a" ]
+                , node $ FB.FramInput 4 $ O [ "b" ]
+                , node $ FB.Add (I "a") (I "b") (O ["c"])
+                , node $ FB.FramOutput 0 $ I "c"
+                -- , node $ FB.Constant 0 $ O ["p"]
+                -- , node $ FB.Constant 0 $ O ["const0"]
+                -- , node $ FB.Constant 1 $ O ["const1"]
+                -- , DFGSwitch "cond"
+                --   [ ( 0, DFG [ node $ FB.Add (I "c") (I "const0") $ O ["d"] ] )
+                --   , ( 1, DFG [ node $ FB.Add (I "c") (I "const1") $ O ["d"] ] )
+                --   ]
+                -- , node $ FB.FramOutput 0 $ I "d"
+                ]
+        ma = bindAll (functionalBlocks g) microarch
+        f = Frame ma g Nothing :: SystemState String String String (TaggedTime String Int)
+    in nitta $ foldl (\b _ -> naive def b) f $ replicate 50 ()
 
 -- | Пример работы с единым временем.
 scheduledBranch
@@ -145,9 +148,8 @@ root
 
 
 main = do
-  test scheduledBranch
-    (def{ cntxVars=M.fromList []
-        } :: Cntx String Int)
+  -- test scheduledBranch (def{ cntxVars=M.fromList [] } :: Cntx String Int)
+  test synthesisedLevel (def{ cntxVars=M.fromList [] } :: Cntx String Int)
   -- test scheduledBranchSPI
   --   (def{ cntxVars=M.fromList [("b", [0])]
   --       , cntxInputs=M.fromList [("a", [1, 2, 3])]

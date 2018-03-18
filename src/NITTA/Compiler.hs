@@ -128,7 +128,7 @@ instance ( Time t, Var v
   options _ Level{ currentFrame } = options compiler currentFrame
   options _ branch@Frame{..} = concat
     [ map generalizeDataFlowOption dataFlowOptions
-    , map generalizeControlFlowOption $ options controlFlowDecision branch
+    , map generalizeControlFlowOption $ options controlDT branch
     , map generalizeBindingOption $ options binding branch
     ]
     where
@@ -146,17 +146,14 @@ instance ( Time t, Var v
                   })
       sensibleOptions = filter $ \DataFlowO{..} -> any isJust $ M.elems dfoTargets
 
-  decision _ bush@Level{..} act
-    = let bush' = bush{ currentFrame=decision compiler currentFrame act }
-      in if isCurrentBranchOver bush'
-        then finalizeBranch bush'
-        else bush'
-  decision _ branch (BindingDecision fb title)
-    = decision binding branch $ BindingD fb title
-  decision _ branch (ControlFlowDecision d)
-    = decision controlFlowDecision branch $ ControlFlowD d
-  decision _ branch@Frame{ nitta=pu, .. } (DataFlowDecision src trg)
-    = branch{ nitta=decision dataFlowDT pu $ DataFlowD src trg }
+  decision _ l@Level{..} d
+    = let l' = l{ currentFrame=decision compiler currentFrame d }
+      in if isCurrentBranchOver l'
+          then finalizeBranch l'
+          else l'
+  decision _ f (BindingDecision fb title) = decision binding f $ BindingD fb title
+  decision _ f (ControlFlowDecision d) = decision controlDT f $ ControlFlowD d
+  decision _ f@Frame{ nitta } (DataFlowDecision src trg) = f{ nitta=decision dataFlowDT nitta $ DataFlowD src trg }
 
 
 option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
@@ -299,8 +296,8 @@ isCurrentBranchOver _ = False
 -- 1) Сменить ветку на следующую.
 -- 2) Вернуться в выполнение корневой ветки, для чего слить вычислительный процесс всех вариантов
 --    ветвления алгоритма.
-finalizeBranch level@Level{ remainFrames=f:fs, currentFrame, completedFrames }
-  = level
+finalizeBranch l@Level{ remainFrames=f:fs, currentFrame, completedFrames }
+  = l
     { currentFrame=f
     , remainFrames=fs
     , completedFrames=currentFrame : completedFrames

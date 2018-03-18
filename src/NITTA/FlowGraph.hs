@@ -10,15 +10,12 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-{-
-TODO: Место для статьи о DFG и CFG. Методах работы с ними. Математической модели
-для их преобразований.
--}
 module NITTA.FlowGraph
-  ( controlFlowDecision
-  , ControlFlowDT
+  ( controlDT
+  , ControlDT
   , DataFlowGraph(..)
   , Decision(..)
+  , node
   , Option(..)
   , SystemState(..)
   ) where
@@ -68,7 +65,7 @@ instance WithFunctionalBlocks (DataFlowGraph v) (FB (Parcel v) v) where
   functionalBlocks DFGSwitch{ dfgCases } = concatMap (functionalBlocks . snd) dfgCases
 
 dfgInputs g = inputsOfFBs $ functionalBlocks g
-
+node fb = DFGNode $ FB fb
 
 -- | Для описания текущего состояния вычислительной системы (с учётом алгоритма,
 -- потока управления, "текущего места" исполнения алгоритма, микроархитектуры и
@@ -104,20 +101,19 @@ data SystemState title tag v t
 instance ( Var v ) => DecisionProblem (BindingDT String v)
                             BindingDT (SystemState String tag v t)
          where
-  options _ Frame{ nitta } = options binding nitta
-  options _ _              = undefined
-  decision _ branch@Frame{ nitta } act = branch{ nitta=decision binding nitta act }
-  decision _ _ _                       = undefined
+  options _ Frame{ nitta }        = options binding nitta
+  options _ Level{ currentFrame } = options binding currentFrame
+  decision _ f@Frame{ nitta } d        = f{ nitta=decision binding nitta d }
+  decision _ l@Level{ currentFrame } d = l{ currentFrame=decision binding currentFrame d }
 
 instance ( Typeable title, Ord title, Show title, Var v, Time t
          ) => DecisionProblem (DataFlowDT title v t)
                    DataFlowDT (SystemState title tag v t)
          where
-  options _ Frame{ nitta } = options dataFlowDT nitta
-  options _ _              = undefined
-  decision _ branch@Frame{ nitta } act = branch{ nitta=decision dataFlowDT nitta act }
-  decision _ _ _                       = undefined
-
+  options _ Frame{ nitta }        = options dataFlowDT nitta
+  options _ Level{ currentFrame } = options dataFlowDT currentFrame
+  decision _ f@Frame{ nitta } d        = f{ nitta=decision dataFlowDT nitta d }
+  decision _ l@Level{ currentFrame } d = l{ currentFrame=decision dataFlowDT currentFrame d }
 
 
 ---------------------------------------------------------------------
@@ -128,35 +124,33 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
 -- может осуществляться 1) спекулятивно (мультиплексор), если функциональные
 -- блоки не содаржат побочных эффектов или 2) реальным выбором вычислительного
 -- процесса.
-data ControlFlowDT v
-controlFlowDecision = Proxy :: Proxy ControlFlowDT
+data ControlDT v
+controlDT = Proxy :: Proxy ControlDT
 
-
-instance DecisionType (ControlFlowDT v) where
-  data Option (ControlFlowDT v) = ControlFlowO (DataFlowGraph v) -- DFGSwitch
+instance DecisionType (ControlDT v) where
+  data Option (ControlDT v) = ControlFlowO (DataFlowGraph v) -- DFGSwitch
     deriving ( Generic )
-  data Decision (ControlFlowDT v) = ControlFlowD (DataFlowGraph v)
+  data Decision (ControlDT v) = ControlFlowD (DataFlowGraph v)
     deriving ( Generic )
 
 instance ( Var v, Time t
-         ) => DecisionProblem (ControlFlowDT v)
-                ControlFlowDT (SystemState String String v (TaggedTime String t))
+         ) => DecisionProblem (ControlDT v)
+                ControlDT (SystemState String String v (TaggedTime String t))
          where
   options _ Frame{ dfg=DFG g, nitta }
-    = [ ControlFlowO sg
-      | sg@DFGSwitch{ dfgKey } <- g
-      , all (`elem` availableVars) $ dfgKey : dfgInputs sg
-      ]
-    where
-      availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT nitta
-  options _ _ = error "ControlFlowDT: options internal error."
+    = let availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT nitta
+    in [ ControlFlowO sg
+       | sg@DFGSwitch{ dfgKey } <- g
+       , all (`elem` availableVars) $ dfgKey : dfgInputs sg
+       ]
+  options _ Level{ currentFrame } = options controlDT currentFrame
+  options _ _ = error "ControlFlowDT: options: wrong DFG."
 
   decision _ Frame{ nitta } (ControlFlowD DFGSwitch{ dfgKey, dfgCases })
     = let now = nextTick $ process nitta
           f : fs = map
-            (\( _caseValue, dfg ) -> Frame
-                -- FIXME: wrong time tag
-                { nitta=setTime now{ tag=Just $ show dfgKey } nitta
+            (\( caseValue, dfg ) -> Frame
+                { nitta=setTime now{ tag=Just $ show dfgKey ++ "." ++ show caseValue } nitta
                 , timeTag=Just $ show dfgKey
                 , dfg
                 }
@@ -166,4 +160,5 @@ instance ( Var v, Time t
               , completedFrames=[]
               , initialFrame=f
               }
-  decision _ _ _ = error "ControlFlowDT: decision internal error."
+  decision _ l@Level{ currentFrame } d = l{ currentFrame=decision controlDT currentFrame d }
+  decision _ _ _ = error "ControlFlowDT: decision: wrong decision"
