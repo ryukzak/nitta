@@ -7,6 +7,7 @@ NITTA - реконфигурируемая вычислительная плат
 ## FAQ
 1. Telegram чат проекта: <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
 1. Telegram чат по Haskell: <https://t.me/joinchat/BC5sVwzQLmvk271Xt4Exgw>
+1. [Рекомендации по работе с проектом](doc/rules.md).
 
 ## Документы
 
