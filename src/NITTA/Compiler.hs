@@ -36,7 +36,7 @@ import           Data.Maybe
 import           Data.Proxy
 import           GHC.Generics
 import           NITTA.BusNetwork
-import           NITTA.FlowGraph
+import           NITTA.DataFlow
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens

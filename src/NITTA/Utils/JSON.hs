@@ -19,7 +19,7 @@ import qualified Data.Map         as M
 import           Data.Text        (pack)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
-import           NITTA.FlowGraph
+import           NITTA.DataFlow
 import           NITTA.Types
 import           Numeric.Interval
 

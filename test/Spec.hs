@@ -12,7 +12,7 @@ import           Data.Default
 import qualified Data.Map                    as M
 import           NITTA.BusNetwork
 import           NITTA.Compiler
-import           NITTA.FlowGraph
+import           NITTA.DataFlow
 import qualified NITTA.FunctionBlocks        as FB
 import qualified NITTA.ProcessUnits.Accum    as A
 import qualified NITTA.ProcessUnits.Fram     as FR

@@ -10,7 +10,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.FlowGraph
+module NITTA.DataFlow
   ( controlDT
   , ControlDT
   , DataFlowGraph(..)

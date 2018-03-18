@@ -62,7 +62,6 @@ writeTestBench workdir pu cntx = do
   createDirectoryIfMissing True workdir
   writeImplementation workdir "" $ hardware pu
   writeImplementation workdir "" $ software pu
-  -- let cntx = M.fromList values
   writeImplementation workdir "" $ testEnviroment cntx pu
 
 
