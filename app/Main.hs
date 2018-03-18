@@ -54,18 +54,12 @@ microarch = busNetwork 24
   ]
 
 
--- | Пример работы с ветвящимся временем.
---
--- - TODO: планирование вычислительного процесса (пропуск переменных, колизии потоков управления и
---   данных, привязок функциональных блоков).
--- - TODO: генерация машинного кода.
--- - TODO: генерация аппаратуры.
--- - TODO: testbench.
 synthesisedLevel
   = let g = DFG [ node $ FB.FramInput 3 $ O [ "a" ]
                 , node $ FB.FramInput 4 $ O [ "b" ]
                 , node $ FB.Add (I "a") (I "b") (O ["c"])
                 , node $ FB.FramOutput 0 $ I "c"
+                -- FIXME: Синтезируется, но сгенировать тест пока нельзя.
                 -- , node $ FB.Constant 0 $ O ["p"]
                 -- , node $ FB.Constant 0 $ O ["const0"]
                 -- , node $ FB.Constant 1 $ O ["const1"]
@@ -77,10 +71,10 @@ synthesisedLevel
                 ]
         ma = bindAll (functionalBlocks g) microarch
         f = Frame ma g Nothing :: SystemState String String String (TaggedTime String Int)
-    in nitta $ foldl (\b _ -> naive def b) f $ replicate 50 ()
+    in nitta $ foldl (\f' _ -> naive def f') f $ replicate 50 ()
 
 -- | Пример работы с единым временем.
-scheduledBranch
+synthesisedFrame
   = let alg = [ FB.framInput 3 $ O [ "a"
                                    , "d"
                                    ]
@@ -103,20 +97,20 @@ scheduledBranch
               ]
         dataFlow = DFG $ map DFGNode alg
         microarch' = bindAll (functionalBlocks dataFlow) microarch
-        initialBranch = Frame microarch' dataFlow Nothing :: SystemState String String String (TaggedTime String Int)
-        Frame{ nitta=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
+        f = Frame microarch' dataFlow Nothing :: SystemState String String String (TaggedTime String Int)
+        Frame{ nitta=pu } = foldl (\f' _ -> naive def f') f $ replicate 50 ()
     in pu
 
 -- | Пример работы с единым временем.
-scheduledBranchSPI
+synthesisedFrameSPI
   = let alg = [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
               , FB $ FB.Send (I "b")
               , FB.reg (I "a") $ O ["b"]
               ]
         dataFlow = DFG $ map DFGNode alg
         microarch' = bindAll (functionalBlocks dataFlow) microarch
-        initialBranch = Frame microarch' dataFlow Nothing :: SystemState String String String (TaggedTime String Int)
-        Frame{ nitta=pu } = foldl (\b _ -> naive def b) initialBranch $ replicate 50 ()
+        f = Frame microarch' dataFlow Nothing :: SystemState String String String (TaggedTime String Int)
+        Frame{ nitta=pu } = foldl (\f' _ -> naive def f') f $ replicate 50 ()
     in pu
 
 root
@@ -185,7 +179,5 @@ simulateSPI n = do
     , FB $ FB.Send (I "c2")
     ]
   print "ok"
-
-
 
 getPU puTitle net = fromMaybe (error "Wrong PU type!") $ castPU $ bnPus net M.! puTitle

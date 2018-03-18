@@ -27,44 +27,41 @@ import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck       as QC
 
-
 main = do
-  -- Используется для того, что бы раскладывать файлы в разные папки при симуляции.
-  counter <- newCounter 0
+  counter <- newCounter 0 -- Используется для того, что бы раскладывать файлы в разные папки при симуляции.
   setEnv "TASTY_QUICKCHECK_TESTS" "10"
   -- TODO: Положть gen в ram fs, нечего насиловать диск.
-  defaultMain $ testGroup "NITTA tests"
-    [ testGroup "Fram unittests" huFramTests
-    , testGroup "Fram quickcheck" (qcFramTests counter)
-    , testGroup "BusNetwork unittests" [ accum_fram1_fram2_netTests ]
-    , testGroup "Utils" [ values2dumpTests ]
+  defaultMain $ testGroup "NITTA"
+    [ testGroup "Fram process unit"
+      [ testCase "unit tests" framTestBench
+      , QC.testProperty "completeness" $ prop_completness <$> processGen framProxy
+      , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram_" counter) $ inputsGen =<< processGen framProxy
+      ]
+    , testGroup "BusNetwork"
+      [ testCase "unit tests" accum_fram1_fram2_netTests
+      ]
+    , testGroup "Utils"
+      [ testCase "values2dump" values2dumpTests
+      ]
     ]
 
-qcFramTests counter
-  = [ QC.testProperty "Fram completeness" $ prop_completness <$> processGen framProxy
-    , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram_" counter) $ inputsGen =<< processGen framProxy
-    ]
-
-huFramTests
+framTestBench
   = let alg = [ FB.reg (I "aa") $ O ["ab"]
               , FB.framOutput 9 $ I "ac"
               ]
+        lib = joinPath ["..", ".."]
+        wd = joinPath ["hdl", "gen", "unittest_fram"]
         fram = bindAllAndNaiveSchedule alg (def :: FR.Fram String Int)
-        library = joinPath ["..", ".."]
-        workdir = joinPath ["hdl", "gen", "unittest_fram"]
-    in [ testCase "Simple unit test" $ assert (testBench library workdir fram (def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])]
-                                                                                  } :: Cntx String Int))
-       ]
-
-
+        cntx = def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] } :: Cntx String Int
+        tb = testBench lib wd fram cntx
+    in tb @? "fram test bench"
 
 accum_fram1_fram2_netTests
-  = let net :: BusNetwork String String (TaggedTime String Int)
-        net = busNetwork 24
+  = let net = busNetwork 24
           [ ("fram1", PU def FR.Link{ FR.oe=Index 11, FR.wr=Index 10, FR.addr=map Index [9, 8, 7, 6] })
           , ("fram2", PU def FR.Link{ FR.oe=Index 5, FR.wr=Index 4, FR.addr=map Index [3, 2, 1, 0] })
           , ("accum", PU def A.Link{ A.init=Index 18, A.load=Index 19, A.neg=Index 20, A.oe=Index 21 } )
-          ]
+          ] :: BusNetwork String String (TaggedTime String Int)
         alg = [ FB.framInput 3 $ O [ "a"
                                    , "d"
                                    ]
@@ -83,19 +80,16 @@ accum_fram1_fram2_netTests
               , FB.reg (I "f") $ O ["g"]
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]
-        net' = bindAll alg (net :: BusNetwork String String (TaggedTime String Int))
-        dataFlow = DFG $ map DFGNode alg
-        compiler = Frame net' dataFlow Nothing :: SystemState String String String (TaggedTime String Int)
-        Frame{ nitta=net''
-             } = foldl (\comp _ -> naive def comp) compiler $ replicate 150 ()
-        library = joinPath ["..", ".."]
-        workdir = joinPath ["hdl", "gen", "unittest_accum_fram1_fram2_net"]
-    in testCase "Obscure integration test for net of accum, fram1, fram2"
-          $ assert $ testBench library workdir net'' (def{ cntxVars=M.fromList [("g", [0x1001])]
-                                                         } :: Cntx String Int)
+        net' = bindAll alg net
+        g = DFG $ map DFGNode alg
+        f = Frame net' g Nothing :: SystemState String String String (TaggedTime String Int)
+        Frame{ nitta=net'' } = foldl (\f' _ -> naive def f') f $ replicate 150 ()
+        lib = joinPath ["..", ".."]
+        wd = joinPath ["hdl", "gen", "unittest_accum_fram1_fram2_net"]
+        cntx = def{ cntxVars=M.fromList [("g", [0x1001])] } :: Cntx String Int
+    in testBench lib wd net'' cntx @? "simple test bench (accum, fram1, fram2)"
 
-
-values2dumpTests = testCase "values2dump" $ do
+values2dumpTests = do
   assertEqual "values2dump: xxxx" "0" $ values2dump [X, X, X, X]
   assertEqual "values2dump: 0000" "0" $ values2dump [B False, B False, B False, B False]
   assertEqual "values2dump: 1111" "f" $ values2dump [B True, B True, B True, B True]

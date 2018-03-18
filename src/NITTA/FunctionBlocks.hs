@@ -72,6 +72,8 @@ push ks v cntx
 
 
 -- | Симмулировать алгоритм.
+--
+-- TODO: simulate DFG
 simulateAlg cntx0 fbs
   = inner cntx0 [] $ sort cntx0 fbs
   where

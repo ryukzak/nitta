@@ -126,10 +126,10 @@ instance ( Time t, Var v
                    CompilerDT (SystemState String String v (TaggedTime String t))
          where
   options _ Level{ currentFrame } = options compiler currentFrame
-  options _ branch@Frame{..} = concat
+  options _ f@Frame{..} = concat
     [ map generalizeDataFlowOption dataFlowOptions
-    , map generalizeControlFlowOption $ options controlDT branch
-    , map generalizeBindingOption $ options binding branch
+    , map generalizeControlFlowOption $ options controlDT f
+    , map generalizeBindingOption $ options binding f
     ]
     where
       dataFlowOptions = sensibleOptions $ filterByDFG $ options dataFlowDT nitta
@@ -148,8 +148,8 @@ instance ( Time t, Var v
 
   decision _ l@Level{..} d
     = let l' = l{ currentFrame=decision compiler currentFrame d }
-      in if isCurrentBranchOver l'
-          then finalizeBranch l'
+      in if isFrameDone l'
+          then makeFrameDone l'
           else l'
   decision _ f (BindingDecision fb title) = decision binding f $ BindingD fb title
   decision _ f (ControlFlowDecision d) = decision controlDT f $ ControlFlowD d
@@ -218,8 +218,8 @@ naive' st@CompilerStep{..}
     (_, _, _, _, d) = last opts
 
 
-naive opt branch
-  = let st = CompilerStep branch opt Nothing
+naive opt f
+  = let st = CompilerStep f opt Nothing
         CompilerStep{ state=st' } = fromMaybe st $ naive' st
     in st'
 
@@ -285,34 +285,35 @@ integral GlobalMetrics{..} _                               = 0
 
 
 -- | Функция применяется к кусту и позволяет определить, осталась ли работа в текущей ветке или нет.
-isCurrentBranchOver Level{ currentFrame=f@Frame{..} }
+isFrameDone Level{ currentFrame=f@Frame{..} }
   | opts <- options compiler f
   = null $ filterBindingOption opts ++ filterDataFlowOption opts
-isCurrentBranchOver _ = False
+isFrameDone _ = False
 
 
--- | Функция позволяет выполнить работы по завершению текущей ветки. Есть два варианта:
---
--- 1) Сменить ветку на следующую.
--- 2) Вернуться в выполнение корневой ветки, для чего слить вычислительный процесс всех вариантов
---    ветвления алгоритма.
-finalizeBranch l@Level{ remainFrames=f:fs, currentFrame, completedFrames }
+-- | Функция завершения текущего фрейма. Есть два сценария: 1) поменять фрейм не меняя уровень, 2)
+-- свернуть уровень и перейти в нажележащему фрейму.
+makeFrameDone l@Level{ remainFrames=f:fs, currentFrame, completedFrames }
   = l
     { currentFrame=f
     , remainFrames=fs
     , completedFrames=currentFrame : completedFrames
     }
-finalizeBranch Level{ initialFrame, currentFrame, completedFrames }
-  = let branchs = currentFrame : completedFrames
-        mergeTime = (maximum $ map (nextTick . process . nitta) branchs){ tag=timeTag initialFrame }
+makeFrameDone Level{ initialFrame, currentFrame, completedFrames }
+  = let fs = currentFrame : completedFrames
+        mergeTime = (maximum $ map (nextTick . process . nitta) fs){ tag=timeTag initialFrame }
         Frame{ nitta=pu@BusNetwork{..} } = currentFrame
     in initialFrame
       { nitta=setTime mergeTime pu
           { bnProcess=snd $ modifyProcess bnProcess $
-              mapM_ (\Step{..} -> add sTime sDesc) $ concatMap inBranchSteps branchs
+              mapM_ (\Step{..} -> add sTime sDesc) $ concatMap stepsFromFrame fs
           }
       }
-finalizeBranch Frame{} = error "finalizeBranch: wrong args."
+  where
+    stepsFromFrame Frame{..} = whatsHappenWith timeTag nitta
+    stepsFromFrame Level{}   = error "stepsFromFrame: wrong args"
+
+makeFrameDone _ = error "makeFrameDone: argument must be Level."
 
 
 
@@ -351,8 +352,6 @@ passiveOption2action d@EndpointO{..}
         b = d^.at.avail.infimum + d^.at.dur.infimum - 1
     in EndpointD epoType (a ... b)
 
-inBranchSteps Frame{..} = whatsHappenWith timeTag nitta
-inBranchSteps Level{}   = error "inBranchSteps: wrong args"
 
 
 whatsHappenWith tag pu =
