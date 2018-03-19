@@ -126,7 +126,7 @@ instance ( Time t, Var v
                    CompilerDT (SystemState String String v (TaggedTime String t))
          where
   options _ Level{ currentFrame } = options compiler currentFrame
-  options _ f@Frame{..} = concat
+  options _ f@Frame{ nitta, dfg } = concat
     [ map generalizeDataFlowOption dataFlowOptions
     , map generalizeControlFlowOption $ options controlDT f
     , map generalizeBindingOption $ options binding f
@@ -134,19 +134,19 @@ instance ( Time t, Var v
     where
       dataFlowOptions = sensibleOptions $ filterByDFG $ options dataFlowDT nitta
       allowByDFG = allowByDFG' dfg
-      allowByDFG' (DFGNode fb)  = variables fb
-      allowByDFG' (DFG g)       = concatMap allowByDFG' g
-      allowByDFG' DFGSwitch{..} = [ dfgKey ]
+      allowByDFG' (DFGNode fb)        = variables fb
+      allowByDFG' (DFG g)             = concatMap allowByDFG' g
+      allowByDFG' DFGSwitch{ dfgKey } = [ dfgKey ]
       filterByDFG
-        = map (\t@DataFlowO{..} -> t
+        = map (\t@DataFlowO{ dfoTargets } -> t
                   { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `elem` allowByDFG
                                                                       then desc
                                                                       else Nothing)
                                                 ) $ M.assocs dfoTargets
                   })
-      sensibleOptions = filter $ \DataFlowO{..} -> any isJust $ M.elems dfoTargets
+      sensibleOptions = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
 
-  decision _ l@Level{..} d = tryMakeLevelDone l{ currentFrame=decision compiler currentFrame d }
+  decision _ l@Level{ currentFrame } d = tryMakeLevelDone l{ currentFrame=decision compiler currentFrame d }
   decision _ f (BindingDecision fb title) = decision binding f $ BindingD fb title
   decision _ f (ControlFlowDecision d) = decision controlDT f $ ControlFlowD d
   decision _ f@Frame{ nitta } (DataFlowDecision src trg) = f{ nitta=decision dataFlowDT nitta $ DataFlowD src trg }
@@ -161,8 +161,7 @@ option2decision (DataFlowOption src trg)
         pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd src : pushTimeConstrains
         pullEnd = pullStart + pullDuration - 1
         pushStart = pullStart + 1
-        mkEvent (from_, tc@TimeConstrain{..})
-          = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
+        mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
     in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
 
@@ -190,11 +189,11 @@ instance ( Time t, Var v
          ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
                    CompilerDT (CompilerStep String String v (TaggedTime String t))
          where
-  options proxy CompilerStep{..} = options proxy state
-  decision proxy st@CompilerStep{..} act = st{ state=decision proxy state act }
+  options proxy CompilerStep{ state } = options proxy state
+  decision proxy st@CompilerStep{ state } act = st{ state=decision proxy state act }
 
 
-optionsWithMetrics CompilerStep{..}
+optionsWithMetrics CompilerStep{ state }
   = sortOn (\(x, _, _, _, _) -> x) $ map measure' opts
   where
     opts = options compiler state
@@ -203,7 +202,7 @@ optionsWithMetrics CompilerStep{..}
       = let m = measure opts state o
         in ( integral gm m, gm, m, o, option2decision o )
 
-naive' st@CompilerStep{..}
+naive' st@CompilerStep{ state }
   = if null opts
     then Nothing
     else Just st{ state=decision compiler state d
@@ -252,8 +251,8 @@ data SpecialMetrics
   deriving ( Show, Generic )
 
 
-measure opts Level{..} opt = measure opts currentFrame opt
-measure opts Frame{ nitta=net@BusNetwork{..} } (BindingOption fb title) = BindingMetrics
+measure opts Level{ currentFrame } opt = measure opts currentFrame opt
+measure opts Frame{ nitta=net@BusNetwork{ bnPus } } (BindingOption fb title) = BindingMetrics
   { critical=isCritical fb
   , alternative=length (howManyOptionAllow (filterBindingOption opts) M.! fb)
   , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind fb (bnPus M.! title)
@@ -297,15 +296,15 @@ makeLevelDone l@Level{ remainFrames=f:fs, currentFrame, completedFrames }
 makeLevelDone Level{ initialFrame, currentFrame, completedFrames }
   = let fs = currentFrame : completedFrames
         mergeTime = (maximum $ map (nextTick . process . nitta) fs){ tag=timeTag initialFrame }
-        Frame{ nitta=pu@BusNetwork{..} } = currentFrame
+        Frame{ nitta=net@BusNetwork{ bnProcess } } = currentFrame
     in initialFrame
-      { nitta=setTime mergeTime pu
+      { nitta=setTime mergeTime net
           { bnProcess=snd $ modifyProcess bnProcess $
-              mapM_ (\Step{..} -> add sTime sDesc) $ concatMap stepsFromFrame fs
+              mapM_ (\Step{ sTime, sDesc } -> add sTime sDesc) $ concatMap stepsFromFrame fs
           }
       }
   where
-    stepsFromFrame Frame{..} = whatsHappenWith timeTag nitta
+    stepsFromFrame Frame{ timeTag, nitta } = whatsHappenWith timeTag nitta
     stepsFromFrame Level{}   = error "stepsFromFrame: wrong args"
 
 makeLevelDone _ = error "makeFrameDone: argument must be Level."
@@ -322,9 +321,9 @@ howManyOptionAllow bOptions
 
 
 -- | Время ожидания переменных.
-waitingTimeOfVariables net@BusNetwork{..}
+waitingTimeOfVariables net
   = [ (variable, tc^.avail.infimum)
-    | DataFlowO{ dfoSource=(_, tc@TimeConstrain{..}), ..} <- options dataFlowDT net
+    | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- options dataFlowDT net
     , (variable, Nothing) <- M.assocs dfoTargets
     ]
 
@@ -340,7 +339,7 @@ optionsAfterBind fb pu = case bind fb pu of
 
 -- * Утилиты
 
-passiveOption2action d@EndpointO{..}
+passiveOption2action d@EndpointO{ epoType }
   = let a = d^.at.avail.infimum
         -- "-1" - необходимо, что бы не затягивать процесс на лишний такт, так как интервал включает
         -- граничные значения.
@@ -350,6 +349,6 @@ passiveOption2action d@EndpointO{..}
 
 
 whatsHappenWith tag pu =
-  [ st | st@Step{..} <- steps $ process pu
+  [ st | st@Step{ sTime } <- steps $ process pu
        , tag == placeInTimeTag sTime
        ]
