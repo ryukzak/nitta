@@ -620,7 +620,6 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
                  ]
     outputStep :: ( Time t ) => Fram v t -> FB (Parcel v) -> Maybe (Int, v)
     outputStep pu' (FB fb)
-    -- FIXME: убирание следующей строки не приводит к падению тестов. Почему?
       | Just (Loop _bs (I v)) <- cast fb = Just (findAddress v pu', v)
       | Just (FramOutput addr (I v)) <- cast fb = Just (addr, v)
       | otherwise = Nothing
