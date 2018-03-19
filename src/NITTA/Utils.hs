@@ -15,8 +15,7 @@ module NITTA.Utils where
 
 import           Control.Monad.State
 import           Data.Default
-import           Data.List           (minimumBy, sortOn)
-import qualified Data.Map            as M
+import           Data.List           (minimumBy, sortOn, (\\))
 import           Data.Maybe          (mapMaybe)
 import           Data.Proxy
 import           Data.Typeable       (Typeable, cast)
@@ -148,15 +147,8 @@ extractInstructions pu = mapMaybe (extractInstruction pu) $ sortOn stepStart $ s
 -- | Собрать список переменных подаваемых на вход указанного списка функциональных блоков. При
 -- формировании результата отсеиваются входы, получаемые из функциональных блоков рассматриваемого
 -- списка.
-inputsOfFBs fbs
-  = let deps0 = M.fromList [(v, []) | v <- concatMap variables fbs]
-        deps = foldl (\dict (a, b) -> M.adjust ((:) b) a dict) deps0 $ concatMap dependency fbs
-    in map fst $ filter (null . snd) $ M.assocs deps
-
--- outputsOfFBs fbs
---   = let deps0 = (M.fromList [(v, []) | v <- concatMap variables fbs])
---         deps = foldl (\dict (a, b) -> M.adjust ((:) b) a dict) deps0 $ concatMap dependency fbs
---     in filter (\a -> all (not . (a `elem`)) deps) $ M.keys deps
+algInputs fbs = concatMap inputs fbs \\ concatMap outputs fbs
+algOutputs fbs = concatMap outputs fbs \\ concatMap inputs fbs
 
 
 

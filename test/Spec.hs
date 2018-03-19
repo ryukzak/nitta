@@ -32,5 +32,7 @@ main = do
       ]
     , testGroup "Utils"
       [ testCase "values2dump" values2dumpTests
+      , testCase "inputsOfFBs" inputsOfFBsTests
+      , testCase "outputsOfFBsTests" outputsOfFBsTests
       ]
     ]

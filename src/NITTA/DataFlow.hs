@@ -62,7 +62,7 @@ instance WithFunctionalBlocks (DataFlowGraph v) (FB (Parcel v) v) where
   functionalBlocks (DFG g)               = concatMap functionalBlocks g
   functionalBlocks DFGSwitch{ dfgCases } = concatMap (functionalBlocks . snd) dfgCases
 
-dfgInputs g = inputsOfFBs $ functionalBlocks g
+dfgInputs g = algInputs $ functionalBlocks g
 node fb = DFGNode $ FB fb
 
 -- | Для описания текущего состояния вычислительной системы (с учётом алгоритма, потока управления,
