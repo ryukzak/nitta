@@ -87,7 +87,7 @@ data Fram v t = Fram
   -- дополнительной информации, такой как время привязки функционального блока. Нельзя сразу делать
   -- привязку к ячейке памяти, так как это будет неэффективно.
   , frRemains  :: [ (FSet (Fram v t), ProcessUid) ]
-  , frBindedFB :: [ FB (Parcel v) v ]
+  , frBindedFB :: [ FB (Parcel v) ]
   , frProcess  :: Process v t
   , frSize     :: Int
   } deriving ( Show )
@@ -103,7 +103,7 @@ instance ( Default t ) => Default (Fram v t) where
       defaultSize = 16
       cells = map (\(i, c) -> c{ initialValue=0x1000 + i }) $ zip [0..] $ repeat def
 
-instance WithFunctionalBlocks (Fram v t) (FB (Parcel v) v) where
+instance WithFunctionalBlocks (Fram v t) (FB (Parcel v)) where
   functionalBlocks Fram{..} = frBindedFB
 
 
@@ -117,7 +117,7 @@ instance FunctionalSet (Fram v t) where
     | Constant' (Constant (Parcel v))
     deriving ( Show, Eq )
 
-instance ( Var v ) => WithFunctionalBlocks (FSet (Fram v t)) (FB (Parcel v) v) where
+instance ( Var v ) => WithFunctionalBlocks (FSet (Fram v t)) (FB (Parcel v)) where
   -- TODO: Сделать данную операцию через Generics.
   functionalBlocks (FramInput' fb)  = [ FB fb ]
   functionalBlocks (FramOutput' fb) = [ FB fb ]
@@ -239,7 +239,7 @@ bindToCell _ fb cell = Left $ "Can't bind " ++ show fb ++ " to " ++ show cell
 instance ( IOType (Parcel v) v
          , Var v
          , Time t
-         , WithFunctionalBlocks (Fram v t) (FB (Parcel v) v)
+         , WithFunctionalBlocks (Fram v t) (FB (Parcel v))
          ) => ProcessUnit (Fram v t) v t where
   bind fb0 pu@Fram{..} = do fb' <- toFSet fb0
                             pu' <- bind' fb'
@@ -614,14 +614,15 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
       = "\n      @(posedge clk);\n"
       ++ unlines [ "  " ++ checkBank addr v (maybe (error $ show ("bank" ++ show v ++ show cntx) ) show (get cntx v))
                  | Step{ sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
-                 , let addr_v = outputStep fb
+                 , let addr_v = outputStep pu fb
                  , isJust addr_v
                  , let Just (addr, v) = addr_v
                  ]
-
-    outputStep (FB fb)
-      | Just (Loop _bs (I a)) <- cast fb = Just (findAddress a pu, a)
-      | Just (FramOutput addr (I a)) <- cast fb = Just (addr, a)
+    outputStep :: ( Time t ) => Fram v t -> FB (Parcel v) -> Maybe (Int, v)
+    outputStep pu' (FB fb)
+    -- FIXME: убирание следующей строки не приводит к падению тестов. Почему?
+      | Just (Loop _bs (I v)) <- cast fb = Just (findAddress v pu', v)
+      | Just (FramOutput addr (I v)) <- cast fb = Just (addr, v)
       | otherwise = Nothing
 
     checkBank addr v value = concatMap ("    " ++)

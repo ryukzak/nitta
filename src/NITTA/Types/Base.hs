@@ -68,6 +68,7 @@ instance ( Show (I io), Variables (I io) v, Eq (I io)
 
 -- | Идентификатор типа для описания физически фактических пересылаемых значений.
 newtype Parcel v = Parcel v
+deriving instance ( Show v ) => Show (Parcel v)
 
 instance Var v => IOTypeFamily (Parcel v) where
   data I (Parcel v) = I v -- ^ Загружаемые значения.
@@ -169,7 +170,7 @@ class FunctionalSet pu where
   -- | Тип для представляния системы команд.
   data FSet pu :: *
 
-instance ( WithFunctionalBlocks (FSet pu) (FB (Parcel v) v) ) => Variables (FSet pu) v where
+instance ( WithFunctionalBlocks (FSet pu) (FB (Parcel v)) ) => Variables (FSet pu) v where
   variables fbs = concatMap variables $ functionalBlocks fbs
 
 
@@ -177,7 +178,7 @@ instance ( WithFunctionalBlocks (FSet pu) (FB (Parcel v) v) ) => Variables (FSet
 class ToFSet pu v | pu -> v where
   -- | Преобразование гетерогенного функционального блока в представление системы функций
   -- вычислительного блока.
-  toFSet :: FB (Parcel v) v -> Either String (FSet pu)
+  toFSet :: FB (Parcel v) -> Either String (FSet pu)
 
 -- | Преобразование из представления системы функций вычислительного блока в гетерогенный
 -- функциональный блок.
@@ -240,36 +241,39 @@ class FunctionSimulation fb v x | fb -> v where
 
 
 
+
+
 -- | Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
-data FB io v where
-  FB :: ( FunctionalBlock fb v
+data FB io where
+  FB :: ( io ~ (_io v)
+        , IOType io v
+        , FunctionalBlock fb v
         , Show fb
         , Variables fb v
-        , IOType io v
         , FunctionSimulation fb v Int
-        ) => fb -> FB io v
-deriving instance ( Show v ) => Show (FB io v)
+        ) => fb -> FB io
+deriving instance ( Show io ) => Show (FB io)
 
-instance ( IOType box v, Var v ) => FunctionalBlock (FB box v) v where
+instance ( Var v ) => FunctionalBlock (FB (Parcel v)) v where
   dependency (FB fb) = dependency fb
   insideOut (FB fb) = insideOut fb
   isCritical (FB fb) = isCritical fb
   inputs (FB fb) = inputs fb
   outputs (FB fb) = outputs fb
 
-instance Variables (FB io v) v where
+instance Variables (FB (Parcel v)) v where
   variables (FB fb) = variables fb
 
-instance Eq (FB io v) where
+instance Eq (FB io) where
   FB a == FB b = Just a == cast b
 
-instance ( Variables (FB io v) v, Ord v ) => Ord (FB io v) where
+instance ( Variables (FB io) v, Ord v ) => Ord (FB io) where
   a `compare` b = variables a `compare` variables b
 
 instance {-# OVERLAPS #-} FunctionalBlock fb v => Variables fb v where
   variables fb = inputs fb ++ outputs fb
 
-instance FunctionSimulation (FB (Parcel v) v) v Int where
+instance FunctionSimulation (FB (Parcel v)) v Int where
   simulate cntx (FB fb) = simulate cntx fb
 
 
@@ -320,7 +324,7 @@ data StepInfo v where
   -- | Решения, принятые на уровне САПР.
   CADStep :: String -> StepInfo v
   -- | Время работы над функциональным блоком функционального алгоритма.
-  FBStep :: FB (Parcel v) v -> StepInfo v
+  FBStep :: FB (Parcel v) -> StepInfo v
   -- | Описание использования вычислительного блока с точки зрения передачи данных.
   EndpointStep :: EndpointType v -> StepInfo v
   -- | Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
@@ -375,8 +379,8 @@ data BindingDT title v
 binding = Proxy :: Proxy BindingDT
 
 instance DecisionType (BindingDT title v) where
-  data Option (BindingDT title v) = BindingO (FB (Parcel v) v) title deriving ( Generic )
-  data Decision (BindingDT title v) = BindingD (FB (Parcel v) v) title deriving ( Generic )
+  data Option (BindingDT title v) = BindingO (FB (Parcel v)) title deriving ( Generic )
+  data Decision (BindingDT title v) = BindingD (FB (Parcel v)) title deriving ( Generic )
 
 
 -- | Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
@@ -448,7 +452,7 @@ instance ( Show v, Show t ) => Show (Decision (EndpointDT v t)) where
 --    4) Повторение, пока список возможных вариантов не станет пустым.
 class ProcessUnit pu v t | pu -> v t where
   -- | Назначить исполнение функционального блока вычислительному узлу.
-  bind :: FB (Parcel v) v -> pu -> Either String pu
+  bind :: FB (Parcel v) -> pu -> Either String pu
   -- | Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
   -- процесс вложенных структурных элементов.
   --
@@ -546,7 +550,7 @@ class Simulatable pu v x | pu -> v x where
   simulateOn :: Cntx v x -- ^ Контекст вычислительного процесса, содержащий уже
                          -- известные значения переменных.
              -> pu -- ^ Вычислительный блок.
-             -> FB (Parcel v) v -- ^ Функциональный блок, оперируйщий интересующим значением.
+             -> FB (Parcel v) -- ^ Функциональный блок, оперируйщий интересующим значением.
              -> Maybe (Cntx v x)
 
 

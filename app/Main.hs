@@ -103,7 +103,7 @@ synthesisedFrame
 
 -- | Пример работы с единым временем.
 synthesisedFrameSPI
-  = let alg = [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
+  = let alg = [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String)
               , FB $ FB.Send (I "b")
               , FB.reg (I "a") $ O ["b"]
               ]
@@ -173,7 +173,7 @@ simulateSPI n = do
   mapM_ putStrLn $ take n $ map show $ FB.simulateAlg (def{ cntxVars=M.fromList [("b", [0])]
                                                           , cntxInputs=M.fromList [("a", [1, 2, 3])]
                                                           } :: Cntx String Int)
-    [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String) String
+    [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String)
     , FB $ FB.Add (I "a") (I "b") (O ["c1", "c2"])
     , FB $ FB.Loop (O ["b"]) (I "c1")
     , FB $ FB.Send (I "c2")

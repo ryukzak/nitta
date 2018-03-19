@@ -45,11 +45,11 @@ data SerialPU st io v t
   = SerialPU
   { -- | Внутрее состояние вычислительного блока. Конкретное состояние зависит от конкретного типа.
     spuState   :: st
-  , spuCurrent :: Maybe (CurrentJob io v t)
+  , spuCurrent :: Maybe (CurrentJob io t)
   -- | Список привязанных к вычислительному блоку функций, но работа над которыми ещё не началась.
   -- Второе значение - ссылка на шаг вычислительного процесса, описывающий привязку функции
   -- к вычислительному блоку.
-  , spuRemain  :: [(FB io v, ProcessUid)]
+  , spuRemain  :: [(FB io, ProcessUid)]
   -- | Описание вычислительного процесса.
   , spuProcess :: Process v t
   } deriving ( Show )
@@ -60,9 +60,9 @@ instance ( Time t, Var v, Default st ) => Default (SerialPU st (Parcel v) v t) w
 
 
 -- | Описание текущей работы вычислительного блока.
-data CurrentJob io v t
+data CurrentJob io t
   = CurrentJob
-  { cFB    :: FB io v -- ^ Текущая функция.
+  { cFB    :: FB io -- ^ Текущая функция.
   , cStart :: t -- ^ Момент времни, когда функция начала вычисляться.
   -- | Выполненные для данной функции вычислительные шаги. Необходимо в значительной
   -- степени для того, чтобы корректно задать все вертикальные отношения между уровнями по
@@ -77,7 +77,7 @@ data CurrentJob io v t
 class SerialPUState st io v t | st -> io, st -> v, st -> t where
   -- | Привязать функцию к текущему состоянию вычислительного блока. В один момент времени только
   -- один функциональный блок.
-  bindToState :: FB io v -> st -> Either String st
+  bindToState :: FB io -> st -> Either String st
   -- | Получить список вариантов развития вычислительного процесса, на основе предоставленного
   -- состояния последовательного вычислительного блока.
   stateOptions :: st -> t -> [Option (EndpointDT v t)]

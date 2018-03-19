@@ -56,11 +56,11 @@ data GBusNetwork title spu v t =
   BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
-      bnRemains            :: [FB (Parcel v) v]
+      bnRemains            :: [FB (Parcel v)]
     -- | Список переданных через сеть переменных (используется для понимания готовности).
     , bnForwardedVariables :: [v]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded             :: M.Map title [FB (Parcel v) v]
+    , bnBinded             :: M.Map title [FB (Parcel v)]
     -- | Описание вычислительного процесса сети, как элемента процессора.
     , bnProcess            :: Process v t
     -- | Словарь вложенных вычислительных блоков по именам.
@@ -89,7 +89,7 @@ busNetwork w pus = BusNetwork [] [] (M.fromList []) def (M.fromList pus') w
     valueData t = t ++ "_data_out"
     valueAttr t = t ++ "_attr_out"
 
-instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork title v t) (FB (Parcel v) v) where
+instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork title v t) (FB (Parcel v)) where
   functionalBlocks BusNetwork{..} = sortFBs binded []
     where
       binded = bnRemains ++ concat (M.elems bnBinded)

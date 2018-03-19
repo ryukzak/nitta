@@ -43,7 +43,7 @@ import           NITTA.Utils
 -- TODO: В случае если функциональные блоки не имеют побочных эффектов, то множество
 -- взаимозаменяемых подграфом можно заменить графом с выборкой результата через мультиплексор.
 data DataFlowGraph v
-  = DFGNode (FB (Parcel v) v) -- ^ вершина графа, соответствует фунциональному блоку.
+  = DFGNode (FB (Parcel v)) -- ^ вершина графа, соответствует фунциональному блоку.
   | DFG [DataFlowGraph v] -- ^ граф, где информация о вершинах хранится внутри
                           -- функциональных блоков.
   | DFGSwitch -- ^ множество взаимозаменяемых подграфов.
@@ -57,7 +57,7 @@ instance ( Var v ) => Variables (DataFlowGraph v) v where
   variables (DFG g)                       = concatMap variables g
   variables DFGSwitch{ dfgKey, dfgCases } = dfgKey : concatMap (variables . snd) dfgCases
 
-instance WithFunctionalBlocks (DataFlowGraph v) (FB (Parcel v) v) where
+instance WithFunctionalBlocks (DataFlowGraph v) (FB (Parcel v)) where
   functionalBlocks (DFGNode fb)          = [ fb ]
   functionalBlocks (DFG g)               = concatMap functionalBlocks g
   functionalBlocks DFGSwitch{ dfgCases } = concatMap (functionalBlocks . snd) dfgCases

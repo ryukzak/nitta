@@ -18,7 +18,7 @@ values2dumpTests = do
   "17" @=? values2dump [B True, B False, B True, B True, B True]
 
 inputsOfFBsTests = do
-  let f = algInputs :: [FB (Parcel String) String] -> [String]
+  let f = algInputs :: [FB (Parcel String)] -> [String]
   []         @=? f [ FB $ FramInput 3 $ O [ "a" ] ]
   ["a", "b"] @=? f [ FB $ Add (I "a") (I "b") (O ["c"]) ]
   ["c"]      @=? f [ FB $ FramOutput 0 $ I "c" ]
@@ -29,7 +29,7 @@ inputsOfFBsTests = do
                    ]
 
 outputsOfFBsTests = do
-  let f = algOutputs :: [FB (Parcel String) String] -> [String]
+  let f = algOutputs :: [FB (Parcel String)] -> [String]
   ["a"] @=? f [ FB $ FramInput 3 $ O [ "a" ] ]
   ["c"] @=? f [ FB $ Add (I "a") (I "b") (O ["c"]) ]
   []    @=? f [ FB $ FramOutput 0 $ I "c" ]

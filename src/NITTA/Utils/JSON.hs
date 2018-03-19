@@ -31,7 +31,7 @@ instance ( ToJSON tag
          , ToJSON t
          ) => ToJSON (TaggedTime tag t)
 instance ( Show v
-         ) => ToJSON (FB (Parcel v) v) where
+         ) => ToJSON (FB (Parcel v)) where
   toJSON = String . pack . show
 instance ( ToJSON t, Time t
          ) => ToJSON (TimeConstrain t) where
