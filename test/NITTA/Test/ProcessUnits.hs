@@ -6,7 +6,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
-module NITTA.ProcessUnitsSpec where
+module NITTA.Test.ProcessUnits where
 
 import           Data.Atomics.Counter
 import           Data.Default
@@ -87,7 +87,7 @@ endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
 inputsGen (pu, fbs) = do
   values <- infiniteListOf $ choose (0, 1000)
   let is = concatMap inputs fbs
-  return (pu, fbs, def{ cntxVars=M.fromList $ zip is (map (\x -> [x]) values) })
+  return (pu, fbs, def{ cntxVars=M.fromList $ zip is (map (:[]) values) })
 
 
 -- | Проверка вычислительного блока на соответсвие работы аппаратной реализации и его модельного

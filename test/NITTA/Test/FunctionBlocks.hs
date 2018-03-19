@@ -6,7 +6,7 @@
 {-
 Данный модуль реализует функции для генерации функциональных блоков.
 -}
-module NITTA.FunctionBlocksSpec where
+module NITTA.Test.FunctionBlocks where
 
 import           Data.Default
 import           Data.List               (nub)

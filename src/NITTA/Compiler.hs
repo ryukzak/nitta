@@ -267,7 +267,7 @@ measure opts Frame{ nitta=net@BusNetwork{..} } (BindingOption fb title) = Bindin
   }
 measure _ _ ControlFlowOption{} = ControlFlowMetrics
 measure _ _ opt@DataFlowOption{} = DataFlowMetrics
-  { waitTime=fromEnum ((specializeDataFlowOption opt)^.at.avail.infimum)
+  { waitTime=fromEnum (specializeDataFlowOption opt^.at.avail.infimum)
   }
 
 
