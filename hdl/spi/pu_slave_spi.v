@@ -1,45 +1,46 @@
 module pu_slave_spi
-  #( parameter DATA_WIDTH     = 32
-    , parameter ATTR_WIDTH     = 4
-    , parameter SPI_DATA_WIDTH = 8
-    , parameter BUF_SIZE       = 6
-   )
-  (  input             		clk
-   , input             		rst
-   , input             		signal_cycle
+	#( parameter DATA_WIDTH     = 32
+	 , parameter ATTR_WIDTH     = 4
+	 , parameter SPI_DATA_WIDTH = 8
+	 , parameter BUF_SIZE       = 6
+	 )
+	( input             clk
+	, input             rst
+	, input             signal_cycle
 
-   // system interface
-   , input                     signal_wr
-   , input   [DATA_WIDTH-1:0]  data_in
-   , input   [ATTR_WIDTH-1:0]  attr_in
+	// system interface
+	, input                    signal_wr
+	, input   [DATA_WIDTH-1:0] data_in
+	, input   [ATTR_WIDTH-1:0] attr_in
 
-   , input                    	signal_oe
-   , output   [DATA_WIDTH-1:0] data_out
-   , output   [ATTR_WIDTH-1:0] attr_out
+	, input                    signal_oe
+	, output   [DATA_WIDTH-1:0] data_out
+	, output   [ATTR_WIDTH-1:0] attr_out
 
-   , output            flag_start
-   , output            flag_stop
+	, output            flag_start
+	, output            flag_stop
 
-   // SPI interface
-   , input             mosi
-   , output            miso
-   , input             sclk
-   , input             cs
-  );
+	// SPI interface
+	, input             mosi
+	, output            miso
+	, input             sclk
+	, input             cs
+	);
 
 reg  buffer_rst;
 
 wire [SPI_DATA_WIDTH-1:0] spi_data_send;
 wire [SPI_DATA_WIDTH-1:0] spi_data_receive;
 wire spi_ready;
-wire receive_to_pu_ready;
 
 reg signal_wr_transfer_to_send;
-wire [DATA_WIDTH-1:0] transfer_data_out_nitta;
+wire [DATA_WIDTH-1:0] transfer_in_out;
 
- 
+wire [ATTR_WIDTH-1:0] attr_out_send;
+wire [ATTR_WIDTH-1:0] attr_out_transfer;
+
 spi_slave_driver #( .DATA_WIDTH( SPI_DATA_WIDTH )
-) spi_driver
+									) spi_driver
 	( .clk( clk )
 	, .rst( rst )  
 
@@ -53,53 +54,51 @@ spi_slave_driver #( .DATA_WIDTH( SPI_DATA_WIDTH )
 	, .cs( cs )
 	);
 
-// [SLAVE <-> NITTA]
+// [TRANSFER <<< NITTA]
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
-) transfer_buffer 
+						) transfer_in_buffer 
 	( .clk( clk )
 	, .rst( buffer_rst )
-	, .wr( signal_wr )
-	, .nitta_wr ( 1'b1 )
-	, .nitta_oe ( 1'b1 )
-	, .spi_ready( 1'b0 )
-	, .oe( signal_oe )
-	, .data_in_nitta( data_in )
-	, .data_out_nitta( transfer_data_out_nitta )
+	, .wr(  signal_wr )
+	, .oe( flag_stop )
+	, .data_in( data_in )
+	, .data_out( transfer_in_out )
+	, .attr_out( attr_out_transfer )
+
 ); 
 
-// [MASTER -> SLAVE]
+// [TRANSFER >>> NITTA]
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
-			, .DATA_WIDTH( DATA_WIDTH )
-			, .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
-) receive_buffer
+						) transfer_out_buffer 
 	( .clk( clk )
 	, .rst( buffer_rst )
-	, .wr( 1'b0 )
-	, .nitta_wr( 1'b0 )
-	, .nitta_oe( 1'b0 )
-	, .receive( 1'b1 )
-	, .send( 1'b0 )
-	, .oe( signal_oe )
-	, .spi_ready( spi_ready && !cs )
-	, .spi_data_receive( spi_data_receive )
+
+); 
+
+// [MASTER >>> SLAVE]
+spi_buffer #( .BUF_SIZE( BUF_SIZE )
+						, .DATA_WIDTH( DATA_WIDTH )
+						, .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
+						) receive_buffer
+	( .clk( clk )
+	, .rst( buffer_rst )
+
 );
 
-// [SLAVE -> MASTER]
+// [MASTER <<< SLAVE]
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
-			, .DATA_WIDTH( DATA_WIDTH )
-			, .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
-) send_buffer 
+						, .DATA_WIDTH( DATA_WIDTH )
+						, .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
+						) send_buffer 
 	( .clk( clk )
 	, .rst( buffer_rst )
 	, .wr( signal_wr_transfer_to_send )
-	, .data_in( transfer_data_out_nitta )
-	, .nitta_wr( 1'b0 )
-	, .nitta_oe ( 1'b0 )
-	, .oe ( 1'b0 )
-	, .receive( 1'b0 )
-	, .send( 1'b1 )
-	, .spi_ready( spi_ready && !cs )
+	, .data_in( transfer_in_out )
+	, .attr_in( 4'b0010 )
+
+	, .spi_ready( spi_ready )
 	, .spi_data_send( spi_data_send )
+
  );
 
 always @( posedge clk or posedge rst ) begin
@@ -108,18 +107,22 @@ always @( posedge clk or posedge rst ) begin
 	end else begin
 		if ( signal_cycle ) begin
 			buffer_rst <= 1;
-		end else begin                      
+		end else begin  
 			buffer_rst <= 0;
 		end                                 
 	end
 end
 
-always @( posedge clk ) begin
-	if ( signal_oe ) begin
+always @(posedge clk ) begin
+	if ( flag_stop ) begin
 		signal_wr_transfer_to_send <= 1;
 	end else begin
 		signal_wr_transfer_to_send <= 0;
 	end
 end
+
+assign flag_start = spi_ready && !cs;
+assign flag_stop  = !spi_ready && cs;
+
 
 endmodule
