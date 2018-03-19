@@ -146,11 +146,7 @@ instance ( Time t, Var v
                   })
       sensibleOptions = filter $ \DataFlowO{..} -> any isJust $ M.elems dfoTargets
 
-  decision _ l@Level{..} d
-    = let l' = l{ currentFrame=decision compiler currentFrame d }
-      in if isFrameDone l'
-          then makeFrameDone l'
-          else l'
+  decision _ l@Level{..} d = tryMakeLevelDone l{ currentFrame=decision compiler currentFrame d }
   decision _ f (BindingDecision fb title) = decision binding f $ BindingD fb title
   decision _ f (ControlFlowDecision d) = decision controlDT f $ ControlFlowD d
   decision _ f@Frame{ nitta } (DataFlowDecision src trg) = f{ nitta=decision dataFlowDT nitta $ DataFlowD src trg }
@@ -284,22 +280,21 @@ integral GlobalMetrics{..} _                               = 0
 -- * Работа с потоком управления.
 
 
--- | Функция применяется к кусту и позволяет определить, осталась ли работа в текущей ветке или нет.
-isFrameDone Level{ currentFrame=f@Frame{..} }
+tryMakeLevelDone l@Level{ currentFrame=f@Frame{} }
   | opts <- options compiler f
-  = null $ filterBindingOption opts ++ filterDataFlowOption opts
-isFrameDone _ = False
-
+  , null $ filterBindingOption opts ++ filterDataFlowOption opts
+  = makeLevelDone l
+tryMakeLevelDone l = l
 
 -- | Функция завершения текущего фрейма. Есть два сценария: 1) поменять фрейм не меняя уровень, 2)
 -- свернуть уровень и перейти в нажележащему фрейму.
-makeFrameDone l@Level{ remainFrames=f:fs, currentFrame, completedFrames }
+makeLevelDone l@Level{ remainFrames=f:fs, currentFrame, completedFrames }
   = l
     { currentFrame=f
     , remainFrames=fs
     , completedFrames=currentFrame : completedFrames
     }
-makeFrameDone Level{ initialFrame, currentFrame, completedFrames }
+makeLevelDone Level{ initialFrame, currentFrame, completedFrames }
   = let fs = currentFrame : completedFrames
         mergeTime = (maximum $ map (nextTick . process . nitta) fs){ tag=timeTag initialFrame }
         Frame{ nitta=pu@BusNetwork{..} } = currentFrame
@@ -313,7 +308,7 @@ makeFrameDone Level{ initialFrame, currentFrame, completedFrames }
     stepsFromFrame Frame{..} = whatsHappenWith timeTag nitta
     stepsFromFrame Level{}   = error "stepsFromFrame: wrong args"
 
-makeFrameDone _ = error "makeFrameDone: argument must be Level."
+makeLevelDone _ = error "makeFrameDone: argument must be Level."
 
 
 
