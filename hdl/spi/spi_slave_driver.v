@@ -44,13 +44,13 @@ always @( posedge rst, posedge clk ) begin
         end
         STATE_WAIT_SCLK_1: begin
           if ( sclk ) begin
-            miso <= shiftreg[7];
+            miso <= shiftreg[DATA_WIDTH - 1];
             state <= STATE_WAIT_SCLK_0;
           end
         end
         STATE_WAIT_SCLK_0: begin
           if ( !sclk ) begin
-            shiftreg <= { shiftreg[6:0], mosi };
+            shiftreg <= { shiftreg[DATA_WIDTH - 1 - 1:0], mosi };
             state <= STATE_WAIT_SCLK_1;
           end
         end

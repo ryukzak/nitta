@@ -61,7 +61,7 @@ always @( posedge rst, posedge clk ) begin
       STATE_IDLE: begin
         sclk <= 0;
         if ( start_transaction ) begin
-          bit_count <= 7;
+          bit_count <= DATA_WIDTH - 1;
           cs <= 0;
           state <= STATE_WAIT_SCLK_1;
         end 
