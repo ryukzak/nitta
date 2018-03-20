@@ -16,6 +16,7 @@ module NITTA.Utils.JSON where
 import           Data.Aeson
 import qualified Data.Map         as M
 import           Data.Text        (pack)
+import           Data.Typeable
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
@@ -45,7 +46,8 @@ instance ( ToJSONKey title, ToJSON title, Title title
          , ToJSON tag
          , ToJSON v, Var v
          , ToJSON t, Time t
-         ) => ToJSON (SystemState title tag v t)
+         , Show x, Ord x, Typeable x, ToJSON x, ToJSONKey x
+         ) => ToJSON (SystemState title tag x v t)
 instance ( ToJSON v, Var v ) => ToJSON (DataFlowGraph v)
 
 
@@ -79,7 +81,12 @@ instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
 instance ( ToJSONKey title, ToJSON title, Title title
          , Var v
          , ToJSON t, Time t
-         ) => ToJSON (BusNetwork title v t) where
+         , ToJSON x
+         , Typeable x
+         , Ord x
+         , ToJSONKey x
+         , Show x
+         ) => ToJSON (BusNetwork title x v t) where
   toJSON n@BusNetwork{..}
              -- , bnSignalBusWidth     :: Int
     = object [ "width" .= bnSignalBusWidth

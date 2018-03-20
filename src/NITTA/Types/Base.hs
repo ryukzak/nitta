@@ -37,9 +37,9 @@ class ( Typeable v, Ord v, Show v ) => Var v
 instance ( Typeable v, Ord v, Show v ) => Var v
 instance {-# OVERLAPS #-} Var String
 
-class Variables x v | x -> v where
+class Variables a v | a -> v where
   -- | Получить список идентификаторов связанных переменных.
-  variables :: x -> [v]
+  variables :: a -> [v]
 
 
 
@@ -218,9 +218,9 @@ class ( Typeable fb
 
 
 
-class WithFunctionalBlocks x fb | x -> fb where
+class WithFunctionalBlocks a fb | a -> fb where
   -- | Получить список связанных функциональных блоков.
-  functionalBlocks :: x -> [fb]
+  functionalBlocks :: a -> [fb]
 
 
 

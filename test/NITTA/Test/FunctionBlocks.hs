@@ -16,7 +16,7 @@ import           NITTA.Types
 import           Test.QuickCheck
 
 
-framDefSize = frSize (def :: Fram () ())
+framDefSize = frSize (def :: Fram () () ())
 framAddrGen = choose (0, framDefSize - 1)
 
 
@@ -39,5 +39,5 @@ instance Arbitrary (Loop (Parcel String)) where
 instance Arbitrary (Reg (Parcel String)) where
   arbitrary = suchThat (Reg <$> inputVarGen <*> outputVarsGen) uniqueVars
 
-instance Arbitrary (Constant (Parcel String)) where
+instance Arbitrary (Constant Int (Parcel String)) where
   arbitrary = suchThat (Constant <$> choose (10, 16) <*> outputVarsGen) uniqueVars

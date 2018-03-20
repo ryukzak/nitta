@@ -23,7 +23,7 @@ import           Numeric.Interval hiding (elem)
 
 
 -- | Контейнер для вычислительных узлов (PU). Необходимо для формирования гетерогенных списков.
-data PU i v t where
+data PU i v x t where
   PU :: ( ByTime pu t
         , Connected pu i
         , DecisionProblem (EndpointDT v t)
@@ -31,15 +31,18 @@ data PU i v t where
         , Default (Instruction pu)
         , ProcessUnit pu v t
         , Show (Instruction pu)
-        , Simulatable pu v Int
+        , Simulatable pu v x
         , Synthesis pu i
         , Typeable i
         , Typeable pu
         , UnambiguouslyDecode pu
+        , Typeable x
+        , Show x
+        , Num x
         ) => { unit :: pu
              , links :: Link pu i
              , networkLink :: NetworkLink i
-             } -> PU i v t
+             } -> PU i v x t
 
 setUnit PU{..} unit'
   | Just links' <- cast links = PU{ unit=unit', links=links', networkLink=networkLink }
@@ -47,20 +50,20 @@ setUnit PU{..} unit'
 
 instance ( Var v, Time t
          ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (PU i v t)
+                   EndpointDT (PU i v x t)
          where
   options proxy PU{..} = options proxy unit
   decision proxy pu@PU{..} act = setUnit pu $ decision proxy unit act
 
-instance ProcessUnit (PU i v t) v t where
+instance ProcessUnit (PU i v x t) v t where
   bind fb pu@PU{..} = setUnit pu <$> bind fb unit
   process PU{..} = process unit
   setTime t pu@PU{..} = setUnit pu $ setTime t unit
 
-instance Simulatable (PU i v t) v Int where
+instance Simulatable (PU i v x t) v x where
   simulateOn cntx PU{..} fb = simulateOn cntx unit fb
 
-instance DefinitionSynthesis (PU i v t) where
+instance DefinitionSynthesis (PU i v x t) where
   moduleName PU{..} = moduleName unit
   hardware PU{..} = hardware unit
   software PU{..} = software unit
@@ -78,7 +81,10 @@ castPU :: ( ByTime pu t
           , Typeable i
           , Typeable pu
           , UnambiguouslyDecode pu
-          ) => PU i v t -> Maybe pu
+          , Typeable x
+          , Show x
+          , Num x
+            ) => PU i v x t -> Maybe pu
 castPU PU{..} = cast unit
 
 

@@ -68,7 +68,7 @@ data GBusNetwork title spu v t =
     -- | Ширина шины управления.
     , bnSignalBusWidth     :: Int
     }
-type BusNetwork title v t = GBusNetwork title (PU LinkId v t) v t
+type BusNetwork title v x t = GBusNetwork title (PU LinkId v x t) v t
 
 -- TODO: Проверка подключения сигнальных линий.
 busNetwork w pus = BusNetwork [] [] (M.fromList []) def (M.fromList pus') w
@@ -89,7 +89,7 @@ busNetwork w pus = BusNetwork [] [] (M.fromList []) def (M.fromList pus') w
     valueData t = t ++ "_data_out"
     valueAttr t = t ++ "_attr_out"
 
-instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork title v t) (FB (Parcel v)) where
+instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork title v x t) (FB (Parcel v)) where
   functionalBlocks BusNetwork{..} = sortFBs binded []
     where
       binded = bnRemains ++ concat (M.elems bnBinded)
@@ -102,8 +102,9 @@ instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork titl
 
 
 instance ( Title title, Var v, Time t
+         , Typeable x
          ) => DecisionProblem (DataFlowDT title v t)
-                   DataFlowDT (BusNetwork title v t)
+                   DataFlowDT (BusNetwork title v x t)
          where
   options _proxy BusNetwork{..}
     = concat [ [ DataFlowO (fromPu, fixPullConstrain pullAt) $ M.fromList pushs
@@ -149,7 +150,7 @@ instance ( Title title, Var v, Time t
     , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add
                 (Activity $ transportStartAt ... transportEndAt)
-                $ InstructionStep (Transport v (fst dfdSource) title :: Instruction (BusNetwork title v t))
+                $ InstructionStep (Transport v (fst dfdSource) title :: Instruction (BusNetwork title v x t))
               ) $ M.assocs push'
         _ <- add (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act
         setProcessTime $ act^.at.supremum + 1
@@ -173,7 +174,8 @@ instance ( Title title, Var v, Time t
 
 
 instance ( Title title, Var v, Time t
-         ) => ProcessUnit (BusNetwork title v t) v t where
+         , Typeable x
+         ) => ProcessUnit (BusNetwork title v x t) v t where
 
   bind fb bn@BusNetwork{..}
     | any (isRight . bind fb) $ M.elems bnPus
@@ -221,20 +223,20 @@ instance ( Title title, Var v, Time t
 
 
 
-instance Controllable (BusNetwork title v t) where
+instance Controllable (BusNetwork title v x t) where
 
-  data Instruction (BusNetwork title v t)
+  data Instruction (BusNetwork title v x t)
     = Transport v title title
     deriving (Typeable, Show)
 
-  data Microcode (BusNetwork title v t)
+  data Microcode (BusNetwork title v x t)
     = BusNetworkMC (A.Array Int Value)
 
 
 
 instance {-# OVERLAPS #-}
          ( Time t
-         ) => ByTime (BusNetwork title v t) t where
+         ) => ByTime (BusNetwork title v x t) t where
   microcodeAt BusNetwork{..} t
     = BusNetworkMC $ foldl merge st $ M.elems bnPus
     where
@@ -247,7 +249,7 @@ instance {-# OVERLAPS #-}
 
 
 
-instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v Int where
+instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v x t) v x where
   simulateOn cntx BusNetwork{..} fb
     = let Just (title, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
           pu = bnPus M.! title
@@ -266,7 +268,7 @@ instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v 
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
 instance ( Var v ) => DecisionProblem (BindingDT String v)
-                            BindingDT (BusNetwork String v t)
+                            BindingDT (BusNetwork String v x t)
          where
   options _ BusNetwork{..} = concatMap bindVariants' bnRemains
     where
@@ -297,7 +299,7 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
 --------------------------------------------------------------------------
 
 
-instance ( Time t ) => DefinitionSynthesis (BusNetwork String v t) where
+instance ( Time t ) => DefinitionSynthesis (BusNetwork String v x t) where
   moduleName BusNetwork{..} = S.join "_" (M.keys bnPus) ++ "_net"
 
   hardware pu@BusNetwork{..}
@@ -382,8 +384,10 @@ instance ( Time t ) => DefinitionSynthesis (BusNetwork String v t) where
 
 
 instance ( Title title, Var v, Time t
-         , DefinitionSynthesis (BusNetwork title v t)
-         ) => TestBench (BusNetwork title v t) v Int where
+         , Show x
+         , DefinitionSynthesis (BusNetwork title v x t)
+         , Typeable x
+         ) => TestBench (BusNetwork title v x t) v x where
   testEnviroment cntx0 pu@BusNetwork{..} = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
     where
       testBenchImp = renderST

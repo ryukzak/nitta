@@ -38,7 +38,7 @@ data Synthesis
 
 
 type T = TaggedTime String Int
-type ST = CompilerStep String String String (TaggedTime String Int)
+type ST = CompilerStep String String String Int (TaggedTime String Int)
 instance ToJSON ST
 instance ToJSON Synthesis
 

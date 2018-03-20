@@ -78,22 +78,22 @@ node fb = DFGNode $ FB fb
 --   планирования вычислительного процесса, то необходимо пройти все варианты развития
 --   вычислительного процесса, следовательно, на каждом уровне стека может присутствовать несколько
 --   кадров.
-data SystemState title tag v t
+data SystemState title tag v x t
   = Frame
-    { nitta   :: BusNetwork title v t
+    { nitta   :: BusNetwork title v x t
     , dfg     :: DataFlowGraph v
     , timeTag :: Maybe tag
     }
   | Level
-    { currentFrame    :: SystemState title tag v t
-    , remainFrames    :: [ SystemState title tag v t ]
-    , completedFrames :: [ SystemState title tag v t ]
-    , initialFrame    :: SystemState title tag v t
+    { currentFrame    :: SystemState title tag v x t
+    , remainFrames    :: [ SystemState title tag v x t ]
+    , completedFrames :: [ SystemState title tag v x t ]
+    , initialFrame    :: SystemState title tag v x t
     }
   deriving ( Generic )
 
 instance ( Var v ) => DecisionProblem (BindingDT String v)
-                            BindingDT (SystemState String tag v t)
+                            BindingDT (SystemState String tag v x t)
          where
   options _ Frame{ nitta }        = options binding nitta
   options _ Level{ currentFrame } = options binding currentFrame
@@ -101,8 +101,9 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
   decision _ l@Level{ currentFrame } d = l{ currentFrame=decision binding currentFrame d }
 
 instance ( Typeable title, Ord title, Show title, Var v, Time t
+         , Typeable x
          ) => DecisionProblem (DataFlowDT title v t)
-                   DataFlowDT (SystemState title tag v t)
+                   DataFlowDT (SystemState title tag v x t)
          where
   options _ Frame{ nitta }        = options dataFlowDT nitta
   options _ Level{ currentFrame } = options dataFlowDT currentFrame
@@ -128,8 +129,9 @@ instance DecisionType (ControlDT v) where
     deriving ( Generic )
 
 instance ( Var v, Time t
+         , Typeable x
          ) => DecisionProblem (ControlDT v)
-                ControlDT (SystemState String String v (TaggedTime String t))
+                ControlDT (SystemState String String v x (TaggedTime String t))
          where
   options _ Frame{ dfg=DFG g, nitta }
     = let availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT nitta

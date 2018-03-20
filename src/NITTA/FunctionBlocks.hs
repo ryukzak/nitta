@@ -105,7 +105,7 @@ framInput addr vs = FB $ FramInput addr vs
 instance ( IOType io v ) => FunctionalBlock (FramInput io) v where
   outputs (FramInput _ o) = variables o
   isCritical _ = True
-instance FunctionSimulation (FramInput (Parcel v)) v Int where
+instance FunctionSimulation (FramInput (Parcel v)) v x where
   -- | Невозможно симулировать данные операции без привязки их к конкретному PU, так как нет
   -- возможности понять что мы что-то записали по тому или иному адресу.
   simulate = error "Can't functional simulate FramInput!"
@@ -120,7 +120,7 @@ framOutput addr v = FB $ FramOutput addr v
 instance IOType io v => FunctionalBlock (FramOutput io) v where
   inputs (FramOutput _ o) = variables o
   isCritical _ = True
-instance FunctionSimulation (FramOutput (Parcel v)) v Int where
+instance FunctionSimulation (FramOutput (Parcel v)) v x where
   simulate = error "Can't functional simulate FramOutput!"
 
 
@@ -136,7 +136,7 @@ instance IOType io v => FunctionalBlock (Reg io) v where
   dependency (Reg i o) = [ (b, a) | a <- variables i
                                   , b <- variables o
                                   ]
-instance ( Ord v ) => FunctionSimulation (Reg (Parcel v)) v Int where
+instance ( Ord v ) => FunctionSimulation (Reg (Parcel v)) v x where
   simulate cntx (Reg (I k1) (O k2)) = do
     v <- cntx `get` k1
     set cntx k2 v
@@ -152,7 +152,7 @@ instance ( IOType io v ) => FunctionalBlock (Loop io) v where
   inputs  (Loop _a b) = variables b
   outputs (Loop a _b) = variables a
   insideOut _ = True
-instance ( Ord v ) => FunctionSimulation (Loop (Parcel v)) v Int where
+instance ( Ord v ) => FunctionSimulation (Loop (Parcel v)) v x where
   simulate cntx (Loop (O k1) (I k2)) = do
     let (cntx', v) = fromMaybe (cntx, fromMaybe undefined $ cntx `get` k2) $ cntx `receive` k2
     set cntx' k1 v
@@ -169,7 +169,7 @@ instance IOType io v => FunctionalBlock (Add io) v where
   dependency (Add a b c) = [ (y, x) | x <- variables a ++ variables b
                                     , y <- variables c
                                     ]
-instance ( Ord v ) => FunctionSimulation (Add (Parcel v)) v Int where
+instance ( Ord v, Num x ) => FunctionSimulation (Add (Parcel v)) v x where
   simulate cntx (Add (I k1) (I k2) (O k3)) = do
     v1 <- cntx `get` k1
     v2 <- cntx `get` k2
@@ -178,15 +178,15 @@ instance ( Ord v ) => FunctionSimulation (Add (Parcel v)) v Int where
 
 
 
-data Constant io = Constant Int (O io) deriving ( Typeable )
-deriving instance ( IOType io v ) => Show (Constant io)
-deriving instance ( IOType io v ) => Eq (Constant io)
+data Constant x io = Constant x (O io) deriving ( Typeable )
+deriving instance ( IOType io v, Show x ) => Show (Constant x io)
+deriving instance ( IOType io v, Eq x ) => Eq (Constant x io)
 
-instance ( IOType io v ) => FunctionalBlock (Constant io) v where
+instance ( IOType io v, Show x, Eq x, Typeable x ) => FunctionalBlock (Constant x io) v where
   outputs (Constant _ o) = variables o
-instance ( Ord v ) => FunctionSimulation (Constant (Parcel v)) v Int where
-  simulate cntx (Constant v (O k))
-    = set cntx k v
+instance ( Ord v ) => FunctionSimulation (Constant x (Parcel v)) v x where
+  simulate cntx (Constant x (O k))
+    = set cntx k x
 
 
 
@@ -196,7 +196,7 @@ deriving instance ( IOType io v ) => Eq (ShiftL io)
 
 instance ( IOType io v ) => FunctionalBlock (ShiftL io) v where
   outputs (ShiftL i o) = variables i ++ variables o
-instance ( Ord v ) => FunctionSimulation (ShiftL (Parcel v)) v Int where
+instance ( Ord v, Bits x ) => FunctionSimulation (ShiftL (Parcel v)) v x where
   simulate cntx (ShiftL (I k1) (O k2)) = do
     v1 <- cntx `get` k1
     let v2 = v1 `shiftR` 1
@@ -209,7 +209,7 @@ deriving instance ( IOType io v ) => Show (Send io)
 deriving instance ( IOType io v ) => Eq (Send io)
 instance ( IOType io v ) => FunctionalBlock (Send io) v where
   inputs (Send i) = variables i
-instance (Ord v) => FunctionSimulation (Send (Parcel v)) v Int where
+instance ( Ord v ) => FunctionSimulation (Send (Parcel v)) v x where
   simulate cntx (Send (I k)) = do
     v <- cntx `get` k
     send cntx k v
@@ -221,7 +221,7 @@ deriving instance ( IOType io v ) => Show (Receive io)
 deriving instance ( IOType io v ) => Eq (Receive io)
 instance ( IOType io v ) => FunctionalBlock (Receive io) v where
   outputs (Receive o) = variables o
-instance (Ord v) => FunctionSimulation (Receive (Parcel v)) v Int where
+instance ( Ord v ) => FunctionSimulation (Receive (Parcel v)) v x where
   simulate cntx (Receive (O ks)) = do
     let k = head ks
     (cntx', v) <- cntx `receive` k

@@ -34,6 +34,7 @@ import           Data.List        (find, intersect, sort, sortOn)
 import qualified Data.Map         as M
 import           Data.Maybe
 import           Data.Proxy
+import           Data.Typeable
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.DataFlow
@@ -122,8 +123,9 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
 instance ( Time t, Var v
+         , Typeable x
          ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
-                   CompilerDT (SystemState String String v (TaggedTime String t))
+                   CompilerDT (SystemState String String v x (TaggedTime String t))
          where
   options _ Level{ currentFrame } = options compiler currentFrame
   options _ f@Frame{ nitta, dfg } = concat
@@ -170,15 +172,15 @@ option2decision (DataFlowOption src trg)
 ---------------------------------------------------------------------
 -- * Наивный, но полноценный компилятор.
 
-data CompilerStep title tag v t
+data CompilerStep title tag v x t
   = CompilerStep
-    { state        :: SystemState title tag v t
+    { state        :: SystemState title tag v x t
     , config       :: NaiveOpt
     , lastDecision :: Maybe (Decision (CompilerDT title tag v t))
     }
   deriving ( Generic )
 
-instance Default (CompilerStep title tag v t) where
+instance Default (CompilerStep title tag v x t) where
   def = CompilerStep{ state=undefined
                     , config=def
                     , lastDecision=Nothing
@@ -186,8 +188,9 @@ instance Default (CompilerStep title tag v t) where
 
 
 instance ( Time t, Var v
+         , Typeable x
          ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
-                   CompilerDT (CompilerStep String String v (TaggedTime String t))
+                   CompilerDT (CompilerStep String String v x (TaggedTime String t))
          where
   options proxy CompilerStep{ state } = options proxy state
   decision proxy st@CompilerStep{ state } act = st{ state=decision proxy state act }
