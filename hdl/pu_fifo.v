@@ -16,23 +16,20 @@ module pu_fifo
 
 reg [DATA_WIDTH + ATTR_WIDTH - 1:0] fifo_buf [0:FIFO_SIZE-1];            
 reg [ADDR_WIDTH-1:0]                fifo_buf_read;    
-reg [ADDR_WIDTH-1:0]                fifo_buf_write;
-           
-assign { attr_out, data_out } = signal_oe ? fifo_buf[fifo_buf_read] : 0; 
-
-always @(posedge rst)
-begin
-  fifo_buf_write <= 0;
-  fifo_buf_read <= 0;  
-end
+reg [ADDR_WIDTH-1:0]                fifo_buf_write;         
 
 always @(posedge clk)
-begin  
+begin
+  if (rst == 1) begin
+  fifo_buf_write <= 0;
+  fifo_buf_read <= 0; 
+  end  
   if (signal_wr == 1) begin
     fifo_buf[fifo_buf_write] <= { attr_in, data_in };    
     fifo_buf_write <= fifo_buf_write == FIFO_SIZE - 1 ? 0 : fifo_buf_write + 1;
   end else if (signal_oe == 1) begin    
     fifo_buf_read <= fifo_buf_read == FIFO_SIZE - 1 ? 0 : fifo_buf_read + 1;    
-  end
+  end  
 end
+assign { attr_out, data_out } = signal_oe ? fifo_buf[fifo_buf_read] : 0; 
 endmodule
