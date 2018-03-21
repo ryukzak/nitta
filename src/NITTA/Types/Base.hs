@@ -252,7 +252,7 @@ data StepInfo v where
   -- | Время работы над функциональным блоком функционального алгоритма.
   FBStep :: FB (Parcel v) -> StepInfo v
   -- | Описание использования вычислительного блока с точки зрения передачи данных.
-  EndpointStep :: EndpointType v -> StepInfo v
+  EndpointRoleStep :: EndpointRole v -> StepInfo v
   -- | Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
   -- определяется типом вычислительного блока.
   InstructionStep :: ( Show (Instruction pu)
@@ -270,17 +270,17 @@ deriving instance ( Show v, Show t ) => Show ( Step v t )
 instance ( Show v ) => Show (StepInfo v) where
   show (CADStep s)                 = s
   show (FBStep (FB fb))            = show fb
-  show (EndpointStep eff)          = show eff
+  show (EndpointRoleStep eff)      = show eff
   show (InstructionStep instr)     = show instr
   show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
 
 
 -- | Получить строку с название уровня указанного шага вычислительного процесса.
-level (CADStep _)         = "CAD"
-level (FBStep _)          = "Function block"
-level (EndpointStep _)    = "Endpoint"
-level (InstructionStep _) = "Instruction"
-level (NestedStep _ _)    = "Nested"
+level (CADStep _)          = "CAD"
+level (FBStep _)           = "Function block"
+level (EndpointRoleStep _) = "Endpoint"
+level (InstructionStep _)  = "Instruction"
+level (NestedStep _ _)     = "Nested"
 
 
 -- | Описание отношений между шагами вычисительного процесса.
@@ -312,7 +312,7 @@ instance DecisionType (BindingDT title v) where
 -- | Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
 -- одно взаимодействие, при этом у PU только один канал для взаимодействия, что в общем то
 -- ограничение. В перспективе должно быть расширено для работы с конвейра.
-data EndpointType v
+data EndpointRole v
   = Source [v] -- ^ Выгрузка данных из PU.
   | Target v   -- ^ Загрузка данных в PU.
   deriving ( Show, Eq, Ord )
@@ -324,7 +324,7 @@ _        << _                 = False
 (Source a) \\\ (Source b) = Source (a L.\\ b)
 a \\\ b = error $ "Can't get sub endpoint for " ++ show a ++ " " ++ show b
 
-instance Variables (EndpointType v) v where
+instance Variables (EndpointRole v) v where
   variables (Source vs) = vs
   variables (Target v)  = [v]
 
@@ -341,12 +341,12 @@ endpointDT = Proxy :: Proxy EndpointDT
 instance DecisionType (EndpointDT v t) where
   data Option (EndpointDT v t)
     = EndpointO
-    { epoType :: EndpointType v -- ^ Чтение данных из входного регистра PU или запись данных в него.
+    { epoType :: EndpointRole v -- ^ Чтение данных из входного регистра PU или запись данных в него.
     , epoAt :: TimeConstrain t -- ^ Временные ограничения на операцию.
     }
   data Decision (EndpointDT v t)
     = EndpointD
-    { epdType :: EndpointType v -- ^ Выбранная операция для взаимодействия с окружающим миром.
+    { epdType :: EndpointRole v -- ^ Выбранная операция для взаимодействия с окружающим миром.
     , epdAt :: Interval t -- ^ Положение операции во времени.
     }
 

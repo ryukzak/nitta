@@ -104,9 +104,9 @@ getFB _                                      = Nothing
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
 
-getEndpoint Step{ sDesc=EndpointStep eff }                = Just eff
-getEndpoint Step{ sDesc=NestedStep _ (EndpointStep eff) } = Just eff
-getEndpoint _                                             = Nothing
+getEndpoint Step{ sDesc=EndpointRoleStep eff }                = Just eff
+getEndpoint Step{ sDesc=NestedStep _ (EndpointRoleStep eff) } = Just eff
+getEndpoint _                                                 = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 

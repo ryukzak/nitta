@@ -172,7 +172,7 @@ serialSchedule
   => Proxy pu -> Decision (EndpointDT v t) -> Instruction pu -> State (Process v t) [ProcessUid]
 serialSchedule proxy act instr = do
   now <- getProcessTime
-  e <- addActivity (act^.at) $ EndpointStep $ epdType act
+  e <- addActivity (act^.at) $ EndpointRoleStep $ epdType act
   i <- addActivity (act^.at) $ InstructionStep instr
   is <- if now < act^.at.infimum
         then do

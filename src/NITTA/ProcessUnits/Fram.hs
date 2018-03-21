@@ -182,7 +182,7 @@ data Job v x t
           -- | Функция, выполняемая в рамках описываемой работы.
         , functionalBlock               :: FSet (Fram v x t)
           -- | Список действие, которые необходимо выполнить для завершения работы.
-        , actions                       :: [ EndpointType v ]
+        , actions                       :: [ EndpointRole v ]
         }
   deriving ( Show, Eq )
 
@@ -390,7 +390,7 @@ instance ( Var v, Time t
       scheduleWork _addr Job{ actions=[] } = error "Fram:scheudle internal error."
       scheduleWork addr job@Job{ actions=x:xs, .. }
         = let ((ep, instrs), p') = modifyProcess p $ do
-                e <- add (Activity $ act^.at) $ EndpointStep $ act^.endType
+                e <- add (Activity $ act^.at) $ EndpointRoleStep $ act^.endType
                 i1 <- addInstr pu (act^.at) $ act2Instruction addr $ act^.endType
                 is <- if tick0 < act^.at.infimum
                   then do
@@ -654,7 +654,7 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
   | otherwise = error $ "Can't find instruction for effect of variable: " ++ show var
   where
     variableSendAt v = [ t | Step{ sTime=Activity t
-                                 , sDesc=EndpointStep endpoints
+                                 , sDesc=EndpointRoleStep endpoints
                                  } <- steps
                            , v `elem` variables endpoints
                            ]

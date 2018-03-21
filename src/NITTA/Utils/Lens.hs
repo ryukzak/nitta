@@ -31,9 +31,9 @@ instance HasAvail (TimeConstrain t) (Interval t) where
 
 class HasEndType a b | a -> b where
   endType :: Lens' a b
-instance HasEndType (Option (EndpointDT v t)) (EndpointType v) where
+instance HasEndType (Option (EndpointDT v t)) (EndpointRole v) where
   endType = lens epoType $ \a@EndpointO{..} b -> a{ epoType=b }
-instance HasEndType (Decision (EndpointDT v t)) (EndpointType v) where
+instance HasEndType (Decision (EndpointDT v t)) (EndpointRole v) where
   endType = lens epdType $ \a@EndpointD{..} b -> a{ epdType=b }
 
 
