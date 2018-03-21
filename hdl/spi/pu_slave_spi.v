@@ -29,8 +29,8 @@ module pu_slave_spi
 
 reg  buffer_rst;
 
-wire [SPI_DATA_WIDTH-1:0] spi_data_send;
-wire [SPI_DATA_WIDTH-1:0] spi_data_receive;
+wire [DATA_WIDTH-1:0] spi_data_send;
+wire [DATA_WIDTH-1:0] spi_data_receive;
 wire spi_ready;
 
 reg signal_wr_transfer_to_send;
@@ -59,11 +59,10 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 						) transfer_in_buffer 
 	( .clk( clk )
 	, .rst( buffer_rst )
-	, .wr(  signal_wr )
-	, .oe( flag_stop )
+	, .wr( signal_wr )
 	, .data_in( data_in )
+	, .oe( flag_stop )
 	, .data_out( transfer_in_out )
-	, .attr_out( attr_out_transfer )
 
 ); 
 
@@ -92,12 +91,10 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 						) send_buffer 
 	( .clk( clk )
 	, .rst( buffer_rst )
-	, .wr( signal_wr_transfer_to_send )
-	, .data_in( transfer_in_out )
-	, .attr_in( 4'b0010 )
-
-	, .spi_ready( spi_ready )
-	, .spi_data_send( spi_data_send )
+	, .wr ( signal_wr_transfer_to_send )
+	, .data_in ( transfer_in_out )
+	, .oe ( signal_wr_transfer_to_send )
+	, .data_out( spi_data_send )
 
  );
 
@@ -121,7 +118,7 @@ always @(posedge clk ) begin
 	end
 end
 
-assign flag_start = spi_ready && !cs;
+// assign flag_start = spi_ready && !cs;
 assign flag_stop  = !spi_ready && cs;
 
 

@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 module spi_master_driver 
-  #( parameter DATA_WIDTH = 8
+  #( parameter DATA_WIDTH = 32
    , parameter SCLK_HALFPERIOD = 1
    )
   ( input             clk
