@@ -13,20 +13,20 @@ wire [DATA_WIDTH-1:0] data_out;
 wire [ATTR_WIDTH-1:0] attr_out;
 
 pu_fifo
-#( .DATA_WIDTH( 32 )
-,  .ATTR_WIDTH( 4 )
-,  .FIFO_SIZE( 3 )
-) u (
-.clk(clk),
-.rst(rst),
-.data_in(data_in),
-.attr_in(attr_in),
-.signal_wr(signal_wr),
+  #( .DATA_WIDTH( 32 )
+  ,  .ATTR_WIDTH( 4 )
+  ,  .FIFO_SIZE( 3 )
+  ) u (
+  .clk(clk),
+  .rst(rst),
+  .data_in(data_in),
+  .attr_in(attr_in),
+  .signal_wr(signal_wr),
 
-.signal_oe(signal_oe),
-.data_out(data_out),
-.attr_out(attr_out)
-);
+  .signal_oe(signal_oe),
+  .data_out(data_out),
+  .attr_out(attr_out)
+  );
 
 initial 
   begin
