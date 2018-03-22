@@ -56,22 +56,28 @@ data GBusNetwork title spu v t =
   BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
-      bnRemains            :: [FB (Parcel v)]
-    -- | Список переданных через сеть переменных (используется для понимания готовности).
-    , bnForwardedVariables :: [v]
+      bnRemains        :: [FB (Parcel v)]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded             :: M.Map title [FB (Parcel v)]
+    , bnBinded         :: M.Map title [FB (Parcel v)]
     -- | Описание вычислительного процесса сети, как элемента процессора.
-    , bnProcess            :: Process v t
+    , bnProcess        :: Process v t
     -- | Словарь вложенных вычислительных блоков по именам.
-    , bnPus                :: M.Map title spu
+    , bnPus            :: M.Map title spu
     -- | Ширина шины управления.
-    , bnSignalBusWidth     :: Int
+    , bnSignalBusWidth :: Int
     }
 type BusNetwork title v x t = GBusNetwork title (PU LinkId v x t) v t
 
+transfered net@BusNetwork{..}
+  = [ v | st <- steps bnProcess
+    , let instr = extractInstruction net st
+    , isJust instr
+    , let (Just (Transport v _ _)) = instr
+    ]
+
+
 -- TODO: Проверка подключения сигнальных линий.
-busNetwork w pus = BusNetwork [] [] (M.fromList []) def (M.fromList pus') w
+busNetwork w pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w
   where
     pus' = map (\(title, f) ->
       (title, f NetworkLink{ clk=Name "clk"
@@ -106,7 +112,7 @@ instance ( Title title, Var v, Time t
          ) => DecisionProblem (DataFlowDT title v t)
                    DataFlowDT (BusNetwork title v x t)
          where
-  options _proxy BusNetwork{..}
+  options _proxy net@BusNetwork{..}
     = concat [ [ DataFlowO (fromPu, fixPullConstrain pullAt) $ M.fromList pushs
                | pushs <- mapM pushOptionsFor pullVars
                , let pushTo = mapMaybe (fmap fst . snd) pushs
@@ -130,6 +136,7 @@ instance ( Title title, Var v, Time t
                           , EndpointO (Target pushVar) pushAt <- vars
                           , pushVar == v
                           ]
+      bnForwardedVariables = transfered net
       availableVars =
         let fbs = bnRemains ++ concat (M.elems bnBinded)
             alg = foldl
@@ -138,7 +145,7 @@ instance ( Title title, Var v, Time t
                   $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
                   $ concatMap dependency fbs
             notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
-        in notBlockedVariables \\ bnForwardedVariables
+        in notBlockedVariables \\  bnForwardedVariables
 
       puOptions = M.assocs $ M.map (options endpointDT) bnPus
 
@@ -154,7 +161,6 @@ instance ( Title title, Var v, Time t
               ) $ M.assocs push'
         _ <- add (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act
         setProcessTime $ act^.at.supremum + 1
-    , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
     where
       transportStartAt = act^.at.infimum

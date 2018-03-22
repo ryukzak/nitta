@@ -93,7 +93,7 @@ instance ( ToJSONKey title, ToJSON title, Title title
              --   bnRemains            :: [FB (Parcel v) v]
              , "remain" .= bnRemains
              -- , bnForwardedVariables :: [v]
-             , "forwardedVariables" .= map (String . pack . show) bnForwardedVariables
+             , "forwardedVariables" .= map (String . pack . show) (transfered n)
              -- , bnBinded             :: M.Map title [FB (Parcel v) v]
              , "binds" .= bnBinded
              -- , bnProcess            :: Process v t
