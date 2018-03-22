@@ -28,16 +28,25 @@ module pu_slave_spi
 	);
 
 reg  buffer_rst;
+reg  resolution_wr;
 
 wire [DATA_WIDTH-1:0] spi_data_send;
 wire [DATA_WIDTH-1:0] spi_data_receive;
 wire spi_ready;
 
 reg signal_wr_transfer_to_send;
+
 wire [DATA_WIDTH-1:0] transfer_in_out;
+wire [DATA_WIDTH-1:0] send_out;
 
 wire [ATTR_WIDTH-1:0] attr_out_send;
 wire [ATTR_WIDTH-1:0] attr_out_transfer;
+
+wire [DATA_WIDTH-1:0] bus_transfer_send;
+wire [DATA_WIDTH-1:0] bus_receive_transfer;
+
+wire [ATTR_WIDTH-1:0] data_out_transfer;
+wire [ATTR_WIDTH-1:0] data_out_send;
 
 spi_slave_driver #( .DATA_WIDTH( SPI_DATA_WIDTH )
 									) spi_driver
@@ -59,11 +68,11 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 						) transfer_in_buffer 
 	( .clk( clk )
 	, .rst( buffer_rst )
-	, .wr( signal_wr )
-	, .data_in( data_in )
-	, .oe( flag_stop )
+	, .wr( signal_wr && resolution_wr )
+	, .data_in( data_in ) 
+	, .attr_out( attr_out_transfer )
 	, .data_out( transfer_in_out )
-
+	, .oe ( signal_wr_transfer_to_send && !resolution_wr )
 ); 
 
 // [TRANSFER >>> NITTA]
@@ -91,22 +100,32 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 						) send_buffer 
 	( .clk( clk )
 	, .rst( buffer_rst )
-	, .wr ( signal_wr_transfer_to_send )
-	, .data_in ( transfer_in_out )
-	, .oe ( signal_wr_transfer_to_send )
-	, .data_out( spi_data_send )
-
+	, .wr( signal_wr && !resolution_wr )
+	, .data_in( data_in ) 
+	, .attr_out( attr_out_send )
+	, .data_out( send_out )
+	, .oe ( signal_wr_transfer_to_send && resolution_wr )
  );
 
 always @( posedge clk or posedge rst ) begin
 	if ( rst ) begin
 		buffer_rst <= 1;
+		resolution_wr <= 1;
 	end else begin
 		if ( signal_cycle ) begin
 			buffer_rst <= 1;
 		end else begin  
 			buffer_rst <= 0;
 		end                                 
+	end
+end
+
+always @( posedge clk ) begin
+	if ( attr_out_send[1] == 1 && !signal_wr && flag_stop ) begin
+		resolution_wr <= 0;
+	end 
+	else if ((attr_out_transfer[1] == 1) && !signal_wr && flag_stop ) begin
+		resolution_wr <= 1;
 	end
 end
 
@@ -118,7 +137,8 @@ always @(posedge clk ) begin
 	end
 end
 
-// assign flag_start = spi_ready && !cs;
+assign spi_data_send = !resolution_wr ? transfer_in_out : send_out;
+assign flag_start = spi_ready && !cs;
 assign flag_stop  = !spi_ready && cs;
 
 

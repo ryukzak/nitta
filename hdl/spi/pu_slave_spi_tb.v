@@ -116,6 +116,21 @@ initial begin // nitta communication
   pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 1;     @(posedge clk);
   pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 1;     @(posedge clk);
 
+  repeat(100) @(posedge clk);
+
+  pu_spi_data_in <= 32'hA1A2A3A4; wr <= 1; oe <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
+  repeat(100) @(posedge clk);
+
+  pu_spi_data_in <= 32'hB1B2B3B4; wr <= 1; oe <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
+  pu_spi_data_in <= 32'hC1C2C3C4; wr <= 1; oe <= 0;     @(posedge clk);
+
+  pu_spi_data_in <= 32'hD1D2D3D4; wr <= 1; oe <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
   repeat(10) @(posedge clk);
 
 
@@ -154,7 +169,27 @@ initial begin // spi communication
 
   repeat(108) @(posedge clk);
 
+  // Второе слвово
+
   master_in = 32'hA1A2A3A4;                              @(posedge clk);
+  start_transaction = 1;                                 @(posedge clk);
+  start_transaction = 0;                                 @(posedge clk);
+
+  repeat(108) @(posedge clk);
+
+  master_in = 32'hB1B2B3B4;                              @(posedge clk);
+  start_transaction = 1;                                 @(posedge clk);
+  start_transaction = 0;                                 @(posedge clk);
+
+  repeat(108) @(posedge clk);
+
+  master_in = 32'hC1C2C3C4;                              @(posedge clk);
+  start_transaction = 1;                                 @(posedge clk);
+  start_transaction = 0;                                 @(posedge clk);
+
+  repeat(108) @(posedge clk);
+
+  master_in = 32'hD1D2D3D4;                              @(posedge clk);
   start_transaction = 1;                                 @(posedge clk);
   start_transaction = 0;                                 @(posedge clk);
 

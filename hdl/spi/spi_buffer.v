@@ -72,70 +72,36 @@ always @(posedge clk or posedge rst) begin
 			memory[ wr_address ] <= data_in;			
 			wr_address <= wr_address + 1;
 			attr_out[0] <= 1;
+			attr_out[1] <= 0;
+			attr_out[2] <= 0;
 		end
 		
-			// 	spi_addr_incremented_wr <= 1;
-			// 	// if ( nitta_wr ) begin
-			// 	// 	memory_nitta[ nitta_wr_address ] <= data_in_nitta;
-			// 	// 	nitta_wr_address <= nitta_wr_address + 1;
-			// 	// end else begin
-			// 	// 	memory[ wr_address ] <= data_in;
-			// 	// 	wr_address <= wr_address + 1;
-			// 	// end
-			// 	// spi_addr_incremented_wr <= 1;
-			// end 
-		// else if ( spi_ready && receive ) begin
-		// 	case ( spi_state )
-		// 		STATE_START_READY: begin
-		// 			memory[ spi_address_recv ] <= { memory[ spi_address_recv ][23:0], spi_data_receive };
-		// 			spi_state <= STATE_STOP_READY;
-		// 		end
-		// 	endcase
-		// end
-			// case ( spi_state )
-			// 	STATE_STOP_READY: begin		
-			// 		count_frame <= count_frame + 1;			
-			// 		spi_state <= STATE_SPI_WAIT;
-			// 	end
-			// 	STATE_SPI_WAIT: begin		
-			// 		spi_state <= STATE_START_READY;  
-			// 	end
-			// 	default: spi_state <= STATE_SPI_WAIT;
-			// endcase
-			// if ( count_frame == 3'b100 ) begin 
-			// 	count_frame <= 0;
-			// 	spi_address_recv <= spi_address_recv + 1;
-			// end
-
 		// fetch received data
 		if ( oe && attr_out[0] ) begin
 			data_out <= memory[ oe_address ];
 			oe_address <= oe_address + 1;
 		end
-		// else if ( spi_ready && attr_in[1] && attr_out[0] ) begin
-		// 	case ( spi_state_send )
-		// 		STATE_START_READY : begin
-		// 			spi_next_word_to_send <= memory [ spi_address_send ] >> SPI_DATA_WIDTH * count_frame_send;
-		// 			spi_state_send <= STATE_STOP_READY;
-		// 		end				
-		// 	endcase
-		// end else begin
-		// 	case ( spi_state_send )
-		// 		STATE_STOP_READY: begin
-		// 			count_frame_send <= count_frame_send + 1;
-		// 			spi_state_send <= STATE_SPI_WAIT;
-		// 		end
-		// 		STATE_SPI_WAIT: begin
-		// 			if ( count_frame_send == 3'b100 ) begin
-		// 				count_frame_send <= 0;
-		// 				spi_address_send <= spi_address_send + 1;
-		// 			end
-		// 			spi_state_send <= STATE_START_READY;
-		// 		end
-		// 	endcase
-		// end
-		
+	
 	end
 end
+
+always @(posedge clk ) begin
+	if ( wr_address == 0 ) begin
+		attr_out[1] = 1; // Буффер пуст
+	end
+end
+
+// Ошибка! +1 
+always @(posedge clk ) begin
+	if ( (wr_address == oe_address) && !wr && !oe ) begin
+		attr_out[2] <= 1; // Переданы все данные
+		wr_address  <= 0;
+		oe_address  <= 0;
+	end
+end
+
+// attr_out[0] - ФЛАГ: Данные есть -> можно из буфера читать данные
+// attr_out[1] - ФЛАГ: Данных нету -> буфер пустой, сделано для переключения буферов
+// attr_out[2] - ФЛАГ: SPI закончил читать данные из буфера
 
 endmodule
