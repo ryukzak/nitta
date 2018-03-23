@@ -19,30 +19,45 @@ module pu_mult
 
 reg [DATA_WIDTH-1:0]         stage1 [0:1];
 reg                          stage1_invalid [0:1];
+reg [DATA_WIDTH-1:DATA_WIDTH/2-1] operands[0:3];
 
 always @(posedge clk) begin
 	if ( rst ) begin
     stage1[0] <= 0;
     stage1[1] <= 0;
+	 operands[0] <= 0;
+	 operands[1] <= 0;
+	 operands[2] <= 0;
+	 operands[3] <= 0;
 	end else begin 
     if ( signal_wr ) begin
       stage1[signal_sel] <= data_in[DATA_WIDTH-1:0];
       stage1_invalid[signal_sel] <= attr_in[INVALID];
+		operands[0] <= (  stage1[0][DATA_WIDTH-1:DATA_WIDTH/2-1]);
+		operands[1] <= ~(  stage1[0][DATA_WIDTH-1:DATA_WIDTH/2-1]);
+		operands[2] <= (  stage1[1][DATA_WIDTH-1:DATA_WIDTH/2-1]);
+		operands[3] <= ~(  stage1[1][DATA_WIDTH-1:DATA_WIDTH/2-1]);
 	  end
   end
 end
 
 
-wire is_operand_invalid[0:1];
-assign is_operand_invalid[0] = !(  stage1[0][DATA_WIDTH-1:DATA_WIDTH/2-1] == 0
-                                ^ ~stage1[0][DATA_WIDTH-1:DATA_WIDTH/2-1] == 0
-                                ) || stage1_invalid[0];
-assign is_operand_invalid[1] = !(  stage1[1][DATA_WIDTH-1:DATA_WIDTH/2-1] == 0
-                                ^ ~stage1[1][DATA_WIDTH-1:DATA_WIDTH/2-1] == 0
-                                ) || stage1_invalid[1];
 
-wire invalid_value = is_operand_invalid[0] 
-                  || is_operand_invalid[1];
+wire is_operand_invalid[0:3];
+wire operand_xor [0:1];
+
+assign is_operand_invalid[0] = (  stage1[0][DATA_WIDTH-1:DATA_WIDTH/2-1] ==  0 );
+assign is_operand_invalid[1] = (  ~stage1[0][DATA_WIDTH-1:DATA_WIDTH/2-1] == 0 );
+assign is_operand_invalid[2] = (  stage1[1][DATA_WIDTH-1:DATA_WIDTH/2-1] ==  0 );
+assign is_operand_invalid[3] = (  ~stage1[1][DATA_WIDTH-1:DATA_WIDTH/2-1] == 0 );
+
+
+
+assign operand_xor[0] = !(is_operand_invalid[0] ^ is_operand_invalid[1]) || stage1_invalid[0];
+assign operand_xor[1] = !(is_operand_invalid[2] ^ is_operand_invalid[3]) || stage1_invalid[1];
+                              
+wire invalid_value = operand_xor[0] 
+                  || operand_xor[1];
 
 
 wire [DATA_WIDTH-1:0]         mult_result;
@@ -73,10 +88,6 @@ reg                           invalid_result;
 reg [DATA_WIDTH-1:0]          data_multresult;
 
 always @(posedge clk) begin
-  if ( signal_oe == 0 ) begin
-      invalid_result <= 0;
-      data_multresult <= 0;
-  end	
   if ( rst ) begin
     data_multresult <= 0;
     invalid_result <= 0;
