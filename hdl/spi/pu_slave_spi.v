@@ -36,6 +36,7 @@ wire [DATA_WIDTH-1:0] spi_data_receive;
 wire spi_ready;
 
 reg signal_wr_transfer_to_send;
+reg signal_oe_to_nitta;
 
 wire [DATA_WIDTH-1:0] transfer_in_out;
 wire [DATA_WIDTH-1:0] send_out;
@@ -47,7 +48,8 @@ wire [ATTR_WIDTH-1:0] attr_out_transfer_in;
 wire [ATTR_WIDTH-1:0] attr_out_transfer_out;
 wire [ATTR_WIDTH-1:0] attr_out_receive;
 
-wire [DATA_WIDTH-1:0] data_out_nitta;
+wire [DATA_WIDTH-1:0] data_out_nitta_receive;
+wire [DATA_WIDTH-1:0] data_out_nitta_transfer;
 
 spi_slave_driver #( .DATA_WIDTH( SPI_DATA_WIDTH )
 									) spi_driver
@@ -82,9 +84,9 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 	( .clk( clk )
 	, .rst( buffer_rst )
 	, .data_in( transfer_out_in ) 
-	, .data_out( data_out_nitta )
+	, .data_out( data_out_nitta_transfer )
 	, .attr_out( attr_out_transfer_out )
-	, .oe( signal_oe && !resolution_oe )
+	, .oe( signal_oe_to_nitta && !resolution_oe )
 	, .wr( signal_wr_transfer_to_send && resolution_oe )
 
 ); 
@@ -96,10 +98,10 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 						) receive_buffer
 	( .clk( clk )
 	, .rst( buffer_rst )
-	, .oe( signal_oe && resolution_oe )
+	, .oe( signal_oe_to_nitta && resolution_oe )
 	, .data_in( receive_in )
 	, .attr_out( attr_out_receive )
-	, .data_out( data_out_nitta )
+	, .data_out( data_out_nitta_receive )
 	, .wr( signal_wr_transfer_to_send && !resolution_oe )
 
 );
@@ -149,6 +151,7 @@ always @( posedge clk ) begin
 	end 
 end
 
+// add signal_oe_buff_to_nitta
 
 always @(posedge clk ) begin
 	if ( flag_stop ) begin
@@ -158,10 +161,18 @@ always @(posedge clk ) begin
 	end
 end
 
+always @(posedge clk ) begin
+	if ( signal_oe ) begin
+		signal_oe_to_nitta <= 1;
+	end else begin
+		signal_oe_to_nitta <= 0;
+	end
+end
+
 assign spi_data_send =   !resolution_wr ? transfer_in_out : send_out;
 assign transfer_out_in =  resolution_oe ? spi_data_receive : 0;
 assign receive_in      = !resolution_oe ? spi_data_receive : 0;
-assign data_out = data_out_nitta;
+assign data_out =        !resolution_oe ? data_out_nitta_transfer : data_out_nitta_receive ;
 assign flag_start = spi_ready && !cs;
 assign flag_stop  = !spi_ready && cs;
 

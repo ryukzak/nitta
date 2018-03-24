@@ -141,6 +141,9 @@ initial begin // nitta communication
   pu_spi_data_in <= 32'hD3D2D3D4; wr <= 1; oe <= 0;     @(posedge clk);
   pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
 
+  repeat(100)          @(posedge clk);
+  oe <= 1;   repeat(5) @(posedge clk);
+  oe <= 0;             @(posedge clk);
   repeat(10) @(posedge clk);
 
 
