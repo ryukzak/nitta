@@ -29,6 +29,7 @@ module pu_slave_spi
 
 reg  buffer_rst;
 reg  resolution_wr;
+reg  resolution_oe;
 
 wire [DATA_WIDTH-1:0] spi_data_send;
 wire [DATA_WIDTH-1:0] spi_data_receive;
@@ -38,15 +39,15 @@ reg signal_wr_transfer_to_send;
 
 wire [DATA_WIDTH-1:0] transfer_in_out;
 wire [DATA_WIDTH-1:0] send_out;
+wire [DATA_WIDTH-1:0] receive_in;
+wire [DATA_WIDTH-1:0] transfer_out_in;
 
 wire [ATTR_WIDTH-1:0] attr_out_send;
-wire [ATTR_WIDTH-1:0] attr_out_transfer;
+wire [ATTR_WIDTH-1:0] attr_out_transfer_in;
+wire [ATTR_WIDTH-1:0] attr_out_transfer_out;
+wire [ATTR_WIDTH-1:0] attr_out_receive;
 
-wire [DATA_WIDTH-1:0] bus_transfer_send;
-wire [DATA_WIDTH-1:0] bus_receive_transfer;
-
-wire [ATTR_WIDTH-1:0] data_out_transfer;
-wire [ATTR_WIDTH-1:0] data_out_send;
+wire [DATA_WIDTH-1:0] data_out_nitta;
 
 spi_slave_driver #( .DATA_WIDTH( SPI_DATA_WIDTH )
 									) spi_driver
@@ -70,7 +71,7 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 	, .rst( buffer_rst )
 	, .wr( signal_wr && resolution_wr )
 	, .data_in( data_in ) 
-	, .attr_out( attr_out_transfer )
+	, .attr_out( attr_out_transfer_in )
 	, .data_out( transfer_in_out )
 	, .oe ( signal_wr_transfer_to_send && !resolution_wr )
 ); 
@@ -80,6 +81,11 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 						) transfer_out_buffer 
 	( .clk( clk )
 	, .rst( buffer_rst )
+	, .data_in( transfer_out_in ) 
+	, .data_out( data_out_nitta )
+	, .attr_out( attr_out_transfer_out )
+	, .oe( signal_oe && !resolution_oe )
+	, .wr( signal_wr_transfer_to_send && resolution_oe )
 
 ); 
 
@@ -90,6 +96,11 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 						) receive_buffer
 	( .clk( clk )
 	, .rst( buffer_rst )
+	, .oe( signal_oe && resolution_oe )
+	, .data_in( receive_in )
+	, .attr_out( attr_out_receive )
+	, .data_out( data_out_nitta )
+	, .wr( signal_wr_transfer_to_send && !resolution_oe )
 
 );
 
@@ -111,6 +122,7 @@ always @( posedge clk or posedge rst ) begin
 	if ( rst ) begin
 		buffer_rst <= 1;
 		resolution_wr <= 1;
+		resolution_oe <= 1;
 	end else begin
 		if ( signal_cycle ) begin
 			buffer_rst <= 1;
@@ -123,11 +135,20 @@ end
 always @( posedge clk ) begin
 	if ( attr_out_send[1] == 1 && !signal_wr && flag_stop ) begin
 		resolution_wr <= 0;
-	end 
-	else if ((attr_out_transfer[1] == 1) && !signal_wr && flag_stop ) begin
+	end else if ((attr_out_transfer_in[1] == 1) && !signal_wr && flag_stop ) begin
 		resolution_wr <= 1;
 	end
 end
+
+always @( posedge clk ) begin
+	if ( (attr_out_receive[1] == 1 || attr_out_receive[3] == 1 ) && !signal_oe && flag_stop ) begin
+		resolution_oe <= 0;
+	end else
+	if (( (attr_out_transfer_out[1] == 1) || attr_out_transfer_out[3] == 1 ) && !signal_oe && flag_stop ) begin
+		resolution_oe <= 1;
+	end 
+end
+
 
 always @(posedge clk ) begin
 	if ( flag_stop ) begin
@@ -137,7 +158,10 @@ always @(posedge clk ) begin
 	end
 end
 
-assign spi_data_send = !resolution_wr ? transfer_in_out : send_out;
+assign spi_data_send =   !resolution_wr ? transfer_in_out : send_out;
+assign transfer_out_in =  resolution_oe ? spi_data_receive : 0;
+assign receive_in      = !resolution_oe ? spi_data_receive : 0;
+assign data_out = data_out_nitta;
 assign flag_start = spi_ready && !cs;
 assign flag_stop  = !spi_ready && cs;
 
