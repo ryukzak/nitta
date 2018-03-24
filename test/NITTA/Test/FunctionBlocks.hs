@@ -16,7 +16,7 @@ import           NITTA.Types
 import           Test.QuickCheck
 
 
-framDefSize = frSize (def :: Fram () () ())
+framDefSize = frSize (def :: Fram () Int ())
 framAddrGen = choose (0, framDefSize - 1)
 
 
@@ -27,17 +27,17 @@ inputVarGen = I <$> vectorOf 3 (elements ['a'..'z'])
 uniqueVars fb = let vs = variables fb in length vs == length (nub vs)
 
 
-instance Arbitrary (FramInput (Parcel String)) where
+instance Arbitrary (FramInput (Parcel String Int)) where
   arbitrary = suchThat (FramInput <$> framAddrGen <*> outputVarsGen) uniqueVars
 
-instance Arbitrary (FramOutput (Parcel String)) where
+instance Arbitrary (FramOutput (Parcel String Int)) where
   arbitrary = suchThat (FramOutput <$> framAddrGen <*> inputVarGen) uniqueVars
 
-instance Arbitrary (Loop (Parcel String)) where
+instance Arbitrary (Loop (Parcel String Int)) where
   arbitrary = suchThat (Loop <$> outputVarsGen <*> inputVarGen) uniqueVars
 
-instance Arbitrary (Reg (Parcel String)) where
+instance Arbitrary (Reg (Parcel String Int)) where
   arbitrary = suchThat (Reg <$> inputVarGen <*> outputVarsGen) uniqueVars
 
-instance Arbitrary (Constant Int (Parcel String)) where
+instance Arbitrary (Constant Int (Parcel String Int)) where
   arbitrary = suchThat (Constant <$> choose (10, 16) <*> outputVarsGen) uniqueVars

@@ -44,9 +44,9 @@ instance {-# OVERLAPS #-} ( Eq v, Variables (FSet pu) v
 processGen proxy = arbitrary >>= processGen' proxy def
   where
     processGen' :: ( DecisionProblem (EndpointDT String Int) EndpointDT pu
-                   , ProcessUnit pu String Int
-                   , WithFunctionalBlocks (FSet pu) (FB (Parcel String))
-                   ) => Proxy pu -> pu -> [FSet pu] -> Gen (pu, [FB (Parcel String)])
+                   , ProcessUnit pu (Parcel String Int) Int
+                   , WithFunctionalBlocks (FSet pu) (FB (Parcel String Int))
+                   ) => Proxy pu -> pu -> [FSet pu] -> Gen (pu, [FB (Parcel String Int)])
     processGen' _ pu specialAlg = endpointWorkGen pu $ concatMap functionalBlocks specialAlg
 
 

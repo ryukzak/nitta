@@ -32,7 +32,7 @@ instance ( ToJSON tag
          , ToJSON t
          ) => ToJSON (TaggedTime tag t)
 instance ( Show v
-         ) => ToJSON (FB (Parcel v)) where
+         ) => ToJSON (FB (Parcel v x)) where
   toJSON = String . pack . show
 instance ( ToJSON t, Time t
          ) => ToJSON (TimeConstrain t) where
@@ -46,6 +46,7 @@ instance ( ToJSONKey title, ToJSON title, Title title
          , ToJSON tag
          , ToJSON v, Var v
          , ToJSON t, Time t
+         , ToJSONKey v
          , Show x, Ord x, Typeable x, ToJSON x, ToJSONKey x
          ) => ToJSON (SystemState title tag x v t)
 instance ( ToJSON v, Var v ) => ToJSON (DataFlowGraph v)
@@ -67,13 +68,12 @@ instance ( ToJSON title
          , ToJSONKey v
          , ToJSON (TimeConstrain t), Time t
          ) => ToJSON (Decision (DataFlowDT title v t))
-instance ( ToJSON title
-         , ToJSON v, Var v
-         ) => ToJSON (Option (BindingDT title v))
-instance ( ToJSON title
-         , ToJSON v
-         , Var v
-         ) => ToJSON (Decision (BindingDT title v))
+instance ( Show title
+         ) => ToJSON (Option (BindingDT title io)) where
+  toJSON (BindingO fb title) = toJSON [ show fb, show title ]
+instance ( Show title
+         ) => ToJSON (Decision (BindingDT title io)) where
+  toJSON (BindingD fb title) = toJSON [ show fb, show title ]
 instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
 instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
 
@@ -86,7 +86,7 @@ instance ( ToJSONKey title, ToJSON title, Title title
          , Ord x
          , ToJSONKey x
          , Show x
-         ) => ToJSON (BusNetwork title x v t) where
+         ) => ToJSON (BusNetwork title v x t) where
   toJSON n@BusNetwork{..}
              -- , bnSignalBusWidth     :: Int
     = object [ "width" .= bnSignalBusWidth

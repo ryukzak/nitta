@@ -4,6 +4,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE StandaloneDeriving     #-}
@@ -16,7 +17,7 @@ module NITTA.Types.Network where
 import           Data.Default
 import qualified Data.Map         as M
 import           Data.Typeable
-import           GHC.Generics            (Generic)
+import           GHC.Generics     (Generic)
 import           NITTA.Types.Base
 import           NITTA.Types.Poly
 import           Numeric.Interval hiding (elem)
@@ -29,7 +30,7 @@ data PU i v x t where
         , DecisionProblem (EndpointDT v t)
                EndpointDT  pu
         , Default (Instruction pu)
-        , ProcessUnit pu v t
+        , ProcessUnit pu (Parcel v x) t
         , Show (Instruction pu)
         , Simulatable pu v x
         , Synthesis pu i
@@ -44,21 +45,22 @@ data PU i v x t where
              , networkLink :: NetworkLink i
              } -> PU i v x t
 
-setUnit PU{..} unit'
-  | Just links' <- cast links = PU{ unit=unit', links=links', networkLink=networkLink }
-  | otherwise = error "setUnit assertion!"
-
 instance ( Var v, Time t
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (PU i v x t)
          where
   options proxy PU{..} = options proxy unit
-  decision proxy pu@PU{..} act = setUnit pu $ decision proxy unit act
+  decision proxy PU{ unit, links, networkLink } d
+    = PU{ unit=decision proxy unit d, links, networkLink }
 
-instance ProcessUnit (PU i v x t) v t where
-  bind fb pu@PU{..} = setUnit pu <$> bind fb unit
-  process PU{..} = process unit
-  setTime t pu@PU{..} = setUnit pu $ setTime t unit
+instance ProcessUnit (PU i v x t) (Parcel v x) t where
+  bind fb PU{ unit, links, networkLink }
+    = case bind fb unit of
+      Right unit' -> Right PU { unit=unit', links, networkLink }
+      Left err    -> Left err
+  process PU{ unit } = process unit
+  setTime t PU{ unit, links, networkLink }
+    = PU{ unit=setTime t unit, links, networkLink }
 
 instance Simulatable (PU i v x t) v x where
   simulateOn cntx PU{..} fb = simulateOn cntx unit fb
@@ -71,12 +73,12 @@ instance DefinitionSynthesis (PU i v x t) where
 castPU :: ( ByTime pu t
           , Connected pu i
           , DecisionProblem (EndpointDT v t)
-                EndpointDT  pu
+                 EndpointDT  pu
           , Default (Instruction pu)
           , DefinitionSynthesis pu
           , ProcessUnit pu v t
           , Show (Instruction pu)
-          , Simulatable pu v Int
+          , Simulatable pu v x
           , Synthesis pu i
           , Typeable i
           , Typeable pu
@@ -84,7 +86,7 @@ castPU :: ( ByTime pu t
           , Typeable x
           , Show x
           , Num x
-            ) => PU i v x t -> Maybe pu
+          ) => PU i v x t -> Maybe pu
 castPU PU{..} = cast unit
 
 
@@ -150,6 +152,6 @@ data NetworkLink i
 data LinkId = Index Int
             | Name String
             deriving ( Show, Eq, Ord )
- 
+
 link (Index i) = show i
-link (Name n) = n
+link (Name n)  = n

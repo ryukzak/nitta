@@ -34,7 +34,6 @@ import           Data.List        (find, intersect, sort, sortOn)
 import qualified Data.Map         as M
 import           Data.Maybe
 import           Data.Proxy
-import           Data.Typeable
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.DataFlow
@@ -99,13 +98,13 @@ compiler = Proxy :: Proxy CompilerDT
 instance DecisionType (CompilerDT title tag v t) where
   data Option (CompilerDT title tag v t)
     = ControlFlowOption (DataFlowGraph v)
-    | BindingOption (FB (Parcel v)) title
+    | BindingOption (FB (Parcel v Int)) title
     | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
     deriving ( Generic )
 
   data Decision (CompilerDT title tag v t)
     = ControlFlowDecision (DataFlowGraph v)
-    | BindingDecision (FB (Parcel v)) title
+    | BindingDecision (FB (Parcel v Int)) title
     | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
     deriving ( Generic )
 
@@ -123,9 +122,8 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
 instance ( Time t, Var v
-         , Typeable x
          ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
-                   CompilerDT (SystemState String String v x (TaggedTime String t))
+                   CompilerDT (SystemState String String v Int (TaggedTime String t))
          where
   options _ Level{ currentFrame } = options compiler currentFrame
   options _ f@Frame{ nitta, dfg } = concat
@@ -188,9 +186,8 @@ instance Default (CompilerStep title tag v x t) where
 
 
 instance ( Time t, Var v
-         , Typeable x
          ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
-                   CompilerDT (CompilerStep String String v x (TaggedTime String t))
+                   CompilerDT (CompilerStep String String v Int (TaggedTime String t))
          where
   options proxy CompilerStep{ state } = options proxy state
   decision proxy st@CompilerStep{ state } act = st{ state=decision proxy state act }

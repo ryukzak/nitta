@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE Rank2Types                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
@@ -52,21 +53,21 @@ class ( Typeable v, Ord v, Show v ) => Title v
 instance ( Typeable v, Ord v, Show v ) => Title v
 
 
-data GBusNetwork title spu v t =
-  BusNetwork
+data GBusNetwork title spu v x t
+  = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
-      bnRemains        :: [FB (Parcel v)]
+      bnRemains        :: [FB (Parcel v x)]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded         :: M.Map title [FB (Parcel v)]
+    , bnBinded         :: M.Map title [FB (Parcel v x)]
     -- | Описание вычислительного процесса сети, как элемента процессора.
-    , bnProcess        :: Process v t
+    , bnProcess        :: Process (Parcel v x) t
     -- | Словарь вложенных вычислительных блоков по именам.
     , bnPus            :: M.Map title spu
     -- | Ширина шины управления.
     , bnSignalBusWidth :: Int
     }
-type BusNetwork title v x t = GBusNetwork title (PU LinkId v x t) v t
+type BusNetwork title v x t = GBusNetwork title (PU LinkId v x t) v x t
 
 transfered net@BusNetwork{..}
   = [ v | st <- steps bnProcess
@@ -95,7 +96,11 @@ busNetwork w pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w
     valueData t = t ++ "_data_out"
     valueAttr t = t ++ "_attr_out"
 
-instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork title v x t) (FB (Parcel v)) where
+instance ( Title title
+         , Time t
+         , Var v
+         , Typeable x
+         ) => WithFunctionalBlocks (BusNetwork title v x t) (FB (Parcel v x)) where
   functionalBlocks BusNetwork{..} = sortFBs binded []
     where
       binded = bnRemains ++ concat (M.elems bnBinded)
@@ -179,9 +184,8 @@ instance ( Title title, Var v, Time t
 
 
 
-instance ( Title title, Var v, Time t
-         , Typeable x
-         ) => ProcessUnit (BusNetwork title v x t) v t where
+instance ( Title title, Time t, Var v, Typeable x
+         ) => ProcessUnit (BusNetwork title v x t) (Parcel v x) t where
 
   bind fb bn@BusNetwork{..}
     | any (isRight . bind fb) $ M.elems bnPus
@@ -273,8 +277,10 @@ instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v x t) 
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( Var v ) => DecisionProblem (BindingDT String v)
-                            BindingDT (BusNetwork String v x t)
+instance ( Var v
+         , Typeable x
+         ) => DecisionProblem (BindingDT String (Parcel v x))
+                    BindingDT (BusNetwork String v x t)
          where
   options _ BusNetwork{..} = concatMap bindVariants' bnRemains
     where
@@ -305,7 +311,8 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
 --------------------------------------------------------------------------
 
 
-instance ( Time t ) => DefinitionSynthesis (BusNetwork String v x t) where
+instance ( Time t
+         ) => DefinitionSynthesis (BusNetwork String v x t) where
   moduleName BusNetwork{..} = S.join "_" (M.keys bnPus) ++ "_net"
 
   hardware pu@BusNetwork{..}
@@ -371,7 +378,7 @@ instance ( Time t ) => DefinitionSynthesis (BusNetwork String v x t) where
                                    ]
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
-      renderInstance insts regs ((title, PU{..}) : xs)
+      renderInstance insts regs ((title, PU{ unit, networkLink, links }) : xs)
         = let inst = hardwareInstance unit title networkLink links
               insts' = inst : regInstance title : insts
               regs' = (valueAttr title, valueData title) : regs

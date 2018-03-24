@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE IncoherentInstances    #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
@@ -70,19 +71,20 @@ instance ( Show (I io), Variables (I io) v, Eq (I io)
 
 
 
--- | Идентификатор типа для описания физически фактических пересылаемых значений.
-newtype Parcel v = Parcel v
-deriving instance ( Show v ) => Show (Parcel v)
+-- | Идентификатор типа для описания физически фактических пересылаемых
+-- значений. Конструктор не нужен, так как фактические значения будут
+-- описываться в рамках IOTypeFamily.
+data Parcel v x
 
-instance Var v => IOTypeFamily (Parcel v) where
-  data I (Parcel v) = I v -- ^ Загружаемые значения.
+instance Var v => IOTypeFamily (Parcel v x) where
+  data I (Parcel v x) = I v -- ^ Загружаемые значения.
     deriving (Show, Eq, Ord)
-  data O (Parcel v) = O [v] -- ^ Выгружаемые значения.
+  data O (Parcel v x) = O [v] -- ^ Выгружаемые значения.
     deriving (Show, Eq, Ord)
 
-instance Variables (I (Parcel v)) v where
+instance Variables (I (Parcel v x)) v where
   variables (I v) = [v]
-instance Variables (O (Parcel v)) v where
+instance Variables (O (Parcel v x)) v where
   variables (O v) = v
 
 
@@ -96,7 +98,12 @@ class FunctionalSet pu where
   -- | Тип для представляния системы команд.
   data FSet pu :: *
 
-instance ( WithFunctionalBlocks (FSet pu) (FB (Parcel v)) ) => Variables (FSet pu) v where
+instance ( WithFunctionalBlocks (FSet pu) (FB (Parcel v x))
+         , Ord v
+         , Show v
+         , Typeable v
+         , Typeable x
+         ) => Variables (FSet pu) v where
   variables fbs = concatMap variables $ functionalBlocks fbs
 
 
@@ -104,7 +111,7 @@ instance ( WithFunctionalBlocks (FSet pu) (FB (Parcel v)) ) => Variables (FSet p
 class ToFSet pu v | pu -> v where
   -- | Преобразование гетерогенного функционального блока в представление системы функций
   -- вычислительного блока.
-  toFSet :: FB (Parcel v) -> Either String (FSet pu)
+  toFSet :: FB (Parcel v x) -> Either String (FSet pu)
 
 -- | Преобразование из представления системы функций вычислительного блока в гетерогенный
 -- функциональный блок.
@@ -162,7 +169,7 @@ instance Default (Cntx v x) where
   def = Cntx M.empty M.empty M.empty M.empty
 
 
-class FunctionSimulation fb v x | fb -> v where
+class FunctionSimulation fb v x | fb -> v x where
   simulate :: Cntx v x -> fb -> Maybe (Cntx v x)
 
 
@@ -171,35 +178,34 @@ class FunctionSimulation fb v x | fb -> v where
 
 -- | Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
 data FB io where
-  FB :: ( io ~ (_io v)
+  FB :: ( io ~ (_io v x)
         , IOType io v
         , FunctionalBlock fb v
         , Show fb
-        , Variables fb v
-        , FunctionSimulation fb v Int
+        , FunctionSimulation fb v x
         ) => fb -> FB io
-deriving instance ( Show io ) => Show (FB io)
+instance Show (FB io) where
+  show (FB fb) = show fb
 
-instance ( Var v ) => FunctionalBlock (FB (Parcel v)) v where
+instance ( Var v
+         , Typeable x
+         ) => FunctionalBlock (FB (Parcel v x)) v where
   dependency (FB fb) = dependency fb
   insideOut (FB fb) = insideOut fb
   isCritical (FB fb) = isCritical fb
   inputs (FB fb) = inputs fb
   outputs (FB fb) = outputs fb
 
-instance Variables (FB (Parcel v)) v where
-  variables (FB fb) = variables fb
+instance Variables (FB (Parcel v x)) v where
+  variables (FB fb) = inputs fb ++ outputs fb
 
 instance Eq (FB io) where
   FB a == FB b = Just a == cast b
 
-instance ( Variables (FB io) v, Ord v ) => Ord (FB io) where
-  a `compare` b = variables a `compare` variables b
+instance Ord (FB (Parcel v x)) where
+  (FB a) `compare` (FB b) = show a `compare` show b
 
-instance {-# OVERLAPS #-} FunctionalBlock fb v => Variables fb v where
-  variables fb = inputs fb ++ outputs fb
-
-instance FunctionSimulation (FB (Parcel v)) v Int where
+instance FunctionSimulation (FB (Parcel v x)) v x where
   simulate cntx (FB fb) = simulate cntx fb
 
 
@@ -215,28 +221,31 @@ instance FunctionSimulation (FB (Parcel v)) v Int where
 --     2) Формирование многоуровневого описания вычислительного процесса для отдельного PU и
 --        входящих в его состав структурных элементов (Nested). К примеру: вычислительный процесс
 --        сети и подключённых к ней PU. (доступно через функцию process)
-data Process v t
+data Process io t
   = Process
-    { steps     :: [Step v t] -- ^ Список шагов вычислительного процесса.
+    { steps     :: [Step io t] -- ^ Список шагов вычислительного процесса.
 
     , relations :: [Relation] -- ^ Список отношений между шагами вычислительного процесса
                               --   (отношения описываются через "кортежи" из ProcessUid).
     , nextTick  :: t          -- ^ Номер первого свободного такта.
     , nextUid   :: ProcessUid -- ^ Следующий свободный идентификатор шага вычислительного процесса.
     }
+deriving instance ( Show v, Show t ) => Show ( Process (Parcel v x) t )
 
-instance ( Default t ) => Default (Process v t) where
+instance ( Default t ) => Default (Process io t) where
   def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
+
 
 type ProcessUid = Int -- ^ Уникальный идентификатор шага вычислительного процесса.
 
 -- | Описание шага вычислительного процесса.
-data Step v t where
+data Step io t where
   Step ::
     { sKey  :: ProcessUid    -- ^ Уникальный идентификатор шага.
     , sTime :: PlaceInTime t -- ^ Описание типа и положения шага во времени.
-    , sDesc :: StepInfo v    -- ^ Описание действия описываемого шага.
-    } -> Step v t
+    , sDesc :: StepInfo io    -- ^ Описание действия описываемого шага.
+    } -> Step io t
+deriving instance ( Show v, Show t ) => Show ( Step (Parcel v x) t )
 
 -- | Описание положения события во времени и типа события:
 data PlaceInTime t
@@ -246,18 +255,18 @@ data PlaceInTime t
 
 -- | Описание события, соответсвующего шага вычислительного процесса. Каждый вариант соответствует
 -- соответствующему отдельному уровню организации вычислительного процесса.
-data StepInfo v where
+data StepInfo io where
   -- | Решения, принятые на уровне САПР.
-  CADStep :: String -> StepInfo v
+  CADStep :: String -> StepInfo io
   -- | Время работы над функциональным блоком функционального алгоритма.
-  FBStep :: FB (Parcel v) -> StepInfo v
+  FBStep :: FB io -> StepInfo io
   -- | Описание использования вычислительного блока с точки зрения передачи данных.
-  EndpointRoleStep :: EndpointRole v -> StepInfo v
+  EndpointRoleStep :: ( io ~ _io v x, Show v, Typeable v ) => EndpointRole v -> StepInfo io
   -- | Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
   -- определяется типом вычислительного блока.
   InstructionStep :: ( Show (Instruction pu)
                      , Typeable (Instruction pu)
-                     ) => Instruction pu -> StepInfo v
+                     ) => Instruction pu -> StepInfo io
 
   -- | Используется для описания вычислительного процесса вложенных структурных элементов.
   -- Как правило не хранится в структурах данных, а генерируется автоматически по требованию при
@@ -265,9 +274,7 @@ data StepInfo v where
   NestedStep :: ( Eq title, Show title, Ord title
                 ) => title -> StepInfo v -> StepInfo v
 
-deriving instance ( Show v, Show t ) => Show ( Process v t )
-deriving instance ( Show v, Show t ) => Show ( Step v t )
-instance ( Show v ) => Show (StepInfo v) where
+instance ( Show v ) => Show (StepInfo (Parcel v x)) where
   show (CADStep s)                 = s
   show (FBStep (FB fb))            = show fb
   show (EndpointRoleStep eff)      = show eff
@@ -301,12 +308,12 @@ data Relation
 
 -- | Решение в области привязки функционального блока к вычислительному. Определяется только для
 -- вычислительных блоков, организующих работу со множеством вложенных блоков, адресуемым по title.
-data BindingDT title v
+data BindingDT title io
 binding = Proxy :: Proxy BindingDT
 
-instance DecisionType (BindingDT title v) where
-  data Option (BindingDT title v) = BindingO (FB (Parcel v)) title deriving ( Generic )
-  data Decision (BindingDT title v) = BindingD (FB (Parcel v)) title deriving ( Generic )
+instance DecisionType (BindingDT title io) where
+  data Option (BindingDT title io) = BindingO (FB io) title deriving ( Generic )
+  data Decision (BindingDT title io) = BindingD (FB io) title deriving ( Generic )
 
 
 -- | Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
@@ -376,14 +383,14 @@ instance ( Show v, Show t ) => Show (Decision (EndpointDT v t)) where
 --       блока. Его модельное время продвигается вперёд, в описании вычислительного процесса
 --       дополняется записями относительно сделанных шагов вычислительного процесса.
 --    4) Повторение, пока список возможных вариантов не станет пустым.
-class ProcessUnit pu v t | pu -> v t where
+class ProcessUnit pu io t | pu -> io t where
   -- | Назначить исполнение функционального блока вычислительному узлу.
-  bind :: FB (Parcel v) -> pu -> Either String pu
+  bind :: FB io -> pu -> Either String pu
   -- | Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
   -- процесс вложенных структурных элементов.
   --
   -- Результат вычисления данной функции не должен редактироваться и возкращаться на место!
-  process :: pu -> Process v t
+  process :: pu -> Process io t
   -- | Установить модельное время вычислительного блока.
   --
   -- TODO: Необходимо преобразовать в setTimeTag.
@@ -476,7 +483,7 @@ class Simulatable pu v x | pu -> v x where
   simulateOn :: Cntx v x -- ^ Контекст вычислительного процесса, содержащий уже
                          -- известные значения переменных.
              -> pu -- ^ Вычислительный блок.
-             -> FB (Parcel v) -- ^ Функциональный блок, оперируйщий интересующим значением.
+             -> FB (Parcel v x) -- ^ Функциональный блок, оперируйщий интересующим значением.
              -> Maybe (Cntx v x)
 
 

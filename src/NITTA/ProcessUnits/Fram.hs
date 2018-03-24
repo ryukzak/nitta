@@ -88,12 +88,16 @@ data Fram v x t = Fram
   -- дополнительной информации, такой как время привязки функционального блока. Нельзя сразу делать
   -- привязку к ячейке памяти, так как это будет неэффективно.
   , frRemains  :: [ (FSet (Fram v x t), ProcessUid) ]
-  , frBindedFB :: [ FB (Parcel v) ]
-  , frProcess  :: Process v t
+  , frBindedFB :: [ FB (Parcel v x) ]
+  , frProcess  :: Process (Parcel v x) t
   , frSize     :: Int
   } deriving ( Show )
 
-instance ( Default t ) => Default (Fram v x t) where
+instance ( Default t
+         , Default x
+         , Enum x
+         , Num x
+         ) => Default (Fram v x t) where
   def = Fram { frMemory=listArray (0, defaultSize - 1) cells
              , frBindedFB=[]
              , frRemains=[]
@@ -104,22 +108,22 @@ instance ( Default t ) => Default (Fram v x t) where
       defaultSize = 16
       cells = map (\(i, c) -> c{ initialValue=0x1000 + i }) $ zip [0..] $ repeat def
 
-instance WithFunctionalBlocks (Fram v x t) (FB (Parcel v)) where
+instance WithFunctionalBlocks (Fram v x t) (FB (Parcel v x)) where
   functionalBlocks Fram{..} = frBindedFB
 
 
 
 instance FunctionalSet (Fram v x t) where
   data FSet (Fram v x t)
-    = FramInput' (FramInput (Parcel v))
-    | FramOutput' (FramOutput (Parcel v))
-    | Loop' (Loop (Parcel v))
-    | Reg' (Reg (Parcel v))
-    | Constant' (Constant x (Parcel v))
+    = FramInput' (FramInput (Parcel v x))
+    | FramOutput' (FramOutput (Parcel v x))
+    | Loop' (Loop (Parcel v x))
+    | Reg' (Reg (Parcel v x))
+    | Constant' (Constant x (Parcel v x))
     deriving ( Show, Eq )
 
-instance ( Var v
-         ) => WithFunctionalBlocks (FSet (Fram v Int t)) (FB (Parcel v)) where
+instance ( Var v, Time t, Typeable x, Eq x, Show x
+         ) => WithFunctionalBlocks (FSet (Fram v x t)) (FB (Parcel v x)) where
   -- TODO: Сделать данную операцию через Generics.
   functionalBlocks (FramInput' fb)  = [ FB fb ]
   functionalBlocks (FramOutput' fb) = [ FB fb ]
@@ -155,11 +159,11 @@ data Cell v x t = Cell
   , current      :: Maybe (Job v x t) -- ^ Ячейка в настоящий момент времени используется для работы.
   , output       :: IOState v x t -- ^ Ячейка позволяет передать значение на следующий вычислительный цикл.
   , lastWrite    :: Maybe t -- ^ Момент последней записи в ячейку (необходим для корректной работы с задержками).
-  , initialValue :: Int -- ^ Значение ячейки после запуска системы (initial секции).
+  , initialValue :: x -- ^ Значение ячейки после запуска системы (initial секции).
   } deriving ( Show )
 
-instance Default (Cell v x t) where
-  def = Cell Undef Nothing Undef Nothing 0
+instance ( Default x ) => Default (Cell v x t) where
+  def = Cell Undef Nothing Undef Nothing def
 
 
 
@@ -240,11 +244,16 @@ bindToCell _ fb cell = Left $ "Can't bind " ++ show fb ++ " to " ++ show cell
 
 
 
-instance ( IOType (Parcel v) v
+instance ( IOType (Parcel v x) v
          , Var v
          , Time t
-         , WithFunctionalBlocks (Fram v Int t) (FB (Parcel v))
-         ) => ProcessUnit (Fram v Int t) v t where
+         , Typeable x
+         , Default x
+         , Num x
+         , Eq x
+         , Show x
+         , WithFunctionalBlocks (Fram v x t) (FB (Parcel v x))
+         ) => ProcessUnit (Fram v x t) (Parcel v x) t where
   bind fb0 pu@Fram{..} = do fb' <- toFSet fb0
                             pu' <- bind' fb'
                             if isSchedulingComplete pu'
@@ -274,9 +283,9 @@ instance ( IOType (Parcel v) v
 
 
 
-instance ( Var v, Time t
+instance ( Var v, Time t, Typeable x, Show x, Eq x
          ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (Fram v Int t)
+                   EndpointDT (Fram v x t)
          where
 
   options _proxy pu@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
@@ -495,35 +504,39 @@ instance UnambiguouslyDecode (Fram v x t) where
 
 
 instance ( Var v, Time t
-         , ProcessUnit (Fram v Int t) v t
-        --  , Num x
-         ) => Simulatable (Fram v Int t) v Int where
-  simulateOn cntx@Cntx{..} pu@Fram{..} (FB fb)
-    | Just (Constant x (O k) :: Constant Int (Parcel v)) <- cast fb = set cntx k x
-    | Just (Loop (O k1@(k:_)) (I _k2) :: Loop (Parcel v)) <- cast fb = do
+         , Num x
+         , Typeable x
+         ) => Simulatable (Fram v x t) v x where
+  simulateOn cntx@Cntx{..} pu@Fram{..} fb
+    | Just (Constant x (O k)) <- castFB fb = set cntx k x
+    | Just (Loop (O k1@(k:_)) (I _k2)) <- castFB fb = do
       let v = fromMaybe (addr2value $ findAddress k pu) $ cntx `get` k
       set cntx k1 v
-    | Just (fb' :: Reg (Parcel v)) <- cast fb = simulate cntx fb'
-    | Just (FramInput addr (O k) :: FramInput (Parcel v)) <- cast fb = do
+    | Just fb'@Reg{} <- castFB fb = simulate cntx fb'
+    | Just (FramInput addr (O k)) <- castFB fb = do
       let v = fromMaybe (addr2value addr) $ cntx `get` head k
       set cntx k v
-    | Just (FramOutput addr (I k) :: FramOutput (Parcel v)) <- cast fb = do
+    | Just (FramOutput addr (I k)) <- castFB fb = do
       v <- get cntx k
       let cntxFram' = M.alter (Just . maybe [v] (v:)) (addr, k) cntxFram
       return cntx{ cntxFram=cntxFram' }
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Fram."
     where
-      addr2value addr = 0x1000 + addr -- must be coordinated with test bench initialization
+      addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test bench initialization
 
 
 
 ---------------------------------------------------
 
-instance ( Var v, Time t
-        --  , Typeable x
-        --  , Show x
-        --  , Num x
-         ) => TestBench (Fram v Int t) v Int where
+instance ( Var v
+         , Time t
+         , Typeable x
+         , Show x
+         , Num x
+         , Default x
+         , Eq x
+         , ProcessUnit (Fram v x t) (Parcel v x) t
+         ) => TestBench (Fram v x t) v x where
   testEnviroment cntx0 pu@Fram{ frProcess=Process{..}, .. }
     = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
     where
@@ -627,10 +640,9 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
                  , isJust addr_v
                  , let Just (addr, v) = addr_v
                  ]
-    outputStep :: ( Time t, Typeable x ) => Fram v x t -> FB (Parcel v) -> Maybe (Int, v)
-    outputStep pu' (FB fb)
-      | Just (Loop _bs (I v)) <- cast fb = Just (findAddress v pu', v)
-      | Just (FramOutput addr (I v)) <- cast fb = Just (addr, v)
+    outputStep pu' fb
+      | Just (Loop _bs (I v)) <- castFB fb = Just (findAddress v pu', v)
+      | Just (FramOutput addr (I v)) <- castFB fb = Just (addr, v)
       | otherwise = Nothing
 
     checkBank addr v value = concatMap ("    " ++)
@@ -653,11 +665,12 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
   = instr
   | otherwise = error $ "Can't find instruction for effect of variable: " ++ show var
   where
-    variableSendAt v = [ t | Step{ sTime=Activity t
-                                 , sDesc=EndpointRoleStep endpoints
-                                 } <- steps
-                           , v `elem` variables endpoints
+    variableSendAt v = [ t | Step{ sTime=Activity t, sDesc=info } <- steps
+                           , v `elem` f info
                            ]
+    f :: StepInfo (_io v x) -> [v]
+    f (EndpointRoleStep rule) = variables rule
+    f _                       = []
 
 
 instance ( Time t, Var v ) => DefinitionSynthesis (Fram v x t) where
@@ -665,7 +678,7 @@ instance ( Time t, Var v ) => DefinitionSynthesis (Fram v x t) where
   hardware pu = FromLibrary $ moduleName pu ++ ".v"
   software _ = Empty
 
-instance ( Time t, Var v
+instance ( Time t, Var v, Show x
          ) => Synthesis (Fram v x t) LinkId where
   hardwareInstance Fram{..} name NetworkLink{..} Link{..} = renderST
     [ "pu_fram "

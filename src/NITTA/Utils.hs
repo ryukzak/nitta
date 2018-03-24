@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeFamilies              #-}
@@ -17,7 +18,6 @@ import           Control.Monad.State
 import           Data.Default
 import           Data.List           (minimumBy, sortOn, (\\))
 import           Data.Maybe          (mapMaybe)
-import           Data.Proxy
 import           Data.Typeable       (Typeable, cast)
 import           NITTA.Types
 import           NITTA.Utils.Lens
@@ -90,7 +90,7 @@ stepStart Step{ sTime=Event t }    = t
 stepStart Step{ sTime=Activity t } = I.inf t
 
 
-whatsHappen t Process{..} = filter (\Step{..} -> t `atSameTime` sTime) steps
+whatsHappen t Process{ steps } = filter (\Step{ sTime } -> t `atSameTime` sTime) steps
 
 
 isFB (FBStep _)                = True
@@ -103,10 +103,10 @@ getFB _                                      = Nothing
 
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
-
-getEndpoint Step{ sDesc=EndpointRoleStep eff }                = Just eff
-getEndpoint Step{ sDesc=NestedStep _ (EndpointRoleStep eff) } = Just eff
-getEndpoint _                                                 = Nothing
+getEndpoint :: Step (Parcel v x) t -> Maybe (EndpointRole v)
+getEndpoint Step{ sDesc=EndpointRoleStep role }                = Just role
+getEndpoint Step{ sDesc=NestedStep _ (EndpointRoleStep role) } = Just role
+getEndpoint _                                                  = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 
@@ -166,9 +166,6 @@ values2dump vs
 
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
 
-
-nopFor :: ( Default (Instruction pu) ) => Proxy pu -> Instruction pu
-nopFor _proxy = def
 
 isTimeWrap p act = nextTick p > act^.at.infimum
 timeWrapError p act = error $ "You can't start work yesterday :) fram time: " ++ show (nextTick p) ++ " action start at: " ++ show (act^.at.infimum)
