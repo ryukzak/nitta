@@ -3,8 +3,8 @@ module pu_mult
    , parameter ATTR_WIDTH        = 4
    , parameter INVALID  			= 0 
    )
-  ( input  wire              clk
-  , input  wire              rst
+  ( input  wire                  clk
+  , input  wire                  rst
 
   , input  wire                  signal_wr  
   , input  wire                  signal_sel
@@ -17,47 +17,58 @@ module pu_mult
   );
 
 
-reg [DATA_WIDTH-1:0]         stage1 [0:1];
-reg                          stage1_invalid [0:1];
-reg [DATA_WIDTH-1:DATA_WIDTH/2-1] operands[0:3];
+reg [DATA_WIDTH-1:0]         			stage1 [0:1];
+reg                          			stage1_invalid [0:1];
+reg [DATA_WIDTH-1:DATA_WIDTH/2-1]	stage_half[0:1]; 
+
 
 always @(posedge clk) begin
 	if ( rst ) begin
     stage1[0] <= 0;
     stage1[1] <= 0;
-	 operands[0] <= 0;
-	 operands[1] <= 0;
-	 operands[2] <= 0;
-	 operands[3] <= 0;
 	end else begin 
     if ( signal_wr ) begin
       stage1[signal_sel] <= data_in[DATA_WIDTH-1:0];
+		stage_half[signal_sel] <= data_in[DATA_WIDTH-1:DATA_WIDTH/2-1];
       stage1_invalid[signal_sel] <= attr_in[INVALID];
-		operands[0] <= (  stage1[0][DATA_WIDTH-1:DATA_WIDTH/2-1]);
-		operands[1] <= ~(  stage1[0][DATA_WIDTH-1:DATA_WIDTH/2-1]);
-		operands[2] <= (  stage1[1][DATA_WIDTH-1:DATA_WIDTH/2-1]);
-		operands[3] <= ~(  stage1[1][DATA_WIDTH-1:DATA_WIDTH/2-1]);
 	  end
   end
 end
 
 
+function invalid_value1;
+parameter DATA_WIDTH        		= 32; 
+input [DATA_WIDTH-1:DATA_WIDTH/2-1] a;
+input [DATA_WIDTH-1:DATA_WIDTH/2-1] b;
+input c;
+input d;
 
-wire is_operand_invalid[0:3];
-wire operand_xor [0:1];
+reg is_highhalf_value[0:1];
+reg is_inv_highhalf_value[0:1];
+reg operand_xor [0:1];
+reg e1;
+reg e2;
 
-assign is_operand_invalid[0] = (  stage1[0][DATA_WIDTH-1:DATA_WIDTH/2-1] ==  0 );
-assign is_operand_invalid[1] = (  ~stage1[0][DATA_WIDTH-1:DATA_WIDTH/2-1] == 0 );
-assign is_operand_invalid[2] = (  stage1[1][DATA_WIDTH-1:DATA_WIDTH/2-1] ==  0 );
-assign is_operand_invalid[3] = (  ~stage1[1][DATA_WIDTH-1:DATA_WIDTH/2-1] == 0 );
+begin
+
+ e1 = ~a == {(DATA_WIDTH/2+1){1'b0}}; 
+ e2 = ~b == {(DATA_WIDTH/2+1){1'b0}};
+
+is_highhalf_value[0] = (  a ==  0 );
+is_inv_highhalf_value[0] = e1;
 
 
+is_highhalf_value[1] = (  b ==  0 );
+is_inv_highhalf_value[1] = e2;
 
-assign operand_xor[0] = !(is_operand_invalid[0] ^ is_operand_invalid[1]) || stage1_invalid[0];
-assign operand_xor[1] = !(is_operand_invalid[2] ^ is_operand_invalid[3]) || stage1_invalid[1];
+operand_xor[0] = !(is_highhalf_value[0] ^ is_inv_highhalf_value[0]);
+operand_xor[1] = !(is_highhalf_value[1] ^ is_inv_highhalf_value[1]); 
                               
-wire invalid_value = operand_xor[0] 
-                  || operand_xor[1];
+invalid_value1 = operand_xor[0] || c
+                  || operand_xor[1] || d;
+
+end
+endfunction
 
 
 wire [DATA_WIDTH-1:0]         mult_result;
@@ -67,12 +78,12 @@ mult_inner mult_i1
   , .result( mult_result )
   );
 
-
-
 reg                           f;
 reg                           write_multresult;
+reg 									invalid_value;
 
 always @(posedge clk) begin
+invalid_value <= invalid_value1(stage_half [0],stage_half [1],stage1_invalid[0],stage1_invalid[1]);
   if ( rst ) begin
     f <= 0;
     write_multresult <= 0;
@@ -82,7 +93,6 @@ always @(posedge clk) begin
     else                             write_multresult <= 0;
   end
 end
-
 
 reg                           invalid_result;
 reg [DATA_WIDTH-1:0]          data_multresult;
@@ -105,6 +115,7 @@ assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INV
                             : 0;
 
 endmodule
+
 
 
 	
