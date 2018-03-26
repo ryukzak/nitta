@@ -7,6 +7,9 @@ iverilog pu_fram.v pu_fram_tb.v && ./a.out
 # mux
 iverilog pu_mux.v pu_mux_tb.v && ./a.out
 
+# fifo
+iverilog pu_fifo.v pu_fifo_tb.v && ./a.out
+
 # control
 
 
