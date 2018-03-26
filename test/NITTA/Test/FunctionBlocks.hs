@@ -24,7 +24,7 @@ outputVarsGen = O <$> resize 3 (listOf1 $ vectorOf 3 $ elements ['a'..'z'])
 inputVarGen = I <$> vectorOf 3 (elements ['a'..'z'])
 
 
-uniqueVars fb = let vs = variables fb in length vs == length (nub vs)
+uniqueVars fb = let vs = inputs fb ++ outputs fb in length vs == length (nub vs)
 
 
 instance Arbitrary (FramInput (Parcel String Int)) where
