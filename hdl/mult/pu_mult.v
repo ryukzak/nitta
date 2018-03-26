@@ -1,7 +1,7 @@
 module pu_mult 
   #( parameter DATA_WIDTH        = 32
    , parameter ATTR_WIDTH        = 4
-   , parameter INVALID  			   = 0 
+   , parameter INVALID  			= 0 
    )
   ( input  wire                  clk
   , input  wire                  rst
@@ -17,9 +17,9 @@ module pu_mult
   );
 
 
-reg [DATA_WIDTH-1:0]         			stage1 [0:1];
+reg [DATA_WIDTH-1:0]         					  stage1 [0:1];
 reg                          			stage1_invalid [0:1];
-reg [DATA_WIDTH-1:DATA_WIDTH/2-1]	stage_half[0:1]; 
+reg [DATA_WIDTH-1:DATA_WIDTH/2-1]		  stage_half[0:1]; 
 
 
 always @(posedge clk) begin
@@ -29,7 +29,7 @@ always @(posedge clk) begin
 	end else begin 
     if ( signal_wr ) begin
       stage1[signal_sel] <= data_in[DATA_WIDTH-1:0];
-		  stage_half[signal_sel] <= data_in[DATA_WIDTH-1:DATA_WIDTH/2-1];
+		stage_half[signal_sel] <= data_in[DATA_WIDTH-1:DATA_WIDTH/2-1];
       stage1_invalid[signal_sel] <= attr_in[INVALID];
 	  end
   end
@@ -77,9 +77,9 @@ mult_inner mult_i1
   , .result( mult_result )
   );
 
-reg                           f;
+reg                           					f;
 reg                           write_multresult;
-reg 									        invalid_value;
+reg 									   invalid_value;
 
 always @(posedge clk) begin
 invalid_value <= invalid_value1(stage_half [0],stage_half [1],stage1_invalid[0],stage1_invalid[1]);
@@ -93,17 +93,17 @@ invalid_value <= invalid_value1(stage_half [0],stage_half [1],stage1_invalid[0],
   end
 end
 
-reg                           invalid_result;
+reg                            invalid_result;
 reg [DATA_WIDTH-1:0]          data_multresult;
 
 always @(posedge clk) begin
   if ( rst ) begin
     data_multresult <= 0;
-    invalid_result <= 0;
+     invalid_result <= 0;
   end else begin
     if ( write_multresult ) begin
       invalid_result <= invalid_value;
-      data_multresult <= mult_result;
+       data_multresult <= mult_result;
     end
   end
 end
