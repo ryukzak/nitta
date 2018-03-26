@@ -154,6 +154,9 @@ main = do
   --       , cntxInputs=M.fromList [("a", [1, 2, 3])]
   --       } :: Cntx String Int)
   -- simulateSPI 3
+  webServer
+
+webServer = do
   let prefix = "import axios from 'axios';\n\
                 \var api = {}\n\
                 \export default api;"
@@ -164,7 +167,6 @@ main = do
   writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
   putStrLn "Server start on 8080..."
   app def{ state=root } >>= run 8080 . simpleCors
-
 
 test pu cntx = do
   timeline "resource/data.json" pu
