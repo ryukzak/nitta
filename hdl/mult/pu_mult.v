@@ -115,7 +115,4 @@ assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INV
                             : 0;
 
 endmodule
-
-
-
 	
