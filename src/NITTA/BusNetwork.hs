@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE Rank2Types                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
@@ -52,26 +53,32 @@ class ( Typeable v, Ord v, Show v ) => Title v
 instance ( Typeable v, Ord v, Show v ) => Title v
 
 
-data GBusNetwork title spu v t =
-  BusNetwork
+data GBusNetwork title spu v x t
+  = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
-      bnRemains            :: [FB (Parcel v) v]
-    -- | Список переданных через сеть переменных (используется для понимания готовности).
-    , bnForwardedVariables :: [v]
+      bnRemains        :: [FB (Parcel v x)]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded             :: M.Map title [FB (Parcel v) v]
+    , bnBinded         :: M.Map title [FB (Parcel v x)]
     -- | Описание вычислительного процесса сети, как элемента процессора.
-    , bnProcess            :: Process v t
+    , bnProcess        :: Process (Parcel v x) t
     -- | Словарь вложенных вычислительных блоков по именам.
-    , bnPus                :: M.Map title spu
+    , bnPus            :: M.Map title spu
     -- | Ширина шины управления.
-    , bnSignalBusWidth     :: Int
+    , bnSignalBusWidth :: Int
     }
-type BusNetwork title v t = GBusNetwork title (PU LinkId v t) v t
+type BusNetwork title v x t = GBusNetwork title (PU LinkId v x t) v x t
+
+transfered net@BusNetwork{..}
+  = [ v | st <- steps bnProcess
+    , let instr = extractInstruction net st
+    , isJust instr
+    , let (Just (Transport v _ _)) = instr
+    ]
+
 
 -- TODO: Проверка подключения сигнальных линий.
-busNetwork w pus = BusNetwork [] [] (M.fromList []) def (M.fromList pus') w
+busNetwork w pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w
   where
     pus' = map (\(title, f) ->
       (title, f NetworkLink{ clk=Name "clk"
@@ -89,7 +96,11 @@ busNetwork w pus = BusNetwork [] [] (M.fromList []) def (M.fromList pus') w
     valueData t = t ++ "_data_out"
     valueAttr t = t ++ "_attr_out"
 
-instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork title v t) (FB (Parcel v) v) where
+instance ( Title title
+         , Time t
+         , Var v
+         , Typeable x
+         ) => WithFunctionalBlocks (BusNetwork title v x t) (FB (Parcel v x)) where
   functionalBlocks BusNetwork{..} = sortFBs binded []
     where
       binded = bnRemains ++ concat (M.elems bnBinded)
@@ -102,10 +113,11 @@ instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork titl
 
 
 instance ( Title title, Var v, Time t
+         , Typeable x
          ) => DecisionProblem (DataFlowDT title v t)
-                   DataFlowDT (BusNetwork title v t)
+                   DataFlowDT (BusNetwork title v x t)
          where
-  options _proxy BusNetwork{..}
+  options _proxy net@BusNetwork{..}
     = concat [ [ DataFlowO (fromPu, fixPullConstrain pullAt) $ M.fromList pushs
                | pushs <- mapM pushOptionsFor pullVars
                , let pushTo = mapMaybe (fmap fst . snd) pushs
@@ -129,6 +141,7 @@ instance ( Title title, Var v, Time t
                           , EndpointO (Target pushVar) pushAt <- vars
                           , pushVar == v
                           ]
+      bnForwardedVariables = transfered net
       availableVars =
         let fbs = bnRemains ++ concat (M.elems bnBinded)
             alg = foldl
@@ -137,7 +150,7 @@ instance ( Title title, Var v, Time t
                   $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
                   $ concatMap dependency fbs
             notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
-        in notBlockedVariables \\ bnForwardedVariables
+        in notBlockedVariables \\  bnForwardedVariables
 
       puOptions = M.assocs $ M.map (options endpointDT) bnPus
 
@@ -149,11 +162,10 @@ instance ( Title title, Var v, Time t
     , bnProcess=snd $ modifyProcess bnProcess $ do
         mapM_ (\(v, (title, _)) -> add
                 (Activity $ transportStartAt ... transportEndAt)
-                $ InstructionStep (Transport v (fst dfdSource) title :: Instruction (BusNetwork title v t))
+                $ InstructionStep (Transport v (fst dfdSource) title :: Instruction (BusNetwork title v x t))
               ) $ M.assocs push'
         _ <- add (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act
         setProcessTime $ act^.at.supremum + 1
-    , bnForwardedVariables=pullVars ++ bnForwardedVariables
     }
     where
       transportStartAt = act^.at.infimum
@@ -172,8 +184,8 @@ instance ( Title title, Var v, Time t
 
 
 
-instance ( Title title, Var v, Time t
-         ) => ProcessUnit (BusNetwork title v t) v t where
+instance ( Title title, Time t, Var v, Typeable x
+         ) => ProcessUnit (BusNetwork title v x t) (Parcel v x) t where
 
   bind fb bn@BusNetwork{..}
     | any (isRight . bind fb) $ M.elems bnPus
@@ -221,20 +233,20 @@ instance ( Title title, Var v, Time t
 
 
 
-instance Controllable (BusNetwork title v t) where
+instance Controllable (BusNetwork title v x t) where
 
-  data Instruction (BusNetwork title v t)
+  data Instruction (BusNetwork title v x t)
     = Transport v title title
     deriving (Typeable, Show)
 
-  data Microcode (BusNetwork title v t)
+  data Microcode (BusNetwork title v x t)
     = BusNetworkMC (A.Array Int Value)
 
 
 
 instance {-# OVERLAPS #-}
          ( Time t
-         ) => ByTime (BusNetwork title v t) t where
+         ) => ByTime (BusNetwork title v x t) t where
   microcodeAt BusNetwork{..} t
     = BusNetworkMC $ foldl merge st $ M.elems bnPus
     where
@@ -247,7 +259,7 @@ instance {-# OVERLAPS #-}
 
 
 
-instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v Int where
+instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v x t) v x where
   simulateOn cntx BusNetwork{..} fb
     = let Just (title, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
           pu = bnPus M.! title
@@ -265,8 +277,10 @@ instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v 
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( Var v ) => DecisionProblem (BindingDT String v)
-                            BindingDT (BusNetwork String v t)
+instance ( Var v
+         , Typeable x
+         ) => DecisionProblem (BindingDT String (Parcel v x))
+                    BindingDT (BusNetwork String v x t)
          where
   options _ BusNetwork{..} = concatMap bindVariants' bnRemains
     where
@@ -297,7 +311,8 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
 --------------------------------------------------------------------------
 
 
-instance ( Time t ) => DefinitionSynthesis (BusNetwork String v t) where
+instance ( Time t
+         ) => DefinitionSynthesis (BusNetwork String v x t) where
   moduleName BusNetwork{..} = S.join "_" (M.keys bnPus) ++ "_net"
 
   hardware pu@BusNetwork{..}
@@ -363,7 +378,7 @@ instance ( Time t ) => DefinitionSynthesis (BusNetwork String v t) where
                                    ]
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
-      renderInstance insts regs ((title, PU{..}) : xs)
+      renderInstance insts regs ((title, PU{ unit, networkLink, links }) : xs)
         = let inst = hardwareInstance unit title networkLink links
               insts' = inst : regInstance title : insts
               regs' = (valueAttr title, valueData title) : regs
@@ -382,8 +397,10 @@ instance ( Time t ) => DefinitionSynthesis (BusNetwork String v t) where
 
 
 instance ( Title title, Var v, Time t
-         , DefinitionSynthesis (BusNetwork title v t)
-         ) => TestBench (BusNetwork title v t) v Int where
+         , Show x
+         , DefinitionSynthesis (BusNetwork title v x t)
+         , Typeable x
+         ) => TestBench (BusNetwork title v x t) v x where
   testEnviroment cntx0 pu@BusNetwork{..} = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
     where
       testBenchImp = renderST

@@ -23,7 +23,7 @@ import           Data.Maybe
 import           GHC.Generics
 import           ListT                  (toList)
 import           NITTA.Compiler
-import           NITTA.Flows
+import           NITTA.DataFlow
 import           NITTA.Types            hiding (Synthesis, steps)
 import           NITTA.Utils.JSON       ()
 import           Servant
@@ -38,7 +38,7 @@ data Synthesis
 
 
 type T = TaggedTime String Int
-type ST = CompilerStep String String String (TaggedTime String Int)
+type ST = CompilerStep String String String Int (TaggedTime String Int)
 instance ToJSON ST
 instance ToJSON Synthesis
 

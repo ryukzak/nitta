@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
@@ -17,9 +16,10 @@ module NITTA.Utils.JSON where
 import           Data.Aeson
 import qualified Data.Map         as M
 import           Data.Text        (pack)
+import           Data.Typeable
 import           NITTA.BusNetwork
 import           NITTA.Compiler
-import           NITTA.Flows
+import           NITTA.DataFlow
 import           NITTA.Types
 import           Numeric.Interval
 
@@ -32,7 +32,7 @@ instance ( ToJSON tag
          , ToJSON t
          ) => ToJSON (TaggedTime tag t)
 instance ( Show v
-         ) => ToJSON (FB (Parcel v) v) where
+         ) => ToJSON (FB (Parcel v x)) where
   toJSON = String . pack . show
 instance ( ToJSON t, Time t
          ) => ToJSON (TimeConstrain t) where
@@ -46,9 +46,10 @@ instance ( ToJSONKey title, ToJSON title, Title title
          , ToJSON tag
          , ToJSON v, Var v
          , ToJSON t, Time t
-         ) => ToJSON (BranchedProcess title tag v t)
-instance ToJSON (ControlFlow tag v) where
-  toJSON _ = String "Control Flow"
+         , ToJSONKey v
+         , Show x, Ord x, Typeable x, ToJSON x, ToJSONKey x
+         ) => ToJSON (SystemState title tag x v t)
+instance ( ToJSON v, Var v ) => ToJSON (DataFlowGraph v)
 
 
 instance ( ToJSON title
@@ -67,28 +68,32 @@ instance ( ToJSON title
          , ToJSONKey v
          , ToJSON (TimeConstrain t), Time t
          ) => ToJSON (Decision (DataFlowDT title v t))
-instance ( ToJSON title
-         , ToJSON v, Var v
-         ) => ToJSON (Option (BindingDT title v))
-instance ( ToJSON title
-         , ToJSON v
-         , Var v
-         ) => ToJSON (Decision (BindingDT title v))
-instance ToJSON (Option (ControlFlowDT tag v))
-instance ToJSON (Decision (ControlFlowDT tag v))
+instance ( Show title
+         ) => ToJSON (Option (BindingDT title io)) where
+  toJSON (BindingO fb title) = toJSON [ show fb, show title ]
+instance ( Show title
+         ) => ToJSON (Decision (BindingDT title io)) where
+  toJSON (BindingD fb title) = toJSON [ show fb, show title ]
+instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
+instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
 
 
 instance ( ToJSONKey title, ToJSON title, Title title
          , Var v
          , ToJSON t, Time t
-         ) => ToJSON (BusNetwork title v t) where
+         , ToJSON x
+         , Typeable x
+         , Ord x
+         , ToJSONKey x
+         , Show x
+         ) => ToJSON (BusNetwork title v x t) where
   toJSON n@BusNetwork{..}
              -- , bnSignalBusWidth     :: Int
     = object [ "width" .= bnSignalBusWidth
              --   bnRemains            :: [FB (Parcel v) v]
              , "remain" .= bnRemains
              -- , bnForwardedVariables :: [v]
-             , "forwardedVariables" .= map (String . pack . show) bnForwardedVariables
+             , "forwardedVariables" .= map (String . pack . show) (transfered n)
              -- , bnBinded             :: M.Map title [FB (Parcel v) v]
              , "binds" .= bnBinded
              -- , bnProcess            :: Process v t
