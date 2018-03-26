@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeFamilies              #-}
@@ -15,13 +16,11 @@ module NITTA.Utils where
 
 import           Control.Monad.State
 import           Data.Default
-import           Data.List           (minimumBy, sortOn)
-import qualified Data.Map            as M
+import           Data.List           (minimumBy, sortOn, (\\))
 import           Data.Maybe          (mapMaybe)
-import           Data.Proxy
 import           Data.Typeable       (Typeable, cast)
-import           NITTA.Lens
 import           NITTA.Types
+import           NITTA.Utils.Lens
 import           Numeric             (readInt, showHex)
 import qualified Numeric.Interval    as I
 import           Text.StringTemplate
@@ -91,7 +90,7 @@ stepStart Step{ sTime=Event t }    = t
 stepStart Step{ sTime=Activity t } = I.inf t
 
 
-whatsHappen t Process{..} = filter (\Step{..} -> t `atSameTime` sTime) steps
+whatsHappen t Process{ steps } = filter (\Step{ sTime } -> t `atSameTime` sTime) steps
 
 
 isFB (FBStep _)                = True
@@ -104,10 +103,10 @@ getFB _                                      = Nothing
 
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
-
-getEndpoint Step{ sDesc=EndpointStep eff }                = Just eff
-getEndpoint Step{ sDesc=NestedStep _ (EndpointStep eff) } = Just eff
-getEndpoint _                                             = Nothing
+getEndpoint :: Step (Parcel v x) t -> Maybe (EndpointRole v)
+getEndpoint Step{ sDesc=EndpointRoleStep role }                = Just role
+getEndpoint Step{ sDesc=NestedStep _ (EndpointRoleStep role) } = Just role
+getEndpoint _                                                  = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 
@@ -148,15 +147,8 @@ extractInstructions pu = mapMaybe (extractInstruction pu) $ sortOn stepStart $ s
 -- | Собрать список переменных подаваемых на вход указанного списка функциональных блоков. При
 -- формировании результата отсеиваются входы, получаемые из функциональных блоков рассматриваемого
 -- списка.
-inputsOfFBs fbs
-  = let deps0 = M.fromList [(v, []) | v <- concatMap variables fbs]
-        deps = foldl (\dict (a, b) -> M.adjust ((:) b) a dict) deps0 $ concatMap dependency fbs
-    in map fst $ filter (null . snd) $ M.assocs deps
-
--- outputsOfFBs fbs
---   = let deps0 = (M.fromList [(v, []) | v <- concatMap variables fbs])
---         deps = foldl (\dict (a, b) -> M.adjust ((:) b) a dict) deps0 $ concatMap dependency fbs
---     in filter (\a -> all (not . (a `elem`)) deps) $ M.keys deps
+algInputs fbs = concatMap inputs fbs \\ concatMap outputs fbs
+algOutputs fbs = concatMap outputs fbs \\ concatMap inputs fbs
 
 
 
@@ -174,9 +166,6 @@ values2dump vs
 
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
 
-
-nopFor :: ( Default (Instruction pu) ) => Proxy pu -> Instruction pu
-nopFor _proxy = def
 
 isTimeWrap p act = nextTick p > act^.at.infimum
 timeWrapError p act = error $ "You can't start work yesterday :) fram time: " ++ show (nextTick p) ++ " action start at: " ++ show (act^.at.infimum)

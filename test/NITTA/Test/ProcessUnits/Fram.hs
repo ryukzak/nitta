@@ -2,32 +2,51 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
-module NITTA.ProcessUnits.FramSpec where
+module NITTA.Test.ProcessUnits.Fram where
 
+import           Control.Applicative       ((<$>))
+import           Data.Default
+import qualified Data.Map                  as M
 import           Data.Proxy
-import           NITTA.FunctionBlocks
-import           NITTA.FunctionBlocksSpec ()
+import           NITTA.Compiler
+import qualified NITTA.FunctionBlocks      as FB
 import           NITTA.ProcessUnits.Fram
+import           NITTA.Test.FunctionBlocks ()
+import           NITTA.TestBench
 import           NITTA.Types
+import           System.FilePath.Posix     (joinPath)
 import           Test.QuickCheck
+import           Test.Tasty.HUnit
 
 
-framProxy = Proxy :: Proxy (Fram String Int)
+framProxy = Proxy :: Proxy (Fram String Int Int)
 
 
-instance Arbitrary (FSet (Fram String t)) where
+instance Arbitrary (FSet (Fram String Int t)) where
   -- TODO: Сделать данную операцию через Generics.
-  arbitrary = oneof [ FramInput' <$> (arbitrary :: Gen (FramInput (Parcel String)))
-                    , FramOutput' <$> (arbitrary :: Gen (FramOutput (Parcel String)))
-                    , Loop' <$> (arbitrary :: Gen (Loop (Parcel String)))
-                    , Reg' <$> (arbitrary :: Gen (Reg (Parcel String)))
-                    , Constant' <$> (arbitrary :: Gen (Constant (Parcel String)))
+  arbitrary = oneof [ FramInput' <$> (arbitrary :: Gen (FB.FramInput (Parcel String Int)))
+                    , FramOutput' <$> (arbitrary :: Gen (FB.FramOutput (Parcel String Int)))
+                    , Loop' <$> (arbitrary :: Gen (FB.Loop (Parcel String Int)))
+                    , Reg' <$> (arbitrary :: Gen (FB.Reg (Parcel String Int)))
+                    , Constant' <$> (arbitrary :: Gen (FB.Constant Int (Parcel String Int)))
                     ]
+
+-----------------------------------------------------------
+
+framTestBench
+  = let alg = [ FB.reg (I "aa") $ O ["ab"]
+              , FB.framOutput 9 $ I "ac"
+              ]
+        lib = joinPath ["..", ".."]
+        wd = joinPath ["hdl", "gen", "unittest_fram"]
+        fram = bindAllAndNaiveSchedule alg (def :: Fram String Int Int)
+        cntx = def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] } :: Cntx String Int
+        tb = testBench lib wd fram cntx
+    in tb @? "fram test bench"
 
 
 

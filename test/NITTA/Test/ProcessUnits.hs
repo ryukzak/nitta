@@ -6,7 +6,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
-module NITTA.ProcessUnitsSpec where
+module NITTA.Test.ProcessUnits where
 
 import           Data.Atomics.Counter
 import           Data.Default
@@ -44,9 +44,9 @@ instance {-# OVERLAPS #-} ( Eq v, Variables (FSet pu) v
 processGen proxy = arbitrary >>= processGen' proxy def
   where
     processGen' :: ( DecisionProblem (EndpointDT String Int) EndpointDT pu
-                   , ProcessUnit pu String Int
-                   , WithFunctionalBlocks (FSet pu) (FB (Parcel String) String)
-                   ) => Proxy pu -> pu -> [FSet pu] -> Gen (pu, [FB (Parcel String) String])
+                   , ProcessUnit pu (Parcel String Int) Int
+                   , WithFunctionalBlocks (FSet pu) (FB (Parcel String Int))
+                   ) => Proxy pu -> pu -> [FSet pu] -> Gen (pu, [FB (Parcel String Int)])
     processGen' _ pu specialAlg = endpointWorkGen pu $ concatMap functionalBlocks specialAlg
 
 
@@ -87,7 +87,7 @@ endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
 inputsGen (pu, fbs) = do
   values <- infiniteListOf $ choose (0, 1000)
   let is = concatMap inputs fbs
-  return (pu, fbs, def{ cntxVars=M.fromList $ zip is (map (\x -> [x]) values) })
+  return (pu, fbs, def{ cntxVars=M.fromList $ zip is (map (:[]) values) })
 
 
 -- | Проверка вычислительного блока на соответсвие работы аппаратной реализации и его модельного

@@ -12,14 +12,17 @@ module NITTA.Timeline
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as BS
 import           Data.List            (nub, takeWhile)
+import           Data.Typeable
 import           NITTA.Types
 import           NITTA.Utils
+import           NITTA.Utils.JSON     ()
 import           Numeric.Interval     (inf, sup)
 
 
 instance ( Time t
          , ToJSON t
-         ) => ToJSON (Step String t) where
+         , Typeable x
+         ) => ToJSON (Step (Parcel String x) t) where
   toJSON st@Step{..} =
     object $ [ "id" .= sKey
              , "start" .= (case sTime of Event t -> t; Activity t -> inf t)
@@ -45,9 +48,6 @@ instance ToJSON Relation where
            , "a" .= a
            , "b" .= b
            ]
-
-instance ( ToJSON t ) => ToJSON (TaggedTime tag t) where
-  toJSON (TaggedTime _ t) = toJSON t
 
 data Group = Group String [String]
   deriving (Eq, Ord)
