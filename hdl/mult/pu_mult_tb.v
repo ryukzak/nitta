@@ -131,7 +131,7 @@ initial begin
   
   signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat (5) @(posedge clk);
   
-  signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; data_in <= -4; attr_in <= 1; @(posedge clk);
+  signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; data_in <= -4; attr_in <= 0; @(posedge clk);
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; data_in <= 5; attr_in <= 0; @(posedge clk);
   signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat(2) @(posedge clk);
   
