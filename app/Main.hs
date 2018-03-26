@@ -42,9 +42,6 @@ import           System.FilePath.Posix       (joinPath, (</>))
 import           Text.StringTemplate
 
 
--- type FPU = FR.Fram String Int (TaggedTime String Int)
-
--- microarch :: BusNetwork String String Int (TaggedTime String Int)
 microarch = busNetwork 24
   [ ("fram1", PU def FR.Link{ FR.oe=Index 11, FR.wr=Index 10, FR.addr=map Index [9, 8, 7, 6] } )
   , ("fram2", PU def FR.Link{ FR.oe=Index 5, FR.wr=Index 4, FR.addr=map Index [3, 2, 1, 0] } )
@@ -106,7 +103,7 @@ synthesisedFrame
 
 -- | Пример работы с единым временем.
 synthesisedFrameSPI
-  = let alg = [ FB $ FB.Receive $ O ["a"] :: FB (Parcel String Int)
+  = let alg = [ FB $ FB.Receive $ O ["a"]
               , FB $ FB.Send (I "b")
               , FB.reg (I "a") $ O ["b"]
               ]
@@ -146,7 +143,7 @@ root
 
 main = do
   -- test scheduledBranch (def{ cntxVars=M.fromList [] } :: Cntx String Int)
-  test synthesisedLevel (def{ cntxVars=M.fromList [] } :: Cntx String Int)
+  test synthesisedLevel def{ cntxVars=M.fromList [] }
   -- test scheduledBranchSPI
   --   (def{ cntxVars=M.fromList [("b", [0])]
   --       , cntxInputs=M.fromList [("a", [1, 2, 3])]
