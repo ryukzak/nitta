@@ -42,29 +42,13 @@ function invalid_value1;
   input [DATA_WIDTH-1:DATA_WIDTH/2-1] data_arg2;
   input atr_arg1;
   input atr_arg2;
-
-  // reg is_highhalf_value[0:1];
-  // reg is_inv_highhalf_value[0:1];
-  // reg operand_xor [0:1];
-  // reg e1;
-  // reg e2;
-
   begin
-    invalid_value1 = !((data_arg1 == 0)^(~data_arg1 == {(DATA_WIDTH/2+1){1'b0}})) || atr_arg1 || 
-    !((data_arg2 == 0)^(~data_arg2 == {(DATA_WIDTH/2+1){1'b0}})) || atr_arg2;
-  //   e1 = ~data_arg1 == {(DATA_WIDTH/2+1){1'b0}}; 
-  //   e2 = ~data_arg2 == {(DATA_WIDTH/2+1){1'b0}};
-  //   is_highhalf_value[0] = data_arg1 ==  0;
-  //   is_inv_highhalf_value[0] = e1;
-  //   is_highhalf_value[1] = data_arg2 == 0;
-  //   is_inv_highhalf_value[1] = e2;
-  //   operand_xor[0] = !(is_highhalf_value[0] ^ is_inv_highhalf_value[0]);
-  //   operand_xor[1] = !(is_highhalf_value[1] ^ is_inv_highhalf_value[1]); 
-  //   invalid_value1 =   operand_xor[0] || atr_arg1
-  //                   || operand_xor[1] || atr_arg2;
+    invalid_value1 = !((data_arg1 == 0)^(~data_arg1 == {(DATA_WIDTH/2+1){1'b0}}))
+                  || !((data_arg2 == 0)^(~data_arg2 == {(DATA_WIDTH/2+1){1'b0}}))  
+                  || atr_arg1 
+                  || atr_arg2;
   end
 endfunction
-
 
 wire [DATA_WIDTH-1:0]         mult_result;
 mult_inner mult_i1
