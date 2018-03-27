@@ -37,30 +37,32 @@ end
 
 
 function invalid_value1;
-parameter DATA_WIDTH = 32; 
-input [DATA_WIDTH-1:DATA_WIDTH/2-1] data_arg1;
-input [DATA_WIDTH-1:DATA_WIDTH/2-1] data_arg2;
-input atr_arg1;
-input atr_arg2;
+  parameter DATA_WIDTH = 32; 
+  input [DATA_WIDTH-1:DATA_WIDTH/2-1] data_arg1;
+  input [DATA_WIDTH-1:DATA_WIDTH/2-1] data_arg2;
+  input atr_arg1;
+  input atr_arg2;
 
-reg is_highhalf_value[0:1];
-reg is_inv_highhalf_value[0:1];
-reg operand_xor [0:1];
-reg e1;
-reg e2;
+  // reg is_highhalf_value[0:1];
+  // reg is_inv_highhalf_value[0:1];
+  // reg operand_xor [0:1];
+  // reg e1;
+  // reg e2;
 
-begin
-  e1 = ~data_arg1 == {(DATA_WIDTH/2+1){1'b0}}; 
-  e2 = ~data_arg2 == {(DATA_WIDTH/2+1){1'b0}};
-  is_highhalf_value[0] = (data_arg1 ==  0);
-  is_inv_highhalf_value[0] = e1;
-  is_highhalf_value[1] = (data_arg2 ==  0);
-  is_inv_highhalf_value[1] = e2;
-  operand_xor[0] = !(is_highhalf_value[0] ^ is_inv_highhalf_value[0]);
-  operand_xor[1] = !(is_highhalf_value[1] ^ is_inv_highhalf_value[1]); 
-  invalid_value1 =   operand_xor[0] || atr_arg1
-                  || operand_xor[1] || atr_arg2;
-end
+  begin
+    invalid_value1 = !((data_arg1 == 0)^(~data_arg1 == {(DATA_WIDTH/2+1){1'b0}})) || atr_arg1 || 
+    !((data_arg2 == 0)^(~data_arg2 == {(DATA_WIDTH/2+1){1'b0}})) || atr_arg2;
+  //   e1 = ~data_arg1 == {(DATA_WIDTH/2+1){1'b0}}; 
+  //   e2 = ~data_arg2 == {(DATA_WIDTH/2+1){1'b0}};
+  //   is_highhalf_value[0] = data_arg1 ==  0;
+  //   is_inv_highhalf_value[0] = e1;
+  //   is_highhalf_value[1] = data_arg2 == 0;
+  //   is_inv_highhalf_value[1] = e2;
+  //   operand_xor[0] = !(is_highhalf_value[0] ^ is_inv_highhalf_value[0]);
+  //   operand_xor[1] = !(is_highhalf_value[1] ^ is_inv_highhalf_value[1]); 
+  //   invalid_value1 =   operand_xor[0] || atr_arg1
+  //                   || operand_xor[1] || atr_arg2;
+  end
 endfunction
 
 
@@ -76,12 +78,12 @@ reg write_multresult;
 reg invalid_value;
 
 always @(posedge clk) begin
-invalid_value <= invalid_value1(stage_half [0],stage_half [1],stage1_invalid[0],stage1_invalid[1]);
-  if ( rst ) begin // a delay is used to write to write_multresult required to record the result of the multiplier
+  invalid_value <= invalid_value1(stage_half [0],stage_half [1],stage1_invalid[0],stage1_invalid[1]);
+  if ( rst ) begin
     f <= 0;
     write_multresult <= 0;
   end else begin
-    f <= signal_sel;
+    f <= signal_sel; // actual register will be updateted only on next clk
     if ( signal_sel == 0 && f == 1 ) write_multresult <= 1;
     else                             write_multresult <= 0;
   end
@@ -104,7 +106,7 @@ end
 
 assign data_out = signal_oe ? data_multresult : 0;
 assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INVALID) 
-                            | {(ATTR_WIDTH-1){1'b0}} 
+                              | {(ATTR_WIDTH-1){1'b0}} 
                             : 0;
 
 endmodule
