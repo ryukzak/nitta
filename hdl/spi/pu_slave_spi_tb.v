@@ -150,7 +150,7 @@ initial begin // nitta communication
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
   for ( i = 0; i < BUF_SIZE; i = i + 1 )
     begin
-      $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
+      $display("%d -> %h , %h , %h", i, pu.receive_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
     end
 
 end

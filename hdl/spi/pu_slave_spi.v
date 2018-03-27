@@ -36,7 +36,6 @@ wire [DATA_WIDTH-1:0] spi_data_receive;
 wire spi_ready;
 
 reg signal_wr_transfer_to_send;
-reg signal_oe_to_nitta;
 
 wire [DATA_WIDTH-1:0] transfer_in_out;
 wire [DATA_WIDTH-1:0] send_out;
@@ -78,19 +77,6 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 	, .oe ( signal_wr_transfer_to_send && !resolution_wr )
 ); 
 
-// [TRANSFER >>> NITTA]
-spi_buffer #( .BUF_SIZE( BUF_SIZE )
-						) transfer_out_buffer 
-	( .clk( clk )
-	, .rst( buffer_rst )
-	, .data_in( transfer_out_in ) 
-	, .data_out( data_out_nitta_transfer )
-	, .attr_out( attr_out_transfer_out )
-	, .oe( signal_oe_to_nitta && !resolution_oe )
-	, .wr( signal_wr_transfer_to_send && resolution_oe )
-
-); 
-
 // [MASTER >>> SLAVE]
 spi_buffer #( .BUF_SIZE( BUF_SIZE )
 						, .DATA_WIDTH( DATA_WIDTH )
@@ -98,12 +84,11 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
 						) receive_buffer
 	( .clk( clk )
 	, .rst( buffer_rst )
-	, .oe( signal_oe_to_nitta && resolution_oe )
-	, .data_in( receive_in )
-	, .attr_out( attr_out_receive )
-	, .data_out( data_out_nitta_receive )
-	, .wr( signal_wr_transfer_to_send && !resolution_oe )
-
+	, .wr( signal_wr_transfer_to_send )
+	, .data_in( spi_data_receive )
+	, .oe( signal_oe )
+	, .data_out( data_out )
+	// , .attr_out( attr_out_receive )
 );
 
 // [MASTER <<< SLAVE]
@@ -142,17 +127,6 @@ always @( posedge clk ) begin
 	end
 end
 
-always @( posedge clk ) begin
-	if ( (attr_out_receive[1] == 1 || attr_out_receive[3] == 1 ) && !signal_oe && flag_stop ) begin
-		resolution_oe <= 0;
-	end else
-	if (( (attr_out_transfer_out[1] == 1) || attr_out_transfer_out[3] == 1 ) && !signal_oe && flag_stop ) begin
-		resolution_oe <= 1;
-	end 
-end
-
-// add signal_oe_buff_to_nitta
-
 always @(posedge clk ) begin
 	if ( flag_stop ) begin
 		signal_wr_transfer_to_send <= 1;
@@ -161,18 +135,7 @@ always @(posedge clk ) begin
 	end
 end
 
-always @(posedge clk ) begin
-	if ( signal_oe ) begin
-		signal_oe_to_nitta <= 1;
-	end else begin
-		signal_oe_to_nitta <= 0;
-	end
-end
-
-assign spi_data_send =   !resolution_wr ? transfer_in_out : send_out;
-assign transfer_out_in =  resolution_oe ? spi_data_receive : 0;
-assign receive_in      = !resolution_oe ? spi_data_receive : 0;
-assign data_out =        !resolution_oe ? data_out_nitta_transfer : data_out_nitta_receive ;
+assign spi_data_send = !resolution_wr ? transfer_in_out : send_out;
 assign flag_start = spi_ready && !cs;
 assign flag_stop  = !spi_ready && cs;
 
