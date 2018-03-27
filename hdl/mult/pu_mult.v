@@ -23,15 +23,15 @@ reg [DATA_WIDTH-1:DATA_WIDTH/2-1] stage_half[0:1];
 
 
 always @(posedge clk) begin
-	if ( rst ) begin
+  if ( rst ) begin
     stage1[0] <= 0;
     stage1[1] <= 0;
-	end else begin 
+  end else begin 
     if ( signal_wr ) begin
       stage1[signal_sel] <= data_in[DATA_WIDTH-1:0];
       stage_half[signal_sel] <= data_in[DATA_WIDTH-1:DATA_WIDTH/2-1];
       stage1_invalid[signal_sel] <= attr_in[INVALID];
-	  end
+    end
   end
 end
 
@@ -77,7 +77,7 @@ reg invalid_value;
 
 always @(posedge clk) begin
 invalid_value <= invalid_value1(stage_half [0],stage_half [1],stage1_invalid[0],stage1_invalid[1]);
-  if ( rst ) begin
+  if ( rst ) begin // a delay is used to write to write_multresult required to record the result of the multiplier
     f <= 0;
     write_multresult <= 0;
   end else begin
@@ -108,7 +108,3 @@ assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INV
                             : 0;
 
 endmodule
-
-
-
-	

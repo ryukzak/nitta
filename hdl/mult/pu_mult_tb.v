@@ -28,20 +28,20 @@
 `timescale 1 ps/ 1 ps
 
 module pu_mult_tb
-#(parameter DATA_WIDTH        = 	32,
-  parameter ATTR_WIDTH        = 	4,
-  parameter INVALID 				= 	0
+#(parameter DATA_WIDTH = 32,
+  parameter ATTR_WIDTH =  4,
+  parameter INVALID    =  0
   );
   
-reg 	[DATA_WIDTH-1:0] 		data_in;
-reg 								signal_oe;
-reg 								rst;
-reg 								signal_sel;
-reg 								signal_wr;
-reg 								clk;
-reg 	[ATTR_WIDTH:0] 		attr_in;                                              
-wire 	[DATA_WIDTH-1:0]  	data_out;
-wire 	[ATTR_WIDTH:0]			attr_out;
+reg  [DATA_WIDTH-1:0]  data_in;
+reg                  signal_oe;
+reg                        rst;
+reg                 signal_sel;
+reg                  signal_wr;
+reg                        clk;
+reg  [ATTR_WIDTH:0]    attr_in;                                              
+wire [DATA_WIDTH-1:0] data_out;
+wire [ATTR_WIDTH:0]   attr_out;
 
                           
 pu_mult 
@@ -61,39 +61,16 @@ pu_mult
     .attr_out(attr_out)
 );
 
-
-task send_valid_value;
-  input [DATA_WIDTH-1:0] data;
-  input select;
-begin
-  signal_sel = select;
-  data_in = data;
-  attr_in[INVALID] = 1;
-end
-endtask
-
-task send_invalid_value;
-  input [DATA_WIDTH-1:0] data;
-  input select;
-begin
-  signal_sel = select;
-  data_in = data;
-  attr_in[INVALID] = 1;
-end
-endtask
-
 initial begin
   clk = 0;
   forever #10 clk = !clk;
 end
 
-
 initial begin
   $display("Start programm");
 
   signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0;  
-  rst <= 1; 
-  repeat (2) @(posedge clk);
+  rst <= 1; repeat (2) @(posedge clk);
   rst <= 0; @(posedge clk);
   
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; data_in <= 5; attr_in <= 0; @(posedge clk);
@@ -101,11 +78,7 @@ initial begin
 
   signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat(2) @(posedge clk);
 
-  signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; @(posedge clk);
-  signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; @(posedge clk);
-  signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; @(posedge clk);
-  signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; @(posedge clk);
-  signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; @(posedge clk);
+  signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat (5) @(posedge clk);
   
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; data_in <= 4; attr_in <= 0; @(posedge clk);
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; data_in <= 5; attr_in <= 0; @(posedge clk);
@@ -137,10 +110,8 @@ initial begin
   
   signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat (5) @(posedge clk);
   
-  
   repeat (20) @(posedge clk);
-  $finish();
-    
+  $finish();    
 end
 
 initial begin
