@@ -16,21 +16,18 @@ module pu_mult
   , output wire [ATTR_WIDTH:0]   attr_out
   );
 
-
-reg [DATA_WIDTH-1:0]              stage1 [0:1];
-reg                               stage1_invalid [0:1];
-reg [DATA_WIDTH-1:DATA_WIDTH/2-1] stage_half[0:1]; 
-
+                                              
+reg [DATA_WIDTH-1:0]              arg [0:1];
+reg                               arg_invalid [0:1];
 
 always @(posedge clk) begin
   if ( rst ) begin
-    stage1[0] <= 0;
-    stage1[1] <= 0;
+    arg[0] <= 0;
+    arg[1] <= 0;
   end else begin 
     if ( signal_wr ) begin
-      stage1[signal_sel] <= data_in[DATA_WIDTH-1:0];
-      stage_half[signal_sel] <= data_in[DATA_WIDTH-1:DATA_WIDTH/2-1];
-      stage1_invalid[signal_sel] <= attr_in[INVALID];
+      arg[signal_sel] <= data_in[DATA_WIDTH-1:0];
+      arg_invalid[signal_sel] <= attr_in[INVALID];
     end
   end
 end
@@ -38,13 +35,13 @@ end
 
 function invalid_value1;
   parameter DATA_WIDTH = 32; 
-  input [DATA_WIDTH-1:DATA_WIDTH/2-1] data_arg1;
-  input [DATA_WIDTH-1:DATA_WIDTH/2-1] data_arg2;
+  input [DATA_WIDTH-1:0] data_arg1;
+  input [DATA_WIDTH-1:0] data_arg2;
   input atr_arg1;
   input atr_arg2;
   begin
-    invalid_value1 = !((data_arg1 == 0)^(~data_arg1 == {(DATA_WIDTH/2+1){1'b0}}))
-                  || !((data_arg2 == 0)^(~data_arg2 == {(DATA_WIDTH/2+1){1'b0}}))  
+    invalid_value1 = !((data_arg1[DATA_WIDTH-1:DATA_WIDTH/2-1] == 0)^(~data_arg1[DATA_WIDTH-1:DATA_WIDTH/2-1] == {(DATA_WIDTH/2+1){1'b0}}))
+                  || !((data_arg2[DATA_WIDTH-1:DATA_WIDTH/2-1] == 0)^(~data_arg2[DATA_WIDTH-1:DATA_WIDTH/2-1] == {(DATA_WIDTH/2+1){1'b0}}))  
                   || atr_arg1 
                   || atr_arg2;
   end
@@ -52,8 +49,8 @@ endfunction
 
 wire [DATA_WIDTH-1:0]         mult_result;
 mult_inner mult_i1
-  ( .dataa( stage1[0][DATA_WIDTH/2-1:0] )
-  , .datab( stage1[1][DATA_WIDTH/2-1:0] )
+  ( .dataa( arg[0][DATA_WIDTH/2-1:0] )
+  , .datab( arg[1][DATA_WIDTH/2-1:0] )
   , .result( mult_result )
   );
 
@@ -62,7 +59,7 @@ reg write_multresult;
 reg invalid_value;
 
 always @(posedge clk) begin
-  invalid_value <= invalid_value1(stage_half [0],stage_half [1],stage1_invalid[0],stage1_invalid[1]);
+  invalid_value <= invalid_value1(arg[0], arg[1], arg_invalid[0], arg_invalid[1]);
   if ( rst ) begin
     f <= 0;
     write_multresult <= 0;
