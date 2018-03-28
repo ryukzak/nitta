@@ -156,6 +156,7 @@ function SynthesisInfo(props) {
 function StepView(props) {
   var path = props.path
   var app = props.app
+  var step = props.app.state.stepData
   return (
     <div>
       <div className="tiny primary button-group">
@@ -183,6 +184,8 @@ function StepView(props) {
             .catch( err => alert(err))
           } } />
       </div>
+      <pre>{ JSON.stringify(step.lastDecision) }</pre>
+      <hr/>
       { ( path.stepView === 'options' )
         ? <StepOptionView path={ path } app={ app } stepDataOptions={ app.state.stepDataOptions } />
       : ( path.stepView === 'info' )
@@ -195,16 +198,17 @@ function StepView(props) {
 
 function StepOptionView(props) {
   var path = props.path
-  var stepData = props.stepDataOptions
-  if ( stepData.length == 0 ) return <pre> Process is over. Options not allow. </pre>
+  var stepData = props.stepData
+  var opts = props.stepDataOptions
+  if ( opts.length == 0 ) return <pre> Process is over. Options not allow. </pre>
   return (
     <div>
       <div class="grid-x">
         <div class="cell small-4">
-          <pre>{ JSON.stringify(stepData[0][1], null, 2) }</pre>
+          <pre>{ JSON.stringify(opts[0][1], null, 2) }</pre>
         </div>
         <div class="cell small-8">
-          <LineChart data={ [ stepData.map( (e, index) => { return { x: index, y: e[0] } }) ] }
+          <LineChart data={ [ opts.map( (e, index) => { return { x: index, y: e[0] } }) ] }
                       width={750} height={250} 
                       axes />
         </div>
@@ -230,7 +234,7 @@ function StepOptionView(props) {
                               }
                             ]      
                           }
-                  data={stepData} />
+                  data={opts} />
     </div>
   )  
 }

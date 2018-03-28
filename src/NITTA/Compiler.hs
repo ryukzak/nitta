@@ -190,7 +190,8 @@ instance ( Time t, Var v
                    CompilerDT (CompilerStep String String v Int (TaggedTime String t))
          where
   options proxy CompilerStep{ state } = options proxy state
-  decision proxy st@CompilerStep{ state } act = st{ state=decision proxy state act }
+  decision proxy st@CompilerStep{ state } d = st{ state=decision proxy state d
+                                                , lastDecision=Just d }
 
 
 optionsWithMetrics CompilerStep{ state }
