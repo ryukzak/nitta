@@ -53,6 +53,15 @@ microarch = busNetwork 24
                            })
   ]
 
+synthesisedFib
+  = let g = DFG [ node $ FB.Add (I "a") (I "b") (O ["b'"])
+                , node $ FB.Loop (O ["a"]) $ I "a'"
+                , node $ FB.Loop (O ["b", "a'"]) $ I "b'"
+                ]
+        ma = bindAll (functionalBlocks g) microarch
+    in Frame ma g Nothing :: SystemState String String String Int (TaggedTime String Int)
+
+synthesisedFib' = foldl (\f' _ -> naive def f') synthesisedFib $ replicate 50 ()
 
 synthesisedLevel
   = let g = DFG [ node $ FB.FramInput 3 $ O [ "a" ]
@@ -143,15 +152,15 @@ root
 
 main = do
   -- test scheduledBranch (def{ cntxVars=M.fromList [] } :: Cntx String Int)
-  test synthesisedLevel def{ cntxVars=M.fromList [] }
+  test (nitta synthesisedFib') def{ cntxVars=M.fromList [] }
   -- test scheduledBranchSPI
   --   (def{ cntxVars=M.fromList [("b", [0])]
   --       , cntxInputs=M.fromList [("a", [1, 2, 3])]
   --       } :: Cntx String Int)
   -- simulateSPI 3
-  -- webServer
+  webServer synthesisedFib
 
-webServer = do
+webServer root = do
   let prefix = "import axios from 'axios';\n\
                 \var api = {}\n\
                 \export default api;"
