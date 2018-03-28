@@ -38,3 +38,12 @@ outputsOfFBsTests = do
               , FB $ Add (I "a") (I "b") (O ["c"])
               , FB $ FramOutput 0 $ I "c"
               ]
+
+endpointRoleEq = do
+  Target "a" == Target "a" @? "Target eq"
+  Target "a" /= Target "b" @? "Target not eq"
+  Source ["a"] /= Target "b" @? "Target not eq Source"
+  Source ["a"] == Source ["a"] @? "Source eq"
+  Source ["a", "b"] == Source ["a", "b"] @? "Source eq"
+  Source ["b", "a"] == Source ["a", "b"] @? "Source eq"
+  Source ["b", "a"] /= Source ["a", "c"] @? "Source not eq"

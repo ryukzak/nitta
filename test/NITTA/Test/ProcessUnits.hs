@@ -110,6 +110,7 @@ prop_completness (pu, fbs0)
         processFBs = sort $ getFBs p
         in    processFBs == fbs -- функции в алгоритме соответствуют выполненным функциям в процессе
           && processVars == algVars -- пересылаемые данные в алгоритме соответствуют пересылаемым данным в процессе
+          && null (options endpointDT pu)
           || trace (  "delta vars: " ++ show (algVars \\ processVars) ++ "\n"
                     ++ "fbs: " ++ concatMap (\fb -> (if fb `elem` processFBs then "+" else "-") ++ "\t" ++ show fb ++ "\n" ) fbs ++ "\n"
                     ++ "fbs: " ++ show processFBs ++ "\n"

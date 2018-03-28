@@ -34,5 +34,6 @@ main = do
       [ testCase "values2dump" values2dumpTests
       , testCase "inputsOfFBs" inputsOfFBsTests
       , testCase "outputsOfFBsTests" outputsOfFBsTests
+      , testCase "endpointRoleEq" endpointRoleEq
       ]
     ]

@@ -21,6 +21,7 @@ import           Data.Default
 import qualified Data.List        as L
 import qualified Data.Map         as M
 import           Data.Proxy
+import qualified Data.Set         as S
 import           Data.Typeable
 import           GHC.Generics
 import           NITTA.Types.Poly
@@ -320,9 +321,15 @@ instance DecisionType (BindingDT title io) where
 -- одно взаимодействие, при этом у PU только один канал для взаимодействия, что в общем то
 -- ограничение. В перспективе должно быть расширено для работы с конвейра.
 data EndpointRole v
+  -- TODO: Change [v] to (Set v) and propagate it.
   = Source [v] -- ^ Выгрузка данных из PU.
   | Target v   -- ^ Загрузка данных в PU.
-  deriving ( Show, Eq, Ord )
+  deriving ( Show, Ord )
+
+instance ( Eq v, Ord v ) => Eq (EndpointRole v) where
+  Target a == Target b = a == b
+  Source a == Source b = S.fromList a == S.fromList b
+  _ == _ = False
 
 (Target a) << (Target b) | a == b = True
 (Source a) << (Source b)          = all (`elem` a) b
