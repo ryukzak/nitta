@@ -182,7 +182,7 @@ serialSchedule
   => Instruction pu -> Decision (EndpointDT v t) -> State (Process (Parcel v x) t) [ProcessUid]
 serialSchedule instr act = do
   now <- getProcessTime
-  e <- addActivity (act^.at) $ EndpointRoleStep $ epdType act
+  e <- addActivity (act^.at) $ EndpointRoleStep $ epdRole act
   i <- addActivity (act^.at) $ InstructionStep instr
   is <- if now < act^.at.infimum
         then do

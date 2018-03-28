@@ -74,9 +74,9 @@ endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
                   Right pu' -> endpointWorkGen' pu' alg' (fb : passedAlg)
                   Left _err -> endpointWorkGen' pu alg' passedAlg
       where
-        endpointGen o@EndpointO{ epoType=s@Source{} } = do
+        endpointGen o@EndpointO{ epoRole=s@Source{} } = do
           vs' <- suchThat (sublistOf $ variables s) (not . null)
-          return o{ epoType=Source vs' }
+          return o{ epoRole=Source vs' }
         endpointGen o = return o
 
 

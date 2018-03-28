@@ -348,23 +348,23 @@ endpointDT = Proxy :: Proxy EndpointDT
 instance DecisionType (EndpointDT v t) where
   data Option (EndpointDT v t)
     = EndpointO
-    { epoType :: EndpointRole v -- ^ Чтение данных из входного регистра PU или запись данных в него.
+    { epoRole :: EndpointRole v -- ^ Чтение данных из входного регистра PU или запись данных в него.
     , epoAt :: TimeConstrain t -- ^ Временные ограничения на операцию.
     }
   data Decision (EndpointDT v t)
     = EndpointD
-    { epdType :: EndpointRole v -- ^ Выбранная операция для взаимодействия с окружающим миром.
+    { epdRole :: EndpointRole v -- ^ Выбранная операция для взаимодействия с окружающим миром.
     , epdAt :: Interval t -- ^ Положение операции во времени.
     }
 
 instance Variables (Option (EndpointDT v t)) v where
-  variables EndpointO{..} = variables epoType
+  variables EndpointO{..} = variables epoRole
 instance Variables (Decision (EndpointDT v t)) v where
-  variables EndpointD{..} = variables epdType
+  variables EndpointD{..} = variables epdRole
 instance ( Show v, Show t ) => Show (Option (EndpointDT v t)) where
-  show EndpointO{..} = "option: " ++ show epoType ++ "@(" ++ show epoAt ++ ")"
+  show EndpointO{..} = "option: " ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
 instance ( Show v, Show t ) => Show (Decision (EndpointDT v t)) where
-  show EndpointD{..} = "decision: " ++ show epdType ++ "@(" ++ show epdAt ++ ")"
+  show EndpointD{..} = "decision: " ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
 
 
 
@@ -508,4 +508,3 @@ class DefinitionSynthesis pu where
   hardware :: pu -> Implementation
   -- | Реализация программной составляющей составляющей вычислительного блока.
   software :: pu -> Implementation
-

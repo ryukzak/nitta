@@ -340,12 +340,12 @@ optionsAfterBind fb pu = case bind fb pu of
 
 -- * Утилиты
 
-passiveOption2action d@EndpointO{ epoType }
+passiveOption2action d@EndpointO{ epoRole }
   = let a = d^.at.avail.infimum
         -- "-1" - необходимо, что бы не затягивать процесс на лишний такт, так как интервал включает
         -- граничные значения.
         b = d^.at.avail.infimum + d^.at.dur.infimum - 1
-    in EndpointD epoType (a ... b)
+    in EndpointD epoRole (a ... b)
 
 
 

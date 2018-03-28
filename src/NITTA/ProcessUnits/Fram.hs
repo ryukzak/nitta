@@ -71,7 +71,6 @@ import qualified Data.Map              as M
 import           Data.Maybe
 import qualified Data.String.Utils     as S
 import           Data.Typeable
-import           Data.Typeable         (cast)
 import           NITTA.Compiler
 import           NITTA.FunctionBlocks
 import           NITTA.TestBench
@@ -336,9 +335,9 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
                     }
         return $ decision proxy pu' act
 
-    | Just (addr, cell) <- find ( any (<< epdType) . cellEndpoints True . snd ) $ assocs frMemory
+    | Just (addr, cell) <- find ( any (<< epdRole) . cellEndpoints True . snd ) $ assocs frMemory
     = case cell of
-        Cell{ input=Def job@Job{ actions=a : _ } } | a << epdType
+        Cell{ input=Def job@Job{ actions=a : _ } } | a << epdRole
           ->  let (p', job') = schedule addr job
                   cell' = updateLastWrite (nextTick p') cell
                   cell'' = case job' of
@@ -352,7 +351,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
               in pu{ frMemory=frMemory // [(addr, cell'')]
                    , frProcess=p'
                    }
-        Cell{ current=Just job@Job{ actions=a : _ } } | a << epdType
+        Cell{ current=Just job@Job{ actions=a : _ } } | a << epdRole
           ->  let (p', job') = schedule addr job
                   cell' = updateLastWrite (nextTick p') cell
                   cell'' = cell'{ input=UsedOrBlocked
@@ -361,7 +360,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
               in pu{ frMemory=frMemory // [(addr, cell'')]
                    , frProcess=p'
                    }
-        Cell{ output=Def job@Job{ actions=act1 : _ } } | act1 << epdType
+        Cell{ output=Def job@Job{ actions=act1 : _ } } | act1 << epdRole
           ->  let (p', Nothing) = schedule addr job
                   -- FIXME: Eсть потенциальная проблема, которая может встречаться и в других
                   -- вычислительных блоках. Если вычислительный блок загружает данные в последний
@@ -387,7 +386,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
       anyInAction = any (`elem` variables act)
       bind2CellStep addr fb t
         = add (Event t) $ CADStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
-      updateLastWrite t cell | Target _ <- epdType = cell{ lastWrite=Just t }
+      updateLastWrite t cell | Target _ <- epdRole = cell{ lastWrite=Just t }
                              | otherwise = cell{ lastWrite=Nothing }
 
       schedule addr job
@@ -399,8 +398,8 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
       scheduleWork _addr Job{ actions=[] } = error "Fram:scheudle internal error."
       scheduleWork addr job@Job{ actions=x:xs, .. }
         = let ((ep, instrs), p') = modifyProcess p $ do
-                e <- add (Activity $ act^.at) $ EndpointRoleStep $ act^.endType
-                i1 <- addInstr pu (act^.at) $ act2Instruction addr $ act^.endType
+                e <- add (Activity $ act^.at) $ EndpointRoleStep $ act^.endRole
+                i1 <- addInstr pu (act^.at) $ act2Instruction addr $ act^.endRole
                 is <- if tick0 < act^.at.infimum
                   then do
                     i2 <- addInstr pu (tick0 ... act^.at.infimum - 1) Nop
@@ -412,7 +411,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
           in (p', job{ endpoints=ep : endpoints
                      , instructions=instrs ++ instructions
                      , startAt=startAt `orElse` Just (act^.at.infimum)
-                     , actions=if x == act^.endType then xs else (x \\\ (act^.endType)) : xs
+                     , actions=if x == act^.endRole then xs else (x \\\ (act^.endRole)) : xs
                      })
       finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
         let start = fromMaybe (error "startAt field is empty!") startAt
