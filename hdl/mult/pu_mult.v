@@ -34,16 +34,15 @@ end
 
 
 function invalid_value1;
-  parameter DATA_WIDTH = 32; 
   input [DATA_WIDTH-1:0] data_arg1;
   input [DATA_WIDTH-1:0] data_arg2;
-  input atr_arg1;
-  input atr_arg2;
+  input attr_arg1;
+  input attr_arg2;
   begin
     invalid_value1 = !((data_arg1[DATA_WIDTH-1:DATA_WIDTH/2-1] == 0)^(~data_arg1[DATA_WIDTH-1:DATA_WIDTH/2-1] == {(DATA_WIDTH/2+1){1'b0}}))
                   || !((data_arg2[DATA_WIDTH-1:DATA_WIDTH/2-1] == 0)^(~data_arg2[DATA_WIDTH-1:DATA_WIDTH/2-1] == {(DATA_WIDTH/2+1){1'b0}}))  
-                  || atr_arg1 
-                  || atr_arg2;
+                  || attr_arg1 
+                  || attr_arg2;
   end
 endfunction
 
