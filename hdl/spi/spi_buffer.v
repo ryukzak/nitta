@@ -30,6 +30,7 @@ reg [ADDR_WIDTH-1:0]          wr_address;
 reg [SPI_DATA_WIDTH-1:0]        spi_debug;
 reg [DATA_WIDTH-1:0]            wr_debug;
 
+integer i;
 
 always @(posedge clk or posedge rst) begin
 	if ( rst ) begin
@@ -50,7 +51,9 @@ always @(posedge clk or posedge rst) begin
 		if ( oe && attr_out[0] ) begin
 			data_out <= memory[ oe_address ];
 			oe_address <= oe_address + 1;
-		end	
+		end	else begin
+			data_out <= 32'h000000;
+		end
 	end
 end
 

@@ -12,6 +12,7 @@ module hoarder
 ,   input                           oe
 ,   input      [DATA_WIDTH-1:0]     data_in
 ,   output reg [DATA_WIDTH-1:0]     data_out
+,   output reg [ATTR_WIDTH-1:0]     attr_hoarder
 ,   input      [SPI_DATA_WIDTH-1:0] data_in_byte
 ,   output reg [SPI_DATA_WIDTH-1:0] data_out_byte
 );
@@ -27,69 +28,27 @@ reg [SPI_DATA_WIDTH-1:0] byte;
 reg [1:0] count_frame_send;
 reg [1:0] count_frame_recv;
 
+// Flags
+reg took;
+
 always @( posedge clk ) begin
     if ( rst ) begin
-        count_frame_send <= 0;
-        count_frame_recv <= 0;
-        send_state <= STATE_IDLE;
+        took <= 0;
     end else begin
 
-        // [+] send master
-        if ( wr ) begin
-            frame <= data_in;
-            send_state <= STATE_IDLE;
+        // [+] receive master
+        if ( oe && took ) begin
+            attr_hoarder[0] <= 1;
+            data_out <= frame;
+        end else if ( ready && !took ) begin
+            frame <= { frame[23:0], data_in_byte };
+            took <= 1;
+        end else if ( !ready && took ) begin
+            took <= 0;
         end else begin
-            if ( ready ) begin
-                case ( send_state )
-                    STATE_SPI_START: begin
-                        data_out_byte <= frame >> SPI_DATA_WIDTH * count_frame_send;
-                        send_state <= STATE_SPI_END;
-                    end
-                endcase
-            end else begin
-                case ( send_state )
-                    STATE_IDLE: begin
-                        if ( count_frame_send == 4 ) begin
-                          count_frame_send <= 0;
-                        end
-                        send_state <= STATE_SPI_START;
-                    end
-                    STATE_SPI_END: begin
-                        count_frame_send <= count_frame_send + 1;
-                        send_state <= STATE_IDLE;
-                    end
-                endcase
-            end
+            attr_hoarder[0] <= 0;
         end
 
-        // [+] receive master
-        if ( oe ) begin
-            data_out <= frame;
-            recv_state <= STATE_IDLE;
-        end else begin
-            if ( ready ) begin
-                case ( recv_state )
-                    STATE_SPI_START: begin
-                        byte <= data_in_byte;
-                        recv_state <= STATE_SPI_END;
-                    end
-                endcase
-            end else begin
-                case ( recv_state )
-                    STATE_IDLE: begin
-                        if ( count_frame_recv == 4 ) begin
-                          count_frame_send <= 0;
-                        end
-                        recv_state <= STATE_SPI_START;
-                    end
-                    STATE_SPI_END: begin
-                        frame = { frame[23:0], byte };
-                        count_frame_recv <= count_frame_recv + 1;
-                        recv_state <= STATE_IDLE;
-                    end            
-                endcase
-            end
-        end
 
     end
 end

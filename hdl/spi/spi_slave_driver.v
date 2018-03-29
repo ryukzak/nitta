@@ -20,6 +20,7 @@ module spi_slave_driver
   );
 
 reg   [DATA_WIDTH-1:0] shiftreg;
+reg   [4:0]            count_sclk;
 
 localparam STATE_IDLE = 0; // wait for transaction begin
 localparam STATE_WAIT_SCLK_1 = 1; // wait for SCLK to become 1
@@ -30,16 +31,18 @@ always @( posedge rst, posedge clk ) begin
   if ( rst ) begin
     shiftreg <= 0;
     miso <= 0;
+    count_sclk <= 0;
     state <= STATE_IDLE;
   end 
   else begin
     if ( cs ) begin
+      count_sclk <= 0;
       state <= STATE_IDLE;
     end
     else begin
       case ( state )
         STATE_IDLE: begin
-          shiftreg <= data_in;
+          shiftreg <= data_in;         
           state <= STATE_WAIT_SCLK_1;
         end
         STATE_WAIT_SCLK_1: begin
@@ -60,6 +63,14 @@ always @( posedge rst, posedge clk ) begin
   end
 end
 
-assign { ready, data_out } = { state == STATE_IDLE, shiftreg };
+always @( posedge sclk ) begin
+  count_sclk <= count_sclk + 1;
+end
+
+// На первое время, чтоб заработало
+assign { ready, data_out } = {  count_sclk == 9 
+                            ||  count_sclk == 17
+                            ||  count_sclk == 25
+                            ||  state == STATE_IDLE, shiftreg };
   
 endmodule

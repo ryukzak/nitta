@@ -2,7 +2,7 @@
 module pu_slave_spi_tb
   #( parameter DATA_WIDTH      = 32
    , parameter ATTR_WIDTH      = 4
-  ,  parameter SPI_DATA_WIDTH  = 32
+  ,  parameter SPI_DATA_WIDTH  = 8
   ,  parameter SCLK_HALFPERIOD = 1
   ,  parameter BUF_SIZE        = 10
   )
@@ -11,12 +11,10 @@ module pu_slave_spi_tb
 reg clk;
 reg rst;
 reg start_transaction;
-reg  [SPI_DATA_WIDTH-1:0] master_in;
-wire [SPI_DATA_WIDTH-1:0] master_out;
-reg  [SPI_DATA_WIDTH-1:0] slave_in;
-wire [SPI_DATA_WIDTH-1:0] slave_out;
+reg  [DATA_WIDTH-1:0] master_in;
+wire [DATA_WIDTH-1:0] master_out;
 
-reg [DATA_WIDTH-1:0] pu_spi_data_in;
+reg  [DATA_WIDTH-1:0] pu_spi_data_in;
 
 wire mosi, miso, sclk, cs;
 
@@ -27,6 +25,7 @@ reg wr;
 wire [DATA_WIDTH-1:0] data_out;
 wire [ATTR_WIDTH-1:0] attr_out;
 reg oe;
+reg cycle;
 
 spi_master_driver master
   ( .clk(clk)
@@ -57,7 +56,7 @@ pu_slave_spi #( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
               ) pu
   ( .clk( clk )
   , .rst( rst )
-  // , .signal_cycle( cycle )
+  , .signal_cycle( cycle )
 
   , .signal_wr( wr )
   , .data_in( pu_spi_data_in )
@@ -95,65 +94,100 @@ initial begin
   $display("finish");
 end
 
-initial begin // nitta communication
+initial begin
   @(negedge rst);
+  oe <= 0;
+  cycle <= 0;   repeat(200) @(posedge clk);
+  cycle <= 1;               @(posedge clk);
 
-  pu_spi_data_in <= 32'hA1A2A3A4; wr <= 1; oe <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  cycle <= 0;   repeat(130) @(posedge clk);
 
-  pu_spi_data_in <= 32'hB1B2B3B4; wr <= 1; oe <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  oe <= 1;                  @(posedge clk);
+  oe <= 0;                  @(posedge clk);
 
-  pu_spi_data_in <= 32'hC1C2C3C4; wr <= 1; oe <= 0;     @(posedge clk);
+  oe <= 1;                  @(posedge clk);
+  oe <= 0;                  @(posedge clk);
 
-  pu_spi_data_in <= 32'hD1D2D3D4; wr <= 1; oe <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  cycle <= 0;   repeat(68) @(posedge clk);
 
+  cycle <= 1;               @(posedge clk);
 
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  cycle <= 0;   repeat(130) @(posedge clk);
 
-  repeat(100) @(posedge clk);
+  oe <= 1;                  @(posedge clk);
+  oe <= 0;                  @(posedge clk);
 
-  pu_spi_data_in <= 32'hA2A2A3A4; wr <= 1; oe <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  cycle <= 0;   repeat(68) @(posedge clk);
 
-  repeat(100) @(posedge clk);
+  cycle <= 1;               @(posedge clk);
 
-  pu_spi_data_in <= 32'hB2B2B3B4; wr <= 1; oe <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  cycle <= 0;   repeat(200) @(posedge clk);
+  cycle <= 1;               @(posedge clk);
 
-  pu_spi_data_in <= 32'hC2C2C3C4; wr <= 1; oe <= 0;     @(posedge clk);
-
-  pu_spi_data_in <= 32'hD2D2D3D4; wr <= 1; oe <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-
-  repeat(500) @(posedge clk);
-
-  pu_spi_data_in <= 32'hB3B2B3B4; wr <= 1; oe <= 1;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-
-  pu_spi_data_in <= 32'hC3C2C3C4; wr <= 1; oe <= 0;     @(posedge clk);
-
-  pu_spi_data_in <= 32'hD3D2D3D4; wr <= 1; oe <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-
-  repeat(100)          @(posedge clk);
-  oe <= 1;   repeat(5) @(posedge clk);
-  oe <= 0;             @(posedge clk);
-  repeat(10) @(posedge clk);
-
-
-  $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
-  for ( i = 0; i < BUF_SIZE; i = i + 1 )
-    begin
-      $display("%d -> %h , %h , %h", i, pu.receive_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
-    end
-
+  cycle <= 0;   repeat(200) @(posedge clk);
+  cycle <= 1;               @(posedge clk);
 end
+
+// initial begin // nitta communication
+//   @(negedge rst);
+
+
+  // pu_spi_data_in <= 32'hA1A2A3A4; wr <= 1; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
+  // pu_spi_data_in <= 32'hB1B2B3B4; wr <= 1; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
+  // pu_spi_data_in <= 32'hC1C2C3C4; wr <= 1; oe <= 0;     @(posedge clk);
+
+  // pu_spi_data_in <= 32'hD1D2D3D4; wr <= 1; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
+
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
+  // repeat(100) @(posedge clk);
+
+  // pu_spi_data_in <= 32'hA2A2A3A4; wr <= 1; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
+  // repeat(100) @(posedge clk);
+
+  // pu_spi_data_in <= 32'hB2B2B3B4; wr <= 1; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
+  // pu_spi_data_in <= 32'hC2C2C3C4; wr <= 1; oe <= 0;     @(posedge clk);
+
+  // pu_spi_data_in <= 32'hD2D2D3D4; wr <= 1; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
+  // repeat(500) @(posedge clk);
+
+  // pu_spi_data_in <= 32'hB3B2B3B4; wr <= 1; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
+  // pu_spi_data_in <= 32'hC3C2C3C4; wr <= 1; oe <= 0;     @(posedge clk);
+
+  // pu_spi_data_in <= 32'hD3D2D3D4; wr <= 1; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+
+  // repeat(100)          @(posedge clk);
+  // oe <= 1;   repeat(5) @(posedge clk);
+  // oe <= 0;             @(posedge clk);
+  // repeat(10) @(posedge clk);
+
+
+  // $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
+  // for ( i = 0; i < BUF_SIZE; i = i + 1 )
+  //   begin
+  //     $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
+  //   end
+
+//end
 
 initial begin // spi communication
   @(negedge rst);
@@ -182,55 +216,28 @@ initial begin // spi communication
 
   repeat(108) @(posedge clk);
 
-  // Второе слово
-
-  master_in = 32'hA2A2A3A4;                              @(posedge clk);
+  master_in = 32'hA1A2A3A4;                              @(posedge clk);
   start_transaction = 1;                                 @(posedge clk);
   start_transaction = 0;                                 @(posedge clk);
 
   repeat(108) @(posedge clk);
 
-  master_in = 32'hB2B2B3B4;                              @(posedge clk);
+  master_in = 32'hB1B2B3B4;                              @(posedge clk);
   start_transaction = 1;                                 @(posedge clk);
   start_transaction = 0;                                 @(posedge clk);
 
   repeat(108) @(posedge clk);
 
-  master_in = 32'hC2C2C3C4;                              @(posedge clk);
+  master_in = 32'hC1C2C3C4;                              @(posedge clk);
   start_transaction = 1;                                 @(posedge clk);
   start_transaction = 0;                                 @(posedge clk);
 
   repeat(108) @(posedge clk);
 
-  master_in = 32'hD2D2D3D4;                              @(posedge clk);
+  master_in = 32'hD1D2D3D4;                              @(posedge clk);
   start_transaction = 1;                                 @(posedge clk);
   start_transaction = 0;                                 @(posedge clk);
 
-  // Третье слово
-
-  master_in = 32'hA3A2A3A4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
-
-  repeat(108) @(posedge clk);
-
-  master_in = 32'hB3B2B3B4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
-
-  repeat(108) @(posedge clk);
-
-  master_in = 32'hC3C2C3C4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
-
-  repeat(108) @(posedge clk);
-
-  master_in = 32'hD3D2D3D4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
-
-  #10000 @(posedge clk);
 
   $finish;
 end
