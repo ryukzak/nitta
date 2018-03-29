@@ -117,6 +117,16 @@ function View(props) {
               { sData.steps.map( (st, i) => <LinkButton key={ i } sname={ i } 
                                                         onClick={ () => { props.app.getStep(path.sId, i)
                                                                         } } /> ) }
+              <a className="button primary" onClick={
+                  () => {
+                    api.postSynthesisBySIdSteps( path.sId, true )
+                    .then( response => { 
+                      props.app.getSynthesis( path.sId ) 
+                      props.app.getStep( path.sId, 0 )
+                    } )
+                    .catch( err => alert(err))
+                  }
+                }>auto_synthesis</a>
             </div>
             { path.sView === 'info'
               ? <SynthesisInfo sData={ sData } app={ props.app } />
@@ -176,7 +186,7 @@ function StepView(props) {
           } } />
         <LinkButton sname="mk_decision" onClick={ 
           () => {
-            api.postSynthesisBySIdStepsByStepIdAuto( path.sId, path.stepId + 1 )
+            api.postSynthesisBySIdSteps( path.sId, false )
             .then( response => { 
               props.app.getSynthesis( path.sId ) 
               props.app.getStep( path.sId, path.stepId + 1 )
