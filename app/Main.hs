@@ -55,9 +55,9 @@ microarch = busNetwork 24
   ]
 
 synthesisedFib
-  = let g = DFG [ node $ FB.Add (I "a") (I "b") (O $ fromList ["b'"])
-                , node $ FB.Loop (O $ fromList ["a"]) $ I "a'"
-                , node $ FB.Loop (O $ fromList ["b", "a'"]) $ I "b'"
+  = let g = DFG [ node $ FB.add "a" "b" ["b'"]
+                , node $ FB.loop ["a"] "a'"
+                , node $ FB.loop ["b", "a'"] "b'"
                 ]
         ma = bindAll (functionalBlocks g) microarch
     in Frame ma g Nothing :: SystemState String String String Int (TaggedTime String Int)
@@ -65,10 +65,10 @@ synthesisedFib
 synthesisedFib' = foldl (\f' _ -> naive def f') synthesisedFib $ replicate 50 ()
 
 synthesisedLevel
-  = let g = DFG [ node $ FB.FramInput 3 $ O $ fromList [ "a" ]
-                , node $ FB.FramInput 4 $ O $ fromList [ "b" ]
-                , node $ FB.Add (I "a") (I "b") (O $ fromList ["c"])
-                , node $ FB.FramOutput 0 $ I "c"
+  = let g = DFG [ node $ FB.framInput 3 [ "a" ]
+                , node $ FB.framInput 4 [ "b" ]
+                , node $ FB.add "a" "b" ["c"]
+                , node $ FB.framOutput 0 "c"
                 -- FIXME: Синтезируется, но сгенировать тест пока нельзя.
                 -- , node $ FB.Constant 0 $ O ["p"]
                 -- , node $ FB.Constant 0 $ O ["const0"]
@@ -85,25 +85,25 @@ synthesisedLevel
 
 -- | Пример работы с единым временем.
 synthesisedFrame
-  = let alg = [ FB.framInput 3 $ O $ fromList [ "a"
-                                              , "d"
-                                              ]
-              , FB.framInput 4 $ O $ fromList [ "b"
-                                              , "c"
-                                              , "e"
-                                              ]
-              , FB.reg (I "a") $ O $ fromList ["x"]
-              , FB.reg (I "b") $ O $ fromList ["y"]
-              , FB.reg (I "c") $ O $ fromList ["z"]
-              , FB.framOutput 5 $ I "x"
-              , FB.framOutput 6 $ I "y"
-              , FB.framOutput 7 $ I "z"
-              , FB.framOutput 0 $ I "sum"
+  = let alg = [ FB.framInput 3 [ "a"
+                               , "d"
+                               ]
+              , FB.framInput 4 [ "b"
+                               , "c"
+                               , "e"
+                               ]
+              , FB.reg "a" ["x"]
+              , FB.reg "b" ["y"]
+              , FB.reg "c" ["z"]
+              , FB.framOutput 5 "x"
+              , FB.framOutput 6 "y"
+              , FB.framOutput 7 "z"
+              , FB.framOutput 0 "sum"
               , FB $ FB.Constant (42 :: Int) (O $ fromList ["const"] :: O (Parcel String Int))
-              , FB.framOutput 9 $ I "const"
-              , FB.loop (O $ fromList ["f"]) $ I "g"
-              , FB $ FB.ShiftL (I "f") $ O $ fromList ["g"]
-              , FB $ FB.Add (I "d") (I "e") (O $ fromList ["sum"])
+              , FB.framOutput 9 "const"
+              , ["f"] `FB.loop` "g"
+              , FB.shiftL "f" ["g"]
+              , FB.add "d" "e" ["sum"]
               ]
         dataFlow = DFG $ map DFGNode alg
         microarch' = bindAll (functionalBlocks dataFlow) microarch
@@ -113,9 +113,9 @@ synthesisedFrame
 
 -- | Пример работы с единым временем.
 synthesisedFrameSPI
-  = let alg = [ FB $ FB.Receive $ O $ fromList ["a"]
-              , FB $ FB.Send (I "b")
-              , FB.reg (I "a") $ O $ fromList ["b"]
+  = let alg = [ FB.receive ["a"]
+              , FB.send "b"
+              , FB.reg "a" ["b"]
               ]
         dataFlow = DFG $ map DFGNode alg
         microarch' = bindAll (functionalBlocks dataFlow) microarch
@@ -124,25 +124,25 @@ synthesisedFrameSPI
     in pu
 
 root
-  = let alg = [ FB.framInput 3 $ O $ fromList [ "a"
-                                              , "d"
-                                              ]
-              , FB.framInput 4 $ O $ fromList [ "b"
-                                              , "c"
-                                              , "e"
-                                              ]
-              , FB.reg (I "a") $ O $ fromList ["x"]
-              , FB.reg (I "b") $ O $ fromList ["y"]
-              , FB.reg (I "c") $ O $ fromList ["z"]
-              , FB.framOutput 5 $ I "x"
-              , FB.framOutput 6 $ I "y"
-              , FB.framOutput 7 $ I "z"
-              , FB.framOutput 0 $ I "sum"
+  = let alg = [ FB.framInput 3 [ "a"
+                               , "d"
+                               ]
+              , FB.framInput 4 [ "b"
+                               , "c"
+                               , "e"
+                               ]
+              , FB.reg "a" ["x"]
+              , FB.reg "b" ["y"]
+              , FB.reg "c" ["z"]
+              , FB.framOutput 5 "x"
+              , FB.framOutput 6 "y"
+              , FB.framOutput 7 "z"
+              , FB.framOutput 0 "sum"
               , FB $ FB.Constant (42 :: Int) (O $ fromList ["const"] :: O (Parcel String Int))
-              , FB.framOutput 9 $ I "const"
-              , FB.loop (O $ fromList ["f"]) $ I "g"
-              , FB $ FB.ShiftL (I "f") $ O $ fromList ["g"]
-              , FB $ FB.Add (I "d") (I "e") (O $ fromList ["sum"])
+              , FB.framOutput 9 "const"
+              , ["f"] `FB.loop` "g"
+              , FB.shiftL "f" ["g"]
+              , FB.add "d" "e" ["sum"]
               ]
         dataFlow = DFG $ map DFGNode alg
         microarch' = bindAll (functionalBlocks dataFlow) microarch
@@ -185,10 +185,10 @@ simulateSPI n = do
   mapM_ putStrLn $ take n $ map show $ FB.simulateAlg (def{ cntxVars=M.fromList [("b", [0])]
                                                           , cntxInputs=M.fromList [("a", [1, 2, 3])]
                                                           } :: Cntx String Int)
-    [ FB $ FB.Receive $ O $ fromList ["a"] :: FB (Parcel String Int)
-    , FB $ FB.Add (I "a") (I "b") (O $ fromList ["c1", "c2"])
-    , FB $ FB.Loop (O $ fromList ["b"]) (I "c1")
-    , FB $ FB.Send (I "c2")
+    [ FB.receive ["a"] :: FB (Parcel String Int)
+    , FB.add "a" "b" ["c1", "c2"]
+    , FB.loop ["b"] "c1"
+    , FB.send "c2"
     ]
   print "ok"
 

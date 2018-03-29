@@ -303,7 +303,7 @@ makeLevelDone Level{ initialFrame, currentFrame, completedFrames }
     in initialFrame
       { nitta=setTime mergeTime net
           { bnProcess=snd $ modifyProcess bnProcess $
-              mapM_ (\Step{ sTime, sDesc } -> add sTime sDesc) $ concatMap stepsFromFrame fs
+              mapM_ (\Step{ sTime, sDesc } -> addStep sTime sDesc) $ concatMap stepsFromFrame fs
           }
       }
   where

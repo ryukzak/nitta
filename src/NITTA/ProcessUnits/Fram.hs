@@ -386,7 +386,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
     where
       anyInAction = any (`elem` variables act)
       bind2CellStep addr fb t
-        = add (Event t) $ CADStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
+        = addStep (Event t) $ CADStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
       updateLastWrite t cell | Target _ <- epdRole = cell{ lastWrite=Just t }
                              | otherwise = cell{ lastWrite=Nothing }
 
@@ -399,7 +399,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
       scheduleWork _addr Job{ actions=[] } = error "Fram:scheudle internal error."
       scheduleWork addr job@Job{ actions=x:xs, .. }
         = let ((ep, instrs), p') = modifyProcess p $ do
-                e <- add (Activity $ act^.at) $ EndpointRoleStep $ act^.endRole
+                e <- addStep (Activity $ act^.at) $ EndpointRoleStep $ act^.endRole
                 i1 <- addInstr pu (act^.at) $ act2Instruction addr $ act^.endRole
                 is <- if tick0 < act^.at.infimum
                   then do
@@ -416,7 +416,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
                      })
       finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
         let start = fromMaybe (error "startAt field is empty!") startAt
-        h <- add (Activity $ start ... act^.at.supremum) $ FBStep $ fromFSet functionalBlock
+        h <- addStep (Activity $ start ... act^.at.supremum) $ FBStep $ fromFSet functionalBlock
         mapM_ (relation . Vertical h) cads
         mapM_ (relation . Vertical h) endpoints
         mapM_ (relation . Vertical h) instructions

@@ -8,7 +8,6 @@ module NITTA.Test.BusNetwork where
 
 import           Data.Default
 import qualified Data.Map                 as M
-import           Data.Set                 (fromList)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
@@ -28,23 +27,23 @@ accum_fram1_fram2_netTests
           , ("fram2", PU (def :: FPU) FR.Link{ FR.oe=Index 5, FR.wr=Index 4, FR.addr=map Index [3, 2, 1, 0] })
           , ("accum", PU def A.Link{ A.init=Index 18, A.load=Index 19, A.neg=Index 20, A.oe=Index 21 } )
           ] :: BusNetwork String String Int (TaggedTime String Int)
-        alg = [ FB.framInput 3 $ O $ fromList [ "a"
-                                              , "d"
-                                              ]
-              , FB.framInput 4 $ O $ fromList [ "b"
-                                              , "c"
-                                              , "e"
-                                              ]
-              , FB.reg (I "a") $ O $ fromList ["x"]
-              , FB.reg (I "b") $ O $ fromList ["y"]
-              , FB.reg (I "c") $ O $ fromList ["z"]
-              , FB.framOutput 5 $ I "x"
-              , FB.framOutput 6 $ I "y"
-              , FB.framOutput 7 $ I "z"
-              , FB.framOutput 0 $ I "sum"
-              , FB.loop (O $ fromList ["f"]) $ I "g"
-              , FB.reg (I "f") $ O $ fromList ["g"]
-              , FB $ FB.Add (I "d") (I "e") (O $ fromList ["sum"])
+        alg = [ FB.framInput 3 [ "a"
+                               , "d"
+                               ]
+              , FB.framInput 4 [ "b"
+                               , "c"
+                               , "e"
+                               ]
+              , FB.reg "a" ["x"]
+              , FB.reg "b" ["y"]
+              , FB.reg "c" ["z"]
+              , FB.framOutput 5 "x"
+              , FB.framOutput 6 "y"
+              , FB.framOutput 7 "z"
+              , FB.framOutput 0 "sum"
+              , ["f"] `FB.loop` "g"
+              , FB.reg "f" ["g"]
+              , FB.add "d" "e" ["sum"]
               ]
         net' = bindAll alg net
         g = DFG $ map DFGNode alg

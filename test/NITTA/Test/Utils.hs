@@ -21,24 +21,24 @@ values2dumpTests = do
 
 inputsOfFBsTests = do
   let f = algInputs :: [FB (Parcel String Int)] -> Set String
-  fromList []         @=? f [ FB $ FramInput 3 $ O $ fromList [ "a" ] ]
-  fromList ["a", "b"] @=? f [ FB $ Add (I "a") (I "b") (O $ fromList ["c"]) ]
-  fromList ["c"]      @=? f [ FB $ FramOutput 0 $ I "c" ]
-  fromList []         @=? f [ FB $ FramInput 3 $ O $ fromList [ "a" ]
-                            , FB $ FramInput 4 $ O $ fromList [ "b" ]
-                            , FB $ Add (I "a") (I "b") (O $ fromList ["c"])
-                            , FB $ FramOutput 0 $ I "c"
+  fromList []         @=? f [ framInput 3 [ "a" ] ] -- FB $ FramInput 3 $ O $ fromList [ "a" ] ]
+  fromList ["a", "b"] @=? f [ add "a" "b" ["c"] ]
+  fromList ["c"]      @=? f [ framOutput 0 "c" ]
+  fromList []         @=? f [ framInput 3 [ "a" ]
+                            , framInput 4 [ "b" ]
+                            , add "a" "b" ["c"]
+                            , framOutput 0 "c"
                             ]
 
 outputsOfFBsTests = do
   let f = algOutputs :: [FB (Parcel String Int)] -> Set String
-  fromList ["a"] @=? f [ FB $ FramInput 3 $ O $ fromList [ "a" ] ]
-  fromList ["c"] @=? f [ FB $ Add (I "a") (I "b") (O $ fromList ["c"]) ]
-  fromList []    @=? f [ FB $ FramOutput 0 $ I "c" ]
-  fromList []    @=? f [ FB $ FramInput 3 $ O $ fromList [ "a" ]
-                       , FB $ FramInput 4 $ O $ fromList [ "b" ]
-                       , FB $ Add (I "a") (I "b") (O $ fromList ["c"])
-                       , FB $ FramOutput 0 $ I "c"
+  fromList ["a"] @=? f [ framInput 3 [ "a" ] ]
+  fromList ["c"] @=? f [ add "a" "b" ["c"] ]
+  fromList []    @=? f [ framOutput 0 "c" ]
+  fromList []    @=? f [ framInput 3 [ "a" ]
+                       , framInput 4 [ "b" ]
+                       , add "a" "b" ["c"]
+                       , framOutput 0 "c"
                        ]
 
 endpointRoleEq = do
@@ -50,3 +50,4 @@ endpointRoleEq = do
   source ["a", "b"] == source ["a", "b"] @? "Source eq"
   source ["b", "a"] == source ["a", "b"] @? "Source eq"
   source ["b", "a"] /= source ["a", "c"] @? "Source not eq"
+

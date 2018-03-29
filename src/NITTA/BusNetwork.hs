@@ -161,11 +161,11 @@ instance ( Title title, Var v, Time t
     | otherwise = ni
     { bnPus=foldl (\s n -> n s) bnPus steps
     , bnProcess=snd $ modifyProcess bnProcess $ do
-        mapM_ (\(v, (title, _)) -> add
+        mapM_ (\(v, (title, _)) -> addStep
                 (Activity $ transportStartAt ... transportEndAt)
                 $ InstructionStep (Transport v (fst dfdSource) title :: Instruction (BusNetwork title v x t))
               ) $ M.assocs push'
-        _ <- add (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act
+        _ <- addStep (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act
         setProcessTime $ act^.at.supremum + 1
     }
     where
@@ -215,7 +215,7 @@ instance ( Title title, Time t, Var v, Typeable x
       addSubProcess transportKey (puTitle, pu') = do
         let subSteps = steps $ process pu'
         uids' <- foldM (\dict Step{..} -> do
-                           k <- add sTime $ NestedStep puTitle sDesc
+                           k <- addStep sTime $ NestedStep puTitle sDesc
                            when (isFB sDesc) $ do
                              let FBStep fb = sDesc
                              mapM_ (\v -> when (v `M.member` transportKey)
@@ -304,7 +304,7 @@ instance ( Var v
                                   Nothing  -> Just [fb]
                            ) puTitle bnBinded
         , bnProcess=snd $ modifyProcess p $
-            add (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
+            addStep (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
         , bnRemains=filter (/= fb) bnRemains
         }
 

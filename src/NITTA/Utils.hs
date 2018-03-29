@@ -59,14 +59,14 @@ bool2binstr False = "0"
 
 modifyProcess p st = runState st p
 
-add placeInTime info = do
+addStep placeInTime info = do
   p@Process{..} <- get
   put p { nextUid=succ nextUid
         , steps=Step nextUid placeInTime info : steps
         }
   return nextUid
 
-addActivity interval = add $ Activity interval
+addActivity interval = addStep $ Activity interval
 
 relation r = do
   p@Process{..} <- get
@@ -81,7 +81,7 @@ getProcessTime = do
   Process{..} <- get
   return nextTick
 
-bindFB fb t = add (Event t) $ CADStep $ "Bind " ++ show fb
+bindFB fb t = addStep (Event t) $ CADStep $ "Bind " ++ show fb
 
 atSameTime a (Activity t) = a `I.member` t
 atSameTime a (Event t)    = a == t
@@ -175,7 +175,7 @@ isTimeWrap p act = nextTick p > act^.at.infimum
 timeWrapError p act = error $ "You can't start work yesterday :) fram time: " ++ show (nextTick p) ++ " action start at: " ++ show (act^.at.infimum)
 
 addInstr :: ( Typeable pu, Show (Instruction pu) ) => pu -> I.Interval t -> Instruction pu -> State (Process v t) ProcessUid
-addInstr _pu t i = add (Activity t) $ InstructionStep i
+addInstr _pu t i = addStep (Activity t) $ InstructionStep i
 
 
 minimumOn f = minimumBy (\a b -> f a `compare` f b)

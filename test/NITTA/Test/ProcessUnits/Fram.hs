@@ -12,7 +12,6 @@ import           Control.Applicative       ((<$>))
 import           Data.Default
 import qualified Data.Map                  as M
 import           Data.Proxy
-import           Data.Set                  (fromList)
 import           NITTA.Compiler
 import qualified NITTA.FunctionBlocks      as FB
 import           NITTA.ProcessUnits.Fram
@@ -39,8 +38,8 @@ instance Arbitrary (FSet (Fram String Int t)) where
 -----------------------------------------------------------
 
 framTestBench
-  = let alg = [ FB.reg (I "aa") $ O $ fromList ["ab"]
-              , FB.framOutput 9 $ I "ac"
+  = let alg = [ FB.reg "aa" ["ab"]
+              , FB.framOutput 9 "ac"
               ]
         lib = joinPath ["..", ".."]
         wd = joinPath ["hdl", "gen", "unittest_fram"]

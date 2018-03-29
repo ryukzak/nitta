@@ -23,7 +23,7 @@ import           Data.Bits
 import           Data.List     (find)
 import qualified Data.Map      as M
 import           Data.Maybe
-import           Data.Set      (elems, union)
+import           Data.Set      (elems, fromList, union)
 import           Data.Typeable
 import           NITTA.Types
 import           NITTA.Utils
@@ -51,13 +51,13 @@ set cntx@Cntx{..} ks v = do
   return cntx{ cntxVars=cntxVars' }
 set' cntx ks v = fromMaybe (error "Can't set in cntx.") $ set cntx ks v
 
-receive cntx@Cntx{..} k = do
+receiveSim cntx@Cntx{..} k = do
   values <- cntxInputs M.!? k
   value <- listToMaybe values
   let cntxInputs' = M.adjust tail k cntxInputs
   return (cntx{ cntxInputs=cntxInputs' }, value)
 
-send cntx@Cntx{..} k v = do
+sendSim cntx@Cntx{..} k v = do
   let cntxOutputs' = M.alter (Just . maybe [v] (v:)) k cntxOutputs
   return cntx{ cntxOutputs=cntxOutputs' }
 
@@ -105,7 +105,7 @@ castFB (FB fb) = cast fb
 data FramInput io = FramInput Int (O io) deriving ( Typeable )
 deriving instance IOType io v => Show (FramInput io)
 deriving instance IOType io v => Eq (FramInput io)
-framInput addr vs = FB $ FramInput addr vs
+framInput addr vs = FB $ FramInput addr $ O $ fromList vs
 
 instance ( IOType io v ) => FunctionalBlock (FramInput io) v where
   outputs (FramInput _ o) = variables o
@@ -120,7 +120,7 @@ instance FunctionSimulation (FramInput (Parcel v x)) v x where
 data FramOutput io = FramOutput Int (I io) deriving ( Typeable )
 deriving instance IOType io v => Show (FramOutput io)
 deriving instance IOType io v => Eq (FramOutput io)
-framOutput addr v = FB $ FramOutput addr v
+framOutput addr v = FB $ FramOutput addr $ I v
 
 instance IOType io v => FunctionalBlock (FramOutput io) v where
   inputs (FramOutput _ o) = variables o
@@ -133,7 +133,7 @@ instance FunctionSimulation (FramOutput (Parcel v x)) v x where
 data Reg io = Reg (I io) (O io) deriving ( Typeable )
 deriving instance IOType io v => Show (Reg io)
 deriving instance IOType io v => Eq (Reg io)
-reg a b = FB $ Reg a b
+reg a b = FB $ Reg (I a) (O $ fromList b)
 
 instance IOType io v => FunctionalBlock (Reg io) v where
   inputs  (Reg a _b) = variables a
@@ -151,7 +151,7 @@ instance ( Ord v ) => FunctionSimulation (Reg (Parcel v x)) v x where
 data Loop io = Loop (O io) (I io) deriving ( Typeable )
 deriving instance ( IOType io v ) => Show (Loop io)
 deriving instance ( IOType io v ) => Eq (Loop io)
-loop bs a = FB $ Loop bs a
+loop bs a = FB $ Loop (O $ fromList bs) $ I a
 
 instance ( IOType io v ) => FunctionalBlock (Loop io) v where
   inputs  (Loop _a b) = variables b
@@ -159,7 +159,7 @@ instance ( IOType io v ) => FunctionalBlock (Loop io) v where
   insideOut _ = True
 instance ( Ord v ) => FunctionSimulation (Loop (Parcel v x)) v x where
   simulate cntx (Loop (O k1) (I k2)) = do
-    let (cntx', v) = fromMaybe (cntx, fromMaybe undefined $ cntx `get` k2) $ cntx `receive` k2
+    let (cntx', v) = fromMaybe (cntx, fromMaybe undefined $ cntx `get` k2) $ cntx `receiveSim` k2
     set cntx' k1 v
 
 
@@ -167,6 +167,7 @@ instance ( Ord v ) => FunctionSimulation (Loop (Parcel v x)) v x where
 data Add io = Add (I io) (I io) (O io) deriving ( Typeable )
 deriving instance IOType io v => Show (Add io)
 deriving instance IOType io v => Eq (Add io)
+add a b c = FB $ Add (I a) (I b) $ O $ fromList c
 
 instance IOType io v => FunctionalBlock (Add io) v where
   inputs  (Add  a  b _c) = variables a `union` variables b
@@ -186,6 +187,7 @@ instance ( Ord v, Num x ) => FunctionSimulation (Add (Parcel v x)) v x where
 data Constant x io = Constant x (O io) deriving ( Typeable )
 deriving instance ( IOType io v, Show x ) => Show (Constant x io)
 deriving instance ( IOType io v, Eq x ) => Eq (Constant x io)
+--constant x vs = FB $ Constant x (O $ fromList vs)
 
 instance ( IOType io v, Show x, Eq x, Typeable x ) => FunctionalBlock (Constant x io) v where
   outputs (Constant _ o) = variables o
@@ -198,6 +200,7 @@ instance ( Ord v ) => FunctionSimulation (Constant x (Parcel v x)) v x where
 data ShiftL io = ShiftL (I io) (O io) deriving ( Typeable )
 deriving instance ( IOType io v ) => Show (ShiftL io)
 deriving instance ( IOType io v ) => Eq (ShiftL io)
+shiftL a b = FB $ ShiftL (I a) $ O $ fromList b
 
 instance ( IOType io v ) => FunctionalBlock (ShiftL io) v where
   outputs (ShiftL i o) = variables i `union` variables o
@@ -210,6 +213,8 @@ instance ( Ord v, Bits x ) => FunctionSimulation (ShiftL (Parcel v x)) v x where
 
 
 newtype Send io = Send (I io) deriving ( Typeable )
+send a = FB $ Send $ I a
+
 deriving instance ( IOType io v ) => Show (Send io)
 deriving instance ( IOType io v ) => Eq (Send io)
 instance ( IOType io v ) => FunctionalBlock (Send io) v where
@@ -217,11 +222,13 @@ instance ( IOType io v ) => FunctionalBlock (Send io) v where
 instance ( Ord v ) => FunctionSimulation (Send (Parcel v x)) v x where
   simulate cntx (Send (I k)) = do
     v <- cntx `get` k
-    send cntx k v
+    sendSim cntx k v
 
 
 
 newtype Receive io = Receive (O io) deriving ( Typeable )
+receive a = FB $ Receive $ O $ fromList a
+
 deriving instance ( IOType io v ) => Show (Receive io)
 deriving instance ( IOType io v ) => Eq (Receive io)
 instance ( IOType io v ) => FunctionalBlock (Receive io) v where
@@ -229,5 +236,5 @@ instance ( IOType io v ) => FunctionalBlock (Receive io) v where
 instance ( Ord v ) => FunctionSimulation (Receive (Parcel v x)) v x where
   simulate cntx (Receive (O ks)) = do
     let k = oneOf ks
-    (cntx', v) <- cntx `receive` k
+    (cntx', v) <- cntx `receiveSim` k
     set cntx' ks v
