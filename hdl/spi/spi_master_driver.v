@@ -40,7 +40,7 @@ spi_slave_driver
   , .rst(rst)
   
   , .data_in(data_in)
-  , .ready(ready)
+  //, .ready(ready)
   , .data_out(data_out)
   
   , .mosi(miso)

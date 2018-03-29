@@ -20,12 +20,14 @@ module spi_slave_driver
   );
 
 reg   [DATA_WIDTH-1:0] shiftreg;
-reg   [4:0]            count_sclk;
+reg   [DATA_WIDTH-1:0] shiftreg_out;
 
-localparam STATE_IDLE = 0; // wait for transaction begin
+localparam SIZE_FRAME  = $clog2( DATA_WIDTH );
+localparam STATE_IDLE = 0;        // wait for transaction begin
 localparam STATE_WAIT_SCLK_1 = 1; // wait for SCLK to become 1
 localparam STATE_WAIT_SCLK_0 = 2; // wait for SCLK to become 0
 reg   [2:0] state;
+reg   [SIZE_FRAME-1:0] count_sclk;
 
 always @( posedge rst, posedge clk ) begin
   if ( rst ) begin
@@ -42,19 +44,22 @@ always @( posedge rst, posedge clk ) begin
     else begin
       case ( state )
         STATE_IDLE: begin
-          shiftreg <= data_in;         
+          shiftreg <= data_in; 
+          count_sclk <= 0;        
           state <= STATE_WAIT_SCLK_1;
         end
         STATE_WAIT_SCLK_1: begin
           if ( sclk ) begin
             miso <= shiftreg[ DATA_WIDTH - 1 ];
-            state <= STATE_WAIT_SCLK_0;
+            count_sclk <= count_sclk + 1; 
+            state <= STATE_WAIT_SCLK_0;           
           end
         end
         STATE_WAIT_SCLK_0: begin
           if ( !sclk ) begin
-            shiftreg <= { shiftreg[DATA_WIDTH - 2:0], mosi };
-            state <= STATE_WAIT_SCLK_1;
+            shiftreg_out          <= { shiftreg[DATA_WIDTH - 2:0], mosi };
+            shiftreg <= count_sclk ? { shiftreg[DATA_WIDTH - 2:0], mosi } : data_in;
+            state <= STATE_WAIT_SCLK_1;              
           end
         end
         default: state <= STATE_IDLE;
@@ -63,14 +68,7 @@ always @( posedge rst, posedge clk ) begin
   end
 end
 
-always @( posedge sclk ) begin
-  count_sclk <= count_sclk + 1;
-end
-
-// На первое время, чтоб заработало
-assign { ready, data_out } = {  count_sclk == 9 
-                            ||  count_sclk == 17
-                            ||  count_sclk == 25
-                            ||  state == STATE_IDLE, shiftreg };
+assign { ready, data_out } = {state == STATE_IDLE
+                           || (count_sclk == 0 && sclk) , shiftreg_out };
   
 endmodule

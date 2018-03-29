@@ -94,7 +94,7 @@ initial begin
   $display("finish");
 end
 
-initial begin
+initial begin // nitta communication read
   @(negedge rst);
   oe <= 0;
   cycle <= 0;   repeat(200) @(posedge clk);
@@ -128,66 +128,61 @@ initial begin
   cycle <= 1;               @(posedge clk);
 end
 
-// initial begin // nitta communication
-//   @(negedge rst);
+initial begin // nitta communication write
+  @(negedge rst);
 
 
-  // pu_spi_data_in <= 32'hA1A2A3A4; wr <= 1; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'hA1A2A3A4; wr <= 1;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
 
-  // pu_spi_data_in <= 32'hB1B2B3B4; wr <= 1; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'hB1B2B3B4; wr <= 1;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
 
-  // pu_spi_data_in <= 32'hC1C2C3C4; wr <= 1; oe <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'hC1C2C3C4; wr <= 1;     @(posedge clk);
 
-  // pu_spi_data_in <= 32'hD1D2D3D4; wr <= 1; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'hD1D2D3D4; wr <= 1;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
 
 
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
 
-  // repeat(100) @(posedge clk);
+  repeat(100) @(posedge clk);
 
-  // pu_spi_data_in <= 32'hA2A2A3A4; wr <= 1; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'hA2A2A3A4; wr <= 1;     @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
 
-  // repeat(100) @(posedge clk);
+  repeat(100) @(posedge clk);
 
-  // pu_spi_data_in <= 32'hB2B2B3B4; wr <= 1; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  pu_spi_data_in <= 32'hB2B2B3B4; wr <= 1;    @(posedge clk);
+  pu_spi_data_in <= 32'h00000000; wr <= 0;    @(posedge clk);
 
-  // pu_spi_data_in <= 32'hC2C2C3C4; wr <= 1; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'hC2C2C3C4; wr <= 1;    @(posedge clk);
 
-  // pu_spi_data_in <= 32'hD2D2D3D4; wr <= 1; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'hD2D2D3D4; wr <= 1;    @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0;    @(posedge clk);
 
   // repeat(500) @(posedge clk);
 
-  // pu_spi_data_in <= 32'hB3B2B3B4; wr <= 1; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'hB3B2B3B4; wr <= 1;    @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0;    @(posedge clk);
 
-  // pu_spi_data_in <= 32'hC3C2C3C4; wr <= 1; oe <= 0;     @(posedge clk);
+  // pu_spi_data_in <= 32'hC3C2C3C4; wr <= 1;    @(posedge clk);
 
-  // pu_spi_data_in <= 32'hD3D2D3D4; wr <= 1; oe <= 0;     @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0; oe <= 0;     @(posedge clk);
-
-  // repeat(100)          @(posedge clk);
-  // oe <= 1;   repeat(5) @(posedge clk);
-  // oe <= 0;             @(posedge clk);
-  // repeat(10) @(posedge clk);
+  // pu_spi_data_in <= 32'hD3D2D3D4; wr <= 1;    @(posedge clk);
+  // pu_spi_data_in <= 32'h00000000; wr <= 0;    @(posedge clk);
 
 
-  // $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
-  // for ( i = 0; i < BUF_SIZE; i = i + 1 )
-  //   begin
-  //     $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
-  //   end
+  $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
+  for ( i = 0; i < BUF_SIZE; i = i + 1 )
+    begin
+      $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
+    end
 
-//end
+end
 
 initial begin // spi communication
   @(negedge rst);
