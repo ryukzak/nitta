@@ -22,6 +22,7 @@ module NITTA.DataFlow
 
 import           Data.List        (nub)
 import qualified Data.Map         as M
+import           Data.Set         (singleton, union)
 import           Data.Typeable
 import           GHC.Generics
 import           NITTA.BusNetwork
@@ -54,8 +55,8 @@ data DataFlowGraph v
 
 instance ( Var v ) => Variables (DataFlowGraph v) v where
   variables (DFGNode fb)                  = variables fb
-  variables (DFG g)                       = concatMap variables g
-  variables DFGSwitch{ dfgKey, dfgCases } = dfgKey : concatMap (variables . snd) dfgCases
+  variables (DFG g)                       = unionsMap variables g
+  variables DFGSwitch{ dfgKey, dfgCases } = singleton dfgKey `union` unionsMap (variables . snd) dfgCases
 
 instance WithFunctionalBlocks (DataFlowGraph v) (FB (Parcel v Int)) where
   functionalBlocks (DFGNode fb)          = [ fb ]
@@ -139,7 +140,7 @@ instance ( Var v, Time t
     = let availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT nitta
     in [ ControlFlowO sg
        | sg@DFGSwitch{ dfgKey } <- g
-       , all (`elem` availableVars) $ dfgKey : dfgInputs sg
+       , all (`elem` availableVars) $ singleton dfgKey `union` dfgInputs sg
        ]
   options _ Level{ currentFrame } = options controlDT currentFrame
   options _ _ = error "ControlFlowDT: options: wrong DFG."

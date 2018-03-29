@@ -14,6 +14,7 @@ module NITTA.ProcessUnits.Accum where
 
 import           Data.Default
 import           Data.List                   (intersect, (\\))
+import           Data.Set                    (elems, fromList)
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.SerialPU
@@ -40,7 +41,7 @@ instance ( Var v
          ) => SerialPUState (State v x t) v x t where
 
   bindToState fb ac@Accum{ acIn=[], acOut=[] }
-    | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[a, b], acOut = cs }
+    | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[a, b], acOut=elems cs }
     | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
@@ -51,18 +52,18 @@ instance ( Var v
     | otherwise -- второй аргумент
     = map (\v -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
   stateOptions Accum{ acOut=vs@(_:_) } now -- вывод
-    = [ EndpointO (Source vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
+    = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
   schedule st@Accum{ acIn=vs@(_:_) } act
-    | not $ null $ vs `intersect` variables act
-    = let st' = st{ acIn=vs \\ variables act }
+    | not $ null $ vs `intersect` elems (variables act)
+    = let st' = st{ acIn=vs \\ elems (variables act) }
           i = if length vs == 2 then Init False else Load False
           work = serialSchedule @(Accum v x t) i act
       in (st', work)
   schedule st@Accum{ acIn=[], acOut=vs } act
-    | not $ null $ vs `intersect` variables act
-    = let st' = st{ acOut=vs \\ variables act }
+    | not $ null $ vs `intersect` elems (variables act)
+    = let st' = st{ acOut=vs \\ elems (variables act) }
           work = serialSchedule @(Accum v x t) Out act
       in (st', work)
   schedule _ _ = error "Accum schedule error!"

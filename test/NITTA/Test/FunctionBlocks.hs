@@ -9,7 +9,8 @@
 module NITTA.Test.FunctionBlocks where
 
 import           Data.Default
-import           Data.List               (nub)
+import           Data.Set                (fromList, intersection)
+import qualified Data.Set                as S
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.Fram
 import           NITTA.Types
@@ -20,11 +21,11 @@ framDefSize = frSize (def :: Fram () Int ())
 framAddrGen = choose (0, framDefSize - 1)
 
 
-outputVarsGen = O <$> resize 3 (listOf1 $ vectorOf 3 $ elements ['a'..'z'])
+outputVarsGen = O . fromList <$> resize 3 (listOf1 $ vectorOf 3 $ elements ['a'..'z'])
 inputVarGen = I <$> vectorOf 3 (elements ['a'..'z'])
 
 
-uniqueVars fb = let vs = inputs fb ++ outputs fb in length vs == length (nub vs)
+uniqueVars fb = S.null (inputs fb `intersection` outputs fb)
 
 
 instance Arbitrary (FramInput (Parcel String Int)) where

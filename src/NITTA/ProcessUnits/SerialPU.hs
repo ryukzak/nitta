@@ -30,7 +30,8 @@ import           Control.Lens        hiding (at, (...))
 import           Control.Monad.State
 import           Data.Default
 import           Data.Either
-import           Data.List           (find, intersect)
+import           Data.List           (find)
+import qualified Data.Set            as S
 import           Data.Typeable
 import           NITTA.Types
 import           NITTA.Utils
@@ -113,7 +114,7 @@ instance ( Var v, Time t
     = stateOptions spuState $ nextTick spuProcess
 
   decision proxy pu@SerialPU{ spuCurrent=Nothing, .. } act
-    | Just (fb, compilerKey) <- find (not . null . (variables act `intersect`) . variables . fst) spuRemain
+    | Just (fb, compilerKey) <- find (not . S.null . (variables act `S.intersection`) . variables . fst) spuRemain
     , Right spuState' <- bindToState fb spuState
     = decision proxy pu{ spuState=spuState'
                , spuCurrent=Just CurrentJob

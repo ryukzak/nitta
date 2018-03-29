@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -17,8 +18,8 @@ module NITTA.ProcessUnits.SPI
   ) where
 
 import           Data.Default
-import           Data.List                   (sort)
 import           Data.Maybe                  (catMaybes)
+import           Data.Set                    (elems, fromList, singleton)
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.SerialPU
@@ -48,26 +49,26 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
 
     | Just (Receive (O vs)) <- castFB fb
     , let (ds, rs) = spiReceive
-    = Right st{ spiReceive=(ds, vs:rs) }
+    = Right st{ spiReceive=(ds, elems vs : rs) }
 
     | otherwise = Left $ "Unknown functional block: " ++ show fb
 
-  stateOptions State{ .. } now = catMaybes [ send' spiSend, receive' spiReceive ]
+  stateOptions State{ spiSend, spiReceive } now = catMaybes [ send' spiSend, receive' spiReceive ]
     where
       send' (_, v:_) = Just $ EndpointO (Target v) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
       send' _ = Nothing
-      receive' (_, vs:_) = Just $ EndpointO (Source vs) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
+      receive' (_, vs:_) = Just $ EndpointO (Source $ fromList vs) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
       receive' _ = Nothing
 
   schedule st@State{ spiSend=(ds, v:rs) } act
-    | [v] == variables act
+    | singleton v == variables act
     = let st' = st{ spiSend=(v:ds, rs) }
           work = serialSchedule @(SPI v x t) Sending act
       in (st', work)
 
   schedule st@State{ spiReceive=(ds, vs:rs) } act
     -- FIXME: Ошибка, так как с точки зрения опции, передачу данных можно дробить на несколько шагов.
-    | sort vs == sort (variables act)
+    | fromList vs == variables act
     = let st' = st{ spiReceive=(vs:ds, rs) }
           work = serialSchedule @(SPI v x t) Receiving act
       in (st', work)

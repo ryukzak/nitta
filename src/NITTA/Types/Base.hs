@@ -18,7 +18,6 @@ module NITTA.Types.Base
   ) where
 
 import           Data.Default
-import qualified Data.List        as L
 import qualified Data.Map         as M
 import           Data.Proxy
 import qualified Data.Set         as S
@@ -45,7 +44,7 @@ instance {-# OVERLAPS #-} Var String
 
 class Variables a v | a -> v where
   -- | Получить список идентификаторов связанных переменных.
-  variables :: a -> [v]
+  variables :: a -> S.Set v
 
 
 
@@ -80,11 +79,11 @@ data Parcel v x
 instance Var v => IOTypeFamily (Parcel v x) where
   data I (Parcel v x) = I v -- ^ Загружаемые значения.
     deriving (Show, Eq, Ord)
-  data O (Parcel v x) = O [v] -- ^ Выгружаемые значения.
+  data O (Parcel v x) = O (S.Set v) -- ^ Выгружаемые значения.
     deriving (Show, Eq, Ord)
 
 instance Variables (I (Parcel v x)) v where
-  variables (I v) = [v]
+  variables (I v) = S.singleton v
 instance Variables (O (Parcel v x)) v where
   variables (O v) = v
 
@@ -105,7 +104,7 @@ instance ( WithFunctionalBlocks (FSet pu) (FB (Parcel v x))
          , Typeable v
          , Typeable x
          ) => Variables (FSet pu) v where
-  variables fbs = concatMap variables $ functionalBlocks fbs
+  variables fbs = S.unions $ map variables $ functionalBlocks fbs
 
 
 
@@ -125,10 +124,10 @@ fromFSet f = head $ functionalBlocks f
 class ( Typeable fb
       , Eq fb
       ) => FunctionalBlock fb v | fb -> v where
-  inputs :: fb -> [v]
-  inputs _ = []
-  outputs :: fb -> [v]
-  outputs _ = []
+  inputs :: fb -> S.Set v
+  inputs _ = S.empty
+  outputs :: fb -> S.Set v
+  outputs _ = S.empty
   -- | Возвращает зависимости между аргументами функционального блока.
   -- Формат: (заблокированное значение, блокирующее значение).
   dependency :: fb -> [(v, v)]
@@ -198,7 +197,7 @@ instance ( Var v
   outputs (FB fb) = outputs fb
 
 instance Variables (FB (Parcel v x)) v where
-  variables (FB fb) = inputs fb ++ outputs fb
+  variables (FB fb) = inputs fb `S.union` outputs fb
 
 instance Eq (FB io) where
   FB a == FB b = Just a == cast b
@@ -321,26 +320,20 @@ instance DecisionType (BindingDT title io) where
 -- одно взаимодействие, при этом у PU только один канал для взаимодействия, что в общем то
 -- ограничение. В перспективе должно быть расширено для работы с конвейра.
 data EndpointRole v
-  -- TODO: Change [v] to (Set v) and propagate it.
-  = Source [v] -- ^ Выгрузка данных из PU.
+  = Source (S.Set v) -- ^ Выгрузка данных из PU.
   | Target v   -- ^ Загрузка данных в PU.
-  deriving ( Show, Ord )
-
-instance ( Eq v, Ord v ) => Eq (EndpointRole v) where
-  Target a == Target b = a == b
-  Source a == Source b = S.fromList a == S.fromList b
-  _ == _ = False
+  deriving ( Show, Eq, Ord )
 
 (Target a) << (Target b) | a == b = True
-(Source a) << (Source b)          = all (`elem` a) b
+(Source a) << (Source b)          = all (`S.member` a) b
 _        << _                 = False
 
-(Source a) \\\ (Source b) = Source (a L.\\ b)
+(Source a) \\\ (Source b) = Source $ S.difference a b
 a \\\ b = error $ "Can't get sub endpoint for " ++ show a ++ " " ++ show b
 
 instance Variables (EndpointRole v) v where
   variables (Source vs) = vs
-  variables (Target v)  = [v]
+  variables (Target v)  = S.singleton v
 
 
 

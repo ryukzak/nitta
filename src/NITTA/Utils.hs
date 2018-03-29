@@ -16,8 +16,9 @@ module NITTA.Utils where
 
 import           Control.Monad.State
 import           Data.Default
-import           Data.List           (minimumBy, sortOn, (\\))
+import           Data.List           (minimumBy, sortOn)
 import           Data.Maybe          (mapMaybe)
+import           Data.Set            (difference, elems, unions)
 import           Data.Typeable       (Typeable, cast)
 import           NITTA.Types
 import           NITTA.Utils.Lens
@@ -26,6 +27,9 @@ import qualified Numeric.Interval    as I
 import           Text.StringTemplate
 
 
+
+unionsMap f lst = unions $ map f lst
+oneOf = head . elems
 
 instance ( Default (Instruction pu)
          , Show (Instruction pu)
@@ -147,8 +151,8 @@ extractInstructions pu = mapMaybe (extractInstruction pu) $ sortOn stepStart $ s
 -- | Собрать список переменных подаваемых на вход указанного списка функциональных блоков. При
 -- формировании результата отсеиваются входы, получаемые из функциональных блоков рассматриваемого
 -- списка.
-algInputs fbs = concatMap inputs fbs \\ concatMap outputs fbs
-algOutputs fbs = concatMap outputs fbs \\ concatMap inputs fbs
+algInputs fbs = unionsMap inputs fbs `difference` unionsMap outputs fbs
+algOutputs fbs = unionsMap outputs fbs `difference` unionsMap inputs fbs
 
 
 

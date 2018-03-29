@@ -69,6 +69,7 @@ import           Data.Generics.Aliases (orElse)
 import           Data.List             (find)
 import qualified Data.Map              as M
 import           Data.Maybe
+import qualified Data.Set              as S
 import qualified Data.String.Utils     as S
 import           Data.Typeable
 import           NITTA.Compiler
@@ -508,12 +509,14 @@ instance ( Var v, Time t
          ) => Simulatable (Fram v x t) v x where
   simulateOn cntx@Cntx{..} pu@Fram{..} fb
     | Just (Constant x (O k)) <- castFB fb = set cntx k x
-    | Just (Loop (O k1@(k:_)) (I _k2)) <- castFB fb = do
+    | Just (Loop (O k1) (I _k2)) <- castFB fb
+    , let k = head $ S.elems k1
+    = do
       let v = fromMaybe (addr2value $ findAddress k pu) $ cntx `get` k
       set cntx k1 v
     | Just fb'@Reg{} <- castFB fb = simulate cntx fb'
     | Just (FramInput addr (O k)) <- castFB fb = do
-      let v = fromMaybe (addr2value addr) $ cntx `get` head k
+      let v = fromMaybe (addr2value addr) $ cntx `get` oneOf k
       set cntx k v
     | Just (FramOutput addr (I k)) <- castFB fb = do
       v <- get cntx k
@@ -615,7 +618,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
   = concatMap ( ("      @(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
   where
     busState t
-      | Just (Source (v : _)) <- endpointAt t p
+      | Just (Source vs) <- endpointAt t p, let v = oneOf vs
       = checkBus v $ maybe (error $ show ("checkBus" ++ show v ++ show cntx) ) show (get cntx v)
       | otherwise
       = "/* NO OUTPUT */"
@@ -667,9 +670,9 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
     variableSendAt v = [ t | Step{ sTime=Activity t, sDesc=info } <- steps
                            , v `elem` f info
                            ]
-    f :: StepInfo (_io v x) -> [v]
+    f :: StepInfo (_io v x) -> S.Set v
     f (EndpointRoleStep rule) = variables rule
-    f _                       = []
+    f _                       = S.empty
 
 
 instance ( Time t, Var v ) => DefinitionSynthesis (Fram v x t) where

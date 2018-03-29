@@ -15,6 +15,7 @@ module NITTA.ProcessUnits.Shift where
 import           Data.Bits
 import           Data.Default
 import           Data.List                   (intersect, (\\))
+import           Data.Set                    (elems, fromList)
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.SerialPU
@@ -41,7 +42,7 @@ instance Default (State v x t) where
 instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t where
 
   bindToState fb s@State{ sIn=Nothing, sOut=[] }
-    | Just (ShiftL (I a) (O cs)) <- castFB fb = Right s{ sIn=Just a, sOut = cs }
+    | Just (ShiftL (I a) (O cs)) <- castFB fb = Right s{ sIn=Just a, sOut=elems cs }
     | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
@@ -49,7 +50,7 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
   stateOptions State{ sIn=Just v } now
     = [ EndpointO (Target v) (TimeConstrain (now ... maxBound) (singleton 2)) ]
   stateOptions State{ sOut=vs@(_:_) } now -- вывод
-    = [ EndpointO (Source vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
+    = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
   schedule st@State{ sIn=Just v } act
@@ -61,8 +62,8 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
             return $ a ++ b
       in (st', work)
   schedule st@State{ sOut=vs } act
-    | not $ null $ vs `intersect` variables act
-    = let st' = st{ sOut=vs \\ variables act }
+    | not $ null $ vs `intersect` elems (variables act)
+    = let st' = st{ sOut=vs \\ elems (variables act) }
           work = serialSchedule @(Shift v x t) Out act
       in (st', work)
   schedule _ _ = error "Accum schedule error!"

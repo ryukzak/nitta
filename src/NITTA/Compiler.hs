@@ -30,10 +30,12 @@ module NITTA.Compiler
 
 import           Control.Arrow    (second)
 import           Data.Default
-import           Data.List        (find, intersect, sort, sortOn)
+import           Data.List        (find, sortOn)
 import qualified Data.Map         as M
 import           Data.Maybe
 import           Data.Proxy
+import           Data.Set         (intersection, member, singleton)
+import qualified Data.Set         as S
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.DataFlow
@@ -65,8 +67,8 @@ bindAllAndNaiveSchedule alg pu0 = naiveSchedule $ bindAll alg pu0
 isSchedulingComplete pu
   = let os = options endpointDT pu
         d = passiveOption2action $ head os
-        algVars = sort $ concatMap variables $ functionalBlocks pu
-        processVars = sort $ concatMap variables $ getEndpoints $ process pu
+        algVars = unionsMap variables $ functionalBlocks pu
+        processVars = unionsMap variables $ getEndpoints $ process pu
     in if null os
         then algVars == processVars
         else isSchedulingComplete $ decision endpointDT pu d
@@ -135,11 +137,11 @@ instance ( Time t, Var v
       dataFlowOptions = sensibleOptions $ filterByDFG $ options dataFlowDT nitta
       allowByDFG = allowByDFG' dfg
       allowByDFG' (DFGNode fb)        = variables fb
-      allowByDFG' (DFG g)             = concatMap allowByDFG' g
-      allowByDFG' DFGSwitch{ dfgKey } = [ dfgKey ]
+      allowByDFG' (DFG g)             = unionsMap allowByDFG' g
+      allowByDFG' DFGSwitch{ dfgKey } = singleton dfgKey
       filterByDFG
         = map (\t@DataFlowO{ dfoTargets } -> t
-                  { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `elem` allowByDFG
+                  { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `member` allowByDFG
                                                                       then desc
                                                                       else Nothing)
                                                 ) $ M.assocs dfoTargets
@@ -335,7 +337,7 @@ optionsAfterBind fb pu = case bind fb pu of
   Right pu' -> filter (\(EndpointO act _) -> act `optionOf` fb) $ options endpointDT pu'
   _         -> []
   where
-    act `optionOf` fb' = not $ null (variables act `intersect` variables fb')
+    act `optionOf` fb' = not $ S.null (variables act `intersection` variables fb')
 
 
 -- * Утилиты

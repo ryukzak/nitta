@@ -23,8 +23,10 @@ import           Data.Bits
 import           Data.List     (find)
 import qualified Data.Map      as M
 import           Data.Maybe
+import           Data.Set      (elems, union)
 import           Data.Typeable
 import           NITTA.Types
+import           NITTA.Utils
 
 
 
@@ -136,8 +138,8 @@ reg a b = FB $ Reg a b
 instance IOType io v => FunctionalBlock (Reg io) v where
   inputs  (Reg a _b) = variables a
   outputs (Reg _a b) = variables b
-  dependency (Reg i o) = [ (b, a) | a <- variables i
-                                  , b <- variables o
+  dependency (Reg i o) = [ (b, a) | a <- elems $ variables i
+                                  , b <- elems $ variables o
                                   ]
 instance ( Ord v ) => FunctionSimulation (Reg (Parcel v x)) v x where
   simulate cntx (Reg (I k1) (O k2)) = do
@@ -167,10 +169,10 @@ deriving instance IOType io v => Show (Add io)
 deriving instance IOType io v => Eq (Add io)
 
 instance IOType io v => FunctionalBlock (Add io) v where
-  inputs  (Add  a  b _c) = variables a ++ variables b
+  inputs  (Add  a  b _c) = variables a `union` variables b
   outputs (Add _a _b  c) = variables c
-  dependency (Add a b c) = [ (y, x) | x <- variables a ++ variables b
-                                    , y <- variables c
+  dependency (Add a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
+                                    , y <- elems $ variables c
                                     ]
 instance ( Ord v, Num x ) => FunctionSimulation (Add (Parcel v x)) v x where
   simulate cntx (Add (I k1) (I k2) (O k3)) = do
@@ -198,7 +200,7 @@ deriving instance ( IOType io v ) => Show (ShiftL io)
 deriving instance ( IOType io v ) => Eq (ShiftL io)
 
 instance ( IOType io v ) => FunctionalBlock (ShiftL io) v where
-  outputs (ShiftL i o) = variables i ++ variables o
+  outputs (ShiftL i o) = variables i `union` variables o
 instance ( Ord v, Bits x ) => FunctionSimulation (ShiftL (Parcel v x)) v x where
   simulate cntx (ShiftL (I k1) (O k2)) = do
     v1 <- cntx `get` k1
@@ -226,6 +228,6 @@ instance ( IOType io v ) => FunctionalBlock (Receive io) v where
   outputs (Receive o) = variables o
 instance ( Ord v ) => FunctionSimulation (Receive (Parcel v x)) v x where
   simulate cntx (Receive (O ks)) = do
-    let k = head ks
+    let k = oneOf ks
     (cntx', v) <- cntx `receive` k
     set cntx' ks v

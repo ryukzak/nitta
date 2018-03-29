@@ -34,10 +34,11 @@ import           Control.Monad.State
 import qualified Data.Array           as A
 import           Data.Default
 import           Data.Either
-import           Data.List            (find, intersect, nub, partition, sortOn,
-                                       (\\))
+import           Data.List            (find, nub, partition, sortOn, (\\))
 import qualified Data.Map             as M
 import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
+import           Data.Set             (elems, fromList, intersection)
+import qualified Data.Set             as S
 import qualified Data.String.Utils    as S
 import           Data.Typeable
 import           NITTA.FunctionBlocks (get')
@@ -109,7 +110,7 @@ instance ( Title title
         = let (ready, notReady) = partition (\fb -> insideOut fb || all (`elem` cntx) (inputs fb)) fbs
           in case ready of
             [] -> error "Cycle in algorithm!"
-            _  -> ready ++ sortFBs notReady (concatMap outputs ready ++ cntx)
+            _  -> ready ++ sortFBs notReady ((elems $ unionsMap outputs ready) ++ cntx)
 
 
 instance ( Title title, Var v, Time t
@@ -119,7 +120,7 @@ instance ( Title title, Var v, Time t
          where
   options _proxy net@BusNetwork{..}
     = concat [ [ DataFlowO (fromPu, fixPullConstrain pullAt) $ M.fromList pushs
-               | pushs <- mapM pushOptionsFor pullVars
+               | pushs <- mapM pushOptionsFor $ elems pullVars
                , let pushTo = mapMaybe (fmap fst . snd) pushs
                , length (nub pushTo) == length pushTo
                ]
@@ -146,7 +147,7 @@ instance ( Title title, Var v, Time t
         let fbs = bnRemains ++ concat (M.elems bnBinded)
             alg = foldl
                   (\dict (a, b) -> M.adjust ((:) b) a dict)
-                  (M.fromList [(v, []) | v <- concatMap variables fbs])
+                  (M.fromList [(v, []) | v <- elems $ unionsMap variables fbs])
                   $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
                   $ concatMap dependency fbs
             notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
@@ -173,7 +174,7 @@ instance ( Title title, Var v, Time t
         map ((\event -> (inf event - transportStartAt) + width event) . snd) $ M.elems push'
       transportEndAt = transportStartAt + transportDuration
       -- if puTitle not exist - skip it...
-      pullStep = M.adjust (\dpu -> decision endpointDT dpu $ EndpointD (Source pullVars) (act^.at)) (fst dfdSource)
+      pullStep = M.adjust (\dpu -> decision endpointDT dpu $ EndpointD (Source $ fromList pullVars) (act^.at)) (fst dfdSource)
       pushStep (var, (dpuTitle, pushAt)) =
         M.adjust (\dpu -> decision endpointDT dpu $ EndpointD (Target var) pushAt) dpuTitle
       pushSteps = map pushStep $ M.assocs push'
@@ -292,7 +293,7 @@ instance ( Var v
         ]
 
       selfTransport fb puTitle =
-        not $ null $ variables fb `intersect` concatMap variables (binded puTitle)
+        not $ null $ variables fb `intersection` unionsMap variables (binded puTitle)
 
       binded puTitle | puTitle `M.member` bnBinded = bnBinded M.! puTitle
                      | otherwise = []
@@ -441,7 +442,10 @@ instance ( Title title, Var v, Time t
           assert time
             = let pulls = filter (\case (Source _) -> True; _ -> False) $ endpointsAt time p
               in case pulls of
-                Source (v:_) : _ -> concat
+                Source vs : _
+                  | not $ S.null vs
+                  , let v = oneOf vs
+                  -> concat
                     [ "if ( !( net.data_bus === " ++ show (get' cntx' v) ++ ") ) "
                     ,   "\\$display("
                     ,     "\""
