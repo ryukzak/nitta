@@ -35,10 +35,10 @@ instance Arbitrary (FramOutput (Parcel String Int)) where
   arbitrary = suchThat (FramOutput <$> framAddrGen <*> inputVarGen) uniqueVars
 
 instance Arbitrary (Loop (Parcel String Int)) where
-  arbitrary = suchThat (Loop <$> outputVarsGen <*> inputVarGen) uniqueVars
+  arbitrary = suchThat (Loop <$> (X <$> choose (0, 256)) <*> outputVarsGen <*> inputVarGen) uniqueVars
 
 instance Arbitrary (Reg (Parcel String Int)) where
   arbitrary = suchThat (Reg <$> inputVarGen <*> outputVarsGen) uniqueVars
 
-instance Arbitrary (Constant Int (Parcel String Int)) where
-  arbitrary = suchThat (Constant <$> choose (10, 16) <*> outputVarsGen) uniqueVars
+instance Arbitrary (Constant (Parcel String Int)) where
+  arbitrary = suchThat (Constant <$> (X <$> choose (10, 16)) <*> outputVarsGen) uniqueVars

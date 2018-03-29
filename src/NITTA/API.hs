@@ -80,13 +80,13 @@ synthesisServer stm
 
 type StepsAPI
      = "steps" :> Get '[JSON] [ST]
+  :<|> "steps" :> QueryParam' '[Required] "toEnd" Bool :> Post '[JSON] ST
   :<|> "steps" :> Capture "stepId" Int :>
        ( Get '[JSON] ST
          -- Дублирование auto в path - костыль. Проблема в следующем - параметры
          -- и флаги не влияют на имя функции в автоматически генерируемом API
          -- для JS, что приводит к утере одного из методов. Что бы решить эту
          -- проблему - параметр был явно указан в path.
-    :<|> "auto" :> QueryFlag "auto" :> Post '[JSON] ST
     :<|> QueryParam' '[Required] "manual" Int :> Post '[JSON] ST
     :<|> "config" :> Get '[JSON] NaiveOpt
     :<|> "decisions" :> Get '[JSON] [Decision (CompilerDT String String String T)]
@@ -101,8 +101,8 @@ type StepsAPI
 
 stepsServer stm sId
      = ( steps <$> getSynthesis stm sId )
+  :<|> ( liftSTM . autoPostStep )
   :<|> \ stepId -> getStep stepId
-              :<|> ( \ True -> liftSTM $ autoPostStep stepId )
               :<|> ( liftSTM . manualPostStep stepId )
               :<|> ( config <$> getStep stepId )
               :<|> ( map option2decision . options compiler <$> getStep stepId )
@@ -113,10 +113,11 @@ stepsServer stm sId
       Synthesis{..} <- getSynthesis' stm sId
       unless ( length steps > stepId ) $ throwSTM err409{ errBody="Step not exists." }
       return $ reverse steps !! stepId
-    autoPostStep stepId = do
+    autoPostStep toEnd = do
       syn@Synthesis{..} <- getSynthesis' stm sId
-      unless ( length steps <= stepId ) $ throwSTM err409{ errBody="Steps already exist." }
-      let steps' = foldl (\(x:xs) _ -> mkStep x : x : xs) steps [length steps .. stepId]
+      let steps' = if toEnd
+          then mkStepToEnd steps
+          else mkStep (head steps) : steps
       M.insert syn{ steps=steps' } sId stm
       return $ head steps'
     manualPostStep stepId decisionId = do
@@ -128,6 +129,10 @@ stepsServer stm sId
       M.insert syn' sId stm
       return step'
     mkStep step = fromMaybe (error "Synthesis is over.") $ naive' step
+    mkStepToEnd ss@(s:_)
+      | Just s' <- naive' s = mkStepToEnd (s':ss)
+      | otherwise = ss
+    mkStepToEnd _ = error "Empty CompilerState."
 
 
 liftSTM stm = liftIO (atomically $ catchSTM (Right <$> stm) (return . Left)) >>= either throwError return

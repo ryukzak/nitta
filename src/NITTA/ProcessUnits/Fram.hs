@@ -119,7 +119,7 @@ instance FunctionalSet (Fram v x t) where
     | FramOutput' (FramOutput (Parcel v x))
     | Loop' (Loop (Parcel v x))
     | Reg' (Reg (Parcel v x))
-    | Constant' (Constant x (Parcel v x))
+    | Constant' (Constant (Parcel v x))
     deriving ( Show, Eq )
 
 instance ( Var v, Time t, Typeable x, Eq x, Show x
@@ -137,7 +137,7 @@ instance ( Var v
   toFSet (FB fb0)
     | Just fb@(Constant _ _) <- cast fb0 = Right $ Constant' fb
     | Just fb@(Reg _ _) <- cast fb0 = Right $ Reg' fb
-    | Just fb@(Loop _ _) <- cast fb0 = Right $ Loop' fb
+    | Just fb@(Loop _ _ _) <- cast fb0 = Right $ Loop' fb
     | Just fb@(FramInput _ _) <- cast fb0 = Right $ FramInput' fb
     | Just fb@(FramOutput _ _) <- cast fb0 = Right $ FramOutput' fb
     | otherwise = Left $ "Fram don't support " ++ show fb0
@@ -224,14 +224,15 @@ bindToCell cs fb@(Reg' (Reg (I a) (O b))) c@Cell{ current=Nothing, .. }
                                , actions=[ Target a, Source b ]
                                }
            }
-bindToCell cs fb@(Loop' (Loop (O b) (I a))) c@Cell{ input=Undef, output=Undef }
+bindToCell cs fb@(Loop' (Loop (X x) (O b) (I a))) c@Cell{ input=Undef, output=Undef }
   = Right c{ input=Def def{ functionalBlock=fb
                           , cads=cs
                           , actions=[ Source b, Target a ]
                           }
+           , initialValue=x
            }
 -- Всё должно быть хорошо, так как если ячейка ранее использовалась, то input будет заблокирован.
-bindToCell cs fb@(Constant' (Constant x (O b))) c@Cell{ input=Undef, current=Nothing, output=Undef }
+bindToCell cs fb@(Constant' (Constant (X x) (O b))) c@Cell{ input=Undef, current=Nothing, output=Undef }
   = Right c{ current=Just $ def{ functionalBlock=fb
                                , cads=cs
                                , actions=[ Source b ]
@@ -244,7 +245,7 @@ bindToCell _ fb cell = Left $ "Can't bind " ++ show fb ++ " to " ++ show cell
 
 
 
-instance ( IOType (Parcel v x) v
+instance ( IOType (Parcel v x) v x
          , Var v
          , Time t
          , Typeable x
@@ -483,7 +484,7 @@ instance Connected (Fram v x t) i where
       ] ++ addrs
     where
       addrs = map (\(linkId, i) -> ( linkId
-                                   , maybe X B $ fmap (`testBit` i) addrSignal
+                                   , maybe Q B $ fmap (`testBit` i) addrSignal
                                    )
                   ) $ zip (reverse addr) [0..]
 
@@ -507,12 +508,11 @@ instance ( Var v, Time t
          , Num x
          , Typeable x
          ) => Simulatable (Fram v x t) v x where
-  simulateOn cntx@Cntx{..} pu@Fram{..} fb
-    | Just (Constant x (O k)) <- castFB fb = set cntx k x
-    | Just (Loop (O k1) (I _k2)) <- castFB fb
-    , let k = head $ S.elems k1
-    = do
-      let v = fromMaybe (addr2value $ findAddress k pu) $ cntx `get` k
+  simulateOn cntx@Cntx{..} Fram{..} fb
+    | Just (Constant (X x) (O k)) <- castFB fb = set cntx k x
+    | Just (Loop (X x) (O k1) (I _k2)) <- castFB fb = do
+      let k = oneOf k1
+      let v = fromMaybe x $ cntx `get` k
       set cntx k1 v
     | Just fb'@Reg{} <- castFB fb = simulate cntx fb'
     | Just (FramInput addr (O k)) <- castFB fb = do
@@ -643,7 +643,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
                  , let Just (addr, v) = addr_v
                  ]
     outputStep pu' fb
-      | Just (Loop _bs (I v)) <- castFB fb = Just (findAddress v pu', v)
+      | Just (Loop _ _bs (I v)) <- castFB fb = Just (findAddress v pu', v)
       | Just (FramOutput addr (I v)) <- castFB fb = Just (addr, v)
       | otherwise = Nothing
 

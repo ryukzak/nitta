@@ -56,8 +56,8 @@ microarch = busNetwork 24
 
 synthesisedFib
   = let g = DFG [ node $ FB.add "a" "b" ["b'"]
-                , node $ FB.loop ["a"] "a'"
-                , node $ FB.loop ["b", "a'"] "b'"
+                , node $ FB.loop 1 ["a"] "a'"
+                , node $ FB.loop 1 ["b", "a'"] "b'"
                 ]
         ma = bindAll (functionalBlocks g) microarch
     in Frame ma g Nothing :: SystemState String String String Int (TaggedTime String Int)
@@ -99,9 +99,9 @@ synthesisedFrame
               , FB.framOutput 6 "y"
               , FB.framOutput 7 "z"
               , FB.framOutput 0 "sum"
-              , FB $ FB.Constant (42 :: Int) (O $ fromList ["const"] :: O (Parcel String Int))
+              , FB.constant 42 ["const"]
               , FB.framOutput 9 "const"
-              , ["f"] `FB.loop` "g"
+              , FB.loop 0 ["f"] "g"
               , FB.shiftL "f" ["g"]
               , FB.add "d" "e" ["sum"]
               ]
@@ -138,9 +138,9 @@ root
               , FB.framOutput 6 "y"
               , FB.framOutput 7 "z"
               , FB.framOutput 0 "sum"
-              , FB $ FB.Constant (42 :: Int) (O $ fromList ["const"] :: O (Parcel String Int))
+              , FB.constant 42 ["const"]
               , FB.framOutput 9 "const"
-              , ["f"] `FB.loop` "g"
+              , FB.loop 0 ["f"] "g"
               , FB.shiftL "f" ["g"]
               , FB.add "d" "e" ["sum"]
               ]
@@ -187,7 +187,7 @@ simulateSPI n = do
                                                           } :: Cntx String Int)
     [ FB.receive ["a"] :: FB (Parcel String Int)
     , FB.add "a" "b" ["c1", "c2"]
-    , FB.loop ["b"] "c1"
+    , FB.loop 0 ["b"] "c1"
     , FB.send "c2"
     ]
   print "ok"
