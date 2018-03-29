@@ -146,17 +146,17 @@ instance ( Ord v ) => FunctionSimulation (Reg (Parcel v x)) v x where
 
 
 
-data Loop io = Loop (O io) (I io) deriving ( Typeable )
+data Loop io = Loop (X io) (O io) (I io) deriving ( Typeable )
 deriving instance ( IOType io v x ) => Show (Loop io)
 deriving instance ( IOType io v x ) => Eq (Loop io)
-loop bs a = FB $ Loop bs a
+loop x bs a = FB $ Loop x bs a
 
 instance ( IOType io v x ) => FunctionalBlock (Loop io) v where
-  inputs  (Loop _a b) = variables b
-  outputs (Loop a _b) = variables a
+  inputs  (Loop _ _a b) = variables b
+  outputs (Loop _ a _b) = variables a
   insideOut _ = True
 instance ( Ord v ) => FunctionSimulation (Loop (Parcel v x)) v x where
-  simulate cntx (Loop (O k1) (I k2)) = do
+  simulate cntx (Loop _ (O k1) (I k2)) = do
     let (cntx', v) = fromMaybe (cntx, fromMaybe undefined $ cntx `get` k2) $ cntx `receive` k2
     set cntx' k1 v
 

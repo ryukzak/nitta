@@ -41,7 +41,7 @@ accum_fram1_fram2_netTests
               , FB.framOutput 6 $ I "y"
               , FB.framOutput 7 $ I "z"
               , FB.framOutput 0 $ I "sum"
-              , FB.loop (O ["f"]) $ I "g"
+              , FB.loop (X 0) (O ["f"]) $ I "g"
               , FB.reg (I "f") $ O ["g"]
               , FB $ FB.Add (I "d") (I "e") (O ["sum"])
               ]

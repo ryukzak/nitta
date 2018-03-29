@@ -423,6 +423,7 @@ instance ( Title title, Var v, Time t
         , "      // Start computational cycle from program[1] to program[n] and repeat.                              "
         , "      // Signals effect to processor state after first clk posedge.                                       "
         , assertions
+        , "      repeat(42) @(posedge clk);                                                                          "
         , "      \\$finish;                                                                                          "
         , "    end                                                                                                   "
         , "                                                                                                          "
