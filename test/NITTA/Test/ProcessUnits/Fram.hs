@@ -32,7 +32,7 @@ instance Arbitrary (FSet (Fram String Int t)) where
                     , FramOutput' <$> (arbitrary :: Gen (FB.FramOutput (Parcel String Int)))
                     , Loop' <$> (arbitrary :: Gen (FB.Loop (Parcel String Int)))
                     , Reg' <$> (arbitrary :: Gen (FB.Reg (Parcel String Int)))
-                    , Constant' <$> (arbitrary :: Gen (FB.Constant Int (Parcel String Int)))
+                    , Constant' <$> (arbitrary :: Gen (FB.Constant (Parcel String Int)))
                     ]
 
 -----------------------------------------------------------

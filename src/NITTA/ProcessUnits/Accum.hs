@@ -114,7 +114,7 @@ instance Connected (Accum v x t) i where
   transmitToLink Microcode{..} Link{..}
     = [ (init, B initSignal)
       , (load, B loadSignal)
-      , (neg, maybe X B negSignal)
+      , (neg, maybe Q B negSignal)
       , (oe, B oeSignal)
       ]
 

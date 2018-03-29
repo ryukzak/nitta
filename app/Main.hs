@@ -98,7 +98,7 @@ synthesisedFrame
               , FB.framOutput 6 $ I "y"
               , FB.framOutput 7 $ I "z"
               , FB.framOutput 0 $ I "sum"
-              , FB $ FB.Constant (42 :: Int) (O ["const"] :: O (Parcel String Int))
+              , FB $ FB.Constant (X (42 :: Int)) (O ["const"] :: O (Parcel String Int))
               , FB.framOutput 9 $ I "const"
               , FB.loop (O ["f"]) $ I "g"
               , FB $ FB.ShiftL (I "f") $ O ["g"]
@@ -137,7 +137,7 @@ root
               , FB.framOutput 6 $ I "y"
               , FB.framOutput 7 $ I "z"
               , FB.framOutput 0 $ I "sum"
-              , FB $ FB.Constant (42 :: Int) (O ["const"] :: O (Parcel String Int))
+              , FB $ FB.Constant (X (42 :: Int)) (O ["const"] :: O (Parcel String Int))
               , FB.framOutput 9 $ I "const"
               , FB.loop (O ["f"]) $ I "g"
               , FB $ FB.ShiftL (I "f") $ O ["g"]

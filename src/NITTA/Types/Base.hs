@@ -60,15 +60,20 @@ class IOTypeFamily io where
   data I io :: *
   -- | Тип для описания выгружаемого значения.
   data O io :: *
+  -- | Тип значения.
+  data X io :: *
+
 
 class ( Show (I io), Variables (I io) v, Eq (I io)
-       , Show (O io), Variables (O io) v, Eq (O io)
-       , Typeable io, Var v
-       ) => IOType io v | io -> v
+      , Show (O io), Variables (O io) v, Eq (O io)
+      , Show (X io), Eq (X io)
+      , Typeable io, Var v
+      ) => IOType io v x | io -> v x
 instance ( Show (I io), Variables (I io) v, Eq (I io)
          , Show (O io), Variables (O io) v, Eq (O io)
-         , Typeable io, Var v
-         ) => IOType io v
+         , Show (X io), Eq (X io)
+         , Typeable io, Var v, io ~ io' v x
+         ) => IOType io v x
 
 
 
@@ -82,6 +87,8 @@ instance Var v => IOTypeFamily (Parcel v x) where
     deriving (Show, Eq, Ord)
   data O (Parcel v x) = O [v] -- ^ Выгружаемые значения.
     deriving (Show, Eq, Ord)
+  data X (Parcel v x) = X x -- ^ Выгружаемые значения.
+    deriving (Show, Eq)
 
 instance Variables (I (Parcel v x)) v where
   variables (I v) = [v]
@@ -179,8 +186,8 @@ class FunctionSimulation fb v x | fb -> v x where
 
 -- | Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
 data FB io where
-  FB :: ( io ~ (_io v x)
-        , IOType io v
+  FB :: ( io ~ (io' v x)
+        , IOType io v x
         , FunctionalBlock fb v
         , Show fb
         , FunctionSimulation fb v x
@@ -450,7 +457,7 @@ class UnambiguouslyDecode pu where
 -- | Значение сигнальной линии.
 data Value
   -- | Значение не определено.
-  = X
+  = Q
   -- | Значение сигнальной линии установлено в логическое значение.
   | B Bool
   -- | Была сделана попытка установить сигнальную линию несколькими источниками, что привело к
@@ -458,16 +465,16 @@ data Value
   | Broken
 
 instance Default Value where
-  def = X
+  def = Q
 
 instance Show Value where
-  show X         = "x"
+  show Q         = "x"
   show (B True)  = "1"
   show (B False) = "0"
   show Broken    = "B"
 
-X +++ v = v
-v +++ X = v
+Q +++ v = v
+v +++ Q = v
 _ +++ _ = Broken
 
 

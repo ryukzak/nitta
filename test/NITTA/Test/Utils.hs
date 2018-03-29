@@ -12,7 +12,7 @@ import           NITTA.Utils
 import           Test.Tasty.HUnit
 
 values2dumpTests = do
-  "0" @=? values2dump [X, X, X, X]
+  "0" @=? values2dump [Q, Q, Q, Q]
   "0" @=? values2dump [B False, B False, B False, B False]
   "f" @=? values2dump [B True, B True, B True, B True]
   "17" @=? values2dump [B True, B False, B True, B True, B True]
