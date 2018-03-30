@@ -9,17 +9,11 @@
 
 module Main where
 
-import           Control.Monad
-import qualified Data.Array                  as A
 import           Data.Default
 import qualified Data.Map                    as M
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Proxy
-import           Data.Set                    (fromList)
-import qualified Data.String.Utils           as U
-import           Data.Typeable
-import           Debug.Trace
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Middleware.Cors (simpleCors)
 import           NITTA.API
@@ -34,13 +28,10 @@ import qualified NITTA.ProcessUnits.SPI      as SPI
 import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
-import           NITTA.Utils
 import           Servant.JS
 import qualified Servant.JS                  as SJS
-import qualified Servant.JS.Angular          as NG
 import           System.Directory
-import           System.FilePath.Posix       (joinPath, (</>))
-import           Text.StringTemplate
+import           System.FilePath.Posix       (joinPath)
 
 
 microarch = busNetwork 24
@@ -54,112 +45,88 @@ microarch = busNetwork 24
   --                          })
   ]
 
-synthesisedFib
-  = let g = DFG [ node $ FB.add "a" "b" ["b'"]
-                , node $ FB.loop 1 ["a"] "a'"
-                , node $ FB.loop 1 ["b", "a'"] "b'"
-                ]
-        ma = bindAll (functionalBlocks g) microarch
-    in Frame ma g Nothing :: SystemState String String String Int (TaggedTime String Int)
+fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
+               , FB.loop 1 ["b1", "b2"] "c"
+               , FB.add "a1" "b1" ["c"]
+               ]
 
-synthesisedFib' = foldl (\f' _ -> naive def f') synthesisedFib $ replicate 50 ()
+teacupAlg = [ FB.constant 70000 ["T_room"] :: FB (Parcel String Int)
+            , FB.constant 10000 ["t_ch"]
+            , FB.constant 125 ["t_step1", "t_step2"]
+            , FB.loop 180000 ["T_cup1", "T_cup2"] "t_cup'"
+            -- (Teacup Temperature - T_room) / t_ch
+            , FB.sub "T_room" "T_cup1" ["acc"]
+            , FB.div "acc" "t_ch" ["loss"]
+            -- INTEG ( -loss to Room
+            , FB.mul "loss" "t_step1" ["delta"]
+            , FB.add "T_cup2" "delta" ["t_cup'"]
+            , FB.loop 0 ["t"] "t'"
+            , FB.add "t" "t_step2" ["t'"]
+            ]
 
-synthesisedLevel
-  = let g = DFG [ node $ FB.framInput 3 [ "a" ]
-                , node $ FB.framInput 4 [ "b" ]
-                , node $ FB.add "a" "b" ["c"]
-                , node $ FB.framOutput 0 "c"
-                -- FIXME: Синтезируется, но сгенировать тест пока нельзя.
-                -- , node $ FB.Constant 0 $ O ["p"]
-                -- , node $ FB.Constant 0 $ O ["const0"]
-                -- , node $ FB.Constant 1 $ O ["const1"]
-                -- , DFGSwitch "cond"
-                --   [ ( 0, DFG [ node $ FB.Add (I "c") (I "const0") $ O ["d"] ] )
-                --   , ( 1, DFG [ node $ FB.Add (I "c") (I "const1") $ O ["d"] ] )
-                --   ]
-                -- , node $ FB.FramOutput 0 $ I "d"
-                ]
-        ma = bindAll (functionalBlocks g) microarch
-        f = Frame ma g Nothing :: SystemState String String String Int (TaggedTime String Int)
-    in nitta $ foldl (\f' _ -> naive def f') f $ replicate 50 ()
+spiAlg = [ FB.receive ["a"] :: FB (Parcel String Int)
+         , FB.reg "a" ["b"]
+         , FB.send "b"
+         ]
 
--- | Пример работы с единым временем.
-synthesisedFrame
-  = let alg = [ FB.framInput 3 [ "a"
-                               , "d"
-                               ]
-              , FB.framInput 4 [ "b"
-                               , "c"
-                               , "e"
-                               ]
-              , FB.reg "a" ["x"]
-              , FB.reg "b" ["y"]
-              , FB.reg "c" ["z"]
-              , FB.framOutput 5 "x"
-              , FB.framOutput 6 "y"
-              , FB.framOutput 7 "z"
-              , FB.framOutput 0 "sum"
-              , FB.constant 42 ["const"]
-              , FB.framOutput 9 "const"
-              , FB.loop 0 ["f"] "g"
-              , FB.shiftL "f" ["g"]
-              , FB.add "d" "e" ["sum"]
-              ]
-        dataFlow = DFG $ map DFGNode alg
-        microarch' = bindAll (functionalBlocks dataFlow) microarch
-        f = Frame microarch' dataFlow Nothing :: SystemState String String String Int (TaggedTime String Int)
-        Frame{ nitta=pu } = foldl (\f' _ -> naive def f') f $ replicate 50 ()
-    in pu
+algorithm = [ FB.framInput 3 [ "a"
+                            , "d"
+                            ] :: FB (Parcel String Int)
+            , FB.framInput 4 [ "b"
+                            , "c"
+                            , "e"
+                            ]
+            , FB.reg "a" ["x"]
+            , FB.reg "b" ["y"]
+            , FB.reg "c" ["z"]
+            , FB.framOutput 5 "x"
+            , FB.framOutput 6 "y"
+            , FB.framOutput 7 "z"
+            , FB.framOutput 0 "sum"
+            , FB.constant 42 ["const"]
+            , FB.framOutput 9 "const"
+            , FB.loop 0 ["f"] "g"
+            , FB.shiftL "f" ["g"]
+            , FB.add "d" "e" ["sum"]
+            ]
 
--- | Пример работы с единым временем.
-synthesisedFrameSPI
-  = let alg = [ FB.receive ["a"]
-              , FB.send "b"
-              , FB.reg "a" ["b"]
-              ]
-        dataFlow = DFG $ map DFGNode alg
-        microarch' = bindAll (functionalBlocks dataFlow) microarch
-        f = Frame microarch' dataFlow Nothing :: SystemState String String String Int (TaggedTime String Int)
-        Frame{ nitta=pu } = foldl (\f' _ -> naive def f') f $ replicate 50 ()
-    in pu
+graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
+            , node $ FB.framInput 4 [ "b" ]
+            , node $ FB.add "a" "b" ["c"]
+            , node $ FB.framOutput 0 "c"
+            -- FIXME: Синтезируется, но сгенировать тест пока нельзя.
+            -- , node $ FB.constant 0 ["p"]
+            -- , node $ FB.constant 0 ["const0"]
+            -- , node $ FB.constant 1 ["const1"]
+            -- , DFGSwitch "cond"
+            --   [ ( 0, DFG [ node $ FB.add "c" "const0" ["d"] ] )
+            --   , ( 1, DFG [ node $ FB.add "c" "const1" ["d"] ] )
+            --   ]
+            -- , node $ FB.framOutput 0 "d"
+            ]
 
-root
-  = let alg = [ FB.framInput 3 [ "a"
-                               , "d"
-                               ]
-              , FB.framInput 4 [ "b"
-                               , "c"
-                               , "e"
-                               ]
-              , FB.reg "a" ["x"]
-              , FB.reg "b" ["y"]
-              , FB.reg "c" ["z"]
-              , FB.framOutput 5 "x"
-              , FB.framOutput 6 "y"
-              , FB.framOutput 7 "z"
-              , FB.framOutput 0 "sum"
-              , FB.constant 42 ["const"]
-              , FB.framOutput 9 "const"
-              , FB.loop 0 ["f"] "g"
-              , FB.shiftL "f" ["g"]
-              , FB.add "d" "e" ["sum"]
-              ]
-        dataFlow = DFG $ map DFGNode alg
-        microarch' = bindAll (functionalBlocks dataFlow) microarch
-    in Frame microarch' dataFlow Nothing :: SystemState String String String Int (TaggedTime String Int)
 
 ---------------------------------------------------------------------------------
 
 
 main = do
-  -- test scheduledBranch (def{ cntxVars=M.fromList [] } :: Cntx String Int)
-  test (nitta synthesisedFib') def{ cntxVars=M.fromList [] }
-  -- test scheduledBranchSPI
-  --   (def{ cntxVars=M.fromList [("b", [0])]
-  --       , cntxInputs=M.fromList [("a", [1, 2, 3])]
-  --       } :: Cntx String Int)
-  simulateTeaCup 100
-  -- webServer synthesisedFib
+  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
+  test "graph" (nitta $ synthesis $ frame graph) def
+
+  putStrLn "funSim teacup:"
+  funSim 100 def teacupAlg
+
+  putStrLn "funSim fibonacci:"
+  funSim 20 def fibonacciAlg
+
+  -- putStrLn "funSim spi:"
+  -- funSim 20 def{ cntxVars=M.fromList [("b", [0])]
+  --              , cntxInputs=M.fromList [("a", [1, 2, 3])]
+  --              } spiAlg
+
+  -- putStrLn "Server start on 8080..."
+  -- webServer $ frame $ dfgraph fibonacciAlg
+
 
 webServer root = do
   let prefix = "import axios from 'axios';\n\
@@ -170,54 +137,27 @@ webServer root = do
                                                                   }
   createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
   writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
-  putStrLn "Server start on 8080..."
   app def{ state=root } >>= run 8080 . simpleCors
 
-test pu cntx = do
+
+test n pu cntx = do
   timeline "resource/data.json" pu
-  r <- testBench "../.." (joinPath ["hdl", "gen", "main"]) pu cntx
+  r <- testBench "../.." (joinPath ["hdl", "gen", n]) pu cntx
   if r then putStrLn "Success"
   else putStrLn "Fail"
-  print "ok"
 
 
-simulateSPI n = do
-  mapM_ putStrLn $ take n $ map show $ FB.simulateAlg (def{ cntxVars=M.fromList [("b", [0])]
-                                                          , cntxInputs=M.fromList [("a", [1, 2, 3])]
-                                                          } :: Cntx String Int)
-    [ FB.receive ["a"] :: FB (Parcel String Int)
-    , FB.add "a" "b" ["c1", "c2"]
-    , FB.loop 0 ["b"] "c1"
-    , FB.send "c2"
-    ]
-  print "ok"
+-----------------------------------------------------------
 
 
-simulateFib n = do
-  putStrLn $ (!! n) $ map show $ FB.simulateAlg def
-    [ FB.loop 0 ["a1"      ] "b2"
-    , FB.loop 1 ["b1", "b2"] "c"
-    , FB.add "a1" "b1" ["c"] :: FB (Parcel String Int)
-    ]
-  print "ok"
+funSim n cntx alg = putStrLn $ (!! n) $ map (filter (/= '"') . show) $ FB.simulateAlg cntx alg
 
+dfgraph = DFG . map node
 
-simulateTeaCup n = do
-  putStrLn $ (!! n) $ map (filter (/= '"') . show) $ FB.simulateAlg def
-    [ FB.constant 70000 ["T_room"] :: FB (Parcel String Int)
-    , FB.constant 10000 ["t_ch"]
-    , FB.constant 125 ["t_step1", "t_step2"]
-    , FB.loop 180000 ["T_cup1", "T_cup2"] "t_cup'"
-    -- (Teacup Temperature - T_room) / t_ch
-    , FB.sub "T_room" "T_cup1" ["acc"]
-    , FB.div "acc" "t_ch" ["loss"]
-    -- INTEG ( -loss to Room
-    , FB.mul "loss" "t_step1" ["delta"]
-    , FB.add "T_cup2" "delta" ["t_cup'"]
-    , FB.loop 0 ["t"] "t'"
-    , FB.add "t" "t_step2" ["t'"]
-    ]
-  print "ok"
+frame g
+  = let ma = bindAll (functionalBlocks g) microarch
+    in Frame ma g Nothing :: SystemState String String String Int (TaggedTime String Int)
 
+synthesis f = foldl (\f' _ -> naive def f') f $ replicate 50 ()
 
 getPU puTitle net = fromMaybe (error "Wrong PU type!") $ castPU $ bnPus net M.! puTitle

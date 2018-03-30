@@ -28,7 +28,7 @@ import           Data.Typeable
 import           GHC.Generics
 import           NITTA.Types.Poly
 import           NITTA.Types.Time
-import           Numeric.Interval  hiding (elem)
+import           Numeric.Interval
 
 
 

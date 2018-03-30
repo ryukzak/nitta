@@ -110,7 +110,7 @@ instance ( Title title
         = let (ready, notReady) = partition (\fb -> insideOut fb || all (`elem` cntx) (inputs fb)) fbs
           in case ready of
             [] -> error "Cycle in algorithm!"
-            _  -> ready ++ sortFBs notReady ((elems $ unionsMap outputs ready) ++ cntx)
+            _  -> ready ++ sortFBs notReady (elems (unionsMap outputs ready) ++ cntx)
 
 
 instance ( Title title, Var v, Time t

@@ -81,6 +81,7 @@ simulateAlg cntx0 fbs = step cntx0 $ cycle $ reorderAlgorithm fbs
     step cntx (f:fs)
       | Just cntx' <- simulate cntx f
       = cntx' : step cntx' fs
+      | otherwise = error $ "Simulation error: " ++ show f
     step _ _ = error "Simulation error."
 
 reorderAlgorithm alg = orderAlgorithm' [] alg
