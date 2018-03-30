@@ -405,7 +405,8 @@ instance ( Title title, Var v, Time t
   testEnviroment cntx0 pu@BusNetwork{..} = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
     where
       testBenchImp = renderST
-        [ "module $moduleName$_tb();                                                                                 "
+        [ "`timescale 1 ps/ 1 ps                                                                                     "
+        , "module $moduleName$_tb();                                                                                 "
         , "                                                                                                          "
         , "reg clk, rst;                                                                                             "
         , "$moduleName$ net                                                                                          "
