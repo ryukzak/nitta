@@ -9,6 +9,7 @@ module Main where
 import           Control.Applicative          ((<$>))
 import           Data.Atomics.Counter
 import           NITTA.Test.BusNetwork
+import           NITTA.Test.FunctionBlocks
 import           NITTA.Test.ProcessUnits
 import           NITTA.Test.ProcessUnits.Fram
 import           NITTA.Test.Utils
@@ -26,6 +27,10 @@ main = do
       [ testCase "unit tests" framTestBench
       , QC.testProperty "completeness" $ prop_completness <$> processGen framProxy
       , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram_" counter) $ inputsGen =<< processGen framProxy
+      ]
+    , testGroup "FunctionalBlock"
+      [ testCase "reorderAlgorithm" reorderAlgorithmTest
+      , testCase "fibonacci" simulateFibonacciTest
       ]
     , testGroup "BusNetwork"
       [ testCase "unit tests" accum_fram1_fram2_netTests

@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE IncoherentInstances    #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE StandaloneDeriving     #-}
@@ -18,14 +19,16 @@ module NITTA.Types.Base
   ) where
 
 import           Data.Default
-import qualified Data.Map         as M
+import           Data.List
+import qualified Data.Map          as M
 import           Data.Proxy
-import qualified Data.Set         as S
+import qualified Data.Set          as S
+import qualified Data.String.Utils as S
 import           Data.Typeable
 import           GHC.Generics
 import           NITTA.Types.Poly
 import           NITTA.Types.Time
-import           Numeric.Interval hiding (elem)
+import           Numeric.Interval  hiding (elem)
 
 
 
@@ -170,7 +173,13 @@ data Cntx v x
          , cntxOutputs :: M.Map v [x]
          , cntxFram    :: M.Map (Int, v) [x]
          }
-  deriving (Show)
+
+instance ( Show v, Show x ) => Show (Cntx v x) where
+  show Cntx{ cntxVars, cntxOutputs }
+    = let vs = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxVars
+          os = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxOutputs
+          dt = vs ++ os
+      in S.join "\n" $ map (S.join "\t") $ transpose dt
 
 instance Default (Cntx v x) where
   def = Cntx M.empty M.empty M.empty M.empty

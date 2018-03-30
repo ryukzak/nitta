@@ -158,7 +158,7 @@ main = do
   --   (def{ cntxVars=M.fromList [("b", [0])]
   --       , cntxInputs=M.fromList [("a", [1, 2, 3])]
   --       } :: Cntx String Int)
-  simulateTeaCup 10
+  simulateFib 20
   -- webServer synthesisedFib
 
 webServer root = do
@@ -192,10 +192,18 @@ simulateSPI n = do
     ]
   print "ok"
 
+
+simulateFib n = do
+  putStrLn $ (!! n) $ map show $ FB.simulateAlg (def :: Cntx String Int)
+    [ FB.loop 0 ["a1"      ] "b2"
+    , FB.loop 1 ["b1", "b2"] "c"
+    , FB.add "a1" "b1" ["c"] :: FB (Parcel String Int)
+    ]
+  print "ok"
+
+
 simulateTeaCup n = do
-  mapM_ putStrLn $ take n $ map show $ FB.simulateAlg (def{ cntxVars=M.fromList [("b", [0])]
-                                                          , cntxInputs=M.fromList [("a", [1, 2, 3])]
-                                                          } :: Cntx String Int)
+  putStrLn $ (!! n) $ map show $ FB.simulateAlg (def :: Cntx String Int)
     [ FB.constant 70000 ["Room Temperature"] :: FB (Parcel String Int)
     , FB.constant 10000 ["Characteristic Time"]
     , FB.constant 125 ["TIME STEP"]

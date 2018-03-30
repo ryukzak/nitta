@@ -20,7 +20,7 @@
 module NITTA.FunctionBlocks where
 
 import           Data.Bits
-import           Data.List     (find)
+import           Data.List     (cycle, intersect, (\\))
 import qualified Data.Map      as M
 import           Data.Maybe
 import           Data.Set      (elems, fromList, union)
@@ -76,24 +76,28 @@ push ks v cntx
 -- | Симмулировать алгоритм.
 --
 -- TODO: simulate DFG
-simulateAlg cntx0 fbs
-  = inner cntx0 [] $ sort cntx0 fbs
+simulateAlg cntx0 fbs = step cntx0 $ cycle $ reorderAlgorithm fbs
   where
-    step cntx fs
-      = let err = error "Can't simulate algorithm, because can't define execution sequence or recived data is over."
-            f = fromMaybe err $ find (isJust . simulate cntx) fs
-            fs' = filter (/= f) fs
-            Just cntx' = simulate cntx f
-        in (f, fs', cntx')
+    step cntx (f:fs)
+      | Just cntx' <- simulate cntx f
+      = cntx' : step cntx' fs
+    step _ _ = error "Simulation error."
 
-    sort _ [] = []
-    sort cntx fs = let (f, fs', cntx') = step cntx fs
-                   in f : sort cntx' fs'
-
-    inner cntx [] fs0 = cntx : inner cntx fs0 fs0
-    inner cntx fs fs0 = let (_f, fs', cntx') = step cntx fs
-                        in inner cntx' fs' fs0
-
+reorderAlgorithm alg = orderAlgorithm' [] alg
+  where
+    orderAlgorithm' _ [] = []
+    orderAlgorithm' vs fs
+      | let insideOuts = filter insideOut fs
+      , not $ null insideOuts
+      , let insideOutsOutputs = elems $ unionsMap outputs insideOuts
+      , let ready = filter (not . null . intersect insideOutsOutputs . elems . inputs) insideOuts
+      , not $ null ready
+      = ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
+    orderAlgorithm' vs fs
+      | let ready = filter (null . (\\ vs) . map snd . dependency) fs
+      , not $ null ready
+      = ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
+    orderAlgorithm' _ _ = error "Can't sort algorithm."
 
 
 castFB :: ( Typeable fb ) => FB io -> Maybe (fb io)
@@ -158,10 +162,10 @@ instance ( IOType io v x ) => FunctionalBlock (Loop io) v where
   inputs  (Loop _ _a b) = variables b
   outputs (Loop _ a _b) = variables a
   insideOut _ = True
-instance ( Ord v ) => FunctionSimulation (Loop (Parcel v x)) v x where
-  simulate cntx (Loop (X x) (O k1) (I k2)) = do
-    let (cntx', v) = fromMaybe (cntx, fromMaybe x $ cntx `get` k2) $ cntx `receiveSim` k2
-    set cntx' k1 v
+instance ( Ord v, Show v, Show x ) => FunctionSimulation (Loop (Parcel v x)) v x where
+  simulate cntx (Loop (X x) (O v2) (I v1)) = do
+    let x' = fromMaybe x $ cntx `get` v1
+    set cntx v2 x'
 
 
 
