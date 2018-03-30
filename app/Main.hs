@@ -158,7 +158,7 @@ main = do
   --   (def{ cntxVars=M.fromList [("b", [0])]
   --       , cntxInputs=M.fromList [("a", [1, 2, 3])]
   --       } :: Cntx String Int)
-  simulateFib 20
+  simulateTeaCup 100
   -- webServer synthesisedFib
 
 webServer root = do
@@ -194,7 +194,7 @@ simulateSPI n = do
 
 
 simulateFib n = do
-  putStrLn $ (!! n) $ map show $ FB.simulateAlg (def :: Cntx String Int)
+  putStrLn $ (!! n) $ map show $ FB.simulateAlg def
     [ FB.loop 0 ["a1"      ] "b2"
     , FB.loop 1 ["b1", "b2"] "c"
     , FB.add "a1" "b1" ["c"] :: FB (Parcel String Int)
@@ -203,19 +203,19 @@ simulateFib n = do
 
 
 simulateTeaCup n = do
-  putStrLn $ (!! n) $ map show $ FB.simulateAlg (def :: Cntx String Int)
-    [ FB.constant 70000 ["Room Temperature"] :: FB (Parcel String Int)
-    , FB.constant 10000 ["Characteristic Time"]
-    , FB.constant 125 ["TIME STEP"]
-    , FB.loop 180000 ["Teacup_copy1", "Teacup_copy2"] "Teacup'"
-    -- (Teacup Temperature - Room Temperature) / Characteristic Time
-    , FB.sub "Room Temperature" "Teacup_copy1" ["acc"]
-    , FB.div "acc" "Characteristic Time" ["Heat Loss"]
-    -- INTEG ( -Heat Loss to Room
-    , FB.mul "Heat Loss" "TIME STEP" ["delta"]
-    -- Второй аргумент подаётся как отрицательный, что в общем-то не верно, так как знак должен быть
-    -- известен на уровне числа, а не определяться опцией.
-    , FB.div "delta" "Teacup_copy2" ["Teacup'"]
+  putStrLn $ (!! n) $ map (filter (/= '"') . show) $ FB.simulateAlg def
+    [ FB.constant 70000 ["T_room"] :: FB (Parcel String Int)
+    , FB.constant 10000 ["t_ch"]
+    , FB.constant 125 ["t_step1", "t_step2"]
+    , FB.loop 180000 ["T_cup1", "T_cup2"] "t_cup'"
+    -- (Teacup Temperature - T_room) / t_ch
+    , FB.sub "T_room" "T_cup1" ["acc"]
+    , FB.div "acc" "t_ch" ["loss"]
+    -- INTEG ( -loss to Room
+    , FB.mul "loss" "t_step1" ["delta"]
+    , FB.add "T_cup2" "delta" ["t_cup'"]
+    , FB.loop 0 ["t"] "t'"
+    , FB.add "t" "t_step2" ["t'"]
     ]
   print "ok"
 
