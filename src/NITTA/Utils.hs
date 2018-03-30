@@ -159,7 +159,7 @@ algOutputs fbs = unionsMap outputs fbs `difference` unionsMap inputs fbs
 values2dump vs
   = let vs' = concatMap show vs
         x = length vs' `mod` 4
-        vs'' = if x == 0 then vs' else  replicate (4 - x) '0' ++ vs'
+        vs'' = if x == 0 then vs' else replicate (4 - x) '0' ++ vs'
     in concatMap (\e -> showHex (readBin e) "") $ groupBy4 vs''
   where
     groupBy4 [] = []

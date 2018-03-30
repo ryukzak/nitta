@@ -48,10 +48,10 @@ microarch = busNetwork 24
   , ("fram2", PU def FR.Link{ FR.oe=Index 5, FR.wr=Index 4, FR.addr=map Index [3, 2, 1, 0] } )
   , ("shift", PU def S.Link{ S.work=Index 12, S.direction=Index 13, S.mode=Index 14, S.step=Index 15, S.init=Index 16, S.oe=Index 17 })
   , ("accum", PU def A.Link{ A.init=Index 18, A.load=Index 19, A.neg=Index 20, A.oe=Index 21 } )
-  , ("spi", PU def SPI.Link{ SPI.wr=Index 22, SPI.oe=Index 23
-                           , SPI.start=Name "start", SPI.stop=Name "stop"
-                           , SPI.mosi=Name "mosi", SPI.miso=Name "miso", SPI.sclk=Name "sclk", SPI.cs=Name "cs"
-                           })
+  -- , ("spi", PU def SPI.Link{ SPI.wr=Index 22, SPI.oe=Index 23
+  --                          , SPI.start=Name "start", SPI.stop=Name "stop"
+  --                          , SPI.mosi=Name "mosi", SPI.miso=Name "miso", SPI.sclk=Name "sclk", SPI.cs=Name "cs"
+  --                          })
   ]
 
 synthesisedFib
@@ -175,7 +175,7 @@ webServer root = do
 
 test pu cntx = do
   timeline "resource/data.json" pu
-  r <- testBench ".." (joinPath ["hdl", "gen"]) pu cntx
+  r <- testBench "../.." (joinPath ["hdl", "gen", "main"]) pu cntx
   if r then putStrLn "Success"
   else putStrLn "Fail"
   print "ok"
