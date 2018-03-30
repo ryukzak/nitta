@@ -158,8 +158,8 @@ main = do
   --   (def{ cntxVars=M.fromList [("b", [0])]
   --       , cntxInputs=M.fromList [("a", [1, 2, 3])]
   --       } :: Cntx String Int)
-  -- simulateSPI 3
-  webServer synthesisedFib
+  simulateTeaCup 10
+  -- webServer synthesisedFib
 
 webServer root = do
   let prefix = "import axios from 'axios';\n\
@@ -191,5 +191,25 @@ simulateSPI n = do
     , FB.send "c2"
     ]
   print "ok"
+
+simulateTeaCup n = do
+  mapM_ putStrLn $ take n $ map show $ FB.simulateAlg (def{ cntxVars=M.fromList [("b", [0])]
+                                                          , cntxInputs=M.fromList [("a", [1, 2, 3])]
+                                                          } :: Cntx String Int)
+    [ FB.constant 70000 ["Room Temperature"] :: FB (Parcel String Int)
+    , FB.constant 10000 ["Characteristic Time"]
+    , FB.constant 125 ["TIME STEP"]
+    , FB.loop 180000 ["Teacup_copy1", "Teacup_copy2"] "Teacup'"
+    -- (Teacup Temperature - Room Temperature) / Characteristic Time
+    , FB.sub "Room Temperature" "Teacup_copy1" ["acc"]
+    , FB.div "acc" "Characteristic Time" ["Heat Loss"]
+    -- INTEG ( -Heat Loss to Room
+    , FB.mul "Heat Loss" "TIME STEP" ["delta"]
+    -- Второй аргумент подаётся как отрицательный, что в общем-то не верно, так как знак должен быть
+    -- известен на уровне числа, а не определяться опцией.
+    , FB.div "delta" "Teacup_copy2" ["Teacup'"]
+    ]
+  print "ok"
+
 
 getPU puTitle net = fromMaybe (error "Wrong PU type!") $ castPU $ bnPus net M.! puTitle

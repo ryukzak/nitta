@@ -159,8 +159,8 @@ instance ( IOType io v x ) => FunctionalBlock (Loop io) v where
   outputs (Loop _ a _b) = variables a
   insideOut _ = True
 instance ( Ord v ) => FunctionSimulation (Loop (Parcel v x)) v x where
-  simulate cntx (Loop _ (O k1) (I k2)) = do
-    let (cntx', v) = fromMaybe (cntx, fromMaybe undefined $ cntx `get` k2) $ cntx `receiveSim` k2
+  simulate cntx (Loop (X x) (O k1) (I k2)) = do
+    let (cntx', v) = fromMaybe (cntx, fromMaybe x $ cntx `get` k2) $ cntx `receiveSim` k2
     set cntx' k1 v
 
 
@@ -182,6 +182,66 @@ instance ( Ord v, Num x ) => FunctionSimulation (Add (Parcel v x)) v x where
     v2 <- cntx `get` k2
     let v3 = v1 + v2
     set cntx k3 v3
+
+
+
+data Sub io = Sub (I io) (I io) (O io) deriving ( Typeable )
+deriving instance ( IOType io v x ) => Show (Sub io)
+deriving instance ( IOType io v x ) => Eq (Sub io)
+sub a b c = FB $ Sub (I a) (I b) $ O $ fromList c
+
+instance ( IOType io v x ) => FunctionalBlock (Sub io) v where
+  inputs  (Sub  a  b _c) = variables a `union` variables b
+  outputs (Sub _a _b  c) = variables c
+  dependency (Sub a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
+                                    , y <- elems $ variables c
+                                    ]
+instance ( Ord v, Num x ) => FunctionSimulation (Sub (Parcel v x)) v x where
+  simulate cntx (Sub (I k1) (I k2) (O k3)) = do
+    v1 <- cntx `get` k1
+    v2 <- cntx `get` k2
+    let v3 = v1 - v2
+    set cntx k3 v3
+
+
+
+data Mul io = Mul (I io) (I io) (O io) deriving ( Typeable )
+deriving instance ( IOType io v x ) => Show (Mul io)
+deriving instance ( IOType io v x ) => Eq (Mul io)
+mul a b c = FB $ Mul (I a) (I b) $ O $ fromList c
+
+instance ( IOType io v x ) => FunctionalBlock (Mul io) v where
+  inputs  (Mul  a  b _c) = variables a `union` variables b
+  outputs (Mul _a _b  c) = variables c
+  dependency (Mul a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
+                                    , y <- elems $ variables c
+                                    ]
+instance ( Ord v, Num x ) => FunctionSimulation (Mul (Parcel v x)) v x where
+  simulate cntx (Mul (I k1) (I k2) (O k3)) = do
+    v1 <- cntx `get` k1
+    v2 <- cntx `get` k2
+    let v3 = v1 * v2
+    set cntx k3 v3
+
+
+
+data Div io = Div (I io) (I io) (O io) deriving ( Typeable )
+deriving instance ( IOType io v x ) => Show (Div io)
+deriving instance ( IOType io v x ) => Eq (Div io)
+div a b c = FB $ Div (I a) (I b) $ O $ fromList c
+
+instance ( IOType io v x ) => FunctionalBlock (Div io) v where
+  inputs  (Div  a  b _c) = variables a `union` variables b
+  outputs (Div _a _b  c) = variables c
+  dependency (Div a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
+                                    , y <- elems $ variables c
+                                    ]
+instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Div (Parcel v x)) v x where
+  simulate cntx (Div (I k1) (I k2) (O k3)) = do
+    v1 <- cntx `get` k1
+    v2 <- cntx `get` k2
+    let v3 = fromIntegral v1 / fromIntegral v2 :: Double
+    set cntx k3 $ round v3
 
 
 
