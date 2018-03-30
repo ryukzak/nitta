@@ -92,7 +92,7 @@ algorithm = [ FB.framInput 3 [ "a"
 
 graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
             , node $ FB.framInput 4 [ "b" ]
-            , node $ FB.add "a" "b" ["c"]
+            , node $ FB.sub "a" "b" ["c"]
             , node $ FB.framOutput 0 "c"
             -- FIXME: Синтезируется, но сгенировать тест пока нельзя.
             -- , node $ FB.constant 0 ["p"]
