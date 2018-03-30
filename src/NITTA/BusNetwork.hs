@@ -251,7 +251,7 @@ instance {-# OVERLAPS #-}
   microcodeAt BusNetwork{..} t
     = BusNetworkMC $ foldl merge st $ M.elems bnPus
     where
-      st = A.listArray (0, bnSignalBusWidth) $ repeat def
+      st = A.listArray (0, bnSignalBusWidth - 1) $ repeat def
       merge arr PU{..}
         = let transmition = transmitToLink (microcodeAt unit t) links
           in foldl merge' arr transmition
