@@ -22,7 +22,7 @@ localparam SIZE_FRAME  = $clog2( DATA_WIDTH );
 reg [DATA_WIDTH-1:0]     frame;
 reg [DATA_WIDTH-1:0]     frame_send;
 reg [SPI_DATA_WIDTH-1:0] byte;
-reg [SIZE_FRAME-4:0] count_frame_send;
+reg [SIZE_FRAME-4:0]     count_frame_send;
 
 reg took;
 reg took_send;
@@ -31,14 +31,15 @@ always @( posedge clk ) begin
     if ( rst ) begin
         took <= 0;
         took_send <= 0;
-        count_frame_send <= 3;
+        count_frame_send <= SIZE_FRAME - 2;
     end else begin
+
         // [+] receive master
         if ( oe && took ) begin
             attr_hoarder[0] <= 1;
             data_out <= frame;
         end else if ( ready && !took ) begin
-            frame <= { frame[23:0], data_in_byte };
+            frame <= { frame[DATA_WIDTH-SPI_DATA_WIDTH-1:0], data_in_byte };
             took <= 1;
         end else if ( !ready && took ) begin
             took <= 0;
@@ -48,7 +49,7 @@ always @( posedge clk ) begin
 
         // [+] send master
         if ( wr ) begin
-            count_frame_send <= 3;
+            count_frame_send <= SIZE_FRAME - 2;
             frame_send <= data_in;
         end else if ( ready && !took_send) begin            
             took_send <= 1;
@@ -56,6 +57,7 @@ always @( posedge clk ) begin
             count_frame_send <= count_frame_send - 1;
             took_send <= 0;
         end
+
     end
 end
 
