@@ -6,6 +6,7 @@
 {-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module Main where
 
@@ -23,6 +24,7 @@ import           NITTA.DataFlow
 import qualified NITTA.FunctionBlocks        as FB
 import qualified NITTA.ProcessUnits.Accum    as A
 import qualified NITTA.ProcessUnits.Fram     as FR
+import qualified NITTA.ProcessUnits.Mult     as M
 import qualified NITTA.ProcessUnits.Shift    as S
 import qualified NITTA.ProcessUnits.SPI      as SPI
 import           NITTA.TestBench
@@ -34,7 +36,7 @@ import           System.Directory
 import           System.FilePath.Posix       (joinPath)
 
 
-microarch = busNetwork 24
+microarch = busNetwork 27
   [ ("fram1", PU def FR.Link{ FR.oe=Index 11, FR.wr=Index 10, FR.addr=map Index [9, 8, 7, 6] } )
   , ("fram2", PU def FR.Link{ FR.oe=Index 5, FR.wr=Index 4, FR.addr=map Index [3, 2, 1, 0] } )
   , ("shift", PU def S.Link{ S.work=Index 12, S.direction=Index 13, S.mode=Index 14, S.step=Index 15, S.init=Index 16, S.oe=Index 17 })
@@ -43,12 +45,18 @@ microarch = busNetwork 24
   --                          , SPI.start=Name "start", SPI.stop=Name "stop"
   --                          , SPI.mosi=Name "mosi", SPI.miso=Name "miso", SPI.sclk=Name "sclk", SPI.cs=Name "cs"
   --                          })
+  , ("mult", PU def M.Link{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
   ]
 
 fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
                , FB.loop 1 ["b1", "b2"] "c"
                , FB.add "a1" "b1" ["c"]
                ]
+
+fibonacciMultAlg = [ FB.loop 1 ["a1"      ] "b2" :: FB (Parcel String Int)
+                   , FB.loop 2 ["b1", "b2"] "c"
+                   , FB.mul "a1" "b1" ["c"]
+                   ]
 
 teacupAlg = [ FB.constant 70000 ["T_room"] :: FB (Parcel String Int)
             , FB.constant 10000 ["t_ch"]
@@ -110,8 +118,9 @@ graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
 
 
 main = do
-  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
-  test "graph" (nitta $ synthesis $ frame graph) def
+  test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
+  -- test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
+  -- test "graph" (nitta $ synthesis $ frame graph) def
 
   putStrLn "funSim teacup:"
   funSim 100 def teacupAlg

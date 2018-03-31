@@ -22,6 +22,7 @@ library
                      , NITTA.FunctionBlocks
                      , NITTA.ProcessUnits.Accum
                      , NITTA.ProcessUnits.Fram
+                     , NITTA.ProcessUnits.Mult
                      , NITTA.ProcessUnits.SerialPU
                      , NITTA.ProcessUnits.Shift
                      , NITTA.ProcessUnits.SPI
