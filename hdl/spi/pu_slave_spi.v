@@ -144,7 +144,7 @@ hoarder receive (
 ,	.attr_hoarder( attr_hoarder_receive )
 	// Send
 ,	.data_in( hoarder_data_in )
-,	.wr( signal_wr_transfer_to_send )
+,	.wr( flag_start )
 ,	.data_out_byte( spi_data_send )
 );
 

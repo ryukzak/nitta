@@ -11,7 +11,7 @@ module spi_buffer
 	, input      [DATA_WIDTH-1:0] data_in
 
 	, input                       oe 
-	, output reg [DATA_WIDTH-1:0] data_out
+	, output     [DATA_WIDTH-1:0] data_out
 
 	, input      [ATTR_WIDTH-1:0] attr_in
 	, output reg [ATTR_WIDTH-1:0] attr_out
@@ -39,6 +39,7 @@ always @(posedge clk or posedge rst) begin
 		attr_out <= 4'b0000;
 	end
 	else begin
+
 		// store data for send
 		if ( wr ) begin
 			memory[ wr_address ] <= data_in;			
@@ -46,14 +47,13 @@ always @(posedge clk or posedge rst) begin
 			attr_out[0] <= 1;
 			attr_out[1] <= 0;
 			attr_out[2] <= 0;
-		end		
+		end	
+
 		// fetch received data
 		if ( oe && attr_out[0] ) begin
-			data_out <= memory[ oe_address ];
 			oe_address <= oe_address + 1;
-		end	else begin
-			data_out <= 32'h000000;
 		end
+		
 	end
 end
 
@@ -74,10 +74,12 @@ always @(posedge clk ) begin
 end
 
 always @(posedge clk ) begin
-	if ( wr_address == (BUF_SIZE-1) ) begin
+	if ( wr_address == ( BUF_SIZE - 1 ) ) begin
 		attr_out[3] <= 1; // Буффер заполнен
 	end
 end
+
+assign data_out = oe ? memory[ oe_address ] : 32'h00000000;
 
 // attr_out[0] - ФЛАГ: Данные есть -> можно из буфера читать данные
 // attr_out[1] - ФЛАГ: Данных нету -> буфер пустой, сделано для переключения буферов

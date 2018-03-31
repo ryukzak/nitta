@@ -14,22 +14,16 @@ module hoarder
 ,   output reg [DATA_WIDTH-1:0]     data_out
 ,   output reg [ATTR_WIDTH-1:0]     attr_hoarder
 ,   input      [SPI_DATA_WIDTH-1:0] data_in_byte
-,   output reg [SPI_DATA_WIDTH-1:0] data_out_byte
+,   output     [SPI_DATA_WIDTH-1:0] data_out_byte
 );
 
-localparam STATE_IDLE      = 0;
-localparam STATE_SPI_START = 1;
-localparam STATE_SPI_END   = 2;
+localparam SIZE_FRAME  = $clog2( DATA_WIDTH );
 
-reg [1:0] send_state;
-reg [1:0] recv_state;
 reg [DATA_WIDTH-1:0]     frame;
 reg [DATA_WIDTH-1:0]     frame_send;
 reg [SPI_DATA_WIDTH-1:0] byte;
-reg [1:0] count_frame_send;
-reg [1:0] count_frame_recv;
+reg [SIZE_FRAME-4:0] count_frame_send;
 
-// Flags
 reg took;
 reg took_send;
 
@@ -37,9 +31,8 @@ always @( posedge clk ) begin
     if ( rst ) begin
         took <= 0;
         took_send <= 0;
-        count_frame_send <= 0;
+        count_frame_send <= 3;
     end else begin
-
         // [+] receive master
         if ( oe && took ) begin
             attr_hoarder[0] <= 1;
@@ -55,21 +48,17 @@ always @( posedge clk ) begin
 
         // [+] send master
         if ( wr ) begin
-            count_frame_send <= 0;
+            count_frame_send <= 3;
             frame_send <= data_in;
-        end else if ( ready && !took_send) begin
-            data_out_byte <= frame_send >> SPI_DATA_WIDTH * count_frame_send;
-            count_frame_send <= count_frame_send + 1;
+        end else if ( ready && !took_send) begin            
             took_send <= 1;
         end else if ( !ready && took_send) begin            
-            if ( count_frame_send == 4 ) begin
-                count_frame_send <= 0;
-            end 
+            count_frame_send <= count_frame_send - 1;
             took_send <= 0;
         end
-
-
     end
 end
+
+assign data_out_byte = count_frame_send == SIZE_FRAME - 2 ? data_in >> SPI_DATA_WIDTH * count_frame_send : frame_send >> SPI_DATA_WIDTH * count_frame_send ;
 
 endmodule
