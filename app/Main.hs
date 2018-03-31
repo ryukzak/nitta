@@ -45,7 +45,7 @@ microarch = busNetwork 27
   --                          , SPI.start=Name "start", SPI.stop=Name "stop"
   --                          , SPI.mosi=Name "mosi", SPI.miso=Name "miso", SPI.sclk=Name "sclk", SPI.cs=Name "cs"
   --                          })
-  , ("mult", PU def M.Link{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
+  -- , ("mult", PU def M.Link{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
   ]
 
 fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
@@ -118,15 +118,15 @@ graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
 
 
 main = do
-  test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
-  -- test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
+  -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
+  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
-  putStrLn "funSim teacup:"
-  funSim 100 def teacupAlg
+  -- putStrLn "funSim teacup:"
+  -- funSim 100 def teacupAlg
 
-  putStrLn "funSim fibonacci:"
-  funSim 20 def fibonacciAlg
+  -- putStrLn "funSim fibonacci:"
+  -- funSim 20 def fibonacciAlg
 
   -- putStrLn "funSim spi:"
   -- funSim 20 def{ cntxVars=M.fromList [("b", [0])]

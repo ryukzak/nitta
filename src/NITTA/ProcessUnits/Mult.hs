@@ -63,7 +63,7 @@ instance ( Var v
   schedule st@Mult{ acIn=[], acOut } act@EndpointD{ epdAt }
     | let actVs = elems (variables act)
     , not $ null $ acOut `intersect` actVs
-    = let work = serialSchedule @(Mult v x t) Out (act){ epdAt=(sup epdAt + 1) ... (inf epdAt + 1) }
+    = let work = serialSchedule @(Mult v x t) Out act
       in ( st{ acOut=acOut \\ actVs }, work )
   schedule _ _ = error "Mult schedule error!"
 

@@ -23,6 +23,7 @@ import           Data.Typeable       (Typeable, cast)
 import           NITTA.Types
 import           NITTA.Utils.Lens
 import           Numeric             (readInt, showHex)
+import           Numeric.Interval    ((...))
 import qualified Numeric.Interval    as I
 import           Text.StringTemplate
 
@@ -65,6 +66,9 @@ addStep placeInTime info = do
         , steps=Step nextUid placeInTime info : steps
         }
   return nextUid
+addStep_ placeInTime info = do
+  addStep placeInTime info
+  return ()
 
 addActivity interval = addStep $ Activity interval
 
@@ -179,3 +183,5 @@ addInstr _pu t i = addStep (Activity t) $ InstructionStep i
 
 
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
+
+shift n d@EndpointD{ epdAt } = d{ epdAt=(I.inf epdAt + n) ... (I.sup epdAt + n) }

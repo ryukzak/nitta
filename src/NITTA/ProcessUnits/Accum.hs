@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -20,7 +21,7 @@ import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval            (singleton, (...))
+import           Numeric.Interval            (inf, singleton, sup, (...))
 import           Prelude                     hiding (init)
 
 
@@ -49,24 +50,24 @@ instance ( Var v
   -- тихая ругань по поводу решения
   stateOptions Accum{ acIn=vs@(_:_) } now
     | length vs == 2 -- первый аргумент.
+    -- TODO: Improve performance.
     = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 2)) vs
     | otherwise -- второй аргумент
     = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
   stateOptions Accum{ acOut=vs@(_:_) } now -- вывод
-    = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
+    = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 2 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
   schedule st@Accum{ acIn=vs@(_:_) } act
     | let actV = oneOf $ variables act
     , ([(neg, _)], remain) <- partition ((== actV) . snd) vs
-    = let st' = st{ acIn=remain }
-          i = if length vs == 2 then Init neg else Load neg
+    = let i = if length vs == 2 then Init neg else Load neg
           work = serialSchedule @(Accum v x t) i act
-      in (st', work)
+      in (st{ acIn=remain }, work)
   schedule st@Accum{ acIn=[], acOut=vs } act
     | not $ null $ vs `intersect` elems (variables act)
     = let st' = st{ acOut=vs \\ elems (variables act) }
-          work = serialSchedule @(Accum v x t) Out act
+          work = serialSchedule @(Accum v x t) Out $ shift (-1) act
       in (st', work)
   schedule _ _ = error "Accum schedule error!"
 

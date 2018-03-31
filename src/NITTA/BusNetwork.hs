@@ -118,13 +118,13 @@ instance ( Title title, Var v, Time t
          ) => DecisionProblem (DataFlowDT title v t)
                    DataFlowDT (BusNetwork title v x t)
          where
-  options _proxy net@BusNetwork{..}
-    = concat [ [ DataFlowO (fromPu, fixPullConstrain pullAt) $ M.fromList pushs
+  options _proxy n@BusNetwork{..}
+    = concat [ [ DataFlowO (srcTitle, fixPullConstrain pullAt) $ M.fromList pushs
                | pushs <- mapM pushOptionsFor $ elems pullVars
                , let pushTo = mapMaybe (fmap fst . snd) pushs
                , length (nub pushTo) == length pushTo
                ]
-             | (fromPu, opts) <- puOptions
+             | (srcTitle, opts) <- puOptions
              , EndpointO (Source pullVars) pullAt <- opts
              ]
     where
@@ -142,7 +142,7 @@ instance ( Title title, Var v, Time t
                           , EndpointO (Target pushVar) pushAt <- vars
                           , pushVar == v
                           ]
-      bnForwardedVariables = transfered net
+      bnForwardedVariables = transfered n
       availableVars =
         let fbs = bnRemains ++ concat (M.elems bnBinded)
             alg = foldl
@@ -155,33 +155,30 @@ instance ( Title title, Var v, Time t
 
       puOptions = M.assocs $ M.map (options endpointDT) bnPus
 
-  decision _proxy ni@BusNetwork{..} act@DataFlowD{..}
-    | nextTick bnProcess > act^.at.infimum
-    = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (act^.at)
-    | otherwise = ni
-    { bnPus=foldl (\s n -> n s) bnPus steps
-    , bnProcess=snd $ modifyProcess bnProcess $ do
-        mapM_ (\(v, (title, _)) -> addStep
-                (Activity $ transportStartAt ... transportEndAt)
-                $ InstructionStep (Transport v (fst dfdSource) title :: Instruction (BusNetwork title v x t))
-              ) $ M.assocs push'
-        _ <- addStep (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act
-        setProcessTime $ act^.at.supremum + 1
-    }
-    where
-      transportStartAt = act^.at.infimum
-      transportDuration = maximum $
-        map ((\event -> (inf event - transportStartAt) + width event) . snd) $ M.elems push'
-      transportEndAt = transportStartAt + transportDuration
-      -- if puTitle not exist - skip it...
-      pullStep = M.adjust (\dpu -> decision endpointDT dpu $ EndpointD (Source $ fromList pullVars) (act^.at)) (fst dfdSource)
-      pushStep (var, (dpuTitle, pushAt)) =
-        M.adjust (\dpu -> decision endpointDT dpu $ EndpointD (Target var) pushAt) dpuTitle
-      pushSteps = map pushStep $ M.assocs push'
-      steps = pullStep : pushSteps
+  decision _proxy n@BusNetwork{ bnProcess, bnPus } d@DataFlowD{ dfdSource=( srcTitle, pullAt ), dfdTargets }
+    | nextTick bnProcess > d^.at.infimum
+    = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (d^.at)
+    | otherwise
+    = let pushs = M.map (fromMaybe undefined) $ M.filter isJust dfdTargets
+          transportStartAt = d^.at.infimum
+          transportDuration = maximum $ map (\(_trg, time) -> (inf time - transportStartAt) + width time) $ M.elems pushs
+          transportEndAt = transportStartAt + transportDuration
 
-      push' = M.map (fromMaybe undefined) $ M.filter isJust dfdTargets
-      pullVars = M.keys push'
+          subDecisions = ( srcTitle, EndpointD (Source $ fromList $ M.keys pushs) pullAt )
+                       : [ ( trgTitle, EndpointD (Target v) pushAt )
+                         | (v, (trgTitle, pushAt)) <- M.assocs pushs
+                         ]
+      in n{ bnPus=foldl applyDecision bnPus subDecisions
+          , bnProcess=snd $ modifyProcess bnProcess $ do
+              mapM_ (\(pushedValue, (targetTitle, _tc)) -> addStep
+                      (Activity $ transportStartAt ... transportEndAt)
+                      $ InstructionStep (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork title v x t))
+                    ) $ M.assocs pushs
+              addStep_ (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show d
+              setProcessTime $ d^.at.supremum + 1
+          }
+    where
+      applyDecision pus (trgTitle, d') = M.adjust (\pu -> decision endpointDT pu d') trgTitle pus
 
 
 

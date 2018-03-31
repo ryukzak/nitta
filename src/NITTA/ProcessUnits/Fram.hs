@@ -59,9 +59,9 @@ module NITTA.ProcessUnits.Fram
   , Link(..)
   ) where
 
-import           Control.Monad         ((>=>))
+import           Control.Monad         (void, when, (>=>))
 import           Data.Array
-import           Data.Bits
+import           Data.Bits             (testBit)
 import           Data.Default
 import           Data.Either
 import           Data.Foldable
@@ -317,13 +317,13 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
                                in reserved == 0 || reserved < allow
 
       constrain Cell{..} (Source _)
-        | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
-        | otherwise              = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
+        | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 + 1 ... maxBound) (1 ... maxBound)
+        | otherwise              = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
       constrain _cell (Target _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
 
 
-  decision proxy pu@Fram{ frProcess=p@Process{ nextTick=tick0 }, .. } act@EndpointD{..}
-    | isTimeWrap p act = timeWrapError p act
+  decision proxy pu@Fram{ frProcess=p@Process{ nextTick=tick0 }, .. } d@EndpointD{..}
+    | isTimeWrap p d = timeWrapError p d
 
     | Just (fb, cad1) <- find ( anyInAction . variables . fst ) frRemains
     = either error id $ do
@@ -335,7 +335,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
                     , frMemory=frMemory // [(addr, cell')]
                     , frProcess=p'
                     }
-        return $ decision proxy pu' act
+        return $ decision proxy pu' d
 
     | Just (addr, cell) <- find ( any (<< epdRole) . cellEndpoints True . snd ) $ assocs frMemory
     = case cell of
@@ -379,13 +379,13 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
                    }
         _ -> error "Fram internal decision error."
 
-    | otherwise = error $ "Can't found selected action: " ++ show act
+    | otherwise = error $ "Can't found selected action: " ++ show d
                   ++ " tick: " ++ show (nextTick p) ++ "\n"
                   ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options endpointDT pu)
                   ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
                   ++ "remains:\n" ++ concatMap ((++ "\n") . show) frRemains
     where
-      anyInAction = any (`elem` variables act)
+      anyInAction = any (`elem` variables d)
       bind2CellStep addr fb t
         = addStep (Event t) $ CADStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
       updateLastWrite t cell | Target _ <- epdRole = cell{ lastWrite=Just t }
@@ -399,31 +399,27 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
 
       scheduleWork _addr Job{ actions=[] } = error "Fram:scheudle internal error."
       scheduleWork addr job@Job{ actions=x:xs, .. }
-        = let ((ep, instrs), p') = modifyProcess p $ do
-                e <- addStep (Activity $ act^.at) $ EndpointRoleStep $ act^.endRole
-                i1 <- addInstr pu (act^.at) $ act2Instruction addr $ act^.endRole
-                is <- if tick0 < act^.at.infimum
-                  then do
-                    i2 <- addInstr pu (tick0 ... act^.at.infimum - 1) Nop
-                    return [ i1, i2 ]
-                  else return [ i1 ]
+        = let ( instrTi, instr ) = case d^.endRole of
+                  Source _ -> ( shift (-1) d^.at, Load addr)
+                  Target _ -> ( d^.at, Save addr)
+              ((ep, instrs), p') = modifyProcess p $ do
+                e <- addStep (Activity $ d^.at) $ EndpointRoleStep $ d^.endRole
+                i <- addInstr pu instrTi instr
+                when (tick0 < instrTi^.infimum) $ void $ addInstr pu (tick0 ... instrTi^.infimum - 1) Nop
                 mapM_ (relation . Vertical e) instrs
-                setProcessTime $ act^.at.supremum + 1
-                return (e, is)
+                setProcessTime $ instrTi^.supremum + 1
+                return (e, [i])
           in (p', job{ endpoints=ep : endpoints
                      , instructions=instrs ++ instructions
-                     , startAt=startAt `orElse` Just (act^.at.infimum)
-                     , actions=if x == act^.endRole then xs else (x \\\ (act^.endRole)) : xs
+                     , startAt=startAt `orElse` Just (d^.at.infimum)
+                     , actions=if x == d^.endRole then xs else (x \\\ (d^.endRole)) : xs
                      })
       finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
         let start = fromMaybe (error "startAt field is empty!") startAt
-        h <- addStep (Activity $ start ... act^.at.supremum) $ FBStep $ fromFSet functionalBlock
+        h <- addStep (Activity $ start ... d^.at.supremum) $ FBStep $ fromFSet functionalBlock
         mapM_ (relation . Vertical h) cads
         mapM_ (relation . Vertical h) endpoints
         mapM_ (relation . Vertical h) instructions
-
-      act2Instruction addr (Source _) = Load addr
-      act2Instruction addr (Target _) = Save addr
 
 
 
