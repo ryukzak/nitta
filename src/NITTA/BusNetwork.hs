@@ -151,7 +151,7 @@ instance ( Title title, Var v, Time t
                   $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
                   $ concatMap dependency fbs
             notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
-        in notBlockedVariables \\  bnForwardedVariables
+        in notBlockedVariables \\ bnForwardedVariables
 
       puOptions = M.assocs $ M.map (options endpointDT) bnPus
 
@@ -435,24 +435,15 @@ instance ( Title title, Var v, Time t
                                               in c
                           ) (Just cntx0) $ functionalBlocks pu
 
-      p = process pu
-      assertions = concatMap ( ("      @(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick p ]
+      assertions = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . assert ) [ 0 .. nextTick $ process pu ]
         where
           assert time
-            = let pulls = filter (\case (Source _) -> True; _ -> False) $ endpointsAt time p
-              in case pulls of
-                Source vs : _
-                  | not $ S.null vs
-                  , let v = oneOf vs
+            = "\\$write(\"%s, bus: %h\", " ++ show (show time) ++ ", net.data_bus); "
+            ++ case extractInstructionAt pu time of
+                Transport v _ _ : _
                   -> concat
-                    [ "if ( !( net.data_bus === " ++ show (get' cntx' v) ++ ") ) "
-                    ,   "\\$display("
-                    ,     "\""
-                    ,       "FAIL wrong value of " ++ show' pulls ++ " the bus failed "
-                    ,       "(got: %h expect: %h)!"
-                    ,     "\", "
-                    , "net.data_bus, " ++ show (get' cntx' v) ++ "); else \\$display(\"%d Correct value: %h\", net.control_unit.program_counter, net.data_bus);"
+                    [ "\\$write(\" == %h (%s)\", " ++ show (get' cntx' v) ++ ", " ++ show v ++ ");"
+                    , "if ( !( net.data_bus === " ++ show (get' cntx' v) ++ ") ) "
+                    ,   "\\$display(\" FAIL\"); else \\$display();"
                     ]
-                [] -> "\\$display(\"%d\", net.control_unit.program_counter); /* nothing to check */"
-                x -> "\\$display(\"%d\", net.control_unit.program_counter); /* don't have expected datafor: " ++ show x ++ "*/"
-          show' s = filter (/= '\"') $ show s
+                [] -> "\\$display();"

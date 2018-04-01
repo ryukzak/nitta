@@ -66,8 +66,9 @@ addStep placeInTime info = do
         , steps=Step nextUid placeInTime info : steps
         }
   return nextUid
+
 addStep_ placeInTime info = do
-  addStep placeInTime info
+  _ <- addStep placeInTime info
   return ()
 
 addActivity interval = addStep $ Activity interval
@@ -140,14 +141,7 @@ extractInstruction _ Step{ sDesc=InstructionStep instr } = cast instr
 extractInstruction _ _                                   = Nothing
 
 
-extractInstructionAt pu t
-  = let p = process pu
-        is = mapMaybe (extractInstruction pu) $ whatsHappen t p
-    in case is of
-      []  -> Nothing
-      [i] -> Just i
-      _   -> error $ "Too many instruction on tick." ++ show is
-
+extractInstructionAt pu t = mapMaybe (extractInstruction pu) $ whatsHappen t $ process pu
 
 extractInstructions pu = mapMaybe (extractInstruction pu) $ sortOn stepStart $ steps $ process pu
 
