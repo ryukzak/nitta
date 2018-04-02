@@ -135,13 +135,13 @@ instance ( Var v, Time t, Typeable x, Eq x, Show x
 instance ( Var v
          , Typeable x
          ) => ToFSet (Fram v x t) v where
-  toFSet (FB fb0)
-    | Just fb@(Constant _ _) <- cast fb0 = Right $ Constant' fb
-    | Just fb@(Reg _ _) <- cast fb0 = Right $ Reg' fb
-    | Just fb@(Loop _ _ _) <- cast fb0 = Right $ Loop' fb
-    | Just fb@(FramInput _ _) <- cast fb0 = Right $ FramInput' fb
-    | Just fb@(FramOutput _ _) <- cast fb0 = Right $ FramOutput' fb
-    | otherwise = Left $ "Fram don't support " ++ show fb0
+  toFSet (FB fb)
+    | Just fb'@Constant{} <- cast fb = Right $ Constant' fb'
+    | Just fb'@Reg{} <- cast fb = Right $ Reg' fb'
+    | Just fb'@Loop{} <- cast fb = Right $ Loop' fb'
+    | Just fb'@FramInput{} <- cast fb = Right $ FramInput' fb'
+    | Just fb'@FramOutput{} <- cast fb = Right $ FramOutput' fb'
+    | otherwise = Left $ "Fram don't support " ++ show fb
 
 isReg (Reg' _) = True
 isReg _        = False
