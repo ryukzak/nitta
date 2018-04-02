@@ -19,7 +19,7 @@
 
 module NITTA.FunctionBlocks where
 
-import           Data.Bits
+import qualified Data.Bits     as B
 import           Data.List     (cycle, intersect, (\\))
 import qualified Data.Map      as M
 import           Data.Maybe
@@ -30,8 +30,8 @@ import           NITTA.Utils
 
 
 
-class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
-instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
+class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, B.Bits a ) => Addr a
+instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, B.Bits a ) => Addr a
 
 get' cntx k = fromMaybe (error $ "Can't get from cntx." ++ show k) $ get cntx k
 get Cntx{..} k = do
@@ -263,17 +263,25 @@ instance ( Ord v ) => FunctionSimulation (Constant (Parcel v x)) v x where
 
 
 
-data ShiftL io = ShiftL (I io) (O io) deriving ( Typeable )
-deriving instance ( IOType io v x ) => Show (ShiftL io)
-deriving instance ( IOType io v x ) => Eq (ShiftL io)
+data ShiftLR io = ShiftL (I io) (O io)
+                | ShiftR (I io) (O io)
+                deriving ( Typeable )
+deriving instance ( IOType io v x ) => Show (ShiftLR io)
+deriving instance ( IOType io v x ) => Eq (ShiftLR io)
 shiftL a b = FB $ ShiftL (I a) $ O $ fromList b
+shiftR a b = FB $ ShiftR (I a) $ O $ fromList b
 
-instance ( IOType io v x ) => FunctionalBlock (ShiftL io) v where
+instance ( IOType io v x ) => FunctionalBlock (ShiftLR io) v where
   outputs (ShiftL i o) = variables i `union` variables o
-instance ( Ord v, Bits x ) => FunctionSimulation (ShiftL (Parcel v x)) v x where
+  outputs (ShiftR i o) = variables i `union` variables o
+instance ( Ord v, B.Bits x ) => FunctionSimulation (ShiftLR (Parcel v x)) v x where
   simulate cntx (ShiftL (I k1) (O k2)) = do
     v1 <- cntx `get` k1
-    let v2 = v1 `shiftR` 1
+    let v2 = v1 `B.shiftL` 1
+    set cntx k2 v2
+  simulate cntx (ShiftR (I k1) (O k2)) = do
+    v1 <- cntx `get` k1
+    let v2 = v1 `B.shiftR` 1
     set cntx k2 v2
 
 
