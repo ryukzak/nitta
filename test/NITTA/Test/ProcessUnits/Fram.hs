@@ -37,16 +37,27 @@ instance Arbitrary (FSet (Fram String Int t)) where
 
 -----------------------------------------------------------
 
-framTestBench
+framRegAndOut
   = let alg = [ FB.reg "aa" ["ab"]
               , FB.framOutput 9 "ac"
               ]
         lib = joinPath ["..", ".."]
-        wd = joinPath ["hdl", "gen", "unittest_fram"]
+        wd = joinPath ["hdl", "gen", "framRegAndOut"]
         fram = bindAllAndNaiveSchedule alg (def :: Fram String Int Int)
-        cntx = def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] } :: Cntx String Int
+        cntx = def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] }
         tb = testBench lib wd fram cntx
-    in tb @? "fram test bench"
+    in tb @? "test bench"
+
+framRegAndConstant
+  = let alg = [ FB.reg "dzw" ["act","mqt"]
+              , FB.constant 11 ["ovj"]
+              ]
+        lib = joinPath ["..", ".."]
+        wd = joinPath ["hdl", "gen", "framRegAndConstant"]
+        fram = bindAllAndNaiveSchedule alg (def :: Fram String Int Int)
+        cntx = def{ cntxVars=M.fromList [("dzw", [975])] }
+        tb = testBench lib wd fram cntx
+    in tb @? "test bench"
 
 
 

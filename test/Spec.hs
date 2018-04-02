@@ -24,7 +24,8 @@ main = do
   -- TODO: Положть gen в ram fs, нечего насиловать диск.
   defaultMain $ testGroup "NITTA"
     [ testGroup "Fram process unit"
-      [ testCase "unit tests" framTestBench
+      [ testCase "framRegAndOut" framRegAndOut
+      , testCase "framRegAndConstant" framRegAndConstant
       , QC.testProperty "completeness" $ prop_completness <$> processGen framProxy
       , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram_" counter) $ inputsGen =<< processGen framProxy
       ]

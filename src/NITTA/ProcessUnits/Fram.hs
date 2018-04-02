@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -407,7 +408,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
                 i <- addInstr pu instrTi instr
                 when (tick0 < instrTi^.infimum) $ void $ addInstr pu (tick0 ... instrTi^.infimum - 1) Nop
                 mapM_ (relation . Vertical e) instrs
-                setProcessTime $ instrTi^.supremum + 1
+                setProcessTime $ d^.at.supremum + 1
                 return (e, [i])
           in (p', job{ endpoints=ep : endpoints
                      , instructions=instrs ++ instructions
@@ -535,7 +536,7 @@ instance ( Var v
          , Eq x
          , ProcessUnit (Fram v x t) (Parcel v x) t
          ) => TestBench (Fram v x t) v x where
-  testEnviroment cntx0 pu@Fram{ frProcess=Process{..}, .. }
+  testEnviroment cntx0 pu@Fram{ frProcess=Process{ steps }, .. }
     = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
     where
       Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) (Just cntx0) $ functionalBlocks pu
@@ -545,8 +546,14 @@ instance ( Var v
         , "parameter ATTR_WIDTH = 4;                                                                                 "
         , "                                                                                                          "
         , "/*                                                                                                        "
+        , "Context:"
         , show cntx
-        , show $ functionalBlocks pu
+        , ""
+        , "Algorithm:"
+        , unlines $ map show $ functionalBlocks pu
+        , ""
+        , "Process:"
+        , unlines $ map show steps
         , "*/                                                                                                        "
         , "                                                                                                          "
         , "reg clk, rst, wr, oe;                                                                                     "
@@ -594,7 +601,7 @@ instance ( Var v
         ]
 
 controlSignals pu@Fram{ frProcess=Process{..}, ..}
-  = concatMap ( ("      " ++) . (++ " @(negedge clk)\n") . showMicrocode . microcodeAt pu) [ 0 .. nextTick + 1 ]
+  = concatMap ( ("      " ++) . (++ " @(posedge clk)\n") . showMicrocode . microcodeAt pu) [ 0 .. nextTick + 1 ]
   where
     showMicrocode Microcode{..} = concat
       [ "oe <= 'b", bool2binstr oeSignal, "; "
@@ -603,7 +610,7 @@ controlSignals pu@Fram{ frProcess=Process{..}, ..}
       ]
 
 testDataInput pu@Fram{ frProcess=p@Process{..}, ..} cntx
-  = concatMap ( ("      " ++) . (++ " @(negedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
+  = concatMap ( ("      " ++) . (++ " @(posedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
   where
     busState t
       | Just (Target v) <- endpointAt t p
@@ -611,23 +618,19 @@ testDataInput pu@Fram{ frProcess=p@Process{..}, ..} cntx
       | otherwise = "/* NO INPUT */"
 
 testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
-  = concatMap ( ("      @(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
+  = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
   where
     busState t
       | Just (Source vs) <- endpointAt t p, let v = oneOf vs
       = checkBus v $ maybe (error $ show ("checkBus" ++ show v ++ show cntx) ) show (get cntx v)
       | otherwise
-      = "/* NO OUTPUT */"
+      = "\\$display( \"data_out: %d\", data_out ); "
 
     checkBus v value = concat
-      [ "if ( !( data_out === " ++ value ++ " ) ) "
-      ,   "\\$display("
-      ,     "\""
-      ,       "FAIL wrong value of " ++ show' v ++ " on the bus! "
-      ,       "(got: %h expect: %h)"
-      ,     "\", "
-      ,     "data_out, " ++ value
-      ,   ");"
+      [ "\\$write( \"data_out: %d == %d\t(%s)\", data_out, " ++ show value ++ ", " ++ show v ++ " ); "
+      ,  "if ( !( data_out === " ++ value ++ " ) ) "
+      ,   "\\$display(\" FAIL\");"
+      ,  "else \\$display();"
       ]
 
     bankCheck
