@@ -6,18 +6,17 @@
 
 module Main where
 
-import           Control.Applicative           ((<$>))
+import           Control.Applicative          ((<$>))
 import           Data.Atomics.Counter
 import           NITTA.Test.BusNetwork
 import           NITTA.Test.FunctionBlocks
 import           NITTA.Test.ProcessUnits
 import           NITTA.Test.ProcessUnits.Fram
-import           NITTA.Test.ProcessUnits.Shift
 import           NITTA.Test.Utils
 import           System.Environment
 import           Test.Tasty
 import           Test.Tasty.HUnit
-import           Test.Tasty.QuickCheck         as QC
+import           Test.Tasty.QuickCheck        as QC
 
 main = do
   counter <- newCounter 0 -- Используется для того, что бы раскладывать файлы в разные папки при симуляции.

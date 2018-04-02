@@ -21,7 +21,7 @@ import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval            (inf, singleton, sup, (...))
+import           Numeric.Interval            (singleton, (...))
 
 
 
@@ -53,18 +53,18 @@ instance ( Var v
     = [ EndpointO (Source $ fromList acOut) $ TimeConstrain (now + 2 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
-  schedule st@Mult{ acIn } act
+  schedule st@Mult{ acIn } d
     | not $ null acIn
-    , let actV = oneOf $ variables act
-    , ([_], remain) <- partition (== actV) acIn
+    , let dV = oneOf $ variables d
+    , ([_], remain) <- partition (== dV) acIn
     = let i = if length acIn == 2 then Load False else Load True
-          work = serialSchedule @(Mult v x t) i act
+          work = serialSchedule @(Mult v x t) i d
       in ( st{ acIn=remain }, work )
-  schedule st@Mult{ acIn=[], acOut } act@EndpointD{ epdAt }
-    | let actVs = elems (variables act)
-    , not $ null $ acOut `intersect` actVs
-    = let work = serialSchedule @(Mult v x t) Out act
-      in ( st{ acOut=acOut \\ actVs }, work )
+  schedule st@Mult{ acIn=[], acOut } d
+    | let dVs = elems (variables d)
+    , not $ null $ acOut `intersect` dVs
+    = let work = serialSchedule @(Mult v x t) Out d
+      in ( st{ acOut=acOut \\ dVs }, work )
   schedule _ _ = error "Mult schedule error!"
 
 

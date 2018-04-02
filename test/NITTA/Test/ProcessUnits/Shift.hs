@@ -8,20 +8,8 @@
 
 module NITTA.Test.ProcessUnits.Shift where
 
-import           Control.Applicative       ((<$>))
-import           Data.Default
-import qualified Data.Map                  as M
 import           Data.Proxy
-import           NITTA.Compiler
-import qualified NITTA.FunctionBlocks      as FB
 import           NITTA.ProcessUnits.Shift
-import           NITTA.Test.FunctionBlocks ()
-import           NITTA.Test.ProcessUnits
-import           NITTA.TestBench
-import           NITTA.Types
-import           System.FilePath.Posix     (joinPath)
-import           Test.QuickCheck
-import           Test.Tasty.HUnit
 
 
 proxy = Proxy :: Proxy (Shift String Int Int)

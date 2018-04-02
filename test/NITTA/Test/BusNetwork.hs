@@ -7,7 +7,6 @@
 module NITTA.Test.BusNetwork where
 
 import           Data.Default
-import qualified Data.Map                 as M
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
