@@ -4,6 +4,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE PartialTypeSignatures  #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
@@ -53,6 +54,7 @@ data SerialPU st v x t
   , spuRemain  :: [(FB (Parcel v x), ProcessUid)]
   -- | Описание вычислительного процесса.
   , spuProcess :: Process (Parcel v x) t
+  , spuFBs     :: [FB (Parcel v x)]
   }
 
 instance ( Show st
@@ -65,8 +67,10 @@ instance ( Show st
                    ++ "}"
 
 instance ( Time t, Var v, Default st ) => Default (SerialPU st v x t) where
-  def = SerialPU def def def def
+  def = SerialPU def def def def def
 
+instance WithFunctionalBlocks (SerialPU st v x t) (FB (Parcel v x)) where
+  functionalBlocks SerialPU{ spuFBs } = spuFBs
 
 
 -- | Описание текущей работы вычислительного блока.
@@ -153,7 +157,7 @@ instance ( Var v, Time t
          , SerialPUState st v x t
          ) => ProcessUnit (SerialPU st v x t) (Parcel v x) t where
 
-  bind fb pu@SerialPU{..}
+  bind fb pu@SerialPU{ spuFBs, spuRemain, spuProcess }
     -- Почему делается попытка привязать функцию к нулевому состоянию последовательного вычислителя,
     -- а не к текущему? Потому что, успешная привязка функции производится к объёртке (помещаем ФБ
     -- в spuRemain), а не к самому состоянию. Ведь к самому состоянию может быть привязана в один
@@ -162,6 +166,7 @@ instance ( Var v, Time t
         Right _ -> let (key, spuProcess') = modifyProcess spuProcess $ bindFB fb $ nextTick spuProcess
                    in Right pu{ spuRemain=(fb, key) : spuRemain
                               , spuProcess=spuProcess'
+                              , spuFBs=fb : spuFBs
                               }
         Left reason -> Left reason
 
