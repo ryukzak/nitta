@@ -16,6 +16,7 @@ import           NITTA.Compiler
 import qualified NITTA.FunctionBlocks      as FB
 import           NITTA.ProcessUnits.Fram
 import           NITTA.Test.FunctionBlocks ()
+import           NITTA.Test.ProcessUnits
 import           NITTA.TestBench
 import           NITTA.Types
 import           System.FilePath.Posix     (joinPath)
@@ -37,27 +38,17 @@ instance Arbitrary (FSet (Fram String Int t)) where
 
 -----------------------------------------------------------
 
-framRegAndOut
-  = let alg = [ FB.reg "aa" ["ab"]
-              , FB.framOutput 9 "ac"
-              ]
-        lib = joinPath ["..", ".."]
-        wd = joinPath ["hdl", "gen", "framRegAndOut"]
-        fram = bindAllAndNaiveSchedule alg (def :: Fram String Int Int)
-        cntx = def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] }
-        tb = testBench lib wd fram cntx
-    in tb @? "test bench"
+framRegAndOut = unitTestbench "framRegAndOut" framProxy
+  def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] }
+  [ FB.reg "aa" ["ab"]
+  , FB.framOutput 9 "ac"
+  ]
 
-framRegAndConstant
-  = let alg = [ FB.reg "dzw" ["act","mqt"]
-              , FB.constant 11 ["ovj"]
-              ]
-        lib = joinPath ["..", ".."]
-        wd = joinPath ["hdl", "gen", "framRegAndConstant"]
-        fram = bindAllAndNaiveSchedule alg (def :: Fram String Int Int)
-        cntx = def{ cntxVars=M.fromList [("dzw", [975])] }
-        tb = testBench lib wd fram cntx
-    in tb @? "test bench"
+framRegAndConstant = unitTestbench "framRegAndConstant" framProxy
+  def{ cntxVars=M.fromList [("dzw", [975])] }
+  [ FB.reg "dzw" ["act","mqt"]
+  , FB.constant 11 ["ovj"]
+  ]
 
 
 

@@ -38,7 +38,6 @@ import           Data.List            (find, nub, partition, sortOn, (\\))
 import qualified Data.Map             as M
 import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
 import           Data.Set             (elems, fromList, intersection)
-import qualified Data.Set             as S
 import qualified Data.String.Utils    as S
 import           Data.Typeable
 import           NITTA.FunctionBlocks (get')

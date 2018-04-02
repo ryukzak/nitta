@@ -22,6 +22,7 @@ import           NITTA.Utils
 import           System.FilePath.Posix   (joinPath)
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
+import           Test.Tasty.HUnit        ((@?))
 
 import           Debug.Trace
 
@@ -121,3 +122,10 @@ prop_completness (pu, fbs0)
                     ++ "processVars: " ++ show processVars ++ "\n"
                     ++ show pu
                     ) False
+
+
+unitTestbench name proxy cntx alg
+  = let lib = joinPath ["..", ".."]
+        wd = joinPath ["hdl", "gen", name]
+        pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
+    in testBench lib wd pu cntx @? name

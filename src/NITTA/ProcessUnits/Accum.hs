@@ -21,7 +21,7 @@ import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval            (inf, singleton, sup, (...))
+import           Numeric.Interval            (singleton, (...))
 import           Prelude                     hiding (init)
 
 
