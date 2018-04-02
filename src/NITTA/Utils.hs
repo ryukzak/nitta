@@ -120,8 +120,10 @@ getEndpoint _                                                  = Nothing
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 
 endpointAt t p
-  | [eff] <- mapMaybe getEndpoint $ whatsHappen t p = Just eff
-  | otherwise = Nothing
+  = case mapMaybe getEndpoint $ whatsHappen t p of
+    [ep] -> Just ep
+    []   -> Nothing
+    eps  -> error $ "Too many endpoint at a time: " ++ show eps
 
 endpointsAt t p = mapMaybe getEndpoint $ whatsHappen t p
 
