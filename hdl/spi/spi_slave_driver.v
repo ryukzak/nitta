@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 module spi_slave_driver 
-  #( parameter DATA_WIDTH = 32
+  #( parameter DATA_WIDTH = 8
    )
   ( input            clk
   , input            rst

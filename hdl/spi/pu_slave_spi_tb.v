@@ -2,17 +2,16 @@
 module pu_slave_spi_tb
   #( parameter DATA_WIDTH      = 32
    , parameter ATTR_WIDTH      = 4
-  ,  parameter SPI_DATA_WIDTH  = 8
-  ,  parameter SCLK_HALFPERIOD = 1
-  ,  parameter BUF_SIZE        = 10
-  )
+   , parameter SPI_DATA_WIDTH  = 8
+   , parameter BUF_SIZE        = 8
+   )
   ();
 
 reg clk;
 reg rst;
 reg start_transaction;
-reg  [DATA_WIDTH-1:0] master_in;
-wire [DATA_WIDTH-1:0] master_out;
+reg  [DATA_WIDTH*2-1:0] master_in;
+wire [DATA_WIDTH*2-1:0] master_out;
 
 reg  [DATA_WIDTH-1:0] pu_spi_data_in;
 
@@ -27,7 +26,14 @@ wire [ATTR_WIDTH-1:0] attr_out;
 reg oe;
 reg cycle;
 
+<<<<<<< HEAD
 spi_master_driver master #( .DATA_WIDTH( DATA_WIDTH )
+=======
+spi_master_driver 
+  #( .DATA_WIDTH( 64 ) 
+   , .SCLK_HALFPERIOD( 1 )
+   ) master
+>>>>>>> 59ea59db1531109da111c5d9755dac2e88b9c20d
   ( .clk(clk)
   , .rst(rst)
   , .start_transaction(start_transaction)
@@ -39,17 +45,7 @@ spi_master_driver master #( .DATA_WIDTH( DATA_WIDTH )
   , .sclk( sclk )
   , .cs( cs )
   );
-
-// spi_slave_driver slave
-//   ( .clk(clk)
-//   , .rst(rst)
-//   , .data_in(slave_in)
-//   , .miso( miso )
-//   , .mosi( mosi )
-//   , .ready(ready)
-//   , .sclk( sclk )
-//   , .cs( cs )
-//   );
+initial master.inner.shiftreg <= 0; // для ясности
 
 pu_slave_spi #( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
               , .BUF_SIZE( BUF_SIZE )
@@ -94,87 +90,41 @@ initial begin
   $display("finish");
 end
 
-initial begin // nitta communication read
+// Вычислительный цикл, включая:
+// 1. Чтение полученных через SPI данных. Получаем 1 слово.
+// 2. Запись данных в SPI. Пишем два слова.
+
+initial begin 
+  pu_spi_data_in <= 32'h00000000; oe <= 0; wr <= 0;
   @(negedge rst);
-  oe <= 0;
-  cycle <= 0;   repeat(200) @(posedge clk);
-  cycle <= 1;               @(posedge clk);
+  /////////////////// Первый цикл.
+  
+  cycle <= 1;                              @(posedge clk); 
+  cycle <= 0;                  repeat( 99) @(posedge clk);
+  oe <= 1;                                 @(posedge clk); // Ожидаем на шине флаг invalid, так как после RST новых загрузок небыло.  
+  oe <= 0;                     repeat( 10) @(posedge clk);
+  wr <= 1; pu_spi_data_in <= 32'hB0B1B2B3; @(posedge clk);
+  wr <= 0;                     repeat( 48) @(posedge clk);
+  wr <= 1; pu_spi_data_in <= 32'hB4B5B6B7; @(posedge clk);
+  wr <= 0;                     repeat( 40) @(posedge clk);
 
-  cycle <= 0;   repeat(130) @(posedge clk);
-
-  oe <= 1;                  @(posedge clk);
-  oe <= 0;                  @(posedge clk);
-
-  oe <= 1;                  @(posedge clk);
-  oe <= 0;                  @(posedge clk);
-
-  cycle <= 0;   repeat(68) @(posedge clk);
-
-  cycle <= 1;               @(posedge clk);
-
-  cycle <= 0;   repeat(130) @(posedge clk);
-
-  oe <= 1;                  @(posedge clk);
-  oe <= 0;                  @(posedge clk);
-
-  cycle <= 0;   repeat(68) @(posedge clk);
-
-  cycle <= 1;               @(posedge clk);
-
-  cycle <= 0;   repeat(200) @(posedge clk);
-  cycle <= 1;               @(posedge clk);
-
-  cycle <= 0;   repeat(200) @(posedge clk);
-  cycle <= 1;               @(posedge clk);
-end
-
-initial begin // nitta communication write
-  @(negedge rst);
+  $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
+  for ( i = 0; i < BUF_SIZE; i = i + 1 )
+    begin
+      $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
+    end
 
 
-  pu_spi_data_in <= 32'hA1A2A3A4; wr <= 1;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
-
-  pu_spi_data_in <= 32'hB1B2B3B4; wr <= 1;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
-
-  pu_spi_data_in <= 32'hC1C2C3C4; wr <= 1;     @(posedge clk);
-
-  pu_spi_data_in <= 32'hD1D2D3D4; wr <= 1;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
-
-
-  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
-
-  repeat(100) @(posedge clk);
-
-  pu_spi_data_in <= 32'hA2A2A3A4; wr <= 1;     @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0;     @(posedge clk);
-
-  repeat(100) @(posedge clk);
-
-  pu_spi_data_in <= 32'hB2B2B3B4; wr <= 1;    @(posedge clk);
-  pu_spi_data_in <= 32'h00000000; wr <= 0;    @(posedge clk);
-
-  // pu_spi_data_in <= 32'hC2C2C3C4; wr <= 1;    @(posedge clk);
-
-  // pu_spi_data_in <= 32'hD2D2D3D4; wr <= 1;    @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0;    @(posedge clk);
-
-  // repeat(500) @(posedge clk);
-
-  // pu_spi_data_in <= 32'hB3B2B3B4; wr <= 1;    @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0;    @(posedge clk);
-
-  // pu_spi_data_in <= 32'hC3C2C3C4; wr <= 1;    @(posedge clk);
-
-  // pu_spi_data_in <= 32'hD3D2D3D4; wr <= 1;    @(posedge clk);
-  // pu_spi_data_in <= 32'h00000000; wr <= 0;    @(posedge clk);
-
+  /////////////////// Второй цикл.
+  cycle <= 1;                              @(posedge clk); // сигнал о начале второго цикла
+  cycle <= 0;                  repeat( 99) @(posedge clk);
+  oe <= 1;                                 @(posedge clk);  // В буфере ожидаем: A0A1A2A3A4A5A6A7
+                                                            // На шине A0A1A2A3
+  oe <= 0;                     repeat( 10) @(posedge clk);
+  wr <= 1; pu_spi_data_in <= 32'hB8B9BABB; @(posedge clk);
+  wr <= 0;                     repeat( 48) @(posedge clk);
+  wr <= 1; pu_spi_data_in <= 32'hBCBDBEBF; @(posedge clk);
+  wr <= 0;                     repeat( 40) @(posedge clk);
 
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
   for ( i = 0; i < BUF_SIZE; i = i + 1 )
@@ -184,87 +134,37 @@ initial begin // nitta communication write
 
 end
 
+
 initial begin // spi communication
   @(negedge rst);
 
-  master_in = 32'hA1A2A3A4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
+  repeat(35) @(posedge clk); 
+  // Во входном буфере должно появиться два слова: A1A2A3A4 и A5A6A7A8.
+  // В канал должно уйти два слова из выходного буфера.
 
-  repeat(108) @(posedge clk);
+  master_in = 64'hA0A1A2A3A4A5A6A7;                        @(posedge clk); 
+  start_transaction = 1;                                   @(posedge clk);
+  start_transaction = 0;                                   @(posedge clk);
+  // Из канала при этом ожидаем получить значение по умолчанию, а именно -
+  // hCCCCCCCC, так как буфер не был заполнен для отправки.
+  repeat(130) @(posedge clk); 
+  repeat(35) @(posedge clk); 
+  
 
-  master_in = 32'hB1B2B3B4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
+  repeat(35) @(posedge clk); 
+  // Во входном буфере должно появиться два слова: A9AAABAC и ADAEAFA0. 
+  // В канал должно уйти два слова из выходного буфера.
 
-  repeat(108) @(posedge clk);
-
-  master_in = 32'hC1C2C3C4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
-
-  repeat(108) @(posedge clk);
-
-  master_in = 32'hD1D2D3D4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
-
-  repeat(108) @(posedge clk);
-
-  master_in = 32'hA1A2A3A4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
-
-  repeat(108) @(posedge clk);
-
-  master_in = 32'hB1B2B3B4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
-
-  repeat(108) @(posedge clk);
-
-  master_in = 32'hC1C2C3C4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
-
-  repeat(108) @(posedge clk);
-
-  master_in = 32'hD1D2D3D4;                              @(posedge clk);
-  start_transaction = 1;                                 @(posedge clk);
-  start_transaction = 0;                                 @(posedge clk);
-
+  master_in = 64'hA8A9AAABACADAEAF;                        @(posedge clk);
+  start_transaction = 1;                                   @(posedge clk);
+  start_transaction = 0;                                   @(posedge clk);
+  // Из канала при этом ожидаем получить значение hB0B1B2B3B4B5B6B7
+  repeat(130 - 3) @(posedge clk); 
+  
+  repeat(60) @(posedge clk); 
 
   $finish;
 end
-
-
-// initial begin
-//   wr <= 0; data_in <= 0; attr_in <= 0;
-//   @(negedge rst);
-//   data_in <= 'h42; attr_in <= 0; wr <= 1; @(posedge clk);
-//   data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
-//   data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
-//   data_in <= 'h43; attr_in <= 0; wr <= 1; @(posedge clk);
-//   data_in <= 'h0; attr_in <= 0; wr <= 1; @(posedge clk);
-//   data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
-//   data_in <= 'h37; attr_in <= 0; wr <= 1; @(posedge clk);
-//   data_in <= 'h0; attr_in <= 0; wr <= 0; @(posedge clk);
-//   repeat(18) @(posedge clk);
-// end
-
-// initial begin
-//   oe <= 0;
-//   @(negedge rst);
-//   oe <= 0; @(posedge clk);
-//   oe <= 0; @(posedge clk);
-//   oe <= 1; @(posedge clk);
-//   oe <= 0; @(posedge clk);
-//   oe <= 1; @(posedge clk);
-//   oe <= 1; @(posedge clk);
-//   oe <= 0; @(posedge clk);
-//   oe <= 0; @(posedge clk);
-//   repeat(18) @(posedge clk);
-// end
 
 
 endmodule
