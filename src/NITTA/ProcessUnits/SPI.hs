@@ -142,6 +142,7 @@ instance ( Var v, Show t ) => DefinitionSynthesis (SPI v x t) where
   moduleName _ = "pu_slave_spi"
   hardware pu = Project "" [ FromLibrary "spi/spi_slave_driver.v"
                            , FromLibrary "spi/spi_buffer.v"
+                           , FromLibrary "spi/hoarder.v"
                            , FromLibrary $ "spi/" ++ moduleName pu ++ ".v"
                            ]
   software pu = Immidiate "transport.txt" $ show pu
@@ -162,15 +163,13 @@ instance ( Time t, Var v
     , "  , .flag_stop( " ++ link stop ++ " )"
     , "  , .data_in( " ++ link dataIn ++ " )"
     , "  , .attr_in( " ++ link attrIn ++ " )"
-    -- , "  , .data_out( " ++ link dataOut ++ " )"
-    -- , "  , .attr_out( " ++ link attrOut ++ " )"
+    , "  , .data_out( " ++ link dataOut ++ " )"
+    , "  , .attr_out( " ++ link attrOut ++ " )"
     , "  , .mosi( " ++ link mosi ++ " )"
     , "  , .miso( " ++ link miso ++ " )"
     , "  , .sclk( " ++ link sclk ++ " )"
     , "  , .cs( " ++ link cs ++ " )"
     , "  );"
-    , "  assign " ++ link dataOut ++ " = 0;"
-    , "  assign " ++ link attrOut ++ " = 0;"
     ] [("name", name)]
     where
       control = link . controlBus
