@@ -26,14 +26,7 @@ wire [ATTR_WIDTH-1:0] attr_out;
 reg oe;
 reg cycle;
 
-<<<<<<< HEAD
 spi_master_driver master #( .DATA_WIDTH( DATA_WIDTH )
-=======
-spi_master_driver 
-  #( .DATA_WIDTH( 64 ) 
-   , .SCLK_HALFPERIOD( 1 )
-   ) master
->>>>>>> 59ea59db1531109da111c5d9755dac2e88b9c20d
   ( .clk(clk)
   , .rst(rst)
   , .start_transaction(start_transaction)
