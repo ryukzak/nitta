@@ -2,10 +2,9 @@
 module pu_slave_spi_tb
   #( parameter DATA_WIDTH      = 32
    , parameter ATTR_WIDTH      = 4
-  ,  parameter SPI_DATA_WIDTH  = 8
-  ,  parameter SCLK_HALFPERIOD = 1
-  ,  parameter BUF_SIZE        = 10
-  )
+   , parameter SPI_DATA_WIDTH  = 8
+   , parameter BUF_SIZE        = 8
+   )
   ();
 
 reg clk;
@@ -27,7 +26,10 @@ wire [ATTR_WIDTH-1:0] attr_out;
 reg oe;
 reg cycle;
 
-spi_master_driver master
+spi_master_driver 
+  #( .DATA_WIDTH( 32 ) 
+   , .SCLK_HALFPERIOD( 1 )
+   ) master
   ( .clk(clk)
   , .rst(rst)
   , .start_transaction(start_transaction)
