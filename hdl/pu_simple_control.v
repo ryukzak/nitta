@@ -7,6 +7,7 @@ module pu_simple_control
   ( input wire clk
   , input wire rst
   , output wire [MICROCODE_WIDTH-1:0] signals_out
+  , output wire cycle
   );
 
 
@@ -28,5 +29,7 @@ always @(posedge clk)
     program_counter <= 1;
   else
     program_counter <= program_counter + 1;
+
+assign cycle = program_counter == 1;
 
 endmodule

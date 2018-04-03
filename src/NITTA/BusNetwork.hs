@@ -345,6 +345,7 @@ instance ( Time t
               , "  ( .clk( clk )"
               , "  , .rst( rst )"
               , "  , .signals_out( control_bus )"
+              , "  , .cycle( cycle )"
               , "  );"
               , ""
               , "$instances$"
