@@ -27,7 +27,7 @@ wire [ATTR_WIDTH-1:0] attr_out;
 reg oe;
 reg cycle;
 
-spi_master_driver master
+spi_master_driver master #( .DATA_WIDTH( DATA_WIDTH )
   ( .clk(clk)
   , .rst(rst)
   , .start_transaction(start_transaction)
