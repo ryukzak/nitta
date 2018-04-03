@@ -2,32 +2,49 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
-module NITTA.ProcessUnits.FramSpec where
+module NITTA.Test.ProcessUnits.Fram where
 
+import           Control.Applicative       ((<$>))
+import           Data.Default
+import qualified Data.Map                  as M
 import           Data.Proxy
-import           NITTA.FunctionBlocks
-import           NITTA.FunctionBlocksSpec ()
+import qualified NITTA.FunctionBlocks      as FB
 import           NITTA.ProcessUnits.Fram
+import           NITTA.Test.FunctionBlocks ()
+import           NITTA.Test.ProcessUnits
 import           NITTA.Types
 import           Test.QuickCheck
 
 
-framProxy = Proxy :: Proxy (Fram String Int)
+framProxy = Proxy :: Proxy (Fram String Int Int)
 
 
-instance Arbitrary (FSet (Fram String t)) where
+instance Arbitrary (FSet (Fram String Int t)) where
   -- TODO: Сделать данную операцию через Generics.
-  arbitrary = oneof [ FramInput' <$> (arbitrary :: Gen (FramInput (Parcel String)))
-                    , FramOutput' <$> (arbitrary :: Gen (FramOutput (Parcel String)))
-                    , Loop' <$> (arbitrary :: Gen (Loop (Parcel String)))
-                    , Reg' <$> (arbitrary :: Gen (Reg (Parcel String)))
-                    , Constant' <$> (arbitrary :: Gen (Constant (Parcel String)))
+  arbitrary = oneof [ FramInput' <$> (arbitrary :: Gen (FB.FramInput (Parcel String Int)))
+                    , FramOutput' <$> (arbitrary :: Gen (FB.FramOutput (Parcel String Int)))
+                    , Loop' <$> (arbitrary :: Gen (FB.Loop (Parcel String Int)))
+                    , Reg' <$> (arbitrary :: Gen (FB.Reg (Parcel String Int)))
+                    , Constant' <$> (arbitrary :: Gen (FB.Constant (Parcel String Int)))
                     ]
+
+-----------------------------------------------------------
+
+framRegAndOut = unitTestbench "framRegAndOut" framProxy
+  def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] }
+  [ FB.reg "aa" ["ab"]
+  , FB.framOutput 9 "ac"
+  ]
+
+framRegAndConstant = unitTestbench "framRegAndConstant" framProxy
+  def{ cntxVars=M.fromList [("dzw", [975])] }
+  [ FB.reg "dzw" ["act","mqt"]
+  , FB.constant 11 ["ovj"]
+  ]
 
 
 

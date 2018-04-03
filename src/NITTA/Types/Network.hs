@@ -1,8 +1,10 @@
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE StandaloneDeriving     #-}
@@ -15,50 +17,55 @@ module NITTA.Types.Network where
 import           Data.Default
 import qualified Data.Map         as M
 import           Data.Typeable
+import           GHC.Generics     (Generic)
 import           NITTA.Types.Base
 import           NITTA.Types.Poly
 import           Numeric.Interval hiding (elem)
 
 
 -- | Контейнер для вычислительных узлов (PU). Необходимо для формирования гетерогенных списков.
-data PU i v t where
+data PU i v x t where
   PU :: ( ByTime pu t
         , Connected pu i
         , DecisionProblem (EndpointDT v t)
                EndpointDT  pu
         , Default (Instruction pu)
-        , ProcessUnit pu v t
+        , ProcessUnit pu (Parcel v x) t
         , Show (Instruction pu)
-        , Simulatable pu v Int
+        , Simulatable pu v x
         , Synthesis pu i
         , Typeable i
         , Typeable pu
         , UnambiguouslyDecode pu
+        , Typeable x
+        , Show x
+        , Num x
         ) => { unit :: pu
              , links :: Link pu i
              , networkLink :: NetworkLink i
-             } -> PU i v t
-
-setUnit PU{..} unit'
-  | Just links' <- cast links = PU{ unit=unit', links=links', networkLink=networkLink }
-  | otherwise = error "setUnit assertion!"
+             } -> PU i v x t
 
 instance ( Var v, Time t
          ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (PU i v t)
+                   EndpointDT (PU i v x t)
          where
   options proxy PU{..} = options proxy unit
-  decision proxy pu@PU{..} act = setUnit pu $ decision proxy unit act
+  decision proxy PU{ unit, links, networkLink } d
+    = PU{ unit=decision proxy unit d, links, networkLink }
 
-instance ProcessUnit (PU i v t) v t where
-  bind fb pu@PU{..} = setUnit pu <$> bind fb unit
-  process PU{..} = process unit
-  setTime t pu@PU{..} = setUnit pu $ setTime t unit
+instance ProcessUnit (PU i v x t) (Parcel v x) t where
+  bind fb PU{ unit, links, networkLink }
+    = case bind fb unit of
+      Right unit' -> Right PU { unit=unit', links, networkLink }
+      Left err    -> Left err
+  process PU{ unit } = process unit
+  setTime t PU{ unit, links, networkLink }
+    = PU{ unit=setTime t unit, links, networkLink }
 
-instance Simulatable (PU i v t) v Int where
+instance Simulatable (PU i v x t) v x where
   simulateOn cntx PU{..} fb = simulateOn cntx unit fb
 
-instance DefinitionSynthesis (PU i v t) where
+instance DefinitionSynthesis (PU i v x t) where
   moduleName PU{..} = moduleName unit
   hardware PU{..} = hardware unit
   software PU{..} = software unit
@@ -66,17 +73,20 @@ instance DefinitionSynthesis (PU i v t) where
 castPU :: ( ByTime pu t
           , Connected pu i
           , DecisionProblem (EndpointDT v t)
-                EndpointDT  pu
+                 EndpointDT  pu
           , Default (Instruction pu)
           , DefinitionSynthesis pu
           , ProcessUnit pu v t
           , Show (Instruction pu)
-          , Simulatable pu v Int
+          , Simulatable pu v x
           , Synthesis pu i
           , Typeable i
           , Typeable pu
           , UnambiguouslyDecode pu
-          ) => PU i v t -> Maybe pu
+          , Typeable x
+          , Show x
+          , Num x
+          ) => PU i v x t -> Maybe pu
 castPU PU{..} = cast unit
 
 
@@ -95,24 +105,27 @@ class Connected pu i where
 data DataFlowDT title v t
 dataFlowDT = Proxy :: Proxy DataFlowDT
 
+type Source title t = (title, t)
+type Target title v t = M.Map v (Maybe (title, t))
+
 instance DecisionType (DataFlowDT title v t) where
   data Option (DataFlowDT title v t)
     = DataFlowO
-    { dfoSource     :: (title, TimeConstrain t) -- ^ Источник пересылки.
+    { dfoSource     :: Source title (TimeConstrain t) -- ^ Источник пересылки.
     -- | Словарь, описывающий все необходимые пункты назначения для пересылаемого значения.
     -- Допустима ситация, когда пункт назначения не может принять значение, в таком случае для
     -- негоне указываются временные ограничения.
     --
     -- Примечание: почему title оказался под Maybe? Потому что мы можем, банально, не знать в каком
     -- PU находится требуемый функциональный блок, так как он может быть ещё непривязан к PU.
-    , dfoTargets    :: M.Map v (Maybe (title, TimeConstrain t))
-    } deriving ( Show )
+    , dfoTargets    :: Target title v (TimeConstrain t)
+    } deriving ( Show, Generic )
   data Decision (DataFlowDT title v t)
     = DataFlowD
-    { dfdSource     :: (title, Interval t) -- ^ Источник пересылки.
+    { dfdSource     :: Source title (Interval t) -- ^ Источник пересылки.
     -- | Словарь, описывающий пункты назначения для пересылаемого значения.
-    , dfdTargets    :: M.Map v (Maybe (title, Interval t))
-    } deriving ( Show )
+    , dfdTargets    :: Target title v (Interval t)
+    } deriving ( Show, Generic )
 
 
 class ( DefinitionSynthesis pu ) => Synthesis pu i where
@@ -139,6 +152,6 @@ data NetworkLink i
 data LinkId = Index Int
             | Name String
             deriving ( Show, Eq, Ord )
- 
+
 link (Index i) = show i
-link (Name n) = n
+link (Name n)  = n

@@ -1,6 +1,9 @@
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -11,24 +14,35 @@
 module NITTA.Compiler
   ( bindAll
   , bindAllAndNaiveSchedule
+  , compiler
+  , CompilerDT
+  , CompilerStep(..)
   , isSchedulingComplete
-  , passiveOption2action
   , naive
+  , naive'
   , NaiveOpt(..)
+  , option2decision
+  , optionsWithMetrics
+  , passiveOption2action
+  , GlobalMetrics(..)
+  , SpecialMetrics(..)
   ) where
 
 import           Control.Arrow    (second)
 import           Data.Default
-import           Data.List        (find, intersect, nub, sort, sortBy, sortOn)
+import           Data.List        (find, sortOn)
 import qualified Data.Map         as M
-import           Data.Maybe       (catMaybes, isJust, mapMaybe)
+import           Data.Maybe
 import           Data.Proxy
+import           Data.Set         (intersection, member, singleton)
+import qualified Data.Set         as S
+import           GHC.Generics
 import           NITTA.BusNetwork
-import           NITTA.Flows
-import           NITTA.Lens
+import           NITTA.DataFlow
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval ((...))
+import           NITTA.Utils.Lens
+import           Numeric.Interval (Interval, (...))
 
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
@@ -36,7 +50,6 @@ bindAll fbs pu = either (\l -> error $ "Can't bind FB to PU: " ++ show l) id $ f
   where
     nextBind (Right pu') fb = bind fb pu'
     nextBind (Left r) _     = error r
-
 
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку и наивным
@@ -54,8 +67,8 @@ bindAllAndNaiveSchedule alg pu0 = naiveSchedule $ bindAll alg pu0
 isSchedulingComplete pu
   = let os = options endpointDT pu
         d = passiveOption2action $ head os
-        algVars = sort $ concatMap variables $ functionalBlocks pu
-        processVars = sort $ concatMap variables $ getEndpoints $ process pu
+        algVars = unionsMap variables $ functionalBlocks pu
+        processVars = unionsMap variables $ getEndpoints $ process pu
     in if null os
         then algVars == processVars
         else isSchedulingComplete $ decision endpointDT pu d
@@ -68,7 +81,7 @@ newtype NaiveOpt = NaiveOpt
   { -- | Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
     -- привязка функциональных блоков.
     threshhold :: Int
-  }
+  } deriving ( Generic )
 
 instance Default NaiveOpt where
   def = NaiveOpt{ threshhold=2
@@ -86,274 +99,233 @@ compiler = Proxy :: Proxy CompilerDT
 
 instance DecisionType (CompilerDT title tag v t) where
   data Option (CompilerDT title tag v t)
-    = CFOption (Option (ControlFlowDT tag v))
-    | BOption  (Option (BindingDT title v))
-    | DFOption (Option (DataFlowDT String v t))
+    = ControlFlowOption (DataFlowGraph v)
+    | BindingOption (FB (Parcel v Int)) title
+    | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
+    deriving ( Generic )
 
   data Decision (CompilerDT title tag v t)
-    = CFDecision (Decision (ControlFlowDT tag v))
-    | BDecision (Decision (BindingDT title v))
-    | DFDecision (Decision (DataFlowDT String v t))
+    = ControlFlowDecision (DataFlowGraph v)
+    | BindingDecision (FB (Parcel v Int)) title
+    | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
+    deriving ( Generic )
 
-getCFOption (CFOption x) = Just x
-getCFOption _            = Nothing
-getBOption (BOption x) = Just x
-getBOption _           = Nothing
-getDFOption (DFOption x) = Just x
-getDFOption _            = Nothing
+filterBindingOption opts = [ x | x@BindingOption{} <- opts ]
+filterControlFlowOption opts = [ x | x@ControlFlowOption{} <- opts ]
+filterDataFlowOption opts = [ x | x@DataFlowOption{} <- opts ]
 
-instance ( Tag tag, Time t, Var v
-         ) => DecisionProblem (CompilerDT String tag v (TaggedTime tag t))
-                   CompilerDT (BranchedProcess String tag v (TaggedTime tag t))
+specializeDataFlowOption (DataFlowOption s t) = DataFlowO s t
+specializeDataFlowOption _ = error "Can't specialize non DataFlow option!"
+
+generalizeDataFlowOption (DataFlowO s t) = DataFlowOption s t
+generalizeControlFlowOption (ControlFlowO x) = ControlFlowOption x
+generalizeBindingOption (BindingO s t) = BindingOption s t
+
+
+
+instance ( Time t, Var v
+         ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
+                   CompilerDT (SystemState String String v Int (TaggedTime String t))
          where
-  options _ Bush{..} = options compiler currentBranch
-  options _ branch
-    = map DFOption (dataFlowOptions branch)
-    ++ map CFOption (options controlFlowDecision branch)
-    ++ map BOption (options binding branch)
+  options _ Level{ currentFrame } = options compiler currentFrame
+  options _ f@Frame{ nitta, dfg } = concat
+    [ map generalizeDataFlowOption dataFlowOptions
+    , map generalizeControlFlowOption $ options controlDT f
+    , map generalizeBindingOption $ options binding f
+    ]
+    where
+      dataFlowOptions = sensibleOptions $ filterByDFG $ options dataFlowDT nitta
+      allowByDFG = allowByDFG' dfg
+      allowByDFG' (DFGNode fb)        = variables fb
+      allowByDFG' (DFG g)             = unionsMap allowByDFG' g
+      allowByDFG' DFGSwitch{ dfgKey } = singleton dfgKey
+      filterByDFG
+        = map (\t@DataFlowO{ dfoTargets } -> t
+                  { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `member` allowByDFG
+                                                                      then desc
+                                                                      else Nothing)
+                                                ) $ M.assocs dfoTargets
+                  })
+      sensibleOptions = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
 
-  decision _ bush@Bush{..} act            = bush{ currentBranch=decision compiler currentBranch act }
-  decision _ branch (BDecision d)  = decision binding branch d
-  decision _ branch (CFDecision d) = decision controlFlowDecision branch d
-  decision _ branch@Branch{ topPU=pu, .. } (DFDecision act) = branch{ topPU=decision dataFlowDT pu act }
+  decision _ l@Level{ currentFrame } d = tryMakeLevelDone l{ currentFrame=decision compiler currentFrame d }
+  decision _ f (BindingDecision fb title) = decision binding f $ BindingD fb title
+  decision _ f (ControlFlowDecision d) = decision controlDT f $ ControlFlowD d
+  decision _ f@Frame{ nitta } (DataFlowDecision src trg) = f{ nitta=decision dataFlowDT nitta $ DataFlowD src trg }
 
+
+option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
+option2decision (BindingOption fb title) = BindingDecision fb title
+option2decision (DataFlowOption src trg)
+  = let pushTimeConstrains = map snd $ catMaybes $ M.elems trg
+        pullStart    = maximum $ (snd src^.avail.infimum) : map (\o -> o^.avail.infimum) pushTimeConstrains
+        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd src : pushTimeConstrains
+        pullEnd = pullStart + pullDuration - 1
+        pushStart = pullStart
+        mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
+        pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
+    in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
 
 
 
 ---------------------------------------------------------------------
 -- * Наивный, но полноценный компилятор.
 
+data CompilerStep title tag v x t
+  = CompilerStep
+    { state        :: SystemState title tag v x t
+    , config       :: NaiveOpt
+    , lastDecision :: Maybe (Decision (CompilerDT title tag v t))
+    }
+  deriving ( Generic )
 
-naive NaiveOpt{..} branch@Branch{}
-  = let d = options2decision branch $ options compiler branch
-    in case d of
-      Just d' -> decision compiler branch d'
-      Nothing -> branch
-
-naive no bush@Bush{..}
-  = let bush' = bush{ currentBranch=naive no currentBranch }
-    in if isCurrentBranchOver bush'
-      then finalizeBranch bush'
-      else bush'
-
-
-
--- | Мегафункция принятия решения в процессе компиляции. На вход получает ветку процесса и доступные
--- опции. Выполняет их приоритезацию и выдаёт победителя в качестве результата. В потенциале может
--- реализовываться с использованием IO, то есть - решение принемает пользователь.
-options2decision branch opts
-  = let bOptions = mapMaybe getBOption opts
-        cfOptions = mapMaybe getCFOption opts
-        dfOptions = mapMaybe getDFOption opts
-    in case () of
-      _ | length dfOptions >= 2 -> Just $ dfDecision dfOptions
-      _ | not $ null bOptions   -> Just $ mkBindDecision branch bOptions
-      _ | not $ null dfOptions  -> Just $ dfDecision dfOptions
-      _ | not $ null cfOptions  -> Just $ CFDecision $ (\(ControlFlowO cf : _) -> ControlFlowD cf) cfOptions
-      _ -> Nothing
-  where
-    dfDecision dfOptions = case sortOn start dfOptions of
-      v : _ -> DFDecision $ networkOption2action v
-      _     -> error "No variants!"
-    start opt = opt^.at.avail.infimum
+instance Default (CompilerStep title tag v x t) where
+  def = CompilerStep{ state=undefined
+                    , config=def
+                    , lastDecision=Nothing
+                    }
 
 
-
----------------------------------------------------------------------
--- * Ветвление алгоритма.
-
-
-data ControlFlowDT tag v
-controlFlowDecision = Proxy :: Proxy ControlFlowDT
-
-
-instance DecisionType (ControlFlowDT tag v) where
-  data Option (ControlFlowDT tag v) = ControlFlowO (ControlFlow tag v)
-  data Decision (ControlFlowDT tag v) = ControlFlowD (ControlFlow tag v)
-
-
-instance ( Tag tag, Var v, Time t
-         ) => DecisionProblem (ControlFlowDT tag v)
-                ControlFlowDT (BranchedProcess String tag v (TaggedTime tag t))
+instance ( Time t, Var v
+         ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
+                   CompilerDT (CompilerStep String String v Int (TaggedTime String t))
          where
-  options _ Branch{ topPU=pu, ..} = branchingOptions controlFlow availableVars
-    where
-      availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT pu
-  options _ _ = undefined
-
-  -- | Выполнить ветвление вычислительного процесса. Это действие заключается в замене текущей ветки
-  -- вычислительного процесса на кустарник (Bush), в рамках работы с которым необъходимо перебрать
-  -- все веточки и в конце собрать обратно в одну ветку.
-  decision _ Branch{..} (ControlFlowD Choice{..})
-    = let now = nextTick $ process topPU
-          branch : branchs = map (\OptionCF{..} -> Branch
-                                    { topPU=setTime now{ tag=ocfTag } topPU
-                                    , controlFlow=oControlFlow
-                                    , branchTag=ocfTag
-                                    , branchInputs=ocfInputs
-                                    }
-                                  ) cfOptions
-      in Bush{ currentBranch=branch
-            , remainingBranches=branchs
-            , completedBranches=[]
-            , rootBranch=branch
-            }
-  decision _ _ _                   = undefined
+  options proxy CompilerStep{ state } = options proxy state
+  decision proxy st@CompilerStep{ state } d = st{ state=decision proxy state d
+                                                , lastDecision=Just d }
 
 
-
--- * Работа с потоком данных.
-
-
-dataFlowOptions Branch{..} = sensibleOptions $ filterByControlModel controlFlow $ options dataFlowDT topPU
+optionsWithMetrics CompilerStep{ state }
+  = reverse $ sortOn (\(x, _, _, _, _) -> x) $ map measure' opts
   where
-    filterByControlModel controlModel opts
-      = let cfOpts = allowByControlFlow controlModel
-        in map (\t@DataFlowO{..} -> t
-                { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `elem` cfOpts
-                                                                     then desc
-                                                                     else Nothing)
-                                              ) $ M.assocs dfoTargets
-                }) opts
-    sensibleOptions = filter $ \DataFlowO{..} -> any isJust $ M.elems dfoTargets
+    opts = options compiler state
+    gm = measureG opts state
+    measure' o
+      = let m = measure opts state o
+        in ( integral gm m, gm, m, o, option2decision o )
 
-dataFlowOptions _ = error "Can't generate dataflow options for BranchingInProgress."
+naive' st@CompilerStep{ state }
+  = if null opts
+    then Nothing
+    else Just st{ state=decision compiler state d
+                , lastDecision=Just d
+                }
+  where
+    opts = optionsWithMetrics st
+    (_, _, _, _, d) = head opts
+
+
+naive opt f
+  = let st = CompilerStep f opt Nothing
+        CompilerStep{ state=st' } = fromMaybe st $ naive' st
+    in st'
+
+
+
+data GlobalMetrics
+  = GlobalMetrics
+    { bindingOptions, dataFlowOptions, controlFlowOptions :: Int
+    } deriving ( Show, Generic )
+
+measureG opts _
+  = GlobalMetrics{ bindingOptions=length $ filterBindingOption opts
+                 , dataFlowOptions=length $ filterDataFlowOption opts
+                 , controlFlowOptions=length $ filterControlFlowOption opts
+                 }
+
+-- | Метрики для принятия решения компилятором.
+data SpecialMetrics
+  = BindingMetrics -- ^ Решения о привязке функциональных блоков к ВУ.
+    -- | Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
+    -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
+    { critical :: Bool
+    -- | Колличество альтернативных привязок для функционального блока.
+    , alternative
+    -- | Привязка данного функционального блока может быть активировано только спустя указанное
+    -- колличество тактов.
+    , restless
+    -- | Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
+    -- количества пересылок.
+    , allowDataFlow :: Int
+    }
+  | DataFlowMetrics { waitTime :: Int }
+  | ControlFlowMetrics
+  deriving ( Show, Generic )
+
+
+measure opts Level{ currentFrame } opt = measure opts currentFrame opt
+measure opts Frame{ nitta=net@BusNetwork{ bnPus } } (BindingOption fb title) = BindingMetrics
+  { critical=isCritical fb
+  , alternative=length (howManyOptionAllow (filterBindingOption opts) M.! fb)
+  , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind fb (bnPus M.! title)
+  , restless=fromMaybe 0 $ do
+      (_var, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ waitingTimeOfVariables net
+      return $ fromEnum tcFrom
+  }
+measure _ _ ControlFlowOption{} = ControlFlowMetrics
+measure _ _ opt@DataFlowOption{} = DataFlowMetrics
+  { waitTime=fromEnum (specializeDataFlowOption opt^.at.avail.infimum)
+  }
+
+
+integral GlobalMetrics{..} DataFlowMetrics{..}
+  | dataFlowOptions >= 2                                   = 10000 + 200 - waitTime
+integral GlobalMetrics{..} BindingMetrics{ critical=True } = 2000
+integral GlobalMetrics{..} BindingMetrics{ alternative=1 } = 500
+integral GlobalMetrics{..} BindingMetrics{..}              = 200 + allowDataFlow * 10 - restless * 2
+integral GlobalMetrics{..} DataFlowMetrics{..}             = 200 - waitTime
+integral GlobalMetrics{..} _                               = 0
 
 
 
 -- * Работа с потоком управления.
 
--- | Получить список вариантов ветвления вычислительного процесса.
---
--- Ветвление вычислительного процесса возможно в том случае, если доступнен ключ ветвления
--- алгоритма и все входные переменные для всех вариантов развития вычислительного процесса.
-branchingOptions (Block cfs) availableVars
-  = [ ControlFlowO x
-    | x@Choice{..} <- cfs
-    , all (`elem` availableVars) $ cfCond : cfInputs
-    ]
-branchingOptions _ _ = error "branchingOptions: internal error."
 
+tryMakeLevelDone l@Level{ currentFrame=f@Frame{} }
+  | opts <- options compiler f
+  , null $ filterBindingOption opts ++ filterDataFlowOption opts
+  = makeLevelDone l
+tryMakeLevelDone l = l
 
-
--- | Функция применяется к кусту и позволяет определить, осталась ли работа в текущей ветке или нет.
-isCurrentBranchOver Bush{ currentBranch=branch@Branch{..} }
-  = let bOptions = options binding branch
-        dfOptions = dataFlowOptions branch
-    in null bOptions && null dfOptions
-isCurrentBranchOver _ = False
-
-
--- | Функция позволяет выполнить работы по завершению текущей ветки. Есть два варианта:
---
--- 1) Сменить ветку на следующую.
--- 2) Вернуться в выполнение корневой ветки, для чего слить вычислительный процесс всех вариантов
---    ветвления алгоритма.
-finalizeBranch bush@Bush{ remainingBranches=b:bs, ..}
-  = bush
-    { currentBranch=b
-    , remainingBranches=bs
-    , completedBranches=currentBranch : completedBranches
+-- | Функция завершения текущего фрейма. Есть два сценария: 1) поменять фрейм не меняя уровень, 2)
+-- свернуть уровень и перейти в нажележащему фрейму.
+makeLevelDone l@Level{ remainFrames=f:fs, currentFrame, completedFrames }
+  = l
+    { currentFrame=f
+    , remainFrames=fs
+    , completedFrames=currentFrame : completedFrames
     }
-finalizeBranch Bush{..}
-  = let branchs = currentBranch : completedBranches
-        mergeTime = (maximum $ map (nextTick . process . topPU) branchs){ tag=branchTag rootBranch }
-        Branch{ topPU=pu@BusNetwork{..} } = currentBranch
-    in rootBranch
-      { topPU=setTime mergeTime pu
+makeLevelDone Level{ initialFrame, currentFrame, completedFrames }
+  = let fs = currentFrame : completedFrames
+        mergeTime = (maximum $ map (nextTick . process . nitta) fs){ tag=timeTag initialFrame }
+        Frame{ nitta=net@BusNetwork{ bnProcess } } = currentFrame
+    in initialFrame
+      { nitta=setTime mergeTime net
           { bnProcess=snd $ modifyProcess bnProcess $
-              mapM_ (\Step{..} -> add sTime sDesc) $ concatMap inBranchSteps branchs
+              mapM_ (\Step{ sTime, sDesc } -> addStep sTime sDesc) $ concatMap stepsFromFrame fs
           }
       }
-finalizeBranch Branch{} = error "finalizeBranch: wrong args."
-
-
-
--- * Работа с привязкой функциональных блоков к вычислительным блокам.
-
-mkBindDecision Branch{ topPU=net@BusNetwork{..} } bOptions
-  = case sort' $ map prioritize' bOptions of
-      BindOption fb puTitle _ : _ -> BDecision $ BindingD fb puTitle
-      _                           -> error "Bind variants is over!"
   where
-    prioritize' (BindingO fb title)
-      = BindOption{ boFB=fb
-                  , boTitle=title
-                  , boPriority=prioritize net (howManyOptionAllow bOptions) fb title
-                  }
-    sort' = sortBy (flip $ \a b -> boPriority a `compare` boPriority b)
-mkBindDecision _ _ = undefined
+    stepsFromFrame Frame{ timeTag, nitta } = whatsHappenWith timeTag nitta
+    stepsFromFrame Level{}   = error "stepsFromFrame: wrong args"
 
-
-
-data BindOption title v = BindOption
-  { boFB       :: FB (Parcel v) v
-  , boTitle    :: title
-  , boPriority :: Maybe BindPriority
-  } deriving (Show)
-
-
-
--- | Приоритеты операции присваивания.
-data BindPriority
-  -- | Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
-  -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
-  = Critical
-  -- | Для данной привязки есть только один вариант.
-  | Exclusive
-  -- | Привязка данного функционального блока может быть активировано только спустя указанное
-  -- колличество тактов.
-  | Restless Int
-  -- | Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
-  -- количества пересылок.
-  | Input Int
-  deriving (Show, Eq)
-
-instance Ord BindPriority where
-  Critical `compare` _ = GT
-  _ `compare` Critical = LT
-  (Input    a) `compare` (Input    b) = a `compare` b -- чем больше, тем лучше
-  (Input    _) `compare`  _           = GT
-  (Restless _) `compare` (Input    _) = LT
-  (Restless a) `compare` (Restless b) = b `compare` a -- чем меньше, тем лучше
-  (Restless _) `compare`  _           = GT
-  Exclusive `compare` Exclusive = EQ
-  Exclusive `compare` _ = LT
-
-
-
--- | Определить приоретет варианта привязки функционального блока.
-prioritize net@BusNetwork{..} optionCount fb title
-  -- В настоящий момент данная операци приводит к тому, что часть FB перестают быть вычислимыми.
-  | isCritical fb                    = Just Critical
-  | length (optionCount M.! fb) == 1 = Just Exclusive
-
-  | pulls <- filter isTarget $ optionsAfterBind fb pu
-  , not (null pulls)
-  = Just $ Input $ sum $ map (length . variables) pulls
-
-  | Just (_var, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ waitingTimeOfVariables net
-  = Just $ Restless $ fromEnum tcFrom
-
-  | otherwise = Nothing
-  where
-    pu = bnPus M.! title
+makeLevelDone _ = error "makeFrameDone: argument must be Level."
 
 
 
 -- | Подсчитать, сколько вариантов для привязки функционального блока определено.
 -- Если вариант всего один, может быть стоит его использовать сразу?
 howManyOptionAllow bOptions
-  = foldl ( \st (BindingO fb title) -> M.alter (countOption title) fb st ) (M.fromList []) bOptions
+  = foldl ( \st (BindingOption fb title) -> M.alter (countOption title) fb st ) (M.fromList []) bOptions
   where
     countOption title (Just titles) = Just $ title : titles
     countOption title Nothing       = Just [ title ]
 
 
 -- | Время ожидания переменных.
-waitingTimeOfVariables net@BusNetwork{..}
+waitingTimeOfVariables net
   = [ (variable, tc^.avail.infimum)
-    | DataFlowO{ dfoSource=(_, tc@TimeConstrain{..}), ..} <- options dataFlowDT net
+    | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- options dataFlowDT net
     , (variable, Nothing) <- M.assocs dfoTargets
     ]
 
@@ -364,41 +336,21 @@ optionsAfterBind fb pu = case bind fb pu of
   Right pu' -> filter (\(EndpointO act _) -> act `optionOf` fb) $ options endpointDT pu'
   _         -> []
   where
-    act `optionOf` fb' = not $ null (variables act `intersect` variables fb')
-
-
+    act `optionOf` fb' = not $ S.null (variables act `intersection` variables fb')
 
 
 -- * Утилиты
 
-passiveOption2action d@EndpointO{..}
+passiveOption2action d@EndpointO{ epoRole }
   = let a = d^.at.avail.infimum
         -- "-1" - необходимо, что бы не затягивать процесс на лишний такт, так как интервал включает
         -- граничные значения.
         b = d^.at.avail.infimum + d^.at.dur.infimum - 1
-    in EndpointD epoType (a ... b)
+    in EndpointD epoRole (a ... b)
 
-networkOption2action DataFlowO{..}
-  = let pushTimeConstrains = map snd $ catMaybes $ M.elems dfoTargets
-        predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
-        pullStart    = maximum $ (snd dfoSource^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
-        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd dfoSource : pushTimeConstrains
-        pullEnd = pullStart + pullDuration - 1
-        pushStart = pullStart + 1
-
-        mkEvent (from, tc@TimeConstrain{..})
-          = Just (from, pushStart ... (pushStart + tc^.dur.infimum - 1))
-        pushs = map (second $ maybe Nothing mkEvent) $ M.assocs dfoTargets
-    in DataFlowD{ dfdSource=( fst dfoSource, pullStart ... pullEnd )
-                , dfdTargets=M.fromList pushs
-                }
-
-
-inBranchSteps Branch{..} = whatsHappenWith branchTag topPU
-inBranchSteps Bush{}     = error "inBranchSteps: wrong args"
 
 
 whatsHappenWith tag pu =
-  [ st | st@Step{..} <- steps $ process pu
+  [ st | st@Step{ sTime } <- steps $ process pu
        , tag == placeInTimeTag sTime
        ]

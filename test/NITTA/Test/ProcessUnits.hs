@@ -6,13 +6,14 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
-module NITTA.ProcessUnitsSpec where
+module NITTA.Test.ProcessUnits where
 
 import           Data.Atomics.Counter
 import           Data.Default
-import           Data.List               (intersect, sort, (\\))
 import qualified Data.Map                as M
 import           Data.Proxy
+import           Data.Set                (difference, elems, empty, fromList,
+                                          intersection, union)
 import           NITTA.Compiler
 import           NITTA.TestBench
 import           NITTA.Timeline
@@ -21,21 +22,24 @@ import           NITTA.Utils
 import           System.FilePath.Posix   (joinPath)
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
+import           Test.Tasty.HUnit        ((@?))
 
 import           Debug.Trace
 
 
 -- | Данный генератор создаёт список независимых по переменным функциональных блоков.
-instance {-# OVERLAPS #-} ( Eq v, Variables (FSet pu) v
+instance {-# OVERLAPS #-} ( Eq v
+                          , Ord v
+                          , Variables (FSet pu) v
                           , FunctionalSet pu, Arbitrary (FSet pu)
                           ) => Arbitrary [FSet pu] where
   arbitrary = onlyUniqueVar <$> listOf1 arbitrary
     where
       onlyUniqueVar = snd . foldl (\(used, fbs) fb -> let vs = variables fb
-                                                      in if null (vs `intersect` used)
-                                                        then ( vs ++ used, fb:fbs )
+                                                      in if null (vs `intersection` used)
+                                                        then ( vs `union` used, fb:fbs )
                                                         else ( used, fbs ) )
-                                  ([], [])
+                                  (empty, [])
 
 
 -- В значительной степени служебная функция, используемая для генерации процесса указанного
@@ -44,9 +48,9 @@ instance {-# OVERLAPS #-} ( Eq v, Variables (FSet pu) v
 processGen proxy = arbitrary >>= processGen' proxy def
   where
     processGen' :: ( DecisionProblem (EndpointDT String Int) EndpointDT pu
-                   , ProcessUnit pu String Int
-                   , WithFunctionalBlocks (FSet pu) (FB (Parcel String) String)
-                   ) => Proxy pu -> pu -> [FSet pu] -> Gen (pu, [FB (Parcel String) String])
+                   , ProcessUnit pu (Parcel String Int) Int
+                   , WithFunctionalBlocks (FSet pu) (FB (Parcel String Int))
+                   ) => Proxy pu -> pu -> [FSet pu] -> Gen (pu, [FB (Parcel String Int)])
     processGen' _ pu specialAlg = endpointWorkGen pu $ concatMap functionalBlocks specialAlg
 
 
@@ -74,9 +78,9 @@ endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
                   Right pu' -> endpointWorkGen' pu' alg' (fb : passedAlg)
                   Left _err -> endpointWorkGen' pu alg' passedAlg
       where
-        endpointGen o@EndpointO{ epoType=s@Source{} } = do
-          vs' <- suchThat (sublistOf $ variables s) (not . null)
-          return o{ epoType=Source vs' }
+        endpointGen o@EndpointO{ epoRole=s@Source{} } = do
+          vs' <- suchThat (sublistOf $ elems $ variables s) (not . null)
+          return o{ epoRole=Source $ fromList vs' }
         endpointGen o = return o
 
 
@@ -86,8 +90,8 @@ endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
 -- TODO: Генерируемые значения должны типизироваться с учётом особенностей вычислительного блока.
 inputsGen (pu, fbs) = do
   values <- infiniteListOf $ choose (0, 1000)
-  let is = concatMap inputs fbs
-  return (pu, fbs, def{ cntxVars=M.fromList $ zip is (map (\x -> [x]) values) })
+  let is = elems $ unionsMap inputs fbs
+  return (pu, fbs, def{ cntxVars=M.fromList $ zip is (map (:[]) values) })
 
 
 -- | Проверка вычислительного блока на соответсвие работы аппаратной реализации и его модельного
@@ -104,16 +108,24 @@ prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
 -- | Формальнаяа проверка полноты выполнения работы вычислительного блока.
 prop_completness (pu, fbs0)
   = let p = process pu
-        processVars = sort $ concatMap variables $ getEndpoints p
-        algVars = sort $ concatMap variables fbs
-        fbs = sort fbs0
-        processFBs = sort $ getFBs p
+        processVars = unionsMap variables $ getEndpoints p
+        algVars = unionsMap variables $ elems fbs
+        fbs = fromList fbs0
+        processFBs = fromList $ getFBs p
         in    processFBs == fbs -- функции в алгоритме соответствуют выполненным функциям в процессе
           && processVars == algVars -- пересылаемые данные в алгоритме соответствуют пересылаемым данным в процессе
-          || trace (  "delta vars: " ++ show (algVars \\ processVars) ++ "\n"
+          && null (options endpointDT pu)
+          || trace (  "delta vars: " ++ show (algVars `difference` processVars) ++ "\n"
                     ++ "fbs: " ++ concatMap (\fb -> (if fb `elem` processFBs then "+" else "-") ++ "\t" ++ show fb ++ "\n" ) fbs ++ "\n"
                     ++ "fbs: " ++ show processFBs ++ "\n"
                     ++ "algVars: " ++ show algVars ++ "\n"
                     ++ "processVars: " ++ show processVars ++ "\n"
                     ++ show pu
                     ) False
+
+
+unitTestbench name proxy cntx alg
+  = let lib = joinPath ["..", ".."]
+        wd = joinPath ["hdl", "gen", name]
+        pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
+    in testBench lib wd pu cntx @? name

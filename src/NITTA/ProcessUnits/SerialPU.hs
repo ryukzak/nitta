@@ -4,6 +4,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE PartialTypeSignatures  #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
@@ -30,54 +31,67 @@ import           Control.Lens        hiding (at, (...))
 import           Control.Monad.State
 import           Data.Default
 import           Data.Either
-import           Data.List           (find, intersect)
+import           Data.List           (find)
+import qualified Data.Set            as S
 import           Data.Typeable
-import           NITTA.Lens
 import           NITTA.Types
 import           NITTA.Utils
+import           NITTA.Utils.Lens
 import           Numeric.Interval    ((...))
 
 
 
 
 -- | Внешняя обёртка для вычислительных блоков, выполняющих функции последовательно.
-data SerialPU st io v t
+data SerialPU st v x t
   = SerialPU
   { -- | Внутрее состояние вычислительного блока. Конкретное состояние зависит от конкретного типа.
     spuState   :: st
-  , spuCurrent :: Maybe (CurrentJob io v t)
+  , spuCurrent :: Maybe (CurrentJob (Parcel v x) t)
   -- | Список привязанных к вычислительному блоку функций, но работа над которыми ещё не началась.
   -- Второе значение - ссылка на шаг вычислительного процесса, описывающий привязку функции
   -- к вычислительному блоку.
-  , spuRemain  :: [(FB io v, ProcessUid)]
+  , spuRemain  :: [(FB (Parcel v x), ProcessUid)]
   -- | Описание вычислительного процесса.
-  , spuProcess :: Process v t
-  } deriving ( Show )
+  , spuProcess :: Process (Parcel v x) t
+  , spuFBs     :: [FB (Parcel v x)]
+  }
 
-instance ( Time t, Var v, Default st ) => Default (SerialPU st (Parcel v) v t) where
-  def = SerialPU def def def def
+instance ( Show st
+         , Show (Process (Parcel v x) t)
+         ) => Show (SerialPU st v x t) where
+  show SerialPU{..} = "SerialPU{spuState=" ++ show spuState
+                  --  ++ ",spuCurrent=" ++ show spuCurrent
+                  --  ++ "spuRemain=" ++ show spuRemain
+                   ++ "spuProcess=" ++ show spuProcess
+                   ++ "}"
 
+instance ( Time t, Var v, Default st ) => Default (SerialPU st v x t) where
+  def = SerialPU def def def def def
+
+instance WithFunctionalBlocks (SerialPU st v x t) (FB (Parcel v x)) where
+  functionalBlocks SerialPU{ spuFBs } = spuFBs
 
 
 -- | Описание текущей работы вычислительного блока.
-data CurrentJob io v t
+data CurrentJob io t
   = CurrentJob
-  { cFB    :: FB io v -- ^ Текущая функция.
+  { cFB    :: FB io -- ^ Текущая функция.
   , cStart :: t -- ^ Момент времни, когда функция начала вычисляться.
   -- | Выполненные для данной функции вычислительные шаги. Необходимо в значительной
   -- степени для того, чтобы корректно задать все вертикальные отношения между уровнями по
   -- завершению работы над функциональным блоком..
   , cSteps :: [ProcessUid]
-  } deriving ( Show )
+  }
 
 
 
 -- | Основная логика работы последовательного вычислительного блока строится вокруг его состояния,
 -- реализующего следующий интерфейс:
-class SerialPUState st io v t | st -> io, st -> v, st -> t where
+class SerialPUState st v x t | st -> v x t where
   -- | Привязать функцию к текущему состоянию вычислительного блока. В один момент времени только
   -- один функциональный блок.
-  bindToState :: FB io v -> st -> Either String st
+  bindToState :: FB (Parcel v x) -> st -> Either String st
   -- | Получить список вариантов развития вычислительного процесса, на основе предоставленного
   -- состояния последовательного вычислительного блока.
   stateOptions :: st -> t -> [Option (EndpointDT v t)]
@@ -86,15 +100,16 @@ class SerialPUState st io v t | st -> io, st -> v, st -> t where
   -- - состояние после выполнения вычислительного процесса;
   -- - монада State, которая сформирует необходимое описание многоуровневого вычислительного
   --   процессса.
-  schedule :: st -> Decision (EndpointDT v t) -> (st, State (Process v t) [ProcessUid])
+  schedule :: st -> Decision (EndpointDT v t) -> (st, State (Process (Parcel v x) t) [ProcessUid])
 
 
 
 instance ( Var v, Time t
          , Default st
-         , SerialPUState st (Parcel v) v t
+         , SerialPUState st v x t
+         , Typeable x
          ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (SerialPU st (Parcel v) v t)
+                   EndpointDT (SerialPU st v x t)
          where
   options _proxy SerialPU{ spuCurrent=Nothing, .. }
     = concatMap ((\f -> f $ nextTick spuProcess) . stateOptions)
@@ -103,7 +118,7 @@ instance ( Var v, Time t
     = stateOptions spuState $ nextTick spuProcess
 
   decision proxy pu@SerialPU{ spuCurrent=Nothing, .. } act
-    | Just (fb, compilerKey) <- find (not . null . (variables act `intersect`) . variables . fst) spuRemain
+    | Just (fb, compilerKey) <- find (not . S.null . (variables act `S.intersection`) . variables . fst) spuRemain
     , Right spuState' <- bindToState fb spuState
     = decision proxy pu{ spuState=spuState'
                , spuCurrent=Just CurrentJob
@@ -139,10 +154,10 @@ instance ( Var v, Time t
 
 instance ( Var v, Time t
          , Default st
-         , SerialPUState st (Parcel v) v t
-         ) => ProcessUnit (SerialPU st (Parcel v) v t) v t where
+         , SerialPUState st v x t
+         ) => ProcessUnit (SerialPU st v x t) (Parcel v x) t where
 
-  bind fb pu@SerialPU{..}
+  bind fb pu@SerialPU{ spuFBs, spuRemain, spuProcess }
     -- Почему делается попытка привязать функцию к нулевому состоянию последовательного вычислителя,
     -- а не к текущему? Потому что, успешная привязка функции производится к объёртке (помещаем ФБ
     -- в spuRemain), а не к самому состоянию. Ведь к самому состоянию может быть привязана в один
@@ -151,6 +166,7 @@ instance ( Var v, Time t
         Right _ -> let (key, spuProcess') = modifyProcess spuProcess $ bindFB fb $ nextTick spuProcess
                    in Right pu{ spuRemain=(fb, key) : spuRemain
                               , spuProcess=spuProcess'
+                              , spuFBs=fb : spuFBs
                               }
         Left reason -> Left reason
 
@@ -169,14 +185,14 @@ instance ( Var v, Time t
 
 serialSchedule
   :: ( Show (Instruction pu), Default (Instruction pu), Var v, Time t, Typeable pu )
-  => Proxy pu -> Decision (EndpointDT v t) -> Instruction pu -> State (Process v t) [ProcessUid]
-serialSchedule proxy act instr = do
+  => Instruction pu -> Decision (EndpointDT v t) -> State (Process (Parcel v x) t) [ProcessUid]
+serialSchedule instr act = do
   now <- getProcessTime
-  e <- addActivity (act^.at) $ EndpointStep $ epdType act
+  e <- addActivity (act^.at) $ EndpointRoleStep $ epdRole act
   i <- addActivity (act^.at) $ InstructionStep instr
   is <- if now < act^.at.infimum
         then do
-            ni <- addActivity (now ... act^.at.infimum - 1) $ InstructionStep $ nopFor proxy
+            ni <- addActivity (now ... act^.at.infimum - 1) $ InstructionStep (def `asTypeOf` instr)
             return [i, ni]
         else return [i]
   mapM_ (relation . Vertical e) is

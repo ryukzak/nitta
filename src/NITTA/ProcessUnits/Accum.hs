@@ -2,9 +2,11 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -12,7 +14,8 @@
 module NITTA.ProcessUnits.Accum where
 
 import           Data.Default
-import           Data.List                   (intersect, (\\))
+import           Data.List                   (intersect, partition, (\\))
+import           Data.Set                    (elems, fromList)
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.SerialPU
@@ -23,107 +26,112 @@ import           Prelude                     hiding (init)
 
 
 
-type Accum v t = SerialPU (State v t) (Parcel v) v t
+type Accum v x t = SerialPU (State v x t) v x t
 
-data State v t = Accum{ acIn :: [v], acOut :: [v] }
+data State v x t = Accum{ acIn :: [(Bool, v)], acOut :: [v] }
   deriving ( Show )
 
-instance Default (State v t) where
+instance Default (State v x t) where
   def = Accum def def
 
 
 
-instance ( Var v, Time t ) => SerialPUState (State v t) (Parcel v) v t where
+instance ( Var v
+         , Time t
+         , Typeable x
+         ) => SerialPUState (State v x t) v x t where
 
-  bindToState (FB fb) ac@Accum{ acIn=[], acOut=[] }
-    | Just (Add (I a) (I b) (O cs)) <- cast fb = Right ac{ acIn=[a, b], acOut = cs }
+  bindToState fb ac@Accum{ acIn=[], acOut=[] }
+    | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[(False, a), (False, b)], acOut=elems cs }
+    | Just (Sub (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[(False, a), (True, b)], acOut=elems cs }
     | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
   -- тихая ругань по поводу решения
   stateOptions Accum{ acIn=vs@(_:_) } now
     | length vs == 2 -- первый аргумент.
-    = map (\v -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 2)) vs
+    -- TODO: Improve performance.
+    = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 2)) vs
     | otherwise -- второй аргумент
-    = map (\v -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
+    = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
   stateOptions Accum{ acOut=vs@(_:_) } now -- вывод
-    = [ EndpointO (Source vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
+    = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 2 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
   schedule st@Accum{ acIn=vs@(_:_) } act
-    | not $ null $ vs `intersect` variables act
-    = let st' = st{ acIn=vs \\ variables act }
-          work = serialSchedule (Proxy :: Proxy (Accum v t)) act
-            $ if length vs == 2
-              then Init False
-              else Load False
-      in (st', work)
+    | let actV = oneOf $ variables act
+    , ([(neg, _)], remain) <- partition ((== actV) . snd) vs
+    = let i = if length vs == 2 then Init neg else Load neg
+          work = serialSchedule @(Accum v x t) i act
+      in (st{ acIn=remain }, work)
   schedule st@Accum{ acIn=[], acOut=vs } act
-    | not $ null $ vs `intersect` variables act
-    = let st' = st{ acOut=vs \\ variables act }
-          work = serialSchedule (Proxy :: Proxy (Accum v t)) act Out
+    | not $ null $ vs `intersect` elems (variables act)
+    = let st' = st{ acOut=vs \\ elems (variables act) }
+          work = serialSchedule @(Accum v x t) Out $ shift (-1) act
       in (st', work)
   schedule _ _ = error "Accum schedule error!"
 
 
-
-instance Controllable (Accum v t) where
-  data Microcode (Accum v t)
+instance Controllable (Accum v x t) where
+  data Microcode (Accum v x t)
     = Microcode{ oeSignal :: Bool
                , initSignal :: Bool
                , loadSignal :: Bool
                , negSignal :: Maybe Bool
                } deriving ( Show, Eq, Ord )
 
-  data Instruction (Accum v t)
+  data Instruction (Accum v x t)
     = Nop
     | Init Bool
     | Load Bool
     | Out
     deriving (Show)
 
-instance Default (Instruction (Accum v t)) where
+instance Default (Instruction (Accum v x t)) where
   def = Nop
 
-instance Default (Microcode (Accum v t)) where
+instance Default (Microcode (Accum v x t)) where
   def = Microcode{ oeSignal=False
                  , initSignal=False
                  , loadSignal=False
                  , negSignal=Nothing
                  }
 
-instance UnambiguouslyDecode (Accum v t) where
+instance UnambiguouslyDecode (Accum v x t) where
   decodeInstruction Nop        = def
   decodeInstruction (Init neg) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
   decodeInstruction (Load neg) = def{ loadSignal=True, negSignal=Just neg }
   decodeInstruction Out        = def{ oeSignal=True }
 
 
-instance ( Var v ) => Simulatable (Accum v t) v Int where
-  simulateOn cntx _ (FB fb)
-    | Just (fb' :: Add (Parcel v)) <- cast fb = simulate cntx fb'
+instance ( Var v
+         , Num x
+         ) => Simulatable (Accum v x t) v x where
+  simulateOn cntx _ fb
+    | Just fb'@Add{} <- castFB fb = simulate cntx fb'
+    | Just fb'@Sub{} <- castFB fb = simulate cntx fb'
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Accum."
 
 
-instance Connected (Accum v t) i where
-  data Link (Accum v t) i
+instance Connected (Accum v x t) i where
+  data Link (Accum v x t) i
     = Link { init, load, neg, oe :: i } deriving ( Show )
   transmitToLink Microcode{..} Link{..}
     = [ (init, B initSignal)
       , (load, B loadSignal)
-      , (neg, maybe X B negSignal)
+      , (neg, maybe Q B negSignal)
       , (oe, B oeSignal)
       ]
 
 
-instance DefinitionSynthesis (Accum v t) where
+instance DefinitionSynthesis (Accum v x t) where
   moduleName _ = "pu_accum"
   hardware pu = FromLibrary $ moduleName pu ++ ".v"
   software _ = Empty
 
 
 instance ( Time t, Var v
-         ) => Synthesis (Accum v t) LinkId where
+         ) => Synthesis (Accum v x t) LinkId where
   hardwareInstance _ name NetworkLink{..} Link{..} = renderST
     [ "pu_accum "
     , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"

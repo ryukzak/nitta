@@ -1,8 +1,11 @@
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE IncoherentInstances    #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE StandaloneDeriving     #-}
@@ -10,15 +13,22 @@
 {-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.Types.Base where
+module NITTA.Types.Base
+  ( module NITTA.Types.Base
+  , module NITTA.Types.Time
+  ) where
 
 import           Data.Default
-import qualified Data.List        as L
-import qualified Data.Map         as M
+import           Data.List
+import qualified Data.Map          as M
 import           Data.Proxy
+import qualified Data.Set          as S
+import qualified Data.String.Utils as S
 import           Data.Typeable
+import           GHC.Generics
 import           NITTA.Types.Poly
-import           Numeric.Interval hiding (elem)
+import           NITTA.Types.Time
+import           Numeric.Interval
 
 
 
@@ -31,13 +41,13 @@ import           Numeric.Interval hiding (elem)
 -- TODO: Повидимому именно тут заложена самая страшная мина текущей реализации, а именно -
 -- отсутствие типизации. При этом в настоящий момент совершенно не понятно как и главное где
 -- учитывать типизацию данных ходящих по шине.
-class ( Typeable v, Eq v, Ord v, Show v ) => Var v
-instance ( Typeable v, Eq v, Ord v, Show v ) => Var v
+class ( Typeable v, Ord v, Show v ) => Var v
+instance ( Typeable v, Ord v, Show v ) => Var v
 instance {-# OVERLAPS #-} Var String
 
-class Variables x v | x -> v where
+class Variables a v | a -> v where
   -- | Получить список идентификаторов связанных переменных.
-  variables :: x -> [v]
+  variables :: a -> S.Set v
 
 
 
@@ -52,106 +62,40 @@ class IOTypeFamily io where
   data I io :: *
   -- | Тип для описания выгружаемого значения.
   data O io :: *
+  -- | Тип значения.
+  data X io :: *
+
 
 class ( Show (I io), Variables (I io) v, Eq (I io)
-       , Show (O io), Variables (O io) v, Eq (O io)
-       , Typeable io, Var v
-       ) => IOType io v | io -> v
+      , Show (O io), Variables (O io) v, Eq (O io)
+      , Show (X io), Eq (X io)
+      , Typeable io, Var v
+      ) => IOType io v x | io -> v x
 instance ( Show (I io), Variables (I io) v, Eq (I io)
          , Show (O io), Variables (O io) v, Eq (O io)
-         , Typeable io, Var v
-         ) => IOType io v
+         , Show (X io), Eq (X io)
+         , Typeable io, Var v, io ~ io' v x
+         ) => IOType io v x
 
 
 
--- | Идентификатор типа для описания физически фактических пересылаемых значений.
-newtype Parcel v = Parcel v
+-- | Идентификатор типа для описания физически фактических пересылаемых
+-- значений. Конструктор не нужен, так как фактические значения будут
+-- описываться в рамках IOTypeFamily.
+data Parcel v x
 
-instance Var v => IOTypeFamily (Parcel v) where
-  data I (Parcel v) = I v -- ^ Загружаемые значения.
+instance Var v => IOTypeFamily (Parcel v x) where
+  data I (Parcel v x) = I v -- ^ Загружаемые значения.
     deriving (Show, Eq, Ord)
-  data O (Parcel v) = O [v] -- ^ Выгружаемые значения.
+  data O (Parcel v x) = O (S.Set v) -- ^ Выгружаемые значения.
     deriving (Show, Eq, Ord)
+  data X (Parcel v x) = X x -- ^ Выгружаемые значения.
+    deriving (Show, Eq)
 
-instance Variables (I (Parcel v)) v where
-  variables (I v) = [v]
-instance Variables (O (Parcel v)) v where
+instance Variables (I (Parcel v x)) v where
+  variables (I v) = S.singleton v
+instance Variables (O (Parcel v x)) v where
   variables (O v) = v
-
-
-
----------------------------------------------------------------------
--- * Время
-
-
--- | Класс координаты во времени.
-class ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
-instance ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
-instance {-# OVERLAPS #-} Time Int
-instance {-# OVERLAPS #-} ( Default t, Typeable tag, Typeable t
-                          , Eq tag, Ord t, Num t, Bounded t, Enum t
-                          , Show tag, Show t
-                          ) => Time (TaggedTime tag t)
-
--- | Описание временных ограничений на активности (Ativity). Используется при описании доступных
--- опций для планирования вычислительного процесса.
-data TimeConstrain t
-  = TimeConstrain
-  { tcAvailable :: Interval t -- ^ Замкнутый интервал, в рамках которого можно выполнить активность.
-  , tcDuration  :: Interval t -- ^ Замкнутый интервал допустимой длительности активности.
-  } deriving ( Eq )
-instance ( Show t ) => Show (TimeConstrain t) where
-  show TimeConstrain{..} = show tcAvailable ++ "/P" ++ show tcDuration ++ ""
-
-
--- | Изначально, для описания времени использовался тип Int. Время отсчитывалось с 0, было линейным
--- и совпадало с адресами памяти команд. К сожалению, это никуда не годится в случае если:
---
---     1) В вычислительном процессе присутствуют циклы и ветвления.
---     2) Вычислитель может включаться, выключаться...
---
--- По этому было принято решение добавить тег, идентифицирующий к какой ветку развития
--- вычислительного процесса относится данная точка.
-data TaggedTime tag t
-  = TaggedTime
-  { tag   :: Maybe tag -- ^ Идентификатор ветки вычислительного процесса.
-  , clock :: t
-  } deriving ( Typeable )
-
-class ( Eq tag, Show tag, Typeable tag ) => Tag tag
-instance ( Eq tag, Show tag, Typeable tag ) => Tag tag
-
-instance ( Default t ) => Default (TaggedTime tag t) where
-  def = TaggedTime Nothing def
-
-instance ( Time t, Show tag ) => Show (TaggedTime tag t) where
-  show (TaggedTime tag t) = show t ++ maybe "" (("!" ++) . show) tag
-instance {-# OVERLAPS #-} ( Time t ) => Show (TaggedTime String t) where
-  show (TaggedTime tag t) = show t ++ maybe "" ("!" ++) tag
-
-instance ( Eq t ) => Eq (TaggedTime tag t) where
-  (TaggedTime _ a) == (TaggedTime _ b) = a == b
-instance ( Ord t ) => Ord (TaggedTime tag t) where
-  (TaggedTime _ a) `compare` (TaggedTime _ b) = a `compare` b
-
-instance ( Enum t ) => Enum (TaggedTime tag t) where
-  toEnum i = TaggedTime Nothing $ toEnum i
-  fromEnum (TaggedTime _ i) = fromEnum i
-instance ( Num t ) => Bounded (TaggedTime tag t) where
-  minBound = TaggedTime Nothing 0
-  maxBound = TaggedTime Nothing 1000
-instance ( Num t, Show tag, Eq tag ) => Num (TaggedTime tag t) where
-  (TaggedTime Nothing a) + (TaggedTime Nothing b) = TaggedTime Nothing (a + b)
-  (TaggedTime (Just tag) a) + (TaggedTime Nothing b) = TaggedTime (Just tag) (a + b)
-  (TaggedTime Nothing a) + (TaggedTime (Just tag) b) = TaggedTime (Just tag) (a + b)
-  (TaggedTime tag_a a) + (TaggedTime tag_b b)
-    | tag_a == tag_b = TaggedTime tag_a (a + b)
-    | otherwise = error $ "Not equal time tag! " ++ show tag_a ++ " " ++ show tag_b
-  fromInteger = TaggedTime Nothing . fromInteger
-  negate t = t{ clock=negate $ clock t }
-  (*) = undefined
-  abs = undefined
-  signum = undefined
 
 
 
@@ -164,15 +108,20 @@ class FunctionalSet pu where
   -- | Тип для представляния системы команд.
   data FSet pu :: *
 
-instance ( WithFunctionalBlocks (FSet pu) (FB (Parcel v) v) ) => Variables (FSet pu) v where
-  variables fbs = concatMap variables $ functionalBlocks fbs
+instance ( WithFunctionalBlocks (FSet pu) (FB (Parcel v x))
+         , Ord v
+         , Show v
+         , Typeable v
+         , Typeable x
+         ) => Variables (FSet pu) v where
+  variables fbs = S.unions $ map variables $ functionalBlocks fbs
 
 
 
 class ToFSet pu v | pu -> v where
   -- | Преобразование гетерогенного функционального блока в представление системы функций
   -- вычислительного блока.
-  toFSet :: FB (Parcel v) v -> Either String (FSet pu)
+  toFSet :: FB (Parcel v x) -> Either String (FSet pu)
 
 -- | Преобразование из представления системы функций вычислительного блока в гетерогенный
 -- функциональный блок.
@@ -185,10 +134,10 @@ fromFSet f = head $ functionalBlocks f
 class ( Typeable fb
       , Eq fb
       ) => FunctionalBlock fb v | fb -> v where
-  inputs :: fb -> [v]
-  inputs _ = []
-  outputs :: fb -> [v]
-  outputs _ = []
+  inputs :: fb -> S.Set v
+  inputs _ = S.empty
+  outputs :: fb -> S.Set v
+  outputs _ = S.empty
   -- | Возвращает зависимости между аргументами функционального блока.
   -- Формат: (заблокированное значение, блокирующее значение).
   dependency :: fb -> [(v, v)]
@@ -212,9 +161,9 @@ class ( Typeable fb
 
 
 
-class WithFunctionalBlocks x fb | x -> fb where
+class WithFunctionalBlocks a fb | a -> fb where
   -- | Получить список связанных функциональных блоков.
-  functionalBlocks :: x -> [fb]
+  functionalBlocks :: a -> [fb]
 
 
 
@@ -224,47 +173,55 @@ data Cntx v x
          , cntxOutputs :: M.Map v [x]
          , cntxFram    :: M.Map (Int, v) [x]
          }
-  deriving (Show)
+
+instance ( Show v, Show x ) => Show (Cntx v x) where
+  show Cntx{ cntxVars, cntxOutputs }
+    = let vs = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxVars
+          os = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxOutputs
+          dt = vs ++ os
+      in S.join "\n" $ map (S.join "\t") $ transpose dt
 
 instance Default (Cntx v x) where
   def = Cntx M.empty M.empty M.empty M.empty
 
 
-class FunctionSimulation fb v x | fb -> v where
+class FunctionSimulation fb v x | fb -> v x where
   simulate :: Cntx v x -> fb -> Maybe (Cntx v x)
 
 
 
--- | Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
-data FB io v where
-  FB :: ( FunctionalBlock fb v
-        , Show fb
-        , Variables fb v
-        , IOType io v
-        , FunctionSimulation fb v Int
-        ) => fb -> FB io v
-deriving instance ( Show v ) => Show (FB io v)
 
-instance ( IOType box v, Var v ) => FunctionalBlock (FB box v) v where
+
+-- | Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
+data FB io where
+  FB :: ( io ~ (io' v x)
+        , IOType io v x
+        , FunctionalBlock fb v
+        , Show fb
+        , FunctionSimulation fb v x
+        ) => fb -> FB io
+instance Show (FB io) where
+  show (FB fb) = "<" ++ show fb ++ ">"
+
+instance ( Var v
+         , Typeable x
+         ) => FunctionalBlock (FB (Parcel v x)) v where
   dependency (FB fb) = dependency fb
   insideOut (FB fb) = insideOut fb
   isCritical (FB fb) = isCritical fb
   inputs (FB fb) = inputs fb
   outputs (FB fb) = outputs fb
 
-instance Variables (FB io v) v where
-  variables (FB fb) = variables fb
+instance Variables (FB (Parcel v x)) v where
+  variables (FB fb) = inputs fb `S.union` outputs fb
 
-instance Eq (FB io v) where
+instance Eq (FB io) where
   FB a == FB b = Just a == cast b
 
-instance ( Variables (FB io v) v, Ord v ) => Ord (FB io v) where
-  a `compare` b = variables a `compare` variables b
+instance Ord (FB (Parcel v x)) where
+  (FB a) `compare` (FB b) = show a `compare` show b
 
-instance {-# OVERLAPS #-} FunctionalBlock fb v => Variables fb v where
-  variables fb = inputs fb ++ outputs fb
-
-instance FunctionSimulation (FB (Parcel v) v) v Int where
+instance FunctionSimulation (FB (Parcel v x)) v x where
   simulate cntx (FB fb) = simulate cntx fb
 
 
@@ -280,28 +237,31 @@ instance FunctionSimulation (FB (Parcel v) v) v Int where
 --     2) Формирование многоуровневого описания вычислительного процесса для отдельного PU и
 --        входящих в его состав структурных элементов (Nested). К примеру: вычислительный процесс
 --        сети и подключённых к ней PU. (доступно через функцию process)
-data Process v t
+data Process io t
   = Process
-    { steps     :: [Step v t] -- ^ Список шагов вычислительного процесса.
+    { steps     :: [Step io t] -- ^ Список шагов вычислительного процесса.
 
     , relations :: [Relation] -- ^ Список отношений между шагами вычислительного процесса
                               --   (отношения описываются через "кортежи" из ProcessUid).
     , nextTick  :: t          -- ^ Номер первого свободного такта.
     , nextUid   :: ProcessUid -- ^ Следующий свободный идентификатор шага вычислительного процесса.
     }
+deriving instance ( Show v, Show t ) => Show ( Process (Parcel v x) t )
 
-instance ( Default t ) => Default (Process v t) where
+instance ( Default t ) => Default (Process io t) where
   def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
+
 
 type ProcessUid = Int -- ^ Уникальный идентификатор шага вычислительного процесса.
 
 -- | Описание шага вычислительного процесса.
-data Step v t where
+data Step io t where
   Step ::
     { sKey  :: ProcessUid    -- ^ Уникальный идентификатор шага.
     , sTime :: PlaceInTime t -- ^ Описание типа и положения шага во времени.
-    , sDesc :: StepInfo v    -- ^ Описание действия описываемого шага.
-    } -> Step v t
+    , sDesc :: StepInfo io    -- ^ Описание действия описываемого шага.
+    } -> Step io t
+deriving instance ( Show v, Show t ) => Show ( Step (Parcel v x) t )
 
 -- | Описание положения события во времени и типа события:
 data PlaceInTime t
@@ -311,18 +271,18 @@ data PlaceInTime t
 
 -- | Описание события, соответсвующего шага вычислительного процесса. Каждый вариант соответствует
 -- соответствующему отдельному уровню организации вычислительного процесса.
-data StepInfo v where
+data StepInfo io where
   -- | Решения, принятые на уровне САПР.
-  CADStep :: String -> StepInfo v
+  CADStep :: String -> StepInfo io
   -- | Время работы над функциональным блоком функционального алгоритма.
-  FBStep :: FB (Parcel v) v -> StepInfo v
+  FBStep :: FB io -> StepInfo io
   -- | Описание использования вычислительного блока с точки зрения передачи данных.
-  EndpointStep :: EndpointType v -> StepInfo v
+  EndpointRoleStep :: ( io ~ _io v x, Show v, Typeable v ) => EndpointRole v -> StepInfo io
   -- | Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
   -- определяется типом вычислительного блока.
   InstructionStep :: ( Show (Instruction pu)
                      , Typeable (Instruction pu)
-                     ) => Instruction pu -> StepInfo v
+                     ) => Instruction pu -> StepInfo io
 
   -- | Используется для описания вычислительного процесса вложенных структурных элементов.
   -- Как правило не хранится в структурах данных, а генерируется автоматически по требованию при
@@ -330,22 +290,20 @@ data StepInfo v where
   NestedStep :: ( Eq title, Show title, Ord title
                 ) => title -> StepInfo v -> StepInfo v
 
-deriving instance ( Show v, Show t ) => Show ( Process v t )
-deriving instance ( Show v, Show t ) => Show ( Step v t )
-instance ( Show v ) => Show (StepInfo v) where
+instance ( Show v ) => Show (StepInfo (Parcel v x)) where
   show (CADStep s)                 = s
   show (FBStep (FB fb))            = show fb
-  show (EndpointStep eff)          = show eff
+  show (EndpointRoleStep eff)      = show eff
   show (InstructionStep instr)     = show instr
   show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
 
 
 -- | Получить строку с название уровня указанного шага вычислительного процесса.
-level (CADStep _)         = "CAD"
-level (FBStep _)          = "Function block"
-level (EndpointStep _)    = "Endpoint"
-level (InstructionStep _) = "Instruction"
-level (NestedStep _ _)    = "Nested"
+level (CADStep _)          = "CAD"
+level (FBStep _)           = "Function block"
+level (EndpointRoleStep _) = "Endpoint"
+level (InstructionStep _)  = "Instruction"
+level (NestedStep _ _)     = "Nested"
 
 
 -- | Описание отношений между шагами вычисительного процесса.
@@ -366,32 +324,32 @@ data Relation
 
 -- | Решение в области привязки функционального блока к вычислительному. Определяется только для
 -- вычислительных блоков, организующих работу со множеством вложенных блоков, адресуемым по title.
-data BindingDT title v
+data BindingDT title io
 binding = Proxy :: Proxy BindingDT
 
-instance DecisionType (BindingDT title v) where
-  data Option (BindingDT title v) = BindingO (FB (Parcel v) v) title
-  data Decision (BindingDT title v) = BindingD (FB (Parcel v) v) title
+instance DecisionType (BindingDT title io) where
+  data Option (BindingDT title io) = BindingO (FB io) title deriving ( Generic )
+  data Decision (BindingDT title io) = BindingD (FB io) title deriving ( Generic )
 
 
 -- | Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
 -- одно взаимодействие, при этом у PU только один канал для взаимодействия, что в общем то
 -- ограничение. В перспективе должно быть расширено для работы с конвейра.
-data EndpointType v
-  = Source [v] -- ^ Выгрузка данных из PU.
+data EndpointRole v
+  = Source (S.Set v) -- ^ Выгрузка данных из PU.
   | Target v   -- ^ Загрузка данных в PU.
   deriving ( Show, Eq, Ord )
 
 (Target a) << (Target b) | a == b = True
-(Source a) << (Source b)          = all (`elem` a) b
+(Source a) << (Source b)          = all (`S.member` a) b
 _        << _                 = False
 
-(Source a) \\\ (Source b) = Source (a L.\\ b)
+(Source a) \\\ (Source b) = Source $ S.difference a b
 a \\\ b = error $ "Can't get sub endpoint for " ++ show a ++ " " ++ show b
 
-instance Variables (EndpointType v) v where
+instance Variables (EndpointRole v) v where
   variables (Source vs) = vs
-  variables (Target v)  = [v]
+  variables (Target v)  = S.singleton v
 
 
 
@@ -406,23 +364,23 @@ endpointDT = Proxy :: Proxy EndpointDT
 instance DecisionType (EndpointDT v t) where
   data Option (EndpointDT v t)
     = EndpointO
-    { epoType :: EndpointType v -- ^ Чтение данных из входного регистра PU или запись данных в него.
+    { epoRole :: EndpointRole v -- ^ Чтение данных из входного регистра PU или запись данных в него.
     , epoAt :: TimeConstrain t -- ^ Временные ограничения на операцию.
     }
   data Decision (EndpointDT v t)
     = EndpointD
-    { epdType :: EndpointType v -- ^ Выбранная операция для взаимодействия с окружающим миром.
+    { epdRole :: EndpointRole v -- ^ Выбранная операция для взаимодействия с окружающим миром.
     , epdAt :: Interval t -- ^ Положение операции во времени.
     }
 
 instance Variables (Option (EndpointDT v t)) v where
-  variables EndpointO{..} = variables epoType
+  variables EndpointO{..} = variables epoRole
 instance Variables (Decision (EndpointDT v t)) v where
-  variables EndpointD{..} = variables epdType
+  variables EndpointD{..} = variables epdRole
 instance ( Show v, Show t ) => Show (Option (EndpointDT v t)) where
-  show EndpointO{..} = "option: " ++ show epoType ++ "@(" ++ show epoAt ++ ")"
+  show EndpointO{..} = "option: " ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
 instance ( Show v, Show t ) => Show (Decision (EndpointDT v t)) where
-  show EndpointD{..} = "decision: " ++ show epdType ++ "@(" ++ show epdAt ++ ")"
+  show EndpointD{..} = "decision: " ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
 
 
 
@@ -441,14 +399,14 @@ instance ( Show v, Show t ) => Show (Decision (EndpointDT v t)) where
 --       блока. Его модельное время продвигается вперёд, в описании вычислительного процесса
 --       дополняется записями относительно сделанных шагов вычислительного процесса.
 --    4) Повторение, пока список возможных вариантов не станет пустым.
-class ProcessUnit pu v t | pu -> v t where
+class ProcessUnit pu io t | pu -> io t where
   -- | Назначить исполнение функционального блока вычислительному узлу.
-  bind :: FB (Parcel v) v -> pu -> Either String pu
+  bind :: FB io -> pu -> Either String pu
   -- | Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
   -- процесс вложенных структурных элементов.
   --
   -- Результат вычисления данной функции не должен редактироваться и возкращаться на место!
-  process :: pu -> Process v t
+  process :: pu -> Process io t
   -- | Установить модельное время вычислительного блока.
   --
   -- TODO: Необходимо преобразовать в setTimeTag.
@@ -501,7 +459,7 @@ class UnambiguouslyDecode pu where
 -- | Значение сигнальной линии.
 data Value
   -- | Значение не определено.
-  = X
+  = Q
   -- | Значение сигнальной линии установлено в логическое значение.
   | B Bool
   -- | Была сделана попытка установить сигнальную линию несколькими источниками, что привело к
@@ -509,16 +467,16 @@ data Value
   | Broken
 
 instance Default Value where
-  def = X
+  def = Q
 
 instance Show Value where
-  show X         = "x"
+  show Q         = "x"
   show (B True)  = "1"
   show (B False) = "0"
   show Broken    = "B"
 
-X +++ v = v
-v +++ X = v
+Q +++ v = v
+v +++ Q = v
 _ +++ _ = Broken
 
 
@@ -541,7 +499,7 @@ class Simulatable pu v x | pu -> v x where
   simulateOn :: Cntx v x -- ^ Контекст вычислительного процесса, содержащий уже
                          -- известные значения переменных.
              -> pu -- ^ Вычислительный блок.
-             -> FB (Parcel v) v -- ^ Функциональный блок, оперируйщий интересующим значением.
+             -> FB (Parcel v x) -- ^ Функциональный блок, оперируйщий интересующим значением.
              -> Maybe (Cntx v x)
 
 
@@ -566,4 +524,3 @@ class DefinitionSynthesis pu where
   hardware :: pu -> Implementation
   -- | Реализация программной составляющей составляющей вычислительного блока.
   software :: pu -> Implementation
-

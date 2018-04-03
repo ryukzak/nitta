@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeFamilies              #-}
@@ -16,17 +17,20 @@ module NITTA.Utils where
 import           Control.Monad.State
 import           Data.Default
 import           Data.List           (minimumBy, sortOn)
-import qualified Data.Map            as M
 import           Data.Maybe          (mapMaybe)
-import           Data.Proxy
+import           Data.Set            (difference, elems, unions)
 import           Data.Typeable       (Typeable, cast)
-import           NITTA.Lens
 import           NITTA.Types
+import           NITTA.Utils.Lens
 import           Numeric             (readInt, showHex)
+import           Numeric.Interval    ((...))
 import qualified Numeric.Interval    as I
 import           Text.StringTemplate
 
 
+
+unionsMap f lst = unions $ map f lst
+oneOf = head . elems
 
 instance ( Default (Instruction pu)
          , Show (Instruction pu)
@@ -56,14 +60,18 @@ bool2binstr False = "0"
 
 modifyProcess p st = runState st p
 
-add placeInTime info = do
+addStep placeInTime info = do
   p@Process{..} <- get
   put p { nextUid=succ nextUid
         , steps=Step nextUid placeInTime info : steps
         }
   return nextUid
 
-addActivity interval = add $ Activity interval
+addStep_ placeInTime info = do
+  _ <- addStep placeInTime info
+  return ()
+
+addActivity interval = addStep $ Activity interval
 
 relation r = do
   p@Process{..} <- get
@@ -78,7 +86,7 @@ getProcessTime = do
   Process{..} <- get
   return nextTick
 
-bindFB fb t = add (Event t) $ CADStep $ "Bind " ++ show fb
+bindFB fb t = addStep (Event t) $ CADStep $ "Bind " ++ show fb
 
 atSameTime a (Activity t) = a `I.member` t
 atSameTime a (Event t)    = a == t
@@ -91,7 +99,7 @@ stepStart Step{ sTime=Event t }    = t
 stepStart Step{ sTime=Activity t } = I.inf t
 
 
-whatsHappen t Process{..} = filter (\Step{..} -> t `atSameTime` sTime) steps
+whatsHappen t Process{ steps } = filter (\Step{ sTime } -> t `atSameTime` sTime) steps
 
 
 isFB (FBStep _)                = True
@@ -104,16 +112,18 @@ getFB _                                      = Nothing
 
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
-
-getEndpoint Step{ sDesc=EndpointStep eff }                = Just eff
-getEndpoint Step{ sDesc=NestedStep _ (EndpointStep eff) } = Just eff
-getEndpoint _                                             = Nothing
+getEndpoint :: Step (Parcel v x) t -> Maybe (EndpointRole v)
+getEndpoint Step{ sDesc=EndpointRoleStep role }                = Just role
+getEndpoint Step{ sDesc=NestedStep _ (EndpointRoleStep role) } = Just role
+getEndpoint _                                                  = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 
 endpointAt t p
-  | [eff] <- mapMaybe getEndpoint $ whatsHappen t p = Just eff
-  | otherwise = Nothing
+  = case mapMaybe getEndpoint $ whatsHappen t p of
+    [ep] -> Just ep
+    []   -> Nothing
+    eps  -> error $ "Too many endpoint at a time: " ++ show eps
 
 endpointsAt t p = mapMaybe getEndpoint $ whatsHappen t p
 
@@ -133,14 +143,7 @@ extractInstruction _ Step{ sDesc=InstructionStep instr } = cast instr
 extractInstruction _ _                                   = Nothing
 
 
-extractInstructionAt pu t
-  = let p = process pu
-        is = mapMaybe (extractInstruction pu) $ whatsHappen t p
-    in case is of
-      []  -> Nothing
-      [i] -> Just i
-      _   -> error $ "Too many instruction on tick." ++ show is
-
+extractInstructionAt pu t = mapMaybe (extractInstruction pu) $ whatsHappen t $ process pu
 
 extractInstructions pu = mapMaybe (extractInstruction pu) $ sortOn stepStart $ steps $ process pu
 
@@ -148,22 +151,15 @@ extractInstructions pu = mapMaybe (extractInstruction pu) $ sortOn stepStart $ s
 -- | Собрать список переменных подаваемых на вход указанного списка функциональных блоков. При
 -- формировании результата отсеиваются входы, получаемые из функциональных блоков рассматриваемого
 -- списка.
-inputsOfFBs fbs
-  = let deps0 = M.fromList [(v, []) | v <- concatMap variables fbs]
-        deps = foldl (\dict (a, b) -> M.adjust ((:) b) a dict) deps0 $ concatMap dependency fbs
-    in map fst $ filter (null . snd) $ M.assocs deps
-
--- outputsOfFBs fbs
---   = let deps0 = (M.fromList [(v, []) | v <- concatMap variables fbs])
---         deps = foldl (\dict (a, b) -> M.adjust ((:) b) a dict) deps0 $ concatMap dependency fbs
---     in filter (\a -> all (not . (a `elem`)) deps) $ M.keys deps
+algInputs fbs = unionsMap inputs fbs `difference` unionsMap outputs fbs
+algOutputs fbs = unionsMap outputs fbs `difference` unionsMap inputs fbs
 
 
 
 values2dump vs
   = let vs' = concatMap show vs
         x = length vs' `mod` 4
-        vs'' = if x == 0 then vs' else  replicate (4 - x) '0' ++ vs'
+        vs'' = if x == 0 then vs' else replicate (4 - x) '0' ++ vs'
     in concatMap (\e -> showHex (readBin e) "") $ groupBy4 vs''
   where
     groupBy4 [] = []
@@ -175,14 +171,13 @@ values2dump vs
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
 
 
-nopFor :: ( Default (Instruction pu) ) => Proxy pu -> Instruction pu
-nopFor _proxy = def
-
 isTimeWrap p act = nextTick p > act^.at.infimum
 timeWrapError p act = error $ "You can't start work yesterday :) fram time: " ++ show (nextTick p) ++ " action start at: " ++ show (act^.at.infimum)
 
 addInstr :: ( Typeable pu, Show (Instruction pu) ) => pu -> I.Interval t -> Instruction pu -> State (Process v t) ProcessUid
-addInstr _pu t i = add (Activity t) $ InstructionStep i
+addInstr _pu t i = addStep (Activity t) $ InstructionStep i
 
 
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
+
+shift n d@EndpointD{ epdAt } = d{ epdAt=(I.inf epdAt + n) ... (I.sup epdAt + n) }

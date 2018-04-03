@@ -19,17 +19,19 @@
 
 module NITTA.FunctionBlocks where
 
-import           Data.Bits
-import           Data.List     (find)
+import qualified Data.Bits     as B
+import           Data.List     (cycle, intersect, (\\))
 import qualified Data.Map      as M
 import           Data.Maybe
+import           Data.Set      (elems, fromList, union)
 import           Data.Typeable
 import           NITTA.Types
+import           NITTA.Utils
 
 
 
-class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
-instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
+class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, B.Bits a ) => Addr a
+instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, B.Bits a ) => Addr a
 
 get' cntx k = fromMaybe (error $ "Can't get from cntx." ++ show k) $ get cntx k
 get Cntx{..} k = do
@@ -49,13 +51,13 @@ set cntx@Cntx{..} ks v = do
   return cntx{ cntxVars=cntxVars' }
 set' cntx ks v = fromMaybe (error "Can't set in cntx.") $ set cntx ks v
 
-receive cntx@Cntx{..} k = do
+receiveSim cntx@Cntx{..} k = do
   values <- cntxInputs M.!? k
   value <- listToMaybe values
   let cntxInputs' = M.adjust tail k cntxInputs
   return (cntx{ cntxInputs=cntxInputs' }, value)
 
-send cntx@Cntx{..} k v = do
+sendSim cntx@Cntx{..} k v = do
   let cntxOutputs' = M.alter (Just . maybe [v] (v:)) k cntxOutputs
   return cntx{ cntxOutputs=cntxOutputs' }
 
@@ -72,38 +74,48 @@ push ks v cntx
 
 
 -- | Симмулировать алгоритм.
-simulateAlg cntx0 fbs
-  = inner cntx0 [] $ sort cntx0 fbs
+--
+-- TODO: simulate DFG
+simulateAlg cntx0 fbs = step cntx0 $ cycle $ reorderAlgorithm fbs
   where
-    step cntx fs
-      = let err = error "Can't simulate algorithm, because can't define execution sequence or recived data is over."
-            f = fromMaybe err $ find (isJust . simulate cntx) fs
-            fs' = filter (/= f) fs
-            Just cntx' = simulate cntx f
-        in (f, fs', cntx')
+    step cntx (f:fs)
+      | Just cntx' <- simulate cntx f
+      = cntx' : step cntx' fs
+      | otherwise = error $ "Simulation error: " ++ show f
+    step _ _ = error "Simulation error."
 
-    sort _ [] = []
-    sort cntx fs = let (f, fs', cntx') = step cntx fs
-                   in f : sort cntx' fs'
+reorderAlgorithm alg = orderAlgorithm' [] alg
+  where
+    orderAlgorithm' _ [] = []
+    orderAlgorithm' vs fs
+      | let insideOuts = filter insideOut fs
+      , not $ null insideOuts
+      , let insideOutsOutputs = elems $ unionsMap outputs insideOuts
+      , let ready = filter (not . null . intersect insideOutsOutputs . elems . inputs) insideOuts
+      , not $ null ready
+      = ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
+    orderAlgorithm' vs fs
+      | let ready = filter (null . (\\ vs) . map snd . dependency) fs
+      , not $ null ready
+      = ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
+    orderAlgorithm' _ _ = error "Can't sort algorithm."
 
-    inner cntx [] fs0 = cntx : inner cntx fs0 fs0
-    inner cntx fs fs0 = let (_f, fs', cntx') = step cntx fs
-                        in inner cntx' fs' fs0
 
-
+castFB :: ( Typeable fb ) => FB io -> Maybe (fb io)
+castFB (FB fb) = cast fb
 
 ----------------------------------------
 
 
 data FramInput io = FramInput Int (O io) deriving ( Typeable )
-deriving instance IOType io v => Show (FramInput io)
-deriving instance IOType io v => Eq (FramInput io)
-framInput addr vs = FB $ FramInput addr vs
+deriving instance ( IOType io v x ) => Show (FramInput io)
+deriving instance ( IOType io v x ) => Eq (FramInput io)
+framInput addr vs = FB $ FramInput addr $ O $ fromList vs
 
-instance ( IOType io v ) => FunctionalBlock (FramInput io) v where
+instance ( IOType io v x ) => FunctionalBlock (FramInput io) v where
   outputs (FramInput _ o) = variables o
   isCritical _ = True
-instance FunctionSimulation (FramInput (Parcel v)) v Int where
+instance FunctionSimulation (FramInput (Parcel v x)) v x where
   -- | Невозможно симулировать данные операции без привязки их к конкретному PU, так как нет
   -- возможности понять что мы что-то записали по тому или иному адресу.
   simulate = error "Can't functional simulate FramInput!"
@@ -111,63 +123,65 @@ instance FunctionSimulation (FramInput (Parcel v)) v Int where
 
 
 data FramOutput io = FramOutput Int (I io) deriving ( Typeable )
-deriving instance IOType io v => Show (FramOutput io)
-deriving instance IOType io v => Eq (FramOutput io)
-framOutput addr v = FB $ FramOutput addr v
+deriving instance ( IOType io v x ) => Show (FramOutput io)
+deriving instance ( IOType io v x ) => Eq (FramOutput io)
+framOutput addr v = FB $ FramOutput addr $ I v
 
-instance IOType io v => FunctionalBlock (FramOutput io) v where
+instance ( IOType io v x ) => FunctionalBlock (FramOutput io) v where
   inputs (FramOutput _ o) = variables o
   isCritical _ = True
-instance FunctionSimulation (FramOutput (Parcel v)) v Int where
+instance FunctionSimulation (FramOutput (Parcel v x)) v x where
   simulate = error "Can't functional simulate FramOutput!"
 
 
 
 data Reg io = Reg (I io) (O io) deriving ( Typeable )
-deriving instance IOType io v => Show (Reg io)
-deriving instance IOType io v => Eq (Reg io)
-reg a b = FB $ Reg a b
+deriving instance ( IOType io v x ) => Show (Reg io)
+deriving instance ( IOType io v x ) => Eq (Reg io)
+reg a b = FB $ Reg (I a) (O $ fromList b)
 
-instance IOType io v => FunctionalBlock (Reg io) v where
+instance ( IOType io v x ) => FunctionalBlock (Reg io) v where
   inputs  (Reg a _b) = variables a
   outputs (Reg _a b) = variables b
-  dependency (Reg i o) = [ (b, a) | a <- variables i
-                                  , b <- variables o
+  dependency (Reg i o) = [ (b, a) | a <- elems $ variables i
+                                  , b <- elems $ variables o
                                   ]
-instance ( Ord v ) => FunctionSimulation (Reg (Parcel v)) v Int where
+instance ( Ord v ) => FunctionSimulation (Reg (Parcel v x)) v x where
   simulate cntx (Reg (I k1) (O k2)) = do
     v <- cntx `get` k1
     set cntx k2 v
 
 
 
-data Loop io = Loop (O io) (I io) deriving ( Typeable )
-deriving instance ( IOType io v ) => Show (Loop io)
-deriving instance ( IOType io v ) => Eq (Loop io)
-loop bs a = FB $ Loop bs a
 
-instance ( IOType io v ) => FunctionalBlock (Loop io) v where
-  inputs  (Loop _a b) = variables b
-  outputs (Loop a _b) = variables a
+data Loop io = Loop (X io) (O io) (I io) deriving ( Typeable )
+deriving instance ( IOType io v x ) => Show (Loop io)
+deriving instance ( IOType io v x ) => Eq (Loop io)
+loop x bs a = FB $ Loop (X x) (O $ fromList bs) $ I a
+
+instance ( IOType io v x ) => FunctionalBlock (Loop io) v where
+  inputs  (Loop _ _a b) = variables b
+  outputs (Loop _ a _b) = variables a
   insideOut _ = True
-instance ( Ord v ) => FunctionSimulation (Loop (Parcel v)) v Int where
-  simulate cntx (Loop (O k1) (I k2)) = do
-    let (cntx', v) = fromMaybe (cntx, fromMaybe undefined $ cntx `get` k2) $ cntx `receive` k2
-    set cntx' k1 v
+instance ( Ord v, Show v, Show x ) => FunctionSimulation (Loop (Parcel v x)) v x where
+  simulate cntx (Loop (X x) (O v2) (I v1)) = do
+    let x' = fromMaybe x $ cntx `get` v1
+    set cntx v2 x'
 
 
 
 data Add io = Add (I io) (I io) (O io) deriving ( Typeable )
-deriving instance IOType io v => Show (Add io)
-deriving instance IOType io v => Eq (Add io)
+deriving instance ( IOType io v x ) => Show (Add io)
+deriving instance ( IOType io v x ) => Eq (Add io)
+add a b c = FB $ Add (I a) (I b) $ O $ fromList c
 
-instance IOType io v => FunctionalBlock (Add io) v where
-  inputs  (Add  a  b _c) = variables a ++ variables b
+instance ( IOType io v x ) => FunctionalBlock (Add io) v where
+  inputs  (Add  a  b _c) = variables a `union` variables b
   outputs (Add _a _b  c) = variables c
-  dependency (Add a b c) = [ (y, x) | x <- variables a ++ variables b
-                                    , y <- variables c
+  dependency (Add a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
+                                    , y <- elems $ variables c
                                     ]
-instance ( Ord v ) => FunctionSimulation (Add (Parcel v)) v Int where
+instance ( Ord v, Num x ) => FunctionSimulation (Add (Parcel v x)) v x where
   simulate cntx (Add (I k1) (I k2) (O k3)) = do
     v1 <- cntx `get` k1
     v2 <- cntx `get` k2
@@ -176,51 +190,125 @@ instance ( Ord v ) => FunctionSimulation (Add (Parcel v)) v Int where
 
 
 
-data Constant io = Constant Int (O io) deriving ( Typeable )
-deriving instance ( IOType io v ) => Show (Constant io)
-deriving instance ( IOType io v ) => Eq (Constant io)
+data Sub io = Sub (I io) (I io) (O io) deriving ( Typeable )
+deriving instance ( IOType io v x ) => Show (Sub io)
+deriving instance ( IOType io v x ) => Eq (Sub io)
+sub a b c = FB $ Sub (I a) (I b) $ O $ fromList c
 
-instance ( IOType io v ) => FunctionalBlock (Constant io) v where
+instance ( IOType io v x ) => FunctionalBlock (Sub io) v where
+  inputs  (Sub  a  b _c) = variables a `union` variables b
+  outputs (Sub _a _b  c) = variables c
+  dependency (Sub a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
+                                    , y <- elems $ variables c
+                                    ]
+instance ( Ord v, Num x ) => FunctionSimulation (Sub (Parcel v x)) v x where
+  simulate cntx (Sub (I k1) (I k2) (O k3)) = do
+    v1 <- cntx `get` k1
+    v2 <- cntx `get` k2
+    let v3 = v1 - v2
+    set cntx k3 v3
+
+
+
+data Mul io = Mul (I io) (I io) (O io) deriving ( Typeable )
+deriving instance ( IOType io v x ) => Show (Mul io)
+deriving instance ( IOType io v x ) => Eq (Mul io)
+mul a b c = FB $ Mul (I a) (I b) $ O $ fromList c
+
+instance ( IOType io v x ) => FunctionalBlock (Mul io) v where
+  inputs  (Mul  a  b _c) = variables a `union` variables b
+  outputs (Mul _a _b  c) = variables c
+  dependency (Mul a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
+                                    , y <- elems $ variables c
+                                    ]
+instance ( Ord v, Num x ) => FunctionSimulation (Mul (Parcel v x)) v x where
+  simulate cntx (Mul (I k1) (I k2) (O k3)) = do
+    v1 <- cntx `get` k1
+    v2 <- cntx `get` k2
+    let v3 = v1 * v2
+    set cntx k3 v3
+
+
+
+data Div io = Div (I io) (I io) (O io) deriving ( Typeable )
+deriving instance ( IOType io v x ) => Show (Div io)
+deriving instance ( IOType io v x ) => Eq (Div io)
+div a b c = FB $ Div (I a) (I b) $ O $ fromList c
+
+instance ( IOType io v x ) => FunctionalBlock (Div io) v where
+  inputs  (Div  a  b _c) = variables a `union` variables b
+  outputs (Div _a _b  c) = variables c
+  dependency (Div a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
+                                    , y <- elems $ variables c
+                                    ]
+instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Div (Parcel v x)) v x where
+  simulate cntx (Div (I k1) (I k2) (O k3)) = do
+    v1 <- cntx `get` k1
+    v2 <- cntx `get` k2
+    let v3 = fromIntegral v1 / fromIntegral v2 :: Double
+    set cntx k3 $ round v3
+
+
+
+data Constant io = Constant (X io) (O io) deriving ( Typeable )
+deriving instance ( IOType io v x, Show x ) => Show (Constant io)
+deriving instance ( IOType io v x, Eq x ) => Eq (Constant io)
+constant x vs = FB $ Constant (X x) $ O $ fromList vs
+
+instance ( IOType io v x, Show x, Eq x, Typeable x ) => FunctionalBlock (Constant io) v where
   outputs (Constant _ o) = variables o
-instance ( Ord v ) => FunctionSimulation (Constant (Parcel v)) v Int where
-  simulate cntx (Constant v (O k))
-    = set cntx k v
+instance ( Ord v ) => FunctionSimulation (Constant (Parcel v x)) v x where
+  simulate cntx (Constant (X x) (O k))
+    = set cntx k x
 
 
 
-data ShiftL io = ShiftL (I io) (O io) deriving ( Typeable )
-deriving instance ( IOType io v ) => Show (ShiftL io)
-deriving instance ( IOType io v ) => Eq (ShiftL io)
+data ShiftLR io = ShiftL (I io) (O io)
+                | ShiftR (I io) (O io)
+                deriving ( Typeable )
+deriving instance ( IOType io v x ) => Show (ShiftLR io)
+deriving instance ( IOType io v x ) => Eq (ShiftLR io)
+shiftL a b = FB $ ShiftL (I a) $ O $ fromList b
+shiftR a b = FB $ ShiftR (I a) $ O $ fromList b
 
-instance ( IOType io v ) => FunctionalBlock (ShiftL io) v where
-  outputs (ShiftL i o) = variables i ++ variables o
-instance ( Ord v ) => FunctionSimulation (ShiftL (Parcel v)) v Int where
+instance ( IOType io v x ) => FunctionalBlock (ShiftLR io) v where
+  outputs (ShiftL i o) = variables i `union` variables o
+  outputs (ShiftR i o) = variables i `union` variables o
+instance ( Ord v, B.Bits x ) => FunctionSimulation (ShiftLR (Parcel v x)) v x where
   simulate cntx (ShiftL (I k1) (O k2)) = do
     v1 <- cntx `get` k1
-    let v2 = v1 `shiftR` 1
+    let v2 = v1 `B.shiftL` 1
+    set cntx k2 v2
+  simulate cntx (ShiftR (I k1) (O k2)) = do
+    v1 <- cntx `get` k1
+    let v2 = v1 `B.shiftR` 1
     set cntx k2 v2
 
 
 
 newtype Send io = Send (I io) deriving ( Typeable )
-deriving instance ( IOType io v ) => Show (Send io)
-deriving instance ( IOType io v ) => Eq (Send io)
-instance ( IOType io v ) => FunctionalBlock (Send io) v where
+send a = FB $ Send $ I a
+
+deriving instance ( IOType io v x ) => Show (Send io)
+deriving instance ( IOType io v x ) => Eq (Send io)
+instance ( IOType io v x ) => FunctionalBlock (Send io) v where
   inputs (Send i) = variables i
-instance (Ord v) => FunctionSimulation (Send (Parcel v)) v Int where
+instance ( Ord v ) => FunctionSimulation (Send (Parcel v x)) v x where
   simulate cntx (Send (I k)) = do
     v <- cntx `get` k
-    send cntx k v
+    sendSim cntx k v
 
 
 
 newtype Receive io = Receive (O io) deriving ( Typeable )
-deriving instance ( IOType io v ) => Show (Receive io)
-deriving instance ( IOType io v ) => Eq (Receive io)
-instance ( IOType io v ) => FunctionalBlock (Receive io) v where
+receive a = FB $ Receive $ O $ fromList a
+
+deriving instance ( IOType io v x ) => Show (Receive io)
+deriving instance ( IOType io v x ) => Eq (Receive io)
+instance ( IOType io v x ) => FunctionalBlock (Receive io) v where
   outputs (Receive o) = variables o
-instance (Ord v) => FunctionSimulation (Receive (Parcel v)) v Int where
+instance ( Ord v ) => FunctionSimulation (Receive (Parcel v x)) v x where
   simulate cntx (Receive (O ks)) = do
-    let k = head ks
-    (cntx', v) <- cntx `receive` k
+    let k = oneOf ks
+    (cntx', v) <- cntx `receiveSim` k
     set cntx' ks v

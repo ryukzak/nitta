@@ -10,8 +10,8 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 
-module NITTA.Lens
-  ( module NITTA.Lens
+module NITTA.Utils.Lens
+  ( module NITTA.Utils.Lens
   , module Control.Lens
   ) where
 
@@ -30,11 +30,11 @@ instance HasAvail (TimeConstrain t) (Interval t) where
 
 
 class HasEndType a b | a -> b where
-  endType :: Lens' a b
-instance HasEndType (Option (EndpointDT v t)) (EndpointType v) where
-  endType = lens epoType $ \a@EndpointO{..} b -> a{ epoType=b }
-instance HasEndType (Decision (EndpointDT v t)) (EndpointType v) where
-  endType = lens epdType $ \a@EndpointD{..} b -> a{ epdType=b }
+  endRole :: Lens' a b
+instance HasEndType (Option (EndpointDT v t)) (EndpointRole v) where
+  endRole = lens epoRole $ \a@EndpointO{..} b -> a{ epoRole=b }
+instance HasEndType (Decision (EndpointDT v t)) (EndpointRole v) where
+  endRole = lens epdRole $ \a@EndpointD{..} b -> a{ epdRole=b }
 
 
 

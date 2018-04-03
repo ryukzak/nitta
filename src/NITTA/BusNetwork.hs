@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE Rank2Types                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
@@ -33,45 +34,51 @@ import           Control.Monad.State
 import qualified Data.Array           as A
 import           Data.Default
 import           Data.Either
-import           Data.List            (find, intersect, nub, partition, sortOn,
-                                       (\\))
+import           Data.List            (find, nub, partition, sortOn, (\\))
 import qualified Data.Map             as M
 import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
+import           Data.Set             (elems, fromList, intersection)
 import qualified Data.String.Utils    as S
 import           Data.Typeable
 import           NITTA.FunctionBlocks (get')
-import           NITTA.Lens
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
+import           NITTA.Utils.Lens
 import           Numeric.Interval     (inf, width, (...))
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
-class ( Typeable v, Eq v, Ord v, Show v ) => Title v
-instance ( Typeable v, Eq v, Ord v, Show v ) => Title v
+class ( Typeable v, Ord v, Show v ) => Title v
+instance ( Typeable v, Ord v, Show v ) => Title v
 
 
-data GBusNetwork title spu v t =
-  BusNetwork
+data GBusNetwork title spu v x t
+  = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
-      bnRemains            :: [FB (Parcel v) v]
-    -- | Список переданных через сеть переменных (используется для понимания готовности).
-    , bnForwardedVariables :: [v]
+      bnRemains        :: [FB (Parcel v x)]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded             :: M.Map title [FB (Parcel v) v]
+    , bnBinded         :: M.Map title [FB (Parcel v x)]
     -- | Описание вычислительного процесса сети, как элемента процессора.
-    , bnProcess            :: Process v t
+    , bnProcess        :: Process (Parcel v x) t
     -- | Словарь вложенных вычислительных блоков по именам.
-    , bnPus                :: M.Map title spu
+    , bnPus            :: M.Map title spu
     -- | Ширина шины управления.
-    , bnSignalBusWidth     :: Int
+    , bnSignalBusWidth :: Int
     }
-type BusNetwork title v t = GBusNetwork title (PU LinkId v t) v t
+type BusNetwork title v x t = GBusNetwork title (PU LinkId v x t) v x t
+
+transfered net@BusNetwork{..}
+  = [ v | st <- steps bnProcess
+    , let instr = extractInstruction net st
+    , isJust instr
+    , let (Just (Transport v _ _)) = instr
+    ]
+
 
 -- TODO: Проверка подключения сигнальных линий.
-busNetwork w pus = BusNetwork [] [] (M.fromList []) def (M.fromList pus') w
+busNetwork w pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w
   where
     pus' = map (\(title, f) ->
       (title, f NetworkLink{ clk=Name "clk"
@@ -89,7 +96,11 @@ busNetwork w pus = BusNetwork [] [] (M.fromList []) def (M.fromList pus') w
     valueData t = t ++ "_data_out"
     valueAttr t = t ++ "_attr_out"
 
-instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork title v t) (FB (Parcel v) v) where
+instance ( Title title
+         , Time t
+         , Var v
+         , Typeable x
+         ) => WithFunctionalBlocks (BusNetwork title v x t) (FB (Parcel v x)) where
   functionalBlocks BusNetwork{..} = sortFBs binded []
     where
       binded = bnRemains ++ concat (M.elems bnBinded)
@@ -98,20 +109,21 @@ instance ( Title title, Var v, Time t ) => WithFunctionalBlocks (BusNetwork titl
         = let (ready, notReady) = partition (\fb -> insideOut fb || all (`elem` cntx) (inputs fb)) fbs
           in case ready of
             [] -> error "Cycle in algorithm!"
-            _  -> ready ++ sortFBs notReady (concatMap outputs ready ++ cntx)
+            _  -> ready ++ sortFBs notReady (elems (unionsMap outputs ready) ++ cntx)
 
 
 instance ( Title title, Var v, Time t
+         , Typeable x
          ) => DecisionProblem (DataFlowDT title v t)
-                   DataFlowDT (BusNetwork title v t)
+                   DataFlowDT (BusNetwork title v x t)
          where
-  options _proxy BusNetwork{..}
-    = concat [ [ DataFlowO (fromPu, fixPullConstrain pullAt) $ M.fromList pushs
-               | pushs <- mapM pushOptionsFor pullVars
+  options _proxy n@BusNetwork{..}
+    = concat [ [ DataFlowO (srcTitle, fixPullConstrain pullAt) $ M.fromList pushs
+               | pushs <- mapM pushOptionsFor $ elems pullVars
                , let pushTo = mapMaybe (fmap fst . snd) pushs
                , length (nub pushTo) == length pushTo
                ]
-             | (fromPu, opts) <- puOptions
+             | (srcTitle, opts) <- puOptions
              , EndpointO (Source pullVars) pullAt <- opts
              ]
     where
@@ -129,11 +141,12 @@ instance ( Title title, Var v, Time t
                           , EndpointO (Target pushVar) pushAt <- vars
                           , pushVar == v
                           ]
+      bnForwardedVariables = transfered n
       availableVars =
         let fbs = bnRemains ++ concat (M.elems bnBinded)
             alg = foldl
                   (\dict (a, b) -> M.adjust ((:) b) a dict)
-                  (M.fromList [(v, []) | v <- concatMap variables fbs])
+                  (M.fromList [(v, []) | v <- elems $ unionsMap variables fbs])
                   $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
                   $ concatMap dependency fbs
             notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
@@ -141,39 +154,35 @@ instance ( Title title, Var v, Time t
 
       puOptions = M.assocs $ M.map (options endpointDT) bnPus
 
-  decision _proxy ni@BusNetwork{..} act@DataFlowD{..}
-    | nextTick bnProcess > act^.at.infimum
-    = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (act^.at)
-    | otherwise = ni
-    { bnPus=foldl (\s n -> n s) bnPus steps
-    , bnProcess=snd $ modifyProcess bnProcess $ do
-        mapM_ (\(v, (title, _)) -> add
-                (Activity $ transportStartAt ... transportEndAt)
-                $ InstructionStep (Transport v (fst dfdSource) title :: Instruction (BusNetwork title v t))
-              ) $ M.assocs push'
-        _ <- add (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show act
-        setProcessTime $ act^.at.supremum + 1
-    , bnForwardedVariables=pullVars ++ bnForwardedVariables
-    }
+  decision _proxy n@BusNetwork{ bnProcess, bnPus } d@DataFlowD{ dfdSource=( srcTitle, pullAt ), dfdTargets }
+    | nextTick bnProcess > d^.at.infimum
+    = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (d^.at)
+    | otherwise
+    = let pushs = M.map (fromMaybe undefined) $ M.filter isJust dfdTargets
+          transportStartAt = d^.at.infimum
+          transportDuration = maximum $ map (\(_trg, time) -> (inf time - transportStartAt) + width time) $ M.elems pushs
+          transportEndAt = transportStartAt + transportDuration
+
+          subDecisions = ( srcTitle, EndpointD (Source $ fromList $ M.keys pushs) pullAt )
+                       : [ ( trgTitle, EndpointD (Target v) pushAt )
+                         | (v, (trgTitle, pushAt)) <- M.assocs pushs
+                         ]
+      in n{ bnPus=foldl applyDecision bnPus subDecisions
+          , bnProcess=snd $ modifyProcess bnProcess $ do
+              mapM_ (\(pushedValue, (targetTitle, _tc)) -> addStep
+                      (Activity $ transportStartAt ... transportEndAt)
+                      $ InstructionStep (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork title v x t))
+                    ) $ M.assocs pushs
+              addStep_ (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show d
+              setProcessTime $ d^.at.supremum + 1
+          }
     where
-      transportStartAt = act^.at.infimum
-      transportDuration = maximum $
-        map ((\event -> (inf event - transportStartAt) + width event) . snd) $ M.elems push'
-      transportEndAt = transportStartAt + transportDuration
-      -- if puTitle not exist - skip it...
-      pullStep = M.adjust (\dpu -> decision endpointDT dpu $ EndpointD (Source pullVars) (act^.at)) (fst dfdSource)
-      pushStep (var, (dpuTitle, pushAt)) =
-        M.adjust (\dpu -> decision endpointDT dpu $ EndpointD (Target var) pushAt) dpuTitle
-      pushSteps = map pushStep $ M.assocs push'
-      steps = pullStep : pushSteps
-
-      push' = M.map (fromMaybe undefined) $ M.filter isJust dfdTargets
-      pullVars = M.keys push'
+      applyDecision pus (trgTitle, d') = M.adjust (\pu -> decision endpointDT pu d') trgTitle pus
 
 
 
-instance ( Title title, Var v, Time t
-         ) => ProcessUnit (BusNetwork title v t) v t where
+instance ( Title title, Time t, Var v, Typeable x
+         ) => ProcessUnit (BusNetwork title v x t) (Parcel v x) t where
 
   bind fb bn@BusNetwork{..}
     | any (isRight . bind fb) $ M.elems bnPus
@@ -202,7 +211,7 @@ instance ( Title title, Var v, Time t
       addSubProcess transportKey (puTitle, pu') = do
         let subSteps = steps $ process pu'
         uids' <- foldM (\dict Step{..} -> do
-                           k <- add sTime $ NestedStep puTitle sDesc
+                           k <- addStep sTime $ NestedStep puTitle sDesc
                            when (isFB sDesc) $ do
                              let FBStep fb = sDesc
                              mapM_ (\v -> when (v `M.member` transportKey)
@@ -221,24 +230,24 @@ instance ( Title title, Var v, Time t
 
 
 
-instance Controllable (BusNetwork title v t) where
+instance Controllable (BusNetwork title v x t) where
 
-  data Instruction (BusNetwork title v t)
+  data Instruction (BusNetwork title v x t)
     = Transport v title title
     deriving (Typeable, Show)
 
-  data Microcode (BusNetwork title v t)
+  data Microcode (BusNetwork title v x t)
     = BusNetworkMC (A.Array Int Value)
 
 
 
 instance {-# OVERLAPS #-}
          ( Time t
-         ) => ByTime (BusNetwork title v t) t where
+         ) => ByTime (BusNetwork title v x t) t where
   microcodeAt BusNetwork{..} t
     = BusNetworkMC $ foldl merge st $ M.elems bnPus
     where
-      st = A.listArray (0, bnSignalBusWidth) $ repeat def
+      st = A.listArray (0, bnSignalBusWidth - 1) $ repeat def
       merge arr PU{..}
         = let transmition = transmitToLink (microcodeAt unit t) links
           in foldl merge' arr transmition
@@ -247,7 +256,7 @@ instance {-# OVERLAPS #-}
 
 
 
-instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v Int where
+instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v x t) v x where
   simulateOn cntx BusNetwork{..} fb
     = let Just (title, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
           pu = bnPus M.! title
@@ -265,8 +274,10 @@ instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v t) v 
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( Var v ) => DecisionProblem (BindingDT String v)
-                            BindingDT (BusNetwork String v t)
+instance ( Var v
+         , Typeable x
+         ) => DecisionProblem (BindingDT String (Parcel v x))
+                    BindingDT (BusNetwork String v x t)
          where
   options _ BusNetwork{..} = concatMap bindVariants' bnRemains
     where
@@ -278,7 +289,7 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
         ]
 
       selfTransport fb puTitle =
-        not $ null $ variables fb `intersect` concatMap variables (binded puTitle)
+        not $ null $ variables fb `intersection` unionsMap variables (binded puTitle)
 
       binded puTitle | puTitle `M.member` bnBinded = bnBinded M.! puTitle
                      | otherwise = []
@@ -289,7 +300,7 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
                                   Nothing  -> Just [fb]
                            ) puTitle bnBinded
         , bnProcess=snd $ modifyProcess p $
-            add (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
+            addStep (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
         , bnRemains=filter (/= fb) bnRemains
         }
 
@@ -297,7 +308,8 @@ instance ( Var v ) => DecisionProblem (BindingDT String v)
 --------------------------------------------------------------------------
 
 
-instance ( Time t ) => DefinitionSynthesis (BusNetwork String v t) where
+instance ( Time t
+         ) => DefinitionSynthesis (BusNetwork String v x t) where
   moduleName BusNetwork{..} = S.join "_" (M.keys bnPus) ++ "_net"
 
   hardware pu@BusNetwork{..}
@@ -363,7 +375,7 @@ instance ( Time t ) => DefinitionSynthesis (BusNetwork String v t) where
                                    ]
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
-      renderInstance insts regs ((title, PU{..}) : xs)
+      renderInstance insts regs ((title, PU{ unit, networkLink, links }) : xs)
         = let inst = hardwareInstance unit title networkLink links
               insts' = inst : regInstance title : insts
               regs' = (valueAttr title, valueData title) : regs
@@ -382,12 +394,15 @@ instance ( Time t ) => DefinitionSynthesis (BusNetwork String v t) where
 
 
 instance ( Title title, Var v, Time t
-         , DefinitionSynthesis (BusNetwork title v t)
-         ) => TestBench (BusNetwork title v t) v Int where
+         , Show x
+         , DefinitionSynthesis (BusNetwork title v x t)
+         , Typeable x
+         ) => TestBench (BusNetwork title v x t) v x where
   testEnviroment cntx0 pu@BusNetwork{..} = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
     where
       testBenchImp = renderST
-        [ "module $moduleName$_tb();                                                                                 "
+        [ "`timescale 1 ps/ 1 ps                                                                                     "
+        , "module $moduleName$_tb();                                                                                 "
         , "                                                                                                          "
         , "reg clk, rst;                                                                                             "
         , "$moduleName$ net                                                                                          "
@@ -401,12 +416,12 @@ instance ( Title title, Var v, Time t
         , "                                                                                                          "
         , "  initial                                                                                                 "
         , "    begin                                                                                                 "
-        , "      // program_counter == 1                                                                             "
-        , "      // на шину управление выставлены значения соответсвующие адресу 0 в памяти пока не снят rst         "
-        , "      @(negedge rst); // Влючение процессора.                                                             "
-        , "      // Сразу после снятия сигнала rst на шину управления выставляются сигналы соответствующие адресу 1. "
-        , "      // После следующего положительного фронта будет получен результат.                                  "
+        , "      // microcode when rst == 1 -> program[0], and must be nop for all PUs                               "
+        , "      @(negedge rst); // Turn nitta processor on.                                                         "
+        , "      // Start computational cycle from program[1] to program[n] and repeat.                              "
+        , "      // Signals effect to processor state after first clk posedge.                                       "
         , assertions
+        , "      repeat(42) @(posedge clk);                                                                          "
         , "      \\$finish;                                                                                          "
         , "    end                                                                                                   "
         , "                                                                                                          "
@@ -419,21 +434,15 @@ instance ( Title title, Var v, Time t
                                               in c
                           ) (Just cntx0) $ functionalBlocks pu
 
-      p = process pu
-      assertions = concatMap ( ("      @(posedge clk); #1; " ++) . (++ "\n") . assert ) [ 0 .. nextTick p ]
+      assertions = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . assert ) [ 0 .. nextTick $ process pu ]
         where
           assert time
-            = let pulls = filter (\case (Source _) -> True; _ -> False) $ endpointsAt time p
-              in case pulls of
-                Source (v:_) : _ -> concat
-                    [ "if ( !( net.data_bus === " ++ show (get' cntx' v) ++ ") ) "
-                    ,   "\\$display("
-                    ,     "\""
-                    ,       "FAIL wrong value of " ++ show' pulls ++ " the bus failed "
-                    ,       "(got: %h expect: %h)!"
-                    ,     "\", "
-                    , "net.data_bus, " ++ show (get' cntx' v) ++ "); else \\$display(\"%d Correct value: %h\", net.control_unit.program_counter, net.data_bus);"
+            = "\\$write(\"%s, bus: %h\", " ++ show (show time) ++ ", net.data_bus); "
+            ++ case extractInstructionAt pu time of
+                Transport v _ _ : _
+                  -> concat
+                    [ "\\$write(\" == %h (%s)\", " ++ show (get' cntx' v) ++ ", " ++ show v ++ ");"
+                    , "if ( !( net.data_bus === " ++ show (get' cntx' v) ++ ") ) "
+                    ,   "\\$display(\" FAIL\"); else \\$display();"
                     ]
-                [] -> "\\$display(\"%d\", net.control_unit.program_counter); /* nothing to check */"
-                x -> "\\$display(\"%d\", net.control_unit.program_counter); /* don't have expected datafor: " ++ show x ++ "*/"
-          show' s = filter (/= '\"') $ show s
+                [] -> "\\$display();"
