@@ -38,8 +38,8 @@ main = do
       ]
     , testGroup "BusNetwork"
       [ testCase "testShiftAndFram" testShiftAndFram
-      -- , testCase "testAccumAndFram" testAccumAndFram
-      -- , testCase "testFram" testFram
+      , testCase "testAccumAndFram" testAccumAndFram
+      , testCase "badTestFram" badTestFram
       ]
     , testGroup "Utils"
       [ testCase "values2dump" values2dumpTests

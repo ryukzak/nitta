@@ -124,6 +124,7 @@ writeImplementation _ _ Empty = return ()
 
 
 -- | Запустить testbench в указанной директории.
+-- TODO: Сделать вывод через Control.Monad.Writer.
 runTestBench library workdir pu = do
   (compileExitCode, compileOut, compileErr)
     <- readCreateProcessWithExitCode (createIVerilogProcess library workdir pu) []

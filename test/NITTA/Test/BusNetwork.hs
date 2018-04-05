@@ -35,19 +35,15 @@ netWithFramShiftAccum = busNetwork 27
 
 testAccumAndFram = unitTest "unittestAccumAndFram" netWithFramShiftAccum
   def
-  [ FB.framInput 3 [ "a", "d" ]
-  , FB.framInput 4 [ "b", "c", "e" ]
-  , FB.reg "a" ["x"]
-  , FB.reg "b" ["y"]
-  , FB.reg "c" ["z"]
-  , FB.framOutput 5 "x"
-  , FB.framOutput 6 "y"
-  , FB.framOutput 7 "z"
-  , FB.framOutput 0 "sum"
-  , FB.loop 0 ["f"] "g"
-  , FB.reg "f" ["g"]
+  [ FB.framInput 3 [ "d", "p" ]
+  , FB.framInput 4 [ "e", "k" ]
+  , FB.framOutput 5 "p"
+  , FB.framOutput 6 "k"
+  , FB.loop 22 ["s"] "sum"
+  , FB.framOutput 7 "s"
   , FB.add "d" "e" ["sum"]
   ]
+
 
 testShiftAndFram = unitTest "unitShiftAndFram" netWithFramShiftAccum
   def
@@ -57,7 +53,22 @@ testShiftAndFram = unitTest "unitShiftAndFram" netWithFramShiftAccum
   , FB.shiftR "f2" ["g2"]
   ]
 
-testFram = unitTest "unitShiftAndFram" netWithFramShiftAccum
+-- Почему данный тест не должен работать корректно (почему там not):
+--
+-- 1) BusNetwork выполняет функциональную симуляцию, без учёта состояния
+--    блоков.
+-- 2) Сперва к PU привязывается framInput к 3 адресу.
+-- 3) Затем к томуже адресу привязывается reg, так как в противном случае он
+--    может заблокировать ячейку. А с учётом того что связываение позднее, а
+--    вычислительный процесс уже начал планироваться для этой ячейки, то и по
+--    времени мы ничего не теряем, а ресурс бережём.
+-- 4) В результате значение в ячейке переписывается значением 42, что приводит
+--    к тому что на следующих циклах framInput возращает 42, а не значение по
+--    умолчанию.
+--
+-- Более того, даже если output повесить на туже ячейку, то ничего не
+-- изменится, так как регистр будет привязан тудаже.
+badTestFram = badUnitTest "badTestFram" netWithFramShiftAccum
   def
   [ FB.framInput 3 [ "x" ]
   , FB.framOutput 5 "x"
@@ -65,12 +76,18 @@ testFram = unitTest "unitShiftAndFram" netWithFramShiftAccum
   , FB.reg "f" ["g"]
   ]
 
+
 -----------------------------------------------
 
 unitTest name n cntx alg = do
   let n' = nitta $ synthesis $ frame n alg
   r <- testBench "../.." (joinPath ["hdl", "gen", name]) n' cntx
   r @? name
+
+badUnitTest name n cntx alg = do
+  let n' = nitta $ synthesis $ frame n alg
+  r <- testBench "../.." (joinPath ["hdl", "gen", name]) n' cntx
+  not r @? name
 
 synthesis f = foldl (\f' _ -> naive def f') f $ replicate 50 ()
 
