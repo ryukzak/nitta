@@ -84,6 +84,13 @@ simulateAlg cntx0 fbs = step cntx0 $ cycle $ reorderAlgorithm fbs
       | otherwise = error $ "Simulation error: " ++ show f
     step _ _ = error "Simulation error."
 
+simulateAlgByCycle cntx fbs = simulateAlgByCycle' $ simulateAlg cntx fbs
+  where
+    l = length fbs - 1
+    simulateAlgByCycle' xs = let x : xs' = drop l xs
+                             in x : simulateAlgByCycle' xs'
+
+
 reorderAlgorithm alg = orderAlgorithm' [] alg
   where
     orderAlgorithm' _ [] = []

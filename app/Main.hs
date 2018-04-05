@@ -123,10 +123,10 @@ main = do
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
   -- putStrLn "funSim teacup:"
-  -- funSim 100 def teacupAlg
+  -- funSim 5 def teacupAlg
 
-  -- putStrLn "funSim fibonacci:"
-  -- funSim 20 def fibonacciAlg
+  putStrLn "funSim fibonacci:"
+  funSim 5 def fibonacciAlg
 
   -- putStrLn "funSim spi:"
   -- funSim 20 def{ cntxVars=M.fromList [("b", [0])]
@@ -135,6 +135,7 @@ main = do
 
   -- putStrLn "Server start on 8080..."
   -- webServer $ frame $ dfgraph fibonacciAlg
+  putStrLn "-- the end --"
 
 
 webServer root = do
@@ -159,7 +160,7 @@ test n pu cntx = do
 -----------------------------------------------------------
 
 
-funSim n cntx alg = putStrLn $ (!! n) $ map (filter (/= '"') . show) $ FB.simulateAlg cntx alg
+funSim n cntx alg = putStrLn $ (!! (n - 1)) $ map (filter (/= '"') . show) $ FB.simulateAlgByCycle cntx alg
 
 dfgraph = DFG . map node
 
