@@ -123,7 +123,7 @@ instance FunctionalSet (Fram v x t) where
     | Constant' (Constant (Parcel v x))
     deriving ( Show, Eq )
 
-instance ( Var v, Time t, Typeable x, Eq x, Show x
+instance ( Var v, Time t, Typeable x, Eq x, Show x, Num x
          ) => WithFunctionalBlocks (FSet (Fram v x t)) (FB (Parcel v x)) where
   -- TODO: Сделать данную операцию через Generics.
   functionalBlocks (FramInput' fb)  = [ FB fb ]
@@ -285,7 +285,7 @@ instance ( IOType (Parcel v x) v x
 
 
 
-instance ( Var v, Time t, Typeable x, Show x, Eq x
+instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (Fram v x t)
          where
@@ -521,8 +521,6 @@ instance ( Var v, Time t
       let cntxFram' = M.alter (Just . maybe [v] (v:)) (addr, k) cntxFram
       return cntx{ cntxFram=cntxFram' }
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Fram."
-    where
-      addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test bench initialization
 
 
 

@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE Rank2Types                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
@@ -32,6 +33,8 @@ import           NITTA.Utils
 
 class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, B.Bits a ) => Addr a
 instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, B.Bits a ) => Addr a
+addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test bench initialization
+
 
 get' cntx k = fromMaybe (error $ "Can't get from cntx." ++ show k) $ get cntx k
 get Cntx{..} k = do
@@ -98,14 +101,14 @@ reorderAlgorithm alg = orderAlgorithm' [] alg
       | let insideOuts = filter insideOut fs
       , not $ null insideOuts
       , let insideOutsOutputs = elems $ unionsMap outputs insideOuts
-      , let ready = filter (not . null . intersect insideOutsOutputs . elems . inputs) insideOuts
-      , not $ null ready
-      = ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
+      = case filter (not . null . intersect insideOutsOutputs . elems . inputs) insideOuts of
+          [] -> insideOuts ++ orderAlgorithm' (elems (unionsMap variables insideOuts) ++ vs) (fs \\ insideOuts)
+          ready -> ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
     orderAlgorithm' vs fs
-      | let ready = filter (null . (\\ vs) . map snd . dependency) fs
+      | let ready = filter (null . (\\ vs) . elems . inputs) fs
       , not $ null ready
       = ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
-    orderAlgorithm' _ _ = error "Can't sort algorithm."
+    orderAlgorithm' _ _ = error $ "Can't sort algorithm. "
 
 
 castFB :: ( Typeable fb ) => FB io -> Maybe (fb io)
@@ -122,10 +125,12 @@ framInput addr vs = FB $ FramInput addr $ O $ fromList vs
 instance ( IOType io v x ) => FunctionalBlock (FramInput io) v where
   outputs (FramInput _ o) = variables o
   isCritical _ = True
-instance FunctionSimulation (FramInput (Parcel v x)) v x where
+instance ( Ord v, Num x ) => FunctionSimulation (FramInput (Parcel v x)) v x where
   -- | Невозможно симулировать данные операции без привязки их к конкретному PU, так как нет
   -- возможности понять что мы что-то записали по тому или иному адресу.
-  simulate = error "Can't functional simulate FramInput!"
+  simulate cntx (FramInput addr (O k)) = do
+    let v = fromMaybe (addr2value addr) $ cntx `get` oneOf k
+    set cntx k v
 
 
 
@@ -137,8 +142,11 @@ framOutput addr v = FB $ FramOutput addr $ I v
 instance ( IOType io v x ) => FunctionalBlock (FramOutput io) v where
   inputs (FramOutput _ o) = variables o
   isCritical _ = True
-instance FunctionSimulation (FramOutput (Parcel v x)) v x where
-  simulate = error "Can't functional simulate FramOutput!"
+instance ( Ord v ) => FunctionSimulation (FramOutput (Parcel v x)) v x where
+  simulate cntx@Cntx{ cntxFram } (FramOutput addr (I k)) = do
+    v <- get cntx k
+    let cntxFram' = M.alter (Just . maybe [v] (v:)) (addr, k) cntxFram
+    return cntx{ cntxFram=cntxFram' }
 
 
 
