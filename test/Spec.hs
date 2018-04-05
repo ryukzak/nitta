@@ -37,8 +37,9 @@ main = do
       , testCase "fibonacci" simulateFibonacciTest
       ]
     , testGroup "BusNetwork"
-      [ testCase "testAccumAndFram" testAccumAndFram
-      , testCase "testShiftAndFram" testShiftAndFram
+      [ testCase "testShiftAndFram" testShiftAndFram
+      -- , testCase "testAccumAndFram" testAccumAndFram
+      -- , testCase "testFram" testFram
       ]
     , testGroup "Utils"
       [ testCase "values2dump" values2dumpTests

@@ -57,6 +57,13 @@ testShiftAndFram = unitTest "unitShiftAndFram" netWithFramShiftAccum
   , FB.shiftR "f2" ["g2"]
   ]
 
+testFram = unitTest "unitShiftAndFram" netWithFramShiftAccum
+  def
+  [ FB.framInput 3 [ "x" ]
+  , FB.framOutput 5 "x"
+  , FB.loop 42 ["f"] "g"
+  , FB.reg "f" ["g"]
+  ]
 
 -----------------------------------------------
 
