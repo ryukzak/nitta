@@ -12,7 +12,7 @@ module pu_simple_control
 
 
 reg [MICROCODE_WIDTH-1:0]       program_memory[MEMORY_SIZE-1:0];
-reg [PROGRAM_COUNTER_WIDTH-1:0] program_counter;
+reg [PROGRAM_COUNTER_WIDTH-1:0] pc;
 
    
 initial
@@ -21,15 +21,17 @@ initial
   end
 
 
-assign signals_out = rst ? program_memory[0] : program_memory[program_counter];
+assign signals_out = rst ? program_memory[0] : program_memory[pc];
 
 
 always @(posedge clk)
-  if ( rst || program_counter >= MEMORY_SIZE - 1 )
-    program_counter <= 1;
+  if ( rst )
+    pc <= 0;
+  else if ( pc >= MEMORY_SIZE - 1 )
+    pc <= 1;
   else
-    program_counter <= program_counter + 1;
+    pc <= pc + 1;
 
-assign cycle = program_counter == 1;
+assign cycle = pc == 1;
 
 endmodule

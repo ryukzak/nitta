@@ -168,7 +168,7 @@ verilogClockGenerator = unlines
   [ "initial begin                                                                                             "
   , "  clk = 1'b0;                                                                                             "
   , "  rst = 1'b1;                                                                                             "
-  , "  repeat(2) #10 clk = ~clk;                                                                               "
+  , "  repeat(4) #10 clk = ~clk;                                                                               "
   , "  rst = 1'b0;                                                                                             "
   , "  forever #10 clk = ~clk;                                                                                 "
   , "end                                                                                                       "
@@ -180,7 +180,6 @@ verilogWorkInitialze = unlines
   , "  begin                                                                                                   "
   , "    \\$dumpfile(\"$moduleName$_tb.vcd\");                                                                 "
   , "    \\$dumpvars(0, $moduleName$_tb);                                                                      "
-  , "    @(negedge rst);                                                                                       "
   , "  end                                                                                                     "
   ]
 

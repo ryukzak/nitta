@@ -363,8 +363,8 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
               in pu{ frMemory=frMemory // [(addr, cell'')]
                    , frProcess=p'
                    }
-        Cell{ output=Def job@Job{ actions=act1 : _ } } | act1 << epdRole
-          ->  let (p', Nothing) = schedule addr job
+        Cell{ output=Def j@Job{ actions=act1 : _ } } | act1 << epdRole
+          ->  let (p', Nothing) = schedule addr j
                   -- FIXME: Eсть потенциальная проблема, которая может встречаться и в других
                   -- вычислительных блоках. Если вычислительный блок загружает данные в последний
                   -- такт вычислительного цикла, а выгружает их в первый так, то возможно ситуация,
@@ -372,6 +372,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
                   -- лежать в плоскости метода process, в рамках которого должен производиться
                   -- анализ уже построенного вычислительного процесса и в случае необходимости,
                   -- добавляться лишний так простоя.
+                  -- , frProcess=snd $ modifyProcess p' $ setProcessTime (d^.at.supremum + 1)
                   cell' = cell{ input=UsedOrBlocked
                               , output=UsedOrBlocked
                               }

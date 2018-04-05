@@ -40,7 +40,7 @@ import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
 import           Data.Set             (elems, fromList, intersection)
 import qualified Data.String.Utils    as S
 import           Data.Typeable
-import           NITTA.FunctionBlocks (get')
+import           NITTA.FunctionBlocks (get', simulateAlgByCycle)
 import           NITTA.TestBench
 import           NITTA.Types
 import           NITTA.Utils
@@ -362,8 +362,6 @@ instance ( Time t
               , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "  { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
               , ( "ProgramSize", show $ fromEnum (nextTick bnProcess)
                   + 1 -- 0 адресс программы для простоя процессора
-                  + 1 -- На последнем такте для BusNetwork можно подготовить следующую
-                      -- пересылку, но сама шина может быть занята работой.
                 )
               ]
       valueData t = t ++ "_data_out"
@@ -389,7 +387,7 @@ instance ( Time t
       memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) ticks
       -- По нулевоу адресу устанавливается команда Nop (он же def) для всех вычислиетльных блоков.
       -- Именно этот адрес выставляется на сигнальные линии когда поднят сигнал rst.
-      ticks = [ -1 .. nextTick ]
+      ticks = [ -1 .. nextTick - 1 ]
       values (BusNetworkMC arr) = reverse $ A.elems arr
 
 
@@ -399,11 +397,10 @@ instance ( Title title, Var v, Time t
          , DefinitionSynthesis (BusNetwork title v x t)
          , Typeable x
          ) => TestBench (BusNetwork title v x t) v x where
-  testEnviroment cntx0 pu@BusNetwork{..} = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
+  testEnviroment cntx0 n@BusNetwork{..} = Immidiate (moduleName n ++ "_tb.v") testBenchImp
     where
       testBenchImp = renderST
-        [ "`timescale 1 ps/ 1 ps                                                                                     "
-        , "module $moduleName$_tb();                                                                                 "
+        [ "module $moduleName$_tb();                                                                                 "
         , "                                                                                                          "
         , "reg clk, rst;                                                                                             "
         , "$moduleName$ net                                                                                          "
@@ -422,28 +419,26 @@ instance ( Title title, Var v, Time t
         , "      // Start computational cycle from program[1] to program[n] and repeat.                              "
         , "      // Signals effect to processor state after first clk posedge.                                       "
         , assertions
-        , "      repeat(42) @(posedge clk);                                                                          "
         , "      \\$finish;                                                                                          "
         , "    end                                                                                                   "
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]
-        [ ("moduleName", moduleName pu)
+        [ ("moduleName", moduleName n)
         ]
 
-      Just cntx' = foldl ( \(Just cntx) fb -> let c = simulateOn cntx pu fb
-                                              in c
-                          ) (Just cntx0) $ functionalBlocks pu
-
-      assertions = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . assert ) [ 0 .. nextTick $ process pu ]
+      cntxs = take 5 $ simulateAlgByCycle cntx0 $ functionalBlocks n
+      cycleTicks = [ 0 .. nextTick (process n) - 1 ]
+      simulationInfo = (0, def) : concatMap (\cntx -> map (\t -> (t, cntx)) cycleTicks) cntxs
+      assertions = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
         where
-          assert time
-            = "\\$write(\"%s, bus: %h\", " ++ show (show time) ++ ", net.data_bus); "
-            ++ case extractInstructionAt pu time of
+          assert (t, cntx)
+            = "\\$write(\"%s, bus: %h\", " ++ show (show t) ++ ", net.data_bus); "
+            ++ case extractInstructionAt n t of
                 Transport v _ _ : _
                   -> concat
-                    [ "\\$write(\" == %h (%s)\", " ++ show (get' cntx' v) ++ ", " ++ show v ++ ");"
-                    , "if ( !( net.data_bus === " ++ show (get' cntx' v) ++ ") ) "
+                    [ "\\$write(\" == %h (%s)\", " ++ show (get' cntx v) ++ ", " ++ show v ++ ");"
+                    , "if ( !( net.data_bus === " ++ show (get' cntx v) ++ ") ) "
                     ,   "\\$display(\" FAIL\"); else \\$display();"
                     ]
                 [] -> "\\$display();"
