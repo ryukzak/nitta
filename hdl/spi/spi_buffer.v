@@ -57,7 +57,7 @@ always @( posedge clk or posedge rst ) begin
 	end
 end
 
-assign data_out = oe ? memory[ oe_address ] : 32'h00000000;
+assign data_out = oe && ~attr_out[ INVALID ] ? memory[ oe_address ] : 32'h00000000;
 
 // attr_out[ INVALID ] => на шину выставляется логическая единица, для случая, когда у нас нету данных для передачи, или когда все данные переданы
 // attr_out[ FULL ]    => на шину выставляется логическая еденица, когда буффер переполнен

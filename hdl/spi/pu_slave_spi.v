@@ -38,6 +38,7 @@ wire [ATTR_WIDTH-1:0] attr_out_transfer_in;
 wire [ATTR_WIDTH-1:0] attr_out_transfer_out;
 wire [ATTR_WIDTH-1:0] attr_out_send;
 wire [ATTR_WIDTH-1:0] attr_out_receive;
+wire [ATTR_WIDTH-1:0] attr_out_hoarder;
 // --------------- END -------------------
 
 // ---------- BUFFER SWITCHING -----------
@@ -51,8 +52,18 @@ wire [DATA_WIDTH-1:0] transfer_in_data_in;
 wire [DATA_WIDTH-1:0] transfer_out_data_in;
 wire [DATA_WIDTH-1:0] send_data_in;
 wire [DATA_WIDTH-1:0] receive_data_in;
+wire [DATA_WIDTH-1:0] hoarder_data_in;
 // --------------- END -------------------
 
+// ----------- WIRE DATA OUT -------------
+wire [DATA_WIDTH-1:0] transfer_in_data_out;
+wire [DATA_WIDTH-1:0] transfer_out_data_out;
+wire [DATA_WIDTH-1:0] send_data_out;
+wire [DATA_WIDTH-1:0] receive_data_out;
+wire [DATA_WIDTH-1:0] hoarder_data_out;
+// --------------- END -------------------
+
+reg load;
 
 spi_slave_driver #( .DATA_WIDTH( SPI_DATA_WIDTH ) 
 ) spi_driver 
@@ -75,6 +86,9 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
     , .wr( signal_wr && ~work_buffer_send )
     , .attr_out( attr_out_transfer_in )
     , .data_in( transfer_in_data_in )
+    // ------------------------------------
+    , .oe( ( flag_start || attr_out_hoarder[ INVALID ] ) && work_buffer_send )
+    , .data_out( transfer_in_data_out )
 ); 
 
 // [TRANSFER >>> NITTA]
@@ -103,13 +117,25 @@ spi_buffer #( .BUF_SIZE( BUF_SIZE )
     , .wr( signal_wr && work_buffer_send )
     , .attr_out( attr_out_send )
     , .data_in( send_data_in )
+    // ----------------------------------
+    , .oe( ( flag_start || attr_out_hoarder[ INVALID ] ) && ~work_buffer_send )
+    , .data_out( send_data_out )
  );
 
 hoarder frame_hoarder (
     .clk( clk )
 ,   .rst( rst )
+,   .data_in( hoarder_data_in )
+,   .wr( flag_start || attr_out_hoarder[ INVALID ] )
+,   .ready( spi_ready )
+,   .data_out_byte( spi_data_send )
+,   .attr_hoarder( attr_out_hoarder )
 
 );
+
+always @( negedge cs ) begin
+    load <= 1;
+end
 
 always @( posedge clk or posedge rst ) begin
     if ( rst ) begin
@@ -126,10 +152,13 @@ always @( posedge clk or posedge rst ) begin
 
             end
         end
+        load <= 0;
     end
 end
 
 assign { transfer_in_data_in, send_data_in } = work_buffer_send ? { 32'h00000000, data_in } : { data_in , 32'h00000000 };
+assign hoarder_data_in = work_buffer_send ? transfer_in_data_out : send_data_out;
 //assign attr_out[INVALID] = 
+assign flag_start = load;
 
 endmodule
