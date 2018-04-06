@@ -8,6 +8,7 @@ module hoarder
     input                           clk
 ,   input                           rst
 ,   input                           ready
+,   input                           flag_start
 ,   input                           wr
 ,   input                           oe
 ,   input      [DATA_WIDTH-1:0]     data_in
@@ -55,7 +56,7 @@ always @( posedge clk ) begin
     end
 end
 
-assign data_out_byte = count[SEND] == SIZE_FRAME - 2 ? data_in >> SPI_DATA_WIDTH * count[SEND] : frame[SEND] >> SPI_DATA_WIDTH * count[SEND];
+assign data_out_byte = ( count[SEND] == SIZE_FRAME - 2 ) && flag_start ? data_in >> SPI_DATA_WIDTH * count[SEND] : frame[SEND] >> SPI_DATA_WIDTH * count[SEND];
 assign { attr_hoarder[INVALID] , attr_hoarder[1], attr_hoarder[2], attr_hoarder[3] } = { count[SEND] == 0 && ready, 1'b0, 1'b0, 1'b0 };
 
 endmodule

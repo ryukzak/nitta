@@ -127,6 +127,7 @@ hoarder frame_hoarder (
 ,   .rst( rst )
 ,   .data_in( hoarder_data_in )
 ,   .wr( flag_start || attr_out_hoarder[ INVALID ] )
+,   .flag_start( flag_start )
 ,   .ready( spi_ready )
 ,   .data_out_byte( spi_data_send )
 ,   .attr_hoarder( attr_out_hoarder )
