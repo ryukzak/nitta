@@ -8,59 +8,55 @@ module hoarder
     input                           clk
 ,   input                           rst
 ,   input                           ready
+,   input                           flag_start
 ,   input                           wr
 ,   input                           oe
 ,   input      [DATA_WIDTH-1:0]     data_in
 ,   output reg [DATA_WIDTH-1:0]     data_out
-,   output reg [ATTR_WIDTH-1:0]     attr_hoarder
+,   output     [ATTR_WIDTH-1:0]     attr_hoarder
 ,   input      [SPI_DATA_WIDTH-1:0] data_in_byte
 ,   output     [SPI_DATA_WIDTH-1:0] data_out_byte
 );
 
+`include "parameters.vh"
+
 localparam SIZE_FRAME  = $clog2( DATA_WIDTH );
+reg SEND, RECEIVE, FLAG, PROCESS;
 
-reg [DATA_WIDTH-1:0]     frame;
-reg [DATA_WIDTH-1:0]     frame_send;
-reg [SPI_DATA_WIDTH-1:0] byte;
-reg [SIZE_FRAME-4:0]     count_frame_send;
-
-reg took;
-reg took_send;
+reg [DATA_WIDTH-1:0] frame [0:1];
+reg [SIZE_FRAME-4:0] count [0:1];
+reg [ATTR_WIDTH-1:0] attr  [0:1];
 
 always @( posedge clk ) begin
     if ( rst ) begin
-        took <= 0;
-        took_send <= 0;
-        count_frame_send <= SIZE_FRAME - 2;
+        SEND                <= 0;
+        RECEIVE             <= 1;
+        FLAG                <= 0;
+        PROCESS             <= 1;
+        attr[FLAG][SEND]    <= 0;
+        attr[PROCESS][SEND] <= 1;
+        count[ SEND ] <= SIZE_FRAME - 2;
     end else begin
 
-        // [+] receive master
-        if ( oe && took ) begin
-            attr_hoarder[0] <= 1;
-            data_out <= frame;
-        end else if ( ready && !took ) begin
-            frame <= { frame[DATA_WIDTH-SPI_DATA_WIDTH-1:0], data_in_byte };
-            took <= 1;
-        end else if ( !ready && took ) begin
-            took <= 0;
-        end else begin
-            attr_hoarder[0] <= 0;
-        end
-
-        // [+] send master
+       // [+] send master
         if ( wr ) begin
-            count_frame_send <= SIZE_FRAME - 2;
-            frame_send <= data_in;
-        end else if ( ready && !took_send) begin            
-            took_send <= 1;
-        end else if ( !ready && took_send) begin            
-            count_frame_send <= count_frame_send - 1;
-            took_send <= 0;
+            count[SEND] <= SIZE_FRAME - 2;
+            frame[SEND] <= data_in;
+            attr[PROCESS][SEND] <= 1;
+        end else if ( ready && ~attr[FLAG][SEND] && attr[PROCESS][SEND] ) begin            
+            attr[FLAG][SEND] <= 1;
+        end else if ( !ready && attr[FLAG][SEND] && attr[PROCESS][SEND] ) begin            
+            count[SEND] <= count[SEND] - 1;
+            attr[FLAG][SEND] <= 0;
+            if ( count[SEND] == 0 ) begin
+                attr[PROCESS][SEND] <= 0;
+            end
         end
-
+         
     end
 end
 
-assign data_out_byte = count_frame_send == SIZE_FRAME - 2 ? data_in >> SPI_DATA_WIDTH * count_frame_send : frame_send >> SPI_DATA_WIDTH * count_frame_send ;
+assign data_out_byte = ( count[SEND] == SIZE_FRAME - 2 ) && flag_start ? data_in >> SPI_DATA_WIDTH * count[SEND] : frame[SEND] >> SPI_DATA_WIDTH * count[SEND];
+assign { attr_hoarder[INVALID] , attr_hoarder[1], attr_hoarder[2], attr_hoarder[3] } = { count[SEND] == 0 && ready, 1'b0, 1'b0, 1'b0 };
 
 endmodule

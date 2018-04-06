@@ -74,9 +74,9 @@ always begin
 end
 
 initial begin
-  clk = 0;                     @(posedge clk);
-  rst = 1;                     @(posedge clk);
-  rst = 0;                     @(posedge clk);
+  clk = 0; cycle = 0; start_transaction = 0; @(posedge clk);
+  rst = 1;                                   @(posedge clk);
+  rst = 0;                                   @(posedge clk);
   $display("Start");
 end
 
