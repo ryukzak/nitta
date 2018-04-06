@@ -105,9 +105,9 @@ instance ( Var v
 
 
 instance Connected (Mult v x t) i where
-  data Link (Mult v x t) i
-    = Link { wr, sel, oe :: i } deriving ( Show )
-  transmitToLink Microcode{..} Link{..}
+  data PUEnv (Mult v x t) i
+    = PUEnv{ wr, sel, oe :: i } deriving ( Show )
+  transmitToLink Microcode{..} PUEnv{..}
     = [ (wr, B wrSignal)
       , (sel, B selSignal)
       , (oe, B oeSignal)
@@ -124,13 +124,13 @@ instance DefinitionSynthesis (Mult v x t) where
 
 instance ( Time t, Var v
          ) => Synthesis (Mult v x t) LinkId where
-  hardwareInstance _ name NetworkLink{..} Link{..} = renderST
+  hardwareInstance _ name SystemEnv{..} PUEnv{..} = renderST
     [ "pu_mult "
-    , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+    , "  #( .DATA_WIDTH( " ++ link parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ link parameterAttrWidth ++ " )"
     , "   ) $name$"
-    , "  ( .clk( " ++ link clk ++ " )"
-    , "  , .rst( " ++ link rst ++ " )"
+    , "  ( .clk( " ++ link signalClk ++ " )"
+    , "  , .rst( " ++ link signalRst ++ " )"
     , "  , .signal_wr( " ++ ctrl wr ++ " )"
     , "  , .signal_sel( " ++ ctrl sel ++ " )"
     , "  , .signal_oe( " ++ ctrl oe ++ " )"
@@ -141,4 +141,4 @@ instance ( Time t, Var v
     , "  );"
     ] [("name", name)]
     where
-      ctrl = link . controlBus
+      ctrl = link . signalBus

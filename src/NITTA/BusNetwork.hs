@@ -81,17 +81,17 @@ transfered net@BusNetwork{..}
 busNetwork w pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w
   where
     pus' = map (\(title, f) ->
-      (title, f NetworkLink{ clk=Name "clk"
-                           , rst=Name "rst"
-                           , cycleStart=Name "cycle"
-                           , dataWidth=Name "32"
-                           , dataIn=Name "data_bus"
-                           , dataOut=Name $ valueData title
-                           , attrWidth=Name "4"
-                           , attrIn=Name "attr_bus"
-                           , attrOut=Name $ valueAttr title
-                           , controlBus= \(Index i) -> Name ("control_bus[" ++ show i ++ "]")
-                           })
+      (title, f SystemEnv{ parameterDataWidth=Name "32"
+                         , parameterAttrWidth=Name "4"
+                         , signalClk=Name "clk"
+                         , signalRst=Name "rst"
+                         , signalCycle=Name "cycle"
+                         , dataIn=Name "data_bus"
+                         , dataOut=Name $ valueData title
+                         , attrIn=Name "attr_bus"
+                         , attrOut=Name $ valueAttr title
+                         , signalBus= \(Index i) -> Name ("control_bus[" ++ show i ++ "]")
+                         })
       ) pus
     valueData t = t ++ "_data_out"
     valueAttr t = t ++ "_attr_out"
@@ -374,8 +374,8 @@ instance ( Time t
                                    ]
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
-      renderInstance insts regs ((title, PU{ unit, networkLink, links }) : xs)
-        = let inst = hardwareInstance unit title networkLink links
+      renderInstance insts regs ((title, PU{ unit, systemEnv, links }) : xs)
+        = let inst = hardwareInstance unit title systemEnv links
               insts' = inst : regInstance title : insts
               regs' = (valueAttr title, valueData title) : regs
           in renderInstance insts' regs' xs
@@ -406,6 +406,7 @@ instance ( Title title, Var v, Time t
         , "$moduleName$ net                                                                                          "
         , "  ( .clk(clk)                                                                                             "
         , "  , .rst(rst)                                                                                             "
+        , " // IO "
         , "  );                                                                                                      "
         , "                                                                                                          "
         , verilogWorkInitialze

@@ -37,20 +37,22 @@ import           System.FilePath.Posix       (joinPath)
 
 
 microarch = busNetwork 27
-  [ ("fram1", PU def FR.Link{ FR.oe=Index 11, FR.wr=Index 10, FR.addr=map Index [9, 8, 7, 6] } )
-  , ("fram2", PU def FR.Link{ FR.oe=Index 5, FR.wr=Index 4, FR.addr=map Index [3, 2, 1, 0] } )
-  , ("shift", PU def S.Link{ S.work=Index 12, S.direction=Index 13, S.mode=Index 14, S.step=Index 15, S.init=Index 16, S.oe=Index 17 })
-  , ("accum", PU def A.Link{ A.init=Index 18, A.load=Index 19, A.neg=Index 20, A.oe=Index 21 } )
-  , ("spi", PU def SPI.Link{ SPI.wr=Index 22, SPI.oe=Index 23
-                           , SPI.start=Name "start", SPI.stop=Name "stop"
-                           , SPI.mosi=Name "mosi", SPI.miso=Name "miso", SPI.sclk=Name "sclk", SPI.cs=Name "cs"
-                           })
-  -- , ("mult", PU def M.Link{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
+  [ ("fram1", PU def FR.PUEnv{ FR.oe=Index 11, FR.wr=Index 10, FR.addr=map Index [9, 8, 7, 6] } )
+  , ("fram2", PU def FR.PUEnv{ FR.oe=Index 5, FR.wr=Index 4, FR.addr=map Index [3, 2, 1, 0] } )
+  , ("shift", PU def S.PUEnv{ S.work=Index 12, S.direction=Index 13, S.mode=Index 14, S.step=Index 15, S.init=Index 16, S.oe=Index 17 })
+  , ("accum", PU def A.PUEnv{ A.init=Index 18, A.load=Index 19, A.neg=Index 20, A.oe=Index 21 } )
+  , ("spi", PU def SPI.PUEnv{ SPI.wr=Index 22, SPI.oe=Index 23
+                             , SPI.start=Name "start", SPI.stop=Name "stop"
+                             , SPI.mosi=Name "mosi", SPI.miso=Name "miso", SPI.sclk=Name "sclk", SPI.cs=Name "cs"
+                             })
+  -- , ("mult", PU def M.PUEnv{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
   ]
 
 fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
                , FB.loop 1 ["b1", "b2"] "c"
-               , FB.add "a1" "b1" ["c"]
+              --  , FB.add "a1" "b1" ["c"]
+               , FB.add "a1" "b1" ["c", "c_copy"]
+               , FB.send "c_copy"
                ]
 
 fibonacciMultAlg = [ FB.loop 1 ["a1"      ] "b2" :: FB (Parcel String Int)

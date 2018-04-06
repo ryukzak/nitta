@@ -114,9 +114,9 @@ instance ( Var v
 
 
 instance Connected (Accum v x t) i where
-  data Link (Accum v x t) i
-    = Link { init, load, neg, oe :: i } deriving ( Show )
-  transmitToLink Microcode{..} Link{..}
+  data PUEnv (Accum v x t) i
+    = PUEnv{ init, load, neg, oe :: i } deriving ( Show )
+  transmitToLink Microcode{..} PUEnv{..}
     = [ (init, B initSignal)
       , (load, B loadSignal)
       , (neg, maybe Q B negSignal)
@@ -132,12 +132,12 @@ instance DefinitionSynthesis (Accum v x t) where
 
 instance ( Time t, Var v
          ) => Synthesis (Accum v x t) LinkId where
-  hardwareInstance _ name NetworkLink{..} Link{..} = renderST
+  hardwareInstance _ name SystemEnv{..} PUEnv{..} = renderST
     [ "pu_accum "
-    , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+    , "  #( .DATA_WIDTH( " ++ link parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ link parameterAttrWidth ++ " )"
     , "   ) $name$"
-    , "  ( .clk( " ++ link clk ++ " )"
+    , "  ( .clk( " ++ link signalClk ++ " )"
     , "  , .signal_init( " ++ ctrl init ++ " )"
     , "  , .signal_load( " ++ ctrl load ++ " )"
     , "  , .signal_neg( " ++ ctrl neg ++ " )"
@@ -150,4 +150,4 @@ instance ( Time t, Var v
     , "initial $name$.acc <= 0;"
     ] [("name", name)]
     where
-      ctrl = link . controlBus
+      ctrl = link . signalBus

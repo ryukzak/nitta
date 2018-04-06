@@ -57,7 +57,7 @@ TODO: Каким образом необходимо работать со вн�
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
   , FSet(..)
-  , Link(..)
+  , PUEnv(..)
   ) where
 
 import           Control.Monad         (void, when, (>=>))
@@ -474,9 +474,9 @@ instance ( Var v, Time t ) => Controllable (Fram v x t) where
     deriving (Show)
 
 instance Connected (Fram v x t) i where
-  data Link (Fram v x t) i
-    = Link { oe, wr :: i, addr :: [i] } deriving ( Show )
-  transmitToLink Microcode{..} Link{..}
+  data PUEnv (Fram v x t) i
+    = PUEnv{ oe, wr :: i, addr :: [i] } deriving ( Show )
+  transmitToLink Microcode{..} PUEnv{..}
     = [ (oe, B oeSignal)
       , (wr, B wrSignal)
       ] ++ addrs
@@ -563,21 +563,21 @@ instance ( Var v
         , "wire [ATTR_WIDTH-1:0] attr_out;                                                                           "
         , "                                                                                                          "
         , hardwareInstance pu "fram"
-            NetworkLink{ clk=Name "clk"
-                       , rst=Name "rst"
-                       , dataWidth=Name "32"
-                       , attrWidth=Name "4"
-                       , dataIn=Name "data_in"
-                       , attrIn=Name "attr_in"
-                       , dataOut=Name "data_out"
-                       , attrOut=Name "attr_out"
-                       , controlBus=id
-                       , cycleStart=Name "cycle"
-                       }
-            Link{ oe=Name "oe"
-                , wr=Name "wr"
-                , addr=[Name "addr"]
-                }
+            SystemEnv{ signalClk=Name "clk"
+                     , signalRst=Name "rst"
+                     , parameterDataWidth=Name "32"
+                     , parameterAttrWidth=Name "4"
+                     , dataIn=Name "data_in"
+                     , attrIn=Name "attr_in"
+                     , dataOut=Name "data_out"
+                     , attrOut=Name "attr_out"
+                     , signalBus=id
+                     , signalCycle=Name "cycle"
+                     }
+            PUEnv{ oe=Name "oe"
+                 , wr=Name "wr"
+                 , addr=[Name "addr"]
+                 }
         , "                                                                                                          "
         , verilogWorkInitialze
         , verilogClockGenerator
@@ -680,13 +680,13 @@ instance ( Time t, Var v ) => DefinitionSynthesis (Fram v x t) where
 
 instance ( Time t, Var v, Show x
          ) => Synthesis (Fram v x t) LinkId where
-  hardwareInstance Fram{..} name NetworkLink{..} Link{..} = renderST
+  hardwareInstance Fram{..} name SystemEnv{..} PUEnv{..} = renderST
     [ "pu_fram "
-    , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+    , "  #( .DATA_WIDTH( " ++ link parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ link parameterAttrWidth ++ " )"
     , "   , .RAM_SIZE( " ++ show frSize ++ " )"
     , "   ) " ++ name
-    , "  ( .clk( " ++ link clk ++ " )"
+    , "  ( .clk( " ++ link signalClk ++ " )"
     , "  , .signal_addr( { " ++ S.join ", " (map control addr) ++ " } )"
     , ""
     , "  , .signal_wr( " ++ control wr ++ " )"
@@ -706,5 +706,5 @@ instance ( Time t, Var v, Show x
       , ("size", show frSize)
       ]
     where
-      control = link . controlBus
+      control = link . signalBus
 

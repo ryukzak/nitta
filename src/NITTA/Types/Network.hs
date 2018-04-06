@@ -41,8 +41,8 @@ data PU i v x t where
         , Show x
         , Num x
         ) => { unit :: pu
-             , links :: Link pu i
-             , networkLink :: NetworkLink i
+             , links :: PUEnv pu i
+             , systemEnv :: SystemEnv i
              } -> PU i v x t
 
 instance ( Var v, Time t
@@ -50,17 +50,17 @@ instance ( Var v, Time t
                    EndpointDT (PU i v x t)
          where
   options proxy PU{..} = options proxy unit
-  decision proxy PU{ unit, links, networkLink } d
-    = PU{ unit=decision proxy unit d, links, networkLink }
+  decision proxy PU{ unit, links, systemEnv } d
+    = PU{ unit=decision proxy unit d, links, systemEnv }
 
 instance ProcessUnit (PU i v x t) (Parcel v x) t where
-  bind fb PU{ unit, links, networkLink }
+  bind fb PU{ unit, links, systemEnv }
     = case bind fb unit of
-      Right unit' -> Right PU { unit=unit', links, networkLink }
+      Right unit' -> Right PU { unit=unit', links, systemEnv }
       Left err    -> Left err
   process PU{ unit } = process unit
-  setTime t PU{ unit, links, networkLink }
-    = PU{ unit=setTime t unit, links, networkLink }
+  setTime t PU{ unit, links, systemEnv }
+    = PU{ unit=setTime t unit, links, systemEnv }
 
 instance Simulatable (PU i v x t) v x where
   simulateOn cntx PU{..} fb = simulateOn cntx unit fb
@@ -93,10 +93,10 @@ castPU PU{..} = cast unit
 class Connected pu i where
   -- | Линии специфичные для подключения вычислительного блока к рабочему окружению: управляющие
   -- сигналы, флаги, подключения к внешнему миру.
-  data Link pu i :: *
+  data PUEnv pu i :: *
   -- | Отображение микрокода на сигнальные линии. Необходимо для "сведения" микрокоманд отдельных
   -- вычислительных блоков в микрокоманды сети.
-  transmitToLink :: Microcode pu -> Link pu i -> [(i, Value)]
+  transmitToLink :: Microcode pu -> PUEnv pu i -> [(i, Value)]
 
 
 
@@ -134,18 +134,18 @@ class ( DefinitionSynthesis pu ) => Synthesis pu i where
   -- Конфигурирование вычислительного блока осуществляется через подаваемы на вход словарь. В
   -- настоящий момент данная функция не является типо-безопастной и не отличается runtime
   -- проверками, что конечно никуда не годится.
-  hardwareInstance :: pu -> String -> NetworkLink i -> Link pu i -> String
+  hardwareInstance :: pu -> String -> SystemEnv i -> PUEnv pu i -> String
 
 
 -- | Подключения к сети.
-data NetworkLink i
-  = NetworkLink
-    { clk, rst :: i
-    , dataWidth :: i, attrWidth :: i
+data SystemEnv i
+  = SystemEnv
+    { signalClk, signalRst :: i
+    , signalCycle :: i -- ^ Сигнал о начале вычислительного цикла.
+    , parameterDataWidth :: i, parameterAttrWidth :: i
     , dataIn, attrIn :: i
     , dataOut, attrOut :: i
-    , cycleStart :: i -- ^ Сигнал о начале вычислительного цикла.
-    , controlBus :: i -> i -- ^ Функция позволяющая подставить индекс на шину управления.
+    , signalBus :: i -> i -- ^ Функция позволяющая подставить индекс на шину управления.
     }
 
 

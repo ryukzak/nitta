@@ -13,7 +13,7 @@
 
 -- slave / master / slave-master?
 module NITTA.ProcessUnits.SPI
-  ( Link(..)
+  ( PUEnv(..)
   , SPI
   ) where
 
@@ -127,11 +127,11 @@ instance ( Ord v ) => Simulatable (SPI v x t) v x where
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on SPI."
 
 instance Connected (SPI v x t) i where
-  data Link (SPI v x t) i
-    = Link { wr, oe :: i
+  data PUEnv (SPI v x t) i
+    = PUEnv{ wr, oe :: i
            , start, stop, mosi, miso, sclk, cs :: i
            } deriving ( Show )
-  transmitToLink Microcode{..} Link{..}
+  transmitToLink Microcode{..} PUEnv{..}
     = [ (wr, B wrSignal)
       , (oe, B oeSignal)
       ]
@@ -149,14 +149,14 @@ instance ( Var v, Show t ) => DefinitionSynthesis (SPI v x t) where
 
 instance ( Time t, Var v
          ) => Synthesis (SPI v x t) LinkId where
-  hardwareInstance _ name NetworkLink{..} Link{..} = renderST
+  hardwareInstance _ name SystemEnv{..} PUEnv{..} = renderST
     [ "pu_slave_spi"
-    , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+    , "  #( .DATA_WIDTH( " ++ link parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ link parameterAttrWidth ++ " )"
     , "   ) $name$"
-    , "  ( .clk( " ++ link clk ++ " )"
-    , "  , .rst( " ++ link rst ++ " )"
-    , "  , .signal_cycle( " ++ link cycleStart ++ " )"
+    , "  ( .clk( " ++ link signalClk ++ " )"
+    , "  , .rst( " ++ link signalRst ++ " )"
+    , "  , .signal_cycle( " ++ link signalCycle ++ " )"
     , "  , .signal_oe( " ++ control oe ++ " )"
     , "  , .signal_wr( " ++ control wr ++ " )"
     , "  , .flag_start( " ++ link start ++ " )"
@@ -170,6 +170,6 @@ instance ( Time t, Var v
     , "  , .sclk( " ++ link sclk ++ " )"
     , "  , .cs( " ++ link cs ++ " )"
     , "  );"
-    ] [("name", name)]
+    ] [ ( "name", name ) ]
     where
-      control = link . controlBus
+      control = link . signalBus

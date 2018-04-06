@@ -119,9 +119,9 @@ instance UnambiguouslyDecode (Shift v x t) where
 
 
 instance Connected (Shift v x t) i where
-  data Link (Shift v x t) i
-    = Link { work, direction, mode, step, init, oe :: i } deriving ( Show )
-  transmitToLink Microcode{..} Link{..}
+  data PUEnv (Shift v x t) i
+    = PUEnv{ work, direction, mode, step, init, oe :: i } deriving ( Show )
+  transmitToLink Microcode{..} PUEnv{..}
     = [ (work, B workSignal)
       , (direction, B directionSignal)
       , (mode, B modeSignal)
@@ -144,11 +144,11 @@ instance DefinitionSynthesis (Shift v x t) where
 
 instance ( Time t, Var v
          ) => Synthesis (Shift v x t) LinkId where
-  hardwareInstance _ name NetworkLink{..} Link{..} = renderST
-    [ "pu_shift #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
-    , "          , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+  hardwareInstance _ name SystemEnv{..} PUEnv{..} = renderST
+    [ "pu_shift #( .DATA_WIDTH( " ++ link parameterDataWidth ++ " )"
+    , "          , .ATTR_WIDTH( " ++ link parameterAttrWidth ++ " )"
     , "          ) $name$"
-    , "  ( .clk( " ++ link clk ++ " )"
+    , "  ( .clk( " ++ link signalClk ++ " )"
     , "  , .signal_work( " ++ control work ++ " ), .signal_direction( " ++ control direction ++ " )"
     , "  , .signal_mode( " ++ control mode ++ " ), .signal_step( " ++ control step ++ " )"
     , "  , .signal_init( " ++ control init ++ " ), .signal_oe( " ++ control oe ++ " )"
@@ -159,4 +159,4 @@ instance ( Time t, Var v
     , "  );"
     ] [("name", name)]
     where
-      control = link . controlBus
+      control = link . signalBus
