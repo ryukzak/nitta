@@ -93,8 +93,8 @@ end
 initial begin 
   pu_spi_data_in <= 32'h00000000; oe <= 0; wr <= 0;
   @(negedge rst);
+
   /////////////////// Первый цикл.
-  
   cycle <= 1;                              @(posedge clk); 
   cycle <= 0;                  repeat( 99) @(posedge clk);
   oe <= 1;                                 @(posedge clk); // Ожидаем на шине флаг invalid, так как после RST новых загрузок небыло.  
@@ -109,7 +109,6 @@ initial begin
     begin
       $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
     end
-
 
   /////////////////// Второй цикл.
   cycle <= 1;                              @(posedge clk); // сигнал о начале второго цикла
@@ -127,6 +126,41 @@ initial begin
     begin
       $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
     end
+
+  /////////////////// Третий цикл.
+  cycle <= 1;                              @(posedge clk); 
+  cycle <= 0;                  repeat( 99) @(posedge clk);
+  oe <= 1;                                 @(posedge clk); // Ожидаем на шине флаг invalid, так как после RST новых загрузок небыло.  
+  oe <= 0;                     repeat( 10) @(posedge clk);
+  wr <= 1; pu_spi_data_in <= 32'hC0C1C2C3; @(posedge clk);
+  wr <= 0;                     repeat( 48) @(posedge clk);
+  wr <= 1; pu_spi_data_in <= 32'hC4C5C6C7; @(posedge clk);
+  wr <= 0;                     repeat( 40) @(posedge clk);
+
+  $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
+  for ( i = 0; i < BUF_SIZE; i = i + 1 )
+    begin
+      $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
+    end
+
+
+  /////////////////// Четвёртый цикл.
+  cycle <= 1;                              @(posedge clk); // сигнал о начале второго цикла
+  cycle <= 0;                  repeat( 99) @(posedge clk);
+  oe <= 1;                                 @(posedge clk);  // В буфере ожидаем: A0A1A2A3A4A5A6A7
+                                                            // На шине A0A1A2A3
+  oe <= 0;                     repeat( 10) @(posedge clk);
+  wr <= 1; pu_spi_data_in <= 32'hC8C9CACB; @(posedge clk);
+  wr <= 0;                     repeat( 48) @(posedge clk);
+  wr <= 1; pu_spi_data_in <= 32'hCCCDCECF; @(posedge clk);
+  wr <= 0;                     repeat( 40) @(posedge clk);
+
+  $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
+  for ( i = 0; i < BUF_SIZE; i = i + 1 )
+    begin
+      $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
+    end
+
 
 end
 
@@ -147,6 +181,7 @@ initial begin // spi communication
   repeat(35) @(posedge clk); 
   
 
+
   repeat(35) @(posedge clk); 
   // Во входном буфере должно появиться два слова: A9AAABAC и ADAEAFA0. 
   // В канал должно уйти два слова из выходного буфера.
@@ -156,7 +191,36 @@ initial begin // spi communication
   start_transaction = 0;                                   @(posedge clk);
   // Из канала при этом ожидаем получить значение hB0B1B2B3B4B5B6B7
   repeat(130 - 3) @(posedge clk); 
+  repeat(35) @(posedge clk); 
+
+
+
+  repeat(35) @(posedge clk); 
+  // Во входном буфере должно появиться два слова: A9AAABAC и ADAEAFA0. 
+  // В канал должно уйти два слова из выходного буфера.
+
+  master_in = 64'hA8A9AAABACADAEAF;                        @(posedge clk);
+  start_transaction = 1;                                   @(posedge clk);
+  start_transaction = 0;                                   @(posedge clk);
+  // Из канала при этом ожидаем получить значение hB0B1B2B3B4B5B6B7
+  repeat(130 - 3) @(posedge clk); 
+  repeat(35) @(posedge clk); 
   
+
+
+  repeat(35) @(posedge clk); 
+  // Во входном буфере должно появиться два слова: A9AAABAC и ADAEAFA0. 
+  // В канал должно уйти два слова из выходного буфера.
+
+  master_in = 64'hA8A9AAABACADAEAF;                        @(posedge clk);
+  start_transaction = 1;                                   @(posedge clk);
+  start_transaction = 0;                                   @(posedge clk);
+  // Из канала при этом ожидаем получить значение hB0B1B2B3B4B5B6B7
+  repeat(130 - 3) @(posedge clk); 
+  repeat(35) @(posedge clk); 
+
+
+
   repeat(60) @(posedge clk); 
 
   $finish;

@@ -1,24 +1,25 @@
 module hoarder
-#(
-    parameter DATA_WIDTH     = 32
-  , parameter ATTR_WIDTH     = 4
-  , parameter SPI_DATA_WIDTH = 8
-)
-(
-    input                           clk
-,   input                           rst
-,   input                           ready
-,   input                           flag_start
-,   input                           wr
-,   input                           oe
-,   input      [DATA_WIDTH-1:0]     data_in
-,   output reg [DATA_WIDTH-1:0]     data_out
-,   output     [ATTR_WIDTH-1:0]     attr_hoarder
-,   input      [SPI_DATA_WIDTH-1:0] data_in_byte
-,   output     [SPI_DATA_WIDTH-1:0] data_out_byte
-);
-
-`include "parameters.vh"
+    #( parameter DATA_WIDTH     = 32
+     , parameter ATTR_WIDTH     = 4
+     , parameter SPI_DATA_WIDTH = 8
+     // The attributes of the buffer
+     , parameter INVALID        = 0
+     , parameter VALID          = 1
+     , parameter SPI_FINISH     = 2
+     , parameter FULL           = 3
+     )
+    ( input                           clk
+    , input                           rst
+    , input                           ready
+    , input                           flag_start
+    , input                           wr
+    , input                           oe
+    , input      [DATA_WIDTH-1:0]     data_in
+    , output reg [DATA_WIDTH-1:0]     data_out
+    , output     [ATTR_WIDTH-1:0]     attr_hoarder
+    , input      [SPI_DATA_WIDTH-1:0] data_in_byte
+    , output     [SPI_DATA_WIDTH-1:0] data_out_byte
+    );
 
 localparam SIZE_FRAME  = $clog2( DATA_WIDTH );
 reg SEND, RECEIVE, FLAG, PROCESS;
