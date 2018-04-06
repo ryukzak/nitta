@@ -26,7 +26,10 @@ wire [ATTR_WIDTH-1:0] attr_out;
 reg oe;
 reg cycle;
 
-spi_master_driver master #( .DATA_WIDTH( DATA_WIDTH )
+spi_master_driver 
+  #( .DATA_WIDTH( 64 ) 
+   , .SCLK_HALFPERIOD( 1 )
+   ) master
   ( .clk(clk)
   , .rst(rst)
   , .start_transaction(start_transaction)
@@ -71,9 +74,9 @@ always begin
 end
 
 initial begin
-  clk = 0;                     @(posedge clk);
-  rst = 1;                     @(posedge clk);
-  rst = 0;                     @(posedge clk);
+  clk = 0; cycle = 0; start_transaction = 0; @(posedge clk);
+  rst = 1;                                   @(posedge clk);
+  rst = 0;                                   @(posedge clk);
   $display("Start");
 end
 
