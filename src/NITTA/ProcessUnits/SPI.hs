@@ -130,7 +130,8 @@ instance Connected (SPI v x t) where
   data PUPorts (SPI v x t)
     = PUPorts{ wr, oe :: Signal
              , start, stop :: String -- FIXME: Что это такое и как этому быть?
-             , mosi, miso, sclk, cs :: IOPort
+             , mosi, sclk, cs :: InputPort
+             , miso :: OutputPort
              } deriving ( Show )
   transmitToLink Microcode{..} PUPorts{..}
     = [ (wr, B wrSignal)
@@ -150,7 +151,7 @@ instance ( Var v, Show t ) => DefinitionSynthesis (SPI v x t) where
 
 instance ( Time t, Var v
          ) => Synthesis (SPI v x t) where
-  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, ioPort } PUPorts{..} = renderST
+  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderST
     [ "pu_slave_spi"
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
@@ -166,9 +167,9 @@ instance ( Time t, Var v
     , "  , .attr_in( " ++ attrIn ++ " )"
     , "  , .data_out( " ++ dataOut ++ " )"
     , "  , .attr_out( " ++ attrOut ++ " )"
-    , "  , .mosi( " ++ ioPort mosi ++ " )"
-    , "  , .miso( " ++ ioPort miso ++ " )"
-    , "  , .sclk( " ++ ioPort sclk ++ " )"
-    , "  , .cs( " ++ ioPort cs ++ " )"
+    , "  , .mosi( " ++ inputPort mosi ++ " )"
+    , "  , .miso( " ++ outputPort miso ++ " )"
+    , "  , .sclk( " ++ inputPort sclk ++ " )"
+    , "  , .cs( " ++ inputPort cs ++ " )"
     , "  );"
     ] [ ( "name", name ) ]

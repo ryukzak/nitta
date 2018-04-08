@@ -139,7 +139,8 @@ class ( DefinitionSynthesis pu ) => Synthesis pu where
 -- | Описание подключения сигнальных шин управления.
 newtype Signal = Signal Int deriving ( Show, Eq, Ord, Ix )
 -- | Описание подключения шин ввода вывода.
-newtype IOPort = IOPort Int deriving ( Show )
+newtype InputPort = InputPort String deriving ( Show, Eq, Ord )
+newtype OutputPort = OutputPort String deriving ( Show, Eq, Ord )
 
 data NetEnv
   = NetEnv
@@ -156,6 +157,7 @@ data Enviroment
     { signalClk :: String
     , signalRst :: String
     , signalCycle :: String -- ^ Сигнал о начале вычислительного цикла.
-    , ioPort :: IOPort -> String
+    , inputPort :: InputPort -> String
+    , outputPort :: OutputPort -> String
     , net :: NetEnv
     }

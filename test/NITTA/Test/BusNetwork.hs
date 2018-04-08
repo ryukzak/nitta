@@ -22,13 +22,15 @@ import           Test.Tasty.HUnit
 
 
 netWithFramShiftAccum = busNetwork 27
+  [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
+  [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
   , ("spi", PU def SPI.PUPorts{ SPI.wr=Signal 22, SPI.oe=Signal 23
                               , SPI.start="start", SPI.stop="stop"
-                              , SPI.mosi=IOPort 0, SPI.miso=IOPort 1, SPI.sclk=IOPort 2, SPI.cs=IOPort 3
+                              , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                               })
   -- , ("mult", PU def M.PUPorts{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
   ]

@@ -567,7 +567,8 @@ instance ( Var v
             Enviroment{ signalClk="clk"
                       , signalRst="rst"
                       , signalCycle="cycle"
-                      , ioPort=error "ioPort not defined"
+                      , inputPort=undefined
+                      , outputPort=undefined
                       , net=NetEnv
                         { parameterDataWidth=32
                         , parameterAttrWidth=4

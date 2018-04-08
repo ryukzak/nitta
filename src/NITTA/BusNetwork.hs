@@ -66,6 +66,8 @@ data GBusNetwork title spu v x t
     , bnPus            :: M.Map title spu
     -- | Ширина шины управления.
     , bnSignalBusWidth :: Int
+    , bnInputPorts     :: [InputPort]
+    , bnOutputPorts    :: [OutputPort]
     }
 type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 
@@ -78,7 +80,7 @@ transfered net@BusNetwork{..}
 
 
 -- TODO: Проверка подключения сигнальных линий.
-busNetwork w pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w
+busNetwork w ips ops pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w ips ops
   where
     pus' = map (\(title, f) ->
       ( title
@@ -86,12 +88,8 @@ busNetwork w pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w
         { signalClk="clk"
         , signalRst="rst"
         , signalCycle="cycle"
-        , ioPort= \(IOPort i) -> case i of
-          0 -> "mosi"
-          1 -> "miso"
-          2 -> "cs"
-          3 -> "sclk"
-          _ -> undefined
+        , inputPort= \(InputPort n) -> n
+        , outputPort= \(OutputPort n) -> n
         , net=NetEnv
           { parameterDataWidth=32
           , parameterAttrWidth=4
@@ -334,12 +332,8 @@ instance ( Time t
               [ "module $moduleName$"
               , "  ( input                     clk"
               , "  , input                     rst"
-              , "  , output                    start"
-              , "  , output                    stop"
-              , "  , input                     mosi"
-              , "  , output                    miso"
-              , "  , input                     sclk"
-              , "  , input                     cs"
+              , "  , " ++ S.join ", " (map (\(InputPort n) -> "input " ++ n) bnInputPorts)
+              , "  , " ++ S.join ", " (map (\(OutputPort n) -> "output " ++ n) bnOutputPorts)
               , "  );"
               , ""
               , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
@@ -351,7 +345,7 @@ instance ( Time t
               , "wire [DATA_WIDTH-1:0] data_bus;"
               , "wire [ATTR_WIDTH-1:0] attr_bus;"
               , ""
-              , "wire cycle;"
+              , "wire cycle, start, stop;"
               , ""
               , "pu_simple_control #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
               , "                   , .PROGRAM_DUMP( \"\\$path\\$$moduleName$.dump\" )"
