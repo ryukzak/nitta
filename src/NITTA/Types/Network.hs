@@ -17,6 +17,7 @@ module NITTA.Types.Network where
 import           Data.Default
 import qualified Data.Map         as M
 import           Data.Typeable
+import Data.Ix
 import           GHC.Generics     (Generic)
 import           NITTA.Types.Base
 import           NITTA.Types.Poly
@@ -24,36 +25,35 @@ import           Numeric.Interval hiding (elem)
 
 
 -- | Контейнер для вычислительных узлов (PU). Необходимо для формирования гетерогенных списков.
-data PU i v x t where
+data PU v x t where
   PU :: ( ByTime pu t
-        , Connected pu i
+        , Connected pu
         , DecisionProblem (EndpointDT v t)
                EndpointDT  pu
         , Default (Instruction pu)
         , ProcessUnit pu (Parcel v x) t
         , Show (Instruction pu)
         , Simulatable pu v x
-        , Synthesis pu i
-        , Typeable i
+        , Synthesis pu
         , Typeable pu
         , UnambiguouslyDecode pu
         , Typeable x
         , Show x
         , Num x
         ) => { unit :: pu
-             , links :: PUEnv pu i
-             , systemEnv :: SystemEnv i
-             } -> PU i v x t
+             , links :: PUPorts pu
+             , systemEnv :: Enviroment
+             } -> PU v x t
 
 instance ( Var v, Time t
          ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (PU i v x t)
+                   EndpointDT (PU v x t)
          where
   options proxy PU{..} = options proxy unit
   decision proxy PU{ unit, links, systemEnv } d
     = PU{ unit=decision proxy unit d, links, systemEnv }
 
-instance ProcessUnit (PU i v x t) (Parcel v x) t where
+instance ProcessUnit (PU v x t) (Parcel v x) t where
   bind fb PU{ unit, links, systemEnv }
     = case bind fb unit of
       Right unit' -> Right PU { unit=unit', links, systemEnv }
@@ -62,16 +62,16 @@ instance ProcessUnit (PU i v x t) (Parcel v x) t where
   setTime t PU{ unit, links, systemEnv }
     = PU{ unit=setTime t unit, links, systemEnv }
 
-instance Simulatable (PU i v x t) v x where
+instance Simulatable (PU v x t) v x where
   simulateOn cntx PU{..} fb = simulateOn cntx unit fb
 
-instance DefinitionSynthesis (PU i v x t) where
+instance DefinitionSynthesis (PU v x t) where
   moduleName PU{..} = moduleName unit
   hardware PU{..} = hardware unit
   software PU{..} = software unit
 
 castPU :: ( ByTime pu t
-          , Connected pu i
+          , Connected pu
           , DecisionProblem (EndpointDT v t)
                  EndpointDT  pu
           , Default (Instruction pu)
@@ -79,24 +79,23 @@ castPU :: ( ByTime pu t
           , ProcessUnit pu v t
           , Show (Instruction pu)
           , Simulatable pu v x
-          , Synthesis pu i
-          , Typeable i
+          , Synthesis pu
           , Typeable pu
           , UnambiguouslyDecode pu
           , Typeable x
           , Show x
           , Num x
-          ) => PU i v x t -> Maybe pu
+          ) => PU v x t -> Maybe pu
 castPU PU{..} = cast unit
 
 
-class Connected pu i where
+class Connected pu where
   -- | Линии специфичные для подключения вычислительного блока к рабочему окружению: управляющие
   -- сигналы, флаги, подключения к внешнему миру.
-  data PUEnv pu i :: *
+  data PUPorts pu :: *
   -- | Отображение микрокода на сигнальные линии. Необходимо для "сведения" микрокоманд отдельных
   -- вычислительных блоков в микрокоманды сети.
-  transmitToLink :: Microcode pu -> PUEnv pu i -> [(i, Value)]
+  transmitToLink :: Microcode pu -> PUPorts pu -> [(Signal, Value)]
 
 
 
@@ -128,30 +127,35 @@ instance DecisionType (DataFlowDT title v t) where
     } deriving ( Show, Generic )
 
 
-class ( DefinitionSynthesis pu ) => Synthesis pu i where
+class ( DefinitionSynthesis pu ) => Synthesis pu where
   -- | Объявление экземпляра модуля. Используется для генерации процессоров и testbench-ей.
   --
   -- Конфигурирование вычислительного блока осуществляется через подаваемы на вход словарь. В
   -- настоящий момент данная функция не является типо-безопастной и не отличается runtime
   -- проверками, что конечно никуда не годится.
-  hardwareInstance :: pu -> String -> SystemEnv i -> PUEnv pu i -> String
+  hardwareInstance :: pu -> String -> Enviroment -> PUPorts pu -> String
 
 
--- | Подключения к сети.
-data SystemEnv i
-  = SystemEnv
-    { signalClk, signalRst :: i
-    , signalCycle :: i -- ^ Сигнал о начале вычислительного цикла.
-    , parameterDataWidth :: i, parameterAttrWidth :: i
-    , dataIn, attrIn :: i
-    , dataOut, attrOut :: i
-    , signalBus :: i -> i -- ^ Функция позволяющая подставить индекс на шину управления.
+-- | Описание подключения сигнальных шин управления.
+newtype Signal = Signal Int deriving ( Show, Eq, Ord, Ix )
+-- | Описание подключения шин ввода вывода.
+newtype IOPort = IOPort Int deriving ( Show )
+
+data NetEnv
+  = NetEnv
+    { parameterDataWidth :: Int
+    , parameterAttrWidth :: Int
+    , dataIn, attrIn :: String
+    , dataOut, attrOut :: String
+    , signal :: Signal -> String -- ^ Функция позволяющая подставить индекс на шину управления.
     }
 
-
-data LinkId = Index Int
-            | Name String
-            deriving ( Show, Eq, Ord )
-
-link (Index i) = show i
-link (Name n)  = n
+-- | Подключения к сети.
+data Enviroment
+  = Enviroment
+    { signalClk :: String
+    , signalRst :: String
+    , signalCycle :: String -- ^ Сигнал о начале вычислительного цикла.
+    , ioPort :: IOPort -> String
+    , net :: NetEnv
+    }

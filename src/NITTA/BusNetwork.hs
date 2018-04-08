@@ -67,7 +67,7 @@ data GBusNetwork title spu v x t
     -- | Ширина шины управления.
     , bnSignalBusWidth :: Int
     }
-type BusNetwork title v x t = GBusNetwork title (PU LinkId v x t) v x t
+type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 
 transfered net@BusNetwork{..}
   = [ v | st <- steps bnProcess
@@ -81,17 +81,27 @@ transfered net@BusNetwork{..}
 busNetwork w pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w
   where
     pus' = map (\(title, f) ->
-      (title, f SystemEnv{ parameterDataWidth=Name "32"
-                         , parameterAttrWidth=Name "4"
-                         , signalClk=Name "clk"
-                         , signalRst=Name "rst"
-                         , signalCycle=Name "cycle"
-                         , dataIn=Name "data_bus"
-                         , dataOut=Name $ valueData title
-                         , attrIn=Name "attr_bus"
-                         , attrOut=Name $ valueAttr title
-                         , signalBus= \(Index i) -> Name ("control_bus[" ++ show i ++ "]")
-                         })
+      ( title
+      , f Enviroment
+        { signalClk="clk"
+        , signalRst="rst"
+        , signalCycle="cycle"
+        , ioPort= \(IOPort i) -> case i of
+          0 -> "mosi"
+          1 -> "miso"
+          2 -> "cs"
+          3 -> "sclk"
+          _ -> undefined
+        , net=NetEnv
+          { parameterDataWidth=32
+          , parameterAttrWidth=4
+          , dataIn="data_bus"
+          , dataOut=valueData title
+          , attrIn="attr_bus"
+          , attrOut=valueAttr title
+          , signal= \(Signal i) -> "control_bus[" ++ show i ++ "]"
+          }
+        })
       ) pus
     valueData t = t ++ "_data_out"
     valueAttr t = t ++ "_attr_out"
@@ -237,7 +247,7 @@ instance Controllable (BusNetwork title v x t) where
     deriving (Typeable, Show)
 
   data Microcode (BusNetwork title v x t)
-    = BusNetworkMC (A.Array Int Value)
+    = BusNetworkMC (A.Array Signal Value)
 
 
 
@@ -245,14 +255,12 @@ instance {-# OVERLAPS #-}
          ( Time t
          ) => ByTime (BusNetwork title v x t) t where
   microcodeAt BusNetwork{..} t
-    = BusNetworkMC $ foldl merge st $ M.elems bnPus
+    = BusNetworkMC $ foldl merge initSt $ M.elems bnPus
     where
-      st = A.listArray (0, bnSignalBusWidth - 1) $ repeat def
-      merge arr PU{..}
-        = let transmition = transmitToLink (microcodeAt unit t) links
-          in foldl merge' arr transmition
-      merge' arr (Index i, x) = arr A.// [ (i, arr A.! i +++ x) ]
-      merge' _ _              = error "Wrong link description!"
+      initSt = A.listArray (Signal 0, Signal $ bnSignalBusWidth - 1) $ repeat def
+      merge st PU{..}
+        = foldl merge' st $ transmitToLink (microcodeAt unit t) links
+      merge' st (s, x) = st A.// [ (s, st A.! s +++ x) ]
 
 
 
@@ -483,7 +491,8 @@ instance ( Title title, Var v, Time t
         [ ("moduleName", moduleName n)
         ]
 
-      cntxs = take 50 $ simulateAlgByCycle cntx0 $ functionalBlocks n
+      -- FIXME: 15 - must be variable
+      cntxs = take 15 $ simulateAlgByCycle cntx0 $ functionalBlocks n
       cycleTicks = [ 0 .. nextTick (process n) - 1 ]
       simulationInfo = (0, def) : concatMap (\cntx -> map (\t -> (t, cntx)) cycleTicks) cntxs
       assertions = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo

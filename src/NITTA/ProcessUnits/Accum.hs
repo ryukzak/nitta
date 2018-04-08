@@ -113,10 +113,10 @@ instance ( Var v
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Accum."
 
 
-instance Connected (Accum v x t) i where
-  data PUEnv (Accum v x t) i
-    = PUEnv{ init, load, neg, oe :: i } deriving ( Show )
-  transmitToLink Microcode{..} PUEnv{..}
+instance Connected (Accum v x t) where
+  data PUPorts (Accum v x t)
+    = PUPorts{ init, load, neg, oe :: Signal } deriving ( Show )
+  transmitToLink Microcode{..} PUPorts{..}
     = [ (init, B initSignal)
       , (load, B loadSignal)
       , (neg, maybe Q B negSignal)
@@ -131,23 +131,21 @@ instance DefinitionSynthesis (Accum v x t) where
 
 
 instance ( Time t, Var v
-         ) => Synthesis (Accum v x t) LinkId where
-  hardwareInstance _ name SystemEnv{..} PUEnv{..} = renderST
+         ) => Synthesis (Accum v x t) where
+  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderST
     [ "pu_accum "
-    , "  #( .DATA_WIDTH( " ++ link parameterDataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link parameterAttrWidth ++ " )"
+    , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
     , "   ) $name$"
-    , "  ( .clk( " ++ link signalClk ++ " )"
-    , "  , .signal_init( " ++ ctrl init ++ " )"
-    , "  , .signal_load( " ++ ctrl load ++ " )"
-    , "  , .signal_neg( " ++ ctrl neg ++ " )"
-    , "  , .signal_oe( " ++ ctrl oe ++ " )"
-    , "  , .data_in( " ++ link dataIn ++ " )"
-    , "  , .attr_in( " ++ link attrIn ++ " )"
-    , "  , .data_out( " ++ link dataOut ++ " )"
-    , "  , .attr_out( " ++ link attrOut ++ " )"
+    , "  ( .clk( " ++ signalClk ++ " )"
+    , "  , .signal_init( " ++ signal init ++ " )"
+    , "  , .signal_load( " ++ signal load ++ " )"
+    , "  , .signal_neg( " ++ signal neg ++ " )"
+    , "  , .signal_oe( " ++ signal oe ++ " )"
+    , "  , .data_in( " ++ dataIn ++ " )"
+    , "  , .attr_in( " ++ attrIn ++ " )"
+    , "  , .data_out( " ++ dataOut ++ " )"
+    , "  , .attr_out( " ++ attrOut ++ " )"
     , "  );"
     , "initial $name$.acc <= 0;"
     ] [("name", name)]
-    where
-      ctrl = link . signalBus

@@ -118,10 +118,10 @@ instance UnambiguouslyDecode (Shift v x t) where
          }
 
 
-instance Connected (Shift v x t) i where
-  data PUEnv (Shift v x t) i
-    = PUEnv{ work, direction, mode, step, init, oe :: i } deriving ( Show )
-  transmitToLink Microcode{..} PUEnv{..}
+instance Connected (Shift v x t) where
+  data PUPorts (Shift v x t)
+    = PUPorts{ work, direction, mode, step, init, oe :: Signal } deriving ( Show )
+  transmitToLink Microcode{..} PUPorts{..}
     = [ (work, B workSignal)
       , (direction, B directionSignal)
       , (mode, B modeSignal)
@@ -143,20 +143,18 @@ instance DefinitionSynthesis (Shift v x t) where
   software _ = Empty
 
 instance ( Time t, Var v
-         ) => Synthesis (Shift v x t) LinkId where
-  hardwareInstance _ name SystemEnv{..} PUEnv{..} = renderST
-    [ "pu_shift #( .DATA_WIDTH( " ++ link parameterDataWidth ++ " )"
-    , "          , .ATTR_WIDTH( " ++ link parameterAttrWidth ++ " )"
+         ) => Synthesis (Shift v x t) where
+  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderST
+    [ "pu_shift #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
+    , "          , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
     , "          ) $name$"
-    , "  ( .clk( " ++ link signalClk ++ " )"
-    , "  , .signal_work( " ++ control work ++ " ), .signal_direction( " ++ control direction ++ " )"
-    , "  , .signal_mode( " ++ control mode ++ " ), .signal_step( " ++ control step ++ " )"
-    , "  , .signal_init( " ++ control init ++ " ), .signal_oe( " ++ control oe ++ " )"
-    , "  , .data_in( " ++ link dataIn ++ " )"
-    , "  , .attr_in( " ++ link attrIn ++ " )"
-    , "  , .data_out( " ++ link dataOut ++ " )"
-    , "  , .attr_out( " ++ link attrOut ++ " )"
+    , "  ( .clk( " ++ signalClk ++ " )"
+    , "  , .signal_work( " ++ signal work ++ " ), .signal_direction( " ++ signal direction ++ " )"
+    , "  , .signal_mode( " ++ signal mode ++ " ), .signal_step( " ++ signal step ++ " )"
+    , "  , .signal_init( " ++ signal init ++ " ), .signal_oe( " ++ signal oe ++ " )"
+    , "  , .data_in( " ++ dataIn ++ " )"
+    , "  , .attr_in( " ++ attrIn ++ " )"
+    , "  , .data_out( " ++ dataOut ++ " )"
+    , "  , .attr_out( " ++ attrOut ++ " )"
     , "  );"
     ] [("name", name)]
-    where
-      control = link . signalBus

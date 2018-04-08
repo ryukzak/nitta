@@ -104,10 +104,10 @@ instance ( Var v
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Mult."
 
 
-instance Connected (Mult v x t) i where
-  data PUEnv (Mult v x t) i
-    = PUEnv{ wr, sel, oe :: i } deriving ( Show )
-  transmitToLink Microcode{..} PUEnv{..}
+instance Connected (Mult v x t) where
+  data PUPorts (Mult v x t)
+    = PUPorts{ wr, sel, oe :: Signal } deriving ( Show )
+  transmitToLink Microcode{..} PUPorts{..}
     = [ (wr, B wrSignal)
       , (sel, B selSignal)
       , (oe, B oeSignal)
@@ -123,22 +123,20 @@ instance DefinitionSynthesis (Mult v x t) where
 
 
 instance ( Time t, Var v
-         ) => Synthesis (Mult v x t) LinkId where
-  hardwareInstance _ name SystemEnv{..} PUEnv{..} = renderST
+         ) => Synthesis (Mult v x t) where
+  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderST
     [ "pu_mult "
-    , "  #( .DATA_WIDTH( " ++ link parameterDataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link parameterAttrWidth ++ " )"
+    , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
     , "   ) $name$"
-    , "  ( .clk( " ++ link signalClk ++ " )"
-    , "  , .rst( " ++ link signalRst ++ " )"
-    , "  , .signal_wr( " ++ ctrl wr ++ " )"
-    , "  , .signal_sel( " ++ ctrl sel ++ " )"
-    , "  , .signal_oe( " ++ ctrl oe ++ " )"
-    , "  , .data_in( " ++ link dataIn ++ " )"
-    , "  , .attr_in( " ++ link attrIn ++ " )"
-    , "  , .data_out( " ++ link dataOut ++ " )"
-    , "  , .attr_out( " ++ link attrOut ++ " )"
+    , "  ( .clk( " ++ signalClk ++ " )"
+    , "  , .rst( " ++ signalRst ++ " )"
+    , "  , .signal_wr( " ++ signal wr ++ " )"
+    , "  , .signal_sel( " ++ signal sel ++ " )"
+    , "  , .signal_oe( " ++ signal oe ++ " )"
+    , "  , .data_in( " ++ dataIn ++ " )"
+    , "  , .attr_in( " ++ attrIn ++ " )"
+    , "  , .data_out( " ++ dataOut ++ " )"
+    , "  , .attr_out( " ++ attrOut ++ " )"
     , "  );"
     ] [("name", name)]
-    where
-      ctrl = link . signalBus

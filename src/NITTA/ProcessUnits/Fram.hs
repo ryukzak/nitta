@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -57,7 +58,7 @@ TODO: Каким образом необходимо работать со вн�
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
   , FSet(..)
-  , PUEnv(..)
+  , PUPorts(..)
   ) where
 
 import           Control.Monad         (void, when, (>=>))
@@ -473,10 +474,10 @@ instance ( Var v, Time t ) => Controllable (Fram v x t) where
     | Save Int
     deriving (Show)
 
-instance Connected (Fram v x t) i where
-  data PUEnv (Fram v x t) i
-    = PUEnv{ oe, wr :: i, addr :: [i] } deriving ( Show )
-  transmitToLink Microcode{..} PUEnv{..}
+instance Connected (Fram v x t) where
+  data PUPorts (Fram v x t)
+    = PUPorts{ oe, wr :: Signal, addr :: [Signal] } deriving ( Show )
+  transmitToLink Microcode{..} PUPorts{..}
     = [ (oe, B oeSignal)
       , (wr, B wrSignal)
       ] ++ addrs
@@ -563,21 +564,27 @@ instance ( Var v
         , "wire [ATTR_WIDTH-1:0] attr_out;                                                                           "
         , "                                                                                                          "
         , hardwareInstance pu "fram"
-            SystemEnv{ signalClk=Name "clk"
-                     , signalRst=Name "rst"
-                     , parameterDataWidth=Name "32"
-                     , parameterAttrWidth=Name "4"
-                     , dataIn=Name "data_in"
-                     , attrIn=Name "attr_in"
-                     , dataOut=Name "data_out"
-                     , attrOut=Name "attr_out"
-                     , signalBus=id
-                     , signalCycle=Name "cycle"
-                     }
-            PUEnv{ oe=Name "oe"
-                 , wr=Name "wr"
-                 , addr=[Name "addr"]
-                 }
+            Enviroment{ signalClk="clk"
+                      , signalRst="rst"
+                      , signalCycle="cycle"
+                      , ioPort=error "ioPort not defined"
+                      , net=NetEnv
+                        { parameterDataWidth=32
+                        , parameterAttrWidth=4
+                        , dataIn="data_in"
+                        , attrIn="attr_in"
+                        , dataOut="data_out"
+                        , attrOut="attr_out"
+                        , signal= \(Signal i) -> case i of
+                          0 -> "oe"
+                          1 -> "wr"
+                          j -> "addr[" ++ show (3 - (j - 2)) ++ "]"
+                        }
+                      }
+            PUPorts{ oe=Signal 0
+                   , wr=Signal 1
+                   , addr=map Signal [ 2, 3, 4, 5 ]
+                   }
         , "                                                                                                          "
         , verilogWorkInitialze
         , verilogClockGenerator
@@ -679,23 +686,23 @@ instance ( Time t, Var v ) => DefinitionSynthesis (Fram v x t) where
   software _ = Empty
 
 instance ( Time t, Var v, Show x
-         ) => Synthesis (Fram v x t) LinkId where
-  hardwareInstance Fram{..} name SystemEnv{..} PUEnv{..} = renderST
+         ) => Synthesis (Fram v x t) where
+  hardwareInstance Fram{..} name Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderST
     [ "pu_fram "
-    , "  #( .DATA_WIDTH( " ++ link parameterDataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link parameterAttrWidth ++ " )"
+    , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
     , "   , .RAM_SIZE( " ++ show frSize ++ " )"
     , "   ) " ++ name
-    , "  ( .clk( " ++ link signalClk ++ " )"
-    , "  , .signal_addr( { " ++ S.join ", " (map control addr) ++ " } )"
+    , "  ( .clk( " ++ signalClk ++ " )"
+    , "  , .signal_addr( { " ++ S.join ", " (map signal addr) ++ " } )"
     , ""
-    , "  , .signal_wr( " ++ control wr ++ " )"
-    , "  , .data_in( " ++ link dataIn ++ " )"
-    , "  , .attr_in( " ++ link attrIn ++ " )"
+    , "  , .signal_wr( " ++ signal wr ++ " )"
+    , "  , .data_in( " ++ dataIn ++ " )"
+    , "  , .attr_in( " ++ attrIn ++ " )"
     , ""
-    , "  , .signal_oe( " ++ control oe ++ " )"
-    , "  , .data_out( " ++ link dataOut ++ " )"
-    , "  , .attr_out( " ++ link attrOut ++ " )"
+    , "  , .signal_oe( " ++ signal oe ++ " )"
+    , "  , .data_out( " ++ dataOut ++ " )"
+    , "  , .attr_out( " ++ attrOut ++ " )"
     , "  );"
     , "initial begin"
     , S.join "\n"
@@ -705,6 +712,3 @@ instance ( Time t, Var v, Show x
     ] [ ("name", name)
       , ("size", show frSize)
       ]
-    where
-      control = link . signalBus
-

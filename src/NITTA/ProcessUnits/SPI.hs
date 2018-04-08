@@ -13,7 +13,7 @@
 
 -- slave / master / slave-master?
 module NITTA.ProcessUnits.SPI
-  ( PUEnv(..)
+  ( PUPorts(..)
   , SPI
   ) where
 
@@ -126,12 +126,13 @@ instance ( Ord v ) => Simulatable (SPI v x t) v x where
     | Just fb'@Receive{} <- castFB fb = simulate cntx fb'
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on SPI."
 
-instance Connected (SPI v x t) i where
-  data PUEnv (SPI v x t) i
-    = PUEnv{ wr, oe :: i
-           , start, stop, mosi, miso, sclk, cs :: i
-           } deriving ( Show )
-  transmitToLink Microcode{..} PUEnv{..}
+instance Connected (SPI v x t) where
+  data PUPorts (SPI v x t)
+    = PUPorts{ wr, oe :: Signal
+             , start, stop :: String -- FIXME: Что это такое и как этому быть?
+             , mosi, miso, sclk, cs :: IOPort
+             } deriving ( Show )
+  transmitToLink Microcode{..} PUPorts{..}
     = [ (wr, B wrSignal)
       , (oe, B oeSignal)
       ]
@@ -148,28 +149,26 @@ instance ( Var v, Show t ) => DefinitionSynthesis (SPI v x t) where
   software pu = Immidiate "transport.txt" $ show pu
 
 instance ( Time t, Var v
-         ) => Synthesis (SPI v x t) LinkId where
-  hardwareInstance _ name SystemEnv{..} PUEnv{..} = renderST
+         ) => Synthesis (SPI v x t) where
+  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, ioPort } PUPorts{..} = renderST
     [ "pu_slave_spi"
-    , "  #( .DATA_WIDTH( " ++ link parameterDataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link parameterAttrWidth ++ " )"
+    , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
     , "   ) $name$"
-    , "  ( .clk( " ++ link signalClk ++ " )"
-    , "  , .rst( " ++ link signalRst ++ " )"
-    , "  , .signal_cycle( " ++ link signalCycle ++ " )"
-    , "  , .signal_oe( " ++ control oe ++ " )"
-    , "  , .signal_wr( " ++ control wr ++ " )"
-    , "  , .flag_start( " ++ link start ++ " )"
-    , "  , .flag_stop( " ++ link stop ++ " )"
-    , "  , .data_in( " ++ link dataIn ++ " )"
-    , "  , .attr_in( " ++ link attrIn ++ " )"
-    , "  , .data_out( " ++ link dataOut ++ " )"
-    , "  , .attr_out( " ++ link attrOut ++ " )"
-    , "  , .mosi( " ++ link mosi ++ " )"
-    , "  , .miso( " ++ link miso ++ " )"
-    , "  , .sclk( " ++ link sclk ++ " )"
-    , "  , .cs( " ++ link cs ++ " )"
+    , "  ( .clk( " ++ signalClk ++ " )"
+    , "  , .rst( " ++ signalRst ++ " )"
+    , "  , .signal_cycle( " ++ signalCycle ++ " )"
+    , "  , .signal_oe( " ++ signal oe ++ " )"
+    , "  , .signal_wr( " ++ signal wr ++ " )"
+    , "  , .flag_start( " ++ start ++ " )"
+    , "  , .flag_stop( " ++ stop ++ " )"
+    , "  , .data_in( " ++ dataIn ++ " )"
+    , "  , .attr_in( " ++ attrIn ++ " )"
+    , "  , .data_out( " ++ dataOut ++ " )"
+    , "  , .attr_out( " ++ attrOut ++ " )"
+    , "  , .mosi( " ++ ioPort mosi ++ " )"
+    , "  , .miso( " ++ ioPort miso ++ " )"
+    , "  , .sclk( " ++ ioPort sclk ++ " )"
+    , "  , .cs( " ++ ioPort cs ++ " )"
     , "  );"
     ] [ ( "name", name ) ]
-    where
-      control = link . signalBus
