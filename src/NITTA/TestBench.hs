@@ -26,7 +26,7 @@ import           System.Process
 
 -- | Для реализующие этот класс вычислительных блоков могут быть сгенерированы testbench-и.
 class TestBench pu v x | pu -> v x where
-  testEnviroment :: Cntx v x -> pu -> Implementation
+  testBenchDescription :: Cntx v x -> pu -> Implementation
 
 
 -- | Сгенерировать и выполнить testbench.
@@ -40,7 +40,7 @@ writeProject library workdir pu cntx = do
   createDirectoryIfMissing True workdir
   writeImplementation workdir "" $ hardware pu
   writeImplementation workdir "" $ software pu
-  writeImplementation workdir "" $ testEnviroment cntx pu
+  writeImplementation workdir "" $ testBenchDescription cntx pu
   writeModelsimDo library workdir pu
   writeFile (joinPath [workdir, "Makefile"]) $ unlines
     [ "icarus:"
@@ -153,7 +153,7 @@ createIVerilogProcess library workdir pu
     in cp { cwd=Just workdir }
 
 testbenchFiles library pu
-  = L.nub $ concatMap (args "") [ hardware pu, testEnviroment undefined pu ]
+  = L.nub $ concatMap (args "") [ hardware pu, testBenchDescription undefined pu ]
   where
     args p (Project p' subInstances) = concatMap (args $ joinPath [p, p']) subInstances
     args p (Immidiate fn _) = [ joinPath [ p, fn ] ]

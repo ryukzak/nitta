@@ -405,66 +405,25 @@ instance ( Title title, Var v, Time t
          , Show x
          , DefinitionSynthesis (BusNetwork title v x t)
          , Typeable x
+        --  , Synthesis (PU v x t)
          ) => TestBench (BusNetwork title v x t) v x where
-  testEnviroment cntx0 n@BusNetwork{..} = Immidiate (moduleName n ++ "_tb.v") testBenchImp
+  testBenchDescription cntx0 n@BusNetwork{..} = Immidiate (moduleName n ++ "_tb.v") testBenchImp
     where
+      show' = filter (/= '"') . show
+      ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
       testBenchImp = renderST
         [ "module $moduleName$_tb();                                                                                 "
         , "                                                                                                          "
         , "reg clk, rst;                                                                                             "
-        , "wire mosi, miso, sclk, cs;"
+        , "wire " ++ S.join ", " ports ++ ";"
         , ""
         , "$moduleName$ net                                                                                          "
         , "  ( .clk( clk )                                                                                           "
         , "  , .rst( rst )                                                                                           "
-        , "  , .mosi( mosi ), .miso( miso ), .sclk( sclk ), .cs( cs ) "
+        , "  , " ++ S.join ", " (map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
         , "  );                                                                                                      "
         , "                                                                                                          "
-        , "reg start_transaction;"
-        , "reg  [32-1:0] master_in;"
-        , "wire [32-1:0] master_out;"
-        , "spi_master_driver "
-        , "  #( .DATA_WIDTH( 32 ) "
-        , "   , .SCLK_HALFPERIOD( 1 )"
-        , "   ) master"
-        , "  ( .clk(clk)"
-        , "  , .rst(rst)"
-        , "  , .start_transaction(start_transaction)"
-        , "  , .data_in(master_in)"
-        , "  , .data_out(master_out)"
-        , "  , .ready(ready)"
-        , "  , .miso( miso )"
-        , "  , .mosi( mosi )"
-        , "  , .sclk( sclk )"
-        , "  , .cs( cs )"
-        , "  );"
-        , "initial master.inner.shiftreg <= 0; // для ясности"
-        , "                                                                                                          "
-        , "initial begin "
-        , "  start_transaction <= 0; master_in <= 0;                                                                 "
-        , "  @(negedge rst);"
-        , "  repeat(8) @(posedge clk); "
-        , "                                                                                                          "
-        , "  master_in = 32'h01234567;                        @(posedge clk); "
-        , "  start_transaction = 1;                           @(posedge clk);"
-        , "  start_transaction = 0;                           @(posedge clk);"
-        , "  repeat(70) @(posedge clk); "
-        , "                                                                                                          "
-        , "  master_in = 32'h89ABCDEF;                        @(posedge clk); "
-        , "  start_transaction = 1;                           @(posedge clk);"
-        , "  start_transaction = 0;                           @(posedge clk);"
-        , "  repeat(70) @(posedge clk); "
-        , "                                                                                                          "
-        , "  master_in = 32'h01234567;                        @(posedge clk); "
-        , "  start_transaction = 1;                           @(posedge clk);"
-        , "  start_transaction = 0;                           @(posedge clk);"
-        , "  repeat(70) @(posedge clk); "
-        , "                                                                                                          "
-        , "  master_in = 32'h89ABCDEF;                        @(posedge clk); "
-        , "  start_transaction = 1;                           @(posedge clk);"
-        , "  start_transaction = 0;                           @(posedge clk);"
-        , "  repeat(70) @(posedge clk); "
-        , "end"
+        , S.join "\n\n" $ filter (not . null) $ map (\(title, PU{ unit, systemEnv, links }) -> testBenchEnviroment unit (show' title) systemEnv links) $ M.assocs bnPus
         , "                                                                                                          "
         , verilogWorkInitialze
         , "                                                                                                          "

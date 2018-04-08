@@ -135,6 +135,9 @@ class ( DefinitionSynthesis pu ) => Synthesis pu where
   -- проверками, что конечно никуда не годится.
   hardwareInstance :: pu -> String -> Enviroment -> PUPorts pu -> String
 
+  testBenchEnviroment :: pu -> String -> Enviroment -> PUPorts pu -> String
+  testBenchEnviroment _ _ _ _ = ""
+
 
 -- | Описание подключения сигнальных шин управления.
 newtype Signal = Signal Int deriving ( Show, Eq, Ord, Ix )
