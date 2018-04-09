@@ -322,8 +322,6 @@ instance ( Time t
     = let pus = map hardware $ M.elems bnPus
           net = [ Immidiate (moduleName pu ++ ".v") iml
                 , FromLibrary "pu_simple_control.v"
-                , FromLibrary "spi/spi_master_driver.v"
-                , FromLibrary "spi/hoarder.v"
                 ]
       in Project (moduleName pu) (pus ++ net)
     where
@@ -332,8 +330,8 @@ instance ( Time t
               [ "module $moduleName$"
               , "  ( input                     clk"
               , "  , input                     rst"
-              , "  , " ++ S.join ", " (map (\(InputPort n) -> "input " ++ n) bnInputPorts)
-              , "  , " ++ S.join ", " (map (\(OutputPort n) -> "output " ++ n) bnOutputPorts)
+              , S.join ", " ("  " : map (\(InputPort n) -> "input " ++ n) bnInputPorts)
+              , S.join ", " ("  " : map (\(OutputPort n) -> "output " ++ n) bnOutputPorts)
               , "  );"
               , ""
               , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
@@ -375,7 +373,7 @@ instance ( Time t
               ]
       valueData t = t ++ "_data_out"
       valueAttr t = t ++ "_attr_out"
-      regInstance title =
+      regInstance title = renderMST
         [ "wire [DATA_WIDTH-1:0] $DataOut$;"
         , "wire [ATTR_WIDTH-1:0] $AttrOut$;"
         ]
@@ -416,12 +414,14 @@ instance ( Title title, Var v, Time t
         [ "module $moduleName$_tb();                                                                                 "
         , "                                                                                                          "
         , "reg clk, rst;                                                                                             "
-        , "wire " ++ S.join ", " ports ++ ";"
+        , if null ports
+            then ""
+            else "wire " ++ S.join ", " ports ++ ";"
         , ""
         , "$moduleName$ net                                                                                          "
         , "  ( .clk( clk )                                                                                           "
         , "  , .rst( rst )                                                                                           "
-        , "  , " ++ S.join ", " (map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
+        , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
         , "  );                                                                                                      "
         , "                                                                                                          "
         , S.join "\n\n" $ filter (not . null) $ map (\(title, PU{ unit, systemEnv, links }) -> testBenchEnviroment unit (show' title) systemEnv links) $ M.assocs bnPus

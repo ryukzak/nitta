@@ -144,6 +144,7 @@ instance ( Var v, Show t ) => DefinitionSynthesis (SPI v x t) where
   moduleName _ = "pu_slave_spi"
   hardware pu = Project "" [ FromLibrary "spi/spi_slave_driver.v"
                            , FromLibrary "spi/spi_buffer.v"
+                           , FromLibrary "spi/spi_master_driver.v"
                            , FromLibrary "spi/hoarder.v"
                            , FromLibrary $ "spi/" ++ moduleName pu ++ ".v"
                            ]
