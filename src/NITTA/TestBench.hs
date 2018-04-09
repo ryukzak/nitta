@@ -6,6 +6,7 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE TemplateHaskell           #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -13,6 +14,7 @@
 module NITTA.TestBench where
 
 import           Control.Monad         (when)
+import           Data.FileEmbed
 import           Data.List             (isSubsequenceOf)
 import qualified Data.List             as L
 import qualified Data.String.Utils     as S
@@ -42,6 +44,7 @@ writeProject library workdir pu cntx = do
   writeImplementation workdir "" $ software pu
   writeImplementation workdir "" $ testBenchDescription cntx pu
   writeModelsimDo library workdir pu
+  writeQuartus library workdir pu
   writeFile (joinPath [workdir, "Makefile"]) $ unlines
     [ "icarus:"
     , "\tiverilog " ++ S.join " " (testbenchFiles library pu)
@@ -50,6 +53,8 @@ writeProject library workdir pu cntx = do
     , "\tmodelsim -do modelsim.do"
     ]
 
+-----------------------------------------------------------
+-- ModelSim
 
 writeModelsimDo library workdir pu
   = let files = testbenchFiles library pu
@@ -102,6 +107,26 @@ waveDo top = renderST
   , "update"
   , "WaveRestoreZoom {0 ps} {828 ps}"
   ] [ ("top", top) ]
+
+
+-----------------------------------------------------------
+-- Quartus
+writeQuartus library workdir pu = do
+  writeFile (joinPath [ workdir, "nitta.qpf" ]) quartusQPF
+  writeFile (joinPath [ workdir, "nitta.qsf" ]) $ quartusQSF library pu
+  writeFile (joinPath [ workdir, "nitta.sdc" ]) quartusSDC
+
+quartusQPF = $(embedStringFile "template/quartus/project_file.qpf") :: String
+
+quartusQSF library pu = renderST [ $(embedStringFile "template/quartus/settings_file.qsf") ]
+  [ ( "VERILOG_FILES"
+    , S.join "\n" $ map ("set_global_assignment -name VERILOG_FILE " ++)
+        $ testbenchFiles library pu
+    )
+  ]
+
+quartusSDC = $(embedStringFile "template/quartus/synopsys_design_constraint.sdc") :: String
+
 
 -- | Записать реализацию (программную или аппаратную) на диск. Реализация может быть представлена
 -- как отдельным файлом, так и целым деревом каталогов. Данные размещаются в указанном рабочем

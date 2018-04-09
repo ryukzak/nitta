@@ -43,6 +43,7 @@ library
                      , containers
                      , data-default
                      , directory
+                     , file-embed
                      , filepath
                      , HStringTemplate
                      , intervals
