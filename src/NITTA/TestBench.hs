@@ -45,69 +45,27 @@ writeProject library workdir pu cntx = do
   writeImplementation workdir "" $ testBenchDescription cntx pu
   writeModelsimDo library workdir pu
   writeQuartus library workdir pu
-  writeFile (joinPath [workdir, "Makefile"]) $ unlines
-    [ "icarus:"
-    , "\tiverilog " ++ S.join " " (testbenchFiles library pu)
-    , "\tvvp a.out"
-    , "modelsim"
-    , "\tmodelsim -do modelsim.do"
-    ]
+  writeFile (joinPath [workdir, "Makefile"])
+    $ renderST $(embedStringFile "template/Makefile")
+      [ ( "iverilog_args", S.join " " $ testbenchFiles library pu ) ]
 
 -----------------------------------------------------------
 -- ModelSim
 
-writeModelsimDo library workdir pu
-  = let files = testbenchFiles library pu
-        top = S.replace ".v" "" $ last files
-    in writeFile (joinPath [workdir, "modelsim.do"]) $ unlines
-      [ "transcript on"
-      , "if {[file exists rtl_work]} {"
-      , "  vdel -lib rtl_work -all"
-      , "}"
-      , "vlib rtl_work"
-      , "vmap work rtl_work"
-      , ""
-      , "set path \"\""
-      , "append path [pwd] \"\""
-      , ""
-      , S.join "\n" $ map (\fn -> "vlog -vlog01compat -work work +incdir+$path $path/" ++ fn) files
-      , "vsim -t 1ps -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L cycloneive_ver -L rtl_work -L work -voptargs=\"+acc\" " ++ top
-      , ""
-      , waveDo top
-      , "view structure"
-      , "view signals"
-      , "run 1200"
-      , "view wave"
+writeModelsimDo library workdir pu = do
+  let files = testbenchFiles library pu
+      top = S.replace ".v" "" $ last files
+  writeFile ( joinPath [ workdir, "wave.do" ] )
+    $ renderST
+      $(embedStringFile "template/modelsim/wave.do")
+      [ ( "top_level", top ) ]
+
+  writeFile ( joinPath [ workdir, "modelsim.do" ] )
+    $ renderST
+      $(embedStringFile "template/modelsim/sim.do")
+      [ ( "top_level", top )
+      , ( "VERILOG_FILES", S.join "\n" $ map (\fn -> "vlog -vlog01compat -work work +incdir+$path $path/" ++ fn) files )
       ]
-
-waveDo top = renderMST
-  [ "onerror {resume}"
-  , "quietly WaveActivateNextPane {} 0"
-  , "add wave -noupdate /$top$/clk"
-  , "add wave -noupdate /$top$/rst"
-  , "add wave -noupdate -radix hexadecimal /$top$/net/control_bus"
-  , "add wave -noupdate -radix decimal /$top$/net/data_bus"
-  , "add wave -noupdate /$top$/net/attr_bus"
-  , "TreeUpdate [SetDefaultTree]"
-  , "WaveRestoreCursors {{Cursor 1} {0 ps} 0}"
-  , "quietly wave cursor active 0"
-  , "configure wave -namecolwidth 318"
-  , "configure wave -valuecolwidth 100"
-  , "configure wave -justifyvalue left"
-  , "configure wave -signalnamewidth 0"
-  , "configure wave -snapdistance 10"
-  , "configure wave -datasetprefix 0"
-  , "configure wave -rowmargin 4"
-  , "configure wave -childrowmargin 2"
-  , "configure wave -gridoffset 0"
-  , "configure wave -gridperiod 1"
-  , "configure wave -griddelta 40"
-  , "configure wave -timeline 0"
-  , "configure wave -timelineunits ns"
-  , "update"
-  , "WaveRestoreZoom {0 ps} {828 ps}"
-  ] [ ("top", top) ]
-
 
 -----------------------------------------------------------
 -- Quartus
