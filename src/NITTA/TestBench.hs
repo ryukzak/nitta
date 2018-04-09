@@ -80,7 +80,7 @@ writeModelsimDo library workdir pu
       , "view wave"
       ]
 
-waveDo top = renderST
+waveDo top = renderMST
   [ "onerror {resume}"
   , "quietly WaveActivateNextPane {} 0"
   , "add wave -noupdate /$top$/clk"
@@ -118,7 +118,7 @@ writeQuartus library workdir pu = do
 
 quartusQPF = $(embedStringFile "template/quartus/project_file.qpf") :: String
 
-quartusQSF library pu = renderST [ $(embedStringFile "template/quartus/settings_file.qsf") ]
+quartusQSF library pu = renderST $(embedStringFile "template/quartus/settings_file.qsf")
   [ ( "VERILOG_FILES"
     , S.join "\n" $ map ("set_global_assignment -name VERILOG_FILE " ++)
         $ testbenchFiles library pu

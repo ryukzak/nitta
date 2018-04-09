@@ -328,7 +328,7 @@ instance ( Time t
       in Project (moduleName pu) (pus ++ net)
     where
       iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
-            in renderST
+            in renderMST
               [ "module $moduleName$"
               , "  ( input                     clk"
               , "  , input                     rst"
@@ -375,12 +375,13 @@ instance ( Time t
               ]
       valueData t = t ++ "_data_out"
       valueAttr t = t ++ "_attr_out"
-      regInstance title = renderST [ "wire [DATA_WIDTH-1:0] $DataOut$;"
-                                   , "wire [ATTR_WIDTH-1:0] $AttrOut$;"
-                                   ]
-                                   [ ("DataOut", valueData title)
-                                   , ("AttrOut", valueAttr title)
-                                   ]
+      regInstance title =
+        [ "wire [DATA_WIDTH-1:0] $DataOut$;"
+        , "wire [ATTR_WIDTH-1:0] $AttrOut$;"
+        ]
+        [ ("DataOut", valueData title)
+        , ("AttrOut", valueAttr title)
+        ]
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
       renderInstance insts regs ((title, PU{ unit, systemEnv, links }) : xs)
@@ -411,7 +412,7 @@ instance ( Title title, Var v, Time t
     where
       show' = filter (/= '"') . show
       ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
-      testBenchImp = renderST
+      testBenchImp = renderMST
         [ "module $moduleName$_tb();                                                                                 "
         , "                                                                                                          "
         , "reg clk, rst;                                                                                             "

@@ -144,7 +144,7 @@ instance DefinitionSynthesis (Shift v x t) where
 
 instance ( Time t, Var v
          ) => Synthesis (Shift v x t) where
-  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderST
+  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
     [ "pu_shift #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "          , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
     , "          ) $name$"

@@ -151,7 +151,7 @@ instance ( Var v, Show t ) => DefinitionSynthesis (SPI v x t) where
 
 instance ( Time t, Var v
          ) => Synthesis (SPI v x t) where
-  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderST
+  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
     [ "pu_slave_spi"
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
@@ -174,7 +174,7 @@ instance ( Time t, Var v
     , "  );"
     ] [ ( "name", name ) ]
 
-  testBenchEnviroment _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..} = renderST
+  testBenchEnviroment _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..} = renderMST
     [ "reg $name$_start_transaction;"
     , "reg  [32-1:0] $name$_master_in;"
     , "wire [32-1:0] $name$_master_out;"

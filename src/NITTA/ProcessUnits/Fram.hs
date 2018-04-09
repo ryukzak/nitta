@@ -540,7 +540,7 @@ instance ( Var v
     = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
     where
       Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) (Just cntx0) $ functionalBlocks pu
-      testBenchImp = renderST
+      testBenchImp = renderMST
         [ "module $moduleName$_tb();                                                                                 "
         , "parameter DATA_WIDTH = 32;                                                                                "
         , "parameter ATTR_WIDTH = 4;                                                                                 "
@@ -688,7 +688,7 @@ instance ( Time t, Var v ) => DefinitionSynthesis (Fram v x t) where
 
 instance ( Time t, Var v, Show x
          ) => Synthesis (Fram v x t) where
-  hardwareInstance Fram{..} name Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderST
+  hardwareInstance Fram{..} name Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
     [ "pu_fram "
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"

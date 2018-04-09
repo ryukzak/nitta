@@ -124,7 +124,7 @@ instance DefinitionSynthesis (Mult v x t) where
 
 instance ( Time t, Var v
          ) => Synthesis (Mult v x t) where
-  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderST
+  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
     [ "pu_mult "
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"

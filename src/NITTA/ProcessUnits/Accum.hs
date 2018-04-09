@@ -132,7 +132,7 @@ instance DefinitionSynthesis (Accum v x t) where
 
 instance ( Time t, Var v
          ) => Synthesis (Accum v x t) where
-  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderST
+  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
     [ "pu_accum "
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"

@@ -168,7 +168,8 @@ values2dump vs
     readBin = fst . head . readInt 2 (`elem` "x01") (\case '1' -> 1; _ -> 0)
 
 
-renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
+renderMST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
+renderST st attrs = render $ setManyAttrib attrs $ newSTMP st
 
 
 isTimeWrap p act = nextTick p > act^.at.infimum
