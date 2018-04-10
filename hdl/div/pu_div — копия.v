@@ -2,7 +2,7 @@ module pu_div
   #( parameter DATA_WIDTH = 32
    , parameter ATTR_WIDTH = 4
    , parameter INVALID    = 0 
-
+   , parameter CLK_LATENCY  = 32
    )
   ( input  wire                  clk
   , input  wire                  rst
@@ -12,7 +12,7 @@ module pu_div
   , input  wire [DATA_WIDTH-1:0] data_in
   , input  wire [ATTR_WIDTH:0]   attr_in
 
-  , input  wire                  res_select
+  , input  wire                    res_select
   , input  wire                  signal_oe
   , output wire [DATA_WIDTH-1:0] data_out 
   , output wire [ATTR_WIDTH:0]   attr_out
@@ -39,14 +39,16 @@ div div_i1
   , .clock( clk )
   );
 
-reg [255:0]               count;
+
+reg [CLK_LATENCY-1:0]               count;
 
 always @(posedge clk) begin
-  if (rst) begin
-  count <= 1;
-  end
-  else begin
-  count <= count + 1;
+  if (signal_wr) begin
+      count <= CLK_LATENCY;
+  end 
+  else
+    if (count > 1) begin
+      count <= count - 1;
   end
 end
 
@@ -58,7 +60,7 @@ always @(posedge clk) begin
     invalid_result <= 0;
   end else begin
     invalid_result <= arg[1] == 0;
-    if ( signal_oe) begin
+    if ( count == 1 ) begin
       if ( res_select ) begin
         data_divresult <= quotient_result;
       end
