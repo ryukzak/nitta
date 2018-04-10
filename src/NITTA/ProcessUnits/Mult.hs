@@ -24,10 +24,9 @@ import           NITTA.Utils
 import           Numeric.Interval            (singleton, (...))
 
 
-
 type Mult v x t = SerialPU (State v x t) v x t
 
-data State v x t = Mult{ acIn :: [v], acOut :: [v] }
+data State v x t = Mult{ inputVs :: [v], outputVs :: [v] }
   deriving ( Show )
 
 instance Default (State v x t) where
@@ -39,32 +38,33 @@ instance ( Var v
          , Time t
          , Typeable x
          ) => SerialPUState (State v x t) v x t where
-
-  bindToState fb ac@Mult{ acIn=[], acOut=[] }
-    | Just (Mul (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[a, b], acOut=elems cs }
+  bindToState fb st@Mult{ inputVs=[], outputVs=[] }
+    | Just (Mul (I a) (I b) (O cs)) <- castFB fb = Right st{ inputVs=[a, b], outputVs=elems cs }
     | otherwise = Left $ "Unknown functional block: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Mult)"
 
-  stateOptions Mult{ acIn } now
-    | not $ null acIn
-    = map (\v -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) acIn
-  stateOptions Mult{ acOut } now
-    | not $ null acOut
-    = [ EndpointO (Source $ fromList acOut) $ TimeConstrain (now + 2 ... maxBound) (1 ... maxBound) ]
+  stateOptions Mult{ inputVs } now
+    | not $ null inputVs
+    = map (\v -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) inputVs
+  stateOptions Mult{ outputVs } now
+    | not $ null outputVs
+    = [ EndpointO (Source $ fromList outputVs) $ TimeConstrain (now + 2 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
-  schedule st@Mult{ acIn } d
-    | not $ null acIn
-    , let dV = oneOf $ variables d
-    , ([_], remain) <- partition (== dV) acIn
-    = let i = if length acIn == 2 then Load False else Load True
+  schedule st@Mult{ inputVs } d
+    | not $ null inputVs
+    , let v = oneOf $ variables d
+    , ([_], remain) <- partition (== v) inputVs
+    = let i = if length inputVs == 2
+                then Load False
+                else Load True
           work = serialSchedule @(Mult v x t) i d
-      in ( st{ acIn=remain }, work )
-  schedule st@Mult{ acIn=[], acOut } d
+      in ( st{ inputVs=remain }, work )
+  schedule st@Mult{ inputVs=[], outputVs } d
     | let dVs = elems (variables d)
-    , not $ null $ acOut `intersect` dVs
+    , not $ null $ outputVs `intersect` dVs
     = let work = serialSchedule @(Mult v x t) Out d
-      in ( st{ acOut=acOut \\ dVs }, work )
+      in ( st{ outputVs=outputVs \\ dVs }, work )
   schedule _ _ = error "Mult schedule error!"
 
 
