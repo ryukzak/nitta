@@ -5,6 +5,7 @@ module pu_accum
   ,  parameter OVERFLOW   = 1
   )
   ( input  wire                  clk
+  , input  wire                  rst
   , input  wire                  signal_load
   , input  wire                  signal_init
   , input  wire                  signal_neg
@@ -42,18 +43,22 @@ assign { carry, wacc[DATA_WIDTH-2:0] } = ext_arg[DATA_WIDTH-2:0] + int_arg[DATA_
 assign wacc[DATA_WIDTH:DATA_WIDTH-1]   = ext_arg[DATA_WIDTH-1] + int_arg[DATA_WIDTH-1] + carry;
 
 
-always @(posedge clk) begin
-  acc[DATA_WIDTH:0] <= wacc;
-  
-  if ( signal_load ) begin
-    if ( signal_init ) begin
-      overflow <= attr_in[ OVERFLOW ];           
-    end else begin 
-      overflow <= overflow || attr_in[ OVERFLOW ];
-    end
+always @(posedge clk)
+  if ( rst ) begin
+    acc <= 0;
+    overflow <= 0;
   end else begin
-      overflow <= carry ^ wacc[DATA_WIDTH]; 
-  end
+    acc[DATA_WIDTH:0] <= wacc;
+
+    if ( signal_load ) begin
+      if ( signal_init ) begin
+        overflow <= attr_in[ OVERFLOW ];           
+      end else begin 
+        overflow <= overflow || attr_in[ OVERFLOW ];
+      end
+    end else begin
+        overflow <= carry ^ wacc[DATA_WIDTH]; 
+    end
   end
 
 always @(posedge clk)
