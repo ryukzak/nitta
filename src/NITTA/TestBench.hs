@@ -47,40 +47,44 @@ writeProject library workdir pu cntx = do
   writeQuartus library workdir pu
   writeFile (joinPath [workdir, "Makefile"])
     $ renderST $(embedStringFile "template/Makefile")
-      [ ( "iverilog_args", S.join " " $ testbenchFiles library pu ) ]
+      [ ( "iverilog_args", S.join " " $ snd $ testBenchFiles library pu ) ]
 
 -----------------------------------------------------------
 -- ModelSim
 
 writeModelsimDo library workdir pu = do
-  let files = testbenchFiles library pu
-      top = S.replace ".v" "" $ last files
+  let (tb, files) = testBenchFiles library pu
   writeFile ( joinPath [ workdir, "wave.do" ] )
     $ renderST
       $(embedStringFile "template/modelsim/wave.do")
-      [ ( "top_level", top ) ]
-
+      [ ( "top_level", tb ) ]
   writeFile ( joinPath [ workdir, "modelsim.do" ] )
     $ renderST
       $(embedStringFile "template/modelsim/sim.do")
-      [ ( "top_level", top )
-      , ( "VERILOG_FILES", S.join "\n" $ map (\fn -> "vlog -vlog01compat -work work +incdir+$path $path/" ++ fn) files )
+      [ ( "top_level", tb )
+      , ( "verilog_files", S.join "\n" $ map (\fn -> "vlog -vlog01compat -work work +incdir+$path $path/" ++ fn) files )
       ]
 
 -----------------------------------------------------------
 -- Quartus
+
 writeQuartus library workdir pu = do
+  let (tb, files) = testBenchFiles library pu
   writeFile (joinPath [ workdir, "nitta.qpf" ]) quartusQPF
-  writeFile (joinPath [ workdir, "nitta.qsf" ]) $ quartusQSF library pu
+  writeFile (joinPath [ workdir, "nitta.qsf" ]) $ quartusQSF tb files
   writeFile (joinPath [ workdir, "nitta.sdc" ]) quartusSDC
+  writeFile ( joinPath [ workdir, "nitta.v" ] )
+    $ renderST
+      $(embedStringFile "template/quartus/nitta.v")
+      [ ( "top_level", tb ) ]
 
 quartusQPF = $(embedStringFile "template/quartus/project_file.qpf") :: String
 
-quartusQSF library pu = renderST $(embedStringFile "template/quartus/settings_file.qsf")
-  [ ( "VERILOG_FILES"
-    , S.join "\n" $ map ("set_global_assignment -name VERILOG_FILE " ++)
-        $ testbenchFiles library pu
+quartusQSF tb files = renderST $(embedStringFile "template/quartus/settings_file.qsf")
+  [ ( "verilog_files"
+    , S.join "\n" $ map ("set_global_assignment -name VERILOG_FILE " ++) files
     )
+  , ( "testbench_module", tb )
   ]
 
 quartusSDC = $(embedStringFile "template/quartus/synopsys_design_constraint.sdc") :: String
@@ -109,8 +113,9 @@ writeImplementation _ _ Empty = return ()
 -- | Запустить testbench в указанной директории.
 -- TODO: Сделать вывод через Control.Monad.Writer.
 runTestBench library workdir pu = do
+  let (_tb, files) = testBenchFiles library pu
   (compileExitCode, compileOut, compileErr)
-    <- readCreateProcessWithExitCode (createIVerilogProcess library workdir pu) []
+    <- readCreateProcessWithExitCode (createIVerilogProcess workdir files) []
   when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
     mapM_ print $ functionalBlocks pu
     putStrLn $ "compiler stdout:\n-------------------------\n" ++ compileOut
@@ -131,12 +136,14 @@ runTestBench library workdir pu = do
 
 -- | Сгенерировать команду для компиляции icarus verilog-ом вычислительного блока и его тестового
 -- окружения.
-createIVerilogProcess library workdir pu
-  = let cp = proc "iverilog" $ testbenchFiles library pu
+createIVerilogProcess workdir files
+  = let cp = proc "iverilog" files
     in cp { cwd=Just workdir }
 
-testbenchFiles library pu
-  = L.nub $ concatMap (args "") [ hardware pu, testBenchDescription undefined pu ]
+testBenchFiles library pu
+  = let files = L.nub $ concatMap (args "") [ hardware pu, testBenchDescription undefined pu ]
+        tb = S.replace ".v" "" $ last files
+    in (tb, files)
   where
     args p (Project p' subInstances) = concatMap (args $ joinPath [p, p']) subInstances
     args p (Immidiate fn _) = [ joinPath [ p, fn ] ]
