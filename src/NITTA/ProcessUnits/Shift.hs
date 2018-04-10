@@ -138,13 +138,13 @@ instance ( Var v, B.Bits x ) => Simulatable (Shift v x t) v x where
 
 
 instance DefinitionSynthesis (Shift v x t) where
-  moduleName _ = "pu_shift"
-  hardware pu = FromLibrary $ moduleName pu ++ ".v"
-  software _ = Empty
+  moduleName _ _ = "pu_shift"
+  hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
+  software _ _ = Empty
 
 instance ( Time t, Var v
          ) => Synthesis (Shift v x t) where
-  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
+  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
     [ "pu_shift #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "          , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
     , "          ) $name$"
@@ -157,4 +157,4 @@ instance ( Time t, Var v
     , "  , .data_out( " ++ dataOut ++ " )"
     , "  , .attr_out( " ++ attrOut ++ " )"
     , "  );"
-    ] [("name", name)]
+    ] [ ( "name", title ) ]

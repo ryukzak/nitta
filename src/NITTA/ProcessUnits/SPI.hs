@@ -141,18 +141,19 @@ instance Connected (SPI v x t) where
 
 
 instance ( Var v, Show t ) => DefinitionSynthesis (SPI v x t) where
-  moduleName _ = "pu_slave_spi"
-  hardware pu = Project "" [ FromLibrary "spi/spi_slave_driver.v"
-                           , FromLibrary "spi/spi_buffer.v"
-                           , FromLibrary "spi/spi_master_driver.v"
-                           , FromLibrary "spi/hoarder.v"
-                           , FromLibrary $ "spi/" ++ moduleName pu ++ ".v"
-                           ]
-  software pu = Immidiate "transport.txt" $ show pu
+  moduleName _ _ = "pu_slave_spi"
+  hardware title pu
+    = Project "" [ FromLibrary "spi/spi_slave_driver.v"
+                 , FromLibrary "spi/spi_buffer.v"
+                 , FromLibrary "spi/spi_master_driver.v"
+                 , FromLibrary "spi/hoarder.v"
+                 , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
+                 ]
+  software _ pu = Immidiate "transport.txt" $ show pu
 
 instance ( Time t, Var v
          ) => Synthesis (SPI v x t) where
-  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
+  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
     [ "pu_slave_spi"
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
@@ -173,9 +174,9 @@ instance ( Time t, Var v
     , "  , .sclk( " ++ inputPort sclk ++ " )"
     , "  , .cs( " ++ inputPort cs ++ " )"
     , "  );"
-    ] [ ( "name", name ) ]
+    ] [ ( "name", title ) ]
 
-  testBenchEnviroment _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..} = renderMST
+  testBenchEnviroment title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..} = renderMST
     [ "reg $name$_start_transaction;"
     , "reg  [32-1:0] $name$_master_in;"
     , "wire [32-1:0] $name$_master_out;"
@@ -223,7 +224,7 @@ instance ( Time t, Var v
     , "  repeat(70) @(posedge $clk$); "
     , "end"
     , "                                                                                                          "
-    ] [ ( "name", name )
+    ] [ ( "name", title )
       , ( "clk", signalClk )
       , ( "rst", signalRst )
       ]

@@ -115,16 +115,17 @@ instance Connected (Mult v x t) where
 
 
 instance DefinitionSynthesis (Mult v x t) where
-  moduleName _ = "pu_mult"
-  hardware _pu = Project "" [ FromLibrary "mult/mult_inner.v"
-                            , FromLibrary "mult/pu_mult.v"
-                            ]
-  software _ = Empty
+  moduleName _ _ = "pu_mult"
+  hardware _ _
+    = Project "" [ FromLibrary "mult/mult_inner.v"
+                 , FromLibrary "mult/pu_mult.v"
+                 ]
+  software _ _ = Empty
 
 
 instance ( Time t, Var v
          ) => Synthesis (Mult v x t) where
-  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
+  hardwareInstance name _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
     [ "pu_mult "
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
@@ -139,4 +140,4 @@ instance ( Time t, Var v
     , "  , .data_out( " ++ dataOut ++ " )"
     , "  , .attr_out( " ++ attrOut ++ " )"
     , "  );"
-    ] [("name", name)]
+    ] [ ( "name", name ) ]

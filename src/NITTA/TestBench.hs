@@ -28,32 +28,32 @@ import           System.Process
 
 -- | Для реализующие этот класс вычислительных блоков могут быть сгенерированы testbench-и.
 class TestBench pu v x | pu -> v x where
-  testBenchDescription :: Cntx v x -> pu -> Implementation
+  testBenchDescription :: String -> pu -> Cntx v x -> Implementation
 
 
 -- | Сгенерировать и выполнить testbench.
-testBench library workdir pu values = do
-  writeProject library workdir pu values
-  runTestBench library workdir pu
+testBench title library workdir pu values = do
+  writeProject title library workdir pu values
+  runTestBench title library workdir pu
 
 
 -- | Записать на диск testbench и все необходимые модули.
-writeProject library workdir pu cntx = do
+writeProject title library workdir pu cntx = do
   createDirectoryIfMissing True workdir
-  writeImplementation workdir "" $ hardware pu
-  writeImplementation workdir "" $ software pu
-  writeImplementation workdir "" $ testBenchDescription cntx pu
-  writeModelsimDo library workdir pu
+  writeImplementation workdir "" $ hardware title pu
+  writeImplementation workdir "" $ software title pu
+  writeImplementation workdir "" $ testBenchDescription title pu cntx
+  writeModelsimDo title library workdir pu
   writeQuartus library workdir pu
   writeFile (joinPath [workdir, "Makefile"])
     $ renderST $(embedStringFile "template/Makefile")
-      [ ( "iverilog_args", S.join " " $ snd $ testBenchFiles library pu ) ]
+      [ ( "iverilog_args", S.join " " $ snd $ testBenchFiles library pu title ) ]
 
 -----------------------------------------------------------
 -- ModelSim
 
-writeModelsimDo library workdir pu = do
-  let (tb, files) = testBenchFiles library pu
+writeModelsimDo title library workdir pu = do
+  let (tb, files) = testBenchFiles library pu title
   writeFile ( joinPath [ workdir, "wave.do" ] )
     $ renderST
       $(embedStringFile "template/modelsim/wave.do")
@@ -69,7 +69,7 @@ writeModelsimDo library workdir pu = do
 -- Quartus
 
 writeQuartus library workdir pu = do
-  let (tb, files) = testBenchFiles library pu
+  let (tb, files) = testBenchFiles library pu "top_level"
   writeFile (joinPath [ workdir, "nitta.qpf" ]) quartusQPF
   writeFile (joinPath [ workdir, "nitta.qsf" ]) $ quartusQSF tb files
   writeFile (joinPath [ workdir, "nitta.sdc" ]) quartusSDC
@@ -112,8 +112,8 @@ writeImplementation _ _ Empty = return ()
 
 -- | Запустить testbench в указанной директории.
 -- TODO: Сделать вывод через Control.Monad.Writer.
-runTestBench library workdir pu = do
-  let (_tb, files) = testBenchFiles library pu
+runTestBench title library workdir pu = do
+  let (_tb, files) = testBenchFiles library pu title
   (compileExitCode, compileOut, compileErr)
     <- readCreateProcessWithExitCode (createIVerilogProcess workdir files) []
   when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
@@ -140,8 +140,8 @@ createIVerilogProcess workdir files
   = let cp = proc "iverilog" files
     in cp { cwd=Just workdir }
 
-testBenchFiles library pu
-  = let files = L.nub $ concatMap (args "") [ hardware pu, testBenchDescription undefined pu ]
+testBenchFiles library pu title
+  = let files = L.nub $ concatMap (args "") [ hardware title pu, testBenchDescription title pu undefined ]
         tb = S.replace ".v" "" $ last files
     in (tb, files)
   where

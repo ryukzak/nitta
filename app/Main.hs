@@ -156,7 +156,7 @@ webServer root = do
 
 test n pu cntx = do
   timeline "resource/data.json" pu
-  r <- testBench "../.." (joinPath ["hdl", "gen", n]) pu cntx
+  r <- testBench n "../.." (joinPath ["hdl", "gen", n]) pu cntx
   if r then putStrLn "Success"
   else putStrLn "Fail"
 

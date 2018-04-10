@@ -15,9 +15,9 @@
 module NITTA.Types.Network where
 
 import           Data.Default
+import           Data.Ix
 import qualified Data.Map         as M
 import           Data.Typeable
-import Data.Ix
 import           GHC.Generics     (Generic)
 import           NITTA.Types.Base
 import           NITTA.Types.Poly
@@ -66,9 +66,9 @@ instance Simulatable (PU v x t) v x where
   simulateOn cntx PU{..} fb = simulateOn cntx unit fb
 
 instance DefinitionSynthesis (PU v x t) where
-  moduleName PU{..} = moduleName unit
-  hardware PU{..} = hardware unit
-  software PU{..} = software unit
+  moduleName name PU{..} = moduleName name unit
+  hardware name PU{..} = hardware name unit
+  software name PU{..} = software name unit
 
 castPU :: ( ByTime pu t
           , Connected pu
@@ -127,15 +127,36 @@ instance DecisionType (DataFlowDT title v t) where
     } deriving ( Show, Generic )
 
 
+-- | Реализация вычислительного блока и его конфигурации (процессора и программоного обеспечения).
+data Implementation
+  -- | Рекомендуемое имя файла для модуля и текст модуля.
+  = Immidiate String String
+  -- | Библиотечный элемент, возвращается имя файла.
+  | FromLibrary String
+  -- | Рекомендуемое имя каталога, в котором должен быть проект данного модуля со всеми вложениями.
+  | Project String [Implementation]
+  | Empty
+
+
+-- | Генерация аппаратной и программной составляющей процессора.
+class DefinitionSynthesis pu where
+  -- | Имя модуля.
+  moduleName :: String -> pu -> String
+  -- | Реализация аппаратной составляющей вычислительного блока.
+  hardware :: String -> pu -> Implementation
+  -- | Реализация программной составляющей составляющей вычислительного блока.
+  software :: String -> pu -> Implementation
+
+
 class ( DefinitionSynthesis pu ) => Synthesis pu where
   -- | Объявление экземпляра модуля. Используется для генерации процессоров и testbench-ей.
   --
   -- Конфигурирование вычислительного блока осуществляется через подаваемы на вход словарь. В
   -- настоящий момент данная функция не является типо-безопастной и не отличается runtime
   -- проверками, что конечно никуда не годится.
-  hardwareInstance :: pu -> String -> Enviroment -> PUPorts pu -> String
+  hardwareInstance :: String -> pu -> Enviroment -> PUPorts pu -> String
 
-  testBenchEnviroment :: pu -> String -> Enviroment -> PUPorts pu -> String
+  testBenchEnviroment :: String -> pu -> Enviroment -> PUPorts pu -> String
   testBenchEnviroment _ _ _ _ = ""
 
 
@@ -149,18 +170,18 @@ data NetEnv
   = NetEnv
     { parameterDataWidth :: Int
     , parameterAttrWidth :: Int
-    , dataIn, attrIn :: String
-    , dataOut, attrOut :: String
-    , signal :: Signal -> String -- ^ Функция позволяющая подставить индекс на шину управления.
+    , dataIn, attrIn     :: String
+    , dataOut, attrOut   :: String
+    , signal             :: Signal -> String -- ^ Функция позволяющая подставить индекс на шину управления.
     }
 
 -- | Подключения к сети.
 data Enviroment
   = Enviroment
-    { signalClk :: String
-    , signalRst :: String
+    { signalClk   :: String
+    , signalRst   :: String
     , signalCycle :: String -- ^ Сигнал о начале вычислительного цикла.
-    , inputPort :: InputPort -> String
-    , outputPort :: OutputPort -> String
-    , net :: NetEnv
+    , inputPort   :: InputPort -> String
+    , outputPort  :: OutputPort -> String
+    , net         :: NetEnv
     }

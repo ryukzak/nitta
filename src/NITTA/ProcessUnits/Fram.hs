@@ -81,6 +81,7 @@ import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval      ((...))
+import           Text.Printf
 
 
 
@@ -534,10 +535,11 @@ instance ( Var v
          , Num x
          , Default x
          , Eq x
+         , PrintfArg x
          , ProcessUnit (Fram v x t) (Parcel v x) t
          ) => TestBench (Fram v x t) v x where
-  testBenchDescription cntx0 pu@Fram{ frProcess=Process{ steps }, .. }
-    = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
+  testBenchDescription title pu@Fram{ frProcess=Process{ steps }, .. } cntx0
+    = Immidiate (moduleName title pu ++ "_tb.v") testBenchImp
     where
       Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) (Just cntx0) $ functionalBlocks pu
       testBenchImp = renderMST
@@ -563,7 +565,7 @@ instance ( Var v
         , "wire [DATA_WIDTH-1:0] data_out;                                                                           "
         , "wire [ATTR_WIDTH-1:0] attr_out;                                                                           "
         , "                                                                                                          "
-        , hardwareInstance pu "fram"
+        , hardwareInstance title pu
             Enviroment{ signalClk="clk"
                       , signalRst="rst"
                       , signalCycle="cycle"
@@ -600,11 +602,11 @@ instance ( Var v
         , "                                                                                                          "
         , initialFinish $ controlSignals pu
         , initialFinish $ testDataInput pu cntx
-        , initialFinish $ testDataOutput pu cntx
+        , initialFinish $ testDataOutput title pu cntx
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]
-        [ ("moduleName", moduleName pu)
+        [ ( "moduleName", moduleName title pu )
         ]
 
 controlSignals pu@Fram{ frProcess=Process{..}, ..}
@@ -624,7 +626,7 @@ testDataInput pu@Fram{ frProcess=p@Process{..}, ..} cntx
        = "data_in <= " ++ show (fromMaybe (error ("input" ++ show v ++ show (functionalBlocks pu)) ) $ get cntx v) ++ ";"
       | otherwise = "/* NO INPUT */"
 
-testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
+testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
   = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
   where
     busState t
@@ -654,7 +656,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
       | otherwise = Nothing
 
     checkBank addr v value = concatMap ("    " ++)
-      [ "if ( !( fram.bank[" ++ show addr ++ "] === " ++ show value ++ " ) ) "
+      [ "if ( !( " ++ title ++ ".bank[" ++ show addr ++ "] === " ++ show value ++ " ) ) "
       ,   "\\$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
@@ -681,19 +683,24 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
     f _                       = S.empty
 
 
-instance ( Time t, Var v ) => DefinitionSynthesis (Fram v x t) where
-  moduleName _ = "pu_fram"
-  hardware pu = FromLibrary $ moduleName pu ++ ".v"
-  software _ = Empty
+softwareFile title pu = moduleName title pu ++ "." ++ title ++ ".dump"
 
-instance ( Time t, Var v, Show x
+instance ( Time t, Var v, PrintfArg x ) => DefinitionSynthesis (Fram v x t) where
+  moduleName _ _ = "pu_fram"
+  hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
+  software title pu@Fram{ frMemory }
+    = Immidiate (softwareFile title pu) $ unlines $ map (printf "%08x" . initialValue) $ elems frMemory
+
+
+instance ( Time t, Var v, Show x, PrintfArg x
          ) => Synthesis (Fram v x t) where
-  hardwareInstance Fram{..} name Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
+  hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
     [ "pu_fram "
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
     , "   , .RAM_SIZE( " ++ show frSize ++ " )"
-    , "   ) " ++ name
+    , "   , .FRAM_DUMP( \"\\$path\\$$softwareFile$\" )"
+    , "   ) " ++ title
     , "  ( .clk( " ++ signalClk ++ " )"
     , "  , .signal_addr( { " ++ S.join ", " (map signal addr) ++ " } )"
     , ""
@@ -705,11 +712,7 @@ instance ( Time t, Var v, Show x
     , "  , .data_out( " ++ dataOut ++ " )"
     , "  , .attr_out( " ++ attrOut ++ " )"
     , "  );"
-    , "initial begin"
-    , S.join "\n"
-        $ map (\(i, Cell{..}) -> "  $name$.bank[" ++ show i ++ "] <= " ++ show initialValue ++ ";")
-        $ assocs frMemory
-    , "end"
-    ] [ ("name", name)
-      , ("size", show frSize)
+    ] [ ( "name", title )
+      , ( "size", show frSize )
+      , ( "softwareFile", softwareFile title pu )
       ]

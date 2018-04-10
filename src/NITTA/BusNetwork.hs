@@ -316,15 +316,16 @@ instance ( Var v
 
 instance ( Time t
          ) => DefinitionSynthesis (BusNetwork String v x t) where
-  moduleName BusNetwork{..} = S.join "_" (M.keys bnPus) ++ "_net"
+  moduleName title BusNetwork{..} = title ++ "_net"
 
-  hardware pu@BusNetwork{..}
-    = let pus = map hardware $ M.elems bnPus
-          net = [ Immidiate (moduleName pu ++ ".v") iml
+  hardware title pu@BusNetwork{..}
+    = let pus = map (uncurry hardware) $ M.assocs bnPus
+          net = [ Immidiate (mn ++ ".v") iml
                 , FromLibrary "pu_simple_control.v"
                 ]
-      in Project (moduleName pu) (pus ++ net)
+      in Project mn (pus ++ net)
     where
+      mn = moduleName title pu
       iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
             in renderMST
               [ "module $moduleName$"
@@ -363,7 +364,7 @@ instance ( Time t
               , "endmodule"
               , ""
               ]
-              [ ( "moduleName", moduleName pu )
+              [ ( "moduleName", mn )
               , ( "microCodeWidth", show bnSignalBusWidth )
               , ( "instances", S.join "\n\n" instances)
               , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "  { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
@@ -373,25 +374,26 @@ instance ( Time t
               ]
       valueData t = t ++ "_data_out"
       valueAttr t = t ++ "_attr_out"
-      regInstance title = renderMST
+      regInstance t = renderMST
         [ "wire [DATA_WIDTH-1:0] $DataOut$;"
         , "wire [ATTR_WIDTH-1:0] $AttrOut$;"
         ]
-        [ ("DataOut", valueData title)
-        , ("AttrOut", valueAttr title)
+        [ ( "DataOut", valueData t )
+        , ( "AttrOut", valueAttr t )
         ]
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
-      renderInstance insts regs ((title, PU{ unit, systemEnv, links }) : xs)
-        = let inst = hardwareInstance unit title systemEnv links
-              insts' = inst : regInstance title : insts
-              regs' = (valueAttr title, valueData title) : regs
+      renderInstance insts regs ((t, PU{ unit, systemEnv, links }) : xs)
+        = let inst = hardwareInstance t unit systemEnv links
+              insts' = inst : regInstance t : insts
+              regs' = (valueAttr t, valueData t) : regs
           in renderInstance insts' regs' xs
 
-  software pu@BusNetwork{ bnProcess=Process{..}, ..}
-    = Project (moduleName pu) $ map software (M.elems bnPus)
-                       ++ [ Immidiate (moduleName pu ++ ".dump") memoryDump ]
+  software title pu@BusNetwork{ bnProcess=Process{..}, ..}
+    = Project mn $ map (uncurry software) (M.assocs bnPus)
+                       ++ [ Immidiate (mn ++ ".dump") memoryDump ]
     where
+      mn = moduleName title pu
       memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) ticks
       -- По нулевоу адресу устанавливается команда Nop (он же def) для всех вычислиетльных блоков.
       -- Именно этот адрес выставляется на сигнальные линии когда поднят сигнал rst.
@@ -404,11 +406,9 @@ instance ( Title title, Var v, Time t
          , Show x
          , DefinitionSynthesis (BusNetwork title v x t)
          , Typeable x
-        --  , Synthesis (PU v x t)
          ) => TestBench (BusNetwork title v x t) v x where
-  testBenchDescription cntx0 n@BusNetwork{..} = Immidiate (moduleName n ++ "_tb.v") testBenchImp
+  testBenchDescription title n@BusNetwork{..} cntx0 = Immidiate (moduleName "" n ++ "_tb.v") testBenchImp
     where
-      show' = filter (/= '"') . show
       ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
       testBenchImp = renderMST
         [ "module $moduleName$_tb();                                                                                 "
@@ -424,7 +424,13 @@ instance ( Title title, Var v, Time t
         , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
         , "  );                                                                                                      "
         , "                                                                                                          "
-        , S.join "\n\n" $ filter (not . null) $ map (\(title, PU{ unit, systemEnv, links }) -> testBenchEnviroment unit (show' title) systemEnv links) $ M.assocs bnPus
+        , S.join "\n\n"
+          [ tbEnv
+          | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus
+          , let t' = filter (/= '"') $ show t
+          , let tbEnv = testBenchEnviroment t' unit systemEnv links
+          , not $ null tbEnv
+          ]
         , "                                                                                                          "
         , verilogWorkInitialze
         , "                                                                                                          "
@@ -442,7 +448,7 @@ instance ( Title title, Var v, Time t
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]
-        [ ("moduleName", moduleName n)
+        [ ( "moduleName", moduleName title n )
         ]
 
       -- FIXME: 15 - must be variable

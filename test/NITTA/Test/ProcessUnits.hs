@@ -99,7 +99,7 @@ inputsGen (pu, fbs) = do
 prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
   i <- run $ incrCounter 1 counter
   let path = joinPath ["hdl", "gen", n ++ show i]
-  res <- run $ testBench "../.." path pu values
+  res <- run $ testBench n "../.." path pu values
   run $ timeline (joinPath [path, "data.json"]) pu
   run $ timeline "resource/data.json" pu
   assert res
@@ -124,8 +124,8 @@ prop_completness (pu, fbs0)
                     ) False
 
 
-unitTestbench name proxy cntx alg
+unitTestbench title proxy cntx alg
   = let lib = joinPath ["..", ".."]
-        wd = joinPath ["hdl", "gen", name]
+        wd = joinPath ["hdl", "gen", title]
         pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
-    in testBench lib wd pu cntx @? name
+    in testBench title lib wd pu cntx @? title

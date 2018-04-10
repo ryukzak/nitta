@@ -27,7 +27,7 @@ main = do
       [ testCase "framRegAndOut" framRegAndOut
       , testCase "framRegAndConstant" framRegAndConstant
       , QC.testProperty "completeness" $ prop_completness <$> processGen framProxy
-      , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram_" counter) $ inputsGen =<< processGen framProxy
+      , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram" counter) $ inputsGen =<< processGen framProxy
       ]
     -- , testGroup "Shift process unit"
     --   [ testCase "shiftBiDirection" shiftBiDirection

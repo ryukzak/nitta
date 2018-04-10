@@ -125,14 +125,14 @@ instance Connected (Accum v x t) where
 
 
 instance DefinitionSynthesis (Accum v x t) where
-  moduleName _ = "pu_accum"
-  hardware pu = FromLibrary $ moduleName pu ++ ".v"
-  software _ = Empty
+  moduleName _ _ = "pu_accum"
+  hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
+  software _ _ = Empty
 
 
 instance ( Time t, Var v
          ) => Synthesis (Accum v x t) where
-  hardwareInstance _ name Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
+  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
     [ "pu_accum "
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
@@ -148,4 +148,4 @@ instance ( Time t, Var v
     , "  , .data_out( " ++ dataOut ++ " )"
     , "  , .attr_out( " ++ attrOut ++ " )"
     , "  );"
-    ] [("name", name)]
+    ] [ ( "name", title ) ]

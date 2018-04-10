@@ -84,12 +84,12 @@ badTestFram = badUnitTest "badTestFram" netWithFramShiftAccum
 
 unitTest name n cntx alg = do
   let n' = nitta $ synthesis $ frame n alg
-  r <- testBench "../.." (joinPath ["hdl", "gen", name]) n' cntx
+  r <- testBench name "../.." (joinPath ["hdl", "gen", name]) n' cntx
   r @? name
 
 badUnitTest name n cntx alg = do
   let n' = nitta $ synthesis $ frame n alg
-  r <- testBench "../.." (joinPath ["hdl", "gen", name]) n' cntx
+  r <- testBench name "../.." (joinPath ["hdl", "gen", name]) n' cntx
   not r @? name
 
 synthesis f = foldl (\f' _ -> naive def f') f $ replicate 50 ()
