@@ -40,6 +40,8 @@ main = do
       [ testCase "testShiftAndFram" testShiftAndFram
       , testCase "testAccumAndFram" testAccumAndFram
       , testCase "badTestFram" badTestFram
+      , testCase "testFibonacci" testFibonacci
+      , testCase "testFibonacciWithSPI" testFibonacciWithSPI
       ]
     , testGroup "Utils"
       [ testCase "values2dump" values2dumpTests

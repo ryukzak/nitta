@@ -21,7 +21,7 @@ import           System.FilePath.Posix    (joinPath)
 import           Test.Tasty.HUnit
 
 
-netWithFramShiftAccum = busNetwork 27
+netWithFramShiftAccumSPI = busNetwork 27
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -32,6 +32,15 @@ netWithFramShiftAccum = busNetwork 27
                               , SPI.start="start", SPI.stop="stop"
                               , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                               })
+  -- , ("mult", PU def M.PUPorts{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
+  ]
+
+
+netWithFramShiftAccum = busNetwork 27 [] []
+  [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
+  , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
+  , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
+  , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
   -- , ("mult", PU def M.PUPorts{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
   ]
 
@@ -55,6 +64,22 @@ testShiftAndFram = unitTest "unitShiftAndFram" netWithFramShiftAccum
   , FB.loop 16 ["f2"] "g2"
   , FB.shiftR "f2" ["g2"]
   ]
+
+testFibonacci = unitTest "testFibonacci" netWithFramShiftAccum
+  def
+  [ FB.loop 0 ["a1"      ] "b2"
+  , FB.loop 1 ["b1", "b2"] "c"
+  , FB.add "a1" "b1" ["c"]
+  ]
+
+testFibonacciWithSPI = unitTest "testFibonacciWithSPI" netWithFramShiftAccumSPI
+  def
+  [ FB.loop 0 ["a1"      ] "b2"
+  , FB.loop 1 ["b1", "b2"] "c"
+  , FB.add "a1" "b1" ["c", "c_copy"]
+  , FB.send "c_copy"
+  ]
+
 
 -- Почему данный тест не должен работать корректно (почему там not):
 --
