@@ -27,7 +27,11 @@ module pu_slave_spi
 , input                     cs
 );
 
-`include "parameters.vh"
+// The attributes of the buffer
+parameter INVALID        = 0;
+parameter VALID          = 1;
+parameter SPI_FINISH     = 2;
+parameter FULL           = 3;
 
 wire [SPI_DATA_WIDTH-1:0] spi_data_send;
 wire [SPI_DATA_WIDTH-1:0] spi_data_receive;
@@ -166,5 +170,7 @@ assign { transfer_in_data_in, send_data_in } = work_buffer_send ? { 32'h00000000
 assign hoarder_data_in = work_buffer_send ? transfer_in_data_out : send_data_out;
 assign flag_start = !cs && spi_ready && flag ? 1 : 0;
 assign flag_stop  = !spi_ready && cs;
+assign data_out = 0;
+assign attr_out = 0;
 
 endmodule
