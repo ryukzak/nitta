@@ -77,6 +77,9 @@ writeQuartus title library workdir pu = do
     $ renderST
       $(embedStringFile "template/quartus/nitta.v")
       [ ( "top_level_module", moduleName title pu ) ]
+  writeFile ( joinPath [ workdir, "pll.v" ] )
+    $(embedStringFile "template/quartus/pll.v")
+
 
 quartusQPF = $(embedStringFile "template/quartus/project_file.qpf") :: String
 

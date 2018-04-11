@@ -1,5 +1,5 @@
 module nitta
-  ( input clk
+  ( input external_clk
   , input rst
   , input mosi
   , output miso
@@ -7,6 +7,13 @@ module nitta
   , input cs
   ); 
  
+wire clk;
+
+pll pll
+  ( .inclk0( external_clk )
+  , .c0(clk)
+  );
+  
 $top_level_module$ net 
   ( .clk( clk ) 
   , .rst( rst ) 

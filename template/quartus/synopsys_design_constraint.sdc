@@ -1,9 +1,9 @@
-create_clock -period 50MHz -name {CLOCK_50} [get_ports {CLOCK_50}]
-
+create_clock -period 50MHz -name {external_clk} [get_ports {external_clk}]
 derive_pll_clocks
 derive_clock_uncertainty
 
-set_false_path -from [get_ports {RST}]
-set_false_path -from [get_ports {MODE}]
-set_false_path -from [get_ports {SPEED}]
-set_false_path -to [get_ports {LED[*]}]
+set_input_delay -clock external_clk -max 0.5 [all_inputs]
+set_input_delay -clock external_clk -min 0.1 [all_inputs]
+
+set_output_delay -clock external_clk -max 0.5 [all_outputs]
+set_output_delay -clock external_clk -min 0.1 [all_outputs] 
