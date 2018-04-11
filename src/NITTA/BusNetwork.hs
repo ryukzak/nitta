@@ -411,7 +411,8 @@ instance ( Title title, Var v, Time t
     where
       ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
       testBenchImp = renderMST
-        [ "module $moduleName$_tb();                                                                                 "
+        [ "`timescale 1 ps / 1 ps"
+        , "module $moduleName$_tb();                                                                                 "
         , "                                                                                                          "
         , "reg clk, rst;                                                                                             "
         , if null ports
