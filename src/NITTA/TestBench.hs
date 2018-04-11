@@ -58,7 +58,7 @@ writeModelsimDo title library workdir pu = do
     $ renderST
       $(embedStringFile "template/modelsim/wave.do")
       [ ( "top_level", tb ) ]
-  writeFile ( joinPath [ workdir, "modelsim.do" ] )
+  writeFile ( joinPath [ workdir, "sim.do" ] )
     $ renderST
       $(embedStringFile "template/modelsim/sim.do")
       [ ( "top_level", tb )
@@ -86,6 +86,9 @@ quartusQPF = $(embedStringFile "template/quartus/project_file.qpf") :: String
 quartusQSF tb files = renderST $(embedStringFile "template/quartus/settings_file.qsf")
   [ ( "verilog_files"
     , S.join "\n" $ map ("set_global_assignment -name VERILOG_FILE " ++) files
+    )
+  , ( "test_bench_files"
+    , S.join "\n" $ map (\fn -> "set_global_assignment -name EDA_TEST_BENCH_FILE " ++ fn ++ " -section_id " ++ tb) files
     )
   , ( "testbench_module", tb )
   ]
