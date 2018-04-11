@@ -3,7 +3,7 @@ module pu_fram
    , parameter DATA_WIDTH = 32
    , parameter ATTR_WIDTH = 4
    , parameter ADDR_WIDTH = $clog2( RAM_SIZE )
-   , parameter FRAM_DUMP = "fram.dump"
+   , parameter FRAM_DUMP = "NOT_DEFINED"
    )
   ( input  wire                  clk
 
