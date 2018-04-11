@@ -407,7 +407,7 @@ instance ( Title title, Var v, Time t
          , DefinitionSynthesis (BusNetwork title v x t)
          , Typeable x
          ) => TestBench (BusNetwork title v x t) v x where
-  testBenchDescription title n@BusNetwork{..} cntx0 = Immidiate (moduleName "" n ++ "_tb.v") testBenchImp
+  testBenchDescription title n@BusNetwork{..} cntx0 = Immidiate (moduleName title n ++ "_tb.v") testBenchImp
     where
       ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
       testBenchImp = renderMST

@@ -38,22 +38,22 @@ testBench title library workdir pu values = do
 
 
 -- | Записать на диск testbench и все необходимые модули.
-writeProject title library workdir pu cntx = do
-  createDirectoryIfMissing True workdir
-  writeImplementation workdir "" $ hardware title pu
-  writeImplementation workdir "" $ software title pu
-  writeImplementation workdir "" $ testBenchDescription title pu cntx
-  writeModelsimDo title library workdir pu
-  writeQuartus library workdir pu
-  writeFile (joinPath [workdir, "Makefile"])
+writeProject title library pwd pu cntx = do
+  createDirectoryIfMissing True pwd
+  writeImplementation pwd $ hardware title pu
+  writeImplementation pwd $ software title pu
+  writeImplementation pwd $ testBenchDescription title pu cntx
+  writeModelsimDo title library pwd pu
+  writeQuartus title library pwd pu
+  writeFile (joinPath [pwd, "Makefile"])
     $ renderST $(embedStringFile "template/Makefile")
-      [ ( "iverilog_args", S.join " " $ snd $ testBenchFiles library pu title ) ]
+      [ ( "iverilog_args", S.join " " $ snd $ projectFiles library pu title ) ]
 
 -----------------------------------------------------------
 -- ModelSim
 
 writeModelsimDo title library workdir pu = do
-  let (tb, files) = testBenchFiles library pu title
+  let (tb, files) = projectFiles library pu title
   writeFile ( joinPath [ workdir, "wave.do" ] )
     $ renderST
       $(embedStringFile "template/modelsim/wave.do")
@@ -68,15 +68,15 @@ writeModelsimDo title library workdir pu = do
 -----------------------------------------------------------
 -- Quartus
 
-writeQuartus library workdir pu = do
-  let (tb, files) = testBenchFiles library pu "top_level"
+writeQuartus title library workdir pu = do
+  let (tb, files) = projectFiles library pu title
   writeFile (joinPath [ workdir, "nitta.qpf" ]) quartusQPF
   writeFile (joinPath [ workdir, "nitta.qsf" ]) $ quartusQSF tb files
   writeFile (joinPath [ workdir, "nitta.sdc" ]) quartusSDC
   writeFile ( joinPath [ workdir, "nitta.v" ] )
     $ renderST
       $(embedStringFile "template/quartus/nitta.v")
-      [ ( "top_level", tb ) ]
+      [ ( "top_level_module", moduleName title pu ) ]
 
 quartusQPF = $(embedStringFile "template/quartus/project_file.qpf") :: String
 
@@ -91,21 +91,23 @@ quartusSDC = $(embedStringFile "template/quartus/synopsys_design_constraint.sdc"
 
 
 -- | Записать реализацию (программную или аппаратную) на диск. Реализация может быть представлена
--- как отдельным файлом, так и целым деревом каталогов. Данные размещаются в указанном рабочем
+-- как отдельным файлом, так и целым деревом каталогов. ДанныеАА размещаются в указанном рабочем
 -- каталоге.
 --
 -- Ключ $path$ используется для корректной адресации между вложенными файлами. К примеру, в папке
 -- DIR лежит два файла f1 и f2, и при этом f1 импортирует в себя f2. Для этого, зачастую, необходимо
 -- указать его адресс относительно рабочего каталога, что осуществляется путём вставки этого адреса
 -- на место ключа $path$.
-writeImplementation workdir p (Immidiate fn src)
-  = writeFile (joinPath [workdir, p, fn]) $ S.replace "$path$" (if null p then "" else p ++ [pathSeparator]) src
-writeImplementation workdir p (Project p' subInstances) = do
-  let path = joinPath [p, p']
-  createDirectoryIfMissing True $ joinPath [ workdir, path ]
-  mapM_ (writeImplementation workdir path) subInstances
-writeImplementation _ _ (FromLibrary _) = return ()
-writeImplementation _ _ Empty = return ()
+writeImplementation pwd impl = writeImpl "" impl
+  where
+    writeImpl p (Immidiate fn src)
+      = writeFile (joinPath [pwd, p, fn]) $ S.replace "$path$" (if null p then "" else p ++ [pathSeparator]) src
+    writeImpl p (Project p' subInstances) = do
+      let path = joinPath [p, p']
+      createDirectoryIfMissing True $ joinPath [ pwd, path ]
+      mapM_ (writeImpl path) subInstances
+    writeImpl _ (FromLibrary _) = return ()
+    writeImpl _ Empty = return ()
 
 
 
@@ -113,7 +115,7 @@ writeImplementation _ _ Empty = return ()
 -- | Запустить testbench в указанной директории.
 -- TODO: Сделать вывод через Control.Monad.Writer.
 runTestBench title library workdir pu = do
-  let (_tb, files) = testBenchFiles library pu title
+  let (_tb, files) = projectFiles library pu title
   (compileExitCode, compileOut, compileErr)
     <- readCreateProcessWithExitCode (createIVerilogProcess workdir files) []
   when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
@@ -140,7 +142,7 @@ createIVerilogProcess workdir files
   = let cp = proc "iverilog" files
     in cp { cwd=Just workdir }
 
-testBenchFiles library pu title
+projectFiles library pu title
   = let files = L.nub $ concatMap (args "") [ hardware title pu, testBenchDescription title pu undefined ]
         tb = S.replace ".v" "" $ last files
     in (tb, files)

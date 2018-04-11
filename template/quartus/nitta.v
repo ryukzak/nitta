@@ -7,7 +7,7 @@ module nitta
   , input cs
   ); 
  
-accum_fram1_fram2_shift_spi_net net 
+$top_level_module$ net 
   ( .clk( clk ) 
   , .rst( rst ) 
   , .mosi( mosi ), .sclk( sclk ), .cs( cs ), .miso( miso )
