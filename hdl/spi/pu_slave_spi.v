@@ -140,7 +140,9 @@ hoarder frame_hoarder (
 );
 
 always @( posedge clk ) begin
-    if ( !cs && spi_ready && flag ) begin
+    if ( rst ) begin
+        flag <= 1;
+	 end else if ( !cs && spi_ready && flag ) begin
         flag <= 0;
     end else if ( flag_stop ) begin
         flag <= 1;
@@ -150,7 +152,6 @@ end
 always @( posedge clk or posedge rst ) begin
     if ( rst ) begin
         work_buffer_send <= SEND;
-        flag <= 1;
     end else begin
         if ( signal_cycle && cs ) begin
             if ( ~attr_out_transfer_in[ INVALID ] && attr_out_send[ INVALID ] ) begin
