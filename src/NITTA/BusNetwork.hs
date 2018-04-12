@@ -329,6 +329,9 @@ instance ( Time t
       iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
             in renderMST
               [ "module $moduleName$"
+              , "  #( parameter DATA_WIDTH = 32"
+              , "   , parameter ATTR_WIDTH = 4"
+              , "   )"
               , "  ( input                     clk"
               , "  , input                     rst"
               , S.join ", " ("  " : map (\(InputPort n) -> "input " ++ n) bnInputPorts)
@@ -340,8 +343,6 @@ instance ( Time t
               , "  );"
               , ""
               , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
-              , "parameter DATA_WIDTH = 32;"
-              , "parameter ATTR_WIDTH = 4;"
               , ""
               , "// Sub module instances"
               , "wire [MICROCODE_WIDTH-1:0] control_bus;"

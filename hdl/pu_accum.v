@@ -1,9 +1,9 @@
 module pu_accum
   #( parameter DATA_WIDTH = 4
-  ,  parameter ATTR_WIDTH = 4
-  ,  parameter SIGN       = 0
-  ,  parameter OVERFLOW   = 1
-  )
+   , parameter ATTR_WIDTH = 4
+   , parameter SIGN       = 0
+   , parameter OVERFLOW   = 1
+   )
   ( input  wire                  clk
   , input  wire                  rst
   , input  wire                  signal_load
