@@ -9,6 +9,7 @@ module pu_simple_control
   , output wire [MICROCODE_WIDTH-1:0] signals_out
   , output wire cycle
   , output wire [7:0] debug_pc
+  , input rendezvous
   );
 
 
@@ -26,12 +27,10 @@ assign signals_out = rst ? program_memory[0] : program_memory[pc];
 
 
 always @(posedge clk)
-  if ( rst )
-    pc <= 0;
-  else if ( pc >= MEMORY_SIZE - 1 )
-    pc <= 1;
-  else
-    pc <= pc + 1;
+  if      ( rst )                   pc <= 0;
+  else if ( pc >= MEMORY_SIZE - 1 ) pc <= rendezvous ? 1 : 0;
+  else if ( pc > 0 )                pc <= pc + 1;
+  else if ( rendezvous )            pc <= 1;
 
 assign cycle = pc == 1;
 

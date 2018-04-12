@@ -44,6 +44,7 @@ $top_level_module$ net
   , .debug_status( debug_status )
   , .debug_bus1( debug_bus1 )
   , .debug_bus2( debug_bus2 )
+  , .is_drop_allow( 1'b0 )
   ); 
                
 endmodule
