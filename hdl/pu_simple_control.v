@@ -8,12 +8,13 @@ module pu_simple_control
   , input wire rst
   , output wire [MICROCODE_WIDTH-1:0] signals_out
   , output wire cycle
+  , output wire [7:0] debug_pc
   );
 
 
 reg [MICROCODE_WIDTH-1:0]       program_memory[MEMORY_SIZE-1:0];
 reg [PROGRAM_COUNTER_WIDTH-1:0] pc;
-
+assign debug_pc = pc;
    
 initial
   begin

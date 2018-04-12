@@ -333,6 +333,9 @@ instance ( Time t
               , "  , input                     rst"
               , S.join ", " ("  " : map (\(InputPort n) -> "input " ++ n) bnInputPorts)
               , S.join ", " ("  " : map (\(OutputPort n) -> "output " ++ n) bnOutputPorts)
+              , "  , output              [7:0] debug_status"
+              , "  , output              [7:0] debug_bus1"
+              , "  , output              [7:0] debug_bus2"
               , "  );"
               , ""
               , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
@@ -343,8 +346,12 @@ instance ( Time t
               , "wire [MICROCODE_WIDTH-1:0] control_bus;"
               , "wire [DATA_WIDTH-1:0] data_bus;"
               , "wire [ATTR_WIDTH-1:0] attr_bus;"
-              , ""
               , "wire cycle, start, stop;"
+              , ""
+              , "wire [7:0] debug_pc;"
+              , "assign debug_status = { cycle, debug_pc[6:0] };"
+              , "assign debug_bus1 = data_bus[7:0];"
+              , "assign debug_bus2 = data_bus[15:8];"
               , ""
               , "pu_simple_control #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
               , "                   , .PROGRAM_DUMP( \"\\$path\\$$moduleName$.dump\" )"
@@ -354,6 +361,7 @@ instance ( Time t
               , "  , .rst( rst )"
               , "  , .signals_out( control_bus )"
               , "  , .cycle( cycle )"
+              , "  , .debug_pc( debug_pc )"
               , "  );"
               , ""
               , "$instances$"
@@ -437,15 +445,15 @@ instance ( Title title, Var v, Time t
         , "                                                                                                          "
         , verilogClockGenerator
         , "                                                                                                          "
-        , "  initial                                                                                                 "
-        , "    begin                                                                                                 "
-        , "      // microcode when rst == 1 -> program[0], and must be nop for all PUs                               "
-        , "      @(negedge rst); // Turn nitta processor on.                                                         "
-        , "      // Start computational cycle from program[1] to program[n] and repeat.                              "
-        , "      // Signals effect to processor state after first clk posedge.                                       "
+        , "initial                                                                                                 "
+        , "  begin                                                                                                 "
+        , "    // microcode when rst == 1 -> program[0], and must be nop for all PUs                               "
+        , "    @(negedge rst); // Turn nitta processor on.                                                         "
+        , "    // Start computational cycle from program[1] to program[n] and repeat.                              "
+        , "    // Signals effect to processor state after first clk posedge.                                       "
         , assertions
-        , "      \\$finish;                                                                                          "
-        , "    end                                                                                                   "
+        , "    \\$finish;                                                                                          "
+        , "  end                                                                                                   "
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]
@@ -456,7 +464,7 @@ instance ( Title title, Var v, Time t
       cntxs = take 15 $ simulateAlgByCycle cntx0 $ functionalBlocks n
       cycleTicks = [ 0 .. nextTick (process n) - 1 ]
       simulationInfo = (0, def) : concatMap (\cntx -> map (\t -> (t, cntx)) cycleTicks) cntxs
-      assertions = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
+      assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
         where
           assert (t, cntx)
             = "\\$write(\"%s, bus: %h\", " ++ show (show t) ++ ", net.data_bus); "

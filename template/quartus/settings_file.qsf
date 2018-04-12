@@ -13,48 +13,60 @@ set_global_assignment -name PROJECT_IP_REGENERATION_POLICY ALWAYS_REGENERATE_IP
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 
-set_location_assignment PIN_A11 -to LED[3]
-set_location_assignment PIN_B13 -to LED[2]
-set_location_assignment PIN_A13 -to LED[1]
-set_location_assignment PIN_A15 -to LED[0]
-set_location_assignment PIN_R8 -to CLOCK_50
-set_location_assignment PIN_M1 -to RST
-set_location_assignment PIN_D1 -to LED[4]
-set_location_assignment PIN_F3 -to LED[5]
-set_location_assignment PIN_B1 -to LED[6]
-set_location_assignment PIN_L3 -to LED[7]
-set_location_assignment PIN_A12 -to ext_slave_sclk
-set_location_assignment PIN_J15 -to SPEED
-set_location_assignment PIN_T8 -to MODE
-set_location_assignment PIN_B12 -to ext_master_cs
-set_location_assignment PIN_B11 -to ext_master_miso
-set_location_assignment PIN_E10 -to ext_master_mosi
-set_location_assignment PIN_D11 -to ext_master_sclk
-set_location_assignment PIN_D12 -to ext_slave_cs
-set_location_assignment PIN_E11 -to ext_slave_mosi
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ext_master_cs
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ext_master_miso
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ext_master_mosi
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ext_master_sclk
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ext_slave_cs
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ext_slave_mosi
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ext_slave_sclk
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to SPEED
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to RST
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to MODE
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LED[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LED[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LED[2]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LED[3]
-set_instance_assignment -name IO_STANDARD "3.0-V LVCMOS" -to LED[4]
-set_instance_assignment -name IO_STANDARD "3.0-V LVCMOS" -to LED[5]
-set_instance_assignment -name IO_STANDARD "3.0-V LVCMOS" -to LED[6]
-set_instance_assignment -name IO_STANDARD "3.0-V LVCMOS" -to LED[7]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to CLOCK_50
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ext_slave_miso
-set_location_assignment PIN_C11 -to ext_slave_miso
-set_location_assignment PIN_B9 -to SEL
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to SEL
+
+set_location_assignment PIN_R8 -to external_clk
+set_location_assignment PIN_M1 -to rst
+
+set_location_assignment PIN_J15 -to keys[0]
+set_location_assignment PIN_E1  -to keys[1]
+
+set_location_assignment PIN_M1  -to dips[0]
+set_location_assignment PIN_T8  -to dips[1]
+set_location_assignment PIN_B9  -to dips[2]
+set_location_assignment PIN_M15 -to dips[3]
+ 
+set_location_assignment PIN_A15 -to leds[0]
+set_location_assignment PIN_A13 -to leds[1]
+set_location_assignment PIN_B13 -to leds[2]
+set_location_assignment PIN_A11 -to leds[3]
+set_location_assignment PIN_D1  -to leds[4]
+set_location_assignment PIN_F3  -to leds[5]
+set_location_assignment PIN_B1  -to leds[6]
+set_location_assignment PIN_L3  -to leds[7]
+
+set_location_assignment PIN_E11 -to mosi
+set_location_assignment PIN_C11 -to miso
+set_location_assignment PIN_A12 -to sclk
+set_location_assignment PIN_D12 -to cs
+
+
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to external_clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to rst
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to keys[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to keys[1]
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to dips[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to dips[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to dips[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to dips[3]
+ 
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[7]
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to mosi
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to miso
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sclk
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to cs
+
+
 
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
