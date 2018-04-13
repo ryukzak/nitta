@@ -1,31 +1,31 @@
 module pu_slave_spi
-#( parameter DATA_WIDTH     = 32
- , parameter ATTR_WIDTH     = 4
- , parameter SPI_DATA_WIDTH = 8
- , parameter BUF_SIZE       = 6
- )
-( input                     clk
-, input                     rst
-, input                     signal_cycle
+  #( parameter DATA_WIDTH     = 32
+   , parameter ATTR_WIDTH     = 4
+   , parameter SPI_DATA_WIDTH = 8
+   , parameter BUF_SIZE       = 6
+   )
+  ( input                     clk
+  , input                     rst
+  , input                     signal_cycle
 
-// system interface
-, input                     signal_wr
-, input    [DATA_WIDTH-1:0] data_in
-, input    [ATTR_WIDTH-1:0] attr_in
+  // system interface
+  , input                     signal_wr
+  , input    [DATA_WIDTH-1:0] data_in
+  , input    [ATTR_WIDTH-1:0] attr_in
 
-, input                     signal_oe
-, output   [DATA_WIDTH-1:0] data_out
-, output   [ATTR_WIDTH-1:0] attr_out
+  , input                     signal_oe
+  , output   [DATA_WIDTH-1:0] data_out
+  , output   [ATTR_WIDTH-1:0] attr_out
 
-, output                    flag_start
-, output reg                flag_stop
+  , output                    flag_start
+  , output reg                flag_stop
 
-// SPI interface
-, input                     mosi
-, output                    miso
-, input                     sclk
-, input                     cs
-);
+  // SPI interface
+  , input                     mosi
+  , output                    miso
+  , input                     sclk
+  , input                     cs
+  );
 
 // The attributes of the buffer
 parameter INVALID        = 0;
@@ -70,101 +70,103 @@ wire [DATA_WIDTH-1:0] hoarder_data_out;
 wire test_load;
 reg flag;
 
-spi_slave_driver #( .DATA_WIDTH( SPI_DATA_WIDTH ) 
-) spi_driver 
-    ( .clk( clk )
-    , .rst( rst )  
-    , .data_in( spi_data_send ) 
-    , .data_out( spi_data_receive )  
-    , .ready( spi_ready )
-    , .mosi( mosi )
-    , .miso( miso )
-    , .sclk( sclk )
-    , .cs( cs )
-    );
+spi_slave_driver 
+  #( .DATA_WIDTH( SPI_DATA_WIDTH ) 
+   ) spi_driver 
+  ( .clk( clk )
+  , .rst( rst )  
+  , .data_in( spi_data_send ) 
+  , .data_out( spi_data_receive )  
+  , .ready( spi_ready )
+  , .mosi( mosi )
+  , .miso( miso )
+  , .sclk( sclk )
+  , .cs( cs )
+  );
 
 // [TRANSFER <<< NITTA]
-spi_buffer #( .BUF_SIZE( BUF_SIZE )
-) transfer_in_buffer 
-    ( .clk( clk )
-    , .rst( rst )
-    , .wr( signal_wr && ~work_buffer_send )
-    , .attr_out( attr_out_transfer_in )
-    , .data_in( transfer_in_data_in )
-    // ------------------------------------
-    , .oe( ( flag_start || attr_out_hoarder[ INVALID ] ) && work_buffer_send )
-    , .data_out( transfer_in_data_out )
-); 
+spi_buffer 
+  #( .BUF_SIZE( BUF_SIZE )
+   ) transfer_in_buffer 
+  ( .clk( clk )
+  , .rst( rst )
+  , .wr( signal_wr && ~work_buffer_send )
+  , .attr_out( attr_out_transfer_in )
+  , .data_in( transfer_in_data_in )
+  // ------------------------------------
+  , .oe( ( flag_start || attr_out_hoarder[ INVALID ] ) && work_buffer_send )
+  , .data_out( transfer_in_data_out )
+  ); 
 
 // [TRANSFER >>> NITTA]
-spi_buffer #( .BUF_SIZE( BUF_SIZE )
-) transfer_out_buffer 
-    ( .clk( clk )
-    , .rst( rst )
-
-); 
+spi_buffer 
+  #( .BUF_SIZE( BUF_SIZE )
+   ) transfer_out_buffer 
+  ( .clk( clk )
+  , .rst( rst )
+  ); 
 
 // [MASTER >>> SLAVE]
-spi_buffer #( .BUF_SIZE( BUF_SIZE )
-            , .DATA_WIDTH( DATA_WIDTH )
-) receive_buffer
-    ( .clk( clk )
-    , .rst( rst )
-
-);
+spi_buffer
+  #( .BUF_SIZE( BUF_SIZE )
+   , .DATA_WIDTH( DATA_WIDTH )
+   ) receive_buffer
+  ( .clk( clk )
+  , .rst( rst )
+  );
 
 // [MASTER <<< SLAVE]
-spi_buffer #( .BUF_SIZE( BUF_SIZE )
-            , .DATA_WIDTH( DATA_WIDTH )
-) send_buffer 
-    ( .clk( clk )
-    , .rst( rst )
-    , .wr( signal_wr && work_buffer_send )
-    , .attr_out( attr_out_send )
-    , .data_in( send_data_in )
-    // ----------------------------------
-    , .oe( ( flag_start || attr_out_hoarder[ INVALID ] ) && ~work_buffer_send )
-    , .data_out( send_data_out )
- );
+spi_buffer 
+  #( .BUF_SIZE( BUF_SIZE )
+   , .DATA_WIDTH( DATA_WIDTH )
+   ) send_buffer 
+  ( .clk( clk )
+  , .rst( rst )
+  , .wr( signal_wr && work_buffer_send )
+  , .attr_out( attr_out_send )
+  , .data_in( send_data_in )
+  // ----------------------------------
+  , .oe( ( flag_start || attr_out_hoarder[ INVALID ] ) && ~work_buffer_send )
+  , .data_out( send_data_out )
+  );
 
-hoarder frame_hoarder (
-    .clk( clk )
-,   .rst( rst )
-,   .data_in( hoarder_data_in )
-,   .wr( flag_start || attr_out_hoarder[ INVALID ] )
-,   .flag_start( flag_start )
-,   .ready( spi_ready )
-,   .data_out_byte( spi_data_send )
-,   .attr_hoarder( attr_out_hoarder )
-
-);
+hoarder frame_hoarder 
+  ( .clk( clk )
+  , .rst( rst )
+  , .data_in( hoarder_data_in )
+  , .wr( flag_start || attr_out_hoarder[ INVALID ] )
+  , .flag_start( flag_start )
+  , .ready( spi_ready )
+  , .data_out_byte( spi_data_send )
+  , .attr_hoarder( attr_out_hoarder )
+  );
 
 always @( posedge clk ) begin
-    if ( rst ) begin
-        flag <= 1;
-	 end else if ( !cs && spi_ready && flag ) begin
-        flag <= 0;
-    end else if ( stop ) begin
-        flag <= 1;
-    end
+  if ( rst ) begin
+    flag <= 1;
+  end else if ( !cs && spi_ready && flag ) begin
+    flag <= 0;
+  end else if ( stop ) begin
+    flag <= 1;
+  end
 end
 
 always @( posedge clk or posedge rst ) begin
-    if ( rst ) begin
+  if ( rst ) begin
+    work_buffer_send <= SEND;
+  end else begin
+    if ( signal_cycle && cs ) begin
+      if ( ~attr_out_transfer_in[ INVALID ] && attr_out_send[ INVALID ] ) begin
         work_buffer_send <= SEND;
-    end else begin
-        if ( signal_cycle && cs ) begin
-            if ( ~attr_out_transfer_in[ INVALID ] && attr_out_send[ INVALID ] ) begin
-                work_buffer_send <= SEND;
-            end else if ( ~attr_out_send[ INVALID ] && attr_out_transfer_in[ INVALID ] ) begin
-                work_buffer_send <= TRANSFER_IN;
-            end
-        end else if ( ~signal_cycle ) begin
-            if ( signal_oe ) begin
+      end else if ( ~attr_out_send[ INVALID ] && attr_out_transfer_in[ INVALID ] ) begin
+        work_buffer_send <= TRANSFER_IN;
+      end
+    end else if ( ~signal_cycle ) begin
+      if ( signal_oe ) begin
 
-            end
-        end
+      end
     end
+  end
 end
 
 assign { transfer_in_data_in, send_data_in } = work_buffer_send ? { 32'h00000000, data_in } : { data_in , 32'h00000000 };
@@ -175,10 +177,10 @@ assign flag_start = !cs && spi_ready && flag ? 1 : 0;
 wire stop = !spi_ready && cs;
 reg flag_stop_prev;
 always @(posedge clk) begin
-    if      ( rst )                         { flag_stop_prev, flag_stop } <= { 1'b0, 1'b0 };
-    else if ( !flag_stop_prev && stop )     { flag_stop_prev, flag_stop } <= { 1'b1, 1'b1 };
-    else if ( flag_stop_prev && flag_stop ) { flag_stop_prev, flag_stop } <= { 1'b1, 1'b0 };
-    else                                    { flag_stop_prev, flag_stop } <= { 1'b0, 1'b0 };
+  if      ( rst )                         { flag_stop_prev, flag_stop } <= { 1'b0, 1'b0 };
+  else if ( !flag_stop_prev && stop )     { flag_stop_prev, flag_stop } <= { 1'b1, 1'b1 };
+  else if ( flag_stop_prev && flag_stop ) { flag_stop_prev, flag_stop } <= { 1'b1, 1'b0 };
+  else                                    { flag_stop_prev, flag_stop } <= { 1'b0, 1'b0 };
 end
 
 assign data_out = 0;
