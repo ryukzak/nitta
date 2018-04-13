@@ -18,7 +18,7 @@ module pu_slave_spi
 , output   [ATTR_WIDTH-1:0] attr_out
 
 , output                    flag_start
-, output                    flag_stop
+, output reg                flag_stop
 
 // SPI interface
 , input                     mosi
@@ -144,7 +144,7 @@ always @( posedge clk ) begin
         flag <= 1;
 	 end else if ( !cs && spi_ready && flag ) begin
         flag <= 0;
-    end else if ( flag_stop ) begin
+    end else if ( stop ) begin
         flag <= 1;
     end
 end
@@ -170,7 +170,17 @@ end
 assign { transfer_in_data_in, send_data_in } = work_buffer_send ? { 32'h00000000, data_in } : { data_in , 32'h00000000 };
 assign hoarder_data_in = work_buffer_send ? transfer_in_data_out : send_data_out;
 assign flag_start = !cs && spi_ready && flag ? 1 : 0;
-assign flag_stop  = !spi_ready && cs;
+
+// Необходимо что бы flag_stop сбрасывался сам через такт после установки.
+wire stop = !spi_ready && cs;
+reg flag_stop_prev;
+always @(posedge clk) begin
+    if      ( rst )                         { flag_stop_prev, flag_stop } <= { 1'b0, 1'b0 };
+    else if ( !flag_stop_prev && stop )     { flag_stop_prev, flag_stop } <= { 1'b1, 1'b1 };
+    else if ( flag_stop_prev && flag_stop ) { flag_stop_prev, flag_stop } <= { 1'b1, 1'b0 };
+    else                                    { flag_stop_prev, flag_stop } <= { 1'b0, 1'b0 };
+end
+
 assign data_out = 0;
 assign attr_out = 0;
 
