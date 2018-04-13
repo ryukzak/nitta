@@ -91,8 +91,8 @@ busNetwork w ips ops pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w
         , inputPort= \(InputPort n) -> n
         , outputPort= \(OutputPort n) -> n
         , net=NetEnv
-          { parameterDataWidth=32
-          , parameterAttrWidth=4
+          { parameterDataWidth=InlineParam "DATA_WIDTH"
+          , parameterAttrWidth=InlineParam "ATTR_WIDTH"
           , dataIn="data_bus"
           , dataOut=valueData title
           , attrIn="attr_bus"
@@ -431,7 +431,10 @@ instance ( Title title, Var v, Time t
             then ""
             else "wire " ++ S.join ", " ports ++ ";"
         , ""
-        , "$moduleName$ net                                                                                          "
+        , "$moduleName$                                                                                           "
+        , "  #( .DATA_WIDTH( 32 )"
+        , "   , .ATTR_WIDTH( 4 )"
+        , "   ) net"
         , "  ( .clk( clk )                                                                                           "
         , "  , .rst( rst )                                                                                           "
         , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)

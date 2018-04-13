@@ -572,8 +572,8 @@ instance ( Var v
                       , inputPort=undefined
                       , outputPort=undefined
                       , net=NetEnv
-                        { parameterDataWidth=32
-                        , parameterAttrWidth=4
+                        { parameterDataWidth=IntParam 32
+                        , parameterAttrWidth=IntParam 4
                         , dataIn="data_in"
                         , attrIn="attr_in"
                         , dataOut="data_out"

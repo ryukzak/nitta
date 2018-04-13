@@ -165,11 +165,19 @@ newtype Signal = Signal Int deriving ( Show, Eq, Ord, Ix )
 -- | Описание подключения шин ввода вывода.
 newtype InputPort = InputPort String deriving ( Show, Eq, Ord )
 newtype OutputPort = OutputPort String deriving ( Show, Eq, Ord )
+data Parameter 
+  = InlineParam String
+  | IntParam Int
+  deriving ( Eq, Ord )
+instance Show Parameter where
+  show (IntParam i) = show i
+  show (InlineParam s) = s
+  
 
 data NetEnv
   = NetEnv
-    { parameterDataWidth :: Int
-    , parameterAttrWidth :: Int
+    { parameterDataWidth :: Parameter
+    , parameterAttrWidth :: Parameter
     , dataIn, attrIn     :: String
     , dataOut, attrOut   :: String
     , signal             :: Signal -> String -- ^ Функция позволяющая подставить индекс на шину управления.
