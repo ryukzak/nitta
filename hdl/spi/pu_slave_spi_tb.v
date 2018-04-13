@@ -7,7 +7,7 @@ module pu_slave_spi_tb
    )
   ();
 
-reg clk;
+reg clk, slow_clk;
 reg rst;
 reg start_transaction;
 reg  [DATA_WIDTH*2-1:0] master_in;
@@ -30,7 +30,7 @@ spi_master_driver
   #( .DATA_WIDTH( 64 ) 
    , .SCLK_HALFPERIOD( 1 )
    ) master
-  ( .clk(clk)
+  ( .clk(slow_clk)
   , .rst(rst)
   , .start_transaction(start_transaction)
   , .data_in(master_in)
@@ -70,13 +70,17 @@ pu_slave_spi #( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
 integer i;
 
 always begin
-  #5 clk = ~clk;
+  #5  clk <= ~clk;
+end
+always begin
+  #20 slow_clk <= ~slow_clk;
 end
 
+
 initial begin
-  clk = 0; cycle = 0; start_transaction = 0; @(posedge clk);
-  rst = 1;                                   @(posedge clk);
-  rst = 0;                                   @(posedge clk);
+  clk <= 0; slow_clk <= 0; cycle <= 0; start_transaction <= 0; @(posedge clk);
+  rst <= 1;                                   @(posedge clk);
+  rst <= 0;                                   @(posedge clk);
   $display("Start");
 end
 
@@ -96,13 +100,14 @@ initial begin
 
   /////////////////// Первый цикл.
   cycle <= 1;                              @(posedge clk); 
-  cycle <= 0;                  repeat( 99) @(posedge clk);
+  cycle <= 0;                  repeat(199) @(posedge clk);
   oe <= 1;                                 @(posedge clk); // Ожидаем на шине флаг invalid, так как после RST новых загрузок небыло.  
   oe <= 0;                     repeat( 10) @(posedge clk);
   wr <= 1; pu_spi_data_in <= 32'hB0B1B2B3; @(posedge clk);
   wr <= 0;                     repeat( 48) @(posedge clk);
   wr <= 1; pu_spi_data_in <= 32'hB4B5B6B7; @(posedge clk);
   wr <= 0;                     repeat( 40) @(posedge clk);
+  repeat(600) @(posedge clk);
 
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
   for ( i = 0; i < BUF_SIZE; i = i + 1 )
@@ -120,6 +125,7 @@ initial begin
   wr <= 0;                     repeat( 48) @(posedge clk);
   wr <= 1; pu_spi_data_in <= 32'hBCBDBEBF; @(posedge clk);
   wr <= 0;                     repeat( 40) @(posedge clk);
+repeat(600) @(posedge clk);
 
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
   for ( i = 0; i < BUF_SIZE; i = i + 1 )
@@ -136,6 +142,7 @@ initial begin
   wr <= 0;                     repeat( 48) @(posedge clk);
   wr <= 1; pu_spi_data_in <= 32'hC4C5C6C7; @(posedge clk);
   wr <= 0;                     repeat( 40) @(posedge clk);
+repeat(600) @(posedge clk);
 
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
   for ( i = 0; i < BUF_SIZE; i = i + 1 )
@@ -168,60 +175,60 @@ end
 initial begin // spi communication
   @(negedge rst);
 
-  repeat(35) @(posedge clk); 
+  repeat(35) @(posedge slow_clk); 
   // Во входном буфере должно появиться два слова: A1A2A3A4 и A5A6A7A8.
   // В канал должно уйти два слова из выходного буфера.
 
-  master_in = 64'hA0A1A2A3A4A5A6A7;                        @(posedge clk); 
-  start_transaction = 1;                                   @(posedge clk);
-  start_transaction = 0;                                   @(posedge clk);
+  master_in = 64'hA0A1A2A3A4A5A6A7;                        @(posedge slow_clk); 
+  start_transaction = 1;                                   @(posedge slow_clk);
+  start_transaction = 0;                                   @(posedge slow_clk);
   // Из канала при этом ожидаем получить значение по умолчанию, а именно -
   // hCCCCCCCC, так как буфер не был заполнен для отправки.
-  repeat(130) @(posedge clk); 
-  repeat(35) @(posedge clk); 
+  repeat(130) @(posedge slow_clk); 
+  repeat(35) @(posedge slow_clk); 
   
 
 
-  repeat(35) @(posedge clk); 
+  repeat(35) @(posedge slow_clk); 
   // Во входном буфере должно появиться два слова: A9AAABAC и ADAEAFA0. 
   // В канал должно уйти два слова из выходного буфера.
 
-  master_in = 64'hA8A9AAABACADAEAF;                        @(posedge clk);
-  start_transaction = 1;                                   @(posedge clk);
-  start_transaction = 0;                                   @(posedge clk);
+  master_in = 64'hA8A9AAABACADAEAF;                        @(posedge slow_clk);
+  start_transaction = 1;                                   @(posedge slow_clk);
+  start_transaction = 0;                                   @(posedge slow_clk);
   // Из канала при этом ожидаем получить значение hB0B1B2B3B4B5B6B7
-  repeat(130 - 3) @(posedge clk); 
-  repeat(35) @(posedge clk); 
+  repeat(130 - 3) @(posedge slow_clk); 
+  repeat(35) @(posedge slow_clk); 
 
 
 
-  repeat(35) @(posedge clk); 
+  repeat(35) @(posedge slow_clk); 
   // Во входном буфере должно появиться два слова: A9AAABAC и ADAEAFA0. 
   // В канал должно уйти два слова из выходного буфера.
 
-  master_in = 64'hA8A9AAABACADAEAF;                        @(posedge clk);
-  start_transaction = 1;                                   @(posedge clk);
-  start_transaction = 0;                                   @(posedge clk);
+  master_in = 64'hA8A9AAABACADAEAF;                        @(posedge slow_clk);
+  start_transaction = 1;                                   @(posedge slow_clk);
+  start_transaction = 0;                                   @(posedge slow_clk);
   // Из канала при этом ожидаем получить значение hB0B1B2B3B4B5B6B7
-  repeat(130 - 3) @(posedge clk); 
-  repeat(35) @(posedge clk); 
+  repeat(130 - 3) @(posedge slow_clk); 
+  repeat(35) @(posedge slow_clk); 
   
 
 
-  repeat(35) @(posedge clk); 
+  repeat(35) @(posedge slow_clk); 
   // Во входном буфере должно появиться два слова: A9AAABAC и ADAEAFA0. 
   // В канал должно уйти два слова из выходного буфера.
 
-  master_in = 64'hA8A9AAABACADAEAF;                        @(posedge clk);
-  start_transaction = 1;                                   @(posedge clk);
-  start_transaction = 0;                                   @(posedge clk);
+  master_in = 64'hA8A9AAABACADAEAF;                        @(posedge slow_clk);
+  start_transaction = 1;                                   @(posedge slow_clk);
+  start_transaction = 0;                                   @(posedge slow_clk);
   // Из канала при этом ожидаем получить значение hB0B1B2B3B4B5B6B7
-  repeat(130 - 3) @(posedge clk); 
-  repeat(35) @(posedge clk); 
+  repeat(130 - 3) @(posedge slow_clk); 
+  repeat(35) @(posedge slow_clk); 
 
 
 
-  repeat(60) @(posedge clk); 
+  repeat(60) @(posedge slow_clk); 
 
   $finish;
 end
