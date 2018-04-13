@@ -52,11 +52,10 @@ microarch = busNetwork 27
 
 fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
                , FB.loop 1 ["b1", "b2"] "c"
-              --  , FB.add "a1" "b1" ["c"]
                , FB.add "a1" "b1" ["c", "c_copy"]
                , FB.send "c_copy"
                , FB.send "i2"
-               , FB.loop 1 ["i1", "i2"] "i+1"
+               , FB.loop 2 ["i1", "i2"] "i+1"
                , FB.constant 1 ["one"]
                , FB.add "i1" "one" ["i+1"]
                ]

@@ -15,6 +15,7 @@ wire clk_200MHz, clk_5kHz, clk_1Hz;
 
 wire rst           = dips[3];
 wire boost         = dips[2];
+wire rendezvous    = dips[1];
 wire show_bus_7_0  = !keys[0];
 wire show_bus_15_8 = !keys[1];
 
@@ -47,7 +48,7 @@ $top_level_module$
   , .debug_status( debug_status )
   , .debug_bus1( debug_bus1 )
   , .debug_bus2( debug_bus2 )
-  , .is_drop_allow( 1'b0 )
+  , .is_drop_allow( rendezvous )
   ); 
                
 endmodule

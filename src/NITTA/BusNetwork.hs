@@ -438,7 +438,7 @@ instance ( Title title, Var v, Time t
         , "  ( .clk( clk )                                                                                           "
         , "  , .rst( rst )                                                                                           "
         , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
-        , "  , .is_drop_allow( 1'b1 )"
+        , "  , .is_drop_allow( 1'b0 )"
         , "  );                                                                                                      "
         , "                                                                                                          "
         , S.join "\n\n"
@@ -460,6 +460,7 @@ instance ( Title title, Var v, Time t
         , "    // Start computational cycle from program[1] to program[n] and repeat.                              "
         , "    // Signals effect to processor state after first clk posedge.                                       "
         , assertions
+        , "  repeat ( 2000 ) @(posedge clk);"
         , "    \\$finish;                                                                                          "
         , "  end                                                                                                   "
         , "                                                                                                          "
