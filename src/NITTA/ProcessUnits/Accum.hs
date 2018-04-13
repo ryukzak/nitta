@@ -51,7 +51,7 @@ instance ( Var v
   stateOptions Accum{ acIn=vs@(_:_) } now
     | length vs == 2 -- первый аргумент.
     -- TODO: Improve performance.
-    = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 2)) vs
+    = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
     | otherwise -- второй аргумент
     = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
   stateOptions Accum{ acOut=vs@(_:_) } now -- вывод

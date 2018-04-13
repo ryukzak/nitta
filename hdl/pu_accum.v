@@ -25,17 +25,15 @@ reg overflow;
 
 // 10 11
 always @(posedge clk)
-  if ( signal_load ) begin
-    if ( signal_init ) begin
-      int_arg <= 0;
-    end else begin 
-      int_arg <= acc[DATA_WIDTH:0];
-    end
+  if ( rst ) begin
+    int_arg <= 0;
+    ext_arg <= 0;
+  end else if ( signal_load ) begin
+    int_arg <= signal_init ? 0 : wacc[DATA_WIDTH-1:0];
     ext_arg <= signal_neg ? -data_in : data_in;
   end
 
-
-wire [DATA_WIDTH:0]  wacc; // +1 на переполнение
+wire [DATA_WIDTH:0] wacc; // +1 на переполнение
 wire carry;
 
 // https://en.wikipedia.org/wiki/Two%27s_complement#Addition
@@ -62,7 +60,7 @@ always @(posedge clk)
   end
 
 always @(posedge clk)
-  if ( ~signal_oe )
+  if ( rst || !signal_oe )
     { attr_out, data_out } <= 0;
   else begin
     data_out           <= acc[DATA_WIDTH-1:0];

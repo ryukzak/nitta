@@ -1,172 +1,112 @@
 `timescale 1 ps/ 1 ps
 module pu_accum_tb
-#(   parameter DATA_WIDTH = 4
-  ,  parameter ATTR_WIDTH = 4
-  ,  parameter SIGN       = 0
-  ,  parameter OVERFLOW   = 1
-)
-(); 
-reg clk 
-,   signal_load
-,   signal_init
-,   signal_neg
-,   signal_oe; 
+  #( parameter DATA_WIDTH = 32
+   , parameter ATTR_WIDTH = 4
+   , parameter SIGN       = 0
+   , parameter OVERFLOW   = 1
+   )
+  (); 
+
+reg clk, rst, signal_load, signal_init, signal_neg, signal_oe;
 
 reg [DATA_WIDTH-1:0] data_in;
-reg [ATTR_WIDTH-1:0] attr_in = 0;
+reg [ATTR_WIDTH-1:0] attr_in;
 
 wire [DATA_WIDTH-1:0] data_out;
 
-pu_accum unit_under_test (
-    .clk(clk),
-    .signal_load(signal_load),
-    .signal_init(signal_init),
-    .signal_neg(signal_neg),
-    .signal_oe(signal_oe),
-    .data_in(data_in),
-    .attr_in(attr_in),
-    .data_out(data_out)
-);
+pu_accum 
+  #( .DATA_WIDTH( DATA_WIDTH )
+   , .ATTR_WIDTH( ATTR_WIDTH )
+   ) unit_under_test 
+  ( .clk(clk)
+  , .rst(rst)
+  , .signal_init(signal_init)
+  , .signal_load(signal_load)
+  , .signal_neg(signal_neg)
+  , .signal_oe(signal_oe)
+  , .data_in(data_in)
+  , .attr_in(attr_in)
+  , .data_out(data_out)
+  );
 
-
-task nop; // nop
-    begin
-        signal_load <= 0;
-        signal_init <= 0;
-        signal_neg  <= 0;
-        signal_oe   <= 0;
-        data_in     <= 0;
-    end
-endtask
-
-task Initialization;
-    input [DATA_WIDTH-1:0] id;
-    begin
-        signal_init <= id;        
-    end
-endtask
-
-task Load;
-    input [DATA_WIDTH-1:0] id;
-    begin
-        signal_load <= id;
-        signal_init = 0;
-        signal_oe   = 0;
-        signal_neg  = 0;
-    end
-endtask
-
-task outputdata;
-    input sig;
-    begin
-        signal_load <= 0;
-        signal_init <= 0;
-        signal_neg  <= 0;
-        signal_oe   <= sig;
-    end
-endtask
-
-task Send_value;
-    input [DATA_WIDTH-1:0] data;
-    begin
-        data_in = data;
-    end
-endtask
-
-task Send_attr_in;
-    input [ATTR_WIDTH-1:0] attr;
-    begin
-        attr_in = attr;
-    end
-endtask
-
-task Send_neg;
-    input x_neg;
-    begin
-        signal_neg = x_neg;
-    end
-endtask
-
-always
-  #5 clk = ~clk;
-
-reg RST;
-
-initial 
+task nop;
   begin
-    RST <= 1;
-    $display("Start programm");
-    clk = 0;
+    signal_init <= 0;
+    signal_load <= 0;
+    signal_neg  <= 0;
+    signal_oe   <= 0;
+    data_in     <= 0;
+    attr_in     <= 0;
+  end
+endtask
 
-    nop(); @(posedge clk);
- 
-    RST <= 0;
-    ///////////////////////////////////////////////////////////////
-    nop(); @(posedge clk);
-    ///////////////////////////////////////////////////////////////    
-    // Load(1);            @(posedge clk);
-    // Initialization(1);  repeat (2) @(posedge clk);
-    // Initialization(0);  repeat (2) @(posedge clk);
-    // Send_value(2);      repeat(2)   @(posedge clk); // сложит сам с собой из-за задержки
-    // Send_neg(0);        @(posedge clk);
-    // Send_value(3);      @(posedge clk);
-    // Load(0);            @(posedge clk);
-    // outputdata(0);      @(posedge clk);
-    ///////////////////////////////////////////////////////////////
-    // Load(1);            @(posedge clk);
-    // Initialization(1);  repeat (2) @(posedge clk);
-    // Initialization(0);  repeat (2) @(posedge clk);
-    // Send_value(7);      @(posedge clk);
-    // Send_neg(0);        @(posedge clk);
-    // Send_value(8);      @(posedge clk);
-    // Load(0);            @(posedge clk);
-    // outputdata(1);      @(posedge clk);
-    ////////////////////////////////////////////////////////////////
-    // Load(1);                    @(posedge clk);
-    // Initialization(1);          repeat (2) @(posedge clk);
-    // Initialization(0);          repeat (2) @(posedge clk);
-    // Load(0);                    @(posedge clk);
-    // Load(1);
-    // Send_value(9);              @(posedge clk);
-    // Load(0);                    @(posedge clk);
-    // //Send_Neg(0);              @(posedge clk); // start
-    // Load(1);
-    // Send_value(3);              @(posedge clk);    
-    // Load(0);                    @(posedge clk);
-    // //Send_Neg(0);              @(posedge clk);
-    // outputdata(1);              @(posedge clk);
-    // outputdata(0);              @(posedge clk);
-    // repeat(10) @(posedge clk);
-    ///////////////////////////////////////////////////////////////
-    nop();                            repeat(10) @(posedge clk);
-    outputdata(0);                    repeat(10) @(posedge clk);
-    ///////////////////////////////////////////////////////////////
-    // Load(1);                 @(posedge clk);
-    // Initialization (1);      repeat (2) @(posedge clk);
-    // Initialization (0);      repeat (2) @(posedge clk);
-    // Send_value(5);           repeat(2) @(posedge clk);
-    // outputdata(1);           @(posedge clk);
-    // outputdata(0);           @(posedge clk);
-    // Send_value(1);           repeat(2) @(posedge clk);
-    // Send_value(data_out);    @(posedge clk);
-    // outputdata(1);           @(posedge clk);
-    // Load(0);                	@(posedge clk);
-    // outputdata(0);           @(posedge clk);
-    $finish;
-  end  
-
-  initial
+task init;
+  input neg;
+  input [DATA_WIDTH-1:0] arg;
   begin
-    $dumpfile("pu_accum.vcd");
-    $dumpvars(0,pu_accum_tb);
-    $display("finish");
-  end 
+    signal_init <= 1;
+    signal_load <= 1;
+    signal_neg  <= neg;
+    signal_oe   <= 0;
+    data_in     <= arg;
+    attr_in     <= 0;
+  end
+endtask
+
+task load;
+  input neg;
+  input [DATA_WIDTH-1:0] arg;
+  begin
+    signal_init <= 0;
+    signal_load <= 1;
+    signal_neg  <= neg;
+    signal_oe   <= 0;
+    data_in     <= arg;
+    attr_in     <= 0;
+  end
+endtask
+
+task out;
+  begin
+    signal_init <= 0;
+    signal_load <= 0;
+    signal_neg  <= 0;
+    signal_oe   <= 1;
+    data_in     <= 0;
+    attr_in     <= 0;
+  end
+endtask
+
+
+
+
+initial begin
+  $dumpfile("pu_accum_tb.vcd");
+  $dumpvars(0, pu_accum_tb);
+  clk <= 1;
+  forever #1 clk <= !clk;
+end
+
+initial begin
+  rst <= 1;     @(posedge clk);
+  @(posedge clk);
+  @(posedge clk);
+  rst <= 0;
+end
+
+initial begin
+  nop();
+  @(negedge rst);
+
+  nop(); @(posedge clk);
+  init(0, 5); @(posedge clk);
+  load(0, 5); @(posedge clk);
+  nop(); @(posedge clk);
+  out(); @(posedge clk);
+  
+  @(posedge clk);
+  
+  $finish;
+end  
        
 endmodule
-
-// ----------------------------------------------
-// iverilog -o test -I./ -y./ pu_accum.v pu_accum_tb.v
-// vvp test
-// gtkwave bench.vcd
-// iverilog -o test -I./ -y./ bench.v testbench.v && vvp test && gtkwave bench.vcd
-// ----------------------------------------------
