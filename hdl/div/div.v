@@ -66,7 +66,7 @@ module div (
 		LPM_DIVIDE_component.lpm_drepresentation = "SIGNED",
 		LPM_DIVIDE_component.lpm_hint = "MAXIMIZE_SPEED=6,LPM_REMAINDERPOSITIVE=TRUE",
 		LPM_DIVIDE_component.lpm_nrepresentation = "SIGNED",
-		LPM_DIVIDE_component.lpm_pipeline = 32,
+		LPM_DIVIDE_component.lpm_pipeline = 4,
 		LPM_DIVIDE_component.lpm_type = "LPM_DIVIDE",
 		LPM_DIVIDE_component.lpm_widthd = 32,
 		LPM_DIVIDE_component.lpm_widthn = 32;
@@ -88,7 +88,7 @@ endmodule
 // Retrieval info: CONSTANT: LPM_DREPRESENTATION STRING "SIGNED"
 // Retrieval info: CONSTANT: LPM_HINT STRING "MAXIMIZE_SPEED=6,LPM_REMAINDERPOSITIVE=TRUE"
 // Retrieval info: CONSTANT: LPM_NREPRESENTATION STRING "SIGNED"
-// Retrieval info: CONSTANT: LPM_PIPELINE NUMERIC "32"
+// Retrieval info: CONSTANT: LPM_PIPELINE NUMERIC "4"
 // Retrieval info: CONSTANT: LPM_TYPE STRING "LPM_DIVIDE"
 // Retrieval info: CONSTANT: LPM_WIDTHD NUMERIC "32"
 // Retrieval info: CONSTANT: LPM_WIDTHN NUMERIC "32"
