@@ -37,10 +37,10 @@ always @(posedge clk) begin
       arg_latch <= data_in[DATA_WIDTH-1:0];
       attr_latch <= attr_in;   
     end else if (signal_wr && signal_sel) begin
-        arg[0] <= arg_latch;
-        attr[0] <= attr_latch;
-        arg[1] <= data_in;
-        attr[1] <= attr_in;
+      arg[0] <= arg_latch;
+      attr[0] <= attr_latch;
+      arg[1] <= data_in;
+      attr[1] <= attr_in;
     end
   end
 end
@@ -54,11 +54,6 @@ always @(posedge clk) begin
     comm_attr <= 0;
   end else begin
     attr_wait[0] <= attr[0] || attr[1] || arg[1] == 0;
-    
-    // comm_attr <= 1;
-    // if ( attr[0] || attr[1] || arg[1] == 0 ) begin
-    //   attr_wait[0] <= !signal_sel ? 1 : 0;
-    // end 
     attr_wait[PIPE-1 : 1] <= attr_wait[ PIPE-2 : 0];
   end
 end 
@@ -75,30 +70,19 @@ div div_i1
 
 reg                  invalid_result;
 reg [DATA_WIDTH-1:0] data_divresult;
-// reg [DATA_WIDTH-1:0] div_result[1:0];
-// reg                  attr_to_ex;
 
 always @(posedge clk) begin
-  // div_result[0] <= quotient_result;
-  // div_result[1] <= remain_result;
   if ( rst ) begin
-    // div_result[0] <= 0;
-    // div_result[1] <= 0;
     invalid_result <= 0;
     data_divresult <= 0;
   end else begin
-    // div_result[0] <= quotient_result;
-    // div_result[1] <= remain_result;
-    // attr_to_ex <= attr_wait[PIPE];
     if ( signal_oe) begin
       invalid_result <= attr_wait[PIPE-1];
       if ( res_select ) begin
         data_divresult <= quotient_result;
-        // data_divresult <= div_result[0];
       end
       else
         data_divresult <= remain_result;
-        // data_divresult <= div_result[1];
     end
   end
 end

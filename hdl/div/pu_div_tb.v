@@ -11,7 +11,7 @@ reg  [DATA_WIDTH-1:0]  data_in;
 reg                  signal_oe;
 reg                        rst;
 reg                 signal_sel;
-reg					  res_select;
+reg                 res_select;
 reg                  signal_wr;
 reg                        clk;
 reg  [ATTR_WIDTH:0]    attr_in;                                              
@@ -34,8 +34,7 @@ pu_div
   , .res_select(res_select)
   , .data_out(data_out)
   , .attr_in(attr_in)
-  , .attr_out(attr_out)
-  
+  , .attr_out(attr_out)  
   );
 
 initial begin
@@ -52,26 +51,34 @@ initial begin
   
 
 
+// writing division arguments 
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; res_select <= 0; data_in <= -100; attr_in <= 1;  @(posedge clk);
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; res_select <= 0; data_in <= 4; attr_in <= 1;  @(posedge clk);
 
+// writing division arguments
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; res_select <= 0; data_in <= 100; attr_in <= 0;  @(posedge clk);
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; res_select <= 0; data_in <= -5; attr_in <= 0;  @(posedge clk);
 
+// waiting for results of division
   signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; res_select <= 0; data_in <= 0; attr_in <= 0; repeat (2) @(posedge clk);
   signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; res_select <= 1; data_in <= 0; attr_in <= 0; repeat (2) @(posedge clk);
 
+// writing results of division, writing division arguments
   signal_oe <= 1; signal_wr <= 1; signal_sel <= 0; res_select <= 1; data_in <= -100; attr_in <= 1;  @(posedge clk);
   signal_oe <= 1; signal_wr <= 1; signal_sel <= 1; res_select <= 1; data_in <= -5; attr_in <= 0;  @(posedge clk);
 
+// writing division arguments
   signal_oe <= 1; signal_wr <= 1; signal_sel <= 0; res_select <= 1; data_in <= 100; attr_in <= 0;  @(posedge clk);
   signal_oe <= 1; signal_wr <= 1; signal_sel <= 1; res_select <= 1; data_in <= 0; attr_in <= 1;  @(posedge clk);
 
+// writing results of division, pause
   signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; res_select <= 1; data_in <= 0; attr_in <= 0; repeat (50) @(posedge clk);
 
+// writing division arguments
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; res_select <= 0; data_in <= -100; attr_in <= 1;  @(posedge clk);
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; res_select <= 0; data_in <= 4; attr_in <= 1;  @(posedge clk);
-  repeat (4) @(posedge clk);
+
+// writing results of division, pause
   signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; res_select <= 1; data_in <= 0; attr_in <= 0; repeat (20) @(posedge clk);
 
 
