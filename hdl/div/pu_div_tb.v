@@ -51,34 +51,34 @@ initial begin
   
 
 
-// writing division arguments 
+// -100 / 4 = -25 (загрузка) 
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; res_select <= 0; data_in <= -100; attr_in <= 1;  @(posedge clk);
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; res_select <= 0; data_in <= 4; attr_in <= 1;  @(posedge clk);
 
-// writing division arguments
+// 100 / -5 = -20 (загрузка)
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; res_select <= 0; data_in <= 100; attr_in <= 0;  @(posedge clk);
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; res_select <= 0; data_in <= -5; attr_in <= 0;  @(posedge clk);
 
-// waiting for results of division
+// -100 / 4 = -25 (результат)
   signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; res_select <= 0; data_in <= 0; attr_in <= 0; repeat (2) @(posedge clk);
   signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; res_select <= 1; data_in <= 0; attr_in <= 0; repeat (2) @(posedge clk);
 
-// writing results of division, writing division arguments
+// 100 / -5 = -20 (результат), -100 / -5 = 25 (загрузка)
   signal_oe <= 1; signal_wr <= 1; signal_sel <= 0; res_select <= 1; data_in <= -100; attr_in <= 1;  @(posedge clk);
   signal_oe <= 1; signal_wr <= 1; signal_sel <= 1; res_select <= 1; data_in <= -5; attr_in <= 0;  @(posedge clk);
 
-// writing division arguments
+// 100 / 0 = x (загрузка)
   signal_oe <= 1; signal_wr <= 1; signal_sel <= 0; res_select <= 1; data_in <= 100; attr_in <= 0;  @(posedge clk);
   signal_oe <= 1; signal_wr <= 1; signal_sel <= 1; res_select <= 1; data_in <= 0; attr_in <= 1;  @(posedge clk);
 
-// writing results of division, pause
+// 100 / 0 = x (результат)
   signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; res_select <= 1; data_in <= 0; attr_in <= 0; repeat (50) @(posedge clk);
 
-// writing division arguments
+// -100 / 4 = -25 (загрузка)
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; res_select <= 0; data_in <= -100; attr_in <= 1;  @(posedge clk);
   signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; res_select <= 0; data_in <= 4; attr_in <= 1;  @(posedge clk);
 
-// writing results of division, pause
+// -100 / 4 = -25 (результат)
   signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; res_select <= 1; data_in <= 0; attr_in <= 0; repeat (20) @(posedge clk);
 
 
