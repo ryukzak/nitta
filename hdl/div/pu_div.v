@@ -30,17 +30,17 @@ always @(posedge clk) begin
     arg[0] <= 0;
     arg[1] <= 0;
     arg_latch <= 0;
-    attr[0] <=0;
-    attr[1] <=0;
+    attr[0] <= 0;
+    attr[1] <= 0;
   end else begin
     if (signal_wr && !signal_sel) begin
       arg_latch <= data_in[DATA_WIDTH-1:0];
       attr_latch <= attr_in;   
     end else if (signal_wr && signal_sel) begin
         arg[0] <= arg_latch;
+        attr[0] <= attr_latch;
         arg[1] <= data_in;
-        attr[0] <=attr_latch;
-        attr[1] <=attr_in;
+        attr[1] <= attr_in;
     end
   end
 end
@@ -53,19 +53,12 @@ always @(posedge clk) begin
     attr_wait <= 0;
     comm_attr <= 0;
   end else begin
-    // if (signal_wr) begin
-    //   if ( attr[0] || attr[1] ) begin
-    //     comm_attr <= 1;
-    //   end else if (arg[1] == 0) begin
-    //       comm_attr <= 1;
-    //     end else comm_attr <= 0;
-    // end
-    // if (attr[0] || attr[1] || arg[1] == 0) begin
-      comm_attr <= 1;
-    // end else comm_attr <= 0;
-    if (attr[0] || attr[1] || arg[1] == 0) begin
-    attr_wait[0] <= !signal_sel ? comm_attr : 0;
-    end 
+    attr_wait[0] <= attr[0] || attr[1] || arg[1] == 0;
+    
+    // comm_attr <= 1;
+    // if ( attr[0] || attr[1] || arg[1] == 0 ) begin
+    //   attr_wait[0] <= !signal_sel ? 1 : 0;
+    // end 
     attr_wait[PIPE-1 : 1] <= attr_wait[ PIPE-2 : 0];
   end
 end 
