@@ -20,45 +20,43 @@ module spi_slave_driver
   );
 
 reg   [DATA_WIDTH-1:0] shiftreg;
-reg   [DATA_WIDTH-1:0] shiftreg_out;
 
-localparam SIZE_FRAME  = $clog2( DATA_WIDTH );
 localparam STATE_IDLE = 0;        // wait for transaction begin
 localparam STATE_WAIT_SCLK_1 = 1; // wait for SCLK to become 1
 localparam STATE_WAIT_SCLK_0 = 2; // wait for SCLK to become 0
 reg   [2:0] state;
-reg   [SIZE_FRAME-1:0] count_sclk;
+
+localparam DATA_COUNTER_WIDTH  = $clog2( DATA_WIDTH + 1 );
+reg   [DATA_COUNTER_WIDTH-1:0] data_counter;
 
 always @( posedge rst, posedge clk ) begin
   if ( rst ) begin
     shiftreg <= 0;
     miso <= 0;
-    count_sclk <= 0;
+    data_counter <= 0;
     state <= STATE_IDLE;
-  end 
-  else begin
+  end else begin
     if ( cs ) begin
-      count_sclk <= 0;
+      data_counter <= 0;
       state <= STATE_IDLE;
-    end
-    else begin
+    end else begin
       case ( state )
         STATE_IDLE: begin
           shiftreg <= data_in; 
-          count_sclk <= 0;        
+          data_counter <= 0;        
           state <= STATE_WAIT_SCLK_1;
         end
         STATE_WAIT_SCLK_1: begin
           if ( sclk ) begin
             miso <= shiftreg[ DATA_WIDTH - 1 ];
-            count_sclk <= count_sclk + 1; 
+            if ( data_counter == DATA_WIDTH ) data_counter <= 1;
+            else data_counter <= data_counter + 1; 
             state <= STATE_WAIT_SCLK_0;           
           end
         end
         STATE_WAIT_SCLK_0: begin
           if ( !sclk ) begin
-            shiftreg_out          <= { shiftreg[DATA_WIDTH - 2:0], mosi };
-            shiftreg <= count_sclk ? { shiftreg[DATA_WIDTH - 2:0], mosi } : data_in;
+            shiftreg <= data_counter ? { shiftreg[DATA_WIDTH - 2:0], mosi } : data_in ;
             state <= STATE_WAIT_SCLK_1;              
           end
         end
@@ -68,7 +66,9 @@ always @( posedge rst, posedge clk ) begin
   end
 end
 
-assign { ready, data_out } = {state == STATE_IDLE
-                           || (count_sclk == 0 && sclk) , shiftreg_out };
+assign data_out = shiftreg;
+assign ready = state == STATE_IDLE 
+                     || data_counter == DATA_WIDTH && sclk && state == STATE_WAIT_SCLK_1
+                      ;
   
 endmodule
