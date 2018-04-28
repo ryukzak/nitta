@@ -12,6 +12,7 @@ reg rst;
 reg start_transaction;
 reg  [DATA_WIDTH*2-1:0] master_in;
 wire [DATA_WIDTH*2-1:0] master_out;
+wire ready;
 
 reg  [DATA_WIDTH-1:0] pu_spi_data_in;
 

@@ -1,7 +1,7 @@
-FILE = spi_master_driver.v spi_slave_driver.v pu_slave_spi_tb.v pu_slave_spi.v spi_buffer.v hoarder.v
+FILE = spi_master_driver.v spi_slave_driver.v pu_slave_spi_tb.v pu_slave_spi.v spi_buffer.v nitta_to_spi_splitter.v
 
 unix:
-	iverilog $(FILE) && ./a.out
+	iverilog -Wall $(FILE) && ./a.out
 
 all: comp vvp #gtk
 

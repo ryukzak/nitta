@@ -1,3 +1,4 @@
+`timescale 1 ms/ 1 ms
 module spi_buffer
   #( parameter DATA_WIDTH     = 32
    , parameter BUF_SIZE       = 10

@@ -1,3 +1,4 @@
+`timescale 1 ms/ 1 ms
 module pu_slave_spi
   #( parameter DATA_WIDTH     = 32
    , parameter ATTR_WIDTH     = 4
@@ -42,7 +43,7 @@ wire [ATTR_WIDTH-1:0] attr_out_transfer_in;
 wire [ATTR_WIDTH-1:0] attr_out_transfer_out;
 wire [ATTR_WIDTH-1:0] attr_out_send;
 wire [ATTR_WIDTH-1:0] attr_out_receive;
-wire [ATTR_WIDTH-1:0] attr_out_hoarder;
+wire [ATTR_WIDTH-1:0] splitter_attr;
 // --------------- END -------------------
 
 // ---------- BUFFER SWITCHING -----------
@@ -56,7 +57,7 @@ wire [DATA_WIDTH-1:0] transfer_in_data_in;
 wire [DATA_WIDTH-1:0] transfer_out_data_in;
 wire [DATA_WIDTH-1:0] send_data_in;
 wire [DATA_WIDTH-1:0] receive_data_in;
-wire [DATA_WIDTH-1:0] hoarder_data_in;
+wire [DATA_WIDTH-1:0] nitta_to_splitter;
 // --------------- END -------------------
 
 // ----------- WIRE DATA OUT -------------
@@ -84,6 +85,23 @@ spi_slave_driver
   , .cs( cs )
   );
 
+wire splitter_wr = flag_start || splitter_attr[ INVALID ];
+
+nitta_to_spi_splitter nitta_to_spi_splitter 
+  ( .clk( clk )
+  , .rst( rst )
+  , .from_nitta( nitta_to_splitter )
+  , .to_spi( spi_data_send )
+  
+  , .wr( splitter_wr )
+  , .flag_start( flag_start )
+  , .ready( spi_ready )
+  , .attr_hoarder( splitter_attr )
+  );
+
+assign nitta_to_splitter = work_buffer_send ? transfer_in_data_out : send_data_out;
+
+
 // [TRANSFER <<< NITTA]
 spi_buffer 
   #( .BUF_SIZE( BUF_SIZE )
@@ -94,7 +112,7 @@ spi_buffer
   , .attr_out( attr_out_transfer_in )
   , .data_in( transfer_in_data_in )
   // ------------------------------------
-  , .oe( ( flag_start || attr_out_hoarder[ INVALID ] ) && work_buffer_send )
+  , .oe( ( splitter_wr ) && work_buffer_send )
   , .data_out( transfer_in_data_out )
   ); 
 
@@ -104,6 +122,9 @@ spi_buffer
    ) transfer_out_buffer 
   ( .clk( clk )
   , .rst( rst )
+  , .wr( 1'b0 )
+  , .oe( 1'b0 )
+  , .data_in( 0 )
   ); 
 
 // [MASTER >>> SLAVE]
@@ -113,6 +134,9 @@ spi_buffer
    ) receive_buffer
   ( .clk( clk )
   , .rst( rst )
+  , .wr( 1'b0 )
+  , .oe( 1'b0 )
+  , .data_in( 0 )
   );
 
 // [MASTER <<< SLAVE]
@@ -126,20 +150,11 @@ spi_buffer
   , .attr_out( attr_out_send )
   , .data_in( send_data_in )
   // ----------------------------------
-  , .oe( ( flag_start || attr_out_hoarder[ INVALID ] ) && ~work_buffer_send )
+  , .oe( ( splitter_wr ) && ~work_buffer_send )
   , .data_out( send_data_out )
   );
 
-hoarder frame_hoarder 
-  ( .clk( clk )
-  , .rst( rst )
-  , .data_in( hoarder_data_in )
-  , .wr( flag_start || attr_out_hoarder[ INVALID ] )
-  , .flag_start( flag_start )
-  , .ready( spi_ready )
-  , .data_out_byte( spi_data_send )
-  , .attr_hoarder( attr_out_hoarder )
-  );
+
 
 always @( posedge clk ) begin
   if ( rst ) begin
@@ -170,7 +185,6 @@ always @( posedge clk or posedge rst ) begin
 end
 
 assign { transfer_in_data_in, send_data_in } = work_buffer_send ? { 32'h00000000, data_in } : { data_in , 32'h00000000 };
-assign hoarder_data_in = work_buffer_send ? transfer_in_data_out : send_data_out;
 assign flag_start = !cs && spi_ready && flag ? 1 : 0;
 
 // Необходимо что бы flag_stop сбрасывался сам через такт после установки.
