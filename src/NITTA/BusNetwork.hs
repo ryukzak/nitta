@@ -439,7 +439,9 @@ instance ( Title title, Var v, Time t
         , "  ( .clk( clk )                                                                                           "
         , "  , .rst( rst )                                                                                           "
         , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
-        , "  , .is_drop_allow( 1'b0 )"
+        , "// if 1 - The process cycle are indipendent from a SPI."
+        , "// else - The process cycle are wait for the SPI."
+        , "  , .is_drop_allow( 1'b1 )"
         , "  );                                                                                                      "
         , "                                                                                                          "
         , S.join "\n\n"

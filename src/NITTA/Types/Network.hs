@@ -69,6 +69,7 @@ instance TargetSystemComponent (PU v x t) where
   moduleName name PU{..} = moduleName name unit
   hardware name PU{..} = hardware name unit
   software name PU{..} = software name unit
+  hardwareInstance name PU{..} = hardwareInstance name PU{..}
 
 castPU :: ( ByTime pu t
           , Connected pu

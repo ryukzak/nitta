@@ -24,7 +24,7 @@ import           GHC.Generics
 import           ListT                  (toList)
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import           NITTA.Types            hiding (Synthesis, steps)
+import           NITTA.Types            hiding (steps)
 import           NITTA.Utils.JSON       ()
 import           Servant
 import qualified STMContainers.Map      as M
