@@ -114,17 +114,14 @@ instance Connected (Mult v x t) where
       ]
 
 
-instance DefinitionSynthesis (Mult v x t) where
+instance TargetSystemComponent (Mult v x t) where
   moduleName _ _ = "pu_mult"
   hardware _ _
-    = Project "" [ FromLibrary "mult/mult_inner.v"
-                 , FromLibrary "mult/pu_mult.v"
-                 ]
+    = Aggregate Nothing
+        [ FromLibrary "mult/mult_inner.v"
+        , FromLibrary "mult/pu_mult.v"
+        ]
   software _ _ = Empty
-
-
-instance ( Time t, Var v
-         ) => Synthesis (Mult v x t) where
   hardwareInstance name _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
     [ "pu_mult "
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"

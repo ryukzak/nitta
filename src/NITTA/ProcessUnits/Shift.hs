@@ -137,13 +137,10 @@ instance ( Var v, B.Bits x ) => Simulatable (Shift v x t) v x where
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
 
 
-instance DefinitionSynthesis (Shift v x t) where
+instance TargetSystemComponent (Shift v x t) where
   moduleName _ _ = "pu_shift"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software _ _ = Empty
-
-instance ( Time t, Var v
-         ) => Synthesis (Shift v x t) where
   hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
     [ "pu_shift #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "          , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"

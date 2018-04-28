@@ -141,19 +141,17 @@ instance Connected (SPI v x t) where
 
 
 
-instance ( Var v, Show t ) => DefinitionSynthesis (SPI v x t) where
+instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
   moduleName _ _ = "pu_slave_spi"
   hardware title pu
-    = Project "" [ FromLibrary "spi/spi_slave_driver.v"
-                 , FromLibrary "spi/spi_buffer.v"
-                 , FromLibrary "spi/spi_master_driver.v"
-                 , FromLibrary "spi/hoarder.v"
-                 , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
-                 ]
+    = Aggregate Nothing
+        [ FromLibrary "spi/spi_slave_driver.v"
+        , FromLibrary "spi/spi_buffer.v"
+        , FromLibrary "spi/spi_master_driver.v"
+        , FromLibrary "spi/hoarder.v"
+        , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
+        ]
   software _ pu = Immidiate "transport.txt" $ show pu
-
-instance ( Time t, Var v
-         ) => Synthesis (SPI v x t) where
   hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
     [ "pu_slave_spi"
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
@@ -177,7 +175,7 @@ instance ( Time t, Var v
     , "  );"
     ] [ ( "name", title ) ]
 
-  testBenchEnviroment title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..} = renderMST
+  componentTestEnviroment title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..} = renderMST
     [ "reg $name$_start_transaction;"
     , "reg  [64-1:0] $name$_master_in;"
     , "wire [64-1:0] $name$_master_out;"

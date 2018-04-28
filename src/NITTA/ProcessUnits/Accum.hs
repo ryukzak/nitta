@@ -124,14 +124,10 @@ instance Connected (Accum v x t) where
       ]
 
 
-instance DefinitionSynthesis (Accum v x t) where
+instance TargetSystemComponent (Accum v x t) where
   moduleName _ _ = "pu_accum"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software _ _ = Empty
-
-
-instance ( Time t, Var v
-         ) => Synthesis (Accum v x t) where
   hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
     [ "pu_accum "
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"

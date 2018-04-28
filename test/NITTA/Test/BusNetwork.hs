@@ -15,7 +15,7 @@ import qualified NITTA.ProcessUnits.Accum as A
 import qualified NITTA.ProcessUnits.Fram  as FR
 import qualified NITTA.ProcessUnits.Shift as S
 import qualified NITTA.ProcessUnits.SPI   as SPI
-import           NITTA.TestBench
+import           NITTA.Project
 import           NITTA.Types
 import           System.FilePath.Posix    (joinPath)
 import           Test.Tasty.HUnit
@@ -109,12 +109,12 @@ badTestFram = badUnitTest "badTestFram" netWithFramShiftAccum
 
 unitTest name n cntx alg = do
   let n' = nitta $ synthesis $ frame n alg
-  r <- testBench name "../.." (joinPath ["hdl", "gen", name]) n' cntx
+  r <- writeAndRunTestBench (Project name "../.." (joinPath ["hdl", "gen", name]) n') cntx
   r @? name
 
 badUnitTest name n cntx alg = do
   let n' = nitta $ synthesis $ frame n alg
-  r <- testBench name "../.." (joinPath ["hdl", "gen", name]) n' cntx
+  r <- writeAndRunTestBench (Project name "../.." (joinPath ["hdl", "gen", name]) n') cntx
   not r @? name
 
 synthesis f = foldl (\f' _ -> naive def f') f $ replicate 50 ()

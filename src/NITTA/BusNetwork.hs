@@ -41,7 +41,7 @@ import           Data.Set             (elems, fromList, intersection)
 import qualified Data.String.Utils    as S
 import           Data.Typeable
 import           NITTA.FunctionBlocks (get', simulateAlgByCycle)
-import           NITTA.TestBench
+import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
@@ -228,8 +228,7 @@ instance ( Title title, Time t, Var v, Typeable x
                            return $ M.insert sKey k dict
                        ) M.empty subSteps
         let subRelations = relations $ process pu'
-        mapM (\r -> relation $ case r of
-                 Vertical a b -> Vertical (uids' M.! a) (uids' M.! b)
+        mapM (\(Vertical a b) -> relation $ Vertical (uids' M.! a) (uids' M.! b)
              ) subRelations
 
   setTime t bn@BusNetwork{..} = bn{ bnProcess=bnProcess{ nextTick=t }
@@ -315,7 +314,7 @@ instance ( Var v
 
 
 instance ( Time t
-         ) => DefinitionSynthesis (BusNetwork String v x t) where
+         ) => TargetSystemComponent (BusNetwork String v x t) where
   moduleName title BusNetwork{..} = title ++ "_net"
 
   hardware title pu@BusNetwork{..}
@@ -323,7 +322,7 @@ instance ( Time t
           net = [ Immidiate (mn ++ ".v") iml
                 , FromLibrary "pu_simple_control.v"
                 ]
-      in Project mn (pus ++ net)
+      in Aggregate (Just mn) (pus ++ net)
     where
       mn = moduleName title pu
       iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
@@ -402,8 +401,9 @@ instance ( Time t
           in renderInstance insts' regs' xs
 
   software title pu@BusNetwork{ bnProcess=Process{..}, ..}
-    = Project mn $ map (uncurry software) (M.assocs bnPus)
-                       ++ [ Immidiate (mn ++ ".dump") memoryDump ]
+    = let subSW = map (uncurry software) (M.assocs bnPus)
+          sw = [ Immidiate (mn ++ ".dump") memoryDump ]
+      in Aggregate (Just mn) $ subSW ++ sw
     where
       mn = moduleName title pu
       memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) ticks
@@ -412,14 +412,15 @@ instance ( Time t
       ticks = [ -1 .. nextTick - 1 ]
       values (BusNetworkMC arr) = reverse $ A.elems arr
 
+  hardwareInstance = undefined
 
 
 instance ( Title title, Var v, Time t
          , Show x
-         , DefinitionSynthesis (BusNetwork title v x t)
+         , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x
          ) => TestBench (BusNetwork title v x t) v x where
-  testBenchDescription title n@BusNetwork{..} cntx0 = Immidiate (moduleName title n ++ "_tb.v") testBenchImp
+  testBenchDescription Project{ projectName, model=n@BusNetwork{..} } cntx0 = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
     where
       ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
       testBenchImp = renderMST
@@ -445,7 +446,7 @@ instance ( Title title, Var v, Time t
           [ tbEnv
           | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus
           , let t' = filter (/= '"') $ show t
-          , let tbEnv = testBenchEnviroment t' unit systemEnv links
+          , let tbEnv = componentTestEnviroment t' unit systemEnv links
           , not $ null tbEnv
           ]
         , "                                                                                                          "
@@ -466,7 +467,7 @@ instance ( Title title, Var v, Time t
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]
-        [ ( "moduleName", moduleName title n )
+        [ ( "moduleName", moduleName projectName n )
         ]
 
       -- FIXME: 15 - must be variable

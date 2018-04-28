@@ -15,7 +15,7 @@ import           Data.Proxy
 import           Data.Set                (difference, elems, empty, fromList,
                                           intersection, union)
 import           NITTA.Compiler
-import           NITTA.TestBench
+import           NITTA.Project
 import           NITTA.Timeline
 import           NITTA.Types
 import           NITTA.Utils
@@ -99,7 +99,7 @@ inputsGen (pu, fbs) = do
 prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
   i <- run $ incrCounter 1 counter
   let path = joinPath ["hdl", "gen", n ++ show i]
-  res <- run $ testBench n "../.." path pu values
+  res <- run $ writeAndRunTestBench (Project n "../.." path pu) values
   run $ timeline (joinPath [path, "data.json"]) pu
   run $ timeline "resource/data.json" pu
   assert res
@@ -128,4 +128,4 @@ unitTestbench title proxy cntx alg
   = let lib = joinPath ["..", ".."]
         wd = joinPath ["hdl", "gen", title]
         pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
-    in testBench title lib wd pu cntx @? title
+    in writeAndRunTestBench (Project title lib wd pu) cntx @? title

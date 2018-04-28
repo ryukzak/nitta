@@ -5,13 +5,14 @@
 {-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TemplateHaskell           #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.TestBench where
+module NITTA.Project where
 
 import           Control.Monad         (when)
 import           Data.FileEmbed
@@ -26,39 +27,49 @@ import           System.FilePath.Posix (joinPath, pathSeparator)
 import           System.Process
 
 
--- | Для реализующие этот класс вычислительных блоков могут быть сгенерированы testbench-и.
+-- | Данный класс позволяет для реализующих его вычислительных блоков сгенировать test bench.
 class TestBench pu v x | pu -> v x where
-  testBenchDescription :: String -> pu -> Cntx v x -> Implementation
+  testBenchDescription :: Project pu -> Cntx v x -> Implementation
+
+
+-- | Проект вычислителя NITTA.
+data Project pu
+  = Project
+    { projectName :: String
+    , libraryPath :: String
+    , projectWD   :: String
+    , model       :: pu
+    } deriving ( Show )
 
 
 -- | Сгенерировать и выполнить testbench.
-testBench title library workdir pu values = do
-  writeProject title library workdir pu values
-  runTestBench title library workdir pu
+writeAndRunTestBench prj@Project{ projectWD } cntx = do
+  writeProject prj
+  writeImplementation projectWD $ testBenchDescription prj cntx
+  runTestBench prj
 
 
--- | Записать на диск testbench и все необходимые модули.
-writeProject title library pwd pu cntx = do
-  createDirectoryIfMissing True pwd
-  writeImplementation pwd $ hardware title pu
-  writeImplementation pwd $ software title pu
-  writeImplementation pwd $ testBenchDescription title pu cntx
-  writeModelsimDo title library pwd pu
-  writeQuartus title library pwd pu
-  writeFile (joinPath [pwd, "Makefile"])
+-- | Записать на диск проект вычислителя.
+writeProject prj@Project{ projectName, projectWD, model } = do
+  createDirectoryIfMissing True projectWD
+  writeImplementation projectWD $ hardware projectName model
+  writeImplementation projectWD $ software projectName model
+  writeModelsimDo prj
+  writeQuartus prj
+  writeFile (joinPath [ projectWD, "Makefile" ])
     $ renderST $(embedStringFile "template/Makefile")
-      [ ( "iverilog_args", S.join " " $ snd $ projectFiles library pu title ) ]
+      [ ( "iverilog_args", S.join " " $ snd $ projectFiles prj ) ]
 
 -----------------------------------------------------------
 -- ModelSim
 
-writeModelsimDo title library workdir pu = do
-  let (tb, files) = projectFiles library pu title
-  writeFile ( joinPath [ workdir, "wave.do" ] )
+writeModelsimDo prj@Project{ projectWD } = do
+  let (tb, files) = projectFiles prj
+  writeFile ( joinPath [ projectWD, "wave.do" ] )
     $ renderST
       $(embedStringFile "template/modelsim/wave.do")
       [ ( "top_level", tb ) ]
-  writeFile ( joinPath [ workdir, "sim.do" ] )
+  writeFile ( joinPath [ projectWD, "sim.do" ] )
     $ renderST
       $(embedStringFile "template/modelsim/sim.do")
       [ ( "top_level", tb )
@@ -68,18 +79,17 @@ writeModelsimDo title library workdir pu = do
 -----------------------------------------------------------
 -- Quartus
 
-writeQuartus title library workdir pu = do
-  let (tb, files) = projectFiles library pu title
-  writeFile (joinPath [ workdir, "nitta.qpf" ]) quartusQPF
-  writeFile (joinPath [ workdir, "nitta.qsf" ]) $ quartusQSF tb files
-  writeFile (joinPath [ workdir, "nitta.sdc" ]) quartusSDC
-  writeFile ( joinPath [ workdir, "nitta.v" ] )
+writeQuartus prj@Project{ projectName, projectWD, model } = do
+  let (tb, files) = projectFiles prj
+  writeFile (joinPath [ projectWD, "nitta.qpf" ]) quartusQPF
+  writeFile (joinPath [ projectWD, "nitta.qsf" ]) $ quartusQSF tb files
+  writeFile (joinPath [ projectWD, "nitta.sdc" ]) quartusSDC
+  writeFile ( joinPath [ projectWD, "nitta.v" ] )
     $ renderST
       $(embedStringFile "template/quartus/nitta.v")
-      [ ( "top_level_module", moduleName title pu ) ]
-  writeFile ( joinPath [ workdir, "pll.v" ] )
+      [ ( "top_level_module", moduleName projectName model ) ]
+  writeFile ( joinPath [ projectWD, "pll.v" ] )
     $(embedStringFile "template/quartus/pll.v")
-
 
 quartusQPF = $(embedStringFile "template/quartus/project_file.qpf") :: String
 
@@ -96,9 +106,10 @@ quartusQSF tb files = renderST $(embedStringFile "template/quartus/settings_file
 quartusSDC = $(embedStringFile "template/quartus/synopsys_design_constraint.sdc") :: String
 
 
--- | Записать реализацию (программную или аппаратную) на диск. Реализация может быть представлена
--- как отдельным файлом, так и целым деревом каталогов. ДанныеАА размещаются в указанном рабочем
--- каталоге.
+-----------------------------------------------------------
+
+
+-- | Записать реализацию на диск. Данные размещаются в указанном рабочем каталоге.
 --
 -- Ключ $path$ используется для корректной адресации между вложенными файлами. К примеру, в папке
 -- DIR лежит два файла f1 и f2, и при этом f1 импортирует в себя f2. Для этого, зачастую, необходимо
@@ -108,8 +119,8 @@ writeImplementation pwd impl = writeImpl "" impl
   where
     writeImpl p (Immidiate fn src)
       = writeFile (joinPath [pwd, p, fn]) $ S.replace "$path$" (if null p then "" else p ++ [pathSeparator]) src
-    writeImpl p (Project p' subInstances) = do
-      let path = joinPath [p, p']
+    writeImpl p (Aggregate p' subInstances) = do
+      let path = joinPath $ maybe [p] (\x -> [p, x]) p'
       createDirectoryIfMissing True $ joinPath [ pwd, path ]
       mapM_ (writeImpl path) subInstances
     writeImpl _ (FromLibrary _) = return ()
@@ -120,22 +131,22 @@ writeImplementation pwd impl = writeImpl "" impl
 
 -- | Запустить testbench в указанной директории.
 -- TODO: Сделать вывод через Control.Monad.Writer.
-runTestBench title library workdir pu = do
-  let (_tb, files) = projectFiles library pu title
-  (compileExitCode, compileOut, compileErr)
-    <- readCreateProcessWithExitCode (createIVerilogProcess workdir files) []
+runTestBench prj@Project{ projectWD, model } = do
+  let (_tb, files) = projectFiles prj
+  ( compileExitCode, compileOut, compileErr )
+    <- readCreateProcessWithExitCode (createIVerilogProcess projectWD files) []
   when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
-    mapM_ print $ functionalBlocks pu
+    mapM_ print $ functionalBlocks model
     putStrLn $ "compiler stdout:\n-------------------------\n" ++ compileOut
     putStrLn $ "compiler stderr:\n-------------------------\n" ++ compileErr
     die "Verilog compilation failed!"
 
   (simExitCode, simOut, simErr)
-    <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just workdir } []
+    <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just projectWD } []
   -- Yep, we can't stop simulation with bad ExitCode...
 
   when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut) $ do
-    mapM_ print $ functionalBlocks pu
+    mapM_ print $ functionalBlocks model
     putStrLn $ "sim stdout:\n-------------------------\n" ++ simOut
     putStrLn $ "sim stderr:\n-------------------------\n" ++ simErr
 
@@ -148,14 +159,15 @@ createIVerilogProcess workdir files
   = let cp = proc "iverilog" files
     in cp { cwd=Just workdir }
 
-projectFiles library pu title
-  = let files = L.nub $ concatMap (args "") [ hardware title pu, testBenchDescription title pu undefined ]
+projectFiles prj@Project{ projectName, libraryPath, model }
+  = let files = L.nub $ concatMap (args "") [ hardware projectName model, testBenchDescription prj undefined ]
         tb = S.replace ".v" "" $ last files
     in (tb, files)
   where
-    args p (Project p' subInstances) = concatMap (args $ joinPath [p, p']) subInstances
+    args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
+    args p (Aggregate Nothing subInstances) = concatMap (args $ joinPath [p]) subInstances
     args p (Immidiate fn _) = [ joinPath [ p, fn ] ]
-    args _ (FromLibrary fn) = [ joinPath [ library, fn ] ]
+    args _ (FromLibrary fn) = [ joinPath [ libraryPath, fn ] ]
     args _ Empty = []
 
 

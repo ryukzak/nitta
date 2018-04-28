@@ -76,7 +76,7 @@ import qualified Data.String.Utils     as S
 import           Data.Typeable
 import           NITTA.Compiler
 import           NITTA.FunctionBlocks
-import           NITTA.TestBench
+import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
@@ -538,8 +538,8 @@ instance ( Var v
          , PrintfArg x
          , ProcessUnit (Fram v x t) (Parcel v x) t
          ) => TestBench (Fram v x t) v x where
-  testBenchDescription title pu@Fram{ frProcess=Process{ steps }, .. } cntx0
-    = Immidiate (moduleName title pu ++ "_tb.v") testBenchImp
+  testBenchDescription Project{ projectName, model=pu@Fram{ frProcess=Process{ steps }, .. } } cntx0
+    = Immidiate (moduleName projectName pu ++ "_tb.v") testBenchImp
     where
       Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) (Just cntx0) $ functionalBlocks pu
       testBenchImp = renderMST
@@ -565,7 +565,7 @@ instance ( Var v
         , "wire [DATA_WIDTH-1:0] data_out;                                                                           "
         , "wire [ATTR_WIDTH-1:0] attr_out;                                                                           "
         , "                                                                                                          "
-        , hardwareInstance title pu
+        , hardwareInstance projectName pu
             Enviroment{ signalClk="clk"
                       , signalRst="rst"
                       , signalCycle="cycle"
@@ -602,11 +602,11 @@ instance ( Var v
         , "                                                                                                          "
         , initialFinish $ controlSignals pu
         , initialFinish $ testDataInput pu cntx
-        , initialFinish $ testDataOutput title pu cntx
+        , initialFinish $ testDataOutput projectName pu cntx
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]
-        [ ( "moduleName", moduleName title pu )
+        [ ( "moduleName", moduleName projectName pu )
         ]
 
 controlSignals pu@Fram{ frProcess=Process{..}, ..}
@@ -685,15 +685,11 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
 
 softwareFile title pu = moduleName title pu ++ "." ++ title ++ ".dump"
 
-instance ( Time t, Var v, PrintfArg x ) => DefinitionSynthesis (Fram v x t) where
+instance ( Time t, Var v, PrintfArg x ) => TargetSystemComponent (Fram v x t) where
   moduleName _ _ = "pu_fram"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software title pu@Fram{ frMemory }
     = Immidiate (softwareFile title pu) $ unlines $ map (printf "%08x" . initialValue) $ elems frMemory
-
-
-instance ( Time t, Var v, Show x, PrintfArg x
-         ) => Synthesis (Fram v x t) where
   hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
     [ "pu_fram "
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"

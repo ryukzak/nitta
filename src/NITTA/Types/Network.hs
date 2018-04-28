@@ -34,9 +34,9 @@ data PU v x t where
         , ProcessUnit pu (Parcel v x) t
         , Show (Instruction pu)
         , Simulatable pu v x
-        , Synthesis pu
         , Typeable pu
         , UnambiguouslyDecode pu
+        , TargetSystemComponent pu
         , Typeable x
         , Show x
         , Num x
@@ -65,7 +65,7 @@ instance ProcessUnit (PU v x t) (Parcel v x) t where
 instance Simulatable (PU v x t) v x where
   simulateOn cntx PU{..} fb = simulateOn cntx unit fb
 
-instance DefinitionSynthesis (PU v x t) where
+instance TargetSystemComponent (PU v x t) where
   moduleName name PU{..} = moduleName name unit
   hardware name PU{..} = hardware name unit
   software name PU{..} = software name unit
@@ -75,11 +75,10 @@ castPU :: ( ByTime pu t
           , DecisionProblem (EndpointDT v t)
                  EndpointDT  pu
           , Default (Instruction pu)
-          , DefinitionSynthesis pu
+          , TargetSystemComponent pu
           , ProcessUnit pu v t
           , Show (Instruction pu)
           , Simulatable pu v x
-          , Synthesis pu
           , Typeable pu
           , UnambiguouslyDecode pu
           , Typeable x
@@ -127,37 +126,41 @@ instance DecisionType (DataFlowDT title v t) where
     } deriving ( Show, Generic )
 
 
--- | Реализация вычислительного блока и его конфигурации (процессора и программоного обеспечения).
+-- | Реализация компонента системы или её фрагмента (HW или SW).
 data Implementation
-  -- | Рекомендуемое имя файла для модуля и текст модуля.
-  = Immidiate String String
-  -- | Библиотечный элемент, возвращается имя файла.
-  | FromLibrary String
-  -- | Рекомендуемое имя каталога, в котором должен быть проект данного модуля со всеми вложениями.
-  | Project String [Implementation]
+  -- | Непосредственно реализация компонента.
+  = Immidiate { impFileName, impText :: String }
+  -- | Библиотечный элемент, приведённый в указанном файле.
+  | FromLibrary { impFileName :: String }
+  -- | Релизация описывается совокупностью файлов располагаемых в указанном каталоге относительно
+  -- рабочей папки.
+  | Aggregate { impPath :: Maybe String, subComponents :: [ Implementation ] }
+  -- Реализация не требуется (к примеру: для многих вычислительных блоков ПО отсутствует).
   | Empty
 
 
--- | Генерация аппаратной и программной составляющей процессора.
-class DefinitionSynthesis pu where
-  -- | Имя модуля.
+-- | Описание компонент целевой системы процессора NITTA. Включает в себя как непосредственную
+-- генерацию программных и аппаратных компонен, так и базовые функции для их интеграции в объемлющие
+-- компоненты. 
+class TargetSystemComponent pu where
+  -- | Название модуля, как правило соответствует названию файла описывающего top_level_module.
   moduleName :: String -> pu -> String
-  -- | Реализация аппаратной составляющей вычислительного блока.
+
+  -- | Совокупность файлов, описывающих аппаратную составляющую компонента целевой системы. Это
+  -- может быть ссылка на библиотеку, сгенерированный файл или папка.
   hardware :: String -> pu -> Implementation
-  -- | Реализация программной составляющей составляющей вычислительного блока.
+
+  -- | Совокупность файлов описывающих программное обеспечение компонента. Могут и отсутствовать.
   software :: String -> pu -> Implementation
 
-
-class ( DefinitionSynthesis pu ) => Synthesis pu where
-  -- | Объявление экземпляра модуля. Используется для генерации процессоров и testbench-ей.
-  --
-  -- Конфигурирование вычислительного блока осуществляется через подаваемы на вход словарь. В
-  -- настоящий момент данная функция не является типо-безопастной и не отличается runtime
-  -- проверками, что конечно никуда не годится.
+  -- | Объявление экземпляра модуля. Необходимо для генерации вложенных компонент и рабочего
+  -- окружения (целевого или тестового).
   hardwareInstance :: String -> pu -> Enviroment -> PUPorts pu -> String
 
-  testBenchEnviroment :: String -> pu -> Enviroment -> PUPorts pu -> String
-  testBenchEnviroment _ _ _ _ = ""
+  -- | Для автоматизированного тестирования компонент со внешними портами ввода/вывода необходимо
+  -- специализированное тестовое окружение, имитирующее ввод/вывод.
+  componentTestEnviroment :: String -> pu -> Enviroment -> PUPorts pu -> String
+  componentTestEnviroment _ _ _ _ = ""
 
 
 -- | Описание подключения сигнальных шин управления.

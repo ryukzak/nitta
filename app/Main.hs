@@ -27,7 +27,7 @@ import qualified NITTA.ProcessUnits.Fram     as FR
 import qualified NITTA.ProcessUnits.Mult     as M
 import qualified NITTA.ProcessUnits.Shift    as S
 import qualified NITTA.ProcessUnits.SPI      as SPI
-import           NITTA.TestBench
+import           NITTA.Project
 import           NITTA.Timeline
 import           NITTA.Types
 import           Servant.JS
@@ -159,7 +159,8 @@ webServer root = do
 
 test n pu cntx = do
   timeline "resource/data.json" pu
-  r <- testBench n "../.." (joinPath ["hdl", "gen", n]) pu cntx
+  let prj = Project n "../.." (joinPath ["hdl", "gen", n]) pu
+  r <- writeAndRunTestBench prj cntx
   if r then putStrLn "Success"
   else putStrLn "Fail"
 
