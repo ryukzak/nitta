@@ -11,29 +11,23 @@
 module Main where
 
 import           Data.Default
-import qualified Data.Map                    as M
+import qualified Data.Map                 as M
 import           Data.Maybe
-import           Data.Monoid
 import           Data.Proxy
-import           Network.Wai.Handler.Warp
-import           Network.Wai.Middleware.Cors (simpleCors)
 import           NITTA.API
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import qualified NITTA.FunctionBlocks        as FB
-import qualified NITTA.ProcessUnits.Accum    as A
-import qualified NITTA.ProcessUnits.Fram     as FR
-import qualified NITTA.ProcessUnits.Mult     as M
-import qualified NITTA.ProcessUnits.Shift    as S
-import qualified NITTA.ProcessUnits.SPI      as SPI
+import qualified NITTA.FunctionBlocks     as FB
+import qualified NITTA.ProcessUnits.Accum as A
+import qualified NITTA.ProcessUnits.Fram  as FR
+import qualified NITTA.ProcessUnits.Mult  as M
+import qualified NITTA.ProcessUnits.Shift as S
+import qualified NITTA.ProcessUnits.SPI   as SPI
 import           NITTA.Project
 import           NITTA.Timeline
 import           NITTA.Types
-import           Servant.JS
-import qualified Servant.JS                  as SJS
-import           System.Directory
-import           System.FilePath.Posix       (joinPath)
+import           System.FilePath.Posix    (joinPath)
 
 
 microarch = busNetwork 27
@@ -143,18 +137,6 @@ main = do
   -- putStrLn "Server start on 8080..."
   -- webServer $ frame $ dfgraph fibonacciAlg
   putStrLn "-- the end --"
-
-
-webServer root = do
-  let prefix = "import axios from 'axios';\n\
-                \var api = {}\n\
-                \export default api;"
-  let axios' = axiosWith defAxiosOptions defCommonGeneratorOptions{ urlPrefix="http://localhost:8080"
-                                                                  , SJS.moduleName="api"
-                                                                  }
-  createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
-  writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
-  app def{ state=root } >>= run 8080 . simpleCors
 
 
 test n pu cntx = do
