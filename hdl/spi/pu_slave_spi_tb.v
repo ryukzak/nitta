@@ -84,10 +84,15 @@ initial begin
 end
 
 initial begin
-  pu.n2s_buffer2.memory[0] = 32'hB0B1B2b3; 
-  pu.n2s_buffer2.memory[1] = 32'hB4B5B6b7; 
-  pu.n2s_buffer2.memory[2] = 32'hB8B9BAbB; 
-  pu.n2s_buffer2.memory[3] = 32'hBCBDBEbF; 
+  pu.n2s_buffer1.memory[0] = 32'hE0E1E2E3; 
+  pu.n2s_buffer1.memory[1] = 32'hE4E5E6E7; 
+  pu.n2s_buffer1.memory[2] = 32'hE8E9EAEB; 
+  pu.n2s_buffer1.memory[3] = 32'hECEDEEEF; 
+
+  pu.n2s_buffer1.memory[0] = 32'hF0F1F2F3; 
+  pu.n2s_buffer1.memory[1] = 32'hF4F5F6F7; 
+  pu.n2s_buffer1.memory[2] = 32'hF8F9FAFB; 
+  pu.n2s_buffer1.memory[3] = 32'hFCFDFEFF; 
 
   $dumpfile("pu_slave_spi_tb.vcd");
   $dumpvars(0, pu_slave_spi_tb);
@@ -102,7 +107,7 @@ task display_buffers;
   integer i;
   begin
     for ( i = 0; i < BUF_SIZE; i = i + 1 ) begin
-      $display("%d -> %h %h", i, pu.n2s_buffer1.memory[i], pu.n2s_buffer2.memory[i]);
+      $display("%d -> %h %h", i, pu.n2s_buffer0.memory[i], pu.n2s_buffer1.memory[i]);
     end
   end 
 endtask
@@ -136,7 +141,7 @@ initial begin
   wr <= 0;                     repeat( 48) @(posedge clk);
   wr <= 1; pu_spi_data_in <= 32'hBCBDBEBF; @(posedge clk);
   wr <= 0;                     repeat( 40) @(posedge clk);
-repeat(600) @(posedge clk);
+  repeat(600) @(posedge clk);
 
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
   display_buffers();
@@ -150,7 +155,7 @@ repeat(600) @(posedge clk);
   wr <= 0;                     repeat( 48) @(posedge clk);
   wr <= 1; pu_spi_data_in <= 32'hC4C5C6C7; @(posedge clk);
   wr <= 0;                     repeat( 40) @(posedge clk);
-repeat(600) @(posedge clk);
+  repeat(600) @(posedge clk);
 
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
   display_buffers();
