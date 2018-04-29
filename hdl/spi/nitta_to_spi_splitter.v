@@ -11,7 +11,7 @@ module nitta_to_spi_splitter
   , input                               spi_ready
   , output     [SPI_DATA_WIDTH-1:0]     to_spi
 
-  , output reg                          splitter_ready
+  , output                              splitter_ready
   , input      [DATA_WIDTH-1:0]         from_nitta
   );
 
@@ -29,15 +29,14 @@ reg wait_spi_ready;
 
 always @( posedge clk ) begin
   if ( rst ) begin
+    // FIXME: Incorect frame width can broke counter.
     data <= 0;
     counter <= 0;
     if ( spi_ready ) wait_spi_ready <= 0;
     else wait_spi_ready <= 1;
-    splitter_ready <= 0;
   end else if ( wait_spi_ready && spi_ready ) begin
     if ( counter == SUBFRAME_NUMBER - 1 ) begin
       data <= from_nitta;
-      splitter_ready <= 1;
       counter <= 0;
     end else begin
       counter <= counter + 1;
@@ -45,8 +44,11 @@ always @( posedge clk ) begin
     wait_spi_ready <= 0;
   end else if ( !wait_spi_ready && !spi_ready ) begin
     wait_spi_ready <= 1;
-    splitter_ready <= 0;
   end
 end
+
+assign splitter_ready = counter == SUBFRAME_NUMBER - 1
+                     && wait_spi_ready 
+                     && spi_ready ;
 
 endmodule

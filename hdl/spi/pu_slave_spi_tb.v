@@ -68,8 +68,6 @@ pu_slave_spi #( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
   , .cs( cs )
   );
 
-integer i;
-
 always begin
   #5  clk <= ~clk;
 end
@@ -86,6 +84,11 @@ initial begin
 end
 
 initial begin
+  pu.n2s_buffer2.memory[0] = 32'hB0B1B2b3; 
+  pu.n2s_buffer2.memory[1] = 32'hB4B5B6b7; 
+  pu.n2s_buffer2.memory[2] = 32'hB8B9BAbB; 
+  pu.n2s_buffer2.memory[3] = 32'hBCBDBEbF; 
+
   $dumpfile("pu_slave_spi_tb.vcd");
   $dumpvars(0, pu_slave_spi_tb);
   $display("finish");
@@ -94,6 +97,16 @@ end
 // Вычислительный цикл, включая:
 // 1. Чтение полученных через SPI данных. Получаем 1 слово.
 // 2. Запись данных в SPI. Пишем два слова.
+
+task display_buffers;
+  integer i;
+  begin
+    for ( i = 0; i < BUF_SIZE; i = i + 1 ) begin
+      $display("%d -> %h %h", i, pu.n2s_buffer1.memory[i], pu.n2s_buffer2.memory[i]);
+    end
+  end 
+endtask
+
 
 initial begin 
   pu_spi_data_in <= 32'h00000000; oe <= 0; wr <= 0;
@@ -111,10 +124,7 @@ initial begin
   repeat(600) @(posedge clk);
 
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
-  for ( i = 0; i < BUF_SIZE; i = i + 1 )
-    begin
-      $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
-    end
+  display_buffers();
 
   /////////////////// Второй цикл.
   cycle <= 1;                              @(posedge clk); // сигнал о начале второго цикла
@@ -129,10 +139,7 @@ initial begin
 repeat(600) @(posedge clk);
 
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
-  for ( i = 0; i < BUF_SIZE; i = i + 1 )
-    begin
-      $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
-    end
+  display_buffers();
 
   /////////////////// Третий цикл.
   cycle <= 1;                              @(posedge clk); 
@@ -146,10 +153,7 @@ repeat(600) @(posedge clk);
 repeat(600) @(posedge clk);
 
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
-  for ( i = 0; i < BUF_SIZE; i = i + 1 )
-    begin
-      $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
-    end
+  display_buffers();
 
 
   /////////////////// Четвёртый цикл.
@@ -164,11 +168,7 @@ repeat(600) @(posedge clk);
   wr <= 0;                     repeat( 40) @(posedge clk);
 
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
-  for ( i = 0; i < BUF_SIZE; i = i + 1 )
-    begin
-      $display("%d -> %h , %h , %h, %h", i, pu.receive_buffer.memory[i], pu.transfer_out_buffer.memory[i], pu.transfer_in_buffer.memory[i], pu.send_buffer.memory[i]);
-    end
-
+  display_buffers();
 
 end
 
