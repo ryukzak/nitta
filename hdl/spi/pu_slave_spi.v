@@ -85,18 +85,18 @@ spi_slave_driver
   , .cs( cs )
   );
 
-wire splitter_wr = flag_start || splitter_attr[ INVALID ];
+wire splitter_ready;
 
 nitta_to_spi_splitter nitta_to_spi_splitter 
   ( .clk( clk )
   , .rst( rst )
-  , .from_nitta( nitta_to_splitter )
+
+  , .spi_ready( spi_ready )
   , .to_spi( spi_data_send )
-  
-  , .wr( splitter_wr )
-  , .flag_start( flag_start )
-  , .ready( spi_ready )
-  , .attr_hoarder( splitter_attr )
+
+  , .splitter_ready( splitter_ready )
+  , .from_nitta( nitta_to_splitter )
+  // , .from_nitta( 32'hABCDEF42 )
   );
 
 assign nitta_to_splitter = work_buffer_send ? transfer_in_data_out : send_data_out;
@@ -112,7 +112,7 @@ spi_buffer
   , .attr_out( attr_out_transfer_in )
   , .data_in( transfer_in_data_in )
   // ------------------------------------
-  , .oe( ( splitter_wr ) && work_buffer_send )
+  , .oe( ( splitter_ready ) && work_buffer_send )
   , .data_out( transfer_in_data_out )
   ); 
 
@@ -150,7 +150,7 @@ spi_buffer
   , .attr_out( attr_out_send )
   , .data_in( send_data_in )
   // ----------------------------------
-  , .oe( ( splitter_wr ) && ~work_buffer_send )
+  , .oe( ( splitter_ready ) && ~work_buffer_send )
   , .data_out( send_data_out )
   );
 

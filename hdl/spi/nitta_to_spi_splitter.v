@@ -2,61 +2,51 @@
 
 module nitta_to_spi_splitter
   #( parameter DATA_WIDTH     = 32
-   , parameter ATTR_WIDTH     = 4
+   , parameter ATTR_WIDTH     = 4 // FIXME:
    , parameter SPI_DATA_WIDTH = 8
-   // The attributes of the buffer
-   , parameter INVALID        = 0
-   , parameter VALID          = 1
-   , parameter SPI_FINISH     = 2
-   , parameter FULL           = 3
    )
   ( input                           clk
   , input                           rst
-  , input                           ready
-  , input                           flag_start
-  , input                           wr
-  , output [ATTR_WIDTH-1:0]         attr_hoarder
 
-  , input  [DATA_WIDTH-1:0]         from_nitta
-  , output [SPI_DATA_WIDTH-1:0]     to_spi
+  , input                               spi_ready
+  , output     [SPI_DATA_WIDTH-1:0]     to_spi
+
+  , output reg                          splitter_ready
+  , input      [DATA_WIDTH-1:0]         from_nitta
   );
 
-localparam SIZE_FRAME  = $clog2( DATA_WIDTH );
-reg SEND, RECEIVE, FLAG, PROCESS;
+localparam SUBFRAME_NUMBER = DATA_WIDTH / SPI_DATA_WIDTH;
+localparam SUBFRAME_COUNTER_WIDTH = $clog2( SUBFRAME_NUMBER );
 
-reg [DATA_WIDTH-1:0] frame [0:1];
-reg [SIZE_FRAME-4:0] count [0:1];
-reg [ATTR_WIDTH-1:0] attr  [0:1];
+reg [DATA_WIDTH-1:0] data;
+reg [SUBFRAME_COUNTER_WIDTH-1:0] counter;
+
+wire [$clog2( DATA_WIDTH )-1:0] shift = (SUBFRAME_NUMBER - counter - 1) * SPI_DATA_WIDTH;
+wire [SPI_DATA_WIDTH-1:0] subframe = from_nitta >> shift;
+assign to_spi = subframe[SPI_DATA_WIDTH-1 : 0];
+
+reg wait_spi_ready;
 
 always @( posedge clk ) begin
   if ( rst ) begin
-    SEND                <= 0;
-    RECEIVE             <= 1;
-    FLAG                <= 0;
-    PROCESS             <= 1;
-    attr[FLAG][SEND]    <= 0;
-    attr[PROCESS][SEND] <= 1;
-    count[ SEND ] <= SIZE_FRAME - 2;
-  end else begin
-    // [+] send master
-    if ( wr ) begin
-        count[SEND] <= SIZE_FRAME - 2;
-        frame[SEND] <= from_nitta;
-        attr[PROCESS][SEND] <= 1;
-    end else if ( ready && ~attr[FLAG][SEND] && attr[PROCESS][SEND] ) begin            
-        attr[FLAG][SEND] <= 1;
-    end else if ( !ready && attr[FLAG][SEND] && attr[PROCESS][SEND] ) begin            
-        count[SEND] <= count[SEND] - 1;
-        attr[FLAG][SEND] <= 0;
-        if ( count[SEND] == 0 ) begin
-            attr[PROCESS][SEND] <= 0;
-        end
+    data <= 0;
+    counter <= 0;
+    if ( spi_ready ) wait_spi_ready <= 0;
+    else wait_spi_ready <= 1;
+    splitter_ready <= 0;
+  end else if ( wait_spi_ready && spi_ready ) begin
+    if ( counter == SUBFRAME_NUMBER - 1 ) begin
+      data <= from_nitta;
+      splitter_ready <= 1;
+      counter <= 0;
+    end else begin
+      counter <= counter + 1;
     end
+    wait_spi_ready <= 0;
+  end else if ( !wait_spi_ready && !spi_ready ) begin
+    wait_spi_ready <= 1;
+    splitter_ready <= 0;
   end
 end
-
-assign to_spi = ( count[SEND] == SIZE_FRAME - 2 ) && flag_start ? from_nitta >> SPI_DATA_WIDTH * count[SEND] : frame[SEND] >> SPI_DATA_WIDTH * count[SEND];
-
-assign { attr_hoarder[INVALID] , attr_hoarder[1], attr_hoarder[2], attr_hoarder[3] } = { count[SEND] == 0 && ready, 1'b0, 1'b0, 1'b0 };
 
 endmodule
