@@ -61,6 +61,12 @@ initial begin
   spi_ready <= 1; from_nitta <= 32'hA0B1C2D3; @(posedge clk); // C2
   spi_ready <= 1; from_nitta <= 32'hA0B1C2D3; @(posedge clk); // C2
   spi_ready <= 0; from_nitta <= 32'hA0B1C2D3; @(posedge clk); // C2
+  spi_ready <= 1; from_nitta <= 32'hA0B1C2D3; @(posedge clk); // D3
+  spi_ready <= 1; from_nitta <= 32'hA0B1C2D3; @(posedge clk); // D3
+  spi_ready <= 0; from_nitta <= 32'hA0B1C2D3; @(posedge clk); // D3
+  spi_ready <= 1; from_nitta <= 32'hA0B1C2D3; @(posedge clk); // A0, splitter_ready
+  spi_ready <= 1; from_nitta <= 32'hA0B1C2D3; @(posedge clk); // A0
+  spi_ready <= 0; from_nitta <= 32'hA0B1C2D3; @(posedge clk); // A0
   repeat(10) @(posedge clk); $finish;
 end
 

@@ -23,13 +23,13 @@ always @( posedge clk ) begin
   if ( rst ) begin
     addr <= 0;
   end else if ( wr ) begin
-    memory[ addr ] <= data_in;      
+    memory[ addr ] <= data_in;
     addr <= addr + 1;
   end else if ( oe ) begin
     addr <= addr + 1;
   end
 end
 
-assign data_out = memory[ addr ];
+assign data_out = oe ? memory[ addr + 1] : memory[ addr ];
 
 endmodule

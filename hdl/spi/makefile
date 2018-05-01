@@ -18,3 +18,10 @@ nitta_to_spi_splitter_tb: nitta_to_spi_splitter_tb.out
 
 nitta_to_spi_splitter_tb.out: nitta_to_spi_splitter.v nitta_to_spi_splitter_tb.v
 	iverilog -o nitta_to_spi_splitter_tb.out nitta_to_spi_splitter.v nitta_to_spi_splitter_tb.v
+
+
+buffer_tb: buffer_tb.out
+	vvp buffer_tb.out
+
+buffer_tb.out: buffer.v buffer_tb.v
+	iverilog -o buffer_tb.out buffer.v buffer_tb.v
