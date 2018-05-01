@@ -11,3 +11,10 @@ vvp:
 	vvp puspi
 gtk:
 	gtkwave pu_slave_spi_tb.vcd
+
+
+nitta_to_spi_splitter_tb: nitta_to_spi_splitter_tb.out
+	vvp nitta_to_spi_splitter_tb.out
+
+nitta_to_spi_splitter_tb.out: nitta_to_spi_splitter.v nitta_to_spi_splitter_tb.v
+	iverilog -o nitta_to_spi_splitter_tb.out nitta_to_spi_splitter.v nitta_to_spi_splitter_tb.v

@@ -4,7 +4,7 @@
 /dist
 /resource/data.json
 *.vcd
-a.out
+*.out
 *.signals.v
 *.inputs.v
 *.outputs.v
