@@ -93,7 +93,7 @@ wire [DATA_WIDTH-1:0] n2s_data_out[0:1];
 assign nitta_to_splitter = n2s_data_out[!buf_sel];
 
 // Буфера на отправку
-spi_buffer
+buffer
   #( .BUF_SIZE( BUF_SIZE )
    ) n2s_buffer0 // nitta to spi
   ( .clk( clk )
@@ -106,7 +106,7 @@ spi_buffer
   , .data_out( n2s_data_out[0] )
   ); 
 
-spi_buffer
+buffer
   #( .BUF_SIZE( BUF_SIZE )
    ) n2s_buffer1 // nitta to spi
   ( .clk( clk )
