@@ -32,7 +32,7 @@ reg [1:0] state;
 localparam DATA_COUNTER_WIDTH = $clog2( DATA_WIDTH + 1 );
 reg [DATA_COUNTER_WIDTH-1:0] data_counter;
 
-always @( posedge rst, posedge clk ) begin
+always @( posedge clk ) begin
   if ( rst || cs ) begin
     data_counter <= 0;
     state <= STATE_WAIT_SCLK_0;
@@ -50,8 +50,9 @@ always @( posedge rst, posedge clk ) begin
         if ( data_counter == DATA_WIDTH) data_counter <= 1;
         else data_counter <= data_counter + 1;   
         state <= STATE_WAIT_SCLK_0;
-      end else if ( state == STATE_READY )
+      end else if ( state == STATE_READY ) begin
         state <= STATE_WAIT_SCLK_1;
+      end
   
       STATE_WAIT_SCLK_0: if ( !sclk ) begin
         shiftreg <= { shiftreg[DATA_WIDTH - 2:0], mosi } ;

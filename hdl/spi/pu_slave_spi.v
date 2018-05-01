@@ -19,7 +19,7 @@ module pu_slave_spi
   , output   [ATTR_WIDTH-1:0] attr_out
 
   , output                    flag_start
-  , output reg                flag_stop
+  , output                    flag_stop
 
   // SPI interface
   , input                     mosi
@@ -35,7 +35,7 @@ module pu_slave_spi
 // SPI
 wire [SPI_DATA_WIDTH-1:0] splitter_to_spi;
 wire [SPI_DATA_WIDTH-1:0] spi_data_receive;
-wire spi_ready, spi_premature_ready;
+wire spi_ready;
 
 spi_slave_driver 
   #( .DATA_WIDTH( SPI_DATA_WIDTH ) 
@@ -46,7 +46,6 @@ spi_slave_driver
   , .data_in( splitter_to_spi ) 
   , .data_out( spi_data_receive )  
   , .ready( spi_ready )
-  , .premature_ready( spi_premature_ready )
   , .mosi( mosi )
   , .miso( miso )
   , .sclk( sclk )
@@ -57,11 +56,15 @@ spi_slave_driver
 // Преобразование слов процессора (DATA_WIDTH) в слова SPI (SPI_DATA_WIDTH).
 wire splitter_ready;
 wire [DATA_WIDTH-1:0] nitta_to_splitter;
-nitta_to_spi_splitter nitta_to_spi_splitter 
+nitta_to_spi_splitter 
+  #( .DATA_WIDTH( DATA_WIDTH )
+   , .ATTR_WIDTH( ATTR_WIDTH )
+   , .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
+   ) nitta_to_spi_splitter 
   ( .clk( clk )
   , .rst( rst || flag_stop )
 
-  , .spi_ready( spi_premature_ready )
+  , .spi_ready( spi_ready )
   , .to_spi( splitter_to_spi )
 
   , .splitter_ready( splitter_ready )
@@ -123,21 +126,24 @@ buffer
 ///////////////////////////////////////////////////////////
 // Флаги
 
-assign flag_start = !cs && spi_ready && flag_start_prev;
-reg flag_start_prev;
+reg cs_prev;
+always @(posedge clk) cs_prev <= cs;
+
+reg wait_flag_start;
+assign flag_start = cs ^ cs_prev && !cs 
+                 && wait_flag_start;
 always @( posedge clk ) begin
-  if      ( rst || stop ) flag_start_prev <= 1;
-  else if ( flag_start )  flag_start_prev <= 0;
+  if      ( rst || flag_stop ) wait_flag_start <= 1;
+  else if ( flag_start       ) wait_flag_start <= 0;
 end
 
 // Необходимо что бы flag_stop сбрасывался сам через такт после установки.
-wire stop = !spi_ready && cs;
-reg flag_stop_prev;
-always @(posedge clk) begin
-  if      ( rst )                         { flag_stop_prev, flag_stop } <= { 1'b0, 1'b0 };
-  else if ( !flag_stop_prev && stop )     { flag_stop_prev, flag_stop } <= { 1'b1, 1'b1 };
-  else if ( flag_stop_prev && flag_stop ) { flag_stop_prev, flag_stop } <= { 1'b1, 1'b0 };
-  else                                    { flag_stop_prev, flag_stop } <= { 1'b0, 1'b0 };
+assign flag_stop = cs ^ cs_prev && cs 
+                && wait_flag_stop;
+reg wait_flag_stop;
+always @( posedge clk ) begin
+  if      ( flag_start       ) wait_flag_stop <= 1;
+  else if ( flag_stop || rst ) wait_flag_stop <= 0;
 end
 
 
