@@ -13,6 +13,8 @@ gtk:
 	gtkwave pu_slave_spi_tb.vcd
 
 
+testbenchs: nitta_to_spi_splitter_tb buffer_tb spi_slave_driver_tb
+
 nitta_to_spi_splitter_tb: nitta_to_spi_splitter_tb.out
 	vvp nitta_to_spi_splitter_tb.out
 
@@ -25,3 +27,10 @@ buffer_tb: buffer_tb.out
 
 buffer_tb.out: buffer.v buffer_tb.v
 	iverilog -o buffer_tb.out buffer.v buffer_tb.v
+
+
+spi_slave_driver_tb: spi_slave_driver_tb.out
+	vvp spi_slave_driver_tb.out
+
+spi_slave_driver_tb.out: spi_slave_driver.v spi_slave_driver_tb.v
+	iverilog -o spi_slave_driver_tb.out spi_slave_driver.v spi_slave_driver_tb.v
