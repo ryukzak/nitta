@@ -58,14 +58,15 @@ initial begin
 
   rst <= 1; @(posedge clk);
   rst <= 0; @(posedge clk);
-  wr <= 0; data_in <= 32'h00000000; oe <= 0;   #1assert32(data_out, 32'h00112233); @(posedge clk);
-  wr <= 0; data_in <= 32'h00000000; oe <= 1;   #1assert32(data_out, 32'h44556677); @(posedge clk);
+  wr <= 0; data_in <= 32'h00000000; oe <= 0;   #1assert32(data_out, 32'h00112233
+  ); @(posedge clk);
+  wr <= 0; data_in <= 32'h00000000; oe <= 1;   #1assert32(data_out, 32'h00112233); @(posedge clk);
   wr <= 0; data_in <= 32'h00000000; oe <= 0;   #1assert32(data_out, 32'h44556677); @(posedge clk);
+  wr <= 0; data_in <= 32'h00000000; oe <= 1;   #1assert32(data_out, 32'h44556677); @(posedge clk);
   wr <= 0; data_in <= 32'h00000000; oe <= 1;   #1assert32(data_out, 32'h8899AABB); @(posedge clk);
-  wr <= 0; data_in <= 32'h00000000; oe <= 1;   #1assert32(data_out, 32'hCCDDEEFF); @(posedge clk);
   wr <= 0; data_in <= 32'h00000000; oe <= 0;   #1assert32(data_out, 32'hCCDDEEFF); @(posedge clk);
 
-  wr <= 0; data_in <= 32'h00000000; oe <= 1;   #1assert32(data_out, 32'hxxxxxxxx); @(posedge clk);
+  wr <= 0; data_in <= 32'h00000000; oe <= 1;   #1assert32(data_out, 32'hCCDDEEFF); @(posedge clk);
   wr <= 0; data_in <= 32'h00000000; oe <= 0;   #1assert32(data_out, 32'hxxxxxxxx); @(posedge clk);
   repeat(10) @(posedge clk); $finish;
 end

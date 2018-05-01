@@ -146,9 +146,9 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
   hardware title pu
     = Aggregate Nothing
         [ FromLibrary "spi/spi_slave_driver.v"
-        , FromLibrary "spi/spi_buffer.v"
+        , FromLibrary "spi/buffer.v"
         , FromLibrary "spi/spi_master_driver.v"
-        , FromLibrary "spi/hoarder.v"
+        , FromLibrary "spi/nitta_to_spi_splitter.v"
         , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
         ]
   software _ pu = Immidiate "transport.txt" $ show pu

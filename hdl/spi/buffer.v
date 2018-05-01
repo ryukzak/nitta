@@ -11,7 +11,7 @@ module buffer
   , input  [DATA_WIDTH-1:0] data_in
 
   , input                   oe 
-  , output [DATA_WIDTH-1:0] data_out
+  , output reg [DATA_WIDTH-1:0] data_out
   );
 
 localparam ADDR_WIDTH = $clog2( BUF_SIZE );
@@ -19,17 +19,18 @@ localparam ADDR_WIDTH = $clog2( BUF_SIZE );
 reg [DATA_WIDTH-1:0] memory [0:BUF_SIZE-1]; 
 reg [ADDR_WIDTH-1:0] addr;
 
+reg [DATA_WIDTH-1:0] future;
+reg future_flag; 
+
 always @( posedge clk ) begin
   if ( rst ) begin
     addr <= 0;
-  end else if ( wr ) begin
-    memory[ addr ] <= data_in;
+    data_out <= memory[ 0 ] ;    
+  end else if ( wr | oe ) begin
+    if ( wr ) memory[ addr ] <= data_in;
     addr <= addr + 1;
-  end else if ( oe ) begin
-    addr <= addr + 1;
+    data_out <= memory[ addr + 1 ] ;
   end
 end
-
-assign data_out = oe ? memory[ addr + 1] : memory[ addr ];
 
 endmodule
