@@ -24,7 +24,11 @@ NITTA - реконфигурируемая вычислительная плат
 ### Публикации по проекту
 1. [Пенской А.В. Разработка и исследование архитектурных стилей проектирования уровневой организации встроенных систем : ... канд. техн. наук : 05.13.12 / Пенской А.В. - Санкт-Петербург, 2016. - 169 с.](https://isu.ifmo.ru/index/0EF1389C59C61A76286892961DA96781)
 1. [DRAFT Система высокоуровневого синтеза на основе гибридной NISC/TTA микроархитектуры](https://nitta.io/nitta-corp/docs/src/master/2018%20MAI%20HLS.pdf)
-1. [DRAFT Емельянов Д.В. Проектирование протокола на базе интерфейса SPI для вычислительной       платформы реального времени // Сборник трудов IIX научно-практической конференции молодых ученых «Вычислительные системы и сети (Майоровские чтения)». 2018. С. X—X.](https://nitta.io/nitta-corp/docs/src/master/2017%20MR%20SPI.pdf)
+1. [Емельянов Д. В. Проектирование протокола на базе интерфейса SPI для вычисли-
+тельной платформы реального времени // Сборник трудов IX научно-практической конференции молодых уче-
+ных «Вычислительные системы и сети (Майоровские чтения)». 2018. С. 74—77.](https://nitta.io/nitta-corp/docs/src/master/2017%20MR%20SPI.pdf)
+    - Emelyanov D. V. Designing SPI based protocol for the real-time computational platform // Proceedings of the scientific and practical conference of young scientists “Computing systems and net-
+works (Mayorov’s readings)”. 2018. P. 74—77 (in Russian).
 1. [DRAFT Пенской А.В. Проектирование вычислительной платформы для моделирования динамических систем, 2018.](https://nitta.io/nitta-corp/docs/src/master/2018%20PPK%20sdcloud-es.pdf)
 1. [DRAFT Анощенков Д.И. Верификация систем высокоуровневого синтеза аппаратных вычислителей](https://nitta.io/nitta-corp/docs/src/master/2018%20PPK%20Property%20Based%20testing%20HLS.pdf)
 
