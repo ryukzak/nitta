@@ -32,11 +32,18 @@ works (Mayorov’s readings)”. 2018. P. 74—77 (in Russian).
 1. [DRAFT Пенской А.В. Проектирование вычислительной платформы для моделирования динамических систем, 2018.](https://nitta.io/nitta-corp/docs/src/master/2018%20PPK%20sdcloud-es.pdf)
 1. [DRAFT Анощенков Д.И. Верификация систем высокоуровневого синтеза аппаратных вычислителей](https://nitta.io/nitta-corp/docs/src/master/2018%20PPK%20Property%20Based%20testing%20HLS.pdf)
 
+#### SGEM 2018
+1. [DRAFT HYBRID NISC/TTA HIGH-LEVEL SYNTHESIS TOOL](https://nitta.io/nitta-corp/docs/src/master/2018%20SGEM%20HLS.pdf)
+2. [DRAFT SPECIALISED COMPUTING PLATFORM FOR SYSTEM DYNAMICS](https://nitta.io/nitta-corp/docs/src/master/2018%20SGEM%20SD.pdf)
+
 #### КМУ 2018, тезисы
 1. Андреев В.В., Пенской А.В. Разработка специализированного языка описания вычислительных блоков для реконфигурируемой вычислительной платформы реального времени // Сборник тезисов докладов конгресса молодых ученых. Электронное издание [Электронный ресурс]. – СПб: Университет ИТМО, 2018. - Режим доступа: <http://kmu.ifmo.ru/collections_article/7699/razrabotka_specializirovannogo_yazyka_opisaniya_vychislitelnyh_blokov_dlya_rekonfiguriruemoy_vychislitelnoy_platformy_realnogo_vremeni.htm>, своб.
 1. Гайош А.И., Корепанов П.Ю., Пенской А.В. Разработка интерфейса загрузки программного обеспечения для реконфигурируемой вычислительной платформы // Сборник тезисов докладов конгресса молодых ученых. Электронное издание [Электронный ресурс]. – СПб: Университет ИТМО, 2018. - Режим доступа: <http://kmu.ifmo.ru/collections_article/7706/razrabotka_interfeysa_zagruzki_programmnogo_obespecheniya_dlya_rekonfiguriruemoy_vychislitelnoy_platformy.htm>, своб.
 1. Емельянов Д.В., Пенской А.В. Разработка вычислительного блока интерфейса SPI для вычислительной платформы реального времени // Сборник тезисов докладов конгресса молодых ученых. Электронное издание [Электронный ресурс]. – СПб: Университет ИТМО, 2018. - Режим доступа: <http://kmu.ifmo.ru/collections_article/7708/razrabotka_vychislitelnogo_bloka_interfeysa_SPI_dlya_vychislitelnoy_platformy_realnogo_vremeni.htm>, своб.
 1. Пенской А.В. Интерфейс управления процессом высокоуровневого синтеза специализированного вычислителя // Сборник тезисов докладов конгресса молодых ученых. Электронное издание [Электронный ресурс]. – СПб: Университет ИТМО, 2018. - Режим доступа: <http://kmu.ifmo.ru/collections_article/7700/interfeys_upravleniya_processom_vysokourovnevogo_sinteza_specializirovannogo_vychislitelya.htm>, своб.
+
+### Гранты
+1. [Заявка на СТАРТ](https://nitta.io/nitta-corp/docs/src/master/2018_start_RTM.pdf)
 
 ### Разное
 1. [Почему в качестве языка программирования выбран Haskell](/doc/why-haskell)
