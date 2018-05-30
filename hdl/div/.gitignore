@@ -1,0 +1,17 @@
+db/
+incremental_db/
+greybox_tmp/
+output_files/
+simulation/
+work/
+.qsys_edit/
+*.qws
+*_bb.v
+*_inst.v
+*.rpt
+*.bak
+*.mti
+*.mpf
+*.qip
+*.ppf
+*.bsf
