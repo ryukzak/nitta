@@ -21,6 +21,7 @@ library
                      , NITTA.DataFlow
                      , NITTA.FunctionBlocks
                      , NITTA.ProcessUnits.Accum
+                     , NITTA.ProcessUnits.Div
                      , NITTA.ProcessUnits.Fram
                      , NITTA.ProcessUnits.SerialPU
                      , NITTA.ProcessUnits.Shift

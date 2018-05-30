@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE Rank2Types                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
@@ -229,24 +230,32 @@ instance ( Ord v, Num x ) => FunctionSimulation (Mul (Parcel v x)) v x where
 
 
 
-data Div io = Div (I io) (I io) (O io) deriving ( Typeable )
+data Div io = Div
+  { denom, numer     :: I io
+  , quotient, remain :: O io
+  } deriving ( Typeable )
 deriving instance ( IOType io v x ) => Show (Div io)
 deriving instance ( IOType io v x ) => Eq (Div io)
-div a b c = FB $ Div (I a) (I b) $ O $ fromList c
+div d n q r = FB Div{ denom=I d
+                    , numer=I n
+                    , quotient=O $ fromList q
+                    , remain=O $ fromList r
+                    }
 
 instance ( IOType io v x ) => FunctionalBlock (Div io) v where
-  inputs  (Div  a  b _c) = variables a `union` variables b
-  outputs (Div _a _b  c) = variables c
-  dependency (Div a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
-                                    , y <- elems $ variables c
-                                    ]
+  inputs  Div{ denom, numer } = variables denom `union` variables numer
+  outputs Div{ quotient, remain } = variables quotient `union` variables remain
+  dependency fb = [ (y, x) | x <- elems $ inputs fb
+                           , y <- elems $ outputs fb
+                           ]
 instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Div (Parcel v x)) v x where
-  simulate cntx (Div (I k1) (I k2) (O k3)) = do
-    v1 <- cntx `get` k1
-    v2 <- cntx `get` k2
-    let v3 = fromIntegral v1 / fromIntegral v2 :: Double
-    set cntx k3 $ round v3
-
+  simulate cntx Div{ denom=I d, numer=I n, quotient=O q, remain=O r } = do
+    v1 <- cntx `get` d
+    v2 <- cntx `get` n
+    let quotient' = fromIntegral v1 / fromIntegral v2 :: Double
+    cntx' <- set cntx q $ round quotient'
+    let remain' = v1 `mod` v2
+    set cntx' r remain'
 
 
 data Constant io = Constant (X io) (O io) deriving ( Typeable )

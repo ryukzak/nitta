@@ -31,6 +31,7 @@ import qualified NITTA.ProcessUnits.Accum    as A
 import qualified NITTA.ProcessUnits.Fram     as FR
 import qualified NITTA.ProcessUnits.Shift    as S
 import qualified NITTA.ProcessUnits.SPI      as SPI
+import qualified NITTA.ProcessUnits.Div      as D
 import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
@@ -43,7 +44,7 @@ import           System.FilePath.Posix       (joinPath, (</>))
 import           Text.StringTemplate
 
 
-microarch = busNetwork 24
+microarch = busNetwork 28
   [ ("fram1", PU def FR.Link{ FR.oe=Index 11, FR.wr=Index 10, FR.addr=map Index [9, 8, 7, 6] } )
   , ("fram2", PU def FR.Link{ FR.oe=Index 5, FR.wr=Index 4, FR.addr=map Index [3, 2, 1, 0] } )
   , ("shift", PU def S.Link{ S.work=Index 12, S.direction=Index 13, S.mode=Index 14, S.step=Index 15, S.init=Index 16, S.oe=Index 17 })
@@ -52,6 +53,7 @@ microarch = busNetwork 24
                            , SPI.start=Name "start", SPI.stop=Name "stop"
                            , SPI.mosi=Name "mosi", SPI.miso=Name "miso", SPI.sclk=Name "sclk", SPI.cs=Name "cs"
                            })
+  , ("div", PU def D.Link{ D.wr=Index 24, D.oe=Index 25, D.wrSel=Index 26, D.oeSel=Index 27 } )
   ]
 
 synthesisedFib
@@ -210,7 +212,7 @@ simulateTeaCup n = do
     , FB.loop 180000 ["T_cup1", "T_cup2"] "t_cup'"
     -- (Teacup Temperature - T_room) / t_ch
     , FB.sub "T_room" "T_cup1" ["acc"]
-    , FB.div "acc" "t_ch" ["loss"]
+    , FB.div "acc" "t_ch" ["loss"] []
     -- INTEG ( -loss to Room
     , FB.mul "loss" "t_step1" ["delta"]
     , FB.add "T_cup2" "delta" ["t_cup'"]
