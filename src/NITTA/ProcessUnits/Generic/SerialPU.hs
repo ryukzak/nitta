@@ -20,7 +20,7 @@
 состояния вычислительного блока.
 -}
 
-module NITTA.ProcessUnits.SerialPU
+module NITTA.ProcessUnits.Generic.SerialPU
   ( SerialPU (SerialPU)
   , SerialPUState (..)
   , serialSchedule

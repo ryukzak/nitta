@@ -22,7 +22,7 @@ import           Data.Maybe                  (catMaybes)
 import           Data.Set                    (elems, fromList, singleton)
 import           Data.Typeable
 import           NITTA.FunctionBlocks
-import           NITTA.ProcessUnits.SerialPU
+import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval            ((...))

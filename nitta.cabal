@@ -23,7 +23,7 @@ library
                      , NITTA.ProcessUnits.Accum
                      , NITTA.ProcessUnits.Div
                      , NITTA.ProcessUnits.Fram
-                     , NITTA.ProcessUnits.SerialPU
+                     , NITTA.ProcessUnits.Generic.SerialPU
                      , NITTA.ProcessUnits.Shift
                      , NITTA.ProcessUnits.SPI
                      , NITTA.TestBench

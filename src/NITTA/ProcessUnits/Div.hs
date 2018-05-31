@@ -134,7 +134,8 @@ instance ( Var v
 
 instance ( Var v, Show t ) => DefinitionSynthesis (Div v x t) where
   moduleName _ = "pu_div"
-  hardware pu = Project "" [ FromLibrary "div/div.v"
+  hardware pu = Project "" [ FromLibrary "div/div_placeholder.v"
+                          --  , FromLibrary "div/div.v"
                            , FromLibrary $ "div/" ++ moduleName pu ++ ".v"
                            ]
   software pu = Empty
@@ -145,7 +146,7 @@ instance ( Time t, Var v
     [ "pu_div"
     , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
-    , "   , .INVALID( INVALID )" -- FIXME:
+    -- , "   , .INVALID( INVALID )" -- FIXME:
     , "   ) $name$"
     , "  ( .clk( " ++ link clk ++ " )"
     , "  , .rst( " ++ link rst ++ " )"

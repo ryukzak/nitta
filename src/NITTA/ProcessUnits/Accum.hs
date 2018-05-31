@@ -17,7 +17,7 @@ import           Data.List                   (intersect, (\\))
 import           Data.Set                    (elems, fromList)
 import           Data.Typeable
 import           NITTA.FunctionBlocks
-import           NITTA.ProcessUnits.SerialPU
+import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval            (singleton, (...))
