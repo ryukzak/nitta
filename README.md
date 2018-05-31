@@ -45,8 +45,13 @@ Telegram чат проекта: <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
 ## Внутренее устройство
 1. Андреев В.В., Пенской А.В. Разработка специализированного языка описания вычислительных блоков для реконфигурируемой вычислительной платформы реального времени // Сборник тезисов докладов конгресса молодых ученых. Электронное издание [Электронный ресурс]. – СПб: Университет ИТМО, 2018. - Режим доступа: <http://kmu.ifmo.ru/collections_article/7699/razrabotka_specializirovannogo_yazyka_opisaniya_vychislitelnyh_blokov_dlya_rekonfiguriruemoy_vychislitelnoy_platformy_realnogo_vremeni.htm>, своб.
 1. Гайош А.И., Корепанов П.Ю., Пенской А.В. Разработка интерфейса загрузки программного обеспечения для реконфигурируемой вычислительной платформы // Сборник тезисов докладов конгресса молодых ученых. Электронное издание [Электронный ресурс]. – СПб: Университет ИТМО, 2018. - Режим доступа: <http://kmu.ifmo.ru/collections_article/7706/razrabotka_interfeysa_zagruzki_programmnogo_obespecheniya_dlya_rekonfiguriruemoy_vychislitelnoy_platformy.htm>, своб.
-1. Пенской А.В. Интерфейс управления процессом высокоуровневого синтеза специализированного вычислителя // Сборник тезисов докладов конгресса молодых ученых. Электронное издание [Электронный ресурс]. – СПб: Университет ИТМО, 2018. - Режим доступа: <http://kmu.ifmo.ru/collections_article/7700/interfeys_upravleniya_processom_vysokourovnevogo_sinteza_specializirovannogo_vychislitelya.htm>, своб.
 1. [DRAFT Анощенков Д.И. Верификация систем высокоуровневого синтеза аппаратных вычислителей](https://nitta.io/nitta-corp/docs/src/master/2018%20PPK%20Property%20Based%20testing%20HLS.pdf)
+
+### Метод синтеза
+1. Пенской А.В. Интерфейс управления процессом высокоуровневого синтеза специализированного вычислителя // Сборник тезисов докладов конгресса молодых ученых. Электронное издание [Электронный ресурс]. – СПб: Университет ИТМО, 2018. - Режим доступа: <http://kmu.ifmo.ru/collections_article/7700/interfeys_upravleniya_processom_vysokourovnevogo_sinteza_specializirovannogo_vychislitelya.htm>, своб. ([mirror](https://nitta.io/nitta-corp/docs/src/master/2018_kmu_synthesis_api.pdf))
+1. [Пенской А.В. Интерфейс управления процессом высокоуровневого синтеза специализированного вычислителя (презентация)](https://nitta.io/nitta-corp/docs/src/master/2018_kmu_synthesis_api_slides.pdf)
+
+
 
 ### Ввод/вывод
 1. [Емельянов Д. В. Проектирование протокола на базе интерфейса SPI для вычисли-
