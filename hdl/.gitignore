@@ -13,3 +13,5 @@ work/
 *.mti
 *.mpf
 *.qip
+*.qsf
+*.qpf
