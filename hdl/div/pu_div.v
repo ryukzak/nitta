@@ -9,12 +9,12 @@ module pu_div
   , input  wire                  rst
 
   , input  wire                  signal_wr  
-  , input  wire                  signal_sel
+  , input  wire                  signal_wr_sel
   , input  wire [DATA_WIDTH-1:0] data_in
   , input  wire [ATTR_WIDTH:0]   attr_in
 
-  , input  wire                  res_select
   , input  wire                  signal_oe
+  , input  wire                  signal_oe_sel
   , output wire [DATA_WIDTH-1:0] data_out 
   , output wire [ATTR_WIDTH:0]   attr_out
   );
@@ -33,10 +33,10 @@ always @(posedge clk) begin
     attr[0] <= 0;
     attr[1] <= 0;
   end else begin
-    if (signal_wr && !signal_sel) begin
+    if (signal_wr && !signal_wr_sel) begin
       arg_latch <= data_in[DATA_WIDTH-1:0];
       attr_latch <= attr_in;   
-    end else if (signal_wr && signal_sel) begin
+    end else if (signal_wr && signal_wr_sel) begin
       arg[0] <= arg_latch;
       attr[0] <= attr_latch;
       arg[1] <= data_in;
@@ -78,7 +78,7 @@ always @(posedge clk) begin
   end else begin
     if ( signal_oe) begin
       invalid_result <= attr_wait[PIPE-1];
-      if ( res_select ) begin
+      if ( signal_oe_sel ) begin
         data_divresult <= quotient_result;
       end
       else
