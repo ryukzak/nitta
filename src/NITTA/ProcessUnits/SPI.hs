@@ -13,7 +13,7 @@
 
 -- slave / master / slave-master?
 module NITTA.ProcessUnits.SPI
-  ( Link(..)
+  ( PUPorts(..)
   , SPI
   ) where
 
@@ -55,7 +55,8 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
 
   stateOptions State{ spiSend, spiReceive } now = catMaybes [ send' spiSend, receive' spiReceive ]
     where
-      send' (_, v:_) = Just $ EndpointO (Target v) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
+      -- FIXME: `+1`, ошибка находится в аппаратуре, тут надо просто убрать запас.
+      send' (_, v:_) = Just $ EndpointO (Target v) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound)
       send' _ = Nothing
       receive' (_, vs:_) = Just $ EndpointO (Source $ fromList vs) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
       receive' _ = Nothing
@@ -126,51 +127,130 @@ instance ( Ord v ) => Simulatable (SPI v x t) v x where
     | Just fb'@Receive{} <- castFB fb = simulate cntx fb'
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on SPI."
 
-instance Connected (SPI v x t) i where
-  data Link (SPI v x t) i
-    = Link { wr, oe :: i
-           , start, stop, mosi, miso, sclk, cs :: i
-           } deriving ( Show )
-  transmitToLink Microcode{..} Link{..}
+instance Connected (SPI v x t) where
+  data PUPorts (SPI v x t)
+    = PUPorts{ wr, oe :: Signal
+             , start, stop :: String -- FIXME: Что это такое и как этому быть?
+             , mosi, sclk, cs :: InputPort
+             , miso :: OutputPort
+             } deriving ( Show )
+  transmitToLink Microcode{..} PUPorts{..}
     = [ (wr, B wrSignal)
       , (oe, B oeSignal)
       ]
 
 
 
-instance ( Var v, Show t ) => DefinitionSynthesis (SPI v x t) where
-  moduleName _ = "pu_slave_spi"
-  hardware pu = Project "" [ FromLibrary "spi/spi_slave_driver.v"
-                           , FromLibrary "spi/spi_buffer.v"
-                           , FromLibrary $ "spi/" ++ moduleName pu ++ ".v"
-                           ]
-  software pu = Immidiate "transport.txt" $ show pu
-
-instance ( Time t, Var v
-         ) => Synthesis (SPI v x t) LinkId where
-  hardwareInstance _ name NetworkLink{..} Link{..} = renderST
+instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
+  moduleName _ _ = "pu_slave_spi"
+  hardware title pu
+    = Aggregate Nothing
+        [ FromLibrary "spi/spi_slave_driver.v"
+        , FromLibrary "spi/buffer.v"
+        , FromLibrary "spi/spi_master_driver.v"
+        , FromLibrary "spi/nitta_to_spi_splitter.v"
+        , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
+        ]
+  software _ pu = Immidiate "transport.txt" $ show pu
+  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
     [ "pu_slave_spi"
-    , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+    , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
     , "   ) $name$"
-    , "  ( .clk( " ++ link clk ++ " )"
-    , "  , .rst( " ++ link rst ++ " )"
-    , "  , .signal_cycle( " ++ link cycleStart ++ " )"
-    , "  , .signal_oe( " ++ control oe ++ " )"
-    , "  , .signal_wr( " ++ control wr ++ " )"
-    , "  , .flag_start( " ++ link start ++ " )"
-    , "  , .flag_stop( " ++ link stop ++ " )"
-    , "  , .data_in( " ++ link dataIn ++ " )"
-    , "  , .attr_in( " ++ link attrIn ++ " )"
-    -- , "  , .data_out( " ++ link dataOut ++ " )"
-    -- , "  , .attr_out( " ++ link attrOut ++ " )"
-    , "  , .mosi( " ++ link mosi ++ " )"
-    , "  , .miso( " ++ link miso ++ " )"
-    , "  , .sclk( " ++ link sclk ++ " )"
-    , "  , .cs( " ++ link cs ++ " )"
+    , "  ( .clk( " ++ signalClk ++ " )"
+    , "  , .rst( " ++ signalRst ++ " )"
+    , "  , .signal_cycle( " ++ signalCycle ++ " )"
+    , "  , .signal_oe( " ++ signal oe ++ " )"
+    , "  , .signal_wr( " ++ signal wr ++ " )"
+    , "  , .flag_start( " ++ start ++ " )"
+    , "  , .flag_stop( " ++ stop ++ " )"
+    , "  , .data_in( " ++ dataIn ++ " )"
+    , "  , .attr_in( " ++ attrIn ++ " )"
+    , "  , .data_out( " ++ dataOut ++ " )"
+    , "  , .attr_out( " ++ attrOut ++ " )"
+    , "  , .mosi( " ++ inputPort mosi ++ " )"
+    , "  , .miso( " ++ outputPort miso ++ " )"
+    , "  , .sclk( " ++ inputPort sclk ++ " )"
+    , "  , .cs( " ++ inputPort cs ++ " )"
     , "  );"
-    , "  assign " ++ link dataOut ++ " = 0;"
-    , "  assign " ++ link attrOut ++ " = 0;"
-    ] [("name", name)]
-    where
-      control = link . controlBus
+    ] [ ( "name", title ) ]
+
+  componentTestEnviroment title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..} = renderMST
+    [ "reg $name$_start_transaction;"
+    , "reg  [64-1:0] $name$_master_in;"
+    , "wire [64-1:0] $name$_master_out;"
+    , "wire $name$_ready;"
+    , "spi_master_driver "
+    , "  #( .DATA_WIDTH( 64 ) " -- FIXME: 32
+    , "   , .SCLK_HALFPERIOD( 1 )"
+    , "   ) $name$_master"
+    , "  ( .clk( $clk$ )"
+    , "  , .rst( $rst$ )"
+    , "  , .start_transaction( $name$_start_transaction )"
+    , "  , .data_in( $name$_master_in )"
+    , "  , .data_out( $name$_master_out )"
+    , "  , .ready( $name$_ready )"
+    , "  , .mosi( " ++ inputPort mosi ++ " )"
+    , "  , .miso( " ++ outputPort miso ++ " )"
+    , "  , .sclk( " ++ inputPort sclk ++ " )"
+    , "  , .cs( " ++ inputPort cs ++ " )"
+    , "  );"
+    , "initial $name$_master.inner.shiftreg <= 0;"
+    , ""
+    , "initial begin"
+    , "  $name$_start_transaction <= 0; $name$_master_in <= 0;"
+    , "  @(negedge $rst$);"
+    , "  repeat(8) @(posedge $clk$); "
+    , ""
+    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
+    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
+    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
+    , "  repeat(200) @(posedge $clk$); "
+    , ""
+    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
+    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
+    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
+    , "  repeat(200) @(posedge $clk$); "
+    , ""
+    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
+    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
+    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
+    , "  repeat(200) @(posedge $clk$); "
+    , ""
+    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
+    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
+    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
+    , "  repeat(200) @(posedge $clk$); "
+    , ""
+    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
+    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
+    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
+    , "  repeat(200) @(posedge $clk$); "
+    , ""
+    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
+    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
+    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
+    , "  repeat(200) @(posedge $clk$); "
+    , ""
+    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
+    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
+    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
+    , "  repeat(200) @(posedge $clk$); "
+    , ""
+    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
+    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
+    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
+    , "  repeat(200) @(posedge $clk$); "
+    , ""
+    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
+    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
+    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
+    , "  repeat(200) @(posedge $clk$); "
+    , ""
+    , "  repeat(70) @(posedge $clk$); "
+    , "end"
+    , "                                                                                                          "
+    ] [ ( "name", title )
+      , ( "clk", signalClk )
+      , ( "rst", signalRst )
+      ]

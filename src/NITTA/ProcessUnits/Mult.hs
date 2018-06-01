@@ -14,7 +14,7 @@
 
 module NITTA.ProcessUnits.Mult
   ( Mult(..)
-  , Link(..)
+  , PUPorts(..)
   ) where
 
 import           Control.Monad.State
@@ -74,7 +74,6 @@ instance Controllable (Mult v x t) where
     = Microcode{ wrSignal :: Bool
                , selSignal :: Bool
                , oeSignal :: Bool
-               , resSelSignal :: Bool
                } deriving ( Show, Eq, Ord )
 
   data Instruction (Mult v x t)
@@ -106,13 +105,12 @@ instance UnambiguouslyDecode (Mult v x t) where
 
 
 
-instance Connected (Mult v x t) i where
-  data Link (Mult v x t) i
-    = Link { wr, wrSel, oe :: i } deriving ( Show )
-  transmitToLink Microcode{..} Link{..}
+instance Connected (Mult v x t) where
+  data PUPorts (Mult v x t)
+    = PUPorts{ wr, wrSel, oe :: Signal } deriving ( Show )
+  transmitToLink Microcode{..} PUPorts{..}
     = [ (wr, B wrSignal)
       , (wrSel, B selSignal)
-      , (oe, B resSelSignal)
       ]
 
 
@@ -125,32 +123,28 @@ instance ( Var v
 
 
 
-instance ( Var v, Show t ) => DefinitionSynthesis (Mult v x t) where
-  moduleName _ = "pu_mult"
-  hardware pu = Project "" [ FromLibrary "mult/mult_placeholder.v"
-                          --  , FromLibrary "Mult/Mult.v"
-                           , FromLibrary $ "mult/" ++ moduleName pu ++ ".v"
-                           ]
-  software pu = Empty
-
 instance ( Time t, Var v
-         ) => Synthesis (Mult v x t) LinkId where
-  hardwareInstance _ name NetworkLink{..} Link{..} = renderST
+         ) => TargetSystemComponent (Mult v x t) where
+  moduleName _ _ = "pu_mult"
+  software _ _ = Empty
+  hardware title pu = Aggregate Nothing [ FromLibrary "mult/mult_placeholder.v"
+                                        --  , FromLibrary "Mult/Mult.v"
+                                        , FromLibrary $ "mult/" ++ moduleName title pu ++ ".v"
+                                        ]
+  hardwareInstance title _ Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
     [ "pu_mult"
-    , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
-    -- , "   , .INVALID( INVALID )" -- FIXME:
+    , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
+    , "   , .INVALID( 0 )" -- FIXME:
     , "   ) $name$"
-    , "  ( .clk( " ++ link clk ++ " )"
-    , "  , .rst( " ++ link rst ++ " )"
-    , "  , .signal_wr( " ++ control wr ++ " )"
-    , "  , .signal_sel( " ++ control wrSel ++ " )"
-    , "  , .data_in( " ++ link dataIn ++ " )"
-    , "  , .attr_in( " ++ link attrIn ++ " )"
-    , "  , .signal_oe( " ++ control oe ++ " )"
-    , "  , .data_out( " ++ link dataOut ++ " )"
-    , "  , .attr_out( " ++ link attrOut ++ " )"
+    , "  ( .clk( " ++ signalClk ++ " )"
+    , "  , .rst( " ++ signalRst ++ " )"
+    , "  , .signal_wr( " ++ signal wr ++ " )"
+    , "  , .signal_sel( " ++ signal wrSel ++ " )"
+    , "  , .data_in( " ++ dataIn ++ " )"
+    , "  , .attr_in( " ++ attrIn ++ " )"
+    , "  , .signal_oe( " ++ signal oe ++ " )"
+    , "  , .data_out( " ++ dataOut ++ " )"
+    , "  , .attr_out( " ++ attrOut ++ " )"
     , "  );"
-    ] [("name", name)]
-    where
-      control = link . controlBus
+    ] [("name", title)]

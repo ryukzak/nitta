@@ -12,15 +12,12 @@ import           Control.Applicative       ((<$>))
 import           Data.Default
 import qualified Data.Map                  as M
 import           Data.Proxy
-import           NITTA.Compiler
 import qualified NITTA.FunctionBlocks      as FB
 import           NITTA.ProcessUnits.Fram
 import           NITTA.Test.FunctionBlocks ()
-import           NITTA.TestBench
+import           NITTA.Test.ProcessUnits
 import           NITTA.Types
-import           System.FilePath.Posix     (joinPath)
 import           Test.QuickCheck
-import           Test.Tasty.HUnit
 
 
 framProxy = Proxy :: Proxy (Fram String Int Int)
@@ -37,16 +34,17 @@ instance Arbitrary (FSet (Fram String Int t)) where
 
 -----------------------------------------------------------
 
-framTestBench
-  = let alg = [ FB.reg "aa" ["ab"]
-              , FB.framOutput 9 "ac"
-              ]
-        lib = joinPath ["..", ".."]
-        wd = joinPath ["hdl", "gen", "unittest_fram"]
-        fram = bindAllAndNaiveSchedule alg (def :: Fram String Int Int)
-        cntx = def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] } :: Cntx String Int
-        tb = testBench lib wd fram cntx
-    in tb @? "fram test bench"
+framRegAndOut = unitTestbench "framRegAndOut" framProxy
+  def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] }
+  [ FB.reg "aa" ["ab"]
+  , FB.framOutput 9 "ac"
+  ]
+
+framRegAndConstant = unitTestbench "framRegAndConstant" framProxy
+  def{ cntxVars=M.fromList [("dzw", [975])] }
+  [ FB.reg "dzw" ["act","mqt"]
+  , FB.constant 11 ["ovj"]
+  ]
 
 
 

@@ -18,16 +18,23 @@ import           Control.Monad
 import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Default
-import           Data.Map               (Map, fromList)
+import           Data.Map                    (Map, fromList)
 import           Data.Maybe
+import           Data.Monoid
 import           GHC.Generics
-import           ListT                  (toList)
+import           ListT                       (toList)
+import           Network.Wai.Handler.Warp
+import           Network.Wai.Middleware.Cors (simpleCors)
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import           NITTA.Types            hiding (Synthesis, steps)
-import           NITTA.Utils.JSON       ()
+import           NITTA.Types                 hiding (steps)
+import           NITTA.Utils.JSON            ()
 import           Servant
-import qualified STMContainers.Map      as M
+import           Servant.JS
+import qualified Servant.JS                  as SJS
+import qualified STMContainers.Map           as M
+import           System.Directory
+import           System.FilePath.Posix       (joinPath)
 
 
 data Synthesis
@@ -154,3 +161,15 @@ app root = do
     M.insert def{ steps=[root] } "root" st
     return st
   return $ serve (Proxy :: Proxy SynthesisAPI) $ synthesisServer stm
+
+
+webServer frame = do
+  let prefix = "import axios from 'axios';\n\
+                \var api = {}\n\
+                \export default api;"
+  let axios' = axiosWith defAxiosOptions defCommonGeneratorOptions{ urlPrefix="http://localhost:8080"
+                                                                  , SJS.moduleName="api"
+                                                                  }
+  createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
+  writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
+  app def{ state=frame } >>= run 8080 . simpleCors

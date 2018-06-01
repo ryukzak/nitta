@@ -20,7 +20,7 @@
 
 module NITTA.FunctionBlocks where
 
-import           Data.Bits
+import qualified Data.Bits     as B
 import           Data.List     (cycle, intersect, (\\))
 import qualified Data.Map      as M
 import           Data.Maybe
@@ -31,8 +31,10 @@ import           NITTA.Utils
 
 
 
-class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
-instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, Bits a ) => Addr a
+class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, B.Bits a ) => Addr a
+instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, B.Bits a ) => Addr a
+addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test bench initialization
+
 
 get' cntx k = fromMaybe (error $ "Can't get from cntx." ++ show k) $ get cntx k
 get Cntx{..} k = do
@@ -82,7 +84,15 @@ simulateAlg cntx0 fbs = step cntx0 $ cycle $ reorderAlgorithm fbs
     step cntx (f:fs)
       | Just cntx' <- simulate cntx f
       = cntx' : step cntx' fs
+      | otherwise = error $ "Simulation error: " ++ show f
     step _ _ = error "Simulation error."
+
+simulateAlgByCycle cntx fbs = simulateAlgByCycle' $ simulateAlg cntx fbs
+  where
+    l = length fbs - 1
+    simulateAlgByCycle' xs = let x : xs' = drop l xs
+                             in x : simulateAlgByCycle' xs'
+
 
 reorderAlgorithm alg = orderAlgorithm' [] alg
   where
@@ -91,14 +101,14 @@ reorderAlgorithm alg = orderAlgorithm' [] alg
       | let insideOuts = filter insideOut fs
       , not $ null insideOuts
       , let insideOutsOutputs = elems $ unionsMap outputs insideOuts
-      , let ready = filter (not . null . intersect insideOutsOutputs . elems . inputs) insideOuts
-      , not $ null ready
-      = ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
+      = case filter (not . null . intersect insideOutsOutputs . elems . inputs) insideOuts of
+          [] -> insideOuts ++ orderAlgorithm' (elems (unionsMap variables insideOuts) ++ vs) (fs \\ insideOuts)
+          ready -> ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
     orderAlgorithm' vs fs
-      | let ready = filter (null . (\\ vs) . map snd . dependency) fs
+      | let ready = filter (null . (\\ vs) . elems . inputs) fs
       , not $ null ready
       = ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
-    orderAlgorithm' _ _ = error "Can't sort algorithm."
+    orderAlgorithm' _ _ = error $ "Can't sort algorithm. "
 
 
 castFB :: ( Typeable fb ) => FB io -> Maybe (fb io)
@@ -115,10 +125,12 @@ framInput addr vs = FB $ FramInput addr $ O $ fromList vs
 instance ( IOType io v x ) => FunctionalBlock (FramInput io) v where
   outputs (FramInput _ o) = variables o
   isCritical _ = True
-instance FunctionSimulation (FramInput (Parcel v x)) v x where
+instance ( Ord v, Num x ) => FunctionSimulation (FramInput (Parcel v x)) v x where
   -- | Невозможно симулировать данные операции без привязки их к конкретному PU, так как нет
   -- возможности понять что мы что-то записали по тому или иному адресу.
-  simulate = error "Can't functional simulate FramInput!"
+  simulate cntx (FramInput addr (O k)) = do
+    let v = fromMaybe (addr2value addr) $ cntx `get` oneOf k
+    set cntx k v
 
 
 
@@ -130,8 +142,11 @@ framOutput addr v = FB $ FramOutput addr $ I v
 instance ( IOType io v x ) => FunctionalBlock (FramOutput io) v where
   inputs (FramOutput _ o) = variables o
   isCritical _ = True
-instance FunctionSimulation (FramOutput (Parcel v x)) v x where
-  simulate = error "Can't functional simulate FramOutput!"
+instance ( Ord v ) => FunctionSimulation (FramOutput (Parcel v x)) v x where
+  simulate cntx@Cntx{ cntxFram } (FramOutput addr (I k)) = do
+    v <- get cntx k
+    let cntxFram' = M.alter (Just . maybe [v] (v:)) (addr, k) cntxFram
+    return cntx{ cntxFram=cntxFram' }
 
 
 
@@ -271,17 +286,25 @@ instance ( Ord v ) => FunctionSimulation (Constant (Parcel v x)) v x where
 
 
 
-data ShiftL io = ShiftL (I io) (O io) deriving ( Typeable )
-deriving instance ( IOType io v x ) => Show (ShiftL io)
-deriving instance ( IOType io v x ) => Eq (ShiftL io)
+data ShiftLR io = ShiftL (I io) (O io)
+                | ShiftR (I io) (O io)
+                deriving ( Typeable )
+deriving instance ( IOType io v x ) => Show (ShiftLR io)
+deriving instance ( IOType io v x ) => Eq (ShiftLR io)
 shiftL a b = FB $ ShiftL (I a) $ O $ fromList b
+shiftR a b = FB $ ShiftR (I a) $ O $ fromList b
 
-instance ( IOType io v x ) => FunctionalBlock (ShiftL io) v where
+instance ( IOType io v x ) => FunctionalBlock (ShiftLR io) v where
   outputs (ShiftL i o) = variables i `union` variables o
-instance ( Ord v, Bits x ) => FunctionSimulation (ShiftL (Parcel v x)) v x where
+  outputs (ShiftR i o) = variables i `union` variables o
+instance ( Ord v, B.Bits x ) => FunctionSimulation (ShiftLR (Parcel v x)) v x where
   simulate cntx (ShiftL (I k1) (O k2)) = do
     v1 <- cntx `get` k1
-    let v2 = v1 `shiftR` 1
+    let v2 = v1 `B.shiftL` 1
+    set cntx k2 v2
+  simulate cntx (ShiftR (I k1) (O k2)) = do
+    v1 <- cntx `get` k1
+    let v2 = v1 `B.shiftR` 1
     set cntx k2 v2
 
 

@@ -24,16 +24,24 @@ main = do
   -- TODO: Положть gen в ram fs, нечего насиловать диск.
   defaultMain $ testGroup "NITTA"
     [ testGroup "Fram process unit"
-      [ testCase "unit tests" framTestBench
+      [ testCase "framRegAndOut" framRegAndOut
+      , testCase "framRegAndConstant" framRegAndConstant
       , QC.testProperty "completeness" $ prop_completness <$> processGen framProxy
-      , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram_" counter) $ inputsGen =<< processGen framProxy
+      , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram" counter) $ inputsGen =<< processGen framProxy
       ]
+    -- , testGroup "Shift process unit"
+    --   [ testCase "shiftBiDirection" shiftBiDirection
+    --   ]
     , testGroup "FunctionalBlock"
       [ testCase "reorderAlgorithm" reorderAlgorithmTest
       , testCase "fibonacci" simulateFibonacciTest
       ]
     , testGroup "BusNetwork"
-      [ testCase "unit tests" accum_fram1_fram2_netTests
+      [ testCase "testShiftAndFram" testShiftAndFram
+      , testCase "testAccumAndFram" testAccumAndFram
+      , testCase "badTestFram" badTestFram
+      , testCase "testFibonacci" testFibonacci
+      , testCase "testFibonacciWithSPI" testFibonacciWithSPI
       ]
     , testGroup "Utils"
       [ testCase "values2dump" values2dumpTests

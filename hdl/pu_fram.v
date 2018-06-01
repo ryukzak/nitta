@@ -3,6 +3,7 @@ module pu_fram
    , parameter DATA_WIDTH = 32
    , parameter ATTR_WIDTH = 4
    , parameter ADDR_WIDTH = $clog2( RAM_SIZE )
+   , parameter FRAM_DUMP = "NOT_DEFINED"
    )
   ( input  wire                  clk
 
@@ -31,6 +32,8 @@ always @(posedge clk)
   end
 
 reg [DATA_WIDTH+ATTR_WIDTH-1:0] bank [RAM_SIZE-1:0];
+initial $readmemh(FRAM_DUMP, bank, 0, RAM_SIZE-1);
+
 always @(posedge clk)
   if ( wr ) bank[addr] <= { attr, data };
 

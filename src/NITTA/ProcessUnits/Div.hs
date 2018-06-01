@@ -14,7 +14,7 @@
 
 module NITTA.ProcessUnits.Div
   ( Div(..)
-  , Link(..)
+  , PUPorts(..)
   ) where
 
 import           Control.Monad.State
@@ -112,10 +112,10 @@ instance UnambiguouslyDecode (Div v x t) where
 
 
 
-instance Connected (Div v x t) i where
-  data Link (Div v x t) i
-    = Link { wr, wrSel, oe, oeSel :: i } deriving ( Show )
-  transmitToLink Microcode{..} Link{..}
+instance Connected (Div v x t) where
+  data PUPorts (Div v x t)
+    = PUPorts{ wr, wrSel, oe, oeSel :: Signal } deriving ( Show )
+  transmitToLink Microcode{..} PUPorts{..}
     = [ (wr, B wrSignal)
       , (wrSel, B selSignal)
       , (oe, B resSelSignal)
@@ -132,33 +132,30 @@ instance ( Var v
 
 
 
-instance ( Var v, Show t ) => DefinitionSynthesis (Div v x t) where
-  moduleName _ = "pu_div"
-  hardware pu = Project "" [ FromLibrary "div/div_placeholder.v"
-                          --  , FromLibrary "div/div.v"
-                           , FromLibrary $ "div/" ++ moduleName pu ++ ".v"
-                           ]
-  software pu = Empty
-
 instance ( Time t, Var v
-         ) => Synthesis (Div v x t) LinkId where
-  hardwareInstance _ name NetworkLink{..} Link{..} = renderST
+         ) => TargetSystemComponent (Div v x t) where
+  moduleName _ _ = "pu_div"
+  software _ _ = Empty
+  hardware title pu = Aggregate Nothing
+    [ FromLibrary "div/div_placeholder.v"
+    --  , FromLibrary "div/div.v"
+    , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
+    ]
+  hardwareInstance title _ Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
     [ "pu_div"
-    , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+    , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
     , "   , .INVALID( 0 )" -- FIXME:
     , "   ) $name$"
-    , "  ( .clk( " ++ link clk ++ " )"
-    , "  , .rst( " ++ link rst ++ " )"
-    , "  , .signal_wr( " ++ control wr ++ " )"
-    , "  , .signal_wr_sel( " ++ control wrSel ++ " )"
-    , "  , .data_in( " ++ link dataIn ++ " )"
-    , "  , .attr_in( " ++ link attrIn ++ " )"
-    , "  , .signal_oe( " ++ control oe ++ " )"
-    , "  , .signal_oe_sel( " ++ control oeSel ++ " )"
-    , "  , .data_out( " ++ link dataOut ++ " )"
-    , "  , .attr_out( " ++ link attrOut ++ " )"
+    , "  ( .clk( " ++ signalClk ++ " )"
+    , "  , .rst( " ++ signalRst ++ " )"
+    , "  , .signal_wr( " ++ signal wr ++ " )"
+    , "  , .signal_wr_sel( " ++ signal wrSel ++ " )"
+    , "  , .data_in( " ++ dataIn ++ " )"
+    , "  , .attr_in( " ++ attrIn ++ " )"
+    , "  , .signal_oe( " ++ signal oe ++ " )"
+    , "  , .signal_oe_sel( " ++ signal oeSel ++ " )"
+    , "  , .data_out( " ++ dataOut ++ " )"
+    , "  , .attr_out( " ++ attrOut ++ " )"
     , "  );"
-    ] [("name", name)]
-    where
-      control = link . controlBus
+    ] [("name", title)]

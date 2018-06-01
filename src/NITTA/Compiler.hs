@@ -158,11 +158,10 @@ option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
 option2decision (BindingOption fb title) = BindingDecision fb title
 option2decision (DataFlowOption src trg)
   = let pushTimeConstrains = map snd $ catMaybes $ M.elems trg
-        predictPullStartFromPush o = o^.avail.infimum - 1 -- сдвиг на 1 за счёт особенностей используемой сети.
-        pullStart    = maximum $ (snd src^.avail.infimum) : map predictPullStartFromPush pushTimeConstrains
+        pullStart    = maximum $ (snd src^.avail.infimum) : map (\o -> o^.avail.infimum) pushTimeConstrains
         pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd src : pushTimeConstrains
         pullEnd = pullStart + pullDuration - 1
-        pushStart = pullStart + 1
+        pushStart = pullStart
         mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
     in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs

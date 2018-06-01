@@ -23,6 +23,7 @@ import           Data.Typeable       (Typeable, cast)
 import           NITTA.Types
 import           NITTA.Utils.Lens
 import           Numeric             (readInt, showHex)
+import           Numeric.Interval    ((...))
 import qualified Numeric.Interval    as I
 import           Text.StringTemplate
 
@@ -65,6 +66,10 @@ addStep placeInTime info = do
         , steps=Step nextUid placeInTime info : steps
         }
   return nextUid
+
+addStep_ placeInTime info = do
+  _ <- addStep placeInTime info
+  return ()
 
 addActivity interval = addStep $ Activity interval
 
@@ -115,8 +120,10 @@ getEndpoint _                                                  = Nothing
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 
 endpointAt t p
-  | [eff] <- mapMaybe getEndpoint $ whatsHappen t p = Just eff
-  | otherwise = Nothing
+  = case mapMaybe getEndpoint $ whatsHappen t p of
+    [ep] -> Just ep
+    []   -> Nothing
+    eps  -> error $ "Too many endpoint at a time: " ++ show eps
 
 endpointsAt t p = mapMaybe getEndpoint $ whatsHappen t p
 
@@ -136,14 +143,7 @@ extractInstruction _ Step{ sDesc=InstructionStep instr } = cast instr
 extractInstruction _ _                                   = Nothing
 
 
-extractInstructionAt pu t
-  = let p = process pu
-        is = mapMaybe (extractInstruction pu) $ whatsHappen t p
-    in case is of
-      []  -> Nothing
-      [i] -> Just i
-      _   -> error $ "Too many instruction on tick." ++ show is
-
+extractInstructionAt pu t = mapMaybe (extractInstruction pu) $ whatsHappen t $ process pu
 
 extractInstructions pu = mapMaybe (extractInstruction pu) $ sortOn stepStart $ steps $ process pu
 
@@ -159,7 +159,7 @@ algOutputs fbs = unionsMap outputs fbs `difference` unionsMap inputs fbs
 values2dump vs
   = let vs' = concatMap show vs
         x = length vs' `mod` 4
-        vs'' = if x == 0 then vs' else  replicate (4 - x) '0' ++ vs'
+        vs'' = if x == 0 then vs' else replicate (4 - x) '0' ++ vs'
     in concatMap (\e -> showHex (readBin e) "") $ groupBy4 vs''
   where
     groupBy4 [] = []
@@ -168,7 +168,8 @@ values2dump vs
     readBin = fst . head . readInt 2 (`elem` "x01") (\case '1' -> 1; _ -> 0)
 
 
-renderST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
+renderMST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
+renderST st attrs = render $ setManyAttrib attrs $ newSTMP st
 
 
 isTimeWrap p act = nextTick p > act^.at.infimum
@@ -179,3 +180,5 @@ addInstr _pu t i = addStep (Activity t) $ InstructionStep i
 
 
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
+
+shift n d@EndpointD{ epdAt } = d{ epdAt=(I.inf epdAt + n) ... (I.sup epdAt + n) }

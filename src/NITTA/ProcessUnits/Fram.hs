@@ -2,7 +2,9 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -56,12 +58,12 @@ TODO: Каким образом необходимо работать со вн�
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
   , FSet(..)
-  , Link(..)
+  , PUPorts(..)
   ) where
 
-import           Control.Monad         ((>=>))
+import           Control.Monad         (void, when, (>=>))
 import           Data.Array
-import           Data.Bits
+import           Data.Bits             (testBit)
 import           Data.Default
 import           Data.Either
 import           Data.Foldable
@@ -74,11 +76,12 @@ import qualified Data.String.Utils     as S
 import           Data.Typeable
 import           NITTA.Compiler
 import           NITTA.FunctionBlocks
-import           NITTA.TestBench
+import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval      ((...))
+import           Text.Printf
 
 
 
@@ -122,7 +125,7 @@ instance FunctionalSet (Fram v x t) where
     | Constant' (Constant (Parcel v x))
     deriving ( Show, Eq )
 
-instance ( Var v, Time t, Typeable x, Eq x, Show x
+instance ( Var v, Time t, Typeable x, Eq x, Show x, Num x
          ) => WithFunctionalBlocks (FSet (Fram v x t)) (FB (Parcel v x)) where
   -- TODO: Сделать данную операцию через Generics.
   functionalBlocks (FramInput' fb)  = [ FB fb ]
@@ -134,13 +137,13 @@ instance ( Var v, Time t, Typeable x, Eq x, Show x
 instance ( Var v
          , Typeable x
          ) => ToFSet (Fram v x t) v where
-  toFSet (FB fb0)
-    | Just fb@(Constant _ _) <- cast fb0 = Right $ Constant' fb
-    | Just fb@(Reg _ _) <- cast fb0 = Right $ Reg' fb
-    | Just fb@(Loop _ _ _) <- cast fb0 = Right $ Loop' fb
-    | Just fb@(FramInput _ _) <- cast fb0 = Right $ FramInput' fb
-    | Just fb@(FramOutput _ _) <- cast fb0 = Right $ FramOutput' fb
-    | otherwise = Left $ "Fram don't support " ++ show fb0
+  toFSet (FB fb)
+    | Just fb'@Constant{} <- cast fb = Right $ Constant' fb'
+    | Just fb'@Reg{} <- cast fb = Right $ Reg' fb'
+    | Just fb'@Loop{} <- cast fb = Right $ Loop' fb'
+    | Just fb'@FramInput{} <- cast fb = Right $ FramInput' fb'
+    | Just fb'@FramOutput{} <- cast fb = Right $ FramOutput' fb'
+    | otherwise = Left $ "Fram don't support " ++ show fb
 
 isReg (Reg' _) = True
 isReg _        = False
@@ -284,7 +287,7 @@ instance ( IOType (Parcel v x) v x
 
 
 
-instance ( Var v, Time t, Typeable x, Show x, Eq x
+instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (Fram v x t)
          where
@@ -317,13 +320,13 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
                                in reserved == 0 || reserved < allow
 
       constrain Cell{..} (Source _)
-        | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
-        | otherwise              = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
+        | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 + 1 ... maxBound) (1 ... maxBound)
+        | otherwise              = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
       constrain _cell (Target _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
 
 
-  decision proxy pu@Fram{ frProcess=p@Process{ nextTick=tick0 }, .. } act@EndpointD{..}
-    | isTimeWrap p act = timeWrapError p act
+  decision proxy pu@Fram{ frProcess=p@Process{ nextTick=tick0 }, .. } d@EndpointD{..}
+    | isTimeWrap p d = timeWrapError p d
 
     | Just (fb, cad1) <- find ( anyInAction . variables . fst ) frRemains
     = either error id $ do
@@ -335,7 +338,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
                     , frMemory=frMemory // [(addr, cell')]
                     , frProcess=p'
                     }
-        return $ decision proxy pu' act
+        return $ decision proxy pu' d
 
     | Just (addr, cell) <- find ( any (<< epdRole) . cellEndpoints True . snd ) $ assocs frMemory
     = case cell of
@@ -362,8 +365,8 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
               in pu{ frMemory=frMemory // [(addr, cell'')]
                    , frProcess=p'
                    }
-        Cell{ output=Def job@Job{ actions=act1 : _ } } | act1 << epdRole
-          ->  let (p', Nothing) = schedule addr job
+        Cell{ output=Def j@Job{ actions=act1 : _ } } | act1 << epdRole
+          ->  let (p', Nothing) = schedule addr j
                   -- FIXME: Eсть потенциальная проблема, которая может встречаться и в других
                   -- вычислительных блоках. Если вычислительный блок загружает данные в последний
                   -- такт вычислительного цикла, а выгружает их в первый так, то возможно ситуация,
@@ -371,6 +374,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
                   -- лежать в плоскости метода process, в рамках которого должен производиться
                   -- анализ уже построенного вычислительного процесса и в случае необходимости,
                   -- добавляться лишний так простоя.
+                  -- , frProcess=snd $ modifyProcess p' $ setProcessTime (d^.at.supremum + 1)
                   cell' = cell{ input=UsedOrBlocked
                               , output=UsedOrBlocked
                               }
@@ -379,13 +383,13 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
                    }
         _ -> error "Fram internal decision error."
 
-    | otherwise = error $ "Can't found selected action: " ++ show act
+    | otherwise = error $ "Can't found selected action: " ++ show d
                   ++ " tick: " ++ show (nextTick p) ++ "\n"
                   ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options endpointDT pu)
                   ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
                   ++ "remains:\n" ++ concatMap ((++ "\n") . show) frRemains
     where
-      anyInAction = any (`elem` variables act)
+      anyInAction = any (`elem` variables d)
       bind2CellStep addr fb t
         = addStep (Event t) $ CADStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
       updateLastWrite t cell | Target _ <- epdRole = cell{ lastWrite=Just t }
@@ -399,31 +403,27 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x
 
       scheduleWork _addr Job{ actions=[] } = error "Fram:scheudle internal error."
       scheduleWork addr job@Job{ actions=x:xs, .. }
-        = let ((ep, instrs), p') = modifyProcess p $ do
-                e <- addStep (Activity $ act^.at) $ EndpointRoleStep $ act^.endRole
-                i1 <- addInstr pu (act^.at) $ act2Instruction addr $ act^.endRole
-                is <- if tick0 < act^.at.infimum
-                  then do
-                    i2 <- addInstr pu (tick0 ... act^.at.infimum - 1) Nop
-                    return [ i1, i2 ]
-                  else return [ i1 ]
+        = let ( instrTi, instr ) = case d^.endRole of
+                  Source _ -> ( shift (-1) d^.at, Load addr)
+                  Target _ -> ( d^.at, Save addr)
+              ((ep, instrs), p') = modifyProcess p $ do
+                e <- addStep (Activity $ d^.at) $ EndpointRoleStep $ d^.endRole
+                i <- addInstr pu instrTi instr
+                when (tick0 < instrTi^.infimum) $ void $ addInstr pu (tick0 ... instrTi^.infimum - 1) Nop
                 mapM_ (relation . Vertical e) instrs
-                setProcessTime $ act^.at.supremum + 1
-                return (e, is)
+                setProcessTime $ d^.at.supremum + 1
+                return (e, [i])
           in (p', job{ endpoints=ep : endpoints
                      , instructions=instrs ++ instructions
-                     , startAt=startAt `orElse` Just (act^.at.infimum)
-                     , actions=if x == act^.endRole then xs else (x \\\ (act^.endRole)) : xs
+                     , startAt=startAt `orElse` Just (d^.at.infimum)
+                     , actions=if x == d^.endRole then xs else (x \\\ (d^.endRole)) : xs
                      })
       finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
         let start = fromMaybe (error "startAt field is empty!") startAt
-        h <- addStep (Activity $ start ... act^.at.supremum) $ FBStep $ fromFSet functionalBlock
+        h <- addStep (Activity $ start ... d^.at.supremum) $ FBStep $ fromFSet functionalBlock
         mapM_ (relation . Vertical h) cads
         mapM_ (relation . Vertical h) endpoints
         mapM_ (relation . Vertical h) instructions
-
-      act2Instruction addr (Source _) = Load addr
-      act2Instruction addr (Target _) = Save addr
 
 
 
@@ -475,10 +475,10 @@ instance ( Var v, Time t ) => Controllable (Fram v x t) where
     | Save Int
     deriving (Show)
 
-instance Connected (Fram v x t) i where
-  data Link (Fram v x t) i
-    = Link { oe, wr :: i, addr :: [i] } deriving ( Show )
-  transmitToLink Microcode{..} Link{..}
+instance Connected (Fram v x t) where
+  data PUPorts (Fram v x t)
+    = PUPorts{ oe, wr :: Signal, addr :: [Signal] } deriving ( Show )
+  transmitToLink Microcode{..} PUPorts{..}
     = [ (oe, B oeSignal)
       , (wr, B wrSignal)
       ] ++ addrs
@@ -523,8 +523,6 @@ instance ( Var v, Time t
       let cntxFram' = M.alter (Just . maybe [v] (v:)) (addr, k) cntxFram
       return cntx{ cntxFram=cntxFram' }
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Fram."
-    where
-      addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test bench initialization
 
 
 
@@ -537,20 +535,27 @@ instance ( Var v
          , Num x
          , Default x
          , Eq x
+         , PrintfArg x
          , ProcessUnit (Fram v x t) (Parcel v x) t
          ) => TestBench (Fram v x t) v x where
-  testEnviroment cntx0 pu@Fram{ frProcess=Process{..}, .. }
-    = Immidiate (moduleName pu ++ "_tb.v") testBenchImp
+  testBenchDescription Project{ projectName, model=pu@Fram{ frProcess=Process{ steps }, .. } } cntx0
+    = Immidiate (moduleName projectName pu ++ "_tb.v") testBenchImp
     where
       Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) (Just cntx0) $ functionalBlocks pu
-      testBenchImp = renderST
+      testBenchImp = renderMST
         [ "module $moduleName$_tb();                                                                                 "
         , "parameter DATA_WIDTH = 32;                                                                                "
         , "parameter ATTR_WIDTH = 4;                                                                                 "
         , "                                                                                                          "
         , "/*                                                                                                        "
+        , "Context:"
         , show cntx
-        , show $ functionalBlocks pu
+        , ""
+        , "Algorithm:"
+        , unlines $ map show $ functionalBlocks pu
+        , ""
+        , "Process:"
+        , unlines $ map show steps
         , "*/                                                                                                        "
         , "                                                                                                          "
         , "reg clk, rst, wr, oe;                                                                                     "
@@ -560,22 +565,29 @@ instance ( Var v
         , "wire [DATA_WIDTH-1:0] data_out;                                                                           "
         , "wire [ATTR_WIDTH-1:0] attr_out;                                                                           "
         , "                                                                                                          "
-        , hardwareInstance pu "fram"
-            NetworkLink{ clk=Name "clk"
-                       , rst=Name "rst"
-                       , dataWidth=Name "32"
-                       , attrWidth=Name "4"
-                       , dataIn=Name "data_in"
-                       , attrIn=Name "attr_in"
-                       , dataOut=Name "data_out"
-                       , attrOut=Name "attr_out"
-                       , controlBus=id
-                       , cycleStart=Name "cycle"
-                       }
-            Link{ oe=Name "oe"
-                , wr=Name "wr"
-                , addr=[Name "addr"]
-                }
+        , hardwareInstance projectName pu
+            Enviroment{ signalClk="clk"
+                      , signalRst="rst"
+                      , signalCycle="cycle"
+                      , inputPort=undefined
+                      , outputPort=undefined
+                      , net=NetEnv
+                        { parameterDataWidth=IntParam 32
+                        , parameterAttrWidth=IntParam 4
+                        , dataIn="data_in"
+                        , attrIn="attr_in"
+                        , dataOut="data_out"
+                        , attrOut="attr_out"
+                        , signal= \(Signal i) -> case i of
+                          0 -> "oe"
+                          1 -> "wr"
+                          j -> "addr[" ++ show (3 - (j - 2)) ++ "]"
+                        }
+                      }
+            PUPorts{ oe=Signal 0
+                   , wr=Signal 1
+                   , addr=map Signal [ 2, 3, 4, 5 ]
+                   }
         , "                                                                                                          "
         , verilogWorkInitialze
         , verilogClockGenerator
@@ -590,15 +602,15 @@ instance ( Var v
         , "                                                                                                          "
         , initialFinish $ controlSignals pu
         , initialFinish $ testDataInput pu cntx
-        , initialFinish $ testDataOutput pu cntx
+        , initialFinish $ testDataOutput projectName pu cntx
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]
-        [ ("moduleName", moduleName pu)
+        [ ( "moduleName", moduleName projectName pu )
         ]
 
 controlSignals pu@Fram{ frProcess=Process{..}, ..}
-  = concatMap ( ("      " ++) . (++ " @(negedge clk)\n") . showMicrocode . microcodeAt pu) [ 0 .. nextTick + 1 ]
+  = concatMap ( ("      " ++) . (++ " @(posedge clk)\n") . showMicrocode . microcodeAt pu) [ 0 .. nextTick + 1 ]
   where
     showMicrocode Microcode{..} = concat
       [ "oe <= 'b", bool2binstr oeSignal, "; "
@@ -607,31 +619,27 @@ controlSignals pu@Fram{ frProcess=Process{..}, ..}
       ]
 
 testDataInput pu@Fram{ frProcess=p@Process{..}, ..} cntx
-  = concatMap ( ("      " ++) . (++ " @(negedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
+  = concatMap ( ("      " ++) . (++ " @(posedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
   where
     busState t
       | Just (Target v) <- endpointAt t p
        = "data_in <= " ++ show (fromMaybe (error ("input" ++ show v ++ show (functionalBlocks pu)) ) $ get cntx v) ++ ";"
       | otherwise = "/* NO INPUT */"
 
-testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
-  = concatMap ( ("      @(posedge clk); #1; " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
+testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
+  = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
   where
     busState t
       | Just (Source vs) <- endpointAt t p, let v = oneOf vs
       = checkBus v $ maybe (error $ show ("checkBus" ++ show v ++ show cntx) ) show (get cntx v)
       | otherwise
-      = "/* NO OUTPUT */"
+      = "\\$display( \"data_out: %d\", data_out ); "
 
     checkBus v value = concat
-      [ "if ( !( data_out === " ++ value ++ " ) ) "
-      ,   "\\$display("
-      ,     "\""
-      ,       "FAIL wrong value of " ++ show' v ++ " on the bus! "
-      ,       "(got: %h expect: %h)"
-      ,     "\", "
-      ,     "data_out, " ++ value
-      ,   ");"
+      [ "\\$write( \"data_out: %d == %d\t(%s)\", data_out, " ++ show value ++ ", " ++ show v ++ " ); "
+      ,  "if ( !( data_out === " ++ value ++ " ) ) "
+      ,   "\\$display(\" FAIL\");"
+      ,  "else \\$display();"
       ]
 
     bankCheck
@@ -648,7 +656,7 @@ testDataOutput pu@Fram{ frProcess=p@Process{..}, ..} cntx
       | otherwise = Nothing
 
     checkBank addr v value = concatMap ("    " ++)
-      [ "if ( !( fram.bank[" ++ show addr ++ "] === " ++ show value ++ " ) ) "
+      [ "if ( !( " ++ title ++ ".bank[" ++ show addr ++ "] === " ++ show value ++ " ) ) "
       ,   "\\$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
@@ -675,38 +683,32 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
     f _                       = S.empty
 
 
-instance ( Time t, Var v ) => DefinitionSynthesis (Fram v x t) where
-  moduleName _ = "pu_fram"
-  hardware pu = FromLibrary $ moduleName pu ++ ".v"
-  software _ = Empty
+softwareFile title pu = moduleName title pu ++ "." ++ title ++ ".dump"
 
-instance ( Time t, Var v, Show x
-         ) => Synthesis (Fram v x t) LinkId where
-  hardwareInstance Fram{..} name NetworkLink{..} Link{..} = renderST
+instance ( Time t, Var v, PrintfArg x ) => TargetSystemComponent (Fram v x t) where
+  moduleName _ _ = "pu_fram"
+  hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
+  software title pu@Fram{ frMemory }
+    = Immidiate (softwareFile title pu) $ unlines $ map (printf "%08x" . initialValue) $ elems frMemory
+  hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
     [ "pu_fram "
-    , "  #( .DATA_WIDTH( " ++ link dataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ link attrWidth ++ " )"
+    , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
+    , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
     , "   , .RAM_SIZE( " ++ show frSize ++ " )"
-    , "   ) " ++ name
-    , "  ( .clk( " ++ link clk ++ " )"
-    , "  , .signal_addr( { " ++ S.join ", " (map control addr) ++ " } )"
+    , "   , .FRAM_DUMP( \"\\$path\\$$softwareFile$\" )"
+    , "   ) " ++ title
+    , "  ( .clk( " ++ signalClk ++ " )"
+    , "  , .signal_addr( { " ++ S.join ", " (map signal addr) ++ " } )"
     , ""
-    , "  , .signal_wr( " ++ control wr ++ " )"
-    , "  , .data_in( " ++ link dataIn ++ " )"
-    , "  , .attr_in( " ++ link attrIn ++ " )"
+    , "  , .signal_wr( " ++ signal wr ++ " )"
+    , "  , .data_in( " ++ dataIn ++ " )"
+    , "  , .attr_in( " ++ attrIn ++ " )"
     , ""
-    , "  , .signal_oe( " ++ control oe ++ " )"
-    , "  , .data_out( " ++ link dataOut ++ " )"
-    , "  , .attr_out( " ++ link attrOut ++ " )"
+    , "  , .signal_oe( " ++ signal oe ++ " )"
+    , "  , .data_out( " ++ dataOut ++ " )"
+    , "  , .attr_out( " ++ attrOut ++ " )"
     , "  );"
-    , "initial begin"
-    , S.join "\n"
-        $ map (\(i, Cell{..}) -> "  $name$.bank[" ++ show i ++ "] <= " ++ show initialValue ++ ";")
-        $ assocs frMemory
-    , "end"
-    ] [ ("name", name)
-      , ("size", show frSize)
+    ] [ ( "name", title )
+      , ( "size", show frSize )
+      , ( "softwareFile", softwareFile title pu )
       ]
-    where
-      control = link . controlBus
-
