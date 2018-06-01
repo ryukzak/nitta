@@ -24,6 +24,7 @@ library
                      , NITTA.ProcessUnits.Div
                      , NITTA.ProcessUnits.Fram
                      , NITTA.ProcessUnits.Generic.SerialPU
+                     , NITTA.ProcessUnits.Mult
                      , NITTA.ProcessUnits.Shift
                      , NITTA.ProcessUnits.SPI
                      , NITTA.TestBench

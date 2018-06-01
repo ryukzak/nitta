@@ -30,6 +30,7 @@ import qualified NITTA.FunctionBlocks        as FB
 import qualified NITTA.ProcessUnits.Accum    as A
 import qualified NITTA.ProcessUnits.Div      as D
 import qualified NITTA.ProcessUnits.Fram     as FR
+import qualified NITTA.ProcessUnits.Mult     as M
 import qualified NITTA.ProcessUnits.Shift    as S
 import qualified NITTA.ProcessUnits.SPI      as SPI
 import           NITTA.TestBench
@@ -53,6 +54,7 @@ microarch = busNetwork 28
                            , SPI.start=Name "start", SPI.stop=Name "stop"
                            , SPI.mosi=Name "mosi", SPI.miso=Name "miso", SPI.sclk=Name "sclk", SPI.cs=Name "cs"
                            })
+  , ("mul", PU def M.Link{ M.wr=Index 24, M.wrSel=Index 26, M.oe=Index 25 } )
   , ("div", PU def D.Link{ D.wr=Index 24, D.wrSel=Index 26, D.oe=Index 25, D.oeSel=Index 27 } )
   ]
 
