@@ -17,18 +17,13 @@ module NITTA.ProcessUnits.Div
   , PUPorts(..)
   ) where
 
-import           Control.Monad.State
 import           Data.Default
-import           Data.Either
-import           Data.List            (find)
-import qualified Data.Set             as S
 import           Data.Typeable
 import           NITTA.FunctionBlocks (castFB)
 import qualified NITTA.FunctionBlocks as FB
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
-import           Numeric.Interval     ((...))
 
 
 
@@ -39,7 +34,7 @@ data ArgumentSel
 
 data ResultSel
   = Quotient
-  |	Remain
+  | Remain
   deriving ( Show, Eq )
 
 data Div v x t
@@ -141,7 +136,7 @@ instance ( Time t, Var v
     --  , FromLibrary "div/div.v"
     , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
     ]
-  hardwareInstance title _ Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
+  hardwareInstance title _ Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle } PUPorts{..} = renderMST
     [ "pu_div"
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"

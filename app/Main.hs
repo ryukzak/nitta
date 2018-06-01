@@ -13,8 +13,6 @@ module Main where
 import           Data.Default
 import qualified Data.Map                 as M
 import           Data.Maybe
-import           Data.Proxy
-import           NITTA.API
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
@@ -28,10 +26,7 @@ import qualified NITTA.ProcessUnits.SPI   as SPI
 import           NITTA.Project
 import           NITTA.Timeline
 import           NITTA.Types
-import           NITTA.Utils
-import           System.Directory
-import           System.FilePath.Posix    (joinPath, (</>))
-import           Text.StringTemplate
+import           System.FilePath          (joinPath)
 
 
 microarch = busNetwork 30

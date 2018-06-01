@@ -17,17 +17,12 @@ module NITTA.ProcessUnits.Mult
   , PUPorts(..)
   ) where
 
-import           Control.Monad.State
 import           Data.Default
-import           Data.Either
-import           Data.List            (find)
-import qualified Data.Set             as S
 import           Data.Typeable
 import           NITTA.FunctionBlocks (castFB)
 import qualified NITTA.FunctionBlocks as FB
 import           NITTA.Types
 import           NITTA.Utils
-import           NITTA.Utils.Lens
 import           Numeric.Interval     ((...))
 
 
