@@ -11,12 +11,12 @@ module pu_div
   , input  wire                  signal_wr  
   , input  wire                  signal_wr_sel
   , input  wire [DATA_WIDTH-1:0] data_in
-  , input  wire [ATTR_WIDTH:0]   attr_in
+  , input  wire [ATTR_WIDTH-1:0] attr_in
 
   , input  wire                  signal_oe
   , input  wire                  signal_oe_sel
   , output wire [DATA_WIDTH-1:0] data_out 
-  , output wire [ATTR_WIDTH:0]   attr_out
+  , output wire [ATTR_WIDTH-1:0] attr_out
   );
 
                                               

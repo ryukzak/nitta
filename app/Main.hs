@@ -28,10 +28,10 @@ import           NITTA.Compiler
 import           NITTA.DataFlow
 import qualified NITTA.FunctionBlocks        as FB
 import qualified NITTA.ProcessUnits.Accum    as A
+import qualified NITTA.ProcessUnits.Div      as D
 import qualified NITTA.ProcessUnits.Fram     as FR
 import qualified NITTA.ProcessUnits.Shift    as S
 import qualified NITTA.ProcessUnits.SPI      as SPI
-import qualified NITTA.ProcessUnits.Div      as D
 import           NITTA.TestBench
 import           NITTA.Timeline
 import           NITTA.Types
@@ -53,7 +53,7 @@ microarch = busNetwork 28
                            , SPI.start=Name "start", SPI.stop=Name "stop"
                            , SPI.mosi=Name "mosi", SPI.miso=Name "miso", SPI.sclk=Name "sclk", SPI.cs=Name "cs"
                            })
-  , ("div", PU def D.Link{ D.wr=Index 24, D.oe=Index 25, D.wrSel=Index 26, D.oeSel=Index 27 } )
+  , ("div", PU def D.Link{ D.wr=Index 24, D.wrSel=Index 26, D.oe=Index 25, D.oeSel=Index 27 } )
   ]
 
 synthesisedFib
