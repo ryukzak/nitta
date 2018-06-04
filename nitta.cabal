@@ -28,7 +28,6 @@ library
                      , NITTA.ProcessUnits.Shift
                      , NITTA.ProcessUnits.SPI
                      , NITTA.Project
-                     , NITTA.Timeline
                      , NITTA.Types
                      , NITTA.Types.Base
                      , NITTA.Types.Network

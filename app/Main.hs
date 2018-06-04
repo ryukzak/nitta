@@ -139,13 +139,12 @@ main = do
   --              , cntxInputs=M.fromList [("a", [1, 2, 3])]
   --              } spiAlg
 
-  -- putStrLn "Server start on 8080..."
-  -- webServer $ frame $ dfgraph fibonacciAlg
+  putStrLn "Server start on 8080..."
+  backendServer $ frame $ dfgraph fibonacciAlg
   putStrLn "-- the end --"
 
 
 test n pu cntx = do
-  timeline "resource/data.json" pu
   let prj = Project n "../.." (joinPath ["hdl", "gen", n]) pu
   r <- writeAndRunTestBench prj cntx
   if r then putStrLn "Success"

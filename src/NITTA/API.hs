@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE RecordWildCards       #-}
@@ -46,7 +47,6 @@ data Synthesis
 
 type T = TaggedTime String Int
 type ST = CompilerStep String String String Int (TaggedTime String Int)
-instance ToJSON ST
 instance ToJSON Synthesis
 
 
@@ -117,7 +117,7 @@ stepsServer stm sId
   where
     getStep = liftSTM . getStep'
     getStep' stepId = do
-      Synthesis{..} <- getSynthesis' stm sId
+      Synthesis{ steps } <- getSynthesis' stm sId
       unless ( length steps > stepId ) $ throwSTM err409{ errBody="Step not exists." }
       return $ reverse steps !! stepId
     autoPostStep toEnd = do
@@ -163,7 +163,7 @@ app root = do
   return $ serve (Proxy :: Proxy SynthesisAPI) $ synthesisServer stm
 
 
-webServer frame = do
+backendServer frame = do
   let prefix = "import axios from 'axios';\n\
                 \var api = {}\n\
                 \export default api;"

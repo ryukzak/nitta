@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE RecordWildCards       #-}
@@ -50,6 +51,7 @@ instance ( ToJSONKey title, ToJSON title, Title title
          , Show x, Ord x, Typeable x, ToJSON x, ToJSONKey x
          ) => ToJSON (SystemState title tag x v t)
 instance ( ToJSON v, Var v ) => ToJSON (DataFlowGraph v)
+instance ToJSON (CompilerStep String String String Int (TaggedTime String Int))
 
 
 instance ( ToJSON title
@@ -100,7 +102,44 @@ instance ( ToJSONKey title, ToJSON title, Title title
              , "processLength" .= nextTick (process n)
              -- , bnPus                :: M.Map title spu
              , "processUnits" .= M.keys bnPus
+             , "process" .= process n
              ]
+
+
+instance ( ToJSON t, Time t, Show v
+         ) => ToJSON (Process (Parcel v x) t) where
+  toJSON Process{ steps, nextTick }
+    = object
+      [ "steps" .= steps
+      , "nextTick" .= nextTick
+      ]
+      -- , relations :: [Relation] -- ^ Список отношений между шагами вычислительного процесса
+      -- , nextUid   :: ProcessUid -- ^ Следующий свободный идентификатор шага вычислительного процесса.
+
+instance ( ToJSON t, Time t, Show v
+         ) => ToJSON (Step (Parcel v x) t) where
+  toJSON Step{ sKey, sTime=Event a, sDesc }
+    = toJSON
+      [ toJSON $ show sKey                         -- Task ID
+      , toJSON $ show sDesc                        -- Task Name
+                                                   -- Resource ID (optional)
+      , toJSON $ fromEnum a                        -- Start
+      , Null                                       -- End
+      , toJSON (0 :: Int)                          -- Duration (in milliseconds)
+      , toJSON (100 :: Int)                        -- Percent Complete
+      , Null                                       -- Dependencies
+      ]
+  toJSON Step{ sKey, sTime=Activity i, sDesc }
+    = toJSON
+      [ toJSON $ show sKey                         -- Task ID
+      , toJSON $ show sDesc                        -- Task Name
+                                                   -- Resource ID (optional)
+      , toJSON $ fromEnum (inf i)                  -- Start
+      , Null                                       -- End
+      , toJSON $ fromEnum (width i) + 1            -- Duration (in milliseconds)
+      , toJSON (100 :: Int)                        -- Percent Complete
+      , Null                                       -- Dependencies
+      ]
 
 
 instance ToJSON SpecialMetrics

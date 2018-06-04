@@ -3,7 +3,8 @@ import './App.css';
 import api from './gen/nitta-api.js';
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
-import {LineChart} from 'react-easy-chart';
+import { LineChart } from 'react-easy-chart';
+import { Chart } from 'react-google-charts';
 
 class App extends Component {
 
@@ -45,6 +46,14 @@ class App extends Component {
   getStep(sId, stepId) {
     api.getSynthesisBySIdStepsByStepId( sId, stepId )
     .then( response => {
+      var steps = [];
+      for ( var k in response.data.state.nitta.process.steps ) {
+        var e = response.data.state.nitta.process.steps[k]
+        e[2] = new Date(e[2] * 1000)
+        e[4] = e[4] * 1000
+        if ( e[4] > 0 ) { steps.push( e ) }
+      }
+      response.data.state.nitta.process.steps = steps
       this.setState({ path: this.root( sId, 'step', stepId )
                     , stepData: response.data
                     })
@@ -174,6 +183,8 @@ function StepView(props) {
           () => app.getStepOption( path.sId, path.stepId ) } />
         <LinkButton sname="info" onClick={ 
           () => app.setPath( path.sId, 'step', path.stepId, 'info' ) } />
+        <LinkButton sname="process" onClick={ 
+          () => app.setPath( path.sId, 'step', path.stepId, 'process' ) } />
         <LinkButton sname="fork" onClick={ 
           () => {
             var sId = path.sId + "." + path.stepId
@@ -198,8 +209,31 @@ function StepView(props) {
       <hr/>
       { ( path.stepView === 'options' )
         ? <StepOptionView path={ path } app={ app } stepDataOptions={ app.state.stepDataOptions } />
+      : ( path.stepView === 'process' )
+        ? <Chart
+              chartType="Gantt"
+              columns={[
+                {"id": "Task ID",          "type": "string"},
+                {"id": "Task Name",        "type": "string"},
+                {"id": "Start Date",       "type": "date"},
+                {"id": "End Date",         "type": "date"},
+                {"id": "Duration",         "type": "number"},
+                {"id": "Percent Complete", "type": "number"},
+                {"id": "Dependencies",     "type": "string"}
+              ]}
+              rows={ app.state.stepData.state.nitta.process.steps }
+              graph_id="ProcessGantt"
+              width="100%"
+              height={ (app.state.stepData.state.nitta.process.steps.length + 1) * 41 + 30 }
+              legend_toggle
+              />
       : ( path.stepView === 'info' )
-        ? <pre>{ JSON.stringify( app.state.stepData, null, 2) }</pre>
+        ? <div>
+            
+            <pre>
+              { JSON.stringify( app.state.stepData, null, 2) }
+            </pre>
+          </div>
         : <pre>path.stepView = { path.stepView }</pre>
       }
     </div>
