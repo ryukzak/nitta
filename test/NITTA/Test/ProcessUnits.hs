@@ -16,7 +16,6 @@ import           Data.Set                (difference, elems, empty, fromList,
                                           intersection, union)
 import           NITTA.Compiler
 import           NITTA.Project
-import           NITTA.Timeline
 import           NITTA.Types
 import           NITTA.Utils
 import           System.FilePath.Posix   (joinPath)
@@ -100,8 +99,6 @@ prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
   i <- run $ incrCounter 1 counter
   let path = joinPath ["hdl", "gen", n ++ show i]
   res <- run $ writeAndRunTestBench (Project n "../.." path pu) values
-  run $ timeline (joinPath [path, "data.json"]) pu
-  run $ timeline "resource/data.json" pu
   assert res
 
 

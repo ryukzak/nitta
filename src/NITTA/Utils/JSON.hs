@@ -110,7 +110,7 @@ instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Process (Parcel v x) t) where
   toJSON Process{ steps, nextTick }
     = object
-      [ "steps" .= steps
+      [ "steps" .= filter (\Step{ sDesc } -> case sDesc of InstructionStep _ -> True; NestedStep _ (InstructionStep _) -> True; _ -> False) steps
       , "nextTick" .= nextTick
       ]
       -- , relations :: [Relation] -- ^ Список отношений между шагами вычислительного процесса

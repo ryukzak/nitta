@@ -344,8 +344,10 @@ data EndpointRole v
 (Source a) << (Source b)          = all (`S.member` a) b
 _        << _                 = False
 
-(Source a) \\\ (Source b) = Source $ S.difference a b
-a \\\ b = error $ "Can't get sub endpoint for " ++ show a ++ " " ++ show b
+(Source a) `sourceDifference` (Source b) = Source $ S.difference a b
+a `sourceDifference` b = error $ "Can't get sub endpoint for " ++ show a ++ " " ++ show b
+
+(\\\) a b = sourceDifference a b
 
 instance Variables (EndpointRole v) v where
   variables (Source vs) = vs

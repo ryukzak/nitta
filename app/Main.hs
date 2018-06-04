@@ -13,6 +13,7 @@ module Main where
 import           Data.Default
 import qualified Data.Map                 as M
 import           Data.Maybe
+import           NITTA.API                (backendServer)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
@@ -24,7 +25,6 @@ import qualified NITTA.ProcessUnits.Mult  as M
 import qualified NITTA.ProcessUnits.Shift as S
 import qualified NITTA.ProcessUnits.SPI   as SPI
 import           NITTA.Project
-import           NITTA.Timeline
 import           NITTA.Types
 import           System.FilePath          (joinPath)
 
