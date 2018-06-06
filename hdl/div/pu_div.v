@@ -67,30 +67,27 @@ div div_i1
   , .remain( remain_result )
   , .clock( clk )
   );
-  defparam
-    div_i1.LPM_DIVIDE_component.lpm_pipeline = 8;
+  // defparam
+  //   div_i1.LPM_DIVIDE_component.lpm_pipeline = 8;
 
 
 reg                  invalid_result;
-reg [DATA_WIDTH-1:0] data_divresult;
+reg [DATA_WIDTH-1:0] quotient;
+reg [DATA_WIDTH-1:0] remain;
 
 always @(posedge clk) begin
   if ( rst ) begin
+    quotient <= 0;
+    remain <= 0;
     invalid_result <= 0;
-    data_divresult <= 0;
   end else begin
-    if ( signal_oe) begin
-      invalid_result <= attr_wait[PIPE-1];
-      if ( signal_oe_sel ) begin
-        data_divresult <= quotient_result;
-      end
-      else
-        data_divresult <= remain_result;
-    end
+    quotient <= quotient_result;
+    remain <= remain_result;
+    invalid_result <= attr_wait[PIPE-1];
   end
 end
 
-assign data_out = signal_oe ? data_divresult : 0;
+assign data_out = signal_oe ? (signal_oe_sel ? remain_result : quotient_result) : 0;
 assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INVALID) 
                               | {(ATTR_WIDTH-1){1'b0}} 
                             : 0;

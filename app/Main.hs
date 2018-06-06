@@ -142,8 +142,8 @@ main = do
   --              , cntxInputs=M.fromList [("a", [1, 2, 3])]
   --              } spiAlg
 
-  putStrLn "Server start on 8080..."
-  backendServer $ frame $ dfgraph divAlg
+  -- putStrLn "Server start on 8080..."
+  -- backendServer $ frame $ dfgraph divAlg
   putStrLn "-- the end --"
 
 

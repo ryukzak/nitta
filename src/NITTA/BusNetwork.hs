@@ -479,11 +479,11 @@ instance ( Title title, Var v, Time t
       assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
         where
           assert (t, cntx)
-            = "\\$write(\"%s, bus: %h\", " ++ show (show t) ++ ", net.data_bus); "
+            = "\\$write(\"%s, bus actual: %h\", " ++ show (show t) ++ ", net.data_bus); "
             ++ case extractInstructionAt n t of
                 Transport v _ _ : _
                   -> concat
-                    [ "\\$write(\" == %h (%s)\", " ++ show (get' cntx v) ++ ", " ++ show v ++ ");"
+                    [ "\\$write(\" expected: %h (%s)\", " ++ show (get' cntx v) ++ ", " ++ show v ++ ");"
                     , "if ( !( net.data_bus === " ++ show (get' cntx v) ++ ") ) "
                     ,   "\\$display(\" FAIL\"); else \\$display();"
                     ]

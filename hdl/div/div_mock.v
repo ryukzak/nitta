@@ -44,29 +44,27 @@ module div (
 	remain);
 
 	input	  clock;
-	input	[31:0]  denom;
-	input	[31:0]  numer;
-	output	[31:0]  quotient;
-	output	[31:0]  remain;
+	input	 [31:0] denom;
+	input	 [31:0] numer;
+	output [31:0] quotient;
+	output [31:0] remain;
 
 	parameter PIPELINE = 4;
 	reg [31:0] buf_quotient[PIPELINE-1:0];
 	reg [31:0] buf_remain[PIPELINE-1:0];
-	reg [31:0] quotient;
-	reg [31:0] remain;
+	wire [31:0] quotient = buf_quotient[3];
+	wire [31:0] remain = buf_remain[3];
 
 	always @(posedge clock) begin
 		buf_quotient[0] <= numer / denom;
 		buf_quotient[1] <= buf_quotient[0];
 		buf_quotient[2] <= buf_quotient[1];
 		buf_quotient[3] <= buf_quotient[2];
-		quotient <= buf_quotient[3];
 
 		buf_remain[0] <= numer % denom;
 		buf_remain[1] <= buf_remain[0];
 		buf_remain[2] <= buf_remain[1];
 		buf_remain[3] <= buf_remain[2];
-		remain <= buf_remain[3];
 	end
 
 

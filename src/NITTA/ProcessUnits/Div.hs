@@ -62,7 +62,7 @@ data Div v x t
     deriving ( Show )
 
 instance ( Time t, Var v ) => Default (Div v x t) where
-    def = Div def def def def 8 1
+    def = Div def def def def 4 1
 
 
 instance ( Var v, Time t
@@ -103,7 +103,7 @@ instance ( Var v, Time t
                     )
                 , pipeOutput=case pipeOutput of
                     [] -> []
-                    po@PipeOutput{ expired=Nothing } : pos -> po{ expired=Just $ inf epdAt + toEnum pipeLine } : pos
+                    po@PipeOutput{ expired=Nothing } : pos -> po{ expired=Just $ inf epdAt + toEnum (pipeLine + 2) } : pos
                     _ -> error "wrong internal state of Div."
                 }
         in
@@ -124,7 +124,7 @@ instance ( Var v, Time t
                     { pipeInput=Nothing
                     , pipeOutput=pipeOutput ++
                         [ PipeOutput
-                            { complete=nextTick + toEnum pipeLine
+                            { complete=nextTick + toEnum (pipeLine + 3)
                             , expired=Nothing
                             , outs=[(q, Quotient), (r, Remain)]
                             }
@@ -257,8 +257,8 @@ instance UnambiguouslyDecode (Div v x t) where
     decodeInstruction Nop            = def
     decodeInstruction (Load Denom)   = def{ wrSignal=True, wrSelSignal=True }
     decodeInstruction (Load Numer)   = def{ wrSignal=True, wrSelSignal=False }
-    decodeInstruction (Out Quotient) = def{ oeSignal=True, oeSelSignal=True }
-    decodeInstruction (Out Remain)   = def{ oeSignal=True, oeSelSignal=False }
+    decodeInstruction (Out Quotient) = def{ oeSignal=True, oeSelSignal=False }
+    decodeInstruction (Out Remain)   = def{ oeSignal=True, oeSelSignal=True }
 
 
 
@@ -289,8 +289,8 @@ instance ( Time t, Var v
     moduleName _ _ = "pu_div"
     software _ _ = Empty
     hardware title pu = Aggregate Nothing
-        -- [ FromLibrary "div/div_placeholder.v"
-        [ FromLibrary "div/div.v"
+        [ FromLibrary "div/div_mock.v"
+        -- [ FromLibrary "div/div.v"
         , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
         ]
     hardwareInstance title _ Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
