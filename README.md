@@ -37,7 +37,7 @@ Telegram чат проекта: <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
 1. [DRAFT SPECIALISED COMPUTING PLATFORM FOR SYSTEM DYNAMICS](https://nitta.io/nitta-corp/docs/src/master/2018%20SGEM%20SD.pdf)
 1. [Пенской А.В. Проектирование вычислительной платформы для моделирования динамических систем. 2018](https://nitta.io/nitta-corp/docs/src/master/2018%20PPK%20sdcloud-es%20slides.pdf)
 1. [DRAFT Пенской А.В. Проектирование вычислительной платформы для моделирования динамических систем, 2018.](https://nitta.io/nitta-corp/docs/src/master/2018%20PPK%20sdcloud-es.pdf)
-1. Шалин, Н.А. Представление моделей динамических систем как потока данных: диплом ... бакалавр: 09.03.04 - Санкт-Петербург, 2018, - 55 c. [текст](https://nitta.io/nitta-corp/docs/src/master/2018_bach_shalin_XMILE2SDF.pdf)  [слайды](https://nitta.io/nitta-corp/docs/src/master/2018_bach_shalin_XMILE2SDF_slides.pdf).
+1. Шалин, Н.А. Представление моделей динамических систем как потока данных: диплом ... бакалавр: 09.03.04 - Санкт-Петербург, 2018, - 55 c. [текст](https://nitta.io/nitta-corp/docs/src/master/2018_bach_shalin_XMILE2SDF.pdf)  [слайды](https://nitta.io/nitta-corp/docs/src/master/2018_bach_shalin_XMILE2SDF_slides.pdf) [исходники](https://nitta.io/Dragollla/xmile2sdf)
 
 ### Высокоуровневый синтез
 1. [DRAFT Система высокоуровневого синтеза на основе гибридной NISC/TTA микроархитектуры](https://nitta.io/nitta-corp/docs/src/master/2018%20MAI%20HLS.pdf)
@@ -51,8 +51,6 @@ Telegram чат проекта: <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
 ### Метод синтеза
 1. Пенской А.В. Интерфейс управления процессом высокоуровневого синтеза специализированного вычислителя // Сборник тезисов докладов конгресса молодых ученых. Электронное издание [Электронный ресурс]. – СПб: Университет ИТМО, 2018. - Режим доступа: <http://kmu.ifmo.ru/collections_article/7700/interfeys_upravleniya_processom_vysokourovnevogo_sinteza_specializirovannogo_vychislitelya.htm>, своб. ([mirror](https://nitta.io/nitta-corp/docs/src/master/2018_kmu_synthesis_api.pdf))
 1. [Пенской А.В. Интерфейс управления процессом высокоуровневого синтеза специализированного вычислителя (презентация)](https://nitta.io/nitta-corp/docs/src/master/2018_kmu_synthesis_api_slides.pdf)
-
-
 
 ### Ввод/вывод
 1. [Емельянов Д. В. Проектирование протокола на базе интерфейса SPI для вычисли-
