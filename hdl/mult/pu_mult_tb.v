@@ -12,9 +12,9 @@ reg                        rst;
 reg                 signal_sel;
 reg                  signal_wr;
 reg                        clk;
-reg  [ATTR_WIDTH:0]    attr_in;                                              
+reg  [ATTR_WIDTH-1:0]  attr_in;                                              
 wire [DATA_WIDTH-1:0] data_out;
-wire [ATTR_WIDTH:0]   attr_out;
+wire [ATTR_WIDTH-1:0] attr_out;
 
                           
 pu_mult 

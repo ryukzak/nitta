@@ -10,11 +10,11 @@ module pu_div_tb
 reg                        rst;
 reg                        clk;
 reg  [DATA_WIDTH-1:0]  data_in;
-reg  [ATTR_WIDTH:0]    attr_in;                                              
+reg  [ATTR_WIDTH-1:0]  attr_in;                                              
 reg                  signal_wr;
 reg              signal_wr_sel;
 wire [DATA_WIDTH-1:0] data_out;
-wire [ATTR_WIDTH:0]   attr_out;
+wire [ATTR_WIDTH-1:0] attr_out;
 reg                  signal_oe;
 reg              signal_oe_sel;
 
