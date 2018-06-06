@@ -21,6 +21,7 @@ module pu_accum
 reg [DATA_WIDTH-1:0]   ext_arg;
 reg [DATA_WIDTH-1:0]   int_arg;
 reg [DATA_WIDTH:0]     acc; // +1 на переполнение
+wire [DATA_WIDTH:0]   wacc; // +1 на переполнение
 reg overflow;
 
 // 10 11
@@ -33,7 +34,6 @@ always @(posedge clk)
     ext_arg <= signal_neg ? -data_in : data_in;
   end
 
-wire [DATA_WIDTH:0] wacc; // +1 на переполнение
 wire carry;
 
 // https://en.wikipedia.org/wiki/Two%27s_complement#Addition
