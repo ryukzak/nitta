@@ -56,7 +56,7 @@ always @(posedge clk) begin
     attr_wait[0] <= attr[0] || attr[1] || arg[1] == 0;
     attr_wait[PIPE-1 : 1] <= attr_wait[ PIPE-2 : 0];
   end
-end 
+end
 
 wire [DATA_WIDTH-1:0]         quotient_result;
 wire [DATA_WIDTH-1:0]         remain_result;
@@ -67,6 +67,9 @@ div div_i1
   , .remain( remain_result )
   , .clock( clk )
   );
+  defparam
+    div_i1.LPM_DIVIDE_component.lpm_pipeline = 8;
+
 
 reg                  invalid_result;
 reg [DATA_WIDTH-1:0] data_divresult;

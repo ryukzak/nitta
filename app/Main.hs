@@ -29,19 +29,19 @@ import           NITTA.Types
 import           System.FilePath          (joinPath)
 
 
-microarch = busNetwork 30
+microarch = busNetwork 31
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-  , ("spi", PU def SPI.PUPorts{ SPI.wr=Signal 22, SPI.oe=Signal 23
-                              , SPI.start="start", SPI.stop="stop"
-                              , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
-                              })
-  , ("mul", PU def M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 26, M.oe=Signal 25 } )
-  , ("div", PU def D.PUPorts{ D.wr=Signal 26, D.wrSel=Signal 27, D.oe=Signal 28, D.oeSel=Signal 29 } )
+  -- , ("spi", PU def SPI.PUPorts{ SPI.wr=Signal 22, SPI.oe=Signal 23
+  --                             , SPI.start="start", SPI.stop="stop"
+  --                             , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
+  --                             })
+  , ("mul", PU def M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
+  , ("div", PU def D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   ]
 
 fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
@@ -58,6 +58,14 @@ fibonacciMultAlg = [ FB.loop 1 ["a1"      ] "b2" :: FB (Parcel String Int)
                    , FB.loop 2 ["b1", "b2"] "c"
                    , FB.mul "a1" "b1" ["c"]
                    ]
+
+divAlg
+  =
+    [ FB.constant 100 ["a"]
+    , FB.loop 2 ["b"] "e"
+    , FB.div "a" "b" ["c"] ["d"]
+    , FB.add "c" "d" ["e"]
+    ]
 
 teacupAlg = [ FB.constant 70000 ["T_room"] :: FB (Parcel String Int)
             , FB.constant 10000 ["t_ch"]
@@ -120,14 +128,14 @@ graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
 
 main = do
   -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
-  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
+  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph divAlg) def
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
   -- putStrLn "funSim teacup:"
   -- funSim 5 def teacupAlg
 
   putStrLn "funSim fibonacci:"
-  funSim 5 def fibonacciAlg
+  funSim 5 def divAlg
 
   -- putStrLn "funSim spi:"
   -- funSim 20 def{ cntxVars=M.fromList [("b", [0])]
@@ -135,7 +143,7 @@ main = do
   --              } spiAlg
 
   putStrLn "Server start on 8080..."
-  backendServer $ frame $ dfgraph fibonacciAlg
+  backendServer $ frame $ dfgraph divAlg
   putStrLn "-- the end --"
 
 

@@ -25,6 +25,7 @@ import           Data.Set             (Set, difference, elems, isSubsetOf,
                                        member)
 import qualified Data.Set             as S
 import           Data.Typeable
+import           Debug.Trace
 import           NITTA.FunctionBlocks (castFB)
 import qualified NITTA.FunctionBlocks as FB
 import           NITTA.Types
@@ -51,15 +52,17 @@ data PipeOutput v t
 
 data Div v x t
     = Div
-        { pipeInput  :: Maybe ([(v, ArgumentSel)], Set v, Set v)
-        , pipeOutput :: [PipeOutput v t]
-        , puRemain   :: [FB (Parcel v x)]
-        , puProcess  :: Process (Parcel v x) t
+        { pipeInput      :: Maybe ([(v, ArgumentSel)], Set v, Set v)
+        , pipeOutput     :: [PipeOutput v t]
+        , puRemain       :: [FB (Parcel v x)]
+        , puProcess      :: Process (Parcel v x) t
+        , pipeLine       :: Int
+        , frequencyRatio :: Int
         }
     deriving ( Show )
 
 instance ( Time t, Var v ) => Default (Div v x t) where
-    def = Div def def def def
+    def = Div def def def def 8 1
 
 
 instance ( Var v, Time t
@@ -73,7 +76,7 @@ instance ( Var v, Time t
             targets Div{ pipeInput=Just (vs, _, _) } = map (target . fst) vs
             targets Div{ pipeInput=Nothing } = map target $ concatMap (elems . inputs) puRemain
 
-            sources Div{ pipeOutput=PipeOutput{ outs, expired, complete }:_ }
+            sources Div{ pipeOutput=PipeOutput{ outs, expired, complete } : _ }
                 = let
                     begin = max complete nextTick
                     end = maybe maxBound ((-begin) +) expired
@@ -84,9 +87,12 @@ instance ( Var v, Time t
             sources Div{} = []
 
     -- Система может "зависнуть", и если так случится, то как быть?
-    decision proxy pu@Div{ pipeInput=Nothing, puRemain } d@EndpointD{ epdRole=Target v }
+    decision
+            proxy
+            pu@Div{ pipeInput=Nothing, puRemain, pipeOutput, pipeLine }
+            d@EndpointD{ epdRole=Target v, epdAt }
         | Just fb <- find (member v . inputs) puRemain
-        , Just (FB.Div (I d_) (I n) (O q) (O r)) <- castFB fb
+        , Just (FB.Div (I n) (I d_) (O q) (O r)) <- castFB fb
         = let
             pu' = pu
                 { puRemain=filter (/= fb) puRemain
@@ -95,15 +101,19 @@ instance ( Var v, Time t
                     , q
                     , r
                     )
+                , pipeOutput=case pipeOutput of
+                    [] -> []
+                    po@PipeOutput{ expired=Nothing } : pos -> po{ expired=Just $ inf epdAt + toEnum pipeLine } : pos
+                    _ -> error "wrong internal state of Div."
                 }
         in
             decision proxy pu' d
 
-    decision _proxy pu@Div{ pipeInput=Just (vs, q, r), pipeOutput, puProcess=Process{ nextTick } } d@EndpointD{ epdRole=Target v, epdAt }
+    decision _proxy pu@Div{ pipeInput=Just (vs, q, r), pipeOutput, puProcess=Process{ nextTick }, pipeLine } d@EndpointD{ epdRole=Target v, epdAt }
         | Just (_, argSel) <- find ((==) v . fst) vs
         = let
             pu' = pu
-                { puProcess=schedule pu $ do
+                { puProcess=schedule pu $
                     scheduleEndpoint d $ do
                         scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
                         scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Load argSel
@@ -114,7 +124,7 @@ instance ( Var v, Time t
                     { pipeInput=Nothing
                     , pipeOutput=pipeOutput ++
                         [ PipeOutput
-                            { complete=nextTick + 8
+                            { complete=nextTick + toEnum pipeLine
                             , expired=Nothing
                             , outs=[(q, Quotient), (r, Remain)]
                             }
@@ -127,7 +137,7 @@ instance ( Var v, Time t
         = let
             waitingVs' = waitingVs `difference` vs
             pu' = pu
-                { puProcess=schedule pu $ do
+                { puProcess=schedule pu $
                     scheduleEndpoint d $ do
                         nextTick <- nextScheduledTick
                         scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
@@ -163,7 +173,7 @@ schedule pu st
         ip :: pu -> Proxy (Instruction pu)
         ip _ = Proxy
 
-nextScheduledTick :: Show t => State (Schedule pu v x t) t
+nextScheduledTick :: ( Show t ) => State (Schedule pu v x t) t
 nextScheduledTick = do
     Schedule{ schProcess=Process{ nextTick } } <- get
     return nextTick
@@ -177,7 +187,7 @@ updateTick tick = do
         }
 
 scheduleStep placeInTime stepInfo = do
-    sch@Schedule{ schProcess=p@Process{ nextUid, steps } } <- get
+    sch@Schedule{ schProcess=p@Process{ nextUid, steps } } <- trace ("> " ++ show placeInTime ++ " " ++ show stepInfo) get
     put sch
         { schProcess=p
             { nextUid=succ nextUid
@@ -188,13 +198,13 @@ scheduleStep placeInTime stepInfo = do
 scheduleInstructionAndUpdateTick start finish instr = do
     Schedule{ iProxy } <- get
     scheduleStep (Activity $ start ... finish) $ InstructionStep (instr `asProxyTypeOf` iProxy)
-    updateTick finish
+    updateTick $ finish + 1
 
 scheduleNopAndUpdateTick start finish =
-    when (start < finish) $ do
+    when (start <= finish) $ do
         Schedule{ iProxy } <- get
         scheduleStep (Activity $ start ... finish) $ InstructionStep (def `asProxyTypeOf` iProxy)
-        updateTick finish
+        updateTick $ finish + 1
 
 
 scheduleEndpoint EndpointD{ epdAt, epdRole } codeGen = do
@@ -216,9 +226,9 @@ instance Controllable (Div v x t) where
     data Microcode (Div v x t)
         = Microcode
             { wrSignal :: Bool
-            , selSignal :: Bool
+            , wrSelSignal :: Bool
             , oeSignal :: Bool
-            , resSelSignal :: Bool
+            , oeSelSignal :: Bool
             } deriving ( Show, Eq, Ord )
 
     data Instruction (Div v x t)
@@ -237,18 +247,18 @@ instance Default (Instruction (Div v x t)) where
 instance Default (Microcode (Div v x t)) where
     def = Microcode
         { wrSignal=False
-        , selSignal=False
+        , wrSelSignal=False
         , oeSignal=False
-        , resSelSignal=False
+        , oeSelSignal=False
         }
 
 
 instance UnambiguouslyDecode (Div v x t) where
     decodeInstruction Nop            = def
-    decodeInstruction (Load Denom)   = def{ wrSignal=True, selSignal=True }
-    decodeInstruction (Load Numer)   = def{ wrSignal=True, selSignal=False }
-    decodeInstruction (Out Quotient) = def{ oeSignal=True, resSelSignal=True }
-    decodeInstruction (Out Remain)   = def{ oeSignal=True, resSelSignal=False }
+    decodeInstruction (Load Denom)   = def{ wrSignal=True, wrSelSignal=True }
+    decodeInstruction (Load Numer)   = def{ wrSignal=True, wrSelSignal=False }
+    decodeInstruction (Out Quotient) = def{ oeSignal=True, oeSelSignal=True }
+    decodeInstruction (Out Remain)   = def{ oeSignal=True, oeSelSignal=False }
 
 
 
@@ -259,9 +269,9 @@ instance Connected (Div v x t) where
     transmitToLink Microcode{..} PUPorts{..}
         =
             [ (wr, B wrSignal)
-            , (wrSel, B selSignal)
-            , (oe, B resSelSignal)
-            , (oeSel, B oeSignal)
+            , (wrSel, B wrSelSignal)
+            , (oe, B oeSignal)
+            , (oeSel, B oeSelSignal)
             ]
 
 
@@ -279,8 +289,8 @@ instance ( Time t, Var v
     moduleName _ _ = "pu_div"
     software _ _ = Empty
     hardware title pu = Aggregate Nothing
-        [ FromLibrary "div/div_placeholder.v"
-        --  , FromLibrary "div/div.v"
+        -- [ FromLibrary "div/div_placeholder.v"
+        [ FromLibrary "div/div.v"
         , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
         ]
     hardwareInstance title _ Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST

@@ -352,7 +352,7 @@ instance ( Time t
               , "wire [7:0] debug_pc;"
               , "assign debug_status = { cycle, debug_pc[6:0] };"
               , "assign debug_bus1 = data_bus[7:0];"
-              , "assign debug_bus2 = data_bus[15:8];"
+              , "assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];"
               , ""
               , "pu_simple_control"
               , "  #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
