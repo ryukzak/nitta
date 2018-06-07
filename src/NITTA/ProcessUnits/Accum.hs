@@ -86,9 +86,8 @@ instance Controllable (Accum v x t) where
     | Load Bool
     | Out
     deriving (Show)
+  nop = Nop
 
-instance Default (Instruction (Accum v x t)) where
-  def = Nop
 
 instance Default (Microcode (Accum v x t)) where
   def = Microcode{ oeSignal=False

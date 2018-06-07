@@ -14,7 +14,6 @@
 
 module NITTA.Types.Network where
 
-import           Data.Default
 import           Data.Ix
 import qualified Data.Map         as M
 import           Data.Typeable
@@ -30,7 +29,6 @@ data PU v x t where
         , Connected pu
         , DecisionProblem (EndpointDT v t)
                EndpointDT  pu
-        , Default (Instruction pu)
         , ProcessUnit pu (Parcel v x) t
         , Show (Instruction pu)
         , Simulatable pu v x
@@ -75,7 +73,6 @@ castPU :: ( ByTime pu t
           , Connected pu
           , DecisionProblem (EndpointDT v t)
                  EndpointDT  pu
-          , Default (Instruction pu)
           , TargetSystemComponent pu
           , ProcessUnit pu v t
           , Show (Instruction pu)

@@ -184,7 +184,7 @@ instance ( Var v, Time t
 -- вычислительного процесса State.
 
 serialSchedule
-  :: ( Show (Instruction pu), Default (Instruction pu), Var v, Time t, Typeable pu )
+  :: ( Show (Instruction pu), Controllable pu, Var v, Time t, Typeable pu )
   => Instruction pu -> Decision (EndpointDT v t) -> State (Process (Parcel v x) t) [ProcessUid]
 serialSchedule instr act = do
   now <- getProcessTime
@@ -192,7 +192,7 @@ serialSchedule instr act = do
   i <- addActivity (act^.at) $ InstructionStep instr
   is <- if now < act^.at.infimum
         then do
-            ni <- addActivity (now ... act^.at.infimum - 1) $ InstructionStep (def `asTypeOf` instr)
+            ni <- addActivity (now ... act^.at.infimum - 1) $ InstructionStep (nop `asTypeOf` instr)
             return [i, ni]
         else return [i]
   mapM_ (relation . Vertical e) is

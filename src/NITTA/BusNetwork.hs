@@ -246,8 +246,9 @@ instance Controllable (BusNetwork title v x t) where
   data Microcode (BusNetwork title v x t)
     = BusNetworkMC (A.Array Signal Value)
 
+  nop = undefined
 
-
+  
 instance {-# OVERLAPS #-}
          ( Time t
          ) => ByTime (BusNetwork title v x t) t where

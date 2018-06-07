@@ -474,6 +474,7 @@ instance ( Var v, Time t ) => Controllable (Fram v x t) where
     | Load Int
     | Save Int
     deriving (Show)
+  nop = Nop
 
 instance Connected (Fram v x t) where
   data PUPorts (Fram v x t)
@@ -488,9 +489,6 @@ instance Connected (Fram v x t) where
                                    )
                   ) $ zip (reverse addr) [0..]
 
-
-instance Default (Instruction (Fram v x t)) where
-  def = Nop
 
 getAddr (Load addr) = Just addr
 getAddr (Save addr) = Just addr

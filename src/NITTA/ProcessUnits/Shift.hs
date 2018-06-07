@@ -93,9 +93,7 @@ instance Controllable (Shift v x t) where
     | Work Bool StepSize Mode
     | Out
     deriving (Show)
-
-instance Default (Instruction (Shift v x t)) where
-  def = Nop
+  nop = Nop
 
 instance Default (Microcode (Shift v x t)) where
   def = Microcode{ workSignal=False

@@ -104,9 +104,7 @@ instance Controllable (SPI v x t) where
     | Receiving
     | Sending
     deriving ( Show )
-
-instance Default (Instruction (SPI v x t)) where
-  def = Nop
+  nop = Nop
 
 instance Default (Microcode (SPI v x t)) where
   def = Microcode{ wrSignal=False

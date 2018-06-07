@@ -51,7 +51,7 @@ instance ( Var v, Time t
                    EndpointDT (Mult v x t)
          where
   options _proxy Mult{} = []
-  decision _proxy pu@Mult{} act = undefined
+  decision _proxy pu@Mult{} _act = undefined
 
 
 instance ( Var v, Time t
@@ -76,27 +76,19 @@ instance Controllable (Mult v x t) where
     | Load ArgumentSel
     | Out
     deriving (Show)
-
-
-
-instance Default (Instruction (Mult v x t)) where
-  def = Nop
-
-
-
-instance Default (Microcode (Mult v x t)) where
-  def = Microcode{ wrSignal=False
-                 , selSignal=False
-                 , oeSignal=False
-                 }
+  nop = Nop
 
 
 instance UnambiguouslyDecode (Mult v x t) where
-  decodeInstruction Nop       = def
-  decodeInstruction (Load A1) = def{ wrSignal=True, selSignal=True }
-  decodeInstruction (Load A2) = def{ wrSignal=True, selSignal=False }
-  decodeInstruction Out       = def{ oeSignal=True }
-  decodeInstruction Out       = def{ oeSignal=True }
+  decodeInstruction Nop       = Microcode
+    { wrSignal=False
+    , selSignal=False
+    , oeSignal=False
+    }
+  decodeInstruction (Load A1) = (decodeInstruction Nop){ wrSignal=True, selSignal=True }
+  decodeInstruction (Load A2) = (decodeInstruction Nop){ wrSignal=True, selSignal=False }
+  decodeInstruction Out       = (decodeInstruction Nop){ oeSignal=True }
+  decodeInstruction Out       = (decodeInstruction Nop){ oeSignal=True }
 
 
 
@@ -126,7 +118,7 @@ instance ( Time t, Var v
                                         --  , FromLibrary "Mult/Mult.v"
                                         , FromLibrary $ "mult/" ++ moduleName title pu ++ ".v"
                                         ]
-  hardwareInstance title _ Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
+  hardwareInstance title _ Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
     [ "pu_mult"
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
