@@ -12,6 +12,7 @@ import           NITTA.Compiler
 import           NITTA.DataFlow
 import qualified NITTA.FunctionBlocks     as FB
 import qualified NITTA.ProcessUnits.Accum as A
+import qualified NITTA.ProcessUnits.Div   as D
 import qualified NITTA.ProcessUnits.Fram  as FR
 import qualified NITTA.ProcessUnits.Shift as S
 import qualified NITTA.ProcessUnits.SPI   as SPI
@@ -21,7 +22,7 @@ import           System.FilePath.Posix    (joinPath)
 import           Test.Tasty.HUnit
 
 
-netWithFramShiftAccumSPI = busNetwork 27
+netWithArithmAndSPI = busNetwork 27
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -36,16 +37,17 @@ netWithFramShiftAccumSPI = busNetwork 27
   ]
 
 
-netWithFramShiftAccum = busNetwork 27 [] []
-  [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
-  , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
+netWithArithm = busNetwork 26 [] []
+  [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
+  , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-  -- , ("mult", PU def M.PUPorts{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
+  , ("div", PU def{ D.mock=True } D.PUPorts{ D.wr=Signal 22, D.wrSel=Signal 23, D.oe=Signal 24, D.oeSel=Signal 25 } )
+  -- , ("mult", PU def M.PUPorts{ M.wr=Index 26, M.sel=Index 27, M.oe=Index 28 } )
   ]
 
 
-testAccumAndFram = unitTest "unittestAccumAndFram" netWithFramShiftAccum
+testAccumAndFram = unitTest "unittestAccumAndFram" netWithArithm
   def
   [ FB.framInput 3 [ "d", "p" ]
   , FB.framInput 4 [ "e", "k" ]
@@ -57,7 +59,7 @@ testAccumAndFram = unitTest "unittestAccumAndFram" netWithFramShiftAccum
   ]
 
 
-testShiftAndFram = unitTest "unitShiftAndFram" netWithFramShiftAccum
+testShiftAndFram = unitTest "unitShiftAndFram" netWithArithm
   def
   [ FB.loop 16 ["f1"] "g1"
   , FB.shiftL "f1" ["g1"]
@@ -65,19 +67,32 @@ testShiftAndFram = unitTest "unitShiftAndFram" netWithFramShiftAccum
   , FB.shiftR "f2" ["g2"]
   ]
 
-testFibonacci = unitTest "testFibonacci" netWithFramShiftAccum
+testFibonacci = unitTest "testFibonacci" netWithArithm
   def
   [ FB.loop 0 ["a1"      ] "b2"
   , FB.loop 1 ["b1", "b2"] "c"
   , FB.add "a1" "b1" ["c"]
   ]
 
-testFibonacciWithSPI = unitTest "testFibonacciWithSPI" netWithFramShiftAccumSPI
+testFibonacciWithSPI = unitTest "testFibonacciWithSPI" netWithArithmAndSPI
   def
   [ FB.loop 0 ["a1"      ] "b2"
   , FB.loop 1 ["b1", "b2"] "c"
   , FB.add "a1" "b1" ["c", "c_copy"]
   , FB.send "c_copy"
+  ]
+
+testDiv = unitTest "testDiv" netWithArithm
+  def
+  [ FB.constant 100 ["a"]
+  , FB.loop 2 ["b"] "e"
+  , FB.div "a" "b" ["c"] ["d"]
+  , FB.add "c" "d" ["e"]
+
+  , FB.constant 200 ["a1"]
+  , FB.loop 2 ["b1"] "e1"
+  , FB.div "a1" "b1" ["c1"] ["d1"]
+  , FB.add "c1" "d1" ["e1"]
   ]
 
 
@@ -96,7 +111,7 @@ testFibonacciWithSPI = unitTest "testFibonacciWithSPI" netWithFramShiftAccumSPI
 --
 -- Более того, даже если output повесить на туже ячейку, то ничего не
 -- изменится, так как регистр будет привязан тудаже.
-badTestFram = badUnitTest "badTestFram" netWithFramShiftAccum
+badTestFram = badUnitTest "badTestFram" netWithArithm
   def
   [ FB.framInput 3 [ "x" ]
   , FB.framOutput 5 "x"

@@ -2,6 +2,7 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate /$top_level$/clk
 add wave -noupdate /$top_level$/rst
+add wave -noupdate -radix decimal /$top_level$/net/cycle
 add wave -noupdate -radix hexadecimal /$top_level$/net/control_bus
 add wave -noupdate -radix decimal /$top_level$/net/data_bus
 add wave -noupdate /$top_level$/net/attr_bus

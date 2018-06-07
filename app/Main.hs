@@ -41,7 +41,7 @@ microarch = busNetwork 31
   --                             , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
   --                             })
   , ("mul", PU def M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-  , ("div", PU def D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+  , ("div", PU def{ D.mock=True } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   ]
 
 fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
@@ -65,6 +65,11 @@ divAlg
     , FB.loop 2 ["b"] "e"
     , FB.div "a" "b" ["c"] ["d"]
     , FB.add "c" "d" ["e"]
+
+    , FB.constant 200 ["a1"]
+    , FB.loop 2 ["b1"] "e1"
+    , FB.div "a1" "b1" ["c1"] ["d1"]
+    , FB.add "c1" "d1" ["e1"]
     ]
 
 teacupAlg = [ FB.constant 70000 ["T_room"] :: FB (Parcel String Int)

@@ -20,6 +20,7 @@ module NITTA.ProcessUnits.Div
 import           Control.Monad.State
 import           Data.Default
 import           Data.List            (find, partition)
+import           Data.Maybe           (fromMaybe)
 import           Data.Proxy           (asProxyTypeOf)
 import           Data.Set             (Set, difference, elems, isSubsetOf,
                                        member)
@@ -58,11 +59,12 @@ data Div v x t
         , puProcess      :: Process (Parcel v x) t
         , pipeLine       :: Int
         , frequencyRatio :: Int
+        , mock           :: Bool
         }
     deriving ( Show )
 
 instance ( Time t, Var v ) => Default (Div v x t) where
-    def = Div def def def def 4 1
+    def = Div def def def def 4 1 False
 
 
 instance ( Var v, Time t
@@ -79,9 +81,10 @@ instance ( Var v, Time t
             sources Div{ pipeOutput=PipeOutput{ outs, expired, complete } : _ }
                 = let
                     begin = max complete nextTick
-                    end = maybe maxBound ((-begin) +) expired
+                    expired' = fromMaybe maxBound expired
+                    end = maybe maxBound (+ (-begin)) expired
                 in
-                    [ EndpointO (Source vs) $ TimeConstrain (begin ... end) (1 ... end)
+                    [ EndpointO (Source vs) $ TimeConstrain (begin ... expired') (1 ... end)
                     | (vs, _) <- outs
                     ]
             sources Div{} = []
@@ -187,7 +190,7 @@ updateTick tick = do
         }
 
 scheduleStep placeInTime stepInfo = do
-    sch@Schedule{ schProcess=p@Process{ nextUid, steps } } <- trace ("> " ++ show placeInTime ++ " " ++ show stepInfo) get
+    sch@Schedule{ schProcess=p@Process{ nextUid, steps } } <- get
     put sch
         { schProcess=p
             { nextUid=succ nextUid
@@ -255,8 +258,8 @@ instance Default (Microcode (Div v x t)) where
 
 instance UnambiguouslyDecode (Div v x t) where
     decodeInstruction Nop            = def
-    decodeInstruction (Load Denom)   = def{ wrSignal=True, wrSelSignal=True }
     decodeInstruction (Load Numer)   = def{ wrSignal=True, wrSelSignal=False }
+    decodeInstruction (Load Denom)   = def{ wrSignal=True, wrSelSignal=True }
     decodeInstruction (Out Quotient) = def{ oeSignal=True, oeSelSignal=False }
     decodeInstruction (Out Remain)   = def{ oeSignal=True, oeSelSignal=True }
 
@@ -288,16 +291,18 @@ instance ( Time t, Var v
          ) => TargetSystemComponent (Div v x t) where
     moduleName _ _ = "pu_div"
     software _ _ = Empty
-    hardware title pu = Aggregate Nothing
-        [ FromLibrary "div/div_mock.v"
-        -- [ FromLibrary "div/div.v"
+    hardware title pu@Div{ mock } = Aggregate Nothing
+        [ if mock
+            then FromLibrary "div/div_mock.v"
+            else FromLibrary "div/div.v"
         , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
         ]
-    hardwareInstance title _ Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
+    hardwareInstance title Div{ mock } Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
         [ "pu_div"
         , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
         , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
         , "   , .INVALID( 0 )" -- FIXME:
+        , "   , .MOCK_DIV( " ++ bool2verilog mock ++ " )"
         , "   ) $name$"
         , "  ( .clk( " ++ signalClk ++ " )"
         , "  , .rst( " ++ signalRst ++ " )"

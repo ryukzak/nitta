@@ -2,7 +2,8 @@ module pu_div
   #( parameter DATA_WIDTH = 32
    , parameter ATTR_WIDTH = 4
    , parameter INVALID    = 0 
-   , parameter PIPE       = 4
+   , parameter PIPELINE   = 4
+   , parameter MOCK_DIV   = 0
    )
 
   ( input  wire                  clk
@@ -45,8 +46,8 @@ always @(posedge clk) begin
   end
 end
 
-reg [PIPE-1:0] attr_wait;
-reg            comm_attr;
+reg [PIPELINE-1:0] attr_wait;
+reg                comm_attr;
 
 always @(posedge clk) begin
   if ( rst ) begin
@@ -54,22 +55,39 @@ always @(posedge clk) begin
     comm_attr <= 0;
   end else begin
     attr_wait[0] <= attr[0] || attr[1] || arg[1] == 0;
-    attr_wait[PIPE-1 : 1] <= attr_wait[ PIPE-2 : 0];
+    attr_wait[ PIPELINE-1 : 1 ] <= attr_wait[ PIPELINE-2 : 0];
   end
 end
 
 wire [DATA_WIDTH-1:0]         quotient_result;
 wire [DATA_WIDTH-1:0]         remain_result;
-div div_i1
-  ( .numer( arg[0] )
-  , .denom( arg[1] )
-  , .quotient( quotient_result )
-  , .remain( remain_result )
-  , .clock( clk )
-  );
-  // defparam
-  //   div_i1.LPM_DIVIDE_component.lpm_pipeline = 8;
 
+
+
+generate
+  if ( MOCK_DIV ) begin
+    div 
+      #( .PIPELINE( PIPELINE ) 
+       ) div_inner
+      ( .numer( arg[0] )
+      , .denom( arg[1] )
+      , .quotient( quotient_result )
+      , .remain( remain_result )
+      , .clock( clk )
+      );
+  end else begin
+    div div_inner
+      ( .numer( arg[0] )
+      , .denom( arg[1] )
+      , .quotient( quotient_result )
+      , .remain( remain_result )
+      , .clock( clk )
+      );
+      defparam
+        div_inner.LPM_DIVIDE_component.lpm_pipeline = PIPELINE;
+  end
+endgenerate
+  
 
 reg                  invalid_result;
 reg [DATA_WIDTH-1:0] quotient;
@@ -83,7 +101,7 @@ always @(posedge clk) begin
   end else begin
     quotient <= quotient_result;
     remain <= remain_result;
-    invalid_result <= attr_wait[PIPE-1];
+    invalid_result <= attr_wait[ PIPELINE - 1 ];
   end
 end
 

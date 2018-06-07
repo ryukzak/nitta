@@ -102,13 +102,13 @@ instance DecisionType (CompilerDT title tag v t) where
     = ControlFlowOption (DataFlowGraph v)
     | BindingOption (FB (Parcel v Int)) title
     | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
-    deriving ( Generic )
+    deriving ( Generic, Show )
 
   data Decision (CompilerDT title tag v t)
     = ControlFlowDecision (DataFlowGraph v)
     | BindingDecision (FB (Parcel v Int)) title
     | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
-    deriving ( Generic )
+    deriving ( Generic, Show )
 
 filterBindingOption opts = [ x | x@BindingOption{} <- opts ]
 filterControlFlowOption opts = [ x | x@ControlFlowOption{} <- opts ]
@@ -199,6 +199,7 @@ optionsWithMetrics CompilerStep{ state }
   = reverse $ sortOn (\(x, _, _, _, _) -> x) $ map measure' opts
   where
     opts = options compiler state
+    -- gm = measureG (trace (show opts) opts) state
     gm = measureG opts state
     measure' o
       = let m = measure opts state o
@@ -207,6 +208,7 @@ optionsWithMetrics CompilerStep{ state }
 naive' st@CompilerStep{ state }
   = if null opts
     then Nothing
+    -- else Just st{ state=decision compiler state $ trace (show d) d
     else Just st{ state=decision compiler state d
                 , lastDecision=Just d
                 }

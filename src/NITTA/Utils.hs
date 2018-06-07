@@ -182,3 +182,6 @@ addInstr _pu t i = addStep (Activity t) $ InstructionStep i
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
 
 shift n d@EndpointD{ epdAt } = d{ epdAt=(I.inf epdAt + n) ... (I.sup epdAt + n) }
+
+bool2verilog True  = "1"
+bool2verilog False = "0"
