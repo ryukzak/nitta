@@ -297,11 +297,12 @@ instance ( Time t, Var v
             else FromLibrary "div/div.v"
         , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
         ]
-    hardwareInstance title Div{ mock } Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
+    hardwareInstance title Div{ pipeLine, mock } Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
         [ "pu_div"
         , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
         , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
         , "   , .INVALID( 0 )" -- FIXME:
+        , "   , .PIPELINE( " ++ show pipeLine ++ " )" -- FIXME:
         , "   , .MOCK_DIV( " ++ bool2verilog mock ++ " )"
         , "   ) $name$"
         , "  ( .clk( " ++ signalClk ++ " )"
