@@ -10,7 +10,7 @@
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 module NITTA.ProcessUnits.Div
     ( Pipeline(..)
@@ -21,11 +21,11 @@ module NITTA.ProcessUnits.Div
 
 import           Control.Monad.State
 import           Data.Default
+import           Data.Either          (rights)
 import           Data.List            (find, partition)
-import           Data.Maybe           (fromMaybe)
+import           Data.Maybe           (fromMaybe, maybeToList)
 import           Data.Proxy           (asProxyTypeOf)
-import           Data.Set             (Set, difference, elems, isSubsetOf,
-                                       member)
+import           Data.Set             (Set, difference, isSubsetOf, member)
 import qualified Data.Set             as S
 import           Data.Typeable
 import           NITTA.FunctionBlocks (castFB)
@@ -45,24 +45,60 @@ data OutputDesc
     | Remain
     deriving ( Show, Eq )
 
-data PipelineOut o t
-    = PipelineOut
-        { expired  :: Maybe t
-        , complete :: t
-        , outs     :: o
-        }
-    deriving ( Show )
-
-
-type DivIn v = ([(v, InputDesc)], (Set v, Set v))
-type DivOut v = [(Set v, OutputDesc)]
+newtype DivIn v = DivIn ([(v, InputDesc)], (Set v, Set v))
+newtype DivOut v = DivOut [(Set v, OutputDesc)]
 newtype DivSt
     = DivSt
         { mock           :: Bool
         }
     deriving ( Show )
 
+
 type Div v x t = Pipeline DivSt (DivIn v) (DivOut v) v x t
+instance ( Time t, Var v ) => Default (Div v x t) where
+    def = Pipeline def def def def 4 1 DivSt{ mock=False }
+
+
+instance ( Var v
+         , Integral x
+         ) => Simulatable (Div v x t) v x where
+    simulateOn cntx _ fb
+        | Just fb'@FB.Div{} <- castFB fb = simulate cntx fb'
+        | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
+
+
+
+
+bindPipeline fb
+    | Just (FB.Div (I n) (I d_) (O q) (O r)) <- castFB fb
+    , let inputSt = DivIn ( [(d_, Denom), (n, Numer)], (q, r) )
+    , let expire = 2
+    = Right ( inputSt, expire )
+    | otherwise = Left $ "Unknown functional block: " ++ show fb
+
+
+targetOptions nextTick (DivIn (vs, _)) = map (target . fst) vs
+    where
+        target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (singleton 1)
+
+
+sourceOptions begin end maxDuration (DivOut outs)
+    =
+        [ EndpointO (Source vs) $ TimeConstrain (begin ... end) (1 ... maxDuration)
+        | (vs, _) <- outs
+        ]
+
+
+
+
+data PipelineOut o t
+    = PipelineOut
+        { expired  :: Maybe t
+        , complete :: t
+        , outputSt :: o
+        }
+    deriving ( Show )
+
 data Pipeline st i o v x t
     = Pipeline
         { pipeInput      :: Maybe i
@@ -77,32 +113,14 @@ data Pipeline st i o v x t
 
 
 
-instance ( Time t, Var v ) => Default (Div v x t) where
-    def = Pipeline def def def def 4 1 DivSt{ mock=False }
-
-
-instance ( Var v
-         , Integral x
-         ) => Simulatable (Div v x t) v x where
-    simulateOn cntx _ fb
-        | Just fb'@FB.Div{} <- castFB fb = simulate cntx fb'
-        | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
-
-
 instance ( Var v, Time t
          ) => ProcessUnit (Div v x t) (Parcel v x) t where
     bind fb pu@Pipeline{ puRemain }
         = case bindPipeline fb of
-            Right _ -> Right pu{ puRemain=fb : puRemain }
+            Right _  -> Right pu{ puRemain=fb : puRemain }
             Left err -> Left $ "Unknown functional block: " ++ err
     process = puProcess
     setTime t pu@Pipeline{ puProcess } = pu{ puProcess=puProcess{ nextTick=t } }
-
-
-bindPipeline fb
-    | Just (FB.Div (I n) (I d_) (O q) (O r)) <- castFB fb
-    = Right ( [(d_, Denom), (n, Numer)], (q, r) )
-    | otherwise = Left $ "Unknown functional block: " ++ show fb
 
 
 instance ( Var v, Time t
@@ -112,67 +130,75 @@ instance ( Var v, Time t
     options _proxy pu@Pipeline{ puRemain, puProcess=Process{ nextTick } }
         = targets pu ++ sources pu
         where
-            target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (singleton 1)
-            targets Pipeline{ pipeInput=Just (vs, _) } = map (target . fst) vs
-            targets Pipeline{ pipeInput=Nothing } = map target $ concatMap (elems . inputs) puRemain
+            targets Pipeline{ pipeInput=Just pipelineIn } = targetOptions nextTick pipelineIn
+            targets Pipeline{ pipeInput=Nothing } = concatMap (targetOptions nextTick . fst) $ rights $ map bindPipeline puRemain
 
-            sources Pipeline{ pipeOutput=PipelineOut{ outs, expired, complete } : _ }
+            sources Pipeline{ pipeOutput=PipelineOut{ complete, expired, outputSt } : _ }
                 = let
                     begin = max complete nextTick
-                    expired' = fromMaybe maxBound expired
-                    end = maybe maxBound (+ (-begin)) expired
+                    end = fromMaybe maxBound expired
+                    maxDuration = maybe maxBound (+ (-begin)) expired
                 in
-                    [ EndpointO (Source vs) $ TimeConstrain (begin ... expired') (1 ... end)
-                    | (vs, _) <- outs
-                    ]
+                    sourceOptions begin end maxDuration outputSt
             sources Pipeline{} = []
 
-    -- Система может "зависнуть", и если так случится, то как быть?
     decision
             proxy
             pu@Pipeline{ pipeInput=Nothing, puRemain, pipeOutput, pipeLine }
             d@EndpointD{ epdRole=Target v, epdAt }
         | Just fb <- find (member v . inputs) puRemain
-        , Just (FB.Div (I n) (I d_) (O q) (O r)) <- castFB fb
+        , Right (inputSt, expire) <- bindPipeline fb
         = let
             pu' = pu
                 { puRemain=filter (/= fb) puRemain
-                , pipeInput=Just
-                    ( [(d_, Denom), (n, Numer)]
-                    , (q, r)
-                    )
+                , pipeInput=Just inputSt
                 , pipeOutput=case pipeOutput of
+                    out@PipelineOut{ expired=Nothing } : outs
+                        -> let out' = out{ expired=Just $ inf epdAt + toEnum (pipeLine + expire) }
+                        in out' : outs
                     [] -> []
-                    po@PipelineOut{ expired=Nothing } : pos -> po{ expired=Just $ inf epdAt + toEnum (pipeLine + 2) } : pos
-                    _ -> error "wrong internal state of Div."
+                    _ -> error "wrong internal state of Pipeline."
                 }
         in
             decision proxy pu' d
 
-    decision _proxy pu@Pipeline{ pipeInput=Just (vs, (q, r)), pipeOutput, puProcess=Process{ nextTick }, pipeLine } d@EndpointD{ epdRole=Target v, epdAt }
-        | Just (_, argSel) <- find ((==) v . fst) vs
-        = let
-            pu' = pu
-                { puProcess=schedule pu $
-                    scheduleEndpoint d $ do
-                        scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
-                        scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Load argSel
-                }
-        in
-            case filter ((/=) v . fst) vs of
-                [] -> pu'
-                    { pipeInput=Nothing
-                    , pipeOutput=pipeOutput ++
-                        [ PipelineOut
-                            { complete=nextTick + toEnum (pipeLine + 3)
-                            , expired=Nothing
-                            , outs=[(q, Quotient), (r, Remain)]
-                            }
-                        ]
-                    }
-                vs' -> pu'{ pipeInput=Just (vs', (q, r)) }
+    decision
+            _proxy
+            pu@Pipeline{ pipeInput=Just inputSt, pipeOutput, pipeLine, puProcess=Process{ nextTick } }
+            d@EndpointD{ epdRole=Target v, epdAt }
+        | let ( inputSt', outputStTail ) = pipelineChanges inputSt v
+        , Just arg <- argType inputSt v
+        = pu
+            { puProcess=schedule pu $
+                scheduleEndpoint d $ scheduleInput arg
+            , pipeInput=inputSt'
+            , pipeOutput=pipeOutput ++ maybeToList outputStTail
+            }
+        where
+            targetDecision inputSt v
+                | Just arg <- argType inputSt v
+                , let ( inputSt', outputStTail ) = pipelineChanges inputSt v
+                = Just ( inputSt', outputStTail, scheduleInput arg )
 
-    decision _proxy pu@Pipeline{ pipeOutput=po@PipelineOut{ outs } : pos } d@EndpointD{ epdRole=Source vs, epdAt }
+            argType (DivIn (inputs_, _)) v_ = snd <$> find ((==) v_ . fst) inputs_
+            pipelineChanges (DivIn (inputs_, (q, r))) v_
+                | length inputs_ > 1 =
+                    ( Just $ DivIn ( filter ((/=) v_ . fst) inputs_, (q, r) )
+                    , Nothing
+                    )
+                | otherwise =
+                    ( Nothing
+                    , Just PipelineOut
+                        { complete=nextTick + toEnum (pipeLine + 3)
+                        , expired=Nothing
+                        , outputSt=DivOut [(q, Quotient), (r, Remain)]
+                        }
+                    )
+            scheduleInput arg = do
+                scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
+                scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Load arg
+
+    decision _proxy pu@Pipeline{ pipeOutput=po@PipelineOut{ outputSt=DivOut outs } : pos } d@EndpointD{ epdRole=Source vs, epdAt }
         | ([(waitingVs, sel)], os) <- partition ((vs `isSubsetOf`) . fst) outs
         = let
             waitingVs' = waitingVs `difference` vs
@@ -183,7 +209,7 @@ instance ( Var v, Time t
                         scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
                         scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Out sel
                 , pipeOutput=po
-                    { outs=(waitingVs', sel) : os
+                    { outputSt=DivOut ((waitingVs', sel) : os)
                     } : pos
                 }
         in
@@ -191,9 +217,9 @@ instance ( Var v, Time t
     decision _ _ _ = error "Error in Div decision"
 
 
-finalize pu@Pipeline{ pipeOutput=po@PipelineOut{ outs=(v, _):vs } : os } | S.null v
-    = finalize pu{ pipeOutput=po{ outs=vs }:os }
-finalize pu@Pipeline{ pipeOutput=PipelineOut{ outs=[] } : os } = finalize pu{ pipeOutput=os }
+finalize pu@Pipeline{ pipeOutput=po@PipelineOut{ outputSt=DivOut ((v, _):vs) } : os } | S.null v
+    = finalize pu{ pipeOutput=po{ outputSt=DivOut vs }:os }
+finalize pu@Pipeline{ pipeOutput=PipelineOut{ outputSt=DivOut [] } : os } = finalize pu{ pipeOutput=os }
 finalize pu = pu
 
 
