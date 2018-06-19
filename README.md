@@ -38,6 +38,7 @@ Telegram чат проекта: <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
 1. [Пенской А.В. Проектирование вычислительной платформы для моделирования динамических систем. 2018](https://nitta.io/nitta-corp/docs/src/master/2018%20PPK%20sdcloud-es%20slides.pdf)
 1. [DRAFT Пенской А.В. Проектирование вычислительной платформы для моделирования динамических систем, 2018.](https://nitta.io/nitta-corp/docs/src/master/2018%20PPK%20sdcloud-es.pdf)
 1. Шалин, Н.А. Представление моделей динамических систем как потока данных: диплом ... бакалавр: 09.03.04 - Санкт-Петербург, 2018, - 55 c. [текст](https://nitta.io/nitta-corp/docs/src/master/2018_bach_shalin_XMILE2SDF.pdf)  [слайды](https://nitta.io/nitta-corp/docs/src/master/2018_bach_shalin_XMILE2SDF_slides.pdf) [исходники](https://nitta.io/Dragollla/xmile2sdf)
+1. Оспенников, Л.В. Разработка системы управления аппаратным вычислителем для системной динамики: диплом ... бакалавр: 01.03.02 - Санкт-Петербург, 2018, - 51 c. [текст](https://nitta.io/nitta-corp/docs/src/master/2018_bach_ospennikov_imp_nitta.pdf)  [слайды](https://nitta.io/nitta-corp/docs/src/master/2018_bach_ospennikov_imp_nitta_slides.pdf)
 
 ### Высокоуровневый синтез
 1. [DRAFT Система высокоуровневого синтеза на основе гибридной NISC/TTA микроархитектуры](https://nitta.io/nitta-corp/docs/src/master/2018%20MAI%20HLS.pdf)
