@@ -32,7 +32,8 @@ import           NITTA.FunctionBlocks (castFB)
 import qualified NITTA.FunctionBlocks as FB
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval     (inf, singleton, sup, (...), Interval)
+import           NITTA.Utils.Process
+import           Numeric.Interval     (Interval, inf, singleton, sup, (...))
 
 
 data InputDesc
@@ -59,7 +60,8 @@ instance ( Default t ) => Default (Div v x t) where
     def = Pipeline def def def def 4 1 DivSt{ mock=False }
 
 divisor :: ( Default t ) => Div v x t
-divisor = def 
+divisor = def
+
 
 instance ( Var v
          , Integral x
@@ -70,13 +72,16 @@ instance ( Var v
 
 
 
+data TargetPipelineDecision i v t
+    = D
+        { latency :: Int
+        , tick    :: t
+        , inputSt :: i
+        , at      :: Interval t
+        , var     :: v
+        }
+    deriving ( Show )
 
-bindPipeline fb
-    | Just (FB.Div (I n) (I d_) (O q) (O r)) <- castFB fb
-    , let inputSt = DivIn ( [(d_, Denom), (n, Numer)], (q, r) )
-    , let expire = 2
-    = Right ( inputSt, expire )
-    | otherwise = Left $ "Unknown functional block: " ++ show fb
 
 
 targetOptions nextTick (DivIn (vs, _)) = map (target . fst) vs
@@ -89,6 +94,47 @@ sourceOptions begin end maxDuration (DivOut outs)
         [ EndpointO (Source vs) $ TimeConstrain (begin ... end) (1 ... maxDuration)
         | (vs, _) <- outs
         ]
+
+
+
+
+targetDecision D{ tick, latency, inputSt, at, var }
+    | Just arg <- argType inputSt var
+    , let ( inputSt', outputStTail ) = pipelineChanges inputSt var
+    = Just ( inputSt', outputStTail, scheduleInput arg )
+    | otherwise = error "Div: targetDecision."
+    where
+        argType (DivIn (inputs_, _)) v_ = snd <$> find ((==) v_ . fst) inputs_
+        pipelineChanges (DivIn (inputs_, (q, r))) v
+            | length inputs_ > 1 =
+                ( Just $ DivIn ( filter ((/=) v . fst) inputs_, (q, r) )
+                , Nothing
+                )
+            | otherwise =
+                ( Nothing
+                , Just PipelineOut
+                    { complete=tick + toEnum (latency + 3)
+                    , expired=Nothing
+                    , outputSt=DivOut [(q, Quotient), (r, Remain)]
+                    }
+                )
+        scheduleInput arg = do
+            scheduleNopAndUpdateTick tick (inf at - 1)
+            scheduleInstructionAndUpdateTick (inf at) (sup at) $ Load arg
+
+
+sourceDecision d@EndpointD{ epdRole=Source vs, epdAt } sel
+    = Just $ scheduleEndpoint d $ do
+        nextTick <- nextScheduledTick
+        scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
+        scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Out sel
+sourceDecision _ _ = Nothing
+
+
+pipelineOutputRemain ( DivOut ((v, _):vs) ) | S.null v = Just $ DivOut vs
+pipelineOutputRemain _ = Nothing
+
+
 
 
 
@@ -115,11 +161,29 @@ data Pipeline st i o v x t
 
 
 
-instance ( Var v, Time t
-         ) => ProcessUnit (Div v x t) (Parcel v x) t where
+
+
+
+
+class PipelinePU ist io where
+    bindPipeline :: FB io -> Either String ( ist, Int )
+
+
+instance PipelinePU (DivIn v) (Parcel v x) where
+    bindPipeline fb
+        | Just (FB.Div (I n) (I d_) (O q) (O r)) <- castFB fb
+        , let inputSt = DivIn ( [(d_, Denom), (n, Numer)], (q, r) )
+        , let expire = 2
+        = Right ( inputSt, expire )
+        | otherwise = Left $ "Unknown functional block: " ++ show fb
+
+
+
+instance ( Var v, Time t, PipelinePU ist (Parcel v x) 
+         ) => ProcessUnit (Pipeline st ist ost v x t) (Parcel v x) t where
     bind fb pu@Pipeline{ puRemain }
         = case bindPipeline fb of
-            Right _  -> Right pu{ puRemain=fb : puRemain }
+            Right ( _inputSt :: ist, _ ) -> Right pu{ puRemain=fb : puRemain }
             Left err -> Left $ "Unknown functional block: " ++ err
     process = puProcess
     setTime t pu@Pipeline{ puProcess } = pu{ puProcess=puProcess{ nextTick=t } }
@@ -168,7 +232,7 @@ instance ( Var v, Time t
             _proxy
             pu@Pipeline{ pipeInput=Just inputSt, pipeOutput, pipeline, puProcess=Process{ nextTick } }
             d@EndpointD{ epdRole=Target v, epdAt }
-        | Just( inputSt', outputStTail, sch ) <- targetDecision D{ latency=pipeline, tick=nextTick, at=epdAt, var=v, inputSt } 
+        | Just( inputSt', outputStTail, sch ) <- targetDecision D{ latency=pipeline, tick=nextTick, at=epdAt, var=v, inputSt }
         = pu
             { puProcess=schedule pu $
                 scheduleEndpoint d sch
@@ -178,14 +242,11 @@ instance ( Var v, Time t
 
     decision _proxy pu@Pipeline{ pipeOutput=po@PipelineOut{ outputSt=DivOut outs } : pos } d@EndpointD{ epdRole=Source vs, epdAt }
         | ([(waitingVs, sel)], os) <- partition ((vs `isSubsetOf`) . fst) outs
+        , Just sch <- sourceDecision d sel
         = let
             waitingVs' = waitingVs `difference` vs
             pu' = pu
-                { puProcess=schedule pu $
-                    scheduleEndpoint d $ do
-                        nextTick <- nextScheduledTick
-                        scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
-                        scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Out sel
+                { puProcess=schedule pu sch
                 , pipeOutput=po
                     { outputSt=DivOut ((waitingVs', sel) : os)
                     } : pos
@@ -195,45 +256,10 @@ instance ( Var v, Time t
     decision _ _ _ = error "Error in Div decision"
 
 
-data TargetPipelineDecision i v t
-    = D
-        { latency :: Int
-        , tick :: t
-        , inputSt :: i
-        , at :: Interval t 
-        , var :: v
-        }
-    deriving ( Show )
-
-
-targetDecision D{ tick, latency, inputSt, at, var }
-    | Just arg <- argType inputSt var
-    , let ( inputSt', outputStTail ) = pipelineChanges inputSt var
-    = Just ( inputSt', outputStTail, scheduleInput arg )
-    | otherwise = error "Div: targetDecision."
-    where
-        argType (DivIn (inputs_, _)) v_ = snd <$> find ((==) v_ . fst) inputs_
-        pipelineChanges (DivIn (inputs_, (q, r))) v
-            | length inputs_ > 1 =
-                ( Just $ DivIn ( filter ((/=) v . fst) inputs_, (q, r) )
-                , Nothing
-                )
-            | otherwise =
-                ( Nothing
-                , Just PipelineOut
-                    { complete=tick + toEnum (latency + 3)
-                    , expired=Nothing
-                    , outputSt=DivOut [(q, Quotient), (r, Remain)]
-                    }
-                )
-        scheduleInput arg = do
-            scheduleNopAndUpdateTick tick (inf at - 1)
-            scheduleInstructionAndUpdateTick (inf at) (sup at) $ Load arg
-
-
-finalize pu@Pipeline{ pipeOutput=po@PipelineOut{ outputSt=DivOut ((v, _):vs) } : os } | S.null v
-    = finalize pu{ pipeOutput=po{ outputSt=DivOut vs }:os }
-finalize pu@Pipeline{ pipeOutput=PipelineOut{ outputSt=DivOut [] } : os } = finalize pu{ pipeOutput=os }
+finalize pu@Pipeline{ pipeOutput=po@PipelineOut{ outputSt } : os }
+    | Just outputSt' <- pipelineOutputRemain outputSt 
+    = finalize pu{ pipeOutput=po{ outputSt=outputSt' }:os }
+finalize pu@Pipeline{ pipeOutput=_ : os } = finalize pu{ pipeOutput=os }
 finalize pu = pu
 
 
@@ -311,58 +337,3 @@ instance ( Time t, Var v
         , "  );"
         ] [("name", title)]
 
-
-
--- * internal
-
-data Schedule pu v x t
-    = Schedule
-        { schProcess :: Process (Parcel v x) t
-        , iProxy     :: Proxy (Instruction pu)
-        }
-
-schedule pu st
-    = schProcess $ execState st Schedule
-        { schProcess=process pu
-        , iProxy=ip pu
-        }
-    where
-        ip :: pu -> Proxy (Instruction pu)
-        ip _ = Proxy
-
-nextScheduledTick :: ( Show t ) => State (Schedule pu v x t) t
-nextScheduledTick = do
-    Schedule{ schProcess=Process{ nextTick } } <- get
-    return nextTick
-
-updateTick tick = do
-    sch@Schedule{ schProcess } <- get
-    put sch
-        { schProcess=schProcess
-            { nextTick=tick
-            }
-        }
-
-scheduleStep placeInTime stepInfo = do
-    sch@Schedule{ schProcess=p@Process{ nextUid, steps } } <- get
-    put sch
-        { schProcess=p
-            { nextUid=succ nextUid
-            , steps=Step nextUid placeInTime stepInfo : steps
-            }
-        }
-
-scheduleInstructionAndUpdateTick start finish instr = do
-    Schedule{ iProxy } <- get
-    scheduleStep (Activity $ start ... finish) $ InstructionStep (instr `asProxyTypeOf` iProxy)
-    updateTick $ finish + 1
-
-scheduleNopAndUpdateTick start finish =
-    when (start <= finish) $ do
-        Schedule{ iProxy } <- get
-        scheduleStep (Activity $ start ... finish) $ InstructionStep (nop `asProxyTypeOf` iProxy)
-        updateTick $ finish + 1
-
-scheduleEndpoint EndpointD{ epdAt, epdRole } codeGen = do
-    scheduleStep (Activity $ inf epdAt ... sup epdAt) $ EndpointRoleStep epdRole
-    codeGen

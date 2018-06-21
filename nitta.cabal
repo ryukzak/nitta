@@ -35,6 +35,7 @@ library
                      , NITTA.Types.Time
                      , NITTA.Utils
                      , NITTA.Utils.JSON
+                     , NITTA.Utils.Process
                      , NITTA.Utils.Lens
   build-depends:       aeson
                      , array
