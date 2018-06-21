@@ -36,21 +36,21 @@ netWithArithmAndSPI = busNetwork 27
   -- , ("mult", PU def M.PUPorts{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
   ]
 
-netWithArithm = busNetwork 26 [] []
+netWithArithm = busNetwork 31 [] []
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-  , ("div", PU def{ D.mock=True } D.PUPorts{ D.wr=Signal 22, D.wrSel=Signal 23, D.oe=Signal 24, D.oeSel=Signal 25 } )
+  , ("div", PU D.divisor{ D.state=D.DivSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   -- , ("mult", PU def M.PUPorts{ M.wr=Index 26, M.sel=Index 27, M.oe=Index 28 } )
   ]
 
-netWithArithm' = busNetwork 26 [] []
+netWithArithm' = busNetwork 31 [] []
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-  , ("div", PU def{ D.mock=True, D.pipeLine=8 } D.PUPorts{ D.wr=Signal 22, D.wrSel=Signal 23, D.oe=Signal 24, D.oeSel=Signal 25 } )
+  , ("div", PU D.divisor{ D.state=D.DivSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   -- , ("mult", PU def M.PUPorts{ M.wr=Index 26, M.sel=Index 27, M.oe=Index 28 } )
   ]
   

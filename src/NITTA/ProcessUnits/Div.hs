@@ -15,8 +15,8 @@
 module NITTA.ProcessUnits.Div
     ( Pipeline(..)
     , PUPorts(..)
-    , Div
     , DivSt(..)
+    , divisor
     ) where
 
 import           Control.Monad.State
@@ -32,7 +32,7 @@ import           NITTA.FunctionBlocks (castFB)
 import qualified NITTA.FunctionBlocks as FB
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval     (inf, singleton, sup, (...))
+import           Numeric.Interval     (inf, singleton, sup, (...), Interval)
 
 
 data InputDesc
@@ -55,9 +55,11 @@ newtype DivSt
 
 
 type Div v x t = Pipeline DivSt (DivIn v) (DivOut v) v x t
-instance ( Time t, Var v ) => Default (Div v x t) where
+instance ( Default t ) => Default (Div v x t) where
     def = Pipeline def def def def 4 1 DivSt{ mock=False }
 
+divisor :: ( Default t ) => Div v x t
+divisor = def 
 
 instance ( Var v
          , Integral x
@@ -105,7 +107,7 @@ data Pipeline st i o v x t
         , pipeOutput     :: [PipelineOut o t]
         , puRemain       :: [FB (Parcel v x)]
         , puProcess      :: Process (Parcel v x) t
-        , pipeLine       :: Int
+        , pipeline       :: Int
         , frequencyRatio :: Int
         , state          :: st
         }
@@ -144,7 +146,7 @@ instance ( Var v, Time t
 
     decision
             proxy
-            pu@Pipeline{ pipeInput=Nothing, puRemain, pipeOutput, pipeLine }
+            pu@Pipeline{ pipeInput=Nothing, puRemain, pipeOutput, pipeline }
             d@EndpointD{ epdRole=Target v, epdAt }
         | Just fb <- find (member v . inputs) puRemain
         , Right (inputSt, expire) <- bindPipeline fb
@@ -154,7 +156,7 @@ instance ( Var v, Time t
                 , pipeInput=Just inputSt
                 , pipeOutput=case pipeOutput of
                     out@PipelineOut{ expired=Nothing } : outs
-                        -> let out' = out{ expired=Just $ inf epdAt + toEnum (pipeLine + expire) }
+                        -> let out' = out{ expired=Just $ inf epdAt + toEnum (pipeline + expire) }
                         in out' : outs
                     [] -> []
                     _ -> error "wrong internal state of Pipeline."
@@ -164,39 +166,15 @@ instance ( Var v, Time t
 
     decision
             _proxy
-            pu@Pipeline{ pipeInput=Just inputSt, pipeOutput, pipeLine, puProcess=Process{ nextTick } }
+            pu@Pipeline{ pipeInput=Just inputSt, pipeOutput, pipeline, puProcess=Process{ nextTick } }
             d@EndpointD{ epdRole=Target v, epdAt }
-        | let ( inputSt', outputStTail ) = pipelineChanges inputSt v
-        , Just arg <- argType inputSt v
+        | Just( inputSt', outputStTail, sch ) <- targetDecision D{ latency=pipeline, tick=nextTick, at=epdAt, var=v, inputSt } 
         = pu
             { puProcess=schedule pu $
-                scheduleEndpoint d $ scheduleInput arg
+                scheduleEndpoint d sch
             , pipeInput=inputSt'
             , pipeOutput=pipeOutput ++ maybeToList outputStTail
             }
-        where
-            targetDecision inputSt v
-                | Just arg <- argType inputSt v
-                , let ( inputSt', outputStTail ) = pipelineChanges inputSt v
-                = Just ( inputSt', outputStTail, scheduleInput arg )
-
-            argType (DivIn (inputs_, _)) v_ = snd <$> find ((==) v_ . fst) inputs_
-            pipelineChanges (DivIn (inputs_, (q, r))) v_
-                | length inputs_ > 1 =
-                    ( Just $ DivIn ( filter ((/=) v_ . fst) inputs_, (q, r) )
-                    , Nothing
-                    )
-                | otherwise =
-                    ( Nothing
-                    , Just PipelineOut
-                        { complete=nextTick + toEnum (pipeLine + 3)
-                        , expired=Nothing
-                        , outputSt=DivOut [(q, Quotient), (r, Remain)]
-                        }
-                    )
-            scheduleInput arg = do
-                scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
-                scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Load arg
 
     decision _proxy pu@Pipeline{ pipeOutput=po@PipelineOut{ outputSt=DivOut outs } : pos } d@EndpointD{ epdRole=Source vs, epdAt }
         | ([(waitingVs, sel)], os) <- partition ((vs `isSubsetOf`) . fst) outs
@@ -215,6 +193,42 @@ instance ( Var v, Time t
         in
             finalize pu'
     decision _ _ _ = error "Error in Div decision"
+
+
+data TargetPipelineDecision i v t
+    = D
+        { latency :: Int
+        , tick :: t
+        , inputSt :: i
+        , at :: Interval t 
+        , var :: v
+        }
+    deriving ( Show )
+
+
+targetDecision D{ tick, latency, inputSt, at, var }
+    | Just arg <- argType inputSt var
+    , let ( inputSt', outputStTail ) = pipelineChanges inputSt var
+    = Just ( inputSt', outputStTail, scheduleInput arg )
+    | otherwise = error "Div: targetDecision."
+    where
+        argType (DivIn (inputs_, _)) v_ = snd <$> find ((==) v_ . fst) inputs_
+        pipelineChanges (DivIn (inputs_, (q, r))) v
+            | length inputs_ > 1 =
+                ( Just $ DivIn ( filter ((/=) v . fst) inputs_, (q, r) )
+                , Nothing
+                )
+            | otherwise =
+                ( Nothing
+                , Just PipelineOut
+                    { complete=tick + toEnum (latency + 3)
+                    , expired=Nothing
+                    , outputSt=DivOut [(q, Quotient), (r, Remain)]
+                    }
+                )
+        scheduleInput arg = do
+            scheduleNopAndUpdateTick tick (inf at - 1)
+            scheduleInstructionAndUpdateTick (inf at) (sup at) $ Load arg
 
 
 finalize pu@Pipeline{ pipeOutput=po@PipelineOut{ outputSt=DivOut ((v, _):vs) } : os } | S.null v
@@ -276,12 +290,12 @@ instance ( Time t, Var v
             else FromLibrary "div/div.v"
         , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
         ]
-    hardwareInstance title Pipeline{ pipeLine, state=DivSt{ mock } } Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
+    hardwareInstance title Pipeline{ pipeline, state=DivSt{ mock } } Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
         [ "pu_div"
         , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
         , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
         , "   , .INVALID( 0 )" -- FIXME:
-        , "   , .PIPELINE( " ++ show pipeLine ++ " )" -- FIXME:
+        , "   , .PIPELINE( " ++ show pipeline ++ " )" -- FIXME:
         , "   , .MOCK_DIV( " ++ bool2verilog mock ++ " )"
         , "   ) $name$"
         , "  ( .clk( " ++ signalClk ++ " )"
