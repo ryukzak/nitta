@@ -23,6 +23,7 @@ library
                      , NITTA.ProcessUnits.Accum
                      , NITTA.ProcessUnits.Div
                      , NITTA.ProcessUnits.Fram
+                     , NITTA.ProcessUnits.Generic.Pipeline
                      , NITTA.ProcessUnits.Generic.SerialPU
                      , NITTA.ProcessUnits.Mult
                      , NITTA.ProcessUnits.Shift
