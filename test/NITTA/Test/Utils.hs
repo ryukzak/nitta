@@ -14,11 +14,11 @@ import           Test.Tasty.HUnit
 
 
 values2dumpTests = do
-  "0" @=? values2dump [Q, Q, Q, Q]
-  "0" @=? values2dump [B False, B False, B False, B False]
-  "f" @=? values2dump [B True, B True, B True, B True]
-  "17" @=? values2dump [B True, B False, B True, B True, B True]
-  "000000" @=? values2dump (replicate 24 $ B False)
+  "0" @=? values2dump [Undef, Undef, Undef, Undef]
+  "0" @=? values2dump [Bool False, Bool False, Bool False, Bool False]
+  "f" @=? values2dump [Bool True, Bool True, Bool True, Bool True]
+  "17" @=? values2dump [Bool True, Bool False, Bool True, Bool True, Bool True]
+  "000000" @=? values2dump (replicate 24 $ Bool False)
 
 inputsOfFBsTests = do
   let f = algInputs :: [FB (Parcel String Int)] -> Set String

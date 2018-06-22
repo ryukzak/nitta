@@ -96,8 +96,8 @@ instance Connected (Mult v x t) where
   data PUPorts (Mult v x t)
     = PUPorts{ wr, wrSel, oe :: Signal } deriving ( Show )
   transmitToLink Microcode{..} PUPorts{..}
-    = [ (wr, B wrSignal)
-      , (wrSel, B selSignal)
+    = [ (wr, Bool wrSignal)
+      , (wrSel, Bool selSignal)
       ]
 
 

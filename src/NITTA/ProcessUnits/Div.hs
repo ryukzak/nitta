@@ -172,10 +172,10 @@ instance Connected (Div v x t) where
         deriving ( Show )
     transmitToLink Microcode{..} PUPorts{..}
         =
-            [ (wr, B wrSignal)
-            , (wrSel, B wrSelSignal)
-            , (oe, B oeSignal)
-            , (oeSel, B oeSelSignal)
+            [ (wr, Bool wrSignal)
+            , (wrSel, Bool wrSelSignal)
+            , (oe, Bool oeSignal)
+            , (oeSel, Bool oeSelSignal)
             ]
 
 

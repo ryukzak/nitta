@@ -120,12 +120,12 @@ instance Connected (Shift v x t) where
   data PUPorts (Shift v x t)
     = PUPorts{ work, direction, mode, step, init, oe :: Signal } deriving ( Show )
   transmitToLink Microcode{..} PUPorts{..}
-    = [ (work, B workSignal)
-      , (direction, B directionSignal)
-      , (mode, B modeSignal)
-      , (step, B stepSignal)
-      , (init, B initSignal)
-      , (oe, B oeSignal)
+    = [ (work, Bool workSignal)
+      , (direction, Bool directionSignal)
+      , (mode, Bool modeSignal)
+      , (step, Bool stepSignal)
+      , (init, Bool initSignal)
+      , (oe, Bool oeSignal)
       ]
 
 

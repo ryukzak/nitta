@@ -462,24 +462,25 @@ class UnambiguouslyDecode pu where
 -- | Значение сигнальной линии.
 data Value
   -- | Значение не определено.
-  = Q
+  = Undef
   -- | Значение сигнальной линии установлено в логическое значение.
-  | B Bool
+  | Bool Bool
   -- | Была сделана попытка установить сигнальную линию несколькими источниками, что привело к
   -- колизии и битому значению.
   | Broken
+  deriving ( Eq )
 
 instance Default Value where
-  def = Q
-
+  def = Undef
+                    
 instance Show Value where
-  show Q         = "x"
-  show (B True)  = "1"
-  show (B False) = "0"
-  show Broken    = "B"
+  show Undef        = "x"
+  show (Bool True)  = "1"
+  show (Bool False) = "0"
+  show Broken       = "B"
 
-Q +++ v = v
-v +++ Q = v
+Undef +++ v = v
+v +++ Undef = v
 _ +++ _ = Broken
 
 

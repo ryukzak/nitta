@@ -77,7 +77,8 @@ import           Data.Typeable
 import           NITTA.Compiler
 import           NITTA.FunctionBlocks
 import           NITTA.Project
-import           NITTA.Types
+import           NITTA.Types           hiding (Undef)
+import qualified NITTA.Types           as T
 import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval      ((...))
@@ -480,12 +481,12 @@ instance Connected (Fram v x t) where
   data PUPorts (Fram v x t)
     = PUPorts{ oe, wr :: Signal, addr :: [Signal] } deriving ( Show )
   transmitToLink Microcode{..} PUPorts{..}
-    = [ (oe, B oeSignal)
-      , (wr, B wrSignal)
+    = [ (oe, Bool oeSignal)
+      , (wr, Bool wrSignal)
       ] ++ addrs
     where
       addrs = map (\(linkId, i) -> ( linkId
-                                   , maybe Q B $ fmap (`testBit` i) addrSignal
+                                   , maybe T.Undef Bool $ fmap (`testBit` i) addrSignal
                                    )
                   ) $ zip (reverse addr) [0..]
 

@@ -133,8 +133,8 @@ instance Connected (SPI v x t) where
              , miso :: OutputPort
              } deriving ( Show )
   transmitToLink Microcode{..} PUPorts{..}
-    = [ (wr, B wrSignal)
-      , (oe, B oeSignal)
+    = [ (wr, Bool wrSignal)
+      , (oe, Bool oeSignal)
       ]
 
 

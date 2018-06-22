@@ -116,10 +116,10 @@ instance Connected (Accum v x t) where
   data PUPorts (Accum v x t)
     = PUPorts{ init, load, neg, oe :: Signal } deriving ( Show )
   transmitToLink Microcode{..} PUPorts{..}
-    = [ (init, B initSignal)
-      , (load, B loadSignal)
-      , (neg, maybe Q B negSignal)
-      , (oe, B oeSignal)
+    = [ (init, Bool initSignal)
+      , (load, Bool loadSignal)
+      , (neg, maybe Undef Bool negSignal)
+      , (oe, Bool oeSignal)
       ]
 
 
