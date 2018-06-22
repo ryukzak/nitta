@@ -114,7 +114,7 @@ instance ( Time t, Var v
          ) => TargetSystemComponent (Mult v x t) where
   moduleName _ _ = "pu_mult"
   software _ _ = Empty
-  hardware title pu = Aggregate Nothing [ FromLibrary "mult/mult_placeholder.v"
+  hardware title pu = Aggregate Nothing [ FromLibrary "mult/mult_mock.v"
                                         --  , FromLibrary "Mult/Mult.v"
                                         , FromLibrary $ "mult/" ++ moduleName title pu ++ ".v"
                                         ]
