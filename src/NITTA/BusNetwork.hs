@@ -473,8 +473,8 @@ instance ( Title title, Var v, Time t
         [ ( "moduleName", moduleName projectName n )
         ]
 
-      -- FIXME: 15 - must be variable
-      cntxs = take 15 $ simulateAlgByCycle cntx0 $ functionalBlocks n
+      -- FIXME: 5 - must be variable
+      cntxs = take 5 $ simulateAlgByCycle cntx0 $ functionalBlocks n
       cycleTicks = [ 0 .. nextTick (process n) - 1 ]
       simulationInfo = (0, def) : concatMap (\cntx -> map (\t -> (t, cntx)) cycleTicks) cntxs
       assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo

@@ -342,7 +342,7 @@ data EndpointRole v
 
 (Target a) << (Target b) | a == b = True
 (Source a) << (Source b)          = all (`S.member` a) b
-_        << _                 = False
+_        << _                     = False
 
 (Source a) `sourceDifference` (Source b) = Source $ S.difference a b
 a `sourceDifference` b = error $ "Can't get sub endpoint for " ++ show a ++ " " ++ show b

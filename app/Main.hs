@@ -40,7 +40,7 @@ microarch = busNetwork 31
   --                             , SPI.start="start", SPI.stop="stop"
   --                             , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
   --                             })
-  , ("mul", PU def M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
+  , ("mul", PU M.multiplier{ M.puMocked=True } M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
   , ("div", PU D.divisor{ D.state=D.DivSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   ]
 
@@ -59,17 +59,22 @@ fibonacciMultAlg = [ FB.loop 1 ["a1"      ] "b2" :: FB (Parcel String Int)
                    , FB.mul "a1" "b1" ["c"]
                    ]
 
-divAlg
+
+
+divAndMulAlg
   =
     [ FB.constant 100 ["a"]
     , FB.loop 2 ["b"] "e"
     , FB.div "a" "b" ["c"] ["d"]
-    , FB.add "c" "d" ["e"]
+    , FB.add "c" "d" ["e", "e'"]
 
     , FB.constant 200 ["a1"]
     , FB.loop 2 ["b1"] "e1"
     , FB.div "a1" "b1" ["c1"] ["d1"]
     , FB.add "c1" "d1" ["e1"]
+
+    , FB.loop 1 ["x"] "y"
+    , FB.mul "x" "e'" ["y"]
     ]
 
 teacupAlg = [ FB.constant 70000 ["T_room"] :: FB (Parcel String Int)
@@ -133,14 +138,14 @@ graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
 
 main = do
   -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
-  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph divAlg) def
+  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph divAndMulAlg) def
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
   -- putStrLn "funSim teacup:"
   -- funSim 5 def teacupAlg
 
   putStrLn "funSim fibonacci:"
-  funSim 5 def divAlg
+  funSim 5 def divAndMulAlg
 
   -- putStrLn "funSim spi:"
   -- funSim 20 def{ cntxVars=M.fromList [("b", [0])]
@@ -148,7 +153,7 @@ main = do
   --              } spiAlg
 
   -- putStrLn "Server start on 8080..."
-  -- backendServer $ frame $ dfgraph divAlg
+  -- backendServer $ frame $ dfgraph divAndMulAlg
   putStrLn "-- the end --"
 
 
