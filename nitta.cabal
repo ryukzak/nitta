@@ -21,11 +21,11 @@ library
                      , NITTA.DataFlow
                      , NITTA.FunctionBlocks
                      , NITTA.ProcessUnits.Accum
-                     , NITTA.ProcessUnits.Div
+                     , NITTA.ProcessUnits.Divisor
                      , NITTA.ProcessUnits.Fram
                      , NITTA.ProcessUnits.Generic.Pipeline
                      , NITTA.ProcessUnits.Generic.SerialPU
-                     , NITTA.ProcessUnits.Mult
+                     , NITTA.ProcessUnits.Multiplier
                      , NITTA.ProcessUnits.Shift
                      , NITTA.ProcessUnits.SPI
                      , NITTA.Project

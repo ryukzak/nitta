@@ -11,22 +11,22 @@
 module Main where
 
 import           Data.Default
-import qualified Data.Map                 as M
+import qualified Data.Map                      as M
 import           Data.Maybe
-import           NITTA.API                (backendServer)
+import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import qualified NITTA.FunctionBlocks     as FB
-import qualified NITTA.ProcessUnits.Accum as A
-import qualified NITTA.ProcessUnits.Div   as D
-import qualified NITTA.ProcessUnits.Fram  as FR
-import qualified NITTA.ProcessUnits.Mult  as M
-import qualified NITTA.ProcessUnits.Shift as S
-import qualified NITTA.ProcessUnits.SPI   as SPI
+import qualified NITTA.FunctionBlocks          as FB
+import qualified NITTA.ProcessUnits.Accum      as A
+import qualified NITTA.ProcessUnits.Divisor    as D
+import qualified NITTA.ProcessUnits.Fram       as FR
+import qualified NITTA.ProcessUnits.Multiplier as M
+import qualified NITTA.ProcessUnits.Shift      as S
+import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
-import           System.FilePath          (joinPath)
+import           System.FilePath               (joinPath)
 
 
 microarch = busNetwork 31
@@ -41,7 +41,7 @@ microarch = busNetwork 31
   --                             , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
   --                             })
   , ("mul", PU M.multiplier{ M.puMocked=True } M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-  , ("div", PU D.divisor{ D.state=D.DivSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+  , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   ]
 
 fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
@@ -56,7 +56,7 @@ fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
 
 fibonacciMultAlg = [ FB.loop 1 ["a1"      ] "b2" :: FB (Parcel String Int)
                    , FB.loop 2 ["b1", "b2"] "c"
-                   , FB.mul "a1" "b1" ["c"]
+                   , FB.multiply "a1" "b1" ["c"]
                    ]
 
 
@@ -65,16 +65,16 @@ divAndMulAlg
   =
     [ FB.constant 100 ["a"]
     , FB.loop 2 ["b"] "e"
-    , FB.div "a" "b" ["c"] ["d"]
+    , FB.division "a" "b" ["c"] ["d"]
     , FB.add "c" "d" ["e", "e'"]
 
     , FB.constant 200 ["a1"]
     , FB.loop 2 ["b1"] "e1"
-    , FB.div "a1" "b1" ["c1"] ["d1"]
+    , FB.division "a1" "b1" ["c1"] ["d1"]
     , FB.add "c1" "d1" ["e1"]
 
     , FB.loop 1 ["x"] "y"
-    , FB.mul "x" "e'" ["y"]
+    , FB.multiply "x" "e'" ["y"]
     ]
 
 teacupAlg = [ FB.constant 70000 ["T_room"] :: FB (Parcel String Int)
@@ -83,9 +83,9 @@ teacupAlg = [ FB.constant 70000 ["T_room"] :: FB (Parcel String Int)
             , FB.loop 180000 ["T_cup1", "T_cup2"] "t_cup'"
             -- (Teacup Temperature - T_room) / t_ch
             , FB.sub "T_room" "T_cup1" ["acc"]
-            , FB.div "acc" "t_ch" ["loss"] []
+            , FB.division "acc" "t_ch" ["loss"] []
             -- INTEG ( -loss to Room
-            , FB.mul "loss" "t_step1" ["delta"]
+            , FB.multiply "loss" "t_step1" ["delta"]
             , FB.add "T_cup2" "delta" ["t_cup'"]
             , FB.loop 0 ["t"] "t'"
             , FB.add "t" "t_step2" ["t'"]

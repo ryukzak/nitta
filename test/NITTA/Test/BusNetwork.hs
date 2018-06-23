@@ -12,7 +12,7 @@ import           NITTA.Compiler
 import           NITTA.DataFlow
 import qualified NITTA.FunctionBlocks     as FB
 import qualified NITTA.ProcessUnits.Accum as A
-import qualified NITTA.ProcessUnits.Div   as D
+import qualified NITTA.ProcessUnits.Divisor   as D
 import qualified NITTA.ProcessUnits.Fram  as FR
 import qualified NITTA.ProcessUnits.Shift as S
 import qualified NITTA.ProcessUnits.SPI   as SPI
@@ -41,7 +41,7 @@ netWithArithm = busNetwork 31 [] []
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-  , ("div", PU D.divisor{ D.state=D.DivSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+  , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   -- , ("mult", PU def M.PUPorts{ M.wr=Index 26, M.sel=Index 27, M.oe=Index 28 } )
   ]
 
@@ -50,7 +50,7 @@ netWithArithm' = busNetwork 31 [] []
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-  , ("div", PU D.divisor{ D.state=D.DivSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+  , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   -- , ("mult", PU def M.PUPorts{ M.wr=Index 26, M.sel=Index 27, M.oe=Index 28 } )
   ]
   
@@ -94,12 +94,12 @@ testDiv4 = unitTest "testDiv4" netWithArithm
   def
   [ FB.constant 100 ["a"]
   , FB.loop 2 ["b"] "e"
-  , FB.div "a" "b" ["c"] ["d"]
+  , FB.division "a" "b" ["c"] ["d"]
   , FB.add "c" "d" ["e"]
 
   , FB.constant 200 ["a1"]
   , FB.loop 2 ["b1"] "e1"
-  , FB.div "a1" "b1" ["c1"] ["d1"]
+  , FB.division "a1" "b1" ["c1"] ["d1"]
   , FB.add "c1" "d1" ["e1"]
   ]
 
@@ -107,12 +107,12 @@ testDiv8 = unitTest "testDiv8" netWithArithm'
   def
   [ FB.constant 100 ["a"]
   , FB.loop 2 ["b"] "e"
-  , FB.div "a" "b" ["c"] ["d"]
+  , FB.division "a" "b" ["c"] ["d"]
   , FB.add "c" "d" ["e"]
 
   , FB.constant 200 ["a1"]
   , FB.loop 2 ["b1"] "e1"
-  , FB.div "a1" "b1" ["c1"] ["d1"]
+  , FB.division "a1" "b1" ["c1"] ["d1"]
   , FB.add "c1" "d1" ["e1"]
   ]
   

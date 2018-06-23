@@ -11,7 +11,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.ProcessUnits.Mult
+module NITTA.ProcessUnits.Multiplier
     ( Multiplier(..)
     , PUPorts(..)
     , multiplier
@@ -55,13 +55,13 @@ multiplier = def
 instance ( Var v, Time t
          ) => ProcessUnit (Multiplier v x t) (Parcel v x) t where
     bind fb pu@Multiplier{ puRemain }
-        | Just FB.Mul{} <- castFB fb = Right pu{ puRemain=fb : puRemain }
+        | Just FB.Multiply{} <- castFB fb = Right pu{ puRemain=fb : puRemain }
         | otherwise = Left $ "Unknown functional block: " ++ show fb
     process = puProcess
     setTime t pu@Multiplier{ puProcess } = pu{ puProcess=puProcess{ nextTick=t } }
 
 execute pu@Multiplier{ puTarget=[], puSource=[], puRemain } fb
-    | Just (FB.Mul (I a) (I b) (O c)) <- castFB fb = pu{ puTarget=[(A, a), (B, b)], puSource=elems c, puRemain=puRemain \\ [ fb ] }
+    | Just (FB.Multiply (I a) (I b) (O c)) <- castFB fb = pu{ puTarget=[(A, a), (B, b)], puSource=elems c, puRemain=puRemain \\ [ fb ] }
 execute _ _ = error ""
 
 
@@ -150,7 +150,7 @@ instance ( Var v
          , Integral x
          ) => Simulatable (Multiplier v x t) v x where
     simulateOn cntx _ fb
-        | Just fb'@FB.Mul{} <- castFB fb = simulate cntx fb'
+        | Just fb'@FB.Multiply{} <- castFB fb = simulate cntx fb'
         | otherwise = error $ "Can't siMultate " ++ show fb ++ " on Shift."
 
 
@@ -163,7 +163,7 @@ instance ( Time t, Var v
         = Aggregate Nothing 
             [ if puMocked 
                 then FromLibrary "mult/mult_mock.v"
-                else FromLibrary "Mult/Mult.v"
+                else FromLibrary "mult/mult_inner.v"
             , FromLibrary $ "mult/" ++ moduleName title pu ++ ".v"
             ]
     hardwareInstance title _ Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST

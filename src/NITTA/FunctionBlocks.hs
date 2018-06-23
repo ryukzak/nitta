@@ -225,19 +225,19 @@ instance ( Ord v, Num x ) => FunctionSimulation (Sub (Parcel v x)) v x where
 
 
 -- TODO: rename to Multiply
-data Mul io = Mul (I io) (I io) (O io) deriving ( Typeable )
-deriving instance ( IOType io v x ) => Show (Mul io)
-deriving instance ( IOType io v x ) => Eq (Mul io)
-mul a b c = FB $ Mul (I a) (I b) $ O $ fromList c
+data Multiply io = Multiply (I io) (I io) (O io) deriving ( Typeable )
+deriving instance ( IOType io v x ) => Show (Multiply io)
+deriving instance ( IOType io v x ) => Eq (Multiply io)
+multiply a b c = FB $ Multiply (I a) (I b) $ O $ fromList c
 
-instance ( IOType io v x ) => FunctionalBlock (Mul io) v where
-  inputs  (Mul  a  b _c) = variables a `union` variables b
-  outputs (Mul _a _b  c) = variables c
-  dependency (Mul a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
+instance ( IOType io v x ) => FunctionalBlock (Multiply io) v where
+  inputs  (Multiply  a  b _c) = variables a `union` variables b
+  outputs (Multiply _a _b  c) = variables c
+  dependency (Multiply a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
                                     , y <- elems $ variables c
                                     ]
-instance ( Ord v, Num x ) => FunctionSimulation (Mul (Parcel v x)) v x where
-  simulate cntx (Mul (I k1) (I k2) (O k3)) = do
+instance ( Ord v, Num x ) => FunctionSimulation (Multiply (Parcel v x)) v x where
+  simulate cntx (Multiply (I k1) (I k2) (O k3)) = do
     v1 <- cntx `get` k1
     v2 <- cntx `get` k2
     let v3 = v1 * v2
@@ -245,26 +245,27 @@ instance ( Ord v, Num x ) => FunctionSimulation (Mul (Parcel v x)) v x where
 
 
 
-data Div io = Div
+data Division io = Division
   { denom, numer     :: I io
   , quotient, remain :: O io
   } deriving ( Typeable )
-deriving instance ( IOType io v x ) => Show (Div io)
-deriving instance ( IOType io v x ) => Eq (Div io)
-div d n q r = FB Div{ denom=I d
-                    , numer=I n
-                    , quotient=O $ fromList q
-                    , remain=O $ fromList r
-                    }
+deriving instance ( IOType io v x ) => Show (Division io)
+deriving instance ( IOType io v x ) => Eq (Division io)
+division d n q r = FB Division
+  { denom=I d
+  , numer=I n
+  , quotient=O $ fromList q
+  , remain=O $ fromList r
+  }
 
-instance ( IOType io v x ) => FunctionalBlock (Div io) v where
-  inputs  Div{ denom, numer } = variables denom `union` variables numer
-  outputs Div{ quotient, remain } = variables quotient `union` variables remain
+instance ( IOType io v x ) => FunctionalBlock (Division io) v where
+  inputs  Division{ denom, numer } = variables denom `union` variables numer
+  outputs Division{ quotient, remain } = variables quotient `union` variables remain
   dependency fb = [ (y, x) | x <- elems $ inputs fb
                            , y <- elems $ outputs fb
                            ]
-instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Div (Parcel v x)) v x where
-  simulate cntx Div{ denom=I d, numer=I n, quotient=O q, remain=O r } = do
+instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Division (Parcel v x)) v x where
+  simulate cntx Division{ denom=I d, numer=I n, quotient=O q, remain=O r } = do
     v1 <- cntx `get` d
     v2 <- cntx `get` n
     let quotient' = fromIntegral v1 / fromIntegral v2 :: Double
