@@ -39,7 +39,7 @@ data TimeConstrain t
   , tcDuration  :: Interval t -- ^ Замкнутый интервал допустимой длительности активности.
   } deriving ( Eq )
 instance ( Show t ) => Show (TimeConstrain t) where
-  show TimeConstrain{..} = show tcAvailable ++ "/P" ++ show tcDuration ++ ""
+  show TimeConstrain{..} = show tcAvailable ++ " /P " ++ show tcDuration ++ ""
 
 
 -- | Изначально, для описания времени использовался тип Int. Время отсчитывалось с 0, было линейным

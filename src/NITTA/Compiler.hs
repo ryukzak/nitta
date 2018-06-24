@@ -44,6 +44,8 @@ import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval (Interval, (...))
 
+import           Debug.Trace
+
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
 bindAll fbs pu = either (\l -> error $ "Can't bind FB to PU: " ++ show l) id $ foldl nextBind (Right pu) fbs
@@ -84,7 +86,7 @@ newtype NaiveOpt = NaiveOpt
   } deriving ( Generic )
 
 instance Default NaiveOpt where
-  def = NaiveOpt{ threshhold=2
+  def = NaiveOpt{ threshhold=1000
                 }
 
 
@@ -206,7 +208,7 @@ optionsWithMetrics CompilerStep{ state }
         in ( integral gm m, gm, m, o, option2decision o )
 
 naive' st@CompilerStep{ state }
-  = if null opts
+  = if null opts -- ( trace (show opts) opts ) 
     then Nothing
     -- else Just st{ state=decision compiler state $ trace (show d) d
     else Just st{ state=decision compiler state d
@@ -250,7 +252,7 @@ data SpecialMetrics
     -- количества пересылок.
     , allowDataFlow :: Int
     }
-  | DataFlowMetrics { waitTime :: Int }
+  | DataFlowMetrics { waitTime :: Int, restrictedTime :: Bool }
   | ControlFlowMetrics
   deriving ( Show, Generic )
 
@@ -267,6 +269,7 @@ measure opts Frame{ nitta=net@BusNetwork{ bnPus } } (BindingOption fb title) = B
 measure _ _ ControlFlowOption{} = ControlFlowMetrics
 measure _ _ opt@DataFlowOption{} = DataFlowMetrics
   { waitTime=fromEnum (specializeDataFlowOption opt^.at.avail.infimum)
+  , restrictedTime=fromEnum (specializeDataFlowOption opt^.at.dur.supremum) /= maxBound
   }
 
 
@@ -275,6 +278,7 @@ integral GlobalMetrics{..} DataFlowMetrics{..}
 integral GlobalMetrics{..} BindingMetrics{ critical=True } = 2000
 integral GlobalMetrics{..} BindingMetrics{ alternative=1 } = 500
 integral GlobalMetrics{..} BindingMetrics{..}              = 200 + allowDataFlow * 10 - restless * 2
+integral GlobalMetrics{..} DataFlowMetrics{..} | restrictedTime = 200 + 100
 integral GlobalMetrics{..} DataFlowMetrics{..}             = 200 - waitTime
 integral GlobalMetrics{..} _                               = 0
 

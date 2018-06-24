@@ -380,9 +380,9 @@ instance Variables (Option (EndpointDT v t)) v where
 instance Variables (Decision (EndpointDT v t)) v where
   variables EndpointD{..} = variables epdRole
 instance ( Show v, Show t ) => Show (Option (EndpointDT v t)) where
-  show EndpointO{..} = "option: " ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
+  show EndpointO{..} = "?" ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
 instance ( Show v, Show t ) => Show (Decision (EndpointDT v t)) where
-  show EndpointD{..} = "decision: " ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
+  show EndpointD{..} = "!" ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
 
 
 

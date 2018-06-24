@@ -41,7 +41,7 @@ microarch = busNetwork 31
   --                             , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
   --                             })
   , ("mul", PU M.multiplier{ M.puMocked=True } M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-  , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+  , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=4 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   ]
 
 fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
@@ -66,6 +66,7 @@ divAndMulAlg
     [ FB.constant 100 ["a"]
     , FB.loop 2 ["b"] "e"
     , FB.division "a" "b" ["c"] ["d"]
+    -- , FB.add "c" "d" ["e"]
     , FB.add "c" "d" ["e", "e'"]
 
     , FB.constant 200 ["a1"]

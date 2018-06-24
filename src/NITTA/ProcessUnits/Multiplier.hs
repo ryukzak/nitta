@@ -71,10 +71,8 @@ instance ( Var v, Time t
                    EndpointDT (Multiplier v x t)
         where
 
-    options _proxy Multiplier{ puTarget, puProcess=Process{ nextTick } } | not $ null puTarget
-        = map (
-            \(_, v) -> EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
-            ) puTarget
+    options _proxy Multiplier{ puTarget=(_, v):_, puProcess=Process{ nextTick } }
+        = [ EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound) ]
     options _proxy Multiplier{ puSource, puProcess=Process{ nextTick } } | not $ null puSource
         = [ EndpointO (Source $ fromList puSource) $ TimeConstrain (nextTick + 2 ... maxBound) (1 ... maxBound) ]
     options proxy pu@Multiplier{ puRemain } = concatMap (options proxy . execute pu) puRemain
@@ -103,7 +101,7 @@ instance ( Var v, Time t
         | let v = oneOf $ variables d
         , Just fb <- find (\fb -> v `member` variables fb) puRemain
         = decision proxy (execute pu fb) d
-    decision _ _ _ = error ""
+    decision _ pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
 
 

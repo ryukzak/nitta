@@ -47,6 +47,8 @@ import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval     (inf, width, (...))
 
+-- import           Debug.Trace
+
 
 -- | Класс идентификатора вложенного вычислительного блока.
 class ( Typeable v, Ord v, Show v ) => Title v
@@ -146,6 +148,7 @@ instance ( Title title, Var v, Time t
 
       pushOptionsFor' v = [ (v, Just (pushTo, pushAt))
                           | (pushTo, vars) <- puOptions
+                          -- | (pushTo, vars) <- trace (S.join "\n" $ map show puOptions) puOptions
                           , EndpointO (Target pushVar) pushAt <- vars
                           , pushVar == v
                           ]
