@@ -48,11 +48,6 @@ Telegram чат проекта: <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
 1. Андреев В.В., Пенской А.В. Разработка специализированного языка описания вычислительных блоков для реконфигурируемой вычислительной платформы реального времени // Сборник тезисов докладов конгресса молодых ученых. Электронное издание [Электронный ресурс]. – СПб: Университет ИТМО, 2018. - Режим доступа: <http://kmu.ifmo.ru/collections_article/7699/razrabotka_specializirovannogo_yazyka_opisaniya_vychislitelnyh_blokov_dlya_rekonfiguriruemoy_vychislitelnoy_platformy_realnogo_vremeni.htm>, своб.
 1. Гайош А.И., Корепанов П.Ю., Пенской А.В. Разработка интерфейса загрузки программного обеспечения для реконфигурируемой вычислительной платформы // Сборник тезисов докладов конгресса молодых ученых. Электронное издание [Электронный ресурс]. – СПб: Университет ИТМО, 2018. - Режим доступа: <http://kmu.ifmo.ru/collections_article/7706/razrabotka_interfeysa_zagruzki_programmnogo_obespecheniya_dlya_rekonfiguriruemoy_vychislitelnoy_platformy.htm>, своб. ([pdf](https://nitta.io/nitta-corp/docs/src/master/2018_kmu_programming_thesis.pdf))
 1. DRAFT [Гайош А.И., Корепанов П.Ю., Пенской А.В. Разработка интерфейса загрузки программного обеспечения для реконфигурируемой вычислительной платформы // Сборника трудов Конгресса (in press). – СПб: Университет ИТМО, 2018.](https://nitta.io/nitta-corp/docs/src/master/2018_kmu_programming.pdf)
-
-
-
-
-
 1. [DRAFT Анощенков Д.И. Верификация систем высокоуровневого синтеза аппаратных вычислителей](https://nitta.io/nitta-corp/docs/src/master/2018%20PPK%20Property%20Based%20testing%20HLS.pdf)
 
 ### Метод синтеза
