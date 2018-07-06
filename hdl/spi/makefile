@@ -35,6 +35,8 @@ spi_slave_driver_tb: spi_slave_driver_tb.out
 spi_slave_driver_tb.out: spi_slave_driver.v spi_slave_driver_tb.v
 	iverilog -o spi_slave_driver_tb.out spi_slave_driver.v spi_slave_driver_tb.v
 
+spi_slave_driver_tb_seq.out: spi_slave_driver_seq.v spi_slave_driver_seq_tb.v
+	iverilog -o spi_slave_driver_seq_tb.out spi_slave_driver_seq.v spi_slave_driver_seq_tb.v
 
 spi_slave_driver_tb.1: spi_slave_driver_tb.1.out
 	vvp spi_slave_driver_tb.1.out
