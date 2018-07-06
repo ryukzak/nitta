@@ -70,6 +70,7 @@ data GBusNetwork title spu v x t
     , bnSignalBusWidth :: Int
     , bnInputPorts     :: [InputPort]
     , bnOutputPorts    :: [OutputPort]
+    , bnAllowDrop      :: Bool
     }
 type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 
@@ -82,7 +83,7 @@ transfered net@BusNetwork{..}
 
 
 -- TODO: Проверка подключения сигнальных линий.
-busNetwork w ips ops pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w ips ops
+busNetwork w allowDrop ips ops pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w ips ops allowDrop
   where
     pus' = map (\(title, f) ->
       ( title
@@ -445,7 +446,7 @@ instance ( Title title, Var v, Time t
         , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
         , "// if 1 - The process cycle are indipendent from a SPI."
         , "// else - The process cycle are wait for the SPI."
-        , "  , .is_drop_allow( 1'b1 )"
+        , "  , .is_drop_allow( " ++ bool2binstr bnAllowDrop ++ " )"
         , "  );                                                                                                      "
         , "                                                                                                          "
         , S.join "\n\n"

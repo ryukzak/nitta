@@ -10,19 +10,19 @@ import           Data.Default
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import qualified NITTA.FunctionBlocks     as FB
-import qualified NITTA.ProcessUnits.Accum as A
-import qualified NITTA.ProcessUnits.Divisor   as D
-import qualified NITTA.ProcessUnits.Fram  as FR
-import qualified NITTA.ProcessUnits.Shift as S
-import qualified NITTA.ProcessUnits.SPI   as SPI
+import qualified NITTA.FunctionBlocks       as FB
+import qualified NITTA.ProcessUnits.Accum   as A
+import qualified NITTA.ProcessUnits.Divisor as D
+import qualified NITTA.ProcessUnits.Fram    as FR
+import qualified NITTA.ProcessUnits.Shift   as S
+import qualified NITTA.ProcessUnits.SPI     as SPI
 import           NITTA.Project
 import           NITTA.Types
-import           System.FilePath.Posix    (joinPath)
+import           System.FilePath.Posix      (joinPath)
 import           Test.Tasty.HUnit
 
 
-netWithArithmAndSPI = busNetwork 27
+netWithArithmAndSPI = busNetwork 27 True
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -36,7 +36,7 @@ netWithArithmAndSPI = busNetwork 27
   -- , ("mult", PU def M.PUPorts{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
   ]
 
-netWithArithm = busNetwork 31 [] []
+netWithArithm = busNetwork 31 True [] []
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
@@ -45,7 +45,7 @@ netWithArithm = busNetwork 31 [] []
   -- , ("mult", PU def M.PUPorts{ M.wr=Index 26, M.sel=Index 27, M.oe=Index 28 } )
   ]
 
-netWithArithm' = busNetwork 31 [] []
+netWithArithm' = busNetwork 31 True [] []
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
@@ -53,7 +53,7 @@ netWithArithm' = busNetwork 31 [] []
   , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   -- , ("mult", PU def M.PUPorts{ M.wr=Index 26, M.sel=Index 27, M.oe=Index 28 } )
   ]
-  
+
 
 testAccumAndFram = unitTest "unittestAccumAndFram" netWithArithm
   def
@@ -115,7 +115,7 @@ testDiv8 = unitTest "testDiv8" netWithArithm'
   , FB.division "a1" "b1" ["c1"] ["d1"]
   , FB.add "c1" "d1" ["e1"]
   ]
-  
+
 
 -- Почему данный тест не должен работать корректно (почему там not):
 --

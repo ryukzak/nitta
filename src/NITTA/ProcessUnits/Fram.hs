@@ -612,8 +612,8 @@ controlSignals pu@Fram{ frProcess=Process{..}, ..}
   = concatMap ( ("      " ++) . (++ " @(posedge clk)\n") . showMicrocode . microcodeAt pu) [ 0 .. nextTick + 1 ]
   where
     showMicrocode Microcode{..} = concat
-      [ "oe <= 'b", bool2binstr oeSignal, "; "
-      , "wr <= 'b", bool2binstr wrSignal, "; "
+      [ "oe <= ", bool2binstr oeSignal, "; "
+      , "wr <= ", bool2binstr wrSignal, "; "
       , "addr <= ", maybe "0" show addrSignal, "; "
       ]
 

@@ -52,8 +52,8 @@ isTarget _                        = False
 isSource (EndpointO (Source _) _) = True
 isSource _                        = False
 
-bool2binstr True  = "1"
-bool2binstr False = "0"
+bool2binstr True  = "1'b1"
+bool2binstr False = "1'b0"
 
 
 

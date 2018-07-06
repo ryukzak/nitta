@@ -29,7 +29,7 @@ import           NITTA.Types
 import           System.FilePath               (joinPath)
 
 
-microarch = busNetwork 31
+microarch = busNetwork 31 True
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
