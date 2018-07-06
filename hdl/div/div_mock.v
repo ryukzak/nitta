@@ -11,14 +11,14 @@ module div
   , remain
   );
 
-input                      clock;
-input  [DATA_WIDTH-1:0]    denom;
-input  [DATA_WIDTH-1:0]    numer;
-output [DATA_WIDTH-1:0] quotient;
-output [DATA_WIDTH-1:0]   remain;
+input  signed                    clock;
+input  signed [DATA_WIDTH-1:0]    denom;
+input  signed [DATA_WIDTH-1:0]    numer;
+output signed [DATA_WIDTH-1:0] quotient;
+output signed [DATA_WIDTH-1:0]   remain;
 
-reg [DATA_WIDTH-1:0] buf_quotient[PIPELINE-1:0];
-reg [DATA_WIDTH-1:0] buf_remain  [PIPELINE-1:0];
+reg signed [DATA_WIDTH-1:0] buf_quotient[PIPELINE-1:0];
+reg signed [DATA_WIDTH-1:0] buf_remain  [PIPELINE-1:0];
 
 integer i;
 always @(posedge clock) begin

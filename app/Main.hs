@@ -63,7 +63,7 @@ fibonacciMultAlg = [ FB.loop 1 ["a1"      ] "b2" :: FB (Parcel String Int)
 
 divAndMulAlg
   =
-    [ FB.constant 100 ["a"]
+    [ FB.constant 100 ["a"] :: FB (Parcel String Int)
     , FB.loop 2 ["b"] "e"
     , FB.division "a" "b" ["c"] ["d"]
     -- , FB.add "c" "d" ["e"]
@@ -139,14 +139,15 @@ graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
 
 main = do
   -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
-  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph divAndMulAlg) def
+  -- test "fibonacci" (nitta $ synthesis $ frame $ dfgraph divAndMulAlg) def
+  test "teacup" (nitta $ synthesis $ frame $ dfgraph teacupAlg) def
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
   -- putStrLn "funSim teacup:"
   -- funSim 5 def teacupAlg
 
-  putStrLn "funSim fibonacci:"
-  funSim 5 def divAndMulAlg
+  -- putStrLn "funSim fibonacci:"
+  -- funSim 5 def divAndMulAlg
 
   -- putStrLn "funSim spi:"
   -- funSim 20 def{ cntxVars=M.fromList [("b", [0])]

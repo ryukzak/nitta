@@ -75,14 +75,14 @@ instance PipelineTF (DivisorSt v) where
 instance PipelinePU (DivisorSt v) (Parcel v x) where
     bindPipeline fb
         | Just (FB.Division (I n) (I d_) (O q) (O r)) <- castFB fb
-        , let inputSt = DivisorIn ( [(d_, Denom), (n, Numer)], (q, r) )
+        , let inputSt = DivisorIn ( [(n, Numer), (d_, Denom)], (q, r) )
         , let expire = 2
         = Right ( inputSt, expire )
         | otherwise = Left $ "Unknown functional block: " ++ show fb
 
 
 instance ( Time t, Var v ) => PipelinePU2 (DivisorSt v) v t where
-    targetOptions nextTick (DivisorIn (vs, _)) = map (target . fst) vs
+    targetOptions nextTick (DivisorIn (vs, _)) = [ head $ map (target . fst) vs ]
         where
             target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (singleton 1)
 
