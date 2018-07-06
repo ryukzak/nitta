@@ -44,7 +44,7 @@ end
 
 assign leds = keys[1] ? buffer : counter;
 
-spi_slave_driver 
+spi_slave_driver2 
   #( .DATA_WIDTH( SPI_DATA_WIDTH ) 
    ) spi_driver 
   ( .clk( clk_200MHz )

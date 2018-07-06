@@ -28,6 +28,10 @@ module pu_slave_spi
   , input                     cs
   );
 
+reg flag_cs;
+always @( posedge clk ) begin
+  flag_cs <= cs;
+end
 
 ///////////////////////////////////////////////////////////
 // [TRANSFER <<< NITTA]
@@ -37,9 +41,8 @@ wire [SPI_DATA_WIDTH-1:0] splitter_to_spi;
 wire [SPI_DATA_WIDTH-1:0] spi_data_receive;
 wire spi_ready;
 
-spi_slave_driver 
+spi_slave_driver2 
   #( .DATA_WIDTH( SPI_DATA_WIDTH ) 
-   , .SUB_FRAME( 1 )
    ) spi_driver 
   ( .clk( clk )
   , .rst( rst )  
@@ -90,7 +93,7 @@ assign n2s_data_in[1] = 1'b0;
 
 wire n2s_oe [0:1];
 assign n2s_oe[0] = 1'b0;
-assign n2s_oe[1] = splitter_ready && !cs;
+assign n2s_oe[1] = splitter_ready && !cs || (!cs && flag_cs ^ cs);
 
 wire [DATA_WIDTH-1:0] n2s_data_out[0:1];
 assign nitta_to_splitter = n2s_data_out[!buf_sel];

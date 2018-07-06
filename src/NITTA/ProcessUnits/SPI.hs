@@ -18,14 +18,15 @@ module NITTA.ProcessUnits.SPI
   ) where
 
 import           Data.Default
-import           Data.Maybe                  (catMaybes)
-import           Data.Set                    (elems, fromList, singleton)
+import           Data.Maybe                          (catMaybes)
+import           Data.Set                            (elems, fromList,
+                                                      singleton)
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval            ((...))
+import           Numeric.Interval                    ((...))
 
 
 
@@ -143,7 +144,8 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
   moduleName _ _ = "pu_slave_spi"
   hardware title pu
     = Aggregate Nothing
-        [ FromLibrary "spi/spi_slave_driver.v"
+        [ FromLibrary "spi/spi_slave_driver_seq.v"
+        , FromLibrary "spi/spi_slave_driver.v"
         , FromLibrary "spi/buffer.v"
         , FromLibrary "spi/spi_master_driver.v"
         , FromLibrary "spi/nitta_to_spi_splitter.v"

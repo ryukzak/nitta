@@ -25,11 +25,11 @@ reg future_flag;
 always @( posedge clk ) begin
   if ( rst ) begin
     addr <= 0;
-    data_out <= memory[ 0 ] ;    
+    data_out <= 0 ;    
   end else if ( wr | oe ) begin
     if ( wr ) memory[ addr ] <= data_in;
+    if ( oe ) data_out <= memory[ addr ] ;
     addr <= addr + 1;
-    data_out <= memory[ addr + 1 ] ;
   end
 end
 

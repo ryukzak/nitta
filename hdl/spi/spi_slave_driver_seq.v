@@ -3,7 +3,7 @@
 // Simple SPI master controller with CPOL=0, CPHA=1
 //////////////////////////////////////////////////////////////////////////////////
 
-module spi_slave_driver 
+module spi_slave_driver2 
     #( parameter DATA_WIDTH = 8
      )
     ( input            clk
@@ -56,21 +56,22 @@ always @( posedge clk ) begin
             end
         end else if ( state == STATE_WAIT_SCLK_1 ) begin
             if ( sclk ) begin
-                miso <= shiftreg[work][ DATA_WIDTH - 1 ];
                 state <= STATE_WAIT_SCLK_0;
-                if ( counter + 1 == DATA_WIDTH + 1 ) begin
-                    counter <= 1;
-                    shiftreg_sel <= !shiftreg_sel;
-                end else begin
-                    counter <= counter + 1;
-                end
+                miso <= shiftreg[work][ DATA_WIDTH - 1 ];
             end else if ( cs ) begin
                 counter <= DATA_WIDTH + 1;
                 state <= STATE_IDLE;
             end
         end else if ( state == STATE_WAIT_SCLK_0 ) begin
             if ( !sclk ) begin
-                shiftreg[work] <= { shiftreg[work][DATA_WIDTH - 2:0], mosi };
+                if ( counter + 1 == DATA_WIDTH + 1 ) begin
+                    counter <= 1;
+                    shiftreg_sel <= !shiftreg_sel;
+                    shiftreg[load] <= { shiftreg[work][DATA_WIDTH - 2:0], mosi };
+                end else begin
+                    shiftreg[work] <= { shiftreg[work][DATA_WIDTH - 2:0], mosi };
+                    counter <= counter + 1;
+                end
                 state <= STATE_WAIT_SCLK_1;
             end
         end else begin
