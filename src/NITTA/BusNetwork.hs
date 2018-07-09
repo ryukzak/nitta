@@ -149,7 +149,7 @@ instance ( Title title, Var v, Time t
 
       pushOptionsFor' v = [ (v, Just (pushTo, pushAt))
                           | (pushTo, vars) <- puOptions
-                          -- | (pushTo, vars) <- trace (S.join "\n" $ map show puOptions) puOptions
+                          --  | (pushTo, vars) <- trace (S.join "\n" $ map show puOptions) puOptions
                           , EndpointO (Target pushVar) pushAt <- vars
                           , pushVar == v
                           ]
@@ -252,7 +252,7 @@ instance Controllable (BusNetwork title v x t) where
 
   nop = undefined
 
-  
+
 instance {-# OVERLAPS #-}
          ( Time t
          ) => ByTime (BusNetwork title v x t) t where

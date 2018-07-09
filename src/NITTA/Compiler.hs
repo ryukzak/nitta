@@ -208,7 +208,7 @@ optionsWithMetrics CompilerStep{ state }
         in ( integral gm m, gm, m, o, option2decision o )
 
 naive' st@CompilerStep{ state }
-  = if null opts -- ( trace (show opts) opts ) 
+  = if null opts -- ( trace (show opts) opts )
     then Nothing
     -- else Just st{ state=decision compiler state $ trace (show d) d
     else Just st{ state=decision compiler state d
@@ -239,17 +239,18 @@ measureG opts _
 
 -- | Метрики для принятия решения компилятором.
 data SpecialMetrics
-  = BindingMetrics -- ^ Решения о привязке функциональных блоков к ВУ.
-    -- | Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
-    -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
-    { critical :: Bool
-    -- | Колличество альтернативных привязок для функционального блока.
-    , alternative
-    -- | Привязка данного функционального блока может быть активировано только спустя указанное
-    -- колличество тактов.
-    , restless
-    -- | Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
-    -- количества пересылок.
+  = -- | Решения о привязке функциональных блоков к ВУ.
+    BindingMetrics
+    { -- | Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
+      -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
+      critical      :: Bool
+      -- | Колличество альтернативных привязок для функционального блока.
+    , alternative   :: Int
+      -- | Привязка данного функционального блока может быть активировано только спустя указанное
+      -- колличество тактов.
+    , restless      :: Int
+      -- | Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
+      -- количества пересылок.
     , allowDataFlow :: Int
     }
   | DataFlowMetrics { waitTime :: Int, restrictedTime :: Bool }
