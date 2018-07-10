@@ -3,14 +3,15 @@
 // Simple SPI master controller with CPOL=0, CPHA=1
 //////////////////////////////////////////////////////////////////////////////////
 
-module spi_slave_driver2 
-    #( parameter DATA_WIDTH = 8
-     )
+module spi_slave_driver2 #
+        ( parameter DATA_WIDTH = 8
+        )
     ( input            clk
     , input            rst
     // system interface
     , input  [DATA_WIDTH-1:0] data_in  // data that master can read from slave
-    , output                  ready    // transaction is not processed now 
+    , output reg              ready    // transaction is not processed now 
+    , output                  prepare
     , output [DATA_WIDTH-1:0] data_out // data written to slave in last transaction
     // SPI iterface
     , output reg       miso
@@ -45,6 +46,7 @@ always @( posedge clk ) begin
         shiftreg[1] <= 0;
         counter <= 0;
         miso <= 0;
+        ready <= 1;
         state <= STATE_IDLE;
     end else begin
         shiftreg[load] <= data_in;
@@ -53,25 +55,26 @@ always @( posedge clk ) begin
                 counter <= 0;
                 shiftreg_sel <= !shiftreg_sel;
                 state <= STATE_WAIT_SCLK_1;
+                ready <= 0;
             end
         end else if ( state == STATE_WAIT_SCLK_1 ) begin
+            ready <= 0;
             if ( sclk ) begin
-                state <= STATE_WAIT_SCLK_0;
                 miso <= shiftreg[work][ DATA_WIDTH - 1 ];
+                counter <= counter + 1;  
+                state <= STATE_WAIT_SCLK_0;
             end else if ( cs ) begin
                 counter <= DATA_WIDTH + 1;
                 state <= STATE_IDLE;
             end
         end else if ( state == STATE_WAIT_SCLK_0 ) begin
             if ( !sclk ) begin
-                if ( counter + 1 == DATA_WIDTH + 1 ) begin
-                    counter <= 1;
+                if ( counter == DATA_WIDTH ) begin
                     shiftreg_sel <= !shiftreg_sel;
-                    shiftreg[load] <= { shiftreg[work][DATA_WIDTH - 2:0], mosi };
-                end else begin
-                    shiftreg[work] <= { shiftreg[work][DATA_WIDTH - 2:0], mosi };
-                    counter <= counter + 1;
+                    ready <= 1;
+                    counter <= 0;
                 end
+                shiftreg[work] <= { shiftreg[work][DATA_WIDTH - 2:0], mosi };
                 state <= STATE_WAIT_SCLK_1;
             end
         end else begin
@@ -80,6 +83,7 @@ always @( posedge clk ) begin
     end
 end
 
-assign { ready, data_out } = { state == STATE_IDLE || state == STATE_WAIT_SCLK_1 && (counter + 1 == DATA_WIDTH + 1 || cs), shiftreg[work] };
+assign prepare = state == STATE_WAIT_SCLK_1 && counter + 1 == DATA_WIDTH && sclk;
+assign data_out = shiftreg[work];
   
 endmodule
