@@ -147,6 +147,7 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
         [ FromLibrary "spi/spi_slave_driver_seq.v"
         , FromLibrary "spi/spi_slave_driver.v"
         , FromLibrary "spi/buffer.v"
+        , FromLibrary "spi/bounce_filter.v"
         , FromLibrary "spi/spi_master_driver.v"
         , FromLibrary "spi/nitta_to_spi_splitter.v"
         , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
@@ -156,6 +157,7 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
     [ "pu_slave_spi"
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
+    , "   , .BOUNCE_FILTER( " ++ "20" ++ " )" -- FIXME: Must be configurable.
     , "   ) $name$"
     , "  ( .clk( " ++ signalClk ++ " )"
     , "  , .rst( " ++ signalRst ++ " )"

@@ -4,6 +4,7 @@ module pu_slave_spi #
         , parameter ATTR_WIDTH     = 4
         , parameter SPI_DATA_WIDTH = 8
         , parameter BUF_SIZE       = 6
+        , parameter BOUNCE_FILTER  = 20
         )
     ( input                     clk
     , input                     rst
@@ -41,18 +42,23 @@ wire [SPI_DATA_WIDTH-1:0] splitter_to_spi;
 wire [SPI_DATA_WIDTH-1:0] spi_data_receive;
 wire spi_ready, spi_prepare;
 
+wire f_mosi, f_cs, f_sclk;
+bounce_filter #( .DIV(BOUNCE_FILTER)) f_mosi_filter ( rst, clk, mosi, f_mosi );
+bounce_filter #( .DIV(BOUNCE_FILTER)) f_cs_filter   ( rst, clk, cs,   f_cs );
+bounce_filter #( .DIV(BOUNCE_FILTER)) f_sclk_filter ( rst, clk, sclk, f_sclk );
+
 spi_slave_driver2 #
-        ( .DATA_WIDTH( SPI_DATA_WIDTH ) 
+        ( .DATA_WIDTH( SPI_DATA_WIDTH )
         ) spi_driver 
     ( .clk( clk )
-    , .rst( rst )  
-    , .data_in( splitter_to_spi ) 
-    , .data_out( spi_data_receive )  
+    , .rst( rst )
+    , .data_in( splitter_to_spi )
+    , .data_out( spi_data_receive )
     , .ready( spi_ready ), .prepare( spi_prepare )
-    , .mosi( mosi )
+    , .mosi( f_mosi )
     , .miso( miso )
-    , .sclk( sclk )
-    , .cs( cs )
+    , .sclk( f_sclk )
+    , .cs( f_cs )
     );
 
 
