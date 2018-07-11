@@ -3,6 +3,7 @@
 // Simple SPI master controller with CPOL=0, CPHA=1
 //////////////////////////////////////////////////////////////////////////////////
 
+
 module spi_slave_driver2 #
         ( parameter DATA_WIDTH = 8
         )
@@ -12,14 +13,15 @@ module spi_slave_driver2 #
     , input  [DATA_WIDTH-1:0] data_in  // data that master can read from slave
     , output reg              ready    // transaction is not processed now 
     , output                  prepare
-    , output [DATA_WIDTH-1:0] data_out // data written to slave in last transaction
+    , output reg [DATA_WIDTH-1:0] data_out // data written to slave in last transaction
     // SPI iterface
     , output reg       miso
     , input            mosi
     , input            sclk
     , input            cs
     );
-
+    
+    
 // В связи с тем, что "прокачать" все данные по комбинационной схеме не удаётся на нужной частоте,
 // необходимо сделать это заранее. Это может быть реализовано за счёт использования нескольких 
 // сдвиговых регистров, где один используется для загрузки данных "на будущее", а второй в работе.
@@ -39,11 +41,13 @@ localparam STATE_WAIT_SCLK_1 = 2; // wait for SCLK to become 1
 localparam STATE_WAIT_SCLK_0 = 3; // wait for SCLK to become 0
 reg   [2:0] state;
 
+
 always @( posedge clk ) begin
     if ( rst ) begin
         shiftreg_sel <= 0;
         shiftreg[0] <= 0;
         shiftreg[1] <= 0;
+        data_out <= 0;
         counter <= 0;
         miso <= 0;
         ready <= 1;
@@ -72,6 +76,7 @@ always @( posedge clk ) begin
                 if ( counter == DATA_WIDTH ) begin
                     shiftreg_sel <= !shiftreg_sel;
                     ready <= 1;
+                    data_out <= { shiftreg[work][DATA_WIDTH - 2:0], mosi };
                     counter <= 0;
                 end
                 shiftreg[work] <= { shiftreg[work][DATA_WIDTH - 2:0], mosi };
@@ -83,7 +88,8 @@ always @( posedge clk ) begin
     end
 end
 
-assign prepare = state == STATE_WAIT_SCLK_1 && counter + 1 == DATA_WIDTH && sclk;
-assign data_out = shiftreg[work];
+
+assign prepare = state == STATE_WAIT_SCLK_1 && sclk && counter + 1 == DATA_WIDTH;
+
   
 endmodule
