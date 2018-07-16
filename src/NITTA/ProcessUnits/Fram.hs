@@ -375,7 +375,6 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                   -- лежать в плоскости метода process, в рамках которого должен производиться
                   -- анализ уже построенного вычислительного процесса и в случае необходимости,
                   -- добавляться лишний так простоя.
-                  -- , frProcess=snd $ modifyProcess p' $ setProcessTime (d^.at.supremum + 1)
                   cell' = cell{ input=UsedOrBlocked
                               , output=UsedOrBlocked
                               }
