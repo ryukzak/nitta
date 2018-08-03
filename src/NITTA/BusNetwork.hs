@@ -196,14 +196,14 @@ instance ( Title title, Var v, Time t
 instance ( Title title, Time t, Var v, Typeable x
          ) => ProcessUnit (BusNetwork title v x t) (Parcel v x) t where
 
-  bind fb bn@BusNetwork{..}
-    | any (isRight . bind fb) $ M.elems bnPus
+  tryBind fb bn@BusNetwork{..}
+    | any (allowToProcess fb) $ M.elems bnPus
     = Right bn{ bnRemains=fb : bnRemains }
-  bind fb BusNetwork{..} = Left $ "All sub process units reject the functional block: " ++ show fb ++ "\n"
+  tryBind fb BusNetwork{..} = Left $ "All sub process units reject the functional block: " ++ show fb ++ "\n"
                                 ++ rejects
     where
       rejects = S.join "\n" $ map showReject $ M.assocs bnPus
-      showReject (title, pu) | Left e <- bind fb pu = "    [" ++ show title ++ "]: " ++ e
+      showReject (title, pu) | Left err <- tryBind fb pu = "    [" ++ show title ++ "]: " ++ err
       showReject (title, _) = "    [" ++ show title ++ "]: undefined"
 
   process pu@BusNetwork{..} = let
@@ -294,7 +294,7 @@ instance ( Var v
       bindVariants' fb =
         [ BindingO fb puTitle
         | (puTitle, pu) <- sortOn (length . binded . fst) $ M.assocs bnPus
-        , isRight $ bind fb pu
+        , allowToProcess fb pu
         , not $ selfTransport fb puTitle
         ]
 
@@ -305,7 +305,7 @@ instance ( Var v
                      | otherwise = []
 
   decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
-    = bn{ bnPus=M.adjust (fromRight undefined . bind fb) puTitle bnPus
+    = bn{ bnPus=M.adjust (bind fb) puTitle bnPus
         , bnBinded=M.alter (\case Just fbs -> Just $ fb : fbs
                                   Nothing  -> Just [fb]
                            ) puTitle bnBinded

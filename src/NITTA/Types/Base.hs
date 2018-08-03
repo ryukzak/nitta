@@ -403,7 +403,7 @@ instance ( Show v, Show t ) => Show (Decision (EndpointDT v t)) where
 --    4) Повторение, пока список возможных вариантов не станет пустым.
 class ProcessUnit pu io t | pu -> io t where
   -- | Назначить исполнение функционального блока вычислительному узлу.
-  bind :: FB io -> pu -> Either String pu
+  tryBind :: FB io -> pu -> Either String pu
   -- | Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
   -- процесс вложенных структурных элементов.
   --
@@ -427,6 +427,14 @@ class ProcessUnit pu io t | pu -> io t where
 
   -- TODO: Добавить метод skip, для того что бы вычислительный блок мог пропускать отдельный
   -- переменные (необходимо для ветвления вычислительного процесса).
+
+bind fb pu = case tryBind fb pu of
+  Right pu' -> pu'
+  Left err  -> error $ "Can't bind FB to PU: " ++ err
+
+allowToProcess fb pu
+  | Right _ <- tryBind fb pu = True
+  | otherwise = False
 
 
 ---------------------------------------------------------------------
@@ -472,7 +480,7 @@ data Value
 
 instance Default Value where
   def = Undef
-                    
+
 instance Show Value where
   show Undef        = "x"
   show (Bool True)  = "1"

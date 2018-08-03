@@ -157,7 +157,7 @@ instance ( Var v, Time t
          , SerialPUState st v x t
          ) => ProcessUnit (SerialPU st v x t) (Parcel v x) t where
 
-  bind fb pu@SerialPU{ spuFBs, spuRemain, spuProcess }
+  tryBind fb pu@SerialPU{ spuFBs, spuRemain, spuProcess }
     -- Почему делается попытка привязать функцию к нулевому состоянию последовательного вычислителя,
     -- а не к текущему? Потому что, успешная привязка функции производится к объёртке (помещаем ФБ
     -- в spuRemain), а не к самому состоянию. Ведь к самому состоянию может быть привязана в один

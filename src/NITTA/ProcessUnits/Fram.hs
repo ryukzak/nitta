@@ -259,11 +259,12 @@ instance ( IOType (Parcel v x) v x
          , Show x
          , WithFunctionalBlocks (Fram v x t) (FB (Parcel v x))
          ) => ProcessUnit (Fram v x t) (Parcel v x) t where
-  bind fb0 pu@Fram{..} = do fb' <- toFSet fb0
-                            pu' <- bind' fb'
-                            if isSchedulingComplete pu'
-                              then Right pu'
-                              else Left "Schedule can't complete stop."
+  tryBind fb0 pu@Fram{..} = do
+    fb' <- toFSet fb0
+    pu' <- bind' fb'
+    if isSchedulingComplete pu'
+      then Right pu'
+      else Left "Schedule can't complete stop."
     where
       bind' fb | Just addr <- immidiateBindTo fb
                , let cell = frMemory ! addr

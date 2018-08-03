@@ -44,14 +44,9 @@ import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval (Interval, (...))
 
-import           Debug.Trace
-
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
-bindAll fbs pu = either (\l -> error $ "Can't bind FB to PU: " ++ show l) id $ foldl nextBind (Right pu) fbs
-  where
-    nextBind (Right pu') fb = bind fb pu'
-    nextBind (Left r) _     = error r
+bindAll fbs pu = foldl (flip bind) pu fbs
 
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку и наивным
@@ -339,7 +334,7 @@ waitingTimeOfVariables net
 
 -- | Оценить, сколько новых вариантов развития вычислительного процесса даёт привязка
 -- функциоанльного блока.
-optionsAfterBind fb pu = case bind fb pu of
+optionsAfterBind fb pu = case tryBind fb pu of
   Right pu' -> filter (\(EndpointO act _) -> act `optionOf` fb) $ options endpointDT pu'
   _         -> []
   where

@@ -52,8 +52,8 @@ instance ( Var v, Time t
     = PU{ unit=decision proxy unit d, links, systemEnv }
 
 instance ProcessUnit (PU v x t) (Parcel v x) t where
-  bind fb PU{ unit, links, systemEnv }
-    = case bind fb unit of
+  tryBind fb PU{ unit, links, systemEnv }
+    = case tryBind fb unit of
       Right unit' -> Right PU { unit=unit', links, systemEnv }
       Left err    -> Left err
   process PU{ unit } = process unit

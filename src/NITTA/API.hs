@@ -21,7 +21,6 @@ import           Data.Aeson
 import           Data.Default
 import           Data.Map                    (Map, fromList)
 import           Data.Maybe
-import           Data.Monoid
 import           GHC.Generics
 import           ListT                       (toList)
 import           Network.Wai.Handler.Warp
