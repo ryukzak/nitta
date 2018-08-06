@@ -63,7 +63,7 @@ module NITTA.ProcessUnits.Multiplier
     ) where
 
 import           Data.Default
-import           Data.List            (find, (\\))
+import           Data.List            (find, (\\), partition)
 import           Data.Set             (elems, fromList, member)
 import           Data.Typeable
 import           NITTA.FunctionBlocks (castFB)
@@ -110,12 +110,9 @@ data Multiplier v x t
           -- так как она есть в описание вычислительного процесса
           -- `puProcess`.
           puRemain  :: [FB (Parcel v x)]
-        , -- | Список переменных, которые необходимо загрузить в
+          -- | Список переменных, которые необходимо загрузить в
           -- вычислительный блок.
-          --
-          -- TODO: Удалить ArgumentSelector, позволит загружать
-          -- аргументы в любом порядке.
-          puTarget  :: [(ArgumentSelector, v)]
+        , puTarget  :: [v]
           -- | Список переменных, которые необходимо выгрузить из
           -- вычислительного блока в любом порядке. Важно
           -- отметить, что все выгружаемые переменные
@@ -152,7 +149,7 @@ instance ( Var v, Time t
     setTime t pu@Multiplier{ puProcess } = pu{ puProcess=puProcess{ nextTick=t } }
 
 execute pu@Multiplier{ puTarget=[], puSource=[], puRemain } fb
-    | Just (FB.Multiply (I a) (I b) (O c)) <- castFB fb = pu{ puTarget=[(A, a), (B, b)], puSource=elems c, puRemain=puRemain \\ [ fb ] }
+    | Just (FB.Multiply (I a) (I b) (O c)) <- castFB fb = pu{ puTarget=[a, b], puSource=elems c, puRemain=puRemain \\ [ fb ] }
 execute _ _ = error ""
 
 
@@ -162,14 +159,15 @@ instance ( Var v, Time t
                    EndpointDT (Multiplier v x t)
         where
 
-    options _proxy Multiplier{ puTarget=(_, v):_, puProcess=Process{ nextTick } }
-        = [ EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound) ]
+    options _proxy Multiplier{ puTarget=vs@(_:_), puProcess=Process{ nextTick } }
+        = map (\v -> EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)) vs
     options _proxy Multiplier{ puSource, puProcess=Process{ nextTick } } | not $ null puSource
         = [ EndpointO (Source $ fromList puSource) $ TimeConstrain (nextTick + 2 ... maxBound) (1 ... maxBound) ]
     options proxy pu@Multiplier{ puRemain } = concatMap (options proxy . execute pu) puRemain
 
-    decision _proxy pu@Multiplier{ puTarget=(sel, v'):xs, puProcess=Process{ nextTick } } d@EndpointD{ epdRole=Target v, epdAt }
-        | v == v'
+    decision _proxy pu@Multiplier{ puTarget=vs, puProcess=Process{ nextTick } } d@EndpointD{ epdRole=Target v, epdAt }
+        | ([_], xs) <- partition (== v) vs
+        , let sel = if null xs then B else A
         = pu
             { puProcess=schedule pu $
                 scheduleEndpoint d $ do
