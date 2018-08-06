@@ -40,8 +40,8 @@ microarch = busNetwork 31 True
                               , SPI.start="start", SPI.stop="stop"
                               , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                               })
-  , ("mul", PU M.multiplier{ M.puMocked=True } M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-  , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=4 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+  , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
+  , ("div", PU (D.divisor 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   ]
 
 fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
@@ -139,12 +139,12 @@ graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
 
 main = do
   -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
-  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
-  -- test "teacup" (nitta $ synthesis $ frame $ dfgraph teacupAlg) def
+  -- test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
   -- putStrLn "funSim teacup:"
-  -- funSim 5 def teacupAlg
+  test "teacup" (nitta $ synthesis $ frame $ dfgraph teacupAlg) def
+  funSim 5 def teacupAlg
 
   -- putStrLn "funSim fibonacci:"
   -- funSim 5 def divAndMulAlg

@@ -132,12 +132,7 @@ data Multiplier v x t
         }
     deriving ( Show )
 
-instance ( Default t ) => Default (Multiplier v x t) where
-    def = Multiplier [] [] [] def False
-
-multiplier :: ( Default t ) => Multiplier v x t
-multiplier = def
--- TODO: multiplier mock = def{ puMock=mock }
+multiplier mock = Multiplier [] [] [] def mock
 
 
 instance ( Var v, Time t

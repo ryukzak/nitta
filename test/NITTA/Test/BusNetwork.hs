@@ -34,7 +34,6 @@ netWithArithmAndSPI = busNetwork 27 True
                               , SPI.start="start", SPI.stop="stop"
                               , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                               })
-  -- , ("mult", PU def M.PUPorts{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
   ]
 
 -- TODO: Автоматическое подключение проводов.
@@ -43,8 +42,8 @@ netWithArithm = busNetwork 31 True [] []
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-  , ("mul", PU M.multiplier{ M.puMocked=True } M.PUPorts{ M.wr=Signal 22, M.wrSel=Signal 23, M.oe=Signal 24 } )
-  , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 25, D.wrSel=Signal 26, D.oe=Signal 27, D.oeSel=Signal 28 } )
+  , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 22, M.wrSel=Signal 23, M.oe=Signal 24 } )
+  , ("div", PU (D.divisor 8 True) D.PUPorts{ D.wr=Signal 25, D.wrSel=Signal 26, D.oe=Signal 27, D.oeSel=Signal 28 } )
   ]
 
 

@@ -34,11 +34,7 @@ import           Numeric.Interval                    (inf, singleton, sup,
 
 
 type Divisor v x t = Pipeline (DivisorSt v) v x t
-instance ( Default t ) => Default (Divisor v x t) where
-    def = Pipeline def def def def 4 1 DivisorSt{ mock=False }
-
-divisor :: ( Default t ) => Divisor v x t
-divisor = def
+divisor pipeline mock = Pipeline def def def def pipeline 1 DivisorSt{ mock=mock }
 
 
 instance ( Var v
