@@ -74,18 +74,18 @@ instance ( Var v
 
 
 instance Controllable (Accum v x t) where
+  data Instruction (Accum v x t)
+    = Init Bool
+    | Load Bool
+    | Out
+    deriving (Show)
+
   data Microcode (Accum v x t)
     = Microcode{ oeSignal :: Bool
                , initSignal :: Bool
                , loadSignal :: Bool
                , negSignal :: Maybe Bool
                } deriving ( Show, Eq, Ord )
-
-  data Instruction (Accum v x t)
-    = Init Bool
-    | Load Bool
-    | Out
-    deriving (Show)
 
 
 instance Default (Microcode (Accum v x t)) where
@@ -96,10 +96,9 @@ instance Default (Microcode (Accum v x t)) where
                  }
 
 instance UnambiguouslyDecode (Accum v x t) where
-  decodeInstruction Nothing           = def
-  decodeInstruction (Just (Init neg)) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
-  decodeInstruction (Just (Load neg)) = def{ loadSignal=True, negSignal=Just neg }
-  decodeInstruction (Just Out)        = def{ oeSignal=True }
+  decodeInstruction (Init neg) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
+  decodeInstruction (Load neg) = def{ loadSignal=True, negSignal=Just neg }
+  decodeInstruction Out        = def{ oeSignal=True }
 
 
 instance ( Var v

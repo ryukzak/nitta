@@ -462,6 +462,10 @@ cellLoad (_addr, Cell{..}) = sum [ if input == UsedOrBlocked then -2 else 0
 
 
 instance ( Var v, Time t ) => Controllable (Fram v x t) where
+  data Instruction (Fram v x t)
+    = Load Int
+    | Save Int
+    deriving (Show)
 
   data Microcode (Fram v x t)
     = Microcode{ oeSignal :: Bool
@@ -469,11 +473,6 @@ instance ( Var v, Time t ) => Controllable (Fram v x t) where
                , addrSignal :: Maybe Int
                }
     deriving (Show, Eq, Ord)
-
-  data Instruction (Fram v x t)
-    = Load Int
-    | Save Int
-    deriving (Show)
 
 instance Connected (Fram v x t) where
   data PUPorts (Fram v x t)
@@ -493,10 +492,12 @@ getAddr (Load addr) = Just addr
 getAddr (Save addr) = Just addr
 
 
+instance Default (Microcode (Fram v x t)) where
+  def = Microcode False False Nothing
+
 instance UnambiguouslyDecode (Fram v x t) where
-  decodeInstruction Nothing            = Microcode False False Nothing
-  decodeInstruction (Just (Load addr)) = Microcode True False $ Just addr
-  decodeInstruction (Just (Save addr)) = Microcode False True $ Just addr
+  decodeInstruction (Load addr) = Microcode True False $ Just addr
+  decodeInstruction (Save addr) = Microcode False True $ Just addr
 
 
 

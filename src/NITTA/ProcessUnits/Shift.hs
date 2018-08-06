@@ -78,6 +78,12 @@ data StepSize  = Bit   | Byte       deriving ( Show, Eq )
 data Mode      = Logic | Arithmetic deriving ( Show, Eq )
 
 instance Controllable (Shift v x t) where
+  data Instruction (Shift v x t)
+    = Init
+    | Work Bool StepSize Mode
+    | Out
+    deriving (Show)
+
   data Microcode (Shift v x t)
     = Microcode{ workSignal :: Bool
                , directionSignal :: Bool
@@ -86,12 +92,6 @@ instance Controllable (Shift v x t) where
                , initSignal :: Bool
                , oeSignal :: Bool
                } deriving ( Show, Eq, Ord )
-
-  data Instruction (Shift v x t)
-    = Init
-    | Work Bool StepSize Mode
-    | Out
-    deriving (Show)
 
 instance Default (Microcode (Shift v x t)) where
   def = Microcode{ workSignal=False
@@ -103,10 +103,9 @@ instance Default (Microcode (Shift v x t)) where
                  }
 
 instance UnambiguouslyDecode (Shift v x t) where
-  decodeInstruction Nothing = def
-  decodeInstruction (Just Init) = def{ initSignal=True }
-  decodeInstruction (Just Out) = def{ oeSignal=True }
-  decodeInstruction (Just (Work toRight step mode))
+  decodeInstruction Init = def{ initSignal=True }
+  decodeInstruction Out = def{ oeSignal=True }
+  decodeInstruction (Work toRight step mode)
     = def{ workSignal=True
          , directionSignal=not toRight
          , modeSignal=mode == Arithmetic

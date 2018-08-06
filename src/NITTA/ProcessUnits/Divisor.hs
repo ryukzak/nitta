@@ -148,11 +148,10 @@ instance Default (Microcode (Divisor v x t)) where
         , oeSelSignal=False
         }
 instance UnambiguouslyDecode (Divisor v x t) where
-    decodeInstruction Nothing = def
-    decodeInstruction (Just (Load Numer))   = def{ wrSignal=True, wrSelSignal=False }
-    decodeInstruction (Just (Load Denom))   = def{ wrSignal=True, wrSelSignal=True }
-    decodeInstruction (Just (Out Quotient)) = def{ oeSignal=True, oeSelSignal=False }
-    decodeInstruction (Just (Out Remain))   = def{ oeSignal=True, oeSelSignal=True }
+    decodeInstruction (Load Numer)   = def{ wrSignal=True, wrSelSignal=False }
+    decodeInstruction (Load Denom)   = def{ wrSignal=True, wrSelSignal=True }
+    decodeInstruction (Out Quotient) = def{ oeSignal=True, oeSelSignal=False }
+    decodeInstruction (Out Remain)   = def{ oeSignal=True, oeSelSignal=True }
 
 
 instance Connected (Divisor v x t) where

@@ -160,7 +160,7 @@ instance ( Var v, Time t
         = [ EndpointO (Source $ fromList puSource) $ TimeConstrain (nextTick + 2 ... maxBound) (1 ... maxBound) ]
     options proxy pu@Multiplier{ puRemain } = concatMap (options proxy . execute pu) puRemain
 
-    decision _proxy pu@Multiplier{ puTarget=vs, puProcess=Process{ nextTick } } d@EndpointD{ epdRole=Target v, epdAt }
+    decision _proxy pu@Multiplier{ puTarget=vs } d@EndpointD{ epdRole=Target v, epdAt }
         | ([_], xs) <- partition (== v) vs
         , let sel = if null xs then B else A
         = pu
@@ -168,7 +168,7 @@ instance ( Var v, Time t
                 scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Load sel
             , puTarget=xs
             }
-    decision _proxy pu@Multiplier{ puSource, puProcess=Process{ nextTick } } d@EndpointD{ epdRole=Source v, epdAt }
+    decision _proxy pu@Multiplier{ puSource } d@EndpointD{ epdRole=Source v, epdAt }
         | not $ null puSource
         , let puSource' = puSource \\ elems v
         , puSource' /= puSource
@@ -198,6 +198,7 @@ instance Controllable (Multiplier v x t) where
         = Load ArgumentSelector
         | Out
         deriving (Show)
+        
     -- |Структура микрокода управляющего поведением вычислительного блока. 
     -- Может быть использован непосредственно для управления аппаратной частью
     -- вычислительного блока, так как содержит непосредственно значения управляющих 
@@ -217,13 +218,11 @@ instance Default (Microcode (Multiplier v x t)) where
         , oeSignal=False
         }
 
--- TODO: универсальная функция декодирования, в том числе и для BusNetwork.
--- TODO: Refactored decodeInstruction :: Instruction -> Microcode. (Maybe match on a upper level)
+
 instance UnambiguouslyDecode (Multiplier v x t) where
-    decodeInstruction Nothing         = def
-    decodeInstruction (Just (Load A)) = def{ wrSignal=True, selSignal=False }
-    decodeInstruction (Just (Load B)) = def{ wrSignal=True, selSignal=True }
-    decodeInstruction (Just Out)      = def{ oeSignal=True }
+    decodeInstruction (Load A) = def{ wrSignal=True, selSignal=False }
+    decodeInstruction (Load B) = def{ wrSignal=True, selSignal=True }
+    decodeInstruction Out      = def{ oeSignal=True }
 
 
 

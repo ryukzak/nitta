@@ -241,7 +241,6 @@ instance ( Title title, Time t, Var v, Typeable x
 
 
 instance Controllable (BusNetwork title v x t) where
-
   data Instruction (BusNetwork title v x t)
     = Transport v title title
     deriving (Typeable, Show)
@@ -257,7 +256,7 @@ instance {-# OVERLAPS #-}
     = BusNetworkMC $ foldl merge initSt $ M.elems bnPus
     where
       initSt = A.listArray (Signal 0, Signal $ bnSignalBusWidth - 1) $ repeat def
-      merge st PU{..}
+      merge st PU{ unit, links }
         = foldl merge' st $ transmitToLink (microcodeAt unit t) links
       merge' st (s, x) = st A.// [ (s, st A.! s +++ x) ]
 

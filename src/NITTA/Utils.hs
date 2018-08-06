@@ -15,6 +15,7 @@
 module NITTA.Utils where
 
 import           Control.Monad.State
+import           Data.Default
 import           Data.List           (minimumBy, sortOn)
 import           Data.Maybe          (mapMaybe)
 import           Data.Set            (difference, elems, unions)
@@ -32,18 +33,17 @@ unionsMap f lst = unions $ map f lst
 oneOf = head . elems
 
 instance ( Show (Instruction pu)
+         , Default (Microcode pu)
          , ProcessUnit pu v t
          , UnambiguouslyDecode pu
          , Time t
          , Typeable pu
          , Controllable pu
          ) => ByTime pu t where
-  microcodeAt pu t =
-    let instruction = case mapMaybe (extractInstruction pu) $ whatsHappen t (process pu) of
-          []  -> Nothing
-          [i] -> Just i
+  microcodeAt pu t = case mapMaybe (extractInstruction pu) $ whatsHappen t (process pu) of
+          []  -> def
+          [i] -> decodeInstruction i
           is  -> error $ "Ambiguously instruction at " ++ show t ++ ": " ++ show is
-    in decodeInstruction instruction
 
 
 

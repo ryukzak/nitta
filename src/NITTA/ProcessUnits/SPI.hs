@@ -80,10 +80,6 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
 
 
 instance Controllable (SPI v x t) where
-  data Microcode (SPI v x t)
-    = Microcode{ wrSignal :: Bool
-               , oeSignal :: Bool
-               } deriving ( Show, Eq, Ord )
   -- | Доступ к входному буферу осуществляется как к очереди. это сделано для
   -- того, что бы сократить колличество сигнальных линий (убрать адрес).
   -- Увеличение адреса производится по негативному фронту сигналов OE и WR для
@@ -105,6 +101,12 @@ instance Controllable (SPI v x t) where
     | Sending
     deriving ( Show )
 
+  data Microcode (SPI v x t)
+    = Microcode{ wrSignal :: Bool
+               , oeSignal :: Bool
+               } deriving ( Show, Eq, Ord )
+
+               
 instance Default (Microcode (SPI v x t)) where
   def = Microcode{ wrSignal=False
                  , oeSignal=False
@@ -112,9 +114,8 @@ instance Default (Microcode (SPI v x t)) where
 
 
 instance UnambiguouslyDecode (SPI v x t) where
-  decodeInstruction Nothing          = def
-  decodeInstruction (Just Sending)   = def{ wrSignal=True }
-  decodeInstruction (Just Receiving) = def{ oeSignal=True }
+  decodeInstruction Sending   = def{ wrSignal=True }
+  decodeInstruction Receiving = def{ oeSignal=True }
 
 
 
