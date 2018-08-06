@@ -10,15 +10,16 @@ import           Data.Default
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import qualified NITTA.FunctionBlocks       as FB
-import qualified NITTA.ProcessUnits.Accum   as A
-import qualified NITTA.ProcessUnits.Divisor as D
-import qualified NITTA.ProcessUnits.Fram    as FR
-import qualified NITTA.ProcessUnits.Shift   as S
-import qualified NITTA.ProcessUnits.SPI     as SPI
+import qualified NITTA.FunctionBlocks          as FB
+import qualified NITTA.ProcessUnits.Accum      as A
+import qualified NITTA.ProcessUnits.Divisor    as D
+import qualified NITTA.ProcessUnits.Fram       as FR
+import qualified NITTA.ProcessUnits.Multiplier as M
+import qualified NITTA.ProcessUnits.Shift      as S
+import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
-import           System.FilePath.Posix      (joinPath)
+import           System.FilePath.Posix         (joinPath)
 import           Test.Tasty.HUnit
 
 
@@ -36,22 +37,14 @@ netWithArithmAndSPI = busNetwork 27 True
   -- , ("mult", PU def M.PUPorts{ M.wr=Index 24, M.sel=Index 25, M.oe=Index 26 } )
   ]
 
+-- TODO: Автоматическое подключение проводов.
 netWithArithm = busNetwork 31 True [] []
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-  , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
-  -- , ("mult", PU def M.PUPorts{ M.wr=Index 26, M.sel=Index 27, M.oe=Index 28 } )
-  ]
-
-netWithArithm' = busNetwork 31 True [] []
-  [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
-  , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
-  , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
-  , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-  , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
-  -- , ("mult", PU def M.PUPorts{ M.wr=Index 26, M.sel=Index 27, M.oe=Index 28 } )
+  , ("mul", PU M.multiplier{ M.puMocked=True } M.PUPorts{ M.wr=Signal 22, M.wrSel=Signal 23, M.oe=Signal 24 } )
+  , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=8 } D.PUPorts{ D.wr=Signal 25, D.wrSel=Signal 26, D.oe=Signal 27, D.oeSel=Signal 28 } )
   ]
 
 
@@ -103,17 +96,15 @@ testDiv4 = unitTest "testDiv4" netWithArithm
   , FB.add "c1" "d1" ["e1"]
   ]
 
-testDiv8 = unitTest "testDiv8" netWithArithm'
+testMultiplier = unitTest "testMultiplier" netWithArithm
   def
-  [ FB.constant 100 ["a"]
-  , FB.loop 2 ["b"] "e"
-  , FB.division "a" "b" ["c"] ["d"]
-  , FB.add "c" "d" ["e"]
+  [ FB.constant 2 ["a"]
+  , FB.loop 1 ["b"] "c"
+  , FB.multiply "a" "b" ["c"]
 
-  , FB.constant 200 ["a1"]
-  , FB.loop 2 ["b1"] "e1"
-  , FB.division "a1" "b1" ["c1"] ["d1"]
-  , FB.add "c1" "d1" ["e1"]
+  , FB.constant 3 ["x"]
+  , FB.loop 1 ["y"] "z"
+  , FB.multiply "y" "x" ["z"]
   ]
 
 

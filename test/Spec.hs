@@ -39,8 +39,8 @@ main = do
     , testGroup "BusNetwork"
       [ testCase "testShiftAndFram" testShiftAndFram
       , testCase "testAccumAndFram" testAccumAndFram
+      , testCase "testMultiplier" testMultiplier
       , testCase "testDiv4" testDiv4
-      , testCase "testDiv8" testDiv8
       , testCase "badTestFram" badTestFram
       , testCase "testFibonacci" testFibonacci
       , testCase "testFibonacciWithSPI" testFibonacciWithSPI

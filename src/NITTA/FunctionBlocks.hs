@@ -224,7 +224,7 @@ instance ( Ord v, Num x ) => FunctionSimulation (Sub (Parcel v x)) v x where
     set cntx k3 v3
 
 
--- TODO: rename to Multiply
+    
 data Multiply io = Multiply (I io) (I io) (O io) deriving ( Typeable )
 deriving instance ( IOType io v x ) => Show (Multiply io)
 deriving instance ( IOType io v x ) => Eq (Multiply io)
