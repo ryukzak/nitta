@@ -461,7 +461,7 @@ cellLoad (_addr, Cell{..}) = sum [ if input == UsedOrBlocked then -2 else 0
 ---------------------------------------------------------------------
 
 
-instance ( Var v, Time t ) => Controllable (Fram v x t) where
+instance Controllable (Fram v x t) where
   data Instruction (Fram v x t)
     = Load Int
     | Save Int
