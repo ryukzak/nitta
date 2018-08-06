@@ -449,7 +449,6 @@ class Controllable pu where
   -- инструкция может описывать пересылку данных между блоками обраобтки (возможно более одной
   -- за такт).
   data Instruction pu :: *
-  nop :: Instruction pu
   -- | Микрокод, управляющий вычислительным блоком. Описывает в человеческом виде все сигналы,
   -- управляющие вычислительным блоком.
   data Microcode pu :: *
@@ -463,7 +462,7 @@ class ByTime pu t | pu -> t where
 
 class UnambiguouslyDecode pu where
   -- | Конвертация инструкции в микрокод.
-  decodeInstruction :: Instruction pu -> Microcode pu
+  decodeInstruction :: Maybe (Instruction pu) -> Microcode pu
 
 
 

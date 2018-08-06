@@ -165,9 +165,7 @@ instance ( Var v, Time t
         , let sel = if null xs then B else A
         = pu
             { puProcess=schedule pu $
-                scheduleEndpoint d $ do
-                    scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
-                    scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Load sel
+                scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Load sel
             , puTarget=xs
             }
     decision _proxy pu@Multiplier{ puSource, puProcess=Process{ nextTick } } d@EndpointD{ epdRole=Source v, epdAt }
@@ -176,9 +174,7 @@ instance ( Var v, Time t
         , puSource' /= puSource
         = pu
             { puProcess=schedule pu $
-                scheduleEndpoint d $ do
-                    scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
-                    scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) Out
+                scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) Out
             , puSource=puSource'
             }
     decision proxy pu@Multiplier{ puTarget=[], puSource=[], puRemain } d
@@ -199,11 +195,9 @@ instance Controllable (Multiplier v x t) where
     -- вычислительного блока, в котором он может прибывать сколь угодно долго без 
     -- побочных эффектов.
     data Instruction (Multiplier v x t)
-        = Nop
-        | Load ArgumentSelector
+        = Load ArgumentSelector
         | Out
         deriving (Show)
-    nop = Nop
     -- |Структура микрокода управляющего поведением вычислительного блока. 
     -- Может быть использован непосредственно для управления аппаратной частью
     -- вычислительного блока, так как содержит непосредственно значения управляющих 
@@ -216,17 +210,20 @@ instance Controllable (Multiplier v x t) where
             }
         deriving ( Show, Eq, Ord )
 
--- TODO: Nop -> Nothing.
--- TODO: универсальная функция декодирования, в том числе и для BusNetwork.
-instance UnambiguouslyDecode (Multiplier v x t) where
-    decodeInstruction Nop       = Microcode
+instance Default (Microcode (Multiplier v x t)) where
+    def = Microcode
         { wrSignal=False
         , selSignal=False
         , oeSignal=False
         }
-    decodeInstruction (Load A) = (decodeInstruction Nop){ wrSignal=True, selSignal=False }
-    decodeInstruction (Load B) = (decodeInstruction Nop){ wrSignal=True, selSignal=True }
-    decodeInstruction Out      = (decodeInstruction Nop){ oeSignal=True }
+
+-- TODO: универсальная функция декодирования, в том числе и для BusNetwork.
+-- TODO: Refactored decodeInstruction :: Instruction -> Microcode. (Maybe match on a upper level)
+instance UnambiguouslyDecode (Multiplier v x t) where
+    decodeInstruction Nothing         = def
+    decodeInstruction (Just (Load A)) = def{ wrSignal=True, selSignal=False }
+    decodeInstruction (Just (Load B)) = def{ wrSignal=True, selSignal=True }
+    decodeInstruction (Just Out)      = def{ oeSignal=True }
 
 
 

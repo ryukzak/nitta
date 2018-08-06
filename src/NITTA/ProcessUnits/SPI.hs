@@ -101,11 +101,9 @@ instance Controllable (SPI v x t) where
   -- 6. Send - В блок загружается с шины слово по адресу 1.
   -- 7. Receive - Из блока выгружается на шину слово по адресу 1.
   data Instruction (SPI v x t)
-    = Nop
-    | Receiving
+    = Receiving
     | Sending
     deriving ( Show )
-  nop = Nop
 
 instance Default (Microcode (SPI v x t)) where
   def = Microcode{ wrSignal=False
@@ -114,9 +112,9 @@ instance Default (Microcode (SPI v x t)) where
 
 
 instance UnambiguouslyDecode (SPI v x t) where
-  decodeInstruction Nop       = def
-  decodeInstruction Sending   = def{ wrSignal=True }
-  decodeInstruction Receiving = def{ oeSignal=True }
+  decodeInstruction Nothing          = def
+  decodeInstruction (Just Sending)   = def{ wrSignal=True }
+  decodeInstruction (Just Receiving) = def{ oeSignal=True }
 
 
 

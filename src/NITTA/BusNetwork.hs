@@ -33,7 +33,6 @@ module NITTA.BusNetwork where
 import           Control.Monad.State
 import qualified Data.Array           as A
 import           Data.Default
-import           Data.Either
 import           Data.List            (find, nub, partition, sortOn, (\\))
 import qualified Data.Map             as M
 import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
@@ -249,8 +248,6 @@ instance Controllable (BusNetwork title v x t) where
 
   data Microcode (BusNetwork title v x t)
     = BusNetworkMC (A.Array Signal Value)
-
-  nop = undefined
 
 
 instance {-# OVERLAPS #-}

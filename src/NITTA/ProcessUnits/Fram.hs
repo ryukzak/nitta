@@ -61,7 +61,7 @@ module NITTA.ProcessUnits.Fram
   , PUPorts(..)
   ) where
 
-import           Control.Monad         (void, when, (>=>))
+import           Control.Monad         ((>=>))
 import           Data.Array
 import           Data.Bits             (testBit)
 import           Data.Default
@@ -410,7 +410,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
               ((ep, instrs), p') = modifyProcess p $ do
                 e <- addStep (Activity $ d^.at) $ EndpointRoleStep $ d^.endRole
                 i <- addInstr pu instrTi instr
-                when (tick0 < instrTi^.infimum) $ void $ addInstr pu (tick0 ... instrTi^.infimum - 1) Nop
+                -- when (tick0 < instrTi^.infimum) $ void $ addInstr pu (tick0 ... instrTi^.infimum - 1) Nop
                 mapM_ (relation . Vertical e) instrs
                 setProcessTime $ d^.at.supremum + 1
                 return (e, [i])
@@ -471,11 +471,9 @@ instance ( Var v, Time t ) => Controllable (Fram v x t) where
     deriving (Show, Eq, Ord)
 
   data Instruction (Fram v x t)
-    = Nop
-    | Load Int
+    = Load Int
     | Save Int
     deriving (Show)
-  nop = Nop
 
 instance Connected (Fram v x t) where
   data PUPorts (Fram v x t)
@@ -493,13 +491,12 @@ instance Connected (Fram v x t) where
 
 getAddr (Load addr) = Just addr
 getAddr (Save addr) = Just addr
-getAddr _           = Nothing
 
 
 instance UnambiguouslyDecode (Fram v x t) where
-  decodeInstruction  Nop        = Microcode False False Nothing
-  decodeInstruction (Load addr) = Microcode True False $ Just addr
-  decodeInstruction (Save addr) = Microcode False True $ Just addr
+  decodeInstruction Nothing            = Microcode False False Nothing
+  decodeInstruction (Just (Load addr)) = Microcode True False $ Just addr
+  decodeInstruction (Just (Save addr)) = Microcode False True $ Just addr
 
 
 

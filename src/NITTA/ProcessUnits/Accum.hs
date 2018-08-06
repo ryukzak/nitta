@@ -14,15 +14,16 @@
 module NITTA.ProcessUnits.Accum where
 
 import           Data.Default
-import           Data.List                   (intersect, partition, (\\))
-import           Data.Set                    (elems, fromList)
+import           Data.List                           (intersect, partition,
+                                                      (\\))
+import           Data.Set                            (elems, fromList)
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval            (singleton, (...))
-import           Prelude                     hiding (init)
+import           Numeric.Interval                    (singleton, (...))
+import           Prelude                             hiding (init)
 
 
 
@@ -81,12 +82,10 @@ instance Controllable (Accum v x t) where
                } deriving ( Show, Eq, Ord )
 
   data Instruction (Accum v x t)
-    = Nop
-    | Init Bool
+    = Init Bool
     | Load Bool
     | Out
     deriving (Show)
-  nop = Nop
 
 
 instance Default (Microcode (Accum v x t)) where
@@ -97,10 +96,10 @@ instance Default (Microcode (Accum v x t)) where
                  }
 
 instance UnambiguouslyDecode (Accum v x t) where
-  decodeInstruction Nop        = def
-  decodeInstruction (Init neg) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
-  decodeInstruction (Load neg) = def{ loadSignal=True, negSignal=Just neg }
-  decodeInstruction Out        = def{ oeSignal=True }
+  decodeInstruction Nothing           = def
+  decodeInstruction (Just (Init neg)) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
+  decodeInstruction (Just (Load neg)) = def{ loadSignal=True, negSignal=Just neg }
+  decodeInstruction (Just Out)        = def{ oeSignal=True }
 
 
 instance ( Var v

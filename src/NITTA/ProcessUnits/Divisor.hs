@@ -102,10 +102,7 @@ instance ( Time t, Var v ) => PipelinePU2 (DivisorSt v) v t where
                         , outputSt=DivisorOut [(q, Quotient), (r, Remain)]
                         }
                     )
-            scheduleInput arg = do
-                t <- nextScheduledTick
-                scheduleNopAndUpdateTick t (inf at - 1)
-                scheduleInstructionAndUpdateTick (inf at) (sup at) $ Load arg
+            scheduleInput arg = scheduleInstructionAndUpdateTick (inf at) (sup at) $ Load arg
     targetDecision _ _ = Nothing
 
     sourceOptions begin end maxDuration (DivisorOut outs)
@@ -118,10 +115,7 @@ instance ( Time t, Var v ) => PipelinePU2 (DivisorSt v) v t where
         | ([(waitingVs, sel)], os) <- partition ((vs `isSubsetOf`) . fst) outs
         , let
             waitingVs' = waitingVs `difference` vs
-            sch = scheduleEndpoint d $ do
-                nextTick <- nextScheduledTick
-                scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
-                scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Out sel
+            sch = scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Out sel
             os' = if S.null waitingVs'
                     then os
                     else (waitingVs', sel) : os
@@ -134,11 +128,9 @@ instance ( Time t, Var v ) => PipelinePU2 (DivisorSt v) v t where
 
 instance Controllable (Divisor v x t) where
     data Instruction (Divisor v x t)
-        = Nop
-        | Load InputDesc
+        = Load InputDesc
         | Out OutputDesc
         deriving (Show)
-    nop = Nop
 
     data Microcode (Divisor v x t)
         = Microcode
@@ -148,18 +140,19 @@ instance Controllable (Divisor v x t) where
             , oeSelSignal :: Bool
             } deriving ( Show, Eq, Ord )
 
-
-instance UnambiguouslyDecode (Divisor v x t) where
-    decodeInstruction Nop = Microcode
+instance Default (Microcode (Divisor v x t)) where
+    def = Microcode
         { wrSignal=False
         , wrSelSignal=False
         , oeSignal=False
         , oeSelSignal=False
         }
-    decodeInstruction (Load Numer)   = (decodeInstruction Nop){ wrSignal=True, wrSelSignal=False }
-    decodeInstruction (Load Denom)   = (decodeInstruction Nop){ wrSignal=True, wrSelSignal=True }
-    decodeInstruction (Out Quotient) = (decodeInstruction Nop){ oeSignal=True, oeSelSignal=False }
-    decodeInstruction (Out Remain)   = (decodeInstruction Nop){ oeSignal=True, oeSelSignal=True }
+instance UnambiguouslyDecode (Divisor v x t) where
+    decodeInstruction Nothing = def
+    decodeInstruction (Just (Load Numer))   = def{ wrSignal=True, wrSelSignal=False }
+    decodeInstruction (Just (Load Denom))   = def{ wrSignal=True, wrSelSignal=True }
+    decodeInstruction (Just (Out Quotient)) = def{ oeSignal=True, oeSelSignal=False }
+    decodeInstruction (Just (Out Remain))   = def{ oeSignal=True, oeSelSignal=True }
 
 
 instance Connected (Divisor v x t) where

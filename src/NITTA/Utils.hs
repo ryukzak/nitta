@@ -40,8 +40,8 @@ instance ( Show (Instruction pu)
          ) => ByTime pu t where
   microcodeAt pu t =
     let instruction = case mapMaybe (extractInstruction pu) $ whatsHappen t (process pu) of
-          []  -> nop
-          [i] -> i
+          []  -> Nothing
+          [i] -> Just i
           is  -> error $ "Ambiguously instruction at " ++ show t ++ ": " ++ show is
     in decodeInstruction instruction
 

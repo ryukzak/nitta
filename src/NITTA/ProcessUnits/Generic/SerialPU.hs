@@ -187,14 +187,8 @@ serialSchedule
   :: ( Show (Instruction pu), Controllable pu, Var v, Time t, Typeable pu )
   => Instruction pu -> Decision (EndpointDT v t) -> State (Process (Parcel v x) t) [ProcessUid]
 serialSchedule instr act = do
-  now <- getProcessTime
   e <- addActivity (act^.at) $ EndpointRoleStep $ epdRole act
   i <- addActivity (act^.at) $ InstructionStep instr
-  is <- if now < act^.at.infimum
-        then do
-            ni <- addActivity (now ... act^.at.infimum - 1) $ InstructionStep (nop `asTypeOf` instr)
-            return [i, ni]
-        else return [i]
-  mapM_ (relation . Vertical e) is
+  mapM_ (relation . Vertical e) [i]
   setProcessTime $ (act^.at.supremum) + 1
-  return $ e : is
+  return [e, i]
