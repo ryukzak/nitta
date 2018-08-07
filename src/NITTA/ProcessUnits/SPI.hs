@@ -48,7 +48,7 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
     , let (ds, rs) = spiReceive
     = Right st{ spiReceive=(ds, elems vs : rs) }
 
-    | otherwise = Left $ "Unknown functional block: " ++ show fb
+    | otherwise = Left $ "The functional block is unsupported by SPI: " ++ show fb
 
   stateOptions State{ spiSend, spiReceive } now = catMaybes [ send' spiSend, receive' spiReceive ]
     where

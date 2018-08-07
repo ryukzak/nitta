@@ -41,7 +41,7 @@ instance ( Var v
   bindToState fb ac@Accum{ acIn=[], acOut=[] }
     | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[(False, a), (False, b)], acOut=elems cs }
     | Just (Sub (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[(False, a), (True, b)], acOut=elems cs }
-    | otherwise = Left $ "Unknown functional block: " ++ show fb
+    | otherwise = Left $ "The functional block is unsupported by Accum: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
   -- тихая ругань по поводу решения

@@ -44,8 +44,8 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
     = case fb' of
       ShiftL (I a) (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=False }
       ShiftR (I a) (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=True }
-    | otherwise = Left $ "Unknown functional block: " ++ show fb
-  bindToState _ _ = error "Try bind to non-zero state. (Accum)"
+    | otherwise = Left $ "The functional block is unsupported by Shift: " ++ show fb
+  bindToState _ _ = error "Try bind to non-zero state. (Shift)"
 
   -- тихая ругань по поводу решения
   stateOptions State{ sIn=Just v } now
