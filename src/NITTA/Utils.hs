@@ -1,14 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes       #-}
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
@@ -60,7 +54,7 @@ bool2binstr False = "1'b0"
 modifyProcess p st = runState st p
 
 addStep placeInTime info = do
-  p@Process{..} <- get
+  p@Process{ nextUid, steps } <- get
   put p { nextUid=succ nextUid
         , steps=Step nextUid placeInTime info : steps
         }
@@ -73,7 +67,7 @@ addStep_ placeInTime info = do
 addActivity interval = addStep $ Activity interval
 
 relation r = do
-  p@Process{..} <- get
+  p@Process{ relations } <- get
   put p{ relations=r : relations }
 
 setProcessTime t = do
@@ -82,7 +76,7 @@ setProcessTime t = do
 
 getProcessTime :: State (Process v t) t
 getProcessTime = do
-  Process{..} <- get
+  Process{ nextTick } <- get
   return nextTick
 
 bindFB fb t = addStep (Event t) $ CADStep $ "Bind " ++ show fb

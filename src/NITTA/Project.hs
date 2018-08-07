@@ -1,15 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes       #-}
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE FunctionalDependencies    #-}
-{-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TemplateHaskell           #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Project where

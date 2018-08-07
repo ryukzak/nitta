@@ -1,12 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes    #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE PartialTypeSignatures  #-}
-{-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
@@ -60,11 +56,10 @@ data SerialPU st v x t
 instance ( Show st
          , Show (Process (Parcel v x) t)
          ) => Show (SerialPU st v x t) where
-  show SerialPU{..} = "SerialPU{spuState=" ++ show spuState
-                  --  ++ ",spuCurrent=" ++ show spuCurrent
-                  --  ++ "spuRemain=" ++ show spuRemain
-                   ++ "spuProcess=" ++ show spuProcess
-                   ++ "}"
+  show SerialPU{ spuState, spuProcess }
+    = "SerialPU{spuState=" ++ show spuState
+      ++ "spuProcess=" ++ show spuProcess
+      ++ "}"
 
 instance ( Time t, Var v, Default st ) => Default (SerialPU st v x t) where
   def = SerialPU def def def def def
@@ -111,13 +106,13 @@ instance ( Var v, Time t
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (SerialPU st v x t)
          where
-  options _proxy SerialPU{ spuCurrent=Nothing, .. }
+  options _proxy SerialPU{ spuCurrent=Nothing, spuRemain, spuState, spuProcess }
     = concatMap ((\f -> f $ nextTick spuProcess) . stateOptions)
       $ rights $ map (\(fb, _) -> bindToState fb spuState) spuRemain
-  options _proxy SerialPU{ spuCurrent=Just _, .. }
+  options _proxy SerialPU{ spuCurrent=Just _, spuState, spuProcess }
     = stateOptions spuState $ nextTick spuProcess
 
-  decision proxy pu@SerialPU{ spuCurrent=Nothing, .. } act
+  decision proxy pu@SerialPU{ spuCurrent=Nothing, spuRemain, spuState } act
     | Just (fb, compilerKey) <- find (not . S.null . (variables act `S.intersection`) . variables . fst) spuRemain
     , Right spuState' <- bindToState fb spuState
     = decision proxy pu{ spuState=spuState'
@@ -128,7 +123,7 @@ instance ( Var v, Time t
                              }
               } act
     | otherwise = error "Variable not found in binded functional blocks."
-  decision _proxy pu@SerialPU{ spuCurrent=Just cur, .. } act
+  decision _proxy pu@SerialPU{ spuCurrent=Just cur, spuState, spuProcess } act
    | nextTick spuProcess > act^.at.infimum
    = error $ "Time wrap! Time: " ++ show (nextTick spuProcess) ++ " Act start at: " ++ show (act^.at.infimum)
    | otherwise
@@ -146,7 +141,7 @@ instance ( Var v, Time t
                     }
            _  -> pu'
     where
-      finish p CurrentJob{..} = snd $ modifyProcess p $ do
+      finish p CurrentJob{ cFB, cStart, cSteps } = snd $ modifyProcess p $ do
         h <- addActivity (cStart ... (act^.at.infimum + act^.at.dur)) $ FBStep cFB
         mapM_ (relation . Vertical h) cSteps
 
@@ -172,7 +167,7 @@ instance ( Var v, Time t
 
   process = spuProcess
 
-  setTime t pu@SerialPU{..} = pu{ spuProcess=spuProcess{ nextTick=t } }
+  setTime t pu@SerialPU{ spuProcess } = pu{ spuProcess=spuProcess{ nextTick=t } }
 
 
 -- * Утилиты --------------------------------------------------------

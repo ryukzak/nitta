@@ -1,15 +1,8 @@
-{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 module NITTA.Utils.JSON where
@@ -43,7 +36,7 @@ instance ( ToJSON t, Time t
 
 
 instance ToJSON NaiveOpt
-instance ( ToJSONKey title, ToJSON title, Title title
+instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
          , ToJSON tag
          , ToJSON v, Var v
          , ToJSON t, Time t
@@ -80,7 +73,7 @@ instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
 instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
 
 
-instance ( ToJSONKey title, ToJSON title, Title title
+instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
          , Var v
          , ToJSON t, Time t
          , ToJSON x

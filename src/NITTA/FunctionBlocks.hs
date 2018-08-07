@@ -1,12 +1,8 @@
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE Rank2Types                #-}
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -41,7 +37,7 @@ addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test be
 
 
 get' cntx k = fromMaybe (error $ "Can't get from cntx." ++ show k) $ get cntx k
-get Cntx{..} k = do
+get Cntx{ cntxVars } k = do
   values <- cntxVars M.!? k
   case values of
     []      -> Nothing
@@ -53,18 +49,18 @@ get Cntx{..} k = do
 -- cntx - контекст, имеет тип: FunSimCntx. Это словарь со значениями переменных, входов, выходов.
 -- ks - список ключей в словаре, для которых нужно обновить знаение.
 -- v - новое значение вызодных переменных, которое необходимо записать для всех ключей.
-set cntx@Cntx{..} ks v = do
+set cntx@Cntx{ cntxVars } ks v = do
   let cntxVars' = foldl (flip $ M.alter (Just . maybe [v] (v:))) cntxVars ks
   return cntx{ cntxVars=cntxVars' }
 set' cntx ks v = fromMaybe (error "Can't set in cntx.") $ set cntx ks v
 
-receiveSim cntx@Cntx{..} k = do
+receiveSim cntx@Cntx{ cntxInputs } k = do
   values <- cntxInputs M.!? k
   value <- listToMaybe values
   let cntxInputs' = M.adjust tail k cntxInputs
   return (cntx{ cntxInputs=cntxInputs' }, value)
 
-sendSim cntx@Cntx{..} k v = do
+sendSim cntx@Cntx{ cntxOutputs } k v = do
   let cntxOutputs' = M.alter (Just . maybe [v] (v:)) k cntxOutputs
   return cntx{ cntxOutputs=cntxOutputs' }
 

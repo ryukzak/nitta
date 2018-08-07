@@ -3,11 +3,8 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE IncoherentInstances    #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
@@ -376,13 +373,13 @@ instance DecisionType (EndpointDT v t) where
     }
 
 instance Variables (Option (EndpointDT v t)) v where
-  variables EndpointO{..} = variables epoRole
+  variables EndpointO{ epoRole } = variables epoRole
 instance Variables (Decision (EndpointDT v t)) v where
-  variables EndpointD{..} = variables epdRole
+  variables EndpointD{ epdRole } = variables epdRole
 instance ( Show v, Show t, Eq t, Bounded t ) => Show (Option (EndpointDT v t)) where
-  show EndpointO{..} = "?" ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
+  show EndpointO{ epoRole, epoAt } = "?" ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
 instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t)) where
-  show EndpointD{..} = "!" ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
+  show EndpointD{ epdRole, epdAt } = "!" ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
 
 
 

@@ -1,15 +1,10 @@
 {-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Types.Network where
@@ -47,7 +42,7 @@ instance ( Var v, Time t
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (PU v x t)
          where
-  options proxy PU{..} = options proxy unit
+  options proxy PU{ unit } = options proxy unit
   decision proxy PU{ unit, links, systemEnv } d
     = PU{ unit=decision proxy unit d, links, systemEnv }
 
@@ -61,13 +56,13 @@ instance ProcessUnit (PU v x t) (Parcel v x) t where
     = PU{ unit=setTime t unit, links, systemEnv }
 
 instance Simulatable (PU v x t) v x where
-  simulateOn cntx PU{..} fb = simulateOn cntx unit fb
+  simulateOn cntx PU{ unit } fb = simulateOn cntx unit fb
 
 instance TargetSystemComponent (PU v x t) where
-  moduleName name PU{..} = moduleName name unit
-  hardware name PU{..} = hardware name unit
-  software name PU{..} = software name unit
-  hardwareInstance name PU{..} = hardwareInstance name PU{..}
+  moduleName name PU{ unit } = moduleName name unit
+  hardware name PU{ unit } = hardware name unit
+  software name PU{ unit } = software name unit
+  hardwareInstance name pu = hardwareInstance name pu
 
 castPU :: ( ByTime pu t
           , Connected pu
@@ -83,7 +78,7 @@ castPU :: ( ByTime pu t
           , Show x
           , Num x
           ) => PU v x t -> Maybe pu
-castPU PU{..} = cast unit
+castPU PU{ unit } = cast unit
 
 
 class Connected pu where

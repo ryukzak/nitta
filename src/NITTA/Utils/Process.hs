@@ -1,13 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes    #-}
 {-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE PartialTypeSignatures  #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 module NITTA.Utils.Process where
