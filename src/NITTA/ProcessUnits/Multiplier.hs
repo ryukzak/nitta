@@ -1,4 +1,3 @@
-{-# LANGUAGE ExtendedDefaultRules  #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
@@ -487,11 +486,10 @@ instance ( Time t, Var v
     -- процессора. Основная задача данной функции - корректно включить вычислительный блок в
     -- инфраструктуру процессора, установив все параметры, имена и провода.
     hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
-        -- FIXME: .INVALID( 0 )
         = [qq|pu_mult
     #( .DATA_WIDTH( $parameterDataWidth )
      , .ATTR_WIDTH( $parameterAttrWidth )
-     , .INVALID( 0 )
+     , .INVALID( 0 )  // FIXME:
      ) $title
     ( .clk( $signalClk )
     , .rst( $signalRst )
