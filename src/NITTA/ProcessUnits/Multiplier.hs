@@ -1,6 +1,8 @@
+{-# LANGUAGE ExtendedDefaultRules  #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -115,6 +117,7 @@ import           Data.Set             (elems, fromList, member)
 import           Data.Typeable
 import           NITTA.FunctionBlocks (castFB)
 import qualified NITTA.FunctionBlocks as FB
+import Text.InterpolatedString.Perl6 (qq)
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Process
@@ -194,7 +197,7 @@ import           Numeric.Interval     (inf, sup, (...))
 -}
 data Multiplier v x t
     -- TODO: Перенести время из процесса сюда.
-    
+
     -- TODO: Сделать реализацию безопастной (выкидывать ошибку при попытке спланировать не корректный ВП).
     = Multiplier
         { -- |Список назначенных, но еще необработанных или необрабатываемых функциональных блоков.
@@ -336,7 +339,7 @@ instance ( Var v, Time t, Typeable x
                 then Just $ sup epdAt + 3
                 else Nothing
             }
-    --    Если модель ожидает, что из неё выгрузят переменные. 
+    --    Если модель ожидает, что из неё выгрузят переменные.
     decision _proxy pu@Multiplier{ puTarget=[], puSource, puDoneAt } d@EndpointD{ epdRole=Source v, epdAt }
         | not $ null puSource
         , let puSource' = puSource \\ elems v
@@ -483,20 +486,20 @@ instance ( Time t, Var v
     -- |Генерация фрагмента исходного кода для создания экземпляра вычислительного блока в рамках
     -- процессора. Основная задача данной функции - корректно включить вычислительный блок в
     -- инфраструктуру процессора, установив все параметры, имена и провода.
-    hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
-        [ "pu_mult"
-        , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
-        , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
-        , "   , .INVALID( 0 )" -- FIXME:
-        , "   ) $name$"
-        , "  ( .clk( " ++ signalClk ++ " )"
-        , "  , .rst( " ++ signalRst ++ " )"
-        , "  , .signal_wr( " ++ signal wr ++ " )"
-        , "  , .signal_sel( " ++ signal wrSel ++ " )"
-        , "  , .data_in( " ++ dataIn ++ " )"
-        , "  , .attr_in( " ++ attrIn ++ " )"
-        , "  , .signal_oe( " ++ signal oe ++ " )"
-        , "  , .data_out( " ++ dataOut ++ " )"
-        , "  , .attr_out( " ++ attrOut ++ " )"
-        , "  );"
-        ] [("name", title)]
+    hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
+        -- FIXME: .INVALID( 0 )
+        = [qq|pu_mult
+    #( .DATA_WIDTH( $parameterDataWidth )
+     , .ATTR_WIDTH( $parameterAttrWidth )
+     , .INVALID( 0 )
+     ) $title
+    ( .clk( $signalClk )
+    , .rst( $signalRst )
+    , .signal_wr( {signal wr} )
+    , .signal_sel( {signal wrSel} )
+    , .data_in( $dataIn )
+    , .attr_in( $attrIn )
+    , .signal_oe( {signal oe} )
+    , .data_out( $dataOut )
+    , .attr_out( $attrOut )
+    );|]

@@ -48,6 +48,7 @@ library
                      , file-embed
                      , filepath
                      , HStringTemplate
+                     , interpolatedstring-perl6
                      , intervals
                      , lens
                      , list-t
