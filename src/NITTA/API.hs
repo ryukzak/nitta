@@ -1,9 +1,9 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators     #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 -- TODO: https://tools.ietf.org/id/draft-kelly-json-hal-03.txt
@@ -16,6 +16,7 @@ import           Data.Aeson
 import           Data.Default
 import           Data.Map                    (Map, fromList)
 import           Data.Maybe
+import           Data.Monoid                 ((<>))
 import           GHC.Generics
 import           ListT                       (toList)
 import           Network.Wai.Handler.Warp
