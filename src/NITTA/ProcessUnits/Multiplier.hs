@@ -48,10 +48,10 @@ Ok, 10 modules loaded.
 сожалению, Haskell-у не хватает информации из контекста, что бы до конца вывести их типы,
 по этому мы зададим их вручную.
 
->>> fb = multiply "a" "b" ["c", "d"] :: FB (Parcel String Int)
+>>> let fb = multiply "a" "b" ["c", "d"] :: FB (Parcel String Int)
 >>> fb
 <Multiply (I "a") (I "b") (O (fromList ["c","d"]))>
->>> st0 = multiplier True :: Multiplier String Int Int
+>>> let st0 = multiplier True :: Multiplier String Int Int
 >>> st0
 Multiplier {puRemain = [], puTarget = [], puSource = [], puDoneAt = Nothing, puProcess = Process {steps = [], relations = [], nextTick = 0, nextUid = 0}, puMocked = True}
 >>> options endpointDT st0
@@ -60,7 +60,7 @@ Multiplier {puRemain = [], puTarget = [], puSource = [], puDoneAt = Nothing, puP
 Назначим функциональный блок вычислительному блоку. Данная операция может выполняться в любой момент
 работы с вычислительным блоком.
 
->>> Right st1 = tryBind fb st0
+>>> let Right st1 = tryBind fb st0
 >>> st1
 Multiplier {puRemain = [<Multiply (I "a") (I "b") (O (fromList ["c","d"]))>], puTarget = [], puSource = [], puDoneAt = Nothing, puProcess = Process {steps = [], relations = [], nextTick = 0, nextUid = 0}, puMocked = True}
 >>> mapM_ print $ options endpointDT st1
@@ -71,12 +71,12 @@ Multiplier {puRemain = [<Multiply (I "a") (I "b") (O (fromList ["c","d"]))>], pu
 соответствующих разным последовательностям загрузки аргументов. Спланируем процесс хагрузки
 аргументов.
 
->>> st2 = decision endpointDT st1 $ EndpointD (Target "a") (0...2)
+>>> let st2 = decision endpointDT st1 $ EndpointD (Target "a") (0...2)
 >>> st2
 Multiplier {puRemain = [], puTarget = ["b"], puSource = ["c","d"], puDoneAt = Nothing, puProcess = Process {steps = [Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 3, nextUid = 2}, puMocked = True}
 >>> mapM_ print $ options endpointDT st2
 ?Target "b"@(3..∞ /P 1..∞)
->>> st3 = decision endpointDT st2 $ EndpointD (Target "b") (3...3)
+>>> let st3 = decision endpointDT st2 $ EndpointD (Target "b") (3...3)
 >>> st3
 Multiplier {puRemain = [], puTarget = [], puSource = ["c","d"], puDoneAt = Just 6, puProcess = Process {steps = [Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 4, nextUid = 4}, puMocked = True}
 >>> mapM_ print $ options endpointDT st3
@@ -86,12 +86,12 @@ Multiplier {puRemain = [], puTarget = [], puSource = ["c","d"], puDoneAt = Just 
 и "d" из вычислительного блока умножителя. Важно отметить, что переменные могут выгружаться как
 параллельно, так и последовательно. Далее будет рассмотрен второй вариант.
 
->>> st4 = decision endpointDT st3 $ EndpointD (Source $ fromList ["c"]) (6...6)
+>>> let st4 = decision endpointDT st3 $ EndpointD (Source $ fromList ["c"]) (6...6)
 >>> st4
 Multiplier {puRemain = [], puTarget = [], puSource = ["d"], puDoneAt = Just 6, puProcess = Process {steps = [Step {sKey = 5, sTime = Activity (6 ... 6), sDesc = Out},Step {sKey = 4, sTime = Activity (6 ... 6), sDesc = Source (fromList ["c"])},Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 7, nextUid = 6}, puMocked = True}
 >>> mapM_ print $ options endpointDT st4
 ?Source (fromList ["d"])@(7..∞ /P 1..∞)
->>> st5 = decision endpointDT st4 $ EndpointD (Source $ fromList ["d"]) (7...7)
+>>> let st5 = decision endpointDT st4 $ EndpointD (Source $ fromList ["d"]) (7...7)
 >>> st5
 Multiplier {puRemain = [], puTarget = [], puSource = [], puDoneAt = Nothing, puProcess = Process {steps = [Step {sKey = 7, sTime = Activity (7 ... 7), sDesc = Out},Step {sKey = 6, sTime = Activity (7 ... 7), sDesc = Source (fromList ["d"])},Step {sKey = 5, sTime = Activity (6 ... 6), sDesc = Out},Step {sKey = 4, sTime = Activity (6 ... 6), sDesc = Source (fromList ["c"])},Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 8, nextUid = 8}, puMocked = True}
 >>> options endpointDT st5

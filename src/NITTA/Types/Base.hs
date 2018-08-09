@@ -198,7 +198,7 @@ data FB io where
         , FunctionSimulation fb v x
         ) => fb -> FB io
 instance Show (FB io) where
-  show (FB fb) = "<" ++ show fb ++ ">"
+  show (FB fb) = "< " ++ show fb ++ " >"
 
 instance ( Var v
          , Typeable x
