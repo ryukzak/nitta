@@ -1,12 +1,13 @@
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE LambdaCase                #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE UndecidableInstances      #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 {-
@@ -32,6 +33,7 @@ import qualified Data.Array           as A
 import           Data.Default
 import           Data.List            (find, nub, partition, sortOn, (\\))
 import qualified Data.Map             as M
+import           Text.InterpolatedString.Perl6 (qq)
 import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
 import           Data.Set             (elems, fromList, intersection)
 import qualified Data.String.Utils    as S
@@ -93,15 +95,13 @@ busNetwork w allowDrop ips ops pus = BusNetwork [] (M.fromList []) def (M.fromLi
           { parameterDataWidth=InlineParam "DATA_WIDTH"
           , parameterAttrWidth=InlineParam "ATTR_WIDTH"
           , dataIn="data_bus"
-          , dataOut=valueData title
+          , dataOut=title ++ "_data_out"
           , attrIn="attr_bus"
-          , attrOut=valueAttr title
+          , attrOut=title ++ "_attr_out"
           , signal= \(Signal i) -> "control_bus[" ++ show i ++ "]"
           }
         })
       ) pus
-    valueData t = t ++ "_data_out"
-    valueAttr t = t ++ "_attr_out"
 
 instance ( Title title
          , Time t
@@ -324,78 +324,63 @@ instance ( Time t
     where
       mn = moduleName title pu
       iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
-            in renderMST
-              [ "module $moduleName$"
-              , "  #( parameter DATA_WIDTH = 32"
-              , "   , parameter ATTR_WIDTH = 4"
-              , "   )"
-              , "  ( input                     clk"
-              , "  , input                     rst"
-              , S.join ", " ("  " : map (\(InputPort n) -> "input " ++ n) bnInputPorts)
-              , S.join ", " ("  " : map (\(OutputPort n) -> "output " ++ n) bnOutputPorts)
-              , "  , output              [7:0] debug_status"
-              , "  , output              [7:0] debug_bus1"
-              , "  , output              [7:0] debug_bus2"
-              , "  , input                     is_drop_allow"
-              , "  );"
-              , ""
-              , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
-              , ""
-              , "// Sub module instances"
-              , "wire [MICROCODE_WIDTH-1:0] control_bus;"
-              , "wire [DATA_WIDTH-1:0] data_bus;"
-              , "wire [ATTR_WIDTH-1:0] attr_bus;"
-              , "wire cycle, start, stop;"
-              , ""
-              , "wire [7:0] debug_pc;"
-              , "assign debug_status = { cycle, debug_pc[6:0] };"
-              , "assign debug_bus1 = data_bus[7:0];"
-              , "assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];"
-              , ""
-              , "pu_simple_control"
-              , "  #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
-              , "   , .PROGRAM_DUMP( \"\\$path\\$$moduleName$.dump\" )"
-              , "   , .MEMORY_SIZE( $ProgramSize$ )"
-              , "   ) control_unit"
-              , "  ( .clk( clk )"
-              , "  , .rst( rst )"
-              , "  , .start_cycle( " ++ bool2binstr bnAllowDrop ++ " || stop )"
-              , "  , .cycle( cycle )"
-              , "  , .signals_out( control_bus )"
-              , "  , .trace_pc( debug_pc )"
-              , "  );"
-              , ""
-              , "$instances$"
-              , "", ""
-              , "assign { attr_bus, data_bus } = "
-              , "$OutputRegs$;"
-              , ""
-              , "endmodule"
-              , ""
-              ]
-              [ ( "moduleName", mn )
-              , ( "microCodeWidth", show bnSignalBusWidth )
-              , ( "instances", S.join "\n\n" instances)
-              , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "  { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
-              , ( "ProgramSize", show $ fromEnum (nextTick bnProcess)
-                  + 1 -- 0 адресс программы для простоя процессора
-                )
-              ]
-      valueData t = t ++ "_data_out"
-      valueAttr t = t ++ "_attr_out"
-      regInstance t = renderMST
-        [ "wire [DATA_WIDTH-1:0] $DataOut$;"
-        , "wire [ATTR_WIDTH-1:0] $AttrOut$;"
-        ]
-        [ ( "DataOut", valueData t )
-        , ( "AttrOut", valueAttr t )
-        ]
+            in [qq|{"module"} $mn
+    #( parameter DATA_WIDTH = 32
+     , parameter ATTR_WIDTH = 4
+     )
+    ( input                     clk
+    , input                     rst
+{ S.join "\\n" $ map (\\(InputPort p) -> ("    , input " ++ p)) bnInputPorts }
+{ S.join "\\n" $ map (\\(OutputPort p) -> ("    , output " ++ p)) bnOutputPorts }
+    , output              [7:0] debug_status
+    , output              [7:0] debug_bus1
+    , output              [7:0] debug_bus2
+    , input                     is_drop_allow
+    );
+
+parameter MICROCODE_WIDTH = $bnSignalBusWidth;
+// Sub module_ instances
+wire [MICROCODE_WIDTH-1:0] control_bus;
+wire [DATA_WIDTH-1:0] data_bus;
+wire [ATTR_WIDTH-1:0] attr_bus;
+wire cycle, start, stop;
+
+wire [7:0] debug_pc;
+assign debug_status = \{ cycle, debug_pc[6:0] \};
+assign debug_bus1 = data_bus[7:0];
+assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
+
+pu_simple_control
+    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )
+     , .PROGRAM_DUMP( "\$path\${mn}.dump" )
+     , .MEMORY_SIZE( {fromEnum (nextTick bnProcess) + 1} ) // 0 адресс программы для простоя процессора
+     ) control_unit
+    ( .clk( clk )
+    , .rst( rst )
+    , .start_cycle( { bool2binstr bnAllowDrop } || stop )
+    , .cycle( cycle )
+    , .signals_out( control_bus )
+    , .trace_pc( debug_pc )
+    );
+
+{ S.join "\\n\\n" instances }
+
+assign data_bus = { S.join " | " $ map snd valuesRegs };
+assign attr_bus = { S.join " | " $ map fst valuesRegs };
+
+endmodule
+|]
+
+      regInstance (t :: String) 
+        = [qq|wire [DATA_WIDTH-1:0] {t}_data_out;
+wire [ATTR_WIDTH-1:0] {t}_attr_out;|]
+        
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
       renderInstance insts regs ((t, PU{ unit, systemEnv, links }) : xs)
         = let inst = hardwareInstance t unit systemEnv links
               insts' = inst : regInstance t : insts
-              regs' = (valueAttr t, valueData t) : regs
+              regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
           in renderInstance insts' regs' xs
 
   software title pu@BusNetwork{ bnProcess=Process{..}, ..}
