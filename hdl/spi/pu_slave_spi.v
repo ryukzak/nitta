@@ -126,17 +126,17 @@ bounce_filter #( .DIV(BOUNCE_FILTER) ) f_sclk_filter ( rst, clk, sclk, f_sclk );
 ///////////////////////////////////////////////////////////
 // Control logic
 
-reg prev_cs;
-always @( posedge clk ) prev_cs <= cs;
+reg prev_f_cs;
+always @( posedge clk ) prev_f_cs <= f_cs;
 
 always @( posedge clk ) begin
     if ( rst ) send_buffer_sel <= 0;
-    else if ( signal_cycle && cs ) send_buffer_sel <= !send_buffer_sel;
+    else if ( signal_cycle && f_cs ) send_buffer_sel <= !send_buffer_sel;
 end
 
 always @( posedge clk ) begin
     if ( rst ) flag_stop <= 0;
-    else if ( !prev_cs && cs ) flag_stop <= 1;
+    else if ( !prev_f_cs && f_cs ) flag_stop <= 1;
     else flag_stop <= 0;
 end
 
