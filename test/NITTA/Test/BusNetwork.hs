@@ -23,7 +23,7 @@ import           System.FilePath.Posix         (joinPath)
 import           Test.Tasty.HUnit
 
 
-netWithArithmAndSPI = busNetwork 27 True
+netWithArithmAndSPI = busNetwork 27 (Just True)
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -37,7 +37,7 @@ netWithArithmAndSPI = busNetwork 27 True
   ]
 
 -- TODO: Автоматическое подключение проводов.
-netWithArithm = busNetwork 31 True [] []
+netWithArithm = busNetwork 31 (Just True) [] []
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
