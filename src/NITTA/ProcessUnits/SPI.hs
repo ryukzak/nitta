@@ -102,7 +102,7 @@ instance Controllable (SPI v x t) where
                , oeSignal :: Bool
                } deriving ( Show, Eq, Ord )
 
-               
+
 instance Default (Microcode (SPI v x t)) where
   def = Microcode{ wrSignal=False
                  , oeSignal=False
@@ -139,7 +139,7 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
   moduleName _ _ = "pu_slave_spi"
   hardware title pu
     = Aggregate Nothing
-        [ FromLibrary "spi/spi_slave_driver_seq.v"
+        [ FromLibrary "spi/pu_slave_spi_driver.v"
         , FromLibrary "spi/spi_slave_driver.v"
         , FromLibrary "spi/buffer.v"
         , FromLibrary "spi/bounce_filter.v"

@@ -43,13 +43,13 @@ wire [SPI_DATA_WIDTH-1:0] spi_data_receive;
 wire spi_ready, spi_prepare;
 
 wire f_mosi, f_cs, f_sclk;
-bounce_filter #( .DIV(BOUNCE_FILTER)) f_mosi_filter ( rst, clk, mosi, f_mosi );
-bounce_filter #( .DIV(BOUNCE_FILTER)) f_cs_filter   ( rst, clk, cs,   f_cs );
-bounce_filter #( .DIV(BOUNCE_FILTER)) f_sclk_filter ( rst, clk, sclk, f_sclk );
+bounce_filter #( .DIV(BOUNCE_FILTER) ) f_mosi_filter ( rst, clk, mosi, f_mosi );
+bounce_filter #( .DIV(BOUNCE_FILTER) ) f_cs_filter   ( rst, clk, cs,   f_cs );
+bounce_filter #( .DIV(BOUNCE_FILTER) ) f_sclk_filter ( rst, clk, sclk, f_sclk );
 
-spi_slave_driver2 #
+pu_slave_spi_driver #
         ( .DATA_WIDTH( SPI_DATA_WIDTH )
-        ) spi_driver 
+        ) spi_driver
     ( .clk( clk )
     , .rst( rst )
     , .data_in( splitter_to_spi )

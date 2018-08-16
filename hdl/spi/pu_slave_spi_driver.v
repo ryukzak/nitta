@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module spi_slave_driver2 #
+module pu_slave_spi_driver #
         ( parameter DATA_WIDTH = 8
         )
     ( input            clk
@@ -64,7 +64,12 @@ always @( posedge clk ) begin
         end else if ( state == STATE_WAIT_SCLK_1 ) begin
             ready <= 0;
             if ( sclk ) begin
-                miso <= shiftreg[work][ DATA_WIDTH - 1 ];
+                if ( counter == 0 ) begin
+                    shiftreg[work] <= data_in;
+                    miso <= data_in[ DATA_WIDTH - 1 ];
+                end else begin
+                    miso <= shiftreg[work][ DATA_WIDTH - 1 ];
+                end
                 counter <= counter + 1;  
                 state <= STATE_WAIT_SCLK_0;
             end else if ( cs ) begin
