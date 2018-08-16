@@ -129,7 +129,7 @@ instance ( Ord v ) => Simulatable (SPI v x t) v x where
 instance Connected (SPI v x t) where
   data PUPorts (SPI v x t)
     = PUPorts{ wr, oe :: Signal
-             , start, stop :: String -- FIXME: Что это такое и как этому быть?
+             , stop :: String -- FIXME: Что это такое и как этому быть?
              , mosi, sclk, cs :: InputPort
              , miso :: OutputPort
              } deriving ( Show )
@@ -164,7 +164,6 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
     , "  , .signal_cycle( " ++ signalCycle ++ " )"
     , "  , .signal_oe( " ++ signal oe ++ " )"
     , "  , .signal_wr( " ++ signal wr ++ " )"
-    , "  , .flag_start( " ++ start ++ " )"
     , "  , .flag_stop( " ++ stop ++ " )"
     , "  , .data_in( " ++ dataIn ++ " )"
     , "  , .attr_in( " ++ attrIn ++ " )"

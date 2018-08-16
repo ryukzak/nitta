@@ -19,7 +19,6 @@ module pu_slave_spi #
     , output   [DATA_WIDTH-1:0] data_out
     , output   [ATTR_WIDTH-1:0] attr_out
 
-    , output                    flag_start // not used
     , output reg                flag_stop
 
     // SPI interface

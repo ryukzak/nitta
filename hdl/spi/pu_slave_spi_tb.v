@@ -60,7 +60,6 @@ pu_slave_spi #( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
   , .data_out( data_out )
   , .attr_out( attr_out )
 
-  // , .flag_start( start )
   //, .flag_stop( ready )
 
   , .mosi( mosi )

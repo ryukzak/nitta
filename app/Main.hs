@@ -32,7 +32,7 @@ microarch = busNetwork 31 (Just True)
   , ("spi", PU
       (SPI.slaveSPI 0)
       SPI.PUPorts{ SPI.wr=Signal 22, SPI.oe=Signal 23
-                 , SPI.start="start", SPI.stop="stop"
+                 , SPI.stop="stop"
                  , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                  })
   , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
