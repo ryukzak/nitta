@@ -46,6 +46,7 @@ initial master.inner.shiftreg <= 0; // для ясности
 
 pu_slave_spi #( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
               , .BUF_SIZE( BUF_SIZE )
+              , .BOUNCE_FILTER( 1 )
               ) pu
   ( .clk( clk )
   , .rst( rst )

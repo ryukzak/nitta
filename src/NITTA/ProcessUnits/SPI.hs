@@ -11,6 +11,7 @@
 module NITTA.ProcessUnits.SPI
   ( PUPorts(..)
   , SPI
+  , slaveSPI
   ) where
 
 import           Data.Default
@@ -27,13 +28,17 @@ import           Numeric.Interval                    ((...))
 
 
 type SPI v x t = SerialPU (State v x t) v x t
-data State v x t = State{ spiSend    :: ([v], [v])
-                        , spiReceive :: ([[v]], [[v]])
+data State v x t = State{ spiSend         :: ([v], [v])
+                        , spiReceive      :: ([[v]], [[v]])
+                        , spiBounceFilter :: Int
                         }
   deriving ( Show )
 
 instance Default (State v x t) where
-  def = State def def
+  def = State def def 20
+
+slaveSPI :: ( Var v, Time t ) => Int -> SPI v x t
+slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def def
 
 
 
@@ -148,11 +153,11 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
         , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
         ]
   software _ pu = Immidiate "transport.txt" $ show pu
-  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
+  hardwareInstance title SerialPU{ spuState=State{ spiBounceFilter } } Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
     [ "pu_slave_spi"
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
-    , "   , .BOUNCE_FILTER( " ++ "20" ++ " )" -- FIXME: Must be configurable.
+    , "   , .BOUNCE_FILTER( " ++ show spiBounceFilter ++ " )" -- FIXME: Must be configurable.
     , "   ) $name$"
     , "  ( .clk( " ++ signalClk ++ " )"
     , "  , .rst( " ++ signalRst ++ " )"

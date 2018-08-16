@@ -18,7 +18,7 @@
 -}
 
 module NITTA.ProcessUnits.Generic.SerialPU
-  ( SerialPU (SerialPU)
+  ( SerialPU (SerialPU, spuState)
   , SerialPUState (..)
   , serialSchedule
   ) where
