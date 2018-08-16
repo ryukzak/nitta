@@ -29,21 +29,22 @@
 module NITTA.BusNetwork where
 
 import           Control.Monad.State
-import qualified Data.Array           as A
+import qualified Data.Array                    as A
 import           Data.Default
-import           Data.List            (find, nub, partition, sortOn, (\\))
-import qualified Data.Map             as M
-import           Text.InterpolatedString.Perl6 (qq)
-import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
-import           Data.Set             (elems, fromList, intersection)
-import qualified Data.String.Utils    as S
+import           Data.List                     (find, nub, partition, sortOn,
+                                                (\\))
+import qualified Data.Map                      as M
+import           Data.Maybe                    (fromMaybe, isJust, mapMaybe)
+import           Data.Set                      (elems, fromList, intersection)
+import qualified Data.String.Utils             as S
 import           Data.Typeable
-import           NITTA.FunctionBlocks (get', simulateAlgByCycle)
+import           NITTA.FunctionBlocks          (get', simulateAlgByCycle)
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
-import           Numeric.Interval     (inf, width, (...))
+import           Numeric.Interval              (inf, width, (...))
+import           Text.InterpolatedString.Perl6 (qq)
 
 -- import           Debug.Trace
 
@@ -68,7 +69,7 @@ data GBusNetwork title spu v x t
     , bnSignalBusWidth :: Int
     , bnInputPorts     :: [InputPort]
     , bnOutputPorts    :: [OutputPort]
-    , bnAllowDrop      :: Bool
+    , bnAllowDrop      :: Maybe Bool
     }
 type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 
@@ -353,11 +354,11 @@ assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bu
 pu_simple_control
     #( .MICROCODE_WIDTH( MICROCODE_WIDTH )
      , .PROGRAM_DUMP( "\$path\${mn}.dump" )
-     , .MEMORY_SIZE( {fromEnum (nextTick bnProcess) + 1} ) // 0 адресс программы для простоя процессора
+     , .MEMORY_SIZE( {fromEnum (nextTick bnProcess) + 1} ) // 0 - address for nop microcode
      ) control_unit
     ( .clk( clk )
     , .rst( rst )
-    , .start_cycle( { bool2binstr bnAllowDrop } || stop )
+    , .start_cycle( { maybe "is_drop_allow" bool2binstr bnAllowDrop } || stop )
     , .cycle( cycle )
     , .signals_out( control_bus )
     , .trace_pc( debug_pc )
@@ -371,10 +372,10 @@ assign attr_bus = { S.join " | " $ map fst valuesRegs };
 endmodule
 |]
 
-      regInstance (t :: String) 
+      regInstance (t :: String)
         = [qq|wire [DATA_WIDTH-1:0] {t}_data_out;
 wire [ATTR_WIDTH-1:0] {t}_attr_out;|]
-        
+
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
       renderInstance insts regs ((t, PU{ unit, systemEnv, links }) : xs)
@@ -424,7 +425,7 @@ instance ( Title title, Var v, Time t
         , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
         , "// if 1 - The process cycle are indipendent from a SPI."
         , "// else - The process cycle are wait for the SPI."
-        , "  , .is_drop_allow( " ++ bool2binstr bnAllowDrop ++ " )"
+        , "  , .is_drop_allow( " ++ maybe "is_drop_allow" bool2binstr bnAllowDrop ++ " )"
         , "  );                                                                                                      "
         , "                                                                                                          "
         , S.join "\n\n"

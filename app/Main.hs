@@ -22,7 +22,7 @@ import           NITTA.Types
 import           System.FilePath               (joinPath)
 
 
-microarch = busNetwork 31 True
+microarch = busNetwork 31 (Just True)
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -134,11 +134,11 @@ graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
 
 main = do
   -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
-  -- test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
+  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
   -- putStrLn "funSim teacup:"
-  test "teacup" (nitta $ synthesis $ frame $ dfgraph teacupAlg) def
+  -- test "teacup" (nitta $ synthesis $ frame $ dfgraph teacupAlg) def
   funSim 5 def teacupAlg
 
   -- putStrLn "funSim fibonacci:"
