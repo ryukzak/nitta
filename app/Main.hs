@@ -6,7 +6,7 @@ module Main where
 import           Data.Default
 import qualified Data.Map                      as M
 import           Data.Maybe
-import           NITTA
+import           Demo
 import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
 import           NITTA.Compiler

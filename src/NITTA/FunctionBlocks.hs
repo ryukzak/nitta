@@ -109,7 +109,7 @@ reorderAlgorithm alg = orderAlgorithm' [] alg
       | let ready = filter (null . (\\ vs) . elems . inputs) fs
       , not $ null ready
       = ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
-    orderAlgorithm' _ _ = error $ "Can't sort algorithm. "
+    orderAlgorithm' _ _ = error "Can't sort algorithm."
 
 
 castFB :: ( Typeable fb ) => FB io -> Maybe (fb io)

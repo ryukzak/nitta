@@ -6,6 +6,8 @@
 
 module NITTA.Project where
 
+-- TODO: Файлы библиотек должны копироваться в проект.
+
 import           Control.Monad         (when)
 import           Data.FileEmbed
 import           Data.List             (isSubsequenceOf)

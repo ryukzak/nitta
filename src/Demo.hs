@@ -1,22 +1,21 @@
 {-|
 В данном модуле описано несколько демо для вычислительной платформы NITTA.
 
-Каждое демо представляет из себя функцию, выполнение которой приведёт к генерации проекта, который можно будет
-синтезировать, загрузить в испытательный стенд и проверить работоспособность.
-
 = Test bench organisation
 
 Test bench was designed with the following components:
 
-1.  The tool computer. It provides control of a modelling process and data transmission. There is using a single-board
-    computer by Electric imp (imp001 right now).
-2.  A NITTA processor. It evaluates system dynamics model in the real-time and provides modelling data by its interfaces
-    as inputs for a system under test. For realising this component DE-0 Nano board with Cyclone IV FPGA have been used.
+1.  The tool computer. It provides control of a modelling process and data transmission. There is
+    using a single-board computer by Electric imp (imp001 right now).
+2.  A NITTA processor. It evaluates system dynamics model in the real-time and provides modelling
+    data by its interfaces as inputs for a system under test. For realising this component DE-0 Nano
+    board with Cyclone IV FPGA have been used.
 
-The controller and the NITTA processor communicate throughout SPI (for data transmission) interfaces. Those interfaces
-were chosen because they are ubiquitous.
+The controller and the NITTA processor communicate throughout SPI (for data transmission)
+interfaces. Those interfaces were chosen because they are ubiquitous.
 
-A user and the test bench communicate throughout electricimp cloud-based IDE (https://impcentral.electricimp.com).
+A user and the test bench communicate throughout electricimp cloud-based IDE
+(https://impcentral.electricimp.com).
 
 @
 +---------------------------------------------+
@@ -36,9 +35,8 @@ A user and the test bench communicate throughout electricimp cloud-based IDE (ht
 +--------+         +----------+
 @
 
-= Подготовка стенда
+= Схема подключение интерфейса SPI к DE0-nano
 
-== Схема подключение интерфейса SPI к DE0-nano
 В скобках указан рекомендованный цвет провода. Пропорции нарушены.
 
 @
@@ -64,7 +62,8 @@ A user and the test bench communicate throughout electricimp cloud-based IDE (ht
 +--------------------------------+
 @
 
-== Схема подключение интерфейса SPI к imp001
+= Схема подключение интерфейса SPI к imp001
+
 @
                     +--------------------------------+
                     | o GND                          |
@@ -81,21 +80,40 @@ A user and the test bench communicate throughout electricimp cloud-based IDE (ht
                     +---------+-----+----------------+
 @
 
+= Требуемоемое программное обеспечение
+
+TODO: Указать какое ПО надо установить для работы со стендом и как именно его запустить.
+
+= Запуск демо
+
+Каждое демо представляет из себя функцию, выполнение которой приведёт к генерации проекта, который
+можно будет синтезировать, загрузить в испытательный стенд и проверить работоспособность. Для начала
+работы с демо необходимо либо вставить вызов функции в функцию 'Main.main', либо осуществить запуск
+из @ghci@.
+
+Её выполнение приведет к генерации одноименного каталога с проектом в директории
+@/hdl/gen/DEMO_NAME@, внутри которого необходимо найти файл @DEMO_NAME.qpf@, затем открыть его в
+@Quartus@ и:
+
+1. синтезировать проект;
+2. открыть программатор и загрузить его в ПЛИС.
+
 -}
 
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
-module NITTA
-    ( fibonacciDemo
-    , fibonacciAlg
+module Demo
+    ( -- * Демо
+      fibonacciDemo
     , teacupDemo
+      -- * Описание алгоритмов
+    , fibonacciAlg
     , teacupAlg
+      -- * Описание процессоров
+    , nittaArch
     ) where
 
 import           Data.Default
-import qualified Data.Map                      as M
-import           Data.Maybe
-import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
@@ -111,7 +129,7 @@ import           NITTA.Types
 import           System.FilePath               (joinPath)
 
 
-microarch = busNetwork 31 Nothing
+nittaArch = busNetwork 31 Nothing
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
     [ OutputPort "miso" ]
     [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -131,16 +149,17 @@ microarch = busNetwork 31 Nothing
 -- TODO: fix rst
 
 
--- |Одним из классических примеров алгоритмов является расчёт последовательности Фибоначчи: 0, 1, 2, 3, 5, 8, 13.
+-- |Одним из классических примеров алгоритмов является расчёт последовательности Фибоначчи: 0, 1, 2,
+-- 3, 5, 8, 13.
 --
 -- Описанная ниже программа реализует два независимых процесса:
 --
 -- - расчёт последовательности Фибоначчи;
 -- - расчёт последовательности целых чисел (номера элемента).
 --
--- Каждый элемент этих последовательностей отправляется на внешний интерфейс, определяемый конфигурацией процессора. В
--- данном примере это интерфейс SPI ('NITTA.ProcessUnit.SPI').
-fibonacciDemo = demo "fibonacci" microarch fibonacciAlg
+-- Каждый элемент этих последовательностей отправляется на внешний интерфейс, определяемый
+-- конфигурацией процессора. В данном примере это интерфейс SPI ('NITTA.ProcessUnit.SPI').
+fibonacciDemo = demo "fibonacci" nittaArch fibonacciAlg
 
 fibonacciAlg = [ FB.loop' 0 "a_new" ["a", "a_send"]
                , FB.loop' 1 "b_new" ["b", "a_new"]
@@ -155,7 +174,7 @@ fibonacciAlg = [ FB.loop' 0 "a_new" ["a", "a_send"]
 
 
 
-teacupDemo = demo "teacup" microarch teacupAlg
+teacupDemo = demo "teacup" nittaArch teacupAlg
 
 teacupAlg = [ FB.loop' 0 "time_new" ["time", "time_send"]
             , FB.constant 125 ["time_step_1", "time_step_2"]

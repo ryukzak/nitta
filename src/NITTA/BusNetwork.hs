@@ -6,6 +6,7 @@
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -459,7 +460,7 @@ instance ( Title title, Var v, Time t
       -- FIXME: 5 - must be variable
       cntxs = take 5 $ simulateAlgByCycle cntx0 $ functionalBlocks n
       cycleTicks = [ 0 .. nextTick (process n) - 1 ]
-      simulationInfo = (0, def) : concatMap (\cntx -> map (\t -> (t, cntx)) cycleTicks) cntxs
+      simulationInfo = (0, def) : concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
       assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
         where
           assert (t, cntx)
