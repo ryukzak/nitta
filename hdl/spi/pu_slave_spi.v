@@ -29,6 +29,7 @@ module pu_slave_spi #
     );
 
 // TODO: spi to nitta dataflow
+// TODO: move test module to test/
 
 
 

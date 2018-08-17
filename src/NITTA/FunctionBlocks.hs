@@ -176,6 +176,7 @@ instance ( Show v, Show x ) => Show (Loop (Parcel v x)) where
   show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join " = " (map show $ elems k2)
 deriving instance ( IOType io v x ) => Eq (Loop io)
 loop x bs a = FB $ Loop (X x) (O $ fromList bs) $ I a
+loop' x a bs = FB $ Loop (X x) (O $ fromList bs) $ I a
 
 instance ( IOType io v x ) => FunctionalBlock (Loop io) v where
   inputs  (Loop _ _a b) = variables b
@@ -256,7 +257,7 @@ data Division io = Division
   , quotient, remain :: O io
   } deriving ( Typeable )
 instance ( Show v ) => Show (Division (Parcel v x)) where
-  show (Division (I k1) (I k2) (O k3) (O k4)) 
+  show (Division (I k1) (I k2) (O k3) (O k4))
     = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " / " ++ show k2 ++ "; "
     ++ S.join " = " (map show $ elems k4) ++ " = " ++ show k1 ++ " mod " ++ show k2
 deriving instance ( IOType io v x ) => Eq (Division io)
