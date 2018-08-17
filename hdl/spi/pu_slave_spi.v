@@ -50,7 +50,6 @@ generate
     for ( i = 0; i < 2; i = i + 1 ) begin : send_buffer_i
         buffer #
                 ( .BUF_SIZE( BUF_SIZE )
-                , .FILE( "spi" + i + ".dump" )
                 ) send_buffer // from nitta to spi
             ( .clk( clk )
             , .rst( rst || flag_stop )
@@ -108,7 +107,7 @@ pu_slave_spi_driver #
     , .rst( rst )
     , .data_in( splitter_to_spi )
     // , .data_out(  )
-    // , .ready( spi_ready )
+    // , .ready(  )
     , .prepare( spi_prepare )
     , .mosi( f_mosi )
     , .miso( miso )

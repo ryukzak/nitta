@@ -22,7 +22,7 @@ import           NITTA.Types
 import           System.FilePath               (joinPath)
 
 
-microarch = busNetwork 31 (Just True)
+microarch = busNetwork 31 Nothing
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -30,7 +30,7 @@ microarch = busNetwork 31 (Just True)
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
   , ("spi", PU
-      (SPI.slaveSPI 0)
+      (SPI.slaveSPI 10)
       SPI.PUPorts{ SPI.wr=Signal 22, SPI.oe=Signal 23
                  , SPI.stop="stop"
                  , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
@@ -76,15 +76,17 @@ divAndMulAlg
 teacupAlg = [ FB.constant 70000 ["T_room"] :: FB (Parcel String Int)
             , FB.constant 10000 ["t_ch"]
             , FB.constant 125 ["t_step1", "t_step2"]
-            , FB.loop 180000 ["T_cup1", "T_cup2"] "t_cup'"
+            , FB.loop 180000 ["T_cup1", "T_cup2", "T_cup3"] "t_cup'"
             -- (Teacup Temperature - T_room) / t_ch
             , FB.sub "T_room" "T_cup1" ["acc"]
             , FB.division "acc" "t_ch" ["loss"] []
             -- INTEG ( -loss to Room
             , FB.multiply "loss" "t_step1" ["delta"]
             , FB.add "T_cup2" "delta" ["t_cup'"]
-            , FB.loop 0 ["t"] "t'"
+            , FB.loop 0 ["t", "t_send"] "t'"
             , FB.add "t" "t_step2" ["t'"]
+            , FB.send "T_cup3"
+            , FB.send "t_send"
             ]
 
 spiAlg = [ FB.receive ["a"] :: FB (Parcel String Int)
@@ -138,7 +140,7 @@ main = do
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
   -- putStrLn "funSim teacup:"
-  -- test "teacup" (nitta $ synthesis $ frame $ dfgraph teacupAlg) def
+  test "teacup" (nitta $ synthesis $ frame $ dfgraph teacupAlg) def
   funSim 5 def teacupAlg
 
   -- putStrLn "funSim fibonacci:"
