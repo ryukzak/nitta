@@ -581,8 +581,8 @@ instance ( Var v
                    , addr=map Signal [ 2, 3, 4, 5 ]
                    }
         , "                                                                                                          "
-        , verilogWorkInitialze
-        , verilogClockGenerator
+        , snippetDumpFile $ moduleName projectName pu
+        , snippetClkGen
         , "                                                                                                          "
         , "initial                                                                                                   "
         , "  begin                                                                                                   "
@@ -592,9 +592,9 @@ instance ( Var v
         , "    forever @(posedge clk);                                                                               "
         , "  end                                                                                                     "
         , "                                                                                                          "
-        , initialFinish $ controlSignals pu
-        , initialFinish $ testDataInput pu cntx
-        , initialFinish $ testDataOutput projectName pu cntx
+        , snippetInitialFinish $ controlSignals pu
+        , snippetInitialFinish $ testDataInput pu cntx
+        , snippetInitialFinish $ testDataOutput projectName pu cntx
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]

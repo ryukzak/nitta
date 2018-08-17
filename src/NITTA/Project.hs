@@ -1,6 +1,7 @@
 {-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Project where
@@ -13,6 +14,7 @@ import qualified Data.String.Utils     as S
 import           NITTA.Types
 import           NITTA.Utils
 import           System.Directory
+import           Text.InterpolatedString.Perl6 (qq)
 import           System.Exit
 import           System.FilePath.Posix (joinPath, pathSeparator)
 import           System.Process
@@ -165,31 +167,26 @@ projectFiles prj@Project{ projectName, libraryPath, model }
 ---------------------------------------------------------------------
 -- * Snippets для генерации Verilog-а
 
+snippetClkGen :: String
+snippetClkGen = [qq|initial begin                                                                                             
+    clk = 1'b0;                                                                                             
+    rst = 1'b1;                                                                                             
+    repeat(4) #1 clk = ~clk;                                                                               
+    rst = 1'b0;                                                                                             
+    forever #1 clk = ~clk;                                                                                 
+end                                                                                                       
+|]
 
-verilogClockGenerator = unlines
-  [ "initial begin                                                                                             "
-  , "  clk = 1'b0;                                                                                             "
-  , "  rst = 1'b1;                                                                                             "
-  , "  repeat(4) #1 clk = ~clk;                                                                               "
-  , "  rst = 1'b0;                                                                                             "
-  , "  forever #1 clk = ~clk;                                                                                 "
-  , "end                                                                                                       "
-  ]
+snippetDumpFile :: String -> String
+snippetDumpFile mn = [qq|initial begin                                                                                    
+    \\\$dumpfile("{ mn }_tb.vcd");                                                  
+    \\\$dumpvars(0, { mn }_tb);                                                       
+end                                                                                      
+|]
 
-
-verilogWorkInitialze = unlines
-  [ "initial                                                                                                   "
-  , "  begin                                                                                                   "
-  , "    \\$dumpfile(\"$moduleName$_tb.vcd\");                                                                 "
-  , "    \\$dumpvars(0, $moduleName$_tb);                                                                      "
-  , "  end                                                                                                     "
-  ]
-
-
-initialFinish inner = unlines
-  [ "  initial                                                                                                 "
-  , "    begin                                                                                                 "
-  , inner
-  , "      \\$finish;                                                                                          "
-  , "    end                                                                                                   "
-  ]
+snippetInitialFinish :: String -> String
+snippetInitialFinish block = [qq|initial begin
+$block
+    \\\$finish;
+end
+|]

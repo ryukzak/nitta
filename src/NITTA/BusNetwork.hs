@@ -436,9 +436,9 @@ instance ( Title title, Var v, Time t
           , not $ null tbEnv
           ]
         , "                                                                                                          "
-        , verilogWorkInitialze
+        , snippetDumpFile $ moduleName projectName n
         , "                                                                                                          "
-        , verilogClockGenerator
+        , snippetClkGen
         , "                                                                                                          "
         , "initial                                                                                                 "
         , "  begin                                                                                                 "
