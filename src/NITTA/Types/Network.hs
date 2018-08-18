@@ -1,15 +1,10 @@
 {-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Types.Network where
@@ -47,13 +42,13 @@ instance ( Var v, Time t
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (PU v x t)
          where
-  options proxy PU{..} = options proxy unit
+  options proxy PU{ unit } = options proxy unit
   decision proxy PU{ unit, links, systemEnv } d
     = PU{ unit=decision proxy unit d, links, systemEnv }
 
 instance ProcessUnit (PU v x t) (Parcel v x) t where
-  bind fb PU{ unit, links, systemEnv }
-    = case bind fb unit of
+  tryBind fb PU{ unit, links, systemEnv }
+    = case tryBind fb unit of
       Right unit' -> Right PU { unit=unit', links, systemEnv }
       Left err    -> Left err
   process PU{ unit } = process unit
@@ -61,13 +56,13 @@ instance ProcessUnit (PU v x t) (Parcel v x) t where
     = PU{ unit=setTime t unit, links, systemEnv }
 
 instance Simulatable (PU v x t) v x where
-  simulateOn cntx PU{..} fb = simulateOn cntx unit fb
+  simulateOn cntx PU{ unit } fb = simulateOn cntx unit fb
 
 instance TargetSystemComponent (PU v x t) where
-  moduleName name PU{..} = moduleName name unit
-  hardware name PU{..} = hardware name unit
-  software name PU{..} = software name unit
-  hardwareInstance name PU{..} = hardwareInstance name PU{..}
+  moduleName name PU{ unit } = moduleName name unit
+  hardware name PU{ unit } = hardware name unit
+  software name PU{ unit } = software name unit
+  hardwareInstance name pu = hardwareInstance name pu
 
 castPU :: ( ByTime pu t
           , Connected pu
@@ -83,7 +78,7 @@ castPU :: ( ByTime pu t
           , Show x
           , Num x
           ) => PU v x t -> Maybe pu
-castPU PU{..} = cast unit
+castPU PU{ unit } = cast unit
 
 
 class Connected pu where
@@ -134,25 +129,29 @@ data Implementation
   -- рабочей папки.
   | Aggregate { impPath :: Maybe String, subComponents :: [ Implementation ] }
   -- Реализация не требуется (к примеру: для многих вычислительных блоков ПО отсутствует).
-  | Empty
+  | Empty -- TODO: Заменить на Maybe.
 
 
--- | Описание компонент целевой системы процессора NITTA. Включает в себя как непосредственную
--- генерацию программных и аппаратных компонен, так и базовые функции для их интеграции в объемлющие
--- компоненты. 
+-- |Класс для кодогенерации для встраивания вычислительного блока в процессор.
 class TargetSystemComponent pu where
-  -- | Название модуля, как правило соответствует названию файла описывающего top_level_module.
+  -- |Наименование аппаратного модуля, соответствующего вычислительному блоку.
   moduleName :: String -> pu -> String
 
-  -- | Совокупность файлов, описывающих аппаратную составляющую компонента целевой системы. Это
-  -- может быть ссылка на библиотеку, сгенерированный файл или папка.
-  hardware :: String -> pu -> Implementation
-
-  -- | Совокупность файлов описывающих программное обеспечение компонента. Могут и отсутствовать.
+  -- |Программное обеспечение для вычислительного блока. Под ПО вычислительного блока понимается
+  -- настройка вычислительного блока, которая может меняться при изменении прикладного алгоритма без
+  -- повторного синтеза аппаратуры. Наличие ПО не является обязательным.
   software :: String -> pu -> Implementation
 
-  -- | Объявление экземпляра модуля. Необходимо для генерации вложенных компонент и рабочего
-  -- окружения (целевого или тестового).
+  -- |Аппаратное обеспечение вычислительного блока. Это может быть ссылка на библиотеку,
+  -- сгенерированный файл либо их совокупность.
+  --
+  -- В связи с тем, что в проекте используется несколько целевых платформ (на момент написания это
+  -- Icarus Verilog для тестирования и Quartus для синтеза), для отдельных вычислительных блоков
+  -- может осуществляться конфигурировние.
+  hardware :: String -> pu -> Implementation
+
+  -- |Генерация фрагмента исходного кода для создания экземпляра вычислительного блока в рамках
+  -- вычислительной платформы NITTA.
   hardwareInstance :: String -> pu -> Enviroment -> PUPorts pu -> String
 
   -- | Для автоматизированного тестирования компонент со внешними портами ввода/вывода необходимо

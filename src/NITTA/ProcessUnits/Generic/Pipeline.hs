@@ -1,10 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -82,7 +78,7 @@ class ( PipelineTF st ) => PipelinePU2 st v t where
 
 instance ( Var v, Time t, PipelinePU st (Parcel v x)
          ) => ProcessUnit (Pipeline st v x t) (Parcel v x) t where
-    bind fb pu@Pipeline{ puRemain }
+    tryBind fb pu@Pipeline{ puRemain }
         = case bindPipeline fb of
             Right ( _ :: InputSt st, _ ) -> Right pu{ puRemain=fb : puRemain }
             Left err -> Left $ "Unknown functional block: " ++ err

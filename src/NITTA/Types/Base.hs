@@ -3,11 +3,8 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE IncoherentInstances    #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
@@ -201,7 +198,7 @@ data FB io where
         , FunctionSimulation fb v x
         ) => fb -> FB io
 instance Show (FB io) where
-  show (FB fb) = "<" ++ show fb ++ ">"
+  show (FB fb) = "< " ++ show fb ++ " >"
 
 instance ( Var v
          , Typeable x
@@ -376,13 +373,13 @@ instance DecisionType (EndpointDT v t) where
     }
 
 instance Variables (Option (EndpointDT v t)) v where
-  variables EndpointO{..} = variables epoRole
+  variables EndpointO{ epoRole } = variables epoRole
 instance Variables (Decision (EndpointDT v t)) v where
-  variables EndpointD{..} = variables epdRole
-instance ( Show v, Show t ) => Show (Option (EndpointDT v t)) where
-  show EndpointO{..} = "?" ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
-instance ( Show v, Show t ) => Show (Decision (EndpointDT v t)) where
-  show EndpointD{..} = "!" ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
+  variables EndpointD{ epdRole } = variables epdRole
+instance ( Show v, Show t, Eq t, Bounded t ) => Show (Option (EndpointDT v t)) where
+  show EndpointO{ epoRole, epoAt } = "?" ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
+instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t)) where
+  show EndpointD{ epdRole, epdAt } = "!" ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
 
 
 
@@ -403,7 +400,7 @@ instance ( Show v, Show t ) => Show (Decision (EndpointDT v t)) where
 --    4) Повторение, пока список возможных вариантов не станет пустым.
 class ProcessUnit pu io t | pu -> io t where
   -- | Назначить исполнение функционального блока вычислительному узлу.
-  bind :: FB io -> pu -> Either String pu
+  tryBind :: FB io -> pu -> Either String pu
   -- | Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
   -- процесс вложенных структурных элементов.
   --
@@ -428,22 +425,33 @@ class ProcessUnit pu io t | pu -> io t where
   -- TODO: Добавить метод skip, для того что бы вычислительный блок мог пропускать отдельный
   -- переменные (необходимо для ветвления вычислительного процесса).
 
+bind fb pu = case tryBind fb pu of
+  Right pu' -> pu'
+  Left err  -> error $ "Can't bind FB to PU: " ++ err
+
+allowToProcess fb pu
+  | Right _ <- tryBind fb pu = True
+  | otherwise = False
+
 
 ---------------------------------------------------------------------
 -- * Сигналы и инструкции
 
-
--- | Управляемые вычислительные блоки.
+-- |Класс управляемых вычислительных блоков.
+--
+-- Определяет низкоуровневые интерфейсы управления вычислительным блоком. Описываются два уровня
+-- организации вычислительного процесса: на уровне инструкций вычислительного блока и на уровне
+-- микрокоманд вычислительного блока.
 class Controllable pu where
-  -- | Инструкции, описывающие работу вычислительного блока. Набор инструкций зависит от типа
-  -- вычислительного блока. Для "оконечных" вычислительных блоков инструкция в прикладном виде
-  -- описывает операцию, выполняемую им и одназначно транслируемую микрокод. Для сети -
-  -- инструкция может описывать пересылку данных между блоками обраобтки (возможно более одной
-  -- за такт).
+  -- |Инструкции вычислительного блока описывают его поведения с точки зрения разработчика. Если
+  -- вычислительный блок не выполняет никаких операций (находится в состоянии ожидания), то его
+  -- поведение не описывается никакой инструкцией.
   data Instruction pu :: *
-  nop :: Instruction pu
-  -- | Микрокод, управляющий вычислительным блоком. Описывает в человеческом виде все сигналы,
-  -- управляющие вычислительным блоком.
+
+  -- |Структура микрокода управляющего поведением вычислительного блока. 
+  -- Может быть использован непосредственно для управления аппаратной частью
+  -- вычислительного блока, так как содержит непосредственно значения управляющих 
+  -- сигналов.
   data Microcode pu :: *
 
 
@@ -453,10 +461,13 @@ class ByTime pu t | pu -> t where
   microcodeAt :: pu -> t -> Microcode pu
 
 
-class UnambiguouslyDecode pu where
-  -- | Конвертация инструкции в микрокод.
+-- |Декодирование инструкции в микрокод.
+--
+-- Не может быть реализована для инструкций сетей, так как: (1) инструкция для сетей описывает
+-- несколько тактов, а значит должна возвращать последовательность значений микрокода; (2)
+-- несколько инструкций может выполняться одновременно.
+class (Default (Microcode pu)) => UnambiguouslyDecode pu where
   decodeInstruction :: Instruction pu -> Microcode pu
-
 
 
 -- | Значение сигнальной линии.
@@ -472,7 +483,7 @@ data Value
 
 instance Default Value where
   def = Undef
-                    
+
 instance Show Value where
   show Undef        = "x"
   show (Bool True)  = "1"

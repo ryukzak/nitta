@@ -1,14 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 module NITTA.ProcessUnits.Divisor
@@ -34,11 +28,7 @@ import           Numeric.Interval                    (inf, singleton, sup,
 
 
 type Divisor v x t = Pipeline (DivisorSt v) v x t
-instance ( Default t ) => Default (Divisor v x t) where
-    def = Pipeline def def def def 4 1 DivisorSt{ mock=False }
-
-divisor :: ( Default t ) => Divisor v x t
-divisor = def
+divisor pipeline mock = Pipeline def def def def pipeline 1 DivisorSt{ mock=mock }
 
 
 instance ( Var v
@@ -106,10 +96,7 @@ instance ( Time t, Var v ) => PipelinePU2 (DivisorSt v) v t where
                         , outputSt=DivisorOut [(q, Quotient), (r, Remain)]
                         }
                     )
-            scheduleInput arg = do
-                t <- nextScheduledTick
-                scheduleNopAndUpdateTick t (inf at - 1)
-                scheduleInstructionAndUpdateTick (inf at) (sup at) $ Load arg
+            scheduleInput arg = scheduleInstructionAndUpdateTick (inf at) (sup at) $ Load arg
     targetDecision _ _ = Nothing
 
     sourceOptions begin end maxDuration (DivisorOut outs)
@@ -122,10 +109,7 @@ instance ( Time t, Var v ) => PipelinePU2 (DivisorSt v) v t where
         | ([(waitingVs, sel)], os) <- partition ((vs `isSubsetOf`) . fst) outs
         , let
             waitingVs' = waitingVs `difference` vs
-            sch = scheduleEndpoint d $ do
-                nextTick <- nextScheduledTick
-                scheduleNopAndUpdateTick nextTick (inf epdAt - 1)
-                scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Out sel
+            sch = scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Out sel
             os' = if S.null waitingVs'
                     then os
                     else (waitingVs', sel) : os
@@ -138,11 +122,9 @@ instance ( Time t, Var v ) => PipelinePU2 (DivisorSt v) v t where
 
 instance Controllable (Divisor v x t) where
     data Instruction (Divisor v x t)
-        = Nop
-        | Load InputDesc
+        = Load InputDesc
         | Out OutputDesc
         deriving (Show)
-    nop = Nop
 
     data Microcode (Divisor v x t)
         = Microcode
@@ -152,18 +134,18 @@ instance Controllable (Divisor v x t) where
             , oeSelSignal :: Bool
             } deriving ( Show, Eq, Ord )
 
-
-instance UnambiguouslyDecode (Divisor v x t) where
-    decodeInstruction Nop = Microcode
+instance Default (Microcode (Divisor v x t)) where
+    def = Microcode
         { wrSignal=False
         , wrSelSignal=False
         , oeSignal=False
         , oeSelSignal=False
         }
-    decodeInstruction (Load Numer)   = (decodeInstruction Nop){ wrSignal=True, wrSelSignal=False }
-    decodeInstruction (Load Denom)   = (decodeInstruction Nop){ wrSignal=True, wrSelSignal=True }
-    decodeInstruction (Out Quotient) = (decodeInstruction Nop){ oeSignal=True, oeSelSignal=False }
-    decodeInstruction (Out Remain)   = (decodeInstruction Nop){ oeSignal=True, oeSelSignal=True }
+instance UnambiguouslyDecode (Divisor v x t) where
+    decodeInstruction (Load Numer)   = def{ wrSignal=True, wrSelSignal=False }
+    decodeInstruction (Load Denom)   = def{ wrSignal=True, wrSelSignal=True }
+    decodeInstruction (Out Quotient) = def{ oeSignal=True, oeSelSignal=False }
+    decodeInstruction (Out Remain)   = def{ oeSignal=True, oeSelSignal=True }
 
 
 instance Connected (Divisor v x t) where

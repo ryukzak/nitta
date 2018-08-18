@@ -1,13 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes    #-}
 {-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE PartialTypeSignatures  #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 module NITTA.Utils.Process where
@@ -61,12 +53,6 @@ scheduleInstructionAndUpdateTick start finish instr = do
     Schedule{ iProxy } <- get
     scheduleStep (Activity $ start ... finish) $ InstructionStep (instr `asProxyTypeOf` iProxy)
     updateTick $ finish + 1
-
-scheduleNopAndUpdateTick start finish =
-    when (start <= finish) $ do
-        Schedule{ iProxy } <- get
-        scheduleStep (Activity $ start ... finish) $ InstructionStep (nop `asProxyTypeOf` iProxy)
-        updateTick $ finish + 1
 
 scheduleEndpoint EndpointD{ epdAt, epdRole } codeGen = do
     scheduleStep (Activity $ inf epdAt ... sup epdAt) $ EndpointRoleStep epdRole

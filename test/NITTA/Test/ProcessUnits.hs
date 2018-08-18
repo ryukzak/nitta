@@ -73,7 +73,7 @@ endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
             endpointWorkGen' (decision endpointDT pu d) alg passedAlg
           BindOpt fb
             ->  let alg' = filter (/= fb) alg
-                in case bind fb pu of
+                in case tryBind fb pu of
                   Right pu' -> endpointWorkGen' pu' alg' (fb : passedAlg)
                   Left _err -> endpointWorkGen' pu alg' passedAlg
       where

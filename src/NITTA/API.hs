@@ -1,14 +1,9 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators     #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 -- TODO: https://tools.ietf.org/id/draft-kelly-json-hal-03.txt
@@ -21,7 +16,7 @@ import           Data.Aeson
 import           Data.Default
 import           Data.Map                    (Map, fromList)
 import           Data.Maybe
-import           Data.Monoid
+import           Data.Monoid                 ((<>))
 import           GHC.Generics
 import           ListT                       (toList)
 import           Network.Wai.Handler.Warp
@@ -77,7 +72,7 @@ synthesisServer stm
     forktSynthesis sId pId stepId = do
       syn <- M.lookup sId stm
       when ( isJust syn ) $ throwSTM err409{ errBody="Synthesis already exist." }
-      p@Synthesis{..} <- getSynthesis' stm pId
+      p@Synthesis{ childs, steps } <- getSynthesis' stm pId
       M.insert p{ childs=(sId, stepId) : childs } pId stm
       M.insert def{ parent=Just ( pId, stepId )
                   , steps=reverse $ take (stepId + 1) $ reverse steps
@@ -121,7 +116,7 @@ stepsServer stm sId
       unless ( length steps > stepId ) $ throwSTM err409{ errBody="Step not exists." }
       return $ reverse steps !! stepId
     autoPostStep toEnd = do
-      syn@Synthesis{..} <- getSynthesis' stm sId
+      syn@Synthesis{ steps } <- getSynthesis' stm sId
       let steps' = if toEnd
           then mkStepToEnd steps
           else mkStep (head steps) : steps
@@ -151,7 +146,7 @@ getSynthesis' stm sId = do
 
 
 getDecision stm sId stepId = do
-  Synthesis{..} <- getSynthesis stm sId
+  Synthesis{ steps } <- getSynthesis stm sId
   return $ steps !! stepId
 
 

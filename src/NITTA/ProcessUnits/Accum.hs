@@ -1,28 +1,25 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.ProcessUnits.Accum where
 
 import           Data.Default
-import           Data.List                   (intersect, partition, (\\))
-import           Data.Set                    (elems, fromList)
+import           Data.List                           (intersect, partition,
+                                                      (\\))
+import           Data.Set                            (elems, fromList)
 import           Data.Typeable
 import           NITTA.FunctionBlocks
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
-import           Numeric.Interval            (singleton, (...))
-import           Prelude                     hiding (init)
+import           Numeric.Interval                    (singleton, (...))
+import           Prelude                             hiding (init)
 
 
 
@@ -44,7 +41,7 @@ instance ( Var v
   bindToState fb ac@Accum{ acIn=[], acOut=[] }
     | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[(False, a), (False, b)], acOut=elems cs }
     | Just (Sub (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[(False, a), (True, b)], acOut=elems cs }
-    | otherwise = Left $ "Unknown functional block: " ++ show fb
+    | otherwise = Left $ "The functional block is unsupported by Accum: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
   -- тихая ругань по поводу решения
@@ -73,20 +70,18 @@ instance ( Var v
 
 
 instance Controllable (Accum v x t) where
+  data Instruction (Accum v x t)
+    = Init Bool
+    | Load Bool
+    | Out
+    deriving (Show)
+
   data Microcode (Accum v x t)
     = Microcode{ oeSignal :: Bool
                , initSignal :: Bool
                , loadSignal :: Bool
                , negSignal :: Maybe Bool
                } deriving ( Show, Eq, Ord )
-
-  data Instruction (Accum v x t)
-    = Nop
-    | Init Bool
-    | Load Bool
-    | Out
-    deriving (Show)
-  nop = Nop
 
 
 instance Default (Microcode (Accum v x t)) where
@@ -97,7 +92,6 @@ instance Default (Microcode (Accum v x t)) where
                  }
 
 instance UnambiguouslyDecode (Accum v x t) where
-  decodeInstruction Nop        = def
   decodeInstruction (Init neg) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
   decodeInstruction (Load neg) = def{ loadSignal=True, negSignal=Just neg }
   decodeInstruction Out        = def{ oeSignal=True }

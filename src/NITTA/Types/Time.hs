@@ -1,9 +1,6 @@
 {-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -38,9 +35,16 @@ data TimeConstrain t
   { tcAvailable :: Interval t -- ^ Замкнутый интервал, в рамках которого можно выполнить активность.
   , tcDuration  :: Interval t -- ^ Замкнутый интервал допустимой длительности активности.
   } deriving ( Eq )
-instance ( Show t ) => Show (TimeConstrain t) where
-  show TimeConstrain{..} = show tcAvailable ++ " /P " ++ show tcDuration ++ ""
-
+instance ( Show t, Eq t, Bounded t ) => Show (TimeConstrain t) where
+  show TimeConstrain{ tcAvailable, tcDuration } = showInf tcAvailable ++ " /P " ++ showInf tcDuration
+    where
+      showInf i
+        = let
+          a = inf i
+          b = sup i
+        in if b == maxBound
+          then show a ++ "..∞"
+          else show a ++ ".." ++ show b
 
 -- | Изначально, для описания времени использовался тип Int. Время отсчитывалось с 0, было линейным
 -- и совпадало с адресами памяти команд. К сожалению, это никуда не годится в случае если:

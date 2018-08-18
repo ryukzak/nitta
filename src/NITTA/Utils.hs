@@ -1,20 +1,15 @@
-{-# LANGUAGE AllowAmbiguousTypes       #-}
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 module NITTA.Utils where
 
 import           Control.Monad.State
+import           Data.Default
 import           Data.List           (minimumBy, sortOn)
 import           Data.Maybe          (mapMaybe)
 import           Data.Set            (difference, elems, unions)
@@ -32,18 +27,17 @@ unionsMap f lst = unions $ map f lst
 oneOf = head . elems
 
 instance ( Show (Instruction pu)
+         , Default (Microcode pu)
          , ProcessUnit pu v t
          , UnambiguouslyDecode pu
          , Time t
          , Typeable pu
          , Controllable pu
          ) => ByTime pu t where
-  microcodeAt pu t =
-    let instruction = case mapMaybe (extractInstruction pu) $ whatsHappen t (process pu) of
-          []  -> nop
-          [i] -> i
+  microcodeAt pu t = case mapMaybe (extractInstruction pu) $ whatsHappen t (process pu) of
+          []  -> def
+          [i] -> decodeInstruction i
           is  -> error $ "Ambiguously instruction at " ++ show t ++ ": " ++ show is
-    in decodeInstruction instruction
 
 
 
@@ -60,7 +54,7 @@ bool2binstr False = "1'b0"
 modifyProcess p st = runState st p
 
 addStep placeInTime info = do
-  p@Process{..} <- get
+  p@Process{ nextUid, steps } <- get
   put p { nextUid=succ nextUid
         , steps=Step nextUid placeInTime info : steps
         }
@@ -73,7 +67,7 @@ addStep_ placeInTime info = do
 addActivity interval = addStep $ Activity interval
 
 relation r = do
-  p@Process{..} <- get
+  p@Process{ relations } <- get
   put p{ relations=r : relations }
 
 setProcessTime t = do
@@ -82,7 +76,7 @@ setProcessTime t = do
 
 getProcessTime :: State (Process v t) t
 getProcessTime = do
-  Process{..} <- get
+  Process{ nextTick } <- get
   return nextTick
 
 bindFB fb t = addStep (Event t) $ CADStep $ "Bind " ++ show fb

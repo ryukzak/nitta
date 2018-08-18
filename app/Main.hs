@@ -1,11 +1,4 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE Rank2Types            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module Main where
@@ -13,6 +6,7 @@ module Main where
 import           Data.Default
 import qualified Data.Map                      as M
 import           Data.Maybe
+import           Demo
 import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
@@ -29,30 +23,22 @@ import           NITTA.Types
 import           System.FilePath               (joinPath)
 
 
-microarch = busNetwork 31 True
+microarch = busNetwork 31 (Just True)
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-  , ("spi", PU def SPI.PUPorts{ SPI.wr=Signal 22, SPI.oe=Signal 23
-                              , SPI.start="start", SPI.stop="stop"
-                              , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
-                              })
-  , ("mul", PU M.multiplier{ M.puMocked=True } M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-  , ("div", PU D.divisor{ D.state=D.DivisorSt True, D.pipeline=4 } D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+  , ("spi", PU
+      (SPI.slaveSPI 0)
+      SPI.PUPorts{ SPI.wr=Signal 22, SPI.oe=Signal 23
+                 , SPI.stop="stop"
+                 , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
+                 })
+  , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
+  , ("div", PU (D.divisor 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   ]
-
-fibonacciAlg = [ FB.loop 0 ["a1"      ] "b2" :: FB (Parcel String Int)
-               , FB.loop 1 ["b1", "b2"] "c"
-               , FB.add "a1" "b1" ["c", "c_copy"]
-               , FB.send "c_copy"
-               , FB.send "i2"
-               , FB.loop 2 ["i1", "i2"] "i+1"
-               , FB.constant 1 ["one"]
-               , FB.add "i1" "one" ["i+1"]
-               ]
 
 fibonacciMultAlg = [ FB.loop 1 ["a1"      ] "b2" :: FB (Parcel String Int)
                    , FB.loop 2 ["b1", "b2"] "c"
@@ -78,19 +64,6 @@ divAndMulAlg
     , FB.multiply "x" "e'" ["y"]
     ]
 
-teacupAlg = [ FB.constant 70000 ["T_room"] :: FB (Parcel String Int)
-            , FB.constant 10000 ["t_ch"]
-            , FB.constant 125 ["t_step1", "t_step2"]
-            , FB.loop 180000 ["T_cup1", "T_cup2"] "t_cup'"
-            -- (Teacup Temperature - T_room) / t_ch
-            , FB.sub "T_room" "T_cup1" ["acc"]
-            , FB.division "acc" "t_ch" ["loss"] []
-            -- INTEG ( -loss to Room
-            , FB.multiply "loss" "t_step1" ["delta"]
-            , FB.add "T_cup2" "delta" ["t_cup'"]
-            , FB.loop 0 ["t"] "t'"
-            , FB.add "t" "t_step2" ["t'"]
-            ]
 
 spiAlg = [ FB.receive ["a"] :: FB (Parcel String Int)
          , FB.reg "a" ["b"]
@@ -138,13 +111,15 @@ graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
 
 
 main = do
+  teacupDemo
+  fibonacciDemo
   -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
   test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
-  -- test "teacup" (nitta $ synthesis $ frame $ dfgraph teacupAlg) def
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
   -- putStrLn "funSim teacup:"
-  -- funSim 5 def teacupAlg
+  test "teacup" (nitta $ synthesis $ frame $ dfgraph teacupAlg) def
+  funSim 5 def teacupAlg
 
   -- putStrLn "funSim fibonacci:"
   -- funSim 5 def divAndMulAlg

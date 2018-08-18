@@ -1,15 +1,14 @@
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE LambdaCase                #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE Rank2Types                #-}
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE UndecidableInstances      #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TupleSections         #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 {-
@@ -31,21 +30,22 @@
 module NITTA.BusNetwork where
 
 import           Control.Monad.State
-import qualified Data.Array           as A
+import qualified Data.Array                    as A
 import           Data.Default
-import           Data.Either
-import           Data.List            (find, nub, partition, sortOn, (\\))
-import qualified Data.Map             as M
-import           Data.Maybe           (fromMaybe, isJust, mapMaybe)
-import           Data.Set             (elems, fromList, intersection)
-import qualified Data.String.Utils    as S
+import           Data.List                     (find, nub, partition, sortOn,
+                                                (\\))
+import qualified Data.Map                      as M
+import           Data.Maybe                    (fromMaybe, isJust, mapMaybe)
+import           Data.Set                      (elems, fromList, intersection)
+import qualified Data.String.Utils             as S
 import           Data.Typeable
-import           NITTA.FunctionBlocks (get', simulateAlgByCycle)
+import           NITTA.FunctionBlocks          (get', simulateAlgByCycle)
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
-import           Numeric.Interval     (inf, width, (...))
+import           Numeric.Interval              (inf, width, (...))
+import           Text.InterpolatedString.Perl6 (qq)
 
 -- import           Debug.Trace
 
@@ -70,7 +70,7 @@ data GBusNetwork title spu v x t
     , bnSignalBusWidth :: Int
     , bnInputPorts     :: [InputPort]
     , bnOutputPorts    :: [OutputPort]
-    , bnAllowDrop      :: Bool
+    , bnAllowDrop      :: Maybe Bool
     }
 type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 
@@ -97,15 +97,13 @@ busNetwork w allowDrop ips ops pus = BusNetwork [] (M.fromList []) def (M.fromLi
           { parameterDataWidth=InlineParam "DATA_WIDTH"
           , parameterAttrWidth=InlineParam "ATTR_WIDTH"
           , dataIn="data_bus"
-          , dataOut=valueData title
+          , dataOut=title ++ "_data_out"
           , attrIn="attr_bus"
-          , attrOut=valueAttr title
+          , attrOut=title ++ "_attr_out"
           , signal= \(Signal i) -> "control_bus[" ++ show i ++ "]"
           }
         })
       ) pus
-    valueData t = t ++ "_data_out"
-    valueAttr t = t ++ "_attr_out"
 
 instance ( Title title
          , Time t
@@ -196,14 +194,14 @@ instance ( Title title, Var v, Time t
 instance ( Title title, Time t, Var v, Typeable x
          ) => ProcessUnit (BusNetwork title v x t) (Parcel v x) t where
 
-  bind fb bn@BusNetwork{..}
-    | any (isRight . bind fb) $ M.elems bnPus
+  tryBind fb bn@BusNetwork{..}
+    | any (allowToProcess fb) $ M.elems bnPus
     = Right bn{ bnRemains=fb : bnRemains }
-  bind fb BusNetwork{..} = Left $ "All sub process units reject the functional block: " ++ show fb ++ "\n"
+  tryBind fb BusNetwork{..} = Left $ "All sub process units reject the functional block: " ++ show fb ++ "\n"
                                 ++ rejects
     where
       rejects = S.join "\n" $ map showReject $ M.assocs bnPus
-      showReject (title, pu) | Left e <- bind fb pu = "    [" ++ show title ++ "]: " ++ e
+      showReject (title, pu) | Left err <- tryBind fb pu = "    [" ++ show title ++ "]: " ++ err
       showReject (title, _) = "    [" ++ show title ++ "]: undefined"
 
   process pu@BusNetwork{..} = let
@@ -242,15 +240,12 @@ instance ( Title title, Time t, Var v, Typeable x
 
 
 instance Controllable (BusNetwork title v x t) where
-
   data Instruction (BusNetwork title v x t)
     = Transport v title title
     deriving (Typeable, Show)
 
   data Microcode (BusNetwork title v x t)
     = BusNetworkMC (A.Array Signal Value)
-
-  nop = undefined
 
 
 instance {-# OVERLAPS #-}
@@ -260,7 +255,7 @@ instance {-# OVERLAPS #-}
     = BusNetworkMC $ foldl merge initSt $ M.elems bnPus
     where
       initSt = A.listArray (Signal 0, Signal $ bnSignalBusWidth - 1) $ repeat def
-      merge st PU{..}
+      merge st PU{ unit, links }
         = foldl merge' st $ transmitToLink (microcodeAt unit t) links
       merge' st (s, x) = st A.// [ (s, st A.! s +++ x) ]
 
@@ -294,7 +289,7 @@ instance ( Var v
       bindVariants' fb =
         [ BindingO fb puTitle
         | (puTitle, pu) <- sortOn (length . binded . fst) $ M.assocs bnPus
-        , isRight $ bind fb pu
+        , allowToProcess fb pu
         , not $ selfTransport fb puTitle
         ]
 
@@ -305,7 +300,7 @@ instance ( Var v
                      | otherwise = []
 
   decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
-    = bn{ bnPus=M.adjust (fromRight undefined . bind fb) puTitle bnPus
+    = bn{ bnPus=M.adjust (bind fb) puTitle bnPus
         , bnBinded=M.alter (\case Just fbs -> Just $ fb : fbs
                                   Nothing  -> Just [fb]
                            ) puTitle bnBinded
@@ -331,78 +326,63 @@ instance ( Time t
     where
       mn = moduleName title pu
       iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
-            in renderMST
-              [ "module $moduleName$"
-              , "  #( parameter DATA_WIDTH = 32"
-              , "   , parameter ATTR_WIDTH = 4"
-              , "   )"
-              , "  ( input                     clk"
-              , "  , input                     rst"
-              , S.join ", " ("  " : map (\(InputPort n) -> "input " ++ n) bnInputPorts)
-              , S.join ", " ("  " : map (\(OutputPort n) -> "output " ++ n) bnOutputPorts)
-              , "  , output              [7:0] debug_status"
-              , "  , output              [7:0] debug_bus1"
-              , "  , output              [7:0] debug_bus2"
-              , "  , input                     is_drop_allow"
-              , "  );"
-              , ""
-              , "parameter MICROCODE_WIDTH = $microCodeWidth$;"
-              , ""
-              , "// Sub module instances"
-              , "wire [MICROCODE_WIDTH-1:0] control_bus;"
-              , "wire [DATA_WIDTH-1:0] data_bus;"
-              , "wire [ATTR_WIDTH-1:0] attr_bus;"
-              , "wire cycle, start, stop;"
-              , ""
-              , "wire [7:0] debug_pc;"
-              , "assign debug_status = { cycle, debug_pc[6:0] };"
-              , "assign debug_bus1 = data_bus[7:0];"
-              , "assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];"
-              , ""
-              , "pu_simple_control"
-              , "  #( .MICROCODE_WIDTH( MICROCODE_WIDTH )"
-              , "   , .PROGRAM_DUMP( \"\\$path\\$$moduleName$.dump\" )"
-              , "   , .MEMORY_SIZE( $ProgramSize$ )"
-              , "   ) control_unit"
-              , "  ( .clk( clk )"
-              , "  , .rst( rst )"
-              , "  , .start_cycle( " ++ bool2binstr bnAllowDrop ++ " || stop )"
-              , "  , .cycle( cycle )"
-              , "  , .signals_out( control_bus )"
-              , "  , .trace_pc( debug_pc )"
-              , "  );"
-              , ""
-              , "$instances$"
-              , "", ""
-              , "assign { attr_bus, data_bus } = "
-              , "$OutputRegs$;"
-              , ""
-              , "endmodule"
-              , ""
-              ]
-              [ ( "moduleName", mn )
-              , ( "microCodeWidth", show bnSignalBusWidth )
-              , ( "instances", S.join "\n\n" instances)
-              , ( "OutputRegs", S.join "| \n" $ map (\(a, d) -> "  { " ++ a ++ ", " ++ d ++ " } ") valuesRegs )
-              , ( "ProgramSize", show $ fromEnum (nextTick bnProcess)
-                  + 1 -- 0 адресс программы для простоя процессора
-                )
-              ]
-      valueData t = t ++ "_data_out"
-      valueAttr t = t ++ "_attr_out"
-      regInstance t = renderMST
-        [ "wire [DATA_WIDTH-1:0] $DataOut$;"
-        , "wire [ATTR_WIDTH-1:0] $AttrOut$;"
-        ]
-        [ ( "DataOut", valueData t )
-        , ( "AttrOut", valueAttr t )
-        ]
+            in [qq|{"module"} $mn
+    #( parameter DATA_WIDTH = 32
+     , parameter ATTR_WIDTH = 4
+     )
+    ( input                     clk
+    , input                     rst
+{ S.join "\\n" $ map (\\(InputPort p) -> ("    , input " ++ p)) bnInputPorts }
+{ S.join "\\n" $ map (\\(OutputPort p) -> ("    , output " ++ p)) bnOutputPorts }
+    , output              [7:0] debug_status
+    , output              [7:0] debug_bus1
+    , output              [7:0] debug_bus2
+    , input                     is_drop_allow
+    );
+
+parameter MICROCODE_WIDTH = $bnSignalBusWidth;
+// Sub module_ instances
+wire [MICROCODE_WIDTH-1:0] control_bus;
+wire [DATA_WIDTH-1:0] data_bus;
+wire [ATTR_WIDTH-1:0] attr_bus;
+wire cycle, start, stop;
+
+wire [7:0] debug_pc;
+assign debug_status = \{ cycle, debug_pc[6:0] \};
+assign debug_bus1 = data_bus[7:0];
+assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
+
+pu_simple_control
+    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )
+     , .PROGRAM_DUMP( "\$path\${mn}.dump" )
+     , .MEMORY_SIZE( {fromEnum (nextTick bnProcess) + 1} ) // 0 - address for nop microcode
+     ) control_unit
+    ( .clk( clk )
+    , .rst( rst )
+    , .start_cycle( { maybe "is_drop_allow" bool2binstr bnAllowDrop } || stop )
+    , .cycle( cycle )
+    , .signals_out( control_bus )
+    , .trace_pc( debug_pc )
+    );
+
+{ S.join "\\n\\n" instances }
+
+assign data_bus = { S.join " | " $ map snd valuesRegs };
+assign attr_bus = { S.join " | " $ map fst valuesRegs };
+
+endmodule
+|]
+
+      regInstance (t :: String)
+        = [qq|wire [DATA_WIDTH-1:0] {t}_data_out;
+wire [ATTR_WIDTH-1:0] {t}_attr_out;|]
+
 
       renderInstance insts regs [] = ( reverse insts, reverse regs )
       renderInstance insts regs ((t, PU{ unit, systemEnv, links }) : xs)
         = let inst = hardwareInstance t unit systemEnv links
               insts' = inst : regInstance t : insts
-              regs' = (valueAttr t, valueData t) : regs
+              regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
           in renderInstance insts' regs' xs
 
   software title pu@BusNetwork{ bnProcess=Process{..}, ..}
@@ -446,7 +426,7 @@ instance ( Title title, Var v, Time t
         , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
         , "// if 1 - The process cycle are indipendent from a SPI."
         , "// else - The process cycle are wait for the SPI."
-        , "  , .is_drop_allow( " ++ bool2binstr bnAllowDrop ++ " )"
+        , "  , .is_drop_allow( " ++ maybe "is_drop_allow" bool2binstr bnAllowDrop ++ " )"
         , "  );                                                                                                      "
         , "                                                                                                          "
         , S.join "\n\n"
@@ -457,9 +437,9 @@ instance ( Title title, Var v, Time t
           , not $ null tbEnv
           ]
         , "                                                                                                          "
-        , verilogWorkInitialze
+        , snippetDumpFile $ moduleName projectName n
         , "                                                                                                          "
-        , verilogClockGenerator
+        , snippetClkGen
         , "                                                                                                          "
         , "initial                                                                                                 "
         , "  begin                                                                                                 "
@@ -480,7 +460,7 @@ instance ( Title title, Var v, Time t
       -- FIXME: 5 - must be variable
       cntxs = take 5 $ simulateAlgByCycle cntx0 $ functionalBlocks n
       cycleTicks = [ 0 .. nextTick (process n) - 1 ]
-      simulationInfo = (0, def) : concatMap (\cntx -> map (\t -> (t, cntx)) cycleTicks) cntxs
+      simulationInfo = (0, def) : concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
       assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
         where
           assert (t, cntx)

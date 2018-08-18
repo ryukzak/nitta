@@ -1,20 +1,17 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 -- slave / master / slave-master?
 module NITTA.ProcessUnits.SPI
   ( PUPorts(..)
   , SPI
+  , slaveSPI
   ) where
 
 import           Data.Default
@@ -31,13 +28,17 @@ import           Numeric.Interval                    ((...))
 
 
 type SPI v x t = SerialPU (State v x t) v x t
-data State v x t = State{ spiSend    :: ([v], [v])
-                        , spiReceive :: ([[v]], [[v]])
+data State v x t = State{ spiSend         :: ([v], [v])
+                        , spiReceive      :: ([[v]], [[v]])
+                        , spiBounceFilter :: Int
                         }
   deriving ( Show )
 
 instance Default (State v x t) where
-  def = State def def
+  def = State def def 20
+
+slaveSPI :: ( Var v, Time t ) => Int -> SPI v x t
+slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def def
 
 
 
@@ -52,7 +53,7 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
     , let (ds, rs) = spiReceive
     = Right st{ spiReceive=(ds, elems vs : rs) }
 
-    | otherwise = Left $ "Unknown functional block: " ++ show fb
+    | otherwise = Left $ "The functional block is unsupported by SPI: " ++ show fb
 
   stateOptions State{ spiSend, spiReceive } now = catMaybes [ send' spiSend, receive' spiReceive ]
     where
@@ -80,10 +81,6 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
 
 
 instance Controllable (SPI v x t) where
-  data Microcode (SPI v x t)
-    = Microcode{ wrSignal :: Bool
-               , oeSignal :: Bool
-               } deriving ( Show, Eq, Ord )
   -- | Доступ к входному буферу осуществляется как к очереди. это сделано для
   -- того, что бы сократить колличество сигнальных линий (убрать адрес).
   -- Увеличение адреса производится по негативному фронту сигналов OE и WR для
@@ -101,11 +98,15 @@ instance Controllable (SPI v x t) where
   -- 6. Send - В блок загружается с шины слово по адресу 1.
   -- 7. Receive - Из блока выгружается на шину слово по адресу 1.
   data Instruction (SPI v x t)
-    = Nop
-    | Receiving
+    = Receiving
     | Sending
     deriving ( Show )
-  nop = Nop
+
+  data Microcode (SPI v x t)
+    = Microcode{ wrSignal :: Bool
+               , oeSignal :: Bool
+               } deriving ( Show, Eq, Ord )
+
 
 instance Default (Microcode (SPI v x t)) where
   def = Microcode{ wrSignal=False
@@ -114,7 +115,6 @@ instance Default (Microcode (SPI v x t)) where
 
 
 instance UnambiguouslyDecode (SPI v x t) where
-  decodeInstruction Nop       = def
   decodeInstruction Sending   = def{ wrSignal=True }
   decodeInstruction Receiving = def{ oeSignal=True }
 
@@ -129,7 +129,7 @@ instance ( Ord v ) => Simulatable (SPI v x t) v x where
 instance Connected (SPI v x t) where
   data PUPorts (SPI v x t)
     = PUPorts{ wr, oe :: Signal
-             , start, stop :: String -- FIXME: Что это такое и как этому быть?
+             , stop :: String -- FIXME: Что это такое и как этому быть?
              , mosi, sclk, cs :: InputPort
              , miso :: OutputPort
              } deriving ( Show )
@@ -144,7 +144,7 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
   moduleName _ _ = "pu_slave_spi"
   hardware title pu
     = Aggregate Nothing
-        [ FromLibrary "spi/spi_slave_driver_seq.v"
+        [ FromLibrary "spi/pu_slave_spi_driver.v"
         , FromLibrary "spi/spi_slave_driver.v"
         , FromLibrary "spi/buffer.v"
         , FromLibrary "spi/bounce_filter.v"
@@ -153,18 +153,17 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
         , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
         ]
   software _ pu = Immidiate "transport.txt" $ show pu
-  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
+  hardwareInstance title SerialPU{ spuState=State{ spiBounceFilter } } Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
     [ "pu_slave_spi"
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
-    , "   , .BOUNCE_FILTER( " ++ "20" ++ " )" -- FIXME: Must be configurable.
+    , "   , .BOUNCE_FILTER( " ++ show spiBounceFilter ++ " )" -- FIXME: Must be configurable.
     , "   ) $name$"
     , "  ( .clk( " ++ signalClk ++ " )"
     , "  , .rst( " ++ signalRst ++ " )"
     , "  , .signal_cycle( " ++ signalCycle ++ " )"
     , "  , .signal_oe( " ++ signal oe ++ " )"
     , "  , .signal_wr( " ++ signal wr ++ " )"
-    , "  , .flag_start( " ++ start ++ " )"
     , "  , .flag_stop( " ++ stop ++ " )"
     , "  , .data_in( " ++ dataIn ++ " )"
     , "  , .attr_in( " ++ attrIn ++ " )"

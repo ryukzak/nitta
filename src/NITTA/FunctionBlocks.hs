@@ -1,14 +1,10 @@
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE Rank2Types                #-}
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE StandaloneDeriving        #-}
-{-# LANGUAGE UndecidableInstances      #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 -- | В данном модуле описываются все функциональные блоки доступные в системе. Функциональные блоки
@@ -17,14 +13,19 @@
 --
 -- - bindToState (класс SerialPUState) для последовательных вычислительных узлов;
 -- - bind (класс ProcessUnit) для остальных
+--
+-- [@Функциональный блок@] Оператор прикладного алгоритма. Может обладать внутренним состояние
+-- (между циклами), подразумевать внутренний процесс.
+
 
 module NITTA.FunctionBlocks where
 
-import qualified Data.Bits     as B
-import           Data.List     (cycle, intersect, (\\))
-import qualified Data.Map      as M
+import qualified Data.Bits         as B
+import           Data.List         (cycle, intersect, (\\))
+import qualified Data.Map          as M
 import           Data.Maybe
-import           Data.Set      (elems, fromList, union)
+import           Data.Set          (elems, fromList, union)
+import qualified Data.String.Utils as S
 import           Data.Typeable
 import           NITTA.Types
 import           NITTA.Utils
@@ -37,7 +38,7 @@ addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test be
 
 
 get' cntx k = fromMaybe (error $ "Can't get from cntx." ++ show k) $ get cntx k
-get Cntx{..} k = do
+get Cntx{ cntxVars } k = do
   values <- cntxVars M.!? k
   case values of
     []      -> Nothing
@@ -49,18 +50,18 @@ get Cntx{..} k = do
 -- cntx - контекст, имеет тип: FunSimCntx. Это словарь со значениями переменных, входов, выходов.
 -- ks - список ключей в словаре, для которых нужно обновить знаение.
 -- v - новое значение вызодных переменных, которое необходимо записать для всех ключей.
-set cntx@Cntx{..} ks v = do
+set cntx@Cntx{ cntxVars } ks v = do
   let cntxVars' = foldl (flip $ M.alter (Just . maybe [v] (v:))) cntxVars ks
   return cntx{ cntxVars=cntxVars' }
 set' cntx ks v = fromMaybe (error "Can't set in cntx.") $ set cntx ks v
 
-receiveSim cntx@Cntx{..} k = do
+receiveSim cntx@Cntx{ cntxInputs } k = do
   values <- cntxInputs M.!? k
   value <- listToMaybe values
   let cntxInputs' = M.adjust tail k cntxInputs
   return (cntx{ cntxInputs=cntxInputs' }, value)
 
-sendSim cntx@Cntx{..} k v = do
+sendSim cntx@Cntx{ cntxOutputs } k v = do
   let cntxOutputs' = M.alter (Just . maybe [v] (v:)) k cntxOutputs
   return cntx{ cntxOutputs=cntxOutputs' }
 
@@ -108,7 +109,7 @@ reorderAlgorithm alg = orderAlgorithm' [] alg
       | let ready = filter (null . (\\ vs) . elems . inputs) fs
       , not $ null ready
       = ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
-    orderAlgorithm' _ _ = error $ "Can't sort algorithm. "
+    orderAlgorithm' _ _ = error "Can't sort algorithm."
 
 
 castFB :: ( Typeable fb ) => FB io -> Maybe (fb io)
@@ -151,7 +152,8 @@ instance ( Ord v ) => FunctionSimulation (FramOutput (Parcel v x)) v x where
 
 
 data Reg io = Reg (I io) (O io) deriving ( Typeable )
-deriving instance ( IOType io v x ) => Show (Reg io)
+instance ( Show v ) => Show (Reg (Parcel v x)) where
+  show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1
 deriving instance ( IOType io v x ) => Eq (Reg io)
 reg a b = FB $ Reg (I a) (O $ fromList b)
 
@@ -170,9 +172,11 @@ instance ( Ord v ) => FunctionSimulation (Reg (Parcel v x)) v x where
 
 
 data Loop io = Loop (X io) (O io) (I io) deriving ( Typeable )
-deriving instance ( IOType io v x ) => Show (Loop io)
+instance ( Show v, Show x ) => Show (Loop (Parcel v x)) where
+  show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join " = " (map show $ elems k2)
 deriving instance ( IOType io v x ) => Eq (Loop io)
 loop x bs a = FB $ Loop (X x) (O $ fromList bs) $ I a
+loop' x a bs = FB $ Loop (X x) (O $ fromList bs) $ I a
 
 instance ( IOType io v x ) => FunctionalBlock (Loop io) v where
   inputs  (Loop _ _a b) = variables b
@@ -186,7 +190,8 @@ instance ( Ord v, Show v, Show x ) => FunctionSimulation (Loop (Parcel v x)) v x
 
 
 data Add io = Add (I io) (I io) (O io) deriving ( Typeable )
-deriving instance ( IOType io v x ) => Show (Add io)
+instance ( Show v ) => Show (Add (Parcel v x)) where
+  show (Add (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " + " ++ show k2
 deriving instance ( IOType io v x ) => Eq (Add io)
 add a b c = FB $ Add (I a) (I b) $ O $ fromList c
 
@@ -206,7 +211,8 @@ instance ( Ord v, Num x ) => FunctionSimulation (Add (Parcel v x)) v x where
 
 
 data Sub io = Sub (I io) (I io) (O io) deriving ( Typeable )
-deriving instance ( IOType io v x ) => Show (Sub io)
+instance ( Show v ) => Show (Sub (Parcel v x)) where
+  show (Sub (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " - " ++ show k2
 deriving instance ( IOType io v x ) => Eq (Sub io)
 sub a b c = FB $ Sub (I a) (I b) $ O $ fromList c
 
@@ -224,9 +230,10 @@ instance ( Ord v, Num x ) => FunctionSimulation (Sub (Parcel v x)) v x where
     set cntx k3 v3
 
 
--- TODO: rename to Multiply
+
 data Multiply io = Multiply (I io) (I io) (O io) deriving ( Typeable )
-deriving instance ( IOType io v x ) => Show (Multiply io)
+instance ( Show v ) => Show (Multiply (Parcel v x)) where
+  show (Multiply (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " * " ++ show k2
 deriving instance ( IOType io v x ) => Eq (Multiply io)
 multiply a b c = FB $ Multiply (I a) (I b) $ O $ fromList c
 
@@ -249,7 +256,10 @@ data Division io = Division
   { denom, numer     :: I io
   , quotient, remain :: O io
   } deriving ( Typeable )
-deriving instance ( IOType io v x ) => Show (Division io)
+instance ( Show v ) => Show (Division (Parcel v x)) where
+  show (Division (I k1) (I k2) (O k3) (O k4))
+    = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " / " ++ show k2 ++ "; "
+    ++ S.join " = " (map show $ elems k4) ++ " = " ++ show k1 ++ " mod " ++ show k2
 deriving instance ( IOType io v x ) => Eq (Division io)
 division d n q r = FB Division
   { denom=I d
@@ -277,7 +287,8 @@ instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Division (Parcel v 
 
 
 data Constant io = Constant (X io) (O io) deriving ( Typeable )
-deriving instance ( IOType io v x, Show x ) => Show (Constant io)
+instance ( Show v, Show x ) => Show (Constant (Parcel v x)) where
+  show (Constant (X x) (O k)) = S.join " = " (map show $ elems k) ++ " = " ++ show x
 deriving instance ( IOType io v x, Eq x ) => Eq (Constant io)
 constant x vs = FB $ Constant (X x) $ O $ fromList vs
 
@@ -292,7 +303,9 @@ instance ( Ord v ) => FunctionSimulation (Constant (Parcel v x)) v x where
 data ShiftLR io = ShiftL (I io) (O io)
                 | ShiftR (I io) (O io)
                 deriving ( Typeable )
-deriving instance ( IOType io v x ) => Show (ShiftLR io)
+instance ( Show v ) => Show (ShiftLR (Parcel v x)) where
+  show (ShiftL (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1 ++ " << 1"
+  show (ShiftR (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1 ++ " >> 1"
 deriving instance ( IOType io v x ) => Eq (ShiftLR io)
 shiftL a b = FB $ ShiftL (I a) $ O $ fromList b
 shiftR a b = FB $ ShiftR (I a) $ O $ fromList b

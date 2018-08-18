@@ -1,14 +1,10 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.ProcessUnits.Shift where
@@ -48,8 +44,8 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
     = case fb' of
       ShiftL (I a) (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=False }
       ShiftR (I a) (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=True }
-    | otherwise = Left $ "Unknown functional block: " ++ show fb
-  bindToState _ _ = error "Try bind to non-zero state. (Accum)"
+    | otherwise = Left $ "The functional block is unsupported by Shift: " ++ show fb
+  bindToState _ _ = error "Try bind to non-zero state. (Shift)"
 
   -- тихая ругань по поводу решения
   stateOptions State{ sIn=Just v } now
@@ -78,6 +74,12 @@ data StepSize  = Bit   | Byte       deriving ( Show, Eq )
 data Mode      = Logic | Arithmetic deriving ( Show, Eq )
 
 instance Controllable (Shift v x t) where
+  data Instruction (Shift v x t)
+    = Init
+    | Work Bool StepSize Mode
+    | Out
+    deriving (Show)
+
   data Microcode (Shift v x t)
     = Microcode{ workSignal :: Bool
                , directionSignal :: Bool
@@ -86,14 +88,6 @@ instance Controllable (Shift v x t) where
                , initSignal :: Bool
                , oeSignal :: Bool
                } deriving ( Show, Eq, Ord )
-
-  data Instruction (Shift v x t)
-    = Nop
-    | Init
-    | Work Bool StepSize Mode
-    | Out
-    deriving (Show)
-  nop = Nop
 
 instance Default (Microcode (Shift v x t)) where
   def = Microcode{ workSignal=False
@@ -105,7 +99,6 @@ instance Default (Microcode (Shift v x t)) where
                  }
 
 instance UnambiguouslyDecode (Shift v x t) where
-  decodeInstruction Nop = def
   decodeInstruction Init = def{ initSignal=True }
   decodeInstruction Out = def{ oeSignal=True }
   decodeInstruction (Work toRight step mode)

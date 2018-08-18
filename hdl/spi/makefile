@@ -43,3 +43,7 @@ spi_slave_driver_tb.1: spi_slave_driver_tb.1.out
 
 spi_slave_driver_tb.1.out: spi_slave_driver.v spi_slave_driver_tb.1.v
 	iverilog -o spi_slave_driver_tb.1.out spi_slave_driver.v spi_slave_driver_tb.1.v
+
+pu_spi_slave_driver: pu_spi_slave_driver.v pu_spi_slave_driver_tb.v
+	iverilog -o pu_spi_slave_driver.out pu_spi_slave_driver.v pu_spi_slave_driver_tb.v && vvp.exe pu_spi_slave_driver.out
+	

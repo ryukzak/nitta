@@ -1,13 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -61,7 +56,7 @@ module NITTA.ProcessUnits.Fram
   , PUPorts(..)
   ) where
 
-import           Control.Monad         (void, when, (>=>))
+import           Control.Monad         ((>=>))
 import           Data.Array
 import           Data.Bits             (testBit)
 import           Data.Default
@@ -259,11 +254,12 @@ instance ( IOType (Parcel v x) v x
          , Show x
          , WithFunctionalBlocks (Fram v x t) (FB (Parcel v x))
          ) => ProcessUnit (Fram v x t) (Parcel v x) t where
-  bind fb0 pu@Fram{..} = do fb' <- toFSet fb0
-                            pu' <- bind' fb'
-                            if isSchedulingComplete pu'
-                              then Right pu'
-                              else Left "Schedule can't complete stop."
+  tryBind fb0 pu@Fram{..} = do
+    fb' <- toFSet fb0
+    pu' <- bind' fb'
+    if isSchedulingComplete pu'
+      then Right pu'
+      else Left "Schedule can't complete stop."
     where
       bind' fb | Just addr <- immidiateBindTo fb
                , let cell = frMemory ! addr
@@ -409,7 +405,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
               ((ep, instrs), p') = modifyProcess p $ do
                 e <- addStep (Activity $ d^.at) $ EndpointRoleStep $ d^.endRole
                 i <- addInstr pu instrTi instr
-                when (tick0 < instrTi^.infimum) $ void $ addInstr pu (tick0 ... instrTi^.infimum - 1) Nop
+                -- when (tick0 < instrTi^.infimum) $ void $ addInstr pu (tick0 ... instrTi^.infimum - 1) Nop
                 mapM_ (relation . Vertical e) instrs
                 setProcessTime $ d^.at.supremum + 1
                 return (e, [i])
@@ -460,7 +456,11 @@ cellLoad (_addr, Cell{..}) = sum [ if input == UsedOrBlocked then -2 else 0
 ---------------------------------------------------------------------
 
 
-instance ( Var v, Time t ) => Controllable (Fram v x t) where
+instance Controllable (Fram v x t) where
+  data Instruction (Fram v x t)
+    = Load Int
+    | Save Int
+    deriving (Show)
 
   data Microcode (Fram v x t)
     = Microcode{ oeSignal :: Bool
@@ -468,13 +468,6 @@ instance ( Var v, Time t ) => Controllable (Fram v x t) where
                , addrSignal :: Maybe Int
                }
     deriving (Show, Eq, Ord)
-
-  data Instruction (Fram v x t)
-    = Nop
-    | Load Int
-    | Save Int
-    deriving (Show)
-  nop = Nop
 
 instance Connected (Fram v x t) where
   data PUPorts (Fram v x t)
@@ -492,11 +485,12 @@ instance Connected (Fram v x t) where
 
 getAddr (Load addr) = Just addr
 getAddr (Save addr) = Just addr
-getAddr _           = Nothing
 
+
+instance Default (Microcode (Fram v x t)) where
+  def = Microcode False False Nothing
 
 instance UnambiguouslyDecode (Fram v x t) where
-  decodeInstruction  Nop        = Microcode False False Nothing
   decodeInstruction (Load addr) = Microcode True False $ Just addr
   decodeInstruction (Save addr) = Microcode False True $ Just addr
 
@@ -587,8 +581,8 @@ instance ( Var v
                    , addr=map Signal [ 2, 3, 4, 5 ]
                    }
         , "                                                                                                          "
-        , verilogWorkInitialze
-        , verilogClockGenerator
+        , snippetDumpFile $ moduleName projectName pu
+        , snippetClkGen
         , "                                                                                                          "
         , "initial                                                                                                   "
         , "  begin                                                                                                   "
@@ -598,9 +592,9 @@ instance ( Var v
         , "    forever @(posedge clk);                                                                               "
         , "  end                                                                                                     "
         , "                                                                                                          "
-        , initialFinish $ controlSignals pu
-        , initialFinish $ testDataInput pu cntx
-        , initialFinish $ testDataOutput projectName pu cntx
+        , snippetInitialFinish $ controlSignals pu
+        , snippetInitialFinish $ testDataInput pu cntx
+        , snippetInitialFinish $ testDataOutput projectName pu cntx
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]

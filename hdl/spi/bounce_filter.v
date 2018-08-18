@@ -4,22 +4,30 @@ module bounce_filter #
     ( input rst
     , input clk
     , input in
-    , output reg out
+    , output out
     );
 
 localparam CNT_WIDTH = $clog2( DIV );
 
 reg [CNT_WIDTH-1:0] cnt;
 
-always @(posedge clk) begin
-    if ( rst ) begin
-        cnt <= 0;
-    end else if ( cnt == DIV ) begin
-        cnt <= 0;
-        out <= in;
+generate
+    if ( DIV == 0 ) begin
+        assign out = in;
     end else begin
-        cnt <= cnt + 1;
+        reg buffer;
+        assign out = buffer;
+        always @(posedge clk) begin
+            if ( rst ) begin
+                cnt <= 0;
+            end else if ( cnt == DIV ) begin
+                cnt <= 0;
+                buffer <= in;
+            end else begin
+                cnt <= cnt + 1;
+            end
+        end
     end
-end
+endgenerate
 	
 endmodule
