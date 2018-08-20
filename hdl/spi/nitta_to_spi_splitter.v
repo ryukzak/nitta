@@ -2,7 +2,7 @@
 
 module nitta_to_spi_splitter #
         ( parameter DATA_WIDTH     = 32
-        , parameter ATTR_WIDTH     = 4 // FIXME:
+        , parameter ATTR_WIDTH     = 4
         , parameter SPI_DATA_WIDTH = 8
         )
     ( input                       clk

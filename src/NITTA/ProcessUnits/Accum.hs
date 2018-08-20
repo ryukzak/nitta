@@ -47,7 +47,6 @@ instance ( Var v
   -- тихая ругань по поводу решения
   stateOptions Accum{ acIn=vs@(_:_) } now
     | length vs == 2 -- первый аргумент.
-    -- TODO: Improve performance.
     = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
     | otherwise -- второй аргумент
     = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs

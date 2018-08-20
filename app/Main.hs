@@ -91,22 +91,6 @@ algorithm = [ FB.framInput 3 [ "a"
             , FB.add "d" "e" ["sum"]
             ]
 
-graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
-            , node $ FB.framInput 4 [ "b" ]
-            , node $ FB.sub "a" "b" ["c"]
-            , node $ FB.framOutput 0 "c"
-            -- FIXME: Синтезируется, но сгенировать тест пока нельзя.
-            -- , node $ FB.constant 0 ["p"]
-            -- , node $ FB.constant 0 ["const0"]
-            -- , node $ FB.constant 1 ["const1"]
-            -- , DFGSwitch "cond"
-            --   [ ( 0, DFG [ node $ FB.add "c" "const0" ["d"] ] )
-            --   , ( 1, DFG [ node $ FB.add "c" "const1" ["d"] ] )
-            --   ]
-            -- , node $ FB.framOutput 0 "d"
-            ]
-
-
 ---------------------------------------------------------------------------------
 
 

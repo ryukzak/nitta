@@ -1,26 +1,27 @@
-{-# LANGUAGE FunctionalDependencies    #-}
-{-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE TemplateHaskell           #-}
-{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE QuasiQuotes            #-}
+{-# LANGUAGE TemplateHaskell        #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Project where
 
 -- TODO: Файлы библиотек должны копироваться в проект.
 
-import           Control.Monad         (when)
+import           Control.Monad                 (when)
 import           Data.FileEmbed
-import           Data.List             (isSubsequenceOf)
-import qualified Data.List             as L
-import qualified Data.String.Utils     as S
+import           Data.List                     (isSubsequenceOf)
+import qualified Data.List                     as L
+import qualified Data.String.Utils             as S
 import           NITTA.Types
 import           NITTA.Utils
 import           System.Directory
-import           Text.InterpolatedString.Perl6 (qq)
 import           System.Exit
-import           System.FilePath.Posix (joinPath, pathSeparator)
+import           System.FilePath.Posix         (joinPath, pathSeparator)
 import           System.Process
+import           Text.InterpolatedString.Perl6 (qq)
 
+-- TODO: Сделать выбор вендора, сейчас это Quartus и IcarusVerilog.
 
 -- | Данный класс позволяет для реализующих его вычислительных блоков сгенировать test bench.
 class TestBench pu v x | pu -> v x where
@@ -32,7 +33,7 @@ data Project pu
   = Project
     { projectName :: String
     , libraryPath :: String
-    , projectPath   :: String
+    , projectPath :: String
     , model       :: pu
     } deriving ( Show )
 
@@ -170,20 +171,20 @@ projectFiles prj@Project{ projectName, libraryPath, model }
 -- * Snippets для генерации Verilog-а
 
 snippetClkGen :: String
-snippetClkGen = [qq|initial begin                                                                                             
-    clk = 1'b0;                                                                                             
-    rst = 1'b1;                                                                                             
-    repeat(4) #1 clk = ~clk;                                                                               
-    rst = 1'b0;                                                                                             
-    forever #1 clk = ~clk;                                                                                 
-end                                                                                                       
+snippetClkGen = [qq|initial begin
+    clk = 1'b0;
+    rst = 1'b1;
+    repeat(4) #1 clk = ~clk;
+    rst = 1'b0;
+    forever #1 clk = ~clk;
+end
 |]
 
 snippetDumpFile :: String -> String
-snippetDumpFile mn = [qq|initial begin                                                                                    
-    \\\$dumpfile("{ mn }_tb.vcd");                                                  
-    \\\$dumpvars(0, { mn }_tb);                                                       
-end                                                                                      
+snippetDumpFile mn = [qq|initial begin
+    \\\$dumpfile("{ mn }_tb.vcd");
+    \\\$dumpvars(0, { mn }_tb);
+end
 |]
 
 snippetInitialFinish :: String -> String

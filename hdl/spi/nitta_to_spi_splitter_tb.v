@@ -12,7 +12,7 @@ reg [31:0] from_nitta;
 
 nitta_to_spi_splitter 
   #( .DATA_WIDTH( 32 )
-   , .ATTR_WIDTH( 0 ) // FIXME:
+   , .ATTR_WIDTH( 0 )
    , .SPI_DATA_WIDTH( 8 )
    ) nitta_to_spi_splitter 
   ( .clk( clk )

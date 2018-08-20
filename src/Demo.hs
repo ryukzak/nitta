@@ -129,6 +129,10 @@ import           NITTA.Project
 import           NITTA.Types
 
 
+-- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
+
+-- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
+-- с задачей о целевой платформе.
 nittaArch = busNetwork 31 Nothing
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
     [ OutputPort "miso" ]
@@ -145,8 +149,6 @@ nittaArch = busNetwork 31 Nothing
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
     , ("div", PU (D.divisor 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
     ]
--- TODO: add frequency
--- TODO: fix rst
 
 
 -- |Одним из классических примеров алгоритмов является расчёт последовательности Фибоначчи: 0, 1, 2,

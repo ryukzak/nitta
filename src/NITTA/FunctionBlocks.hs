@@ -78,8 +78,9 @@ push ks v cntx
 
 
 -- | Симмулировать алгоритм.
---
--- TODO: simulate DFG
+
+-- FIXME: Заменить симуляцию [FunctionalBlock] на DataFlowGraph в simulateAlg и simulateAlgByCycle. В случае
+-- "расщеплённого времени" останавливаться с ошибкой.
 simulateAlg cntx0 fbs = step cntx0 $ cycle $ reorderAlgorithm fbs
   where
     step cntx (f:fs)

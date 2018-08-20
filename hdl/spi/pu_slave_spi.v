@@ -1,4 +1,11 @@
 `timescale 1 ms/ 1 ms
+
+// FIXME: Почистить реализацию модуля. Перенести модули тестового окружения в поддиректорию "test".
+
+// FIXME: Необходимо сделать получение данных через данный вычислительный блок.
+
+// FIXME: Необходимо сделать корректную работу с атрибутами (архитектура, testbench-и, испытания в железе).
+
 module pu_slave_spi #
         ( parameter DATA_WIDTH     = 32
         , parameter ATTR_WIDTH     = 4
@@ -27,10 +34,6 @@ module pu_slave_spi #
     , input                     mosi
     , output                    miso
     );
-
-// TODO: spi to nitta dataflow
-// TODO: move test module to test/
-
 
 
 ///////////////////////////////////////////////////////////

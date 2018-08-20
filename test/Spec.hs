@@ -18,10 +18,15 @@ import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck        as QC
 
+
+-- FIXME: Тестирование очень активно работает с диском. В связи с этим рационально положить папку
+-- hdl/gen в ramfs. Это и ускорит тестирование, и сбережёт железо. Необходимо это сделать для Linux,
+-- но код должен корректно запускаться на Windows / OS X.
 main = do
   counter <- newCounter 0 -- Используется для того, что бы раскладывать файлы в разные папки при симуляции.
+  -- FIXME: Сделать так, что бы при тестировании данная настройка могла определяться снаружи. А 10
+  -- выставлялось только при быстром тестировании.
   setEnv "TASTY_QUICKCHECK_TESTS" "10"
-  -- TODO: Положть gen в ram fs, нечего насиловать диск.
   defaultMain $ testGroup "NITTA"
     [ testGroup "Fram process unit"
       [ testCase "framRegAndOut" framRegAndOut

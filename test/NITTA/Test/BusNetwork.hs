@@ -36,7 +36,6 @@ netWithArithmAndSPI = busNetwork 27 (Just True)
                               })
   ]
 
--- TODO: Автоматическое подключение проводов.
 netWithArithm = busNetwork 31 (Just True) [] []
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )

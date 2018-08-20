@@ -83,6 +83,8 @@ transfered net@BusNetwork{..}
 
 
 -- TODO: Проверка подключения сигнальных линий.
+
+-- TODO: Вариант функции, где провода будут подключаться автоматически.
 busNetwork w allowDrop ips ops pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w ips ops allowDrop
   where
     pus' = map (\(title, f) ->
@@ -457,7 +459,7 @@ instance ( Title title, Var v, Time t
         [ ( "moduleName", moduleName projectName n )
         ]
 
-      -- FIXME: 5 - must be variable
+      -- TODO: Количество циклов для тестирования должно задаваться пользователем.
       cntxs = take 5 $ simulateAlgByCycle cntx0 $ functionalBlocks n
       cycleTicks = [ 0 .. nextTick (process n) - 1 ]
       simulationInfo = (0, def) : concatMap (\cntx -> map (, cntx) cycleTicks) cntxs

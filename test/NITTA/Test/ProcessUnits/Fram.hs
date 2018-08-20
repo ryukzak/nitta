@@ -23,8 +23,8 @@ import           Test.QuickCheck
 framProxy = Proxy :: Proxy (Fram String Int Int)
 
 
+-- TODO: Сделать данную операцию через Generics или убрать совсем.
 instance Arbitrary (FSet (Fram String Int t)) where
-  -- TODO: Сделать данную операцию через Generics.
   arbitrary = oneof [ FramInput' <$> (arbitrary :: Gen (FB.FramInput (Parcel String Int)))
                     , FramOutput' <$> (arbitrary :: Gen (FB.FramOutput (Parcel String Int)))
                     , Loop' <$> (arbitrary :: Gen (FB.Loop (Parcel String Int)))

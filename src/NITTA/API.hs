@@ -6,7 +6,6 @@
 {-# LANGUAGE TypeOperators     #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
--- TODO: https://tools.ietf.org/id/draft-kelly-json-hal-03.txt
 module NITTA.API where
 
 import           Control.Concurrent.STM

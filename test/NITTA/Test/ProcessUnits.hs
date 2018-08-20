@@ -85,8 +85,6 @@ endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
 
 
 -- | Генерация случайных входных данных для заданного алгорима.
---
--- TODO: Генерируемые значения должны типизироваться с учётом особенностей вычислительного блока.
 inputsGen (pu, fbs) = do
   values <- infiniteListOf $ choose (0, 1000)
   let is = elems $ unionsMap inputs fbs
