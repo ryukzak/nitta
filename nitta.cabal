@@ -46,6 +46,7 @@ library
                      , containers
                      , data-default
                      , directory
+                     , extra
                      , file-embed
                      , filepath
                      , HStringTemplate

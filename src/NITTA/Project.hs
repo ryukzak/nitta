@@ -1,12 +1,26 @@
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE QuasiQuotes            #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.Project where
+-- |Модуль отвечающий за генерацию проектов на базе процессора NITTA.
+module NITTA.Project
+    ( Project(..)
+    , TestBench(..)
+    , writeAndRunTestBench
+    , writeAndRunTestBenchDevNull
+    , writeProject
+    -- *Snippets for Verilog code-generation
+    , snippetClkGen
+    , snippetDumpFile
+    , snippetInitialFinish
+    ) where
 
--- TODO: Файлы библиотек должны копироваться в проект.
+-- FIXME: Файлы библиотек должны копироваться в проект.
+
+-- TODO: Сделать выбор вендора, сейчас это Quartus и IcarusVerilog.
 
 import           Control.Monad                 (when)
 import           Data.FileEmbed
@@ -18,10 +32,12 @@ import           NITTA.Utils
 import           System.Directory
 import           System.Exit
 import           System.FilePath.Posix         (joinPath, pathSeparator)
+import           System.Info.Extra             (isWindows)
+import           System.IO                     (IOMode (WriteMode), hPrint,
+                                                hPutStrLn, stderr, withFile)
 import           System.Process
 import           Text.InterpolatedString.Perl6 (qq)
 
--- TODO: Сделать выбор вендора, сейчас это Quartus и IcarusVerilog.
 
 -- |Данный класс позволяет для реализующих его вычислительных блоков сгенировать test bench.
 class TestBench pu v x | pu -> v x where
@@ -39,10 +55,17 @@ data Project pu v x
         } deriving ( Show )
 
 
--- |Сгенерировать и выполнить testbench.
+-- |Сохранить проект и выполнить test bench.
 writeAndRunTestBench prj = do
     writeProject prj
-    runTestBench prj
+    runTestBench stderr prj
+
+
+-- |Сохранить проект и выполнить test bench. При этом вывод текста будет отправлен в @/dev/null@.
+-- Используется для unittest-ов, которые должны "падать".
+writeAndRunTestBenchDevNull prj = do
+    writeProject prj
+    withFile (if isWindows then "NUL" else "/dev/null") WriteMode (`runTestBench` prj)
 
 
 -- |Записать на диск проект вычислителя.
@@ -57,9 +80,11 @@ writeProject prj@Project{ projectName, projectPath, model } = do
         $ renderST $(embedStringFile "template/Makefile")
             [ ( "iverilog_args", S.join " " $ snd $ projectFiles prj ) ]
 
------------------------------------------------------------
--- ModelSim
 
+-- |Сгенерировать служебные файлы для симуляции при помощи ModelSim.
+
+-- FIXME: Исправить интеграцию Modelsim и Quartus (прозрачный запуск симуляции по кнопке из
+-- Quartus).
 writeModelsimDo prj@Project{ projectPath } = do
     let (tb, files) = projectFiles prj
     writeFile ( joinPath [ projectPath, "wave.do" ] )
@@ -73,9 +98,7 @@ writeModelsimDo prj@Project{ projectPath } = do
             , ( "verilog_files", S.join "\n" $ map (\fn -> "vlog -vlog01compat -work work +incdir+$path $path/" ++ fn) files )
             ]
 
------------------------------------------------------------
--- Quartus
-
+-- |Сгенерировать служебные файлы для Quartus.
 writeQuartus prj@Project{ projectName, projectPath, model } = do
     let (tb, files) = projectFiles prj
     writeFile (joinPath [ projectPath, "nitta.qpf" ]) quartusQPF
@@ -128,33 +151,31 @@ writeImplementation pwd impl = writeImpl "" impl
 
 -- |Запустить testbench в указанной директории.
 -- TODO: Сделать вывод через Control.Monad.Writer.
-runTestBench prj@Project{ projectPath, model } = do
+runTestBench h prj@Project{ projectPath, model } = do
     let (_tb, files) = projectFiles prj
     ( compileExitCode, compileOut, compileErr )
         <- readCreateProcessWithExitCode (createIVerilogProcess projectPath files) []
     when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
-        mapM_ print $ functions model
-        putStrLn $ "compiler stdout:\n-------------------------\n" ++ compileOut
-        putStrLn $ "compiler stderr:\n-------------------------\n" ++ compileErr
+        mapM_ (hPrint h) $ functions model
+        hPutStrLn h $ "compiler stdout:\n-------------------------\n" ++ compileOut
+        hPutStrLn h $ "compiler stderr:\n-------------------------\n" ++ compileErr
         die "Verilog compilation failed!"
 
     (simExitCode, simOut, simErr)
         <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just projectPath } []
-        -- Yep, we can't stop simulation with bad ExitCode...
 
+    -- Yep, we can't stop simulation with bad ExitCode...
     when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut) $ do
-        mapM_ print $ functions model
-        putStrLn $ "sim stdout:\n-------------------------\n" ++ simOut
-        putStrLn $ "sim stderr:\n-------------------------\n" ++ simErr
+        mapM_ (hPrint h) $ functions model
+        hPutStrLn h $ "sim stdout:\n-------------------------\n" ++ simOut
+        hPutStrLn h $ "sim stderr:\n-------------------------\n" ++ simErr
 
     return $ not ("FAIL" `isSubsequenceOf` simOut)
 
 
 -- |Сгенерировать команду для компиляции icarus verilog-ом вычислительного блока и его тестового
 -- окружения.
-createIVerilogProcess workdir files
-    = let cp = proc "iverilog" files
-    in cp { cwd=Just workdir }
+createIVerilogProcess workdir files = (proc "iverilog" files){ cwd=Just workdir }
 
 projectFiles prj@Project{ projectName, libraryPath, model }
     = let
@@ -169,8 +190,8 @@ projectFiles prj@Project{ projectName, libraryPath, model }
         args _ Empty = []
 
 
----------------------------------------------------------------------
--- * Snippets для генерации Verilog-а
+-----------------------------------------------------------
+
 
 snippetClkGen :: String
 snippetClkGen = [qq|initial begin
