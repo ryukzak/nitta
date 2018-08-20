@@ -32,39 +32,39 @@ data Project pu
   = Project
     { projectName :: String
     , libraryPath :: String
-    , projectWD   :: String
+    , projectPath   :: String
     , model       :: pu
     } deriving ( Show )
 
 
 -- | Сгенерировать и выполнить testbench.
-writeAndRunTestBench prj@Project{ projectWD } cntx = do
+writeAndRunTestBench prj@Project{ projectPath } cntx = do
   writeProject prj
-  writeImplementation projectWD $ testBenchDescription prj cntx
+  writeImplementation projectPath $ testBenchDescription prj cntx
   runTestBench prj
 
 
 -- | Записать на диск проект вычислителя.
-writeProject prj@Project{ projectName, projectWD, model } = do
-  createDirectoryIfMissing True projectWD
-  writeImplementation projectWD $ hardware projectName model
-  writeImplementation projectWD $ software projectName model
+writeProject prj@Project{ projectName, projectPath, model } = do
+  createDirectoryIfMissing True projectPath
+  writeImplementation projectPath $ hardware projectName model
+  writeImplementation projectPath $ software projectName model
   writeModelsimDo prj
   writeQuartus prj
-  writeFile (joinPath [ projectWD, "Makefile" ])
+  writeFile (joinPath [ projectPath, "Makefile" ])
     $ renderST $(embedStringFile "template/Makefile")
       [ ( "iverilog_args", S.join " " $ snd $ projectFiles prj ) ]
 
 -----------------------------------------------------------
 -- ModelSim
 
-writeModelsimDo prj@Project{ projectWD } = do
+writeModelsimDo prj@Project{ projectPath } = do
   let (tb, files) = projectFiles prj
-  writeFile ( joinPath [ projectWD, "wave.do" ] )
+  writeFile ( joinPath [ projectPath, "wave.do" ] )
     $ renderST
       $(embedStringFile "template/modelsim/wave.do")
       [ ( "top_level", tb ) ]
-  writeFile ( joinPath [ projectWD, "sim.do" ] )
+  writeFile ( joinPath [ projectPath, "sim.do" ] )
     $ renderST
       $(embedStringFile "template/modelsim/sim.do")
       [ ( "top_level", tb )
@@ -74,16 +74,16 @@ writeModelsimDo prj@Project{ projectWD } = do
 -----------------------------------------------------------
 -- Quartus
 
-writeQuartus prj@Project{ projectName, projectWD, model } = do
+writeQuartus prj@Project{ projectName, projectPath, model } = do
   let (tb, files) = projectFiles prj
-  writeFile (joinPath [ projectWD, "nitta.qpf" ]) quartusQPF
-  writeFile (joinPath [ projectWD, "nitta.qsf" ]) $ quartusQSF tb files
-  writeFile (joinPath [ projectWD, "nitta.sdc" ]) quartusSDC
-  writeFile ( joinPath [ projectWD, "nitta.v" ] )
+  writeFile (joinPath [ projectPath, "nitta.qpf" ]) quartusQPF
+  writeFile (joinPath [ projectPath, "nitta.qsf" ]) $ quartusQSF tb files
+  writeFile (joinPath [ projectPath, "nitta.sdc" ]) quartusSDC
+  writeFile ( joinPath [ projectPath, "nitta.v" ] )
     $ renderST
       $(embedStringFile "template/quartus/nitta.v")
       [ ( "top_level_module", moduleName projectName model ) ]
-  writeFile ( joinPath [ projectWD, "pll.v" ] )
+  writeFile ( joinPath [ projectPath, "pll.v" ] )
     $(embedStringFile "template/quartus/pll.v")
 
 quartusQPF = $(embedStringFile "template/quartus/project_file.qpf") :: String
@@ -126,10 +126,10 @@ writeImplementation pwd impl = writeImpl "" impl
 
 -- | Запустить testbench в указанной директории.
 -- TODO: Сделать вывод через Control.Monad.Writer.
-runTestBench prj@Project{ projectWD, model } = do
+runTestBench prj@Project{ projectPath, model } = do
   let (_tb, files) = projectFiles prj
   ( compileExitCode, compileOut, compileErr )
-    <- readCreateProcessWithExitCode (createIVerilogProcess projectWD files) []
+    <- readCreateProcessWithExitCode (createIVerilogProcess projectPath files) []
   when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
     mapM_ print $ functionalBlocks model
     putStrLn $ "compiler stdout:\n-------------------------\n" ++ compileOut
@@ -137,7 +137,7 @@ runTestBench prj@Project{ projectWD, model } = do
     die "Verilog compilation failed!"
 
   (simExitCode, simOut, simErr)
-    <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just projectWD } []
+    <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just projectPath } []
   -- Yep, we can't stop simulation with bad ExitCode...
 
   when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut) $ do

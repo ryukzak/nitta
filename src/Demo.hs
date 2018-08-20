@@ -101,6 +101,7 @@ TODO: Указать какое ПО надо установить для раб
 -}
 
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 module Demo
     ( -- * Демо
@@ -126,7 +127,6 @@ import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
-import           System.FilePath               (joinPath)
 
 
 nittaArch = busNetwork 31 Nothing
@@ -159,7 +159,12 @@ nittaArch = busNetwork 31 Nothing
 --
 -- Каждый элемент этих последовательностей отправляется на внешний интерфейс, определяемый
 -- конфигурацией процессора. В данном примере это интерфейс SPI ('NITTA.ProcessUnit.SPI').
-fibonacciDemo = demo "fibonacci" nittaArch fibonacciAlg
+fibonacciDemo = demo Project
+    { projectName="fibonacciDemo"
+    , libraryPath="../.."
+    , projectPath="hdl/gen/fibonacciDemo"
+    , model=mkModelWithOneNetwork nittaArch fibonacciAlg
+    }
 
 fibonacciAlg = [ FB.loop' 0 "a_new" ["a", "a_send"]
                , FB.loop' 1 "b_new" ["b", "a_new"]
@@ -170,11 +175,16 @@ fibonacciAlg = [ FB.loop' 0 "a_new" ["a", "a_send"]
                , FB.constant 1 ["one"]
                , FB.add "index" "one" ["index_new"]
                , FB.send "index_send"
-               ] :: [FB (Parcel String Int)]
+               ]
 
 
 
-teacupDemo = demo "teacup" nittaArch teacupAlg
+teacupDemo = demo Project
+    { projectName="teacupDemo"
+    , libraryPath="../.."
+    , projectPath="hdl/gen/teacupDemo"
+    , model=mkModelWithOneNetwork nittaArch teacupAlg
+    }
 
 teacupAlg = [ FB.loop' 0 "time_new" ["time", "time_send"]
             , FB.constant 125 ["time_step_1", "time_step_2"]
@@ -192,24 +202,22 @@ teacupAlg = [ FB.loop' 0 "time_new" ["time", "time_send"]
             , FB.multiply "temp_loss" "time_step_2" ["delta"]
             , FB.add "temp_cup_2" "delta" ["temp_cup_new"]
             , FB.send "temp_cup_send"
-            ] :: [FB (Parcel String Int)]
+            ]
 
 
 
 -----------------------------------------------------------
 
-demo n arch alg = do
-    let pu = nitta $ synthesis $ frame arch $ dfgraph alg
-    let pwd = joinPath ["hdl", "gen", n]
-    let prj = Project n "../.." pwd pu
+mkModelWithOneNetwork arch alg = Frame
+    { nitta=bindAll alg arch
+    , dfg=DFG $ map node alg
+    , timeTag=Nothing
+    } :: SystemState String String String Int (TaggedTime String Int)
+
+schedule f = nitta $ foldl (\f' _ -> naive def f') f $ replicate 50 ()
+
+demo prj@Project{ projectPath, model } = do
+    let prj' = prj{ model=schedule model }
     let cntx = def
-    writeProject prj
-    writeImplementation pwd $ testBenchDescription prj cntx
-
-dfgraph = DFG . map node
-
-frame arch g
-  = let ma = bindAll (functionalBlocks g) arch
-    in Frame ma g Nothing :: SystemState String String String Int (TaggedTime String Int)
-
-synthesis f = foldl (\f' _ -> naive def f') f $ replicate 50 ()
+    writeProject prj'
+    writeImplementation projectPath $ testBenchDescription prj' cntx
