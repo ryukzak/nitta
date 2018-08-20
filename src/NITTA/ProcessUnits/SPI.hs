@@ -26,7 +26,6 @@ import           NITTA.Utils
 import           Numeric.Interval                    ((...))
 
 
-
 type SPI v x t = SerialPU (State v x t) v x t
 data State v x t = State{ spiSend         :: ([v], [v])
                         , spiReceive      :: ([[v]], [[v]])

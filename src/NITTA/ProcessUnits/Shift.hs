@@ -7,7 +7,11 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.ProcessUnits.Shift where
+module NITTA.ProcessUnits.Shift 
+  ( Shift
+  , PUPorts(..)
+  ) 
+  where
 
 import qualified Data.Bits                           as B
 import           Data.Default

@@ -482,8 +482,8 @@ instance ( Var v
 instance ( Time t, Var v
          ) => TargetSystemComponent (Multiplier v x t) where
     -- |Наименование аппаратного модуля, экземпляр которого создаётся для его встраивания в
-    -- процессор. В данном случае задается в файле @/hdl/mult/pu_mult.v@.
-    moduleName _title _pu = "pu_mult"
+    -- процессор. В данном случае задается в файле @/hdl/multiplier/pu_multiplier.v@.
+    moduleName _title _pu = "pu_multiplier"
 
     -- |Генератор программного обеспечения вычислительного блока. В случае умножителя ПО
     -- отсутствует. Разберёмся почему так. Ранее говорилось, что ПО имеет две составляющие:
@@ -505,16 +505,16 @@ instance ( Time t, Var v
     hardware title pu@Multiplier{ isMocked }
         = Aggregate Nothing
             [ if isMocked
-                then FromLibrary "mult/mult_mock.v"
-                else FromLibrary "mult/mult_inner.v"
-            , FromLibrary $ "mult/" ++ moduleName title pu ++ ".v"
+                then FromLibrary "multiplier/mult_mock.v"
+                else FromLibrary "multiplier/mult_inner.v"
+            , FromLibrary $ "multiplier/" ++ moduleName title pu ++ ".v"
             ]
 
     -- |Генерация фрагмента исходного кода для создания экземпляра вычислительного блока в рамках
     -- процессора. Основная задача данной функции - корректно включить вычислительный блок в
     -- инфраструктуру процессора, установив все параметры, имена и провода.
     hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
-        = [qq|pu_mult
+        = [qq|pu_multiplier
     #( .DATA_WIDTH( $parameterDataWidth )
      , .ATTR_WIDTH( $parameterAttrWidth )
      , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.

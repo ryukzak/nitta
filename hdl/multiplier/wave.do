@@ -1,14 +1,14 @@
 onerror {resume}
 quietly WaveActivateNextPane {} 0
-add wave -noupdate /pu_mult_tb/clk
-add wave -noupdate /pu_mult_tb/rst
-add wave -noupdate /pu_mult_tb/signal_sel
-add wave -noupdate /pu_mult_tb/signal_wr
-add wave -noupdate -radix decimal /pu_mult_tb/data_in
-add wave -noupdate -radix hexadecimal /pu_mult_tb/attr_in
-add wave -noupdate /pu_mult_tb/signal_oe
-add wave -noupdate -radix decimal /pu_mult_tb/data_out
-add wave -noupdate -radix hexadecimal /pu_mult_tb/attr_out
+add wave -noupdate /pu_multiplier_tb/clk
+add wave -noupdate /pu_multiplier_tb/rst
+add wave -noupdate /pu_multiplier_tb/signal_sel
+add wave -noupdate /pu_multiplier_tb/signal_wr
+add wave -noupdate -radix decimal /pu_multiplier_tb/data_in
+add wave -noupdate -radix hexadecimal /pu_multiplier_tb/attr_in
+add wave -noupdate /pu_multiplier_tb/signal_oe
+add wave -noupdate -radix decimal /pu_multiplier_tb/data_out
+add wave -noupdate -radix hexadecimal /pu_multiplier_tb/attr_out
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {0 ps} 0}
 quietly wave cursor active 0

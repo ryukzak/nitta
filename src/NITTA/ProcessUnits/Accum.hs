@@ -7,7 +7,10 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.ProcessUnits.Accum where
+module NITTA.ProcessUnits.Accum
+  ( Accum
+  , PUPorts(..)
+  ) where
 
 import           Data.Default
 import           Data.List                           (intersect, partition,
