@@ -25,23 +25,23 @@ import           Text.InterpolatedString.Perl6 (qq)
 
 -- |Данный класс позволяет для реализующих его вычислительных блоков сгенировать test bench.
 class TestBench pu v x | pu -> v x where
-    testBenchDescription :: Project pu -> Cntx v x -> Implementation
+    testBenchDescription :: Project pu v x -> Implementation
 
 
 -- |Проект вычислителя NITTA.
-data Project pu
+data Project pu v x
     = Project
         { projectName :: String -- ^Наименование проекта.
         , libraryPath :: String -- ^Директория библиотеки с вычислительными блоками.
         , projectPath :: String -- ^Директория проекта, куда будут размещены его файлы.
         , model       :: pu     -- ^Модель вычислительного блока.
+        , testCntx    :: Maybe (Cntx v x) -- ^Контекст для генерации test bench.
         } deriving ( Show )
 
 
 -- |Сгенерировать и выполнить testbench.
-writeAndRunTestBench prj@Project{ projectPath } cntx = do
+writeAndRunTestBench prj = do
     writeProject prj
-    writeImplementation projectPath $ testBenchDescription prj cntx
     runTestBench prj
 
 
@@ -50,6 +50,7 @@ writeProject prj@Project{ projectName, projectPath, model } = do
     createDirectoryIfMissing True projectPath
     writeImplementation projectPath $ hardware projectName model
     writeImplementation projectPath $ software projectName model
+    writeImplementation projectPath $ testBenchDescription prj
     writeModelsimDo prj
     writeQuartus prj
     writeFile (joinPath [ projectPath, "Makefile" ])
@@ -157,7 +158,7 @@ createIVerilogProcess workdir files
 
 projectFiles prj@Project{ projectName, libraryPath, model }
     = let
-        files = L.nub $ concatMap (args "") [ hardware projectName model, testBenchDescription prj undefined ]
+        files = L.nub $ concatMap (args "") [ hardware projectName model, testBenchDescription prj ]
         tb = S.replace ".v" "" $ last files
     in (tb, files)
     where

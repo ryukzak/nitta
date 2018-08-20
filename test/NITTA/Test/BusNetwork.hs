@@ -134,12 +134,12 @@ badTestFram = badUnitTest "badTestFram" netWithArithm
 
 unitTest name n cntx alg = do
   let n' = nitta $ synthesis $ frame n alg
-  r <- writeAndRunTestBench (Project name "../.." (joinPath ["hdl", "gen", name]) n') cntx
+  r <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
   r @? name
 
 badUnitTest name n cntx alg = do
   let n' = nitta $ synthesis $ frame n alg
-  r <- writeAndRunTestBench (Project name "../.." (joinPath ["hdl", "gen", name]) n') cntx
+  r <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
   not r @? name
 
 synthesis f = foldl (\f' _ -> naive def f') f $ replicate 50 ()

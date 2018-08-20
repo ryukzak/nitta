@@ -35,13 +35,13 @@ instance Arbitrary (FSet (Fram String Int t)) where
 -----------------------------------------------------------
 
 framRegAndOut = unitTestbench "framRegAndOut" framProxy
-  def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] }
+  (Just def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] })
   [ F.reg "aa" ["ab"]
   , F.framOutput 9 "ac"
   ]
 
 framRegAndConstant = unitTestbench "framRegAndConstant" framProxy
-  def{ cntxVars=M.fromList [("dzw", [975])] }
+  (Just def{ cntxVars=M.fromList [("dzw", [975])] })
   [ F.reg "dzw" ["act","mqt"]
   , F.constant 11 ["ovj"]
   ]

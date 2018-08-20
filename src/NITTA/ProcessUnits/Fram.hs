@@ -528,10 +528,10 @@ instance ( Var v
          , PrintfArg x
          , ProcessUnit (Fram v x t) (Parcel v x) t
          ) => TestBench (Fram v x t) v x where
-  testBenchDescription Project{ projectName, model=pu@Fram{ frProcess=Process{ steps }, .. } } cntx0
+  testBenchDescription Project{ projectName, model=pu@Fram{ frProcess=Process{ steps }, .. }, testCntx }
     = Immidiate (moduleName projectName pu ++ "_tb.v") testBenchImp
     where
-      Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) (Just cntx0) $ functions pu
+      Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx $ functions pu
       testBenchImp = renderMST
         [ "module $moduleName$_tb();                                                                                 "
         , "parameter DATA_WIDTH = 32;                                                                                "

@@ -88,7 +88,7 @@ endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
 inputsGen (pu, fbs) = do
   values <- infiniteListOf $ choose (0, 1000)
   let is = elems $ unionsMap inputs fbs
-  return (pu, fbs, def{ cntxVars=M.fromList $ zip is (map (:[]) values) })
+  return (pu, fbs, Just def{ cntxVars=M.fromList $ zip is (map (:[]) values) })
 
 
 -- | Проверка вычислительного блока на соответсвие работы аппаратной реализации и его модельного
@@ -96,7 +96,7 @@ inputsGen (pu, fbs) = do
 prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
   i <- run $ incrCounter 1 counter
   let path = joinPath ["hdl", "gen", n ++ show i]
-  res <- run $ writeAndRunTestBench (Project n "../.." path pu) values
+  res <- run $ writeAndRunTestBench $ Project n "../.." path pu values
   assert res
 
 
@@ -123,4 +123,4 @@ unitTestbench title proxy cntx alg
   = let lib = joinPath ["..", ".."]
         wd = joinPath ["hdl", "gen", title]
         pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
-    in writeAndRunTestBench (Project title lib wd pu) cntx @? title
+    in writeAndRunTestBench (Project title lib wd pu cntx) @? title

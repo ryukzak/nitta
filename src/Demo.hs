@@ -228,6 +228,7 @@ fibonacciDemo = demo Project
     , libraryPath="../.."
     , projectPath="hdl/gen/fibonacciDemo"
     , model=mkModelWithOneNetwork nittaArch fibonacciAlg
+    , testCntx=Nothing
     }
 
 fibonacciAlg = [ F.loop 0 "a_new" ["a", "a_send"]
@@ -260,6 +261,7 @@ teacupDemo = demo Project
     , libraryPath="../.."
     , projectPath="hdl/gen/teacupDemo"
     , model=mkModelWithOneNetwork nittaArch teacupAlg
+    , testCntx=Nothing
     }
 
 teacupAlg = [ F.loop 0 "time_new" ["time", "time_send"]
@@ -294,7 +296,5 @@ schedule f = nitta $ foldl (\f' _ -> naive def f') f $ replicate 50 ()
 
 demo prj@Project{ projectPath, model } = do
     let prj' = prj{ model=schedule model }
-    let cntx = def
     writeProject prj'
-    writeImplementation projectPath $ testBenchDescription prj' cntx
     putStrLn $ "Demo project in " ++ projectPath

@@ -98,11 +98,11 @@ main = do
   teacupDemo
   fibonacciDemo
   -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
-  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
+  test "fibonacci" $ nitta $ synthesis $ frame $ dfgraph fibonacciAlg
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
   -- putStrLn "funSim teacup:"
-  test "teacup" (nitta $ synthesis $ frame $ dfgraph teacupAlg) def
+  test "teacup" $ nitta $ synthesis $ frame $ dfgraph teacupAlg
   funSim 5 def teacupAlg
 
   -- putStrLn "funSim fibonacci:"
@@ -118,9 +118,14 @@ main = do
   putStrLn "-- the end --"
 
 
-test n pu cntx = do
-  let prj = Project n "../.." (joinPath ["hdl", "gen", n]) pu
-  r <- writeAndRunTestBench prj cntx
+test n pu = do
+  let prj = Project { projectName=n
+                    , libraryPath="../.."
+                    , projectPath=joinPath ["hdl", "gen", n]
+                    , model=pu
+                    , testCntx=Nothing
+                    }
+  r <- writeAndRunTestBench prj
   if r then putStrLn "Success"
   else putStrLn "Fail"
 

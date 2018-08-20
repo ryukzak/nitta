@@ -407,7 +407,7 @@ instance ( Title title, Var v, Time t
          , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x
          ) => TestBench (BusNetwork title v x t) v x where
-  testBenchDescription Project{ projectName, model=n@BusNetwork{..} } cntx0 = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
+  testBenchDescription Project{ projectName, model=n@BusNetwork{..}, testCntx } = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
     where
       ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
       testBenchImp = renderMST
@@ -460,7 +460,7 @@ instance ( Title title, Var v, Time t
         ]
 
       -- TODO: Количество циклов для тестирования должно задаваться пользователем.
-      cntxs = take 5 $ simulateAlgByCycle cntx0 $ functions n
+      cntxs = take 5 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n
       cycleTicks = [ 0 .. nextTick (process n) - 1 ]
       simulationInfo = (0, def) : concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
       assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
