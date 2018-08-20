@@ -105,6 +105,9 @@ getFB _                                     = Nothing
 
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
+instance ( Ord t ) => WithFunctions (Process (Parcel v x) t) (F (Parcel v x)) where
+  functions = getFBs
+
 getEndpoint :: Step (Parcel v x) t -> Maybe (EndpointRole v)
 getEndpoint Step{ sDesc=EndpointRoleStep role }                = Just role
 getEndpoint Step{ sDesc=NestedStep _ (EndpointRoleStep role) } = Just role

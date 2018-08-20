@@ -8,7 +8,6 @@
 
 module NITTA.Test.ProcessUnits.Fram where
 
-import           Control.Applicative     ((<$>))
 import           Data.Default
 import qualified Data.Map                as M
 import           Data.Proxy
@@ -17,20 +16,8 @@ import           NITTA.ProcessUnits.Fram
 import           NITTA.Test.Functions    ()
 import           NITTA.Test.ProcessUnits
 import           NITTA.Types
-import           Test.QuickCheck
-
 
 framProxy = Proxy :: Proxy (Fram String Int Int)
-
-
--- TODO: Сделать данную операцию через Generics или убрать совсем.
-instance Arbitrary (FSet (Fram String Int t)) where
-  arbitrary = oneof [ FramInput' <$> (arbitrary :: Gen (F.FramInput (Parcel String Int)))
-                    , FramOutput' <$> (arbitrary :: Gen (F.FramOutput (Parcel String Int)))
-                    , Loop' <$> (arbitrary :: Gen (F.Loop (Parcel String Int)))
-                    , Reg' <$> (arbitrary :: Gen (F.Reg (Parcel String Int)))
-                    , Constant' <$> (arbitrary :: Gen (F.Constant (Parcel String Int)))
-                    ]
 
 -----------------------------------------------------------
 

@@ -1,9 +1,12 @@
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 {-|
@@ -118,11 +121,15 @@ module NITTA.ProcessUnits.Multiplier
     , PUPorts(..)
     ) where
 
+import           Control.Monad
 import           Data.Default
 import           Data.List                     (find, partition, (\\))
+import           Data.Maybe
 import           Data.Set                      (elems, fromList, member)
+import qualified Data.String.Utils             as S
 import           Data.Typeable
 import qualified NITTA.Functions               as F
+import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Process
@@ -203,9 +210,10 @@ import           Text.InterpolatedString.Perl6 (qq)
 - t - идентификатор момента времени.
 -}
 
--- TODO: Перенести время из процесса сюда.
+-- TODO: Перенести время из процесса сюда, добавить его в currentWork.
 
 -- FIXME: Сделать реализацию безопастной (выкидывать ошибку при попытке спланировать не корректный ВП).
+-- FIXME: Убрать сигнал wrSignal.
 data Multiplier v x t
     = Multiplier
         { -- |Список назначенных, но еще необработанных или необрабатываемых функций.
@@ -218,26 +226,27 @@ data Multiplier v x t
           -- Назначенные функции могут выполняться в произвольном порядке. Явное хранение информации
           -- о выполненных функциях не осуществляется, так как она есть в описание вычислительного
           -- процесса 'process_'.
-          remain   :: [F (Parcel v x)]
+          remain      :: [F (Parcel v x)]
           -- |Список переменных, которые необходимо загрузить в вычислительный блок для вычисления
           -- текущей функции.
-        , targets  :: [v]
+        , targets     :: [v]
           -- |Список переменных, которые необходимо выгрузить из вычислительного блока для
           -- вычисления текущей функции. Порядок выгрузки - произвольный. Важно отметить, что все
           -- выгружаемые переменные соответствуют одному значению - результату умножения.
-        , sources  :: [v]
+        , sources     :: [v]
           -- |Фактический процесс умножения будет завершён в указанный момент времени и его
           -- результат будет доступен для выгрузки. Значение устанавливается сразу после загрузки
           -- всех аргументов.
-        , doneAt   :: Maybe t
+        , doneAt      :: Maybe t
+        , currentWork :: Maybe (t, F (Parcel v x))
           -- |Описание вычислительного процесса, спланированного для данного вычислительного блока
           -- 'NITTA.Types.Base.Process'.
-        , process_ :: Process (Parcel v x) t
+        , process_    :: Process (Parcel v x) t
           -- |В реализации данного вычислительного блока используется IP ядро поставляемое вместе с
           -- Altera Quartus. Это не позволяет осуществлять симуляцию при помощи Icarus Verilog.
           -- Чтобы обойти данное ограничение была создана заглушка, подключаемая вместо IP ядра если
           -- установлен данный флаг.
-        , isMocked :: Bool
+        , isMocked    :: Bool
         }
     deriving ( Show )
 
@@ -245,8 +254,7 @@ data Multiplier v x t
 -- |Конструктор модели умножителя вычислительного блока. Аргумент определяет внутреннюю оранизацию
 -- вычислительного блока: использование IP ядра умножителя (False) или заглушки (True). Подробнее
 -- см. функцию hardware в классе 'TargetSystemComponent'.
-multiplier mock = Multiplier [] [] [] Nothing def mock
-
+multiplier mock = Multiplier [] [] [] Nothing Nothing def mock
 
 
 
@@ -285,7 +293,12 @@ instance ( Var v, Time t
 
 -- |Данная функция осуществляет фактическое взятие функционального блока в работу.
 assignment pu@Multiplier{ targets=[], sources=[], remain } f
-    | Just (F.Multiply (I a) (I b) (O c)) <- F.castF f = pu{ targets=[a, b], sources=elems c, remain=remain \\ [ f ] }
+    | Just (F.Multiply (I a) (I b) (O c)) <- F.castF f
+    = pu
+        { targets=[a, b]
+        , currentWork=Just (def, f)
+        , sources=elems c, remain=remain \\ [ f ]
+        }
 assignment _ _ = error "Multiplier: internal assignment error."
 
 
@@ -361,18 +374,21 @@ instance ( Var v, Time t, Typeable x
                 else Nothing
             }
     --    2. Если модель ожидает, что из неё выгрузят переменные.
-    decision _proxy pu@Multiplier{ targets=[], sources, doneAt } d@EndpointD{ epdRole=Source v, epdAt }
+    decision _proxy pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f) } d@EndpointD{ epdRole=Source v, epdAt }
         | not $ null sources
         , let sources' = sources \\ elems v
         , sources' /= sources
         = pu
             { -- Осуществляется планирование вычислительного процесса.
-              process_=schedule pu $
+              process_=schedule pu $ do
+                when (null sources') $ scheduleFunction a (sup epdAt) f
                 scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) Out
               -- В случае если не все переменные были запрошены - сохраняются оставшиеся.
             , sources=sources'
-              -- Если вся работа выполнена, то сбрасывается время готовности результата.
+              -- Если вся работа выполнена, то сбрасывается время готовности результата, как и
+              -- текущая работа.
             , doneAt=if null sources' then Nothing else doneAt
+            , currentWork=if null sources' then Nothing else Just (a, f)
             }
     --    3. Если никакая функция в настоящий момент не выполняется, значит необходимо найти в
     --       списке назначенных функций требуемую, запустить ее в работу, и только затем принять
@@ -514,11 +530,11 @@ instance ( Time t, Var v
     -- процессора. Основная задача данной функции - корректно включить вычислительный блок в
     -- инфраструктуру процессора, установив все параметры, имена и провода.
     hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
-        = [qq|pu_multiplier
-    #( .DATA_WIDTH( $parameterDataWidth )
-     , .ATTR_WIDTH( $parameterAttrWidth )
-     , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
-     ) $title
+        = [qq|pu_multiplier #
+        ( .DATA_WIDTH( $parameterDataWidth )
+        , .ATTR_WIDTH( $parameterAttrWidth )
+        , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
+        ) $title
     ( .clk( $signalClk )
     , .rst( $signalRst )
     , .signal_wr( {signal wr} )
@@ -529,3 +545,110 @@ instance ( Time t, Var v
     , .data_out( $dataOut )
     , .attr_out( $attrOut )
     );|]
+
+
+-- |Данный класс является служебным и предназначен для того, что бы извлекать из вычислительного
+-- блока все функции, привязанные к вычислительному блоку.
+instance ( Ord t ) => WithFunctions (Multiplier v x t) (F (Parcel v x)) where
+    functions Multiplier{ process_ } = functions process_
+
+
+-- |Данный класс позволяет сгенерировать test bench для вычислительного блока.
+instance ( Var v
+         , Time t
+         , Typeable x
+         , Show x
+         , Num x
+         , Default x
+         , Eq x
+         , Integral x
+         , ProcessUnit (Multiplier v x t) (Parcel v x) t
+         ) => TestBench (Multiplier v x t) v x where
+    testBenchDescription Project{ projectName, model=pu@Multiplier{ process_=p@Process{ steps, nextTick }}, testCntx }
+        = Immidiate (mn ++ "_tb.v") testBenchImp
+        where
+            Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx $ functions pu
+            mn = moduleName projectName pu
+            adapt = S.replace "\\" ""
+            inst = hardwareInstance projectName pu
+                Enviroment
+                    { signalClk="clk"
+                    , signalRst="rst"
+                    , signalCycle="cycle"
+                    , inputPort=undefined
+                    , outputPort=undefined
+                    , net=NetEnv
+                        { parameterDataWidth=IntParam 32
+                        , parameterAttrWidth=IntParam 4
+                        , dataIn="data_in"
+                        , attrIn="attr_in"
+                        , dataOut="data_out"
+                        , attrOut="attr_out"
+                        , signal= \case
+                            (Signal 0) -> "oe"
+                            (Signal 1) -> "wr"
+                            (Signal 2) -> "wrSel"
+                            _ -> error "testBenchDescription wrong signal"
+                        }
+                    }
+                PUPorts
+                    { oe=Signal 0
+                    , wr=Signal 1
+                    , wrSel=Signal 2
+                    }
+
+            controlSignals = concatMap (\t -> ctrl t $ microcodeAt pu t) [ 0 .. nextTick + 1 ]
+                where
+                    ctrl t Microcode{ oeSignal, wrSignal, selSignal } 
+                        | let val = getVal t 
+                        = [qq|
+    oe <= {bool2binstr oeSignal}; wr <= {bool2binstr wrSignal}; wrSel <= {bool2binstr selSignal}; data_in <= { val }; @(posedge clk);|]
+
+            getVal t 
+                | Just (Target v) <- endpointAt t p
+                = fromMaybe undefined $ F.get cntx v
+                | otherwise = 0
+
+            busCheck = concatMap busCheck' [ 0 .. nextTick + 1 ]
+                where
+                    busCheck' t
+                        | Just (Source vs) <- endpointAt t p
+                        , let v = oneOf vs
+                        , let (Just val) = F.get cntx v
+                        = [qq|@(posedge clk);
+    \$write( "data_out: %d == %d    (%s)", data_out, { val }, { v } );
+    if ( !( data_out === { val } ) ) \$display(" FAIL");
+    else \$display();|]
+                        | otherwise
+                        = [qq|
+    @(posedge clk); \$display( "data_out: %d", data_out );|]
+
+            testBenchImp = [qq|{"module"} { mn }_tb();
+
+parameter DATA_WIDTH = 32;
+parameter ATTR_WIDTH = 4;
+
+/*
+Context:
+{ show cntx }
+Algorithm:
+{ unlines $ map show $ functions pu }
+Process:
+{ unlines $ map show steps }
+*/
+
+reg clk, rst, wr, oe, wrSel;
+reg [DATA_WIDTH-1:0]  data_in;
+reg [ATTR_WIDTH-1:0]  attr_in;
+wire [DATA_WIDTH-1:0] data_out;
+wire [ATTR_WIDTH-1:0] attr_out;
+
+{ inst }
+
+{ adapt $ snippetDumpFile mn }
+{ adapt snippetClkGen }
+{ adapt $ snippetInitialFinish $ "    @(negedge rst);" ++ controlSignals }
+{ adapt $ snippetInitialFinish $ "    @(negedge rst);" ++ busCheck }
+
+endmodule
+|]

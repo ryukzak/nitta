@@ -121,7 +121,6 @@ instance FunctionalSet (Fram v x t) where
     | Constant' (Constant (Parcel v x))
     deriving ( Show, Eq )
 
--- TODO: Сделать данную операцию через Generics или убрать совсем.
 instance ( Var v, Time t, Typeable x, Eq x, Show x, Num x
          ) => WithFunctions (FSet (Fram v x t)) (F (Parcel v x)) where
   functions (FramInput' f)  = [ F f ]

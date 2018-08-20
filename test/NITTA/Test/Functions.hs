@@ -46,6 +46,8 @@ instance Arbitrary (Reg (Parcel String Int)) where
 instance Arbitrary (Constant (Parcel String Int)) where
   arbitrary = suchThat (Constant <$> (X <$> choose (10, 16)) <*> outputVarsGen) uniqueVars
 
+instance Arbitrary (Multiply (Parcel String Int)) where
+  arbitrary = suchThat (Multiply <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
 
 reorderAlgorithmTest = do
   let f = reorderAlgorithm :: [F (Parcel String Int)] -> [F (Parcel String Int)]

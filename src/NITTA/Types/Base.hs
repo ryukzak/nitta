@@ -100,6 +100,8 @@ instance Variables (O (Parcel v x)) v where
 
 
 -- |Семейство типов для описания системы функций вычислительного блока.
+
+-- FIXME: Удалить данный класс.
 class FunctionalSet pu where
   -- |Тип для представляния системы команд.
   data FSet pu :: *
