@@ -47,8 +47,8 @@ Ok, 10 modules loaded.
 Создаём функцию и начальное состояние модели вычислительного блока умножителя. К сожалению, GHC не
 хватает информации из контекста, чтобы вывести их типы, по этому зададим их явно.
 
->>> let fb = multiply "a" "b" ["c", "d"] :: F (Parcel String Int)
->>> fb
+>>> let f = multiply "a" "b" ["c", "d"] :: F (Parcel String Int)
+>>> f
 <Multiply (I "a") (I "b") (O (fromList ["c","d"]))>
 >>> let st0 = multiplier True :: Multiplier String Int Int
 >>> st0
@@ -62,7 +62,7 @@ Multiplier {puRemain = [], targets = [], sources = [], doneAt = Nothing, process
 не может быть "потеряна" внутри модели. Если у вычислительного блока есть внутренние ресурсы - то их
 должно быть достаточно для завершения планирования, даже если оно неэффективно.
 
->>> let Right st1 = tryBind fb st0
+>>> let Right st1 = tryBind f st0
 >>> st1
 Multiplier {puRemain = [<Multiply (I "a") (I "b") (O (fromList ["c","d"]))>], targets = [], sources = [], doneAt = Nothing, process_ = Process {steps = [], relations = [], nextTick = 0, nextUid = 0}, isMocked = True}
 >>> mapM_ print $ options endpointDT st1
@@ -122,7 +122,6 @@ import           Data.Default
 import           Data.List                     (find, partition, (\\))
 import           Data.Set                      (elems, fromList, member)
 import           Data.Typeable
-import           NITTA.Functions               (castF)
 import qualified NITTA.Functions               as F
 import           NITTA.Types
 import           NITTA.Utils
@@ -265,17 +264,17 @@ multiplier mock = Multiplier [] [] [] Nothing def mock
 instance ( Var v, Time t
          ) => ProcessUnit (Multiplier v x t) (Parcel v x) t where
     -- |Привязка к вычислительному блоку осуществялется этой функцией.
-    tryBind fb pu@Multiplier{ remain }
+    tryBind f pu@Multiplier{ remain }
         -- Для этого осуществляется проверка, приводится ли тип функции к одному из поддерживаемых
         -- ('NITTA.FunctionalBlocks.castF') и в случае успеха возвращается состояние модели после
         -- привязки с меткой 'Right'.
         --
         -- Важно отметить, что "привязка" не означается фактическое начало работы, что позволяет
         -- сперва осуществить привязку всех задач, а уже потом планировать вычислительный процесс.
-        | Just F.Multiply{} <- castF fb = Right pu{ remain=fb : remain }
+        | Just F.Multiply{} <- F.castF f = Right pu{ remain=f : remain }
         -- В случае невозможности привязки возвращается строка с кратким описание причины отказа и
         -- меткой 'Left'.
-        | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show fb
+        | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
     -- |Унифицированный интерфейс для получения описания вычислительного процесса.
     process = process_
     -- |Данный метод используется для установки времени вычислительного блока снаружи. В настоящий
@@ -285,8 +284,8 @@ instance ( Var v, Time t
 
 
 -- |Данная функция осуществляет фактическое взятие функционального блока в работу.
-assignment pu@Multiplier{ targets=[], sources=[], remain } fb
-    | Just (F.Multiply (I a) (I b) (O c)) <- castF fb = pu{ targets=[a, b], sources=elems c, remain=remain \\ [ fb ] }
+assignment pu@Multiplier{ targets=[], sources=[], remain } f
+    | Just (F.Multiply (I a) (I b) (O c)) <- F.castF f = pu{ targets=[a, b], sources=elems c, remain=remain \\ [ f ] }
 assignment _ _ = error "Multiplier: internal assignment error."
 
 
@@ -381,8 +380,8 @@ instance ( Var v, Time t, Typeable x
     --       в ситуации 1.
     decision proxy pu@Multiplier{ targets=[], sources=[], remain } d
         | let v = oneOf $ variables d
-        , Just fb <- find (\fb -> v `member` variables fb) remain
-        = decision proxy (assignment pu fb) d
+        , Just f <- find (\f -> v `member` variables f) remain
+        = decision proxy (assignment pu f) d
     --    4. Если что-то пошло не так.
     decision _ pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
@@ -471,10 +470,10 @@ instance Connected (Multiplier v x t) where
 instance ( Var v
          , Integral x
          ) => Simulatable (Multiplier v x t) v x where
-    simulateOn cntx _ fb
+    simulateOn cntx _ f
         -- Определяем функцию и делегируем ее расчет реализации по умолчанию.
-        | Just fb'@F.Multiply{} <- castF fb = simulate cntx fb'
-        | otherwise = error $ "Can't simultate on Multiplier: " ++ show fb
+        | Just f'@F.Multiply{} <- F.castF f = simulate cntx f'
+        | otherwise = error $ "Can't simultate on Multiplier: " ++ show f
 
 
 -- |Для генерации процессоров и тестов использующих данный вычислительный блок используются
