@@ -142,7 +142,7 @@ instance ( Var v, Time t
            _  -> pu'
     where
       finish p CurrentJob{ cFB, cStart, cSteps } = snd $ modifyProcess p $ do
-        h <- addActivity (cStart ... (act^.at.infimum + act^.at.dur)) $ FBStep cFB
+        h <- addActivity (cStart ... (act^.at.infimum + act^.at.dur)) $ FStep cFB
         mapM_ (relation . Vertical h) cSteps
 
 

@@ -414,7 +414,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                      })
       finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
         let start = fromMaybe (error "startAt field is empty!") startAt
-        h <- addStep (Activity $ start ... d^.at.supremum) $ FBStep $ fromFSet functionalBlock
+        h <- addStep (Activity $ start ... d^.at.supremum) $ FStep $ fromFSet functionalBlock
         mapM_ (relation . Vertical h) cads
         mapM_ (relation . Vertical h) endpoints
         mapM_ (relation . Vertical h) instructions
@@ -635,7 +635,7 @@ testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
     bankCheck
       = "\n      @(posedge clk);\n"
       ++ unlines [ "  " ++ checkBank addr v (maybe (error $ show ("bank" ++ show v ++ show cntx) ) show (get cntx v))
-                 | Step{ sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
+                 | Step{ sDesc=FStep fb, .. } <- filter (isFB . sDesc) steps
                  , let addr_v = outputStep pu fb
                  , isJust addr_v
                  , let Just (addr, v) = addr_v

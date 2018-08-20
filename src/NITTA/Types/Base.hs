@@ -270,7 +270,7 @@ data StepInfo io where
   -- |Решения, принятые на уровне САПР.
   CADStep :: String -> StepInfo io
   -- |Время работы над функциональным блоком функционального алгоритма.
-  FBStep :: F io -> StepInfo io
+  FStep :: F io -> StepInfo io
   -- |Описание использования вычислительного блока с точки зрения передачи данных.
   EndpointRoleStep :: ( io ~ _io v x, Show v, Typeable v ) => EndpointRole v -> StepInfo io
   -- |Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
@@ -287,7 +287,7 @@ data StepInfo io where
 
 instance ( Show v ) => Show (StepInfo (Parcel v x)) where
   show (CADStep s)                 = s
-  show (FBStep (F f))              = show f
+  show (FStep (F f))              = show f
   show (EndpointRoleStep eff)      = show eff
   show (InstructionStep instr)     = show instr
   show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
@@ -295,7 +295,7 @@ instance ( Show v ) => Show (StepInfo (Parcel v x)) where
 
 -- |Получить строку с название уровня указанного шага вычислительного процесса.
 level (CADStep _)          = "CAD"
-level (FBStep _)           = "Function block"
+level (FStep _)            = "Function"
 level (EndpointRoleStep _) = "Endpoint"
 level (InstructionStep _)  = "Instruction"
 level (NestedStep _ _)     = "Nested"

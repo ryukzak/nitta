@@ -225,7 +225,7 @@ instance ( Title title, Time t, Var v, Typeable x
         uids' <- foldM (\dict Step{..} -> do
                            k <- addStep sTime $ NestedStep puTitle sDesc
                            when (isFB sDesc) $ do
-                             let FBStep fb = sDesc
+                             let FStep fb = sDesc
                              mapM_ (\v -> when (v `M.member` transportKey)
                                           $ relation $ Vertical (transportKey M.! v) k
                                    ) $ variables fb
