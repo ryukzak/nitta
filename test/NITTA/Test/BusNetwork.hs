@@ -52,7 +52,7 @@ testAccumAndFram = unitTest "unittestAccumAndFram" netWithArithm
   , F.framInput 4 [ "e", "k" ]
   , F.framOutput 5 "p"
   , F.framOutput 6 "k"
-  , F.loop 22 ["s"] "sum"
+  , F.loop 22 "sum" ["s"]
   , F.framOutput 7 "s"
   , F.add "d" "e" ["sum"]
   ]
@@ -60,23 +60,23 @@ testAccumAndFram = unitTest "unittestAccumAndFram" netWithArithm
 
 testShiftAndFram = unitTest "unitShiftAndFram" netWithArithm
   def
-  [ F.loop 16 ["f1"] "g1"
+  [ F.loop 16 "g1" ["f1"]
   , F.shiftL "f1" ["g1"]
-  , F.loop 16 ["f2"] "g2"
+  , F.loop 16 "g2" ["f2"]
   , F.shiftR "f2" ["g2"]
   ]
 
 testFibonacci = unitTest "testFibonacci" netWithArithm
   def
-  [ F.loop 0 ["a1"      ] "b2"
-  , F.loop 1 ["b1", "b2"] "c"
+  [ F.loop 0  "b2" ["a1"      ]
+  , F.loop 1  "c"  ["b1", "b2"]
   , F.add "a1" "b1" ["c"]
   ]
 
 testFibonacciWithSPI = unitTest "testFibonacciWithSPI" netWithArithmAndSPI
   def
-  [ F.loop 0 ["a1"      ] "b2"
-  , F.loop 1 ["b1", "b2"] "c"
+  [ F.loop 0 "b2" ["a1"      ]
+  , F.loop 1 "c"  ["b1", "b2"]
   , F.add "a1" "b1" ["c", "c_copy"]
   , F.send "c_copy"
   ]
@@ -84,12 +84,12 @@ testFibonacciWithSPI = unitTest "testFibonacciWithSPI" netWithArithmAndSPI
 testDiv4 = unitTest "testDiv4" netWithArithm
   def
   [ F.constant 100 ["a"]
-  , F.loop 2 ["b"] "e"
+  , F.loop 2 "e" ["b"]
   , F.division "a" "b" ["c"] ["d"]
   , F.add "c" "d" ["e"]
 
   , F.constant 200 ["a1"]
-  , F.loop 2 ["b1"] "e1"
+  , F.loop 2 "e1" ["b1"]
   , F.division "a1" "b1" ["c1"] ["d1"]
   , F.add "c1" "d1" ["e1"]
   ]
@@ -97,11 +97,11 @@ testDiv4 = unitTest "testDiv4" netWithArithm
 testMultiplier = unitTest "testMultiplier" netWithArithm
   def
   [ F.constant 2 ["a"]
-  , F.loop 1 ["b"] "c"
+  , F.loop 1 "c" ["b"]
   , F.multiply "a" "b" ["c"]
 
   , F.constant 3 ["x"]
-  , F.loop 1 ["y"] "z"
+  , F.loop 1 "z" ["y"]
   , F.multiply "y" "x" ["z"]
   ]
 
@@ -125,7 +125,7 @@ badTestFram = badUnitTest "badTestFram" netWithArithm
   def
   [ F.framInput 3 [ "x" ]
   , F.framOutput 5 "x"
-  , F.loop 42 ["f"] "g"
+  , F.loop 42 "g" ["f"]
   , F.reg "f" ["g"]
   ]
 

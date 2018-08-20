@@ -28,7 +28,7 @@ module NITTA.Functions
     , Constant(..), constant
     , FramInput(..), framInput
     , FramOutput(..), framOutput
-    , Loop(..), loop, loop'
+    , Loop(..), loop
     , Reg(..), reg
     , addr2value
     -- *Input/Output
@@ -187,8 +187,7 @@ data Loop io = Loop (X io) (O io) (I io) deriving ( Typeable )
 instance ( Show v, Show x ) => Show (Loop (Parcel v x)) where
     show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join " = " (map show $ elems k2)
 deriving instance ( IOType io v x ) => Eq (Loop io)
-loop x bs a = F $ Loop (X x) (O $ fromList bs) $ I a
-loop' x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
+loop x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
 
 instance ( IOType io v x ) => Function (Loop io) v where
     inputs  (Loop _ _a b) = variables b

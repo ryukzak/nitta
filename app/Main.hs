@@ -40,8 +40,8 @@ microarch = busNetwork 31 (Just True)
   , ("div", PU (D.divisor 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   ]
 
-fibonacciMultAlg = [ F.loop 1 ["a1"      ] "b2" :: F (Parcel String Int)
-                   , F.loop 2 ["b1", "b2"] "c"
+fibonacciMultAlg = [ F.loop 1 "b2" ["a1"      ] :: F (Parcel String Int)
+                   , F.loop 2 "c"  ["b1", "b2"]
                    , F.multiply "a1" "b1" ["c"]
                    ]
 
@@ -50,17 +50,17 @@ fibonacciMultAlg = [ F.loop 1 ["a1"      ] "b2" :: F (Parcel String Int)
 divAndMulAlg
   =
     [ F.constant 100 ["a"] :: F (Parcel String Int)
-    , F.loop 2 ["b"] "e"
+    , F.loop 2 "e" ["b"]
     , F.division "a" "b" ["c"] ["d"]
     -- , F.add "c" "d" ["e"]
     , F.add "c" "d" ["e", "e'"]
 
     , F.constant 200 ["a1"]
-    , F.loop 2 ["b1"] "e1"
+    , F.loop 2 "e1" ["b1"]
     , F.division "a1" "b1" ["c1"] ["d1"]
     , F.add "c1" "d1" ["e1"]
 
-    , F.loop 1 ["x"] "y"
+    , F.loop 1 "y" ["x"]
     , F.multiply "x" "e'" ["y"]
     ]
 
@@ -86,7 +86,7 @@ algorithm = [ F.framInput 3 [ "a"
             , F.framOutput 0 "sum"
             , F.constant 42 ["const"]
             , F.framOutput 9 "const"
-            , F.loop 0 ["f"] "g"
+            , F.loop 0 "g" ["f"]
             , F.shiftL "f" ["g"]
             , F.add "d" "e" ["sum"]
             ]

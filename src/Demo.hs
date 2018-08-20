@@ -168,12 +168,12 @@ fibonacciDemo = demo Project
     , model=mkModelWithOneNetwork nittaArch fibonacciAlg
     }
 
-fibonacciAlg = [ F.loop' 0 "a_new" ["a", "a_send"]
-               , F.loop' 1 "b_new" ["b", "a_new"]
+fibonacciAlg = [ F.loop 0 "a_new" ["a", "a_send"]
+               , F.loop 1 "b_new" ["b", "a_new"]
                , F.add "a" "b" ["b_new"]
                , F.send "a_send"
 
-               , F.loop' 0  "index_new" ["index", "index_send"]
+               , F.loop 0  "index_new" ["index", "index_send"]
                , F.constant 1 ["one"]
                , F.add "index" "one" ["index_new"]
                , F.send "index_send"
@@ -188,14 +188,14 @@ teacupDemo = demo Project
     , model=mkModelWithOneNetwork nittaArch teacupAlg
     }
 
-teacupAlg = [ F.loop' 0 "time_new" ["time", "time_send"]
+teacupAlg = [ F.loop 0 "time_new" ["time", "time_send"]
             , F.constant 125 ["time_step_1", "time_step_2"]
             , F.add "time" "time_step_1" ["time_new"]
             , F.send "time_send"
 
             , F.constant 70000 ["temp_room"]
             , F.constant 10000 ["temp_ch"]
-            , F.loop' 180000 "temp_cup_new" ["temp_cup_1", "temp_cup_2", "temp_cup_send"]
+            , F.loop 180000 "temp_cup_new" ["temp_cup_1", "temp_cup_2", "temp_cup_send"]
             -- (Teacup Temperature - temp_room) / temp_ch
             , F.sub "temp_room" "temp_cup_1" ["acc"]
             , F.division "acc" "temp_ch" ["temp_loss"] []

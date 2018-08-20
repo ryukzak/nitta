@@ -49,16 +49,16 @@ instance Arbitrary (Constant (Parcel String Int)) where
 
 reorderAlgorithmTest = do
   let f = reorderAlgorithm :: [F (Parcel String Int)] -> [F (Parcel String Int)]
-  let l1 = loop 0 ["a1"      ] "b2"
-  let l2 = loop 1 ["b1", "b2"] "c"
+  let l1 = loop 0 "b2" ["a1"      ]
+  let l2 = loop 1 "c" ["b1", "b2"]
   let a = add "a1" "b1" ["c"]
   mapM_ (([ l1, l2, a ] @=?) . f) $ permutations [ l1, l2, a ]
 
 
 simulateFibonacciTest = do
   let cntxs = simulateAlg (def :: Cntx String Int)
-                [ loop 0 ["a1"      ] "b2"
-                , loop 1 ["b1", "b2"] "c"
+                [ loop 0 "b2" ["a1"      ]
+                , loop 1 "c" ["b1", "b2"]
                 , add "a1" "b1" ["c"] :: F (Parcel String Int)
                 ]
   let fibs = reverse (cntxVars (cntxs !! 20) M.! "a1")
