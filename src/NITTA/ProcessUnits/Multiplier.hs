@@ -6,15 +6,13 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
--- TODO: Rename FunctionBlock -> Function
-
 {-|
 Module : Multiplier (модель вычислительного блока умножителя)
 
 В данном модуле реализуется модель вычислительного блока умножителя для САПР. Он может вычислять
 следующие функции:
 
-- 'NITTA.FunctionBlocks.Multiply'.
+- 'NITTA.Functions.Multiply'.
 
 В один момент времени может вычисляться только одна функция, при этом ее выполнение не может быть
 прервано.
@@ -40,16 +38,16 @@ Module : Multiplier (модель вычислительного блока ум
 [ 5 of 10] Compiling NITTA.Types      ( /Users/penskoi/Documents/src/nitta/src/NITTA/Types.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Types.o ) [flags changed]
 [ 6 of 10] Compiling NITTA.Utils.Lens ( /Users/penskoi/Documents/src/nitta/src/NITTA/Utils/Lens.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Utils/Lens.o ) [flags changed]
 [ 7 of 10] Compiling NITTA.Utils      ( /Users/penskoi/Documents/src/nitta/src/NITTA/Utils.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Utils.o ) [flags changed]
-[ 8 of 10] Compiling NITTA.FunctionBlocks ( /Users/penskoi/Documents/src/nitta/src/NITTA/FunctionBlocks.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/FunctionBlocks.o ) [flags changed]
+[ 8 of 10] Compiling NITTA.Functions ( /Users/penskoi/Documents/src/nitta/src/NITTA/Functions.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Functions.o ) [flags changed]
 [10 of 10] Compiling NITTA.ProcessUnits.Multiplier ( /Users/penskoi/Documents/src/nitta/src/NITTA/ProcessUnits/Multiplier.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/ProcessUnits/Multiplier.o )
 Ok, 10 modules loaded.
->>> :module +NITTA.Types NITTA.FunctionBlocks Numeric.Interval Data.Set
+>>> :module +NITTA.Types NITTA.Functions Numeric.Interval Data.Set
 >>> :set prompt "\ESC[34mλ> \ESC[m"
 
 Создаём функцию и начальное состояние модели вычислительного блока умножителя. К сожалению, GHC не
 хватает информации из контекста, чтобы вывести их типы, по этому зададим их явно.
 
->>> let fb = multiply "a" "b" ["c", "d"] :: FB (Parcel String Int)
+>>> let fb = multiply "a" "b" ["c", "d"] :: F (Parcel String Int)
 >>> fb
 <Multiply (I "a") (I "b") (O (fromList ["c","d"]))>
 >>> let st0 = multiplier True :: Multiplier String Int Int
@@ -124,8 +122,8 @@ import           Data.Default
 import           Data.List                     (find, partition, (\\))
 import           Data.Set                      (elems, fromList, member)
 import           Data.Typeable
-import           NITTA.FunctionBlocks          (castFB)
-import qualified NITTA.FunctionBlocks          as FB
+import           NITTA.Functions               (castF)
+import qualified NITTA.Functions               as F
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Process
@@ -153,7 +151,7 @@ import           Text.InterpolatedString.Perl6 (qq)
 реализует только обработку данных согласно одной функции.
 
 Поведение вычислительного блока определяется прикладным алгоритмом, являющимся композицией функций с
-зависимостями по данным ('NITTA.FunctionBlocks'). САПР назначает (привязывает) функции к конкретным
+зависимостями по данным ('NITTA.Functions'). САПР назначает (привязывает) функции к конкретным
 вычислительным блокам, а те, в свою очередь, определяют возможные варианты развития процесса.
 
 Любой вычислительный блок подразумевает три составляющие:
@@ -221,7 +219,7 @@ data Multiplier v x t
           -- Назначенные функции могут выполняться в произвольном порядке. Явное хранение информации
           -- о выполненных функциях не осуществляется, так как она есть в описание вычислительного
           -- процесса 'process_'.
-          remain   :: [FB (Parcel v x)]
+          remain   :: [F (Parcel v x)]
           -- |Список переменных, которые необходимо загрузить в вычислительный блок для вычисления
           -- текущей функции.
         , targets  :: [v]
@@ -269,12 +267,12 @@ instance ( Var v, Time t
     -- |Привязка к вычислительному блоку осуществялется этой функцией.
     tryBind fb pu@Multiplier{ remain }
         -- Для этого осуществляется проверка, приводится ли тип функции к одному из поддерживаемых
-        -- ('NITTA.FunctionalBlocks.castFB') и в случае успеха возвращается состояние модели после
+        -- ('NITTA.FunctionalBlocks.castF') и в случае успеха возвращается состояние модели после
         -- привязки с меткой 'Right'.
         --
         -- Важно отметить, что "привязка" не означается фактическое начало работы, что позволяет
         -- сперва осуществить привязку всех задач, а уже потом планировать вычислительный процесс.
-        | Just FB.Multiply{} <- castFB fb = Right pu{ remain=fb : remain }
+        | Just F.Multiply{} <- castF fb = Right pu{ remain=fb : remain }
         -- В случае невозможности привязки возвращается строка с кратким описание причины отказа и
         -- меткой 'Left'.
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show fb
@@ -288,7 +286,7 @@ instance ( Var v, Time t
 
 -- |Данная функция осуществляет фактическое взятие функционального блока в работу.
 assignment pu@Multiplier{ targets=[], sources=[], remain } fb
-    | Just (FB.Multiply (I a) (I b) (O c)) <- castFB fb = pu{ targets=[a, b], sources=elems c, remain=remain \\ [ fb ] }
+    | Just (F.Multiply (I a) (I b) (O c)) <- castF fb = pu{ targets=[a, b], sources=elems c, remain=remain \\ [ fb ] }
 assignment _ _ = error "Multiplier: internal assignment error."
 
 
@@ -475,7 +473,7 @@ instance ( Var v
          ) => Simulatable (Multiplier v x t) v x where
     simulateOn cntx _ fb
         -- Определяем функцию и делегируем ее расчет реализации по умолчанию.
-        | Just fb'@FB.Multiply{} <- castFB fb = simulate cntx fb'
+        | Just fb'@F.Multiply{} <- castF fb = simulate cntx fb'
         | otherwise = error $ "Can't simultate on Multiplier: " ++ show fb
 
 

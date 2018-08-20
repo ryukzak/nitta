@@ -118,7 +118,7 @@ import           Data.Default
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import qualified NITTA.FunctionBlocks          as FB
+import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divisor    as D
 import qualified NITTA.ProcessUnits.Fram       as FR
@@ -168,15 +168,15 @@ fibonacciDemo = demo Project
     , model=mkModelWithOneNetwork nittaArch fibonacciAlg
     }
 
-fibonacciAlg = [ FB.loop' 0 "a_new" ["a", "a_send"]
-               , FB.loop' 1 "b_new" ["b", "a_new"]
-               , FB.add "a" "b" ["b_new"]
-               , FB.send "a_send"
+fibonacciAlg = [ F.loop' 0 "a_new" ["a", "a_send"]
+               , F.loop' 1 "b_new" ["b", "a_new"]
+               , F.add "a" "b" ["b_new"]
+               , F.send "a_send"
 
-               , FB.loop' 0  "index_new" ["index", "index_send"]
-               , FB.constant 1 ["one"]
-               , FB.add "index" "one" ["index_new"]
-               , FB.send "index_send"
+               , F.loop' 0  "index_new" ["index", "index_send"]
+               , F.constant 1 ["one"]
+               , F.add "index" "one" ["index_new"]
+               , F.send "index_send"
                ]
 
 
@@ -188,22 +188,22 @@ teacupDemo = demo Project
     , model=mkModelWithOneNetwork nittaArch teacupAlg
     }
 
-teacupAlg = [ FB.loop' 0 "time_new" ["time", "time_send"]
-            , FB.constant 125 ["time_step_1", "time_step_2"]
-            , FB.add "time" "time_step_1" ["time_new"]
-            , FB.send "time_send"
+teacupAlg = [ F.loop' 0 "time_new" ["time", "time_send"]
+            , F.constant 125 ["time_step_1", "time_step_2"]
+            , F.add "time" "time_step_1" ["time_new"]
+            , F.send "time_send"
 
-            , FB.constant 70000 ["temp_room"]
-            , FB.constant 10000 ["temp_ch"]
-            , FB.loop' 180000 "temp_cup_new" ["temp_cup_1", "temp_cup_2", "temp_cup_send"]
+            , F.constant 70000 ["temp_room"]
+            , F.constant 10000 ["temp_ch"]
+            , F.loop' 180000 "temp_cup_new" ["temp_cup_1", "temp_cup_2", "temp_cup_send"]
             -- (Teacup Temperature - temp_room) / temp_ch
-            , FB.sub "temp_room" "temp_cup_1" ["acc"]
-            , FB.division "acc" "temp_ch" ["temp_loss"] []
+            , F.sub "temp_room" "temp_cup_1" ["acc"]
+            , F.division "acc" "temp_ch" ["temp_loss"] []
 
             -- INTEG ( -temp_loss to Room
-            , FB.multiply "temp_loss" "time_step_2" ["delta"]
-            , FB.add "temp_cup_2" "delta" ["temp_cup_new"]
-            , FB.send "temp_cup_send"
+            , F.multiply "temp_loss" "time_step_2" ["delta"]
+            , F.add "temp_cup_2" "delta" ["temp_cup_new"]
+            , F.send "temp_cup_send"
             ]
 
 

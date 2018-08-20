@@ -48,9 +48,9 @@ processGen proxy = arbitrary >>= processGen' proxy def
   where
     processGen' :: ( DecisionProblem (EndpointDT String Int) EndpointDT pu
                    , ProcessUnit pu (Parcel String Int) Int
-                   , WithFunctionalBlocks (FSet pu) (FB (Parcel String Int))
-                   ) => Proxy pu -> pu -> [FSet pu] -> Gen (pu, [FB (Parcel String Int)])
-    processGen' _ pu specialAlg = endpointWorkGen pu $ concatMap functionalBlocks specialAlg
+                   , WithFunctions (FSet pu) (F (Parcel String Int))
+                   ) => Proxy pu -> pu -> [FSet pu] -> Gen (pu, [F (Parcel String Int)])
+    processGen' _ pu specialAlg = endpointWorkGen pu $ concatMap functions specialAlg
 
 
 

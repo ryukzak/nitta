@@ -37,7 +37,7 @@ data Pipeline st v x t
     = Pipeline
         { pipeInput      :: Maybe (InputSt st)
         , pipeOutput     :: [PipelineOut st t]
-        , puRemain       :: [FB (Parcel v x)]
+        , puRemain       :: [F (Parcel v x)]
         , puProcess      :: Process (Parcel v x) t
         , pipeline       :: Int
         , frequencyRatio :: Int
@@ -51,7 +51,7 @@ class PipelineTF st where
 
 
 class ( PipelineTF st ) => PipelinePU st io where
-    bindPipeline :: FB io -> Either String ( InputSt st, Int )
+    bindPipeline :: F io -> Either String ( InputSt st, Int )
 
 data TargetPipelineDecision st v t
     = D

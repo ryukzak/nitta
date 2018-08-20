@@ -6,14 +6,14 @@
 {-
 Данный модуль реализует функции для генерации функциональных блоков.
 -}
-module NITTA.Test.FunctionBlocks where
+module NITTA.Test.Functions where
 
 import           Data.Default
 import           Data.List               (permutations)
 import qualified Data.Map                as M
 import           Data.Set                (fromList, intersection)
 import qualified Data.Set                as S
-import           NITTA.FunctionBlocks
+import           NITTA.Functions
 import           NITTA.ProcessUnits.Fram
 import           NITTA.Types
 import           Test.QuickCheck
@@ -48,7 +48,7 @@ instance Arbitrary (Constant (Parcel String Int)) where
 
 
 reorderAlgorithmTest = do
-  let f = reorderAlgorithm :: [FB (Parcel String Int)] -> [FB (Parcel String Int)]
+  let f = reorderAlgorithm :: [F (Parcel String Int)] -> [F (Parcel String Int)]
   let l1 = loop 0 ["a1"      ] "b2"
   let l2 = loop 1 ["b1", "b2"] "c"
   let a = add "a1" "b1" ["c"]
@@ -59,7 +59,7 @@ simulateFibonacciTest = do
   let cntxs = simulateAlg (def :: Cntx String Int)
                 [ loop 0 ["a1"      ] "b2"
                 , loop 1 ["b1", "b2"] "c"
-                , add "a1" "b1" ["c"] :: FB (Parcel String Int)
+                , add "a1" "b1" ["c"] :: F (Parcel String Int)
                 ]
   let fibs = reverse (cntxVars (cntxs !! 20) M.! "a1")
   [0, 1, 1, 2, 3, 5, 8] @=? fibs

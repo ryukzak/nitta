@@ -39,7 +39,7 @@ import           Data.Maybe                    (fromMaybe, isJust, mapMaybe)
 import           Data.Set                      (elems, fromList, intersection)
 import qualified Data.String.Utils             as S
 import           Data.Typeable
-import           NITTA.FunctionBlocks          (get', simulateAlgByCycle)
+import           NITTA.Functions               (get', simulateAlgByCycle)
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
@@ -59,9 +59,9 @@ data GBusNetwork title spu v x t
   = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
-      bnRemains        :: [FB (Parcel v x)]
+      bnRemains        :: [F (Parcel v x)]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded         :: M.Map title [FB (Parcel v x)]
+    , bnBinded         :: M.Map title [F (Parcel v x)]
     -- | Описание вычислительного процесса сети, как элемента процессора.
     , bnProcess        :: Process (Parcel v x) t
     -- | Словарь вложенных вычислительных блоков по именам.
@@ -111,8 +111,8 @@ instance ( Title title
          , Time t
          , Var v
          , Typeable x
-         ) => WithFunctionalBlocks (BusNetwork title v x t) (FB (Parcel v x)) where
-  functionalBlocks BusNetwork{..} = sortFBs binded []
+         ) => WithFunctions (BusNetwork title v x t) (F (Parcel v x)) where
+  functions BusNetwork{..} = sortFBs binded []
     where
       binded = bnRemains ++ concat (M.elems bnBinded)
       sortFBs [] _ = []
@@ -460,7 +460,7 @@ instance ( Title title, Var v, Time t
         ]
 
       -- TODO: Количество циклов для тестирования должно задаваться пользователем.
-      cntxs = take 5 $ simulateAlgByCycle cntx0 $ functionalBlocks n
+      cntxs = take 5 $ simulateAlgByCycle cntx0 $ functions n
       cycleTicks = [ 0 .. nextTick (process n) - 1 ]
       simulationInfo = (0, def) : concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
       assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo

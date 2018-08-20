@@ -8,13 +8,13 @@
 
 module NITTA.Test.ProcessUnits.Fram where
 
-import           Control.Applicative       ((<$>))
+import           Control.Applicative     ((<$>))
 import           Data.Default
-import qualified Data.Map                  as M
+import qualified Data.Map                as M
 import           Data.Proxy
-import qualified NITTA.FunctionBlocks      as FB
+import qualified NITTA.Functions         as F
 import           NITTA.ProcessUnits.Fram
-import           NITTA.Test.FunctionBlocks ()
+import           NITTA.Test.Functions    ()
 import           NITTA.Test.ProcessUnits
 import           NITTA.Types
 import           Test.QuickCheck
@@ -25,25 +25,25 @@ framProxy = Proxy :: Proxy (Fram String Int Int)
 
 -- TODO: Сделать данную операцию через Generics или убрать совсем.
 instance Arbitrary (FSet (Fram String Int t)) where
-  arbitrary = oneof [ FramInput' <$> (arbitrary :: Gen (FB.FramInput (Parcel String Int)))
-                    , FramOutput' <$> (arbitrary :: Gen (FB.FramOutput (Parcel String Int)))
-                    , Loop' <$> (arbitrary :: Gen (FB.Loop (Parcel String Int)))
-                    , Reg' <$> (arbitrary :: Gen (FB.Reg (Parcel String Int)))
-                    , Constant' <$> (arbitrary :: Gen (FB.Constant (Parcel String Int)))
+  arbitrary = oneof [ FramInput' <$> (arbitrary :: Gen (F.FramInput (Parcel String Int)))
+                    , FramOutput' <$> (arbitrary :: Gen (F.FramOutput (Parcel String Int)))
+                    , Loop' <$> (arbitrary :: Gen (F.Loop (Parcel String Int)))
+                    , Reg' <$> (arbitrary :: Gen (F.Reg (Parcel String Int)))
+                    , Constant' <$> (arbitrary :: Gen (F.Constant (Parcel String Int)))
                     ]
 
 -----------------------------------------------------------
 
 framRegAndOut = unitTestbench "framRegAndOut" framProxy
   def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] }
-  [ FB.reg "aa" ["ab"]
-  , FB.framOutput 9 "ac"
+  [ F.reg "aa" ["ab"]
+  , F.framOutput 9 "ac"
   ]
 
 framRegAndConstant = unitTestbench "framRegAndConstant" framProxy
   def{ cntxVars=M.fromList [("dzw", [975])] }
-  [ FB.reg "dzw" ["act","mqt"]
-  , FB.constant 11 ["ovj"]
+  [ F.reg "dzw" ["act","mqt"]
+  , F.constant 11 ["ovj"]
   ]
 
 
@@ -54,7 +54,7 @@ framRegAndConstant = unitTestbench "framRegAndConstant" framProxy
 -- TODO: Необходимо реимплементировать для новых условий в виде через создание контролируемого
 -- processGen и сортировки / фильтрации алгоритма.
 --
--- data ST = ST { acc           :: [FB Parcel String]
+-- data ST = ST { acc           :: [F Parcel String]
 --              , forInput      :: [Int]
 --              , forOutput     :: [Int]
 --              , numberOfLoops :: Int
@@ -70,10 +70,10 @@ framRegAndConstant = unitTestbench "framRegAndConstant" framProxy
 --            ) generalPred
 --   where
 --     maker st0@ST{..} _ = nextState st0 <$> do
---       fb <- suchThat (oneof [ FB <$> (arbitrary :: Gen (FramInput Parcel String))
---                             , FB <$> (arbitrary :: Gen (FramOutput Parcel String))
---                             , FB <$> (arbitrary :: Gen (Loop Parcel String))
---                             , FB <$> (arbitrary :: Gen (Reg Parcel String))
+--       fb <- suchThat (oneof [ F <$> (arbitrary :: Gen (FramInput Parcel String))
+--                             , F <$> (arbitrary :: Gen (FramOutput Parcel String))
+--                             , F <$> (arbitrary :: Gen (Loop Parcel String))
+--                             , F <$> (arbitrary :: Gen (Reg Parcel String))
 --                             ]
 --                      ) check
 --       v <- choose (0 :: Int, 0xFF)
@@ -84,21 +84,21 @@ framRegAndConstant = unitTestbench "framRegAndConstant" framProxy
 --             , usedVariables=variables fb ++ usedVariables
 --             }
 --           specificUpdate fb value st
---             | Just (FramInput addr _vs) <- castFB fb = st{ forInput=addr : forInput }
---             | Just (FramOutput addr (I v)) <- castFB fb = st{ forOutput=addr : forOutput
+--             | Just (FramInput addr _vs) <- castF fb = st{ forInput=addr : forInput }
+--             | Just (FramOutput addr (I v)) <- castF fb = st{ forOutput=addr : forOutput
 --                                                             , values=(v, value) : values
 --                                                             }
---             | Just (Loop _bs (I a)) <- castFB fb = st{ numberOfLoops=numberOfLoops + 1
+--             | Just (Loop _bs (I a)) <- castF fb = st{ numberOfLoops=numberOfLoops + 1
 --                                                      , values=(a, value) : values
 --                                                      }
---             | Just (Reg (I a) _bs) <- castFB fb = st{ values=(a, value) : values }
---             | otherwise = error $ "Bad FB: " ++ show fb
+--             | Just (Reg (I a) _bs) <- castF fb = st{ values=(a, value) : values }
+--             | otherwise = error $ "Bad F: " ++ show fb
 --           check fb
 --             | not $ null (variables fb `intersect` usedVariables) = False
---             | Just (Reg _ _ :: Reg Parcel String) <- castFB fb = True
+--             | Just (Reg _ _ :: Reg Parcel String) <- castF fb = True
 --             | not checkCellUsage = True
 --             | not (dfIoUses < framDefSize) = False
---             | Just (FramInput addr _) <- castFB fb = addr `notElem` forInput
---             | Just (FramOutput addr _) <- castFB fb = addr `notElem` forOutput
+--             | Just (FramInput addr _) <- castF fb = addr `notElem` forInput
+--             | Just (FramOutput addr _) <- castF fb = addr `notElem` forOutput
 --             | otherwise = True -- for Loop
 --           dfIoUses = length (nub $ forInput `union` forOutput) + numberOfLoops

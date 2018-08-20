@@ -9,18 +9,18 @@
 
 module NITTA.ProcessUnits.Shift where
 
-import qualified Data.Bits                   as B
+import qualified Data.Bits                           as B
 import           Data.Default
-import           Data.List                   (intersect, (\\))
-import           Data.Set                    (elems, fromList)
+import           Data.List                           (intersect, (\\))
+import           Data.Set                            (elems, fromList)
 import           Data.Typeable
-import           NITTA.FunctionBlocks
+import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
-import           Numeric.Interval            (singleton, (...))
-import           Prelude                     hiding (init)
+import           Numeric.Interval                    (singleton, (...))
+import           Prelude                             hiding (init)
 
 
 type Shift v x t = SerialPU (State v x t) v x t
@@ -40,7 +40,7 @@ instance Default (State v x t) where
 instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t where
 
   bindToState fb s@State{ sIn=Nothing, sOut=[] }
-    | Just fb' <- castFB fb
+    | Just fb' <- castF fb
     = case fb' of
       ShiftL (I a) (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=False }
       ShiftR (I a) (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=True }
@@ -124,7 +124,7 @@ instance Connected (Shift v x t) where
 
 instance ( Var v, B.Bits x ) => Simulatable (Shift v x t) v x where
   simulateOn cntx _ fb
-    | Just (fb' :: ShiftLR (Parcel v x)) <- castFB fb = simulate cntx fb'
+    | Just (fb' :: ShiftLR (Parcel v x)) <- castF fb = simulate cntx fb'
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
 
 

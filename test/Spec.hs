@@ -9,7 +9,7 @@ module Main where
 import           Control.Applicative          ((<$>))
 import           Data.Atomics.Counter
 import           NITTA.Test.BusNetwork
-import           NITTA.Test.FunctionBlocks
+import           NITTA.Test.Functions
 import           NITTA.Test.ProcessUnits
 import           NITTA.Test.ProcessUnits.Fram
 import           NITTA.Test.Utils
@@ -37,7 +37,7 @@ main = do
     -- , testGroup "Shift process unit"
     --   [ testCase "shiftBiDirection" shiftBiDirection
     --   ]
-    , testGroup "FunctionalBlock"
+    , testGroup "Function"
       [ testCase "reorderAlgorithm" reorderAlgorithmTest
       , testCase "fibonacci" simulateFibonacciTest
       ]

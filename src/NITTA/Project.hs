@@ -132,7 +132,7 @@ runTestBench prj@Project{ projectPath, model } = do
   ( compileExitCode, compileOut, compileErr )
     <- readCreateProcessWithExitCode (createIVerilogProcess projectPath files) []
   when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
-    mapM_ print $ functionalBlocks model
+    mapM_ print $ functions model
     putStrLn $ "compiler stdout:\n-------------------------\n" ++ compileOut
     putStrLn $ "compiler stderr:\n-------------------------\n" ++ compileErr
     die "Verilog compilation failed!"
@@ -142,7 +142,7 @@ runTestBench prj@Project{ projectPath, model } = do
   -- Yep, we can't stop simulation with bad ExitCode...
 
   when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut) $ do
-    mapM_ print $ functionalBlocks model
+    mapM_ print $ functions model
     putStrLn $ "sim stdout:\n-------------------------\n" ++ simOut
     putStrLn $ "sim stderr:\n-------------------------\n" ++ simErr
 

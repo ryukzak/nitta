@@ -104,36 +104,36 @@ class FunctionalSet pu where
   -- |Тип для представляния системы команд.
   data FSet pu :: *
 
-instance ( WithFunctionalBlocks (FSet pu) (FB (Parcel v x))
+instance ( WithFunctions (FSet pu) (F (Parcel v x))
          , Ord v
          , Show v
          , Typeable v
          , Typeable x
          ) => Variables (FSet pu) v where
-  variables fbs = S.unions $ map variables $ functionalBlocks fbs
+  variables fbs = S.unions $ map variables $ functions fbs
 
 
 
 class ToFSet pu v | pu -> v where
   -- |Преобразование гетерогенного функционального блока в представление системы функций вычислительного блока.
-  toFSet :: FB (Parcel v x) -> Either String (FSet pu)
+  toFSet :: F (Parcel v x) -> Either String (FSet pu)
 
 -- |Преобразование из представления системы функций вычислительного блока в гетерогенный функциональный блок.
-fromFSet f = head $ functionalBlocks f
+fromFSet f = head $ functions f
 
 
 
 -- |Класс функциональных блоков. Описывает все необходмые для работы компилятора свойства.
-class ( Typeable fb
-      , Eq fb
-      ) => FunctionalBlock fb v | fb -> v where
-  inputs :: fb -> S.Set v
+class ( Typeable f
+      , Eq f
+      ) => Function f v | f -> v where
+  inputs :: f -> S.Set v
   inputs _ = S.empty
-  outputs :: fb -> S.Set v
+  outputs :: f -> S.Set v
   outputs _ = S.empty
   -- |Возвращает зависимости между аргументами функционального блока. Формат: (заблокированное
   -- значение, блокирующее значение).
-  dependency :: fb -> [(v, v)]
+  dependency :: f -> [(v, v)]
   dependency _ = []
   -- |Необходимость "выворачивания" функций при визуализации вычислительного процесса. Выглядит
   -- примерно так:
@@ -141,7 +141,7 @@ class ( Typeable fb
   -- 1. Начинается вместе с вычислительным циклом.
   -- 2. Прерывается.
   -- 3. Возобнавляется и выполняется до конца вычислительного цикла.
-  insideOut :: fb -> Bool
+  insideOut :: f -> Bool
   insideOut _ = False
   -- |Информация для приоритизации функций в процессе диспетчеризации. Критические функциональные
   -- блоки - блоки, жёстко блокирующие внутрении ресурсы PU. Такие блоки следует привязывать одними
@@ -149,15 +149,15 @@ class ( Typeable fb
   -- следовательно заблокировать процесс синтеза.
   --
   -- Примечание: на самом деле это не правильно, так как критичность на самом деле определяется
-  -- связкой fb + pu. К примеру - использование Loop для Accum.
-  isCritical :: fb -> Bool
+  -- связкой f + pu. К примеру - использование Loop для Accum.
+  isCritical :: f -> Bool
   isCritical _ = False
 
 
 
-class WithFunctionalBlocks a fb | a -> fb where
+class WithFunctions a f | a -> f where
   -- |Получить список связанных функциональных блоков.
-  functionalBlocks :: a -> [fb]
+  functions :: a -> [f]
 
 
 
@@ -179,44 +179,45 @@ instance Default (Cntx v x) where
   def = Cntx M.empty M.empty M.empty M.empty
 
 
-class FunctionSimulation fb v x | fb -> v x where
-  simulate :: Cntx v x -> fb -> Maybe (Cntx v x)
+class FunctionSimulation f v x | f -> v x where
+  simulate :: Cntx v x -> f -> Maybe (Cntx v x)
 
 
 
 
 
 -- |Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
-data FB io where
-  FB :: ( io ~ (io' v x)
-        , IOType io v x
-        , FunctionalBlock fb v
-        , Show fb
-        , FunctionSimulation fb v x
-        ) => fb -> FB io
-instance Show (FB io) where
-  show (FB fb) = "< " ++ show fb ++ " >"
+data F io where
+  F ::
+    ( io ~ (io' v x)
+    , IOType io v x
+    , Function f v
+    , Show f
+    , FunctionSimulation f v x
+    ) => f -> F io
+instance Show (F io) where
+  show (F f) = "< " ++ show f ++ " >"
 
 instance ( Var v
          , Typeable x
-         ) => FunctionalBlock (FB (Parcel v x)) v where
-  dependency (FB fb) = dependency fb
-  insideOut (FB fb) = insideOut fb
-  isCritical (FB fb) = isCritical fb
-  inputs (FB fb) = inputs fb
-  outputs (FB fb) = outputs fb
+         ) => Function (F (Parcel v x)) v where
+  dependency (F f) = dependency f
+  insideOut (F f) = insideOut f
+  isCritical (F f) = isCritical f
+  inputs (F f) = inputs f
+  outputs (F f) = outputs f
 
-instance Variables (FB (Parcel v x)) v where
-  variables (FB fb) = inputs fb `S.union` outputs fb
+instance Variables (F (Parcel v x)) v where
+  variables (F f) = inputs f `S.union` outputs f
 
-instance Eq (FB io) where
-  FB a == FB b = Just a == cast b
+instance Eq (F io) where
+  F a == F b = Just a == cast b
 
-instance Ord (FB (Parcel v x)) where
-  (FB a) `compare` (FB b) = show a `compare` show b
+instance Ord (F (Parcel v x)) where
+  (F a) `compare` (F b) = show a `compare` show b
 
-instance FunctionSimulation (FB (Parcel v x)) v x where
-  simulate cntx (FB fb) = simulate cntx fb
+instance FunctionSimulation (F (Parcel v x)) v x where
+  simulate cntx (F f) = simulate cntx f
 
 
 ---------------------------------------------------------------------
@@ -269,7 +270,7 @@ data StepInfo io where
   -- |Решения, принятые на уровне САПР.
   CADStep :: String -> StepInfo io
   -- |Время работы над функциональным блоком функционального алгоритма.
-  FBStep :: FB io -> StepInfo io
+  FBStep :: F io -> StepInfo io
   -- |Описание использования вычислительного блока с точки зрения передачи данных.
   EndpointRoleStep :: ( io ~ _io v x, Show v, Typeable v ) => EndpointRole v -> StepInfo io
   -- |Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
@@ -286,7 +287,7 @@ data StepInfo io where
 
 instance ( Show v ) => Show (StepInfo (Parcel v x)) where
   show (CADStep s)                 = s
-  show (FBStep (FB fb))            = show fb
+  show (FBStep (F f))              = show f
   show (EndpointRoleStep eff)      = show eff
   show (InstructionStep instr)     = show instr
   show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
@@ -322,8 +323,8 @@ data BindingDT title io
 binding = Proxy :: Proxy BindingDT
 
 instance DecisionType (BindingDT title io) where
-  data Option (BindingDT title io) = BindingO (FB io) title deriving ( Generic )
-  data Decision (BindingDT title io) = BindingD (FB io) title deriving ( Generic )
+  data Option (BindingDT title io) = BindingO (F io) title deriving ( Generic )
+  data Decision (BindingDT title io) = BindingD (F io) title deriving ( Generic )
 
 
 -- |Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
@@ -397,7 +398,7 @@ instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t))
 -- 4) Повторение, пока список возможных вариантов не станет пустым.
 class ProcessUnit pu io t | pu -> io t where
   -- |Назначить исполнение функционального блока вычислительному узлу.
-  tryBind :: FB io -> pu -> Either String pu
+  tryBind :: F io -> pu -> Either String pu
   -- |Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
   -- процесс вложенных структурных элементов.
   --
@@ -423,7 +424,7 @@ class ProcessUnit pu io t | pu -> io t where
 
 bind fb pu = case tryBind fb pu of
   Right pu' -> pu'
-  Left err  -> error $ "Can't bind FB to PU: " ++ err
+  Left err  -> error $ "Can't bind F to PU: " ++ err
 
 allowToProcess fb pu
   | Right _ <- tryBind fb pu = True
@@ -510,5 +511,5 @@ class Simulatable pu v x | pu -> v x where
   simulateOn :: Cntx v x -- ^Контекст вычислительного процесса, содержащий уже
                          -- известные значения переменных.
              -> pu -- ^Вычислительный блок.
-             -> FB (Parcel v x) -- ^Функциональный блок, оперируйщий интересующим значением.
+             -> F (Parcel v x) -- ^Функциональный блок, оперируйщий интересующим значением.
              -> Maybe (Cntx v x)

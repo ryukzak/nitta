@@ -19,7 +19,7 @@ import           Data.Maybe                          (catMaybes)
 import           Data.Set                            (elems, fromList,
                                                       singleton)
 import           Data.Typeable
-import           NITTA.FunctionBlocks
+import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
@@ -45,11 +45,11 @@ slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def def
 instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t where
 
   bindToState fb st@State{ .. }
-    | Just (Send (I v)) <- castFB fb
+    | Just (Send (I v)) <- castF fb
     , let (ds, rs) = spiSend
     = Right st{ spiSend=(ds, v:rs) }
 
-    | Just (Receive (O vs)) <- castFB fb
+    | Just (Receive (O vs)) <- castF fb
     , let (ds, rs) = spiReceive
     = Right st{ spiReceive=(ds, elems vs : rs) }
 
@@ -122,8 +122,8 @@ instance UnambiguouslyDecode (SPI v x t) where
 
 instance ( Ord v ) => Simulatable (SPI v x t) v x where
   simulateOn cntx _ fb
-    | Just fb'@Send{} <- castFB fb = simulate cntx fb'
-    | Just fb'@Receive{} <- castFB fb = simulate cntx fb'
+    | Just fb'@Send{} <- castF fb = simulate cntx fb'
+    | Just fb'@Receive{} <- castF fb = simulate cntx fb'
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on SPI."
 
 instance Connected (SPI v x t) where

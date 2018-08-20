@@ -40,7 +40,7 @@ import           NITTA.Utils
 -- FIXME: Сделать визуализацию DataFlowGraph через graphviz. В первую очередь DFG.
 data DataFlowGraph v
   -- |Вершина графа, соответствует фунциональному блоку.
-  = DFGNode (FB (Parcel v Int))
+  = DFGNode (F (Parcel v Int))
   -- |Граф, где информация о вершинах хранится внутри функциональных блоков.
   | DFG [DataFlowGraph v]
   -- |Множество взаимозаменяемых подграфов.
@@ -55,13 +55,13 @@ instance ( Var v ) => Variables (DataFlowGraph v) v where
   variables (DFG g)                       = unionsMap variables g
   variables DFGSwitch{ dfgKey, dfgCases } = singleton dfgKey `union` unionsMap (variables . snd) dfgCases
 
-instance WithFunctionalBlocks (DataFlowGraph v) (FB (Parcel v Int)) where
-  functionalBlocks (DFGNode fb)          = [ fb ]
-  functionalBlocks (DFG g)               = concatMap functionalBlocks g
-  functionalBlocks DFGSwitch{ dfgCases } = concatMap (functionalBlocks . snd) dfgCases
+instance WithFunctions (DataFlowGraph v) (F (Parcel v Int)) where
+  functions (DFGNode fb)          = [ fb ]
+  functions (DFG g)               = concatMap functions g
+  functions DFGSwitch{ dfgCases } = concatMap (functions . snd) dfgCases
 
-dfgInputs g = algInputs $ functionalBlocks g
-node (fb :: FB (Parcel v Int)) = DFGNode fb
+dfgInputs g = algInputs $ functions g
+node (fb :: F (Parcel v Int)) = DFGNode fb
 
 -- |Для описания текущего состояния вычислительной системы (с учётом алгоритма, потока управления,
 -- "текущего места" исполнения алгоритма, микроархитектуры и расписния) необходима работа со стеком.

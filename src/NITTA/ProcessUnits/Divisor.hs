@@ -17,8 +17,8 @@ import           Data.List                           (find, partition)
 import           Data.Set                            (Set, difference,
                                                       isSubsetOf)
 import qualified Data.Set                            as S
-import           NITTA.FunctionBlocks                (castFB)
-import qualified NITTA.FunctionBlocks                as FB
+import           NITTA.Functions                     (castF)
+import qualified NITTA.Functions                     as F
 import           NITTA.ProcessUnits.Generic.Pipeline
 import           NITTA.Types
 import           NITTA.Utils
@@ -35,7 +35,7 @@ instance ( Var v
          , Integral x
          ) => Simulatable (Divisor v x t) v x where
     simulateOn cntx _ fb
-        | Just fb'@FB.Division{} <- castFB fb = simulate cntx fb'
+        | Just fb'@F.Division{} <- castF fb = simulate cntx fb'
         | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
 
 
@@ -64,7 +64,7 @@ instance PipelineTF (DivisorSt v) where
 
 instance PipelinePU (DivisorSt v) (Parcel v x) where
     bindPipeline fb
-        | Just (FB.Division (I n) (I d_) (O q) (O r)) <- castFB fb
+        | Just (F.Division (I n) (I d_) (O q) (O r)) <- castF fb
         , let inputSt = DivisorIn ( [(n, Numer), (d_, Denom)], (q, r) )
         , let expire = 2
         = Right ( inputSt, expire )

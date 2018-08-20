@@ -14,7 +14,7 @@ import           Data.List                           (intersect, partition,
                                                       (\\))
 import           Data.Set                            (elems, fromList)
 import           Data.Typeable
-import           NITTA.FunctionBlocks
+import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
@@ -39,8 +39,8 @@ instance ( Var v
          ) => SerialPUState (State v x t) v x t where
 
   bindToState fb ac@Accum{ acIn=[], acOut=[] }
-    | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[(False, a), (False, b)], acOut=elems cs }
-    | Just (Sub (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[(False, a), (True, b)], acOut=elems cs }
+    | Just (Add (I a) (I b) (O cs)) <- castF fb = Right ac{ acIn=[(False, a), (False, b)], acOut=elems cs }
+    | Just (Sub (I a) (I b) (O cs)) <- castF fb = Right ac{ acIn=[(False, a), (True, b)], acOut=elems cs }
     | otherwise = Left $ "The functional block is unsupported by Accum: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
@@ -100,8 +100,8 @@ instance ( Var v
          , Num x
          ) => Simulatable (Accum v x t) v x where
   simulateOn cntx _ fb
-    | Just fb'@Add{} <- castFB fb = simulate cntx fb'
-    | Just fb'@Sub{} <- castFB fb = simulate cntx fb'
+    | Just fb'@Add{} <- castF fb = simulate cntx fb'
+    | Just fb'@Sub{} <- castF fb = simulate cntx fb'
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Accum."
 
 
