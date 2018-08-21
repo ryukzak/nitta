@@ -208,9 +208,9 @@ import           Text.InterpolatedString.Perl6 (qq)
 - t - идентификатор момента времени.
 -}
 
--- TODO: Перенести время из процесса сюда, добавить его в currentWork.
+-- FIXME: Разработать safeDecision, которая будет проверять осуществлять дополнительные проверки
+-- корректности принятого решения.
 
--- FIXME: Сделать реализацию безопастной (выкидывать ошибку при попытке спланировать не корректный ВП).
 -- FIXME: Убрать сигнал wrSignal.
 data Multiplier v x t
     = Multiplier
@@ -240,6 +240,7 @@ data Multiplier v x t
           -- |Описание вычислительного процесса, спланированного для данного вычислительного блока
           -- 'NITTA.Types.Base.Process'.
         , process_    :: Process (Parcel v x) t
+        , tick        :: t
           -- |В реализации данного вычислительного блока используется IP ядро поставляемое вместе с
           -- Altera Quartus. Это не позволяет осуществлять симуляцию при помощи Icarus Verilog.
           -- Чтобы обойти данное ограничение была создана заглушка, подключаемая вместо IP ядра если
@@ -252,7 +253,7 @@ data Multiplier v x t
 -- |Конструктор модели умножителя вычислительного блока. Аргумент определяет внутреннюю оранизацию
 -- вычислительного блока: использование IP ядра умножителя (False) или заглушки (True). Подробнее
 -- см. функцию hardware в классе 'TargetSystemComponent'.
-multiplier mock = Multiplier [] [] [] Nothing Nothing def mock
+multiplier mock = Multiplier [] [] [] Nothing Nothing def def mock
 
 
 
@@ -286,15 +287,15 @@ instance ( Var v, Time t
     -- |Данный метод используется для установки времени вычислительного блока снаружи. В настоящий
     -- момент это необходимо только для реализации ветвления, которое находится на стадии
     -- прототипирования.
-    setTime t pu@Multiplier{ process_ } = pu{ process_=process_{ nextTick=t } }
+    setTime t pu@Multiplier{} = pu{ tick=t }
 
 
 -- |Данная функция осуществляет фактическое взятие функционального блока в работу.
-assignment pu@Multiplier{ targets=[], sources=[], remain } f
+assignment pu@Multiplier{ targets=[], sources=[], remain, tick } f
     | Just (F.Multiply (I a) (I b) (O c)) <- F.castF f
     = pu
         { targets=[a, b]
-        , currentWork=Just (def, f)
+        , currentWork=Just (tick + 1, f)
         , sources=elems c, remain=remain \\ [ f ]
         }
 assignment _ _ = error "Multiplier: internal assignment error."
@@ -323,13 +324,13 @@ instance ( Var v, Time t, Typeable x
 
     --    - список вариантов загружаемых в вычислительный блок переменных, необходимых для
     --      находящейся в работе функции;
-    options _proxy Multiplier{ targets=vs@(_:_), process_=Process{ nextTick } }
-        = map (\v -> EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)) vs
+    options _proxy Multiplier{ targets=vs@(_:_), tick }
+        = map (\v -> EndpointO (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
 
     --    - список вариантов выгружаемых из вычислительного блока переменных;
-    options _proxy Multiplier{ sources, doneAt=Just at, process_=Process{ nextTick } }
+    options _proxy Multiplier{ sources, doneAt=Just at, tick }
         | not $ null sources
-        = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at nextTick ... maxBound) (1 ... maxBound) ]
+        = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
 
     --    - список вариантов загружаемых в вычислительный блок переменных, загрузка любой из которых
     --      приведёт к фактическу началу работы над соответствующей функцией.
@@ -361,8 +362,8 @@ instance ( Var v, Time t, Typeable x
         , let sel = if null xs then B else A
         = pu
             { -- Осуществляется планирование вычислительного процесса.
-              process_=schedule pu $
-                scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Load sel
+              process_=schedule pu $ do
+                scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
               -- Сохраняется остаток работы на следующий цикл.
             , targets=xs
               -- Если загружены все необходимые аргументы (@null xs@), то сохраняется момент
@@ -370,6 +371,8 @@ instance ( Var v, Time t, Typeable x
             , doneAt=if null xs
                 then Just $ sup epdAt + 3
                 else Nothing
+              -- Продвигается вперёд модельное время.
+            , tick=sup epdAt
             }
     --    2. Если модель ожидает, что из неё выгрузят переменные.
     decision _proxy pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f) } d@EndpointD{ epdRole=Source v, epdAt }
@@ -380,13 +383,15 @@ instance ( Var v, Time t, Typeable x
             { -- Осуществляется планирование вычислительного процесса.
               process_=schedule pu $ do
                 when (null sources') $ scheduleFunction a (sup epdAt) f
-                scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) Out
+                scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Out
               -- В случае если не все переменные были запрошены - сохраняются оставшиеся.
             , sources=sources'
               -- Если вся работа выполнена, то сбрасывается время готовности результата, как и
               -- текущая работа.
             , doneAt=if null sources' then Nothing else doneAt
             , currentWork=if null sources' then Nothing else Just (a, f)
+              -- Продвигается вперёд модельное время.
+            , tick=sup epdAt
             }
     --    3. Если никакая функция в настоящий момент не выполняется, значит необходимо найти в
     --       списке назначенных функций требуемую, запустить ее в работу, и только затем принять
@@ -471,9 +476,9 @@ instance UnambiguouslyDecode (Multiplier v x t) where
 instance Connected (Multiplier v x t) where
     data PUPorts (Multiplier v x t)
         = PUPorts
-            { wr           -- ˆЗагрузить аргумент. 
+            { wr           -- ˆЗагрузить аргумент.
             , wrSel        -- ˆВыбор загружаемого аргумента (A | B).
-            , oe :: Signal -- ˆВыгрузить результат работы.       
+            , oe :: Signal -- ˆВыгрузить результат работы.
             } deriving ( Show )
     transmitToLink Microcode{..} PUPorts{..}
         =

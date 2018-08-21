@@ -96,7 +96,9 @@ instance ( Time t, Var v ) => PipelinePU2 (DivisorSt v) v t where
                         , outputSt=DivisorOut [(q, Quotient), (r, Remain)]
                         }
                     )
-            scheduleInput arg = scheduleInstructionAndUpdateTick (inf at) (sup at) $ Load arg
+            scheduleInput arg = do
+                updateTick $ sup at + 1
+                scheduleInstruction (inf at) (sup at) $ Load arg
     targetDecision _ _ = Nothing
 
     sourceOptions begin end maxDuration (DivisorOut outs)
@@ -109,7 +111,9 @@ instance ( Time t, Var v ) => PipelinePU2 (DivisorSt v) v t where
         | ([(waitingVs, sel)], os) <- partition ((vs `isSubsetOf`) . fst) outs
         , let
             waitingVs' = waitingVs `difference` vs
-            sch = scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Out sel
+            sch = scheduleEndpoint d $ do
+                updateTick $ sup epdAt + 1
+                scheduleInstruction (inf epdAt) (sup epdAt) $ Out sel
             os' = if S.null waitingVs'
                     then os
                     else (waitingVs', sel) : os
