@@ -57,3 +57,5 @@ scheduleInstructionAndUpdateTick start finish instr = do
 scheduleEndpoint EndpointD{ epdAt, epdRole } codeGen = do
     scheduleStep (Activity $ inf epdAt ... sup epdAt) $ EndpointRoleStep epdRole
     codeGen
+
+scheduleFunction a b f = scheduleStep (Activity $ a ... b) $ FStep f

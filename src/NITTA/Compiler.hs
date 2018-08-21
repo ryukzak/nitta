@@ -60,7 +60,7 @@ bindAllAndNaiveSchedule alg pu0 = naiveSchedule $ bindAll alg pu0
 isSchedulingComplete pu
   = let os = options endpointDT pu
         d = passiveOption2action $ head os
-        algVars = unionsMap variables $ functionalBlocks pu
+        algVars = unionsMap variables $ functions pu
         processVars = unionsMap variables $ getEndpoints $ process pu
     in if null os
         then algVars == processVars
@@ -93,13 +93,13 @@ compiler = Proxy :: Proxy CompilerDT
 instance DecisionType (CompilerDT title tag v t) where
   data Option (CompilerDT title tag v t)
     = ControlFlowOption (DataFlowGraph v)
-    | BindingOption (FB (Parcel v Int)) title
+    | BindingOption (F (Parcel v Int)) title
     | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
     deriving ( Generic, Show )
 
   data Decision (CompilerDT title tag v t)
     = ControlFlowDecision (DataFlowGraph v)
-    | BindingDecision (FB (Parcel v Int)) title
+    | BindingDecision (F (Parcel v Int)) title
     | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
     deriving ( Generic, Show )
 

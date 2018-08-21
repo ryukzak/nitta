@@ -95,15 +95,18 @@ stepStart Step{ sTime=Activity t } = I.inf t
 whatsHappen t Process{ steps } = filter (\Step{ sTime } -> t `atSameTime` sTime) steps
 
 
-isFB (FBStep _)                = True
-isFB (NestedStep _ (FBStep _)) = True
-isFB _                         = False
+isFB (FStep _)                = True
+isFB (NestedStep _ (FStep _)) = True
+isFB _                        = False
 
-getFB Step{ sDesc=FBStep fb }                = Just fb
-getFB Step{ sDesc=NestedStep _ (FBStep fb) } = Just fb
-getFB _                                      = Nothing
+getFB Step{ sDesc=FStep fb }                = Just fb
+getFB Step{ sDesc=NestedStep _ (FStep fb) } = Just fb
+getFB _                                     = Nothing
 
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
+
+instance ( Ord t ) => WithFunctions (Process (Parcel v x) t) (F (Parcel v x)) where
+  functions = getFBs
 
 getEndpoint :: Step (Parcel v x) t -> Maybe (EndpointRole v)
 getEndpoint Step{ sDesc=EndpointRoleStep role }                = Just role

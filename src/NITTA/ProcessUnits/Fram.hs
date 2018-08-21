@@ -70,7 +70,7 @@ import qualified Data.Set              as S
 import qualified Data.String.Utils     as S
 import           Data.Typeable
 import           NITTA.Compiler
-import           NITTA.FunctionBlocks
+import           NITTA.Functions
 import           NITTA.Project
 import           NITTA.Types           hiding (Undef)
 import qualified NITTA.Types           as T
@@ -87,7 +87,7 @@ data Fram v x t = Fram
   -- дополнительной информации, такой как время привязки функционального блока. Нельзя сразу делать
   -- привязку к ячейке памяти, так как это будет неэффективно.
   , frRemains  :: [ (FSet (Fram v x t), ProcessUid) ]
-  , frBindedFB :: [ FB (Parcel v x) ]
+  , frBindedFB :: [ F (Parcel v x) ]
   , frProcess  :: Process (Parcel v x) t
   , frSize     :: Int
   } deriving ( Show )
@@ -107,8 +107,8 @@ instance ( Default t
       defaultSize = 16
       cells = map (\(i, c) -> c{ initialValue=0x1000 + i }) $ zip [0..] $ repeat def
 
-instance WithFunctionalBlocks (Fram v x t) (FB (Parcel v x)) where
-  functionalBlocks Fram{..} = frBindedFB
+instance WithFunctions (Fram v x t) (F (Parcel v x)) where
+  functions Fram{..} = frBindedFB
 
 
 
@@ -122,18 +122,17 @@ instance FunctionalSet (Fram v x t) where
     deriving ( Show, Eq )
 
 instance ( Var v, Time t, Typeable x, Eq x, Show x, Num x
-         ) => WithFunctionalBlocks (FSet (Fram v x t)) (FB (Parcel v x)) where
-  -- TODO: Сделать данную операцию через Generics.
-  functionalBlocks (FramInput' fb)  = [ FB fb ]
-  functionalBlocks (FramOutput' fb) = [ FB fb ]
-  functionalBlocks (Loop' fb)       = [ FB fb ]
-  functionalBlocks (Reg' fb)        = [ FB fb ]
-  functionalBlocks (Constant' fb)   = [ FB fb ]
+         ) => WithFunctions (FSet (Fram v x t)) (F (Parcel v x)) where
+  functions (FramInput' f)  = [ F f ]
+  functions (FramOutput' f) = [ F f ]
+  functions (Loop' f)       = [ F f ]
+  functions (Reg' f)        = [ F f ]
+  functions (Constant' f)   = [ F f ]
 
 instance ( Var v
          , Typeable x
          ) => ToFSet (Fram v x t) v where
-  toFSet (FB fb)
+  toFSet (F fb)
     | Just fb'@Constant{} <- cast fb = Right $ Constant' fb'
     | Just fb'@Reg{} <- cast fb = Right $ Reg' fb'
     | Just fb'@Loop{} <- cast fb = Right $ Loop' fb'
@@ -252,7 +251,7 @@ instance ( IOType (Parcel v x) v x
          , Num x
          , Eq x
          , Show x
-         , WithFunctionalBlocks (Fram v x t) (FB (Parcel v x))
+         , WithFunctions (Fram v x t) (F (Parcel v x))
          ) => ProcessUnit (Fram v x t) (Parcel v x) t where
   tryBind fb0 pu@Fram{..} = do
     fb' <- toFSet fb0
@@ -364,13 +363,11 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                    }
         Cell{ output=Def j@Job{ actions=act1 : _ } } | act1 << epdRole
           ->  let (p', Nothing) = schedule addr j
-                  -- FIXME: Eсть потенциальная проблема, которая может встречаться и в других
-                  -- вычислительных блоках. Если вычислительный блок загружает данные в последний
-                  -- такт вычислительного цикла, а выгружает их в первый так, то возможно ситуация,
-                  -- когда внутрение процессы не успели завершиться. Решение этой проблемы должно
-                  -- лежать в плоскости метода process, в рамках которого должен производиться
-                  -- анализ уже построенного вычислительного процесса и в случае необходимости,
-                  -- добавляться лишний так простоя.
+                  -- TODO: Eсть потенциальная проблема, которая может встречаться и в других вычислительных блоках. Если
+                  -- вычислительный блок загружает данные в последний такт вычислительного цикла, а выгружает их в
+                  -- первый так, то возможно ситуация, когда внутрение процессы не успели завершиться. Решение этой
+                  -- проблемы должно лежать в плоскости метода process, в рамках которого должен производиться анализ
+                  -- уже построенного вычислительного процесса и в случае необходимости, добавляться лишний так простоя.
                   cell' = cell{ input=UsedOrBlocked
                               , output=UsedOrBlocked
                               }
@@ -416,7 +413,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                      })
       finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
         let start = fromMaybe (error "startAt field is empty!") startAt
-        h <- addStep (Activity $ start ... d^.at.supremum) $ FBStep $ fromFSet functionalBlock
+        h <- addStep (Activity $ start ... d^.at.supremum) $ FStep $ fromFSet functionalBlock
         mapM_ (relation . Vertical h) cads
         mapM_ (relation . Vertical h) endpoints
         mapM_ (relation . Vertical h) instructions
@@ -501,16 +498,16 @@ instance ( Var v, Time t
          , Typeable x
          ) => Simulatable (Fram v x t) v x where
   simulateOn cntx@Cntx{..} Fram{..} fb
-    | Just (Constant (X x) (O k)) <- castFB fb = set cntx k x
-    | Just (Loop (X x) (O k1) (I _k2)) <- castFB fb = do
+    | Just (Constant (X x) (O k)) <- castF fb = set cntx k x
+    | Just (Loop (X x) (O k1) (I _k2)) <- castF fb = do
       let k = oneOf k1
       let v = fromMaybe x $ cntx `get` k
       set cntx k1 v
-    | Just fb'@Reg{} <- castFB fb = simulate cntx fb'
-    | Just (FramInput addr (O k)) <- castFB fb = do
+    | Just fb'@Reg{} <- castF fb = simulate cntx fb'
+    | Just (FramInput addr (O k)) <- castF fb = do
       let v = fromMaybe (addr2value addr) $ cntx `get` oneOf k
       set cntx k v
-    | Just (FramOutput addr (I k)) <- castFB fb = do
+    | Just (FramOutput addr (I k)) <- castF fb = do
       v <- get cntx k
       let cntxFram' = M.alter (Just . maybe [v] (v:)) (addr, k) cntxFram
       return cntx{ cntxFram=cntxFram' }
@@ -530,10 +527,10 @@ instance ( Var v
          , PrintfArg x
          , ProcessUnit (Fram v x t) (Parcel v x) t
          ) => TestBench (Fram v x t) v x where
-  testBenchDescription Project{ projectName, model=pu@Fram{ frProcess=Process{ steps }, .. } } cntx0
+  testBenchDescription Project{ projectName, model=pu@Fram{ frProcess=Process{ steps }, .. }, testCntx }
     = Immidiate (moduleName projectName pu ++ "_tb.v") testBenchImp
     where
-      Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) (Just cntx0) $ functionalBlocks pu
+      Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx $ functions pu
       testBenchImp = renderMST
         [ "module $moduleName$_tb();                                                                                 "
         , "parameter DATA_WIDTH = 32;                                                                                "
@@ -544,7 +541,7 @@ instance ( Var v
         , show cntx
         , ""
         , "Algorithm:"
-        , unlines $ map show $ functionalBlocks pu
+        , unlines $ map show $ functions pu
         , ""
         , "Process:"
         , unlines $ map show steps
@@ -581,7 +578,7 @@ instance ( Var v
                    , addr=map Signal [ 2, 3, 4, 5 ]
                    }
         , "                                                                                                          "
-        , snippetDumpFile $ moduleName projectName pu
+        , snippetDumpFile' $ moduleName projectName pu
         , snippetClkGen
         , "                                                                                                          "
         , "initial                                                                                                   "
@@ -592,9 +589,9 @@ instance ( Var v
         , "    forever @(posedge clk);                                                                               "
         , "  end                                                                                                     "
         , "                                                                                                          "
-        , snippetInitialFinish $ controlSignals pu
-        , snippetInitialFinish $ testDataInput pu cntx
-        , snippetInitialFinish $ testDataOutput projectName pu cntx
+        , snippetInitialFinish' $ controlSignals pu
+        , snippetInitialFinish' $ testDataInput pu cntx
+        , snippetInitialFinish' $ testDataOutput projectName pu cntx
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]
@@ -615,7 +612,7 @@ testDataInput pu@Fram{ frProcess=p@Process{..}, ..} cntx
   where
     busState t
       | Just (Target v) <- endpointAt t p
-       = "data_in <= " ++ show (fromMaybe (error ("input" ++ show v ++ show (functionalBlocks pu)) ) $ get cntx v) ++ ";"
+       = "data_in <= " ++ show (fromMaybe (error ("input" ++ show v ++ show (functions pu)) ) $ get cntx v) ++ ";"
       | otherwise = "/* NO INPUT */"
 
 testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
@@ -637,14 +634,14 @@ testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
     bankCheck
       = "\n      @(posedge clk);\n"
       ++ unlines [ "  " ++ checkBank addr v (maybe (error $ show ("bank" ++ show v ++ show cntx) ) show (get cntx v))
-                 | Step{ sDesc=FBStep fb, .. } <- filter (isFB . sDesc) steps
+                 | Step{ sDesc=FStep fb, .. } <- filter (isFB . sDesc) steps
                  , let addr_v = outputStep pu fb
                  , isJust addr_v
                  , let Just (addr, v) = addr_v
                  ]
     outputStep pu' fb
-      | Just (Loop _ _bs (I v)) <- castFB fb = Just (findAddress v pu', v)
-      | Just (FramOutput addr (I v)) <- castFB fb = Just (addr, v)
+      | Just (Loop _ _bs (I v)) <- castF fb = Just (findAddress v pu', v)
+      | Just (FramOutput addr (I v)) <- castF fb = Just (addr, v)
       | otherwise = Nothing
 
     checkBank addr v value = concatMap ("    " ++)

@@ -18,8 +18,8 @@ proxy = Proxy :: Proxy (Shift String Int Int)
 
 -- shiftBiDirection = unitTestbench "shiftBiDirection" proxy
 --   def
---   [ FB.loop 16 ["f1"] "g1" :: FB (Parcel String Int)
---   , FB.shiftL "f1" ["g1"]
---   , FB.loop 16 ["f2"] "g2"
---   , FB.shiftR "f2" ["g2"]
+--   [ F.loop 16 ["f1"] "g1" :: F (Parcel String Int)
+--   , F.shiftL "f1" ["g1"]
+--   , F.loop 16 ["f2"] "g2"
+--   , F.shiftR "f2" ["g2"]
 --   ]

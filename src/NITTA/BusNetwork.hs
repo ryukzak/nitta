@@ -39,7 +39,7 @@ import           Data.Maybe                    (fromMaybe, isJust, mapMaybe)
 import           Data.Set                      (elems, fromList, intersection)
 import qualified Data.String.Utils             as S
 import           Data.Typeable
-import           NITTA.FunctionBlocks          (get', simulateAlgByCycle)
+import           NITTA.Functions               (get', simulateAlgByCycle)
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
@@ -59,9 +59,9 @@ data GBusNetwork title spu v x t
   = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
-      bnRemains        :: [FB (Parcel v x)]
+      bnRemains        :: [F (Parcel v x)]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded         :: M.Map title [FB (Parcel v x)]
+    , bnBinded         :: M.Map title [F (Parcel v x)]
     -- | Описание вычислительного процесса сети, как элемента процессора.
     , bnProcess        :: Process (Parcel v x) t
     -- | Словарь вложенных вычислительных блоков по именам.
@@ -83,6 +83,8 @@ transfered net@BusNetwork{..}
 
 
 -- TODO: Проверка подключения сигнальных линий.
+
+-- TODO: Вариант функции, где провода будут подключаться автоматически.
 busNetwork w allowDrop ips ops pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w ips ops allowDrop
   where
     pus' = map (\(title, f) ->
@@ -109,8 +111,8 @@ instance ( Title title
          , Time t
          , Var v
          , Typeable x
-         ) => WithFunctionalBlocks (BusNetwork title v x t) (FB (Parcel v x)) where
-  functionalBlocks BusNetwork{..} = sortFBs binded []
+         ) => WithFunctions (BusNetwork title v x t) (F (Parcel v x)) where
+  functions BusNetwork{..} = sortFBs binded []
     where
       binded = bnRemains ++ concat (M.elems bnBinded)
       sortFBs [] _ = []
@@ -223,7 +225,7 @@ instance ( Title title, Time t, Var v, Typeable x
         uids' <- foldM (\dict Step{..} -> do
                            k <- addStep sTime $ NestedStep puTitle sDesc
                            when (isFB sDesc) $ do
-                             let FBStep fb = sDesc
+                             let FStep fb = sDesc
                              mapM_ (\v -> when (v `M.member` transportKey)
                                           $ relation $ Vertical (transportKey M.! v) k
                                    ) $ variables fb
@@ -405,7 +407,7 @@ instance ( Title title, Var v, Time t
          , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x
          ) => TestBench (BusNetwork title v x t) v x where
-  testBenchDescription Project{ projectName, model=n@BusNetwork{..} } cntx0 = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
+  testBenchDescription Project{ projectName, model=n@BusNetwork{..}, testCntx } = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
     where
       ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
       testBenchImp = renderMST
@@ -437,7 +439,7 @@ instance ( Title title, Var v, Time t
           , not $ null tbEnv
           ]
         , "                                                                                                          "
-        , snippetDumpFile $ moduleName projectName n
+        , snippetDumpFile' $ moduleName projectName n
         , "                                                                                                          "
         , snippetClkGen
         , "                                                                                                          "
@@ -457,8 +459,8 @@ instance ( Title title, Var v, Time t
         [ ( "moduleName", moduleName projectName n )
         ]
 
-      -- FIXME: 5 - must be variable
-      cntxs = take 5 $ simulateAlgByCycle cntx0 $ functionalBlocks n
+      -- TODO: Количество циклов для тестирования должно задаваться пользователем.
+      cntxs = take 5 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n
       cycleTicks = [ 0 .. nextTick (process n) - 1 ]
       simulationInfo = (0, def) : concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
       assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo

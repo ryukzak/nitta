@@ -10,7 +10,7 @@ import           Data.Default
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import qualified NITTA.FunctionBlocks          as FB
+import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divisor    as D
 import qualified NITTA.ProcessUnits.Fram       as FR
@@ -36,7 +36,6 @@ netWithArithmAndSPI = busNetwork 27 (Just True)
                               })
   ]
 
--- TODO: Автоматическое подключение проводов.
 netWithArithm = busNetwork 31 (Just True) [] []
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
@@ -49,61 +48,61 @@ netWithArithm = busNetwork 31 (Just True) [] []
 
 testAccumAndFram = unitTest "unittestAccumAndFram" netWithArithm
   def
-  [ FB.framInput 3 [ "d", "p" ]
-  , FB.framInput 4 [ "e", "k" ]
-  , FB.framOutput 5 "p"
-  , FB.framOutput 6 "k"
-  , FB.loop 22 ["s"] "sum"
-  , FB.framOutput 7 "s"
-  , FB.add "d" "e" ["sum"]
+  [ F.framInput 3 [ "d", "p" ]
+  , F.framInput 4 [ "e", "k" ]
+  , F.framOutput 5 "p"
+  , F.framOutput 6 "k"
+  , F.loop 22 "sum" ["s"]
+  , F.framOutput 7 "s"
+  , F.add "d" "e" ["sum"]
   ]
 
 
 testShiftAndFram = unitTest "unitShiftAndFram" netWithArithm
   def
-  [ FB.loop 16 ["f1"] "g1"
-  , FB.shiftL "f1" ["g1"]
-  , FB.loop 16 ["f2"] "g2"
-  , FB.shiftR "f2" ["g2"]
+  [ F.loop 16 "g1" ["f1"]
+  , F.shiftL "f1" ["g1"]
+  , F.loop 16 "g2" ["f2"]
+  , F.shiftR "f2" ["g2"]
   ]
 
 testFibonacci = unitTest "testFibonacci" netWithArithm
   def
-  [ FB.loop 0 ["a1"      ] "b2"
-  , FB.loop 1 ["b1", "b2"] "c"
-  , FB.add "a1" "b1" ["c"]
+  [ F.loop 0  "b2" ["a1"      ]
+  , F.loop 1  "c"  ["b1", "b2"]
+  , F.add "a1" "b1" ["c"]
   ]
 
 testFibonacciWithSPI = unitTest "testFibonacciWithSPI" netWithArithmAndSPI
   def
-  [ FB.loop 0 ["a1"      ] "b2"
-  , FB.loop 1 ["b1", "b2"] "c"
-  , FB.add "a1" "b1" ["c", "c_copy"]
-  , FB.send "c_copy"
+  [ F.loop 0 "b2" ["a1"      ]
+  , F.loop 1 "c"  ["b1", "b2"]
+  , F.add "a1" "b1" ["c", "c_copy"]
+  , F.send "c_copy"
   ]
 
 testDiv4 = unitTest "testDiv4" netWithArithm
   def
-  [ FB.constant 100 ["a"]
-  , FB.loop 2 ["b"] "e"
-  , FB.division "a" "b" ["c"] ["d"]
-  , FB.add "c" "d" ["e"]
+  [ F.constant 100 ["a"]
+  , F.loop 2 "e" ["b"]
+  , F.division "a" "b" ["c"] ["d"]
+  , F.add "c" "d" ["e"]
 
-  , FB.constant 200 ["a1"]
-  , FB.loop 2 ["b1"] "e1"
-  , FB.division "a1" "b1" ["c1"] ["d1"]
-  , FB.add "c1" "d1" ["e1"]
+  , F.constant 200 ["a1"]
+  , F.loop 2 "e1" ["b1"]
+  , F.division "a1" "b1" ["c1"] ["d1"]
+  , F.add "c1" "d1" ["e1"]
   ]
 
 testMultiplier = unitTest "testMultiplier" netWithArithm
   def
-  [ FB.constant 2 ["a"]
-  , FB.loop 1 ["b"] "c"
-  , FB.multiply "a" "b" ["c"]
+  [ F.constant 2 ["a"]
+  , F.loop 1 "c" ["b"]
+  , F.multiply "a" "b" ["c"]
 
-  , FB.constant 3 ["x"]
-  , FB.loop 1 ["y"] "z"
-  , FB.multiply "y" "x" ["z"]
+  , F.constant 3 ["x"]
+  , F.loop 1 "z" ["y"]
+  , F.multiply "y" "x" ["z"]
   ]
 
 
@@ -124,10 +123,10 @@ testMultiplier = unitTest "testMultiplier" netWithArithm
 -- изменится, так как регистр будет привязан тудаже.
 badTestFram = badUnitTest "badTestFram" netWithArithm
   def
-  [ FB.framInput 3 [ "x" ]
-  , FB.framOutput 5 "x"
-  , FB.loop 42 ["f"] "g"
-  , FB.reg "f" ["g"]
+  [ F.framInput 3 [ "x" ]
+  , F.framOutput 5 "x"
+  , F.loop 42 "g" ["f"]
+  , F.reg "f" ["g"]
   ]
 
 
@@ -135,12 +134,12 @@ badTestFram = badUnitTest "badTestFram" netWithArithm
 
 unitTest name n cntx alg = do
   let n' = nitta $ synthesis $ frame n alg
-  r <- writeAndRunTestBench (Project name "../.." (joinPath ["hdl", "gen", name]) n') cntx
+  r <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
   r @? name
 
 badUnitTest name n cntx alg = do
   let n' = nitta $ synthesis $ frame n alg
-  r <- writeAndRunTestBench (Project name "../.." (joinPath ["hdl", "gen", name]) n') cntx
+  r <- writeAndRunTestBenchDevNull $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
   not r @? name
 
 synthesis f = foldl (\f' _ -> naive def f') f $ replicate 50 ()

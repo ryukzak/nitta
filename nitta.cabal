@@ -1,6 +1,6 @@
 name:                nitta
 version:             0.0.0.1
-synopsis:            CAD for recofigurable realtime computation platform NITTA
+synopsis:            CAD for reconfigurable real-time computation platform NITTA.
 -- description:
 homepage:            https://nitta.io
 license:             BSD3
@@ -20,7 +20,7 @@ library
                      , NITTA.BusNetwork
                      , NITTA.Compiler
                      , NITTA.DataFlow
-                     , NITTA.FunctionBlocks
+                     , NITTA.Functions
                      , NITTA.ProcessUnits.Accum
                      , NITTA.ProcessUnits.Divisor
                      , NITTA.ProcessUnits.Fram
@@ -46,6 +46,7 @@ library
                      , containers
                      , data-default
                      , directory
+                     , extra
                      , file-embed
                      , filepath
                      , HStringTemplate
@@ -86,7 +87,7 @@ test-suite nitta-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       NITTA.Test.BusNetwork
-                     , NITTA.Test.FunctionBlocks
+                     , NITTA.Test.Functions
                      , NITTA.Test.ProcessUnits
                      , NITTA.Test.ProcessUnits.Fram
                      , NITTA.Test.ProcessUnits.Shift

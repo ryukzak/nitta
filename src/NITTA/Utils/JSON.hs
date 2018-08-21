@@ -1,8 +1,8 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 module NITTA.Utils.JSON where
@@ -26,7 +26,7 @@ instance ( ToJSON tag
          , ToJSON t
          ) => ToJSON (TaggedTime tag t)
 instance ( Show v
-         ) => ToJSON (FB (Parcel v x)) where
+         ) => ToJSON (F (Parcel v x)) where
   toJSON = String . pack . show
 instance ( ToJSON t, Time t
          ) => ToJSON (TimeConstrain t) where
@@ -85,11 +85,11 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
   toJSON n@BusNetwork{..}
              -- , bnSignalBusWidth     :: Int
     = object [ "width" .= bnSignalBusWidth
-             --   bnRemains            :: [FB (Parcel v) v]
+             --   bnRemains            :: [F (Parcel v) v]
              , "remain" .= bnRemains
              -- , bnForwardedVariables :: [v]
              , "forwardedVariables" .= map (String . pack . show) (transfered n)
-             -- , bnBinded             :: M.Map title [FB (Parcel v) v]
+             -- , bnBinded             :: M.Map title [F (Parcel v) v]
              , "binds" .= bnBinded
              -- , bnProcess            :: Process v t
              , "processLength" .= nextTick (process n)

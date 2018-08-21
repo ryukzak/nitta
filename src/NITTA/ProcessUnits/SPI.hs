@@ -19,12 +19,11 @@ import           Data.Maybe                          (catMaybes)
 import           Data.Set                            (elems, fromList,
                                                       singleton)
 import           Data.Typeable
-import           NITTA.FunctionBlocks
+import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval                    ((...))
-
 
 
 type SPI v x t = SerialPU (State v x t) v x t
@@ -45,11 +44,11 @@ slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def def
 instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t where
 
   bindToState fb st@State{ .. }
-    | Just (Send (I v)) <- castFB fb
+    | Just (Send (I v)) <- castF fb
     , let (ds, rs) = spiSend
     = Right st{ spiSend=(ds, v:rs) }
 
-    | Just (Receive (O vs)) <- castFB fb
+    | Just (Receive (O vs)) <- castF fb
     , let (ds, rs) = spiReceive
     = Right st{ spiReceive=(ds, elems vs : rs) }
 
@@ -57,7 +56,6 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
 
   stateOptions State{ spiSend, spiReceive } now = catMaybes [ send' spiSend, receive' spiReceive ]
     where
-      -- FIXME: `+1`, ошибка находится в аппаратуре, тут надо просто убрать запас.
       send' (_, v:_) = Just $ EndpointO (Target v) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound)
       send' _ = Nothing
       receive' (_, vs:_) = Just $ EndpointO (Source $ fromList vs) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
@@ -70,7 +68,8 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
       in (st', work)
 
   schedule st@State{ spiReceive=(ds, vs:rs) } act
-    -- FIXME: Ошибка, так как с точки зрения опции, передачу данных можно дробить на несколько шагов.
+    -- FIXME: Выгрузка данных должна осуществляться в несколько шагов. Эту ошибку необходимо исправить здесь и в
+    -- аппаратуре.
     | fromList vs == variables act
     = let st' = st{ spiReceive=(vs:ds, rs) }
           work = serialSchedule @(SPI v x t) Receiving act
@@ -122,14 +121,16 @@ instance UnambiguouslyDecode (SPI v x t) where
 
 instance ( Ord v ) => Simulatable (SPI v x t) v x where
   simulateOn cntx _ fb
-    | Just fb'@Send{} <- castFB fb = simulate cntx fb'
-    | Just fb'@Receive{} <- castFB fb = simulate cntx fb'
+    | Just fb'@Send{} <- castF fb = simulate cntx fb'
+    | Just fb'@Receive{} <- castF fb = simulate cntx fb'
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on SPI."
 
 instance Connected (SPI v x t) where
   data PUPorts (SPI v x t)
     = PUPorts{ wr, oe :: Signal
-             , stop :: String -- FIXME: Что это такое и как этому быть?
+             -- |Данный сигнал используется для оповещения процессора о завершении передачи данных. Необходимо для
+             -- приостановки работы пока передача не будет завершена, так как в противном случае данные будут потеряны.
+             , stop :: String
              , mosi, sclk, cs :: InputPort
              , miso :: OutputPort
              } deriving ( Show )
@@ -157,7 +158,7 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
     [ "pu_slave_spi"
     , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
     , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
-    , "   , .BOUNCE_FILTER( " ++ show spiBounceFilter ++ " )" -- FIXME: Must be configurable.
+    , "   , .BOUNCE_FILTER( " ++ show spiBounceFilter ++ " )"
     , "   ) $name$"
     , "  ( .clk( " ++ signalClk ++ " )"
     , "  , .rst( " ++ signalRst ++ " )"
@@ -176,13 +177,15 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
     , "  );"
     ] [ ( "name", title ) ]
 
+  -- TODO: Превратить в настоящий тест, а не заглушку. Скорей всего затронет не только эту функцию, а всю инфраструктуру
+  -- тестирования.
   componentTestEnviroment title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..} = renderMST
     [ "reg $name$_start_transaction;"
-    , "reg  [64-1:0] $name$_master_in;"
+     , "reg  [64-1:0] $name$_master_in;"
     , "wire [64-1:0] $name$_master_out;"
     , "wire $name$_ready;"
     , "spi_master_driver "
-    , "  #( .DATA_WIDTH( 64 ) " -- FIXME: 32
+    , "  #( .DATA_WIDTH( 64 ) "
     , "   , .SCLK_HALFPERIOD( 1 )"
     , "   ) $name$_master"
     , "  ( .clk( $clk$ )"

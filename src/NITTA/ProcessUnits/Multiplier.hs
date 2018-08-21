@@ -1,12 +1,13 @@
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
-
--- TODO: FunctionBlock -> Function
 
 {-|
 Module : Multiplier (модель вычислительного блока умножителя)
@@ -14,7 +15,7 @@ Module : Multiplier (модель вычислительного блока ум
 В данном модуле реализуется модель вычислительного блока умножителя для САПР. Он может вычислять
 следующие функции:
 
-- 'NITTA.FunctionBlocks.Multiply'.
+- 'NITTA.Functions.Multiply'.
 
 В один момент времени может вычисляться только одна функция, при этом ее выполнение не может быть
 прервано.
@@ -40,17 +41,17 @@ Module : Multiplier (модель вычислительного блока ум
 [ 5 of 10] Compiling NITTA.Types      ( /Users/penskoi/Documents/src/nitta/src/NITTA/Types.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Types.o ) [flags changed]
 [ 6 of 10] Compiling NITTA.Utils.Lens ( /Users/penskoi/Documents/src/nitta/src/NITTA/Utils/Lens.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Utils/Lens.o ) [flags changed]
 [ 7 of 10] Compiling NITTA.Utils      ( /Users/penskoi/Documents/src/nitta/src/NITTA/Utils.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Utils.o ) [flags changed]
-[ 8 of 10] Compiling NITTA.FunctionBlocks ( /Users/penskoi/Documents/src/nitta/src/NITTA/FunctionBlocks.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/FunctionBlocks.o ) [flags changed]
+[ 8 of 10] Compiling NITTA.Functions ( /Users/penskoi/Documents/src/nitta/src/NITTA/Functions.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Functions.o ) [flags changed]
 [10 of 10] Compiling NITTA.ProcessUnits.Multiplier ( /Users/penskoi/Documents/src/nitta/src/NITTA/ProcessUnits/Multiplier.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/ProcessUnits/Multiplier.o )
 Ok, 10 modules loaded.
->>> :module +NITTA.Types NITTA.FunctionBlocks Numeric.Interval Data.Set
+>>> :module +NITTA.Types NITTA.Functions Numeric.Interval Data.Set
 >>> :set prompt "\ESC[34mλ> \ESC[m"
 
 Создаём функцию и начальное состояние модели вычислительного блока умножителя. К сожалению, GHC не
 хватает информации из контекста, чтобы вывести их типы, по этому зададим их явно.
 
->>> let fb = multiply "a" "b" ["c", "d"] :: FB (Parcel String Int)
->>> fb
+>>> let f = multiply "a" "b" ["c", "d"] :: F (Parcel String Int)
+>>> f
 <Multiply (I "a") (I "b") (O (fromList ["c","d"]))>
 >>> let st0 = multiplier True :: Multiplier String Int Int
 >>> st0
@@ -62,9 +63,9 @@ Multiplier {puRemain = [], targets = [], sources = [], doneAt = Nothing, process
 момент работы с моделью, в том числе когда вычислительный процесс уже полностью спланирован
 (добавление новой работы). Главное правило - если работа назначена, то она обязана быть выполнена и
 не может быть "потеряна" внутри модели. Если у вычислительного блока есть внутренние ресурсы - то их
-должно быть достаточно для завершения планирования, даже если оно неэффективно. 
+должно быть достаточно для завершения планирования, даже если оно неэффективно.
 
->>> let Right st1 = tryBind fb st0
+>>> let Right st1 = tryBind f st0
 >>> st1
 Multiplier {puRemain = [<Multiply (I "a") (I "b") (O (fromList ["c","d"]))>], targets = [], sources = [], doneAt = Nothing, process_ = Process {steps = [], relations = [], nextTick = 0, nextUid = 0}, isMocked = True}
 >>> mapM_ print $ options endpointDT st1
@@ -107,13 +108,12 @@ Multiplier {puRemain = [], targets = [], sources = [], doneAt = Nothing, process
 []
 
 Варианты развития вычислительного процесса закончились. Все назначеные функции выполнены. Далее
-может быть сгенерирован микрокод, организующий описанный вычислительный процесс. 
+может быть сгенерирован микрокод, организующий описанный вычислительный процесс.
 -}
 
--- TODO: Перспективным направлением по развитию данного вычислительного блока является внедрение в
--- него регистра накопителя, что позволит перемножать произвольное количество аргументов, что
--- сократит количество транзакций по шине данных при перемножении более двух переменных одной
--- функцией. 
+-- FIXME: Перспективным направлением по развитию данного вычислительного блока является внедрение в него регистра
+-- накопителя, что позволит перемножать произвольное количество аргументов, что сократит количество транзакций по шине
+-- данных при перемножении более двух переменных одной функцией.
 
 module NITTA.ProcessUnits.Multiplier
     ( multiplier
@@ -121,12 +121,13 @@ module NITTA.ProcessUnits.Multiplier
     , PUPorts(..)
     ) where
 
+import           Control.Monad
 import           Data.Default
 import           Data.List                     (find, partition, (\\))
 import           Data.Set                      (elems, fromList, member)
 import           Data.Typeable
-import           NITTA.FunctionBlocks          (castFB)
-import qualified NITTA.FunctionBlocks          as FB
+import qualified NITTA.Functions               as F
+import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Process
@@ -151,10 +152,10 @@ import           Text.InterpolatedString.Perl6 (qq)
 - наличие внутренних ресурсов.
 
 Рассматриваемый вычислительный блок с этих точек зрения является одним из простейших, Так как
-реализует только обработку данных согласно одной функции. 
+реализует только обработку данных согласно одной функции.
 
 Поведение вычислительного блока определяется прикладным алгоритмом, являющимся композицией функций с
-зависимостями по данным ('NITTA.FunctionBlocks'). САПР назначает (привязывает) функции к конкретным
+зависимостями по данным ('NITTA.Functions'). САПР назначает (привязывает) функции к конкретным
 вычислительным блокам, а те, в свою очередь, определяют возможные варианты развития процесса.
 
 Любой вычислительный блок подразумевает три составляющие:
@@ -206,11 +207,12 @@ import           Text.InterpolatedString.Perl6 (qq)
 - x - тип значений, с которыми работает умножитель;
 - t - идентификатор момента времени.
 -}
-data Multiplier v x t
-    -- TODO: Перенести время из процесса сюда.
 
-    -- TODO: Сделать реализацию безопастной (выкидывать ошибку при попытке спланировать не
-    -- корректный ВП).
+-- TODO: Перенести время из процесса сюда, добавить его в currentWork.
+
+-- FIXME: Сделать реализацию безопастной (выкидывать ошибку при попытке спланировать не корректный ВП).
+-- FIXME: Убрать сигнал wrSignal.
+data Multiplier v x t
     = Multiplier
         { -- |Список назначенных, но еще необработанных или необрабатываемых функций.
           -- Выполнение функции начинается с:
@@ -222,28 +224,27 @@ data Multiplier v x t
           -- Назначенные функции могут выполняться в произвольном порядке. Явное хранение информации
           -- о выполненных функциях не осуществляется, так как она есть в описание вычислительного
           -- процесса 'process_'.
-          remain  :: [FB (Parcel v x)]
+          remain      :: [F (Parcel v x)]
           -- |Список переменных, которые необходимо загрузить в вычислительный блок для вычисления
           -- текущей функции.
-        , targets  :: [v]
+        , targets     :: [v]
           -- |Список переменных, которые необходимо выгрузить из вычислительного блока для
           -- вычисления текущей функции. Порядок выгрузки - произвольный. Важно отметить, что все
           -- выгружаемые переменные соответствуют одному значению - результату умножения.
-        , sources  :: [v]
+        , sources     :: [v]
           -- |Фактический процесс умножения будет завершён в указанный момент времени и его
           -- результат будет доступен для выгрузки. Значение устанавливается сразу после загрузки
           -- всех аргументов.
-        , doneAt  :: Maybe t
+        , doneAt      :: Maybe t
+        , currentWork :: Maybe (t, F (Parcel v x))
           -- |Описание вычислительного процесса, спланированного для данного вычислительного блока
           -- 'NITTA.Types.Base.Process'.
-        , process_ :: Process (Parcel v x) t
+        , process_    :: Process (Parcel v x) t
           -- |В реализации данного вычислительного блока используется IP ядро поставляемое вместе с
           -- Altera Quartus. Это не позволяет осуществлять симуляцию при помощи Icarus Verilog.
           -- Чтобы обойти данное ограничение была создана заглушка, подключаемая вместо IP ядра если
           -- установлен данный флаг.
-
-          -- TODO: Сделать через выбор вендора, сейчас это Quartus и IcarusVerilog.
-        , isMocked  :: Bool
+        , isMocked    :: Bool
         }
     deriving ( Show )
 
@@ -251,8 +252,7 @@ data Multiplier v x t
 -- |Конструктор модели умножителя вычислительного блока. Аргумент определяет внутреннюю оранизацию
 -- вычислительного блока: использование IP ядра умножителя (False) или заглушки (True). Подробнее
 -- см. функцию hardware в классе 'TargetSystemComponent'.
-multiplier mock = Multiplier [] [] [] Nothing def mock
-
+multiplier mock = Multiplier [] [] [] Nothing Nothing def mock
 
 
 
@@ -266,21 +266,21 @@ multiplier mock = Multiplier [] [] [] Nothing def mock
 -- работу рассматриваемую функцию. Затем, на основании различных метрик (как например загрузка
 -- вычислительных блоков, количество и тип ещё не привязанных функций) выбирается лучший вариант.
 -- Привязка может быть выполнена как постепенно по мере планирования вычислительного процесса, так и
--- одновременно для всех функций в самом начале. 
+-- одновременно для всех функций в самом начале.
 instance ( Var v, Time t
          ) => ProcessUnit (Multiplier v x t) (Parcel v x) t where
     -- |Привязка к вычислительному блоку осуществялется этой функцией.
-    tryBind fb pu@Multiplier{ remain }
+    tryBind f pu@Multiplier{ remain }
         -- Для этого осуществляется проверка, приводится ли тип функции к одному из поддерживаемых
-        -- ('NITTA.FunctionalBlocks.castFB') и в случае успеха возвращается состояние модели после
+        -- ('NITTA.FunctionalBlocks.castF') и в случае успеха возвращается состояние модели после
         -- привязки с меткой 'Right'.
         --
         -- Важно отметить, что "привязка" не означается фактическое начало работы, что позволяет
         -- сперва осуществить привязку всех задач, а уже потом планировать вычислительный процесс.
-        | Just FB.Multiply{} <- castFB fb = Right pu{ remain=fb : remain }
+        | Just F.Multiply{} <- F.castF f = Right pu{ remain=f : remain }
         -- В случае невозможности привязки возвращается строка с кратким описание причины отказа и
         -- меткой 'Left'.
-        | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show fb
+        | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
     -- |Унифицированный интерфейс для получения описания вычислительного процесса.
     process = process_
     -- |Данный метод используется для установки времени вычислительного блока снаружи. В настоящий
@@ -290,8 +290,13 @@ instance ( Var v, Time t
 
 
 -- |Данная функция осуществляет фактическое взятие функционального блока в работу.
-assignment pu@Multiplier{ targets=[], sources=[], remain } fb
-    | Just (FB.Multiply (I a) (I b) (O c)) <- castFB fb = pu{ targets=[a, b], sources=elems c, remain=remain \\ [ fb ] }
+assignment pu@Multiplier{ targets=[], sources=[], remain } f
+    | Just (F.Multiply (I a) (I b) (O c)) <- F.castF f
+    = pu
+        { targets=[a, b]
+        , currentWork=Just (def, f)
+        , sources=elems c, remain=remain \\ [ f ]
+        }
 assignment _ _ = error "Multiplier: internal assignment error."
 
 
@@ -317,7 +322,7 @@ instance ( Var v, Time t, Typeable x
     --    результатом которой является один из следующих списков:
 
     --    - список вариантов загружаемых в вычислительный блок переменных, необходимых для
-    --      находящейся в работе функции; 
+    --      находящейся в работе функции;
     options _proxy Multiplier{ targets=vs@(_:_), process_=Process{ nextTick } }
         = map (\v -> EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)) vs
 
@@ -367,18 +372,21 @@ instance ( Var v, Time t, Typeable x
                 else Nothing
             }
     --    2. Если модель ожидает, что из неё выгрузят переменные.
-    decision _proxy pu@Multiplier{ targets=[], sources, doneAt } d@EndpointD{ epdRole=Source v, epdAt }
+    decision _proxy pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f) } d@EndpointD{ epdRole=Source v, epdAt }
         | not $ null sources
         , let sources' = sources \\ elems v
         , sources' /= sources
         = pu
             { -- Осуществляется планирование вычислительного процесса.
-              process_=schedule pu $
+              process_=schedule pu $ do
+                when (null sources') $ scheduleFunction a (sup epdAt) f
                 scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) Out
               -- В случае если не все переменные были запрошены - сохраняются оставшиеся.
             , sources=sources'
-              -- Если вся работа выполнена, то сбрасывается время готовности результата.
+              -- Если вся работа выполнена, то сбрасывается время готовности результата, как и
+              -- текущая работа.
             , doneAt=if null sources' then Nothing else doneAt
+            , currentWork=if null sources' then Nothing else Just (a, f)
             }
     --    3. Если никакая функция в настоящий момент не выполняется, значит необходимо найти в
     --       списке назначенных функций требуемую, запустить ее в работу, и только затем принять
@@ -386,8 +394,8 @@ instance ( Var v, Time t, Typeable x
     --       в ситуации 1.
     decision proxy pu@Multiplier{ targets=[], sources=[], remain } d
         | let v = oneOf $ variables d
-        , Just fb <- find (\fb -> v `member` variables fb) remain
-        = decision proxy (assignment pu fb) d
+        , Just f <- find (\f -> v `member` variables f) remain
+        = decision proxy (assignment pu f) d
     --    4. Если что-то пошло не так.
     decision _ pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
@@ -449,12 +457,13 @@ instance Default (Microcode (Multiplier v x t)) where
 
 -- |Связка инструкций и микрокода осуществляется данным классом, который требует их однозначного
 -- соответствия, а также независимо от состояния и настроек модели.
+
+-- TODO: Требуется привязка к PU, так как в настройках модели может определяться ширина тех или иных
+-- значений (как в случае с addr у Fram)
 instance UnambiguouslyDecode (Multiplier v x t) where
     decodeInstruction (Load A) = def{ wrSignal=True, selSignal=False }
     decodeInstruction (Load B) = def{ wrSignal=True, selSignal=True }
     decodeInstruction Out      = def{ oeSignal=True }
--- TODO: Требуется привязка к PU, так как в настройках модели может определяться ширина тех или иных
--- значений (как в случае с addr у Fram)
 
 -- |Определение сигнальных линий вычислительного блока, используемого для их ручного подключения к
 -- сигнальной шине на уровне сети, а также функция отображения микрокода на линии. В будущем данный
@@ -475,10 +484,10 @@ instance Connected (Multiplier v x t) where
 instance ( Var v
          , Integral x
          ) => Simulatable (Multiplier v x t) v x where
-    simulateOn cntx _ fb
+    simulateOn cntx _ f
         -- Определяем функцию и делегируем ее расчет реализации по умолчанию.
-        | Just fb'@FB.Multiply{} <- castFB fb = simulate cntx fb'
-        | otherwise = error $ "Can't simultate on Multiplier: " ++ show fb
+        | Just f'@F.Multiply{} <- F.castF f = simulate cntx f'
+        | otherwise = error $ "Can't simultate on Multiplier: " ++ show f
 
 
 -- |Для генерации процессоров и тестов использующих данный вычислительный блок используются
@@ -487,8 +496,8 @@ instance ( Var v
 instance ( Time t, Var v
          ) => TargetSystemComponent (Multiplier v x t) where
     -- |Наименование аппаратного модуля, экземпляр которого создаётся для его встраивания в
-    -- процессор. В данном случае задается в файле @/hdl/mult/pu_mult.v@.
-    moduleName _title _pu = "pu_mult"
+    -- процессор. В данном случае задается в файле @/hdl/multiplier/pu_multiplier.v@.
+    moduleName _title _pu = "pu_multiplier"
 
     -- |Генератор программного обеспечения вычислительного блока. В случае умножителя ПО
     -- отсутствует. Разберёмся почему так. Ранее говорилось, что ПО имеет две составляющие:
@@ -510,20 +519,20 @@ instance ( Time t, Var v
     hardware title pu@Multiplier{ isMocked }
         = Aggregate Nothing
             [ if isMocked
-                then FromLibrary "mult/mult_mock.v"
-                else FromLibrary "mult/mult_inner.v"
-            , FromLibrary $ "mult/" ++ moduleName title pu ++ ".v"
+                then FromLibrary "multiplier/mult_mock.v"
+                else FromLibrary "multiplier/mult_inner.v"
+            , FromLibrary $ "multiplier/" ++ moduleName title pu ++ ".v"
             ]
 
     -- |Генерация фрагмента исходного кода для создания экземпляра вычислительного блока в рамках
     -- процессора. Основная задача данной функции - корректно включить вычислительный блок в
     -- инфраструктуру процессора, установив все параметры, имена и провода.
     hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
-        = [qq|pu_mult
-    #( .DATA_WIDTH( $parameterDataWidth )
-     , .ATTR_WIDTH( $parameterAttrWidth )
-     , .INVALID( 0 )  // FIXME:
-     ) $title
+        = [qq|pu_multiplier #
+        ( .DATA_WIDTH( $parameterDataWidth )
+        , .ATTR_WIDTH( $parameterAttrWidth )
+        , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
+        ) $title
     ( .clk( $signalClk )
     , .rst( $signalRst )
     , .signal_wr( {signal wr} )
@@ -534,3 +543,58 @@ instance ( Time t, Var v
     , .data_out( $dataOut )
     , .attr_out( $attrOut )
     );|]
+
+
+-- |Данный класс является служебным и предназначен для того, что бы извлекать из вычислительного
+-- блока все функции, привязанные к вычислительному блоку. Реализация данного класс проста: у модели
+-- вычистельного блока берётся описание процесса (все спланированные функции), берутся все функции в
+-- очереди и, в случае наличия, функция находящаяся в работе.
+instance ( Ord t ) => WithFunctions (Multiplier v x t) (F (Parcel v x)) where
+    functions Multiplier{ process_, remain, currentWork } 
+        = functions process_ 
+        ++ remain 
+        ++ case currentWork of
+            Just (_, f) -> [f]
+            Nothing -> []
+
+
+-- |Основное назначение данного класс - генерация автоматизированных тестов изолировано для данного
+-- вычислительного блока. Для этого он позволяет сгенерировать test bench для вычисилтельного блока
+-- в соответствии с его моделью и спланированным вычислительным процессом. С самими тестами следует
+-- ознакомиться в 'Spec'.
+--
+-- Тестирование осуществляется следующим образом: на основании имеющегося описания вычислительного
+-- процесса генерируется последовательность внешних воздействия на вычислительный блок (сигналы и
+-- входные данные), а также последовательность проверок выходных сигналов и данных. Выходные данные
+-- сравниваются с результатами функциональной симуляции и если они не совпадают, то выводится
+-- соответствующее сообщение об ошибке.
+instance ( Var v, Time t
+         , Typeable x, Show x, Integral x
+         ) => TestBench (Multiplier v x t) v x where
+    testBenchDescription prj@Project{ projectName, model=pu }
+        -- Test bench представляет из себя один файл описанный ниже. Для его генерации используется
+        -- готовый snippet, так как в большинстве случаев они будут подобны. Ключевое значение имеет
+        -- структура данных 'NITTA.Project.TestBenchSetup', описывающая специфику данного модуля.
+        = Immidiate (moduleName projectName pu ++ "_tb.v")
+            $ snippetTestBench prj TestBenchSetup
+                -- Список управляющих сигналов. Необходим для инициализации одноименных регистров.
+                { tbcSignals=["oe", "wr", "wrSel"]
+                -- Функция подключения вычислительного блока к окружению и идентификаторы сигнальных
+                -- линий. В структуре @tbcPorts@ описывается к чему именно подключаются сигнальные
+                -- линии тестируемого блока. А в @tbcSignalConnect@ как эти абстрактные номера
+                -- отображаются в генерируемом исходном коде.
+                , tbcPorts=PUPorts
+                    { oe=Signal 0
+                    , wr=Signal 1
+                    , wrSel=Signal 2
+                    }
+                , tbcSignalConnect= \case
+                    (Signal 0) -> "oe"
+                    (Signal 1) -> "wr"
+                    (Signal 2) -> "wrSel"
+                    _ -> error "testBenchDescription wrong signal"
+                -- При генерации test bench-а знать, как задаются управляющие сигналы
+                -- вычислительного блока. Именно это и описано ниже. Отметим, что работа с шиной данных полностью реализуется в рамках snippet-а.
+                , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
+                    [qq|oe <= {bool2binstr oeSignal}; wr <= {bool2binstr wrSignal}; wrSel <= {bool2binstr selSignal};|]
+                }

@@ -10,7 +10,7 @@ wire [31:0] data_out;
 
 buffer 
   #( .DATA_WIDTH( 32 )
-   , .ATTR_WIDTH( 0 ) // FIXME:
+   , .ATTR_WIDTH( 0 )
    , .BUF_SIZE( 6 )
    ) buffer 
   ( .clk( clk )

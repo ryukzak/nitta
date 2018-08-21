@@ -7,14 +7,17 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.ProcessUnits.Accum where
+module NITTA.ProcessUnits.Accum
+  ( Accum
+  , PUPorts(..)
+  ) where
 
 import           Data.Default
 import           Data.List                           (intersect, partition,
                                                       (\\))
 import           Data.Set                            (elems, fromList)
 import           Data.Typeable
-import           NITTA.FunctionBlocks
+import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
 import           NITTA.Utils
@@ -39,15 +42,14 @@ instance ( Var v
          ) => SerialPUState (State v x t) v x t where
 
   bindToState fb ac@Accum{ acIn=[], acOut=[] }
-    | Just (Add (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[(False, a), (False, b)], acOut=elems cs }
-    | Just (Sub (I a) (I b) (O cs)) <- castFB fb = Right ac{ acIn=[(False, a), (True, b)], acOut=elems cs }
+    | Just (Add (I a) (I b) (O cs)) <- castF fb = Right ac{ acIn=[(False, a), (False, b)], acOut=elems cs }
+    | Just (Sub (I a) (I b) (O cs)) <- castF fb = Right ac{ acIn=[(False, a), (True, b)], acOut=elems cs }
     | otherwise = Left $ "The functional block is unsupported by Accum: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Accum)"
 
   -- тихая ругань по поводу решения
   stateOptions Accum{ acIn=vs@(_:_) } now
     | length vs == 2 -- первый аргумент.
-    -- TODO: Improve performance.
     = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
     | otherwise -- второй аргумент
     = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
@@ -101,8 +103,8 @@ instance ( Var v
          , Num x
          ) => Simulatable (Accum v x t) v x where
   simulateOn cntx _ fb
-    | Just fb'@Add{} <- castFB fb = simulate cntx fb'
-    | Just fb'@Sub{} <- castFB fb = simulate cntx fb'
+    | Just fb'@Add{} <- castF fb = simulate cntx fb'
+    | Just fb'@Sub{} <- castF fb = simulate cntx fb'
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Accum."
 
 

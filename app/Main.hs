@@ -11,7 +11,7 @@ import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import qualified NITTA.FunctionBlocks          as FB
+import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divisor    as D
 import qualified NITTA.ProcessUnits.Fram       as FR
@@ -40,72 +40,56 @@ microarch = busNetwork 31 (Just True)
   , ("div", PU (D.divisor 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
   ]
 
-fibonacciMultAlg = [ FB.loop 1 ["a1"      ] "b2" :: FB (Parcel String Int)
-                   , FB.loop 2 ["b1", "b2"] "c"
-                   , FB.multiply "a1" "b1" ["c"]
+fibonacciMultAlg = [ F.loop 1 "b2" ["a1"      ] :: F (Parcel String Int)
+                   , F.loop 2 "c"  ["b1", "b2"]
+                   , F.multiply "a1" "b1" ["c"]
                    ]
 
 
 
 divAndMulAlg
   =
-    [ FB.constant 100 ["a"] :: FB (Parcel String Int)
-    , FB.loop 2 ["b"] "e"
-    , FB.division "a" "b" ["c"] ["d"]
-    -- , FB.add "c" "d" ["e"]
-    , FB.add "c" "d" ["e", "e'"]
+    [ F.constant 100 ["a"] :: F (Parcel String Int)
+    , F.loop 2 "e" ["b"]
+    , F.division "a" "b" ["c"] ["d"]
+    -- , F.add "c" "d" ["e"]
+    , F.add "c" "d" ["e", "e'"]
 
-    , FB.constant 200 ["a1"]
-    , FB.loop 2 ["b1"] "e1"
-    , FB.division "a1" "b1" ["c1"] ["d1"]
-    , FB.add "c1" "d1" ["e1"]
+    , F.constant 200 ["a1"]
+    , F.loop 2 "e1" ["b1"]
+    , F.division "a1" "b1" ["c1"] ["d1"]
+    , F.add "c1" "d1" ["e1"]
 
-    , FB.loop 1 ["x"] "y"
-    , FB.multiply "x" "e'" ["y"]
+    , F.loop 1 "y" ["x"]
+    , F.multiply "x" "e'" ["y"]
     ]
 
 
-spiAlg = [ FB.receive ["a"] :: FB (Parcel String Int)
-         , FB.reg "a" ["b"]
-         , FB.send "b"
+spiAlg = [ F.receive ["a"] :: F (Parcel String Int)
+         , F.reg "a" ["b"]
+         , F.send "b"
          ]
 
-algorithm = [ FB.framInput 3 [ "a"
+algorithm = [ F.framInput 3 [ "a"
                              , "d"
-                             ] :: FB (Parcel String Int)
-            , FB.framInput 4 [ "b"
+                             ] :: F (Parcel String Int)
+            , F.framInput 4 [ "b"
                              , "c"
                              , "e"
                              ]
-            , FB.reg "a" ["x"]
-            , FB.reg "b" ["y"]
-            , FB.reg "c" ["z"]
-            , FB.framOutput 5 "x"
-            , FB.framOutput 6 "y"
-            , FB.framOutput 7 "z"
-            , FB.framOutput 0 "sum"
-            , FB.constant 42 ["const"]
-            , FB.framOutput 9 "const"
-            , FB.loop 0 ["f"] "g"
-            , FB.shiftL "f" ["g"]
-            , FB.add "d" "e" ["sum"]
+            , F.reg "a" ["x"]
+            , F.reg "b" ["y"]
+            , F.reg "c" ["z"]
+            , F.framOutput 5 "x"
+            , F.framOutput 6 "y"
+            , F.framOutput 7 "z"
+            , F.framOutput 0 "sum"
+            , F.constant 42 ["const"]
+            , F.framOutput 9 "const"
+            , F.loop 0 "g" ["f"]
+            , F.shiftL "f" ["g"]
+            , F.add "d" "e" ["sum"]
             ]
-
-graph = DFG [ node (FB.framInput 3 [ "a" ] :: FB (Parcel String Int))
-            , node $ FB.framInput 4 [ "b" ]
-            , node $ FB.sub "a" "b" ["c"]
-            , node $ FB.framOutput 0 "c"
-            -- FIXME: Синтезируется, но сгенировать тест пока нельзя.
-            -- , node $ FB.constant 0 ["p"]
-            -- , node $ FB.constant 0 ["const0"]
-            -- , node $ FB.constant 1 ["const1"]
-            -- , DFGSwitch "cond"
-            --   [ ( 0, DFG [ node $ FB.add "c" "const0" ["d"] ] )
-            --   , ( 1, DFG [ node $ FB.add "c" "const1" ["d"] ] )
-            --   ]
-            -- , node $ FB.framOutput 0 "d"
-            ]
-
 
 ---------------------------------------------------------------------------------
 
@@ -114,11 +98,11 @@ main = do
   teacupDemo
   fibonacciDemo
   -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
-  test "fibonacci" (nitta $ synthesis $ frame $ dfgraph fibonacciAlg) def
+  test "fibonacci" $ nitta $ synthesis $ frame $ dfgraph fibonacciAlg
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
   -- putStrLn "funSim teacup:"
-  test "teacup" (nitta $ synthesis $ frame $ dfgraph teacupAlg) def
+  test "teacup" $ nitta $ synthesis $ frame $ dfgraph teacupAlg
   funSim 5 def teacupAlg
 
   -- putStrLn "funSim fibonacci:"
@@ -134,9 +118,14 @@ main = do
   putStrLn "-- the end --"
 
 
-test n pu cntx = do
-  let prj = Project n "../.." (joinPath ["hdl", "gen", n]) pu
-  r <- writeAndRunTestBench prj cntx
+test n pu = do
+  let prj = Project { projectName=n
+                    , libraryPath="../.."
+                    , projectPath=joinPath ["hdl", "gen", n]
+                    , model=pu
+                    , testCntx=Nothing
+                    }
+  r <- writeAndRunTestBench prj
   if r then putStrLn "Success"
   else putStrLn "Fail"
 
@@ -144,12 +133,12 @@ test n pu cntx = do
 -----------------------------------------------------------
 
 
-funSim n cntx alg = putStrLn $ (!! (n - 1)) $ map (filter (/= '"') . show) $ FB.simulateAlgByCycle cntx alg
+funSim n cntx alg = putStrLn $ (!! (n - 1)) $ map (filter (/= '"') . show) $ F.simulateAlgByCycle cntx alg
 
 dfgraph = DFG . map node
 
 frame g
-  = let ma = bindAll (functionalBlocks g) microarch
+  = let ma = bindAll (functions g) microarch
     in Frame ma g Nothing :: SystemState String String String Int (TaggedTime String Int)
 
 synthesis f = foldl (\f' _ -> naive def f') f $ replicate 50 ()
