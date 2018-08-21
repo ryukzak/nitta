@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -52,7 +53,6 @@ TODO: Каким образом необходимо работать со вн�
 -}
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
-  , FSet(..)
   , PUPorts(..)
   ) where
 
@@ -86,7 +86,7 @@ data Fram v x t = Fram
   -- | Информация о функциональных блоках, которые необходимо обработать fram-у. Требуют хранения
   -- дополнительной информации, такой как время привязки функционального блока. Нельзя сразу делать
   -- привязку к ячейке памяти, так как это будет неэффективно.
-  , frRemains  :: [ (FSet (Fram v x t), ProcessUid) ]
+  , frRemains  :: [ (F (Parcel v x), ProcessUid) ]
   , frBindedFB :: [ F (Parcel v x) ]
   , frProcess  :: Process (Parcel v x) t
   , frSize     :: Int
@@ -112,40 +112,12 @@ instance WithFunctions (Fram v x t) (F (Parcel v x)) where
 
 
 
-instance FunctionalSet (Fram v x t) where
-  data FSet (Fram v x t)
-    = FramInput' (FramInput (Parcel v x))
-    | FramOutput' (FramOutput (Parcel v x))
-    | Loop' (Loop (Parcel v x))
-    | Reg' (Reg (Parcel v x))
-    | Constant' (Constant (Parcel v x))
-    deriving ( Show, Eq )
+isReg f | Just Reg{} <- castF f = True
+isReg _ = False
 
-instance ( Var v, Time t, Typeable x, Eq x, Show x, Num x
-         ) => WithFunctions (FSet (Fram v x t)) (F (Parcel v x)) where
-  functions (FramInput' f)  = [ F f ]
-  functions (FramOutput' f) = [ F f ]
-  functions (Loop' f)       = [ F f ]
-  functions (Reg' f)        = [ F f ]
-  functions (Constant' f)   = [ F f ]
-
-instance ( Var v
-         , Typeable x
-         ) => ToFSet (Fram v x t) v where
-  toFSet (F fb)
-    | Just fb'@Constant{} <- cast fb = Right $ Constant' fb'
-    | Just fb'@Reg{} <- cast fb = Right $ Reg' fb'
-    | Just fb'@Loop{} <- cast fb = Right $ Loop' fb'
-    | Just fb'@FramInput{} <- cast fb = Right $ FramInput' fb'
-    | Just fb'@FramOutput{} <- cast fb = Right $ FramOutput' fb'
-    | otherwise = Left $ "Fram don't support " ++ show fb
-
-isReg (Reg' _) = True
-isReg _        = False
-
-isConstOrLoop (Constant' _) = True
-isConstOrLoop (Loop' _)     = True
-isConstOrLoop _             = False
+isConstOrLoop f | Just Constant{} <- castF f = True
+isConstOrLoop f | Just Loop{} <- castF f     = True
+isConstOrLoop _ = False
 
 
 ---------------------------------------------------------------------
@@ -182,7 +154,7 @@ data Job v x t
           -- | Время начала выполнения работы.
         , startAt                       :: Maybe t
           -- | Функция, выполняемая в рамках описываемой работы.
-        , functionalBlock               :: FSet (Fram v x t)
+        , function                      :: F (Parcel v x)
           -- | Список действие, которые необходимо выполнить для завершения работы.
         , actions                       :: [ EndpointRole v ]
         }
@@ -197,41 +169,47 @@ instance Default (Job v x t) where
 -- | Предикат, определяющий время привязки функции к вычислительному блоку. Если возвращается
 -- Nothing - то привязка выполняеся в ленивом режиме, если возвращается Just адрес - то привязка
 -- должна быть выполнена немедленно к указанной ячейки.
-immidiateBindTo (FramInput' (FramInput addr _))   = Just addr
-immidiateBindTo (FramOutput' (FramOutput addr _)) = Just addr
-immidiateBindTo _                                 = Nothing
+immidiateBindTo f
+  | Just (FramInput addr _) <- castF f = Just addr
+  | Just (FramOutput addr _) <- castF f = Just addr
+immidiateBindTo _ = Nothing
 
 
 -- | Привязать функцию к указанной ячейке памяти, сформировав описание работы для её выполнения.
-bindToCell cs fb@(FramInput' (FramInput _ (O a))) c@Cell{ input=Undef }
-  = Right c{ input=Def def{ functionalBlock=fb
+bindToCell cs f c@Cell{ input=Undef }
+  | Just (FramInput _ (O a)) <- castF f
+  = Right c{ input=Def def{ function=f
                           , cads=cs
                           , actions=[ Source a ]
                           }
            }
-bindToCell cs fb@(FramOutput' (FramOutput _ (I b))) c@Cell{ output=Undef }
-  = Right c{ output=Def def{ functionalBlock=fb
+bindToCell cs f c@Cell{ output=Undef }
+  | Just (FramOutput _ (I b)) <- castF f
+  = Right c{ output=Def def{ function=f
                            , cads=cs
                            , actions=[ Target b ]
                            }
            }
-bindToCell cs fb@(Reg' (Reg (I a) (O b))) c@Cell{ current=Nothing, .. }
-  | output /= UsedOrBlocked
-  = Right c{ current=Just $ def{ functionalBlock=fb
+bindToCell cs f c@Cell{ current=Nothing, .. }
+  | Just (Reg (I a) (O b)) <- castF f
+  , output /= UsedOrBlocked
+  = Right c{ current=Just $ def{ function=f
                                , cads=cs
                                , actions=[ Target a, Source b ]
                                }
            }
-bindToCell cs fb@(Loop' (Loop (X x) (O b) (I a))) c@Cell{ input=Undef, output=Undef }
-  = Right c{ input=Def def{ functionalBlock=fb
+bindToCell cs f c@Cell{ input=Undef, output=Undef }
+  | Just (Loop (X x) (O b) (I a)) <- castF f
+  = Right c{ input=Def def{ function=f
                           , cads=cs
                           , actions=[ Source b, Target a ]
                           }
            , initialValue=x
            }
 -- Всё должно быть хорошо, так как если ячейка ранее использовалась, то input будет заблокирован.
-bindToCell cs fb@(Constant' (Constant (X x) (O b))) c@Cell{ input=Undef, current=Nothing, output=Undef }
-  = Right c{ current=Just $ def{ functionalBlock=fb
+bindToCell cs f c@Cell{ input=Undef, current=Nothing, output=Undef }
+  | Just (Constant (X x) (O b)) <- castF f
+  = Right c{ current=Just $ def{ function=f
                                , cads=cs
                                , actions=[ Source b ]
                                }
@@ -239,7 +217,7 @@ bindToCell cs fb@(Constant' (Constant (X x) (O b))) c@Cell{ input=Undef, current
            , output=UsedOrBlocked
            , initialValue=x
            }
-bindToCell _ fb cell = Left $ "Can't bind " ++ show fb ++ " to " ++ show cell
+bindToCell _ f cell = Left $ "Can't bind " ++ show f ++ " to " ++ show cell
 
 
 
@@ -253,27 +231,26 @@ instance ( IOType (Parcel v x) v x
          , Show x
          , WithFunctions (Fram v x t) (F (Parcel v x))
          ) => ProcessUnit (Fram v x t) (Parcel v x) t where
-  tryBind fb0 pu@Fram{..} = do
-    fb' <- toFSet fb0
-    pu' <- bind' fb'
+  tryBind f pu@Fram{..} = do
+    pu' <- bind' f
     if isSchedulingComplete pu'
       then Right pu'
       else Left "Schedule can't complete stop."
     where
       bind' fb | Just addr <- immidiateBindTo fb
                , let cell = frMemory ! addr
-               , let (cad, frProcess') = modifyProcess frProcess $ bindFB fb0 $ nextTick frProcess
+               , let (cad, frProcess') = modifyProcess frProcess $ bindFB f $ nextTick frProcess
                , Right cell' <- bindToCell [cad] fb cell
                = Right pu{ frProcess=frProcess'
                          , frMemory=frMemory // [(addr, cell')]
-                         , frBindedFB=fb0 : frBindedFB
+                         , frBindedFB=f : frBindedFB
                          }
 
-               | Right _ <- bindToCell def fb def
-               , let (cad, frProcess') = modifyProcess frProcess $ bindFB fb0 $ nextTick frProcess
+               | Right (_ :: Cell v x t) <- bindToCell def fb def
+               , let (cad, frProcess') = modifyProcess frProcess $ bindFB f $ nextTick frProcess
                = Right pu{ frProcess=frProcess'
-                         , frRemains=(fb, cad) : frRemains
-                         , frBindedFB=fb0 : frBindedFB
+                         , frRemains=(f, cad) : frRemains
+                         , frBindedFB=f : frBindedFB
                          }
 
                | otherwise = Left ""
@@ -342,7 +319,8 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
           ->  let (p', job') = schedule addr job
                   cell' = updateLastWrite (nextTick p') cell
                   cell'' = case job' of
-                    Just job''@Job{ actions=Target _ : _, functionalBlock=Loop' _ }
+                    Just job''@Job{ actions=Target _ : _, function=f }
+                      | Just Loop{} <- castF f
                       -- Данная ветка работает в случае Loop. "Ручной" перенос работы необходим для
                       -- сохранения целостности описания вычислительного процесса.
                       -> cell'{ input=UsedOrBlocked, output=Def job'' }
@@ -413,7 +391,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                      })
       finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
         let start = fromMaybe (error "startAt field is empty!") startAt
-        h <- addStep (Activity $ start ... d^.at.supremum) $ FStep $ fromFSet functionalBlock
+        h <- addStep (Activity $ start ... d^.at.supremum) $ FStep function
         mapM_ (relation . Vertical h) cads
         mapM_ (relation . Vertical h) endpoints
         mapM_ (relation . Vertical h) instructions
@@ -427,13 +405,14 @@ cellEndpoints _ _                                                 = Left undefin
 
 
 
-findCell Fram{..} fb@(Reg' _)
-  | let cs = filter ( isRight . bindToCell [] fb . snd ) $ assocs frMemory
+findCell pu@Fram{..} f
+  | Just Reg{} <- castF f
+  , let cs = filter ( isRight . bindToCell [] f . snd ) $ assocs frMemory
   , not $ null cs
   = Right $ minimumOn cellLoad cs
-findCell fr (Loop' _)     = findFreeCell fr
-findCell fr (Constant' _) = findFreeCell fr
-findCell _ _               = Left "Not found."
+  | Just Loop{} <- castF f = findFreeCell pu
+  | Just Constant{} <- castF f = findFreeCell pu
+  | otherwise = Left "Not found."
 
 findFreeCell Fram{..}
   | let cs = filter (\(_, c) -> case c of

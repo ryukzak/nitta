@@ -98,33 +98,6 @@ instance Variables (O (Parcel v x)) v where
 ---------------------------------------------------------------------
 -- * Функциональные блоки
 
-
--- |Семейство типов для описания системы функций вычислительного блока.
-
--- FIXME: Удалить данный класс.
-class FunctionalSet pu where
-  -- |Тип для представляния системы команд.
-  data FSet pu :: *
-
-instance ( WithFunctions (FSet pu) (F (Parcel v x))
-         , Ord v
-         , Show v
-         , Typeable v
-         , Typeable x
-         ) => Variables (FSet pu) v where
-  variables fbs = S.unions $ map variables $ functions fbs
-
-
-
-class ToFSet pu v | pu -> v where
-  -- |Преобразование гетерогенного функционального блока в представление системы функций вычислительного блока.
-  toFSet :: F (Parcel v x) -> Either String (FSet pu)
-
--- |Преобразование из представления системы функций вычислительного блока в гетерогенный функциональный блок.
-fromFSet f = head $ functions f
-
-
-
 -- |Класс функциональных блоков. Описывает все необходмые для работы компилятора свойства.
 class Function f v | f -> v where
   inputs :: f -> S.Set v

@@ -26,21 +26,6 @@ import           Test.Tasty.HUnit        ((@?))
 import           Debug.Trace
 
 
--- |Данный генератор создаёт список независимых по переменным функциональных блоков.
-instance {-# OVERLAPS #-} ( Eq v
-                          , Ord v
-                          , Variables (FSet pu) v
-                          , FunctionalSet pu, Arbitrary (FSet pu)
-                          ) => Arbitrary [FSet pu] where
-  arbitrary = onlyUniqueVar <$> listOf1 arbitrary
-    where
-      onlyUniqueVar = snd . foldl (\(used, fbs) fb -> let vs = variables fb
-                                                      in if null (vs `intersection` used)
-                                                        then ( vs `union` used, fb:fbs )
-                                                        else ( used, fbs ) )
-                                  (empty, [])
-
-
 -- |В значительной степени служебная функция, используемая для генерации процесса указанного
 -- вычислительного блока под случайный алгоритм. Возвращает вычислительный блок со спланированым
 -- вычислительным процессом и алгоритм.
