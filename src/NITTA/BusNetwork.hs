@@ -361,7 +361,7 @@ pu_simple_control
      ) control_unit
     ( .clk( clk )
     , .rst( rst )
-    , .start_cycle( { maybe "is_drop_allow" bool2binstr bnAllowDrop } || stop )
+    , .start_cycle( { maybe "is_drop_allow" bool2verilog bnAllowDrop } || stop )
     , .cycle( cycle )
     , .signals_out( control_bus )
     , .trace_pc( debug_pc )
@@ -428,7 +428,7 @@ instance ( Title title, Var v, Time t
         , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
         , "// if 1 - The process cycle are indipendent from a SPI."
         , "// else - The process cycle are wait for the SPI."
-        , "  , .is_drop_allow( " ++ maybe "is_drop_allow" bool2binstr bnAllowDrop ++ " )"
+        , "  , .is_drop_allow( " ++ maybe "is_drop_allow" bool2verilog bnAllowDrop ++ " )"
         , "  );                                                                                                      "
         , "                                                                                                          "
         , S.join "\n\n"

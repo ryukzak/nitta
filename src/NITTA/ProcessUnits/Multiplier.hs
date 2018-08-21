@@ -596,5 +596,5 @@ instance ( Var v, Time t
                 -- При генерации test bench-а знать, как задаются управляющие сигналы
                 -- вычислительного блока. Именно это и описано ниже. Отметим, что работа с шиной данных полностью реализуется в рамках snippet-а.
                 , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
-                    [qq|oe <= {bool2binstr oeSignal}; wr <= {bool2binstr wrSignal}; wrSel <= {bool2binstr selSignal};|]
+                    [qq|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
                 }
