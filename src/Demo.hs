@@ -1,4 +1,11 @@
 {-|
+Module      : Demo
+Description : NITTA project demos
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
 В данном модуле описано несколько демо для вычислительной платформы NITTA.
 
 = Test bench organisation
