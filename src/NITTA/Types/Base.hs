@@ -126,9 +126,7 @@ fromFSet f = head $ functions f
 
 
 -- |Класс функциональных блоков. Описывает все необходмые для работы компилятора свойства.
-class ( Typeable f
-      , Eq f
-      ) => Function f v | f -> v where
+class Function f v | f -> v where
   inputs :: f -> S.Set v
   inputs _ = S.empty
   outputs :: f -> S.Set v
@@ -195,6 +193,7 @@ data F io where
     , IOType io v x
     , Function f v
     , Show f
+    , Typeable f
     , FunctionSimulation f v x
     ) => f -> F io
 instance Show (F io) where
@@ -213,7 +212,7 @@ instance Variables (F (Parcel v x)) v where
   variables (F f) = inputs f `S.union` outputs f
 
 instance Eq (F io) where
-  F a == F b = Just a == cast b
+  F a == F b = show a == show b
 
 instance Ord (F (Parcel v x)) where
   (F a) `compare` (F b) = show a `compare` show b
@@ -289,7 +288,7 @@ data StepInfo io where
 
 instance ( Show v ) => Show (StepInfo (Parcel v x)) where
   show (CADStep s)                 = s
-  show (FStep (F f))              = show f
+  show (FStep (F f))               = show f
   show (EndpointRoleStep eff)      = show eff
   show (InstructionStep instr)     = show instr
   show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
@@ -465,7 +464,7 @@ class ByTime pu t | pu -> t where
 -- Не может быть реализована для инструкций сетей, так как: (1) инструкция для сетей описывает
 -- несколько тактов, а значит должна возвращать последовательность значений микрокода; (2)
 -- несколько инструкций может выполняться одновременно.
-class (Default (Microcode pu)) => UnambiguouslyDecode pu where
+class UnambiguouslyDecode pu where
   decodeInstruction :: Instruction pu -> Microcode pu
 
 
