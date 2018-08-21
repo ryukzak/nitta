@@ -161,7 +161,7 @@ import           Text.InterpolatedString.Perl6 (qq)
 Любой вычислительный блок подразумевает три составляющие:
 
 - аппаратное обеспечение вычислительного блока - набор заранее подготовленных либо автоматически
-  генерируемых файлов описания аппаратруры на Hardware Description Language (@/hdl/mult@);
+  генерируемых файлов описания аппаратруры на Hardware Description Language (@/hdl/multiplier@);
 - программное обеспечение вычислительного блока - набор бинарных файлов задающих:
   - начальное состояние и настройки вычислительного блока;
   - управляющую программу;
@@ -550,12 +550,12 @@ instance ( Time t, Var v
 -- вычистельного блока берётся описание процесса (все спланированные функции), берутся все функции в
 -- очереди и, в случае наличия, функция находящаяся в работе.
 instance ( Ord t ) => WithFunctions (Multiplier v x t) (F (Parcel v x)) where
-    functions Multiplier{ process_, remain, currentWork } 
-        = functions process_ 
-        ++ remain 
+    functions Multiplier{ process_, remain, currentWork }
+        = functions process_
+        ++ remain
         ++ case currentWork of
             Just (_, f) -> [f]
-            Nothing -> []
+            Nothing     -> []
 
 
 -- |Основное назначение данного класс - генерация автоматизированных тестов изолировано для данного

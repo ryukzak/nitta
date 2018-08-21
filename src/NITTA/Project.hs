@@ -165,12 +165,13 @@ writeImplementation pwd impl = writeImpl "" impl
 
 
 -- |Запустить testbench в указанной директории.
--- TODO: Сделать вывод через Control.Monad.Writer.
 runTestBench h prj@Project{ projectPath, model } = do
     let (_tb, files) = projectFiles prj
     ( compileExitCode, compileOut, compileErr )
         <- readCreateProcessWithExitCode (createIVerilogProcess projectPath files) []
     when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
+        hPutStrLn h $ "Project: " ++ projectPath
+        hPutStrLn h $ "Files: " ++ S.join ", " files
         mapM_ (hPrint h) $ functions model
         hPutStrLn h $ "compiler stdout:\n-------------------------\n" ++ compileOut
         hPutStrLn h $ "compiler stderr:\n-------------------------\n" ++ compileErr
@@ -181,6 +182,8 @@ runTestBench h prj@Project{ projectPath, model } = do
 
     -- Yep, we can't stop simulation with bad ExitCode...
     when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut) $ do
+        hPutStrLn h $ "Project: " ++ projectPath
+        hPutStrLn h $ "Files: " ++ S.join ", " files
         mapM_ (hPrint h) $ functions model
         hPutStrLn h $ "sim stdout:\n-------------------------\n" ++ simOut
         hPutStrLn h $ "sim stderr:\n-------------------------\n" ++ simErr
