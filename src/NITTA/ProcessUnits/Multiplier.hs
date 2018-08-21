@@ -434,11 +434,11 @@ instance Controllable (Multiplier v x t) where
     -- вычислительного блока.
     data Microcode (Multiplier v x t)
         = Microcode
-            { -- Сигнал записи в вычислительный блок.
+            { -- |Сигнал записи в вычислительный блок.
               wrSignal :: Bool
-              -- Селектор аргумента, загружаемого в вычислительный блок.
+              -- |Селектор аргумента, загружаемого в вычислительный блок.
             , selSignal :: Bool
-              -- Сигнал выгрузки результата из вычислительного блока.
+              -- |Сигнал выгрузки результата из вычислительного блока.
             , oeSignal :: Bool
             }
         deriving ( Show, Eq, Ord )
@@ -470,7 +470,11 @@ instance UnambiguouslyDecode (Multiplier v x t) where
 -- класс будет перерабатываться с целью автоматизации данного процесса.
 instance Connected (Multiplier v x t) where
     data PUPorts (Multiplier v x t)
-        = PUPorts{ wr, wrSel, oe :: Signal } deriving ( Show )
+        = PUPorts
+            { wr           -- ˆЗагрузить аргумент. 
+            , wrSel        -- ˆВыбор загружаемого аргумента (A | B).
+            , oe :: Signal -- ˆВыгрузить результат работы.       
+            } deriving ( Show )
     transmitToLink Microcode{..} PUPorts{..}
         =
             [ (wr, Bool wrSignal)
