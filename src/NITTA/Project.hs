@@ -50,12 +50,12 @@ class TestBench pu v x | pu -> v x where
     testBenchDescription :: Project pu v x -> Implementation
 
 
-data TestBenchSetup pu x
+data TestBenchSetup pu
     = TestBenchSetup
         { tbcSignals       :: [String]
-        , tbcSignalConnect :: Signal -> String
         , tbcPorts         :: PUPorts pu
-        , tbcCtrl          :: Microcode pu -> x -> String
+        , tbcSignalConnect :: Signal -> String
+        , tbcCtrl          :: Microcode pu -> String
         }
 
 
@@ -274,7 +274,7 @@ snippetTestBench
                 }
             tbcPorts
 
-        controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pu t) (targetVal t)) [ 0 .. nextTick + 1 ]
+        controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pu t) ++ [qq| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
             , Just val <- F.get cntx v

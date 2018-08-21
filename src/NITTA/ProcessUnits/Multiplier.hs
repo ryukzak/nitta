@@ -546,36 +546,55 @@ instance ( Time t, Var v
 
 
 -- |Данный класс является служебным и предназначен для того, что бы извлекать из вычислительного
--- блока все функции, привязанные к вычислительному блоку.
+-- блока все функции, привязанные к вычислительному блоку. Реализация данного класс проста: у модели
+-- вычистельного блока берётся описание процесса (все спланированные функции), берутся все функции в
+-- очереди и, в случае наличия, функция находящаяся в работе.
 instance ( Ord t ) => WithFunctions (Multiplier v x t) (F (Parcel v x)) where
-    functions Multiplier{ process_ } = functions process_
+    functions Multiplier{ process_, remain, currentWork } 
+        = functions process_ 
+        ++ remain 
+        ++ case currentWork of
+            Just (_, f) -> [f]
+            Nothing -> []
 
 
--- |Данный класс позволяет сгенерировать test bench для вычислительного блока.
-instance ( Var v
-         , Time t
-         , Typeable x
-         , Show x
-         , Num x
-         , Default x
-         , Eq x
-         , Integral x
-         , ProcessUnit (Multiplier v x t) (Parcel v x) t
+-- |Основное назначение данного класс - генерация автоматизированных тестов изолировано для данного
+-- вычислительного блока. Для этого он позволяет сгенерировать test bench для вычисилтельного блока
+-- в соответствии с его моделью и спланированным вычислительным процессом. С самими тестами следует
+-- ознакомиться в 'Spec'.
+--
+-- Тестирование осуществляется следующим образом: на основании имеющегося описания вычислительного
+-- процесса генерируется последовательность внешних воздействия на вычислительный блок (сигналы и
+-- входные данные), а также последовательность проверок выходных сигналов и данных. Выходные данные
+-- сравниваются с результатами функциональной симуляции и если они не совпадают, то выводится
+-- соответствующее сообщение об ошибке.
+instance ( Var v, Time t
+         , Typeable x, Show x, Integral x
          ) => TestBench (Multiplier v x t) v x where
     testBenchDescription prj@Project{ projectName, model=pu }
+        -- Test bench представляет из себя один файл описанный ниже. Для его генерации используется
+        -- готовый snippet, так как в большинстве случаев они будут подобны. Ключевое значение имеет
+        -- структура данных 'NITTA.Project.TestBenchSetup', описывающая специфику данного модуля.
         = Immidiate (moduleName projectName pu ++ "_tb.v")
             $ snippetTestBench prj TestBenchSetup
+                -- Список управляющих сигналов. Необходим для инициализации одноименных регистров.
                 { tbcSignals=["oe", "wr", "wrSel"]
-                , tbcSignalConnect= \case
-                    (Signal 0) -> "oe"
-                    (Signal 1) -> "wr"
-                    (Signal 2) -> "wrSel"
-                    _ -> error "testBenchDescription wrong signal"
+                -- Функция подключения вычислительного блока к окружению и идентификаторы сигнальных
+                -- линий. В структуре @tbcPorts@ описывается к чему именно подключаются сигнальные
+                -- линии тестируемого блока. А в @tbcSignalConnect@ как эти абстрактные номера
+                -- отображаются в генерируемом исходном коде.
                 , tbcPorts=PUPorts
                     { oe=Signal 0
                     , wr=Signal 1
                     , wrSel=Signal 2
                     }
-                , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } val ->
-                    [qq|oe <= {bool2binstr oeSignal}; wr <= {bool2binstr wrSignal}; wrSel <= {bool2binstr selSignal}; data_in <= { val }; @(posedge clk);|]
+                , tbcSignalConnect= \case
+                    (Signal 0) -> "oe"
+                    (Signal 1) -> "wr"
+                    (Signal 2) -> "wrSel"
+                    _ -> error "testBenchDescription wrong signal"
+                -- При генерации test bench-а знать, как задаются управляющие сигналы
+                -- вычислительного блока. Именно это и описано ниже. Отметим, что работа с шиной данных полностью реализуется в рамках snippet-а.
+                , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
+                    [qq|oe <= {bool2binstr oeSignal}; wr <= {bool2binstr wrSignal}; wrSel <= {bool2binstr selSignal};|]
                 }
