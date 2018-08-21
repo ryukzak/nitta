@@ -1,6 +1,6 @@
 name:                nitta
 version:             0.0.0.1
-synopsis:            CAD for recofigurable realtime computation platform NITTA
+synopsis:            CAD for reconfigurable real-time computation platform NITTA.
 -- description:
 homepage:            https://nitta.io
 license:             BSD3
