@@ -90,7 +90,6 @@ test-suite nitta-test
                      , NITTA.Test.Functions
                      , NITTA.Test.ProcessUnits
                      , NITTA.Test.ProcessUnits.Fram
-                     , NITTA.Test.ProcessUnits.Shift
                      , NITTA.Test.Utils
   build-depends:       atomic-primops
                      , base

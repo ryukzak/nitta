@@ -8,18 +8,22 @@
 
 module NITTA.Test.ProcessUnits.Shift where
 
+import           Data.Default
 import           Data.Proxy
+import qualified NITTA.Functions          as F
 import           NITTA.ProcessUnits.Shift
+import           NITTA.Test.ProcessUnits
+import           NITTA.Types
 
 
 proxy = Proxy :: Proxy (Shift String Int Int)
 
 -----------------------------------------------------------
 
--- shiftBiDirection = unitTestbench "shiftBiDirection" proxy
---   def
---   [ F.loop 16 ["f1"] "g1" :: F (Parcel String Int)
+-- shiftBiDirection = unitTestBench "shiftBiDirection" proxy
+--   (Just def)
+--   [ F.loop 16 "g1" ["f1"] :: F (Parcel String Int)
 --   , F.shiftL "f1" ["g1"]
---   , F.loop 16 ["f2"] "g2"
+--   , F.loop 16 "g2" ["f2"]
 --   , F.shiftR "f2" ["g2"]
 --   ]

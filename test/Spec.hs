@@ -7,8 +7,8 @@
 module Main where
 
 import           Control.Applicative           ((<$>))
-import           Data.Atomics.Counter
-import           Data.Default
+import           Data.Atomics.Counter          (newCounter)
+import           Data.Default                  (def)
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnits.Multiplier
@@ -18,10 +18,10 @@ import           NITTA.Test.ProcessUnits
 import           NITTA.Test.ProcessUnits.Fram
 import           NITTA.Test.Utils
 import           NITTA.Types
-import           System.Environment
-import           Test.Tasty
-import           Test.Tasty.HUnit
-import           Test.Tasty.QuickCheck         as QC
+import           System.Environment            (setEnv)
+import           Test.Tasty                    (defaultMain, testGroup)
+import           Test.Tasty.HUnit              (testCase)
+import           Test.Tasty.QuickCheck         (Gen, arbitrary, testProperty)
 
 
 -- FIXME: Тестирование очень активно работает с диском. В связи с этим рационально положить папку
@@ -36,12 +36,12 @@ main = do
         [ testGroup "Fram process unit"
             [ testCase "framRegAndOut" framRegAndOut
             , testCase "framRegAndConstant" framRegAndConstant
-            , QC.testProperty "completeness" $ prop_completness <$> framGen
-            , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram" counter) $ inputsGen =<< framGen
+            , testProperty "completeness" $ prop_completness <$> framGen
+            , testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram" counter) $ inputsGen =<< framGen
             ]
         ,  testGroup "Multiply process unit"
-            [ QC.testProperty "completeness" $ prop_completness <$> multiplierGen
-            , QC.testProperty "simulation" $ fmap (prop_simulation "prop_simulation_multiplier" counter) $ inputsGen =<< multiplierGen
+            [ testProperty "completeness" $ prop_completness <$> multiplierGen
+            , testProperty "simulation" $ fmap (prop_simulation "prop_simulation_multiplier" counter) $ inputsGen =<< multiplierGen
             ]
         -- , testGroup "Shift process unit"
         --     [ testCase "shiftBiDirection" shiftBiDirection
@@ -75,4 +75,6 @@ framGen = processGen (def :: (Fram String Int Int))
     , F <$> (arbitrary :: Gen (Reg (Parcel String Int)))
     ]
 
-multiplierGen = processGen (multiplier True) [ F <$> (arbitrary :: Gen (Multiply (Parcel String Int))) ]
+multiplierGen = processGen (multiplier True)
+    [ F <$> (arbitrary :: Gen (Multiply (Parcel String Int)))
+    ]
