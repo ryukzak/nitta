@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TypeOperators     #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
@@ -10,27 +11,33 @@ module NITTA.API where
 
 import           Control.Concurrent.STM
 import           Control.Monad
+import           Control.Monad                 (when)
 import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Default
-import           Data.Map                    (Map, fromList)
+import           Data.Map                      (Map, fromList)
 import           Data.Maybe
-import           Data.Monoid                 ((<>))
+import           Data.Monoid                   ((<>))
 import           GHC.Generics
-import           ListT                       (toList)
+import           ListT                         (toList)
 import           Network.Wai.Handler.Warp
-import           Network.Wai.Middleware.Cors (simpleCors)
+import           Network.Wai.Middleware.Cors   (simpleCors)
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import           NITTA.Types                 hiding (steps)
-import           NITTA.Utils.JSON            ()
+import           NITTA.Types                   hiding (steps)
+import           NITTA.Utils.JSON              ()
 import           Servant
 import           Servant.JS
-import qualified Servant.JS                  as SJS
-import qualified STMContainers.Map           as M
+import qualified Servant.JS                    as SJS
+import           Servant.Utils.StaticFiles     (serveDirectoryWebApp)
+import qualified STMContainers.Map             as M
 import           System.Directory
-import           System.FilePath.Posix       (joinPath)
+import           System.Exit
+import           System.FilePath.Posix         (joinPath)
+import           System.Process
+import           Text.InterpolatedString.Perl6 (qq)
 
+-- import           Servant.Server.StaticFiles (serveDirectoryWebApp) -- update on servant 14+
 
 data Synthesis
     = Synthesis
@@ -158,16 +165,36 @@ app root = do
         st <- M.new
         M.insert def{ steps=[root] } "root" st
         return st
-    return $ serve (Proxy :: Proxy SynthesisAPI) $ synthesisServer stm
+    let top =    synthesisServer stm
+            :<|> serveDirectoryWebApp (joinPath ["web", "build"])
+    return $ serve (Proxy :: Proxy (SynthesisAPI :<|> Raw)) top
+
+prepareServer = do
+    -- Generate JS API
+    let prefix = [qq|import axios from 'axios';
+var api = \{\};
+export default api;|]
+    let axios' = axiosWith defAxiosOptions defCommonGeneratorOptions
+            { urlPrefix="http://localhost:8080"
+            , SJS.moduleName="api"
+            }
+    createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
+    writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
+
+    -- Generate web app by npm
+    ( exitCode, out, err )
+        <- readCreateProcessWithExitCode
+            (shell "npm run-script build"){ cwd=Just "web" }
+            []
+    putStrLn "npm output:"
+    putStrLn out
+    when (exitCode /= ExitSuccess || not (null err)) $ do
+        putStrLn "npm error:"
+        putStrLn err
+        die "Verilog compilation failed!"
 
 
 backendServer frame = do
-    let prefix = "import axios from 'axios';\n\
-                    \var api = {}\n\
-                    \export default api;"
-    let axios' = axiosWith defAxiosOptions defCommonGeneratorOptions{ urlPrefix="http://localhost:8080"
-                                                                    , SJS.moduleName="api"
-                                                                    }
-    createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
-    writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
+    prepareServer
+    putStrLn "Server start on 8080..."
     app def{ state=frame } >>= run 8080 . simpleCors
