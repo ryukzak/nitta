@@ -578,7 +578,7 @@ instance ( Var v
                    , addr=map Signal [ 2, 3, 4, 5 ]
                    }
         , "                                                                                                          "
-        , snippetDumpFile $ moduleName projectName pu
+        , snippetDumpFile' $ moduleName projectName pu
         , snippetClkGen
         , "                                                                                                          "
         , "initial                                                                                                   "
@@ -589,9 +589,9 @@ instance ( Var v
         , "    forever @(posedge clk);                                                                               "
         , "  end                                                                                                     "
         , "                                                                                                          "
-        , snippetInitialFinish $ controlSignals pu
-        , snippetInitialFinish $ testDataInput pu cntx
-        , snippetInitialFinish $ testDataOutput projectName pu cntx
+        , snippetInitialFinish' $ controlSignals pu
+        , snippetInitialFinish' $ testDataInput pu cntx
+        , snippetInitialFinish' $ testDataOutput projectName pu cntx
         , "                                                                                                          "
         , "endmodule                                                                                                 "
         ]

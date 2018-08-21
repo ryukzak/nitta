@@ -124,9 +124,7 @@ module NITTA.ProcessUnits.Multiplier
 import           Control.Monad
 import           Data.Default
 import           Data.List                     (find, partition, (\\))
-import           Data.Maybe
 import           Data.Set                      (elems, fromList, member)
-import qualified Data.String.Utils             as S
 import           Data.Typeable
 import qualified NITTA.Functions               as F
 import           NITTA.Project
@@ -564,91 +562,20 @@ instance ( Var v
          , Integral x
          , ProcessUnit (Multiplier v x t) (Parcel v x) t
          ) => TestBench (Multiplier v x t) v x where
-    testBenchDescription Project{ projectName, model=pu@Multiplier{ process_=p@Process{ steps, nextTick }}, testCntx }
-        = Immidiate (mn ++ "_tb.v") testBenchImp
-        where
-            Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx $ functions pu
-            mn = moduleName projectName pu
-            adapt = S.replace "\\" ""
-            inst = hardwareInstance projectName pu
-                Enviroment
-                    { signalClk="clk"
-                    , signalRst="rst"
-                    , signalCycle="cycle"
-                    , inputPort=undefined
-                    , outputPort=undefined
-                    , net=NetEnv
-                        { parameterDataWidth=IntParam 32
-                        , parameterAttrWidth=IntParam 4
-                        , dataIn="data_in"
-                        , attrIn="attr_in"
-                        , dataOut="data_out"
-                        , attrOut="attr_out"
-                        , signal= \case
-                            (Signal 0) -> "oe"
-                            (Signal 1) -> "wr"
-                            (Signal 2) -> "wrSel"
-                            _ -> error "testBenchDescription wrong signal"
-                        }
-                    }
-                PUPorts
+    testBenchDescription prj@Project{ projectName, model=pu }
+        = Immidiate (moduleName projectName pu ++ "_tb.v")
+            $ snippetTestBench prj TestBenchSetup
+                { tbcSignals=["oe", "wr", "wrSel"]
+                , tbcSignalConnect= \case
+                    (Signal 0) -> "oe"
+                    (Signal 1) -> "wr"
+                    (Signal 2) -> "wrSel"
+                    _ -> error "testBenchDescription wrong signal"
+                , tbcPorts=PUPorts
                     { oe=Signal 0
                     , wr=Signal 1
                     , wrSel=Signal 2
                     }
-
-            controlSignals = concatMap (\t -> ctrl t $ microcodeAt pu t) [ 0 .. nextTick + 1 ]
-                where
-                    ctrl t Microcode{ oeSignal, wrSignal, selSignal } 
-                        | let val = getVal t 
-                        = [qq|
-    oe <= {bool2binstr oeSignal}; wr <= {bool2binstr wrSignal}; wrSel <= {bool2binstr selSignal}; data_in <= { val }; @(posedge clk);|]
-
-            getVal t 
-                | Just (Target v) <- endpointAt t p
-                = fromMaybe undefined $ F.get cntx v
-                | otherwise = 0
-
-            busCheck = concatMap busCheck' [ 0 .. nextTick + 1 ]
-                where
-                    busCheck' t
-                        | Just (Source vs) <- endpointAt t p
-                        , let v = oneOf vs
-                        , let (Just val) = F.get cntx v
-                        = [qq|@(posedge clk);
-    \$write( "data_out: %d == %d    (%s)", data_out, { val }, { v } );
-    if ( !( data_out === { val } ) ) \$display(" FAIL");
-    else \$display();|]
-                        | otherwise
-                        = [qq|
-    @(posedge clk); \$display( "data_out: %d", data_out );|]
-
-            testBenchImp = [qq|{"module"} { mn }_tb();
-
-parameter DATA_WIDTH = 32;
-parameter ATTR_WIDTH = 4;
-
-/*
-Context:
-{ show cntx }
-Algorithm:
-{ unlines $ map show $ functions pu }
-Process:
-{ unlines $ map show steps }
-*/
-
-reg clk, rst, wr, oe, wrSel;
-reg [DATA_WIDTH-1:0]  data_in;
-reg [ATTR_WIDTH-1:0]  attr_in;
-wire [DATA_WIDTH-1:0] data_out;
-wire [ATTR_WIDTH-1:0] attr_out;
-
-{ inst }
-
-{ adapt $ snippetDumpFile mn }
-{ adapt snippetClkGen }
-{ adapt $ snippetInitialFinish $ "    @(negedge rst);" ++ controlSignals }
-{ adapt $ snippetInitialFinish $ "    @(negedge rst);" ++ busCheck }
-
-endmodule
-|]
+                , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } val ->
+                    [qq|oe <= {bool2binstr oeSignal}; wr <= {bool2binstr wrSignal}; wrSel <= {bool2binstr selSignal}; data_in <= { val }; @(posedge clk);|]
+                }

@@ -439,7 +439,7 @@ instance ( Title title, Var v, Time t
           , not $ null tbEnv
           ]
         , "                                                                                                          "
-        , snippetDumpFile $ moduleName projectName n
+        , snippetDumpFile' $ moduleName projectName n
         , "                                                                                                          "
         , snippetClkGen
         , "                                                                                                          "

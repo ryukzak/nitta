@@ -33,38 +33,38 @@ main = do
     -- выставлялось только при быстром тестировании.
     setEnv "TASTY_QUICKCHECK_TESTS" "10"
     defaultMain $ testGroup "NITTA"
-      [ testGroup "Fram process unit"
-          [ testCase "framRegAndOut" framRegAndOut
-          , testCase "framRegAndConstant" framRegAndConstant
-          , QC.testProperty "completeness" $ prop_completness <$> framGen
-          , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram" counter) $ inputsGen =<< framGen
-          ]
-      ,  testGroup "Multiply process unit"
-          [ QC.testProperty "completeness" $ prop_completness <$> multiplierGen
-          , QC.testProperty "simulation" $ fmap (prop_simulation "prop_simulation_multiplier" counter) $ inputsGen =<< multiplierGen
-          ]
-      -- , testGroup "Shift process unit"
-      --     [ testCase "shiftBiDirection" shiftBiDirection
-      --     ]
-      , testGroup "Function"
-          [ testCase "reorderAlgorithm" reorderAlgorithmTest
-          , testCase "fibonacci" simulateFibonacciTest
-          ]
-      , testGroup "BusNetwork"
-          [ testCase "testShiftAndFram" testShiftAndFram
-          , testCase "testAccumAndFram" testAccumAndFram
-          , testCase "testMultiplier" testMultiplier
-          , testCase "testDiv4" testDiv4
-          , testCase "badTestFram" badTestFram
-          , testCase "testFibonacci" testFibonacci
-          , testCase "testFibonacciWithSPI" testFibonacciWithSPI
-          ]
-      , testGroup "Utils"
-          [ testCase "values2dump" values2dumpTests
-          , testCase "inputsOfFBs" inputsOfFBsTests
-          , testCase "outputsOfFBsTests" outputsOfFBsTests
-          , testCase "endpointRoleEq" endpointRoleEq
-          ]
+        [ testGroup "Fram process unit"
+            [ testCase "framRegAndOut" framRegAndOut
+            , testCase "framRegAndConstant" framRegAndConstant
+            , QC.testProperty "completeness" $ prop_completness <$> framGen
+            , QC.testProperty "Fram simulation" $ fmap (prop_simulation "prop_simulation_fram" counter) $ inputsGen =<< framGen
+            ]
+        ,  testGroup "Multiply process unit"
+            [ QC.testProperty "completeness" $ prop_completness <$> multiplierGen
+            , QC.testProperty "simulation" $ fmap (prop_simulation "prop_simulation_multiplier" counter) $ inputsGen =<< multiplierGen
+            ]
+        -- , testGroup "Shift process unit"
+        --     [ testCase "shiftBiDirection" shiftBiDirection
+        --     ]
+        , testGroup "Function"
+            [ testCase "reorderAlgorithm" reorderAlgorithmTest
+            , testCase "fibonacci" simulateFibonacciTest
+            ]
+        , testGroup "BusNetwork"
+            [ testCase "testShiftAndFram" testShiftAndFram
+            , testCase "testAccumAndFram" testAccumAndFram
+            , testCase "testMultiplier" testMultiplier
+            , testCase "testDiv4" testDiv4
+            , testCase "badTestFram" badTestFram
+            , testCase "testFibonacci" testFibonacci
+            , testCase "testFibonacciWithSPI" testFibonacciWithSPI
+            ]
+        , testGroup "Utils"
+            [ testCase "values2dump" values2dumpTests
+            , testCase "inputsOfFBs" inputsOfFBsTests
+            , testCase "outputsOfFBsTests" outputsOfFBsTests
+            , testCase "endpointRoleEq" endpointRoleEq
+            ]
       ]
 
 framGen = processGen (def :: (Fram String Int Int))

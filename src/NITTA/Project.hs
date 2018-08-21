@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
@@ -9,13 +10,17 @@
 module NITTA.Project
     ( Project(..)
     , TestBench(..)
+    , TestBenchSetup(..)
     , writeAndRunTestBench
     , writeAndRunTestBenchDevNull
     , writeProject
     -- *Snippets for Verilog code-generation
     , snippetClkGen
     , snippetDumpFile
+    , snippetDumpFile'
     , snippetInitialFinish
+    , snippetInitialFinish'
+    , snippetTestBench
     ) where
 
 -- FIXME: Файлы библиотек должны копироваться в проект.
@@ -27,6 +32,7 @@ import           Data.FileEmbed
 import           Data.List                     (isSubsequenceOf)
 import qualified Data.List                     as L
 import qualified Data.String.Utils             as S
+import           NITTA.Functions               as F
 import           NITTA.Types
 import           NITTA.Utils
 import           System.Directory
@@ -42,6 +48,15 @@ import           Text.InterpolatedString.Perl6 (qq)
 -- |Данный класс позволяет для реализующих его вычислительных блоков сгенировать test bench.
 class TestBench pu v x | pu -> v x where
     testBenchDescription :: Project pu v x -> Implementation
+
+
+data TestBenchSetup pu x
+    = TestBenchSetup
+        { tbcSignals       :: [String]
+        , tbcSignalConnect :: Signal -> String
+        , tbcPorts         :: PUPorts pu
+        , tbcCtrl          :: Microcode pu -> x -> String
+        }
 
 
 -- |Проект вычислителя NITTA.
@@ -205,6 +220,13 @@ end
 
 snippetDumpFile :: String -> String
 snippetDumpFile mn = [qq|initial begin
+    \$dumpfile("{ mn }_tb.vcd");
+    \$dumpvars(0, { mn }_tb);
+end
+|]
+
+snippetDumpFile' :: String -> String
+snippetDumpFile' mn = [qq|initial begin
     \\\$dumpfile("{ mn }_tb.vcd");
     \\\$dumpvars(0, { mn }_tb);
 end
@@ -213,6 +235,93 @@ end
 snippetInitialFinish :: String -> String
 snippetInitialFinish block = [qq|initial begin
 $block
+    \$finish;
+end
+|]
+
+snippetInitialFinish' :: String -> String
+snippetInitialFinish' block = [qq|initial begin
+$block
     \\\$finish;
 end
 |]
+
+
+snippetTestBench
+        Project{ projectName, model=pu, testCntx }
+        TestBenchSetup{ tbcSignals, tbcSignalConnect, tbcPorts, tbcCtrl }
+    = let
+        mn = moduleName projectName pu
+        p@Process{ steps, nextTick } = process pu
+        Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx $ functions pu
+
+        inst = hardwareInstance projectName pu
+            Enviroment
+                { signalClk="clk"
+                , signalRst="rst"
+                , signalCycle="cycle"
+                , inputPort=undefined
+                , outputPort=undefined
+                , net=NetEnv
+                    { parameterDataWidth=IntParam 32
+                    , parameterAttrWidth=IntParam 4
+                    , dataIn="data_in"
+                    , attrIn="attr_in"
+                    , dataOut="data_out"
+                    , attrOut="attr_out"
+                    , signal=tbcSignalConnect
+                    }
+                }
+            tbcPorts
+
+        controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pu t) (targetVal t)) [ 0 .. nextTick + 1 ]
+        targetVal t
+            | Just (Target v) <- endpointAt t p
+            , Just val <- F.get cntx v
+            = val
+            | otherwise = 0
+
+        busCheck = concatMap busCheck' [ 0 .. nextTick + 1 ]
+            where
+                busCheck' t
+                    | Just (Source vs) <- endpointAt t p
+                    , let v = oneOf vs
+                    , let (Just val) = F.get cntx v
+                    = [qq|    @(posedge clk);
+        \$write( "data_out: %d == %d    (%s)", data_out, { val }, { v } );
+        if ( !( data_out === { val } ) ) \$display(" FAIL");
+        else \$display();
+|]
+                    | otherwise
+                    = [qq|    @(posedge clk); \$display( "data_out: %d", data_out );
+|]
+
+    in [qq|{"module"} {mn}_tb();
+
+parameter DATA_WIDTH = 32;
+parameter ATTR_WIDTH = 4;
+
+/*
+Algorithm:
+{ unlines $ map show $ functions pu }
+Process:
+{ unlines $ map show steps }
+Context:
+{ show cntx }
+*/
+
+reg clk, rst;
+reg { S.join ", " tbcSignals };
+reg [DATA_WIDTH-1:0]  data_in;
+reg [ATTR_WIDTH-1:0]  attr_in;
+wire [DATA_WIDTH-1:0] data_out;
+wire [ATTR_WIDTH-1:0] attr_out;
+
+{ inst }
+
+{ snippetClkGen }
+{ snippetDumpFile mn }
+{ snippetInitialFinish $ "    @(negedge rst);\\n    " ++ controlSignals }
+{ snippetInitialFinish $ "    @(negedge rst);\\n" ++ busCheck }
+endmodule
+|] :: String
