@@ -54,6 +54,7 @@ export class ProcessView extends Component {
         steps.push(this.state.steps[i])
       }
     }
+    if (steps.length === 0) return (<pre> Process is empty </pre>)
 
     return (
       <div>
