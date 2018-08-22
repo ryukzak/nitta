@@ -47,15 +47,30 @@ class App extends Component {
     api.getSynthesisBySIdStepsByStepId( sId, stepId )
     .then( response => {
       var steps = [];
+      var levels = {};
+      var processUnits = {};
       for ( var k in response.data.state.nitta.process.steps ) {
-        var e = response.data.state.nitta.process.steps[k]
-        e[2] = new Date(e[2] * 1000)
-        e[4] = e[4] * 1000
-        if ( e[4] > 0 ) { steps.push( e ) }
+        var step = response.data.state.nitta.process.steps[k]
+        var e = [ null, null, null, null, null, null, null ]
+        e[0] = step.sKey.toString()                             // Task ID
+        e[1] = step.sDesc                                       // Task Name
+                                                                // Resource ID (optional)
+        e[2] = new Date(step.sTime[0] * 1000)                   // Start
+        e[3] = null                                             // End
+        e[4] = step.sTime[1] != null ? (step.sTime[1] + 1) * 1000 : 1000000  // Duration
+        e[5] = 100                                              // Percent Complete
+        e[6] = null                                             // Dependencies
+        if (!(step.sLevel in levels)) levels[step.sLevel] = true
+        if (!(step.sPU in processUnits)) processUnits[step.sPU] = true 
+        steps.push( e )
       }
+      response.data.state.nitta.process.steps_raw = response.data.state.nitta.process.steps
       response.data.state.nitta.process.steps = steps
+      response.data.state.nitta.process.levels = levels
+      response.data.state.nitta.process.processUnits = processUnits
       this.setState({ path: this.root( sId, 'step', stepId )
                     , stepData: response.data
+                    , _p: response.data.state.nitta.process
                     })
       this.getStepOption( sId, stepId )
     } )
@@ -176,6 +191,17 @@ function StepView(props) {
   var path = props.path
   var app = props.app
   var step = props.app.state.stepData
+  var levels = app.state.stepData.state.nitta.process.levels
+  var processUnits = app.state.stepData.state.nitta.process.processUnits
+  var steps = []
+  var steps_raw = app.state.stepData.state.nitta.process.steps_raw;
+  var steps_to_view = app.state.stepData.state.nitta.process.steps;
+
+  for ( var i = 0; i < steps_raw.length; i++ ) {
+    console.log(steps_raw[i].sLevel, levels[steps_raw[i].sLevel], steps_raw[i].sPU, processUnits[steps_raw[i].sPU])
+    if ( levels[steps_raw[i].sLevel] && processUnits[steps_raw[i].sPU] )
+      steps.push( steps_to_view[i] )
+  }
   return (
     <div>
       <div className="tiny primary button-group">
@@ -210,26 +236,58 @@ function StepView(props) {
       { ( path.stepView === 'options' )
         ? <StepOptionView path={ path } app={ app } stepDataOptions={ app.state.stepDataOptions } />
       : ( path.stepView === 'process' )
-        ? <Chart
-              chartType="Gantt"
-              columns={[
-                {"id": "Task ID",          "type": "string"},
-                {"id": "Task Name",        "type": "string"},
-                {"id": "Start Date",       "type": "date"},
-                {"id": "End Date",         "type": "date"},
-                {"id": "Duration",         "type": "number"},
-                {"id": "Percent Complete", "type": "number"},
-                {"id": "Dependencies",     "type": "string"}
-              ]}
-              rows={ app.state.stepData.state.nitta.process.steps }
-              graph_id="ProcessGantt"
-              width="100%"
-              height={ (app.state.stepData.state.nitta.process.steps.length + 1) * 41 + 30 }
-              legend_toggle
-              />
+        ? <div>
+            <div class="grid-x">
+              <div class="cell small-6">
+                <h4>Levels</h4>
+                { Object.keys(levels).map( 
+                  (k, i) => <div>
+                    <input type="checkbox" id={ k } name={ k }
+                            defaultChecked={ levels[k] } 
+                            onChange={function (){ levels[k] = !levels[k]; }}
+                            />
+                    <label for={ k }> { k } </label>
+                  </div>
+                ) }
+              </div>
+              <div class="cell small-6">
+                <h4>Process units</h4>
+                { Object.keys(processUnits).map( 
+                  (k, i) => <div>
+                    <input type="checkbox" id={ k } name={ k }
+                            defaultChecked={ processUnits[k] } 
+                            onChange={function (){ processUnits[k] = !processUnits[k]; }}
+                            />
+                    <label for={ k }> { k } </label>
+                  </div>
+                ) }
+              </div>
+            </div>
+            <hr/>
+            <pre>FIXME: For refresh Gantt charts - change the view and jump back.</pre>
+            <Chart
+                chartType="Gantt"
+                columns={[
+                  {"id": "Task ID",          "type": "string"},
+                  {"id": "Task Name",        "type": "string"},
+                  {"id": "Start Date",       "type": "date"},
+                  {"id": "End Date",         "type": "date"},
+                  {"id": "Duration",         "type": "number"},
+                  {"id": "Percent Complete", "type": "number"},
+                  {"id": "Dependencies",     "type": "string"}
+                ]}
+                rows={ steps }
+                width="100%"
+                height={ (steps.length + 1) * 21 + 30 }
+                options={{
+                  gantt: {
+                    trackHeight: 20,
+                    barHeight: 10
+                }}}              
+                />
+          </div>
       : ( path.stepView === 'info' )
         ? <div>
-            
             <pre>
               { JSON.stringify( app.state.stepData, null, 2) }
             </pre>

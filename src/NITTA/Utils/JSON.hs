@@ -103,7 +103,7 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Process (Parcel v x) t) where
     toJSON Process{ steps, nextTick } = object
-        [ "steps" .= filter (\Step{ sDesc } -> case sDesc of InstructionStep _ -> True; NestedStep _ (InstructionStep _) -> True; _ -> False) steps
+        [ "steps" .= steps
         , "nextTick" .= nextTick
         ]
         -- , relations :: [Relation] -- ^ Список отношений между шагами вычислительного процесса
@@ -111,27 +111,18 @@ instance ( ToJSON t, Time t, Show v
 
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Step (Parcel v x) t) where
-    toJSON Step{ sKey, sTime=Event a, sDesc } = toJSON
-        [ toJSON $ show sKey                         -- Task ID
-        , toJSON $ show sDesc                        -- Task Name
-                                                     -- Resource ID (optional)
-        , toJSON $ fromEnum a                        -- Start
-        , Null                                       -- End
-        , toJSON (0 :: Int)                          -- Duration (in milliseconds)
-        , toJSON (100 :: Int)                        -- Percent Complete
-        , Null                                       -- Dependencies
-        ]
-    toJSON Step{ sKey, sTime=Activity i, sDesc } = toJSON
-        [ toJSON $ show sKey                         -- Task ID
-        , toJSON $ show sDesc                        -- Task Name
-                                                     -- Resource ID (optional)
-        , toJSON $ fromEnum (inf i)                  -- Start
-        , Null                                       -- End
-        , toJSON $ fromEnum (width i) + 1            -- Duration (in milliseconds)
-        , toJSON (100 :: Int)                        -- Percent Complete
-        , Null                                       -- Dependencies
+    toJSON Step{ sKey, sTime, sDesc } = object
+        [ "sKey" .= sKey
+        , "sDesc" .= show sDesc
+        , "sTime" .= sTime
+        , "sLevel" .= level sDesc
+        , "sPU" .= showPU sDesc
         ]
 
+instance ( ToJSON t, Time t
+         ) => ToJSON (PlaceInTime t) where
+    toJSON (Event t)    = toJSON [ fromEnum t, fromEnum t ]
+    toJSON (Activity i) = toJSON [ fromEnum $ inf i, fromEnum $ sup i ]
 
 instance ToJSON SpecialMetrics
 instance ToJSON GlobalMetrics

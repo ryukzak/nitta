@@ -268,12 +268,17 @@ instance ( Show v ) => Show (StepInfo (Parcel v x)) where
 
 
 -- |Получить строку с название уровня указанного шага вычислительного процесса.
-level (CADStep _)          = "CAD"
-level (FStep _)            = "Function"
-level (EndpointRoleStep _) = "Endpoint"
-level (InstructionStep _)  = "Instruction"
-level (NestedStep _ _)     = "Nested"
+level CADStep{}          = "CAD"
+level FStep{}            = "Function"
+level EndpointRoleStep{} = "Endpoint"
+level InstructionStep{}  = "Instruction"
+level (NestedStep _ sub) = level sub
 
+showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
+  where
+    showPU' :: StepInfo (Parcel v x) -> [String]
+    showPU' (NestedStep title sub) = show title : showPU' sub
+    showPU' _                      = []
 
 -- |Описание отношений между шагами вычисительного процесса.
 data Relation
