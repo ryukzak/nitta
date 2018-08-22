@@ -9,11 +9,13 @@
 -- |Модуль отвечающий за генерацию проектов на базе процессора NITTA.
 module NITTA.Project
     ( Project(..)
+    , writeProject
+    -- *Test bench
     , TestBench(..)
     , TestBenchSetup(..)
+    -- *Utils
     , writeAndRunTestBench
     , writeAndRunTestBenchDevNull
-    , writeProject
     -- *Snippets for Verilog code-generation
     , snippetClkGen
     , snippetDumpFile
@@ -24,6 +26,8 @@ module NITTA.Project
     ) where
 
 -- FIXME: Файлы библиотек должны копироваться в проект.
+
+-- TODO: Добавить информацию о происхождении в автоматически генерируемые файлы.
 
 -- TODO: Сделать выбор вендора, сейчас это Quartus и IcarusVerilog.
 
@@ -165,6 +169,8 @@ writeImplementation pwd impl = writeImpl "" impl
 
 
 -- |Запустить testbench в указанной директории.
+
+-- TODO: Добавить сохранение вывода в память для дальнейшей обработки.
 runTestBench h prj@Project{ projectPath, model } = do
     let (_tb, files) = projectFiles prj
     ( compileExitCode, compileOut, compileErr )

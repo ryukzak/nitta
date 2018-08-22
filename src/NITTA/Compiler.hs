@@ -168,6 +168,7 @@ data CompilerStep title tag v x t
   = CompilerStep
     { state        :: SystemState title tag v x t
     , config       :: NaiveOpt
+    -- TODO: rename to prevDevision
     , lastDecision :: Maybe (Decision (CompilerDT title tag v t))
     }
   deriving ( Generic )

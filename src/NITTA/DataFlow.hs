@@ -76,6 +76,8 @@ node (fb :: F (Parcel v Int)) = DFGNode fb
 --   планирования вычислительного процесса, то необходимо пройти все варианты развития
 --   вычислительного процесса, следовательно, на каждом уровне стека может присутствовать несколько
 --   кадров.
+
+-- TODO: rename SystemState to ModelState
 data SystemState title tag v x t
   = Frame
     { nitta   :: BusNetwork title v x t
