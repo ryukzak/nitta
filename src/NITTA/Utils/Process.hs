@@ -13,11 +13,13 @@ Stability   : experimental
 module NITTA.Utils.Process
     ( Schedule(..) -- TODO: must be hidded
     , runSchedule
-    , execSchedule
-    , scheduleEndpoint
+    , execSchedule, execScheduleWithProcess
+    , scheduleEndpoint, runScheduleWithProcess
     , scheduleFunction
     , scheduleInstruction
+    , scheduleNestedStep
     , establishVerticalRelations
+    , getProcessSlice
     , updateTick -- TODO: must be hidded
     ) where
 
@@ -36,10 +38,13 @@ data Schedule pu v x t
 
 
 execSchedule pu st = snd $ runSchedule pu st
+execScheduleWithProcess pu p st = snd $ runScheduleWithProcess pu p st
 
-runSchedule pu st
+runSchedule pu st = runScheduleWithProcess pu (process pu) st
+
+runScheduleWithProcess pu p st
     = let (a, s) = runState st Schedule
-            { schProcess=process pu
+            { schProcess=p
             , iProxy=ip pu
             }
     in (a, schProcess s)
@@ -48,12 +53,15 @@ runSchedule pu st
         ip _ = Proxy
 
 
-scheduleStep placeInTime stepInfo = do
+scheduleStep placeInTime stepInfo
+    = scheduleStep' (\uid -> Step uid placeInTime stepInfo)
+
+scheduleStep' mkStep = do
     sch@Schedule{ schProcess=p@Process{ nextUid, steps } } <- get
     put sch
         { schProcess=p
             { nextUid=succ nextUid
-            , steps=Step nextUid placeInTime stepInfo : steps
+            , steps=mkStep nextUid : steps
             }
         }
     return [ nextUid ]
@@ -62,7 +70,7 @@ establishVerticalRelations high low = do
     sch@Schedule{ schProcess=p@Process{ relations } } <- get
     put sch
         { schProcess=p
-            { relations=[ Vertical h l | h <- high, l <- low ]++ relations
+            { relations=[ Vertical h l | h <- high, l <- low ] ++ relations
             }
         }
 
@@ -80,6 +88,16 @@ scheduleInstruction start finish instr = do
     Schedule{ iProxy } <- get
     scheduleStep (Activity $ start ... finish) $ InstructionStep (instr `asProxyTypeOf` iProxy)
 
+scheduleNestedStep title Step{ sTime, sDesc } = do
+    sKey <- scheduleStep sTime $ NestedStep title sDesc
+    when (length sKey /= 1) $ error "scheduleNestedStep internal error."
+    return $ head sKey
+    -- TODO: = scheduleStep' (\uid -> NestedStep title step)
+
+getProcessSlice :: State (Schedule pu v x t) (Process (Parcel v x) t)
+getProcessSlice = do
+    Schedule{ schProcess } <- get
+    return schProcess
 
 -- depricated
 updateTick tick = do

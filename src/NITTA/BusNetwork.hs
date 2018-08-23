@@ -43,6 +43,7 @@ import           NITTA.Functions               (get', simulateAlgByCycle)
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
+import           NITTA.Utils.Process
 import           NITTA.Utils.Lens
 import           Numeric.Interval              (inf, width, (...))
 import           Text.InterpolatedString.Perl6 (qq)
@@ -196,48 +197,66 @@ instance ( Title title, Var v, Time t
 instance ( Title title, Time t, Var v, Typeable x
          ) => ProcessUnit (BusNetwork title v x t) (Parcel v x) t where
 
-  tryBind fb bn@BusNetwork{..}
-    | any (allowToProcess fb) $ M.elems bnPus
-    = Right bn{ bnRemains=fb : bnRemains }
-  tryBind fb BusNetwork{..} = Left $ "All sub process units reject the functional block: " ++ show fb ++ "\n"
-                                ++ rejects
-    where
-      rejects = S.join "\n" $ map showReject $ M.assocs bnPus
-      showReject (title, pu) | Left err <- tryBind fb pu = "    [" ++ show title ++ "]: " ++ err
-      showReject (title, _) = "    [" ++ show title ++ "]: undefined"
+    tryBind f net@BusNetwork{ bnRemains, bnPus }
+        | any (allowToProcess f) $ M.elems bnPus   
+        = Right net{ bnRemains=f : bnRemains }
+    tryBind f BusNetwork{ bnPus }
+        = Left $ "All sub process units reject the functional block: " ++ show f ++ "\n" ++ rejects
+        where
+            rejects = S.join "\n" $ map showReject $ M.assocs bnPus
+            showReject (title, pu) | Left err <- tryBind f pu = "    [" ++ show title ++ "]: " ++ err
+            showReject (title, _) = "    [" ++ show title ++ "]: undefined"
+    
 
-  process pu@BusNetwork{..} = let
-    transportKey = M.fromList
-      [ (v, sKey st)
-      | st <- steps bnProcess
-      , let instr = extractInstruction pu st
-      , isJust instr
-      , let (Just (Transport v _ _)) = instr
-      ]
-    p'@Process{ steps=steps' } = snd $ modifyProcess bnProcess $ do
-      let pus = sortOn fst $ M.assocs bnPus
-      mapM (addSubProcess transportKey) pus
+    process net@BusNetwork{ bnProcess, bnPus }
+        = let
+            v2transportStepUid = M.fromList
+                [ (v, sKey)
+                | Step{ sKey, sDesc } <- steps bnProcess
+                , isInstruction sDesc
+                , v <- case sDesc of
+                    (InstructionStep i)
+                        | Just (Transport var _ _) <- cast i `maybeInstructionOf` net
+                        -> [var]
+                    _ -> []
+                ]
+        in execScheduleWithProcess net bnProcess $ do
+            -- Копируем нижележащие процессы наверх.
+            mapM_ addNestedProcess $ sortOn fst $ M.assocs bnPus
 
-    in p'{ steps=reverse steps' }
-    where
-      addSubProcess transportKey (puTitle, pu') = do
-        let subSteps = steps $ process pu'
-        uids' <- foldM (\dict Step{..} -> do
-                           k <- addStep sTime $ NestedStep puTitle sDesc
-                          --  when (isFB sDesc) $ do
-                          --    let FStep fb = sDesc
-                          --    mapM_ (\v -> when (v `M.member` transportKey)
-                          --                 $ relation $ Vertical (transportKey M.! v) k
-                          --          ) $ variables fb
-                           return $ M.insert sKey k dict
-                       ) M.empty subSteps
-        let subRelations = relations $ process pu'
-        mapM (\(Vertical a b) -> relation $ Vertical (uids' M.! a) (uids' M.! b)
-             ) subRelations
+            Process{ steps } <- getProcessSlice
+            -- Transport - Endpoint
+            let low = concatMap (\Step{ sKey, sDesc } ->
+                    case sDesc of
+                        (NestedStep _ (EndpointRoleStep role)) -> [ (sKey, v) | v <- elems $ variables role ]
+                        _ -> []
+                    ) steps
+            mapM_ 
+                ( \(l, v) -> 
+                    when (v `M.member` v2transportStepUid) 
+                        $ establishVerticalRelations [v2transportStepUid M.! v] [l] ) 
+                low
+            -- FB - Transport
+            mapM_ ( \Step{ sKey, sDesc=NestedStep _ (FStep f) } ->
+                    mapM_ ( \v ->
+                            when (v `M.member` v2transportStepUid)
+                                $ establishVerticalRelations [ sKey ] [ v2transportStepUid M.! v ] )
+                        $ variables f )
+                $ filter (isFB . sDesc) steps
+        where
+            addNestedProcess (title, pu) = do
+                let Process{ steps, relations } = process pu
+                uidDict <- M.fromList <$> mapM 
+                    ( \step@Step{ sKey } -> do
+                        sKey' <- scheduleNestedStep title step
+                        return (sKey, sKey') ) 
+                    steps
+                mapM_ (\(Vertical h l) -> establishVerticalRelations [uidDict M.! h] [uidDict M.! l]) relations
 
-  setTime t bn@BusNetwork{..} = bn{ bnProcess=bnProcess{ nextTick=t }
-                                  , bnPus=M.map (setTime t) bnPus
-                                  }
+    setTime t net@BusNetwork{..} = net
+        { bnProcess=bnProcess{ nextTick=t }
+        , bnPus=M.map (setTime t) bnPus
+        }
 
 
 

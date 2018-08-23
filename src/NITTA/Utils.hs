@@ -37,9 +37,12 @@ module NITTA.Utils
     , getEndpoints
     , getFBs
     , isFB
+    , isInstruction
     , isTarget
     , placeInTimeTag
     , whatsHappen
+    , instructionOf
+    , maybeInstructionOf
     ) where
 
 import           Control.Monad.State
@@ -184,6 +187,9 @@ isFB (FStep _)                = True
 isFB (NestedStep _ (FStep _)) = True
 isFB _                        = False
 
+isInstruction (InstructionStep _) = True
+isInstruction _                   = False
+
 
 atSameTime a (Activity t) = a `I.member` t
 atSameTime a (Event t)    = a == t
@@ -195,3 +201,12 @@ placeInTimeTag (Event t)    = tag t
 
 stepStart Step{ sTime=Event t }    = t
 stepStart Step{ sTime=Activity t } = I.inf t
+
+
+-- modern
+
+instructionOf :: Instruction pu -> pu -> Instruction pu
+i `instructionOf` _pu = i
+
+maybeInstructionOf :: Maybe (Instruction pu) -> pu -> Maybe (Instruction pu)
+i `maybeInstructionOf` _pu = i

@@ -273,6 +273,7 @@ level FStep{}            = "Function"
 level EndpointRoleStep{} = "Endpoint"
 level InstructionStep{}  = "Instruction"
 level (NestedStep _ sub) = level sub
+-- level (NestedStep title sub) = S.replace "\"" "" (show title) ++ "." ++ level sub
 
 showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
   where
