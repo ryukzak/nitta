@@ -234,13 +234,13 @@ instance ( Title title, Time t, Var v, Typeable x
             mapM_ 
                 ( \(l, v) -> 
                     when (v `M.member` v2transportStepUid) 
-                        $ establishVerticalRelations [v2transportStepUid M.! v] [l] ) 
+                        $ establishVerticalRelation (v2transportStepUid M.! v) l ) 
                 low
             -- FB - Transport
             mapM_ ( \Step{ sKey, sDesc=NestedStep _ (FStep f) } ->
                     mapM_ ( \v ->
                             when (v `M.member` v2transportStepUid)
-                                $ establishVerticalRelations [ sKey ] [ v2transportStepUid M.! v ] )
+                                $ establishVerticalRelation sKey (v2transportStepUid M.! v) )
                         $ variables f )
                 $ filter (isFB . sDesc) steps
         where
@@ -251,7 +251,7 @@ instance ( Title title, Time t, Var v, Typeable x
                         sKey' <- scheduleNestedStep title step
                         return (sKey, sKey') ) 
                     steps
-                mapM_ (\(Vertical h l) -> establishVerticalRelations [uidDict M.! h] [uidDict M.! l]) relations
+                mapM_ (\(Vertical h l) -> establishVerticalRelation (uidDict M.! h) (uidDict M.! l)) relations
 
     setTime t net@BusNetwork{..} = net
         { bnProcess=bnProcess{ nextTick=t }
