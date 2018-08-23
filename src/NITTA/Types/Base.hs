@@ -228,7 +228,7 @@ data Step io t
   = Step
     { sKey  :: ProcessUid    -- ^Уникальный идентификатор шага.
     , sTime :: PlaceInTime t -- ^Описание типа и положения шага во времени.
-    , sDesc :: StepInfo io    -- ^Описание действия описываемого шага.
+    , sDesc :: StepInfo io t -- ^Описание действия описываемого шага.
     }
 deriving instance ( Show v, Show t ) => Show ( Step (Parcel v x) t )
 
@@ -240,31 +240,38 @@ data PlaceInTime t
 
 -- |Описание события, соответсвующего шага вычислительного процесса. Каждый вариант соответствует
 -- соответствующему отдельному уровню организации вычислительного процесса.
-data StepInfo io where
-  -- |Решения, принятые на уровне САПР.
-  CADStep :: String -> StepInfo io
-  -- |Время работы над функциональным блоком функционального алгоритма.
-  FStep :: F io -> StepInfo io
-  -- |Описание использования вычислительного блока с точки зрения передачи данных.
-  EndpointRoleStep :: ( io ~ _io v x, Show v, Typeable v ) => EndpointRole v -> StepInfo io
-  -- |Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
-  -- определяется типом вычислительного блока.
-  InstructionStep :: ( Show (Instruction pu)
-                     , Typeable (Instruction pu)
-                     ) => Instruction pu -> StepInfo io
+data StepInfo io t where
+    -- |Решения, принятые на уровне САПР.
+    CADStep :: String -> StepInfo io t
+    -- |Время работы над функциональным блоком функционального алгоритма.
+    FStep :: F io -> StepInfo io t
+    -- |Описание использования вычислительного блока с точки зрения передачи данных.
+    EndpointRoleStep :: ( io ~ _io v x, Show v, Typeable v ) => EndpointRole v -> StepInfo io t
+    -- |Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
+    -- определяется типом вычислительного блока.
+    InstructionStep :: 
+        ( Show (Instruction pu)
+        , Typeable (Instruction pu)
+        ) => Instruction pu -> StepInfo io t
+    -- |Используется для описания вычислительного процесса вложенных структурных элементов. Как
+    -- правило не хранится в структурах данных, а генерируется автоматически по требованию при
+    -- помощи опроса вложенных структурных элементов.
+    NestedStep :: 
+        ( Eq title, Show title, Ord title
+        ) => 
+            { nTitle :: title
+            , nStep :: Step io t 
+            } -> StepInfo io t
 
-  -- |Используется для описания вычислительного процесса вложенных структурных элементов.
-  -- Как правило не хранится в структурах данных, а генерируется автоматически по требованию при
-  -- помощи опроса вложенных структурных элементов.
-  NestedStep :: ( Eq title, Show title, Ord title
-                ) => title -> StepInfo v -> StepInfo v
+descent Step{ sDesc=NestedStep _ step } = descent step
+descent step                            = step
 
-instance ( Show v ) => Show (StepInfo (Parcel v x)) where
-  show (CADStep s)                 = s
-  show (FStep (F f))               = show f
-  show (EndpointRoleStep eff)      = show eff
-  show (InstructionStep instr)     = show instr
-  show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
+instance (Show (Step io t)) => Show (StepInfo io t) where
+    show (CADStep s)                 = s
+    show (FStep (F f))               = show f
+    show (EndpointRoleStep eff)      = show eff
+    show (InstructionStep instr)     = show instr
+    show NestedStep{ nTitle, nStep } = show nTitle ++ "." ++ show nStep
 
 
 -- |Получить строку с название уровня указанного шага вычислительного процесса.
@@ -272,14 +279,14 @@ level CADStep{}          = "CAD"
 level FStep{}            = "Function"
 level EndpointRoleStep{} = "Endpoint"
 level InstructionStep{}  = "Instruction"
-level (NestedStep _ sub) = level sub
+level (NestedStep _ step) = level $ sDesc $ descent step
 -- level (NestedStep title sub) = S.replace "\"" "" (show title) ++ "." ++ level sub
 
 showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
-  where
-    showPU' :: StepInfo (Parcel v x) -> [String]
-    showPU' (NestedStep title sub) = show title : showPU' sub
-    showPU' _                      = []
+    where
+        showPU' :: StepInfo (Parcel v x) t -> [String]
+        showPU' (NestedStep title Step{ sDesc }) = show title : showPU' sDesc
+        showPU' _                                = []
 
 -- |Описание отношений между шагами вычисительного процесса.
 data Relation

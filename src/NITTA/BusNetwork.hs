@@ -228,7 +228,7 @@ instance ( Title title, Time t, Var v, Typeable x
             -- Transport - Endpoint
             let low = concatMap (\Step{ sKey, sDesc } ->
                     case sDesc of
-                        (NestedStep _ (EndpointRoleStep role)) -> [ (sKey, v) | v <- elems $ variables role ]
+                        NestedStep{ nStep=Step{ sDesc=EndpointRoleStep role } } -> [ (sKey, v) | v <- elems $ variables role ]
                         _ -> []
                     ) steps
             mapM_ 
@@ -237,12 +237,12 @@ instance ( Title title, Time t, Var v, Typeable x
                         $ establishVerticalRelation (v2transportStepUid M.! v) l ) 
                 low
             -- FB - Transport
-            mapM_ ( \Step{ sKey, sDesc=NestedStep _ (FStep f) } ->
+            mapM_ ( \Step{ sKey, sDesc=NestedStep{ nStep=Step{ sDesc=FStep f } } } ->
                     mapM_ ( \v ->
                             when (v `M.member` v2transportStepUid)
                                 $ establishVerticalRelation sKey (v2transportStepUid M.! v) )
                         $ variables f )
-                $ filter (isFB . sDesc) steps
+                $ filter isFB steps
         where
             addNestedProcess (title, pu) = do
                 let Process{ steps, relations } = process pu

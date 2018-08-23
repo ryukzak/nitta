@@ -48,7 +48,7 @@ module NITTA.Utils
 import           Control.Monad.State
 import           Data.Default
 import           Data.List           (minimumBy, sortOn)
-import           Data.Maybe          (mapMaybe)
+import           Data.Maybe          (isJust, mapMaybe)
 import           Data.Set            (difference, elems, unions)
 import           Data.Typeable       (Typeable, cast)
 import           NITTA.Types
@@ -158,17 +158,15 @@ endpointAt t p
         eps  -> error $ "Too many endpoint at a time: " ++ show eps
 
 
-getFB Step{ sDesc=FStep fb }                = Just fb
-getFB Step{ sDesc=NestedStep _ (FStep fb) } = Just fb
-getFB _                                     = Nothing
+getFB step | Step{ sDesc=FStep fb } <- descent step = Just fb
+getFB _    = Nothing
 
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
 
 getEndpoint :: Step (Parcel v x) t -> Maybe (EndpointRole v)
-getEndpoint Step{ sDesc=EndpointRoleStep role }                = Just role
-getEndpoint Step{ sDesc=NestedStep _ (EndpointRoleStep role) } = Just role
-getEndpoint _                                                  = Nothing
+getEndpoint step | Step{ sDesc=EndpointRoleStep role } <- descent step = Just role
+getEndpoint _                                                          = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 
@@ -183,9 +181,7 @@ extractInstructionAt pu t = mapMaybe (extractInstruction pu) $ whatsHappen t $ p
 isTarget (EndpointO (Target _) _) = True
 isTarget _                        = False
 
-isFB (FStep _)                = True
-isFB (NestedStep _ (FStep _)) = True
-isFB _                        = False
+isFB s = isJust $ getFB s
 
 isInstruction (InstructionStep _) = True
 isInstruction _                   = False

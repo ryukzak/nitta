@@ -359,43 +359,46 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                   ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options endpointDT pu)
                   ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
                   ++ "remains:\n" ++ concatMap ((++ "\n") . show) frRemains
-    where
-      anyInAction = any (`elem` variables d)
-      bind2CellStep addr fb t
-        = addStep (Event t) $ CADStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
-      updateLastWrite t cell | Target _ <- epdRole = cell{ lastWrite=Just t }
-                             | otherwise = cell{ lastWrite=Nothing }
+        where
+            anyInAction = any (`elem` variables d)
+            bind2CellStep addr fb t
+                = addStep (Event t) $ CADStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
+            updateLastWrite t cell 
+                | Target _ <- epdRole = cell{ lastWrite=Just t }
+                | otherwise = cell{ lastWrite=Nothing }
 
-      schedule addr job
-        = let (p', job'@Job{..}) = scheduleWork addr job
-          in if null actions
-            then (finishSchedule p' job', Nothing)
-            else (p', Just job')
+            schedule addr job
+                = let (p', job'@Job{..}) = scheduleWork addr job
+                in if null actions
+                    then (finishSchedule p' job', Nothing)
+                    else (p', Just job')
 
-      scheduleWork _addr Job{ actions=[] } = error "Fram:scheudle internal error."
-      scheduleWork addr job@Job{ actions=x:xs, .. }
-        = let ( instrTi, instr ) = case d^.endRole of
-                  Source _ -> ( shift (-1) d^.at, Load addr)
-                  Target _ -> ( d^.at, Save addr)
-              ((ep, instrs), p') = modifyProcess p $ do
-                e <- addStep (Activity $ d^.at) $ EndpointRoleStep $ d^.endRole
-                i <- addInstr pu instrTi instr
-                -- when (tick0 < instrTi^.infimum) $ void $ addInstr pu (tick0 ... instrTi^.infimum - 1) Nop
-                -- mapM_ (relation . Vertical e) instrs
-                setProcessTime $ d^.at.supremum + 1
-                return (e, [i])
-          in (p', job{ endpoints=ep : endpoints
-                     , instructions=instrs ++ instructions
-                     , startAt=startAt `orElse` Just (d^.at.infimum)
-                     , actions=if x == d^.endRole then xs else (x \\\ (d^.endRole)) : xs
-                     })
-      finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
-        let start = fromMaybe (error "startAt field is empty!") startAt
-        h <- addStep (Activity $ start ... d^.at.supremum) $ FStep function
-        return ()
-        -- mapM_ (relation . Vertical h) cads
-        -- mapM_ (relation . Vertical h) endpoints
-        -- mapM_ (relation . Vertical h) instructions
+            scheduleWork _addr Job{ actions=[] } = error "Fram:scheudle internal error."
+            scheduleWork addr job@Job{ actions=x:xs, .. }
+                = let 
+                    ( instrTi, instr ) = case d^.endRole of
+                        Source _ -> ( shift (-1) d^.at, Load addr)
+                        Target _ -> ( d^.at, Save addr)
+                    ((ep, instrs), p') = modifyProcess p $ do
+                        e <- addStep (Activity $ d^.at) $ EndpointRoleStep $ d^.endRole
+                        i <- addInstr pu instrTi instr
+                        -- when (tick0 < instrTi^.infimum) $ void $ addInstr pu (tick0 ... instrTi^.infimum - 1) Nop
+                        -- mapM_ (relation . Vertical e) instrs
+                        setProcessTime $ d^.at.supremum + 1
+                        return (e, [i])
+                in (p', job
+                    { endpoints=ep : endpoints
+                    , instructions=instrs ++ instructions
+                    , startAt=startAt `orElse` Just (d^.at.infimum)
+                    , actions=if x == d^.endRole then xs else (x \\\ (d^.endRole)) : xs
+                    })
+            finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
+                let start = fromMaybe (error "startAt field is empty!") startAt
+                _ <- addStep (Activity $ start ... d^.at.supremum) $ FStep function
+                return ()
+                -- mapM_ (relation . Vertical h) cads
+                -- mapM_ (relation . Vertical h) endpoints
+                -- mapM_ (relation . Vertical h) instructions
 
 
 
@@ -614,8 +617,8 @@ testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
     bankCheck
       = "\n      @(posedge clk);\n"
       ++ unlines [ "  " ++ checkBank addr v (maybe (error $ show ("bank" ++ show v ++ show cntx) ) show (get cntx v))
-                 | Step{ sDesc=FStep fb, .. } <- filter (isFB . sDesc) steps
-                 , let addr_v = outputStep pu fb
+                 | Step{ sDesc=FStep f, .. } <- filter isFB $ map descent steps
+                 , let addr_v = outputStep pu f
                  , isJust addr_v
                  , let Just (addr, v) = addr_v
                  ]
@@ -639,17 +642,17 @@ testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
 
 findAddress var pu@Fram{ frProcess=p@Process{..} }
-  | [ time ] <- variableSendAt var
-  , [ instr ] <- mapMaybe (extractInstruction pu >=> getAddr) $ whatsHappen (time^.infimum) p
-  = instr
-  | otherwise = error $ "Can't find instruction for effect of variable: " ++ show var
-  where
-    variableSendAt v = [ t | Step{ sTime=Activity t, sDesc=info } <- steps
+    | [ time ] <- variableSendAt var
+    , [ instr ] <- mapMaybe (extractInstruction pu >=> getAddr) $ whatsHappen (time^.infimum) p
+    = instr
+    | otherwise = error $ "Can't find instruction for effect of variable: " ++ show var
+    where
+        variableSendAt v = [ t | Step{ sTime=Activity t, sDesc=info } <- steps
                            , v `elem` f info
                            ]
-    f :: StepInfo (_io v x) -> S.Set v
-    f (EndpointRoleStep rule) = variables rule
-    f _                       = S.empty
+        f :: StepInfo (_io v x) t -> S.Set v
+        f (EndpointRoleStep rule) = variables rule
+        f _                       = S.empty
 
 
 softwareFile title pu = moduleName title pu ++ "." ++ title ++ ".dump"
