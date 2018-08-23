@@ -102,12 +102,11 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
 
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Process (Parcel v x) t) where
-    toJSON Process{ steps, nextTick } = object
+    toJSON Process{ steps, nextTick, relations } = object
         [ "steps" .= steps
         , "nextTick" .= nextTick
+        , "relations" .= relations
         ]
-        -- , relations :: [Relation] -- ^ Список отношений между шагами вычислительного процесса
-        -- , nextUid   :: ProcessUid -- ^ Следующий свободный идентификатор шага вычислительного процесса.
 
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Step (Parcel v x) t) where
@@ -123,6 +122,9 @@ instance ( ToJSON t, Time t
          ) => ToJSON (PlaceInTime t) where
     toJSON (Event t)    = toJSON [ fromEnum t, fromEnum t ]
     toJSON (Activity i) = toJSON [ fromEnum $ inf i, fromEnum $ sup i ]
+
+instance ToJSON Relation where 
+    toJSON (Vertical a b) = toJSON [ a, b ]
 
 instance ToJSON SpecialMetrics
 instance ToJSON GlobalMetrics

@@ -6,6 +6,13 @@ import { Chart } from 'react-google-charts'
 export class ProcessView extends Component {
   constructor (props) {
     super(props)
+    var relations = {}
+    for (var r in props.relations) {
+      var a = props.relations[r][0].toString()
+      var b = props.relations[r][1].toString()
+      if (!(a in relations)) relations[a] = []
+      relations[a].push(b)
+    }
     var steps = []
     var levels = {}
     var processUnits = {}
@@ -19,7 +26,8 @@ export class ProcessView extends Component {
       e[4] = null // End
       e[5] = step.sTime[1] != null ? (step.sTime[1] + 1) * 1000 : 1000000 // Duration
       e[6] = 100 // Percent Complete
-      e[7] = null // Dependencies
+      // e[7] = null // Dependencies
+      e[7] = e[0] in relations ? relations[e[0]].join() : null // Dependencies
       if (!(step.sLevel in levels)) levels[step.sLevel] = true
       if (!(step.sPU in processUnits)) processUnits[step.sPU] = true
       steps.push(e)
@@ -47,9 +55,7 @@ export class ProcessView extends Component {
   }
   render () {
     var steps = []
-    console.log(steps)
     for (var i = 0; i < this.state.steps.length; i++) {
-      console.log(this.state.steps_raw[i].sLevel, this.state.levels[this.state.steps_raw[i].sLevel], this.state.steps_raw[i].sPU, this.state.processUnits[this.state.steps_raw[i].sPU])
       if (this.state.levels[this.state.steps_raw[i].sLevel] && this.state.processUnits[this.state.steps_raw[i].sPU]) {
         steps.push(this.state.steps[i])
       }
@@ -66,7 +72,7 @@ export class ProcessView extends Component {
                 (k, i) => <div>
                   <input type='checkbox' id={k} name={k} key={k}
                     defaultChecked={this.state.levels[k]}
-                    onChange={() => { this.changeLevels(k) } }
+                    onChange={() => { this.changeLevels(k) }}
                   />
                   <label for={k}> {k} </label>
                 </div>

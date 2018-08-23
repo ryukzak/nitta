@@ -213,7 +213,10 @@ function StepView (props) {
       { (path.stepView === 'options')
         ? <StepOptionView path={path} app={app} stepDataOptions={app.state.stepDataOptions} />
         : (path.stepView === 'process')
-          ? <ProcessView steps={app.state.stepData.state.nitta.process.steps} />
+          ? <ProcessView
+            steps={app.state.stepData.state.nitta.process.steps}
+            relations={app.state.stepData.state.nitta.process.relations}
+          />
           : (path.stepView === 'info')
             ? <div>
               <pre>
