@@ -26,7 +26,7 @@ export class ProcessView extends Component {
       e[4] = new Date(step.sTime[1] != null ? (step.sTime[1] + 1) * 1000 : 1000000) // End
       e[5] = null // Duration
       e[6] = 100 // Percent Complete
-      e[7] = e[0] in relations ? relations[e[0]].join() : null // Dependencies
+      e[7] = e[0] in relations ? relations[e[0]] : null // Dependencies
       if (!(step.sLevel in levels)) levels[step.sLevel] = true
       if (!(step.sPU in processUnits)) processUnits[step.sPU] = true
       steps.push(e)
@@ -38,29 +38,45 @@ export class ProcessView extends Component {
       processUnits: processUnits
     }
   }
-  changeLevels (l) {
-    var levels = Object.assign({}, this.state.levels)
-    levels[l] = !levels[l]
-    this.setState({
-      levels: levels
-    })
+  changeFilter (filterName, k) {
+    var filter = Object.assign({}, this.state[filterName])
+    filter[k] = !filter[k]
+    var updState = {}
+    updState[filterName] = filter
+    this.setState(updState)
   }
-  changeProcessUnits (pu) {
-    var processUnits = Object.assign({}, this.state.processUnits)
-    processUnits[pu] = !processUnits[pu]
-    this.setState({
-      processUnits: processUnits
-    })
+  filterOnly (filterName, showOnly) {
+    var filter = {}
+    var keys = Object.keys(this.state[filterName])
+    for (var k in keys) {
+      filter[keys[k]] = false
+    }
+    // filter[showOnly] = true
+    // FIXME: not needed, because changeFilter will be fired automatically.
+    var updState = {}
+    updState[filterName] = filter
+    this.setState(updState)
   }
   render () {
     var steps = []
-    for (var i = 0; i < this.state.steps.length; i++) {
+    var stepKeys = {}
+    var i
+    for (i = 0; i < this.state.steps.length; i++) {
       if (this.state.levels[this.state.steps_raw[i].sLevel] && this.state.processUnits[this.state.steps_raw[i].sPU]) {
-        steps.push(this.state.steps[i])
+        var step = this.state.steps[i].map(e => { return e })
+        steps.push(step)
+        stepKeys[this.state.steps[i][0]] = true
       }
     }
-    if (steps.length === 0) return (<pre> Process is empty </pre>)
-
+    for (i in steps) {
+      var deps = steps[i][7]
+      if (deps == null) continue
+      var newDeps = []
+      for (var j in deps) {
+        if (deps[j] in stepKeys) newDeps.push(deps[j])
+      }
+      steps[i][7] = newDeps.join()
+    }
     return (
       <div>
         <div className='grid-x'>
@@ -70,10 +86,13 @@ export class ProcessView extends Component {
               Object.keys(this.state.levels).map(
                 (k, i) => <div key={'level: ' + k}>
                   <input type='checkbox' id={k} name={k}
-                    defaultChecked={this.state.levels[k]}
-                    onChange={() => { this.changeLevels(k) }}
+                    checked={this.state.levels[k]}
+                    onChange={() => { this.changeFilter('levels', k) }}
                   />
-                  <label htmlFor={k}> {k} </label>
+                  <label htmlFor={k}>
+                    {k}
+                    <a onClick={() => { this.filterOnly('levels', k) }}> only </a>
+                  </label>
                 </div>
               )}
           </div>
@@ -82,43 +101,49 @@ export class ProcessView extends Component {
             {Object.keys(this.state.processUnits).map(
               (k, i) => <div key={'processUnit: ' + k}>
                 <input type='checkbox' id={k} name={k}
-                  defaultChecked={this.state.processUnits[k]}
-                  onChange={() => { this.changeProcessUnits(k) }}
+                  checked={this.state.processUnits[k]}
+                  onChange={() => { this.changeFilter('processUnits', k) }}
                 />
-                <label htmlFor={k}> {k} </label>
+                <label htmlFor={k}>
+                  {k}
+                  <a onClick={() => { this.filterOnly('processUnits', k) }}> only </a>
+                </label>
               </div>
             )}
           </div>
         </div>
         <hr />
-        <Chart
-          chartType='Gantt'
-          columns={[
-            { 'id': 'Task ID', 'type': 'string' },
-            { 'id': 'Task Name', 'type': 'string' },
-            { 'id': 'Resource', 'type': 'string' },
-            { 'id': 'Start Date', 'type': 'date' },
-            { 'id': 'End Date', 'type': 'date' },
-            { 'id': 'Duration', 'type': 'number' },
-            { 'id': 'Percent Complete', 'type': 'number' },
-            { 'id': 'Dependencies', 'type': 'string' }
-          ]}
-          rows={steps}
-          width='100%'
-          height={(steps.length + 1) * 31 + 30}
-          options={{
-            gantt: {
-              trackHeight: 30,
-              barHeight: 10,
-              criticalPathEnabled: false,
-              barCornerRadius: 1,
-              arrow: {
-                length: 4,
-                radius: 5
+        { steps.length === 0
+          ? (<pre> Process is empty </pre>)
+          : <Chart
+            chartType='Gantt'
+            columns={[
+              { 'id': 'Task ID', 'type': 'string' },
+              { 'id': 'Task Name', 'type': 'string' },
+              { 'id': 'Resource', 'type': 'string' },
+              { 'id': 'Start Date', 'type': 'date' },
+              { 'id': 'End Date', 'type': 'date' },
+              { 'id': 'Duration', 'type': 'number' },
+              { 'id': 'Percent Complete', 'type': 'number' },
+              { 'id': 'Dependencies', 'type': 'string' }
+            ]}
+            rows={steps}
+            width='100%'
+            height={(steps.length + 1) * 31 + 30}
+            options={{
+              gantt: {
+                trackHeight: 30,
+                barHeight: 10,
+                criticalPathEnabled: false,
+                barCornerRadius: 1,
+                arrow: {
+                  length: 4,
+                  radius: 5
+                }
               }
-            }
-          }}
-        />
+            }}
+          />
+        }
       </div>
     )
   }
