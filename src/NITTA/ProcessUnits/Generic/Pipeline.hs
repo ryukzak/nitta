@@ -135,8 +135,8 @@ instance ( Var v, Time t
             d@EndpointD{ epdRole=Target v, epdAt }
         | Just( inputSt', outputStTail, sch ) <- targetDecision d D{ latency=pipeline, tick=nextTick, at=epdAt, var=v, inputSt }
         = pu
-            { puProcess=schedule pu $
-                scheduleEndpoint d sch
+            { puProcess=execSchedule pu $
+                void $ scheduleEndpoint d (sch >> return [])
             , pipeInput=inputSt'
             , pipeOutput=pipeOutput ++ maybeToList outputStTail
             }
@@ -144,7 +144,7 @@ instance ( Var v, Time t
     decision _proxy pu@Pipeline{ pipeOutput=po@PipelineOut{ outputSt } : pos } d@EndpointD{}
         | Just ( outputSt', sch ) <- sourceDecision d outputSt
         = pu
-            { puProcess=schedule pu sch
+            { puProcess=execSchedule pu sch
             , pipeOutput=case outputSt' of
                 Just st' -> po{ outputSt=st' } : pos
                 Nothing  -> pos

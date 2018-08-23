@@ -12,6 +12,7 @@ module NITTA.ProcessUnits.Divisor
     , divisor
     ) where
 
+import           Control.Monad                       (void)
 import           Data.Default
 import           Data.List                           (find, partition)
 import           Data.Set                            (Set, difference,
@@ -99,6 +100,7 @@ instance ( Time t, Var v ) => PipelinePU2 (DivisorSt v) v t where
             scheduleInput arg = do
                 updateTick $ sup at + 1
                 scheduleInstruction (inf at) (sup at) $ Load arg
+                return ()
     targetDecision _ _ = Nothing
 
     sourceOptions begin end maxDuration (DivisorOut outs)
@@ -118,7 +120,7 @@ instance ( Time t, Var v ) => PipelinePU2 (DivisorSt v) v t where
                     then os
                     else (waitingVs', sel) : os
         = Just ( if null os' then Nothing else Just $ DivisorOut os'
-            , sch
+            , void sch
             )
     sourceDecision _ _ = Nothing
 

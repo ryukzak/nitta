@@ -224,11 +224,11 @@ instance ( Title title, Time t, Var v, Typeable x
         let subSteps = steps $ process pu'
         uids' <- foldM (\dict Step{..} -> do
                            k <- addStep sTime $ NestedStep puTitle sDesc
-                           when (isFB sDesc) $ do
-                             let FStep fb = sDesc
-                             mapM_ (\v -> when (v `M.member` transportKey)
-                                          $ relation $ Vertical (transportKey M.! v) k
-                                   ) $ variables fb
+                          --  when (isFB sDesc) $ do
+                          --    let FStep fb = sDesc
+                          --    mapM_ (\v -> when (v `M.member` transportKey)
+                          --                 $ relation $ Vertical (transportKey M.! v) k
+                          --          ) $ variables fb
                            return $ M.insert sKey k dict
                        ) M.empty subSteps
         let subRelations = relations $ process pu'

@@ -121,7 +121,7 @@ module NITTA.ProcessUnits.Multiplier
     , PUPorts(..)
     ) where
 
-import           Control.Monad
+import           Control.Monad                 (when)
 import           Data.Default
 import           Data.List                     (find, partition, (\\))
 import           Data.Set                      (elems, fromList, member)
@@ -224,28 +224,33 @@ data Multiplier v x t
           -- Назначенные функции могут выполняться в произвольном порядке. Явное хранение информации
           -- о выполненных функциях не осуществляется, так как она есть в описание вычислительного
           -- процесса 'process_'.
-          remain      :: [F (Parcel v x)]
+          remain               :: [F (Parcel v x)]
           -- |Список переменных, которые необходимо загрузить в вычислительный блок для вычисления
           -- текущей функции.
-        , targets     :: [v]
+        , targets              :: [v]
           -- |Список переменных, которые необходимо выгрузить из вычислительного блока для
           -- вычисления текущей функции. Порядок выгрузки - произвольный. Важно отметить, что все
           -- выгружаемые переменные соответствуют одному значению - результату умножения.
-        , sources     :: [v]
+        , sources              :: [v]
           -- |Фактический процесс умножения будет завершён в указанный момент времени и его
           -- результат будет доступен для выгрузки. Значение устанавливается сразу после загрузки
           -- всех аргументов.
-        , doneAt      :: Maybe t
-        , currentWork :: Maybe (t, F (Parcel v x))
+        , doneAt               :: Maybe t
+        , currentWork          :: Maybe (t, F (Parcel v x))
+          -- |В процессе планирования вычисления функции необходимо определить неопределённое
+          -- количество загрузок / выгрузок данных в / из вычислительного блока, что бы затем
+          -- установить вертикальную взаимосвязь между информацией о выполняемой функции и этими
+          -- пересылками.
+        , currentWorkEndpoints :: [ ProcessUid ]
           -- |Описание вычислительного процесса, спланированного для данного вычислительного блока
           -- 'NITTA.Types.Base.Process'.
-        , process_    :: Process (Parcel v x) t
-        , tick        :: t
+        , process_             :: Process (Parcel v x) t
+        , tick                 :: t
           -- |В реализации данного вычислительного блока используется IP ядро поставляемое вместе с
           -- Altera Quartus. Это не позволяет осуществлять симуляцию при помощи Icarus Verilog.
           -- Чтобы обойти данное ограничение была создана заглушка, подключаемая вместо IP ядра если
           -- установлен данный флаг.
-        , isMocked    :: Bool
+        , isMocked             :: Bool
         }
     deriving ( Show )
 
@@ -253,8 +258,17 @@ data Multiplier v x t
 -- |Конструктор модели умножителя вычислительного блока. Аргумент определяет внутреннюю оранизацию
 -- вычислительного блока: использование IP ядра умножителя (False) или заглушки (True). Подробнее
 -- см. функцию hardware в классе 'TargetSystemComponent'.
-multiplier mock = Multiplier [] [] [] Nothing Nothing def def mock
-
+multiplier mock = Multiplier
+    { remain=[]
+    , targets=[]
+    , sources=[]
+    , doneAt=Nothing
+    , currentWork=Nothing
+    , currentWorkEndpoints=[]
+    , process_=def
+    , tick=def
+    , isMocked=mock
+    }
 
 
 -- |Привязку функций к вычислительным блокам осуществляет данный класс типов. Он позволяет
@@ -353,19 +367,23 @@ instance ( Var v, Time t, Typeable x
     --    блока. Можно выделить следующие варианты решений:
     --
     --    1. Если модель ожидает, что в неё загрузят переменную, тогда:
-    decision _proxy pu@Multiplier{ targets=vs } d@EndpointD{ epdRole=Target v, epdAt }
+    decision _proxy pu@Multiplier{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
         -- Из списка загружаемых значений извлекается трубуемая переменная, а остаток - сохраняется
         -- для следующих шагов.
         | ([_], xs) <- partition (== v) vs
         -- Переменная @sel@ используется для того, что бы зафиксировать очерёдность загрузки
         -- переменных в аппаратный блок, что необходимо из-за особенностей реализации.
         , let sel = if null xs then B else A
-        = pu
-            { -- Осуществляется планирование вычислительного процесса.
-              process_=schedule pu $ do
+        -- Осуществляется планирование вычислительного процесса.
+        , let (newEndpoints, process_') = runSchedule pu $
                 scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
+        = pu
+            { process_=process_'
               -- Сохраняется остаток работы на следующий цикл.
             , targets=xs
+              -- Сохраняем информацию тех событиях процесса, которые описываются отправку /
+              -- получение данных для текущего функционального блока.
+            , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
               -- Если загружены все необходимые аргументы (@null xs@), то сохраняется момент
               -- времени, когда будет получен результат.
             , doneAt=if null xs
@@ -375,21 +393,29 @@ instance ( Var v, Time t, Typeable x
             , tick=sup epdAt
             }
     --    2. Если модель ожидает, что из неё выгрузят переменные.
-    decision _proxy pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f) } d@EndpointD{ epdRole=Source v, epdAt }
+    decision _proxy pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointD{ epdRole=Source v, epdAt }
         | not $ null sources
         , let sources' = sources \\ elems v
         , sources' /= sources
+        -- Осуществляется планирование вычислительного процесса.
+        , let (newEndpoints, process_') = runSchedule pu $ do
+                endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Out
+                when (null sources') $ do
+                    high <- scheduleFunction a (sup epdAt) f
+                    let low = endpoints ++ currentWorkEndpoints
+                    -- Устанавливаем вертикальную взаимосвязь между функциональным блоком и
+                    -- связанными с ним пересылками данных.
+                    establishVerticalRelations high low
+                return endpoints
         = pu
-            { -- Осуществляется планирование вычислительного процесса.
-              process_=schedule pu $ do
-                when (null sources') $ scheduleFunction a (sup epdAt) f
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Out
+            { process_=process_'
               -- В случае если не все переменные были запрошены - сохраняются оставшиеся.
             , sources=sources'
-              -- Если вся работа выполнена, то сбрасывается время готовности результата, как и
-              -- текущая работа.
+              -- Если вся работа выполнена, то сбрасывается время готовности результата, текущая
+              -- работа и перечисление передач, выполненных в рамках текущей функции.
             , doneAt=if null sources' then Nothing else doneAt
             , currentWork=if null sources' then Nothing else Just (a, f)
+            , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
               -- Продвигается вперёд модельное время.
             , tick=sup epdAt
             }

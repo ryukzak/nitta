@@ -381,7 +381,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                 e <- addStep (Activity $ d^.at) $ EndpointRoleStep $ d^.endRole
                 i <- addInstr pu instrTi instr
                 -- when (tick0 < instrTi^.infimum) $ void $ addInstr pu (tick0 ... instrTi^.infimum - 1) Nop
-                mapM_ (relation . Vertical e) instrs
+                -- mapM_ (relation . Vertical e) instrs
                 setProcessTime $ d^.at.supremum + 1
                 return (e, [i])
           in (p', job{ endpoints=ep : endpoints
@@ -392,9 +392,10 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
       finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
         let start = fromMaybe (error "startAt field is empty!") startAt
         h <- addStep (Activity $ start ... d^.at.supremum) $ FStep function
-        mapM_ (relation . Vertical h) cads
-        mapM_ (relation . Vertical h) endpoints
-        mapM_ (relation . Vertical h) instructions
+        return ()
+        -- mapM_ (relation . Vertical h) cads
+        -- mapM_ (relation . Vertical h) endpoints
+        -- mapM_ (relation . Vertical h) instructions
 
 
 
