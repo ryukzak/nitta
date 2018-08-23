@@ -235,11 +235,11 @@ function StepOptionView (props) {
   if (opts.length === 0) return <pre> Process is over. Options not allow. </pre>
   return (
     <div>
-      <div class='grid-x'>
-        <div class='cell small-4'>
+      <div className='grid-x'>
+        <div className='cell small-4'>
           <pre>{ JSON.stringify(opts[0][1], null, 2) }</pre>
         </div>
-        <div class='cell small-8'>
+        <div className='cell small-8'>
           <LineChart data={[ opts.map((e, index) => { return { x: index, y: e[0] } }) ]}
             width={750} height={250}
             axes />

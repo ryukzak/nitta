@@ -8,8 +8,8 @@ export class ProcessView extends Component {
     super(props)
     var relations = {}
     for (var r in props.relations) {
-      var a = props.relations[r][0].toString()
-      var b = props.relations[r][1].toString()
+      var a = props.relations[r][1].toString()
+      var b = props.relations[r][0].toString()
       if (!(a in relations)) relations[a] = []
       relations[a].push(b)
     }
@@ -23,10 +23,9 @@ export class ProcessView extends Component {
       e[1] = step.sDesc // Task Name
       e[2] = step.sPU // Resource ID (optional)
       e[3] = new Date(step.sTime[0] * 1000) // Start
-      e[4] = null // End
-      e[5] = step.sTime[1] != null ? (step.sTime[1] + 1) * 1000 : 1000000 // Duration
+      e[4] = new Date(step.sTime[1] != null ? (step.sTime[1] + 1) * 1000 : 1000000) // End
+      e[5] = null // Duration
       e[6] = 100 // Percent Complete
-      // e[7] = null // Dependencies
       e[7] = e[0] in relations ? relations[e[0]].join() : null // Dependencies
       if (!(step.sLevel in levels)) levels[step.sLevel] = true
       if (!(step.sPU in processUnits)) processUnits[step.sPU] = true
@@ -64,29 +63,29 @@ export class ProcessView extends Component {
 
     return (
       <div>
-        <div class='grid-x'>
-          <div class='cell small-6'>
+        <div className='grid-x'>
+          <div className='cell small-6'>
             <h4>Levels</h4>
             {
               Object.keys(this.state.levels).map(
-                (k, i) => <div>
-                  <input type='checkbox' id={k} name={k} key={k}
+                (k, i) => <div key={'level: ' + k}>
+                  <input type='checkbox' id={k} name={k}
                     defaultChecked={this.state.levels[k]}
                     onChange={() => { this.changeLevels(k) }}
                   />
-                  <label for={k}> {k} </label>
+                  <label htmlFor={k}> {k} </label>
                 </div>
               )}
           </div>
-          <div class='cell small-6'>
+          <div className='cell small-6'>
             <h4>Process units</h4>
             {Object.keys(this.state.processUnits).map(
-              (k, i) => <div>
-                <input type='checkbox' id={k} name={k} key={k}
+              (k, i) => <div key={'processUnit: ' + k}>
+                <input type='checkbox' id={k} name={k}
                   defaultChecked={this.state.processUnits[k]}
                   onChange={() => { this.changeProcessUnits(k) }}
                 />
-                <label for={k}> {k} </label>
+                <label htmlFor={k}> {k} </label>
               </div>
             )}
           </div>
@@ -106,11 +105,17 @@ export class ProcessView extends Component {
           ]}
           rows={steps}
           width='100%'
-          height={(steps.length + 1) * 21 + 30}
+          height={(steps.length + 1) * 31 + 30}
           options={{
             gantt: {
-              trackHeight: 20,
-              barHeight: 10
+              trackHeight: 30,
+              barHeight: 10,
+              criticalPathEnabled: false,
+              barCornerRadius: 1,
+              arrow: {
+                length: 4,
+                radius: 5
+              }
             }
           }}
         />
