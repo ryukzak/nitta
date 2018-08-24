@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Demo
                      , NITTA.API
+                     , NITTA.API.REST
                      , NITTA.BusNetwork
                      , NITTA.Compiler
                      , NITTA.DataFlow
