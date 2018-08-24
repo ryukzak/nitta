@@ -16,6 +16,7 @@ export class ProcessView extends Component {
     var steps = []
     var levels = {}
     var processUnits = {}
+    var processUnitsAndLevels = {}
     for (var k in props.steps) {
       var step = props.steps[k]
       var e = [null, null, null, null, null, null, null, null]
@@ -29,13 +30,16 @@ export class ProcessView extends Component {
       e[7] = e[0] in relations ? relations[e[0]] : null // Dependencies
       if (!(step.sLevel in levels)) levels[step.sLevel] = true
       if (!(step.sPU in processUnits)) processUnits[step.sPU] = true
+      var pul = step.sPU + '.' + step.sLevel
+      if (!(pul in processUnitsAndLevels)) processUnitsAndLevels[pul] = true
       steps.push(e)
     }
     this.state = {
       steps: steps,
       steps_raw: props.steps,
       levels: levels,
-      processUnits: processUnits
+      processUnits: processUnits,
+      processUnitsAndLevels: processUnitsAndLevels
     }
   }
   changeFilter (filterName, k) {
@@ -57,12 +61,19 @@ export class ProcessView extends Component {
     updState[filterName] = filter
     this.setState(updState)
   }
+  processUnitAndLevel (stepRaw) {
+    return stepRaw.sPU + '.' + stepRaw.sLevel
+  }
   render () {
     var steps = []
     var stepKeys = {}
     var i
     for (i = 0; i < this.state.steps.length; i++) {
-      if (this.state.levels[this.state.steps_raw[i].sLevel] && this.state.processUnits[this.state.steps_raw[i].sPU]) {
+      var stepRaw = this.state.steps_raw[i]
+      if (this.state.levels[stepRaw.sLevel] &&
+        this.state.processUnits[stepRaw.sPU] &&
+        this.state.processUnitsAndLevels[this.processUnitAndLevel(stepRaw)]
+      ) {
         var step = this.state.steps[i].map(e => { return e })
         steps.push(step)
         stepKeys[this.state.steps[i][0]] = true
@@ -79,8 +90,9 @@ export class ProcessView extends Component {
     }
     return (
       <div>
+        <h2>Filters:</h2>
         <div className='grid-x'>
-          <div className='cell small-6'>
+          <div className='cell small-4'>
             <h4>Levels</h4>
             {
               Object.keys(this.state.levels).map(
@@ -96,7 +108,7 @@ export class ProcessView extends Component {
                 </div>
               )}
           </div>
-          <div className='cell small-6'>
+          <div className='cell small-4'>
             <h4>Process units</h4>
             {Object.keys(this.state.processUnits).map(
               (k, i) => <div key={'processUnit: ' + k}>
@@ -110,6 +122,22 @@ export class ProcessView extends Component {
                 </label>
               </div>
             )}
+          </div>
+          <div className='cell small-4'>
+            <h4>ProcessUnits and Levels</h4>
+            {
+              Object.keys(this.state.processUnitsAndLevels).map(
+                (k, i) => <div key={'processUnitAndLevel: ' + k}>
+                  <input type='checkbox' id={k} name={k}
+                    checked={this.state.processUnitsAndLevels[k]}
+                    onChange={() => { this.changeFilter('processUnitsAndLevels', k) }}
+                  />
+                  <label htmlFor={k}>
+                    {k}
+                    <a onClick={() => { this.filterOnly('processUnitsAndLevels', k) }}> only </a>
+                  </label>
+                </div>
+              )}
           </div>
         </div>
         <hr />
