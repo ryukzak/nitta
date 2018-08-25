@@ -4,9 +4,11 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE QuasiQuotes          #-}
+{-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.API.REST
@@ -25,21 +27,22 @@ module NITTA.API.REST
     ) where
 
 import           Control.Concurrent.STM
-import           Control.Monad          (when)
+import           Control.Monad                 (when)
 import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Default
-import           Data.Map               (Map, fromList)
+import           Data.Map                      (Map, fromList)
 import           Data.Maybe
 import           Debug.Trace
 import           GHC.Generics
-import           ListT                  (toList)
+import           ListT                         (toList)
 import           NITTA.Compiler
 import           NITTA.DataFlow
 import           NITTA.Types
-import           NITTA.Utils.JSON       ()
+import           NITTA.Utils.JSON              ()
 import           Servant
-import qualified STMContainers.Map      as M
+import qualified STMContainers.Map             as M
+import           Text.InterpolatedString.Perl6 (qq)
 
 
 type T = TaggedTime String Int
@@ -91,8 +94,7 @@ synthesis initialStep = Synthesis
 
 type SynthesisAPI
     =    "synthesis" :> Get '[JSON] (Map String SYN)
-    -- FIXME: rename sId to sid
-    :<|> "synthesis" :> Capture "sId" String :> WithSynthesis
+    :<|> "synthesis" :> Capture "sid" String :> WithSynthesis
 
 synthesisServer st
     =    allSynthesis st
@@ -104,25 +106,22 @@ allSynthesis st = fmap fromList ( liftSTM $ toList $ M.stream st )
 
 type WithSynthesis
     =    Get '[JSON] SYN
-    -- FIXME: rename parentId to parentSid, stepId to six
-    :<|> QueryParam' '[Required] "parentId" String :>
-            QueryParam' '[Required] "stepId" Int :>
+    :<|> QueryParam' '[Required] "parentSid" String :>
+            QueryParam' '[Required] "six" Int :>
             PostNoContent '[JSON] ()
     :<|> StepAPI
 
 withSynthesis st sid
     =    getSynthesis st sid
-    :<|> ( \ parentSid six -> forkSynthesis st sid parentSid six )
+    :<|> ( \ parentSid six -> liftSTM $ forkSynthesis st sid parentSid six )
     :<|> stepServer st sid
 
 
 
 type StepAPI
     =    "sSteps" :> Get '[JSON] [CSt]
-    -- FIXME: rename, toEnd to oneStep
-    :<|> "sSteps" :> QueryParam' '[Required] "toEnd" Bool :> Post '[JSON] CSt -- compilerStep
-    -- FIXME: rename, stepId to six
-    :<|> "sSteps" :> Capture "stepId" Int :> WithStep
+    :<|> "sSteps" :> QueryParam' '[Required] "oneStep" Bool :> Post '[JSON] SynthesisUid -- compilerStep
+    :<|> "sSteps" :> Capture "six" Int :> WithStep
 
 stepServer st sid
     =    ( sSteps <$> getSynthesis st sid )
@@ -137,14 +136,14 @@ type WithStep
     -- и флаги не влияют на имя функции в автоматически генерируемом API
     -- для JS, что приводит к утере одного из методов. Что бы решить эту
     -- проблему - параметр был явно указан в path.
-    :<|> QueryParam' '[Required] "manual" Int :> Post '[JSON] CSt
+    :<|> QueryParam' '[Required] "manual" Int :> Post '[JSON] SynthesisUid -- manualStep
     :<|> "config" :> Get '[JSON] NaiveOpt
     :<|> "decisions" :> Get '[JSON] [Decision (CompilerDT String String String T)]
     :<|> "options" :> Get '[JSON] [ RESTOption ]
 
 withStep st sid six
     =    getStep st sid six
-    :<|> ( liftSTM . manualPostStep st sid six )
+    :<|> ( \did -> liftSTM $ manualStep st sid six did )
     :<|> ( config <$> getStep st sid six )
     :<|> ( map option2decision . options compiler <$> getStep st sid six )
     :<|> ( optionsWithMetrics <$> getStep st sid six )
@@ -175,7 +174,7 @@ synthesisMustNotExist st sid = do
 
 -- *Synthesis generation
 
-forkSynthesis st sid parentSid six = liftSTM $ do
+forkSynthesis st sid parentSid six = do
     synthesisMustNotExist st sid
     parent@Synthesis{ sChilds, sSteps } <- getSynthesis' st parentSid
     M.insert parent{ sChilds=(sid, six) : sChilds } parentSid st
@@ -183,11 +182,10 @@ forkSynthesis st sid parentSid six = liftSTM $ do
         Synthesis
             { sParent=Just ( parentSid, six )
             , sChilds=[]
-            , sSteps=reverse $ take (six + 1) $ reverse sSteps
+            , sSteps=drop (length sSteps - six - 1) sSteps
             }
         sid
         st
-
 
 compilerStep st sid oneStep = do
     s@Synthesis{ sSteps } <- getSynthesis' st sid
@@ -198,7 +196,7 @@ compilerStep st sid oneStep = do
         False -> return $ mkAllSteps sSteps
         _ -> throwSTM err409{ errBody="Synthesis is over." }
     M.insert s{ sSteps=sSteps' } sid st
-    return $ head sSteps'
+    return (sid, length sSteps' - 1)
     where
         mkAllSteps steps@(s:_)
             | Just s' <- naive' s = mkAllSteps (s':steps)
@@ -206,15 +204,25 @@ compilerStep st sid oneStep = do
         mkAllSteps _ = error "Empty CompilerState."
 
 
-manualPostStep st sid six decisionId = do
-    syn@Synthesis{ sSteps=sSteps@(step:_) } <- getSynthesis' st sid
-    unless (length sSteps == six) $ throwSTM err409{ errBody="Only one manual step at a time." }
-    let d = ((!! decisionId) . map option2decision . options compiler) step
-    let step' = decision compiler step d
-    let syn' = syn{ sSteps=step' : sSteps }
-    M.insert syn' sid st
-    return step'
-
+manualStep st sid six dix = do
+    syn@Synthesis{ sSteps } <- getSynthesis' st sid
+    let a = length sSteps
+    let b = six
+    let c = a `compare` b
+    case trace [qq|$a $c $b|] c of
+        LT -> throwSTM err409{ errBody="Step with that index not exists." }
+        EQ -> do -- make step
+            let step = head sSteps
+            let d = ((!! dix) . map option2decision . options compiler) step
+            let step' = decision compiler step d
+            let syn' = syn{ sSteps=step' : sSteps }
+            M.insert syn' sid st
+            return (sid, six + 1)
+        GT -> do -- fork and make step
+            let six' = six - 1
+            let sid' = [qq|fork $sid[$six'] decision: $dix|]
+            forkSynthesis st sid' sid six'
+            manualStep st sid' six dix
 
 
 -- *Internal

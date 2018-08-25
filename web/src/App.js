@@ -6,6 +6,20 @@ import 'react-table/react-table.css'
 import { LineChart } from 'react-easy-chart'
 import { ProcessView } from './process-view.js'
 
+var hapi = {}
+hapi.forkSynthesis = api.postSynthesisBySid
+hapi.manualDecision = api.postSynthesisBySidSStepsBySix
+hapi.getStep = api.getSynthesisBySidSStepsBySix
+hapi.getStepOption = api.getSynthesisBySidSStepsBySixOptions
+hapi.compilerStep = api.postSynthesisBySidSSteps
+hapi.getSynthesis = function (sid) {
+  if (sid === undefined) {
+    return api.getSynthesis()
+  } else {
+    return api.getSynthesisBySid(sid)
+  }
+}
+
 class App extends Component {
   constructor () {
     super()
@@ -23,7 +37,7 @@ class App extends Component {
   }
 
   getAllSynthesis () {
-    api.getSynthesis()
+    hapi.getSynthesis()
       .then(response => this.setState({
         path: this.root(),
         synthesisList: Object.keys(response.data),
@@ -35,7 +49,7 @@ class App extends Component {
 
   getSynthesis (sId) {
     // TODO: Смена синтеза без смены шина. Необходимо для простоты сравнения вариантов винтеза.
-    api.getSynthesisBySId(sId)
+    hapi.getSynthesis(sId)
       .then(response => {
         this.setState({
           path: this.root(sId, 'info'),
@@ -45,8 +59,18 @@ class App extends Component {
       .catch(err => console.log(err))
   }
 
+  forkSynthesis (path, props) {
+    var sId = path.sId + '.' + path.stepId
+    while (props.app.state.synthesisList.indexOf(sId) >= 0) {
+      sId += "'"
+    }
+    hapi.forkSynthesis(sId, path.sId, path.stepId)
+    props.app.getAllSynthesis()
+    props.app.getSynthesis(sId)
+  }
+
   getStep (sId, stepId) {
-    api.getSynthesisBySIdStepsByStepId(sId, stepId)
+    hapi.getStep(sId, stepId)
       .then(response => {
         this.setState({
           path: this.root(sId, 'step', stepId),
@@ -58,7 +82,7 @@ class App extends Component {
   }
 
   getStepOption (sId, stepId) {
-    api.getSynthesisBySIdStepsByStepIdOptions(sId, stepId)
+    hapi.getStepOption(sId, stepId)
       .then(response => this.setState({
         path: this.root(sId, 'step', stepId, 'options'),
         stepDataOptions: response.data
@@ -122,17 +146,17 @@ function View (props) {
         ? <div>
           <div className='tiny button-group'>
             <a className='button primary' onClick={() => props.app.setPath(path.sId, 'info')}>Info</a>
-            { sData.steps.map((st, i) =>
+            { sData.sSteps.map((st, i) =>
               <LinkButton key={i} sname={i}
                 onClick={() => { props.app.getStep(path.sId, i) }}
               />
             )}
             <a className='button primary' onClick={
               () => {
-                api.postSynthesisBySIdSteps(path.sId, true)
+                hapi.compilerStep(path.sId, false)
                   .then(response => {
-                    props.app.getSynthesis(path.sId)
-                    props.app.getStep(path.sId, 0)
+                    props.app.getSynthesis(response.data[0])
+                    props.app.getStep(response.data[0], response.data[1])
                   })
                   .catch(err => alert(err))
               }
@@ -157,14 +181,14 @@ function SynthesisInfo (props) {
   return (
     <dl>
       <dt>Parent:</dt>
-      <dd> { sData.parent
-        ? (<LinkButton sname={sData.parent[0]} onClick={() => app.getSynthesis(sData.parent[0])} />)
+      <dd> { sData.sParent
+        ? (<LinkButton sname={sData.sParent[0]} onClick={() => app.getSynthesis(sData.sParent[0])} />)
         : (<div> - </div>) }
       </dd>
       <dt>Childs:</dt>
       <dd>
         <div className='tiny button-group'>
-          { sData.childs.map((k, i) => <LinkButton key={i} sname={k[0]} onClick={() => app.getSynthesis(k[0])} />) }
+          { sData.sChilds.map((k, i) => <LinkButton key={i} sname={k[0]} onClick={() => app.getSynthesis(k[0])} />) }
         </div>
       </dd>
       <dt>Config (may vary from step to step):</dt>
@@ -188,22 +212,13 @@ function StepView (props) {
           () => app.setPath(path.sId, 'step', path.stepId, 'info')} />
         <LinkButton sname='process' onClick={
           () => app.setPath(path.sId, 'step', path.stepId, 'process')} />
-        <LinkButton sname='fork' onClick={
-          () => {
-            var sId = path.sId + '.' + path.stepId
-            while (props.app.state.synthesisList.indexOf(sId) >= 0) {
-              sId += "'"
-            }
-            api.postSynthesisBySId(sId, path.sId, path.stepId)
-            props.app.getAllSynthesis()
-            props.app.getSynthesis(sId)
-          }} />
+        <LinkButton sname='fork' onClick={() => { this.forkSynthesis(path, props) }} />
         <LinkButton sname='mk_decision' onClick={
           () => {
-            api.postSynthesisBySIdSteps(path.sId, false)
+            hapi.compilerStep(path.sId, true)
               .then(response => {
-                props.app.getSynthesis(path.sId)
-                props.app.getStep(path.sId, path.stepId + 1)
+                props.app.getSynthesis(response.data[0])
+                props.app.getStep(response.data[0], response.data[1])
               })
               .catch(err => alert(err))
           }} />
@@ -255,8 +270,9 @@ function StepOptionView (props) {
               Cell: row =>
                 <a onClick={
                   () => {
-                    api.postSynthesisBySIdStepsByStepId(path.sId, path.stepId + 1, row.index)
+                    hapi.manualDecision(path.sId, path.stepId + 1, row.index)
                       .then(response => {
+                        // FIXME: Не обновляется список синтезов.
                         props.app.getSynthesis(path.sId)
                         props.app.getStep(path.sId, path.stepId + 1)
                       })
