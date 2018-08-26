@@ -16,7 +16,7 @@ export const hapi = {
     }
   },
   getStep2: (sRoot, six) => api.getSynthesisByRsidByRsixSStepsBySix(sRoot.sid, sRoot.six, six),
-  forkSynthesis: (parent, child) => api.postSynthesisByRsidByRsix(parent.sid, parent.six, child.sid, child.six),
+  forkSynthesis: (parent, childSix) => api.postSynthesisByRsidByRsix(parent.sid, parent.six, childSix),
   compilerStep: (sRoot, oneStep) => api.postSynthesisByRsidByRsixSSteps(sRoot.sid, sRoot.six, oneStep)
 
   // manualDecision: api.postSynthesisBySidSStepsBySix,

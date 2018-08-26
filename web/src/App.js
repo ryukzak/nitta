@@ -18,7 +18,7 @@ class App extends Component {
   }
 
   selectSynthesis (sRoot) {
-    console.log('App:selectSynthesis(', sRoot, ')')
+    console.debug('App:selectSynthesis(', sRoot, ')')
     if (sRoot) {
       hapi.getSynthesis(sRoot)
         .then(response => {
@@ -40,7 +40,7 @@ class App extends Component {
             { this.state.currentSynthesis !== null && (<li> {this.state.currentSynthesis.sid}.{this.state.currentSynthesis.six} </li>) }
           </ul>
         </nav>
-        <SynthesisGraph propagateSRoot={(sRoot) => this.selectSynthesis(sRoot)} refreshTrigger={this.state.refreshSynthesisGraph} />
+        <SynthesisGraph propagateSRoot={sRoot => this.selectSynthesis(sRoot)} refreshTrigger={this.state.refreshSynthesisGraph} />
         <SynthesisView sRoot={this.state.currentSynthesis} propagateSRoot={(sRoot) => this.selectSynthesis(sRoot)} />
       </div>
     )
@@ -60,6 +60,7 @@ class SynthesisView extends Component {
   }
 
   handleSynthesisChange (sRoot, view) {
+    console.debug('SynthesisView:handleSynthesisChange(', sRoot, view, ')')
     if (sRoot) {
       hapi.getSynthesis(sRoot)
         .then(response => {
@@ -119,15 +120,13 @@ class SynthesisView extends Component {
           />
         }
         { this.state.view === 'step' &&
-          <StepView sRoot={this.state.sRoot} six={this.state.six} propagateSRoot={(sRoot) => this.propagateSRoot(sRoot)} />
+          <StepView sRoot={this.state.sRoot} six={this.state.six} propagateSRoot={sRoot => this.propagateSRoot(sRoot)} />
           // <pre>{JSON.stringify(this.state.step, null, 2) }</pre>
         }
       </div>
     )
   }
 }
-
-var forkUid = {}
 
 class StepView extends Component {
   constructor (props) {
@@ -147,7 +146,7 @@ class StepView extends Component {
   }
 
   handleSixChange (sRoot, six) {
-    console.log(2, sRoot, six)
+    console.debug('StepView:handleSixChange(', sRoot, six, ')')
     if (sRoot !== null && six !== null && sRoot !== undefined && six !== undefined) {
       hapi.getStep2(sRoot, six)
         .then(response => {
@@ -162,17 +161,14 @@ class StepView extends Component {
   }
 
   forkSynthesis (sRoot, six) {
-    console.log(forkUid)
-    var newSid = showSRoot(sRoot, six)
-    if (!(newSid in forkUid)) {
-      forkUid[newSid] = -1
+    if (sRoot.six > six) {
+      alert('if six is from previous synthesis, fork must be start early.')
+      return
     }
-    forkUid[newSid] += 1
-    newSid += '.' + forkUid[newSid]
-    var newSRoot = { sid: newSid, six: six }
-    hapi.forkSynthesis(sRoot, newSRoot)
+    // FIXME: if six is from previous synthesis, fork must be start early.
+    hapi.forkSynthesis(sRoot, six)
       .then(response => {
-        this.propagateSRoot(newSRoot)
+        this.propagateSRoot(response.data)
       })
       .catch(err => console.log(err))
   }

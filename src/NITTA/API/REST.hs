@@ -150,14 +150,12 @@ allSynthesis st = fromList . map (\(k, v) -> (k, view v)) <$> ( liftSTM $ toList
 
 type WithSynthesis
     =    Get '[JSON] SYN
-    :<|> QueryParam' '[Required] "childSid" Sid :>
-            QueryParam' '[Required] "childSix" Six :>
-            PostNoContent '[JSON] ()
+    :<|> QueryParam' '[Required] "childSix" Six :> Post '[JSON] SRoot
     :<|> StepAPI
 
 withSynthesis st sRoot
     =    getSynthesis st sRoot
-    :<|> ( \childSid childSix -> liftSTM $ forkSynthesis st sRoot SRoot{ sid=childSid, six=childSix } )
+    :<|> ( \childSix -> liftSTM $ forkSynthesis st sRoot childSix )
     :<|> stepServer st sRoot
 
 
@@ -218,19 +216,29 @@ synthesisMustNotExist st uid = do
 
 -- *Synthesis generation
 
-forkSynthesis st parentUid@SRoot{ six } childUid = do
-    synthesisMustNotExist st childUid
+forkSynthesis st parentUid@SRoot{ sid, six } childSix = do
+    childUid <- genChildUid st parentUid childSix
     parent@Synthesis{ sChilds, sSteps } <- getSynthesis' st parentUid
     M.insert parent{ sChilds=childUid : sChilds } parentUid st
     M.insert
         Synthesis
             { sParent=Just parentUid
             , sChilds=[]
-            , sSteps=drop (length sSteps - six - 1) sSteps
+            , sSteps=drop (length sSteps - childSix - 1) sSteps
             }
         childUid
         st
+    return $ trace (show childUid) childUid
 
+genChildUid st root@SRoot{ sid, six } childSix = inner (0 :: Int)
+    where
+        inner acc = do
+            let child = SRoot{ sid=[qq|$sid[$six:$childSix].$acc|], six=childSix }
+            syn <- M.lookup child st
+            case syn of
+                Just _ -> inner (acc + 1)
+                Nothing -> return child
+    
 compilerStep st sRoot oneStep = do
     s@Synthesis{ sSteps } <- getSynthesis' st sRoot
     sSteps' <- case oneStep of

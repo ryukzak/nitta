@@ -9,39 +9,15 @@ export class SynthesisGraph extends Component {
     super(props)
     this.propagateSRoot = props.propagateSRoot
 
-    var myTreeData = [
-      {
-        name: 'Top Level',
-        attributes: {
-          keyC: 'val C'
-        },
-        children: [
-          {
-            name: 'Level 2: A',
-            attributes: {
-              keyC: 'val C'
-            }
-          },
-          {
-            name: 'Level 2: B'
-          }
-        ]
-      }
-    ]
-
     this.state = {
       synthesisNumber: null,
-      graph: myTreeData
+      graph: null
     }
     this.refreshSynthesis()
   }
 
   componentWillReceiveProps (props) {
     if (this.state.refreshTrigger !== props.refreshTrigger) this.refreshSynthesis()
-  }
-
-  buildGraph (nodes, edges, root) {
-
   }
 
   refreshSynthesis () {
@@ -72,8 +48,9 @@ export class SynthesisGraph extends Component {
           pointer.name = key.sid
           pointer.sRoot = key
           pointer.attributes = {
-            steps: info.siSteps.length
+            // steps: info.siSteps.length
           }
+          // FIXME: Hightlight current synthesis.
           pointer.children = []
           // FIXME: sorting
           info.siChilds.forEach(e => {
@@ -93,22 +70,24 @@ export class SynthesisGraph extends Component {
   }
 
   render () {
+    if (this.state.graph === null) return <div />
+    // FIXME: dynamic width and size
     return (
       <div>
         <Tree data={this.state.graph}
           nodeSize={{x: 150, y: 50}}
           separation={{siblings: 1, nonSiblings: 1}}
-          // pathFunc='elbow'
+          pathFunc='elbow'
           translate={{x: 20, y: 70}}
           collapsible={false}
           styles={{nodes: {
             node: {
-              name: {'font-size': '12px'},
-              attributes: {'font-size': '10px'}
+              name: {'fontSize': '12px'},
+              attributes: {'fontSize': '10px'}
             },
             leafNode: {
-              name: {'font-size': '12px'},
-              attributes: {'font-size': '10px'}
+              name: {'fontSize': '12px'},
+              attributes: {'fontSize': '10px'}
             }
           }}}
           onClick={(node) => this.propagateSRoot(node.sRoot)}
