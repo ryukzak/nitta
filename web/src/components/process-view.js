@@ -1,5 +1,4 @@
 import React, { Component } from 'react'
-import './App.css'
 import 'react-table/react-table.css'
 import { Chart } from 'react-google-charts'
 

@@ -5,6 +5,7 @@
   "dependencies": {
     "axios": "^0.18.0",
     "react": "^16.4.2",
+    "react-d3-tree": "^1.11.0",
     "react-dom": "^16.4.2",
     "react-easy-chart": "^1.0.0",
     "react-google-charts": "^1.6.6",

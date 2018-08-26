@@ -1,118 +1,34 @@
 import React, { Component } from 'react'
 import './App.css'
-import api from './gen/nitta-api.js'
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
 import { LineChart } from 'react-easy-chart'
-import { ProcessView } from './process-view.js'
-
-var hapi = {}
-hapi.forkSynthesis = api.postSynthesisBySid
-hapi.manualDecision = api.postSynthesisBySidSStepsBySix
-hapi.getStep = api.getSynthesisBySidSStepsBySix
-hapi.getStepOption = api.getSynthesisBySidSStepsBySixOptions
-hapi.compilerStep = api.postSynthesisBySidSSteps
-hapi.getSynthesis = function (sid) {
-  if (sid === undefined) {
-    return api.getSynthesis()
-  } else {
-    return api.getSynthesisBySid(sid)
-  }
-}
+import { SynthesisGraph } from './components/synthesis-graph'
+import { ProcessView } from './components/process-view'
+import { hapi } from './hapi'
+import { LinkButton } from './utils'
 
 class App extends Component {
   constructor () {
     super()
     this.state = {
-      path: this.root(),
-      synthesisList: [],
-      sData: null,
-      stepData: null,
-      stepOption: null
+      currentSynthesis: null,
+      refreshSynthesisGraph: true
     }
-    this.getAllSynthesis = this.getAllSynthesis.bind(this)
-    this.path = this.path.bind(this)
-    this.setPath = this.setPath.bind(this)
-    this.getAllSynthesis()
   }
 
-  getAllSynthesis () {
-    hapi.getSynthesis()
-      .then(response => this.setState({
-        path: this.root(),
-        synthesisList: Object.keys(response.data),
-        sData: null,
-        stepData: null
-      }))
-      .catch(err => console.log(err))
-  }
-
-  getSynthesis (sId) {
-    // TODO: Смена синтеза без смены шина. Необходимо для простоты сравнения вариантов винтеза.
-    hapi.getSynthesis(sId)
-      .then(response => {
-        this.setState({
-          path: this.root(sId, 'info'),
-          sData: response.data
+  selectSynthesis (sRoot) {
+    console.log('App:selectSynthesis(', sRoot, ')')
+    if (sRoot) {
+      hapi.getSynthesis(sRoot)
+        .then(response => {
+          this.setState({
+            currentSynthesis: sRoot,
+            refreshSynthesisGraph: !this.state.refreshSynthesisGraph
+          })
         })
-      })
-      .catch(err => console.log(err))
-  }
-
-  forkSynthesis (path, props) {
-    var sId = path.sId + '.' + path.stepId
-    while (props.app.state.synthesisList.indexOf(sId) >= 0) {
-      sId += "'"
+        .catch(err => console.log(err))
     }
-    hapi.forkSynthesis(sId, path.sId, path.stepId)
-    props.app.getAllSynthesis()
-    props.app.getSynthesis(sId)
-  }
-
-  getStep (sId, stepId) {
-    hapi.getStep(sId, stepId)
-      .then(response => {
-        this.setState({
-          path: this.root(sId, 'step', stepId),
-          stepData: response.data
-        })
-        this.getStepOption(sId, stepId)
-      })
-      .catch(err => console.log(err))
-  }
-
-  getStepOption (sId, stepId) {
-    hapi.getStepOption(sId, stepId)
-      .then(response => this.setState({
-        path: this.root(sId, 'step', stepId, 'options'),
-        stepDataOptions: response.data
-      }))
-      .catch(err => console.log(err))
-  }
-
-  root (sId, sView, stepId, stepView) {
-    return {
-      sId: sId,
-      sView: sView,
-      stepId: stepId,
-      stepView: stepView
-    }
-  }
-
-  setPath (sId, sView, stepId, stepView) {
-    console.log(this.root(sId, sView, stepId))
-    this.setState({
-      path: this.root(sId, sView, stepId, stepView)
-    })
-  }
-
-  path () {
-    var result = []
-    if (this.state.path.sId) { result.push(this.state.path.sId) }
-    if (this.state.path.sView) { result.push(this.state.path.sView) }
-    if (this.state.path.stepId) { result.push(this.state.path.stepId) }
-    if (this.state.path.stepView) { result.push(this.state.path.stepView) }
-    return result
   }
 
   render () {
@@ -121,179 +37,252 @@ class App extends Component {
         <nav aria-label='You are here:'>
           <ul className='breadcrumbs'>
             <li>Project</li>
-            { this.path().map((v, i) => <li key={i}> { v } </li>) }
+            { this.state.currentSynthesis !== null && (<li> {this.state.currentSynthesis.sid}.{this.state.currentSynthesis.six} </li>) }
           </ul>
         </nav>
-
-        <div className='tiny button-group'>
-          <a className='button primary' onClick={this.getAllSynthesis}>Refresh</a>
-          { this.state.synthesisList.map((sname, i) =>
-            <LinkButton key={i} sname={sname} onClick={() => this.getSynthesis(sname)} />) }
-        </div>
-
-        <View path={this.state.path} sData={this.state.sData} stepData={this.state.stepData} app={this} />
+        <SynthesisGraph propagateSRoot={(sRoot) => this.selectSynthesis(sRoot)} refreshTrigger={this.state.refreshSynthesisGraph} />
+        <SynthesisView sRoot={this.state.currentSynthesis} propagateSRoot={(sRoot) => this.selectSynthesis(sRoot)} />
       </div>
     )
   }
 }
 
-function View (props) {
-  var path = props.path
-  var sData = props.sData
-  return (
-    <div>
-      { path.sId
-        ? <div>
+class SynthesisView extends Component {
+  constructor (props) {
+    super(props)
+    this.state = {
+      sRoot: props.sRoot,
+      view: null,
+      data: null
+    }
+    this.propagateSRoot = props.propagateSRoot
+    if (props.sRoot !== undefined) this.handleSynthesisChange(props.sRoot)
+  }
+
+  handleSynthesisChange (sRoot, view) {
+    if (sRoot) {
+      hapi.getSynthesis(sRoot)
+        .then(response => {
+          this.setState({
+            sRoot: sRoot,
+            data: response.data,
+            view: view === undefined ? 'info' : view
+          })
+          this.propagateSRoot(sRoot)
+        })
+        .catch(err => console.log(err))
+    }
+  }
+
+  componentWillReceiveProps (props) {
+    if (this.state.sRoot !== props.sRoot) this.handleSynthesisChange(props.sRoot)
+  }
+
+  render (props) {
+    return (
+      <div>
+        { this.state.sRoot === null && <pre> SYNTHESIS NOT SELECTED </pre> }
+        { this.state.sRoot !== null &&
           <div className='tiny button-group'>
-            <a className='button primary' onClick={() => props.app.setPath(path.sId, 'info')}>Info</a>
-            { sData.sSteps.map((st, i) =>
+            <a className='button primary' onClick={() => this.setState({view: 'info'})}>info</a>
+            { this.state.data.sSteps.map((step, i) =>
               <LinkButton key={i} sname={i}
-                onClick={() => { props.app.getStep(path.sId, i) }}
+                onClick={() => { this.setState({view: 'step', six: i}) }}
               />
             )}
             <a className='button primary' onClick={
               () => {
-                hapi.compilerStep(path.sId, false)
+                hapi.compilerStep(this.state.sRoot, true)
                   .then(response => {
-                    props.app.getSynthesis(response.data[0])
-                    props.app.getStep(response.data[0], response.data[1])
+                    console.log(response.data)
+                    this.handleSynthesisChange(response.data[0], response.data[1])
                   })
                   .catch(err => alert(err))
               }
-            }>auto_synthesis</a>
+            }>one step</a>
+            <a className='button primary' onClick={
+              () => {
+                hapi.compilerStep(this.state.sRoot, false)
+                  .then(response => {
+                    console.log(response.data)
+                    this.handleSynthesisChange(response.data[0], response.data[1])
+                  })
+                  .catch(err => alert(err))
+              }
+            }>all steps</a>
           </div>
-          { path.sView === 'info'
-            ? <SynthesisInfo sData={sData} app={props.app} />
-            : path.sView === 'step'
-              ? <StepView path={path} stepData={props.stepData} app={props.app} />
-              : <pre>path.sView = {path.sView}</pre>
-          }
+        }
+        { this.state.view === 'info' &&
+          <SynthesisInfo
+            data={this.state.data}
+            propagateSRoot={sRoot => this.propagateSRoot(sRoot)}
+          />
+        }
+        { this.state.view === 'step' &&
+          <StepView sRoot={this.state.sRoot} six={this.state.six} propagateSRoot={(sRoot) => this.propagateSRoot(sRoot)} />
+          // <pre>{JSON.stringify(this.state.step, null, 2) }</pre>
+        }
+      </div>
+    )
+  }
+}
+
+var forkUid = {}
+
+class StepView extends Component {
+  constructor (props) {
+    super(props)
+    this.state = {
+      sRoot: props.sRoot,
+      six: props.six,
+      data: null
+    }
+    this.propagateSRoot = props.propagateSRoot
+    this.handleSixChange(props.sRoot, props.six)
+  }
+
+  componentWillReceiveProps (props) {
+    if (this.state.sRoot !== props.sRoot ||
+      this.state.six !== props.six) this.handleSixChange(props.sRoot, props.six)
+  }
+
+  handleSixChange (sRoot, six) {
+    console.log(2, sRoot, six)
+    if (sRoot !== null && six !== null && sRoot !== undefined && six !== undefined) {
+      hapi.getStep2(sRoot, six)
+        .then(response => {
+          this.setState({
+            sRoot: sRoot,
+            six: six,
+            data: response.data
+          })
+        })
+        .catch(err => console.log(err))
+    }
+  }
+
+  forkSynthesis (sRoot, six) {
+    console.log(forkUid)
+    var newSid = showSRoot(sRoot, six)
+    if (!(newSid in forkUid)) {
+      forkUid[newSid] = -1
+    }
+    forkUid[newSid] += 1
+    newSid += '.' + forkUid[newSid]
+    var newSRoot = { sid: newSid, six: six }
+    hapi.forkSynthesis(sRoot, newSRoot)
+      .then(response => {
+        this.propagateSRoot(newSRoot)
+      })
+      .catch(err => console.log(err))
+  }
+
+  render () {
+    return (
+      <div>
+        <div className='tiny primary button-group'>
+          {/* <LinkButton sname='options' onClick={
+            () => app.getStepOption(path.sId, path.stepId)} />
+          <LinkButton sname='info' onClick={
+            () => app.setPath(path.sId, 'step', path.stepId, 'info')} /> */}
+          {/* <LinkButton sname='process' onClick={
+            () => app.setPath(path.sId, 'step', path.stepId, 'process')} /> */}
+          <LinkButton sname='fork' onClick={() => { this.forkSynthesis(this.state.sRoot, this.state.six) }} />
         </div>
-        : <pre> SYNTHESIS NOT SELECTED </pre>
-      }
-    </div>
-  )
+        <pre>{ JSON.stringify(this.state.data, null, 2) }</pre>
+        <hr />
+        {/* { (path.stepView === 'options')
+          ? <StepOptionView path={path} app={app} stepDataOptions={app.state.stepDataOptions} />
+          : (path.stepView === 'process')
+            ? <ProcessView
+              steps={app.state.stepData.state.nitta.process.steps}
+              relations={app.state.stepData.state.nitta.process.relations}
+            />
+            : (path.stepView === 'info')
+              ? <div>
+                <pre>
+                  { JSON.stringify(app.state.stepData, null, 2) }
+                </pre>
+              </div>
+              : <pre>path.stepView = { path.stepView }</pre>
+        } */}
+      </div>
+    )
+  }
 }
 
 function SynthesisInfo (props) {
-  var sData = props.sData
-  var app = props.app
   return (
     <dl>
       <dt>Parent:</dt>
-      <dd> { sData.sParent
-        ? (<LinkButton sname={sData.sParent[0]} onClick={() => app.getSynthesis(sData.sParent[0])} />)
+      <dd> { props.data.sParent
+        ? (<LinkButton sname={showSRoot(props.data.sParent)} onClick={() => props.propagateSRoot(showSRoot(props.data.sParent))} />)
         : (<div> - </div>) }
       </dd>
       <dt>Childs:</dt>
       <dd>
         <div className='tiny button-group'>
-          { sData.sChilds.map((k, i) => <LinkButton key={i} sname={k[0]} onClick={() => app.getSynthesis(k[0])} />) }
+          { props.data.sChilds.map((k, i) => <LinkButton key={i} sname={showSRoot(k)} onClick={() => props.propagateSRoot(k)} />) }
         </div>
       </dd>
-      <dt>Config (may vary from step to step):</dt>
+      <hr />
       <dd>
-        <pre>{ JSON.stringify(sData.config, null, 2) }</pre>
+        <pre>{ JSON.stringify(props.data, null, 2) }</pre>
       </dd>
     </dl>
   )
 }
 
-function StepView (props) {
-  var path = props.path
-  var app = props.app
-  var step = props.app.state.stepData
-  return (
-    <div>
-      <div className='tiny primary button-group'>
-        <LinkButton sname='options' onClick={
-          () => app.getStepOption(path.sId, path.stepId)} />
-        <LinkButton sname='info' onClick={
-          () => app.setPath(path.sId, 'step', path.stepId, 'info')} />
-        <LinkButton sname='process' onClick={
-          () => app.setPath(path.sId, 'step', path.stepId, 'process')} />
-        <LinkButton sname='fork' onClick={() => { this.forkSynthesis(path, props) }} />
-        <LinkButton sname='mk_decision' onClick={
-          () => {
-            hapi.compilerStep(path.sId, true)
-              .then(response => {
-                props.app.getSynthesis(response.data[0])
-                props.app.getStep(response.data[0], response.data[1])
-              })
-              .catch(err => alert(err))
-          }} />
-      </div>
-      <pre>{ JSON.stringify(step.lastDecision) }</pre>
-      <hr />
-      { (path.stepView === 'options')
-        ? <StepOptionView path={path} app={app} stepDataOptions={app.state.stepDataOptions} />
-        : (path.stepView === 'process')
-          ? <ProcessView
-            steps={app.state.stepData.state.nitta.process.steps}
-            relations={app.state.stepData.state.nitta.process.relations}
-          />
-          : (path.stepView === 'info')
-            ? <div>
-              <pre>
-                { JSON.stringify(app.state.stepData, null, 2) }
-              </pre>
-            </div>
-            : <pre>path.stepView = { path.stepView }</pre>
-      }
-    </div>
-  )
+function showSRoot (sRoot, six) {
+  console.log(sRoot)
+  if (six === undefined) return sRoot.sid + '[' + sRoot.six + ']'
+  return sRoot.sid + '[' + sRoot.six + ':' + six + ']'
 }
 
-function StepOptionView (props) {
-  var path = props.path
-  var opts = props.stepDataOptions
-  if (opts.length === 0) return <pre> Process is over. Options not allow. </pre>
-  return (
-    <div>
-      <div className='grid-x'>
-        <div className='cell small-4'>
-          <pre>{ JSON.stringify(opts[0][1], null, 2) }</pre>
-        </div>
-        <div className='cell small-8'>
-          <LineChart data={[ opts.map((e, index) => { return { x: index, y: e[0] } }) ]}
-            width={750} height={250}
-            axes />
-        </div>
-      </div>
-      <ReactTable
-        columns={
-          [
-            {
-              Header: 'Integral',
-              accessor: '0',
-              maxWidth: 70,
-              Cell: row =>
-                <a onClick={
-                  () => {
-                    hapi.manualDecision(path.sId, path.stepId + 1, row.index)
-                      .then(response => {
-                        // FIXME: Не обновляется список синтезов.
-                        props.app.getSynthesis(path.sId)
-                        props.app.getStep(path.sId, path.stepId + 1)
-                      })
-                      .catch(err => alert(err))
-                  }}> { row.value }
-                </a>
-            },
-            {Header: 'Description', accessor: '3', Cell: row => <pre> {JSON.stringify(row.value)} </pre>},
-            {Header: 'Metrics', accessor: '2', Cell: row => <pre> {JSON.stringify(row.value) } </pre>}
-          ]
-        }
-        data={opts}
-      />
-    </div>
-  )
-}
-
-function LinkButton (props) {
-  return (
-    <a className='button tiny secondary' onClick={props.onClick}> {props.sname} </a>
-  )
-}
+// function StepOptionView (props) {
+//   var path = props.path
+//   var opts = props.stepDataOptions
+//   if (opts.length === 0) return <pre> Process is over. Options not allow. </pre>
+//   return (
+//     <div>
+//       <div className='grid-x'>
+//         <div className='cell small-4'>
+//           <pre>{ JSON.stringify(opts[0][1], null, 2) }</pre>
+//         </div>
+//         <div className='cell small-8'>
+//           <LineChart data={[ opts.map((e, index) => { return { x: index, y: e[0] } }) ]}
+//             width={750} height={250}
+//             axes />
+//         </div>
+//       </div>
+//       <ReactTable
+//         columns={
+//           [
+//             {
+//               Header: 'Integral',
+//               accessor: '0',
+//               maxWidth: 70,
+//               Cell: row =>
+//                 <a onClick={
+//                   () => {
+//                     hapi.manualDecision(path.sId, path.stepId + 1, row.index)
+//                       .then(response => {
+//                         // FIXME: Не обновляется список синтезов.
+//                         props.app.getSynthesis(path.sId)
+//                         props.app.getStep(path.sId, path.stepId + 1)
+//                       })
+//                       .catch(err => alert(err))
+//                   }}> { row.value }
+//                 </a>
+//             },
+//             {Header: 'Description', accessor: '3', Cell: row => <pre> {JSON.stringify(row.value)} </pre>},
+//             {Header: 'Metrics', accessor: '2', Cell: row => <pre> {JSON.stringify(row.value) } </pre>}
+//           ]
+//         }
+//         data={opts}
+//       />
+//     </div>
+//   )
+// }
 
 export default App

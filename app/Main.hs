@@ -95,15 +95,15 @@ algorithm = [ F.framInput 3 [ "a"
 
 
 main = do
-  teacupDemo
-  fibonacciDemo
+  -- teacupDemo
+  -- fibonacciDemo
   -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
-  test "fibonacci" $ nitta $ synthesis $ frame $ dfgraph fibonacciAlg
+  -- test "fibonacci" $ nitta $ synthesis $ frame $ dfgraph fibonacciAlg
   -- test "graph" (nitta $ synthesis $ frame graph) def
 
   -- putStrLn "funSim teacup:"
-  test "teacup" $ nitta $ synthesis $ frame $ dfgraph teacupAlg
-  funSim 5 def teacupAlg
+  -- test "teacup" $ nitta $ synthesis $ frame $ dfgraph teacupAlg
+  -- funSim 5 def teacupAlg
 
   -- putStrLn "funSim fibonacci:"
   -- funSim 5 def divAndMulAlg
@@ -114,7 +114,7 @@ main = do
   --              } spiAlg
 
   -- putStrLn "Server start on 8080..."
-  -- backendServer $ frame $ dfgraph divAndMulAlg
+  backendServer True $ frame $ dfgraph divAndMulAlg
   putStrLn "-- the end --"
 
 

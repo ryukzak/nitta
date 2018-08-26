@@ -50,7 +50,9 @@ library
                      , extra
                      , file-embed
                      , filepath
+                     , hashable
                      , HStringTemplate
+                     , http-api-data
                      , interpolatedstring-perl6
                      , intervals
                      , lens

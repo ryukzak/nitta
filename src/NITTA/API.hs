@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeOperators     #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
@@ -58,22 +59,22 @@ export default api;|]
 
     -- Generate web app by npm.
     -- TODO: Rebuild at each run.
-    ( exitCode, out, err )
-        <- readCreateProcessWithExitCode
-            (shell "npm run-script build"){ cwd=Just "web" }
-            []
-    putStrLn "npm output:"
-    putStrLn out
-    when (exitCode /= ExitSuccess || not (null err)) $ do
-        putStrLn "npm error:"
-        putStrLn err
-        die "Verilog compilation failed!"
+    -- ( exitCode, out, err )
+    --     <- readCreateProcessWithExitCode
+    --         (shell "npm run-script build"){ cwd=Just "web" }
+    --         []
+    -- putStrLn "npm output:"
+    -- putStrLn out
+    -- when (exitCode /= ExitSuccess || not (null err)) $ do
+    --     putStrLn "npm error:"
+    --     putStrLn err
+    --     die "npm compilation failed!"
 
 
 application compilerState = do
     stm <- atomically $ do
         st <- M.new
-        M.insert (synthesis compilerState) "root" st
+        M.insert (synthesis compilerState) (SRoot "root" 0) st
         return st
     return $ serve
         ( Proxy :: Proxy
@@ -97,6 +98,6 @@ backendServer prepare modelState = do
     let initialCompilerState = def{ state=modelState }
     app <- application initialCompilerState
     setLocaleEncoding utf8
-    T.writeFile "web/api.txt" $ layout (Proxy :: Proxy SynthesisAPI) 
+    T.writeFile "web/api.txt" $ layout (Proxy :: Proxy SynthesisAPI)
 
     run port $ simpleCors app
