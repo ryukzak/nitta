@@ -95,8 +95,8 @@ algorithm = [ F.framInput 3 [ "a"
 
 
 main = do
-  -- teacupDemo
-  -- fibonacciDemo
+  teacupDemo
+  fibonacciDemo
   -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
   -- test "fibonacci" $ nitta $ synthesis $ frame $ dfgraph fibonacciAlg
   -- test "graph" (nitta $ synthesis $ frame graph) def
@@ -113,8 +113,7 @@ main = do
   --              , cntxInputs=M.fromList [("a", [1, 2, 3])]
   --              } spiAlg
 
-  -- putStrLn "Server start on 8080..."
-  backendServer True $ frame $ dfgraph divAndMulAlg
+  -- backendServer False $ frame $ dfgraph divAndMulAlg
   putStrLn "-- the end --"
 
 

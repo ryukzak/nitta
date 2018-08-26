@@ -59,22 +59,22 @@ export default api;|]
 
     -- Generate web app by npm.
     -- TODO: Rebuild at each run.
-    -- ( exitCode, out, err )
-    --     <- readCreateProcessWithExitCode
-    --         (shell "npm run-script build"){ cwd=Just "web" }
-    --         []
-    -- putStrLn "npm output:"
-    -- putStrLn out
-    -- when (exitCode /= ExitSuccess || not (null err)) $ do
-    --     putStrLn "npm error:"
-    --     putStrLn err
-    --     die "npm compilation failed!"
+    ( exitCode, out, err )
+        <- readCreateProcessWithExitCode
+            (shell "npm run-script build"){ cwd=Just "web" }
+            []
+    putStrLn "npm output:"
+    putStrLn out
+    when (exitCode /= ExitSuccess || not (null err)) $ do
+        putStrLn "npm error:"
+        putStrLn err
+        die "npm compilation failed!"
 
 
 application compilerState = do
     stm <- atomically $ do
         st <- M.new
-        M.insert (synthesis compilerState) (SRoot "root" 0) st
+        M.insert (synthesis compilerState) rootNode st
         return st
     return $ serve
         ( Proxy :: Proxy

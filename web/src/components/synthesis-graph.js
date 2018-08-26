@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import 'react-table/react-table.css'
 import { hapi } from '../hapi'
-import { LinkButton } from '../utils'
+import { LinkButton, showSRoot } from '../utils'
 import Tree from 'react-d3-tree'
 
 export class SynthesisGraph extends Component {
@@ -23,7 +23,6 @@ export class SynthesisGraph extends Component {
   refreshSynthesis () {
     hapi.getSynthesis()
       .then(response => {
-        // var keys = []
         var key, info
 
         var graph = {}
@@ -95,10 +94,4 @@ export class SynthesisGraph extends Component {
       </div>
     )
   }
-}
-
-// FIXME: dup
-function showSRoot (sRoot) {
-  console.log(sRoot)
-  return sRoot.sid + '[' + sRoot.six + ']'
 }
