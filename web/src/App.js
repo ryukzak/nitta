@@ -10,22 +10,16 @@ class App extends Component {
   constructor () {
     super()
     this.state = {
-      currentSynthesis: null,
-      refreshSynthesisGraph: true
+      currentSynthesis: null
     }
   }
 
-  selectSynthesis (sRoot) {
-    console.debug('App:selectSynthesis(', sRoot, ')')
-    if (sRoot) {
-      hapi.getSynthesis(sRoot)
-        .then(response => {
-          this.setState({
-            currentSynthesis: sRoot,
-            refreshSynthesisGraph: !this.state.refreshSynthesisGraph
-          })
-        })
-        .catch(err => console.log(err))
+  selectSynthesis (sNode) {
+    console.debug('App:selectSynthesis(', sNode, ')')
+    if (sNode && sNode !== this.state.currentSynthesis) {
+      this.setState({
+        currentSynthesis: sNode
+      })
     }
   }
 
@@ -38,8 +32,8 @@ class App extends Component {
             { this.state.currentSynthesis !== null && (<li> {this.state.currentSynthesis.sid}.{this.state.currentSynthesis.six} </li>) }
           </ul>
         </nav>
-        <SynthesisGraph propagateSRoot={sRoot => this.selectSynthesis(sRoot)} refreshTrigger={this.state.refreshSynthesisGraph} />
-        <SynthesisView sRoot={this.state.currentSynthesis} propagateSRoot={(sRoot) => this.selectSynthesis(sRoot)} />
+        <SynthesisGraph sNode={this.state.currentSynthesis} propagateSRoot={sRoot => this.selectSynthesis(sRoot)} />
+        <SynthesisView sRoot={this.state.currentSynthesis} propagateSRoot={sRoot => this.selectSynthesis(sRoot)} />
       </div>
     )
   }
@@ -57,7 +51,7 @@ class SynthesisView extends Component {
     if (props.sRoot !== undefined) this.handleSynthesisChange(props.sRoot)
   }
 
-  handleSynthesisChange (sRoot, view) {
+  handleSynthesisChange (sRoot, view, six) {
     console.debug('SynthesisView:handleSynthesisChange(', sRoot, view, ')')
     if (sRoot) {
       hapi.getSynthesis(sRoot)
@@ -65,7 +59,8 @@ class SynthesisView extends Component {
           this.setState({
             sRoot: sRoot,
             data: response.data,
-            view: view === undefined ? 'info' : view
+            view: view === undefined ? 'info' : view,
+            six: view === 'step' ? six : this.state.six
           })
           this.propagateSRoot(sRoot)
         })
@@ -75,6 +70,14 @@ class SynthesisView extends Component {
 
   componentWillReceiveProps (props) {
     if (this.state.sRoot !== props.sRoot) this.handleSynthesisChange(props.sRoot)
+  }
+
+  compilerStep (oneStep) {
+    hapi.compilerStep(this.state.sRoot, oneStep)
+      .then(response => {
+        this.handleSynthesisChange(response.data[0], 'step', response.data[1])
+      })
+      .catch(err => alert(err))
   }
 
   render (props) {
@@ -89,34 +92,14 @@ class SynthesisView extends Component {
                 onClick={() => { this.setState({view: 'step', six: i}) }}
               />
             )}
-            <a className='button primary' onClick={
-              () => {
-                hapi.compilerStep(this.state.sRoot, true)
-                  .then(response => {
-                    console.log(response.data)
-                    this.handleSynthesisChange(response.data[0], response.data[1])
-                  })
-                  .catch(err => alert(err))
-              }
-            }>one step</a>
-            <a className='button primary' onClick={
-              () => {
-                hapi.compilerStep(this.state.sRoot, false)
-                  .then(response => {
-                    console.log(response.data)
-                    this.handleSynthesisChange(response.data[0], response.data[1])
-                  })
-                  .catch(err => alert(err))
-              }
-            }>all steps</a>
+            <a className='button primary' onClick={() => { this.compilerStep(true) }}>one step</a>
+            <a className='button primary' onClick={() => { this.compilerStep(false) }}>all steps</a>
           </div>
         }
-        { this.state.view === 'info' &&
-          <SynthesisInfo
-            data={this.state.data}
-            propagateSRoot={sRoot => this.propagateSRoot(sRoot)}
-          />
-        }
+        { this.state.view === 'info' && <SynthesisInfo
+          data={this.state.data}
+          propagateSRoot={sRoot => this.propagateSRoot(sRoot)}
+        /> }
         { this.state.view === 'step' &&
           <StepView sRoot={this.state.sRoot} six={this.state.six} propagateSRoot={sRoot => this.propagateSRoot(sRoot)} />
         }

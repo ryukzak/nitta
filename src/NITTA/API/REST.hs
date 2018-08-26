@@ -33,7 +33,6 @@ import           Data.Aeson
 import           Data.Default
 import           Data.Hashable
 import           Data.Map                      (Map, fromList)
-import           Debug.Trace
 import           GHC.Generics
 import           ListT                         (toList)
 import           NITTA.Compiler
@@ -142,8 +141,9 @@ allSynthesis st = fromList . map (\(k, v) -> (k, view v)) <$> liftSTM ( toList $
 
 
 type WithSynthesis
+    -- FIXME: Change SYN to SynthesisView. We don't need data about all steps at one.
     =    Get '[JSON] SYN
-    :<|> QueryParam' '[Required] "childSix" Six :> Post '[JSON] SNode
+    :<|> QueryParam' '[Required] "childSix" Six :> Post '[JSON] (SNode, Six)
     :<|> StepAPI
 
 withSynthesis st node
@@ -221,7 +221,7 @@ forkSynthesis st parentNode childSix = do
             }
             childNode
         st
-    return childNode
+    return (childNode, childSix)
 
 compilerStep st node oneStep = do
     syn@Synthesis{ sSteps } <- getSynthesis' st node
@@ -251,7 +251,7 @@ manualStep st node six dix = do
             M.insert syn' node st
             return (node, six + 1)
         GT -> do -- fork and manualStep
-            childUid <- forkSynthesis st node (six - 1)
+            (childUid, _) <- forkSynthesis st node (six - 1)
             manualStep st childUid six dix
 
 genChildNode st SNode{ sid, six } childSix = inner (0 :: Int)

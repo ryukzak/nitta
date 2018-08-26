@@ -17,22 +17,34 @@ export class StepView extends Component {
       options: []
     }
     this.propagateSRoot = props.propagateSRoot
-    this.handleSixChange(props.sRoot, props.six)
+    this.handleSixChange(props.sRoot, props.six, true)
   }
 
   componentWillReceiveProps (props) {
+    console.debug('StepView:componentWillReceiveProps()')
     if (this.state.sRoot !== props.sRoot ||
       this.state.six !== props.six) this.handleSixChange(props.sRoot, props.six)
   }
 
-  handleSixChange (sRoot, six) {
-    console.debug('StepView:handleSixChange(', sRoot, six, ')')
-    if (sRoot !== null && six !== null && sRoot !== undefined && six !== undefined) {
+  handleSixChange (sRoot, six, firstTime) {
+    console.debug('StepView:handleSixChange(', sRoot, six, ') // state.sRoot, state.six:', this.state.sRoot, this.state.six)
+    if (firstTime ||
+      (
+        sRoot !== null && six !== null && sRoot !== undefined && six !== undefined &&
+        (sRoot !== this.state.sRoot || six !== this.state.six)
+      )
+    ) {
+      if (!firstTime) {
+        this.setState({
+          sRoot: sRoot,
+          six: six,
+          data: null,
+          options: []
+        })
+      }
       hapi.getStep(sRoot, six)
         .then(response => {
           this.setState({
-            sRoot: sRoot,
-            six: six,
             data: response.data,
             options: []
           })
@@ -42,6 +54,7 @@ export class StepView extends Component {
   }
 
   forkSynthesis (sRoot, six) {
+    console.debug('StepView:forkSynthesis(', sRoot, six, ')')
     if (sRoot.six > six) {
       alert('if six is from previous synthesis, fork must be start early.')
       return
@@ -49,7 +62,7 @@ export class StepView extends Component {
     // FIXME: if six is from previous synthesis, fork must be start early.
     hapi.forkSynthesis(sRoot, six)
       .then(response => {
-        this.propagateSRoot(response.data)
+        this.propagateSRoot(response.data[0], response.data[1])
       })
       .catch(err => console.log(err))
   }
@@ -118,10 +131,7 @@ function StepOptionView (props) {
                 <a onClick={() => {
                   hapi.manualDecision(props.sRoot, props.six, row.index)
                     .then(response => {
-                      props.propagateSRoot(props.sRoot)
-                      // FIXME: Не обновляется список синтезов.
-                      // props.app.getSynthesis(path.sId)
-                      // props.app.getStep(path.sId, path.stepId + 1)
+                      props.propagateSRoot(response.data[0], response.data[1])
                     })
                     .catch(err => alert(err))
                 }}> { row.value }

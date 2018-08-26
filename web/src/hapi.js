@@ -2,6 +2,7 @@ import api from './gen/nitta-api.js'
 
 export const hapi = {
   getSynthesis: (sRoot) => {
+    console.debug('hapi.getSynthesis(', sRoot, ')')
     if (sRoot === undefined) {
       return api.getSynthesis()
     } else {
