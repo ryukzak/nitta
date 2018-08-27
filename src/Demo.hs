@@ -188,6 +188,7 @@ module Demo
     ) where
 
 import           Data.Default
+import           Data.Tree
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
@@ -310,7 +311,7 @@ mkModelWithOneNetwork arch alg = Frame
 schedule model
     = let
         (syn, sid) = simpleSynthesis def (rootSynthesis model)
-    in nitta $ sModel $ getSynthesis syn sid
+    in nitta $ sModel $ rootLabel $ getSynthesis sid syn
 
 demo prj@Project{ projectPath, model } = do
     let prj' = prj{ model=schedule model }

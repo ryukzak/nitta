@@ -27,6 +27,7 @@ import           Control.Concurrent.STM
 import           Control.Monad                 (when)
 import           Data.Default
 import           Data.Monoid                   ((<>))
+import NITTA.Types.Synthesis
 import qualified Data.Text.IO                  as T
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
 import           Network.Wai.Handler.Warp      (run)
@@ -72,16 +73,13 @@ export default api;|]
 
 
 application compilerState = do
-    stm <- atomically $ do
-        st <- M.new
-        M.insert (synthesis compilerState) rootNode st
-        return st
+    st <- newTVarIO $ rootSynthesis compilerState
     return $ serve
         ( Proxy :: Proxy
             (    SynthesisAPI
             :<|> Raw
             ) )
-        (    synthesisServer stm
+        (    synthesisServer st
         :<|> serveDirectoryWebApp (joinPath ["web", "build"])
         )
 
@@ -95,8 +93,8 @@ backendServer prepare modelState = do
     when prepare $ prepareServer port
     putStrLn $ "Running NITTA server on port: " ++ show port
 
-    let initialCompilerState = def{ state=modelState }
-    app <- application initialCompilerState
+    -- let initialCompilerState = def{ state=modelState }
+    app <- application modelState
     setLocaleEncoding utf8
     T.writeFile "web/api.txt" $ layout (Proxy :: Proxy SynthesisAPI)
 
