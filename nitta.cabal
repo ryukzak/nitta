@@ -76,6 +76,7 @@ executable nitta
   main-is:             Main.hs
   build-depends:       array
                      , base
+                     , cmdargs
                      , containers
                      , data-default
                      , directory

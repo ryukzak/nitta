@@ -1,5 +1,8 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE NamedFieldPuns     #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS_GHC -fno-cse #-}
 
 {-|
 Module      : Main
@@ -12,6 +15,7 @@ Stability   : experimental
 
 module Main where
 
+import           Control.Monad                 (when)
 import           Data.Default                  as D
 import qualified Data.Map                      as M
 import           Data.Maybe
@@ -29,6 +33,7 @@ import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
+import           System.Console.CmdArgs
 import           System.FilePath               (joinPath)
 
 
@@ -100,6 +105,19 @@ algorithm =
 
 ---------------------------------------------------------------------------------
 
+-- |Command line interface.
+data Nitta
+    = Nitta
+        { web        :: Bool
+        , no_web_gen :: Bool
+        }
+    deriving (Show, Data, Typeable)
+nittaArgs = Nitta
+    { web=False &= help "Run web server"
+    , no_web_gen=False &= help "No regenerate WebUI static files"
+    }
+
+
 
 main = do
     teacupDemo
@@ -119,8 +137,8 @@ main = do
     -- funSim 20 def{ cntxVars=M.fromList [("b", [0])]
     --              , cntxInputs=M.fromList [("a", [1, 2, 3])]
     --              } spiAlg
-
-    -- backendServer False $ frame $ dfgraph divAndMulAlg
+    Nitta{ web, no_web_gen } <- cmdArgs nittaArgs
+    when web $ backendServer (not no_web_gen) $ frame $ dfgraph divAndMulAlg
     putStrLn "-- the end --"
 
 
