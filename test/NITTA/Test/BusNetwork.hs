@@ -7,9 +7,8 @@
 module NITTA.Test.BusNetwork where
 
 import           Data.Default
+import           Demo
 import           NITTA.BusNetwork
-import           NITTA.Compiler
-import           NITTA.DataFlow
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divisor    as D
@@ -133,17 +132,11 @@ badTestFram = badUnitTest "badTestFram" netWithArithm
 -----------------------------------------------
 
 unitTest name n cntx alg = do
-  let n' = nitta $ synthesis $ frame n alg
+  let n' = schedule $ mkModelWithOneNetwork n alg
   r <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
   r @? name
 
 badUnitTest name n cntx alg = do
-  let n' = nitta $ synthesis $ frame n alg
+  let n' = schedule $ mkModelWithOneNetwork n alg
   r <- writeAndRunTestBenchDevNull $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
   not r @? name
-
-synthesis f = foldl (\f' _ -> naive def f') f $ replicate 50 ()
-
-frame n alg
-  = let n' = bindAll alg n
-    in Frame n' (DFG $ map node alg) Nothing :: SystemState String String String Int (TaggedTime String Int)

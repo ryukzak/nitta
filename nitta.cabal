@@ -35,6 +35,7 @@ library
                      , NITTA.Types.Base
                      , NITTA.Types.Network
                      , NITTA.Types.Poly
+                     , NITTA.Types.Synthesis
                      , NITTA.Types.Time
                      , NITTA.Utils
                      , NITTA.Utils.JSON

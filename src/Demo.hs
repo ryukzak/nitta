@@ -182,6 +182,9 @@ module Demo
     , teacupAlg
       -- * Описание процессоров
     , nittaArch
+      -- * Utils
+    , mkModelWithOneNetwork
+    , schedule
     ) where
 
 import           Data.Default
@@ -197,6 +200,7 @@ import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Synthesis
 
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
@@ -294,13 +298,19 @@ teacupAlg = [ F.loop 0 "time_new" ["time", "time_send"]
 
 -----------------------------------------------------------
 
+-- |Make a model of NITTA process with one network and a specific algorithm. All functions are
+-- already bound to the network.
 mkModelWithOneNetwork arch alg = Frame
     { nitta=bindAll alg arch
     , dfg=DFG $ map node alg
     , timeTag=Nothing
     } :: SystemState String String String Int (TaggedTime String Int)
 
-schedule f = nitta $ foldl (\f' _ -> naive def f') f $ replicate 50 ()
+-- |Schedule process by 'simpleSynthesis'.
+schedule model
+    = let
+        (syn, sid) = simpleSynthesis def (rootSynthesis model)
+    in nitta $ sModel $ getSynthesis syn sid
 
 demo prj@Project{ projectPath, model } = do
     let prj' = prj{ model=schedule model }

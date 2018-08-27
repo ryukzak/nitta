@@ -33,6 +33,7 @@ import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Synthesis
 import           System.Console.CmdArgs
 import           System.FilePath               (joinPath)
 
@@ -55,13 +56,6 @@ microarch = busNetwork 31 (Just True)
     , ("div", PU (D.divisor 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
     ]
 
-fibonacciMultAlg =
-    [ F.loop 1 "b2" ["a1"      ] :: F (Parcel String Int)
-    , F.loop 2 "c"  ["b1", "b2"]
-    , F.multiply "a1" "b1" ["c"]
-    ]
-
-
 
 divAndMulAlg =
     [ F.constant 100 ["a"] :: F (Parcel String Int)
@@ -79,29 +73,6 @@ divAndMulAlg =
     , F.multiply "x" "e'" ["y"]
     ]
 
-
-spiAlg =
-    [ F.receive ["a"] :: F (Parcel String Int)
-    , F.reg "a" ["b"]
-    , F.send "b"
-    ]
-
-algorithm =
-    [ F.framInput 3 [ "a", "d"] :: F (Parcel String Int)
-    , F.framInput 4 [ "b", "c", "e"]
-    , F.reg "a" ["x"]
-    , F.reg "b" ["y"]
-    , F.reg "c" ["z"]
-    , F.framOutput 5 "x"
-    , F.framOutput 6 "y"
-    , F.framOutput 7 "z"
-    , F.framOutput 0 "sum"
-    , F.constant 42 ["const"]
-    , F.framOutput 9 "const"
-    , F.loop 0 "g" ["f"]
-    , F.shiftL "f" ["g"]
-    , F.add "d" "e" ["sum"]
-    ]
 
 ---------------------------------------------------------------------------------
 
@@ -122,23 +93,18 @@ nittaArgs = Nitta
 main = do
     teacupDemo
     fibonacciDemo
-    -- test "fibonacciMultAlg" (nitta $ synthesis $ frame $ dfgraph fibonacciMultAlg) def
-    -- test "fibonacci" $ nitta $ synthesis $ frame $ dfgraph fibonacciAlg
-    -- test "graph" (nitta $ synthesis $ frame graph) def
+    
+    -- test "fibonacci" $ schedule $ mkModelWithOneNetwork microarch fibonacciAlg
 
     -- putStrLn "funSim teacup:"
-    -- test "teacup" $ nitta $ synthesis $ frame $ dfgraph teacupAlg
-    -- funSim 5 def teacupAlg
+    -- test "teacup" $ schedule $ mkModelWithOneNetwork microarch teacupAlg
+    -- funSim 5 D.def teacupAlg
 
     -- putStrLn "funSim fibonacci:"
-    -- funSim 5 def divAndMulAlg
+    -- funSim 5 D.def divAndMulAlg
 
-    -- putStrLn "funSim spi:"
-    -- funSim 20 def{ cntxVars=M.fromList [("b", [0])]
-    --              , cntxInputs=M.fromList [("a", [1, 2, 3])]
-    --              } spiAlg
     Nitta{ web, no_web_gen } <- cmdArgs nittaArgs
-    when web $ backendServer (not no_web_gen) $ frame $ dfgraph divAndMulAlg
+    when web $ backendServer (not no_web_gen) $ mkModelWithOneNetwork microarch teacupAlg
     putStrLn "-- the end --"
 
 
@@ -159,13 +125,3 @@ test n pu = do
 
 
 funSim n cntx alg = putStrLn $ (!! (n - 1)) $ map (filter (/= '"') . show) $ F.simulateAlgByCycle cntx alg
-
-dfgraph = DFG . map node
-
-frame g
-    = let ma = bindAll (functions g) microarch
-    in Frame ma g Nothing :: SystemState String String String Int (TaggedTime String Int)
-
-synthesis f = foldl (\f' _ -> naive D.def f') f $ replicate 50 ()
-
-getPU puTitle n = fromMaybe (error "Wrong PU type!") $ castPU $ bnPus n M.! puTitle
