@@ -42,7 +42,7 @@ class SynthesisView extends Component {
       model: null
     }
     this.propagateCurrentNid = props.propagateCurrentNid
-    this.handleViewChange(props.currentNid, 'process')
+    this.handleViewChange(props.currentNid, 'model')
   }
 
   handleViewChange (nid, view) {
@@ -50,12 +50,13 @@ class SynthesisView extends Component {
     if (nid === undefined || nid === null) return
 
     this.setState({currentNid: nid, view: 'update'})
-    if (view === 'process') this.updateProcess(nid)
+    if (view === 'process') this.updateModel(nid, 'process')
+    if (view === 'model') this.updateModel(nid, 'model')
   }
 
   componentWillReceiveProps (props) {
     var view = this.state.view
-    if (view === 'update') view = 'process'
+    if (view === 'update') view = 'model'
     if (this.state.currentNid !== props.currentNid) this.handleViewChange(props.currentNid, view)
   }
 
@@ -67,12 +68,12 @@ class SynthesisView extends Component {
       .catch(err => alert(err))
   }
 
-  updateProcess (nid) {
+  updateModel (nid, view) {
     hapi.getModel(nid)
       .then(response => {
         this.setState({
           model: response.data,
-          view: 'process'
+          view: view
         })
       })
       .catch(err => console.log(err))
@@ -86,15 +87,18 @@ class SynthesisView extends Component {
         { this.state.currentNid !== null &&
           <div>
             <div className='tiny button-group'>
+              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'model')}>raw model</a>
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'process')}>process</a>
               <a className='button primary' onClick={() => { this.compilerStep(true) }}>one step</a>
               <a className='button primary' onClick={() => { this.compilerStep(false) }}>all steps</a>
             </div>
             { this.state.view === 'update' && <pre> updating... </pre> }
+            { this.state.view === 'model' && <pre> { JSON.stringify(this.state.model, null, 2) } </pre> }
             { this.state.view === 'process' && <ProcessView
               steps={this.state.model.nitta.process.steps}
               relations={this.state.model.nitta.process.relations}
             /> }
+
           </div>
         }
 
