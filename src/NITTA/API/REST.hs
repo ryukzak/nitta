@@ -27,20 +27,24 @@ module NITTA.API.REST
     , synthesisServer
     ) where
 
-import           Control.Concurrent.STM.TVar
 import           Control.Concurrent.STM
+import           Control.Concurrent.STM.TVar
 import           Control.Monad.Except
+import           Control.Monad.Zip             (mzip)
 import           Data.Aeson
 import           Data.Default
-import Data.List.Split
-import NITTA.Types.Synthesis
 import           Data.Hashable
+import           Data.List.Split
 import           Data.Map                      (Map, fromList)
+import qualified Data.Text                     as T
+import           Data.Tree
+import           Debug.Trace
 import           GHC.Generics
 import           ListT                         (toList)
 import           NITTA.Compiler
 import           NITTA.DataFlow                ()
 import           NITTA.Types
+import           NITTA.Types.Synthesis
 import           NITTA.Utils.JSON              ()
 import           Servant
 import qualified STMContainers.Map             as M
@@ -69,27 +73,75 @@ instance ToJSON (Synthesis String String String Int (TaggedTime String Int))
 
 -- *REST API
 
+
 type SynthesisAPI
-    =    "synthesis" :> Get '[JSON] SYN
-    :<|> "synthesis" :> Capture "nid" String :> WithSynthesis
+    =    "synthesis" :> Get '[JSON] (Tree SynthesisView)
+    :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis
 
 synthesisServer st
-    =    ( liftSTM $ readTVar st )
-    :<|> \nid -> withSynthesis st (map read $ splitOn "," nid)
+    =    ( view <$> (liftSTM $ readTVar st ))
+    :<|> \nid -> withSynthesis st nid
+
+
+data SynthesisView
+    = SynthesisView
+        { svNnid :: Nid
+        , svCntx :: [String]
+        }
+    deriving (Generic)
+
+instance ToJSON SynthesisView
+
+view n = fmap (\(nid, Synthesis{ sCntx } ) -> SynthesisView nid sCntx) $ mzip (nids n) n
+
+instance Show Nid where
+    show (Nid []) = "."
+    show (Nid is) = show' is
+        where
+            show' []     = ""
+            show' (x:xs) = '.' : show x ++ show' xs
+
+
+instance ToJSON Nid where
+    toJSON nid = toJSON $ show nid
+
+instance FromJSON Nid where
+    parseJSON v = readNid <$> parseJSON v
+
+instance FromHttpApiData Nid where
+    parseUrlPiece = Right . readNid . T.unpack
+
+readNid []       = error "readNid error (empty)"
+readNid ['.']    = Nid []
+readNid ('.':xs) = Nid $ map read $ splitOn "." xs
 
 
 
 type WithSynthesis
     =    Get '[JSON] SYN
+    :<|> "simple" :> Post '[JSON] Nid
 --     :<|> QueryParam' '[Required] "childSix" Six :> Post '[JSON] (SNode, Six)
 --     :<|> StepAPI
 
 withSynthesis st nid
-    =    (liftSTM $ readTVar st) >>= return . getSynthesis nid
+    =    get st nid
+    :<|> simple st nid
 --     :<|> ( \childSix -> liftSTM $ forkSynthesis st node childSix )
 --     :<|> stepServer st node
 
 
+
+
+get st nid = do
+    n <- liftSTM $ readTVar st
+    return $ getSynthesis nid n
+
+simple st nid
+    = liftSTM $ do
+        syn <- readTVar st
+        let Just (syn', nid') = simpleSynthesisAt def nid syn
+        writeTVar st syn'
+        return nid'
 
 -- type StepAPI
 --     =    "sSteps" :> Get '[JSON] [CSt]

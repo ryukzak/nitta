@@ -22,15 +22,17 @@ Stability   : experimental
 module NITTA.Types.Synthesis
     ( Synthesis(..)
     , SynthesisNode
-    , Nid
+    , Nid(..)
     , rootSynthesis
     , simpleSynthesis
     , getSynthesis
     , simpleSynthesisOneStepAt
+    , simpleSynthesisAt
+    , nids
     ) where
 
+import           Data.Tree
 import           GHC.Generics
-import Data.Tree
 import           NITTA.Compiler
 import           NITTA.DataFlow   (SystemState)
 import           NITTA.Utils.JSON ()
@@ -40,64 +42,73 @@ type SynthesisNode title tag v x t = Tree (Synthesis title tag v x t)
 
 data Synthesis title tag v x t
     = Synthesis
-        { sModel    :: SystemState title tag v x t
-        , sCntx     :: Maybe ()
+        { sModel :: SystemState title tag v x t
+        , sCntx  :: [String]
         }
     deriving ( Generic )
 
 -- |Synthesis identical.
-type Nid = [Int]
+newtype Nid = Nid [Int]
 
-getSynthesis [] n = n
-getSynthesis (s:sid) Node{ subForest } = getSynthesis sid (subForest !! s)
+nids n = inner [] n
+    where
+        inner is Node{ subForest } = Node
+            { rootLabel=Nid $ reverse is
+            , subForest=zipWith (\i subN -> inner (i:is) subN) [0..] subForest
+            }
+
+getSynthesis (Nid []) n                     = n
+getSynthesis (Nid (i:is)) Node{ subForest } = getSynthesis (Nid is) (subForest !! i)
 
 -- | Create initial synthesis.
 rootSynthesis m = Node
     { rootLabel=Synthesis
         { sModel=m
-        , sCntx=Nothing
+        , sCntx=[]
         }
     , subForest=[]
     }
 
 
-simpleSynthesis opt syn = simpleSynthesis' opt syn []
+simpleSynthesis opt n@Node{ rootLabel=rl@Synthesis{ sCntx } }
+    = simpleSynthesis' opt n{ rootLabel=rl{ sCntx="simple":sCntx } } $ Nid []
 
-simpleSynthesis' opt n sid
-    = case simpleSynthesisOneStep opt sid n of
-        Just (Node{ subForest }, _) -> 
-            let subN = last subForest
-                (subN', subSid') = simpleSynthesis' opt subN sid
-            in (n{ subForest=subForest ++ [ subN' ] }, length subForest : subSid')
-        Nothing -> (n, sid)
+simpleSynthesis' opt n@Node{ subForest } nid
+    = case simpleSynthesisOneStep opt nid n of
+        Just (Node{ subForest=subForest' }, _) ->
+            let subN = last subForest'
+                (subN', Nid subIs) = simpleSynthesis' opt subN nid
+            in (n{ subForest=subForest ++ [ subN' ] }, Nid (length subForest : subIs) )
+        Nothing -> (n, nid)
 
-simpleSynthesisOneStep opt sid n@Node{ rootLabel=Synthesis{ sModel }, subForest }
+simpleSynthesisOneStep opt (Nid is) n@Node{ rootLabel=Synthesis{ sModel }, subForest }
     = let
         cStep = CompilerStep sModel opt Nothing
     in case naive' cStep of
-        Just CompilerStep{ state=sModel' } -> 
+        Just CompilerStep{ state=sModel' } ->
             let subN = Node
                     { rootLabel=Synthesis
                         { sModel=sModel'
-                        , sCntx=Nothing
+                        , sCntx=["simple1"]
                         }
                     , subForest=[]
                     }
-            in Just (n{ subForest=subForest ++ [ subN ] }, length subForest : sid)
+            in Just (n{ subForest=subForest ++ [ subN ] }, Nid (length subForest : is))
         Nothing -> Nothing
 
 
+simpleSynthesisAt opt nid n
+    = updateSynthesis (Just . simpleSynthesis opt) nid n
 
-simpleSynthesisOneStepAt opt sid
-    = updateSynthesis (simpleSynthesisOneStep opt sid)
+simpleSynthesisOneStepAt opt nid
+    = updateSynthesis (simpleSynthesisOneStep opt nid)
 
--- f :: SynthesisNode -> Maybe (SynthesisNode, Nid)
-updateSynthesis f sid0 n0 = inner sid0 n0
+updateSynthesis f nid0 n0 = inner nid0 n0
     where
-        inner [] n = f n
-        inner (s:subSid) n@Node{ subForest }
+        inner (Nid []) n = f n
+        inner (Nid (i:is)) n@Node{ subForest }
             = let
-                (before, subN : after) = splitAt s subForest
-            in case inner subSid subN of
-                Just (subN', subSid') -> Just (n{ subForest=before ++ (subN' : after) }, subSid')
+                (before, subN : after) = splitAt i subForest
+            in case inner (Nid is) subN of
+                Just (subN', is') -> Just (n{ subForest=before ++ (subN' : after) }, is')
                 Nothing -> Nothing

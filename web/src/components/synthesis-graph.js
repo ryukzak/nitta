@@ -1,7 +1,6 @@
 import React, { Component } from 'react'
 import 'react-table/react-table.css'
 import { hapi } from '../hapi'
-import { showSRoot } from '../utils'
 import Tree from 'react-d3-tree'
 
 export class SynthesisGraph extends Component {
@@ -10,61 +9,76 @@ export class SynthesisGraph extends Component {
     this.propagateSRoot = props.propagateSRoot
 
     this.state = {
-      synthesisNumber: null,
-      sNode: null,
       graph: null,
-      sNodes: null
+      nids: null,
+      currentNid: null
     }
     this.refreshSynthesis()
   }
 
   componentWillReceiveProps (props) {
-    console.debug('SynthesisGraph:componentWillReceiveProps() // state.sNode, props.sNode:', this.state.sNode, props.sNode)
-    if (!this.state.sNodes[showSRoot(props.sNode)]) this.refreshSynthesis()
-    if (this.state.sNode !== props.sNode) this.setState({sNode: props.sNode})
+    console.debug('SynthesisGraph:componentWillReceiveProps() // props.currentNid, this.state.currentNid:', props.currentNid, this.state.currentNid)
+    if (!(props.currentNid in this.state.nids)) this.refreshSynthesis()
+    if (props.currentNid !== null && this.state.currentNid !== props.currentNid) {
+      this.unmarkNode(this.state.currentNid)
+      this.markNode(props.currentNid)
+      this.setState({
+        currentNid: props.currentNid,
+        graph: [this.state.graph[0]] // force rerender Tree
+      })
+    }
+  }
+
+  markNode (nid, nids) {
+    if (nids === undefined) nids = this.state.nids
+    console.debug(nid)
+    if (nid === null || nids === null) return
+    nids[nid].nodeSvgShape = {
+      shape: 'circle',
+      shapeProps: {
+        r: 10,
+        cx: 0,
+        cy: 0,
+        fill: 'red'
+      }
+    }
+  }
+
+  unmarkNode (nid) {
+    if (nid === null) return
+    this.state.nids[nid].nodeSvgShape = undefined
   }
 
   refreshSynthesis () {
     console.debug('SynthesisGraph:refreshSynthesis()')
     hapi.getSynthesis()
       .then(response => {
-        var key, info
-        var graph = {}
-        var cache = {}
-        var sNodes = {}
-
-        if (this.state.synthesisNumber === response.data.length) return
-
-        response.data.forEach(item => {
-          key = item[0]
-          var sKey = showSRoot(key)
-          sNodes[sKey] = true
-          info = item[1]
-          var pointer
-          if (info.siParent === null) {
-            pointer = graph
-          } else {
-            pointer = cache[sKey]
-          }
-          pointer.name = key.sid
-          pointer.sRoot = key
-          pointer.attributes = {
-            // steps: info.siSteps.length
-          }
-          // FIXME: Hightlight current synthesis.
-          pointer.children = []
-          // FIXME: sorting
-          info.siChilds.forEach(e => {
-            var node = {}
-            cache[showSRoot(e)] = node
-            pointer.children.push(node)
+        var i = 0
+        var nids = {}
+        var buildGraph = (gNode, dNode) => {
+          gNode.name = i.toString()
+          gNode.nid = dNode[0].svNnid
+          nids[dNode[0].svNnid] = gNode
+          i += 1
+          gNode.attributes = {}
+          dNode[0].svCntx.forEach(e => {
+            gNode.attributes[e] = true
           })
-        })
+          gNode.children = []
+          dNode[1].forEach(e => {
+            var tmp = {}
+            gNode.children.push(tmp)
+            buildGraph(tmp, e)
+          })
+          return gNode
+        }
+        var graph = buildGraph({}, response.data)
+        nids['.'] = graph
+        if (this.state.currentNid !== null) this.markNode(this.state.currentNid, nids)
 
         this.setState({
           graph: [graph],
-          synthesisNumber: response.data.length,
-          sNodes: sNodes
+          nids: nids
         })
       })
       .catch(err => console.log(err))
@@ -72,27 +86,32 @@ export class SynthesisGraph extends Component {
 
   render () {
     if (this.state.graph === null) return <div />
-    // FIXME: dynamic width and size
     return (
       <div>
-        <Tree data={this.state.graph}
-          nodeSize={{x: 150, y: 50}}
-          separation={{siblings: 1, nonSiblings: 1}}
-          pathFunc='elbow'
-          translate={{x: 20, y: 70}}
-          collapsible={false}
-          styles={{nodes: {
-            node: {
-              name: {'fontSize': '12px'},
-              attributes: {'fontSize': '10px'}
-            },
-            leafNode: {
-              name: {'fontSize': '12px'},
-              attributes: {'fontSize': '10px'}
-            }
-          }}}
-          onClick={(node) => { console.debug('SynthesisGraph: propagateSRoot(', node.sRoot, ')'); this.propagateSRoot(node.sRoot) }}
-        />
+        <div style={{width: '100%', height: '300px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
+          <Tree
+            data={this.state.graph}
+            nodeSize={{x: 80, y: 80}}
+            separation={{siblings: 1, nonSiblings: 1}}
+            pathFunc='elbow'
+            translate={{x: 20, y: 70}}
+            collapsible={false}
+            zoom={0.7}
+            transitionDuration={0}
+            styles={{nodes: {
+              node: {
+                name: {'fontSize': '12px'},
+                attributes: {'fontSize': '10px'}
+              },
+              leafNode: {
+                name: {'fontSize': '12px'},
+                attributes: {'fontSize': '10px'}
+              }
+            }}}
+            onClick={(node) => { console.debug('SynthesisGraph: propagateSRoot(', node.nid, ')'); this.propagateSRoot(node.nid) }}
+          />
+          <pre>Current synthesis (nid): {this.state.currentNid}</pre>
+        </div>
       </div>
     )
   }

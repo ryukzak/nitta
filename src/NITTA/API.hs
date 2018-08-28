@@ -96,6 +96,6 @@ backendServer prepare modelState = do
     -- let initialCompilerState = def{ state=modelState }
     app <- application modelState
     setLocaleEncoding utf8
-    T.writeFile "web/api.txt" $ layout (Proxy :: Proxy SynthesisAPI)
+    -- T.writeFile "web/api.txt" $ layout (Proxy :: Proxy SynthesisAPI)
 
     run port $ simpleCors app

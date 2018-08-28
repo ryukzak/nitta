@@ -32,8 +32,8 @@ class App extends Component {
             { this.state.currentSynthesis !== null && (<li> {this.state.currentSynthesis.sid}.{this.state.currentSynthesis.six} </li>) }
           </ul>
         </nav>
-        <SynthesisGraph sNode={this.state.currentSynthesis} propagateSRoot={sRoot => this.selectSynthesis(sRoot)} />
-        <SynthesisView sRoot={this.state.currentSynthesis} propagateSRoot={sRoot => this.selectSynthesis(sRoot)} />
+        <SynthesisGraph currentNid={this.state.currentSynthesis} propagateSRoot={sRoot => this.selectSynthesis(sRoot)} />
+        {/* <SynthesisView sRoot={this.state.currentSynthesis} propagateSRoot={sRoot => this.selectSynthesis(sRoot)} /> */}
       </div>
     )
   }
