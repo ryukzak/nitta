@@ -112,7 +112,7 @@ export class SynthesisGraph extends Component {
                 attributes: {'fontSize': '10px'}
               }
             }}}
-            onClick={(node) => { console.debug('SynthesisGraph: propagateSRoot(', node.nid, ')'); this.propagateSRoot(node.nid) }}
+            onClick={(node) => { console.debug('SynthesisGraph: propagateCurrentNid(', node.nid, ')'); this.propagateCurrentNid(node.nid) }}
           />
         </div>
       </div>
