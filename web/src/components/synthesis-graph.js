@@ -18,7 +18,7 @@ export class SynthesisGraph extends Component {
 
   componentWillReceiveProps (props) {
     console.debug('SynthesisGraph:componentWillReceiveProps() // props.currentNid, this.state.currentNid:', props.currentNid, this.state.currentNid)
-    if (!(props.currentNid in this.state.nids)) this.refreshSynthesis()
+    if (props.currentNid !== null && !(props.currentNid in this.state.nids)) this.refreshSynthesis()
     if (props.currentNid !== null && this.state.currentNid !== props.currentNid) {
       this.unmarkNode(this.state.currentNid)
       this.markNode(props.currentNid)
@@ -88,6 +88,10 @@ export class SynthesisGraph extends Component {
     if (this.state.graph === null) return <div />
     return (
       <div>
+        <pre>
+          [<a onClick={() => this.refreshSynthesis()}> refresh </a>]
+          current synthesis (nid): {this.state.currentNid}
+        </pre>
         <div style={{width: '100%', height: '300px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
           <Tree
             data={this.state.graph}
@@ -110,7 +114,6 @@ export class SynthesisGraph extends Component {
             }}}
             onClick={(node) => { console.debug('SynthesisGraph: propagateSRoot(', node.nid, ')'); this.propagateSRoot(node.nid) }}
           />
-          <pre>Current synthesis (nid): {this.state.currentNid}</pre>
         </div>
       </div>
     )

@@ -26,12 +26,6 @@ class App extends Component {
   render () {
     return (
       <div>
-        <nav aria-label='You are here:'>
-          <ul className='breadcrumbs'>
-            <li>Project</li>
-            { this.state.currentSynthesis !== null && (<li> {this.state.currentSynthesis.sid}.{this.state.currentSynthesis.six} </li>) }
-          </ul>
-        </nav>
         <SynthesisGraph currentNid={this.state.currentSynthesis} propagateSRoot={sRoot => this.selectSynthesis(sRoot)} />
         {/* <SynthesisView sRoot={this.state.currentSynthesis} propagateSRoot={sRoot => this.selectSynthesis(sRoot)} /> */}
       </div>
