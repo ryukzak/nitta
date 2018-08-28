@@ -10,15 +10,15 @@ class App extends Component {
   constructor () {
     super()
     this.state = {
-      currentSynthesis: null
+      currentNid: null
     }
   }
 
-  selectSynthesis (sNode) {
-    console.debug('App:selectSynthesis(', sNode, ')')
-    if (sNode && sNode !== this.state.currentSynthesis) {
+  onSynthesisChange (sNode) {
+    console.debug('App:onSynthesisChange(', sNode, ')')
+    if (sNode && sNode !== this.state.currentNid) {
       this.setState({
-        currentSynthesis: sNode
+        currentNid: sNode
       })
     }
   }
@@ -26,8 +26,8 @@ class App extends Component {
   render () {
     return (
       <div>
-        <SynthesisGraph currentNid={this.state.currentSynthesis} propagateSRoot={sRoot => this.selectSynthesis(sRoot)} />
-        {/* <SynthesisView sRoot={this.state.currentSynthesis} propagateSRoot={sRoot => this.selectSynthesis(sRoot)} /> */}
+        <SynthesisGraph currentNid={this.state.currentNid} propagateCurrentNid={sRoot => this.onSynthesisChange(sRoot)} />
+        {/* <SynthesisView sRoot={this.state.currentNid} propagateSRoot={sRoot => this.onSynthesisChange(sRoot)} /> */}
       </div>
     )
   }

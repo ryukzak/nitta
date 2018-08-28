@@ -6,7 +6,7 @@ import Tree from 'react-d3-tree'
 export class SynthesisGraph extends Component {
   constructor (props) {
     super(props)
-    this.propagateSRoot = props.propagateSRoot
+    this.propagateCurrentNid = props.propagateCurrentNid
 
     this.state = {
       graph: null,
@@ -51,15 +51,14 @@ export class SynthesisGraph extends Component {
 
   refreshSynthesis () {
     console.debug('SynthesisGraph:refreshSynthesis()')
+    var reLastNidStep = /\.[^.]*$/
     hapi.getSynthesis()
       .then(response => {
-        var i = 0
         var nids = {}
         var buildGraph = (gNode, dNode) => {
-          gNode.name = i.toString()
+          gNode.name = reLastNidStep.exec(dNode[0].svNnid)[0]
           gNode.nid = dNode[0].svNnid
           nids[dNode[0].svNnid] = gNode
-          i += 1
           gNode.attributes = {}
           dNode[0].svCntx.forEach(e => {
             gNode.attributes[e] = true
