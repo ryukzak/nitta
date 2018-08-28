@@ -4,7 +4,7 @@ import 'react-table/react-table.css'
 import { SynthesisGraph } from './components/synthesis-graph'
 import { hapi } from './hapi'
 import { LinkButton, showSRoot } from './utils'
-import { StepView } from './components/step-view'
+import { ProcessView } from './components/process-view'
 
 class App extends Component {
   constructor () {
@@ -26,8 +26,8 @@ class App extends Component {
   render () {
     return (
       <div>
-        <SynthesisGraph currentNid={this.state.currentNid} propagateCurrentNid={sRoot => this.onSynthesisChange(sRoot)} />
-        {/* <SynthesisView sRoot={this.state.currentNid} propagateSRoot={sRoot => this.onSynthesisChange(sRoot)} /> */}
+        <SynthesisGraph currentNid={this.state.currentNid} propagateCurrentNid={nid => this.onSynthesisChange(nid)} />
+        <SynthesisView currentNid={this.state.currentNid} propagateCurrentNid={nid => this.onSynthesisChange(nid)} />
       </div>
     )
   }
@@ -37,66 +37,74 @@ class SynthesisView extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      sRoot: props.sRoot,
-      view: null,
-      data: null
+      currentNid: props.currentNid,
+      view: 'update',
+      model: null
     }
-    this.propagateSRoot = props.propagateSRoot
-    if (props.sRoot !== undefined) this.handleSynthesisChange(props.sRoot)
+    this.propagateCurrentNid = props.propagateCurrentNid
+    this.handleViewChange(props.currentNid, 'process')
   }
 
-  handleSynthesisChange (sRoot, view, six) {
-    console.debug('SynthesisView:handleSynthesisChange(', sRoot, view, ')')
-    if (sRoot) {
-      hapi.getSynthesis(sRoot)
-        .then(response => {
-          this.setState({
-            sRoot: sRoot,
-            data: response.data,
-            view: view === undefined ? 'info' : view,
-            six: view === 'step' ? six : this.state.six
-          })
-          this.propagateSRoot(sRoot)
-        })
-        .catch(err => console.log(err))
-    }
+  handleViewChange (nid, view) {
+    console.debug('SynthesisView:handleViewChange(', nid, view, ') // this.state.view:', this.state.view)
+    if (nid === undefined || nid === null) return
+
+    this.setState({currentNid: nid, view: 'update'})
+    if (view === 'process') this.updateProcess(nid)
   }
 
   componentWillReceiveProps (props) {
-    if (this.state.sRoot !== props.sRoot) this.handleSynthesisChange(props.sRoot)
+    var view = this.state.view
+    if (view === 'update') view = 'process'
+    if (this.state.currentNid !== props.currentNid) this.handleViewChange(props.currentNid, view)
   }
 
   compilerStep (oneStep) {
-    hapi.compilerStep(this.state.sRoot, oneStep)
+    hapi.compilerStep(this.state.currentNid, oneStep)
       .then(response => {
-        this.handleSynthesisChange(response.data[0], 'step', response.data[1])
+        this.handleViewChange(response.data[0], 'step', response.data[1])
       })
       .catch(err => alert(err))
+  }
+
+  updateProcess (nid) {
+    hapi.getModel(nid)
+      .then(response => {
+        this.setState({
+          model: response.data,
+          view: 'process'
+        })
+      })
+      .catch(err => console.log(err))
   }
 
   render (props) {
     return (
       <div>
-        { this.state.sRoot === null && <pre> SYNTHESIS NOT SELECTED </pre> }
-        { this.state.sRoot !== null &&
-          <div className='tiny button-group'>
-            <a className='button primary' onClick={() => this.setState({view: 'info'})}>info</a>
-            { this.state.data.sSteps.map((step, i) =>
-              <LinkButton key={i} sname={i}
-                onClick={() => { this.setState({view: 'step', six: i}) }}
-              />
-            )}
-            <a className='button primary' onClick={() => { this.compilerStep(true) }}>one step</a>
-            <a className='button primary' onClick={() => { this.compilerStep(false) }}>all steps</a>
+        { this.state.currentNid === null && <pre> synthesis is not selected </pre> }
+
+        { this.state.currentNid !== null &&
+          <div>
+            <div className='tiny button-group'>
+              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'process')}>process</a>
+              <a className='button primary' onClick={() => { this.compilerStep(true) }}>one step</a>
+              <a className='button primary' onClick={() => { this.compilerStep(false) }}>all steps</a>
+            </div>
+            { this.state.view === 'update' && <pre> updating... </pre> }
+            { this.state.view === 'process' && <ProcessView
+              steps={this.state.model.nitta.process.steps}
+              relations={this.state.model.nitta.process.relations}
+            /> }
           </div>
         }
-        { this.state.view === 'info' && <SynthesisInfo
+
+        {/* { this.state.view === 'info' && <SynthesisInfo
           data={this.state.data}
-          propagateSRoot={sRoot => this.propagateSRoot(sRoot)}
+          propagateCurrentNid={currentNid => this.propagateCurrentNid(currentNid)}
         /> }
         { this.state.view === 'step' &&
-          <StepView sRoot={this.state.sRoot} six={this.state.six} propagateSRoot={sRoot => this.propagateSRoot(sRoot)} />
-        }
+          <StepView currentNid={this.state.currentNid} six={this.state.six} propagateCurrentNid={currentNid => this.propagateSRoot(currentNid)} />
+        } */}
       </div>
     )
   }

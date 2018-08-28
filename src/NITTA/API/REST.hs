@@ -42,6 +42,7 @@ import           Debug.Trace
 import           GHC.Generics
 import           ListT                         (toList)
 import           NITTA.Compiler
+import           NITTA.DataFlow
 import           NITTA.DataFlow                ()
 import           NITTA.Types
 import           NITTA.Types.Synthesis
@@ -94,12 +95,14 @@ instance ToJSON SynthesisView
 
 view n = fmap (\(nid, Synthesis{ sCntx } ) -> SynthesisView nid sCntx) $ mzip (nids n) n
 
+nidSep = ':'
+
 instance Show Nid where
-    show (Nid []) = "."
+    show (Nid []) = [nidSep]
     show (Nid is) = show' is
         where
             show' []     = ""
-            show' (x:xs) = '.' : show x ++ show' xs
+            show' (x:xs) = nidSep : show x ++ show' xs
 
 
 instance ToJSON Nid where
@@ -111,20 +114,22 @@ instance FromJSON Nid where
 instance FromHttpApiData Nid where
     parseUrlPiece = Right . readNid . T.unpack
 
-readNid []       = error "readNid error (empty)"
-readNid ['.']    = Nid []
-readNid ('.':xs) = Nid $ map read $ splitOn "." xs
+readNid [s]    | s == nidSep    = Nid []
+readNid (s:xs) | s == nidSep = Nid $ map read $ splitOn [nidSep] xs
+readNid badNid = error $ "readNid error (empty): " ++ badNid
 
 
 
 type WithSynthesis
     =    Get '[JSON] SYN
+    :<|> "model" :> Get '[JSON] (SystemState String String String Int (TaggedTime String Int))
     :<|> "simple" :> Post '[JSON] Nid
 --     :<|> QueryParam' '[Required] "childSix" Six :> Post '[JSON] (SNode, Six)
 --     :<|> StepAPI
 
 withSynthesis st nid
     =    get st nid
+    :<|> getModel st nid
     :<|> simple st nid
 --     :<|> ( \childSix -> liftSTM $ forkSynthesis st node childSix )
 --     :<|> stepServer st node
@@ -133,8 +138,13 @@ withSynthesis st nid
 
 
 get st nid = do
-    n <- liftSTM $ readTVar st
-    return $ getSynthesis nid n
+    root <- liftSTM $ readTVar st
+    return $ getSynthesis nid root
+
+getModel st nid = do
+    root <- liftSTM $ readTVar st
+    let Node{ rootLabel=Synthesis{ sModel } } = getSynthesis nid root
+    return sModel
 
 simple st nid
     = liftSTM $ do

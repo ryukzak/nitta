@@ -51,7 +51,7 @@ export class SynthesisGraph extends Component {
 
   refreshSynthesis () {
     console.debug('SynthesisGraph:refreshSynthesis()')
-    var reLastNidStep = /\.[^.]*$/
+    var reLastNidStep = /:[^:]*$/
     hapi.getSynthesis()
       .then(response => {
         var nids = {}
