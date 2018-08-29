@@ -37,7 +37,6 @@ import           Data.Tree
 import           GHC.Generics
 import           NITTA.Compiler
 import           NITTA.DataFlow   (SystemState)
-import           NITTA.Utils.JSON ()
 
 
 type SynthesisNode title tag v x t = Tree (Synthesis title tag v x t)

@@ -18,8 +18,6 @@ Stability   : experimental
 
 module NITTA.API.REST
     ( Synthesis(..)
-    -- , synthesis
-    -- , rootNode
     , SynthesisAPI
     , synthesisServer
     ) where
@@ -29,15 +27,13 @@ import           Control.Monad.Except
 import           Control.Monad.Zip      (mzip)
 import           Data.Aeson
 import           Data.Default
-import qualified Data.Text              as T
 import           Data.Tree
 import           GHC.Generics
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import           NITTA.DataFlow         ()
 import           NITTA.Types
 import           NITTA.Types.Synthesis
-import           NITTA.Utils.JSON       ()
+import           NITTA.API.Marshalling       ()
 import           Servant
 
 
@@ -58,16 +54,8 @@ data SynthesisView
 
 instance ToJSON SynthesisView
 
-view n = fmap (\(nid, Synthesis{ sCntx } ) -> SynthesisView{ svNnid=nid, svCntx=sCntx }) $ mzip (nids n) n
+view n = (\(nid, Synthesis{ sCntx } ) -> SynthesisView{ svNnid=nid, svCntx=sCntx }) <$> mzip (nids n) n
 
-instance ToJSON Nid where
-    toJSON nid = toJSON $ show nid
-
-instance FromJSON Nid where
-    parseJSON v = read <$> parseJSON v
-
-instance FromHttpApiData Nid where
-    parseUrlPiece = Right . read . T.unpack
 
 type RESTOption =
     ( Int
@@ -143,7 +131,7 @@ simpleCompilerManual st nid m
 
 
 
--- -- *Internal
+-- *Internal
 
 liftSTM stm = do
     e <- liftIO (atomically $ catchSTM (Right <$> stm) (return . Left))

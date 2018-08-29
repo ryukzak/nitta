@@ -6,14 +6,13 @@ import Tree from 'react-d3-tree'
 export class SynthesisGraph extends Component {
   constructor (props) {
     super(props)
-    this.propagateCurrentNid = props.propagateCurrentNid
-
+    this.onCurrentNidChange = props.onCurrentNidChange
     this.state = {
       graph: null,
       nids: null,
       currentNid: null
     }
-    this.refreshSynthesis()
+    this.reloadSynthesis()
   }
 
   componentWillReceiveProps (props) {
@@ -23,7 +22,7 @@ export class SynthesisGraph extends Component {
       this.setState({
         currentNid: props.currentNid
       })
-      this.refreshSynthesis()
+      this.reloadSynthesis()
       return
     }
     if (props.currentNid !== null && this.state.currentNid !== props.currentNid) {
@@ -56,8 +55,8 @@ export class SynthesisGraph extends Component {
     this.state.nids[nid].nodeSvgShape = undefined
   }
 
-  refreshSynthesis () {
-    console.debug('SynthesisGraph:refreshSynthesis()')
+  reloadSynthesis () {
+    console.debug('SynthesisGraph:reloadSynthesis()')
     var reLastNidStep = /:[^:]*$/
     hapi.getSynthesis()
       .then(response => {
@@ -95,7 +94,7 @@ export class SynthesisGraph extends Component {
     return (
       <div>
         <pre>
-          [<a onClick={() => this.refreshSynthesis()}> refresh </a>]
+          [<a onClick={() => this.reloadSynthesis()}> refresh </a>]
           current synthesis (nid): {this.state.currentNid}
         </pre>
         <div style={{width: '100%', height: '300px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
@@ -118,7 +117,7 @@ export class SynthesisGraph extends Component {
                 attributes: {'fontSize': '10px'}
               }
             }}}
-            onClick={(node) => { console.debug('SynthesisGraph: propagateCurrentNid(', node.nid, ')'); this.propagateCurrentNid(node.nid) }}
+            onClick={(node) => { console.debug('SynthesisGraph: onCurrentNidChange(', node.nid, ')'); this.onCurrentNidChange(node.nid) }}
           />
         </div>
       </div>

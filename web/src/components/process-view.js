@@ -5,6 +5,7 @@ import { Chart } from 'react-google-charts'
 export class ProcessView extends Component {
   constructor (props) {
     super(props)
+
     var relations = {}
     for (var r in props.relations) {
       var a = props.relations[r][1].toString()
@@ -12,6 +13,7 @@ export class ProcessView extends Component {
       if (!(a in relations)) relations[a] = []
       relations[a].push(b)
     }
+
     var steps = []
     var levels = {}
     var processUnits = {}
@@ -33,6 +35,7 @@ export class ProcessView extends Component {
       if (!(pul in processUnitsAndLevels)) processUnitsAndLevels[pul] = true
       steps.push(e)
     }
+
     this.state = {
       steps: steps,
       steps_raw: props.steps,
@@ -41,6 +44,7 @@ export class ProcessView extends Component {
       processUnitsAndLevels: processUnitsAndLevels
     }
   }
+
   changeFilter (filterName, k) {
     var filter = Object.assign({}, this.state[filterName])
     filter[k] = !filter[k]
@@ -48,6 +52,7 @@ export class ProcessView extends Component {
     updState[filterName] = filter
     this.setState(updState)
   }
+
   filterOnly (filterName, showOnly) {
     var filter = {}
     var keys = Object.keys(this.state[filterName])
@@ -60,9 +65,11 @@ export class ProcessView extends Component {
     updState[filterName] = filter
     this.setState(updState)
   }
+
   processUnitAndLevel (stepRaw) {
     return stepRaw.sPU + '.' + stepRaw.sLevel
   }
+
   render () {
     var steps = []
     var stepKeys = {}
@@ -78,6 +85,7 @@ export class ProcessView extends Component {
         stepKeys[this.state.steps[i][0]] = true
       }
     }
+
     for (i in steps) {
       var deps = steps[i][7]
       if (deps == null) continue
@@ -87,6 +95,7 @@ export class ProcessView extends Component {
       }
       steps[i][7] = newDeps.join()
     }
+
     return (
       <div>
         <h2>Filters:</h2>

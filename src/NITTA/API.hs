@@ -1,10 +1,8 @@
 {-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeOperators     #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
@@ -30,7 +28,7 @@ import NITTA.Types.Synthesis
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
 import           Network.Wai.Handler.Warp      (run)
 import           Network.Wai.Middleware.Cors   (simpleCors)
-import           NITTA.Utils.JSON              ()
+import           NITTA.API.Marshalling              ()
 import           Servant
 import qualified Servant.JS                    as SJS
 import           Servant.Utils.StaticFiles     (serveDirectoryWebApp)

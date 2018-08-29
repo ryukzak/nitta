@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Demo
                      , NITTA.API
+                     , NITTA.API.Marshalling
                      , NITTA.API.REST
                      , NITTA.BusNetwork
                      , NITTA.Compiler
@@ -38,9 +39,8 @@ library
                      , NITTA.Types.Synthesis
                      , NITTA.Types.Time
                      , NITTA.Utils
-                     , NITTA.Utils.JSON
-                     , NITTA.Utils.Process
                      , NITTA.Utils.Lens
+                     , NITTA.Utils.Process
   build-depends:       aeson
                      , array
                      , base
