@@ -11,5 +11,6 @@ export const hapi = {
   },
   getModel: (nid) => api.getSynthesisByNidModel(nid),
   simpleCompiler: (nid, onlyOneStep) => api.postSynthesisByNidSimple(nid, onlyOneStep),
-  simpleCompilerOptions: (nid) => api.getSynthesisByNidSimpleOptions(nid)
+  simpleCompilerOptions: (nid) => api.getSynthesisByNidSimpleOptions(nid),
+  manualDecision: (nid, m) => api.postSynthesisByNidSimpleManual(nid, m)
 }

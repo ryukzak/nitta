@@ -16,6 +16,7 @@ module NITTA.Compiler
   , isSchedulingComplete
   , naive
   , naive'
+  , naive''
   , NaiveOpt(..)
   , option2decision
   , optionsWithMetrics
@@ -199,7 +200,9 @@ optionsWithMetrics CompilerStep{ state }
       = let m = measure opts state o
         in ( integral gm m, gm, m, o, option2decision o )
 
-naive' st@CompilerStep{ state }
+naive' st = naive'' st 0
+
+naive'' st@CompilerStep{ state } n
   = if null opts -- ( trace (show opts) opts )
     then Nothing
     -- else Just st{ state=decision compiler state $ trace (show d) d
@@ -208,8 +211,7 @@ naive' st@CompilerStep{ state }
                 }
   where
     opts = optionsWithMetrics st
-    (_, _, _, _, d) = head opts
-
+    (_, _, _, _, d) = opts !! n
 
 naive opt f
   = let st = CompilerStep f opt Nothing

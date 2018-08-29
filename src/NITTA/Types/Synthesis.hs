@@ -26,6 +26,7 @@ module NITTA.Types.Synthesis
     , rootSynthesis
     , simpleSynthesis
     , getSynthesis
+    , simpleSynthesisAtManual
     , simpleSynthesisOneStepAt
     , simpleSynthesisAt
     , nids
@@ -92,14 +93,14 @@ rootSynthesis m = Node
     }
 
 
-simpleSynthesis opt n@Node{ rootLabel=rl@Synthesis{ sCntx } }
-    = inner opt n{ rootLabel=rl{ sCntx="simple":sCntx } } $ Nid []
+simpleSynthesis opt nRoot@Node{ rootLabel=rl@Synthesis{ sCntx } }
+    = inner nRoot{ rootLabel=rl{ sCntx="simple":sCntx } } $ Nid []
     where
-        inner opt n@Node{ subForest } nid
+        inner n@Node{ subForest } nid
             = case simpleSynthesisOneStep opt n of
                 Just (Node{ subForest=subForest' }, _) ->
                     let subN = last subForest'
-                        (subN', Nid subIs) = inner opt subN nid
+                        (subN', Nid subIs) = inner subN nid
                     in (n{ subForest=subForest ++ [ subN' ] }, Nid (length subForest : subIs) )
                 Nothing -> (n, nid)
 
@@ -118,6 +119,23 @@ simpleSynthesisOneStep opt n@Node{ rootLabel=Synthesis{ sModel }, subForest }
             in Just (n{ subForest=subForest ++ [ subN ] }, Nid [length subForest])
         Nothing -> Nothing
 
+simpleSynthesisManual opt m n@Node{ rootLabel=Synthesis{ sModel }, subForest }
+    = let
+        cStep = CompilerStep sModel opt Nothing
+    in case naive'' cStep m of
+        Just CompilerStep{ state=sModel' } ->
+            let subN = Node
+                    { rootLabel=Synthesis
+                        { sModel=sModel'
+                        , sCntx=["manual"]
+                        }
+                    , subForest=[]
+                    }
+            in Just (n{ subForest=subForest ++ [ subN ] }, Nid [length subForest])
+        Nothing -> Nothing
+
+simpleSynthesisAtManual opt nid n m
+    = updateSynthesis (simpleSynthesisManual opt m) nid n
 
 simpleSynthesisAt opt nid n
     = updateSynthesis (Just . simpleSynthesis opt) nid n

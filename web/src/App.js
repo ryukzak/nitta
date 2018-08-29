@@ -5,7 +5,9 @@ import { SynthesisGraph } from './components/synthesis-graph'
 import { hapi } from './hapi'
 import { LinkButton, showSRoot } from './utils'
 import { ProcessView } from './components/process-view'
-import { StepOptionView } from './components/step-view'
+import ReactTable from 'react-table'
+import { LineChart } from 'react-easy-chart'
+// import { StepOptionView } from './components/step-view'
 
 class App extends Component {
   constructor () {
@@ -54,7 +56,7 @@ class SynthesisView extends Component {
     this.setState({currentNid: nid, view: 'update'})
     if (view === 'process') this.updateModel(nid, 'process')
     if (view === 'model') this.updateModel(nid, 'model')
-    if (view === 'scOptions') this.updateSCOptions(nid)
+    if (view === 'scOptions') this.setState({view: 'scOptions'})
   }
 
   componentWillReceiveProps (props) {
@@ -73,19 +75,6 @@ class SynthesisView extends Component {
         this.propagateCurrentNid(newNid)
       })
       .catch(err => alert(err))
-  }
-
-  updateSCOptions (nid) {
-    if (nid === undefined || nid === null) return
-    console.debug('SynthesisView:simpleCompilerOptions(', nid, ')')
-    hapi.simpleCompilerOptions(nid)
-      .then(response => {
-        this.setState({
-          scOptions: response.data,
-          view: 'scOptions'
-        })
-      })
-      .catch(err => console.log(err))
   }
 
   updateModel (nid, view) {
@@ -120,12 +109,83 @@ class SynthesisView extends Component {
               relations={this.state.model.nitta.process.relations}
             /> }
             { this.state.view === 'scOptions' && <StepOptionView
-              options={this.state.scOptions}
               currentNid={this.state.currentNid}
               propagateCurrentNid={nid => this.propagateCurrentNid(nid)}
             /> }
           </div>
         }
+      </div>
+    )
+  }
+}
+
+class StepOptionView extends Component {
+  constructor (props) {
+    super(props)
+    this.state = {
+      currentNid: props.currentNid,
+      options: null
+    }
+    this.propagateCurrentNid = props.propagateCurrentNid
+    this.updateSCOptions(props.currentNid)
+  }
+
+  componentWillReceiveProps (props) {
+    console.debug('StepOptionView:componentWillReceiveProps(', props, ')')
+    if (this.state.currentNid !== props.currentNid) this.updateSCOptions(props.currentNid)
+    this.setState({currentNid: props.currentNid})
+  }
+
+  updateSCOptions (nid) {
+    if (nid === undefined || nid === null) return
+    console.debug('StepOptionView:updateSCOptions§(', nid, ')')
+    hapi.simpleCompilerOptions(nid)
+      .then(response => {
+        this.setState({
+          options: response.data
+        })
+      })
+      .catch(err => console.log(err))
+  }
+
+  render () {
+    if (this.state.options === undefined || this.state.options === null) return <div />
+    if (this.state.options.length === 0) return <pre> Process is over. Options not allow. </pre>
+    return (
+      <div>
+        <div className='grid-x'>
+          <div className='cell small-4'>
+            <pre>{ JSON.stringify(this.state.options[0][1], null, 2) }</pre>
+          </div>
+          <div className='cell small-8'>
+            <LineChart data={[ this.state.options.map((e, index) => { return { x: index, y: e[0] } }) ]}
+              width={750} height={250}
+              axes />
+          </div>
+        </div>
+        <ReactTable
+          columns={
+            [
+              {
+                Header: 'Integral',
+                accessor: '0',
+                maxWidth: 70,
+                Cell: row =>
+                  <a onClick={() => {
+                    hapi.manualDecision(this.state.currentNid, row.index)
+                      .then(response => {
+                        this.propagateCurrentNid(response.data)
+                      })
+                      .catch(err => alert(err))
+                  }}> { row.value }
+                  </a>
+              },
+              {Header: 'Description', accessor: '3', Cell: row => <pre> {JSON.stringify(row.value)} </pre>},
+              {Header: 'Metrics', accessor: '2', Cell: row => <pre> {JSON.stringify(row.value) } </pre>}
+            ]
+          }
+          data={this.state.options}
+        />
       </div>
     )
   }

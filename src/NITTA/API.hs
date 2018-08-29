@@ -25,19 +25,15 @@ import           NITTA.API.REST
 
 import           Control.Concurrent.STM
 import           Control.Monad                 (when)
-import           Data.Default
 import           Data.Monoid                   ((<>))
 import NITTA.Types.Synthesis
-import qualified Data.Text.IO                  as T
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
 import           Network.Wai.Handler.Warp      (run)
 import           Network.Wai.Middleware.Cors   (simpleCors)
-import           NITTA.Compiler
 import           NITTA.Utils.JSON              ()
 import           Servant
 import qualified Servant.JS                    as SJS
 import           Servant.Utils.StaticFiles     (serveDirectoryWebApp)
-import qualified STMContainers.Map             as M
 import           System.Directory              (createDirectoryIfMissing)
 import           System.Exit                   (ExitCode (..), die)
 import           System.FilePath.Posix         (joinPath)
