@@ -105,8 +105,8 @@ export class StepView extends Component {
   }
 }
 
-function StepOptionView (props) {
-  if (props.options === undefined) return <div />
+export function StepOptionView (props) {
+  if (props.options === undefined || props.options === null) return <div />
   if (props.options.length === 0) return <pre> Process is over. Options not allow. </pre>
   return (
     <div>
@@ -129,9 +129,9 @@ function StepOptionView (props) {
               maxWidth: 70,
               Cell: row =>
                 <a onClick={() => {
-                  hapi.manualDecision(props.sRoot, props.six, row.index)
+                  hapi.manualDecision(props.currentNid, row.index)
                     .then(response => {
-                      props.propagateSRoot(response.data[0], response.data[1])
+                      props.propagateCurrentNid(props.currentNid)
                     })
                     .catch(err => alert(err))
                 }}> { row.value }

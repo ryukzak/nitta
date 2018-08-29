@@ -63,14 +63,6 @@ instance ToJSON (Synthesis String String String Int (TaggedTime String Int))
 
 -- *REST API Projections.
 
--- type RESTOption =
---     ( Int
---     , GlobalMetrics
---     , SpecialMetrics
---     , Option (CompilerDT String String String (TaggedTime String Int))
---     , Decision (CompilerDT String String String (TaggedTime String Int))
---     )
-
 data SynthesisView
     = SynthesisView
         { svNnid :: Nid
@@ -91,6 +83,13 @@ instance FromJSON Nid where
 instance FromHttpApiData Nid where
     parseUrlPiece = Right . read . T.unpack
 
+type RESTOption =
+    ( Int
+    , GlobalMetrics
+    , SpecialMetrics
+    , Option (CompilerDT String String String (TaggedTime String Int))
+    , Decision (CompilerDT String String String (TaggedTime String Int))
+    )
 
 
 -- *REST API
@@ -100,7 +99,7 @@ type SynthesisAPI
     :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis
 
 synthesisServer st
-    =    ( view <$> (liftSTM $ readTVar st ))
+    =    ( view <$> liftSTM (readTVar st))
     :<|> \nid -> withSynthesis st nid
 
 
@@ -108,17 +107,17 @@ synthesisServer st
 type WithSynthesis
     =    Get '[JSON] SYN
     :<|> "model" :> Get '[JSON] (SystemState String String String Int (TaggedTime String Int))
+    :<|> "simple" :> "options" :> Get '[JSON] [ RESTOption ]
     :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
---     :<|> QueryParam' '[Required] "childSix" Six :> Post '[JSON] (SNode, Six)
---     :<|> StepAPI
 
+--     :<|> "decisions" :> Get '[JSON] [Decision (CompilerDT String String String (TaggedTime String Int))]
 
 
 withSynthesis st nid
     =    get st nid
     :<|> getModel st nid
+    :<|> simpleCompilerOptions st nid
     :<|> \onlyOneStep -> simpleCompiler st nid onlyOneStep
---     :<|> ( \childSix -> liftSTM $ forkSynthesis st node childSix )
 --     :<|> stepServer st node
 
 
@@ -128,10 +127,17 @@ get st nid = do
     root <- liftSTM $ readTVar st
     return $ getSynthesis nid root
 
+simpleCompilerOptions st nid = do
+    root <- liftSTM $ readTVar st
+    let Node{ rootLabel=Synthesis{ sModel } } = getSynthesis nid root
+    let compilerState = def{ state=sModel }
+    return $ optionsWithMetrics compilerState
+
 getModel st nid = do
     root <- liftSTM $ readTVar st
     let Node{ rootLabel=Synthesis{ sModel } } = getSynthesis nid root
     return sModel
+
 
 simpleCompiler st nid onlyOneStep
     = liftSTM $ do
@@ -142,15 +148,6 @@ simpleCompiler st nid onlyOneStep
         writeTVar st n'
         return $ trace (show nid') nid'
 
--- type StepAPI
---     =    "sSteps" :> Get '[JSON] [CSt]
---     :<|> "sSteps" :> QueryParam' '[Required] "oneStep" Bool :> Post '[JSON] (SNode, Six) -- compilerStep
---     :<|> "sSteps" :> Capture "six" Int :> WithStep
-
--- stepServer st node
---     =    ( sSteps <$> getSynthesis st node )
---     :<|> ( \oneStep -> liftSTM $ compilerStep st node oneStep )
---     :<|> \six -> withStep st node six
 
 
 
@@ -197,36 +194,6 @@ simpleCompiler st nid onlyOneStep
 
 
 -- -- *Synthesis generation
-
--- forkSynthesis st parentNode childSix = do
---     childNode <- genChildNode st parentNode childSix
---     parent@Synthesis{ sChilds, sSteps } <- getSynthesis' st parentNode
---     M.insert parent{ sChilds=childNode : sChilds } parentNode st
---     M.insert
---         Synthesis
---             { sParent=Just parentNode
---             , sChilds=[]
---             , sSteps=drop (length sSteps - childSix - 1) sSteps
---             }
---             childNode
---         st
---     return (childNode, childSix)
-
--- compilerStep st node oneStep = do
---     syn@Synthesis{ sSteps } <- getSynthesis' st node
---     sSteps' <- case oneStep of
---         True
---             | Just step <- naive' (head sSteps)
---             -> return (step : sSteps)
---         False -> return $ mkAllSteps sSteps
---         _ -> throwSTM err409{ errBody="Synthesis is over." }
---     M.insert syn{ sSteps=sSteps' } node st
---     return (node, length sSteps' - 1)
---     where
---         mkAllSteps steps@(s:_)
---             | Just s' <- naive' s = mkAllSteps (s':steps)
---             | otherwise = steps
---         mkAllSteps _ = error "Empty CompilerState."
 
 -- manualStep st node six dix = do
 --     syn@Synthesis{ sSteps } <- getSynthesis' st node

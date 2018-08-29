@@ -5,6 +5,7 @@ import { SynthesisGraph } from './components/synthesis-graph'
 import { hapi } from './hapi'
 import { LinkButton, showSRoot } from './utils'
 import { ProcessView } from './components/process-view'
+import { StepOptionView } from './components/step-view'
 
 class App extends Component {
   constructor () {
@@ -39,7 +40,8 @@ class SynthesisView extends Component {
     this.state = {
       currentNid: props.currentNid,
       view: 'update',
-      model: null
+      model: null,
+      scOptions: null
     }
     this.propagateCurrentNid = props.propagateCurrentNid
     this.handleViewChange(props.currentNid, 'model')
@@ -52,6 +54,7 @@ class SynthesisView extends Component {
     this.setState({currentNid: nid, view: 'update'})
     if (view === 'process') this.updateModel(nid, 'process')
     if (view === 'model') this.updateModel(nid, 'model')
+    if (view === 'scOptions') this.updateSCOptions(nid)
   }
 
   componentWillReceiveProps (props) {
@@ -70,6 +73,19 @@ class SynthesisView extends Component {
         this.propagateCurrentNid(newNid)
       })
       .catch(err => alert(err))
+  }
+
+  updateSCOptions (nid) {
+    if (nid === undefined || nid === null) return
+    console.debug('SynthesisView:simpleCompilerOptions(', nid, ')')
+    hapi.simpleCompilerOptions(nid)
+      .then(response => {
+        this.setState({
+          scOptions: response.data,
+          view: 'scOptions'
+        })
+      })
+      .catch(err => console.log(err))
   }
 
   updateModel (nid, view) {
@@ -93,6 +109,7 @@ class SynthesisView extends Component {
             <div className='tiny button-group'>
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'model')}>raw model</a>
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'process')}>process</a>
+              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'scOptions')}>SC options</a>
               <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, true)}>one step</a>
               <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, false)}>all steps</a>
             </div>
@@ -101,6 +118,11 @@ class SynthesisView extends Component {
             { this.state.view === 'process' && <ProcessView
               steps={this.state.model.nitta.process.steps}
               relations={this.state.model.nitta.process.relations}
+            /> }
+            { this.state.view === 'scOptions' && <StepOptionView
+              options={this.state.scOptions}
+              currentNid={this.state.currentNid}
+              propagateCurrentNid={nid => this.propagateCurrentNid(nid)}
             /> }
           </div>
         }
