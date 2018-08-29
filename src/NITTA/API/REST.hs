@@ -95,28 +95,18 @@ instance ToJSON SynthesisView
 
 view n = fmap (\(nid, Synthesis{ sCntx } ) -> SynthesisView nid sCntx) $ mzip (nids n) n
 
-nidSep = ':'
 
-instance Show Nid where
-    show (Nid []) = [nidSep]
-    show (Nid is) = show' is
-        where
-            show' []     = ""
-            show' (x:xs) = nidSep : show x ++ show' xs
 
 
 instance ToJSON Nid where
     toJSON nid = toJSON $ show nid
 
 instance FromJSON Nid where
-    parseJSON v = readNid <$> parseJSON v
+    parseJSON v = read <$> parseJSON v
 
 instance FromHttpApiData Nid where
-    parseUrlPiece = Right . readNid . T.unpack
+    parseUrlPiece = Right . read . T.unpack
 
-readNid [s]    | s == nidSep    = Nid []
-readNid (s:xs) | s == nidSep = Nid $ map read $ splitOn [nidSep] xs
-readNid badNid = error $ "readNid error (empty): " ++ badNid
 
 
 

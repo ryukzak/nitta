@@ -34,6 +34,7 @@ module NITTA.Types.Synthesis
 import           Data.Tree
 import           GHC.Generics
 import           NITTA.Compiler
+import           Data.List.Split
 import           NITTA.DataFlow   (SystemState)
 import           NITTA.Utils.JSON ()
 
@@ -47,8 +48,27 @@ data Synthesis title tag v x t
         }
     deriving ( Generic )
 
+
 -- |Synthesis identical.
 newtype Nid = Nid [Int]
+nidSep = ':'
+
+instance Show Nid where
+    show (Nid []) = [nidSep]
+    show (Nid is) = show' is
+        where
+            show' []     = ""
+            show' (x:xs) = nidSep : show x ++ show' xs
+
+instance Read Nid where
+    readsPrec _ [x] | x == nidSep    = [(Nid [], "")]
+    readsPrec d (x:xs)
+        | x == nidSep 
+        , let is = map (readsPrec d) $ splitOn [nidSep] xs
+        , all (not . null) is
+        = [(Nid $ map fst $ concat is, "")]
+    readsPrec _ _ = []
+
 
 nids n = inner [] n
     where
@@ -57,6 +77,8 @@ nids n = inner [] n
             , subForest=zipWith (\i subN -> inner (i:is) subN) [0..] subForest
             }
 
+
+            
 getSynthesis (Nid []) n                     = n
 getSynthesis (Nid (i:is)) Node{ subForest } = getSynthesis (Nid is) (subForest !! i)
 
