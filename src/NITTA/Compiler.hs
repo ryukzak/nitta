@@ -7,6 +7,15 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
+{-|
+Module      : NITTA.Compiler
+Description : Simple compiler implementation
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
+
 module NITTA.Compiler
   ( bindAll
   , bindAllAndNaiveSchedule
@@ -14,11 +23,8 @@ module NITTA.Compiler
   , CompilerDT
   , CompilerStep(..)
   , isSchedulingComplete
-  , naive
-  , naive'
-  , naive''
+  , naiveStep
   , NaiveOpt(..)
-  , option2decision
   , optionsWithMetrics
   , passiveOption2action
   , GlobalMetrics(..)
@@ -194,29 +200,20 @@ optionsWithMetrics CompilerStep{ state }
   = reverse $ sortOn (\(x, _, _, _, _) -> x) $ map measure' opts
   where
     opts = options compiler state
-    -- gm = measureG (trace (show opts) opts) state
     gm = measureG opts state
     measure' o
       = let m = measure opts state o
         in ( integral gm m, gm, m, o, option2decision o )
 
-naive' st = naive'' st 0
-
-naive'' st@CompilerStep{ state } n
+naiveStep md st@CompilerStep{ state }
   = if null opts -- ( trace (show opts) opts )
     then Nothing
-    -- else Just st{ state=decision compiler state $ trace (show d) d
     else Just st{ state=decision compiler state d
                 , lastDecision=Just d
                 }
   where
     opts = optionsWithMetrics st
-    (_, _, _, _, d) = opts !! n
-
-naive opt f
-  = let st = CompilerStep f opt Nothing
-        CompilerStep{ state=st' } = fromMaybe st $ naive' st
-    in st'
+    (_, _, _, _, d) = opts !! md
 
 
 

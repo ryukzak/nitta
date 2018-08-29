@@ -92,36 +92,30 @@ rootSynthesis m = Node
     }
 
 
-simpleSynthesis opt nRoot@Node{ rootLabel=rl@Synthesis{ sCntx } }
-    = inner nRoot{ rootLabel=rl{ sCntx="simple":sCntx } } $ Nid []
+recApply rec nRoot@Node{ rootLabel=rl@Synthesis{ sCntx } }
+    = inner nRoot{ rootLabel=rl } $ Nid []
     where
         inner n@Node{ subForest } nid
-            = case simpleSynthesisOneStep opt n of
+            = case rec n of
                 Just (Node{ subForest=subForest' }, _) ->
                     let subN = last subForest'
                         (subN', Nid subIs) = inner subN nid
                     in (n{ subForest=subForest ++ [ subN' ] }, Nid (length subForest : subIs) )
                 Nothing -> (n, nid)
 
-simpleSynthesisOneStep opt n@Node{ rootLabel=Synthesis{ sModel }, subForest }
-    = let
-        cStep = CompilerStep sModel opt Nothing
-    in case naive' cStep of
-        Just CompilerStep{ state=sModel' } ->
-            let subN = Node
-                    { rootLabel=Synthesis
-                        { sModel=sModel'
-                        , sCntx=["simple1"]
-                        }
-                    , subForest=[]
-                    }
-            in Just (n{ subForest=subForest ++ [ subN ] }, Nid [length subForest])
-        Nothing -> Nothing
 
-simpleSynthesisManual opt m n@Node{ rootLabel=Synthesis{ sModel }, subForest }
+simpleSynthesis opt = recApply (simpleSynthesisOneStep opt)
+
+simpleSynthesisOneStep opt n = simpleSynthesisStep opt 0 "auto" n
+
+simpleSynthesisManual opt md n = simpleSynthesisStep opt md "manual" n
+
+
+
+simpleSynthesisStep opt md info n@Node{ rootLabel=r@Synthesis{ sModel }, subForest }
     = let
         cStep = CompilerStep sModel opt Nothing
-    in case naive'' cStep m of
+    in case naiveStep md cStep of
         Just CompilerStep{ state=sModel' } ->
             let subN = Node
                     { rootLabel=Synthesis
