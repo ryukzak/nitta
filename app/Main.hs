@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE NamedFieldPuns     #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
