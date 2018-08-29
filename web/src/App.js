@@ -55,15 +55,19 @@ class SynthesisView extends Component {
   }
 
   componentWillReceiveProps (props) {
+    console.debug('SynthesisView:componentWillReceiveProps(', props, ')')
     var view = this.state.view
     if (view === 'update') view = 'model'
     if (this.state.currentNid !== props.currentNid) this.handleViewChange(props.currentNid, view)
   }
 
-  compilerStep (oneStep) {
-    hapi.compilerStep(this.state.currentNid, oneStep)
+  simpleCompiler (nid, onlyOneStep) {
+    if (nid === undefined || nid === null) return
+    console.debug('SynthesisView:simpleCompiler(', nid, onlyOneStep, ')')
+    hapi.simpleCompiler(nid, onlyOneStep)
       .then(response => {
-        this.handleViewChange(response.data[0], 'step', response.data[1])
+        var newNid = response.data
+        this.propagateCurrentNid(newNid)
       })
       .catch(err => alert(err))
   }
@@ -89,8 +93,8 @@ class SynthesisView extends Component {
             <div className='tiny button-group'>
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'model')}>raw model</a>
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'process')}>process</a>
-              <a className='button primary' onClick={() => { this.compilerStep(true) }}>one step</a>
-              <a className='button primary' onClick={() => { this.compilerStep(false) }}>all steps</a>
+              <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, true)}>one step</a>
+              <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, false)}>all steps</a>
             </div>
             { this.state.view === 'update' && <pre> updating... </pre> }
             { this.state.view === 'model' && <pre> { JSON.stringify(this.state.model, null, 2) } </pre> }
@@ -98,42 +102,11 @@ class SynthesisView extends Component {
               steps={this.state.model.nitta.process.steps}
               relations={this.state.model.nitta.process.relations}
             /> }
-
           </div>
         }
-
-        {/* { this.state.view === 'info' && <SynthesisInfo
-          data={this.state.data}
-          propagateCurrentNid={currentNid => this.propagateCurrentNid(currentNid)}
-        /> }
-        { this.state.view === 'step' &&
-          <StepView currentNid={this.state.currentNid} six={this.state.six} propagateCurrentNid={currentNid => this.propagateSRoot(currentNid)} />
-        } */}
       </div>
     )
   }
-}
-
-function SynthesisInfo (props) {
-  return (
-    <dl>
-      <dt>Parent:</dt>
-      <dd> { props.data.sParent
-        ? (<LinkButton sname={showSRoot(props.data.sParent)} onClick={() => props.propagateSRoot(showSRoot(props.data.sParent))} />)
-        : (<div> - </div>) }
-      </dd>
-      <dt>Childs:</dt>
-      <dd>
-        <div className='tiny button-group'>
-          { props.data.sChilds.map((k, i) => <LinkButton key={i} sname={showSRoot(k)} onClick={() => props.propagateSRoot(k)} />) }
-        </div>
-      </dd>
-      <hr />
-      <dd>
-        <pre>{ JSON.stringify(props.data, null, 2) }</pre>
-      </dd>
-    </dl>
-  )
 }
 
 export default App

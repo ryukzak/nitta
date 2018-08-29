@@ -18,7 +18,14 @@ export class SynthesisGraph extends Component {
 
   componentWillReceiveProps (props) {
     console.debug('SynthesisGraph:componentWillReceiveProps() // props.currentNid, this.state.currentNid:', props.currentNid, this.state.currentNid)
-    if (props.currentNid !== null && !(props.currentNid in this.state.nids)) this.refreshSynthesis()
+
+    if (props.currentNid !== null && !(props.currentNid in this.state.nids)) {
+      this.setState({
+        currentNid: props.currentNid
+      })
+      this.refreshSynthesis()
+      return
+    }
     if (props.currentNid !== null && this.state.currentNid !== props.currentNid) {
       this.unmarkNode(this.state.currentNid)
       this.markNode(props.currentNid)

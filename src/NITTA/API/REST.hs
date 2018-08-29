@@ -36,6 +36,7 @@ import           Data.Default
 import           Data.Hashable
 import           Data.List.Split
 import           Data.Map                      (Map, fromList)
+import           Data.Maybe                    (fromMaybe, isJust)
 import qualified Data.Text                     as T
 import           Data.Tree
 import           Debug.Trace
@@ -50,6 +51,7 @@ import           NITTA.Utils.JSON              ()
 import           Servant
 import qualified STMContainers.Map             as M
 import           Text.InterpolatedString.Perl6 (qq)
+import           Text.Read.Lex                 (numberToInteger)
 
 
 
@@ -61,7 +63,6 @@ instance ToJSON (Synthesis String String String Int (TaggedTime String Int))
 
 -- *REST API Projections.
 
-
 -- type RESTOption =
 --     ( Int
 --     , GlobalMetrics
@@ -69,20 +70,6 @@ instance ToJSON (Synthesis String String String Int (TaggedTime String Int))
 --     , Option (CompilerDT String String String (TaggedTime String Int))
 --     , Decision (CompilerDT String String String (TaggedTime String Int))
 --     )
-
-
-
--- *REST API
-
-
-type SynthesisAPI
-    =    "synthesis" :> Get '[JSON] (Tree SynthesisView)
-    :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis
-
-synthesisServer st
-    =    ( view <$> (liftSTM $ readTVar st ))
-    :<|> \nid -> withSynthesis st nid
-
 
 data SynthesisView
     = SynthesisView
@@ -95,9 +82,6 @@ instance ToJSON SynthesisView
 
 view n = fmap (\(nid, Synthesis{ sCntx } ) -> SynthesisView nid sCntx) $ mzip (nids n) n
 
-
-
-
 instance ToJSON Nid where
     toJSON nid = toJSON $ show nid
 
@@ -109,18 +93,31 @@ instance FromHttpApiData Nid where
 
 
 
+-- *REST API
+
+type SynthesisAPI
+    =    "synthesis" :> Get '[JSON] (Tree SynthesisView)
+    :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis
+
+synthesisServer st
+    =    ( view <$> (liftSTM $ readTVar st ))
+    :<|> \nid -> withSynthesis st nid
+
+
 
 type WithSynthesis
     =    Get '[JSON] SYN
     :<|> "model" :> Get '[JSON] (SystemState String String String Int (TaggedTime String Int))
-    :<|> "simple" :> Post '[JSON] Nid
+    :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
 --     :<|> QueryParam' '[Required] "childSix" Six :> Post '[JSON] (SNode, Six)
 --     :<|> StepAPI
+
+
 
 withSynthesis st nid
     =    get st nid
     :<|> getModel st nid
-    :<|> simple st nid
+    :<|> \onlyOneStep -> simpleCompiler st nid onlyOneStep
 --     :<|> ( \childSix -> liftSTM $ forkSynthesis st node childSix )
 --     :<|> stepServer st node
 
@@ -136,12 +133,14 @@ getModel st nid = do
     let Node{ rootLabel=Synthesis{ sModel } } = getSynthesis nid root
     return sModel
 
-simple st nid
+simpleCompiler st nid onlyOneStep
     = liftSTM $ do
-        syn <- readTVar st
-        let Just (syn', nid') = simpleSynthesisAt def nid syn
-        writeTVar st syn'
-        return nid'
+        n <- readTVar st
+        let Just (n', nid') = if onlyOneStep
+            then simpleSynthesisOneStepAt def nid n
+            else simpleSynthesisAt def nid n
+        writeTVar st n'
+        return $ trace (show nid') nid'
 
 -- type StepAPI
 --     =    "sSteps" :> Get '[JSON] [CSt]
