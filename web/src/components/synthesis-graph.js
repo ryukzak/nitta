@@ -89,13 +89,19 @@ export class SynthesisGraph extends Component {
       .catch(err => console.log(err))
   }
 
+  stepsNumber () {
+    if (this.state.currentNid === null) return 'NaN'
+    if (this.state.currentNid === ':') return 0
+    return this.state.currentNid.split(':').length - 1
+  }
+
   render () {
     if (this.state.graph === null) return <div />
     return (
       <div>
         <pre>
           [<a onClick={() => this.reloadSynthesis()}> refresh </a>]
-          current synthesis (nid): {this.state.currentNid}
+          current synthesis (nid) [{this.stepsNumber()}] {this.state.currentNid}
         </pre>
         <div style={{width: '100%', height: '300px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
           <Tree
