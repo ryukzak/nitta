@@ -6,7 +6,6 @@
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE TypeSynonymInstances      #-}
@@ -27,17 +26,24 @@ module NITTA.Types.Synthesis
     , rootSynthesis
     , Nid(..)
     , nids
+    , SynthUpd(..)
+    , SubNode(..)
       -- *Processing SynthesisTree
     , getSynthesis
     , update
     , apply
     , recApply
       -- *Synhesis context
+    , SynthCntxCls(..)
+    , SynthCntx(..)
     , comment
+    , setCntx
+    , findCntx
     ) where
 
 import           Data.List.Split
 import           Data.Tree
+import           Data.Typeable   (Typeable, cast)
 import           GHC.Generics
 import           NITTA.DataFlow  (SystemState)
 
@@ -47,7 +53,7 @@ type SynthesisTree title tag v x t = Tree (Synthesis title tag v x t)
 data Synthesis title tag v x t
     = Synthesis
         { sModel :: SystemState title tag v x t
-        , sCntx  :: [Cntx]
+        , sCntx  :: [SynthCntx]
         }
     deriving ( Generic )
 
@@ -94,27 +100,50 @@ rootSynthesis m = Node
 
 -- *Synthesis context
 
-class CntxCls a where
-    data Cntx' a :: *
+class SynthCntxCls a where
+    data SynthCntx' a :: *
 
-data Cntx = forall a. ( Show (Cntx' a) ) => Cntx (Cntx' a)
+data SynthCntx = forall a. ( Show (SynthCntx' a), Typeable (SynthCntx' a) ) => SynthCntx (SynthCntx' a)
 
-instance Show Cntx where
-    show (Cntx e) = show e
+instance Show SynthCntx where
+    show (SynthCntx e) = show e
 
+findCntx [] = Nothing
+findCntx (SynthCntx c : cs)
+    | Just cntx <- cast c = Just cntx
+    | otherwise = findCntx cs
+
+setCntx newCntx [] = [SynthCntx newCntx]
+setCntx newCntx (SynthCntx c : cs)
+    | Just c' <- cast c
+    , let _ = c' `asTypeOf` newCntx
+    = SynthCntx newCntx : cs
+    | otherwise
+    = SynthCntx c : setCntx newCntx cs
 
 
 data Comment
 
-instance CntxCls Comment where
-    data Cntx' Comment = Comment String
+instance SynthCntxCls Comment where
+    data SynthCntx' Comment = Comment String
         deriving ( Show )
 
-comment = Cntx . Comment
+comment = SynthCntx . Comment
 
 
 
 -- *Processing
+
+-- |Update synthesis node data. Can affect subForest and current (or upper) node.
+data SynthUpd a
+    = SynthUpd
+        { upp :: a -- ^new upper node
+        , sub :: SubNode a -- ^new sub node
+        }
+
+data SubNode a
+    = NewNode a
+    | Patch Int
 
 -- |Get specific by @nid@ node from a synthesis tree.
 getSynthesis (Nid []) n                     = n
@@ -137,20 +166,32 @@ update f nid rootN = inner nid rootN
 recApply rec nRoot = inner nRoot
     where
         inner n@Node{ rootLabel, subForest }
-            = case rec rootLabel of
-                Just rootLabel' ->
-                    let (subN', Nid subIs) = inner Node{ rootLabel=rootLabel', subForest=[] }
-                    in (n{ subForest=subForest ++ [ subN' ] }, Nid (length subForest : subIs) )
+            = case rec (length subForest) rootLabel of
+                Just SynthUpd{ upp, sub=NewNode sub } -> -- rootLabel' ->
+                    let (subN', Nid subIxs) = inner Node{ rootLabel=sub, subForest=[] }
+                    in (n{ rootLabel=upp, subForest=subForest ++ [subN'] }, Nid (length subForest : subIxs) )
+                Just SynthUpd{ upp, sub=Patch ix } ->
+                    let (subN, Nid subIxs) = inner $ subForest !! ix
+                    in (n{ rootLabel=upp, subForest=setSubNode ix subN subForest }, Nid (ix : subIxs))
                 Nothing -> (n, Nid [])
 
 
 -- |Apply @f@ to a synthesis in a node.
 apply f n@Node{ rootLabel, subForest }
-    = case f rootLabel of
-        Just rootLabel' ->
+    = case f (length subForest) rootLabel of
+        Just SynthUpd{ upp, sub=NewNode sub } ->
             let subN = Node
-                    { rootLabel=rootLabel'
+                    { rootLabel=sub
                     , subForest=[]
                     }
-            in Just (n{ subForest=subForest ++ [ subN ] }, Nid [length subForest])
+            in Just (n{ rootLabel=upp, subForest=subForest ++ [subN]}, Nid [length subForest])
+        Just SynthUpd{ upp, sub=Patch ix } ->
+            let subN = subForest !! ix
+            in Just (n{ rootLabel=upp }, Nid [ix])
         Nothing -> Nothing
+
+
+setSubNode i n forest
+    | length forest == i = forest ++ [n]
+    | let (before, subN : after) = splitAt i forest
+    = before ++ (n : after)

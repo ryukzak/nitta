@@ -52,16 +52,32 @@ import           NITTA.Utils.Lens
 import           Numeric.Interval      (Interval, (...))
 
 
-simpleSynthesisStep opt md info Synthesis{ sModel }
+
+data SimpleSynthCache
+
+instance SynthCntxCls SimpleSynthCache where
+    data SynthCntx' SimpleSynthCache = SimpleSynthCache (M.Map Int Int)
+        deriving ( Show )
+
+instance Default (SynthCntx' SimpleSynthCache) where
+    def = SimpleSynthCache def
+
+simpleSynthesisStep opt md info ix syn@Synthesis{ sModel, sCntx }
     = let
+        SimpleSynthCache cache = fromMaybe def $ findCntx sCntx
         cStep = CompilerStep sModel opt Nothing
-    in case naiveStep md cStep of
-        Just CompilerStep{ state=sModel' } ->
-            Just $ Synthesis
-                { sModel=sModel'
-                , sCntx=[comment info]
-                }
-        Nothing -> Nothing
+    in case cache M.!? md of
+        Just ix' -> Just $ SynthUpd{ upp=syn, sub=Patch ix' }
+        Nothing -> case naiveStep md cStep of
+            Just CompilerStep{ state=sModel' } ->
+                Just $ SynthUpd
+                    { upp=syn{ sCntx=setCntx (SimpleSynthCache $ M.insert md ix cache) sCntx }
+                    , sub=NewNode $ Synthesis
+                        { sModel=sModel'
+                        , sCntx=[comment info]
+                        }
+                    }
+            Nothing -> Nothing
 
 simpleSynthesis opt n = recApply (simpleSynthesisStep opt 0 "auto") n
 simpleSynthesisOneStep opt n = apply (simpleSynthesisStep opt 0 "auto") n
