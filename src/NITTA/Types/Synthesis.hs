@@ -25,7 +25,7 @@ module NITTA.Types.Synthesis
     , Synthesis(..)
     , rootSynthesis
     , Nid(..)
-    , nids
+    , nidsTree
     , SynthUpd(..)
     , SubNode(..)
       -- *Processing SynthesisTree
@@ -79,7 +79,7 @@ instance Read Nid where
     readsPrec _ _ = []
 
 
-nids n = inner [] n
+nidsTree n = inner [] n
     where
         inner is Node{ subForest } = Node
             { rootLabel=Nid $ reverse is
@@ -175,6 +175,11 @@ recApply rec nRoot = inner nRoot
                     in (n{ rootLabel=upp, subForest=setSubNode ix subN subForest }, Nid (ix : subIxs))
                 Nothing -> (n, Nid [])
 
+        setSubNode i n forest
+            | length forest == i = forest ++ [n]
+            | let (before, _subN : after) = splitAt i forest
+            = before ++ (n : after)
+
 
 -- |Apply @f@ to a synthesis in a node.
 apply f n@Node{ rootLabel, subForest }
@@ -186,12 +191,5 @@ apply f n@Node{ rootLabel, subForest }
                     }
             in Just (n{ rootLabel=upp, subForest=subForest ++ [subN]}, Nid [length subForest])
         Just SynthUpd{ upp, sub=Patch ix } ->
-            let subN = subForest !! ix
-            in Just (n{ rootLabel=upp }, Nid [ix])
+            Just (n{ rootLabel=upp }, Nid [ix])
         Nothing -> Nothing
-
-
-setSubNode i n forest
-    | length forest == i = forest ++ [n]
-    | let (before, subN : after) = splitAt i forest
-    = before ++ (n : after)

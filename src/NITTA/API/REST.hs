@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -52,7 +53,7 @@ data SynthesisView
 
 instance ToJSON SynthesisView
 
-view n = (\(nid, Synthesis{ sCntx } ) -> SynthesisView{ svNnid=nid, svCntx=map show sCntx }) <$> mzip (nids n) n
+view n = (\(nid, Synthesis{ sCntx } ) -> SynthesisView{ svNnid=nid, svCntx=map show sCntx }) <$> mzip (nidsTree n) n
 
 
 type RESTOption =
@@ -79,20 +80,32 @@ synthesisServer st
 type WithSynthesis
     =    Get '[JSON] SYN
     :<|> "model" :> Get '[JSON] (SystemState String String String Int (TaggedTime String Int))
-    :<|> "simple" :> "options" :> Get '[JSON] [ RESTOption ]
+    :<|> SimpleCompilerAPI
+
+withSynthesis st nid
+    =    get st nid
+    :<|> getModel st nid
+    :<|> simpleCompilerServer st nid
+
+
+
+type SimpleCompilerAPI
+    =    "simple" :> "options" :> Get '[JSON] [ RESTOption ]
     :<|> "simple" :> "obviousBind" :> Post '[JSON] Nid
     :<|> "simple" :> "allThreads" :> Post '[JSON] Nid
     :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
     :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
 
-withSynthesis st nid
-    =    get st nid
-    :<|> getModel st nid
-    :<|> simpleCompilerOptions st nid
-    :<|> simpleCompilerObviousBind st nid
-    :<|> simpleCompilerAllTheads st nid
-    :<|> ( \md -> simpleCompilerManual st nid md )
-    :<|> \onlyOneStep -> simpleCompiler st nid onlyOneStep
+simpleCompilerServer st nid
+    =    simpleCompilerOptions st nid
+    :<|> updateSynthesis (Just . compilerObviousBind def) st nid
+    :<|> updateSynthesis (Just . compilerAllTheads def) st nid
+    :<|> ( \md -> updateSynthesis (apply (simpleSynthesisStep def md "manual")) st nid )
+    :<|> \case
+            True -> updateSynthesis (apply (simpleSynthesisStep def 0 "auto")) st nid
+            False -> updateSynthesis (Just . recApply (simpleSynthesisStep def 0 "auto")) st nid
+
+
 
 
 
@@ -111,38 +124,11 @@ getModel st nid = do
     let Node{ rootLabel=Synthesis{ sModel } } = getSynthesis nid root
     return sModel
 
-
-
-simpleCompiler st nid onlyOneStep
-    = liftSTM $ do
-        n <- readTVar st
-        let Just (n', nid') = if onlyOneStep
-            then update (simpleSynthesisOneStep def) nid n
-            else update (Just . simpleSynthesis def) nid n
-        writeTVar st n'
-        return nid'
-
-simpleCompilerManual st nid md
-    = liftSTM $ do
-        n <- readTVar st
-        let Just (n', nid') = update (simpleSynthesisManual def md) nid n
-        writeTVar st n'
-        return nid'
-
-simpleCompilerObviousBind st nid
-    = liftSTM $ do
-        n <- readTVar st
-        let Just (n', nid') = update (\syn -> Just $ compilerObviousBind def syn) nid n
-        writeTVar st n'
-        return nid'
-
-
-simpleCompilerAllTheads st nid
-    = liftSTM $ do
-        n <- readTVar st
-        let Just (n', nid') = update (\syn -> Just $ compilerAllTheads def syn) nid n
-        writeTVar st n'
-        return nid'
+updateSynthesis f st nid = liftSTM $ do
+    n <- readTVar st
+    let Just (n', nid') = update f nid n
+    writeTVar st n'
+    return nid'
 
 
 
