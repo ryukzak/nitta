@@ -29,23 +29,44 @@ module NITTA.Compiler
   , passiveOption2action
   , GlobalMetrics(..)
   , SpecialMetrics(..)
+  , simpleSynthesis
+  , simpleSynthesisOneStep
+  , simpleSynthesisManual
   ) where
 
-import           Control.Arrow    (second)
+import           Control.Arrow         (second)
 import           Data.Default
-import           Data.List        (find, sortOn)
-import qualified Data.Map         as M
+import           Data.List             (find, sortOn)
+import qualified Data.Map              as M
 import           Data.Maybe
 import           Data.Proxy
-import           Data.Set         (intersection, member, singleton)
-import qualified Data.Set         as S
+import           Data.Set              (intersection, member, singleton)
+import qualified Data.Set              as S
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.DataFlow
 import           NITTA.Types
+import           NITTA.Types.Synthesis
 import           NITTA.Utils
 import           NITTA.Utils.Lens
-import           Numeric.Interval (Interval, (...))
+import           Numeric.Interval      (Interval, (...))
+
+
+simpleSynthesisStep opt md info Synthesis{ sModel }
+    = let
+        cStep = CompilerStep sModel opt Nothing
+    in case naiveStep md cStep of
+        Just CompilerStep{ state=sModel' } ->
+            Just $ Synthesis
+                { sModel=sModel'
+                , sCntx=[comment info]
+                }
+        Nothing -> Nothing
+
+simpleSynthesis opt n = recApply (simpleSynthesisStep opt 0 "auto") n
+simpleSynthesisOneStep opt n = apply (simpleSynthesisStep opt 0 "auto") n
+simpleSynthesisManual opt md n = apply (simpleSynthesisStep opt md "manual") n
+
 
 
 -- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.

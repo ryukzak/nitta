@@ -1,13 +1,15 @@
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE NamedFieldPuns       #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE QuasiQuotes          #-}
-{-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE DeriveGeneric             #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE NamedFieldPuns            #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE StandaloneDeriving        #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE TypeOperators             #-}
+{-# LANGUAGE TypeSynonymInstances      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
@@ -20,31 +22,32 @@ Stability   : experimental
 -}
 
 module NITTA.Types.Synthesis
-    ( Synthesis(..)
-    , SynthesisNode
-    , Nid(..)
+    ( SynthesisTree
+    , Synthesis(..)
     , rootSynthesis
-    , simpleSynthesis
-    , getSynthesis
-    , simpleSynthesisAtManual
-    , simpleSynthesisOneStepAt
-    , simpleSynthesisAt
+    , Nid(..)
     , nids
+      -- *Processing SynthesisTree
+    , getSynthesis
+    , update
+    , apply
+    , recApply
+      -- *Synhesis context
+    , comment
     ) where
 
 import           Data.List.Split
 import           Data.Tree
 import           GHC.Generics
-import           NITTA.Compiler
-import           NITTA.DataFlow   (SystemState)
+import           NITTA.DataFlow  (SystemState)
 
 
-type SynthesisNode title tag v x t = Tree (Synthesis title tag v x t)
+type SynthesisTree title tag v x t = Tree (Synthesis title tag v x t)
 
 data Synthesis title tag v x t
     = Synthesis
         { sModel :: SystemState title tag v x t
-        , sCntx  :: [String]
+        , sCntx  :: [Cntx]
         }
     deriving ( Generic )
 
@@ -78,11 +81,7 @@ nids n = inner [] n
             }
 
 
-
-getSynthesis (Nid []) n                     = n
-getSynthesis (Nid (i:is)) Node{ subForest } = getSynthesis (Nid is) (subForest !! i)
-
--- | Create initial synthesis.
+-- |Create initial synthesis.
 rootSynthesis m = Node
     { rootLabel=Synthesis
         { sModel=m
@@ -92,51 +91,38 @@ rootSynthesis m = Node
     }
 
 
-recApply rec nRoot@Node{ rootLabel=rl@Synthesis{ sCntx } }
-    = inner nRoot{ rootLabel=rl } $ Nid []
-    where
-        inner n@Node{ subForest } nid
-            = case rec n of
-                Just (Node{ subForest=subForest' }, _) ->
-                    let subN = last subForest'
-                        (subN', Nid subIs) = inner subN nid
-                    in (n{ subForest=subForest ++ [ subN' ] }, Nid (length subForest : subIs) )
-                Nothing -> (n, nid)
 
+-- *Synthesis context
 
-simpleSynthesis opt = recApply (simpleSynthesisOneStep opt)
+class CntxCls a where
+    data Cntx' a :: *
 
-simpleSynthesisOneStep opt n = simpleSynthesisStep opt 0 "auto" n
+data Cntx = forall a. ( Show (Cntx' a) ) => Cntx (Cntx' a)
 
-simpleSynthesisManual opt md n = simpleSynthesisStep opt md "manual" n
+instance Show Cntx where
+    show (Cntx e) = show e
 
 
 
-simpleSynthesisStep opt md info n@Node{ rootLabel=r@Synthesis{ sModel }, subForest }
-    = let
-        cStep = CompilerStep sModel opt Nothing
-    in case naiveStep md cStep of
-        Just CompilerStep{ state=sModel' } ->
-            let subN = Node
-                    { rootLabel=Synthesis
-                        { sModel=sModel'
-                        , sCntx=["manual"]
-                        }
-                    , subForest=[]
-                    }
-            in Just (n{ subForest=subForest ++ [ subN ] }, Nid [length subForest])
-        Nothing -> Nothing
+data Comment
 
-simpleSynthesisAtManual opt nid n m
-    = updateSynthesis (simpleSynthesisManual opt m) nid n
+instance CntxCls Comment where
+    data Cntx' Comment = Comment String
+        deriving ( Show )
 
-simpleSynthesisAt opt nid n
-    = updateSynthesis (Just . simpleSynthesis opt) nid n
+comment = Cntx . Comment
 
-simpleSynthesisOneStepAt opt nid n
-    = updateSynthesis (simpleSynthesisOneStep opt) nid n
 
-updateSynthesis f rootNid rootN = inner rootNid rootN
+
+-- *Processing
+
+-- |Get specific by @nid@ node from a synthesis tree.
+getSynthesis (Nid []) n                     = n
+getSynthesis (Nid (i:is)) Node{ subForest } = getSynthesis (Nid is) (subForest !! i)
+
+
+-- |Update specific by @nid@ node in a synthesis tree by the @f@.
+update f nid rootN = inner nid rootN
     where
         inner (Nid []) n = f n
         inner (Nid (i:is)) n@Node{ subForest }
@@ -145,3 +131,26 @@ updateSynthesis f rootNid rootN = inner rootNid rootN
             in case inner (Nid is) subN of
                 Just (subN', Nid is') -> Just (n{ subForest=before ++ (subN' : after) }, Nid (i:is'))
                 Nothing -> Nothing
+
+
+-- |Recursively apply @rec@ to a synthesis while it is applicable (returning Just value).
+recApply rec nRoot = inner nRoot
+    where
+        inner n@Node{ rootLabel, subForest }
+            = case rec rootLabel of
+                Just rootLabel' ->
+                    let (subN', Nid subIs) = inner Node{ rootLabel=rootLabel', subForest=[] }
+                    in (n{ subForest=subForest ++ [ subN' ] }, Nid (length subForest : subIs) )
+                Nothing -> (n, Nid [])
+
+
+-- |Apply @f@ to a synthesis in a node.
+apply f n@Node{ rootLabel, subForest }
+    = case f rootLabel of
+        Just rootLabel' ->
+            let subN = Node
+                    { rootLabel=rootLabel'
+                    , subForest=[]
+                    }
+            in Just (n{ subForest=subForest ++ [ subN ] }, Nid [length subForest])
+        Nothing -> Nothing

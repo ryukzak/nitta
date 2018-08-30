@@ -82,7 +82,7 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
 
 
 
--- *Synthesis
+-- *Model
 instance ( ToJSON v, Var v ) => ToJSON (DataFlowGraph v)
 
 instance ToJSON Relation where
@@ -95,7 +95,7 @@ instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
          , ToJSONKey v
          , Show x, Ord x, Typeable x, ToJSON x, ToJSONKey x
          ) => ToJSON (SystemState title tag x v t)
-         
+
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Process (Parcel v x) t) where
     toJSON Process{ steps, nextTick, relations } = object
@@ -116,7 +116,7 @@ instance ( ToJSON t, Time t, Show v
 
 
 
--- * Synthesis
+-- *Synthesis
 instance ToJSON Nid where
     toJSON nid = toJSON $ show nid
 
@@ -125,6 +125,13 @@ instance FromJSON Nid where
 
 instance FromHttpApiData Nid where
     parseUrlPiece = Right . read . T.unpack
+
+
+instance ToJSON (Synthesis String String String Int (TaggedTime String Int)) where
+    toJSON Synthesis{ sModel, sCntx } = object
+        [ "sModel" .= sModel
+        , "sCntx" .= (map show sCntx)
+        ]
 
 
 
@@ -136,7 +143,7 @@ instance ToJSON GlobalMetrics
 
 
 
--- * Basic data
+-- *Basic data
 instance ( ToJSON tag, ToJSON t ) => ToJSON (TaggedTime tag t)
 
 instance ( ToJSON t, Time t ) => ToJSON (PlaceInTime t) where

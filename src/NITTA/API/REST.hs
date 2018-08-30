@@ -29,18 +29,16 @@ import           Data.Aeson
 import           Data.Default
 import           Data.Tree
 import           GHC.Generics
+import           NITTA.API.Marshalling  ()
 import           NITTA.Compiler
 import           NITTA.DataFlow
 import           NITTA.Types
 import           NITTA.Types.Synthesis
-import           NITTA.API.Marshalling       ()
 import           Servant
 
 
 
-type SYN = SynthesisNode String String String Int (TaggedTime String Int)
-
-instance ToJSON (Synthesis String String String Int (TaggedTime String Int))
+type SYN = SynthesisTree String String String Int (TaggedTime String Int)
 
 
 -- *REST API Projections.
@@ -54,7 +52,7 @@ data SynthesisView
 
 instance ToJSON SynthesisView
 
-view n = (\(nid, Synthesis{ sCntx } ) -> SynthesisView{ svNnid=nid, svCntx=sCntx }) <$> mzip (nids n) n
+view n = (\(nid, Synthesis{ sCntx } ) -> SynthesisView{ svNnid=nid, svCntx=map show sCntx }) <$> mzip (nids n) n
 
 
 type RESTOption =
@@ -85,15 +83,12 @@ type WithSynthesis
     :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
     :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
 
-
-
 withSynthesis st nid
     =    get st nid
     :<|> getModel st nid
     :<|> simpleCompilerOptions st nid
-    :<|> ( \m -> simpleCompilerManual st nid m )
+    :<|> ( \md -> simpleCompilerManual st nid md )
     :<|> \onlyOneStep -> simpleCompiler st nid onlyOneStep
-
 
 
 
@@ -113,19 +108,20 @@ getModel st nid = do
     return sModel
 
 
+
 simpleCompiler st nid onlyOneStep
     = liftSTM $ do
         n <- readTVar st
         let Just (n', nid') = if onlyOneStep
-            then simpleSynthesisOneStepAt def nid n
-            else simpleSynthesisAt def nid n
+            then update (simpleSynthesisOneStep def) nid n
+            else update (Just . simpleSynthesis def) nid n
         writeTVar st n'
         return nid'
 
-simpleCompilerManual st nid m
+simpleCompilerManual st nid md
     = liftSTM $ do
         n <- readTVar st
-        let Just (n', nid') = simpleSynthesisAtManual def nid n m
+        let Just (n', nid') = update (simpleSynthesisManual def md) nid n
         writeTVar st n'
         return nid'
 

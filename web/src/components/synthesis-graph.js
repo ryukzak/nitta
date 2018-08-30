@@ -66,8 +66,8 @@ export class SynthesisGraph extends Component {
           gNode.nid = dNode[0].svNnid
           nids[dNode[0].svNnid] = gNode
           gNode.attributes = {}
-          dNode[0].svCntx.forEach(e => {
-            gNode.attributes[e] = true
+          dNode[0].svCntx.forEach((e, i) => {
+            gNode.attributes[i] = e
           })
           gNode.children = []
           dNode[1].forEach(e => {
