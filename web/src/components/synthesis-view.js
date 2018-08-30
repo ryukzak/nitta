@@ -45,6 +45,28 @@ export class SynthesisView extends Component {
       .catch(err => alert(err))
   }
 
+  obviousBind (nid) {
+    if (nid === undefined || nid === null) return
+    console.debug('SynthesisView:obviousBind(', nid, ')')
+    hapi.obviousBind(nid)
+      .then(response => {
+        var newNid = response.data
+        this.onCurrentNidChange(newNid)
+      })
+      .catch(err => alert(err))
+  }
+
+  simpleAllThreads (nid) {
+    if (nid === undefined || nid === null) return
+    console.debug('SynthesisView:obviousBind(', nid, ')')
+    hapi.simpleAllThreads(nid)
+      .then(response => {
+        var newNid = response.data
+        this.onCurrentNidChange(newNid)
+      })
+      .catch(err => alert(err))
+  }
+
   updateModel (nid, view) {
     hapi.getModel(nid)
       .then(response => {
@@ -67,6 +89,8 @@ export class SynthesisView extends Component {
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'model')}>raw model</a>
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'process')}>process</a>
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'scOptions')}>SC options</a>
+              <a className='button primary' onClick={() => this.obviousBind(this.state.currentNid)}>obvious bind</a>
+              <a className='button primary' onClick={() => this.simpleAllThreads(this.state.currentNid)}>all threads</a>
               <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, true)}>one step</a>
               <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, false)}>all steps</a>
             </div>

@@ -80,6 +80,8 @@ type WithSynthesis
     =    Get '[JSON] SYN
     :<|> "model" :> Get '[JSON] (SystemState String String String Int (TaggedTime String Int))
     :<|> "simple" :> "options" :> Get '[JSON] [ RESTOption ]
+    :<|> "simple" :> "obviousBind" :> Post '[JSON] Nid
+    :<|> "simple" :> "allThreads" :> Post '[JSON] Nid
     :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
     :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
 
@@ -87,6 +89,8 @@ withSynthesis st nid
     =    get st nid
     :<|> getModel st nid
     :<|> simpleCompilerOptions st nid
+    :<|> simpleCompilerObviousBind st nid
+    :<|> simpleCompilerAllTheads st nid
     :<|> ( \md -> simpleCompilerManual st nid md )
     :<|> \onlyOneStep -> simpleCompiler st nid onlyOneStep
 
@@ -122,6 +126,21 @@ simpleCompilerManual st nid md
     = liftSTM $ do
         n <- readTVar st
         let Just (n', nid') = update (simpleSynthesisManual def md) nid n
+        writeTVar st n'
+        return nid'
+
+simpleCompilerObviousBind st nid
+    = liftSTM $ do
+        n <- readTVar st
+        let Just (n', nid') = update (\syn -> Just $ compilerObviousBind def syn) nid n
+        writeTVar st n'
+        return nid'
+
+
+simpleCompilerAllTheads st nid
+    = liftSTM $ do
+        n <- readTVar st
+        let Just (n', nid') = update (\syn -> Just $ compilerAllTheads def syn) nid n
         writeTVar st n'
         return nid'
 

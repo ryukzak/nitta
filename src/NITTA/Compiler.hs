@@ -32,6 +32,8 @@ module NITTA.Compiler
   , simpleSynthesis
   , simpleSynthesisOneStep
   , simpleSynthesisManual
+  , compilerObviousBind
+  , compilerAllTheads
   ) where
 
 import           Control.Arrow         (second)
@@ -42,6 +44,7 @@ import           Data.Maybe
 import           Data.Proxy
 import           Data.Set              (intersection, member, singleton)
 import qualified Data.Set              as S
+import           Data.Tree
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.DataFlow
@@ -82,6 +85,34 @@ simpleSynthesisStep opt md info ix syn@Synthesis{ sModel, sCntx }
 simpleSynthesis opt n = recApply (simpleSynthesisStep opt 0 "auto") n
 simpleSynthesisOneStep opt n = apply (simpleSynthesisStep opt 0 "auto") n
 simpleSynthesisManual opt md n = apply (simpleSynthesisStep opt md "manual") n
+
+compilerObviousBind opt n = recApply (compilerObviousBind' opt) n
+
+compilerObviousBind' opt ix syn@Synthesis{ sModel }
+    = let
+        opts = optionsWithMetrics def{ state=sModel }
+        opts' = map fst $ filter
+                    (\(_, (_, _, sm, _, _)) -> case sm of
+                        BindingMetrics{ alternative } -> alternative == 1
+                        _                             -> False
+                    )
+                    $ zip [0..] opts
+    in case opts' of
+        (md:_) -> simpleSynthesisStep opt md "obliousBind" ix syn
+        _      -> Nothing
+
+
+compilerAllTheads opt rootN@Node{ rootLabel=Synthesis{ sModel } }
+    = let
+        mds = [ 0 .. length (optionsWithMetrics def{ state=sModel }) - 1 ]
+        (rootN', nids) = foldl
+            (\(n, nids) md ->
+                let Just (n', nid) = simpleSynthesisManual opt md n
+                    Just (n'', nid') = update (Just . simpleSynthesis opt) nid n'
+                in (n'', nid':nids))
+            (rootN, [])
+            mds
+    in (rootN', head nids)
 
 
 
