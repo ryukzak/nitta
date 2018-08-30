@@ -80,12 +80,14 @@ divAndMulAlg =
 data Nitta
     = Nitta
         { web        :: Bool
-        , no_web_gen :: Bool
+        , no_static_gen :: Bool
+        , no_api_gen :: Bool
         }
     deriving (Show, Data, Typeable)
 nittaArgs = Nitta
     { web=False &= help "Run web server"
-    , no_web_gen=False &= help "No regenerate WebUI static files"
+    , no_static_gen=False &= help "No regenerate WebUI static files"
+    , no_api_gen=False &= help "No regenerate rest_api.js library"
     }
 
 
@@ -103,8 +105,8 @@ main = do
     -- putStrLn "funSim fibonacci:"
     -- funSim 5 D.def divAndMulAlg
 
-    Nitta{ web, no_web_gen } <- cmdArgs nittaArgs
-    when web $ backendServer (not no_web_gen) $ mkModelWithOneNetwork microarch teacupAlg
+    Nitta{ web, no_static_gen, no_api_gen } <- cmdArgs nittaArgs
+    when web $ backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch teacupAlg
     putStrLn "-- the end --"
 
 

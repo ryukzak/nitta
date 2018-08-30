@@ -22,7 +22,7 @@ module NITTA.API
 import           NITTA.API.REST
 
 import           Control.Concurrent.STM
-import           Control.Monad                 (when)
+import           Control.Monad                 (when, unless)
 import           Data.Monoid                   ((<>))
 import NITTA.Types.Synthesis
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
@@ -40,8 +40,8 @@ import           Text.InterpolatedString.Perl6 (qq)
 -- import           Servant.Server.StaticFiles (serveDirectoryWebApp) -- update on servant 14+
 
 
-prepareServer port = do
-    -- Generate JS API
+prepareJSAPI port = do
+    putStrLn "Generate rest_api.js library..."
     let prefix = [qq|import axios from 'axios';
 var api = \{\};
 export default api;|]
@@ -51,9 +51,12 @@ export default api;|]
             }
     createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
     SJS.writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
+    putStrLn "Generate rest_api.js library...OK"
 
-    -- Generate web app by npm.
+
+prepareStaticFiles = do
     -- TODO: Rebuild at each run.
+    putStrLn "Generate statis files..."
     ( exitCode, out, err )
         <- readCreateProcessWithExitCode
             (shell "npm run-script build"){ cwd=Just "web" }
@@ -64,6 +67,8 @@ export default api;|]
         putStrLn "npm error:"
         putStrLn err
         die "npm compilation failed!"
+    putStrLn "Generate statis files...OK"
+
 
 
 application compilerState = do
@@ -82,9 +87,11 @@ application compilerState = do
 --
 -- - if true - prepare static files for the web UI by @npm@;
 -- - initial model state.
-backendServer prepare modelState = do
+backendServer no_api_gen no_static_gen modelState = do
     let port = 8080
-    when prepare $ prepareServer port
+    unless no_api_gen $ prepareJSAPI port
+    unless no_static_gen prepareStaticFiles
+
     putStrLn $ "Running NITTA server on port: " ++ show port
 
     -- let initialCompilerState = def{ state=modelState }
