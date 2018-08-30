@@ -79,9 +79,9 @@ divAndMulAlg =
 -- |Command line interface.
 data Nitta
     = Nitta
-        { web        :: Bool
+        { web           :: Bool
         , no_static_gen :: Bool
-        , no_api_gen :: Bool
+        , no_api_gen    :: Bool
         }
     deriving (Show, Data, Typeable)
 nittaArgs = Nitta
@@ -95,7 +95,7 @@ nittaArgs = Nitta
 main = do
     teacupDemo
     fibonacciDemo
-    
+
     -- test "fibonacci" $ schedule $ mkModelWithOneNetwork microarch fibonacciAlg
 
     -- putStrLn "funSim teacup:"

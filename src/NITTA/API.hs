@@ -22,13 +22,13 @@ module NITTA.API
 import           NITTA.API.REST
 
 import           Control.Concurrent.STM
-import           Control.Monad                 (when, unless)
+import           Control.Monad                 (unless, when)
 import           Data.Monoid                   ((<>))
-import NITTA.Types.Synthesis
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
 import           Network.Wai.Handler.Warp      (run)
 import           Network.Wai.Middleware.Cors   (simpleCors)
-import           NITTA.API.Marshalling              ()
+import           NITTA.API.Marshalling         ()
+import           NITTA.Types.Synthesis
 import           Servant
 import qualified Servant.JS                    as SJS
 import           Servant.Utils.StaticFiles     (serveDirectoryWebApp)
