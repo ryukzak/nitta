@@ -23,6 +23,7 @@ Stability   : experimental
 module NITTA.Types.Synthesis
     ( SynthesisTree
     , Synthesis(..)
+    , SynthesisStatus(..)
     , rootSynthesis
     , Nid(..)
     , nidsTree
@@ -49,6 +50,12 @@ import           NITTA.DataFlow  (SystemState)
 
 
 type SynthesisTree title tag v x t = Tree (Synthesis title tag v x t)
+
+data SynthesisStatus
+    = InProgress
+    | Finished
+    | DeadEnd
+    deriving ( Show )
 
 data Synthesis title tag v x t
     = Synthesis
