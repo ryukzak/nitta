@@ -46,15 +46,23 @@ type SYN = SynthesisTree String String String Int (TaggedTime String Int)
 
 data SynthesisView
     = SynthesisView
-        { svNnid   :: Nid
-        , svCntx   :: [String]
-        , svStatus :: SynthesisStatus
+        { svNnid     :: Nid
+        , svCntx     :: [String]
+        , svStatus   :: SynthesisStatus
+        , svDuration :: Int
         }
     deriving (Generic)
 
 instance ToJSON SynthesisView
 
-view n = (\(nid, Synthesis{ sCntx, sStatus } ) -> SynthesisView{ svNnid=nid, svCntx=map show sCntx, svStatus=sStatus }) <$> mzip (nidsTree n) n
+view n = f <$> mzip (nidsTree n) n
+    where
+        f (nid, Synthesis sModel sCntx sStatus ) = SynthesisView
+            { svNnid=nid
+            , svCntx=map show sCntx
+            , svStatus=sStatus
+            , svDuration=fromEnum $ targetProcessDuration sModel
+            }
 
 
 type RESTOption =

@@ -34,6 +34,7 @@ module NITTA.Types.Synthesis
     , update
     , apply
     , recApply
+    , targetProcessDuration
       -- *Synhesis context
     , SynthCntxCls(..)
     , SynthCntx(..)
@@ -46,7 +47,8 @@ import           Data.List.Split
 import           Data.Tree
 import           Data.Typeable   (Typeable, cast)
 import           GHC.Generics
-import           NITTA.DataFlow  (SystemState)
+import           NITTA.DataFlow  (SystemState (..))
+import           NITTA.Types     (nextTick, process)
 
 
 type SynthesisTree title tag v x t = Tree (Synthesis title tag v x t)
@@ -105,6 +107,8 @@ rootSynthesis m = Node
     , subForest=[]
     }
 
+targetProcessDuration Frame{ nitta } = nextTick $ process nitta
+targetProcessDuration _              = undefined
 
 
 -- *Synthesis context

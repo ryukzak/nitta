@@ -73,7 +73,7 @@ export class SynthesisGraph extends Component {
           nids[dNode[0].svNnid] = gNode
           if (dNode[0].svStatus === 'Finished') this.markNode(gNode.nid, nids, 'green')
           if (dNode[0].svStatus === 'DeadEnd') this.markNode(gNode.nid, nids, 'black')
-          gNode.attributes = {}
+          gNode.attributes = { dur: dNode[0].svDuration }
           dNode[0].svCntx.forEach((e, i) => {
             gNode.attributes[i] = e
           })
