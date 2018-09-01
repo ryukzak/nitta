@@ -55,6 +55,8 @@ data SynthesisView
 
 instance ToJSON SynthesisView
 
+-- FIXME: Filter a synthesis tree to the fastest process.
+
 view n = f <$> mzip (nidsTree n) n
     where
         f (nid, Synthesis sModel sCntx sStatus ) = SynthesisView
@@ -101,14 +103,14 @@ withSynthesis st nid
 type SimpleCompilerAPI
     =    "simple" :> "options" :> Get '[JSON] [ RESTOption ]
     :<|> "simple" :> "obviousBind" :> Post '[JSON] Nid
-    :<|> "simple" :> "allThreads" :> Post '[JSON] Nid
+    :<|> "simple" :> "allThreads" :> QueryParam' '[Required] "deep" Int :> Post '[JSON] Nid
     :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
     :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
 
 simpleCompilerServer st nid
     =    simpleCompilerOptions st nid
     :<|> updateSynthesis (Just . compilerObviousBind def) st nid
-    :<|> updateSynthesis (Just . compilerAllTheads def) st nid
+    :<|> ( \deep -> updateSynthesis (Just . compilerAllTheads def deep) st nid )
     :<|> ( \md -> updateSynthesis (apply (simpleSynthesisStep def md "manual")) st nid )
     :<|> \case
             True -> updateSynthesis (apply (simpleSynthesisStep def 0 "auto")) st nid

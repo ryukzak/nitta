@@ -108,13 +108,25 @@ compilerObviousBind opt n = recApply inner n
                 _      -> Nothing
 
 
-compilerAllTheads opt rootN@Node{ rootLabel=Synthesis{ sModel } }
+
+compilerAllTheads opt 1 rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
         mds = [ 0 .. length (optionsWithMetrics def{ state=sModel }) - 1 ]
         (rootN', nids) = foldl
             (\(n1, nids1) md ->
                 let Just (n2, nid2) = apply (simpleSynthesisStep opt md "allThreads") n1
                     Just (n3, nid3) = update (Just . simpleSynthesis opt) nid2 n2
+                in (n3, nid3 : nids1))
+            (rootN, [])
+            mds
+    in (rootN', head nids)
+compilerAllTheads opt deep rootN@Node{ rootLabel=Synthesis{ sModel } }
+    = let
+        mds = [ 0 .. length (optionsWithMetrics def{ state=sModel }) - 1 ]
+        (rootN', nids) = foldl
+            (\(n1, nids1) md ->
+                let Just (n2, nid2) = apply (simpleSynthesisStep opt md "allThreads") n1
+                    Just (n3, nid3) = update (Just . compilerAllTheads opt (deep-1)) nid2 n2
                 in (n3, nid3 : nids1))
             (rootN, [])
             mds

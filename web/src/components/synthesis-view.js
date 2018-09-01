@@ -56,10 +56,10 @@ export class SynthesisView extends Component {
       .catch(err => alert(err))
   }
 
-  simpleAllThreads (nid) {
+  simpleAllThreads (nid, deep) {
     if (nid === undefined || nid === null) return
     console.debug('SynthesisView:obviousBind(', nid, ')')
-    hapi.simpleAllThreads(nid)
+    hapi.simpleAllThreads(nid, deep)
       .then(response => {
         var newNid = response.data
         this.onCurrentNidChange(newNid)
@@ -89,10 +89,12 @@ export class SynthesisView extends Component {
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'model')}>raw model</a>
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'process')}>process</a>
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'scOptions')}>SC options</a>
-              <a className='button primary' onClick={() => this.obviousBind(this.state.currentNid)}>obvious bind</a>
-              <a className='button primary' onClick={() => this.simpleAllThreads(this.state.currentNid)}>all threads</a>
-              <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, true)}>one step</a>
-              <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, false)}>all steps</a>
+              <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, true)}>step</a>
+              <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, false)}>thread</a>
+              <a className='button primary' onClick={() => this.obviousBind(this.state.currentNid)}>obvious bind;</a>
+              <a className='button primary' onClick={() => this.simpleAllThreads(this.state.currentNid, 1)}>all threads #1</a>
+              <a className='button primary' onClick={() => this.simpleAllThreads(this.state.currentNid, 2)}>#2</a>
+              <a className='button primary' onClick={() => this.simpleAllThreads(this.state.currentNid, 3)}>#3</a>
             </div>
             { this.state.view === 'update' && <pre> updating... </pre> }
             { this.state.view === 'model' && <pre> { JSON.stringify(this.state.model, null, 2) } </pre> }
