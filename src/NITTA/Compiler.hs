@@ -77,9 +77,18 @@ simpleSynthesisStep opt md info ix syn@Synthesis{ sModel, sCntx }
                     , sub=NewNode $ Synthesis
                         { sModel=sModel'
                         , sCntx=[comment info]
+                        , sStatus=status sModel'
                         }
                     }
             Nothing -> Nothing
+    where
+        status m
+            | isSchedulingComplete' m = Finished
+            | not (isSchedulingComplete' m)
+            , null (options compiler m)
+            = DeadEnd
+            | otherwise = InProgress
+
 
 simpleSynthesis opt n = recApply (simpleSynthesisStep opt 0 "auto") n
 
@@ -139,6 +148,13 @@ isSchedulingComplete pu
         else isSchedulingComplete $ decision endpointDT pu d
         -- then trace ("end on: " ++ show processVars ++ " " ++ show algVars) $ algVars == processVars
         -- else trace ("continue: " ++ show d ++ " " ++ show os) $ isSchedulingComplete $ decision endpointDT pu d
+
+
+isSchedulingComplete' Frame{ nitta, dfg }
+    | let inWork = S.fromList $ transfered nitta
+    , let inAlg = variables dfg
+    = inWork == inAlg
+isSchedulingComplete' _ = undefined
 
 
 -- | Настройки процесса компиляции.

@@ -35,24 +35,30 @@ export class SynthesisGraph extends Component {
     }
   }
 
-  markNode (nid, nids) {
+  markNode (nid, nids, color) {
+    if (color === undefined) color = 'red'
     if (nids === undefined) nids = this.state.nids
-    console.debug(nid)
     if (nid === null || nids === null) return
+
+    if (color === 'red') {
+      nids[nid].nodeSvgShapeOriginal = nids[nid].nodeSvgShape
+    }
+    console.debug('SynthesisGraph:markNode(', nid, nids, color, ')')
     nids[nid].nodeSvgShape = {
       shape: 'circle',
       shapeProps: {
         r: 10,
         cx: 0,
         cy: 0,
-        fill: 'red'
+        fill: color
       }
     }
   }
 
   unmarkNode (nid) {
+    console.debug('SynthesisGraph:unmarkNode(', nid, ')')
     if (nid === null) return
-    this.state.nids[nid].nodeSvgShape = undefined
+    this.state.nids[nid].nodeSvgShape = this.state.nids[nid].nodeSvgShapeOriginal
   }
 
   reloadSynthesis () {
@@ -65,6 +71,8 @@ export class SynthesisGraph extends Component {
           gNode.name = reLastNidStep.exec(dNode[0].svNnid)[0]
           gNode.nid = dNode[0].svNnid
           nids[dNode[0].svNnid] = gNode
+          if (dNode[0].svStatus === 'Finished') this.markNode(gNode.nid, nids, 'green')
+          if (dNode[0].svStatus === 'DeadEnd') this.markNode(gNode.nid, nids, 'black')
           gNode.attributes = {}
           dNode[0].svCntx.forEach((e, i) => {
             gNode.attributes[i] = e
@@ -75,6 +83,8 @@ export class SynthesisGraph extends Component {
             gNode.children.push(tmp)
             buildGraph(tmp, e)
           })
+          console.log('>', dNode[0].svNnid, ' --> ', dNode[0].svStatus)
+
           return gNode
         }
         var graph = buildGraph({}, response.data)
@@ -103,16 +113,25 @@ export class SynthesisGraph extends Component {
           [<a onClick={() => this.reloadSynthesis()}> refresh </a>]
           current synthesis (nid) [{this.stepsNumber()}] {this.state.currentNid}
         </pre>
-        <div style={{width: '100%', height: '300px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
+        <div style={{width: '100%', height: '600px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
           <Tree
             data={this.state.graph}
-            nodeSize={{x: 80, y: 80}}
+            nodeSize={{x: 200, y: 80}}
             separation={{siblings: 1, nonSiblings: 1}}
             pathFunc='elbow'
             translate={{x: 20, y: 70}}
             collapsible={false}
             zoom={0.7}
             transitionDuration={0}
+            nodeSvgShape={{
+              shape: 'circle',
+              shapeProps: {
+                r: 10,
+                cx: 0,
+                cy: 0,
+                fill: 'white'
+              }
+            }}
             styles={{nodes: {
               node: {
                 name: {'fontSize': '12px'},
@@ -126,6 +145,7 @@ export class SynthesisGraph extends Component {
             onClick={(node) => { console.debug('SynthesisGraph: onCurrentNidChange(', node.nid, ')'); this.onCurrentNidChange(node.nid) }}
           />
         </div>
+        <pre>Colors: red - current synthesis; green - finished; black - dead end</pre>
       </div>
     )
   }

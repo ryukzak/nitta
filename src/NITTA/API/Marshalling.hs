@@ -128,11 +128,13 @@ instance FromHttpApiData Nid where
 
 
 instance ToJSON (Synthesis String String String Int (TaggedTime String Int)) where
-    toJSON Synthesis{ sModel, sCntx } = object
+    toJSON Synthesis{ sModel, sCntx, sStatus } = object
         [ "sModel" .= sModel
-        , "sCntx" .= (map show sCntx)
+        , "sCntx" .= map show sCntx
+        , "sStatus" .= show sStatus
         ]
 
+instance ToJSON SynthesisStatus
 
 
 -- *Simple compiler

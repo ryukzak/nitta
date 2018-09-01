@@ -55,12 +55,13 @@ data SynthesisStatus
     = InProgress
     | Finished
     | DeadEnd
-    deriving ( Show )
+    deriving ( Show, Generic )
 
 data Synthesis title tag v x t
     = Synthesis
-        { sModel :: SystemState title tag v x t
-        , sCntx  :: [SynthCntx]
+        { sModel  :: SystemState title tag v x t
+        , sCntx   :: [SynthCntx]
+        , sStatus :: SynthesisStatus
         }
     deriving ( Generic )
 
@@ -99,6 +100,7 @@ rootSynthesis m = Node
     { rootLabel=Synthesis
         { sModel=m
         , sCntx=[]
+        , sStatus=InProgress
         }
     , subForest=[]
     }

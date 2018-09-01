@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiWayIf            #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
@@ -43,12 +44,10 @@ import           NITTA.Functions               (get', simulateAlgByCycle)
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
-import           NITTA.Utils.Process
 import           NITTA.Utils.Lens
+import           NITTA.Utils.Process
 import           Numeric.Interval              (inf, width, (...))
 import           Text.InterpolatedString.Perl6 (qq)
-
--- import           Debug.Trace
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
@@ -75,12 +74,14 @@ data GBusNetwork title spu v x t
     }
 type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 
-transfered net@BusNetwork{..}
-  = [ v | st <- steps bnProcess
-    , let instr = extractInstruction net st
-    , isJust instr
-    , let (Just (Transport v _ _)) = instr
-    ]
+transfered net@BusNetwork{ bnProcess }
+    = mapMaybe
+        (\Step{ sDesc } -> case sDesc of
+            (InstructionStep i) | Just (Transport v _ _) <- cast i `maybeInstructionOf` net 
+                -> Just v
+            _ -> Nothing
+        )
+        $ steps bnProcess
 
 
 -- TODO: Проверка подключения сигнальных линий.
@@ -198,7 +199,7 @@ instance ( Title title, Time t, Var v, Typeable x
          ) => ProcessUnit (BusNetwork title v x t) (Parcel v x) t where
 
     tryBind f net@BusNetwork{ bnRemains, bnPus }
-        | any (allowToProcess f) $ M.elems bnPus   
+        | any (allowToProcess f) $ M.elems bnPus
         = Right net{ bnRemains=f : bnRemains }
     tryBind f BusNetwork{ bnPus }
         = Left $ "All sub process units reject the functional block: " ++ show f ++ "\n" ++ rejects
@@ -206,7 +207,7 @@ instance ( Title title, Time t, Var v, Typeable x
             rejects = S.join "\n" $ map showReject $ M.assocs bnPus
             showReject (title, pu) | Left err <- tryBind f pu = "    [" ++ show title ++ "]: " ++ err
             showReject (title, _) = "    [" ++ show title ++ "]: undefined"
-    
+
 
     process net@BusNetwork{ bnProcess, bnPus }
         = let
@@ -231,10 +232,10 @@ instance ( Title title, Time t, Var v, Typeable x
                         NestedStep{ nStep=Step{ sDesc=EndpointRoleStep role } } -> [ (sKey, v) | v <- elems $ variables role ]
                         _ -> []
                     ) steps
-            mapM_ 
-                ( \(l, v) -> 
-                    when (v `M.member` v2transportStepUid) 
-                        $ establishVerticalRelation (v2transportStepUid M.! v) l ) 
+            mapM_
+                ( \(l, v) ->
+                    when (v `M.member` v2transportStepUid)
+                        $ establishVerticalRelation (v2transportStepUid M.! v) l )
                 low
             -- FB - Transport
             mapM_ ( \Step{ sKey, sDesc=NestedStep{ nStep=Step{ sDesc=FStep f } } } ->
@@ -246,10 +247,10 @@ instance ( Title title, Time t, Var v, Typeable x
         where
             addNestedProcess (title, pu) = do
                 let Process{ steps, relations } = process pu
-                uidDict <- M.fromList <$> mapM 
+                uidDict <- M.fromList <$> mapM
                     ( \step@Step{ sKey } -> do
                         sKey' <- scheduleNestedStep title step
-                        return (sKey, sKey') ) 
+                        return (sKey, sKey') )
                     steps
                 mapM_ (\(Vertical h l) -> establishVerticalRelation (uidDict M.! h) (uidDict M.! l)) relations
 
