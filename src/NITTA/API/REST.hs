@@ -55,7 +55,7 @@ data SynthesisView
 
 instance ToJSON SynthesisView
 
--- FIXME: Filter a synthesis tree to the fastest process.
+-- FIXME: Filter a synthesis tree to the fastest (or n fastet) process.
 
 view n = f <$> mzip (nidsTree n) n
     where
