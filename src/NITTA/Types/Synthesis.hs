@@ -47,7 +47,7 @@ import           Data.List.Split
 import           Data.Tree
 import           Data.Typeable   (Typeable, cast)
 import           GHC.Generics
-import           NITTA.DataFlow  (SystemState (..))
+import           NITTA.DataFlow  (ModelState (..))
 import           NITTA.Types     (nextTick, process)
 
 
@@ -61,7 +61,7 @@ data SynthesisStatus
 
 data Synthesis title tag v x t
     = Synthesis
-        { sModel  :: SystemState title tag v x t
+        { sModel  :: ModelState title tag v x t
         , sCntx   :: [SynthCntx]
         , sStatus :: SynthesisStatus
         }
@@ -107,7 +107,7 @@ rootSynthesis m = Node
     , subForest=[]
     }
 
-targetProcessDuration Frame{ nitta } = nextTick $ process nitta
+targetProcessDuration Frame{ processor } = nextTick $ process processor
 targetProcessDuration _              = undefined
 
 

@@ -13,7 +13,7 @@ module NITTA.DataFlow
   , Decision(..)
   , node
   , Option(..)
-  , SystemState(..)
+  , ModelState(..)
   ) where
 
 import           Data.List        (nub)
@@ -76,40 +76,38 @@ node (fb :: F (Parcel v Int)) = DFGNode fb
 --   планирования вычислительного процесса, то необходимо пройти все варианты развития
 --   вычислительного процесса, следовательно, на каждом уровне стека может присутствовать несколько
 --   кадров.
-
--- TODO: rename SystemState to ModelState
-data SystemState title tag v x t
+data ModelState title tag v x t
   = Frame
-    { nitta   :: BusNetwork title v x t
+    { processor   :: BusNetwork title v x t
     , dfg     :: DataFlowGraph v
     , timeTag :: Maybe tag
     }
   | Level
-    { currentFrame    :: SystemState title tag v x t
-    , remainFrames    :: [ SystemState title tag v x t ]
-    , completedFrames :: [ SystemState title tag v x t ]
-    , initialFrame    :: SystemState title tag v x t
+    { currentFrame    :: ModelState title tag v x t
+    , remainFrames    :: [ ModelState title tag v x t ]
+    , completedFrames :: [ ModelState title tag v x t ]
+    , initialFrame    :: ModelState title tag v x t
     }
   deriving ( Generic )
 
 instance ( Var v
          , Typeable x
          ) => DecisionProblem (BindingDT String (Parcel v x))
-                    BindingDT (SystemState String tag v x t)
+                    BindingDT (ModelState String tag v x t)
          where
-  options _ Frame{ nitta }        = options binding nitta
+  options _ Frame{ processor }        = options binding processor
   options _ Level{ currentFrame } = options binding currentFrame
-  decision _ f@Frame{ nitta } d        = f{ nitta=decision binding nitta d }
+  decision _ f@Frame{ processor } d        = f{ processor=decision binding processor d }
   decision _ l@Level{ currentFrame } d = l{ currentFrame=decision binding currentFrame d }
 
 instance ( Typeable title, Ord title, Show title, Var v, Time t
          , Typeable x
          ) => DecisionProblem (DataFlowDT title v t)
-                   DataFlowDT (SystemState title tag v x t)
+                   DataFlowDT (ModelState title tag v x t)
          where
-  options _ Frame{ nitta }        = options dataFlowDT nitta
+  options _ Frame{ processor }        = options dataFlowDT processor
   options _ Level{ currentFrame } = options dataFlowDT currentFrame
-  decision _ f@Frame{ nitta } d        = f{ nitta=decision dataFlowDT nitta d }
+  decision _ f@Frame{ processor } d        = f{ processor=decision dataFlowDT processor d }
   decision _ l@Level{ currentFrame } d = l{ currentFrame=decision dataFlowDT currentFrame d }
 
 
@@ -134,10 +132,10 @@ instance DecisionType (ControlDT v) where
 instance ( Var v, Time t
          , Typeable x
          ) => DecisionProblem (ControlDT v)
-                ControlDT (SystemState String String v x (TaggedTime String t))
+                ControlDT (ModelState String String v x (TaggedTime String t))
          where
-  options _ Frame{ dfg=DFG g, nitta }
-    = let availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT nitta
+  options _ Frame{ dfg=DFG g, processor }
+    = let availableVars = nub $ concatMap (M.keys . dfoTargets) $ options dataFlowDT processor
     in [ ControlFlowO sg
        | sg@DFGSwitch{ dfgKey } <- g
        , all (`elem` availableVars) $ singleton dfgKey `union` dfgInputs sg
@@ -145,11 +143,11 @@ instance ( Var v, Time t
   options _ Level{ currentFrame } = options controlDT currentFrame
   options _ _ = error "ControlFlowDT: options: wrong DFG."
 
-  decision _ Frame{ nitta } (ControlFlowD DFGSwitch{ dfgKey, dfgCases })
-    = let now = nextTick $ process nitta
+  decision _ Frame{ processor } (ControlFlowD DFGSwitch{ dfgKey, dfgCases })
+    = let now = nextTick $ process processor
           f : fs = map
             (\( caseValue, dfg ) -> Frame
-                { nitta=setTime now{ tag=Just $ show dfgKey ++ "." ++ show caseValue } nitta
+                { processor=setTime now{ tag=Just $ show dfgKey ++ "." ++ show caseValue } processor
                 , timeTag=Just $ show dfgKey
                 , dfg
                 }

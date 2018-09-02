@@ -94,7 +94,7 @@ instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
          , ToJSON t, Time t
          , ToJSONKey v
          , Show x, Ord x, Typeable x, ToJSON x, ToJSONKey x
-         ) => ToJSON (SystemState title tag x v t)
+         ) => ToJSON (ModelState title tag x v t)
 
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Process (Parcel v x) t) where

@@ -466,7 +466,7 @@ instance ( Title title, Var v, Time t
         , "initial                                                                                                 "
         , "  begin                                                                                                 "
         , "    // microcode when rst == 1 -> program[0], and must be nop for all PUs                               "
-        , "    @(negedge rst); // Turn nitta processor on.                                                         "
+        , "    @(negedge rst); // Turn processor on.                                                         "
         , "    // Start computational cycle from program[1] to program[n] and repeat.                              "
         , "    // Signals effect to processor state after first clk posedge.                                       "
         , assertions

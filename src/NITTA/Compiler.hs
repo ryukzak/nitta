@@ -162,8 +162,8 @@ isSchedulingComplete pu
         -- else trace ("continue: " ++ show d ++ " " ++ show os) $ isSchedulingComplete $ decision endpointDT pu d
 
 
-isSchedulingComplete' Frame{ nitta, dfg }
-    | let inWork = S.fromList $ transfered nitta
+isSchedulingComplete' Frame{ processor, dfg }
+    | let inWork = S.fromList $ transfered processor
     , let inAlg = variables dfg
     = inWork == inAlg
 isSchedulingComplete' _ = undefined
@@ -218,16 +218,16 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 instance ( Time t, Var v
          ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
-                   CompilerDT (SystemState String String v Int (TaggedTime String t))
+                   CompilerDT (ModelState String String v Int (TaggedTime String t))
          where
   options _ Level{ currentFrame } = options compiler currentFrame
-  options _ f@Frame{ nitta, dfg } = concat
+  options _ f@Frame{ processor, dfg } = concat
     [ map generalizeDataFlowOption dataFlowOptions
     , map generalizeControlFlowOption $ options controlDT f
     , map generalizeBindingOption $ options binding f
     ]
     where
-      dataFlowOptions = sensibleOptions $ filterByDFG $ options dataFlowDT nitta
+      dataFlowOptions = sensibleOptions $ filterByDFG $ options dataFlowDT processor
       allowByDFG = allowByDFG' dfg
       allowByDFG' (DFGNode fb)        = variables fb
       allowByDFG' (DFG g)             = unionsMap allowByDFG' g
@@ -244,7 +244,7 @@ instance ( Time t, Var v
   decision _ l@Level{ currentFrame } d = tryMakeLevelDone l{ currentFrame=decision compiler currentFrame d }
   decision _ f (BindingDecision fb title) = decision binding f $ BindingD fb title
   decision _ f (ControlFlowDecision d) = decision controlDT f $ ControlFlowD d
-  decision _ f@Frame{ nitta } (DataFlowDecision src trg) = f{ nitta=decision dataFlowDT nitta $ DataFlowD src trg }
+  decision _ f@Frame{ processor } (DataFlowDecision src trg) = f{ processor=decision dataFlowDT processor $ DataFlowD src trg }
 
 
 option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
@@ -266,7 +266,7 @@ option2decision (DataFlowOption src trg)
 
 data CompilerStep title tag v x t
   = CompilerStep
-    { state        :: SystemState title tag v x t
+    { state        :: ModelState title tag v x t
     , config       :: NaiveOpt
     -- TODO: rename to prevDevision
     , lastDecision :: Maybe (Decision (CompilerDT title tag v t))
@@ -343,7 +343,7 @@ data SpecialMetrics
 
 
 measure opts Level{ currentFrame } opt = measure opts currentFrame opt
-measure opts Frame{ nitta=net@BusNetwork{ bnPus } } (BindingOption fb title) = BindingMetrics
+measure opts Frame{ processor=net@BusNetwork{ bnPus } } (BindingOption fb title) = BindingMetrics
   { critical=isCritical fb
   , alternative=length (howManyOptionAllow (filterBindingOption opts) M.! fb)
   , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind fb (bnPus M.! title)
@@ -388,16 +388,16 @@ makeLevelDone l@Level{ remainFrames=f:fs, currentFrame, completedFrames }
     }
 makeLevelDone Level{ initialFrame, currentFrame, completedFrames }
   = let fs = currentFrame : completedFrames
-        mergeTime = (maximum $ map (nextTick . process . nitta) fs){ tag=timeTag initialFrame }
-        Frame{ nitta=net@BusNetwork{ bnProcess } } = currentFrame
+        mergeTime = (maximum $ map (nextTick . process . processor) fs){ tag=timeTag initialFrame }
+        Frame{ processor=net@BusNetwork{ bnProcess } } = currentFrame
     in initialFrame
-      { nitta=setTime mergeTime net
+      { processor=setTime mergeTime net
           { bnProcess=snd $ modifyProcess bnProcess $
               mapM_ (\Step{ sTime, sDesc } -> addStep sTime sDesc) $ concatMap stepsFromFrame fs
           }
       }
   where
-    stepsFromFrame Frame{ timeTag, nitta } = whatsHappenWith timeTag nitta
+    stepsFromFrame Frame{ timeTag, processor } = whatsHappenWith timeTag processor
     stepsFromFrame Level{}   = error "stepsFromFrame: wrong args"
 
 makeLevelDone _ = error "makeFrameDone: argument must be Level."

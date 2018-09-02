@@ -302,16 +302,16 @@ teacupAlg = [ F.loop 0 "time_new" ["time", "time_send"]
 -- |Make a model of NITTA process with one network and a specific algorithm. All functions are
 -- already bound to the network.
 mkModelWithOneNetwork arch alg = Frame
-    { nitta=bindAll alg arch
+    { processor=bindAll alg arch
     , dfg=DFG $ map node alg
     , timeTag=Nothing
-    } :: SystemState String String String Int (TaggedTime String Int)
+    } :: ModelState String String String Int (TaggedTime String Int)
 
 -- |Schedule process by 'simpleSynthesis'.
 schedule model
     = let
         (syn, sid) = simpleSynthesis def (rootSynthesis model)
-    in nitta $ sModel $ rootLabel $ getSynthesis sid syn
+    in processor $ sModel $ rootLabel $ getSynthesis sid syn
 
 demo prj@Project{ projectPath, model } = do
     let prj' = prj{ model=schedule model }

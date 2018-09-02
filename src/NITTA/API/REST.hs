@@ -90,7 +90,7 @@ synthesisServer st
 
 type WithSynthesis
     =    Get '[JSON] SYN
-    :<|> "model" :> Get '[JSON] (SystemState String String String Int (TaggedTime String Int))
+    :<|> "model" :> Get '[JSON] (ModelState String String String Int (TaggedTime String Int))
     :<|> SimpleCompilerAPI
 
 withSynthesis st nid
