@@ -24,6 +24,7 @@ export class SynthesisView extends Component {
     this.setState({currentNid: nid, view: 'update'})
     if (view === 'process') this.updateModel(nid, 'process')
     if (view === 'model') this.updateModel(nid, 'model')
+    if (view === 'testbench') this.updateTestBench(nid, 'testbench')
     if (view === 'scOptions') this.setState({view: 'scOptions'})
   }
 
@@ -78,6 +79,17 @@ export class SynthesisView extends Component {
       .catch(err => console.log(err))
   }
 
+  updateTestBench (nid, view) {
+    hapi.runTestBench(nid, 'web_ui')
+      .then(response => {
+        this.setState({
+          testBenchDump: response.data,
+          view: view
+        })
+      })
+      .catch(err => console.log(err))
+  }
+
   render (props) {
     return (
       <div>
@@ -95,6 +107,7 @@ export class SynthesisView extends Component {
               <a className='button primary' onClick={() => this.simpleAllThreads(this.state.currentNid, 1)}>all threads #1</a>
               <a className='button primary' onClick={() => this.simpleAllThreads(this.state.currentNid, 2)}>#2</a>
               <a className='button primary' onClick={() => this.simpleAllThreads(this.state.currentNid, 3)}>#3</a>
+              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'testbench')}>testbench</a>
             </div>
             { this.state.view === 'update' && <pre> updating... </pre> }
             { this.state.view === 'model' && <pre> { JSON.stringify(this.state.model, null, 2) } </pre> }
@@ -106,6 +119,20 @@ export class SynthesisView extends Component {
               currentNid={this.state.currentNid}
               onCurrentNidChange={nid => this.onCurrentNidChange(nid)}
             /> }
+            { this.state.view === 'testbench' &&
+              <div>
+                Status: <pre> { JSON.stringify(this.state.testBenchDump.tbStatus) } </pre>
+                Stdout:
+                <hr />
+                <pre> { this.state.testBenchDump.tbSimulationStdout } </pre>
+                <hr />
+                Stderr:
+                <hr />
+                <pre> { this.state.testBenchDump.tbSimulationErrout } </pre>
+                <hr />
+                <pre> { JSON.stringify(this.state.testBenchDump, null, 2) } </pre>
+              </div>
+            }
           </div>
         }
       </div>

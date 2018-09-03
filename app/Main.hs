@@ -118,8 +118,8 @@ test n pu = do
             , model=pu
             , testCntx=Nothing
             }
-    r <- writeAndRunTestBench prj
-    if r then putStrLn "Success"
+    TestBenchReport{ tbStatus } <- writeAndRunTestBench prj
+    if tbStatus then putStrLn "Success"
     else putStrLn "Fail"
 
 

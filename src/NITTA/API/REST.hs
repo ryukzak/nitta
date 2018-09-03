@@ -33,9 +33,12 @@ import           GHC.Generics
 import           NITTA.API.Marshalling  ()
 import           NITTA.Compiler
 import           NITTA.DataFlow
+import           NITTA.Project          (Project (..), TestBenchReport,
+                                         writeAndRunTestBench)
 import           NITTA.Types
 import           NITTA.Types.Synthesis
 import           Servant
+import           System.FilePath        (joinPath)
 
 
 
@@ -59,7 +62,7 @@ instance ToJSON SynthesisView
 
 view n = f <$> mzip (nidsTree n) n
     where
-        f (nid, Synthesis sModel sCntx sStatus ) = SynthesisView
+        f ( nid, Synthesis sModel sCntx sStatus ) = SynthesisView
             { svNnid=nid
             , svCntx=map show sCntx
             , svStatus=sStatus
@@ -67,6 +70,7 @@ view n = f <$> mzip (nidsTree n) n
             }
 
 
+-- FIXME: Convert to record.
 type RESTOption =
     ( Int
     , GlobalMetrics
@@ -91,11 +95,13 @@ synthesisServer st
 type WithSynthesis
     =    Get '[JSON] SYN
     :<|> "model" :> Get '[JSON] (ModelState String String String Int (TaggedTime String Int))
+    :<|> "testBenchOutput" :> Capture "name" String :> Get '[JSON] TestBenchReport
     :<|> SimpleCompilerAPI
 
 withSynthesis st nid
     =    get st nid
     :<|> getModel st nid
+    :<|> ( \name -> getTestBenchOutput st nid name )
     :<|> simpleCompilerServer st nid
 
 
@@ -141,6 +147,16 @@ updateSynthesis f st nid = liftSTM $ do
     writeTVar st n'
     return nid'
 
+getTestBenchOutput st _nid name = do
+    Node{ rootLabel=Synthesis{ sModel } } <- liftSTM $ readTVar st
+    let prj = Project
+            { projectName=name
+            , libraryPath="../.."
+            , projectPath=joinPath ["hdl", "gen", name]
+            , model=schedule sModel
+            , testCntx=Nothing
+            }
+    liftIO $ writeAndRunTestBench prj
 
 
 -- *Internal

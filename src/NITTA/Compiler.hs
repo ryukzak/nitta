@@ -33,6 +33,8 @@ module NITTA.Compiler
   , simpleSynthesisStep
   , compilerObviousBind
   , compilerAllTheads
+  , schedule
+  , mkModelWithOneNetwork
   ) where
 
 import           Control.Arrow         (second)
@@ -131,6 +133,22 @@ compilerAllTheads opt deep rootN@Node{ rootLabel=Synthesis{ sModel } }
             (rootN, [])
             mds
     in (rootN', head nids)
+
+
+-- |Schedule process by 'simpleSynthesis'.
+schedule model
+    = let
+        (syn, sid) = simpleSynthesis def (rootSynthesis model)
+    in processor $ sModel $ rootLabel $ getSynthesis sid syn
+
+
+-- |Make a model of NITTA process with one network and a specific algorithm. All functions are
+-- already bound to the network.
+mkModelWithOneNetwork arch alg = Frame
+    { processor=bindAll alg arch
+    , dfg=DFG $ map node alg
+    , timeTag=Nothing
+    } :: ModelState String String String Int (TaggedTime String Int)
 
 
 

@@ -23,6 +23,7 @@ import           Data.Typeable
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
+import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Types.Synthesis
 import           Numeric.Interval
@@ -135,6 +136,7 @@ instance ToJSON (Synthesis String String String Int (TaggedTime String Int)) whe
         ]
 
 instance ToJSON SynthesisStatus
+instance ToJSON TestBenchReport
 
 
 -- *Simple compiler

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
@@ -12,6 +13,7 @@ module NITTA.Project
     , writeProject
     -- *Test bench
     , TestBench(..)
+    , TestBenchReport(..)
     , TestBenchSetup(..)
     -- *Utils
     , writeAndRunTestBench
@@ -36,6 +38,7 @@ import           Data.FileEmbed
 import           Data.List                     (isSubsequenceOf)
 import qualified Data.List                     as L
 import qualified Data.String.Utils             as S
+import           GHC.Generics                  (Generic)
 import           NITTA.Functions               as F
 import           NITTA.Types
 import           NITTA.Utils
@@ -61,6 +64,19 @@ data TestBenchSetup pu
         , tbcSignalConnect :: Signal -> String
         , tbcCtrl          :: Microcode pu -> String
         }
+
+data TestBenchReport
+    = TestBenchReport
+        { tbStatus          :: Bool
+        , tbPath :: String
+        , tbFiles :: [String]
+        , tbFunctions :: [String]
+        , tbCompilerStdout :: String
+        , tbCompilerErrout :: String
+        , tbSimulationStdout :: String
+        , tbSimulationErrout :: String
+        }
+    deriving (Generic)
 
 
 -- |Проект вычислителя NITTA.
@@ -175,26 +191,58 @@ runTestBench h prj@Project{ projectPath, model } = do
     let (_tb, files) = projectFiles prj
     ( compileExitCode, compileOut, compileErr )
         <- readCreateProcessWithExitCode (createIVerilogProcess projectPath files) []
+
+    let header = unlines
+            [ "Project: " ++ projectPath
+            , "Files: " ++ S.join ", " files
+            , "Functional blocks: "
+            , S.join "\n" $ map show $ functions model
+            ]
+    let compilerOutputDump = unlines
+            [ header
+            , "-------------------------"
+            , "compiler stdout:"
+            , "-------------------------"
+            , compileOut
+            , "-------------------------"
+            , "compiler stderr:"
+            , "-------------------------"
+            , compileErr
+            ]
+
     when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
-        hPutStrLn h $ "Project: " ++ projectPath
-        hPutStrLn h $ "Files: " ++ S.join ", " files
-        mapM_ (hPrint h) $ functions model
-        hPutStrLn h $ "compiler stdout:\n-------------------------\n" ++ compileOut
-        hPutStrLn h $ "compiler stderr:\n-------------------------\n" ++ compileErr
+        hPutStrLn h compilerOutputDump
         die "Verilog compilation failed!"
 
     (simExitCode, simOut, simErr)
         <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just projectPath } []
 
-    -- Yep, we can't stop simulation with bad ExitCode...
-    when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut) $ do
-        hPutStrLn h $ "Project: " ++ projectPath
-        hPutStrLn h $ "Files: " ++ S.join ", " files
-        mapM_ (hPrint h) $ functions model
-        hPutStrLn h $ "sim stdout:\n-------------------------\n" ++ simOut
-        hPutStrLn h $ "sim stderr:\n-------------------------\n" ++ simErr
+    let icarusOutputDump = unlines
+            [ header
+            , "-------------------------"
+            , "compiler stdout:"
+            , "-------------------------"
+            , simOut
+            , "-------------------------"
+            , "compiler stderr:"
+            , "-------------------------"
+            , simErr
+            ]
 
-    return $ not ("FAIL" `isSubsequenceOf` simOut)
+    -- Yep, we can't stop simulation with bad ExitCode...
+    when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut)
+        $ hPutStrLn h icarusOutputDump
+
+    return TestBenchReport
+        { tbStatus=not ("FAIL" `isSubsequenceOf` simOut)
+        , tbPath=projectPath
+        , tbFiles=files
+        , tbFunctions=map show $ functions model
+        , tbCompilerStdout=compileOut
+        , tbCompilerErrout=compileErr
+        , tbSimulationStdout=simOut
+        , tbSimulationErrout=simErr
+        }
 
 
 -- |Сгенерировать команду для компиляции icarus verilog-ом вычислительного блока и его тестового
