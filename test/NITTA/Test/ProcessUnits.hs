@@ -94,7 +94,7 @@ prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
     i <- run $ incrCounter 1 counter
     let path = joinPath ["hdl", "gen", n ++ show i]
     res <- run $ writeAndRunTestBench $ Project n "../.." path pu values
-    assert res
+    assert $ tbStatus res
 
 
 -- |Формальнаяа проверка полноты выполнения работы вычислительного блока.
@@ -117,9 +117,9 @@ prop_completness (pu, fbs0)
                 ) False
 
 
-unitTestBench title proxy cntx alg
-    = let 
+unitTestBench title proxy cntx alg = do 
+    let  
         lib = joinPath ["..", ".."]
         wd = joinPath ["hdl", "gen", title]
         pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
-    in writeAndRunTestBench (Project title lib wd pu cntx) @? title
+    (tbStatus <$> writeAndRunTestBench (Project title lib wd pu cntx)) @? title

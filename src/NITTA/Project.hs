@@ -46,8 +46,8 @@ import           System.Directory
 import           System.Exit
 import           System.FilePath.Posix         (joinPath, pathSeparator)
 import           System.Info.Extra             (isWindows)
-import           System.IO                     (IOMode (WriteMode), hPrint,
-                                                hPutStrLn, stderr, withFile)
+import           System.IO                     (IOMode (WriteMode), hPutStrLn,
+                                                stderr, withFile)
 import           System.Process
 import           Text.InterpolatedString.Perl6 (qq)
 
@@ -67,12 +67,12 @@ data TestBenchSetup pu
 
 data TestBenchReport
     = TestBenchReport
-        { tbStatus          :: Bool
-        , tbPath :: String
-        , tbFiles :: [String]
-        , tbFunctions :: [String]
-        , tbCompilerStdout :: String
-        , tbCompilerErrout :: String
+        { tbStatus           :: Bool
+        , tbPath             :: String
+        , tbFiles            :: [String]
+        , tbFunctions        :: [String]
+        , tbCompilerStdout   :: String
+        , tbCompilerErrout   :: String
         , tbSimulationStdout :: String
         , tbSimulationErrout :: String
         }

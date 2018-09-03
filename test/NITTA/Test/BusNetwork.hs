@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
@@ -9,6 +10,7 @@ module NITTA.Test.BusNetwork where
 import           Data.Default
 import           Demo
 import           NITTA.BusNetwork
+import           NITTA.Compiler
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divisor    as D
@@ -133,10 +135,10 @@ badTestFram = badUnitTest "badTestFram" netWithArithm
 
 unitTest name n cntx alg = do
   let n' = schedule $ mkModelWithOneNetwork n alg
-  r <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
-  r @? name
+  TestBenchReport{ tbStatus } <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
+  tbStatus @? name
 
 badUnitTest name n cntx alg = do
   let n' = schedule $ mkModelWithOneNetwork n alg
-  r <- writeAndRunTestBenchDevNull $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
-  not r @? name
+  TestBenchReport{ tbStatus } <- writeAndRunTestBenchDevNull $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
+  not tbStatus @? name
