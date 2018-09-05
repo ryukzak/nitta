@@ -39,11 +39,12 @@ import           Text.InterpolatedString.Perl6 (qq)
 lua2functions src
     = let
         Right ast = parseText chunk src
-        Right (call, funAssign) = findMain ast
+        Right (fn, call, funAssign) = findMain ast
         AlgBuilder{ algItems } = buildAlg $ do
             addMainInputs call funAssign
             let statements = funAssignStatments funAssign
-            mapM_ processStatement statements
+            -- mapM_ (\s -> processStatement fn $ trace (show s) s) statements
+            mapM_ (processStatement fn) statements
             addConstants
         fs = filter (\case Function{} -> True; _ -> False) algItems
         varDict = M.fromList
@@ -107,6 +108,10 @@ function2nitta Function{ fName="constant", fIn=[], fOut=[o], fValues=[x] } = do
     o' <- output o
     store $ F.constant x o'
 
+function2nitta Function{ fName="send", fIn=[i], fOut=[], fValues=[] } = do
+    i' <- input i
+    store $ F.send i'
+
 function2nitta Function{ fName="add", fIn=[a, b], fOut=[c], fValues=[] } = do
     a' <- input a
     b' <- input b
@@ -140,7 +145,10 @@ store (f :: F (Parcel String Int)) = do
 findMain (Block statements Nothing)
     | [call] <- filter (\case FunCall{} -> True; _ -> False) statements
     , [funAssign] <- filter (\case FunAssign{} -> True; _ -> False) statements
-    = Right (call, funAssign)
+    , (FunCall (NormalFunCall (PEVar (VarName (Name fnCall))) _)) <- call
+    , (FunAssign (FunName (Name fnAssign) _ _) _) <- funAssign
+    , fnCall == fnAssign
+    = Right (fnCall, call, funAssign)
 findMain _ = error "can't find main function in lua source code"
 
 
@@ -164,25 +172,31 @@ addConstants = do
 
 
 
-processStatement (Assign lexps rexps) = do
+processStatement _fn (Assign lexps rexps) = do
     work <- zipWithM assignStatement lexps rexps
     let (renames, adds) = foldl (\(as, bs) (a, b) -> (a ++ as, b ++ bs)) ([], []) work
     diff <- concat <$> sequence renames
     mapM_ (\f -> f diff) adds
 
-processStatement (FunCall (NormalFunCall (PEVar (VarName (Name _funName))) (Args args))) = do
-    AlgBuilder{ algItems } <- get
-    let algIn = reverse $ filter (\case InputVar{} -> True; _ -> False) algItems
-    mapM_ (uncurry f) $ zip algIn args
-    where
-        f InputVar{ iX, iVar } rexp = do
-            i <- expArg rexp
-            let fun = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
-            alg@AlgBuilder{ algItems } <- get
-            put alg{ algItems=fun : algItems }
-        f _ _ = undefined
+processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
+    | fn == fName
+    = do
+        AlgBuilder{ algItems } <- get
+        let algIn = reverse $ filter (\case InputVar{} -> True; _ -> False) algItems
+        mapM_ (uncurry f) $ zip algIn args
+        where
+            f InputVar{ iX, iVar } rexp = do
+                i <- expArg rexp
+                let fun = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
+                alg@AlgBuilder{ algItems } <- get
+                put alg{ algItems=fun : algItems }
+            f _ _ = undefined
 
-processStatement st = error $ "statement: " ++ show st
+processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
+    fIn <- mapM expArg args
+    addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[] }
+
+processStatement _fn st = error $ "statement: " ++ show st
 
 
 

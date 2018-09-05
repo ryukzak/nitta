@@ -101,6 +101,8 @@ main = do
 
     test "fibonacci" $ schedule $ mkModelWithOneNetwork microarch $ lua2functions
         [qq|function fib(i, a, b)
+                send(i)
+                send(a)
                 i = i + 1
                 a, b = b, a + b
                 fib(i, a, b)
