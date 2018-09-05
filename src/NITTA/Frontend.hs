@@ -43,7 +43,6 @@ lua2functions src
         AlgBuilder{ algItems } = buildAlg $ do
             addMainInputs call funAssign
             let statements = funAssignStatments funAssign
-            -- mapM_ (\s -> processStatement fn $ trace (show s) s) statements
             mapM_ (processStatement fn) statements
             addConstants
         fs = filter (\case Function{} -> True; _ -> False) algItems
@@ -171,6 +170,10 @@ addConstants = do
     mapM_ (\Constant{ cX, cVar} ->  addFunction Function{ fName="constant", fIn=[], fOut=[cVar], fValues=[cX] } ) constants
 
 
+
+processStatement _fn (LocalAssign [Name n] Nothing) = do
+    AlgBuilder{ algVars } <- get
+    when (n `elem` algVars) $ error "local variable alredy defined"
 
 processStatement _fn (Assign lexps rexps) = do
     work <- zipWithM assignStatement lexps rexps

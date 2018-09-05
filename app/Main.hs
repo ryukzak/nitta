@@ -103,9 +103,10 @@ main = do
         [qq|function fib(i, a, b)
                 send(i)
                 send(a)
-                i = i + 1
+                local i2 
+                i2 = i + 1
                 a, b = b, a + b
-                fib(i, a, b)
+                fib(i2, a, b)
             end
             fib(0, 0, 1)|]
 
