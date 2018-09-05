@@ -8,7 +8,6 @@
 module NITTA.Test.BusNetwork where
 
 import           Data.Default
-import           Demo
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import qualified NITTA.Functions               as F
