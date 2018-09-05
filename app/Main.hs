@@ -24,6 +24,7 @@ import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
+import           NITTA.Frontend                 (frontendSmokeTest)
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divisor    as D
@@ -104,6 +105,7 @@ main = do
 
     -- putStrLn "funSim fibonacci:"
     -- funSim 5 D.def divAndMulAlg
+    frontendSmokeTest
 
     Nitta{ web, no_static_gen, no_api_gen } <- cmdArgs nittaArgs
     when web $ backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch teacupAlg

@@ -22,6 +22,7 @@ library
                      , NITTA.BusNetwork
                      , NITTA.Compiler
                      , NITTA.DataFlow
+                     , NITTA.Frontend
                      , NITTA.Functions
                      , NITTA.ProcessUnits.Accum
                      , NITTA.ProcessUnits.Divisor
@@ -56,6 +57,7 @@ library
                      , http-api-data
                      , interpolatedstring-perl6
                      , intervals
+                     , language-lua
                      , lens
                      , list-t
                      , MissingH
