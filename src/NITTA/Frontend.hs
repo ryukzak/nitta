@@ -175,6 +175,11 @@ processStatement _fn (LocalAssign [Name n] Nothing) = do
     AlgBuilder{ algVars } <- get
     when (n `elem` algVars) $ error "local variable alredy defined"
 
+processStatement fn (LocalAssign [Name n] (Just [rexp])) = do
+    AlgBuilder{ algVars } <- get
+    when (n `elem` algVars) $ error "local variable alredy defined"
+    processStatement fn $ Assign [VarName (Name n)] [rexp]
+
 processStatement _fn (Assign lexps rexps) = do
     work <- zipWithM assignStatement lexps rexps
     let (renames, adds) = foldl (\(as, bs) (a, b) -> (a ++ as, b ++ bs)) ([], []) work
