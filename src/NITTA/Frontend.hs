@@ -19,6 +19,7 @@ module NITTA.Frontend
     ( lua2functions
     ) where
 
+import           Control.Monad                 (when)
 import           Control.Monad.State
 import           Data.Default                  (def)
 import           Data.List                     (find, group, sort)
@@ -33,91 +34,18 @@ import qualified NITTA.Functions               as F
 import           NITTA.Types                   (F, Parcel)
 import           Text.InterpolatedString.Perl6 (qq)
 
-data AlgBuilder
-    = InputVar Int Int Text -- ix initial var
-    | Constant Int Text
-    | AliasFromTo Text Text
-    | RenamedFromTo Text Text
-    | Function
-        { fIn     :: [Text]
-        , fOut    :: [Text]
-        , fName   :: String
-        , fValues :: [Int]
-        }
-    deriving ( Show )
-
-
-patch var var' = inner
-    where
-        inner [] = []
-        inner (InputVar ix x v : xs) | v == var = InputVar ix x var' : inner xs
-        inner (Constant x v : xs) | v == var = Constant x var' : inner xs
-        inner (AliasFromTo f t : xs) = AliasFromTo (rn f) (rn t) : inner xs
-        inner (f@Function{ fIn, fOut } : xs) = f{ fIn=map rn fIn, fOut=map rn fOut } : inner xs
-        inner (x:xs) = x : inner xs
-
-        rn v
-            | v == var = var'
-            | otherwise = v
-
-
-data Alg
-    = Alg
-        { algBuilder :: [AlgBuilder]
-        , algVarGen  :: [Text]
-        , algVars    :: [Text]
-        }
-
-instance Show Alg where
-    show Alg{ algBuilder, algVars }
-        = "Alg\n{ algBuilder=\n"
-        ++ S.join "\n" (map show $ reverse algBuilder)
-        ++ "\nalgVars: " ++ show algVars
-        ++ "\n}"
-
-runAlgBuilder proc
-    = runState proc Alg
-        { algBuilder=[]
-        , algVarGen=map (pack . ("#" ++) . show) [(0::Int)..]
-        , algVars=[]
-        }
-
-
-frontendSmokeTest = do
-    let src = [qq|
-            function fib(i, a, b)
-                i = i + 1
-                a, b = b, a + b
-                fib(i, a, b)
-            end
-
-            fib(0, 0, 1)
-            |]
-
-    -- let Right block@(Block _statments Nothing) = parseText chunk src
-    -- let Right (call, funAssign) = findMain block
-    -- let s = show $ runAlgBuilder $ do
-    --         defineLoopedVars call funAssign
-    --         let statements = funStatements funAssign
-    --         mapM_ statement statements
-    --         addConstants
-    -- print $ length s
-    mapM_ putStrLn $ map show $ lua2functions src
-    -- putStrLn s
-
-    putStrLn "-- the end --"
 
 
 lua2functions src
     = let
         Right ast = parseText chunk src
         Right (call, funAssign) = findMain ast
-        (_, Alg{ algBuilder }) = runAlgBuilder $ do
-            defineLoopedVars call funAssign
-            let statements = funStatements funAssign
-            mapM_ statement statements
+        AlgBuilder{ algItems } = buildAlg $ do
+            addMainInputs call funAssign
+            let statements = funAssignStatments funAssign
+            mapM_ processStatement statements
             addConstants
-        fs = filter (\case Function{} -> True; _ -> False) algBuilder
+        fs = filter (\case Function{} -> True; _ -> False) algItems
         varDict = M.fromList
             $ map varRow
             $ group $ sort $ concatMap fIn fs
@@ -127,6 +55,67 @@ lua2functions src
             = let vs = zipWith (\v i -> [qq|{unpack v}_{i}|]) lst ([0..] :: [Int])
             in (x, (vs, vs))
         varRow _ = undefined
+
+
+
+data AlgBuilder
+    = AlgBuilder
+        { algItems  :: [AlgBuilderItem]
+        , algVarGen :: [Text]
+        , algVars   :: [Text]
+        }
+
+instance Show AlgBuilder where
+    show (AlgBuilder algItems _algVarGen algVars )
+        = "AlgBuilder\n{ algItems=\n"
+        ++ S.join "\n" (map show $ reverse algItems)
+        ++ "\nalgVars: " ++ show algVars
+        ++ "\n}"
+
+data AlgBuilderItem
+    = InputVar{ iIx :: Int, iX :: Int, iVar :: Text }
+    | Constant{ cX :: Int, cVar :: Text }
+    | Alias{ aFrom :: Text, aTo :: Text }
+    | Renamed{ rFrom :: Text, rTo :: Text }
+    | Function
+        { fIn     :: [Text]
+        , fOut    :: [Text]
+        , fName   :: String
+        , fValues :: [Int]
+        }
+    deriving ( Show )
+
+
+
+buildAlg proc
+    = execState proc AlgBuilder
+        { algItems=[]
+        , algVarGen=map (pack . ("#" ++) . show) [(0::Int)..]
+        , algVars=[]
+        }
+
+
+
+-- *Translate AlgBuiler functions to nitta functions
+
+function2nitta Function{ fName="loop", fIn=[i], fOut=[o], fValues=[x] } = do
+    i' <- input i
+    o' <- output o
+    store $ F.loop x i' o'
+
+function2nitta Function{ fName="constant", fIn=[], fOut=[o], fValues=[x] } = do
+    o' <- output o
+    store $ F.constant x o'
+
+function2nitta Function{ fName="add", fIn=[a, b], fOut=[c], fValues=[] } = do
+    a' <- input a
+    b' <- input b
+    c' <- output c
+    store $ F.add a' b' c'
+
+function2nitta f = error $ "unknown function: " ++ show f
+
+
 
 input v = do
     (dict, fs) <- get
@@ -146,175 +135,167 @@ store (f :: F (Parcel String Int)) = do
 
 
 
-
-function2nitta Function{ fName="loop", fIn=[i], fOut=[o], fValues=[x] } = do
-    i' <- input i
-    o' <- output o
-    store $ F.loop x i' o'
-
-function2nitta Function{ fName="constant", fIn=[], fOut=[o], fValues=[x] } = do
-    o' <- output o
-    store $ F.constant x o'
-
-function2nitta Function{ fName="Add", fIn=[a, b], fOut=[c], fValues=[] } = do
-    a' <- input a
-    b' <- input b
-    c' <- output c
-    store $ F.add a' b' c'
-
-function2nitta _ = error "unknown function"
-
-
-
-
-
-
+-- *AST inspection and algorithm builder
 
 findMain (Block statements Nothing)
-    = let
-        [call] = filter (\case FunCall{} -> True; _ -> False) statements
-        [funAssign] = filter (\case FunAssign{} -> True; _ -> False) statements
-    in Right (call, funAssign)
-findMain _ = undefined
+    | [call] <- filter (\case FunCall{} -> True; _ -> False) statements
+    , [funAssign] <- filter (\case FunAssign{} -> True; _ -> False) statements
+    = Right (call, funAssign)
+findMain _ = error "can't find main function in lua source code"
 
-defineLoopedVars call funAssign = do
-    let FunAssign (FunName (Name _funName) _ _) (FunBody args _ _) = funAssign
-    let vars = map (\case (Name v) -> v) args
-    let FunCall (NormalFunCall _ (Args callArgs)) = call
+
+addMainInputs
+        (FunCall (NormalFunCall _ (Args callArgs)))
+        (FunAssign (FunName (Name _funName) _ _) (FunBody declArgs _ _)) = do
+    let vars = map (\case (Name v) -> v) declArgs
     let values = map (\case (Number _ s) -> read (T.unpack s); _ -> undefined) callArgs
-    mapM_ addInput $ zip3 [0..] vars values
+    when (length vars /= length values)
+        $ error "a different number of arguments in main a function declaration and call"
+    mapM_ (\(iIx, iX, iVar) -> addItem InputVar{ iIx, iX, iVar } [iVar]) $ zip3 [0..] values vars
 
-addInput (ix, var, value) = do
-    alg@Alg{ algBuilder, algVars } <- get
-    put alg
-        { algBuilder=InputVar ix value var : algBuilder
-        , algVars=var : algVars
-        }
+addMainInputs _ _ = error "bad main function description"
 
 
 
-funStatements (FunAssign _ (FunBody _ _ (Block statments _))) = statments
-funStatements _                                               = undefined
+addConstants = do
+    AlgBuilder{ algItems } <- get
+    let constants = filter (\case Constant{} -> True; _ -> False) algItems
+    mapM_ (\Constant{ cX, cVar} ->  addFunction Function{ fName="constant", fIn=[], fOut=[cVar], fValues=[cX] } ) constants
 
-statement (Assign lexps rexps) = do
-    work <- mapM (uncurry assign) $ zip lexps rexps
+
+
+processStatement (Assign lexps rexps) = do
+    work <- zipWithM assignStatement lexps rexps
     let (renames, adds) = foldl (\(as, bs) (a, b) -> (a ++ as, b ++ bs)) ([], []) work
-    diff <- concat <$> mapM id renames
+    diff <- concat <$> sequence renames
     mapM_ (\f -> f diff) adds
 
-statement (FunCall (NormalFunCall (PEVar (VarName (Name _funName))) (Args args))) = do
-    Alg{ algBuilder } <- get
-    let algIn = reverse $ filter (\case InputVar{} -> True; _ -> False) algBuilder
+processStatement (FunCall (NormalFunCall (PEVar (VarName (Name _funName))) (Args args))) = do
+    AlgBuilder{ algItems } <- get
+    let algIn = reverse $ filter (\case InputVar{} -> True; _ -> False) algItems
     mapM_ (uncurry f) $ zip algIn args
     where
-        f (InputVar _ix value o) rexp = do
-            i <- arg rexp
-            let fun = Function{ fName="loop", fIn=[i], fOut=[o], fValues=[value] }
-            alg@Alg{ algBuilder } <- get
-            put alg{ algBuilder=fun : algBuilder }
+        f InputVar{ iX, iVar } rexp = do
+            i <- expArg rexp
+            let fun = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
+            alg@AlgBuilder{ algItems } <- get
+            put alg{ algItems=fun : algItems }
         f _ _ = undefined
 
-statement st = error $ "statement: " ++ show st
+processStatement st = error $ "statement: " ++ show st
 
 
-assign (VarName (Name v)) (Binop Add a b) = do
-    a' <- arg a
-    b' <- arg b
-    let f = Function{ fName="Add", fIn=[a', b'], fOut=[v], fValues=[] }
+
+assignStatement (VarName (Name v)) (Binop Add a b) = do
+    a' <- expArg a
+    b' <- expArg b
+    let f = Function{ fName="add", fIn=[a', b'], fOut=[v], fValues=[] }
     return
-        ( [ renameVars [v] ]
-        , [ addFunction' f ]
+        ( [ renameVarsIfNeeded [v] ]
+        , [ patchAndAddFunction f ]
         )
-assign (VarName (Name a)) (PrefixExp (PEVar (VarName (Name b))))
+assignStatement (VarName (Name a)) (PrefixExp (PEVar (VarName (Name b))))
     = return
-        ( [ renameVars [a] ]
-        , [ \diff -> do
-            let b' = applyDiff diff b
-            alg@Alg{ algBuilder } <- get
-            put alg
-                { algBuilder=AliasFromTo a b' : algBuilder
-                }
-          ]
+        ( [ renameVarsIfNeeded [a] ]
+        , [ \diff -> addItem Alias{ aFrom=a, aTo=applyPatch diff b } [] ]
         )
 
-assign lexp rexp = error $ "assign: " ++ show (lexp, rexp)
+assignStatement lexp rexp = error $ "assignStatement: " ++ show (lexp, rexp)
 
 
-applyDiff diff v
-    = case find ((== v) . fst) diff of
-        Just (_, v') -> v'
-        _            -> v
 
-renameVars fOut = do
-    Alg{ algVars } <- get
-    mapM autoRename $ filter (`elem` algVars) fOut
-
-addFunction' f@Function{ fIn } diff = do
-    let fIn' = map
-            ( \v -> case find ((== v) . fst) diff of
-                Just (_, v') -> v'
-                _            -> v )
-            fIn
-    alg@Alg{ algBuilder } <- get
-    put alg
-        { algBuilder=f{ fIn=fIn' } : algBuilder
-        }
-addFunction' _ _ = undefined
-
-arg (Number IntNum valueT) = do
-    let value = read $ T.unpack valueT
-    alg@Alg{ algBuilder, algVarGen=g:gs } <- get
-    case filter (\case (Constant v _) | v == value -> True; _ -> False) algBuilder of
-        [] -> do
+expArg (Number IntNum textX) = do
+    let x = read $ T.unpack textX
+    alg@AlgBuilder{ algItems, algVarGen=g:gs } <- get
+    case find (\case Constant{ cX } | cX == x -> True; _ -> False) algItems of
+        Just Constant{ cVar } -> return cVar
+        Nothing -> do
             put alg
-                { algBuilder=Constant value g : algBuilder
+                { algItems=Constant{ cX=x, cVar=g } : algItems
                 , algVarGen=gs
                 }
             return g
-        [Constant _ var] -> return var
-        _ -> undefined
-arg (PrefixExp (PEVar (VarName (Name var)))) = do
-    Alg{ algBuilder } <- get
-    return $ case find (\case (AliasFromTo v _) | v == var -> True; _ -> False) algBuilder of
-        Just (AliasFromTo _ var') -> var'
-        _                         -> var
+        Just _ -> error "internal error"
 
-arg a = error $ "arg: " ++ show a
+expArg (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
+
+expArg a = error $ "expArg: " ++ show a
 
 
-addFunction f@Function{ fIn, fOut } = do
-    Alg{ algVars } <- get
-    diff <- mapM autoRename $ filter (`elem` algVars) fOut
-    let fIn' = map
-            ( \v -> case find ((== v) . fst) diff of
-                Just (_, v') -> v'
-                _            -> v )
-            fIn
-    alg@Alg{ algBuilder } <- get
+
+-- *Internal
+
+addFunction f@Function{ fOut } = do
+    diff <- renameVarsIfNeeded fOut
+    patchAndAddFunction f diff
+addFunction e = error $ "addFunction try to add: " ++ show e
+
+
+
+patchAndAddFunction f@Function{ fIn } diff = do
+    let fIn' = map (applyPatch diff) fIn
+    alg@AlgBuilder{ algItems } <- get
     put alg
-        { algBuilder=f{ fIn=fIn' } : algBuilder
-        , algVars=fOut ++ algVars
+        { algItems=f{ fIn=fIn' } : algItems
         }
-addFunction _ = undefined
+patchAndAddFunction _ _ = undefined
 
 
-renameFromTo var var' = do
-    alg@Alg{ algBuilder, algVars } <- get
-    put alg
-        { algBuilder=RenamedFromTo var var' : patch var var' algBuilder
-        , algVars=var' : algVars
-        }
 
+renameVarsIfNeeded fOut = do
+    AlgBuilder{ algVars } <- get
+    mapM autoRename $ filter (`elem` algVars) fOut
 
 autoRename var = do
-    alg@Alg{ algVarGen=g:gs } <- get
+    alg@AlgBuilder{ algVarGen=g:gs } <- get
     let var' = T.concat [var, g]
     put alg { algVarGen=gs }
     renameFromTo var var'
     return (var, var')
 
+renameFromTo rFrom rTo = do
+    alg@AlgBuilder{ algItems, algVars } <- get
+    put alg
+        { algItems=Renamed{ rFrom, rTo } : patch algItems
+        , algVars=rTo : algVars
+        }
+    where
+        patch [] = []
+        patch (i@InputVar{ iVar } : xs) = i{ iVar=rn iVar } : patch xs
+        patch (Constant x v : xs) = Constant x (rn v) : patch xs
+        patch (Alias{ aFrom, aTo } : xs) = Alias (rn aFrom) (rn aTo) : patch xs
+        patch (f@Function{ fIn, fOut } : xs) = f{ fIn=map rn fIn, fOut=map rn fOut } : patch xs
+        patch (x:xs) = x : patch xs
 
-addConstants = do
-    Alg{ algBuilder } <- get
-    let constants = filter (\case Constant{} -> True; _ -> False) algBuilder
-    mapM_ (\(Constant x var) ->  addFunction Function{ fName="constant", fIn=[], fOut=[var], fValues=[x] } ) constants
+        rn v
+            | v == rFrom = rTo
+            | otherwise = v
+
+
+
+funAssignStatments (FunAssign _ (FunBody _ _ (Block statments _))) = statments
+funAssignStatments _                                               = error "funAssignStatments : not function assignment"
+
+
+
+addItem item vars = do
+    alg@AlgBuilder{ algItems, algVars } <- get
+    put alg
+        { algItems=item : algItems
+        , algVars=vars ++ algVars
+        }
+
+
+
+findAlias var = do
+    AlgBuilder{ algItems } <- get
+    case find (\case Alias{ aFrom } | aFrom == var -> True; _ -> False) algItems of
+        Just Alias{ aTo } -> findAlias aTo
+        _                 -> return var
+
+
+
+applyPatch diff v
+    = case find ((== v) . fst) diff of
+        Just (_, v') -> v'
+        _            -> v
