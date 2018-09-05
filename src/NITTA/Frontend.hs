@@ -1,12 +1,13 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase       #-}
-{-# LANGUAGE NamedFieldPuns   #-}
-{-# LANGUAGE QuasiQuotes      #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
-Module      : Frontend
+Module      : NITTA.Frontend
 Description : Lua frontend prototype
 Copyright   : (c) Aleksandr Penskoi, 2018
 License     : BSD3
@@ -14,20 +15,22 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 
-module NITTA.Frontend 
-    ( frontendSmokeTest
+module NITTA.Frontend
+    ( lua2functions
     ) where
 
 import           Control.Monad.State
 import           Data.Default                  (def)
-import           Data.List                     (find)
+import           Data.List                     (find, group, sort)
 import           Data.Maybe                    (catMaybes)
 import qualified Data.String.Utils             as S
+
+import qualified Data.Map                      as M
 import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
-import           Debug.Trace
 import           Language.Lua
 import qualified NITTA.Functions               as F
+import           NITTA.Types                   (F, Parcel)
 import           Text.InterpolatedString.Perl6 (qq)
 
 data AlgBuilder
@@ -90,18 +93,81 @@ frontendSmokeTest = do
 
             fib(0, 0, 1)
             |]
-    let Right block@(Block _statments Nothing) = parseText chunk src
-    let Right (call, funAssign) = findMain block
-    let s = show $ runAlgBuilder $ do
+
+    -- let Right block@(Block _statments Nothing) = parseText chunk src
+    -- let Right (call, funAssign) = findMain block
+    -- let s = show $ runAlgBuilder $ do
+    --         defineLoopedVars call funAssign
+    --         let statements = funStatements funAssign
+    --         mapM_ statement statements
+    --         addConstants
+    -- print $ length s
+    mapM_ putStrLn $ map show $ lua2functions src
+    -- putStrLn s
+
+    putStrLn "-- the end --"
+
+
+lua2functions src
+    = let
+        Right ast = parseText chunk src
+        Right (call, funAssign) = findMain ast
+        (_, Alg{ algBuilder }) = runAlgBuilder $ do
             defineLoopedVars call funAssign
             let statements = funStatements funAssign
             mapM_ statement statements
             addConstants
-            -- recCall $ last statements0
-    print $ length s
-    putStrLn s
+        fs = filter (\case Function{} -> True; _ -> False) algBuilder
+        varDict = M.fromList
+            $ map varRow
+            $ group $ sort $ concatMap fIn fs
+    in snd $ execState (mapM_ function2nitta fs) (varDict, [])
+    where
+        varRow lst@(x:_)
+            = let vs = zipWith (\v i -> [qq|{unpack v}_{i}|]) lst ([0..] :: [Int])
+            in (x, (vs, vs))
+        varRow _ = undefined
 
-    putStrLn "-- the end --"
+input v = do
+    (dict, fs) <- get
+    let (x:xs, lst) = dict M.! v
+    put (M.insert v (xs, lst) dict, fs)
+    return x
+
+output v = do
+    (dict, fs) <- get
+    let (xs, lst) = dict M.! v
+    put (M.insert v (xs, lst) dict, fs)
+    return lst
+
+store (f :: F (Parcel String Int)) = do
+    (dict, fs) <- get
+    put (dict, f:fs)
+
+
+
+
+function2nitta Function{ fName="loop", fIn=[i], fOut=[o], fValues=[x] } = do
+    i' <- input i
+    o' <- output o
+    store $ F.loop x i' o'
+
+function2nitta Function{ fName="constant", fIn=[], fOut=[o], fValues=[x] } = do
+    o' <- output o
+    store $ F.constant x o'
+
+function2nitta Function{ fName="Add", fIn=[a, b], fOut=[c], fValues=[] } = do
+    a' <- input a
+    b' <- input b
+    c' <- output c
+    store $ F.add a' b' c'
+
+function2nitta _ = error "unknown function"
+
+
+
+
+
 
 
 findMain (Block statements Nothing)
@@ -128,7 +194,7 @@ addInput (ix, var, value) = do
 
 
 funStatements (FunAssign _ (FunBody _ _ (Block statments _))) = statments
-funStatements _ = undefined
+funStatements _                                               = undefined
 
 statement (Assign lexps rexps) = do
     work <- mapM (uncurry assign) $ zip lexps rexps
@@ -143,15 +209,12 @@ statement (FunCall (NormalFunCall (PEVar (VarName (Name _funName))) (Args args))
     where
         f (InputVar _ix value o) rexp = do
             i <- arg rexp
-            let fun = trace [qq|> loop: $i $o|] $ Function{ fName="loop", fIn=[i], fOut=[o], fValues=[value] }
+            let fun = Function{ fName="loop", fIn=[i], fOut=[o], fValues=[value] }
             alg@Alg{ algBuilder } <- get
             put alg{ algBuilder=fun : algBuilder }
         f _ _ = undefined
 
-statement st =
-    case trace ("statement >> " ++ show st) $ show st of
-        "" -> undefined
-        _  -> return ()
+statement st = error $ "statement: " ++ show st
 
 
 assign (VarName (Name v)) (Binop Add a b) = do
@@ -174,9 +237,7 @@ assign (VarName (Name a)) (PrefixExp (PEVar (VarName (Name b))))
           ]
         )
 
-assign lexp rexp = case trace ("FAIL Assign >> " ++ show (lexp, rexp)) $ show lexp of
-    "" -> undefined
-    _  -> return ([],[])
+assign lexp rexp = error $ "assign: " ++ show (lexp, rexp)
 
 
 applyDiff diff v
@@ -234,7 +295,7 @@ addFunction f@Function{ fIn, fOut } = do
         { algBuilder=f{ fIn=fIn' } : algBuilder
         , algVars=fOut ++ algVars
         }
-addFunction _ = undefined 
+addFunction _ = undefined
 
 
 renameFromTo var var' = do

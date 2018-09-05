@@ -170,7 +170,7 @@ data F io where
     , FunctionSimulation f v x
     ) => f -> F io
 instance Show (F io) where
-  show (F f) = "< " ++ show f ++ " >"
+  show (F f) = S.replace "\"" "" $ show f
 
 instance ( Var v
          , Typeable x

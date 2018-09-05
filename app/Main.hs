@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE QuasiQuotes        #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
@@ -24,7 +25,7 @@ import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import           NITTA.Frontend                 (frontendSmokeTest)
+import           NITTA.Frontend
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divisor    as D
@@ -37,6 +38,7 @@ import           NITTA.Types
 import           NITTA.Types.Synthesis
 import           System.Console.CmdArgs
 import           System.FilePath               (joinPath)
+import           Text.InterpolatedString.Perl6 (qq)
 
 
 microarch = busNetwork 31 (Just True)
@@ -94,10 +96,16 @@ nittaArgs = Nitta
 
 
 main = do
-    teacupDemo
-    fibonacciDemo
+    -- teacupDemo
+    -- fibonacciDemo
 
-    -- test "fibonacci" $ schedule $ mkModelWithOneNetwork microarch fibonacciAlg
+    test "fibonacci" $ schedule $ mkModelWithOneNetwork microarch $ lua2functions
+        [qq|function fib(i, a, b)
+                i = i + 1
+                a, b = b, a + b
+                fib(i, a, b)
+            end
+            fib(0, 0, 1)|]
 
     -- putStrLn "funSim teacup:"
     -- test "teacup" $ schedule $ mkModelWithOneNetwork microarch teacupAlg
@@ -105,7 +113,6 @@ main = do
 
     -- putStrLn "funSim fibonacci:"
     -- funSim 5 D.def divAndMulAlg
-    frontendSmokeTest
 
     Nitta{ web, no_static_gen, no_api_gen } <- cmdArgs nittaArgs
     when web $ backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch teacupAlg
@@ -121,8 +128,8 @@ test n pu = do
             , testCntx=Nothing
             }
     TestBenchReport{ tbStatus } <- writeAndRunTestBench prj
-    if tbStatus then putStrLn "Success"
-    else putStrLn "Fail"
+    if tbStatus then putStrLn $ n ++ " test - Success"
+    else putStrLn $ n ++ " test - Fail"
 
 
 -----------------------------------------------------------
