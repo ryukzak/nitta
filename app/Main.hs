@@ -99,15 +99,14 @@ main = do
     -- teacupDemo
     -- fibonacciDemo
 
-    test "fibonacci" $ schedule $ mkModelWithOneNetwork microarch $ lua2functions
-        [qq|function fib(i, a, b)
-                send(i)
-                send(a)
-                local i2 = i + 1
-                a, b = b, a + b
-                fib(i2, a, b)
-            end
-            fib(0, 0, 1)|]
+    -- test "fibonacci" $ schedule $ mkModelWithOneNetwork microarch $ lua2functions
+    --     -- from accum to accum don't work
+    --     [qq|function fib(i)
+    --             send(i)
+    --             local i2 = i + 1 + 0
+    --             fib(i2)
+    --         end
+    --         fib(0)|]
 
     -- putStrLn "funSim teacup:"
     -- test "teacup" $ schedule $ mkModelWithOneNetwork microarch teacupAlg

@@ -1,8 +1,10 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE QuasiQuotes         #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TupleSections         #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
@@ -23,10 +25,9 @@ import           Control.Monad                 (when)
 import           Control.Monad.State
 import           Data.Default                  (def)
 import           Data.List                     (find, group, sort)
+import qualified Data.Map                      as M
 import           Data.Maybe                    (catMaybes)
 import qualified Data.String.Utils             as S
-
-import qualified Data.Map                      as M
 import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
@@ -38,7 +39,7 @@ import           Text.InterpolatedString.Perl6 (qq)
 
 lua2functions src
     = let
-        Right ast = parseText chunk src
+        ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         Right (fn, call, funAssign) = findMain ast
         AlgBuilder{ algItems } = buildAlg $ do
             addMainInputs call funAssign
@@ -167,7 +168,7 @@ addMainInputs _ _ = error "bad main function description"
 addConstants = do
     AlgBuilder{ algItems } <- get
     let constants = filter (\case Constant{} -> True; _ -> False) algItems
-    mapM_ (\Constant{ cX, cVar} ->  addFunction Function{ fName="constant", fIn=[], fOut=[cVar], fValues=[cX] } ) constants
+    mapM_ (\Constant{ cX, cVar} -> addFunction Function{ fName="constant", fIn=[], fOut=[cVar], fValues=[cX] } ) constants
 
 
 
@@ -194,14 +195,14 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
         mapM_ (uncurry f) $ zip algIn args
         where
             f InputVar{ iX, iVar } rexp = do
-                i <- expArg rexp
+                (i, [], []) <- expArg rexp
                 let fun = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
                 alg@AlgBuilder{ algItems } <- get
                 put alg{ algItems=fun : algItems }
             f _ _ = undefined
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
-    fIn <- mapM expArg args
+    fIn <- map (\(i, [], []) -> i) <$> mapM expArg args
     addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[] }
 
 processStatement _fn st = error $ "statement: " ++ show st
@@ -209,13 +210,14 @@ processStatement _fn st = error $ "statement: " ++ show st
 
 
 assignStatement (VarName (Name v)) (Binop Add a b) = do
-    a' <- expArg a
-    b' <- expArg b
+    (a', renamersA, functionsA) <- expArg a
+    (b', renamersB, functionsB) <- expArg b
     let f = Function{ fName="add", fIn=[a', b'], fOut=[v], fValues=[] }
     return
-        ( [ renameVarsIfNeeded [v] ]
-        , [ patchAndAddFunction f ]
+        ( renameVarsIfNeeded [v] : renamersA ++ renamersB
+        , patchAndAddFunction f : functionsA ++ functionsB
         )
+
 assignStatement (VarName (Name a)) (PrefixExp (PEVar (VarName (Name b))))
     = return
         ( [ renameVarsIfNeeded [a] ]
@@ -226,20 +228,26 @@ assignStatement lexp rexp = error $ "assignStatement: " ++ show (lexp, rexp)
 
 
 
+type Diff = [(Text, Text)]
+expArg :: Exp -> State AlgBuilder (Text, [State AlgBuilder Diff], [Diff -> State AlgBuilder ()])
 expArg (Number IntNum textX) = do
     let x = read $ T.unpack textX
-    alg@AlgBuilder{ algItems, algVarGen=g:gs } <- get
+    AlgBuilder{ algItems } <- get
     case find (\case Constant{ cX } | cX == x -> True; _ -> False) algItems of
-        Just Constant{ cVar } -> return cVar
+        Just Constant{ cVar } -> return (cVar, [], [])
         Nothing -> do
-            put alg
-                { algItems=Constant{ cX=x, cVar=g } : algItems
-                , algVarGen=gs
-                }
-            return g
+            g <- genVar "constant"
+            addItem Constant{ cX=x, cVar=g } []
+            return (g, [], [])
         Just _ -> error "internal error"
 
-expArg (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
+expArg (PrefixExp (PEVar (VarName (Name var))))
+    = (, [], []) <$> findAlias var
+
+expArg binop@Binop{} = do
+    c <- genVar "tmp"
+    (renamers, functions) <- assignStatement (VarName (Name c)) binop
+    return (c, renamers, functions)
 
 expArg a = error $ "expArg: " ++ show a
 
@@ -269,9 +277,7 @@ renameVarsIfNeeded fOut = do
     mapM autoRename $ filter (`elem` algVars) fOut
 
 autoRename var = do
-    alg@AlgBuilder{ algVarGen=g:gs } <- get
-    let var' = T.concat [var, g]
-    put alg { algVarGen=gs }
+    var' <- genVar $ unpack var
     renameFromTo var var'
     return (var, var')
 
@@ -306,6 +312,13 @@ addItem item vars = do
         { algItems=item : algItems
         , algVars=vars ++ algVars
         }
+
+
+
+genVar prefix = do
+    alg@AlgBuilder{ algVarGen=g:gs } <- get
+    put alg{ algVarGen=gs }
+    return $ T.concat [pack prefix, g]
 
 
 
