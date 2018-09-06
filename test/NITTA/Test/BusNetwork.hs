@@ -132,6 +132,8 @@ badTestFram = badUnitTest "badTestFram" netWithArithm
 
 -----------------------------------------------
 
+processorTest name alg = testCase name $ unitTest "testMultiplier" netWithArithmAndSPI def alg
+
 unitTest name n cntx alg = do
   let n' = schedule $ mkModelWithOneNetwork n alg
   TestBenchReport{ tbStatus } <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx

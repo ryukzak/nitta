@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
@@ -13,6 +14,7 @@ import           NITTA.Functions
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnits.Multiplier
 import           NITTA.Test.BusNetwork
+import           NITTA.Frontend
 import           NITTA.Test.Functions
 import           NITTA.Test.ProcessUnits
 import           NITTA.Test.ProcessUnits.Fram
@@ -22,6 +24,7 @@ import           System.Environment            (setEnv)
 import           Test.Tasty                    (defaultMain, testGroup)
 import           Test.Tasty.HUnit              (testCase)
 import           Test.Tasty.QuickCheck         (Gen, arbitrary, testProperty)
+import           Text.InterpolatedString.Perl6 (qq)
 
 
 -- FIXME: Тестирование очень активно работает с диском. В связи с этим рационально положить папку
@@ -64,6 +67,24 @@ main = do
             , testCase "inputsOfFBs" inputsOfFBsTests
             , testCase "outputsOfFBsTests" outputsOfFBsTests
             , testCase "endpointRoleEq" endpointRoleEq
+            ]
+        , testGroup "lua frontend"
+            [ processorTest "counter" $ lua2functions
+                [qq|function fib(i)
+                        send(i)
+                        i = i + 1
+                        fib(i)
+                    end
+                    fib(0)
+                |]
+            , processorTest "counter, local var" $ lua2functions
+                [qq|function fib(i)
+                        send(i)
+                        local i2 = i + 1
+                        fib(i2)
+                    end
+                    fib(0)
+                |]
             ]
       ]
 
