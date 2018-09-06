@@ -185,7 +185,7 @@ instance ( Ord v ) => FunctionSimulation (Reg (Parcel v x)) v x where
 
 data Loop io = Loop (X io) (O io) (I io) deriving ( Typeable )
 instance ( Show v, Show x ) => Show (Loop (Parcel v x)) where
-    show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join " = " (map show $ elems k2)
+    show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join ", " (map show $ elems k2)
 deriving instance ( IOType io v x ) => Eq (Loop io)
 loop x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
 

@@ -334,6 +334,8 @@ instance ( Var v
 
 --------------------------------------------------------------------------
 
+programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
+
 
 instance ( Time t
          ) => TargetSystemComponent (BusNetwork String v x t) where
@@ -377,7 +379,7 @@ assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bu
 pu_simple_control
     #( .MICROCODE_WIDTH( MICROCODE_WIDTH )
      , .PROGRAM_DUMP( "\$path\${mn}.dump" )
-     , .MEMORY_SIZE( {fromEnum (nextTick bnProcess) + 1} ) // 0 - address for nop microcode
+     , .MEMORY_SIZE( { length $ programTicks pu } ) // 0 - address for nop microcode
      ) control_unit
     ( .clk( clk )
     , .rst( rst )
@@ -413,10 +415,9 @@ wire [ATTR_WIDTH-1:0] {t}_attr_out;|]
       in Aggregate (Just mn) $ subSW ++ sw
     where
       mn = moduleName title pu
-      memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) ticks
       -- По нулевоу адресу устанавливается команда Nop (он же def) для всех вычислиетльных блоков.
       -- Именно этот адрес выставляется на сигнальные линии когда поднят сигнал rst.
-      ticks = [ -1 .. nextTick - 1 ]
+      memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) $ programTicks pu
       values (BusNetworkMC arr) = reverse $ A.elems arr
 
   hardwareInstance = undefined
@@ -481,12 +482,12 @@ instance ( Title title, Var v, Time t
 
       -- TODO: Количество циклов для тестирования должно задаваться пользователем.
       cntxs = take 5 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n
-      cycleTicks = [ 0 .. nextTick (process n) - 1 ]
+      cycleTicks = tail $ programTicks n  -- because program[0] is skiped
       simulationInfo = (0, def) : concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
       assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
         where
           assert (t, cntx)
-            = "\\$write(\"%s, bus actual: %h\", " ++ show (show t) ++ ", net.data_bus); "
+            = "\\$write(\"%s, bus actual: %h\", " ++ show t ++ ", net.data_bus); "
             ++ case extractInstructionAt n t of
                 Transport v _ _ : _
                   -> concat
