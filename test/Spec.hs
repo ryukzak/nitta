@@ -91,6 +91,18 @@ main = do
                     end
                     counter(0)
                 |]
+            , processorTest "fibonacci, a, b" $ lua2functions
+                [qq|function fib(a, b)
+                        a, b = b, a + b
+                        fib(a, b)
+                    end
+                    fib(0, 1)|]
+            , processorTest "fibonacci, b, a" $ lua2functions
+                [qq|function fib(a, b)
+                        b, a = a + b, b
+                        fib(a, b)
+                    end
+                    fib(0, 1)|]
             ]
       ]
 

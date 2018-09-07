@@ -44,7 +44,7 @@ lua2functions src
         AlgBuilder{ algItems } = buildAlg $ do
             addMainInputs call funAssign
             let statements = funAssignStatments funAssign
-            mapM_ (processStatement fn) statements
+            mapM_ (\e -> processStatement fn e) statements
             addConstants
         fs = filter (\case Function{} -> True; _ -> False) algItems
         varDict = M.fromList
@@ -62,14 +62,16 @@ lua2functions src
 data AlgBuilder
     = AlgBuilder
         { algItems  :: [AlgBuilderItem]
+        , algBuffer :: [AlgBuilderItem]
         , algVarGen :: [Text]
         , algVars   :: [Text]
         }
 
 instance Show AlgBuilder where
-    show (AlgBuilder algItems _algVarGen algVars )
+    show (AlgBuilder algItems algBuffer _algVarGen algVars )
         = "AlgBuilder\n{ algItems=\n"
         ++ S.join "\n" (map show $ reverse algItems)
+        ++ "\nalgBuffer: " ++ show algBuffer
         ++ "\nalgVars: " ++ show algVars
         ++ "\n}"
 
@@ -91,6 +93,7 @@ data AlgBuilderItem
 buildAlg proc
     = execState proc AlgBuilder
         { algItems=[]
+        , algBuffer=[]
         , algVarGen=map (pack . ("#" ++) . show) [(0::Int)..]
         , algVars=[]
         }
@@ -191,6 +194,7 @@ processStatement _fn st@(Assign lexps rexps)
             let outs = map (\case (VarName (Name v)) -> [v]; l -> error $ "bad left expression: " ++ show l) lexps
             diff <- concat <$> mapM renameVarsIfNeeded outs
             zipWithM_ (rightExp diff) outs rexps
+            flushBuffer
         | otherwise -> error $ "processStatement: " ++ show st
 
 processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
@@ -233,7 +237,7 @@ rightExp
     patchAndAddFunction f diff
 
 rightExp diff [a] (PrefixExp (PEVar (VarName (Name b))))
-    = addItem Alias{ aFrom=a, aTo=applyPatch diff b } []
+    = addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }
 
 rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
@@ -315,10 +319,21 @@ funAssignStatments (FunAssign _ (FunBody _ _ (Block statments _))) = statments
 funAssignStatments _                                               = error "funAssignStatments : not function assignment"
 
 
+flushBuffer = modify'
+    $ \alg@AlgBuilder{ algBuffer, algItems } -> alg
+        { algItems=algBuffer ++ algItems
+        , algBuffer=[] 
+        }
 
-addItem item vars = do
-    alg@AlgBuilder{ algItems, algVars } <- get
-    put alg
+
+addItemToBuffer item = modify' 
+    $ \alg@AlgBuilder{ algBuffer } -> alg
+        { algBuffer=item : algBuffer
+        }
+
+
+addItem item vars = modify' 
+    $ \alg@AlgBuilder{ algItems, algVars } -> alg
         { algItems=item : algItems
         , algVars=vars ++ algVars
         }
