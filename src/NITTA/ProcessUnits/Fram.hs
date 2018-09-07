@@ -231,6 +231,10 @@ instance ( IOType (Parcel v x) v x
          , Show x
          , WithFunctions (Fram v x t) (F (Parcel v x))
          ) => ProcessUnit (Fram v x t) (Parcel v x) t where
+    tryBind f Fram{ frBindedFB }
+        | not $ null (variables f `S.intersection` S.unions (map variables frBindedFB))
+        = Left "Can't bind, because needed self transaction."
+
     tryBind f pu@Fram{ frMemory, frBindedFB, frRemains, frProcess } = do
         pu' <- bind' f
         if isSchedulingCompletable pu'
