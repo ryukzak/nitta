@@ -66,7 +66,7 @@ endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
                 then return (pu, passedAlg)
                 else case opts !! i of
                     SchedOpt o -> do
-                        d <- passiveOption2action <$> endpointGen o
+                        d <- endpointOption2action <$> endpointGen o
                         endpointWorkGen' (decision endpointDT pu d) alg passedAlg
                     BindOpt fb
                         ->  let alg' = filter (/= fb) alg

@@ -165,7 +165,7 @@ instance ( Ord v ) => FunctionSimulation (FramOutput (Parcel v x)) v x where
 
 data Reg io = Reg (I io) (O io) deriving ( Typeable )
 instance ( Show v ) => Show (Reg (Parcel v x)) where
-    show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1
+    show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = reg(" ++ show k1 ++ ")"
 deriving instance ( IOType io v x ) => Eq (Reg io)
 reg a b = F $ Reg (I a) (O $ fromList b)
 
@@ -299,7 +299,7 @@ instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Division (Parcel v 
 
 data Constant io = Constant (X io) (O io) deriving ( Typeable )
 instance ( Show v, Show x ) => Show (Constant (Parcel v x)) where
-    show (Constant (X x) (O k)) = S.join " = " (map show $ elems k) ++ " = " ++ show x
+    show (Constant (X x) (O k)) = S.join " = " (map show $ elems k) ++ " = const(" ++ show x ++ ")"
 deriving instance ( IOType io v x, Eq x ) => Eq (Constant io)
 constant x vs = F $ Constant (X x) $ O $ fromList vs
 

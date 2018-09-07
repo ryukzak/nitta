@@ -108,7 +108,7 @@ instance ( Default t
       cells = map (\(i, c) -> c{ initialValue=0x1000 + i }) $ zip [0..] $ repeat def
 
 instance WithFunctions (Fram v x t) (F (Parcel v x)) where
-  functions Fram{..} = frBindedFB
+    functions Fram{ frBindedFB } = frBindedFB
 
 
 
@@ -190,7 +190,7 @@ bindToCell cs f c@Cell{ output=Undef }
                            , actions=[ Target b ]
                            }
            }
-bindToCell cs f c@Cell{ current=Nothing, .. }
+bindToCell cs f c@Cell{ current=Nothing, output }
   | Just (Reg (I a) (O b)) <- castF f
   , output /= UsedOrBlocked
   = Right c{ current=Just $ def{ function=f
@@ -231,32 +231,35 @@ instance ( IOType (Parcel v x) v x
          , Show x
          , WithFunctions (Fram v x t) (F (Parcel v x))
          ) => ProcessUnit (Fram v x t) (Parcel v x) t where
-  tryBind f pu@Fram{..} = do
-    pu' <- bind' f
-    if isSchedulingComplete pu'
-      then Right pu'
-      else Left "Schedule can't complete stop."
-    where
-      bind' fb | Just addr <- immidiateBindTo fb
-               , let cell = frMemory ! addr
-               , let (cad, frProcess') = modifyProcess frProcess $ bindFB f $ nextTick frProcess
-               , Right cell' <- bindToCell [cad] fb cell
-               = Right pu{ frProcess=frProcess'
-                         , frMemory=frMemory // [(addr, cell')]
-                         , frBindedFB=f : frBindedFB
-                         }
+    tryBind f pu@Fram{ frMemory, frBindedFB, frRemains, frProcess } = do
+        pu' <- bind' f
+        if isSchedulingCompletable pu'
+            then Right pu'
+            else Left "Schedule can't complete stop."
+        where
+            bind' fb 
+                | Just addr <- immidiateBindTo fb
+                , let cell = frMemory ! addr
+                , let (cad, frProcess') = modifyProcess frProcess $ bindFB f $ nextTick frProcess
+                , Right cell' <- bindToCell [cad] fb cell
+                = Right pu
+                    { frProcess=frProcess'
+                    , frMemory=frMemory // [(addr, cell')]
+                    , frBindedFB=f : frBindedFB
+                    }
 
-               | Right (_ :: Cell v x t) <- bindToCell def fb def
-               , let (cad, frProcess') = modifyProcess frProcess $ bindFB f $ nextTick frProcess
-               = Right pu{ frProcess=frProcess'
-                         , frRemains=(f, cad) : frRemains
-                         , frBindedFB=f : frBindedFB
-                         }
+                | Right (_ :: Cell v x t) <- bindToCell def fb def
+                , let (cad, frProcess') = modifyProcess frProcess $ bindFB f $ nextTick frProcess
+                = Right pu
+                    { frProcess=frProcess'
+                    , frRemains=(f, cad) : frRemains
+                    , frBindedFB=f : frBindedFB
+                    }
 
-               | otherwise = Left ""
+                | otherwise = Left ""
 
-  process = frProcess
-  setTime t fr@Fram{..} = fr{ frProcess=frProcess{ nextTick=t } }
+    process = frProcess
+    setTime t fr@Fram{..} = fr{ frProcess=frProcess{ nextTick=t } }
 
 
 
@@ -265,96 +268,112 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                    EndpointDT (Fram v x t)
          where
 
-  options _proxy pu@Fram{ frProcess=Process{..}, ..} = fromCells ++ fromRemain
-    where
-      fromRemain = [ EndpointO ep $ constrain c ep
-                   | (fb, cad) <- frRemains
-                   , not (isReg fb) || isSourceBlockAllow
-                   , (c, ep) <- toList $ do
-                       (_addr, cell) <- findCell pu fb
-                       cell' <- bindToCell [cad] fb cell
-                       ep <- cellEndpoints False cell'
-                       return (cell', ep)
-                   ]
+    options _proxy pu@Fram{ frProcess=Process{ nextTick }, frRemains, frMemory } = fromCells ++ fromRemain
+        where
+            fromRemain = 
+                [ EndpointO ep $ constrain c ep
+                | (f, cad) <- frRemains
+                , not (isReg f) || isSourceBlockAllow
+                , (c, ep) <- toList $ do
+                    (_addr, cell) <- findCell pu f
+                    cell' <- bindToCell [cad] f cell
+                    ep <- cellEndpoints False cell'
+                    return (cell', ep)
+                ]
 
-      fromCells = [ EndpointO ep $ constrain cell ep
-                  | (_addr, cell@Cell{..}) <- assocs frMemory
-                  , ep <- toList $ cellEndpoints isTargetBlockAllow cell
-                  ]
+            fromCells = 
+                [ EndpointO ep $ constrain cell ep
+                | (_addr, cell) <- assocs frMemory
+                , ep <- toList $ cellEndpoints isTargetBlockAllow cell
+                ]
 
-      -- | Загрузка в память значения на следующий вычислительный цикл не позволяет использовать её
-      -- в качестве регистра на текущем цикле.
-      isTargetBlockAllow = let need = length $ filter (isReg . fst) frRemains
-                               allow = length $ filter (\Cell{..} -> output /= UsedOrBlocked) $ elems frMemory
-                               reserved = length $ filter (isConstOrLoop . fst) frRemains
-                               in need == 0 || allow - reserved > 1
-      isSourceBlockAllow = let reserved = length (filter (isConstOrLoop . fst) frRemains)
-                               allow = length $ filter (\Cell{..} -> input == Undef && output == Undef) $ elems frMemory
-                               in reserved == 0 || reserved < allow
+            -- | Загрузка в память значения на следующий вычислительный цикл не позволяет использовать её
+            -- в качестве регистра на текущем цикле.
+            isTargetBlockAllow 
+                = let 
+                    need = length $ filter (isReg . fst) frRemains
+                    allow = length $ filter (\Cell{ output } -> output /= UsedOrBlocked) $ elems frMemory
+                    reserved = length $ filter (isConstOrLoop . fst) frRemains
+                in need == 0 || allow - reserved > 1
+            isSourceBlockAllow 
+                = let 
+                    reserved = length (filter (isConstOrLoop . fst) frRemains)
+                    allow = length $ filter (\Cell{ input, output } -> input == Undef && output == Undef) $ elems frMemory
+                in reserved == 0 || reserved < allow
 
-      constrain Cell{..} (Source _)
-        | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 + 1 ... maxBound) (1 ... maxBound)
-        | otherwise              = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
-      constrain _cell (Target _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
+            constrain Cell{ lastWrite } (Source _)
+                | lastWrite == Just nextTick = TimeConstrain (nextTick + 1 + 1 ... maxBound) (1 ... maxBound)
+                | otherwise                  = TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
+            constrain _cell (Target _) = TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
 
 
-  decision proxy pu@Fram{ frProcess=p@Process{ nextTick=tick0 }, .. } d@EndpointD{..}
-    | isTimeWrap p d = timeWrapError p d
+    decision proxy pu@Fram{ frProcess=p@Process{ nextTick=tick0 }, frMemory, frRemains } d@EndpointD{ epdRole }
+        | isTimeWrap p d = timeWrapError p d
 
-    | Just (fb, cad1) <- find ( anyInAction . variables . fst ) frRemains
-    = either error id $ do
-        (addr, cell) <- findCell pu fb
+        | Just (fb, cad1) <- find ( anyInAction . variables . fst ) frRemains
+        = either error id $ do
+            (addr, cell) <- findCell pu fb
 
-        let (cad2, p') = modifyProcess p $ bind2CellStep addr fb tick0
-        cell' <- bindToCell [cad1, cad2] fb cell
-        let pu' = pu{ frRemains=filter ((/= fb) . fst) frRemains
+            let (cad2, p') = modifyProcess p $ bind2CellStep addr fb tick0
+            cell' <- bindToCell [cad1, cad2] fb cell
+            let pu' = pu
+                    { frRemains=filter ((/= fb) . fst) frRemains
                     , frMemory=frMemory // [(addr, cell')]
                     , frProcess=p'
                     }
-        return $ decision proxy pu' d
+            return $ decision proxy pu' d
 
-    | Just (addr, cell) <- find ( any (<< epdRole) . cellEndpoints True . snd ) $ assocs frMemory
-    = case cell of
-        Cell{ input=Def job@Job{ actions=a : _ } } | a << epdRole
-          ->  let (p', job') = schedule addr job
-                  cell' = updateLastWrite (nextTick p') cell
-                  cell'' = case job' of
-                    Just job''@Job{ actions=Target _ : _, function=f }
-                      | Just Loop{} <- castF f
-                      -- Данная ветка работает в случае Loop. "Ручной" перенос работы необходим для
-                      -- сохранения целостности описания вычислительного процесса.
-                      -> cell'{ input=UsedOrBlocked, output=Def job'' }
-                    Just job''@Job{ actions=Source _ : _ } -> cell{ input=Def job'' }
-                    Just _ -> error "Fram internal error after input process."
-                    Nothing -> cell'{ input=UsedOrBlocked }
-              in pu{ frMemory=frMemory // [(addr, cell'')]
-                   , frProcess=p'
-                   }
-        Cell{ current=Just job@Job{ actions=a : _ } } | a << epdRole
-          ->  let (p', job') = schedule addr job
-                  cell' = updateLastWrite (nextTick p') cell
-                  cell'' = cell'{ input=UsedOrBlocked
-                                , current=job'
-                                }
-              in pu{ frMemory=frMemory // [(addr, cell'')]
-                   , frProcess=p'
-                   }
-        Cell{ output=Def j@Job{ actions=act1 : _ } } | act1 << epdRole
-          ->  let (p', Nothing) = schedule addr j
-                  -- TODO: Eсть потенциальная проблема, которая может встречаться и в других вычислительных блоках. Если
-                  -- вычислительный блок загружает данные в последний такт вычислительного цикла, а выгружает их в
-                  -- первый так, то возможно ситуация, когда внутрение процессы не успели завершиться. Решение этой
-                  -- проблемы должно лежать в плоскости метода process, в рамках которого должен производиться анализ
-                  -- уже построенного вычислительного процесса и в случае необходимости, добавляться лишний так простоя.
-                  cell' = cell{ input=UsedOrBlocked
-                              , output=UsedOrBlocked
-                              }
-              in pu{ frMemory=frMemory // [(addr, cell')]
-                   , frProcess=p'
-                   }
-        _ -> error "Fram internal decision error."
+        | Just (addr, cell) <- find ( any (<< epdRole) . cellEndpoints True . snd ) $ assocs frMemory
+        = case cell of
+            Cell{ input=Def job@Job{ actions=a : _ } } | a << epdRole
+                -> let 
+                    (p', job') = scheduleFRAM addr job
+                    cell' = updateLastWrite (nextTick p') cell
+                    cell'' = case job' of
+                        Just job''@Job{ actions=Target _ : _, function=f }
+                            | Just Loop{} <- castF f
+                            -- Данная ветка работает в случае Loop. "Ручной" перенос работы необходим для
+                            -- сохранения целостности описания вычислительного процесса.
+                            -> cell'{ input=UsedOrBlocked, output=Def job'' }
+                        Just job''@Job{ actions=Source _ : _ } -> cell{ input=Def job'' }
+                        Just _ -> error "Fram internal error after input process."
+                        Nothing -> cell'{ input=UsedOrBlocked }
+                in pu
+                    { frMemory=frMemory // [(addr, cell'')]
+                    , frProcess=p'
+                    }
+            Cell{ current=Just job@Job{ actions=a : _ } } | a << epdRole
+                -> let 
+                    (p', job') = scheduleFRAM addr job
+                    cell' = updateLastWrite (nextTick p') cell
+                    cell'' = cell'
+                        { input=UsedOrBlocked
+                        , current=job'
+                        }
+                in pu
+                    { frMemory=frMemory // [(addr, cell'')]
+                    , frProcess=p'
+                    }
+            Cell{ output=Def j@Job{ actions=act1 : _ } } | act1 << epdRole
+                -> let 
+                    (p', Nothing) = scheduleFRAM addr j
+                    -- TODO: Eсть потенциальная проблема, которая может встречаться и в других вычислительных блоках. Если
+                    -- вычислительный блок загружает данные в последний такт вычислительного цикла, а выгружает их в
+                    -- первый так, то возможно ситуация, когда внутрение процессы не успели завершиться. Решение этой
+                    -- проблемы должно лежать в плоскости метода process, в рамках которого должен производиться анализ
+                    -- уже построенного вычислительного процесса и в случае необходимости, добавляться лишний так простоя.
+                    cell' = cell
+                        { input=UsedOrBlocked
+                        , output=UsedOrBlocked
+                        }
+                in pu
+                    { frMemory=frMemory // [(addr, cell')]
+                    , frProcess=p'
+                    }
+            _ -> error "Fram internal decision error."
 
-    | otherwise = error $ "Can't found selected action: " ++ show d
+        | otherwise 
+            = error $ "Can't found selected decision: " ++ show d
                   ++ " tick: " ++ show (nextTick p) ++ "\n"
                   ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options endpointDT pu)
                   ++ "cells:\n" ++ concatMap ((++ "\n") . show) (assocs frMemory)
@@ -367,14 +386,13 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                 | Target _ <- epdRole = cell{ lastWrite=Just t }
                 | otherwise = cell{ lastWrite=Nothing }
 
-            schedule addr job
-                = let (p', job'@Job{..}) = scheduleWork addr job
-                in if null actions
-                    then (finishSchedule p' job', Nothing)
-                    else (p', Just job')
+            scheduleFRAM addr job 
+                = case scheduleWork addr job of
+                    (p', job'@Job{ actions=[] }) -> (finishSchedule p' job', Nothing)
+                    (p', job') -> (p', Just job')
 
             scheduleWork _addr Job{ actions=[] } = error "Fram:scheudle internal error."
-            scheduleWork addr job@Job{ actions=x:xs, .. }
+            scheduleWork addr job@Job{ actions=x:xs, startAt=startAt, instructions, endpoints }
                 = let 
                     ( instrTi, instr ) = case d^.endRole of
                         Source _ -> ( shift (-1) d^.at, Load addr)
@@ -392,7 +410,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                     , startAt=startAt `orElse` Just (d^.at.infimum)
                     , actions=if x == d^.endRole then xs else (x \\\ (d^.endRole)) : xs
                     })
-            finishSchedule p' Job{..} = snd $ modifyProcess p' $ do
+            finishSchedule p' Job{ startAt, function } = snd $ modifyProcess p' $ do
                 let start = fromMaybe (error "startAt field is empty!") startAt
                 _ <- addStep (Activity $ start ... d^.at.supremum) $ FStep function
                 return ()
@@ -409,7 +427,7 @@ cellEndpoints _ _                                                 = Left undefin
 
 
 
-findCell pu@Fram{..} f
+findCell pu@Fram{ frMemory } f
   | Just Reg{} <- castF f
   , let cs = filter ( isRight . bindToCell [] f . snd ) $ assocs frMemory
   , not $ null cs
@@ -418,7 +436,7 @@ findCell pu@Fram{..} f
   | Just Constant{} <- castF f = findFreeCell pu
   | otherwise = Left "Not found."
 
-findFreeCell Fram{..}
+findFreeCell Fram{ frMemory }
   | let cs = filter (\(_, c) -> case c of
                                   Cell{ input=Undef, current=Nothing, output=Undef } -> True;
                                   _ -> False
@@ -427,9 +445,11 @@ findFreeCell Fram{..}
   = Right $ minimumOn cellLoad cs
 findFreeCell _ = Left "Not found."
 
-cellLoad (_addr, Cell{..}) = sum [ if input == UsedOrBlocked then -2 else 0
-                                 , if output == Undef then -1 else 0
-                                 ] :: Int
+cellLoad (_addr, Cell{ input, output }) 
+    = sum 
+        [ if input == UsedOrBlocked then -2 else 0
+        , if output == Undef then -1 else 0
+        ] :: Int
 
 
 
@@ -452,7 +472,7 @@ instance Controllable (Fram v x t) where
 instance Connected (Fram v x t) where
   data PUPorts (Fram v x t)
     = PUPorts{ oe, wr :: Signal, addr :: [Signal] } deriving ( Show )
-  transmitToLink Microcode{..} PUPorts{..}
+  transmitToLink Microcode{ oeSignal, wrSignal, addrSignal } PUPorts{ oe, wr, addr }
     = [ (oe, Bool oeSignal)
       , (wr, Bool wrSignal)
       ] ++ addrs

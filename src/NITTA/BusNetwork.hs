@@ -55,8 +55,7 @@ class ( Typeable v, Ord v, Show v ) => Title v
 instance ( Typeable v, Ord v, Show v ) => Title v
 
 
-data GBusNetwork title spu v x t
-  = BusNetwork
+data GBusNetwork title spu v x t = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
       bnRemains        :: [F (Parcel v x)]
@@ -77,7 +76,7 @@ type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 transfered net@BusNetwork{ bnProcess }
     = mapMaybe
         (\Step{ sDesc } -> case sDesc of
-            (InstructionStep i) | Just (Transport v _ _) <- cast i `maybeInstructionOf` net 
+            (InstructionStep i) | Just (Transport v _ _) <- cast i `maybeInstructionOf` net
                 -> Just v
             _ -> Nothing
         )
@@ -88,110 +87,118 @@ transfered net@BusNetwork{ bnProcess }
 
 -- TODO: Вариант функции, где провода будут подключаться автоматически.
 busNetwork w allowDrop ips ops pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w ips ops allowDrop
-  where
-    pus' = map (\(title, f) ->
-      ( title
-      , f Enviroment
-        { signalClk="clk"
-        , signalRst="rst"
-        , signalCycle="cycle"
-        , inputPort= \(InputPort n) -> n
-        , outputPort= \(OutputPort n) -> n
-        , net=NetEnv
-          { parameterDataWidth=InlineParam "DATA_WIDTH"
-          , parameterAttrWidth=InlineParam "ATTR_WIDTH"
-          , dataIn="data_bus"
-          , dataOut=title ++ "_data_out"
-          , attrIn="attr_bus"
-          , attrOut=title ++ "_attr_out"
-          , signal= \(Signal i) -> "control_bus[" ++ show i ++ "]"
-          }
-        })
-      ) pus
+    where
+        pus' = map (\(title, f) ->
+            ( title
+            , f Enviroment
+                { signalClk="clk"
+                , signalRst="rst"
+                , signalCycle="cycle"
+                , inputPort= \(InputPort n) -> n
+                , outputPort= \(OutputPort n) -> n
+                , net=NetEnv
+                    { parameterDataWidth=InlineParam "DATA_WIDTH"
+                    , parameterAttrWidth=InlineParam "ATTR_WIDTH"
+                    , dataIn="data_bus"
+                    , dataOut=title ++ "_data_out"
+                    , attrIn="attr_bus"
+                    , attrOut=title ++ "_attr_out"
+                    , signal= \(Signal i) -> "control_bus[" ++ show i ++ "]"
+                    }
+                })
+            ) pus
 
 instance ( Title title
          , Time t
          , Var v
          , Typeable x
          ) => WithFunctions (BusNetwork title v x t) (F (Parcel v x)) where
-  functions BusNetwork{..} = sortFBs binded []
-    where
-      binded = bnRemains ++ concat (M.elems bnBinded)
-      sortFBs [] _ = []
-      sortFBs fbs cntx
-        = let (ready, notReady) = partition (\fb -> insideOut fb || all (`elem` cntx) (inputs fb)) fbs
-          in case ready of
-            [] -> error "Cycle in algorithm!"
-            _  -> ready ++ sortFBs notReady (elems (unionsMap outputs ready) ++ cntx)
+    functions BusNetwork{..} = sortFBs binded []
+        where
+            binded = bnRemains ++ concat (M.elems bnBinded)
+            sortFBs [] _ = []
+            sortFBs fbs cntx
+                = let (ready, notReady) = partition (\fb -> insideOut fb || all (`elem` cntx) (inputs fb)) fbs
+                in case ready of
+                    [] -> error "Cycle in algorithm!"
+                    _  -> ready ++ sortFBs notReady (elems (unionsMap outputs ready) ++ cntx)
 
 
 instance ( Title title, Var v, Time t
          , Typeable x
          ) => DecisionProblem (DataFlowDT title v t)
                    DataFlowDT (BusNetwork title v x t)
-         where
-  options _proxy n@BusNetwork{..}
-    = concat [ [ DataFlowO (srcTitle, fixPullConstrain pullAt) $ M.fromList pushs
-               | pushs <- mapM pushOptionsFor $ elems pullVars
-               , let pushTo = mapMaybe (fmap fst . snd) pushs
-               , length (nub pushTo) == length pushTo
-               ]
-             | (srcTitle, opts) <- puOptions
-             , EndpointO (Source pullVars) pullAt <- opts
-             ]
     where
-      now = nextTick bnProcess
-      fixPullConstrain constrain
-        = let a = max now $ constrain^.avail.infimum
-              b = constrain^.avail.supremum
-          in constrain & avail .~ (a ... b)
+    options _proxy n@BusNetwork{..}
+        = concat
+            [
+                [ DataFlowO (srcTitle, fixPullConstrain pullAt) $ M.fromList pushs
+                | pushs <- mapM pushOptionsFor $ elems pullVars
+                , let pushTo = mapMaybe (fmap fst . snd) pushs
+                , length (nub pushTo) == length pushTo
+                ]
+            | (srcTitle, opts) <- puOptions
+            , EndpointO (Source pullVars) pullAt <- opts
+            ]
+        where
+            now = nextTick bnProcess
+            fixPullConstrain constrain
+                = let
+                    a = max now $ constrain^.avail.infimum
+                    b = constrain^.avail.supremum
+                in constrain & avail .~ (a ... b)
 
-      pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
-      pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
+            pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
+            pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
 
-      pushOptionsFor' v = [ (v, Just (pushTo, pushAt))
-                          | (pushTo, vars) <- puOptions
-                          --  | (pushTo, vars) <- trace (S.join "\n" $ map show puOptions) puOptions
-                          , EndpointO (Target pushVar) pushAt <- vars
-                          , pushVar == v
-                          ]
-      bnForwardedVariables = transfered n
-      availableVars =
-        let fbs = bnRemains ++ concat (M.elems bnBinded)
-            alg = foldl
-                  (\dict (a, b) -> M.adjust ((:) b) a dict)
-                  (M.fromList [(v, []) | v <- elems $ unionsMap variables fbs])
-                  $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
-                  $ concatMap dependency fbs
-            notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
-        in notBlockedVariables \\ bnForwardedVariables
+            pushOptionsFor' v = [ (v, Just (pushTo, pushAt))
+                                | (pushTo, vars) <- puOptions
+                                --  | (pushTo, vars) <- trace (S.join "\n" $ map show puOptions) puOptions
+                                , EndpointO (Target pushVar) pushAt <- vars
+                                , pushVar == v
+                                ]
+            bnForwardedVariables = transfered n
+            availableVars
+                = let
+                    fbs = bnRemains ++ concat (M.elems bnBinded)
+                    alg = foldl
+                        (\dict (a, b) -> M.adjust ((:) b) a dict)
+                        (M.fromList [(v, []) | v <- elems $ unionsMap variables fbs])
+                        $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
+                        $ concatMap dependency fbs
+                    notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
+                in notBlockedVariables \\ bnForwardedVariables
 
-      puOptions = M.assocs $ M.map (options endpointDT) bnPus
+            puOptions = M.assocs $ M.map (options endpointDT) bnPus
 
-  decision _proxy n@BusNetwork{ bnProcess, bnPus } d@DataFlowD{ dfdSource=( srcTitle, pullAt ), dfdTargets }
-    | nextTick bnProcess > d^.at.infimum
-    = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (d^.at)
-    | otherwise
-    = let pushs = M.map (fromMaybe undefined) $ M.filter isJust dfdTargets
-          transportStartAt = d^.at.infimum
-          transportDuration = maximum $ map (\(_trg, time) -> (inf time - transportStartAt) + width time) $ M.elems pushs
-          transportEndAt = transportStartAt + transportDuration
+    decision _proxy n@BusNetwork{ bnProcess, bnPus } d@DataFlowD{ dfdSource=( srcTitle, pullAt ), dfdTargets }
+        | nextTick bnProcess > d^.at.infimum
+        = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (d^.at)
+        | otherwise
+        = let
+            pushs = M.map (fromMaybe undefined) $ M.filter isJust dfdTargets
+            transportStartAt = d^.at.infimum
+            transportDuration = maximum $ map (\(_trg, time) -> (inf time - transportStartAt) + width time) $ M.elems pushs
+            transportEndAt = transportStartAt + transportDuration
 
-          subDecisions = ( srcTitle, EndpointD (Source $ fromList $ M.keys pushs) pullAt )
-                       : [ ( trgTitle, EndpointD (Target v) pushAt )
-                         | (v, (trgTitle, pushAt)) <- M.assocs pushs
-                         ]
-      in n{ bnPus=foldl applyDecision bnPus subDecisions
-          , bnProcess=snd $ modifyProcess bnProcess $ do
-              mapM_ (\(pushedValue, (targetTitle, _tc)) -> addStep
-                      (Activity $ transportStartAt ... transportEndAt)
-                      $ InstructionStep (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork title v x t))
-                    ) $ M.assocs pushs
-              addStep_ (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show d
-              setProcessTime $ d^.at.supremum + 1
-          }
-    where
-      applyDecision pus (trgTitle, d') = M.adjust (\pu -> decision endpointDT pu d') trgTitle pus
+            subDecisions = ( srcTitle, EndpointD (Source $ fromList $ M.keys pushs) pullAt )
+                        :   [ ( trgTitle, EndpointD (Target v) pushAt )
+                            | (v, (trgTitle, pushAt)) <- M.assocs pushs
+                            ]
+        in n
+            { bnPus=foldl applyDecision bnPus subDecisions
+            , bnProcess=snd $ modifyProcess bnProcess $ do
+                mapM_
+                    (\(pushedValue, (targetTitle, _tc)) -> addStep
+                        (Activity $ transportStartAt ... transportEndAt)
+                        $ InstructionStep (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork title v x t))
+                    )
+                    $ M.assocs pushs
+                addStep_ (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show d
+                setProcessTime $ d^.at.supremum + 1
+            }
+        where
+            applyDecision pus (trgTitle, d') = M.adjust (\pu -> decision endpointDT pu d') trgTitle pus
 
 
 
@@ -262,32 +269,33 @@ instance ( Title title, Time t, Var v, Typeable x
 
 
 instance Controllable (BusNetwork title v x t) where
-  data Instruction (BusNetwork title v x t)
-    = Transport v title title
-    deriving (Typeable, Show)
+    data Instruction (BusNetwork title v x t)
+        = Transport v title title
+        deriving (Typeable, Show)
 
-  data Microcode (BusNetwork title v x t)
-    = BusNetworkMC (A.Array Signal Value)
+    data Microcode (BusNetwork title v x t)
+        = BusNetworkMC (A.Array Signal Value)
 
 
 instance {-# OVERLAPS #-}
          ( Time t
          ) => ByTime (BusNetwork title v x t) t where
-  microcodeAt BusNetwork{..} t
-    = BusNetworkMC $ foldl merge initSt $ M.elems bnPus
-    where
-      initSt = A.listArray (Signal 0, Signal $ bnSignalBusWidth - 1) $ repeat def
-      merge st PU{ unit, links }
-        = foldl merge' st $ transmitToLink (microcodeAt unit t) links
-      merge' st (s, x) = st A.// [ (s, st A.! s +++ x) ]
+    microcodeAt BusNetwork{..} t
+        = BusNetworkMC $ foldl merge initSt $ M.elems bnPus
+        where
+            initSt = A.listArray (Signal 0, Signal $ bnSignalBusWidth - 1) $ repeat def
+            merge st PU{ unit, links }
+                = foldl merge' st $ transmitToLink (microcodeAt unit t) links
+            merge' st (s, x) = st A.// [ (s, st A.! s +++ x) ]
 
 
 
 instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v x t) v x where
-  simulateOn cntx BusNetwork{..} fb
-    = let Just (title, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
-          pu = bnPus M.! title
-      in simulateOn cntx pu fb
+    simulateOn cntx BusNetwork{..} fb
+        = let
+            Just (title, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
+            pu = bnPus M.! title
+        in simulateOn cntx pu fb
 
 
 
@@ -306,29 +314,32 @@ instance ( Var v
          ) => DecisionProblem (BindingDT String (Parcel v x))
                     BindingDT (BusNetwork String v x t)
          where
-  options _ BusNetwork{..} = concatMap bindVariants' bnRemains
-    where
-      bindVariants' fb =
-        [ BindingO fb puTitle
-        | (puTitle, pu) <- sortOn (length . binded . fst) $ M.assocs bnPus
-        , allowToProcess fb pu
-        , not $ selfTransport fb puTitle
-        ]
+    options _ BusNetwork{..} = concatMap bindVariants' bnRemains
+        where
+            bindVariants' fb =
+                [ BindingO fb puTitle
+                | (puTitle, pu) <- sortOn (length . binded . fst) $ M.assocs bnPus
+                , allowToProcess fb pu
+                , not $ selfTransport fb puTitle
+                ]
 
-      selfTransport fb puTitle =
-        not $ null $ variables fb `intersection` unionsMap variables (binded puTitle)
+            selfTransport fb puTitle =
+                not $ null $ variables fb `intersection` unionsMap variables (binded puTitle)
 
-      binded puTitle | puTitle `M.member` bnBinded = bnBinded M.! puTitle
-                     | otherwise = []
+            binded puTitle
+                | puTitle `M.member` bnBinded = bnBinded M.! puTitle
+                | otherwise = []
 
-  decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
-    = bn{ bnPus=M.adjust (bind fb) puTitle bnPus
-        , bnBinded=M.alter (\case Just fbs -> Just $ fb : fbs
-                                  Nothing  -> Just [fb]
-                           ) puTitle bnBinded
-        , bnProcess=snd $ modifyProcess p $
-            addStep (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
-        , bnRemains=filter (/= fb) bnRemains
+    decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
+        = bn
+            { bnPus=M.adjust (bind fb) puTitle bnPus
+            , bnBinded=M.alter
+                (\case  Just fbs -> Just $ fb : fbs
+                        Nothing  -> Just [fb]
+                ) puTitle bnBinded
+            , bnProcess=snd $ modifyProcess p $
+                addStep (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
+            , bnRemains=filter (/= fb) bnRemains
         }
 
 
@@ -337,20 +348,23 @@ instance ( Var v
 programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
 
-instance ( Time t
-         ) => TargetSystemComponent (BusNetwork String v x t) where
-  moduleName title BusNetwork{..} = title ++ "_net"
+instance
+        ( Time t
+        ) => TargetSystemComponent (BusNetwork String v x t) where
+    moduleName title BusNetwork{..} = title ++ "_net"
 
-  hardware title pu@BusNetwork{..}
-    = let pus = map (uncurry hardware) $ M.assocs bnPus
-          net = [ Immidiate (mn ++ ".v") iml
+    hardware title pu@BusNetwork{..}
+        = let
+            pus = map (uncurry hardware) $ M.assocs bnPus
+            net =
+                [ Immidiate (mn ++ ".v") iml
                 , FromLibrary "pu_simple_control.v"
                 ]
-      in Aggregate (Just mn) (pus ++ net)
-    where
-      mn = moduleName title pu
-      iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
-            in [qq|{"module"} $mn
+        in Aggregate (Just mn) (pus ++ net)
+        where
+            mn = moduleName title pu
+            iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
+                in [qq|{"module"} $mn
     #( parameter DATA_WIDTH = 32
      , parameter ATTR_WIDTH = 4
      )
@@ -397,30 +411,32 @@ assign attr_bus = { S.join " | " $ map fst valuesRegs };
 endmodule
 |]
 
-      regInstance (t :: String)
-        = [qq|wire [DATA_WIDTH-1:0] {t}_data_out;
+            regInstance (t :: String)
+                = [qq|wire [DATA_WIDTH-1:0] {t}_data_out;
 wire [ATTR_WIDTH-1:0] {t}_attr_out;|]
 
 
-      renderInstance insts regs [] = ( reverse insts, reverse regs )
-      renderInstance insts regs ((t, PU{ unit, systemEnv, links }) : xs)
-        = let inst = hardwareInstance t unit systemEnv links
-              insts' = inst : regInstance t : insts
-              regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
-          in renderInstance insts' regs' xs
+            renderInstance insts regs [] = ( reverse insts, reverse regs )
+            renderInstance insts regs ((t, PU{ unit, systemEnv, links }) : xs)
+                = let
+                    inst = hardwareInstance t unit systemEnv links
+                    insts' = inst : regInstance t : insts
+                    regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
+                in renderInstance insts' regs' xs
 
-  software title pu@BusNetwork{ bnProcess=Process{..}, ..}
-    = let subSW = map (uncurry software) (M.assocs bnPus)
-          sw = [ Immidiate (mn ++ ".dump") memoryDump ]
-      in Aggregate (Just mn) $ subSW ++ sw
-    where
-      mn = moduleName title pu
-      -- По нулевоу адресу устанавливается команда Nop (он же def) для всех вычислиетльных блоков.
-      -- Именно этот адрес выставляется на сигнальные линии когда поднят сигнал rst.
-      memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) $ programTicks pu
-      values (BusNetworkMC arr) = reverse $ A.elems arr
+    software title pu@BusNetwork{ bnProcess=Process{..}, ..}
+        = let
+            subSW = map (uncurry software) (M.assocs bnPus)
+            sw = [ Immidiate (mn ++ ".dump") memoryDump ]
+        in Aggregate (Just mn) $ subSW ++ sw
+        where
+            mn = moduleName title pu
+            -- По нулевоу адресу устанавливается команда Nop (он же def) для всех вычислиетльных блоков.
+            -- Именно этот адрес выставляется на сигнальные линии когда поднят сигнал rst.
+            memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) $ programTicks pu
+            values (BusNetworkMC arr) = reverse $ A.elems arr
 
-  hardwareInstance = undefined
+    hardwareInstance = undefined
 
 
 instance ( Title title, Var v, Time t
@@ -428,71 +444,71 @@ instance ( Title title, Var v, Time t
          , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x
          ) => TestBench (BusNetwork title v x t) v x where
-  testBenchDescription Project{ projectName, model=n@BusNetwork{..}, testCntx } = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
-    where
-      ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
-      testBenchImp = renderMST
-        [ "`timescale 1 ps / 1 ps"
-        , "module $moduleName$_tb();                                                                                 "
-        , "                                                                                                          "
-        , "reg clk, rst;                                                                                             "
-        , if null ports
-            then ""
-            else "wire " ++ S.join ", " ports ++ ";"
-        , ""
-        , "$moduleName$                                                                                           "
-        , "  #( .DATA_WIDTH( 32 )"
-        , "   , .ATTR_WIDTH( 4 )"
-        , "   ) net"
-        , "  ( .clk( clk )                                                                                           "
-        , "  , .rst( rst )                                                                                           "
-        , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
-        , "// if 1 - The process cycle are indipendent from a SPI."
-        , "// else - The process cycle are wait for the SPI."
-        , "  , .is_drop_allow( " ++ maybe "is_drop_allow" bool2verilog bnAllowDrop ++ " )"
-        , "  );                                                                                                      "
-        , "                                                                                                          "
-        , S.join "\n\n"
-          [ tbEnv
-          | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus
-          , let t' = filter (/= '"') $ show t
-          , let tbEnv = componentTestEnviroment t' unit systemEnv links
-          , not $ null tbEnv
-          ]
-        , "                                                                                                          "
-        , snippetDumpFile' $ moduleName projectName n
-        , "                                                                                                          "
-        , snippetClkGen
-        , "                                                                                                          "
-        , "initial                                                                                                 "
-        , "  begin                                                                                                 "
-        , "    // microcode when rst == 1 -> program[0], and must be nop for all PUs                               "
-        , "    @(negedge rst); // Turn processor on.                                                         "
-        , "    // Start computational cycle from program[1] to program[n] and repeat.                              "
-        , "    // Signals effect to processor state after first clk posedge.                                       "
-        , assertions
-        , "  repeat ( 2000 ) @(posedge clk);"
-        , "    \\$finish;                                                                                          "
-        , "  end                                                                                                   "
-        , "                                                                                                          "
-        , "endmodule                                                                                                 "
-        ]
-        [ ( "moduleName", moduleName projectName n )
-        ]
-
-      -- TODO: Количество циклов для тестирования должно задаваться пользователем.
-      cntxs = take 5 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n
-      cycleTicks = tail $ programTicks n  -- because program[0] is skiped
-      simulationInfo = (0, def) : concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
-      assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
+    testBenchDescription Project{ projectName, model=n@BusNetwork{..}, testCntx }
+        = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
         where
-          assert (t, cntx)
-            = "\\$write(\"%s, bus actual: %h\", " ++ show t ++ ", net.data_bus); "
-            ++ case extractInstructionAt n t of
-                Transport v _ _ : _
-                  -> concat
-                    [ "\\$write(\" expected: %h (%s)\", " ++ show (get' cntx v) ++ ", " ++ show v ++ ");"
-                    , "if ( !( net.data_bus === " ++ show (get' cntx v) ++ ") ) "
-                    ,   "\\$display(\" FAIL\"); else \\$display();"
-                    ]
-                [] -> "\\$display();"
+            ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
+            testBenchImp = renderMST
+                [ "`timescale 1 ps / 1 ps"
+                , "module $moduleName$_tb();                                                                                 "
+                , "                                                                                                          "
+                , "reg clk, rst;                                                                                             "
+                , if null ports
+                    then ""
+                    else "wire " ++ S.join ", " ports ++ ";"
+                , ""
+                , "$moduleName$                                                                                           "
+                , "  #( .DATA_WIDTH( 32 )"
+                , "   , .ATTR_WIDTH( 4 )"
+                , "   ) net"
+                , "  ( .clk( clk )                                                                                           "
+                , "  , .rst( rst )                                                                                           "
+                , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
+                , "// if 1 - The process cycle are indipendent from a SPI."
+                , "// else - The process cycle are wait for the SPI."
+                , "  , .is_drop_allow( " ++ maybe "is_drop_allow" bool2verilog bnAllowDrop ++ " )"
+                , "  );                                                                                                      "
+                , "                                                                                                          "
+                , S.join "\n\n"
+                [ tbEnv
+                | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus
+                , let t' = filter (/= '"') $ show t
+                , let tbEnv = componentTestEnviroment t' unit systemEnv links
+                , not $ null tbEnv
+                ]
+                , "                                                                                                          "
+                , snippetDumpFile' $ moduleName projectName n
+                , "                                                                                                          "
+                , snippetClkGen
+                , "                                                                                                          "
+                , "initial                                                                                                 "
+                , "  begin                                                                                                 "
+                , "    // microcode when rst == 1 -> program[0], and must be nop for all PUs                               "
+                , "    @(negedge rst); // Turn processor on.                                                         "
+                , "    // Start computational cycle from program[1] to program[n] and repeat.                              "
+                , "    // Signals effect to processor state after first clk posedge.                                       "
+                , assertions
+                , "  repeat ( 2000 ) @(posedge clk);"
+                , "    \\$finish;                                                                                          "
+                , "  end                                                                                                   "
+                , "                                                                                                          "
+                , "endmodule                                                                                                 "
+                ]
+                [ ( "moduleName", moduleName projectName n )
+                ]
+
+            -- TODO: Количество циклов для тестирования должно задаваться пользователем.
+            cntxs = take 5 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n
+            cycleTicks = tail $ programTicks n  -- because program[0] is skiped
+            simulationInfo = (0, def) : concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
+            assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
+                where
+                    assert (t, cntx)
+                        = "\\$write(\"%s, bus actual: %h\", " ++ show t ++ ", net.data_bus); "
+                        ++ case extractInstructionAt n t of
+                            Transport v _ _ : _ -> concat
+                                [ "\\$write(\" expected: %h (%s)\", " ++ show (get' cntx v) ++ ", " ++ show v ++ ");"
+                                , "if ( !( net.data_bus === " ++ show (get' cntx v) ++ ") ) "
+                                ,   "\\$display(\" FAIL\"); else \\$display();"
+                                ]
+                            [] -> "\\$display();"

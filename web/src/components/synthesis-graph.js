@@ -113,7 +113,7 @@ export class SynthesisGraph extends Component {
           [<a onClick={() => this.reloadSynthesis()}> refresh </a>]
           current synthesis (nid) [{this.stepsNumber()}] {this.state.currentNid}
         </pre>
-        <div style={{width: '100%', height: '600px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
+        <div style={{width: '100%', height: '200px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
           <Tree
             data={this.state.graph}
             nodeSize={{x: 200, y: 80}}
