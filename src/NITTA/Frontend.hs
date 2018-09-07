@@ -1,10 +1,10 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiWayIf            #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TupleSections         #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
@@ -35,7 +35,7 @@ import qualified NITTA.Functions               as F
 import           NITTA.Types                   (F, Parcel)
 import           Text.InterpolatedString.Perl6 (qq)
 
-
+import           Debug.Trace
 
 lua2functions src
     = let
@@ -50,7 +50,7 @@ lua2functions src
         varDict = M.fromList
             $ map varRow
             $ group $ sort $ concatMap fIn fs
-    in snd $ execState (mapM_ function2nitta fs) (varDict, [])
+    in trace (S.join "\n" $ map show algItems) $ snd $ execState (mapM_ function2nitta fs) (varDict, [])
     where
         varRow lst@(x:_)
             = let vs = zipWith (\v i -> [qq|{unpack v}_{i}|]) lst ([0..] :: [Int])
@@ -103,6 +103,11 @@ function2nitta Function{ fName="loop", fIn=[i], fOut=[o], fValues=[x] } = do
     i' <- input i
     o' <- output o
     store $ F.loop x i' o'
+
+function2nitta Function{ fName="reg", fIn=[i], fOut=[o], fValues=[] } = do
+    i' <- input i
+    o' <- output o
+    store $ F.reg i' o'
 
 function2nitta Function{ fName="constant", fIn=[], fOut=[o], fValues=[x] } = do
     o' <- output o
@@ -172,20 +177,21 @@ addConstants = do
 
 
 
+processStatement fn (LocalAssign [Name n] (Just [rexp])) = do
+    processStatement fn $ LocalAssign [Name n] Nothing
+    processStatement fn $ Assign [VarName (Name n)] [rexp]
+
 processStatement _fn (LocalAssign [Name n] Nothing) = do
     AlgBuilder{ algVars } <- get
     when (n `elem` algVars) $ error "local variable alredy defined"
 
-processStatement fn (LocalAssign [Name n] (Just [rexp])) = do
-    AlgBuilder{ algVars } <- get
-    when (n `elem` algVars) $ error "local variable alredy defined"
-    processStatement fn $ Assign [VarName (Name n)] [rexp]
-
-processStatement _fn (Assign lexps rexps) = do
-    work <- zipWithM assignStatement lexps rexps
-    let (renames, adds) = foldl (\(as, bs) (a, b) -> (a ++ as, b ++ bs)) ([], []) work
-    diff <- concat <$> sequence renames
-    mapM_ (\f -> f diff) adds
+processStatement _fn st@(Assign lexps rexps)
+    = if
+        | length lexps == length rexps -> do
+            let outs = map (\case (VarName (Name v)) -> [v]; l -> error $ "bad left expression: " ++ show l) lexps
+            diff <- concat <$> mapM renameVarsIfNeeded outs
+            zipWithM_ (rightExp diff) outs rexps
+        | otherwise -> error $ "processStatement: " ++ show st
 
 processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
     | fn == fName
@@ -195,61 +201,65 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
         mapM_ (uncurry f) $ zip algIn args
         where
             f InputVar{ iX, iVar } rexp = do
-                (i, [], []) <- expArg rexp
+                i <- expArg [] rexp
                 let fun = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
                 alg@AlgBuilder{ algItems } <- get
                 put alg{ algItems=fun : algItems }
             f _ _ = undefined
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
-    fIn <- map (\(i, [], []) -> i) <$> mapM expArg args
+    fIn <- mapM (expArg []) args
     addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[] }
 
 processStatement _fn st = error $ "statement: " ++ show st
 
 
 
-assignStatement (VarName (Name v)) (Binop Add a b) = do
-    (a', renamersA, functionsA) <- expArg a
-    (b', renamersB, functionsB) <- expArg b
-    let f = Function{ fName="add", fIn=[a', b'], fOut=[v], fValues=[] }
-    return
-        ( renameVarsIfNeeded [v] : renamersA ++ renamersB
-        , patchAndAddFunction f : functionsA ++ functionsB
-        )
+rightExp diff fOut (Binop Add a b) = do
+    a' <- expArg diff a
+    b' <- expArg diff b
+    let f = Function{ fName="add", fIn=[a', b'], fOut, fValues=[] }
+    patchAndAddFunction f diff
 
-assignStatement (VarName (Name a)) (PrefixExp (PEVar (VarName (Name b))))
-    = return
-        ( [ renameVarsIfNeeded [a] ]
-        , [ \diff -> addItem Alias{ aFrom=a, aTo=applyPatch diff b } [] ]
-        )
+rightExp
+        diff
+        fOut
+        (PrefixExp (PEFunCall (NormalFunCall
+            (PEVar (VarName (Name fn)))
+            (Args args)
+        ))) = do
+    fIn <- mapM (expArg diff) args
+    let f = Function{ fName=unpack fn, fIn, fOut, fValues=[] }
+    patchAndAddFunction f diff
 
-assignStatement lexp rexp = error $ "assignStatement: " ++ show (lexp, rexp)
+rightExp diff [a] (PrefixExp (PEVar (VarName (Name b))))
+    = addItem Alias{ aFrom=a, aTo=applyPatch diff b } []
+
+rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
 
 
-type Diff = [(Text, Text)]
-expArg :: Exp -> State AlgBuilder (Text, [State AlgBuilder Diff], [Diff -> State AlgBuilder ()])
-expArg (Number IntNum textX) = do
+expArg _diff (Number IntNum textX) = do
     let x = read $ T.unpack textX
     AlgBuilder{ algItems } <- get
     case find (\case Constant{ cX } | cX == x -> True; _ -> False) algItems of
-        Just Constant{ cVar } -> return (cVar, [], [])
+        Just Constant{ cVar } -> return cVar
         Nothing -> do
             g <- genVar "constant"
             addItem Constant{ cX=x, cVar=g } []
-            return (g, [], [])
+            return g
         Just _ -> error "internal error"
 
-expArg (PrefixExp (PEVar (VarName (Name var))))
-    = (, [], []) <$> findAlias var
+expArg _diff (PrefixExp (PEVar (VarName (Name var))))
+    -- FIXME: cause collision between "parallel" function.
+    = findAlias var
 
-expArg binop@Binop{} = do
+expArg diff binop@Binop{} = do
     c <- genVar "tmp"
-    (renamers, functions) <- assignStatement (VarName (Name c)) binop
-    return (c, renamers, functions)
+    rightExp diff [c] binop
+    return c
 
-expArg a = error $ "expArg: " ++ show a
+expArg _diff a = error $ "expArg: " ++ show a
 
 
 
@@ -322,11 +332,14 @@ genVar prefix = do
 
 
 
-findAlias var = do
+findAlias var0 = do
     AlgBuilder{ algItems } <- get
-    case find (\case Alias{ aFrom } | aFrom == var -> True; _ -> False) algItems of
-        Just Alias{ aTo } -> findAlias aTo
-        _                 -> return var
+    return $ inner var0 algItems
+    where
+        inner var [] = var
+        inner var (Alias{ aFrom, aTo }:xs)
+            | aFrom == var = inner aTo xs
+        inner var (_:xs) = inner var xs
 
 
 
