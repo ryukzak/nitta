@@ -112,8 +112,8 @@ export class SynthesisView extends Component {
             { this.state.view === 'update' && <pre> updating... </pre> }
             { this.state.view === 'model' && <pre> { JSON.stringify(this.state.model, null, 2) } </pre> }
             { this.state.view === 'process' && <ProcessView
-              steps={this.state.model.nitta.process.steps}
-              relations={this.state.model.nitta.process.relations}
+              steps={this.state.model.processor.process.steps}
+              relations={this.state.model.processor.process.relations}
             /> }
             { this.state.view === 'scOptions' && <SimpleCompilerView
               currentNid={this.state.currentNid}
