@@ -132,7 +132,7 @@ badTestFram = badUnitTest "badTestFram" netWithArithm
 
 -----------------------------------------------
 
-processorTest name alg = testCase name $ unitTest "testMultiplier" netWithArithmAndSPI def alg
+processorTest name alg = testCase name $ unitTest ("processorTest " ++ name) netWithArithmAndSPI def alg
 
 unitTest name n cntx alg = do
   let n' = schedule $ mkModelWithOneNetwork n alg
