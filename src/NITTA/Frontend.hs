@@ -228,8 +228,12 @@ expArg _diff (Number IntNum textX) = do
             return g
         Just _ -> error "internal error"
 
-expArg _diff (PrefixExp (PEVar (VarName (Name var))))
-    = findAlias var
+expArg _diff (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
+
+expArg diff call@(PrefixExp (PEFunCall _)) = do
+    c <- genVar "tmp"
+    rightExp diff [c] call
+    return c
 
 expArg diff binop@Binop{} = do
     c <- genVar "tmp"

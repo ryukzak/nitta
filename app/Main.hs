@@ -123,16 +123,10 @@ main = do
     -- teacupDemo
     -- fibonacciDemo
 
+    -- FIXME: why it's don't work?
     -- test "lua_test" $ schedule $ mkModelWithOneNetwork microarch $ lua2functions
     --     [qq|function fib(a, b)
-    --             a, b = b, a + b
-    --             fib(a, b)
-    --         end
-    --         fib(0, 1)|]
-
-    -- test "lua_test" $ schedule $ mkModelWithOneNetwork microarch $ lua2functions
-    --     [qq|function fib(a, b)
-    --             a, b = b, reg(a + b) + 0
+    --             a, b = b, reg(a + reg(b + 0)) + 0
     --             fib(a, b)
     --         end
     --         fib(0, 1)|]
