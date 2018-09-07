@@ -69,7 +69,7 @@ main = do
             , testCase "endpointRoleEq" endpointRoleEq
             ]
         , testGroup "lua frontend"
-            [ processorTest "counter, void function" $ lua2functions
+            [ processorTest "counter_void_function" $ lua2functions
                 [qq|function counter(i)
                         send(i)
                         i = i + 1
@@ -77,33 +77,33 @@ main = do
                     end
                     counter(0)
                 |]
-            , processorTest "counter, local var" $ lua2functions
+            , processorTest "counter_local_var" $ lua2functions
                 [qq|function counter(i)
                         local i2 = i + 1
                         counter(i2)
                     end
                     counter(0)
                 |]
-            , processorTest "counter, function" $ lua2functions
+            , processorTest "counter_function" $ lua2functions
                 [qq|function counter(i)
                         i = reg(i + 1)
                         counter(i)
                     end
                     counter(0)
                 |]
-            , processorTest "fibonacci, a, b" $ lua2functions
+            , processorTest "fibonacci_a_b" $ lua2functions
                 [qq|function fib(a, b)
                         a, b = b, a + b
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "fibonacci, b, a" $ lua2functions
+            , processorTest "fibonacci_b_a" $ lua2functions
                 [qq|function fib(a, b)
                         b, a = a + b, b
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "fibonacci, nested fun call" $ lua2functions
+            , processorTest "fibonacci_nested_fun_call" $ lua2functions
                 [qq|function fib(a, b)
                         a, b = b, reg(a + reg(b)) + 0
                         fib(a, b)
