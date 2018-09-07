@@ -50,7 +50,7 @@ lua2functions src
         varDict = M.fromList
             $ map varRow
             $ group $ sort $ concatMap fIn fs
-    in snd $ execState (mapM_ function2nitta fs) (varDict, [])
+    in snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
     where
         varRow lst@(x:_)
             = let vs = zipWith (\v i -> [qq|{unpack v}_{i}|]) lst ([0..] :: [Int])
@@ -102,30 +102,11 @@ buildAlg proc
 
 -- *Translate AlgBuiler functions to nitta functions
 
-function2nitta Function{ fName="loop", fIn=[i], fOut=[o], fValues=[x] } = do
-    i' <- input i
-    o' <- output o
-    store $ F.loop x i' o'
-
-function2nitta Function{ fName="reg", fIn=[i], fOut=[o], fValues=[] } = do
-    i' <- input i
-    o' <- output o
-    store $ F.reg i' o'
-
-function2nitta Function{ fName="constant", fIn=[], fOut=[o], fValues=[x] } = do
-    o' <- output o
-    store $ F.constant x o'
-
-function2nitta Function{ fName="send", fIn=[i], fOut=[], fValues=[] } = do
-    i' <- input i
-    store $ F.send i'
-
-function2nitta Function{ fName="add", fIn=[a, b], fOut=[c], fValues=[] } = do
-    a' <- input a
-    b' <- input b
-    c' <- output c
-    store $ F.add a' b' c'
-
+function2nitta Function{ fName="loop",     fIn=[i],    fOut=[o], fValues=[x] } = F.loop x <$> input i <*> output o
+function2nitta Function{ fName="reg",      fIn=[i],    fOut=[o], fValues=[]  } = F.reg <$> input i <*> output o
+function2nitta Function{ fName="constant", fIn=[],     fOut=[o], fValues=[x] } = F.constant x <$> output o
+function2nitta Function{ fName="send",     fIn=[i],    fOut=[],  fValues=[]  } = F.send <$> input i
+function2nitta Function{ fName="add",      fIn=[a, b], fOut=[c], fValues=[]  } = F.add <$> input a <*> input b <*> output c
 function2nitta f = error $ "unknown function: " ++ show f
 
 
@@ -136,15 +117,9 @@ input v = do
     put (M.insert v (xs, lst) dict, fs)
     return x
 
-output v = do
-    (dict, fs) <- get
-    let (xs, lst) = dict M.! v
-    put (M.insert v (xs, lst) dict, fs)
-    return lst
+output v = gets $ \(dict, _fs) -> snd (dict M.! v)
 
-store (f :: F (Parcel String Int)) = do
-    (dict, fs) <- get
-    put (dict, f:fs)
+store f = modify' $ \(dict, fs) -> (dict, f:fs)
 
 
 
@@ -207,8 +182,7 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
             f InputVar{ iX, iVar } rexp = do
                 i <- expArg [] rexp
                 let fun = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
-                alg@AlgBuilder{ algItems } <- get
-                put alg{ algItems=fun : algItems }
+                modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems=fun : algItems }
             f _ _ = undefined
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
@@ -255,7 +229,6 @@ expArg _diff (Number IntNum textX) = do
         Just _ -> error "internal error"
 
 expArg _diff (PrefixExp (PEVar (VarName (Name var))))
-    -- FIXME: cause collision between "parallel" function.
     = findAlias var
 
 expArg diff binop@Binop{} = do
