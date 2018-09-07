@@ -52,7 +52,7 @@ import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval      (Interval, (...))
 
-import Debug.Trace
+
 
 data SimpleSynthCache
 
@@ -92,11 +92,11 @@ naiveStep md st@CompilerStep{ state }
     = if null opts -- ( trace (show opts) opts )
         then Nothing
         else Just st
-            { state=trace ("=== " ++ show (options compiler st')) st'
+            { state=st'
             , lastDecision=Just d
             }
     where
-        st' = decision compiler state $ trace (">>> " ++ show d) d
+        st' = decision compiler state d
         opts = optionsWithMetrics st
         (_, _, _, _, d) = opts !! md
 
@@ -180,8 +180,8 @@ bindAllAndNaiveSchedule alg pu0 = naiveSchedule $ bindAll alg pu0
 -- привязки функционального блока.
 isSchedulingCompletable pu
     = case options endpointDT pu of 
-        opts@(o:_os) -> let 
-                d = endpointOption2action $ trace ("options: " ++ show opts) o
+        (o:_os) -> let 
+                d = endpointOption2action o
                 pu' = decision endpointDT pu d
                 in isSchedulingCompletable pu'
         _ -> let
@@ -250,7 +250,7 @@ instance ( Time t, Var v
          where
     options _ Level{ currentFrame } = options compiler currentFrame
     options _ f@Frame{ processor, dfg } = concat
-        [ map generalizeDataFlowOption $ trace (">> " ++ show dataFlowOptions) dataFlowOptions
+        [ map generalizeDataFlowOption dataFlowOptions
         , map generalizeControlFlowOption $ options controlDT f
         , map generalizeBindingOption $ options binding f
         ]
@@ -322,7 +322,7 @@ instance ( Time t, Var v
 
 
 optionsWithMetrics CompilerStep{ state }
-    = reverse $ sortOn (\(x, _, _, _, _) -> x) $ map measure' $ trace (">>> " ++ show opts) opts
+    = reverse $ sortOn (\(x, _, _, _, _) -> x) $ map measure' opts
     where
         opts = options compiler state
         gm = measureG opts state
@@ -462,7 +462,7 @@ endpointOption2action o@EndpointO{ epoRole }
         -- "-1" - необходимо, что бы не затягивать процесс на лишний такт, так как интервал включает
         -- граничные значения.
         b = o^.at.avail.infimum + o^.at.dur.infimum - 1
-    in trace ("endpointOption2action: " ++ show o ++ " -> " ++ show (EndpointD epoRole (a ... b))) $ EndpointD epoRole (a ... b)
+    in EndpointD epoRole (a ... b)
 
 
 

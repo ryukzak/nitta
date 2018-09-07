@@ -35,7 +35,7 @@ import qualified NITTA.Functions               as F
 import           NITTA.Types                   (F, Parcel)
 import           Text.InterpolatedString.Perl6 (qq)
 
-import           Debug.Trace
+
 
 lua2functions src
     = let
@@ -50,7 +50,7 @@ lua2functions src
         varDict = M.fromList
             $ map varRow
             $ group $ sort $ concatMap fIn fs
-    in trace (S.join "\n" $ map show algItems) $ snd $ execState (mapM_ function2nitta fs) (varDict, [])
+    in snd $ execState (mapM_ function2nitta fs) (varDict, [])
     where
         varRow lst@(x:_)
             = let vs = zipWith (\v i -> [qq|{unpack v}_{i}|]) lst ([0..] :: [Int])

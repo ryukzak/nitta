@@ -10,11 +10,11 @@ module Main where
 import           Control.Applicative           ((<$>))
 import           Data.Atomics.Counter          (newCounter)
 import           Data.Default                  (def)
+import           NITTA.Frontend
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnits.Multiplier
 import           NITTA.Test.BusNetwork
-import           NITTA.Frontend
 import           NITTA.Test.Functions
 import           NITTA.Test.ProcessUnits
 import           NITTA.Test.ProcessUnits.Fram
@@ -69,21 +69,27 @@ main = do
             , testCase "endpointRoleEq" endpointRoleEq
             ]
         , testGroup "lua frontend"
-            [ processorTest "counter" $ lua2functions
-                [qq|function fib(i)
+            [ processorTest "counter, void function" $ lua2functions
+                [qq|function counter(i)
                         send(i)
                         i = i + 1
-                        fib(i)
+                        counter(i)
                     end
-                    fib(0)
+                    counter(0)
                 |]
             , processorTest "counter, local var" $ lua2functions
-                [qq|function fib(i)
-                        send(i)
+                [qq|function counter(i)
                         local i2 = i + 1
-                        fib(i2)
+                        counter(i2)
                     end
-                    fib(0)
+                    counter(0)
+                |]
+            , processorTest "counter, function" $ lua2functions
+                [qq|function counter(i)
+                        i = reg(i + 1)
+                        counter(i)
+                    end
+                    counter(0)
                 |]
             ]
       ]

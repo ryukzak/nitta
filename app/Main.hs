@@ -40,7 +40,6 @@ import           System.Console.CmdArgs
 import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qq)
 
-
 microarch = busNetwork 31 (Just True)
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
     [ OutputPort "miso" ]
@@ -93,20 +92,50 @@ nittaArgs = Nitta
     , no_api_gen=False &= help "No regenerate rest_api.js library"
     }
 
+        -- [qq|function fib(i, a, b)
+        --         send(i)
+        --         send(a)
+        --         local i2 = i + 1
+
+        --         local a_tmp = a
+        --         a = b
+        --         b = reg(a_tmp+b)
+        --         fib(i2, a, b)
+        --     end
+        --     fib(0, 0, 1)
+        -- |]
+
+        -- [qq|function fib(i, a, b)
+        --         send(i)
+        --         send(a)
+        --         local i2 = i + 1
+
+        --         local a_tmp = a
+        --         a = b
+        --         b = reg(a_tmp+b)
+        --         fib(i2, a, b)
+        --     end
+        --     fib(0, 0, 1)
+        -- |]
 
 
 main = do
     -- teacupDemo
     -- fibonacciDemo
 
-    -- test "fibonacci" $ schedule $ mkModelWithOneNetwork microarch $ lua2functions
-    --     -- from accum to accum don't work
-    --     [qq|function fib(i)
-    --             send(i)
-    --             local i2 = i + 1 + 0
-    --             fib(i2)
+    -- test "lua_test" $ schedule $ mkModelWithOneNetwork microarch $ lua2functions
+    --     [qq|function fib(a, b)
+    --             a, b = b, a + b
+    --             fib(a, b)
     --         end
-    --         fib(0)|]
+    --         fib(0, 1)|]
+
+    -- test "lua_test" $ schedule $ mkModelWithOneNetwork microarch $ lua2functions
+    --     [qq|function fib(a, b)
+    --             a, b = b, reg(a + b) + 0
+    --             fib(a, b)
+    --         end
+    --         fib(0, 1)|]
 
     -- putStrLn "funSim teacup:"
     -- test "teacup" $ schedule $ mkModelWithOneNetwork microarch teacupAlg
