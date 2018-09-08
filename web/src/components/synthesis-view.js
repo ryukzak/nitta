@@ -10,18 +10,19 @@ export class SynthesisView extends Component {
     this.onCurrentNidChange = props.onCurrentNidChange
     this.state = {
       currentNid: props.currentNid,
+      synthesisStatus: props.synthesisStatus,
       view: 'update',
       model: null,
       scOptions: null
     }
-    this.handleViewChange(props.currentNid, 'model')
+    this.handleViewChange(props.currentNid, props.synthesisStatus, 'model')
   }
 
-  handleViewChange (nid, view) {
+  handleViewChange (nid, synthesisStatus, view) {
     console.debug('SynthesisView:handleViewChange(', nid, view, ') // this.state.view:', this.state.view)
     if (nid === undefined || nid === null) return
 
-    this.setState({currentNid: nid, view: 'update'})
+    this.setState({currentNid: nid, synthesisStatus: synthesisStatus, view: 'update'})
     if (view === 'process') this.updateModel(nid, 'process')
     if (view === 'model') this.updateModel(nid, 'model')
     if (view === 'testbench') this.updateTestBench(nid, 'testbench')
@@ -32,7 +33,9 @@ export class SynthesisView extends Component {
     console.debug('SynthesisView:componentWillReceiveProps(', props, ')')
     var view = this.state.view
     if (view === 'update') view = 'model'
-    if (this.state.currentNid !== props.currentNid) this.handleViewChange(props.currentNid, view)
+    if (this.state.currentNid !== props.currentNid) {
+      this.handleViewChange(props.currentNid, props.synthesisStatus, view)
+    }
   }
 
   simpleCompiler (nid, onlyOneStep) {
@@ -98,16 +101,18 @@ export class SynthesisView extends Component {
         { this.state.currentNid !== null &&
           <div>
             <div className='tiny button-group'>
-              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'model')}>raw model</a>
-              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'process')}>process</a>
-              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'scOptions')}>SC options</a>
+              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, this.state.synthesisStatus, 'model')}>raw model</a>
+              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, this.state.synthesisStatus, 'process')}>process</a>
+              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, this.state.synthesisStatus, 'scOptions')}>SC options</a>
+              <a className='button primary' disabled={this.state.synthesisStatus !== 'Finished'} onClick={() => this.handleViewChange(this.state.currentNid, this.state.synthesisStatus, 'testbench')}>testbench</a>
+            </div>
+            <div className='tiny button-group'>
               <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, true)}>step</a>
               <a className='button primary' onClick={() => this.simpleCompiler(this.state.currentNid, false)}>thread</a>
               <a className='button primary' onClick={() => this.obviousBind(this.state.currentNid)}>obvious bind;</a>
               <a className='button primary' onClick={() => this.simpleAllThreads(this.state.currentNid, 1)}>all threads #1</a>
               <a className='button primary' onClick={() => this.simpleAllThreads(this.state.currentNid, 2)}>#2</a>
               <a className='button primary' onClick={() => this.simpleAllThreads(this.state.currentNid, 3)}>#3</a>
-              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNid, 'testbench')}>testbench</a>
             </div>
             { this.state.view === 'update' && <pre> updating... </pre> }
             { this.state.view === 'model' && <pre> { JSON.stringify(this.state.model, null, 2) } </pre> }
@@ -119,7 +124,10 @@ export class SynthesisView extends Component {
               currentNid={this.state.currentNid}
               onCurrentNidChange={nid => this.onCurrentNidChange(nid)}
             /> }
-            { this.state.view === 'testbench' &&
+            { this.state.view === 'testbench' && this.state.synthesisStatus !== 'Finished' &&
+              <pre>Synthesis is not Finished.</pre>
+            }
+            { this.state.view === 'testbench' && this.state.synthesisStatus === 'Finished' &&
               <div>
                 Status: <pre> { JSON.stringify(this.state.testBenchDump.tbStatus) } </pre>
                 Stdout:

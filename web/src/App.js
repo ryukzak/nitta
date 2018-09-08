@@ -8,7 +8,8 @@ class App extends Component {
   constructor () {
     super()
     this.state = {
-      currentNid: null
+      currentNid: null,
+      synthesisStatus: null
     }
   }
 
@@ -21,11 +22,20 @@ class App extends Component {
     }
   }
 
+  onSynthesisStatusChange (status) {
+    console.debug('App:onSynthesisStatusChange(', status, ')')
+    if (status && status !== this.state.currentNid) {
+      this.setState({
+        synthesisStatus: status
+      })
+    }
+  }
+
   render () {
     return (
       <div>
-        <SynthesisGraph currentNid={this.state.currentNid} onCurrentNidChange={nid => this.onSynthesisChange(nid)} />
-        <SynthesisView currentNid={this.state.currentNid} onCurrentNidChange={nid => this.onSynthesisChange(nid)} />
+        <SynthesisGraph currentNid={this.state.currentNid} onCurrentNidChange={nid => this.onSynthesisChange(nid)} onSynthesisStatusChange={status => this.onSynthesisStatusChange(status)} />
+        <SynthesisView currentNid={this.state.currentNid} synthesisStatus={this.state.synthesisStatus} onCurrentNidChange={nid => this.onSynthesisChange(nid)} />
       </div>
     )
   }

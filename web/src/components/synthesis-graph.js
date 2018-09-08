@@ -7,6 +7,7 @@ export class SynthesisGraph extends Component {
   constructor (props) {
     super(props)
     this.onCurrentNidChange = props.onCurrentNidChange
+    this.onSynthesisStatusChange = props.onSynthesisStatusChange
     this.state = {
       graph: null,
       nids: null,
@@ -74,6 +75,7 @@ export class SynthesisGraph extends Component {
           if (dNode[0].svStatus === 'Finished') this.markNode(gNode.nid, nids, 'green')
           if (dNode[0].svStatus === 'DeadEnd') this.markNode(gNode.nid, nids, 'black')
           gNode.attributes = { dur: dNode[0].svDuration }
+          gNode.status = dNode[0].svStatus
           dNode[0].svCntx.forEach((e, i) => {
             gNode.attributes[i] = e
           })
@@ -142,7 +144,11 @@ export class SynthesisGraph extends Component {
                 attributes: {'fontSize': '10px'}
               }
             }}}
-            onClick={(node) => { console.debug('SynthesisGraph: onCurrentNidChange(', node.nid, ')'); this.onCurrentNidChange(node.nid) }}
+            onClick={(node) => {
+              console.debug('SynthesisGraph: onCurrentNidChange(', node.nid, ')')
+              this.onCurrentNidChange(node.nid)
+              this.onSynthesisStatusChange(node.status)
+            }}
           />
         </div>
         <pre>Colors: red - current synthesis; green - finished; black - dead end</pre>
