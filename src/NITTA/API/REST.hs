@@ -128,17 +128,17 @@ simpleCompilerServer st nid
 
 get st nid = do
     root <- liftSTM $ readTVar st
-    return $ getSynthesis nid root
+    return $ getSynthesisNode nid root
 
 simpleCompilerOptions st nid = do
     root <- liftSTM $ readTVar st
-    let Node{ rootLabel=Synthesis{ sModel } } = getSynthesis nid root
+    let Synthesis{ sModel } = getSynthesis nid root
     let compilerState = def{ state=sModel }
     return $ optionsWithMetrics compilerState
 
 getModel st nid = do
     root <- liftSTM $ readTVar st
-    let Node{ rootLabel=Synthesis{ sModel } } = getSynthesis nid root
+    let Synthesis{ sModel } = getSynthesis nid root
     return sModel
 
 updateSynthesis f st nid = liftSTM $ do

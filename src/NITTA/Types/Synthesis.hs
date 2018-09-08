@@ -30,6 +30,7 @@ module NITTA.Types.Synthesis
     , SynthUpd(..)
     , SubNode(..)
       -- *Processing SynthesisTree
+    , getSynthesisNode
     , getSynthesis
     , update
     , apply
@@ -57,7 +58,7 @@ data SynthesisStatus
     = InProgress
     | Finished
     | DeadEnd
-    deriving ( Show, Generic )
+    deriving ( Show, Generic, Eq )
 
 data Synthesis title tag v x t
     = Synthesis
@@ -108,7 +109,7 @@ rootSynthesis m = Node
     }
 
 targetProcessDuration Frame{ processor } = nextTick $ process processor
-targetProcessDuration _              = undefined
+targetProcessDuration _                  = undefined
 
 
 -- *Synthesis context
@@ -159,8 +160,11 @@ data SubNode a
     | Patch Int
 
 -- |Get specific by @nid@ node from a synthesis tree.
-getSynthesis (Nid []) n                     = n
-getSynthesis (Nid (i:is)) Node{ subForest } = getSynthesis (Nid is) (subForest !! i)
+getSynthesisNode (Nid []) n                     = n
+getSynthesisNode (Nid (i:is)) Node{ subForest } = getSynthesisNode (Nid is) (subForest !! i)
+
+getSynthesis nid n = rootLabel $ getSynthesisNode nid n
+
 
 
 -- |Update specific by @nid@ node in a synthesis tree by the @f@.

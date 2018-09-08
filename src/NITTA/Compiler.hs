@@ -149,7 +149,7 @@ compilerAllTheads opt deep rootN@Node{ rootLabel=Synthesis{ sModel } }
 schedule model
     = let
         (syn, sid) = simpleSynthesis def (rootSynthesis model)
-    in processor $ sModel $ rootLabel $ getSynthesis sid syn
+    in processor $ sModel $ getSynthesis sid syn
 
 
 -- |Make a model of NITTA process with one network and a specific algorithm. All functions are
@@ -179,8 +179,8 @@ bindAllAndNaiveSchedule alg pu0 = naiveSchedule $ bindAll alg pu0
 -- функционаные блоки могут быть выполнены). Данная функция используется для проверки возможности
 -- привязки функционального блока.
 isSchedulingCompletable pu
-    = case options endpointDT pu of 
-        (o:_os) -> let 
+    = case options endpointDT pu of
+        (o:_os) -> let
                 d = endpointOption2action o
                 pu' = decision endpointDT pu d
                 in isSchedulingCompletable pu'
@@ -278,7 +278,7 @@ instance ( Time t, Var v
 option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
 option2decision (BindingOption fb title) = BindingDecision fb title
 option2decision (DataFlowOption src trg)
-    = let 
+    = let
         pushTimeConstrains = map snd $ catMaybes $ M.elems trg
         pullStart    = maximum $ (snd src^.avail.infimum) : map (\o -> o^.avail.infimum) pushTimeConstrains
         pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd src : pushTimeConstrains
@@ -317,7 +317,7 @@ instance ( Time t, Var v
     options proxy CompilerStep{ state } = options proxy state
     decision proxy st@CompilerStep{ state } d = st
         { state=decision proxy state d
-        , lastDecision=Just d 
+        , lastDecision=Just d
         }
 
 
@@ -410,7 +410,7 @@ makeLevelDone l@Level{ remainFrames=f:fs, currentFrame, completedFrames }
         , completedFrames=currentFrame : completedFrames
         }
 makeLevelDone Level{ initialFrame, currentFrame, completedFrames }
-    = let 
+    = let
         fs = currentFrame : completedFrames
         mergeTime = (maximum $ map (nextTick . process . processor) fs){ tag=timeTag initialFrame }
         Frame{ processor=net@BusNetwork{ bnProcess } } = currentFrame
@@ -438,7 +438,7 @@ howManyOptionAllow bOptions
 
 
 -- | Время ожидания переменных.
-waitingTimeOfVariables net = 
+waitingTimeOfVariables net =
     [ (variable, tc^.avail.infimum)
     | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- options dataFlowDT net
     , (variable, Nothing) <- M.assocs dfoTargets
@@ -457,7 +457,7 @@ optionsAfterBind fb pu = case tryBind fb pu of
 -- * Утилиты
 
 endpointOption2action o@EndpointO{ epoRole }
-    = let 
+    = let
         a = o^.at.avail.infimum
         -- "-1" - необходимо, что бы не затягивать процесс на лишний такт, так как интервал включает
         -- граничные значения.
@@ -467,7 +467,7 @@ endpointOption2action o@EndpointO{ epoRole }
 
 
 whatsHappenWith tag pu =
-    [ st 
+    [ st
     | st@Step{ sTime } <- steps $ process pu
     , tag == placeInTimeTag sTime
     ]
