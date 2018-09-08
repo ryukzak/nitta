@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
@@ -101,8 +102,12 @@ naiveStep md st@CompilerStep{ state }
         (_, _, _, _, d) = opts !! md
 
 
+simpleSynthesis opt n
+    = let
+        (n', nid') = compilerObviousBind opt n
+        Just (n'', nid'') = update (Just . compilerAllTheads opt 1) nid' n'
+    in (n'', nid'')
 
-simpleSynthesis opt n = recApply (simpleSynthesisStep opt 0 "auto") n
 
 compilerObviousBind opt n = recApply inner n
     where
@@ -121,17 +126,17 @@ compilerObviousBind opt n = recApply inner n
 
 
 
-compilerAllTheads opt 1 rootN@Node{ rootLabel=Synthesis{ sModel } }
+compilerAllTheads opt (1 :: Int) rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
         mds = [ 0 .. length (optionsWithMetrics def{ state=sModel }) - 1 ]
         (rootN', nids) = foldl
             (\(n1, nids1) md ->
                 let Just (n2, nid2) = apply (simpleSynthesisStep opt md "allThreads") n1
-                    Just (n3, nid3) = update (Just . simpleSynthesis opt) nid2 n2
+                    Just (n3, nid3) = update (Just . recApply (simpleSynthesisStep opt 0 "auto")) nid2 n2
                 in (n3, nid3 : nids1))
             (rootN, [])
             mds
-    in (rootN', bestNids nids rootN)
+    in (rootN', bestNids rootN' nids)
 compilerAllTheads opt deep rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
         mds = [ 0 .. length (optionsWithMetrics def{ state=sModel }) - 1 ]
@@ -142,10 +147,10 @@ compilerAllTheads opt deep rootN@Node{ rootLabel=Synthesis{ sModel } }
                 in (n3, nid3 : nids1))
             (rootN, [])
             mds
-    in (rootN', bestNids nids rootN)
+    in (rootN', bestNids rootN' nids)
 
 
-bestNids nids root
+bestNids root nids
     = let
         ns = map (\nid -> (nid, getSynthesis nid root)) nids
     in case filter ((== Finished) . sStatus . snd) ns of
@@ -158,8 +163,8 @@ bestNids nids root
 -- |Schedule process by 'simpleSynthesis'.
 schedule model
     = let
-        (syn, sid) = simpleSynthesis def (rootSynthesis model)
-    in processor $ sModel $ getSynthesis sid syn
+        (n, nid) = simpleSynthesis def (rootSynthesis model)
+    in processor $ sModel $ getSynthesis nid n
 
 
 -- |Make a model of NITTA process with one network and a specific algorithm. All functions are

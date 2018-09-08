@@ -161,7 +161,9 @@ data SubNode a
 
 -- |Get specific by @nid@ node from a synthesis tree.
 getSynthesisNode (Nid []) n                     = n
-getSynthesisNode (Nid (i:is)) Node{ subForest } = getSynthesisNode (Nid is) (subForest !! i)
+getSynthesisNode nid@(Nid (i:is)) Node{ subForest }
+    | length subForest <= i = error $ "getSynthesisNode: wrong nid: " ++ show nid
+    | otherwise = getSynthesisNode (Nid is) (subForest !! i)
 
 getSynthesis nid n = rootLabel $ getSynthesisNode nid n
 

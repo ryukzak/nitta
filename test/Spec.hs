@@ -103,9 +103,15 @@ main = do
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "fibonacci_nested_fun_call" $ lua2functions
+            , processorTest "fibonacci_nested_fun_call1" $ lua2functions
                 [qq|function fib(a, b)
                         a, b = b, reg(a + reg(b)) + 0
+                        fib(a, b)
+                    end
+                    fib(0, 1)|]
+            , processorTest "fibonacci_nested_fun_call2" $ lua2functions
+                [qq|function fib(a, b)
+                        a, b = b, reg(a + reg(b + 0)) + 0
                         fib(a, b)
                     end
                     fib(0, 1)|]
