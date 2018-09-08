@@ -37,11 +37,11 @@ export class SynthesisGraph extends Component {
   }
 
   markNode (nid, nids, color) {
-    if (color === undefined) color = 'red'
+    if (color === undefined) color = 'blue'
     if (nids === undefined) nids = this.state.nids
     if (nid === null || nids === null) return
 
-    if (color === 'red') {
+    if (color === 'blue') {
       nids[nid].nodeSvgShapeOriginal = nids[nid].nodeSvgShape
     }
     console.debug('SynthesisGraph:markNode(', nid, nids, color, ')')
@@ -72,8 +72,8 @@ export class SynthesisGraph extends Component {
           gNode.name = reLastNidStep.exec(dNode[0].svNnid)[0]
           gNode.nid = dNode[0].svNnid
           nids[dNode[0].svNnid] = gNode
-          if (dNode[0].svStatus === 'Finished') this.markNode(gNode.nid, nids, 'green')
-          if (dNode[0].svStatus === 'DeadEnd') this.markNode(gNode.nid, nids, 'black')
+          if (dNode[0].svStatus === 'Finished') this.markNode(gNode.nid, nids, 'lime')
+          if (dNode[0].svStatus === 'DeadEnd') this.markNode(gNode.nid, nids, 'red')
           gNode.attributes = { dur: dNode[0].svDuration }
           gNode.status = dNode[0].svStatus
           dNode[0].svCntx.forEach((e, i) => {
@@ -113,7 +113,7 @@ export class SynthesisGraph extends Component {
       <div>
         <pre>
           [<a onClick={() => this.reloadSynthesis()}> refresh </a>]
-          current synthesis (nid) [{this.stepsNumber()}] {this.state.currentNid}
+          steps: {this.stepsNumber()}; selected synthesis nid - {this.state.currentNid}
         </pre>
         <div style={{width: '100%', height: '200px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
           <Tree
@@ -151,7 +151,7 @@ export class SynthesisGraph extends Component {
             }}
           />
         </div>
-        <pre>Colors: red - current synthesis; green - finished; black - dead end</pre>
+        <pre class='text-right'>red - dead end; green - finished; blue - current</pre>
       </div>
     )
   }
