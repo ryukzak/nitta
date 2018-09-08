@@ -36,7 +36,7 @@ module NITTA.Compiler
 
 import           Control.Arrow         (second)
 import           Data.Default
-import           Data.List             (find, sortOn)
+import           Data.List             (find, maximumBy, sortOn)
 import qualified Data.Map              as M
 import           Data.Maybe
 import           Data.Proxy
@@ -131,7 +131,7 @@ compilerAllTheads opt 1 rootN@Node{ rootLabel=Synthesis{ sModel } }
                 in (n3, nid3 : nids1))
             (rootN, [])
             mds
-    in (rootN', head nids)
+    in (rootN', bestNids nids rootN)
 compilerAllTheads opt deep rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
         mds = [ 0 .. length (optionsWithMetrics def{ state=sModel }) - 1 ]
@@ -142,7 +142,17 @@ compilerAllTheads opt deep rootN@Node{ rootLabel=Synthesis{ sModel } }
                 in (n3, nid3 : nids1))
             (rootN, [])
             mds
-    in (rootN', head nids)
+    in (rootN', bestNids nids rootN)
+
+
+bestNids nids root
+    = let
+        ns = map (\nid -> (nid, getSynthesis nid root)) nids
+    in case filter ((== Finished) . sStatus . snd) ns of
+        []  -> head nids
+        ns' -> fst $ maximumBy (\a b -> f a `compare` f b) ns'
+    where
+        f = fromEnum . targetProcessDuration . sModel . snd
 
 
 -- |Schedule process by 'simpleSynthesis'.
