@@ -504,7 +504,7 @@ instance ( Title title, Var v, Time t
             assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
                 where
                     assert (t, cntx)
-                        = "\\$write(\"%s, bus actual: %h\", " ++ show t ++ ", net.data_bus); "
+                        = "\\$write(\"%d, bus actual: %h\", " ++ show t ++ ", net.data_bus); "
                         ++ case extractInstructionAt n t of
                             Transport v _ _ : _ -> concat
                                 [ "\\$write(\" expected: %h (%s)\", " ++ show (get' cntx v) ++ ", " ++ show v ++ ");"
