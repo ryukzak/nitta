@@ -15,5 +15,5 @@ export const hapi = {
   manualDecision: (nid, m) => api.postSynthesisByNidSimpleManual(nid, m),
   obviousBind: (nid) => api.postSynthesisByNidSimpleObviousBind(nid),
   simpleAllThreads: (nid, deep) => api.postSynthesisByNidSimpleAllThreads(nid, deep),
-  runTestBench: (nid, name) => api.getSynthesisByNidTestBenchOutputByName(nid, name)
+  runTestBench: (nid, name) => api.getSynthesisByNidTestBenchOutput(nid, name)
 }

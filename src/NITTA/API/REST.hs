@@ -95,7 +95,7 @@ synthesisServer st
 type WithSynthesis
     =    Get '[JSON] SYN
     :<|> "model" :> Get '[JSON] (ModelState String String String Int (TaggedTime String Int))
-    :<|> "testBenchOutput" :> Capture "name" String :> Get '[JSON] TestBenchReport
+    :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
     :<|> SimpleCompilerAPI
 
 withSynthesis st nid
