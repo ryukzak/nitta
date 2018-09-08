@@ -362,7 +362,7 @@ parameter ATTR_WIDTH = 4;
 Algorithm:
 { unlines $ map show $ functions pu }
 Process:
-{ unlines $ map show steps }
+{ unlines $ map show $ reverse steps }
 Context:
 { show cntx }
 */

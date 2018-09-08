@@ -375,7 +375,10 @@ instance ( Var v, Time t, Typeable x
         -- переменных в аппаратный блок, что необходимо из-за особенностей реализации.
         , let sel = if null xs then B else A
         -- Осуществляется планирование вычислительного процесса.
-        , let (newEndpoints, process_') = runSchedule pu $
+        , let (newEndpoints, process_') = runSchedule pu $ do
+                -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
+                -- которые берут информацию о времени из Process
+                updateTick (sup epdAt)
                 scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
         = pu
             { process_=process_'
@@ -406,6 +409,9 @@ instance ( Var v, Time t, Typeable x
                     -- Устанавливаем вертикальную взаимосвязь между функциональным блоком и
                     -- связанными с ним пересылками данных.
                     establishVerticalRelations high low
+                -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
+                -- которые берут информацию о времени из Process
+                updateTick (sup epdAt)
                 return endpoints
         = pu
             { process_=process_'
