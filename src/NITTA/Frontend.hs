@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiWayIf            #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -44,7 +45,7 @@ lua2functions src
         AlgBuilder{ algItems } = buildAlg $ do
             addMainInputs call funAssign
             let statements = funAssignStatments funAssign
-            mapM_ (\e -> processStatement fn e) statements
+            forM_ statements $ processStatement fn
             addConstants
         fs = filter (\case Function{} -> True; _ -> False) algItems
         varDict = M.fromList
@@ -94,7 +95,7 @@ buildAlg proc
     = execState proc AlgBuilder
         { algItems=[]
         , algBuffer=[]
-        , algVarGen=map (pack . ("#" ++) . show) [(0::Int)..]
+        , algVarGen=map (\i -> [qq|#$i|]) [(0::Int)..]
         , algVars=[]
         }
 
@@ -107,6 +108,9 @@ function2nitta Function{ fName="reg",      fIn=[i],    fOut=[o], fValues=[]  } =
 function2nitta Function{ fName="constant", fIn=[],     fOut=[o], fValues=[x] } = F.constant x <$> output o
 function2nitta Function{ fName="send",     fIn=[i],    fOut=[],  fValues=[]  } = F.send <$> input i
 function2nitta Function{ fName="add",      fIn=[a, b], fOut=[c], fValues=[]  } = F.add <$> input a <*> input b <*> output c
+function2nitta Function{ fName="sub",      fIn=[a, b], fOut=[c], fValues=[]  } = F.sub <$> input a <*> input b <*> output c
+function2nitta Function{ fName="multiply", fIn=[a, b], fOut=[c], fValues=[]  } = F.multiply <$> input a <*> input b <*> output c
+function2nitta Function{ fName="divide",   fIn=[d, n], fOut=[q, r], fValues=[] } = F.division <$> input d <*> input n <*> output q <*> output r
 function2nitta f = error $ "unknown function: " ++ show f
 
 
@@ -117,7 +121,9 @@ input v = do
     put (M.insert v (xs, lst) dict, fs)
     return x
 
-output v = gets $ \(dict, _fs) -> snd (dict M.! v)
+output v
+    | T.head v == '_' = return []
+    | otherwise = gets $ \(dict, _fs) -> snd (dict M.! v)
 
 store f = modify' $ \(dict, fs) -> (dict, f:fs)
 
@@ -139,7 +145,7 @@ addMainInputs
         (FunCall (NormalFunCall _ (Args callArgs)))
         (FunAssign (FunName (Name _funName) _ _) (FunBody declArgs _ _)) = do
     let vars = map (\case (Name v) -> v) declArgs
-    let values = map (\case (Number _ s) -> read (T.unpack s); _ -> undefined) callArgs
+    let values = map (\case (Number _ s) -> read (unpack s); _ -> undefined) callArgs
     when (length vars /= length values)
         $ error "a different number of arguments in main a function declaration and call"
     mapM_ (\(iIx, iX, iVar) -> addItem InputVar{ iIx, iX, iVar } [iVar]) $ zip3 [0..] values vars
@@ -151,17 +157,19 @@ addMainInputs _ _ = error "bad main function description"
 addConstants = do
     AlgBuilder{ algItems } <- get
     let constants = filter (\case Constant{} -> True; _ -> False) algItems
-    mapM_ (\Constant{ cX, cVar} -> addFunction Function{ fName="constant", fIn=[], fOut=[cVar], fValues=[cX] } ) constants
+    forM_ constants $ \Constant{ cX, cVar} ->
+        addFunction Function{ fName="constant", fIn=[], fOut=[cVar], fValues=[cX] }
 
 
 
-processStatement fn (LocalAssign [Name n] (Just [rexp])) = do
-    processStatement fn $ LocalAssign [Name n] Nothing
-    processStatement fn $ Assign [VarName (Name n)] [rexp]
+processStatement fn (LocalAssign names (Just [rexp])) = do
+    processStatement fn $ LocalAssign names Nothing
+    processStatement fn $ Assign (map VarName names) [rexp]
 
-processStatement _fn (LocalAssign [Name n] Nothing) = do
+processStatement _fn (LocalAssign names Nothing) = do
     AlgBuilder{ algVars } <- get
-    when (n `elem` algVars) $ error "local variable alredy defined"
+    forM_ names $ \(Name n) ->
+        when (n `elem` algVars) $ error "local variable alredy defined"
 
 processStatement _fn st@(Assign lexps rexps)
     = if
@@ -169,6 +177,11 @@ processStatement _fn st@(Assign lexps rexps)
             let outs = map (\case (VarName (Name v)) -> [v]; l -> error $ "bad left expression: " ++ show l) lexps
             diff <- concat <$> mapM renameVarsIfNeeded outs
             zipWithM_ (rightExp diff) outs rexps
+            flushBuffer
+        | length lexps > 1 && length rexps == 1 -> do
+            let outs = map (\case (VarName (Name v)) -> v; l -> error $ "bad left expression: " ++ show l) lexps
+            diff <- renameVarsIfNeeded outs
+            rightExp diff outs $ head rexps
             flushBuffer
         | otherwise -> error $ "processStatement: " ++ show st
 
@@ -193,11 +206,17 @@ processStatement _fn st = error $ "statement: " ++ show st
 
 
 
-rightExp diff fOut (Binop Add a b) = do
+rightExp diff fOut (Binop op a b) = do
     a' <- expArg diff a
     b' <- expArg diff b
-    let f = Function{ fName="add", fIn=[a', b'], fOut, fValues=[] }
+    let f = Function{ fName=binop op, fIn=[a', b'], fOut, fValues=[] }
     patchAndAddFunction f diff
+    where
+        binop Add = "add"
+        binop Sub = "sub"
+        binop Mul = "multiply"
+        binop Div = "divide"
+        binop o   = error $ "unknown binop: " ++ show o
 
 rightExp
         diff
@@ -210,23 +229,18 @@ rightExp
     let f = Function{ fName=unpack fn, fIn, fOut, fValues=[] }
     patchAndAddFunction f diff
 
-rightExp diff [a] (PrefixExp (PEVar (VarName (Name b))))
+rightExp diff [a] (PrefixExp (PEVar (VarName (Name b)))) -- a = b
     = addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }
+
+rightExp diff [a] n@(Number _ _) = do -- a = 42
+    b <- expConstant (T.concat [a, "_constant"]) n
+    addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }
 
 rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
 
 
-expArg _diff (Number IntNum textX) = do
-    let x = read $ T.unpack textX
-    AlgBuilder{ algItems } <- get
-    case find (\case Constant{ cX } | cX == x -> True; _ -> False) algItems of
-        Just Constant{ cVar } -> return cVar
-        Nothing -> do
-            g <- genVar "constant"
-            addItem Constant{ cX=x, cVar=g } []
-            return g
-        Just _ -> error "internal error"
+expArg _diff n@(Number _ _) = expConstant "constant" n
 
 expArg _diff (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
 
@@ -234,6 +248,8 @@ expArg diff call@(PrefixExp (PEFunCall _)) = do
     c <- genVar "tmp"
     rightExp diff [c] call
     return c
+
+expArg diff (PrefixExp (Paren arg)) = expArg diff arg
 
 expArg diff binop@Binop{} = do
     c <- genVar "tmp"
@@ -245,6 +261,20 @@ expArg _diff a = error $ "expArg: " ++ show a
 
 
 -- *Internal
+
+expConstant prefix (Number IntNum textX) = do
+    let x = read $ unpack textX
+    AlgBuilder{ algItems } <- get
+    case find (\case Constant{ cX } | cX == x -> True; _ -> False) algItems of
+        Just Constant{ cVar } -> return cVar
+        Nothing -> do
+            g <- genVar prefix
+            addItem Constant{ cX=x, cVar=g } []
+            return g
+        Just _ -> error "internal error"
+expConstant _ _ = undefined
+
+
 
 addFunction f@Function{ fOut } = do
     diff <- renameVarsIfNeeded fOut
@@ -268,7 +298,7 @@ renameVarsIfNeeded fOut = do
     mapM autoRename $ filter (`elem` algVars) fOut
 
 autoRename var = do
-    var' <- genVar $ unpack var
+    var' <- genVar var
     renameFromTo var var'
     return (var, var')
 
@@ -299,17 +329,17 @@ funAssignStatments _                                               = error "funA
 flushBuffer = modify'
     $ \alg@AlgBuilder{ algBuffer, algItems } -> alg
         { algItems=algBuffer ++ algItems
-        , algBuffer=[] 
+        , algBuffer=[]
         }
 
 
-addItemToBuffer item = modify' 
+addItemToBuffer item = modify'
     $ \alg@AlgBuilder{ algBuffer } -> alg
         { algBuffer=item : algBuffer
         }
 
 
-addItem item vars = modify' 
+addItem item vars = modify'
     $ \alg@AlgBuilder{ algItems, algVars } -> alg
         { algItems=item : algItems
         , algVars=vars ++ algVars
@@ -320,7 +350,7 @@ addItem item vars = modify'
 genVar prefix = do
     alg@AlgBuilder{ algVarGen=g:gs } <- get
     put alg{ algVarGen=gs }
-    return $ T.concat [pack prefix, g]
+    return $ T.concat [prefix, g]
 
 
 

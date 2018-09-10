@@ -270,7 +270,7 @@ data Division io = Division
 instance ( Show v ) => Show (Division (Parcel v x)) where
     show (Division (I k1) (I k2) (O k3) (O k4))
         = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " / " ++ show k2 ++ "; "
-        ++ S.join " = " (map show $ elems k4) ++ " = " ++ show k1 ++ " mod " ++ show k2
+        ++ S.join " = " (if null k4 then ["_"] else map show $ elems k4) ++ " = " ++ show k1 ++ " `mod` " ++ show k2
 deriving instance ( IOType io v x ) => Eq (Division io)
 division d n q r = F Division
     { denom=I d
