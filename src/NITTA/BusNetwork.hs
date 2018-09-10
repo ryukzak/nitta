@@ -451,7 +451,15 @@ instance ( Title title, Var v, Time t
             testBenchImp = renderMST
                 [ "`timescale 1 ps / 1 ps"
                 , "module $moduleName$_tb();                                                                                 "
+                , ""
+                , "/* Functions:"
+                , S.join "\n" $ map show $ functions n 
+                , "*/"
                 , "                                                                                                          "
+                , "/* Steps:"
+                , S.join "\n" $ map show $ reverse $ steps $ process n 
+                , "*/"
+                , ""
                 , "reg clk, rst;                                                                                             "
                 , if null ports
                     then ""
