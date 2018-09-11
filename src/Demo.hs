@@ -172,6 +172,7 @@ Start Compilation@. Затем вам необходимо прошить в П�
 
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
+{-# LANGUAGE QuasiQuotes      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 module Demo
     ( -- * Демо
@@ -179,12 +180,13 @@ module Demo
     , teacupDemo
       -- * Описание алгоритмов
     , fibonacciAlg
-    , teacupAlg
+    , teacupAlg, teacupLua, teacupAlg2
       -- * Описание процессоров
     , nittaArch
     ) where
 
 import           Data.Default
+import           Data.Text                     (Text)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import qualified NITTA.Functions               as F
@@ -196,6 +198,7 @@ import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
+import           Text.InterpolatedString.Perl6 (qq)
 
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
@@ -288,6 +291,42 @@ teacupAlg = [ F.loop 0 "time_new" ["time", "time_send"]
             , F.add "temp_cup_2" "delta" ["temp_cup_new"]
             , F.send "temp_cup_send"
             ]
+
+teacupAlg2 =
+    [ F.send "time#3_1"
+    , F.send "temp_cup#4_2"
+    , F.add "time#3_0" "time_step_constant#2_1" ["time_0"]
+    , F.sub "temp_room_constant#1_0" "temp_cup#4_1" ["acc_0"]
+    , F.division "acc_0" "temp_ch_constant#0_0" ["temp_loss_0"] []
+    , F.multiply "temp_loss_0" "time_step_constant#2_0" ["delta_0"]
+    , F.add "temp_cup#4_0" "delta_0" ["temp_cup_0"]
+
+    , F.loop 0 "time_0" ["time#3_0", "time#3_1"]
+    , F.loop 180000 "temp_cup_0" [ "temp_cup#4_0", "temp_cup#4_1","temp_cup#4_2"]
+    , F.constant 125 ["time_step_constant#2_1", "time_step_constant#2_0"]
+    , F.constant 70000 ["temp_room_constant#1_0"]
+    , F.constant 10000 ["temp_ch_constant#0_0"]
+    ] :: [F (Parcel String Int)]
+
+teacupLua =
+    [qq|function teacup(time, temp_cup)
+            local temp_ch = 10000
+            local temp_room = 70000
+            local time_step = 125
+
+            send(time)
+            send(temp_cup)
+
+            time = time + time_step
+            local acc = temp_room - temp_cup
+            local temp_loss, _ = acc / temp_ch
+
+            local delta = temp_loss * time_step
+            temp_cup = temp_cup + delta
+
+            teacup(time, temp_cup)
+        end
+        teacup(0, 180000)|] :: Text
 
 
 

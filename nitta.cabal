@@ -27,7 +27,6 @@ library
                      , NITTA.ProcessUnits.Accum
                      , NITTA.ProcessUnits.Divisor
                      , NITTA.ProcessUnits.Fram
-                     , NITTA.ProcessUnits.Generic.Pipeline
                      , NITTA.ProcessUnits.Generic.SerialPU
                      , NITTA.ProcessUnits.Multiplier
                      , NITTA.ProcessUnits.Shift
