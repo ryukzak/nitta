@@ -13,6 +13,7 @@ import           Data.Default                  (def)
 import           Demo
 import           NITTA.Frontend
 import           NITTA.Functions
+import           NITTA.ProcessUnits.Divider
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnits.Multiplier
 import           NITTA.Test.BusNetwork
@@ -46,6 +47,10 @@ main = do
         ,  testGroup "Multiply process unit"
             [ testProperty "completeness" $ prop_completness <$> multiplierGen
             , testProperty "simulation" $ fmap (prop_simulation "prop_simulation_multiplier" counter) $ inputsGen =<< multiplierGen
+            ]
+        ,  testGroup "Divider process unit"
+            [ testProperty "completeness" $ prop_completness <$> dividerGen
+            , testProperty "simulation" $ fmap (prop_simulation "prop_simulation_divider" counter) $ inputsGen =<< dividerGen
             ]
         -- , testGroup "Shift process unit"
         --     [ testCase "shiftBiDirection" shiftBiDirection
@@ -136,4 +141,8 @@ framGen = processGen (def :: (Fram String Int Int))
 
 multiplierGen = processGen (multiplier True)
     [ F <$> (arbitrary :: Gen (Multiply (Parcel String Int)))
+    ]
+
+dividerGen = processGen (divider 4 True)
+    [ F <$> (arbitrary :: Gen (Division (Parcel String Int)))
     ]

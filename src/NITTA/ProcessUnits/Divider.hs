@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -13,19 +14,22 @@ module NITTA.ProcessUnits.Divider
     , PUPorts(..)
     ) where
 
+import           Control.Monad                 (void, when)
 import           Data.Default
-import           Data.List           (partition, sortBy)
-import           Data.Maybe          (fromMaybe)
-import           Data.Set            (Set, member)
-import qualified Data.Set            as S
+import           Data.List                     (partition, sortBy)
+import           Data.Maybe                    (fromMaybe)
+import           Data.Set                      (Set, member)
+import qualified Data.Set                      as S
 import           Data.Typeable
-import           NITTA.Functions     (castF)
-import qualified NITTA.Functions     as F
+import           NITTA.Functions               (castF)
+import qualified NITTA.Functions               as F
+import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Process
-import           Numeric.Interval    (Interval, inf, intersection, singleton,
-                                      sup, width, (...))
+import           Numeric.Interval              (Interval, inf, intersection,
+                                                singleton, sup, width, (...))
+import           Text.InterpolatedString.Perl6 (qq)
 
 
 data InputDesc
@@ -63,6 +67,14 @@ divider pipeline mock = Divider
     , mock
     }
 
+instance ( Time t ) => Default (Divider v x t) where
+    def = divider 4 True
+
+instance ( Ord t ) => WithFunctions (Divider v x t) (F (Parcel v x)) where
+    functions Divider{ process_, remains, jobs }
+        = functions process_
+        ++ remains
+        ++ map function jobs
 
 data Job v x t
     = Input
@@ -77,6 +89,7 @@ data Job v x t
         }
     | Output
         { function  :: F (Parcel v x)
+        , startAt   :: t
         , rottenAt  :: Maybe t
         , finishAt  :: t
         , outputRnd :: [(OutputDesc, Set v)]
@@ -118,9 +131,9 @@ remain2input nextTick f
     = Input{ function=f, startAt=nextTick, inputSeq=[(Numer, n), (Denom, d)] }
 remain2input _ _ = error "divider inProgress2Output internal error"
 
-inProgress2Output rottenAt InProgress{ function, finishAt }
+inProgress2Output rottenAt InProgress{ function, startAt, finishAt }
     | Just (F.Division _ _ (O q) (O r)) <- castF function
-    = Output{ function, rottenAt, finishAt, outputRnd=[(Quotient, q), (Remain, r)] }
+    = Output{ function, rottenAt, startAt, finishAt, outputRnd=[(Quotient, q), (Remain, r)] }
 inProgress2Output _ _ = error "divider inProgress2Output internal error"
 
 
@@ -227,7 +240,7 @@ instance ( Var v, Time t
             _proxy
             pu@Divider{ jobs, sourceIntervals }
             d@EndpointD{ epdRole=Source vs, epdAt }
-        | Just (out@Output{ outputRnd }, other) <- findOutput jobs
+        | Just (out@Output{ outputRnd, startAt, function }, other) <- findOutput jobs
         , (vss, [(tag, vs')]) <- partition (\(_tag, vs') -> null (vs `S.intersection` vs')) outputRnd
         , let vss' = let tmp = vs' `S.difference` vs
                 in if S.null tmp
@@ -240,11 +253,12 @@ instance ( Var v, Time t
                 else out{ outputRnd=vss' } : other
             , process_=execSchedule pu $ do
                 _endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Out tag
+                when (null vss') $ void $ scheduleFunction startAt (sup epdAt) function
                 -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
                 -- которые берут информацию о времени из Process
                 updateTick (sup epdAt)
             }
-    
+
     decision _ _ _ = error "divider decision internal error"
 
 
@@ -340,3 +354,26 @@ instance ( Time t, Var v
         , "  );"
         ] [("name", title)]
 
+
+instance ( Var v, Time t
+         , Typeable x, Show x, Integral x
+         ) => TestBench (Divider v x t) v x where
+    testBenchDescription prj@Project{ projectName, model=pu }
+        = Immidiate (moduleName projectName pu ++ "_tb.v")
+            $ snippetTestBench prj TestBenchSetup
+                { tbcSignals=["oe", "oeSel", "wr", "wrSel"]
+                , tbcPorts=PUPorts
+                    { oe=Signal 0
+                    , oeSel=Signal 1
+                    , wr=Signal 2
+                    , wrSel=Signal 3
+                    }
+                , tbcSignalConnect= \case
+                    (Signal 0) -> "oe"
+                    (Signal 1) -> "oeSel"
+                    (Signal 2) -> "wr"
+                    (Signal 3) -> "wrSel"
+                    _ -> error "testBenchDescription wrong signal"
+                , tbcCtrl= \Microcode{ oeSignal, oeSelSignal, wrSignal, wrSelSignal } ->
+                    [qq|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]
+                }

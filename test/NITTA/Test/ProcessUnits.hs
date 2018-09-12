@@ -99,7 +99,7 @@ prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
 
 -- |Формальнаяа проверка полноты выполнения работы вычислительного блока.
 prop_completness (pu, fbs0)
-    = let 
+    = let
         p = process pu
         processVars = unionsMap variables $ getEndpoints p
         algVars = unionsMap variables $ elems fbs
@@ -113,12 +113,12 @@ prop_completness (pu, fbs0)
                 ++ "fbs: " ++ show processFBs ++ "\n"
                 ++ "algVars: " ++ show algVars ++ "\n"
                 ++ "processVars: " ++ show processVars ++ "\n"
-                ++ show pu
+                -- ++ show pu
                 ) False
 
 
-unitTestBench title proxy cntx alg = do 
-    let  
+unitTestBench title proxy cntx alg = do
+    let
         lib = joinPath ["..", ".."]
         wd = joinPath ["hdl", "gen", title]
         pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
