@@ -152,7 +152,7 @@ instance ( Title title, Var v, Time t
             pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
 
             pushOptionsFor' v = [ (v, Just (pushTo, pushAt))
-                                -- | (pushTo, vars) <- trace ("\n==========" ++ S.join "\n" (map show puOptions)) puOptions
+                                --   | (pushTo, vars) <- trace ("\n==========" ++ S.join "\n" (map show puOptions)) puOptions
                                 | (pushTo, vars) <- puOptions
                                 , EndpointO (Target pushVar) pushAt <- vars
                                 , pushVar == v
