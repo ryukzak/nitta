@@ -86,6 +86,7 @@ data Nitta
         , no_api_gen    :: Bool
         }
     deriving (Show, Data, Typeable)
+    
 nittaArgs = Nitta
     { web=False &= help "Run web server"
     , no_static_gen=False &= help "No regenerate WebUI static files"

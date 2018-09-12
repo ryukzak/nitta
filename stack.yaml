@@ -40,12 +40,11 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- QuickCheck-GenT-0.2.0
-- arrows-0.4.4.1
-- Stream-0.4.7.2
-- lazysmallcheck-0.6
-- language-lua-0.11.0
 - alex-tools-0.4
+- language-lua-0.11.0
+- lazysmallcheck-0.6
+- QuickCheck-GenT-0.2.0
+- Stream-0.4.7.2
 
 # Override default flag values for local packages and extra-deps
 flags: {}

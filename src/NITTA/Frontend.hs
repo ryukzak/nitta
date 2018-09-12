@@ -27,7 +27,7 @@ import           Control.Monad.State
 import           Data.Default                  (def)
 import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
-import           Data.Maybe                    (catMaybes)
+import           Data.Maybe                    (catMaybes, fromMaybe)
 import qualified Data.String.Utils             as S
 import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
@@ -36,7 +36,14 @@ import qualified NITTA.Functions               as F
 import           NITTA.Types                   (F, Parcel)
 import           Text.InterpolatedString.Perl6 (qq)
 
+-- import Debug.Trace
 
+-- FIXME: Variable b don't consume anywhere, except recursive call and it causes the exception.
+-- function f(a, b)
+--     a, b = a / 2
+--     f(a, b)
+-- end
+-- f(1025, 0)
 
 lua2functions src
     = let
@@ -47,6 +54,7 @@ lua2functions src
             let statements = funAssignStatments funAssign
             forM_ statements $ processStatement fn
             addConstants
+        -- fs = filter (\case Function{} -> True; _ -> False) $ trace (S.join "\n" $ map show algItems) algItems
         fs = filter (\case Function{} -> True; _ -> False) algItems
         varDict = M.fromList
             $ map varRow
@@ -87,6 +95,7 @@ data AlgBuilderItem
         , fName   :: String
         , fValues :: [Int]
         }
+    -- FIXME: check all local variable declaration
     deriving ( Show )
 
 
@@ -123,7 +132,8 @@ input v = do
 
 output v
     | T.head v == '_' = return []
-    | otherwise = gets $ \(dict, _fs) -> snd (dict M.! v)
+    | otherwise = gets $ \(dict, _fs) ->
+        snd (fromMaybe (error [qq|unknown variable: $v|]) (dict M.!? v))
 
 store f = modify' $ \(dict, fs) -> (dict, f:fs)
 

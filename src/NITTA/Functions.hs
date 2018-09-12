@@ -292,7 +292,7 @@ instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Division (Parcel v 
         let quotient' = fromIntegral v1 / fromIntegral v2 :: Double
         -- The rounding function is selected according to the mock behaviur.
         -- The IP-block have different behaviour.
-        cntx' <- set cntx q $ ceiling quotient'
+        cntx' <- set cntx q $ truncate quotient'
         let remain' = v1 `mod` v2
         set cntx' r remain'
 

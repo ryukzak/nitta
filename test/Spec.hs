@@ -10,6 +10,7 @@ module Main where
 import           Control.Applicative           ((<$>))
 import           Data.Atomics.Counter          (newCounter)
 import           Data.Default                  (def)
+import           Demo
 import           NITTA.Frontend
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Fram
@@ -69,7 +70,7 @@ main = do
             , testCase "endpointRoleEq" endpointRoleEq
             ]
         , testGroup "lua frontend"
-            [ processorTest "counter_void_function" $ lua2functions
+            [ processorTest "lua_counter_void_function" $ lua2functions
                 [qq|function counter(i)
                         send(i)
                         i = i + 1
@@ -77,50 +78,51 @@ main = do
                     end
                     counter(0)
                 |]
-            , processorTest "counter_local_var" $ lua2functions
+            , processorTest "lua_counter_local_var" $ lua2functions
                 [qq|function counter(i)
                         local i2 = i + 1
                         counter(i2)
                     end
                     counter(0)
                 |]
-            , processorTest "counter_function" $ lua2functions
+            , processorTest "lua_counter_function" $ lua2functions
                 [qq|function counter(i)
                         i = reg(i + 1)
                         counter(i)
                     end
                     counter(0)
                 |]
-            , processorTest "fibonacci_a_b" $ lua2functions
+            , processorTest "lua_fibonacci_a_b" $ lua2functions
                 [qq|function fib(a, b)
                         a, b = b, a + b
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "fibonacci_b_a" $ lua2functions
+            , processorTest "lua_fibonacci_b_a" $ lua2functions
                 [qq|function fib(a, b)
                         b, a = a + b, b
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "fibonacci_nested_fun_call1" $ lua2functions
+            , processorTest "lua_fibonacci_nested_fun_call1" $ lua2functions
                 [qq|function fib(a, b)
                         a, b = b, reg(a + reg(b)) + 0
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "fibonacci_nested_fun_call2" $ lua2functions
+            , processorTest "lua_fibonacci_nested_fun_call2" $ lua2functions
                 [qq|function fib(a, b)
                         a, b = b, reg(a + reg(b + 0)) + 0
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "divider test" $ lua2functions
+            , processorTest "lua_divider_test" $ lua2functions
                 [qq|function f(a)
                         a, _b = a / 2
                         f(a)
                     end
                     f(1024)|]
+            , processorTest "lua_teacup" $ lua2functions teacupLua
             ]
       ]
 

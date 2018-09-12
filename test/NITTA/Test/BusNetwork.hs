@@ -23,7 +23,7 @@ import           System.FilePath.Posix         (joinPath)
 import           Test.Tasty.HUnit
 
 
-netWithArithmAndSPI = busNetwork 27 (Just True)
+netWithArithmAndSPI = busNetwork 31 (Just True)
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -34,6 +34,8 @@ netWithArithmAndSPI = busNetwork 27 (Just True)
                               , SPI.stop="stop"
                               , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                               })
+  , ("div", PU (D.divider 8 True) D.PUPorts{ D.wr=Signal 24, D.wrSel=Signal 25, D.oe=Signal 26, D.oeSel=Signal 27 } )
+  , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 28, M.wrSel=Signal 29, M.oe=Signal 30 } )
   ]
 
 netWithArithm = busNetwork 31 (Just True) [] []

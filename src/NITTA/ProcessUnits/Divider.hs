@@ -13,15 +13,11 @@ module NITTA.ProcessUnits.Divider
     , PUPorts(..)
     ) where
 
-import           Control.Monad       (void)
-import           Control.Monad.State
 import           Data.Default
-import           Data.Either         (rights)
-import           Data.List           (find, minimumBy, partition, sortBy)
-import           Data.Maybe          (fromMaybe, maybeToList)
-import           Data.Set            (Set, difference, isSubsetOf, member)
+import           Data.List           (partition, sortBy)
+import           Data.Maybe          (fromMaybe)
+import           Data.Set            (Set, member)
 import qualified Data.Set            as S
-import qualified Data.String.Utils   as S
 import           Data.Typeable
 import           NITTA.Functions     (castF)
 import qualified NITTA.Functions     as F
@@ -120,11 +116,12 @@ findNextInProgress jobs
 remain2input nextTick f
     | Just (F.Division (I n) (I d) (O _q) (O _r)) <- castF f
     = Input{ function=f, startAt=nextTick, inputSeq=[(Numer, n), (Denom, d)] }
+remain2input _ _ = error "divider inProgress2Output internal error"
 
-inProgress2Output rottenAt InProgress{ function, startAt, finishAt }
+inProgress2Output rottenAt InProgress{ function, finishAt }
     | Just (F.Division _ _ (O q) (O r)) <- castF function
     = Output{ function, rottenAt, finishAt, outputRnd=[(Quotient, q), (Remain, r)] }
-
+inProgress2Output _ _ = error "divider inProgress2Output internal error"
 
 
 resolveColisions [] opt = [ opt ]
@@ -176,7 +173,7 @@ instance ( Var v, Time t
                 (Target v)
                 $ TimeConstrain (nextTargetTick pu ... maxBound) (singleton 1)
             targets
-                | Just (Input{ inputSeq=(tag, v):_ }, _) <- findInput jobs
+                | Just (Input{ inputSeq=(_tag, v):_ }, _) <- findInput jobs
                 = [ target v ]
                 | otherwise = map (target . snd . head . inputSeq . remain2input nextTick) remains
 
@@ -197,6 +194,7 @@ instance ( Var v, Time t
                 | otherwise = []
 
 
+    -- FIXME: vertical relations
     decision
             proxy
             pu@Divider{ jobs, targetIntervals, remains, pipeline, latency }
@@ -219,7 +217,7 @@ instance ( Var v, Time t
                 then InProgress{ function, startAt, finishAt } : other
                 else i{ inputSeq=vs } : other
             , process_=execSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load tag
+                _endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load tag
                 -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
                 -- которые берут информацию о времени из Process
                 updateTick (sup epdAt)
@@ -227,7 +225,7 @@ instance ( Var v, Time t
 
     decision
             _proxy
-            pu@Divider{ jobs, sourceIntervals, pipeline }
+            pu@Divider{ jobs, sourceIntervals }
             d@EndpointD{ epdRole=Source vs, epdAt }
         | Just (out@Output{ outputRnd }, other) <- findOutput jobs
         , (vss, [(tag, vs')]) <- partition (\(_tag, vs') -> null (vs `S.intersection` vs')) outputRnd
@@ -241,11 +239,13 @@ instance ( Var v, Time t
                 then other
                 else out{ outputRnd=vss' } : other
             , process_=execSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Out tag
+                _endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Out tag
                 -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
                 -- которые берут информацию о времени из Process
                 updateTick (sup epdAt)
             }
+    
+    decision _ _ _ = error "divider decision internal error"
 
 
 

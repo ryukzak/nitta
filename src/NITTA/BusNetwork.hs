@@ -152,8 +152,8 @@ instance ( Title title, Var v, Time t
             pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
 
             pushOptionsFor' v = [ (v, Just (pushTo, pushAt))
+                                -- | (pushTo, vars) <- trace ("\n==========" ++ S.join "\n" (map show puOptions)) puOptions
                                 | (pushTo, vars) <- puOptions
-                                --  | (pushTo, vars) <- trace (S.join "\n" $ map show puOptions) puOptions
                                 , EndpointO (Target pushVar) pushAt <- vars
                                 , pushVar == v
                                 ]
@@ -453,11 +453,11 @@ instance ( Title title, Var v, Time t
                 , "module $moduleName$_tb();                                                                                 "
                 , ""
                 , "/* Functions:"
-                , S.join "\n" $ map show $ functions n 
+                , S.join "\n" $ map show $ functions n
                 , "*/"
                 , "                                                                                                          "
                 , "/* Steps:"
-                , S.join "\n" $ map show $ reverse $ steps $ process n 
+                , S.join "\n" $ map show $ reverse $ steps $ process n
                 , "*/"
                 , ""
                 , "reg clk, rst;                                                                                             "
