@@ -191,7 +191,7 @@ import           NITTA.BusNetwork
 import           NITTA.Compiler
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
-import qualified NITTA.ProcessUnits.Divisor    as D
+import qualified NITTA.ProcessUnits.Divider    as D
 import qualified NITTA.ProcessUnits.Fram       as FR
 import qualified NITTA.ProcessUnits.Multiplier as M
 import qualified NITTA.ProcessUnits.Shift      as S

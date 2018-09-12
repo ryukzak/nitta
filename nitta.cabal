@@ -25,7 +25,7 @@ library
                      , NITTA.Frontend
                      , NITTA.Functions
                      , NITTA.ProcessUnits.Accum
-                     , NITTA.ProcessUnits.Divisor
+                     , NITTA.ProcessUnits.Divider
                      , NITTA.ProcessUnits.Fram
                      , NITTA.ProcessUnits.Generic.SerialPU
                      , NITTA.ProcessUnits.Multiplier
