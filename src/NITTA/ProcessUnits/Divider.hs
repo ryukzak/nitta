@@ -9,7 +9,9 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 module NITTA.ProcessUnits.Divider
-    where
+    ( divider
+    , PUPorts(..)
+    ) where
 
 import           Control.Monad       (void)
 import           Control.Monad.State
@@ -19,6 +21,7 @@ import           Data.List           (find, minimumBy, partition, sortBy)
 import           Data.Maybe          (fromMaybe, maybeToList)
 import           Data.Set            (Set, difference, isSubsetOf, member)
 import qualified Data.Set            as S
+import qualified Data.String.Utils   as S
 import           Data.Typeable
 import           NITTA.Functions     (castF)
 import qualified NITTA.Functions     as F
@@ -27,7 +30,6 @@ import           NITTA.Utils
 import           NITTA.Utils.Process
 import           Numeric.Interval    (Interval, inf, intersection, singleton,
                                       sup, width, (...))
-
 
 
 data InputDesc
@@ -49,16 +51,18 @@ data Divider v x t
         , targetIntervals :: [Interval t]
         , sourceIntervals :: [Interval t]
         , process_        :: Process (Parcel v x) t
-        , pipeline        :: Int
+        , latency         :: t
+        , pipeline        :: t
         , mock            :: Bool
         }
 
-divisor pipeline mock = Divider
+divider pipeline mock = Divider
     { jobs=[]
     , remains=[]
     , targetIntervals=[]
     , sourceIntervals=[]
     , process_=def
+    , latency=1
     , pipeline
     , mock
     }
@@ -78,9 +82,10 @@ data Job v x t
     | Output
         { function  :: F (Parcel v x)
         , rottenAt  :: Maybe t
+        , finishAt  :: t
         , outputRnd :: [(OutputDesc, Set v)]
         }
-    deriving ( Eq )
+    deriving ( Eq, Show )
 
 
 nextTargetTick Divider{ targetIntervals=[] }  = 0
@@ -88,37 +93,6 @@ nextTargetTick Divider{ targetIntervals=i:_ } = sup i + 1
 
 nextSourceTick Divider{ sourceIntervals=[] }  = 0
 nextSourceTick Divider{ sourceIntervals=i:_ } = sup i + 1
-
-
-remain2input nextTick f
-    | Just (F.Division (I n) (I d) (O _q) (O _r)) <- castF f
-    = Input{ function=f, startAt=nextTick, inputSeq=[(Numer, n), (Denom, d)] }
-
-
-inProgress2Output rottenAt InProgress{ function, startAt, finishAt }
-    | Just (F.Division _ _ (O q) (O r)) <- castF function
-    = Output{ function, rottenAt, outputRnd=[(Quotient, q), (Remain, r)] }
-
-instance ( Var v, Time t
-         ) => ProcessUnit (Divider v x t) (Parcel v x) t where
-    tryBind f pu@Divider{ remains }
-        | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f
-        = Right pu
-            { remains=f : remains
-            }
-        | otherwise = Left $ "Unknown functional block: " ++ show f
-    process = process_
-    setTime t pu@Divider{ process_ } = pu{ process_=process_{ nextTick=t } }
-
-
-
-resolveColisions [] opt = [ opt ]
-resolveColisions intervals opt@EndpointO{ epoAt=tc@TimeConstrain{ tcAvailable } }
-    | all ((0 ==) . width . intersection tcAvailable) intervals
-    = [ opt ]
-    | otherwise  -- FIXME: we must prick out work point from intervals
-    , let from = maximum $ map sup intervals
-    = [ opt{ epoAt=tc{ tcAvailable=from ... inf tcAvailable } } ]
 
 
 
@@ -143,13 +117,51 @@ findNextInProgress jobs
 
 
 
-rottenTime Divider{ jobs, pipeline }
+remain2input nextTick f
+    | Just (F.Division (I n) (I d) (O _q) (O _r)) <- castF f
+    = Input{ function=f, startAt=nextTick, inputSeq=[(Numer, n), (Denom, d)] }
+
+inProgress2Output rottenAt InProgress{ function, startAt, finishAt }
+    | Just (F.Division _ _ (O q) (O r)) <- castF function
+    = Output{ function, rottenAt, finishAt, outputRnd=[(Quotient, q), (Remain, r)] }
+
+
+
+resolveColisions [] opt = [ opt ]
+resolveColisions intervals opt@EndpointO{ epoAt=tc@TimeConstrain{ tcAvailable } }
+    | all ((0 ==) . width . intersection tcAvailable) intervals
+    = [ opt ]
+    | otherwise  -- FIXME: we must prick out work point from intervals
+    , let from = maximum $ map sup intervals
+    = [ opt{ epoAt=tc{ tcAvailable=from ... inf tcAvailable } } ]
+
+
+rottenTime Divider{ pipeline, latency } jobs
     | Just (InProgress{ startAt }, _) <- findNextInProgress jobs
-    = Just (startAt + toEnum pipeline + 10 )
+    = Just (startAt + pipeline + latency )
     | Just (Input{ startAt }, _) <- findOutput jobs
-    = Just (startAt + toEnum pipeline + 10 )
+    = Just (startAt + pipeline + latency )
     | otherwise = Nothing
 
+
+pushOutput pu@Divider{ jobs }
+    | Just _ <- findOutput jobs = pu
+    | Just (ij, other) <- findNextInProgress jobs
+    = pu{ jobs=inProgress2Output (rottenTime pu other) ij : other }
+    | otherwise = pu
+
+
+
+instance ( Var v, Time t
+         ) => ProcessUnit (Divider v x t) (Parcel v x) t where
+    tryBind f pu@Divider{ remains }
+        | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f
+        = Right pu
+            { remains=f : remains
+            }
+        | otherwise = Left $ "Unknown functional block: " ++ show f
+    process = process_
+    setTime t pu@Divider{ process_ } = pu{ process_=process_{ nextTick=t } }
 
 
 instance ( Var v, Time t
@@ -168,25 +180,26 @@ instance ( Var v, Time t
                 = [ target v ]
                 | otherwise = map (target . snd . head . inputSeq . remain2input nextTick) remains
 
-            source Output{ outputRnd, rottenAt }
+            source Output{ outputRnd, rottenAt, finishAt }
                 = map
                     ( \(_tag, vs) -> EndpointO
                         (Source vs)
                         $ TimeConstrain
-                            (nextSourceTick pu ... fromMaybe maxBound rottenAt)
+                            (max finishAt (nextSourceTick pu) ... fromMaybe maxBound rottenAt)
                             (singleton 1) )
                     outputRnd
             source _ = error "Divider internal error: source."
 
             sources
                 | Just (out, _) <- findOutput jobs = source out
-                | Just (ij, _) <- findNextInProgress jobs
-                 = source $ inProgress2Output (rottenTime pu) ij
+                | Just (ij, other) <- findNextInProgress jobs
+                 = source $ inProgress2Output (rottenTime pu other) ij
                 | otherwise = []
+
 
     decision
             proxy
-            pu@Divider{ jobs, targetIntervals, pipeline, remains }
+            pu@Divider{ jobs, targetIntervals, remains, pipeline, latency }
             d@EndpointD{ epdRole=Target v, epdAt }
         | ([f], fs) <- partition (\f -> v `member` variables f) remains
         = decision
@@ -199,7 +212,7 @@ instance ( Var v, Time t
 
         | Just (i@Input{ inputSeq=((tag, nextV):vs), function, startAt }, other) <- findInput jobs
         , v == nextV
-        , let finishAt = sup epdAt + toEnum pipeline + 10
+        , let finishAt = sup epdAt + pipeline + latency
         = pushOutput pu
             { targetIntervals=epdAt : targetIntervals
             , jobs=if null vs
@@ -233,13 +246,6 @@ instance ( Var v, Time t
                 -- которые берут информацию о времени из Process
                 updateTick (sup epdAt)
             }
-
-
-pushOutput pu@Divider{ jobs }
-    | Just _ <- findOutput jobs = pu
-    | Just (ij, other) <- findNextInProgress jobs
-    = pu{ jobs=inProgress2Output (rottenTime pu) ij : other }
-    | otherwise = pu
 
 
 

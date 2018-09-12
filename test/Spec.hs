@@ -115,6 +115,12 @@ main = do
                         fib(a, b)
                     end
                     fib(0, 1)|]
+            , processorTest "divider test" $ lua2functions
+                [qq|function f(a)
+                        a, _b = a / 2
+                        f(a)
+                    end
+                    f(1024)|]
             ]
       ]
 

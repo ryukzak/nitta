@@ -28,7 +28,7 @@ import           NITTA.DataFlow
 import           NITTA.Frontend
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
-import qualified NITTA.ProcessUnits.Divisor    as D
+import qualified NITTA.ProcessUnits.Divider    as D
 import qualified NITTA.ProcessUnits.Fram       as FR
 import qualified NITTA.ProcessUnits.Multiplier as M
 import qualified NITTA.ProcessUnits.Shift      as S
@@ -55,7 +55,7 @@ microarch = busNetwork 31 (Just True)
             , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
             })
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-    , ("div", PU (D.divisor 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+    , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
     ]
 
 
