@@ -155,7 +155,7 @@ bestNids root nids
         ns = map (\nid -> (nid, getSynthesis nid root)) nids
     in case filter ((== Finished) . sStatus . snd) ns of
         []  -> head nids
-        ns' -> fst $ maximumBy (\a b -> f a `compare` f b) ns'
+        ns' -> fst $ minimumOn f ns'
     where
         f = fromEnum . targetProcessDuration . sModel . snd
 
