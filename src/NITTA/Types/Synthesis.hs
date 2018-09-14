@@ -28,6 +28,7 @@ module NITTA.Types.Synthesis
     , Nid(..)
     , nidsTree
     , SynthesisSetup(..)
+    , simple
     , SynthesisStep(..)
       -- *Processing SynthesisTree
     , getSynthesisNode
@@ -102,19 +103,19 @@ nidsTree n = inner [] n
 
 
 
--- | Настройки процесса синтеза.
-newtype SynthesisSetup
+-- |Synthesis process setup, which determines next synthesis step selection.
+data SynthesisSetup
     = Simple
         { -- | Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
           -- привязка функциональных блоков.
           threshhold :: Int
-        } 
+        }
+    | UnambiguousBind
     deriving ( Generic, Show, Eq, Ord )
 
-instance Default SynthesisSetup where
-    def = Simple
-        { threshhold=1000
-        }
+simple = Simple
+    { threshhold=1000
+    }
 
 data SynthesisStep = SynthesisStep
     { setup :: SynthesisSetup
@@ -201,25 +202,24 @@ update f nid rootN = inner nid rootN
 -- |Recursively apply @rec@ to a synthesis while it is applicable (returning Just value).
 recApply rec step nRoot = inner nRoot
     where
-        -- inner n@Node{ rootLabel, subForest }
-        --     = case apply rec step n of
-        --         Just (n'@Node{ rootLabel=rootLabel', subForest=subForest' }, _) ->
-        --             let i = length subForest
-        --                 sub = last subForest'
-        --                 (sub', Nid subIxs) = inner sub
-        --             in (n{ subForest=subForest ++ [sub'] }, Nid (i : subIxs) )
-        --         Nothing -> (n, Nid [])
-        inner n@Node{ rootLabel, subForest }
-            = case rec step rootLabel of
-                Just sub ->
-                    let (subN', Nid subIxs) = inner Node{ rootLabel=sub, subForest=[] }
-                    in (n{ subForest=subForest ++ [subN'] }, Nid (length subForest : subIxs) )
+        inner n@Node{ subForest }
+            = case apply rec step n of
+                Just (n'@Node{ subForest=subForest' }, Nid [i]) ->
+                    let sub = subForest' !! i
+                        (sub', Nid subIxs) = inner sub
+                    in (n'{ subForest=setSubNode i sub' subForest }, Nid (i : subIxs) )
                 Nothing -> (n, Nid [])
+                _ -> error "Synthesis: recApply internal error"
+        setSubNode i n forest
+            | length forest == i = forest ++ [n]
+            | let (before, _subN : after) = splitAt i forest
+            = before ++ (n : after)
+
 
 
 -- |Apply @f@ to a synthesis in a node.
 apply f step n@Node{ rootLabel=rootLabel@Synthesis{ sCache }, subForest }
-    = case sCache M.!? step of 
+    = case sCache M.!? step of
         Just i -> Just (n, Nid [i])
         Nothing -> case f step rootLabel of
             Just sub ->

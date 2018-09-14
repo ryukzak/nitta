@@ -115,14 +115,12 @@ type SimpleCompilerAPI
 
 simpleCompilerServer st nid
     =    simpleCompilerOptions st nid
-    :<|> updateSynthesis (Just . compilerObviousBind def) st nid
-    :<|> ( \deep -> updateSynthesis (Just . compilerAllTheads def deep) st nid )
-    :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=def, ix }) st nid )
+    :<|> updateSynthesis (Just . compilerObviousBind) st nid
+    :<|> ( \deep -> updateSynthesis (Just . compilerAllTheads simple deep) st nid )
+    :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix }) st nid )
     :<|> \case
-            True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=def, ix=0 }) st nid
-            False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=def, ix=0 }) st nid
-
-
+            True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=0 }) st nid
+            False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=0 }) st nid
 
 
 

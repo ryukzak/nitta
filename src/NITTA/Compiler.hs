@@ -97,14 +97,14 @@ naiveStep md st@CompilerStep{ state }
 
 simpleSynthesis setup n
     = let
-        (n', nid') = compilerObviousBind setup n
+        (n', nid') = compilerObviousBind n
         Just (n'', nid'') = update (Just . compilerAllTheads setup 1) nid' n'
     in (n'', nid'')
 
 
-compilerObviousBind setup n = recApply inner () n
+compilerObviousBind n = recApply inner (SynthesisStep UnambiguousBind 0) n
     where
-        inner () syn@Synthesis{ sModel }
+        inner _ syn@Synthesis{ sModel }
             = let
                 opts = optionsWithMetrics def{ state=sModel }
                 opts' = map fst $ filter
@@ -114,7 +114,7 @@ compilerObviousBind setup n = recApply inner () n
                             )
                             $ zip [0..] opts
             in case opts' of
-                (ix:_) -> simpleSynthesisStep "obliousBind" SynthesisStep{ setup, ix } syn
+                (ix:_) -> simpleSynthesisStep "obliousBind" SynthesisStep{ setup=UnambiguousBind, ix } syn
                 _      -> Nothing
 
 
@@ -156,7 +156,7 @@ bestNids root nids
 -- |Schedule process by 'simpleSynthesis'.
 schedule model
     = let
-        (n, nid) = simpleSynthesis def (rootSynthesis model)
+        (n, nid) = simpleSynthesis simple (rootSynthesis model)
     in processor $ sModel $ getSynthesis nid n
 
 
@@ -302,7 +302,7 @@ data CompilerStep title tag v x t
 instance Default (CompilerStep title tag v x t) where
     def = CompilerStep
         { state=undefined
-        , config=def
+        , config=simple
         , lastDecision=Nothing
         }
 
