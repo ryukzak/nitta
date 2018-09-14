@@ -28,8 +28,8 @@ module NITTA.Types.Synthesis
     , Nid(..)
     , nidsTree
     , SynthesisSetup(..)
-    , simple
     , SynthesisStep(..)
+    , simple
       -- *Processing SynthesisTree
     , getSynthesisNode
     , getSynthesis
@@ -53,6 +53,7 @@ import           Data.Typeable   (Typeable, cast)
 import           GHC.Generics
 import           NITTA.DataFlow  (ModelState (..))
 import           NITTA.Types     (nextTick, process)
+
 
 
 type SynthesisTree title tag v x t = Tree (Synthesis title tag v x t)
@@ -106,7 +107,7 @@ nidsTree n = inner [] n
 -- |Synthesis process setup, which determines next synthesis step selection.
 data SynthesisSetup
     = Simple
-        { -- | Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
+        { -- |Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
           -- привязка функциональных блоков.
           threshhold :: Int
         }
@@ -164,6 +165,8 @@ setCntx newCntx (SynthCntx c : cs)
     = SynthCntx c : setCntx newCntx cs
 
 
+--------------------
+
 data Comment
 
 instance SynthCntxCls Comment where
@@ -176,9 +179,8 @@ comment = SynthCntx . Comment
 
 -- *Processing
 
-
 -- |Get specific by @nid@ node from a synthesis tree.
-getSynthesisNode (Nid []) n                     = n
+getSynthesisNode (Nid []) n = n
 getSynthesisNode nid@(Nid (i:is)) Node{ subForest }
     | length subForest <= i = error $ "getSynthesisNode: wrong nid: " ++ show nid
     | otherwise = getSynthesisNode (Nid is) (subForest !! i)
@@ -186,6 +188,7 @@ getSynthesisNode nid@(Nid (i:is)) Node{ subForest }
 getSynthesis nid n = rootLabel $ getSynthesisNode nid n
 
 
+-- FIXME: swap nid and root in output (as in args)
 
 -- |Update specific by @nid@ node in a synthesis tree by the @f@.
 update f nid rootN = inner nid rootN
@@ -197,6 +200,7 @@ update f nid rootN = inner nid rootN
             in case inner (Nid is) subN of
                 Just (subN', Nid is') -> Just (n{ subForest=before ++ (subN' : after) }, Nid (i:is'))
                 Nothing -> Nothing
+
 
 
 -- |Recursively apply @rec@ to a synthesis while it is applicable (returning Just value).

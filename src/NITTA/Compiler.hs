@@ -55,25 +55,39 @@ import           Numeric.Interval      (Interval, (...))
 
 
 
-data SimpleSynthCache
+-- |Schedule process by simple synthesis.
+schedule model
+    = let 
+        n = rootSynthesis model
+        (n', nid') = compilerObviousBind n
+        Just (n'', nid'') = update (Just . compilerAllTheads simple 1) nid' n'
+        Synthesis{ sModel=Frame{ processor } } = getSynthesis nid'' n''
+    in processor
 
-instance SynthCntxCls SimpleSynthCache where
-    data SynthCntx' SimpleSynthCache = SimpleSynthCache (M.Map Int Int)
-        deriving ( Show )
 
-instance Default (SynthCntx' SimpleSynthCache) where
-    def = SimpleSynthCache def
 
-simpleSynthesisStep info SynthesisStep{ setup, ix=md } syn@Synthesis{ sModel }
-    = case naiveStep md $ CompilerStep sModel setup Nothing of
-        Just CompilerStep{ state=sModel' } ->
-            Just Synthesis
-                    { sModel=sModel'
-                    , sCntx=[comment info]
-                    , sStatus=status sModel'
-                    , sCache=def
-                    }
-        Nothing -> Nothing
+simpleSynthesis setup n
+    = let
+        (n', nid') = compilerObviousBind n
+        Just (n'', nid'') = update (Just . compilerAllTheads simple 1) nid' n'
+    in (n'', nid'')
+
+
+
+simpleSynthesisStep info SynthesisStep{ setup, ix } Synthesis{ sModel }
+    | let
+        compSt = CompilerStep sModel setup Nothing
+    = case optionsWithMetrics compSt of
+        [] -> Nothing
+        opts -> let
+            (_, _, _, _, d) = opts !! ix
+            sModel' = state $ decision compiler compSt d
+            in Just $ Synthesis
+                { sModel=sModel'
+                , sCntx=[comment info]
+                , sStatus=status sModel'
+                , sCache=def
+                }
     where
         status m
             | isSchedulingComplete m = Finished
@@ -82,24 +96,6 @@ simpleSynthesisStep info SynthesisStep{ setup, ix=md } syn@Synthesis{ sModel }
             = DeadEnd
             | otherwise = InProgress
 
-naiveStep md st@CompilerStep{ state }
-    = if null opts -- ( trace (show opts) opts )
-        then Nothing
-        else Just st
-            { state=st'
-            , lastDecision=Just d
-            }
-    where
-        st' = decision compiler state d
-        opts = optionsWithMetrics st
-        (_, _, _, _, d) = opts !! md
-
-
-simpleSynthesis setup n
-    = let
-        (n', nid') = compilerObviousBind n
-        Just (n'', nid'') = update (Just . compilerAllTheads setup 1) nid' n'
-    in (n'', nid'')
 
 
 compilerObviousBind n = recApply inner (SynthesisStep UnambiguousBind 0) n
@@ -152,12 +148,6 @@ bestNids root nids
     where
         f = fromEnum . targetProcessDuration . sModel . snd
 
-
--- |Schedule process by 'simpleSynthesis'.
-schedule model
-    = let
-        (n, nid) = simpleSynthesis simple (rootSynthesis model)
-    in processor $ sModel $ getSynthesis nid n
 
 
 -- |Make a model of NITTA process with one network and a specific algorithm. All functions are
