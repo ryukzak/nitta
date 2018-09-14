@@ -133,7 +133,7 @@ remain2input _ _ = error "divider inProgress2Output internal error"
 
 inProgress2Output rottenAt InProgress{ function, startAt, finishAt }
     | Just (F.Division _ _ (O q) (O r)) <- castF function
-    = Output{ function, rottenAt, startAt, finishAt, outputRnd=[(Quotient, q), (Remain, r)] }
+    = Output{ function, rottenAt, startAt, finishAt, outputRnd=filter (not . null . snd) [(Quotient, q), (Remain, r)] }
 inProgress2Output _ _ = error "divider inProgress2Output internal error"
 
 

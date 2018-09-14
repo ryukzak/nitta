@@ -49,8 +49,24 @@ main = do
             , testProperty "simulation" $ fmap (prop_simulation "prop_simulation_multiplier" counter) $ inputsGen =<< multiplierGen
             ]
         ,  testGroup "Divider process unit"
-            [ testProperty "completeness" $ prop_completness <$> dividerGen
-            , testProperty "simulation" $ fmap (prop_simulation "prop_simulation_divider" counter) $ inputsGen =<< dividerGen
+            [ processorTest "lua_divider_test_1" $ lua2functions
+                [qq|function f(a)
+                        a, _b = a / 2
+                        f(a)
+                    end
+                    f(1024)|]
+            , processorTest "lua_divider_test_2" $ lua2functions
+                [qq|function f(a, b)
+                        a, _ = a / 2
+                        b, _ = b / 3
+                        f(a, b)
+                    end
+                    f(1024, 1024)|]
+            -- FIXME: Auto text can't work correctly, because processGen don't take into account the
+            -- facts that some variables may go out.
+
+            -- , testProperty "completeness" $ prop_completness <$> dividerGen
+            -- , testProperty "simulation" $ fmap (prop_simulation "prop_simulation_divider" counter) $ inputsGen =<< dividerGen
             ]
         -- , testGroup "Shift process unit"
         --     [ testCase "shiftBiDirection" shiftBiDirection
@@ -64,7 +80,6 @@ main = do
             , testCase "testAccumAndFram" testAccumAndFram
             , testCase "testMultiplier" testMultiplier
             , testCase "testDiv4" testDiv4
-            , testCase "badTestFram" badTestFram
             , testCase "testFibonacci" testFibonacci
             , testCase "testFibonacciWithSPI" testFibonacciWithSPI
             ]
@@ -121,12 +136,6 @@ main = do
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "lua_divider_test" $ lua2functions
-                [qq|function f(a)
-                        a, _b = a / 2
-                        f(a)
-                    end
-                    f(1024)|]
             , processorTest "lua_teacup" $ lua2functions teacupLua
             ]
       ]
