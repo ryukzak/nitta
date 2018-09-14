@@ -66,14 +66,6 @@ schedule model
 
 
 
-simpleSynthesis setup n
-    = let
-        (n', nid') = compilerObviousBind n
-        Just (n'', nid'') = update (Just . compilerAllTheads simple 1) nid' n'
-    in (n'', nid'')
-
-
-
 simpleSynthesisStep info SynthesisStep{ setup, ix } Synthesis{ sModel }
     | let
         compSt = CompilerStep sModel setup Nothing
