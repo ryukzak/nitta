@@ -27,8 +27,8 @@ module NITTA.Types.Synthesis
     , rootSynthesis
     , Nid(..)
     , nidsTree
-    , SynthUpd(..)
-    , SubNode(..)
+    , SynthesisSetup(..)
+    , SynthesisStep(..)
       -- *Processing SynthesisTree
     , getSynthesisNode
     , getSynthesis
@@ -44,7 +44,9 @@ module NITTA.Types.Synthesis
     , findCntx
     ) where
 
+import           Data.Default
 import           Data.List.Split
+import qualified Data.Map        as M
 import           Data.Tree
 import           Data.Typeable   (Typeable, cast)
 import           GHC.Generics
@@ -65,6 +67,7 @@ data Synthesis title tag v x t
         { sModel  :: ModelState title tag v x t
         , sCntx   :: [SynthCntx]
         , sStatus :: SynthesisStatus
+        , sCache  :: M.Map SynthesisStep Int
         }
     deriving ( Generic )
 
@@ -98,12 +101,36 @@ nidsTree n = inner [] n
             }
 
 
+
+-- | Настройки процесса синтеза.
+newtype SynthesisSetup
+    = Simple
+        { -- | Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
+          -- привязка функциональных блоков.
+          threshhold :: Int
+        } 
+    deriving ( Generic, Show, Eq, Ord )
+
+instance Default SynthesisSetup where
+    def = Simple
+        { threshhold=1000
+        }
+
+data SynthesisStep = SynthesisStep
+    { setup :: SynthesisSetup
+    , ix    :: Int
+    }
+    deriving ( Show, Eq, Ord )
+
+
+
 -- |Create initial synthesis.
 rootSynthesis m = Node
     { rootLabel=Synthesis
         { sModel=m
         , sCntx=[]
         , sStatus=InProgress
+        , sCache=def
         }
     , subForest=[]
     }
@@ -148,16 +175,6 @@ comment = SynthCntx . Comment
 
 -- *Processing
 
--- |Update synthesis node data. Can affect subForest and current (or upper) node.
-data SynthUpd a
-    = SynthUpd
-        { upp :: a -- ^new upper node
-        , sub :: SubNode a -- ^new sub node
-        }
-
-data SubNode a
-    = NewNode a
-    | Patch Int
 
 -- |Get specific by @nid@ node from a synthesis tree.
 getSynthesisNode (Nid []) n                     = n
@@ -182,33 +199,35 @@ update f nid rootN = inner nid rootN
 
 
 -- |Recursively apply @rec@ to a synthesis while it is applicable (returning Just value).
-recApply rec nRoot = inner nRoot
+recApply rec step nRoot = inner nRoot
     where
+        -- inner n@Node{ rootLabel, subForest }
+        --     = case apply rec step n of
+        --         Just (n'@Node{ rootLabel=rootLabel', subForest=subForest' }, _) ->
+        --             let i = length subForest
+        --                 sub = last subForest'
+        --                 (sub', Nid subIxs) = inner sub
+        --             in (n{ subForest=subForest ++ [sub'] }, Nid (i : subIxs) )
+        --         Nothing -> (n, Nid [])
         inner n@Node{ rootLabel, subForest }
-            = case rec (length subForest) rootLabel of
-                Just SynthUpd{ upp, sub=NewNode sub } -> -- rootLabel' ->
+            = case rec step rootLabel of
+                Just sub ->
                     let (subN', Nid subIxs) = inner Node{ rootLabel=sub, subForest=[] }
-                    in (n{ rootLabel=upp, subForest=subForest ++ [subN'] }, Nid (length subForest : subIxs) )
-                Just SynthUpd{ upp, sub=Patch ix } ->
-                    let (subN, Nid subIxs) = inner $ subForest !! ix
-                    in (n{ rootLabel=upp, subForest=setSubNode ix subN subForest }, Nid (ix : subIxs))
+                    in (n{ subForest=subForest ++ [subN'] }, Nid (length subForest : subIxs) )
                 Nothing -> (n, Nid [])
-
-        setSubNode i n forest
-            | length forest == i = forest ++ [n]
-            | let (before, _subN : after) = splitAt i forest
-            = before ++ (n : after)
 
 
 -- |Apply @f@ to a synthesis in a node.
-apply f n@Node{ rootLabel, subForest }
-    = case f (length subForest) rootLabel of
-        Just SynthUpd{ upp, sub=NewNode sub } ->
-            let subN = Node
-                    { rootLabel=sub
-                    , subForest=[]
-                    }
-            in Just (n{ rootLabel=upp, subForest=subForest ++ [subN]}, Nid [length subForest])
-        Just SynthUpd{ upp, sub=Patch ix } ->
-            Just (n{ rootLabel=upp }, Nid [ix])
-        Nothing -> Nothing
+apply f step n@Node{ rootLabel=rootLabel@Synthesis{ sCache }, subForest }
+    = case sCache M.!? step of 
+        Just i -> Just (n, Nid [i])
+        Nothing -> case f step rootLabel of
+            Just sub ->
+                let subN = Node
+                        { rootLabel=sub
+                        , subForest=[]
+                        }
+                    i = length subForest
+                    rootLabel' = rootLabel{ sCache=M.insert step i sCache }
+                in Just (n{ rootLabel=rootLabel', subForest=subForest ++ [subN]}, Nid [i])
+            Nothing -> Nothing

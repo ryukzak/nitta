@@ -62,7 +62,7 @@ instance ToJSON SynthesisView
 
 view n = f <$> mzip (nidsTree n) n
     where
-        f ( nid, Synthesis sModel sCntx sStatus ) = SynthesisView
+        f ( nid, Synthesis sModel sCntx sStatus _sCache ) = SynthesisView
             { svNnid=nid
             , svCntx=map show sCntx
             , svStatus=sStatus
@@ -117,10 +117,10 @@ simpleCompilerServer st nid
     =    simpleCompilerOptions st nid
     :<|> updateSynthesis (Just . compilerObviousBind def) st nid
     :<|> ( \deep -> updateSynthesis (Just . compilerAllTheads def deep) st nid )
-    :<|> ( \md -> updateSynthesis (apply (simpleSynthesisStep def md "manual")) st nid )
+    :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=def, ix }) st nid )
     :<|> \case
-            True -> updateSynthesis (apply (simpleSynthesisStep def 0 "auto")) st nid
-            False -> updateSynthesis (Just . recApply (simpleSynthesisStep def 0 "auto")) st nid
+            True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=def, ix=0 }) st nid
+            False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=def, ix=0 }) st nid
 
 
 

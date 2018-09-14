@@ -23,7 +23,7 @@ module NITTA.Compiler
     , CompilerDT
     , CompilerStep(..)
     , isSchedulingCompletable
-    , NaiveOpt(..)
+    , SynthesisSetup(..)
     , optionsWithMetrics
     , endpointOption2action
     , GlobalMetrics(..)
@@ -64,23 +64,16 @@ instance SynthCntxCls SimpleSynthCache where
 instance Default (SynthCntx' SimpleSynthCache) where
     def = SimpleSynthCache def
 
-simpleSynthesisStep opt md info ix syn@Synthesis{ sModel, sCntx }
-    = let
-        SimpleSynthCache cache = fromMaybe def $ findCntx sCntx
-        cStep = CompilerStep sModel opt Nothing
-    in case cache M.!? md of
-        Just ix' -> Just $ SynthUpd{ upp=syn, sub=Patch ix' }
-        Nothing -> case naiveStep md cStep of
-            Just CompilerStep{ state=sModel' } ->
-                Just $ SynthUpd
-                    { upp=syn{ sCntx=setCntx (SimpleSynthCache $ M.insert md ix cache) sCntx }
-                    , sub=NewNode $ Synthesis
-                        { sModel=sModel'
-                        , sCntx=[comment info]
-                        , sStatus=status sModel'
-                        }
+simpleSynthesisStep info SynthesisStep{ setup, ix=md } syn@Synthesis{ sModel }
+    = case naiveStep md $ CompilerStep sModel setup Nothing of
+        Just CompilerStep{ state=sModel' } ->
+            Just Synthesis
+                    { sModel=sModel'
+                    , sCntx=[comment info]
+                    , sStatus=status sModel'
+                    , sCache=def
                     }
-            Nothing -> Nothing
+        Nothing -> Nothing
     where
         status m
             | isSchedulingComplete m = Finished
@@ -102,16 +95,16 @@ naiveStep md st@CompilerStep{ state }
         (_, _, _, _, d) = opts !! md
 
 
-simpleSynthesis opt n
+simpleSynthesis setup n
     = let
-        (n', nid') = compilerObviousBind opt n
-        Just (n'', nid'') = update (Just . compilerAllTheads opt 1) nid' n'
+        (n', nid') = compilerObviousBind setup n
+        Just (n'', nid'') = update (Just . compilerAllTheads setup 1) nid' n'
     in (n'', nid'')
 
 
-compilerObviousBind opt n = recApply inner n
+compilerObviousBind setup n = recApply inner () n
     where
-        inner ix syn@Synthesis{ sModel }
+        inner () syn@Synthesis{ sModel }
             = let
                 opts = optionsWithMetrics def{ state=sModel }
                 opts' = map fst $ filter
@@ -121,29 +114,29 @@ compilerObviousBind opt n = recApply inner n
                             )
                             $ zip [0..] opts
             in case opts' of
-                (md:_) -> simpleSynthesisStep opt md "obliousBind" ix syn
+                (ix:_) -> simpleSynthesisStep "obliousBind" SynthesisStep{ setup, ix } syn
                 _      -> Nothing
 
 
 
-compilerAllTheads opt (1 :: Int) rootN@Node{ rootLabel=Synthesis{ sModel } }
+compilerAllTheads setup (1 :: Int) rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
         mds = [ 0 .. length (optionsWithMetrics def{ state=sModel }) - 1 ]
         (rootN', nids) = foldl
-            (\(n1, nids1) md ->
-                let Just (n2, nid2) = apply (simpleSynthesisStep opt md "allThreads") n1
-                    Just (n3, nid3) = update (Just . recApply (simpleSynthesisStep opt 0 "auto")) nid2 n2
+            (\(n1, nids1) ix ->
+                let Just (n2, nid2) = apply (simpleSynthesisStep "allThreads") SynthesisStep{ setup, ix } n1
+                    Just (n3, nid3) = update (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup, ix=0 }) nid2 n2
                 in (n3, nid3 : nids1))
             (rootN, [])
             mds
     in (rootN', bestNids rootN' nids)
-compilerAllTheads opt deep rootN@Node{ rootLabel=Synthesis{ sModel } }
+compilerAllTheads setup deep rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
         mds = [ 0 .. length (optionsWithMetrics def{ state=sModel }) - 1 ]
         (rootN', nids) = foldl
-            (\(n1, nids1) md ->
-                let Just (n2, nid2) = apply (simpleSynthesisStep opt md "allThreads") n1
-                    Just (n3, nid3) = update (Just . compilerAllTheads opt (deep-1)) nid2 n2
+            (\(n1, nids1) ix ->
+                let Just (n2, nid2) = apply (simpleSynthesisStep "allThreads") SynthesisStep{ setup, ix } n1
+                    Just (n3, nid3) = update (Just . compilerAllTheads setup (deep-1)) nid2 n2
                 in (n3, nid3 : nids1))
             (rootN, [])
             mds
@@ -211,17 +204,6 @@ isSchedulingComplete Frame{ processor, dfg }
     = inWork == inAlg
 isSchedulingComplete _ = undefined
 
-
--- | Настройки процесса компиляции.
-newtype NaiveOpt = NaiveOpt
-    { -- | Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
-        -- привязка функциональных блоков.
-        threshhold :: Int
-    } deriving ( Generic )
-
-instance Default NaiveOpt where
-    def = NaiveOpt{ threshhold=1000
-                }
 
 
 
@@ -311,7 +293,7 @@ option2decision (DataFlowOption src trg)
 data CompilerStep title tag v x t
     = CompilerStep
         { state        :: ModelState title tag v x t
-        , config       :: NaiveOpt
+        , config       :: SynthesisSetup
         -- TODO: rename to prevDevision
         , lastDecision :: Maybe (Decision (CompilerDT title tag v t))
         }
