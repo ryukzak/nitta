@@ -28,6 +28,9 @@ outputVarsGen = O . fromList <$> resize 3 (listOf1 $ vectorOf 3 $ elements ['a'.
 inputVarGen = I <$> vectorOf 3 (elements ['a'..'z'])
 
 
+-- TODO: Иногда, может получиться вот такой вот функциональный блок: < "qqq" = "joi" * "joi" >, что
+-- необходимо исправить. Не очень ясно как решать эту проблему, ведь у нас везде Set, а дубль
+-- происходит с одной стороны.
 uniqueVars fb = S.null (inputs fb `intersection` outputs fb)
 
 
@@ -48,6 +51,9 @@ instance Arbitrary (Constant (Parcel String Int)) where
 
 instance Arbitrary (Multiply (Parcel String Int)) where
   arbitrary = suchThat (Multiply <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
+
+instance Arbitrary (Division (Parcel String Int)) where
+  arbitrary = suchThat (Division <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
 
 reorderAlgorithmTest = do
   let f = reorderAlgorithm :: [F (Parcel String Int)] -> [F (Parcel String Int)]

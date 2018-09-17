@@ -1,37 +1,139 @@
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
-module NITTA.Utils.Process where
+{-|
+Module      : NITTA.Utils.Process
+Description : Utilities for process description.
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
+A multilevel process is an object with a complex internal structure. Process description should
+contain every step (including start and finish time), and relations between them (Vertical or
+sequence). It is possible to define process manually, but, in practice, is preferred to use 'State'
+based builder from that module.
+
+It also agreed to the process inspection.
+-}
+module NITTA.Utils.Process
+    ( Schedule(..) -- TODO: must be hidded
+    , runSchedule
+    , execSchedule, execScheduleWithProcess
+    , scheduleEndpoint, runScheduleWithProcess
+    , scheduleFunction
+    , scheduleInstruction
+    , scheduleNestedStep
+    , establishVerticalRelations, establishVerticalRelation
+    , getProcessSlice
+    , updateTick -- TODO: must be hidded
+    ) where
 
 import           Control.Monad.State
-import           Data.Proxy           (asProxyTypeOf)
+import           Data.Proxy          (asProxyTypeOf)
 import           Data.Typeable
 import           NITTA.Types
-import           Numeric.Interval     (inf, sup, (...))
+import           Numeric.Interval    (inf, sup, (...))
 
-
-
+-- |Process builder state.
 data Schedule pu v x t
     = Schedule
-        { schProcess :: Process (Parcel v x) t
-        , iProxy     :: Proxy (Instruction pu)
+        { -- |Defining process.
+          schProcess :: Process (Parcel v x) t 
+          -- |Proxy for process unit instruction, which is needed for API simplify. Without that,
+          -- for some function, the user needs to describe type explicitly.
+        , iProxy     :: Proxy (Instruction pu) 
         }
 
-schedule pu st
-    = schProcess $ execState st Schedule
-        { schProcess=process pu
-        , iProxy=ip pu
-        }
+-- |Execute process builder and return new process description. The initial process state is getting
+-- from the PU by the 'process' function.
+execSchedule pu st = snd $ runSchedule pu st
+
+-- |Execute process builder and return new process description. The initial process state is passed
+-- explicetly.
+execScheduleWithProcess pu p st = snd $ runScheduleWithProcess pu p st
+
+-- |Execute process builder and return list of new step UID and new process description. The initial
+-- process state is getting from the PU by the 'process' function.
+runSchedule pu st = runScheduleWithProcess pu (process pu) st
+
+-- |Execute process builder and return list of new step UID and new process description. The initial
+-- process state is passed explicetly.
+runScheduleWithProcess pu p st
+    = let (a, s) = runState st Schedule
+            { schProcess=p
+            , iProxy=ip pu
+            }
+    in (a, schProcess s)
     where
         ip :: pu -> Proxy (Instruction pu)
         ip _ = Proxy
 
-nextScheduledTick :: ( Show t ) => State (Schedule pu v x t) t
-nextScheduledTick = do
-    Schedule{ schProcess=Process{ nextTick } } <- get
-    return nextTick
+-- |Add process step with passed the time and info.
+scheduleStep placeInTime stepInfo
+    = scheduleStep' (\uid -> Step uid placeInTime stepInfo)
 
+scheduleStep' mkStep = do
+    sch@Schedule{ schProcess=p@Process{ nextUid, steps } } <- get
+    put sch
+        { schProcess=p
+            { nextUid=succ nextUid
+            , steps=mkStep nextUid : steps
+            }
+        }
+    return [ nextUid ]
+
+-- |Add to the process description information about vertical relations, which are defined by the
+-- Cartesian product of high and low lists.
+establishVerticalRelations high low = do
+    sch@Schedule{ schProcess=p@Process{ relations } } <- get
+    put sch
+        { schProcess=p
+            { relations=[ Vertical h l | h <- high, l <- low ] ++ relations
+            }
+        }
+
+-- |Add to the process description information about vertical relation.
+establishVerticalRelation h l = do
+    sch@Schedule{ schProcess=p@Process{ relations } } <- get
+    put sch
+        { schProcess=p
+            { relations=Vertical h l : relations
+            }
+        }
+
+
+-- |Add to the process description information about function evaluation.
+scheduleFunction a b f = scheduleStep (Activity $ a ... b) $ FStep f
+
+-- |Add to the process description information about endpoint behaviour, and it's low-level
+-- implementation (on instruction level). Vertical relations connect endpoint level and instruction
+-- level steps.
+scheduleEndpoint EndpointD{ epdAt, epdRole } codeGen = do
+    high <- scheduleStep (Activity $ inf epdAt ... sup epdAt) $ EndpointRoleStep epdRole
+    low <- codeGen
+    establishVerticalRelations high low
+    return high
+
+-- |Add to the process description information about instruction evaluation.
+scheduleInstruction start finish instr = do
+    Schedule{ iProxy } <- get
+    scheduleStep (Activity $ start ... finish) $ InstructionStep (instr `asProxyTypeOf` iProxy)
+
+-- |Add to the process description information about nested step.
+scheduleNestedStep title step@Step{ sTime } = do
+    sKey <- scheduleStep' (\uid -> Step uid sTime $ NestedStep title step) 
+    when (length sKey /= 1) $ error "scheduleNestedStep internal error."
+    return $ head sKey
+
+-- |Get a current slice of the computational process.
+getProcessSlice :: State (Schedule pu v x t) (Process (Parcel v x) t)
+getProcessSlice = do
+    Schedule{ schProcess } <- get
+    return schProcess
+
+-- depricated
 updateTick tick = do
     sch@Schedule{ schProcess } <- get
     put sch
@@ -39,23 +141,3 @@ updateTick tick = do
             { nextTick=tick
             }
         }
-
-scheduleStep placeInTime stepInfo = do
-    sch@Schedule{ schProcess=p@Process{ nextUid, steps } } <- get
-    put sch
-        { schProcess=p
-            { nextUid=succ nextUid
-            , steps=Step nextUid placeInTime stepInfo : steps
-            }
-        }
-
-scheduleInstructionAndUpdateTick start finish instr = do
-    Schedule{ iProxy } <- get
-    scheduleStep (Activity $ start ... finish) $ InstructionStep (instr `asProxyTypeOf` iProxy)
-    updateTick $ finish + 1
-
-scheduleEndpoint EndpointD{ epdAt, epdRole } codeGen = do
-    scheduleStep (Activity $ inf epdAt ... sup epdAt) $ EndpointRoleStep epdRole
-    codeGen
-
-scheduleFunction a b f = scheduleStep (Activity $ a ... b) $ FStep f

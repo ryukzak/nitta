@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
@@ -9,11 +10,14 @@
 -- |Модуль отвечающий за генерацию проектов на базе процессора NITTA.
 module NITTA.Project
     ( Project(..)
+    , writeProject
+    -- *Test bench
     , TestBench(..)
+    , TestBenchReport(..)
     , TestBenchSetup(..)
+    -- *Utils
     , writeAndRunTestBench
     , writeAndRunTestBenchDevNull
-    , writeProject
     -- *Snippets for Verilog code-generation
     , snippetClkGen
     , snippetDumpFile
@@ -25,6 +29,8 @@ module NITTA.Project
 
 -- FIXME: Файлы библиотек должны копироваться в проект.
 
+-- TODO: Добавить информацию о происхождении в автоматически генерируемые файлы.
+
 -- TODO: Сделать выбор вендора, сейчас это Quartus и IcarusVerilog.
 
 import           Control.Monad                 (when)
@@ -32,6 +38,7 @@ import           Data.FileEmbed
 import           Data.List                     (isSubsequenceOf)
 import qualified Data.List                     as L
 import qualified Data.String.Utils             as S
+import           GHC.Generics                  (Generic)
 import           NITTA.Functions               as F
 import           NITTA.Types
 import           NITTA.Utils
@@ -39,8 +46,8 @@ import           System.Directory
 import           System.Exit
 import           System.FilePath.Posix         (joinPath, pathSeparator)
 import           System.Info.Extra             (isWindows)
-import           System.IO                     (IOMode (WriteMode), hPrint,
-                                                hPutStrLn, stderr, withFile)
+import           System.IO                     (IOMode (WriteMode), hPutStrLn,
+                                                stderr, withFile)
 import           System.Process
 import           Text.InterpolatedString.Perl6 (qq)
 
@@ -57,6 +64,19 @@ data TestBenchSetup pu
         , tbcSignalConnect :: Signal -> String
         , tbcCtrl          :: Microcode pu -> String
         }
+
+data TestBenchReport
+    = TestBenchReport
+        { tbStatus           :: Bool
+        , tbPath             :: String
+        , tbFiles            :: [String]
+        , tbFunctions        :: [String]
+        , tbCompilerStdout   :: String
+        , tbCompilerErrout   :: String
+        , tbSimulationStdout :: String
+        , tbSimulationErrout :: String
+        }
+    deriving (Generic)
 
 
 -- |Проект вычислителя NITTA.
@@ -165,27 +185,64 @@ writeImplementation pwd impl = writeImpl "" impl
 
 
 -- |Запустить testbench в указанной директории.
--- TODO: Сделать вывод через Control.Monad.Writer.
+
+-- TODO: Добавить сохранение вывода в память для дальнейшей обработки.
 runTestBench h prj@Project{ projectPath, model } = do
     let (_tb, files) = projectFiles prj
     ( compileExitCode, compileOut, compileErr )
         <- readCreateProcessWithExitCode (createIVerilogProcess projectPath files) []
+
+    let header = unlines
+            [ "Project: " ++ projectPath
+            , "Files: " ++ S.join ", " files
+            , "Functional blocks: "
+            , S.join "\n" $ map show $ functions model
+            ]
+    let compilerOutputDump = unlines
+            [ header
+            , "-------------------------"
+            , "compiler stdout:"
+            , "-------------------------"
+            , compileOut
+            , "-------------------------"
+            , "compiler stderr:"
+            , "-------------------------"
+            , compileErr
+            ]
+
     when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
-        mapM_ (hPrint h) $ functions model
-        hPutStrLn h $ "compiler stdout:\n-------------------------\n" ++ compileOut
-        hPutStrLn h $ "compiler stderr:\n-------------------------\n" ++ compileErr
+        hPutStrLn h compilerOutputDump
         die "Verilog compilation failed!"
 
     (simExitCode, simOut, simErr)
         <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just projectPath } []
 
-    -- Yep, we can't stop simulation with bad ExitCode...
-    when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut) $ do
-        mapM_ (hPrint h) $ functions model
-        hPutStrLn h $ "sim stdout:\n-------------------------\n" ++ simOut
-        hPutStrLn h $ "sim stderr:\n-------------------------\n" ++ simErr
+    let icarusOutputDump = unlines
+            [ header
+            , "-------------------------"
+            , "compiler stdout:"
+            , "-------------------------"
+            , simOut
+            , "-------------------------"
+            , "compiler stderr:"
+            , "-------------------------"
+            , simErr
+            ]
 
-    return $ not ("FAIL" `isSubsequenceOf` simOut)
+    -- Yep, we can't stop simulation with bad ExitCode...
+    when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut)
+        $ hPutStrLn h icarusOutputDump
+
+    return TestBenchReport
+        { tbStatus=not ("FAIL" `isSubsequenceOf` simOut)
+        , tbPath=projectPath
+        , tbFiles=files
+        , tbFunctions=map show $ functions model
+        , tbCompilerStdout=compileOut
+        , tbCompilerErrout=compileErr
+        , tbSimulationStdout=simOut
+        , tbSimulationErrout=simErr
+        }
 
 
 -- |Сгенерировать команду для компиляции icarus verilog-ом вычислительного блока и его тестового
@@ -305,7 +362,7 @@ parameter ATTR_WIDTH = 4;
 Algorithm:
 { unlines $ map show $ functions pu }
 Process:
-{ unlines $ map show steps }
+{ unlines $ map show $ reverse steps }
 Context:
 { show cntx }
 */

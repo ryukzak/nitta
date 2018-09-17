@@ -121,7 +121,7 @@ module NITTA.ProcessUnits.Multiplier
     , PUPorts(..)
     ) where
 
-import           Control.Monad
+import           Control.Monad                 (when)
 import           Data.Default
 import           Data.List                     (find, partition, (\\))
 import           Data.Set                      (elems, fromList, member)
@@ -161,7 +161,7 @@ import           Text.InterpolatedString.Perl6 (qq)
 Любой вычислительный блок подразумевает три составляющие:
 
 - аппаратное обеспечение вычислительного блока - набор заранее подготовленных либо автоматически
-  генерируемых файлов описания аппаратруры на Hardware Description Language (@/hdl/mult@);
+  генерируемых файлов описания аппаратруры на Hardware Description Language (@/hdl/multiplier@);
 - программное обеспечение вычислительного блока - набор бинарных файлов задающих:
   - начальное состояние и настройки вычислительного блока;
   - управляющую программу;
@@ -208,9 +208,9 @@ import           Text.InterpolatedString.Perl6 (qq)
 - t - идентификатор момента времени.
 -}
 
--- TODO: Перенести время из процесса сюда, добавить его в currentWork.
+-- FIXME: Разработать safeDecision, которая будет проверять осуществлять дополнительные проверки
+-- корректности принятого решения.
 
--- FIXME: Сделать реализацию безопастной (выкидывать ошибку при попытке спланировать не корректный ВП).
 -- FIXME: Убрать сигнал wrSignal.
 data Multiplier v x t
     = Multiplier
@@ -224,27 +224,33 @@ data Multiplier v x t
           -- Назначенные функции могут выполняться в произвольном порядке. Явное хранение информации
           -- о выполненных функциях не осуществляется, так как она есть в описание вычислительного
           -- процесса 'process_'.
-          remain      :: [F (Parcel v x)]
+          remain               :: [F (Parcel v x)]
           -- |Список переменных, которые необходимо загрузить в вычислительный блок для вычисления
           -- текущей функции.
-        , targets     :: [v]
+        , targets              :: [v]
           -- |Список переменных, которые необходимо выгрузить из вычислительного блока для
           -- вычисления текущей функции. Порядок выгрузки - произвольный. Важно отметить, что все
           -- выгружаемые переменные соответствуют одному значению - результату умножения.
-        , sources     :: [v]
+        , sources              :: [v]
           -- |Фактический процесс умножения будет завершён в указанный момент времени и его
           -- результат будет доступен для выгрузки. Значение устанавливается сразу после загрузки
           -- всех аргументов.
-        , doneAt      :: Maybe t
-        , currentWork :: Maybe (t, F (Parcel v x))
+        , doneAt               :: Maybe t
+        , currentWork          :: Maybe (t, F (Parcel v x))
+          -- |В процессе планирования вычисления функции необходимо определить неопределённое
+          -- количество загрузок / выгрузок данных в / из вычислительного блока, что бы затем
+          -- установить вертикальную взаимосвязь между информацией о выполняемой функции и этими
+          -- пересылками.
+        , currentWorkEndpoints :: [ ProcessUid ]
           -- |Описание вычислительного процесса, спланированного для данного вычислительного блока
           -- 'NITTA.Types.Base.Process'.
-        , process_    :: Process (Parcel v x) t
+        , process_             :: Process (Parcel v x) t
+        , tick                 :: t
           -- |В реализации данного вычислительного блока используется IP ядро поставляемое вместе с
           -- Altera Quartus. Это не позволяет осуществлять симуляцию при помощи Icarus Verilog.
           -- Чтобы обойти данное ограничение была создана заглушка, подключаемая вместо IP ядра если
           -- установлен данный флаг.
-        , isMocked    :: Bool
+        , isMocked             :: Bool
         }
     deriving ( Show )
 
@@ -252,8 +258,17 @@ data Multiplier v x t
 -- |Конструктор модели умножителя вычислительного блока. Аргумент определяет внутреннюю оранизацию
 -- вычислительного блока: использование IP ядра умножителя (False) или заглушки (True). Подробнее
 -- см. функцию hardware в классе 'TargetSystemComponent'.
-multiplier mock = Multiplier [] [] [] Nothing Nothing def mock
-
+multiplier mock = Multiplier
+    { remain=[]
+    , targets=[]
+    , sources=[]
+    , doneAt=Nothing
+    , currentWork=Nothing
+    , currentWorkEndpoints=[]
+    , process_=def
+    , tick=def
+    , isMocked=mock
+    }
 
 
 -- |Привязку функций к вычислительным блокам осуществляет данный класс типов. Он позволяет
@@ -286,15 +301,15 @@ instance ( Var v, Time t
     -- |Данный метод используется для установки времени вычислительного блока снаружи. В настоящий
     -- момент это необходимо только для реализации ветвления, которое находится на стадии
     -- прототипирования.
-    setTime t pu@Multiplier{ process_ } = pu{ process_=process_{ nextTick=t } }
+    setTime t pu@Multiplier{} = pu{ tick=t }
 
 
 -- |Данная функция осуществляет фактическое взятие функционального блока в работу.
-assignment pu@Multiplier{ targets=[], sources=[], remain } f
+assignment pu@Multiplier{ targets=[], sources=[], remain, tick } f
     | Just (F.Multiply (I a) (I b) (O c)) <- F.castF f
     = pu
         { targets=[a, b]
-        , currentWork=Just (def, f)
+        , currentWork=Just (tick + 1, f)
         , sources=elems c, remain=remain \\ [ f ]
         }
 assignment _ _ = error "Multiplier: internal assignment error."
@@ -323,13 +338,13 @@ instance ( Var v, Time t, Typeable x
 
     --    - список вариантов загружаемых в вычислительный блок переменных, необходимых для
     --      находящейся в работе функции;
-    options _proxy Multiplier{ targets=vs@(_:_), process_=Process{ nextTick } }
-        = map (\v -> EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)) vs
+    options _proxy Multiplier{ targets=vs@(_:_), tick }
+        = map (\v -> EndpointO (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
 
     --    - список вариантов выгружаемых из вычислительного блока переменных;
-    options _proxy Multiplier{ sources, doneAt=Just at, process_=Process{ nextTick } }
+    options _proxy Multiplier{ sources, doneAt=Just at, tick }
         | not $ null sources
-        = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at nextTick ... maxBound) (1 ... maxBound) ]
+        = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
 
     --    - список вариантов загружаемых в вычислительный блок переменных, загрузка любой из которых
     --      приведёт к фактическу началу работы над соответствующей функцией.
@@ -352,41 +367,63 @@ instance ( Var v, Time t, Typeable x
     --    блока. Можно выделить следующие варианты решений:
     --
     --    1. Если модель ожидает, что в неё загрузят переменную, тогда:
-    decision _proxy pu@Multiplier{ targets=vs } d@EndpointD{ epdRole=Target v, epdAt }
+    decision _proxy pu@Multiplier{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
         -- Из списка загружаемых значений извлекается трубуемая переменная, а остаток - сохраняется
         -- для следующих шагов.
         | ([_], xs) <- partition (== v) vs
         -- Переменная @sel@ используется для того, что бы зафиксировать очерёдность загрузки
         -- переменных в аппаратный блок, что необходимо из-за особенностей реализации.
         , let sel = if null xs then B else A
+        -- Осуществляется планирование вычислительного процесса.
+        , let (newEndpoints, process_') = runSchedule pu $ do
+                -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
+                -- которые берут информацию о времени из Process
+                updateTick (sup epdAt)
+                scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
         = pu
-            { -- Осуществляется планирование вычислительного процесса.
-              process_=schedule pu $
-                scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) $ Load sel
+            { process_=process_'
               -- Сохраняется остаток работы на следующий цикл.
             , targets=xs
+              -- Сохраняем информацию тех событиях процесса, которые описываются отправку /
+              -- получение данных для текущего функционального блока.
+            , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
               -- Если загружены все необходимые аргументы (@null xs@), то сохраняется момент
               -- времени, когда будет получен результат.
             , doneAt=if null xs
                 then Just $ sup epdAt + 3
                 else Nothing
+              -- Продвигается вперёд модельное время.
+            , tick=sup epdAt
             }
     --    2. Если модель ожидает, что из неё выгрузят переменные.
-    decision _proxy pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f) } d@EndpointD{ epdRole=Source v, epdAt }
+    decision _proxy pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointD{ epdRole=Source v, epdAt }
         | not $ null sources
         , let sources' = sources \\ elems v
         , sources' /= sources
+        -- Осуществляется планирование вычислительного процесса.
+        , let (newEndpoints, process_') = runSchedule pu $ do
+                endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Out
+                when (null sources') $ do
+                    high <- scheduleFunction a (sup epdAt) f
+                    let low = endpoints ++ currentWorkEndpoints
+                    -- Устанавливаем вертикальную взаимосвязь между функциональным блоком и
+                    -- связанными с ним пересылками данных.
+                    establishVerticalRelations high low
+                -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
+                -- которые берут информацию о времени из Process
+                updateTick (sup epdAt)
+                return endpoints
         = pu
-            { -- Осуществляется планирование вычислительного процесса.
-              process_=schedule pu $ do
-                when (null sources') $ scheduleFunction a (sup epdAt) f
-                scheduleEndpoint d $ scheduleInstructionAndUpdateTick (inf epdAt) (sup epdAt) Out
+            { process_=process_'
               -- В случае если не все переменные были запрошены - сохраняются оставшиеся.
             , sources=sources'
-              -- Если вся работа выполнена, то сбрасывается время готовности результата, как и
-              -- текущая работа.
+              -- Если вся работа выполнена, то сбрасывается время готовности результата, текущая
+              -- работа и перечисление передач, выполненных в рамках текущей функции.
             , doneAt=if null sources' then Nothing else doneAt
             , currentWork=if null sources' then Nothing else Just (a, f)
+            , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
+              -- Продвигается вперёд модельное время.
+            , tick=sup epdAt
             }
     --    3. Если никакая функция в настоящий момент не выполняется, значит необходимо найти в
     --       списке назначенных функций требуемую, запустить ее в работу, и только затем принять
@@ -434,11 +471,11 @@ instance Controllable (Multiplier v x t) where
     -- вычислительного блока.
     data Microcode (Multiplier v x t)
         = Microcode
-            { -- Сигнал записи в вычислительный блок.
+            { -- |Сигнал записи в вычислительный блок.
               wrSignal :: Bool
-              -- Селектор аргумента, загружаемого в вычислительный блок.
+              -- |Селектор аргумента, загружаемого в вычислительный блок.
             , selSignal :: Bool
-              -- Сигнал выгрузки результата из вычислительного блока.
+              -- |Сигнал выгрузки результата из вычислительного блока.
             , oeSignal :: Bool
             }
         deriving ( Show, Eq, Ord )
@@ -470,7 +507,11 @@ instance UnambiguouslyDecode (Multiplier v x t) where
 -- класс будет перерабатываться с целью автоматизации данного процесса.
 instance Connected (Multiplier v x t) where
     data PUPorts (Multiplier v x t)
-        = PUPorts{ wr, wrSel, oe :: Signal } deriving ( Show )
+        = PUPorts
+            { wr           -- ˆЗагрузить аргумент.
+            , wrSel        -- ˆВыбор загружаемого аргумента (A | B).
+            , oe :: Signal -- ˆВыгрузить результат работы.
+            } deriving ( Show )
     transmitToLink Microcode{..} PUPorts{..}
         =
             [ (wr, Bool wrSignal)
@@ -550,12 +591,12 @@ instance ( Time t, Var v
 -- вычистельного блока берётся описание процесса (все спланированные функции), берутся все функции в
 -- очереди и, в случае наличия, функция находящаяся в работе.
 instance ( Ord t ) => WithFunctions (Multiplier v x t) (F (Parcel v x)) where
-    functions Multiplier{ process_, remain, currentWork } 
-        = functions process_ 
-        ++ remain 
+    functions Multiplier{ process_, remain, currentWork }
+        = functions process_
+        ++ remain
         ++ case currentWork of
             Just (_, f) -> [f]
-            Nothing -> []
+            Nothing     -> []
 
 
 -- |Основное назначение данного класс - генерация автоматизированных тестов изолировано для данного
@@ -596,5 +637,5 @@ instance ( Var v, Time t
                 -- При генерации test bench-а знать, как задаются управляющие сигналы
                 -- вычислительного блока. Именно это и описано ниже. Отметим, что работа с шиной данных полностью реализуется в рамках snippet-а.
                 , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
-                    [qq|oe <= {bool2binstr oeSignal}; wr <= {bool2binstr wrSignal}; wrSel <= {bool2binstr selSignal};|]
+                    [qq|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
                 }

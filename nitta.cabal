@@ -17,14 +17,16 @@ library
   hs-source-dirs:      src
   exposed-modules:     Demo
                      , NITTA.API
+                     , NITTA.API.Marshalling
+                     , NITTA.API.REST
                      , NITTA.BusNetwork
                      , NITTA.Compiler
                      , NITTA.DataFlow
+                     , NITTA.Frontend
                      , NITTA.Functions
                      , NITTA.ProcessUnits.Accum
-                     , NITTA.ProcessUnits.Divisor
+                     , NITTA.ProcessUnits.Divider
                      , NITTA.ProcessUnits.Fram
-                     , NITTA.ProcessUnits.Generic.Pipeline
                      , NITTA.ProcessUnits.Generic.SerialPU
                      , NITTA.ProcessUnits.Multiplier
                      , NITTA.ProcessUnits.Shift
@@ -34,11 +36,11 @@ library
                      , NITTA.Types.Base
                      , NITTA.Types.Network
                      , NITTA.Types.Poly
+                     , NITTA.Types.Synthesis
                      , NITTA.Types.Time
                      , NITTA.Utils
-                     , NITTA.Utils.JSON
-                     , NITTA.Utils.Process
                      , NITTA.Utils.Lens
+                     , NITTA.Utils.Process
   build-depends:       aeson
                      , array
                      , base
@@ -49,9 +51,12 @@ library
                      , extra
                      , file-embed
                      , filepath
+                     , hashable
                      , HStringTemplate
+                     , http-api-data
                      , interpolatedstring-perl6
                      , intervals
+                     , language-lua
                      , lens
                      , list-t
                      , MissingH
@@ -60,6 +65,7 @@ library
                      , servant
                      , servant-js 
                      , servant-server
+                     , split
                      , stm
                      , stm-containers 
                      , syb
@@ -73,11 +79,13 @@ executable nitta
   main-is:             Main.hs
   build-depends:       array
                      , base
+                     , cmdargs
                      , containers
                      , data-default
                      , directory
                      , filepath
                      , HStringTemplate
+                     , interpolatedstring-perl6
                      , MissingH
                      , nitta
   default-language:    Haskell2010
@@ -90,13 +98,13 @@ test-suite nitta-test
                      , NITTA.Test.Functions
                      , NITTA.Test.ProcessUnits
                      , NITTA.Test.ProcessUnits.Fram
-                     , NITTA.Test.ProcessUnits.Shift
                      , NITTA.Test.Utils
   build-depends:       atomic-primops
                      , base
                      , containers
                      , data-default
                      , filepath
+                     , interpolatedstring-perl6
                      , mtl
                      , nitta
                      , QuickCheck

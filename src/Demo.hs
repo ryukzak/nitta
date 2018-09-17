@@ -1,4 +1,11 @@
 {-|
+Module      : Demo
+Description : NITTA project demos
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
 В данном модуле описано несколько демо для вычислительной платформы NITTA.
 
 = Test bench organisation
@@ -124,15 +131,15 @@ Start Compilation@. Затем вам необходимо прошить в П�
 
 Теперь подготовьте к работе управляющий конроллер. Для этого вам необходимо:
 
-1) Поднять Wi-Fi сеть и подключить к ней контроллер в соответствии с инструкцией
+1. Поднять Wi-Fi сеть и подключить к ней контроллер в соответствии с инструкцией
    <https://developer.electricimp.com/gettingstarted/explorer/blinkup>.
-2) В случае если вы используете аккаунт @aleksandpenskoi@ зайдите в строке @SPI_testbench@ выберите
+2. В случае если вы используете аккаунт @aleksandpenskoi@ зайдите в строке @SPI_testbench@ выберите
    @Development Zone@, затем @Code@.
-3) Убедитесь, что последней вызываемой функцией в правой части экрана (Device Code) является
+3. Убедитесь, что последней вызываемой функцией в правой части экрана (Device Code) является
    функция, одноименная названию демо.
-4) Внизу слева вы увидете список подключённых к проекту устройств. Напротив нужного нажмите кнопку с
+4. Внизу слева вы увидете список подключённых к проекту устройств. Напротив нужного нажмите кнопку с
    иконкой On/Off.
-5) В терминале снизу справа должен будет появиться журнал передачи данных на подобие приведённого
+5. В терминале снизу справа должен будет появиться журнал передачи данных на подобие приведённого
    ниже.
 
 @
@@ -165,6 +172,7 @@ Start Compilation@. Затем вам необходимо прошить в П�
 
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
+{-# LANGUAGE QuasiQuotes      #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 module Demo
     ( -- * Демо
@@ -172,24 +180,25 @@ module Demo
     , teacupDemo
       -- * Описание алгоритмов
     , fibonacciAlg
-    , teacupAlg
+    , teacupAlg, teacupLua, teacupAlg2
       -- * Описание процессоров
     , nittaArch
     ) where
 
 import           Data.Default
+import           Data.Text                     (Text)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
-import           NITTA.DataFlow
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
-import qualified NITTA.ProcessUnits.Divisor    as D
+import qualified NITTA.ProcessUnits.Divider    as D
 import qualified NITTA.ProcessUnits.Fram       as FR
 import qualified NITTA.ProcessUnits.Multiplier as M
 import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
+import           Text.InterpolatedString.Perl6 (qq)
 
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
@@ -210,7 +219,7 @@ nittaArch = busNetwork 31 Nothing
                     , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                     })
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-    , ("div", PU (D.divisor 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+    , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
     ]
 
 
@@ -283,17 +292,45 @@ teacupAlg = [ F.loop 0 "time_new" ["time", "time_send"]
             , F.send "temp_cup_send"
             ]
 
+teacupAlg2 =
+    [ F.send "time#3_1"
+    , F.send "temp_cup#4_2"
+    , F.add "time#3_0" "time_step_constant#2_1" ["time_0"]
+    , F.sub "temp_room_constant#1_0" "temp_cup#4_1" ["acc_0"]
+    , F.division "acc_0" "temp_ch_constant#0_0" ["temp_loss_0"] []
+    , F.multiply "temp_loss_0" "time_step_constant#2_0" ["delta_0"]
+    , F.add "temp_cup#4_0" "delta_0" ["temp_cup_0"]
+
+    , F.loop 0 "time_0" ["time#3_0", "time#3_1"]
+    , F.loop 180000 "temp_cup_0" [ "temp_cup#4_0", "temp_cup#4_1","temp_cup#4_2"]
+    , F.constant 125 ["time_step_constant#2_1", "time_step_constant#2_0"]
+    , F.constant 70000 ["temp_room_constant#1_0"]
+    , F.constant 10000 ["temp_ch_constant#0_0"]
+    ] :: [F (Parcel String Int)]
+
+teacupLua =
+    [qq|function teacup(time, temp_cup)
+            local temp_ch = 10000
+            local temp_room = 70000
+            local time_step = 125
+
+            send(time)
+            send(temp_cup)
+
+            time = time + time_step
+            local acc = temp_room - temp_cup
+            local temp_loss, _ = acc / temp_ch
+
+            local delta = temp_loss * time_step
+            temp_cup = temp_cup + delta
+
+            teacup(time, temp_cup)
+        end
+        teacup(0, 180000)|] :: Text
+
 
 
 -----------------------------------------------------------
-
-mkModelWithOneNetwork arch alg = Frame
-    { nitta=bindAll alg arch
-    , dfg=DFG $ map node alg
-    , timeTag=Nothing
-    } :: SystemState String String String Int (TaggedTime String Int)
-
-schedule f = nitta $ foldl (\f' _ -> naive def f') f $ replicate 50 ()
 
 demo prj@Project{ projectPath, model } = do
     let prj' = prj{ model=schedule model }

@@ -1,20 +1,24 @@
 {
-  "name": "web",
+  "name": "nitta-web-ui",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
     "axios": "^0.18.0",
-    "react": "^16.2.0",
-    "react-dom": "^16.2.0",
+    "react": "^16.4.2",
+    "react-d3-tree": "^1.11.0",
+    "react-dom": "^16.4.2",
     "react-easy-chart": "^1.0.0",
     "react-google-charts": "^1.6.6",
     "react-scripts": "1.1.1",
-    "react-table": "^6.8.0"
+    "react-table": "^6.8.6"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "standard": "^11.0.1"
   }
 }

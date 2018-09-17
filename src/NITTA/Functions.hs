@@ -165,7 +165,7 @@ instance ( Ord v ) => FunctionSimulation (FramOutput (Parcel v x)) v x where
 
 data Reg io = Reg (I io) (O io) deriving ( Typeable )
 instance ( Show v ) => Show (Reg (Parcel v x)) where
-    show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1
+    show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = reg(" ++ show k1 ++ ")"
 deriving instance ( IOType io v x ) => Eq (Reg io)
 reg a b = F $ Reg (I a) (O $ fromList b)
 
@@ -185,7 +185,7 @@ instance ( Ord v ) => FunctionSimulation (Reg (Parcel v x)) v x where
 
 data Loop io = Loop (X io) (O io) (I io) deriving ( Typeable )
 instance ( Show v, Show x ) => Show (Loop (Parcel v x)) where
-    show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join " = " (map show $ elems k2)
+    show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join ", " (map show $ elems k2)
 deriving instance ( IOType io v x ) => Eq (Loop io)
 loop x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
 
@@ -270,7 +270,7 @@ data Division io = Division
 instance ( Show v ) => Show (Division (Parcel v x)) where
     show (Division (I k1) (I k2) (O k3) (O k4))
         = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " / " ++ show k2 ++ "; "
-        ++ S.join " = " (map show $ elems k4) ++ " = " ++ show k1 ++ " mod " ++ show k2
+        ++ S.join " = " (if null k4 then ["_"] else map show $ elems k4) ++ " = " ++ show k1 ++ " `mod` " ++ show k2
 deriving instance ( IOType io v x ) => Eq (Division io)
 division d n q r = F Division
     { denom=I d
@@ -292,14 +292,14 @@ instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Division (Parcel v 
         let quotient' = fromIntegral v1 / fromIntegral v2 :: Double
         -- The rounding function is selected according to the mock behaviur.
         -- The IP-block have different behaviour.
-        cntx' <- set cntx q $ ceiling quotient'
+        cntx' <- set cntx q $ truncate quotient'
         let remain' = v1 `mod` v2
         set cntx' r remain'
 
 
 data Constant io = Constant (X io) (O io) deriving ( Typeable )
 instance ( Show v, Show x ) => Show (Constant (Parcel v x)) where
-    show (Constant (X x) (O k)) = S.join " = " (map show $ elems k) ++ " = " ++ show x
+    show (Constant (X x) (O k)) = S.join " = " (map show $ elems k) ++ " = const(" ++ show x ++ ")"
 deriving instance ( IOType io v x, Eq x ) => Eq (Constant io)
 constant x vs = F $ Constant (X x) $ O $ fromList vs
 

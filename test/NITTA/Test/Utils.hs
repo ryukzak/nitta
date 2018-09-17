@@ -12,7 +12,6 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Test.Tasty.HUnit
 
-
 values2dumpTests = do
   "0" @=? values2dump [Undef, Undef, Undef, Undef]
   "0" @=? values2dump [Bool False, Bool False, Bool False, Bool False]

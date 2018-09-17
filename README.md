@@ -1,3 +1,34 @@
+# Reconfigurable real-time computational platform
+
+## Application area
+
+- developing cyber-physical systems which are based on adaptive robust control algorithms and
+  artificial intelligence with high requirements on latency and computational volume, power and area
+  consumption; 
+- developing hardware programmable accelerators and co-processors;
+- developing problem-oriented programmable ASIC; 
+- developing dynamically reconfigurable IP-core and soft-core for FPGA.
+
+## Project goals
+
+- rapid prototyping of control and cyber-physical systems;
+- hardware in the loop simulation;
+- target system synthesis and its components;
+- integration of the real-time system with nonreal-time environment and automation of its
+  interaction;
+- developing of IP-core for embedded systems and systems on a chip.
+
+## Key features
+
+- the orientation on model-driven engineering and not on software engineering; 
+- automation of most of the development stages, including algorithm and model design and functional
+  simulation, prototyping and complex verification, complex automatisation of cross-layer testing
+  and synthesis and optimisation of a target system;
+- deeply computational platform reconfiguration on hardware, software and tool levels, transparency
+  of CAD system workflow.
+
+Project status: early prototype.
+
 # Реконфигурируемая вычислительная платформа реального времени NITTA
 
 ## Область применения:

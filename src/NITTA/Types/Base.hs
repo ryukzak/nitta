@@ -98,37 +98,8 @@ instance Variables (O (Parcel v x)) v where
 ---------------------------------------------------------------------
 -- * Функциональные блоки
 
-
--- |Семейство типов для описания системы функций вычислительного блока.
-
--- FIXME: Удалить данный класс.
-class FunctionalSet pu where
-  -- |Тип для представляния системы команд.
-  data FSet pu :: *
-
-instance ( WithFunctions (FSet pu) (F (Parcel v x))
-         , Ord v
-         , Show v
-         , Typeable v
-         , Typeable x
-         ) => Variables (FSet pu) v where
-  variables fbs = S.unions $ map variables $ functions fbs
-
-
-
-class ToFSet pu v | pu -> v where
-  -- |Преобразование гетерогенного функционального блока в представление системы функций вычислительного блока.
-  toFSet :: F (Parcel v x) -> Either String (FSet pu)
-
--- |Преобразование из представления системы функций вычислительного блока в гетерогенный функциональный блок.
-fromFSet f = head $ functions f
-
-
-
 -- |Класс функциональных блоков. Описывает все необходмые для работы компилятора свойства.
-class ( Typeable f
-      , Eq f
-      ) => Function f v | f -> v where
+class Function f v | f -> v where
   inputs :: f -> S.Set v
   inputs _ = S.empty
   outputs :: f -> S.Set v
@@ -195,10 +166,11 @@ data F io where
     , IOType io v x
     , Function f v
     , Show f
+    , Typeable f
     , FunctionSimulation f v x
     ) => f -> F io
 instance Show (F io) where
-  show (F f) = "< " ++ show f ++ " >"
+  show (F f) = S.replace "\"" "" $ show f
 
 instance ( Var v
          , Typeable x
@@ -213,7 +185,7 @@ instance Variables (F (Parcel v x)) v where
   variables (F f) = inputs f `S.union` outputs f
 
 instance Eq (F io) where
-  F a == F b = Just a == cast b
+  F a == F b = show a == show b
 
 instance Ord (F (Parcel v x)) where
   (F a) `compare` (F b) = show a `compare` show b
@@ -229,9 +201,9 @@ instance FunctionSimulation (F (Parcel v x)) v x where
 -- |Описание многоуровневого вычислительного процесса PU. Подход к моделированию вдохновлён ISO
 -- 15926. Имеются следующие варианты использования:
 --
--- 1) Хранение многоуровневого описания вычислительного процесса отдельного PU (одного структурного
+-- 1. Хранение многоуровневого описания вычислительного процесса отдельного PU (одного структурного
 --    элемента процессора).
--- 2) Формирование многоуровневого описания вычислительного процесса для отдельного PU и входящих в
+-- 2. Формирование многоуровневого описания вычислительного процесса для отдельного PU и входящих в
 --    его состав структурных элементов (Nested). К примеру: вычислительный процесс сети и
 --    подключённых к ней PU. (доступно через функцию process)
 data Process io t
@@ -252,12 +224,12 @@ instance ( Default t ) => Default (Process io t) where
 type ProcessUid = Int -- ^Уникальный идентификатор шага вычислительного процесса.
 
 -- |Описание шага вычислительного процесса.
-data Step io t where
-  Step ::
+data Step io t
+  = Step
     { sKey  :: ProcessUid    -- ^Уникальный идентификатор шага.
     , sTime :: PlaceInTime t -- ^Описание типа и положения шага во времени.
-    , sDesc :: StepInfo io    -- ^Описание действия описываемого шага.
-    } -> Step io t
+    , sDesc :: StepInfo io t -- ^Описание действия описываемого шага.
+    }
 deriving instance ( Show v, Show t ) => Show ( Step (Parcel v x) t )
 
 -- |Описание положения события во времени и типа события:
@@ -268,40 +240,52 @@ data PlaceInTime t
 
 -- |Описание события, соответсвующего шага вычислительного процесса. Каждый вариант соответствует
 -- соответствующему отдельному уровню организации вычислительного процесса.
-data StepInfo io where
-  -- |Решения, принятые на уровне САПР.
-  CADStep :: String -> StepInfo io
-  -- |Время работы над функциональным блоком функционального алгоритма.
-  FStep :: F io -> StepInfo io
-  -- |Описание использования вычислительного блока с точки зрения передачи данных.
-  EndpointRoleStep :: ( io ~ _io v x, Show v, Typeable v ) => EndpointRole v -> StepInfo io
-  -- |Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
-  -- определяется типом вычислительного блока.
-  InstructionStep :: ( Show (Instruction pu)
-                     , Typeable (Instruction pu)
-                     ) => Instruction pu -> StepInfo io
+data StepInfo io t where
+    -- |Решения, принятые на уровне САПР.
+    CADStep :: String -> StepInfo io t
+    -- |Время работы над функциональным блоком функционального алгоритма.
+    FStep :: F io -> StepInfo io t
+    -- |Описание использования вычислительного блока с точки зрения передачи данных.
+    EndpointRoleStep :: ( io ~ _io v x, Show v, Typeable v ) => EndpointRole v -> StepInfo io t
+    -- |Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
+    -- определяется типом вычислительного блока.
+    InstructionStep :: 
+        ( Show (Instruction pu)
+        , Typeable (Instruction pu)
+        ) => Instruction pu -> StepInfo io t
+    -- |Используется для описания вычислительного процесса вложенных структурных элементов. Как
+    -- правило не хранится в структурах данных, а генерируется автоматически по требованию при
+    -- помощи опроса вложенных структурных элементов.
+    NestedStep :: 
+        ( Eq title, Show title, Ord title
+        ) => 
+            { nTitle :: title
+            , nStep :: Step io t 
+            } -> StepInfo io t
 
-  -- |Используется для описания вычислительного процесса вложенных структурных элементов.
-  -- Как правило не хранится в структурах данных, а генерируется автоматически по требованию при
-  -- помощи опроса вложенных структурных элементов.
-  NestedStep :: ( Eq title, Show title, Ord title
-                ) => title -> StepInfo v -> StepInfo v
+descent Step{ sDesc=NestedStep _ step } = descent step
+descent step                            = step
 
-instance ( Show v ) => Show (StepInfo (Parcel v x)) where
-  show (CADStep s)                 = s
-  show (FStep (F f))              = show f
-  show (EndpointRoleStep eff)      = show eff
-  show (InstructionStep instr)     = show instr
-  show (NestedStep title stepInfo) = show title ++ "." ++ show stepInfo
+instance (Show (Step io t)) => Show (StepInfo io t) where
+    show (CADStep s)                 = s
+    show (FStep (F f))               = show f
+    show (EndpointRoleStep eff)      = show eff
+    show (InstructionStep instr)     = show instr
+    show NestedStep{ nTitle, nStep } = show nTitle ++ "." ++ show nStep
 
 
 -- |Получить строку с название уровня указанного шага вычислительного процесса.
-level (CADStep _)          = "CAD"
-level (FStep _)            = "Function"
-level (EndpointRoleStep _) = "Endpoint"
-level (InstructionStep _)  = "Instruction"
-level (NestedStep _ _)     = "Nested"
+level CADStep{}          = "CAD"
+level FStep{}            = "Function"
+level EndpointRoleStep{} = "Endpoint"
+level InstructionStep{}  = "Instruction"
+level (NestedStep _ step) = level $ sDesc $ descent step
 
+showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
+    where
+        showPU' :: StepInfo (Parcel v x) t -> [String]
+        showPU' (NestedStep title Step{ sDesc }) = show title : showPU' sDesc
+        showPU' _                                = []
 
 -- |Описание отношений между шагами вычисительного процесса.
 data Relation
@@ -332,6 +316,9 @@ instance DecisionType (BindingDT title io) where
 -- |Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
 -- одно взаимодействие, при этом у PU только один канал для взаимодействия, что в общем то
 -- ограничение. В перспективе должно быть расширено для работы с конвейра.
+
+-- TODO: В настоящий момен Source определяет множество вариантов выгрузки переменной. Это
+-- неправильно и требует комплексной переработки.
 data EndpointRole v
   = Source (S.Set v) -- ^ Выгрузка данных из PU.
   | Target v   -- ^ Загрузка данных в PU.
@@ -392,12 +379,12 @@ instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t))
 --
 -- Идеологически, планирование вычислительного процесса производится следующим образом:
 --
--- 1) Вычислительному блоку назначаются испоняемые им функции.
--- 2) Блок опрашивается на предмет возможных вариантов развития вычислительного процесса.
--- 3) Выбранный вариант развития вычислительного процесса моделируется в рамках вычислительного
+-- 1. Вычислительному блоку назначаются испоняемые им функции.
+-- 2. Блок опрашивается на предмет возможных вариантов развития вычислительного процесса.
+-- 3. Выбранный вариант развития вычислительного процесса моделируется в рамках вычислительного
 --    блока. Его модельное время продвигается вперёд, в описании вычислительного процесса
 --    дополняется записями относительно сделанных шагов вычислительного процесса.
--- 4) Повторение, пока список возможных вариантов не станет пустым.
+-- 4. Повторение, пока список возможных вариантов не станет пустым.
 class ProcessUnit pu io t | pu -> io t where
   -- |Назначить исполнение функционального блока вычислительному узлу.
   tryBind :: F io -> pu -> Either String pu
@@ -410,8 +397,8 @@ class ProcessUnit pu io t | pu -> io t where
   --
   -- История вопроса: Изначально, данный метод был добавлен для работы в ращеплённом времени, но он:
   --
-  -- 1) недостаточен,
-  -- 2) может быть реализован в рамках алгоритма компиляции.
+  -- 1. недостаточен,
+  -- 2. может быть реализован в рамках алгоритма компиляции.
   --
   -- В тоже время, setTime нужен не только для того, чтобы ограничить время, но и для того, что бы установить тег
   -- времени.
@@ -465,7 +452,7 @@ class ByTime pu t | pu -> t where
 -- Не может быть реализована для инструкций сетей, так как: (1) инструкция для сетей описывает
 -- несколько тактов, а значит должна возвращать последовательность значений микрокода; (2)
 -- несколько инструкций может выполняться одновременно.
-class (Default (Microcode pu)) => UnambiguouslyDecode pu where
+class UnambiguouslyDecode pu where
   decodeInstruction :: Instruction pu -> Microcode pu
 
 

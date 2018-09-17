@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
@@ -9,10 +10,9 @@ module NITTA.Test.BusNetwork where
 import           Data.Default
 import           NITTA.BusNetwork
 import           NITTA.Compiler
-import           NITTA.DataFlow
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
-import qualified NITTA.ProcessUnits.Divisor    as D
+import qualified NITTA.ProcessUnits.Divider    as D
 import qualified NITTA.ProcessUnits.Fram       as FR
 import qualified NITTA.ProcessUnits.Multiplier as M
 import qualified NITTA.ProcessUnits.Shift      as S
@@ -23,7 +23,7 @@ import           System.FilePath.Posix         (joinPath)
 import           Test.Tasty.HUnit
 
 
-netWithArithmAndSPI = busNetwork 27 (Just True)
+netWithArithmAndSPI = busNetwork 31 (Just True)
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -34,6 +34,8 @@ netWithArithmAndSPI = busNetwork 27 (Just True)
                               , SPI.stop="stop"
                               , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                               })
+  , ("div", PU (D.divider 8 True) D.PUPorts{ D.wr=Signal 24, D.wrSel=Signal 25, D.oe=Signal 26, D.oeSel=Signal 27 } )
+  , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 28, M.wrSel=Signal 29, M.oe=Signal 30 } )
   ]
 
 netWithArithm = busNetwork 31 (Just True) [] []
@@ -42,7 +44,7 @@ netWithArithm = busNetwork 31 (Just True) [] []
   , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
   , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 22, M.wrSel=Signal 23, M.oe=Signal 24 } )
-  , ("div", PU (D.divisor 8 True) D.PUPorts{ D.wr=Signal 25, D.wrSel=Signal 26, D.oe=Signal 27, D.oeSel=Signal 28 } )
+  , ("div", PU (D.divider 8 True) D.PUPorts{ D.wr=Signal 25, D.wrSel=Signal 26, D.oe=Signal 27, D.oeSel=Signal 28 } )
   ]
 
 
@@ -106,44 +108,17 @@ testMultiplier = unitTest "testMultiplier" netWithArithm
   ]
 
 
--- Почему данный тест не должен работать корректно (почему там not):
---
--- 1) BusNetwork выполняет функциональную симуляцию, без учёта состояния
---    блоков.
--- 2) Сперва к PU привязывается framInput к 3 адресу.
--- 3) Затем к томуже адресу привязывается reg, так как в противном случае он
---    может заблокировать ячейку. А с учётом того что связываение позднее, а
---    вычислительный процесс уже начал планироваться для этой ячейки, то и по
---    времени мы ничего не теряем, а ресурс бережём.
--- 4) В результате значение в ячейке переписывается значением 42, что приводит
---    к тому что на следующих циклах framInput возращает 42, а не значение по
---    умолчанию.
---
--- Более того, даже если output повесить на туже ячейку, то ничего не
--- изменится, так как регистр будет привязан тудаже.
-badTestFram = badUnitTest "badTestFram" netWithArithm
-  def
-  [ F.framInput 3 [ "x" ]
-  , F.framOutput 5 "x"
-  , F.loop 42 "g" ["f"]
-  , F.reg "f" ["g"]
-  ]
-
 
 -----------------------------------------------
 
+processorTest name alg = testCase name $ unitTest ("processorTest_" ++ name) netWithArithmAndSPI def alg
+
 unitTest name n cntx alg = do
-  let n' = nitta $ synthesis $ frame n alg
-  r <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
-  r @? name
+  let n' = schedule $ mkModelWithOneNetwork n alg
+  TestBenchReport{ tbStatus } <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
+  tbStatus @? name
 
 badUnitTest name n cntx alg = do
-  let n' = nitta $ synthesis $ frame n alg
-  r <- writeAndRunTestBenchDevNull $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
-  not r @? name
-
-synthesis f = foldl (\f' _ -> naive def f') f $ replicate 50 ()
-
-frame n alg
-  = let n' = bindAll alg n
-    in Frame n' (DFG $ map node alg) Nothing :: SystemState String String String Int (TaggedTime String Int)
+  let n' = schedule $ mkModelWithOneNetwork n alg
+  TestBenchReport{ tbStatus } <- writeAndRunTestBenchDevNull $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
+  not tbStatus @? name
