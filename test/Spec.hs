@@ -13,6 +13,7 @@ import           Data.Default                  (def)
 import           Demo
 import           NITTA.Frontend
 import           NITTA.Functions
+import           NITTA.ProcessUnits.Divider
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnits.Multiplier
 import           NITTA.Test.BusNetwork
@@ -47,6 +48,26 @@ main = do
             [ testProperty "completeness" $ prop_completness <$> multiplierGen
             , testProperty "simulation" $ fmap (prop_simulation "prop_simulation_multiplier" counter) $ inputsGen =<< multiplierGen
             ]
+        ,  testGroup "Divider process unit"
+            [ processorTest "lua_divider_test_1" $ lua2functions
+                [qq|function f(a)
+                        a, _b = a / 2
+                        f(a)
+                    end
+                    f(1024)|]
+            , processorTest "lua_divider_test_2" $ lua2functions
+                [qq|function f(a, b)
+                        a, _ = a / 2
+                        b, _ = b / 3
+                        f(a, b)
+                    end
+                    f(1024, 1024)|]
+            -- FIXME: Auto text can't work correctly, because processGen don't take into account the
+            -- facts that some variables may go out.
+
+            -- , testProperty "completeness" $ prop_completness <$> dividerGen
+            -- , testProperty "simulation" $ fmap (prop_simulation "prop_simulation_divider" counter) $ inputsGen =<< dividerGen
+            ]
         -- , testGroup "Shift process unit"
         --     [ testCase "shiftBiDirection" shiftBiDirection
         --     ]
@@ -59,7 +80,6 @@ main = do
             , testCase "testAccumAndFram" testAccumAndFram
             , testCase "testMultiplier" testMultiplier
             , testCase "testDiv4" testDiv4
-            , testCase "badTestFram" badTestFram
             , testCase "testFibonacci" testFibonacci
             , testCase "testFibonacciWithSPI" testFibonacciWithSPI
             ]
@@ -116,12 +136,6 @@ main = do
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "lua_divider_test" $ lua2functions
-                [qq|function f(a)
-                        a, _b = a / 2
-                        f(a)
-                    end
-                    f(1024)|]
             , processorTest "lua_teacup" $ lua2functions teacupLua
             ]
       ]
@@ -136,4 +150,8 @@ framGen = processGen (def :: (Fram String Int Int))
 
 multiplierGen = processGen (multiplier True)
     [ F <$> (arbitrary :: Gen (Multiply (Parcel String Int)))
+    ]
+
+dividerGen = processGen (divider 4 True)
+    [ F <$> (arbitrary :: Gen (Division (Parcel String Int)))
     ]

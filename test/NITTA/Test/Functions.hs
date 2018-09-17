@@ -52,7 +52,9 @@ instance Arbitrary (Constant (Parcel String Int)) where
 instance Arbitrary (Multiply (Parcel String Int)) where
   arbitrary = suchThat (Multiply <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
 
-  
+instance Arbitrary (Division (Parcel String Int)) where
+  arbitrary = suchThat (Division <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
+
 reorderAlgorithmTest = do
   let f = reorderAlgorithm :: [F (Parcel String Int)] -> [F (Parcel String Int)]
   let l1 = loop 0 "b2" ["a1"      ]
