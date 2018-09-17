@@ -57,8 +57,6 @@ data SynthesisView
 
 instance ToJSON SynthesisView
 
--- FIXME: Filter a synthesis tree to the fastest (or n fastet) process.
-
 view n = f <$> mzip (nidsTree n) n
     where
         f ( nid, Synthesis sModel sCntx sStatus _sCache ) = SynthesisView
@@ -68,15 +66,6 @@ view n = f <$> mzip (nidsTree n) n
             , svDuration=fromEnum $ targetProcessDuration sModel
             }
 
-
--- FIXME: Convert to record.
-type RESTOption =
-    ( Int
-    , GlobalMetrics
-    , SpecialMetrics
-    , Option (CompilerDT String String String (TaggedTime String Int))
-    , Decision (CompilerDT String String String (TaggedTime String Int))
-    )
 
 
 -- *REST API
@@ -106,7 +95,7 @@ withSynthesis st nid
 
 
 type SimpleCompilerAPI
-    =    "simple" :> "options" :> Get '[JSON] [ RESTOption ]
+    =    "simple" :> "options" :> Get '[JSON] [ WithMetric (CompilerDT String String String (TaggedTime String Int)) ]
     :<|> "simple" :> "obviousBind" :> Post '[JSON] Nid
     :<|> "simple" :> "allThreads" :> QueryParam' '[Required] "deep" Int :> Post '[JSON] Nid
     :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep

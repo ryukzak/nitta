@@ -144,6 +144,9 @@ instance ToJSON SynthesisSetup
 instance ToJSON SpecialMetrics
 instance ToJSON GlobalMetrics
 
+instance ToJSON (WithMetric (CompilerDT String String String (TaggedTime String Int))) where 
+    toJSON WithMetric{ mIntegral, mGlobal, mSpecial, mOption, mDecision } 
+        = toJSON ( mIntegral, mGlobal, mSpecial, mOption, mDecision )
 
 
 -- *Basic data

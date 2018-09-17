@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -24,10 +25,11 @@ module NITTA.Compiler
     , simpleSynthesisAllThreads
     , synthesisObviousBind
 
-      -- *Metrics    
-    , optionsWithMetrics
+      -- *Metrics
+    , WithMetric(..)
     , GlobalMetrics(..)
     , SpecialMetrics(..)
+    , optionsWithMetrics
 
       -- *Utils
     , isSchedulingCompletable
@@ -39,7 +41,7 @@ module NITTA.Compiler
 
 import           Control.Arrow         (second)
 import           Data.Default
-import           Data.List             (find, sortOn)
+import           Data.List             (find, sort)
 import qualified Data.Map              as M
 import           Data.Maybe
 import           Data.Proxy
@@ -59,7 +61,7 @@ import           Numeric.Interval      (Interval, (...))
 
 -- |Schedule process by simple synthesis.
 simpleSynthesis model
-    = let 
+    = let
         n = rootSynthesis model
         (n', nid') = synthesisObviousBind n
         Just (n'', nid'') = update (Just . simpleSynthesisAllThreads simple 1) nid' n'
@@ -72,8 +74,7 @@ simpleSynthesisStep info SynthesisStep{ ix } Synthesis{ sModel }
     = case optionsWithMetrics sModel of
         [] -> Nothing
         opts -> let
-            (_, _, _, _, d) = opts !! ix
-            sModel' = decision compiler sModel d
+            sModel' = decision compiler sModel $ mDecision (opts !! ix)
             in Just $ Synthesis
                 { sModel=sModel'
                 , sCntx=[comment info]
@@ -93,17 +94,14 @@ simpleSynthesisStep info SynthesisStep{ ix } Synthesis{ sModel }
 synthesisObviousBind n = recApply inner (SynthesisStep UnambiguousBind 0) n
     where
         inner _ syn@Synthesis{ sModel }
-            = let
-                opts = optionsWithMetrics sModel
-                opts' = map fst $ filter
-                            (\(_, (_, _, sm, _, _)) -> case sm of
-                                BindingMetrics{ alternative } -> alternative == 1
-                                _                             -> False
-                            )
-                            $ zip [0..] opts
-            in case opts' of
-                (ix:_) -> simpleSynthesisStep "obliousBind" SynthesisStep{ setup=UnambiguousBind, ix } syn
-                _      -> Nothing
+            = case find 
+                    (   (\case
+                            BindingMetrics{ alternative } -> alternative == 1
+                            _                             -> False
+                        ) . mSpecial . snd
+                    ) $ zip [0..] $ optionsWithMetrics sModel of
+                Just (ix, _) -> simpleSynthesisStep "obliousBind" SynthesisStep{ setup=UnambiguousBind, ix } syn 
+                Nothing -> Nothing
 
 
 
@@ -197,9 +195,10 @@ instance DecisionType (CompilerDT title tag v t) where
         | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
         deriving ( Generic, Show )
 
-filterBindingOption opts = [ x | x@BindingOption{} <- opts ]
-filterControlFlowOption opts = [ x | x@ControlFlowOption{} <- opts ]
-filterDataFlowOption opts = [ x | x@DataFlowOption{} <- opts ]
+
+isBinding = \case BindingOption{} -> True; _ -> False
+isControlFlow = \case ControlFlowOption{} -> True; _ -> False
+isDataFlow = \case DataFlowOption{} -> True; _ -> False
 
 specializeDataFlowOption (DataFlowOption s t) = DataFlowO s t
 specializeDataFlowOption _ = error "Can't specialize non DataFlow option!"
@@ -259,14 +258,38 @@ option2decision (DataFlowOption src trg)
 ---------------------------------------------------------------------
 -- * Наивный, но полноценный компилятор.
 
+data WithMetric dt
+    = WithMetric
+        { mIntegral :: Int
+        , mGlobal   :: GlobalMetrics
+        , mSpecial  :: SpecialMetrics
+        , mOption   :: Option dt
+        , mDecision :: Decision dt
+        }
+
+instance Eq (WithMetric dt) where
+    WithMetric{ mIntegral=a } == WithMetric{ mIntegral=b } = a == b
+
+instance Ord (WithMetric dt) where
+    WithMetric{ mIntegral=a } `compare` WithMetric{ mIntegral=b } = a `compare` b
+
+
+
+
 optionsWithMetrics model
-    = reverse $ sortOn (\(x, _, _, _, _) -> x) $ map measure' opts
+    = reverse $ sort $ map measure' opts
     where
         opts = options compiler model
         gm = measureG opts model
         measure' o
             = let m = measure opts model o
-            in ( integral gm m, gm, m, o, option2decision o )
+            in WithMetric
+                { mIntegral=integral gm m
+                , mGlobal=gm
+                , mSpecial=m
+                , mOption=o
+                , mDecision=option2decision o
+                }
 
 
 
@@ -277,9 +300,9 @@ data GlobalMetrics
 
 measureG opts _
     = GlobalMetrics
-        { bindingOptions=length $ filterBindingOption opts
-        , dataFlowOptions=length $ filterDataFlowOption opts
-        , controlFlowOptions=length $ filterControlFlowOption opts
+        { bindingOptions=length $ filter isBinding opts
+        , dataFlowOptions=length $ filter isDataFlow opts
+        , controlFlowOptions=length $ filter isControlFlow opts
         }
 
 -- | Метрики для принятия решения компилятором.
@@ -306,7 +329,7 @@ data SpecialMetrics
 measure opts Level{ currentFrame } opt = measure opts currentFrame opt
 measure opts Frame{ processor=net@BusNetwork{ bnPus } } (BindingOption fb title) = BindingMetrics
     { critical=isCritical fb
-    , alternative=length (howManyOptionAllow (filterBindingOption opts) M.! fb)
+    , alternative=length (howManyOptionAllow (filter isBinding opts) M.! fb)
     , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind fb (bnPus M.! title)
     , restless=fromMaybe 0 $ do
         (_var, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ waitingTimeOfVariables net
@@ -335,7 +358,7 @@ integral GlobalMetrics{..} _                               = 0
 
 tryMakeLevelDone l@Level{ currentFrame=f@Frame{} }
     | opts <- options compiler f
-    , null $ filterBindingOption opts ++ filterDataFlowOption opts
+    , null $ filter isBinding opts ++ filter isDataFlow opts
     = makeLevelDone l
 tryMakeLevelDone l = l
 
