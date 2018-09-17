@@ -58,7 +58,7 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
     = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
-  schedule st@State{ sIn=Just v, sRight } act
+  simpleSynthesis st@State{ sIn=Just v, sRight } act
     | v `elem` variables act
     = let st' = st{ sIn=Nothing }
           work = do
@@ -66,12 +66,12 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
             b <- serialSchedule @(Shift v x t) (Work sRight Bit Logic) act{ epdAt=act^.at.infimum + 1 ... act^.at.supremum }
             return $ a ++ b
       in (st', work)
-  schedule st@State{ sOut=vs } act
+  simpleSynthesis st@State{ sOut=vs } act
     | not $ null $ vs `intersect` elems (variables act)
     = let st' = st{ sOut=vs \\ elems (variables act) }
           work = serialSchedule @(Shift v x t) Out $ shift (-1) act
       in (st', work)
-  schedule _ _ = error "Accum schedule error!"
+  simpleSynthesis _ _ = error "Accum simpleSynthesis error!"
 
 
 data StepSize  = Bit   | Byte       deriving ( Show, Eq )

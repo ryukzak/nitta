@@ -123,3 +123,13 @@ unitTestBench title proxy cntx alg = do
         wd = joinPath ["hdl", "gen", title]
         pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
     (tbStatus <$> writeAndRunTestBench (Project title lib wd pu cntx)) @? title
+
+
+
+-- |Выполнить привязку списка функциональных блоков к указанному вычислительному блоку и наивным
+-- образом спланировать вычислительный процесс.
+bindAllAndNaiveSchedule alg pu0 = naiveSchedule $ foldl (flip bind) pu0 alg
+    where
+        naiveSchedule pu
+            | opt : _ <- options endpointDT pu = naiveSchedule $ decision endpointDT pu $ endpointOption2action opt
+            | otherwise = pu

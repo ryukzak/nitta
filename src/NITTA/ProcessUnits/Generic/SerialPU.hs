@@ -95,7 +95,7 @@ class SerialPUState st v x t | st -> v x t where
   -- - состояние после выполнения вычислительного процесса;
   -- - монада State, которая сформирует необходимое описание многоуровневого вычислительного
   --   процессса.
-  schedule :: st -> Decision (EndpointDT v t) -> (st, State (Process (Parcel v x) t) [ProcessUid])
+  simpleSynthesis :: st -> Decision (EndpointDT v t) -> (st, State (Process (Parcel v x) t) [ProcessUid])
 
 
 
@@ -127,7 +127,7 @@ instance ( Var v, Time t
    | nextTick spuProcess > act^.at.infimum
    = error $ "Time wrap! Time: " ++ show (nextTick spuProcess) ++ " Act start at: " ++ show (act^.at.infimum)
    | otherwise
-    = let (spuState', work) = schedule spuState act
+    = let (spuState', work) = simpleSynthesis spuState act
           (steps, spuProcess') = modifyProcess spuProcess work
           cur' = cur{ cSteps=steps ++ cSteps cur }
           pu' = pu{ spuState=spuState'

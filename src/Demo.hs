@@ -333,6 +333,6 @@ teacupLua =
 -----------------------------------------------------------
 
 demo prj@Project{ projectPath, model } = do
-    let prj' = prj{ model=schedule model }
+    let prj' = prj{ model=simpleSynthesis model }
     writeProject prj'
     putStrLn $ "Demo project in " ++ projectPath

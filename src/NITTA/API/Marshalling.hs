@@ -141,7 +141,6 @@ instance ToJSON TestBenchReport
 
 -- *Simple compiler
 instance ToJSON SynthesisSetup
-instance ToJSON (CompilerStep String String String Int (TaggedTime String Int))
 instance ToJSON SpecialMetrics
 instance ToJSON GlobalMetrics
 

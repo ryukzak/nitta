@@ -57,18 +57,18 @@ instance ( Var v
     = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 2 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
-  schedule st@Accum{ acIn=vs@(_:_) } act
+  simpleSynthesis st@Accum{ acIn=vs@(_:_) } act
     | let actV = oneOf $ variables act
     , ([(neg, _)], remain) <- partition ((== actV) . snd) vs
     = let i = if length vs == 2 then Init neg else Load neg
           work = serialSchedule @(Accum v x t) i act
       in (st{ acIn=remain }, work)
-  schedule st@Accum{ acIn=[], acOut=vs } act
+  simpleSynthesis st@Accum{ acIn=[], acOut=vs } act
     | not $ null $ vs `intersect` elems (variables act)
     = let st' = st{ acOut=vs \\ elems (variables act) }
           work = serialSchedule @(Accum v x t) Out $ shift (-1) act
       in (st', work)
-  schedule _ _ = error "Accum schedule error!"
+  simpleSynthesis _ _ = error "Accum simpleSynthesis error!"
 
 
 instance Controllable (Accum v x t) where

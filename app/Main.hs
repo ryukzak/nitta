@@ -125,7 +125,7 @@ main = do
     -- fibonacciDemo
 
     -- FIXME: why it's don't work?
-    -- test "lua_test" $ schedule $ mkModelWithOneNetwork microarch $ lua2functions
+    -- test "lua_test" $ simpleSynthesis $ mkModelWithOneNetwork microarch $ lua2functions
     --     [qq|function fib(a, b)
     --             a, b = b, reg(a + reg(b + 0)) + 0
     --             fib(a, b)
@@ -133,7 +133,7 @@ main = do
     --         fib(0, 1)|]
 
     -- putStrLn "funSim teacup:"
-    -- test "teacup" $ schedule $ mkModelWithOneNetwork microarch teacupAlg
+    -- test "teacup" $ simpleSynthesis $ mkModelWithOneNetwork microarch teacupAlg
     -- funSim 5 D.def teacupAlg
 
     -- putStrLn "funSim fibonacci:"

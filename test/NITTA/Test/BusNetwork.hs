@@ -114,11 +114,11 @@ testMultiplier = unitTest "testMultiplier" netWithArithm
 processorTest name alg = testCase name $ unitTest ("processorTest_" ++ name) netWithArithmAndSPI def alg
 
 unitTest name n cntx alg = do
-  let n' = schedule $ mkModelWithOneNetwork n alg
+  let n' = simpleSynthesis $ mkModelWithOneNetwork n alg
   TestBenchReport{ tbStatus } <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
   tbStatus @? name
 
 badUnitTest name n cntx alg = do
-  let n' = schedule $ mkModelWithOneNetwork n alg
+  let n' = simpleSynthesis $ mkModelWithOneNetwork n alg
   TestBenchReport{ tbStatus } <- writeAndRunTestBenchDevNull $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
   not tbStatus @? name

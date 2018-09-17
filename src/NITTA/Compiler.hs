@@ -18,26 +18,28 @@ Stability   : experimental
 -}
 
 module NITTA.Compiler
-    ( bindAllAndNaiveSchedule
-    , compiler
-    , CompilerDT
-    , CompilerStep(..)
-    , isSchedulingCompletable
-    , SynthesisSetup(..)
+    ( -- *Simple synthesis
+      simpleSynthesis
+    , simpleSynthesisStep
+    , simpleSynthesisAllThreads
+    , synthesisObviousBind
+
+      -- *Metrics    
     , optionsWithMetrics
-    , endpointOption2action
     , GlobalMetrics(..)
     , SpecialMetrics(..)
-    , simpleSynthesisStep
-    , compilerObviousBind
-    , compilerAllTheads
-    , schedule
+
+      -- *Utils
+    , isSchedulingCompletable
+    , endpointOption2action
+    , compiler
+    , CompilerDT
     , mkModelWithOneNetwork
     ) where
 
 import           Control.Arrow         (second)
 import           Data.Default
-import           Data.List             (find, maximumBy, sortOn)
+import           Data.List             (find, sortOn)
 import qualified Data.Map              as M
 import           Data.Maybe
 import           Data.Proxy
@@ -56,24 +58,22 @@ import           Numeric.Interval      (Interval, (...))
 
 
 -- |Schedule process by simple synthesis.
-schedule model
+simpleSynthesis model
     = let 
         n = rootSynthesis model
-        (n', nid') = compilerObviousBind n
-        Just (n'', nid'') = update (Just . compilerAllTheads simple 1) nid' n'
+        (n', nid') = synthesisObviousBind n
+        Just (n'', nid'') = update (Just . simpleSynthesisAllThreads simple 1) nid' n'
         Synthesis{ sModel=Frame{ processor } } = getSynthesis nid'' n''
     in processor
 
 
 
-simpleSynthesisStep info SynthesisStep{ setup, ix } Synthesis{ sModel }
-    | let
-        compSt = CompilerStep sModel setup Nothing
-    = case optionsWithMetrics compSt of
+simpleSynthesisStep info SynthesisStep{ ix } Synthesis{ sModel }
+    = case optionsWithMetrics sModel of
         [] -> Nothing
         opts -> let
             (_, _, _, _, d) = opts !! ix
-            sModel' = state $ decision compiler compSt d
+            sModel' = decision compiler sModel d
             in Just $ Synthesis
                 { sModel=sModel'
                 , sCntx=[comment info]
@@ -90,11 +90,11 @@ simpleSynthesisStep info SynthesisStep{ setup, ix } Synthesis{ sModel }
 
 
 
-compilerObviousBind n = recApply inner (SynthesisStep UnambiguousBind 0) n
+synthesisObviousBind n = recApply inner (SynthesisStep UnambiguousBind 0) n
     where
         inner _ syn@Synthesis{ sModel }
             = let
-                opts = optionsWithMetrics def{ state=sModel }
+                opts = optionsWithMetrics sModel
                 opts' = map fst $ filter
                             (\(_, (_, _, sm, _, _)) -> case sm of
                                 BindingMetrics{ alternative } -> alternative == 1
@@ -107,9 +107,9 @@ compilerObviousBind n = recApply inner (SynthesisStep UnambiguousBind 0) n
 
 
 
-compilerAllTheads setup (1 :: Int) rootN@Node{ rootLabel=Synthesis{ sModel } }
+simpleSynthesisAllThreads setup (1 :: Int) rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
-        mds = [ 0 .. length (optionsWithMetrics def{ state=sModel }) - 1 ]
+        mds = [ 0 .. length (optionsWithMetrics sModel) - 1 ]
         (rootN', nids) = foldl
             (\(n1, nids1) ix ->
                 let Just (n2, nid2) = apply (simpleSynthesisStep "allThreads") SynthesisStep{ setup, ix } n1
@@ -118,13 +118,13 @@ compilerAllTheads setup (1 :: Int) rootN@Node{ rootLabel=Synthesis{ sModel } }
             (rootN, [])
             mds
     in (rootN', bestNids rootN' nids)
-compilerAllTheads setup deep rootN@Node{ rootLabel=Synthesis{ sModel } }
+simpleSynthesisAllThreads setup deep rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
-        mds = [ 0 .. length (optionsWithMetrics def{ state=sModel }) - 1 ]
+        mds = [ 0 .. length (optionsWithMetrics sModel) - 1 ]
         (rootN', nids) = foldl
             (\(n1, nids1) ix ->
                 let Just (n2, nid2) = apply (simpleSynthesisStep "allThreads") SynthesisStep{ setup, ix } n1
-                    Just (n3, nid3) = update (Just . compilerAllTheads setup (deep-1)) nid2 n2
+                    Just (n3, nid3) = update (Just . simpleSynthesisAllThreads setup (deep-1)) nid2 n2
                 in (n3, nid3 : nids1))
             (rootN, [])
             mds
@@ -145,24 +145,11 @@ bestNids root nids
 -- |Make a model of NITTA process with one network and a specific algorithm. All functions are
 -- already bound to the network.
 mkModelWithOneNetwork arch alg = Frame
-    { processor=bindAll alg arch
+    { processor=foldl (flip bind) arch alg
     , dfg=DFG $ map node alg
     , timeTag=Nothing
     } :: ModelState String String String Int (TaggedTime String Int)
 
-
-
--- | Выполнить привязку списка функциональных блоков к указанному вычислительному блоку.
-bindAll fbs pu = foldl (flip bind) pu fbs
-
-
--- |Выполнить привязку списка функциональных блоков к указанному вычислительному блоку и наивным
--- образом спланировать вычислительный процесс.
-bindAllAndNaiveSchedule alg pu0 = naiveSchedule $ bindAll alg pu0
-    where
-        naiveSchedule pu
-            | opt : _ <- options endpointDT pu = naiveSchedule $ decision endpointDT pu $ endpointOption2action opt
-            | otherwise = pu
 
 
 -- | Проверка является процесс планирования вычислительного процесса полностью завершимым (все
@@ -272,41 +259,13 @@ option2decision (DataFlowOption src trg)
 ---------------------------------------------------------------------
 -- * Наивный, но полноценный компилятор.
 
-data CompilerStep title tag v x t
-    = CompilerStep
-        { state        :: ModelState title tag v x t
-        , config       :: SynthesisSetup
-        -- TODO: rename to prevDevision
-        , lastDecision :: Maybe (Decision (CompilerDT title tag v t))
-        }
-    deriving ( Generic )
-
-instance Default (CompilerStep title tag v x t) where
-    def = CompilerStep
-        { state=undefined
-        , config=simple
-        , lastDecision=Nothing
-        }
-
-
-instance ( Time t, Var v
-         ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
-                   CompilerDT (CompilerStep String String v Int (TaggedTime String t))
-         where
-    options proxy CompilerStep{ state } = options proxy state
-    decision proxy st@CompilerStep{ state } d = st
-        { state=decision proxy state d
-        , lastDecision=Just d
-        }
-
-
-optionsWithMetrics CompilerStep{ state }
+optionsWithMetrics model
     = reverse $ sortOn (\(x, _, _, _, _) -> x) $ map measure' opts
     where
-        opts = options compiler state
-        gm = measureG opts state
+        opts = options compiler model
+        gm = measureG opts model
         measure' o
-            = let m = measure opts state o
+            = let m = measure opts model o
             in ( integral gm m, gm, m, o, option2decision o )
 
 

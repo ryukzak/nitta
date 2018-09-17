@@ -27,7 +27,6 @@ import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Zip      (mzip)
 import           Data.Aeson
-import           Data.Default
 import           Data.Tree
 import           GHC.Generics
 import           NITTA.API.Marshalling  ()
@@ -115,8 +114,8 @@ type SimpleCompilerAPI
 
 simpleCompilerServer st nid
     =    simpleCompilerOptions st nid
-    :<|> updateSynthesis (Just . compilerObviousBind) st nid
-    :<|> ( \deep -> updateSynthesis (Just . compilerAllTheads simple deep) st nid )
+    :<|> updateSynthesis (Just . synthesisObviousBind) st nid
+    :<|> ( \deep -> updateSynthesis (Just . simpleSynthesisAllThreads simple deep) st nid )
     :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix }) st nid )
     :<|> \case
             True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=0 }) st nid
@@ -131,8 +130,7 @@ get st nid = do
 simpleCompilerOptions st nid = do
     root <- liftSTM $ readTVar st
     let Synthesis{ sModel } = getSynthesis nid root
-    let compilerState = def{ state=sModel }
-    return $ optionsWithMetrics compilerState
+    return $ optionsWithMetrics sModel
 
 getModel st nid = do
     root <- liftSTM $ readTVar st
@@ -151,7 +149,7 @@ getTestBenchOutput st _nid name = do
             { projectName=name
             , libraryPath="../.."
             , projectPath=joinPath ["hdl", "gen", name]
-            , model=schedule sModel
+            , model=simpleSynthesis sModel
             , testCntx=Nothing
             }
     liftIO $ writeAndRunTestBench prj

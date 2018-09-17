@@ -61,13 +61,13 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
       receive' (_, vs:_) = Just $ EndpointO (Source $ fromList vs) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
       receive' _ = Nothing
 
-  schedule st@State{ spiSend=(ds, v:rs) } act
+  simpleSynthesis st@State{ spiSend=(ds, v:rs) } act
     | singleton v == variables act
     = let st' = st{ spiSend=(v:ds, rs) }
           work = serialSchedule @(SPI v x t) Sending act
       in (st', work)
 
-  schedule st@State{ spiReceive=(ds, vs:rs) } act
+  simpleSynthesis st@State{ spiReceive=(ds, vs:rs) } act
     -- FIXME: Выгрузка данных должна осуществляться в несколько шагов. Эту ошибку необходимо исправить здесь и в
     -- аппаратуре.
     | fromList vs == variables act
@@ -75,7 +75,7 @@ instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t wher
           work = serialSchedule @(SPI v x t) Receiving act
       in (st', work)
 
-  schedule _ _ = error "Schedule error! (SPI)"
+  simpleSynthesis _ _ = error "Schedule error! (SPI)"
 
 
 
