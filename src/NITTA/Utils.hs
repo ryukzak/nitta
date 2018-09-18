@@ -14,6 +14,7 @@ module NITTA.Utils
     , isTimeWrap
     , timeWrapError
     , minimumOn
+    , maximumOn
     , shift
     -- *HDL generation
     , bool2verilog
@@ -47,7 +48,7 @@ module NITTA.Utils
 
 import           Control.Monad.State
 import           Data.Default
-import           Data.List           (minimumBy, sortOn)
+import           Data.List           (minimumBy, maximumBy, sortOn)
 import           Data.Maybe          (isJust, mapMaybe)
 import           Data.Set            (difference, elems, unions)
 import           Data.Typeable       (Typeable, cast)
@@ -92,6 +93,7 @@ isTimeWrap p act = nextTick p > act^.at.infimum
 timeWrapError p act = error $ "You can't start work yesterday :) fram time: " ++ show (nextTick p) ++ " action start at: " ++ show (act^.at.infimum)
 
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
+maximumOn f = maximumBy (\a b -> f a `compare` f b)
 
 shift n d@EndpointD{ epdAt } = d{ epdAt=(I.inf epdAt + n) ... (I.sup epdAt + n) }
 

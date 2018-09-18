@@ -105,10 +105,10 @@ simpleCompilerServer st nid
     =    simpleCompilerOptions st nid
     :<|> updateSynthesis (Just . synthesisObviousBind) st nid
     :<|> ( \deep -> updateSynthesis (Just . simpleSynthesisAllThreads simple deep) st nid )
-    :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix }) st nid )
+    :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix=Just ix }) st nid )
     :<|> \case
-            True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=0 }) st nid
-            False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=0 }) st nid
+            True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
+            False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
 
 
 
@@ -128,9 +128,11 @@ getModel st nid = do
 
 updateSynthesis f st nid = liftSTM $ do
     n <- readTVar st
-    let Just (n', nid') = update f nid n
-    writeTVar st n'
-    return nid'
+    case update f nid n of
+        Just (n', nid') -> do 
+            writeTVar st n'
+            return nid'
+        Nothing -> return nid
 
 getTestBenchOutput st _nid name = do
     Node{ rootLabel=Synthesis{ sModel } } <- liftSTM $ readTVar st

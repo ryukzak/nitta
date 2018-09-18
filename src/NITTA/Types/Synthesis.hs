@@ -120,7 +120,7 @@ simple = Simple
 
 data SynthesisStep = SynthesisStep
     { setup :: SynthesisSetup
-    , ix    :: Int
+    , ix    :: Maybe Int -- ^Nothing means best from the synthesis point of view.
     }
     deriving ( Show, Eq, Ord )
 

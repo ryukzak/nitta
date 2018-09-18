@@ -73,8 +73,10 @@ simpleSynthesis model
 simpleSynthesisStep info SynthesisStep{ ix } Synthesis{ sModel }
     = case optionsWithMetrics sModel of
         [] -> Nothing
-        opts -> let
-            sModel' = decision compiler sModel $ mDecision (opts !! ix)
+        opts -> 
+            let
+                ix' = fromMaybe (fst $ maximumOn (mIntegral . snd) $ zip [0..] opts) ix
+                sModel' = decision compiler sModel $ mDecision (opts !! ix')
             in Just $ Synthesis
                 { sModel=sModel'
                 , sCntx=[comment info]
@@ -91,7 +93,7 @@ simpleSynthesisStep info SynthesisStep{ ix } Synthesis{ sModel }
 
 
 
-synthesisObviousBind n = recApply inner (SynthesisStep UnambiguousBind 0) n
+synthesisObviousBind n = recApply inner (SynthesisStep UnambiguousBind Nothing) n
     where
         inner _ syn@Synthesis{ sModel }
             = case find 
@@ -100,25 +102,25 @@ synthesisObviousBind n = recApply inner (SynthesisStep UnambiguousBind 0) n
                             _                             -> False
                         ) . mSpecial . snd
                     ) $ zip [0..] $ optionsWithMetrics sModel of
-                Just (ix, _) -> simpleSynthesisStep "obliousBind" SynthesisStep{ setup=UnambiguousBind, ix } syn 
+                Just (ix, _) -> simpleSynthesisStep "obliousBind" SynthesisStep{ setup=UnambiguousBind, ix=Just ix } syn 
                 Nothing -> Nothing
 
 
 
 simpleSynthesisAllThreads setup (1 :: Int) rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
-        mds = [ 0 .. length (optionsWithMetrics sModel) - 1 ]
+        mds = map Just [ 0 .. length (optionsWithMetrics sModel) - 1 ]
         (rootN', nids) = foldl
             (\(n1, nids1) ix ->
                 let Just (n2, nid2) = apply (simpleSynthesisStep "allThreads") SynthesisStep{ setup, ix } n1
-                    Just (n3, nid3) = update (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup, ix=0 }) nid2 n2
+                    Just (n3, nid3) = update (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup, ix=Nothing }) nid2 n2
                 in (n3, nid3 : nids1))
             (rootN, [])
             mds
     in (rootN', bestNids rootN' nids)
 simpleSynthesisAllThreads setup deep rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
-        mds = [ 0 .. length (optionsWithMetrics sModel) - 1 ]
+        mds = map Just [ 0 .. length (optionsWithMetrics sModel) - 1 ]
         (rootN', nids) = foldl
             (\(n1, nids1) ix ->
                 let Just (n2, nid2) = apply (simpleSynthesisStep "allThreads") SynthesisStep{ setup, ix } n1
