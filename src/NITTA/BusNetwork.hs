@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE LambdaCase            #-}
@@ -51,8 +52,7 @@ import           Text.InterpolatedString.Perl6 (qq)
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
-class ( Typeable v, Ord v, Show v ) => Title v
-instance ( Typeable v, Ord v, Show v ) => Title v
+type Title v = ( Typeable v, Ord v, Show v )
 
 
 data GBusNetwork title spu v x t = BusNetwork

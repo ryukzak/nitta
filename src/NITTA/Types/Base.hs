@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
@@ -38,9 +39,7 @@ import           Numeric.Interval
 -- TODO: Видимо именно тут заложена самая страшная мина текущей реализации, а именно - отсутствие
 -- типизации. При этом в настоящий момент совершенно не понятно как и главное где учитывать
 -- типизацию данных ходящих по шине.
-class ( Typeable v, Ord v, Show v ) => Var v
-instance ( Typeable v, Ord v, Show v ) => Var v
-instance {-# OVERLAPS #-} Var String
+type Var v = ( Typeable v, Ord v, Show v )
 
 class Variables a v | a -> v where
   -- |Получить список идентификаторов связанных переменных.
@@ -80,7 +79,7 @@ instance ( Show (I io), Variables (I io) v, Eq (I io)
 -- нужен, так как фактические значения будут описываться в рамках IOTypeFamily.
 data Parcel v x
 
-instance Var v => IOTypeFamily (Parcel v x) where
+instance ( Var v ) => IOTypeFamily (Parcel v x) where
   data I (Parcel v x) = I v -- ^Загружаемые значения.
     deriving (Show, Eq, Ord)
   data O (Parcel v x) = O (S.Set v) -- ^Выгружаемые значения.

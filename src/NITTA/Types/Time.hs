@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE NamedFieldPuns        #-}
@@ -20,13 +21,8 @@ import           Numeric.Interval
 
 
 -- | Класс координаты во времени.
-class ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
-instance ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t ) => Time t
-instance {-# OVERLAPS #-} Time Int
-instance {-# OVERLAPS #-} ( Default t, Typeable tag, Typeable t
-                          , Eq tag, Ord t, Num t, Bounded t, Enum t
-                          , Show tag, Show t
-                          ) => Time (TaggedTime tag t)
+
+type Time t = ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t )
 
 -- | Описание временных ограничений на активности (Ativity). Используется при описании доступных
 -- опций для планирования вычислительного процесса.
@@ -63,8 +59,7 @@ data TaggedTime tag t
   , clock :: t
   } deriving ( Typeable, Generic )
 
-class ( Eq tag, Show tag, Typeable tag ) => Tag tag
-instance ( Eq tag, Show tag, Typeable tag ) => Tag tag
+type Tag tag = ( Eq tag, Show tag, Typeable tag )
 
 instance ( Default t ) => Default (TaggedTime tag t) where
   def = TaggedTime Nothing def

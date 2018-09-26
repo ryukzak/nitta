@@ -55,8 +55,6 @@ import           NITTA.Utils
 
 
 
-class ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, B.Bits a ) => Addr a
-instance ( Typeable a, Num a, Eq a, Ord a, Enum a, Show a, B.Bits a ) => Addr a
 addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test bench initialization
 
 

@@ -58,6 +58,7 @@ import           NITTA.Utils.Lens
 import           Numeric.Interval      (Interval, (...))
 
 
+-- FIXME: Dijkstra algorithm as a Synthesiser method.
 
 -- |Schedule process by simple synthesis.
 simpleSynthesis model
