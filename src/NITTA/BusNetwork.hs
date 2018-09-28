@@ -162,10 +162,10 @@ instance ( Title title, Var v, Time t
                 = let
                     fbs = bnRemains ++ concat (M.elems bnBinded)
                     alg = foldl
-                        (\dict (a, b) -> M.adjust ((:) b) a dict)
+                        (\dict Lock{ locked=a, lockBy=b } -> M.adjust ((:) b) a dict)
                         (M.fromList [(v, []) | v <- elems $ unionsMap variables fbs])
-                        $ filter (\(_a, b) -> b `notElem` bnForwardedVariables)
-                        $ concatMap dependency fbs
+                        $ filter (\Lock{ lockBy } -> lockBy `notElem` bnForwardedVariables)
+                        $ concatMap locks fbs
                     notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
                 in notBlockedVariables \\ bnForwardedVariables
 

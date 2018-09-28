@@ -83,6 +83,11 @@ sendSim cntx@Cntx{ cntxOutputs } k v = do
     let cntxOutputs' = M.alter (Just . maybe [v] (v:)) k cntxOutputs
     return cntx{ cntxOutputs=cntxOutputs' }
 
+inputsLockOutputs f = 
+    [ Lock{ locked=y, lockBy=x } 
+    | x <- elems $ inputs f
+    , y <- elems $ outputs f
+    ]
 
 
 -- |Симмулировать алгоритм.
@@ -136,6 +141,7 @@ framInput addr vs = F $ FramInput addr $ O $ fromList vs
 instance ( IOType io v x ) => Function (FramInput io) v where
     outputs (FramInput _ o) = variables o
     isCritical _ = True
+instance ( IOType io v x ) => Locks (FramInput io) v where locks _ = []
 instance ( Ord v, Num x ) => FunctionSimulation (FramInput (Parcel v x)) v x where
     -- |Невозможно симулировать данные операции без привязки их к конкретному PU, так как нет
     -- возможности понять что мы что-то записали по тому или иному адресу.
@@ -153,6 +159,7 @@ framOutput addr v = F $ FramOutput addr $ I v
 instance ( IOType io v x ) => Function (FramOutput io) v where
     inputs (FramOutput _ o) = variables o
     isCritical _ = True
+instance ( IOType io v x ) => Locks (FramOutput io) v where locks _ = []
 instance ( Ord v ) => FunctionSimulation (FramOutput (Parcel v x)) v x where
     simulate cntx@Cntx{ cntxFram } (FramOutput addr (I k)) = do
         v <- get cntx k
@@ -170,9 +177,8 @@ reg a b = F $ Reg (I a) (O $ fromList b)
 instance ( IOType io v x ) => Function (Reg io) v where
     inputs  (Reg a _b) = variables a
     outputs (Reg _a b) = variables b
-    dependency (Reg i o) = [ (b, a) | a <- elems $ variables i
-                                    , b <- elems $ variables o
-                                    ]
+instance ( IOType io v x ) => Locks (Reg io) v where 
+    locks = inputsLockOutputs
 instance ( Ord v ) => FunctionSimulation (Reg (Parcel v x)) v x where
     simulate cntx (Reg (I k1) (O k2)) = do
         v <- cntx `get` k1
@@ -191,6 +197,7 @@ instance ( IOType io v x ) => Function (Loop io) v where
     inputs  (Loop _ _a b) = variables b
     outputs (Loop _ a _b) = variables a
     insideOut _ = True
+instance ( IOType io v x ) => Locks (Loop io) v where locks _ = []
 instance ( Ord v, Show v, Show x ) => FunctionSimulation (Loop (Parcel v x)) v x where
     simulate cntx (Loop (X x) (O v2) (I v1)) = do
         let x' = fromMaybe x $ cntx `get` v1
@@ -207,9 +214,8 @@ add a b c = F $ Add (I a) (I b) $ O $ fromList c
 instance ( IOType io v x ) => Function (Add io) v where
     inputs  (Add  a  b _c) = variables a `union` variables b
     outputs (Add _a _b  c) = variables c
-    dependency (Add a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
-                                      , y <- elems $ variables c
-                                      ]
+instance ( IOType io v x ) => Locks (Add io) v where 
+    locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Add (Parcel v x)) v x where
     simulate cntx (Add (I k1) (I k2) (O k3)) = do
         v1 <- cntx `get` k1
@@ -228,9 +234,8 @@ sub a b c = F $ Sub (I a) (I b) $ O $ fromList c
 instance ( IOType io v x ) => Function (Sub io) v where
     inputs  (Sub  a  b _c) = variables a `union` variables b
     outputs (Sub _a _b  c) = variables c
-    dependency (Sub a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
-                                      , y <- elems $ variables c
-                                      ]
+instance ( IOType io v x ) => Locks (Sub io) v where 
+    locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Sub (Parcel v x)) v x where
     simulate cntx (Sub (I k1) (I k2) (O k3)) = do
         v1 <- cntx `get` k1
@@ -249,9 +254,8 @@ multiply a b c = F $ Multiply (I a) (I b) $ O $ fromList c
 instance ( IOType io v x ) => Function (Multiply io) v where
     inputs  (Multiply  a  b _c) = variables a `union` variables b
     outputs (Multiply _a _b  c) = variables c
-    dependency (Multiply a b c) = [ (y, x) | x <- elems $ variables a `union` variables b
-                                  , y <- elems $ variables c
-                                  ]
+instance ( IOType io v x ) => Locks (Multiply io) v where 
+    locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Multiply (Parcel v x)) v x where
     simulate cntx (Multiply (I k1) (I k2) (O k3)) = do
         v1 <- cntx `get` k1
@@ -280,9 +284,8 @@ division d n q r = F Division
 instance ( IOType io v x ) => Function (Division io) v where
     inputs  Division{ denom, numer } = variables denom `union` variables numer
     outputs Division{ quotient, remain } = variables quotient `union` variables remain
-    dependency fb = [ (y, x) | x <- elems $ inputs fb
-                             , y <- elems $ outputs fb
-                             ]
+instance ( IOType io v x ) => Locks (Division io) v where 
+    locks = inputsLockOutputs
 instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Division (Parcel v x)) v x where
     simulate cntx Division{ denom=I d, numer=I n, quotient=O q, remain=O r } = do
         v1 <- cntx `get` d
@@ -303,12 +306,14 @@ constant x vs = F $ Constant (X x) $ O $ fromList vs
 
 instance ( IOType io v x, Show x, Eq x, Typeable x ) => Function (Constant io) v where
     outputs (Constant _ o) = variables o
+instance ( IOType io v x ) => Locks (Constant io) v where locks _ = []
 instance ( Ord v ) => FunctionSimulation (Constant (Parcel v x)) v x where
     simulate cntx (Constant (X x) (O k))
         = set cntx k x
 
 
 
+-- FIXME: just fixme
 data ShiftLR io = ShiftL (I io) (O io)
                 | ShiftR (I io) (O io)
                 deriving ( Typeable )
@@ -322,6 +327,8 @@ shiftR a b = F $ ShiftR (I a) $ O $ fromList b
 instance ( IOType io v x ) => Function (ShiftLR io) v where
     outputs (ShiftL i o) = variables i `union` variables o
     outputs (ShiftR i o) = variables i `union` variables o
+instance ( IOType io v x ) => Locks (ShiftLR io) v where 
+    locks = inputsLockOutputs
 instance ( Ord v, B.Bits x ) => FunctionSimulation (ShiftLR (Parcel v x)) v x where
     simulate cntx (ShiftL (I k1) (O k2)) = do
         v1 <- cntx `get` k1
@@ -341,6 +348,7 @@ deriving instance ( IOType io v x ) => Show (Send io)
 deriving instance ( IOType io v x ) => Eq (Send io)
 instance ( IOType io v x ) => Function (Send io) v where
     inputs (Send i) = variables i
+instance ( IOType io v x ) => Locks (Send io) v where locks _ = []
 instance ( Ord v ) => FunctionSimulation (Send (Parcel v x)) v x where
     simulate cntx (Send (I k)) = do
         v <- cntx `get` k
@@ -355,6 +363,7 @@ deriving instance ( IOType io v x ) => Show (Receive io)
 deriving instance ( IOType io v x ) => Eq (Receive io)
 instance ( IOType io v x ) => Function (Receive io) v where
     outputs (Receive o) = variables o
+instance ( IOType io v x ) => Locks (Receive io) v where locks _ = []
 instance ( Ord v ) => FunctionSimulation (Receive (Parcel v x)) v x where
     simulate cntx (Receive (O ks)) = do
         let k = oneOf ks

@@ -12,9 +12,9 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module NITTA.Types.Base
-  ( module NITTA.Types.Base
-  , module NITTA.Types.Time
-  ) where
+    ( module NITTA.Types.Base
+    , module NITTA.Types.Time
+    ) where
 
 import           Data.Default
 import           Data.List
@@ -42,8 +42,8 @@ import           Numeric.Interval
 type Var v = ( Typeable v, Ord v, Show v )
 
 class Variables a v | a -> v where
-  -- |Получить список идентификаторов связанных переменных.
-  variables :: a -> S.Set v
+    -- |Получить список идентификаторов связанных переменных.
+    variables :: a -> S.Set v
 
 
 
@@ -54,12 +54,12 @@ class Variables a v | a -> v where
 -- - фактического (Parcel) описания пересылок (выход из f формирует значения а и b, значение a
 --   загружается в g, значение b загружается в h).
 class IOTypeFamily io where
-  -- |Тип для описания загружаемого значения.
-  data I io :: *
-  -- |Тип для описания выгружаемого значения.
-  data O io :: *
-  -- |Тип значения.
-  data X io :: *
+    -- |Тип для описания загружаемого значения.
+    data I io :: *
+    -- |Тип для описания выгружаемого значения.
+    data O io :: *
+    -- |Тип значения.
+    data X io :: *
 
 
 class ( Show (I io), Variables (I io) v, Eq (I io)
@@ -80,17 +80,17 @@ instance ( Show (I io), Variables (I io) v, Eq (I io)
 data Parcel v x
 
 instance ( Var v ) => IOTypeFamily (Parcel v x) where
-  data I (Parcel v x) = I v -- ^Загружаемые значения.
-    deriving (Show, Eq, Ord)
-  data O (Parcel v x) = O (S.Set v) -- ^Выгружаемые значения.
-    deriving (Show, Eq, Ord)
-  data X (Parcel v x) = X x -- ^Выгружаемые значения.
-    deriving (Show, Eq)
+    data I (Parcel v x) = I v -- ^Загружаемые значения.
+        deriving (Show, Eq, Ord)
+    data O (Parcel v x) = O (S.Set v) -- ^Выгружаемые значения.
+        deriving (Show, Eq, Ord)
+    data X (Parcel v x) = X x -- ^Выгружаемые значения.
+        deriving (Show, Eq)
 
 instance Variables (I (Parcel v x)) v where
-  variables (I v) = S.singleton v
+    variables (I v) = S.singleton v
 instance Variables (O (Parcel v x)) v where
-  variables (O v) = v
+    variables (O v) = v
 
 
 
@@ -99,60 +99,71 @@ instance Variables (O (Parcel v x)) v where
 
 -- |Класс функциональных блоков. Описывает все необходмые для работы компилятора свойства.
 class Function f v | f -> v where
-  inputs :: f -> S.Set v
-  inputs _ = S.empty
-  outputs :: f -> S.Set v
-  outputs _ = S.empty
-  -- |Возвращает зависимости между аргументами функционального блока. Формат: (заблокированное
-  -- значение, блокирующее значение).
-  dependency :: f -> [(v, v)]
-  dependency _ = []
-  -- |Необходимость "выворачивания" функций при визуализации вычислительного процесса. Выглядит
-  -- примерно так:
-  --
-  -- 1. Начинается вместе с вычислительным циклом.
-  -- 2. Прерывается.
-  -- 3. Возобнавляется и выполняется до конца вычислительного цикла.
-  insideOut :: f -> Bool
-  insideOut _ = False
-  -- |Информация для приоритизации функций в процессе диспетчеризации. Критические функциональные
-  -- блоки - блоки, жёстко блокирующие внутрении ресурсы PU. Такие блоки следует привязывать одними
-  -- из первых, так как в противном случае требуемые ресурс может быть занят другим ФБ, а
-  -- следовательно заблокировать процесс синтеза.
-  --
-  -- Примечание: на самом деле это не правильно, так как критичность на самом деле определяется
-  -- связкой f + pu. К примеру - использование Loop для Accum.
-  isCritical :: f -> Bool
-  isCritical _ = False
+    inputs :: f -> S.Set v
+    inputs _ = S.empty
+    outputs :: f -> S.Set v
+    outputs _ = S.empty
+    -- |Необходимость "выворачивания" функций при визуализации вычислительного процесса. Выглядит
+    -- примерно так:
+    --
+    -- 1. Начинается вместе с вычислительным циклом.
+    -- 2. Прерывается.
+    -- 3. Возобнавляется и выполняется до конца вычислительного цикла.
+    insideOut :: f -> Bool
+    insideOut _ = False
+    -- |Информация для приоритизации функций в процессе диспетчеризации. Критические функциональные
+    -- блоки - блоки, жёстко блокирующие внутрении ресурсы PU. Такие блоки следует привязывать одними
+    -- из первых, так как в противном случае требуемые ресурс может быть занят другим ФБ, а
+    -- следовательно заблокировать процесс синтеза.
+    --
+    -- Примечание: на самом деле это не правильно, так как критичность на самом деле определяется
+    -- связкой f + pu. К примеру - использование Loop для Accum.
+    isCritical :: f -> Bool
+    isCritical _ = False
+
+
+data Lock v
+    = Lock 
+        { locked :: v
+        , lockBy :: v 
+        }
+    deriving ( Show )
+
+class Locks x v | x -> v where 
+    -- |Возвращает зависимости между аргументами функционального блока. Формат: (заблокированное
+    -- значение, блокирующее значение).
+    locks :: x -> [Lock v]
 
 
 
 class WithFunctions a f | a -> f where
-  -- |Получить список связанных функциональных блоков.
-  functions :: a -> [f]
+    -- |Получить список связанных функциональных блоков.
+    functions :: a -> [f]
 
 
 
 data Cntx v x
-  = Cntx { cntxVars    :: M.Map v [x]
-         , cntxInputs  :: M.Map v [x]
-         , cntxOutputs :: M.Map v [x]
-         , cntxFram    :: M.Map (Int, v) [x]
-         }
+    = Cntx 
+        { cntxVars    :: M.Map v [x]
+        , cntxInputs  :: M.Map v [x]
+        , cntxOutputs :: M.Map v [x]
+        , cntxFram    :: M.Map (Int, v) [x]
+        }
 
 instance ( Show v, Show x ) => Show (Cntx v x) where
-  show Cntx{ cntxVars, cntxOutputs }
-    = let vs = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxVars
-          os = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxOutputs
-          dt = vs ++ os
-      in S.join "\n" $ map (S.join "\t") $ transpose dt
+    show Cntx{ cntxVars, cntxOutputs }
+        = let 
+            vs = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxVars
+            os = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxOutputs
+            dt = vs ++ os
+        in S.join "\n" $ map (S.join "\t") $ transpose dt
 
 instance Default (Cntx v x) where
-  def = Cntx M.empty M.empty M.empty M.empty
+    def = Cntx M.empty M.empty M.empty M.empty
 
 
 class FunctionSimulation f v x | f -> v x where
-  simulate :: Cntx v x -> f -> Maybe (Cntx v x)
+    simulate :: Cntx v x -> f -> Maybe (Cntx v x)
 
 
 
@@ -160,37 +171,40 @@ class FunctionSimulation f v x | f -> v x where
 
 -- |Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
 data F io where
-  F ::
-    ( io ~ (io' v x)
-    , IOType io v x
-    , Function f v
-    , Show f
-    , Typeable f
-    , FunctionSimulation f v x
-    ) => f -> F io
+    F ::
+        ( io ~ (io' v x)
+        , IOType io v x
+        , Function f v
+        , Locks f v
+        , Show f
+        , Typeable f
+        , FunctionSimulation f v x
+        ) => f -> F io
 instance Show (F io) where
-  show (F f) = S.replace "\"" "" $ show f
+    show (F f) = S.replace "\"" "" $ show f
 
 instance ( Var v
          , Typeable x
          ) => Function (F (Parcel v x)) v where
-  dependency (F f) = dependency f
-  insideOut (F f) = insideOut f
-  isCritical (F f) = isCritical f
-  inputs (F f) = inputs f
-  outputs (F f) = outputs f
+    insideOut (F f) = insideOut f
+    isCritical (F f) = isCritical f
+    inputs (F f) = inputs f
+    outputs (F f) = outputs f
+
+instance Locks (F (Parcel v x)) v where 
+    locks (F f) = locks f
 
 instance Variables (F (Parcel v x)) v where
-  variables (F f) = inputs f `S.union` outputs f
+    variables (F f) = inputs f `S.union` outputs f
 
 instance Eq (F io) where
-  F a == F b = show a == show b
+    F a == F b = show a == show b
 
 instance Ord (F (Parcel v x)) where
-  (F a) `compare` (F b) = show a `compare` show b
+    (F a) `compare` (F b) = show a `compare` show b
 
 instance FunctionSimulation (F (Parcel v x)) v x where
-  simulate cntx (F f) = simulate cntx f
+    simulate cntx (F f) = simulate cntx f
 
 
 ---------------------------------------------------------------------
@@ -206,36 +220,36 @@ instance FunctionSimulation (F (Parcel v x)) v x where
 --    его состав структурных элементов (Nested). К примеру: вычислительный процесс сети и
 --    подключённых к ней PU. (доступно через функцию process)
 data Process io t
-  = Process
-    { steps     :: [Step io t] -- ^Список шагов вычислительного процесса.
+    = Process
+        { steps     :: [Step io t] -- ^Список шагов вычислительного процесса.
 
-    , relations :: [Relation] -- ^Список отношений между шагами вычислительного процесса
-                              -- (отношения описываются через "кортежи" из ProcessUid).
-    , nextTick  :: t          -- ^Номер первого свободного такта.
-    , nextUid   :: ProcessUid -- ^Следующий свободный идентификатор шага вычислительного процесса.
-    }
+        , relations :: [Relation] -- ^Список отношений между шагами вычислительного процесса
+                                  -- (отношения описываются через "кортежи" из ProcessUid).
+        , nextTick  :: t          -- ^Номер первого свободного такта.
+        , nextUid   :: ProcessUid -- ^Следующий свободный идентификатор шага вычислительного процесса.
+        }
 deriving instance ( Show v, Show t ) => Show ( Process (Parcel v x) t )
 
 instance ( Default t ) => Default (Process io t) where
-  def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
+    def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
 
 
 type ProcessUid = Int -- ^Уникальный идентификатор шага вычислительного процесса.
 
 -- |Описание шага вычислительного процесса.
 data Step io t
-  = Step
-    { sKey  :: ProcessUid    -- ^Уникальный идентификатор шага.
-    , sTime :: PlaceInTime t -- ^Описание типа и положения шага во времени.
-    , sDesc :: StepInfo io t -- ^Описание действия описываемого шага.
-    }
+    = Step
+        { sKey  :: ProcessUid    -- ^Уникальный идентификатор шага.
+        , sTime :: PlaceInTime t -- ^Описание типа и положения шага во времени.
+        , sDesc :: StepInfo io t -- ^Описание действия описываемого шага.
+        }
 deriving instance ( Show v, Show t ) => Show ( Step (Parcel v x) t )
 
 -- |Описание положения события во времени и типа события:
 data PlaceInTime t
-  = Event t -- ^Мгновенные события, используются главным образом для описания событий САПР.
-  | Activity ( Interval t ) -- ^Протяжённые во времени события. Используются замкнутые интервалы.
-  deriving ( Show )
+    = Event t -- ^Мгновенные события, используются главным образом для описания событий САПР.
+    | Activity ( Interval t ) -- ^Протяжённые во времени события. Используются замкнутые интервалы.
+    deriving ( Show )
 
 -- |Описание события, соответсвующего шага вычислительного процесса. Каждый вариант соответствует
 -- соответствующему отдельному уровню организации вычислительного процесса.
@@ -288,10 +302,10 @@ showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
 
 -- |Описание отношений между шагами вычисительного процесса.
 data Relation
-  -- |Отношение между шагами вычислительного процесса разных уровней, в котором второй шаг получен
-  -- путём трансляции/детализации первого шага.
-  = Vertical ProcessUid ProcessUid
-  deriving (Show, Eq)
+    -- |Отношение между шагами вычислительного процесса разных уровней, в котором второй шаг получен
+    -- путём трансляции/детализации первого шага.
+    = Vertical ProcessUid ProcessUid
+    deriving (Show, Eq)
 
 
 
@@ -308,8 +322,8 @@ data BindingDT title io
 binding = Proxy :: Proxy BindingDT
 
 instance DecisionType (BindingDT title io) where
-  data Option (BindingDT title io) = BindingO (F io) title deriving ( Generic )
-  data Decision (BindingDT title io) = BindingD (F io) title deriving ( Generic )
+    data Option (BindingDT title io) = BindingO (F io) title deriving ( Generic )
+    data Decision (BindingDT title io) = BindingD (F io) title deriving ( Generic )
 
 
 -- |Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
@@ -319,9 +333,9 @@ instance DecisionType (BindingDT title io) where
 -- TODO: В настоящий момен Source определяет множество вариантов выгрузки переменной. Это
 -- неправильно и требует комплексной переработки.
 data EndpointRole v
-  = Source (S.Set v) -- ^ Выгрузка данных из PU.
-  | Target v   -- ^ Загрузка данных в PU.
-  deriving ( Show, Eq, Ord )
+    = Source (S.Set v) -- ^ Выгрузка данных из PU.
+    | Target v   -- ^ Загрузка данных в PU.
+    deriving ( Show, Eq, Ord )
 
 (Target a) << (Target b) | a == b = True
 (Source a) << (Source b)          = all (`S.member` a) b
@@ -333,8 +347,8 @@ a `sourceDifference` b = error $ "Can't get sub endpoint for " ++ show a ++ " " 
 (\\\) a b = sourceDifference a b
 
 instance Variables (EndpointRole v) v where
-  variables (Source vs) = vs
-  variables (Target v)  = S.singleton v
+    variables (Source vs) = vs
+    variables (Target v)  = S.singleton v
 
 
 
@@ -347,25 +361,25 @@ data EndpointDT v t
 endpointDT = Proxy :: Proxy EndpointDT
 
 instance DecisionType (EndpointDT v t) where
-  data Option (EndpointDT v t)
-    = EndpointO
-    { epoRole :: EndpointRole v -- ^ Чтение данных из входного регистра PU или запись данных в него.
-    , epoAt :: TimeConstrain t -- ^ Временные ограничения на операцию.
-    }
-  data Decision (EndpointDT v t)
-    = EndpointD
-    { epdRole :: EndpointRole v -- ^ Выбранная операция для взаимодействия с окружающим миром.
-    , epdAt :: Interval t -- ^ Положение операции во времени.
-    }
+    data Option (EndpointDT v t)
+        = EndpointO
+        { epoRole :: EndpointRole v -- ^ Чтение данных из входного регистра PU или запись данных в него.
+        , epoAt :: TimeConstrain t -- ^ Временные ограничения на операцию.
+        }
+    data Decision (EndpointDT v t)
+        = EndpointD
+        { epdRole :: EndpointRole v -- ^ Выбранная операция для взаимодействия с окружающим миром.
+        , epdAt :: Interval t -- ^ Положение операции во времени.
+        }
 
 instance Variables (Option (EndpointDT v t)) v where
-  variables EndpointO{ epoRole } = variables epoRole
+    variables EndpointO{ epoRole } = variables epoRole
 instance Variables (Decision (EndpointDT v t)) v where
-  variables EndpointD{ epdRole } = variables epdRole
+    variables EndpointD{ epdRole } = variables epdRole
 instance ( Show v, Show t, Eq t, Bounded t ) => Show (Option (EndpointDT v t)) where
-  show EndpointO{ epoRole, epoAt } = "?" ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
+    show EndpointO{ epoRole, epoAt } = "?" ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
 instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t)) where
-  show EndpointD{ epdRole, epdAt } = "!" ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
+    show EndpointD{ epdRole, epdAt } = "!" ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
 
 
 
@@ -385,38 +399,38 @@ instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t))
 --    дополняется записями относительно сделанных шагов вычислительного процесса.
 -- 4. Повторение, пока список возможных вариантов не станет пустым.
 class ProcessUnit pu io t | pu -> io t where
-  -- |Назначить исполнение функционального блока вычислительному узлу.
-  tryBind :: F io -> pu -> Either String pu
-  -- |Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
-  -- процесс вложенных структурных элементов.
-  --
-  -- Результат вычисления данной функции не должен редактироваться и возкращаться на место!
-  process :: pu -> Process io t
-  -- |Установить модельное время вычислительного блока.
-  --
-  -- История вопроса: Изначально, данный метод был добавлен для работы в ращеплённом времени, но он:
-  --
-  -- 1. недостаточен,
-  -- 2. может быть реализован в рамках алгоритма компиляции.
-  --
-  -- В тоже время, setTime нужен не только для того, чтобы ограничить время, но и для того, что бы установить тег
-  -- времени.
-  --
-  -- Вероятно, хорошим вариантом является жёсткое отслеживание времени и как следствие - явная изменение его тега /
-  -- значения. Логично ожидать что данная операция будет применяться ко сему дереву вычислителя.
+    -- |Назначить исполнение функционального блока вычислительному узлу.
+    tryBind :: F io -> pu -> Either String pu
+    -- |Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
+    -- процесс вложенных структурных элементов.
+    --
+    -- Результат вычисления данной функции не должен редактироваться и возкращаться на место!
+    process :: pu -> Process io t
+    -- |Установить модельное время вычислительного блока.
+    --
+    -- История вопроса: Изначально, данный метод был добавлен для работы в ращеплённом времени, но он:
+    --
+    -- 1. недостаточен,
+    -- 2. может быть реализован в рамках алгоритма компиляции.
+    --
+    -- В тоже время, setTime нужен не только для того, чтобы ограничить время, но и для того, что бы установить тег
+    -- времени.
+    --
+    -- Вероятно, хорошим вариантом является жёсткое отслеживание времени и как следствие - явная изменение его тега /
+    -- значения. Логично ожидать что данная операция будет применяться ко сему дереву вычислителя.
 
-  -- TODO: Необходимо преобразовать в setTimeTag. Добавить метод skip, для того что бы вычислительный блок мог
-  -- пропускать отдельный переменные (необходимо для ветвления вычислительного процесса).
-  setTime :: t -> pu -> pu
+    -- TODO: Необходимо преобразовать в setTimeTag. Добавить метод skip, для того что бы вычислительный блок мог
+    -- пропускать отдельный переменные (необходимо для ветвления вычислительного процесса).
+    setTime :: t -> pu -> pu
 
 
 bind fb pu = case tryBind fb pu of
-  Right pu' -> pu'
-  Left err  -> error $ "Can't bind F to PU: " ++ err
+    Right pu' -> pu'
+    Left err  -> error $ "Can't bind F to PU: " ++ err
 
 allowToProcess fb pu
-  | Right _ <- tryBind fb pu = True
-  | otherwise = False
+    | Right _ <- tryBind fb pu = True
+    | otherwise = False
 
 
 ---------------------------------------------------------------------
@@ -428,22 +442,22 @@ allowToProcess fb pu
 -- организации вычислительного процесса: на уровне инструкций вычислительного блока и на уровне
 -- микрокоманд вычислительного блока.
 class Controllable pu where
-  -- |Инструкции вычислительного блока описывают его поведения с точки зрения разработчика. Если
-  -- вычислительный блок не выполняет никаких операций (находится в состоянии ожидания), то его
-  -- поведение не описывается никакой инструкцией.
-  data Instruction pu :: *
+    -- |Инструкции вычислительного блока описывают его поведения с точки зрения разработчика. Если
+    -- вычислительный блок не выполняет никаких операций (находится в состоянии ожидания), то его
+    -- поведение не описывается никакой инструкцией.
+    data Instruction pu :: *
 
-  -- |Структура микрокода управляющего поведением вычислительного блока.
-  -- Может быть использован непосредственно для управления аппаратной частью
-  -- вычислительного блока, так как содержит непосредственно значения управляющих
-  -- сигналов.
-  data Microcode pu :: *
+    -- |Структура микрокода управляющего поведением вычислительного блока.
+    -- Может быть использован непосредственно для управления аппаратной частью
+    -- вычислительного блока, так как содержит непосредственно значения управляющих
+    -- сигналов.
+    data Microcode pu :: *
 
 
 -- |Метод, необходимый для управляемых блоков обработки данных. Позволяет узнать микрокоманду
 -- для конкретного такта вычислительного процесса.
 class ByTime pu t | pu -> t where
-  microcodeAt :: pu -> t -> Microcode pu
+    microcodeAt :: pu -> t -> Microcode pu
 
 
 -- |Декодирование инструкции в микрокод.
@@ -452,28 +466,28 @@ class ByTime pu t | pu -> t where
 -- несколько тактов, а значит должна возвращать последовательность значений микрокода; (2)
 -- несколько инструкций может выполняться одновременно.
 class UnambiguouslyDecode pu where
-  decodeInstruction :: Instruction pu -> Microcode pu
+    decodeInstruction :: Instruction pu -> Microcode pu
 
 
 -- |Значение сигнальной линии.
 data Value
-  -- |Значение не определено.
-  = Undef
-  -- |Значение сигнальной линии установлено в логическое значение.
-  | Bool Bool
-  -- |Была сделана попытка установить сигнальную линию несколькими источниками, что привело к
-  -- колизии и битому значению.
-  | Broken
-  deriving ( Eq )
+    -- |Значение не определено.
+    = Undef
+    -- |Значение сигнальной линии установлено в логическое значение.
+    | Bool Bool
+    -- |Была сделана попытка установить сигнальную линию несколькими источниками, что привело к
+    -- колизии и битому значению.
+    | Broken
+    deriving ( Eq )
 
 instance Default Value where
-  def = Undef
+    def = Undef
 
 instance Show Value where
-  show Undef        = "x"
-  show (Bool True)  = "1"
-  show (Bool False) = "0"
-  show Broken       = "B"
+    show Undef        = "x"
+    show (Bool True)  = "1"
+    show (Bool False) = "0"
+    show Broken       = "B"
 
 Undef +++ v = v
 v +++ Undef = v
@@ -496,8 +510,9 @@ _ +++ _ = Broken
 -- стороны - это позволяет учитывать внутренее состояние вычислительного блока, что может быть
 -- полезным при работе со значеними по умолчанию).
 class Simulatable pu v x | pu -> v x where
-  simulateOn :: Cntx v x -- ^Контекст вычислительного процесса, содержащий уже
-                         -- известные значения переменных.
-             -> pu -- ^Вычислительный блок.
-             -> F (Parcel v x) -- ^Функциональный блок, оперируйщий интересующим значением.
-             -> Maybe (Cntx v x)
+    simulateOn 
+        :: Cntx v x -- ^Контекст вычислительного процесса, содержащий уже
+                    -- известные значения переменных.
+            -> pu -- ^Вычислительный блок.
+            -> F (Parcel v x) -- ^Функциональный блок, оперируйщий интересующим значением.
+            -> Maybe (Cntx v x)
