@@ -20,7 +20,7 @@ Stability   : experimental
 
 module NITTA.Frontend
     ( lua2functions
-    , FixPointArithmetic(..)
+    , ArithmeticType(..)
     ) where
 
 import           Control.Monad                 (when)
@@ -70,8 +70,15 @@ lua2functions fp src
         varRow _ = undefined
 
 
-
-data FixPointArithmetic = IntArithmetic | DecimalFP Int | BinaryFP Int deriving Show
+-- |Описывает формат представления чисел в алгоритме.
+data ArithmeticType 
+    -- |В алгоритме не поддерживаются вещественные числа.
+    = IntArithmetic 
+    -- |Представление вещественных чисел как целочисленных, умножением на 10 в заданной степени.
+    | DecimalFP Int 
+    -- |Представление вещественных чисел как целочисленных, умножением на 2 в заданной степени.
+    | BinaryFP Int 
+    deriving Show
 
 data AlgBuilder
     = AlgBuilder
@@ -79,7 +86,7 @@ data AlgBuilder
         , algBuffer     :: [AlgBuilderItem]
         , algVarGen     :: [Text]
         , algVars       :: [Text]
-        , algArithmetic :: FixPointArithmetic
+        , algArithmetic :: ArithmeticType
         }
 
 instance Show AlgBuilder where
@@ -195,6 +202,7 @@ preprocessFunctions fp = do
             q <- genVar "_mod"
             cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
             modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case fp of 
+                -- FIXME: add shift for more than 1
                 BinaryFP  1 -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
                                Function{ fName="shiftR", fIn=[v], fOut=[c], fValues=[] } :
                                algItems
@@ -349,21 +357,16 @@ expConstant _ _ = undefined
 
 
 
-transformToFixPoint fp x = checkInt $ case maybeRead x of
-    Just t  -> case fp of
-        IntArithmetic -> Right t
-        (DecimalFP n) -> Right $ t * 10^n
-        (BinaryFP  n) -> Right $ t * 2^n
-    Nothing -> case fp of
-        IntArithmetic -> Left "Float values is unsupported"
-        (DecimalFP n) -> Right $ fst $ properFraction (read x * 10^n :: Double)
-        (BinaryFP  n) -> Right $ fst $ properFraction (read x * 2^n  :: Double)
-    where
-        maybeRead = fmap fst . listToMaybe . reads
-        checkInt (Left  s) = Left s
-        checkInt (Right v) | toInteger (minBound :: Int) <= v && 
-                             toInteger (maxBound :: Int) >= v    = Right $ fromInteger v 
-                           | otherwise                           = Left  $ "The value is outside the allowed limits: " ++ x
+transformToFixPoint fp x
+        | IntArithmetic <- fp = maybe (Left "Float values is unsupported") checkInt $ maybeRead x
+        | (DecimalFP n) <- fp = maybe (readDouble 10 n x) (checkInt . (* 10^n)) $ maybeRead x
+        | (BinaryFP  n) <- fp = maybe (readDouble 2  n x) (checkInt . (* 2 ^n)) $ maybeRead x
+    where 
+        maybeRead      = fmap fst . listToMaybe . reads
+        readDouble t n = checkInt . fst . properFraction . (* t^n) . (read :: String -> Double)
+        checkInt v     | toInteger (minBound :: Int) <= v && 
+                         toInteger (maxBound :: Int) >= v    = Right $ fromInteger v 
+                       | otherwise                           = Left  $ "The value is outside the allowed limits: " ++ x
 
 
 
