@@ -241,7 +241,7 @@ instance ( IOType (Parcel v x) v x
             then Right pu'
             else Left "Schedule can't complete stop."
         where
-            bind' fb 
+            bind' fb
                 | Just addr <- immidiateBindTo fb
                 , let cell = frMemory ! addr
                 , let (cad, frProcess') = modifyProcess frProcess $ bindFB f $ nextTick frProcess
@@ -266,6 +266,9 @@ instance ( IOType (Parcel v x) v x
     setTime t fr@Fram{..} = fr{ frProcess=frProcess{ nextTick=t } }
 
 
+instance Locks (Fram v x t) v where
+    -- FIXME:
+    locks _ = []
 
 instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
          ) => DecisionProblem (EndpointDT v t)
@@ -274,7 +277,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
 
     options _proxy pu@Fram{ frProcess=Process{ nextTick }, frRemains, frMemory } = fromCells ++ fromRemain
         where
-            fromRemain = 
+            fromRemain =
                 [ EndpointO ep $ constrain c ep
                 | (f, cad) <- frRemains
                 , not (isReg f) || isSourceBlockAllow
@@ -285,7 +288,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                     return (cell', ep)
                 ]
 
-            fromCells = 
+            fromCells =
                 [ EndpointO ep $ constrain cell ep
                 | (_addr, cell) <- assocs frMemory
                 , ep <- toList $ cellEndpoints isTargetBlockAllow cell
@@ -293,14 +296,14 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
 
             -- | Загрузка в память значения на следующий вычислительный цикл не позволяет использовать её
             -- в качестве регистра на текущем цикле.
-            isTargetBlockAllow 
-                = let 
+            isTargetBlockAllow
+                = let
                     need = length $ filter (isReg . fst) frRemains
                     allow = length $ filter (\Cell{ output } -> output /= UsedOrBlocked) $ elems frMemory
                     reserved = length $ filter (isConstOrLoop . fst) frRemains
                 in need == 0 || allow - reserved > 1
-            isSourceBlockAllow 
-                = let 
+            isSourceBlockAllow
+                = let
                     reserved = length (filter (isConstOrLoop . fst) frRemains)
                     allow = length $ filter (\Cell{ input, output } -> input == Undef && output == Undef) $ elems frMemory
                 in reserved == 0 || reserved < allow
@@ -330,7 +333,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
         | Just (addr, cell) <- find ( any (<< epdRole) . cellEndpoints True . snd ) $ assocs frMemory
         = case cell of
             Cell{ input=Def job@Job{ actions=a : _ } } | a << epdRole
-                -> let 
+                -> let
                     (p', job') = scheduleFRAM addr job
                     cell' = updateLastWrite (nextTick p') cell
                     cell'' = case job' of
@@ -347,7 +350,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                     , frProcess=p'
                     }
             Cell{ current=Just job@Job{ actions=a : _ } } | a << epdRole
-                -> let 
+                -> let
                     (p', job') = scheduleFRAM addr job
                     cell' = updateLastWrite (nextTick p') cell
                     cell'' = cell'
@@ -359,7 +362,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                     , frProcess=p'
                     }
             Cell{ output=Def j@Job{ actions=act1 : _ } } | act1 << epdRole
-                -> let 
+                -> let
                     (p', Nothing) = scheduleFRAM addr j
                     -- TODO: Eсть потенциальная проблема, которая может встречаться и в других вычислительных блоках. Если
                     -- вычислительный блок загружает данные в последний такт вычислительного цикла, а выгружает их в
@@ -376,7 +379,7 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
                     }
             _ -> error "Fram internal decision error."
 
-        | otherwise 
+        | otherwise
             = error $ "Can't found selected decision: " ++ show d
                   ++ " tick: " ++ show (nextTick p) ++ "\n"
                   ++ "available options: \n" ++ concatMap ((++ "\n") . show) (options endpointDT pu)
@@ -386,18 +389,18 @@ instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
             anyInAction = any (`elem` variables d)
             bind2CellStep addr fb t
                 = addStep (Event t) $ CADStep $ "Bind " ++ show fb ++ " to cell " ++ show addr
-            updateLastWrite t cell 
+            updateLastWrite t cell
                 | Target _ <- epdRole = cell{ lastWrite=Just t }
                 | otherwise = cell{ lastWrite=Nothing }
 
-            scheduleFRAM addr job 
+            scheduleFRAM addr job
                 = case scheduleWork addr job of
                     (p', job'@Job{ actions=[] }) -> (finishSchedule p' job', Nothing)
                     (p', job') -> (p', Just job')
 
             scheduleWork _addr Job{ actions=[] } = error "Fram:scheudle internal error."
             scheduleWork addr job@Job{ actions=x:xs, startAt=startAt, instructions, endpoints }
-                = let 
+                = let
                     ( instrTi, instr ) = case d^.endRole of
                         Source _ -> ( shift (-1) d^.at, Load addr)
                         Target _ -> ( d^.at, Save addr)
@@ -449,8 +452,8 @@ findFreeCell Fram{ frMemory }
   = Right $ minimumOn cellLoad cs
 findFreeCell _ = Left "Not found."
 
-cellLoad (_addr, Cell{ input, output }) 
-    = sum 
+cellLoad (_addr, Cell{ input, output })
+    = sum
         [ if input == UsedOrBlocked then -2 else 0
         , if output == Undef then -1 else 0
         ] :: Int

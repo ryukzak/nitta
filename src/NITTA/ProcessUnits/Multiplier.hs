@@ -255,6 +255,23 @@ data Multiplier v x t
     deriving ( Show )
 
 
+-- |Отслеживание внутренних зависимостей по данным, формируемым вычислительным блоком.
+instance Locks (Multiplier v x t) v where
+    locks Multiplier{ remain, sources, targets } =
+        -- Зависимость выходных данных от загружаемых аргументов. Если @sources@ пустой список,
+        -- то и зависимостей не будет.
+        [ Lock{ lockBy, locked }
+        | locked <- sources
+        , lockBy <- targets
+        ]
+        ++
+        -- Зависимости функций в очереди от выполняемой в настоящий момент.
+        [ Lock{ lockBy, locked }
+        | locked <- concatMap (elems . variables) remain
+        , lockBy <- sources ++ targets
+        ]
+
+
 -- |Конструктор модели умножителя вычислительного блока. Аргумент определяет внутреннюю оранизацию
 -- вычислительного блока: использование IP ядра умножителя (False) или заглушки (True). Подробнее
 -- см. функцию hardware в классе 'TargetSystemComponent'.

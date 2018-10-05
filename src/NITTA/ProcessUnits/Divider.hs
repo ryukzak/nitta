@@ -174,6 +174,11 @@ instance ( Var v, Time t
     setTime t pu@Divider{ process_ } = pu{ process_=process_{ nextTick=t } }
 
 
+instance Locks (Divider v x t) v where
+    -- FIXME:
+    locks _ = []
+
+
 instance ( Var v, Time t
          , Typeable x
          ) => DecisionProblem (EndpointDT v t)

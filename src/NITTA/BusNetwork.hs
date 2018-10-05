@@ -165,7 +165,7 @@ instance ( Title title, Var v, Time t
                         (\dict Lock{ locked=a, lockBy=b } -> M.adjust ((:) b) a dict)
                         (M.fromList [(v, []) | v <- elems $ unionsMap variables fbs])
                         $ filter (\Lock{ lockBy } -> lockBy `notElem` bnForwardedVariables)
-                        $ concatMap locks fbs
+                        $ concatMap locks fbs ++ concatMap locks (M.elems bnPus)
                     notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
                 in notBlockedVariables \\ bnForwardedVariables
 

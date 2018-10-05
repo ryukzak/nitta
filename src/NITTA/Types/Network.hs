@@ -34,6 +34,7 @@ data PU v x t where
         , Typeable x
         , Show x
         , Num x
+        , Locks pu v
         ) => 
             { unit :: pu
             , links :: PUPorts pu
@@ -57,6 +58,9 @@ instance ProcessUnit (PU v x t) (Parcel v x) t where
     setTime t PU{ unit, links, systemEnv }
         = PU{ unit=setTime t unit, links, systemEnv }
 
+instance Locks (PU v x t) v where 
+    locks PU{ unit } = locks unit
+        
 instance Simulatable (PU v x t) v x where
     simulateOn cntx PU{ unit } fb = simulateOn cntx unit fb
 

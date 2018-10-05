@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -72,9 +72,9 @@ simpleSynthesis model
 
 
 simpleSynthesisStep info SynthesisStep{ ix } Synthesis{ sModel }
-    = case optionsWithMetrics sModel of
+    = case optionsWithMetrics simple sModel of
         [] -> Nothing
-        opts -> 
+        opts ->
             let
                 ix' = fromMaybe (fst $ maximumOn (mIntegral . snd) $ zip [0..] opts) ix
                 sModel' = decision compiler sModel $ mDecision (opts !! ix')
@@ -97,20 +97,20 @@ simpleSynthesisStep info SynthesisStep{ ix } Synthesis{ sModel }
 synthesisObviousBind n = recApply inner (SynthesisStep UnambiguousBind Nothing) n
     where
         inner _ syn@Synthesis{ sModel }
-            = case find 
+            = case find
                     (   (\case
                             BindingMetrics{ alternative } -> alternative == 1
                             _                             -> False
                         ) . mSpecial . snd
-                    ) $ zip [0..] $ optionsWithMetrics sModel of
-                Just (ix, _) -> simpleSynthesisStep "obliousBind" SynthesisStep{ setup=UnambiguousBind, ix=Just ix } syn 
+                    ) $ zip [0..] $ optionsWithMetrics simple sModel of
+                Just (ix, _) -> simpleSynthesisStep "obliousBind" SynthesisStep{ setup=UnambiguousBind, ix=Just ix } syn
                 Nothing -> Nothing
 
 
 
 simpleSynthesisAllThreads setup (1 :: Int) rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
-        mds = map Just [ 0 .. length (optionsWithMetrics sModel) - 1 ]
+        mds = map Just [ 0 .. length (optionsWithMetrics setup sModel) - 1 ]
         (rootN', nids) = foldl
             (\(n1, nids1) ix ->
                 let Just (n2, nid2) = apply (simpleSynthesisStep "allThreads") SynthesisStep{ setup, ix } n1
@@ -121,7 +121,7 @@ simpleSynthesisAllThreads setup (1 :: Int) rootN@Node{ rootLabel=Synthesis{ sMod
     in (rootN', bestNids rootN' nids)
 simpleSynthesisAllThreads setup deep rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
-        mds = map Just [ 0 .. length (optionsWithMetrics sModel) - 1 ]
+        mds = map Just [ 0 .. length (optionsWithMetrics setup sModel) - 1 ]
         (rootN', nids) = foldl
             (\(n1, nids1) ix ->
                 let Just (n2, nid2) = apply (simpleSynthesisStep "allThreads") SynthesisStep{ setup, ix } n1
@@ -279,7 +279,7 @@ instance Ord (WithMetric dt) where
 
 
 
-optionsWithMetrics model
+optionsWithMetrics Simple{ threshhold } model
     = reverse $ sort $ map measure' opts
     where
         opts = options compiler model
@@ -287,12 +287,13 @@ optionsWithMetrics model
         measure' o
             = let m = measure opts model o
             in WithMetric
-                { mIntegral=integral gm m
+                { mIntegral=integral threshhold gm m
                 , mGlobal=gm
                 , mSpecial=m
                 , mOption=o
                 , mDecision=option2decision o
                 }
+optionsWithMetrics _ _ = error "Wrong setup for compiler!"
 
 
 
@@ -345,14 +346,14 @@ measure _ _ opt@DataFlowOption{} = DataFlowMetrics
     }
 
 
-integral GlobalMetrics{..} DataFlowMetrics{..}
-    | dataFlowOptions >= 2                                   = 10000 + 200 - waitTime
-integral GlobalMetrics{..} BindingMetrics{ critical=True } = 2000
-integral GlobalMetrics{..} BindingMetrics{ alternative=1 } = 500
-integral GlobalMetrics{..} BindingMetrics{..}              = 200 + allowDataFlow * 10 - restless * 2
-integral GlobalMetrics{..} DataFlowMetrics{..} | restrictedTime = 200 + 100
-integral GlobalMetrics{..} DataFlowMetrics{..}             = 200 - waitTime
-integral GlobalMetrics{..} _                               = 0
+integral threshhold GlobalMetrics{..} DataFlowMetrics{..}
+    | dataFlowOptions >= threshhold                                    = 10000 + 200 - waitTime
+integral _threshhold GlobalMetrics{..} BindingMetrics{ critical=True } = 2000
+integral _threshhold GlobalMetrics{..} BindingMetrics{ alternative=1 } = 500
+integral _threshhold GlobalMetrics{..} BindingMetrics{..}              = 200 + allowDataFlow * 10 - restless * 2
+integral _threshhold GlobalMetrics{..} DataFlowMetrics{..} | restrictedTime = 200 + 100
+integral _threshhold GlobalMetrics{..} DataFlowMetrics{..}             = 200 - waitTime
+integral _threshhold GlobalMetrics{..} _                               = 0
 
 
 

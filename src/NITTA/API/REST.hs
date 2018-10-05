@@ -119,7 +119,7 @@ get st nid = do
 simpleCompilerOptions st nid = do
     root <- liftSTM $ readTVar st
     let Synthesis{ sModel } = getSynthesis nid root
-    return $ optionsWithMetrics sModel
+    return $ optionsWithMetrics simple sModel
 
 getModel st nid = do
     root <- liftSTM $ readTVar st
@@ -129,7 +129,7 @@ getModel st nid = do
 updateSynthesis f st nid = liftSTM $ do
     n <- readTVar st
     case update f nid n of
-        Just (n', nid') -> do 
+        Just (n', nid') -> do
             writeTVar st n'
             return nid'
         Nothing -> return nid

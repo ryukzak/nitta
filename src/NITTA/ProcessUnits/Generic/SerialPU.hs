@@ -28,6 +28,7 @@ import           Control.Monad.State
 import           Data.Default
 import           Data.Either
 import           Data.List           (find)
+import           Data.Set            (elems)
 import qualified Data.Set            as S
 import           Data.Typeable
 import           NITTA.Types
@@ -115,13 +116,15 @@ instance ( Var v, Time t
   decision proxy pu@SerialPU{ spuCurrent=Nothing, spuRemain, spuState } act
     | Just (fb, compilerKey) <- find (not . S.null . (variables act `S.intersection`) . variables . fst) spuRemain
     , Right spuState' <- bindToState fb spuState
-    = decision proxy pu{ spuState=spuState'
-               , spuCurrent=Just CurrentJob
-                             { cFB=fb
-                             , cStart=act^.at.infimum
-                             , cSteps=[ compilerKey ]
-                             }
-              } act
+    = decision proxy pu
+        { spuState=spuState'
+        , spuCurrent=Just CurrentJob
+                      { cFB=fb
+                      , cStart=act^.at.infimum
+                      , cSteps=[ compilerKey ]
+                      }
+        , spuRemain=filter ((/= fb) . fst) spuRemain
+        } act
     | otherwise = error "Variable not found in binded functional blocks."
   decision _proxy pu@SerialPU{ spuCurrent=Just cur, spuState, spuProcess } act
    | nextTick spuProcess > act^.at.infimum
@@ -169,6 +172,15 @@ instance ( Var v, Time t
   process = spuProcess
 
   setTime t pu@SerialPU{ spuProcess } = pu{ spuProcess=spuProcess{ nextTick=t } }
+
+
+instance Locks (SerialPU st v x t) v where
+  locks SerialPU{ spuCurrent=Nothing } = []
+  locks SerialPU{ spuCurrent=Just CurrentJob{ cFB }, spuRemain } =
+    [ Lock{ locked, lockBy }
+    | locked <- concatMap (elems . variables . fst) spuRemain
+    , lockBy <- elems $ variables cFB
+    ]
 
 
 -- * Утилиты --------------------------------------------------------
