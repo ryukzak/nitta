@@ -21,6 +21,8 @@ Stability   : experimental
 module NITTA.Frontend
     ( lua2functions
     , ArithmeticType(..)
+    , NumberReprType(..)
+    , transformToFixPoint
     ) where
 
 import           Control.Monad                 (when)
@@ -32,6 +34,8 @@ import           Data.Maybe                    (catMaybes, fromMaybe, listToMayb
 import qualified Data.String.Utils             as S
 import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
+import           Text.Read                     (readMaybe)
+import           Data.Bool                     (bool)
 import           Language.Lua
 import qualified NITTA.Functions               as F
 import           NITTA.Types                   (F, Parcel)
@@ -46,16 +50,16 @@ import           Text.InterpolatedString.Perl6 (qq)
 -- end
 -- f(1025, 0)
 
-lua2functions fp src
+lua2functions arithmeticType src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         --ast = trace ("ast = " ++ show ast') ast'
         Right (fn, call, funAssign) = findMain ast
-        AlgBuilder{ algItems } = buildAlg fp $ do
+        AlgBuilder{ algItems } = buildAlg arithmeticType $ do
             addMainInputs call funAssign
             let statements = funAssignStatments funAssign
             forM_ statements $ processStatement fn
-            preprocessFunctions fp
+            preprocessFunctions $ reprType arithmeticType
             addConstants
         -- fs = filter (\case Function{} -> True; _ -> False) $ trace (S.join "\n" $ map show algItems) algItems
         fs = filter (\case Function{} -> True; _ -> False) algItems
@@ -70,14 +74,23 @@ lua2functions fp src
         varRow _ = undefined
 
 
--- |Описывает формат представления чисел в алгоритме.
-data ArithmeticType 
+-- |Описание способа представления вещественных чисел в алгоритме
+data NumberReprType
     -- |В алгоритме не поддерживаются вещественные числа.
-    = IntArithmetic 
+    = IntRepr
     -- |Представление вещественных чисел как целочисленных, умножением на 10 в заданной степени.
     | DecimalFP Int 
     -- |Представление вещественных чисел как целочисленных, умножением на 2 в заданной степени.
     | BinaryFP Int 
+    deriving Show
+
+-- |Описывает формат представления чисел в алгоритме.
+data ArithmeticType
+    = ArithmeticType 
+        { reprType  :: NumberReprType -- ^Представление вещественных чисел в алгоритме
+        , bitsCount :: Int            -- ^Количество бит требующихся на представление числа (по модулю)
+        , negNumber :: Bool           -- ^Возможность использования отрицательных чисел
+        } 
     deriving Show
 
 data AlgBuilder
@@ -114,13 +127,13 @@ data AlgBuilderItem
 
 
 
-buildAlg fp proc
+buildAlg arithmeticType proc
     = execState proc AlgBuilder
         { algItems=[]
         , algBuffer=[]
         , algVarGen=map (\i -> [qq|#$i|]) [(0::Int)..]
         , algVars=[]
-        , algArithmetic=fp
+        , algArithmetic=arithmeticType
         }
 
 
@@ -191,8 +204,8 @@ addConstants = do
 
 
 
-preprocessFunctions IntArithmetic = return ()
-preprocessFunctions fp = do
+preprocessFunctions IntRepr = return ()
+preprocessFunctions rt = do
     alg@AlgBuilder{ algItems } <- get
     put alg{ algItems=[] }
     mapM_ preprocessFunctions' algItems
@@ -201,7 +214,7 @@ preprocessFunctions fp = do
             v <- genVar "tmp"
             q <- genVar "_mod"
             cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
-            modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case fp of 
+            modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of 
                 -- FIXME: add shift for more than 1
                 BinaryFP  1 -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
                                Function{ fName="shiftR", fIn=[v], fOut=[c], fValues=[] } :
@@ -214,7 +227,7 @@ preprocessFunctions fp = do
         preprocessFunctions' Function{ fName="divide", fIn=[d, n], fOut=[q, r], fValues=[] } = do
             v <- genVar "tmp"
             cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
-            modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems= case fp of 
+            modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems= case rt of 
                 BinaryFP  1 -> Function{ fName="shiftL", fIn=[d], fOut=[v], fValues=[] } :
                                Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
                                algItems
@@ -357,16 +370,17 @@ expConstant _ _ = undefined
 
 
 
-transformToFixPoint fp x
-        | IntArithmetic <- fp = maybe (Left "Float values is unsupported") checkInt $ maybeRead x
-        | (DecimalFP n) <- fp = maybe (readDouble 10 n x) (checkInt . (* 10^n)) $ maybeRead x
-        | (BinaryFP  n) <- fp = maybe (readDouble 2  n x) (checkInt . (* 2 ^n)) $ maybeRead x
+transformToFixPoint algArithmetic x
+        | IntRepr       <- rt = maybe (Left "Float values is unsupported") checkInt $ readMaybe x
+        | (DecimalFP n) <- rt = maybe (readDouble 10 n x) (checkInt . (* 10^n)) $ readMaybe x
+        | (BinaryFP  n) <- rt = maybe (readDouble 2  n x) (checkInt . (* 2 ^n)) $ readMaybe x
     where 
-        maybeRead      = fmap fst . listToMaybe . reads
+        rt             = reprType algArithmetic
+        maxNum         = 2 ^ bitsCount algArithmetic - 1
+        minNum         = bool 0 (-maxNum - 1) $ negNumber algArithmetic
         readDouble t n = checkInt . fst . properFraction . (* t^n) . (read :: String -> Double)
-        checkInt v     | toInteger (minBound :: Int) <= v && 
-                         toInteger (maxBound :: Int) >= v    = Right $ fromInteger v 
-                       | otherwise                           = Left  $ "The value is outside the allowed limits: " ++ x
+        checkInt v     | v <= maxNum && v >= minNum = Right $ fromInteger v 
+                       | otherwise                  = Left  $ unpack [qq|The value is outside the allowed limits [$minNum, $maxNum]: $v ($x)|]
 
 
 
