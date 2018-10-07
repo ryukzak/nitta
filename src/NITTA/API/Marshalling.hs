@@ -26,6 +26,7 @@ import           NITTA.DataFlow
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Types.Synthesis
+import           NITTA.Utils           (transfered)
 import           Numeric.Interval
 import           Servant
 

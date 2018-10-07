@@ -73,15 +73,6 @@ data GBusNetwork title spu v x t = BusNetwork
     }
 type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 
-transfered net@BusNetwork{ bnProcess }
-    = mapMaybe
-        (\Step{ sDesc } -> case sDesc of
-            (InstructionStep i) | Just (Transport v _ _) <- cast i `maybeInstructionOf` net
-                -> Just v
-            _ -> Nothing
-        )
-        $ steps bnProcess
-
 
 -- TODO: Проверка подключения сигнальных линий.
 

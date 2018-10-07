@@ -36,6 +36,7 @@ module NITTA.Utils
     , extractInstruction
     , extractInstructionAt
     , getEndpoints
+    , transfered
     , getFBs
     , isFB
     , isInstruction
@@ -48,7 +49,7 @@ module NITTA.Utils
 
 import           Control.Monad.State
 import           Data.Default
-import           Data.List           (minimumBy, maximumBy, sortOn)
+import           Data.List           (maximumBy, minimumBy, nub, sortOn)
 import           Data.Maybe          (isJust, mapMaybe)
 import           Data.Set            (difference, elems, unions)
 import           Data.Typeable       (Typeable, cast)
@@ -171,6 +172,7 @@ getEndpoint step | Step{ sDesc=EndpointRoleStep role } <- descent step = Just ro
 getEndpoint _                                                          = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
+transfered pu = nub $ concatMap (elems . variables) $ getEndpoints $ process pu
 
 
 extractInstruction :: ( Typeable (Instruction pu) ) => pu -> Step v t -> Maybe (Instruction pu)
