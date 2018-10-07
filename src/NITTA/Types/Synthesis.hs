@@ -95,7 +95,7 @@ instance Read Nid where
     readsPrec _ _ = []
 
 
-nidsTree n = inner [] n
+nidsTree = inner []
     where
         inner is Node{ subForest } = Node
             { rootLabel=Nid $ reverse is

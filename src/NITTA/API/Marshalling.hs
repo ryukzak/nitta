@@ -54,8 +54,8 @@ instance ( Show title
 instance ( Show title
          ) => ToJSON (Decision (BindingDT title io)) where
     toJSON (BindingD fb title) = toJSON [ show fb, show title ]
-instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
-instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
+-- instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
+-- instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
 
 
 
@@ -144,8 +144,8 @@ instance ToJSON SynthesisSetup
 instance ToJSON SpecialMetrics
 instance ToJSON GlobalMetrics
 
-instance ToJSON (WithMetric (CompilerDT String String String (TaggedTime String Int))) where 
-    toJSON WithMetric{ mIntegral, mGlobal, mSpecial, mOption, mDecision } 
+instance ToJSON (WithMetric (CompilerDT String String String (TaggedTime String Int))) where
+    toJSON WithMetric{ mIntegral, mGlobal, mSpecial, mOption, mDecision }
         = toJSON ( mIntegral, mGlobal, mSpecial, mOption, mDecision )
 
 
