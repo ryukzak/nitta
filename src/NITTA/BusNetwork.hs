@@ -130,7 +130,7 @@ instance ( Title title, Var v, Time t
                    DataFlowDT (BusNetwork title v x t)
     where
     options _proxy n@BusNetwork{..}
-        = concat
+        = notEmptyDestination $ concat
             [
                 [ DataFlowO (srcTitle, fixPullConstrain pullAt) $ M.fromList pushs
                 | pushs <- mapM pushOptionsFor $ elems pullVars
@@ -141,6 +141,7 @@ instance ( Title title, Var v, Time t
             , EndpointO (Source pullVars) pullAt <- opts
             ]
         where
+            notEmptyDestination = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
             now = nextTick bnProcess
             fixPullConstrain constrain
                 = let

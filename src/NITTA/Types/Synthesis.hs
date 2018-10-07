@@ -115,7 +115,7 @@ data SynthesisSetup
     deriving ( Generic, Show, Eq, Ord )
 
 simple = Simple
-    { threshhold=1000
+    { threshhold=2
     }
 
 data SynthesisStep = SynthesisStep
@@ -138,7 +138,6 @@ rootSynthesis m = Node
     }
 
 targetProcessDuration Frame{ processor } = nextTick $ process processor
-targetProcessDuration _                  = undefined
 
 
 -- *Synthesis context

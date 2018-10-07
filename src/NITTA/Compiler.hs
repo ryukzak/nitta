@@ -27,7 +27,6 @@ module NITTA.Compiler
 
       -- *Metrics
     , WithMetric(..)
-    , GlobalMetrics(..)
     , SpecialMetrics(..)
     , optionsWithMetrics
 
@@ -45,7 +44,7 @@ import           Data.List             (find)
 import qualified Data.Map              as M
 import           Data.Maybe
 import           Data.Proxy
-import           Data.Set              (intersection, member)
+import           Data.Set              (Set, fromList, intersection, member)
 import qualified Data.Set              as S
 import           Data.Tree
 import           GHC.Generics
@@ -186,20 +185,16 @@ compiler = Proxy :: Proxy CompilerDT
 
 instance DecisionType (CompilerDT title tag v t) where
     data Option (CompilerDT title tag v t)
-        -- = ControlFlowOption (DataFlowGraph v)
         = BindingOption (F (Parcel v Int)) title
         | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
         deriving ( Generic, Show )
 
     data Decision (CompilerDT title tag v t)
-        -- = ControlFlowDecision (DataFlowGraph v)
         = BindingDecision (F (Parcel v Int)) title
         | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
         deriving ( Generic, Show )
 
-
 isBinding = \case BindingOption{} -> True; _ -> False
--- isControlFlow = \case ControlFlowOption{} -> True; _ -> False
 isDataFlow = \case DataFlowOption{} -> True; _ -> False
 
 specializeDataFlowOption (DataFlowOption s t) = DataFlowO s t
@@ -207,7 +202,6 @@ specializeDataFlowOption _ = error "Can't specialize non DataFlow option!"
 
 generalizeDataFlowOption (DataFlowO s t) = DataFlowOption s t
 generalizeBindingOption (BindingO s t) = BindingOption s t
--- generalizeControlFlowOption (ControlFlowO x) = ControlFlowOption x
 
 
 
@@ -215,34 +209,13 @@ instance ( Time t, Var v
          ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
                    CompilerDT (ModelState String String v Int (TaggedTime String t))
         where
-    -- options _ Level{ currentFrame } = options compiler currentFrame
-    options _ f@Frame{ processor, dfg } = concat
-        [ map generalizeDataFlowOption numberOfDFOptions
-        , map generalizeBindingOption $ options binding f
-        -- , map generalizeControlFlowOption $ options controlDT f
-        ]
-        where
-            numberOfDFOptions = sensibleOptions $ filterByDFG $ options dataFlowDT processor
-            allowByDFG = allowByDFG' dfg
-            allowByDFG' (DFGNode fb) = variables fb
-            allowByDFG' (DFG g)      = unionsMap allowByDFG' g
-            -- allowByDFG' DFGSwitch{ dfgKey } = singleton dfgKey
-            filterByDFG
-                = map (\t@DataFlowO{ dfoTargets } -> t
-                    { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `member` allowByDFG
-                                                                        then desc
-                                                                        else Nothing)
-                                                    ) $ M.assocs dfoTargets
-                    })
-            sensibleOptions = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
+    options _ f@Frame{ processor }
+        =  map generalizeBindingOption (options binding f)
+        ++ map generalizeDataFlowOption (options dataFlowDT processor)
 
-    -- decision _ l@Level{ currentFrame } d = tryMakeLevelDone l{ currentFrame=decision compiler currentFrame d }
     decision _ f (BindingDecision fb title) = decision binding f $ BindingD fb title
-    -- decision _ f (ControlFlowDecision d) = decision controlDT f $ ControlFlowD d
     decision _ f@Frame{ processor } (DataFlowDecision src trg) = f{ processor=decision dataFlowDT processor $ DataFlowD src trg }
 
-
--- option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
 option2decision (BindingOption fb title) = BindingDecision fb title
 option2decision (DataFlowOption src trg)
     = let
@@ -262,62 +235,57 @@ option2decision (DataFlowOption src trg)
 
 data WithMetric dt
     = WithMetric
-        { mIntegral :: Int
-        , mGlobal   :: GlobalMetrics
-        , mSpecial  :: SpecialMetrics
-        , mOption   :: Option dt
+        { mOption   :: Option dt
         , mDecision :: Decision dt
+        , mSpecial  :: SpecialMetrics
+        , mIntegral :: Int
         }
 
-instance Eq (WithMetric dt) where
-    WithMetric{ mIntegral=a } == WithMetric{ mIntegral=b } = a == b
 
-instance Ord (WithMetric dt) where
-    WithMetric{ mIntegral=a } `compare` WithMetric{ mIntegral=b } = a `compare` b
+data MeasureCntx f o m
+    = MeasureCntx
+        { possibleDeadlockBinds :: Set f
+        , numberOfBindOptions   :: Int
+        , numberOfDFOptions     :: Int
+        , dataflowThreshhold    :: Int
+        , allOptions            :: o
+        , model                 :: m
+        }
 
 
+optionsWithMetrics Simple{ threshhold } model@Frame{ processor=BusNetwork{ bnBinded } }
+    = let
+        allOptions = options compiler model
 
-optionsWithMetrics Simple{ threshhold } model = map measure' opts
-    where
-        gm = measureG opts model
-        opts = options compiler model
-        measure' o
-            = let m = measure opts model o
-            in WithMetric
-                { mIntegral=integral threshhold gm m
-                , mGlobal=gm
-                , mSpecial=m
-                , mOption=o
-                , mDecision=option2decision o
+        notBindedFunctions = map (\(BindingOption f _) -> f) $ filter isBinding allOptions
+        bindedVar = unionsMap variables $ concat $ M.elems bnBinded
+        possibleDeadlockBinds = fromList
+            [ f
+            | f <- notBindedFunctions
+            , Lock{ locked } <- locks f
+            , locked `member` bindedVar
+            ]
+
+        cntx = MeasureCntx
+            { numberOfBindOptions=length $ filter isBinding allOptions
+            , numberOfDFOptions=length $ filter isDataFlow allOptions
+            , dataflowThreshhold=threshhold
+            , possibleDeadlockBinds
+            , allOptions
+            , model
+            }
+
+        measure' mOption
+            | let mSpecial = measure cntx mOption
+            = WithMetric
+                { mOption
+                , mDecision=option2decision mOption
+                , mSpecial
+                , mIntegral=integral cntx mSpecial
                 }
+    in map measure' allOptions
+
 optionsWithMetrics _ _ = error "Wrong setup for compiler!"
-
-
-
-data GlobalMetrics
-    = GlobalMetrics
-        { numberOfBindOptions  :: Int
-        , numberOfDFOptions    :: Int
-        -- , numberOfCFOptions :: Int
-        -- |Если была выполнена привязка функции из серидины алгоритма, то это может
-        -- привести к deadlock-у. В такой ситуации может быть активирована пересылка
-        -- в вычислительный блок, в то время как часть из входных данных не доступна,
-        -- так как требуемая функция ещё не привязана, а после привязки не сможет быть
-        -- вычисленна, так как ресурс уже занят.
-        , possibleDeadlockBind :: Bool
-        } deriving ( Show, Generic )
-
-measureG opts _
-    = GlobalMetrics
-        { numberOfBindOptions=length $ filter isBinding opts
-        , numberOfDFOptions=length $ filter isDataFlow opts
-        -- , numberOfCFOptions=length $ filter isControlFlow opts
-        , possibleDeadlockBind=False
-        }
-
-
-
-
 
 
 
@@ -325,46 +293,53 @@ measureG opts _
 data SpecialMetrics
     = -- | Решения о привязке функциональных блоков к ВУ.
         BindingMetrics
-        { -- | Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
+        { -- |Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
           -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
-          critical      :: Bool
-            -- | Колличество альтернативных привязок для функционального блока.
-        , alternative   :: Int
-            -- | Привязка данного функционального блока может быть активировано только спустя указанное
-            -- колличество тактов.
-        , restless      :: Int
-            -- | Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
-            -- количества пересылок.
-        , allowDataFlow :: Int
+          critical         :: Bool
+          -- |Колличество альтернативных привязок для функционального блока.
+        , alternative      :: Int
+          -- |Привязка данного функционального блока может быть активировано только спустя указанное
+          -- колличество тактов.
+        , restless         :: Int
+          -- |Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
+          -- количества пересылок.
+        , allowDataFlow    :: Int
+          -- |Если была выполнена привязка функции из серидины алгоритма, то это может
+          -- привести к deadlock-у. В такой ситуации может быть активирована пересылка
+          -- в вычислительный блок, в то время как часть из входных данных не доступна,
+          -- так как требуемая функция ещё не привязана, а после привязки не сможет быть
+          -- вычисленна, так как ресурс уже занят.
+        , possibleDeadlock :: Bool
         }
     | DataFlowMetrics { waitTime :: Int, restrictedTime :: Bool }
-    -- | ControlFlowMetrics
     deriving ( Show, Generic )
 
 
--- measure opts Level{ currentFrame } opt = measure opts currentFrame opt
-measure opts Frame{ processor=net@BusNetwork{ bnPus } } (BindingOption fb title) = BindingMetrics
-    { critical=isCritical fb
-    , alternative=length (howManyOptionAllow (filter isBinding opts) M.! fb)
-    , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind fb (bnPus M.! title)
-    , restless=fromMaybe 0 $ do
-        (_var, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ waitingTimeOfVariables net
-        return $ fromEnum tcFrom
-    }
--- measure _ _ ControlFlowOption{} = ControlFlowMetrics
-measure _ _ opt@DataFlowOption{} = DataFlowMetrics
+measure
+        MeasureCntx{ possibleDeadlockBinds, allOptions, model=Frame{ processor=net@BusNetwork{ bnPus } } }
+        (BindingOption f title)
+    = BindingMetrics
+        { critical=isCritical f
+        , alternative=length (howManyOptionAllow (filter isBinding allOptions) M.! f)
+        , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind f (bnPus M.! title)
+        , restless=fromMaybe 0 $ do
+            (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables net
+            return $ fromEnum tcFrom
+        , possibleDeadlock=f `member` possibleDeadlockBinds
+        }
+measure MeasureCntx{} opt@DataFlowOption{} = DataFlowMetrics
     { waitTime=fromEnum (specializeDataFlowOption opt^.at.avail.infimum)
     , restrictedTime=fromEnum (specializeDataFlowOption opt^.at.dur.supremum) /= maxBound
     }
 
-
-integral threshhold GlobalMetrics{..} DataFlowMetrics{..}
-    | numberOfDFOptions >= threshhold                                  = 10000 + 200 - waitTime
-integral _threshhold GlobalMetrics{..} BindingMetrics{ critical=True } = 2000
-integral _threshhold GlobalMetrics{..} BindingMetrics{ alternative=1 } = 500
-integral _threshhold GlobalMetrics{..} BindingMetrics{..}              = 200 + allowDataFlow * 10 - restless * 2
-integral _threshhold GlobalMetrics{..} DataFlowMetrics{..} | restrictedTime = 200 + 100
-integral _threshhold GlobalMetrics{..} DataFlowMetrics{..}             = 200 - waitTime
+integral MeasureCntx{} BindingMetrics{ possibleDeadlock=True }            = 2000000
+integral MeasureCntx{ numberOfDFOptions, dataflowThreshhold } DataFlowMetrics{ waitTime }
+    | numberOfDFOptions >= dataflowThreshhold                             = 10000 + 200 - waitTime
+integral MeasureCntx{} BindingMetrics{ critical=True }                    = 2000
+integral MeasureCntx{} BindingMetrics{ alternative=1 }                    = 500
+integral MeasureCntx{} BindingMetrics{ allowDataFlow, restless }          = 200 + allowDataFlow * 10 - restless * 2
+integral MeasureCntx{} DataFlowMetrics{ restrictedTime } | restrictedTime = 200 + 100
+integral MeasureCntx{} DataFlowMetrics{ waitTime }                        = 200 - waitTime
 
 
 
