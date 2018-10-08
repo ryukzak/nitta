@@ -88,7 +88,7 @@ data ModelState title tag v x t
         , dfg       :: DataFlowGraph v
         , timeTag   :: Maybe tag
         }
-    -- | Level
+    --  | Level
     --     { currentFrame    :: ModelState title tag v x t
     --     , remainFrames    :: [ ModelState title tag v x t ]
     --     , completedFrames :: [ ModelState title tag v x t ]
