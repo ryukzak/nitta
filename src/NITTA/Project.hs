@@ -82,11 +82,11 @@ data TestBenchReport
 -- |Проект вычислителя NITTA.
 data Project pu v x
     = Project
-        { projectName :: String -- ^Наименование проекта.
-        , libraryPath :: String -- ^Директория библиотеки с вычислительными блоками.
-        , projectPath :: String -- ^Директория проекта, куда будут размещены его файлы.
-        , model       :: pu     -- ^Модель вычислительного блока.
-        , testCntx    :: Maybe (Cntx v x) -- ^Контекст для генерации test bench.
+        { projectName    :: String -- ^Наименование проекта.
+        , libraryPath    :: String -- ^Директория библиотеки с вычислительными блоками.
+        , projectPath    :: String -- ^Директория проекта, куда будут размещены его файлы.
+        , processorModel :: pu     -- ^Модель вычислительного блока.
+        , testCntx       :: Maybe (Cntx v x) -- ^Контекст для генерации test bench.
         } deriving ( Show )
 
 
@@ -104,10 +104,10 @@ writeAndRunTestBenchDevNull prj = do
 
 
 -- |Записать на диск проект вычислителя.
-writeProject prj@Project{ projectName, projectPath, model } = do
+writeProject prj@Project{ projectName, projectPath, processorModel } = do
     createDirectoryIfMissing True projectPath
-    writeImplementation projectPath $ hardware projectName model
-    writeImplementation projectPath $ software projectName model
+    writeImplementation projectPath $ hardware projectName processorModel
+    writeImplementation projectPath $ software projectName processorModel
     writeImplementation projectPath $ testBenchDescription prj
     writeModelsimDo prj
     writeQuartus prj
@@ -134,7 +134,7 @@ writeModelsimDo prj@Project{ projectPath } = do
             ]
 
 -- |Сгенерировать служебные файлы для Quartus.
-writeQuartus prj@Project{ projectName, projectPath, model } = do
+writeQuartus prj@Project{ projectName, projectPath, processorModel } = do
     let (tb, files) = projectFiles prj
     writeFile (joinPath [ projectPath, "nitta.qpf" ]) quartusQPF
     writeFile (joinPath [ projectPath, "nitta.qsf" ]) $ quartusQSF tb files
@@ -142,7 +142,7 @@ writeQuartus prj@Project{ projectName, projectPath, model } = do
     writeFile ( joinPath [ projectPath, "nitta.v" ] )
         $ renderST
             $(embedStringFile "template/quartus/nitta.v")
-            [ ( "top_level_module", moduleName projectName model ) ]
+            [ ( "top_level_module", moduleName projectName processorModel ) ]
     writeFile ( joinPath [ projectPath, "pll.v" ] )
         $(embedStringFile "template/quartus/pll.v")
 
@@ -187,7 +187,7 @@ writeImplementation pwd impl = writeImpl "" impl
 -- |Запустить testbench в указанной директории.
 
 -- TODO: Добавить сохранение вывода в память для дальнейшей обработки.
-runTestBench h prj@Project{ projectPath, model } = do
+runTestBench h prj@Project{ projectPath, processorModel } = do
     let (_tb, files) = projectFiles prj
     ( compileExitCode, compileOut, compileErr )
         <- readCreateProcessWithExitCode (createIVerilogProcess projectPath files) []
@@ -196,7 +196,7 @@ runTestBench h prj@Project{ projectPath, model } = do
             [ "Project: " ++ projectPath
             , "Files: " ++ S.join ", " files
             , "Functional blocks: "
-            , S.join "\n" $ map show $ functions model
+            , S.join "\n" $ map show $ functions processorModel
             ]
     let compilerOutputDump = unlines
             [ header
@@ -237,7 +237,7 @@ runTestBench h prj@Project{ projectPath, model } = do
         { tbStatus=not ("FAIL" `isSubsequenceOf` simOut)
         , tbPath=projectPath
         , tbFiles=files
-        , tbFunctions=map show $ functions model
+        , tbFunctions=map show $ functions processorModel
         , tbCompilerStdout=compileOut
         , tbCompilerErrout=compileErr
         , tbSimulationStdout=simOut
@@ -249,9 +249,9 @@ runTestBench h prj@Project{ projectPath, model } = do
 -- окружения.
 createIVerilogProcess workdir files = (proc "iverilog" files){ cwd=Just workdir }
 
-projectFiles prj@Project{ projectName, libraryPath, model }
+projectFiles prj@Project{ projectName, libraryPath, processorModel }
     = let
-        files = L.nub $ concatMap (args "") [ hardware projectName model, testBenchDescription prj ]
+        files = L.nub $ concatMap (args "") [ hardware projectName processorModel, testBenchDescription prj ]
         tb = S.replace ".v" "" $ last files
     in (tb, files)
     where
@@ -305,7 +305,7 @@ end
 
 
 snippetTestBench
-        Project{ projectName, model=pu, testCntx }
+        Project{ projectName, processorModel=pu, testCntx }
         TestBenchSetup{ tbcSignals, tbcSignalConnect, tbcPorts, tbcCtrl }
     = let
         mn = moduleName projectName pu

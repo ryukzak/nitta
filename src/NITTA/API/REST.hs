@@ -140,7 +140,7 @@ getTestBenchOutput st _nid name = do
             { projectName=name
             , libraryPath="../.."
             , projectPath=joinPath ["hdl", "gen", name]
-            , model=simpleSynthesis sModel
+            , processorModel=processor $ simpleSynthesis sModel
             , testCntx=Nothing
             }
     liftIO $ writeAndRunTestBench prj

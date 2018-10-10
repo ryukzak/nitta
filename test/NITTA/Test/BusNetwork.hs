@@ -10,6 +10,7 @@ module NITTA.Test.BusNetwork where
 import           Data.Default
 import           NITTA.BusNetwork
 import           NITTA.Compiler
+import           NITTA.DataFlow
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divider    as D
@@ -113,12 +114,12 @@ testMultiplier = unitTest "testMultiplier" netWithArithm
 
 processorTest name alg = testCase name $ unitTest ("processorTest_" ++ name) netWithArithmAndSPI def alg
 
-unitTest name n cntx alg = do
-  let n' = simpleSynthesis $ mkModelWithOneNetwork n alg
-  TestBenchReport{ tbStatus } <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
+unitTest name arch cntx alg = do
+  let Frame{ processor } = simpleSynthesis $ mkModelWithOneNetwork arch alg
+  TestBenchReport{ tbStatus } <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) processor cntx
   tbStatus @? name
 
-badUnitTest name n cntx alg = do
-  let n' = simpleSynthesis $ mkModelWithOneNetwork n alg
-  TestBenchReport{ tbStatus } <- writeAndRunTestBenchDevNull $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
+badUnitTest name arch cntx alg = do
+  let Frame{ processor } = simpleSynthesis $ mkModelWithOneNetwork arch alg
+  TestBenchReport{ tbStatus } <- writeAndRunTestBenchDevNull $ Project name "../.." (joinPath ["hdl", "gen", name]) processor cntx
   not tbStatus @? name

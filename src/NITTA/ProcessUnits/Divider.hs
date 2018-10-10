@@ -363,8 +363,8 @@ instance ( Time t, Var v
 instance ( Var v, Time t
          , Typeable x, Show x, Integral x
          ) => TestBench (Divider v x t) v x where
-    testBenchDescription prj@Project{ projectName, model=pu }
-        = Immidiate (moduleName projectName pu ++ "_tb.v")
+    testBenchDescription prj@Project{ projectName, processorModel }
+        = Immidiate (moduleName projectName processorModel ++ "_tb.v")
             $ snippetTestBench prj TestBenchSetup
                 { tbcSignals=["oe", "oeSel", "wr", "wrSel"]
                 , tbcPorts=PUPorts

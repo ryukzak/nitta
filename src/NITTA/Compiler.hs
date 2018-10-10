@@ -31,6 +31,7 @@ module NITTA.Compiler
     , optionsWithMetrics
 
       -- *Utils
+    , isSchedulingComplete
     , isSchedulingCompletable
     , endpointOption2action
     , compiler
@@ -65,8 +66,8 @@ simpleSynthesis model
         n = rootSynthesis model
         (n', nid') = synthesisObviousBind n
         Just (n'', nid'') = update (Just . simpleSynthesisAllThreads simple 1) nid' n'
-        Synthesis{ sModel=Frame{ processor } } = getSynthesis nid'' n''
-    in processor
+        Synthesis{ sModel } = getSynthesis nid'' n''
+    in sModel
 
 
 

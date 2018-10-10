@@ -629,11 +629,11 @@ instance ( Ord t ) => WithFunctions (Multiplier v x t) (F (Parcel v x)) where
 instance ( Var v, Time t
          , Typeable x, Show x, Integral x
          ) => TestBench (Multiplier v x t) v x where
-    testBenchDescription prj@Project{ projectName, model=pu }
+    testBenchDescription prj@Project{ projectName, processorModel }
         -- Test bench представляет из себя один файл описанный ниже. Для его генерации используется
         -- готовый snippet, так как в большинстве случаев они будут подобны. Ключевое значение имеет
         -- структура данных 'NITTA.Project.TestBenchSetup', описывающая специфику данного модуля.
-        = Immidiate (moduleName projectName pu ++ "_tb.v")
+        = Immidiate (moduleName projectName processorModel ++ "_tb.v")
             $ snippetTestBench prj TestBenchSetup
                 -- Список управляющих сигналов. Необходим для инициализации одноименных регистров.
                 { tbcSignals=["oe", "wr", "wrSel"]

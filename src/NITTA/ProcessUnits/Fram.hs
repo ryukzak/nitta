@@ -537,7 +537,7 @@ instance ( Var v
          , PrintfArg x
          , ProcessUnit (Fram v x t) (Parcel v x) t
          ) => TestBench (Fram v x t) v x where
-  testBenchDescription Project{ projectName, model=pu@Fram{ frProcess=Process{ steps }, .. }, testCntx }
+  testBenchDescription Project{ projectName, processorModel=pu@Fram{ frProcess=Process{ steps }, .. }, testCntx }
     = Immidiate (moduleName projectName pu ++ "_tb.v") testBenchImp
     where
       Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx $ functions pu

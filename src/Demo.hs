@@ -189,6 +189,7 @@ import           Data.Default
 import           Data.Text                     (Text)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
+import           NITTA.DataFlow
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divider    as D
@@ -237,7 +238,7 @@ fibonacciDemo = demo Project
     { projectName="fibonacciDemo"
     , libraryPath="../.."
     , projectPath="hdl/gen/fibonacciDemo"
-    , model=mkModelWithOneNetwork nittaArch fibonacciAlg
+    , processorModel=mkModelWithOneNetwork nittaArch fibonacciAlg
     , testCntx=Nothing
     }
 
@@ -270,7 +271,7 @@ teacupDemo = demo Project
     { projectName="teacupDemo"
     , libraryPath="../.."
     , projectPath="hdl/gen/teacupDemo"
-    , model=mkModelWithOneNetwork nittaArch teacupAlg
+    , processorModel=mkModelWithOneNetwork nittaArch teacupAlg
     , testCntx=Nothing
     }
 
@@ -332,7 +333,7 @@ teacupLua =
 
 -----------------------------------------------------------
 
-demo prj@Project{ projectPath, model } = do
-    let prj' = prj{ model=simpleSynthesis model }
+demo prj@Project{ projectPath, processorModel } = do
+    let prj' = prj{ processorModel=processor $ simpleSynthesis processorModel }
     writeProject prj'
     putStrLn $ "Demo project in " ++ projectPath

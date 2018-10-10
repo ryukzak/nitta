@@ -59,23 +59,6 @@ microarch = busNetwork 31 (Just True)
     ]
 
 
-divAndMulAlg =
-    [ F.constant 100 ["a"] :: F (Parcel String Int)
-    , F.loop 2 "e" ["b"]
-    , F.division "a" "b" ["c"] ["d"]
-    -- , F.add "c" "d" ["e"]
-    , F.add "c" "d" ["e", "e'"]
-
-    , F.constant 200 ["a1"]
-    , F.loop 2 "e1" ["b1"]
-    , F.division "a1" "b1" ["c1"] ["d1"]
-    , F.add "c1" "d1" ["e1"]
-
-    , F.loop 1 "y" ["x"]
-    , F.multiply "x" "e'" ["y"]
-    ]
-
-
 ---------------------------------------------------------------------------------
 
 -- |Command line interface.
@@ -93,44 +76,18 @@ nittaArgs = Nitta
     , no_api_gen=False &= help "No regenerate rest_api.js library"
     }
 
-        -- [qq|function fib(i, a, b)
-        --         send(i)
-        --         send(a)
-        --         local i2 = i + 1
-
-        --         local a_tmp = a
-        --         a = b
-        --         b = reg(a_tmp+b)
-        --         fib(i2, a, b)
-        --     end
-        --     fib(0, 0, 1)
-        -- |]
-
-        -- [qq|function fib(i, a, b)
-        --         send(i)
-        --         send(a)
-        --         local i2 = i + 1
-
-        --         local a_tmp = a
-        --         a = b
-        --         b = reg(a_tmp+b)
-        --         fib(i2, a, b)
-        --     end
-        --     fib(0, 0, 1)
-        -- |]
-
 
 main = do
     -- teacupDemo
     -- fibonacciDemo
 
     -- FIXME: why it's don't work?
-    -- test "lua_test" $ simpleSynthesis $ mkModelWithOneNetwork microarch $ lua2functions
-    --     [qq|function fib(a, b)
-    --             a, b = b, reg(a + reg(b + 0)) + 0
-    --             fib(a, b)
-    --         end
-    --         fib(0, 1)|]
+    test "lua_test" $ simpleSynthesis $ mkModelWithOneNetwork microarch $ lua2functions
+        [qq|function fib(a, b)
+                a, b = b, reg(a + reg(b + 0)) + 0
+                fib(a, b)
+            end
+            fib(0, 1)|]
 
     -- putStrLn "funSim teacup:"
     -- test "teacup" $ simpleSynthesis $ mkModelWithOneNetwork microarch teacupAlg
@@ -144,17 +101,20 @@ main = do
     putStrLn "-- the end --"
 
 
-test n pu = do
+test n model@Frame{ processor } = do
     let prj = Project
             { projectName=n
             , libraryPath="../.."
             , projectPath=joinPath ["hdl", "gen", n]
-            , model=pu
+            , processorModel=processor
             , testCntx=Nothing
             }
-    TestBenchReport{ tbStatus } <- writeAndRunTestBench prj
-    if tbStatus then putStrLn $ n ++ " test - Success"
-    else putStrLn $ n ++ " test - Fail"
+    if isSchedulingComplete model
+        then do
+            TestBenchReport{ tbStatus } <- writeAndRunTestBench prj
+            if tbStatus then putStrLn $ n ++ " test - Success"
+            else putStrLn $ n ++ " test - Fail"
+        else putStrLn $ n ++ " not isSchedulingComplete"
 
 
 -----------------------------------------------------------

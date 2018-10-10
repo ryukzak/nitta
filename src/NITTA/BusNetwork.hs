@@ -436,7 +436,7 @@ instance ( Title title, Var v, Time t
          , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x
          ) => TestBench (BusNetwork title v x t) v x where
-    testBenchDescription Project{ projectName, model=n@BusNetwork{..}, testCntx }
+    testBenchDescription Project{ projectName, processorModel=n@BusNetwork{..}, testCntx }
         = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
         where
             ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
