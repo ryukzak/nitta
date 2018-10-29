@@ -58,7 +58,7 @@ import           NITTA.Utils
 addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test bench initialization
 
 
-get' cntx k = fromMaybe (error $ "Can't get from cntx." ++ show k) $ get cntx k
+get' cntx k = fromMaybe (error $ "Can't get from cntx: " ++ show k ++ " cntx: " ++ show cntx) $ get cntx k
 get Cntx{ cntxVars } k = do
     values <- cntxVars M.!? k
     case values of
@@ -74,9 +74,8 @@ set cntx@Cntx{ cntxVars } ks val = do
     return cntx{ cntxVars=cntxVars' }
 
 receiveSim cntx@Cntx{ cntxInputs } k = do
-    values <- cntxInputs M.!? k
-    value <- listToMaybe values
-    let cntxInputs' = M.adjust tail k cntxInputs
+    value : values <- cntxInputs M.!? k
+    let cntxInputs' = M.insert k values cntxInputs
     return (cntx{ cntxInputs=cntxInputs' }, value)
 
 sendSim cntx@Cntx{ cntxOutputs } k v = do
@@ -107,7 +106,7 @@ simulateAlgByCycle cntx fbs = simulateAlgByCycle' $ simulateAlg cntx fbs
         l = length fbs - 1
         simulateAlgByCycle' xs
             = let x : xs' = drop l xs
-                in x : simulateAlgByCycle' xs'
+            in x : simulateAlgByCycle' xs'
 
 
 reorderAlgorithm alg = orderAlgorithm' [] alg
@@ -364,7 +363,7 @@ deriving instance ( IOType io v x ) => Eq (Receive io)
 instance ( IOType io v x ) => Function (Receive io) v where
     outputs (Receive o) = variables o
 instance ( IOType io v x ) => Locks (Receive io) v where locks _ = []
-instance ( Ord v ) => FunctionSimulation (Receive (Parcel v x)) v x where
+instance ( Ord v, Show v, Show x ) => FunctionSimulation (Receive (Parcel v x)) v x where
     simulate cntx (Receive (O ks)) = do
         let k = oneOf ks
         (cntx', v) <- cntx `receiveSim` k

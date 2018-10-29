@@ -150,12 +150,15 @@ data Cntx v x
         , cntxFram    :: M.Map (Int, v) [x]
         }
 
+-- FIXME: Incorrect output if cntxInput has different amount of data. 
 instance ( Show v, Show x ) => Show (Cntx v x) where
-    show Cntx{ cntxVars, cntxOutputs }
+    show Cntx{ cntxVars, cntxInputs, cntxOutputs }
         = let 
-            vs = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxVars
-            os = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxOutputs
-            dt = vs ++ os
+            dt = concat
+                [ map (\(v, xs) -> reverse $ map ( filter (/= '"') . (("q." ++ show v ++ ":") ++) . show ) xs) $ M.assocs cntxInputs
+                , map (\(v, xs) -> reverse $ map ( filter (/= '"') . ((show v ++ ":") ++) . show ) xs) $ M.assocs cntxOutputs
+                , map (\(v, xs) -> reverse $ map ( filter (/= '"') . ((show v ++ ":") ++) . show ) xs) $ M.assocs cntxVars
+                ]
         in S.join "\n" $ map (S.join "\t") $ transpose dt
 
 instance Default (Cntx v x) where

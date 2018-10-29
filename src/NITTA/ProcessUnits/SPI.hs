@@ -119,7 +119,7 @@ instance UnambiguouslyDecode (SPI v x t) where
 
 
 
-instance ( Ord v ) => Simulatable (SPI v x t) v x where
+instance ( Ord v, Show v, Show x ) => Simulatable (SPI v x t) v x where
   simulateOn cntx _ fb
     | Just fb'@Send{} <- castF fb = simulate cntx fb'
     | Just fb'@Receive{} <- castF fb = simulate cntx fb'
@@ -181,7 +181,7 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
   -- тестирования.
   componentTestEnviroment title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..} = renderMST
     [ "reg $name$_start_transaction;"
-     , "reg  [64-1:0] $name$_master_in;"
+    , "reg  [64-1:0] $name$_master_in;"
     , "wire [64-1:0] $name$_master_out;"
     , "wire $name$_ready;"
     , "spi_master_driver "

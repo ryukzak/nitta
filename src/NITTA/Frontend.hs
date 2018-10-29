@@ -104,7 +104,7 @@ buildAlg proc
     = execState proc AlgBuilder
         { algItems=[]
         , algBuffer=[]
-        , algVarGen=map (\i -> [qq|#$i|]) [(0::Int)..]
+        , algVarGen=map (\i -> [qq|#{i}|]) [(0::Int)..]
         , algVars=[]
         }
 
@@ -116,11 +116,12 @@ function2nitta Function{ fName="loop",     fIn=[i],    fOut=[o], fValues=[x] } =
 function2nitta Function{ fName="reg",      fIn=[i],    fOut=[o], fValues=[]  } = F.reg <$> input i <*> output o
 function2nitta Function{ fName="constant", fIn=[],     fOut=[o], fValues=[x] } = F.constant x <$> output o
 function2nitta Function{ fName="send",     fIn=[i],    fOut=[],  fValues=[]  } = F.send <$> input i
+function2nitta Function{ fName="receive",  fIn=[],     fOut=[o], fValues=[]  } = F.receive <$> output o
 function2nitta Function{ fName="add",      fIn=[a, b], fOut=[c], fValues=[]  } = F.add <$> input a <*> input b <*> output c
 function2nitta Function{ fName="sub",      fIn=[a, b], fOut=[c], fValues=[]  } = F.sub <$> input a <*> input b <*> output c
 function2nitta Function{ fName="multiply", fIn=[a, b], fOut=[c], fValues=[]  } = F.multiply <$> input a <*> input b <*> output c
 function2nitta Function{ fName="divide",   fIn=[d, n], fOut=[q, r], fValues=[] } = F.division <$> input d <*> input n <*> output q <*> output r
-function2nitta f = error $ "unknown function: " ++ show f
+function2nitta f = error $ "frontend don't known function: " ++ show f
 
 
 
@@ -179,7 +180,7 @@ processStatement fn (LocalAssign names (Just [rexp])) = do
 processStatement _fn (LocalAssign names Nothing) = do
     AlgBuilder{ algVars } <- get
     forM_ names $ \(Name n) ->
-        when (n `elem` algVars) $ error "local variable alredy defined"
+        when (n `elem` algVars) $ error "local variable already defined"
 
 processStatement _fn st@(Assign lexps rexps)
     = if

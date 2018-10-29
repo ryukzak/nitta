@@ -247,10 +247,10 @@ fibonacciAlg = [ F.loop 0 "a_new" ["a", "a_send"]
                , F.add "a" "b" ["b_new"]
                , F.send "a_send"
 
-               , F.loop 0  "index_new" ["index", "index_send"]
+               , F.loop 0  "i_new" ["i", "i_send"]
                , F.constant 1 ["one"]
-               , F.add "index" "one" ["index_new"]
-               , F.send "index_send"
+               , F.add "i" "one" ["i_new"]
+               , F.send "i_send"
                ]
 
 

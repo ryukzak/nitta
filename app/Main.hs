@@ -1,7 +1,8 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE FlexibleContexts   #-}
-{-# LANGUAGE NamedFieldPuns     #-}
-{-# LANGUAGE QuasiQuotes        #-}
+{-# LANGUAGE DeriveDataTypeable  #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
@@ -69,7 +70,7 @@ data Nitta
         , no_api_gen    :: Bool
         }
     deriving (Show, Data, Typeable)
-    
+
 nittaArgs = Nitta
     { web=False &= help "Run web server"
     , no_static_gen=False &= help "No regenerate WebUI static files"
@@ -81,33 +82,40 @@ main = do
     -- teacupDemo
     -- fibonacciDemo
 
+    -- putStrLn "--------------------------------"
+    -- funSim 5 D.def{ cntxInputs=M.fromList [("b_0", [1..5])] } $ lua2functions
+    --     [qq|function fib(a)
+    --             local b = receive()
+    --             local c = a + b
+    --             fib(c)
+    --         end
+    --         fib(1)|]
+    -- putStrLn "--------------------------------"
+
     -- FIXME: why it's don't work?
-    test "lua_test" $ simpleSynthesis $ mkModelWithOneNetwork microarch $ lua2functions
-        [qq|function fib(a, b)
-                a, b = b, reg(a + reg(b + 0)) + 0
-                fib(a, b)
-            end
-            fib(0, 1)|]
+    testWithInput "lua_test" [("b_0", [1..5])] $ simpleSynthesis $ mkModelWithOneNetwork microarch fibonacciAlg -- $ lua2functions
+        -- [qq|function fib(a)
+        --         local b = receive()
+        --         local c = a + b
+        --         fib(c)
+        --     end
+        --     fib(1)|]
 
-    -- putStrLn "funSim teacup:"
-    -- test "teacup" $ simpleSynthesis $ mkModelWithOneNetwork microarch teacupAlg
-    -- funSim 5 D.def teacupAlg
-
-    -- putStrLn "funSim fibonacci:"
-    -- funSim 5 D.def divAndMulAlg
-
-    Nitta{ web, no_static_gen, no_api_gen } <- cmdArgs nittaArgs
-    when web $ backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch teacupAlg
+    when False $ do
+        Nitta{ web, no_static_gen, no_api_gen } <- cmdArgs nittaArgs
+        when web $ backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch teacupAlg
     putStrLn "-- the end --"
 
 
-test n model@Frame{ processor } = do
+test n model = testWithInput n [] model
+
+testWithInput n is model@Frame{ processor } = do
     let prj = Project
             { projectName=n
             , libraryPath="../.."
             , projectPath=joinPath ["hdl", "gen", n]
             , processorModel=processor
-            , testCntx=Nothing
+            , testCntx=Just D.def{ cntxInputs=M.fromList is }
             }
     if isSchedulingComplete model
         then do
@@ -120,4 +128,6 @@ test n model@Frame{ processor } = do
 -----------------------------------------------------------
 
 
-funSim n cntx alg = putStrLn $ (!! (n - 1)) $ map (filter (/= '"') . show) $ F.simulateAlgByCycle cntx alg
+funSim n cntx (alg :: [F (Parcel String Int)])
+    = let cntxs = F.simulateAlgByCycle cntx alg
+    in mapM_ putStrLn $ map (("---------------------\n"++) . filter (/= '"') . show) $ take n cntxs
