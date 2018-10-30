@@ -24,8 +24,10 @@ framDefSize = frSize (def :: Fram () Int ())
 framAddrGen = choose (0, framDefSize - 1)
 
 
-outputVarsGen = O . fromList <$> resize 3 (listOf1 $ vectorOf 3 $ elements ['a'..'z'])
-inputVarGen = I <$> vectorOf 3 (elements ['a'..'z'])
+varNameSize = 7
+
+outputVarsGen = O . fromList <$> resize 3 (listOf1 $ vectorOf varNameSize $ elements ['a'..'z'])
+inputVarGen = I <$> vectorOf varNameSize (elements ['a'..'z'])
 
 
 -- TODO: Иногда, может получиться вот такой вот функциональный блок: < "qqq" = "joi" * "joi" >, что
@@ -35,39 +37,39 @@ uniqueVars fb = S.null (inputs fb `intersection` outputs fb)
 
 
 instance Arbitrary (FramInput (Parcel String Int)) where
-  arbitrary = suchThat (FramInput <$> framAddrGen <*> outputVarsGen) uniqueVars
+    arbitrary = suchThat (FramInput <$> framAddrGen <*> outputVarsGen) uniqueVars
 
 instance Arbitrary (FramOutput (Parcel String Int)) where
-  arbitrary = suchThat (FramOutput <$> framAddrGen <*> inputVarGen) uniqueVars
+    arbitrary = suchThat (FramOutput <$> framAddrGen <*> inputVarGen) uniqueVars
 
 instance Arbitrary (Loop (Parcel String Int)) where
-  arbitrary = suchThat (Loop <$> (X <$> choose (0, 256)) <*> outputVarsGen <*> inputVarGen) uniqueVars
+    arbitrary = suchThat (Loop <$> (X <$> choose (0, 256)) <*> outputVarsGen <*> inputVarGen) uniqueVars
 
 instance Arbitrary (Reg (Parcel String Int)) where
-  arbitrary = suchThat (Reg <$> inputVarGen <*> outputVarsGen) uniqueVars
+    arbitrary = suchThat (Reg <$> inputVarGen <*> outputVarsGen) uniqueVars
 
 instance Arbitrary (Constant (Parcel String Int)) where
-  arbitrary = suchThat (Constant <$> (X <$> choose (10, 16)) <*> outputVarsGen) uniqueVars
+    arbitrary = suchThat (Constant <$> (X <$> choose (10, 16)) <*> outputVarsGen) uniqueVars
 
 instance Arbitrary (Multiply (Parcel String Int)) where
-  arbitrary = suchThat (Multiply <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
+    arbitrary = suchThat (Multiply <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
 
 instance Arbitrary (Division (Parcel String Int)) where
-  arbitrary = suchThat (Division <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
+    arbitrary = suchThat (Division <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
 
 reorderAlgorithmTest = do
-  let f = reorderAlgorithm :: [F (Parcel String Int)] -> [F (Parcel String Int)]
-  let l1 = loop 0 "b2" ["a1"      ]
-  let l2 = loop 1 "c" ["b1", "b2"]
-  let a = add "a1" "b1" ["c"]
-  mapM_ (([ l1, l2, a ] @=?) . f) $ permutations [ l1, l2, a ]
+    let f = reorderAlgorithm :: [F (Parcel String Int)] -> [F (Parcel String Int)]
+    let l1 = loop 0 "b2" ["a1"      ]
+    let l2 = loop 1 "c" ["b1", "b2"]
+    let a = add "a1" "b1" ["c"]
+    mapM_ (([ l1, l2, a ] @=?) . f) $ permutations [ l1, l2, a ]
 
 
 simulateFibonacciTest = do
-  let cntxs = simulateAlg (def :: Cntx String Int)
-                [ loop 0 "b2" ["a1"      ]
-                , loop 1 "c" ["b1", "b2"]
-                , add "a1" "b1" ["c"] :: F (Parcel String Int)
-                ]
-  let fibs = reverse (cntxVars (cntxs !! 20) M.! "a1")
-  [0, 1, 1, 2, 3, 5, 8] @=? fibs
+    let cntxs = simulateAlg (def :: Cntx String Int)
+            [ loop 0 "b2" ["a1"      ]
+            , loop 1 "c" ["b1", "b2"]
+            , add "a1" "b1" ["c"] :: F (Parcel String Int)
+            ]
+    let fibs = reverse (cntxVars (cntxs !! 20) M.! "a1")
+    [0, 1, 1, 2, 3, 5, 8] @=? fibs
