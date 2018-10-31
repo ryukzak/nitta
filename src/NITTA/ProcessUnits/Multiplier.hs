@@ -132,7 +132,7 @@ import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Process
 import           Numeric.Interval              (inf, sup, (...))
-import           Text.InterpolatedString.Perl6 (qq)
+import           Text.InterpolatedString.Perl6 (qc)
 
 {-
 = Вычислительный блок
@@ -586,20 +586,20 @@ instance ( Time t, Var v
     -- процессора. Основная задача данной функции - корректно включить вычислительный блок в
     -- инфраструктуру процессора, установив все параметры, имена и провода.
     hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
-        = [qq|pu_multiplier #
-        ( .DATA_WIDTH( $parameterDataWidth )
-        , .ATTR_WIDTH( $parameterAttrWidth )
+        = [qc|pu_multiplier #
+        ( .DATA_WIDTH( {parameterDataWidth} )
+        , .ATTR_WIDTH( {parameterAttrWidth} )
         , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
-        ) $title
-    ( .clk( $signalClk )
-    , .rst( $signalRst )
-    , .signal_wr( {signal wr} )
-    , .signal_sel( {signal wrSel} )
-    , .data_in( $dataIn )
-    , .attr_in( $attrIn )
-    , .signal_oe( {signal oe} )
-    , .data_out( $dataOut )
-    , .attr_out( $attrOut )
+        ) { title }
+    ( .clk( {signalClk} )
+    , .rst( {signalRst} )
+    , .signal_wr( { signal wr } )
+    , .signal_sel( { signal wrSel } )
+    , .data_in( { dataIn } )
+    , .attr_in( { attrIn } )
+    , .signal_oe( { signal oe } )
+    , .data_out( { dataOut } )
+    , .attr_out( { attrOut } )
     );|]
 
 
@@ -654,5 +654,5 @@ instance ( Var v, Time t
                 -- При генерации test bench-а знать, как задаются управляющие сигналы
                 -- вычислительного блока. Именно это и описано ниже. Отметим, что работа с шиной данных полностью реализуется в рамках snippet-а.
                 , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
-                    [qq|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
+                    [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
                 }
