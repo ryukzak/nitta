@@ -25,22 +25,22 @@ module NITTA.Project
     , snippetTestBench
     ) where
 
--- FIXME: Файлы библиотек должны копироваться в проект.
-
 -- TODO: Добавить информацию о происхождении в автоматически генерируемые файлы.
 
 -- TODO: Сделать выбор вендора, сейчас это Quartus и IcarusVerilog.
 
-import           Control.Monad                 (when)
+import           Control.Monad                 (mapM, when)
 import           Data.FileEmbed
 import           Data.List                     (isSubsequenceOf)
 import qualified Data.List                     as L
 import qualified Data.String.Utils             as S
+import qualified Data.Text                     as T
 import           GHC.Generics                  (Generic)
 import           NITTA.Functions               as F
 import           NITTA.Types
 import           NITTA.Utils
 import           System.Directory
+import           System.Directory              (copyFile)
 import           System.Exit
 import           System.FilePath.Posix         (joinPath, pathSeparator)
 import           System.Info.Extra             (isWindows)
@@ -109,6 +109,8 @@ writeProject prj@Project{ projectName, projectPath, processorModel } = do
     writeImplementation projectPath $ testBenchDescription prj
     writeModelsimDo prj
     writeQuartus prj
+
+    _ <- copyLibraryFiles prj
     writeFile (joinPath [ projectPath, "Makefile" ])
         $ renderST $(embedStringFile "template/Makefile")
             [ ( "iverilog_args", S.join " " $ snd $ projectFiles prj ) ]
@@ -130,6 +132,9 @@ writeModelsimDo prj@Project{ projectPath } = do
             [ ( "top_level", tb )
             , ( "verilog_files", S.join "\n" $ map (\fn -> "vlog -vlog01compat -work work +incdir+$path $path/" ++ fn) files )
             ]
+
+-- writeVFiles name = do
+--     copyFile
 
 -- |Сгенерировать служебные файлы для Quartus.
 writeQuartus prj@Project{ projectName, projectPath, processorModel } = do
@@ -179,8 +184,21 @@ writeImplementation pwd impl = writeImpl "" impl
         writeImpl _ (FromLibrary _) = return ()
         writeImpl _ Empty = return ()
 
+-- |Скопировать файл в lib, если он находится в libraryPath
+copyLibraryFile file Project{ projectPath, libraryPath }
+    | T.isPrefixOf (T.pack libraryPath) (T.pack file) = do
+        let newFilePath = T.drop 6 (T.pack file)
+        let fileName = T.unpack $ L.last $ T.split (=='/') newFilePath
+        path <- makeAbsolute $ joinPath [projectPath, file]
+        newPath <- makeAbsolute $ joinPath [projectPath, "lib", fileName]
+        libPath <- makeAbsolute $ joinPath [projectPath, "lib"]
+        createDirectoryIfMissing True libPath
+        copyFile path newPath
+    | otherwise = return ()
 
-
+copyLibraryFiles prj@Project{} =
+    let (_tb, files) = projectFiles' prj in
+        mapM (\f -> copyLibraryFile f prj) files
 
 -- |Запустить testbench в указанной директории.
 
@@ -247,7 +265,20 @@ runTestBench h prj@Project{ projectPath, processorModel } = do
 -- окружения.
 createIVerilogProcess workdir files = (proc "iverilog" files){ cwd=Just workdir }
 
-projectFiles prj@Project{ projectName, libraryPath, processorModel }
+
+projectFiles prj@Project{ projectName, processorModel }
+    = let
+        files = L.nub $ concatMap (args "") [ hardware projectName processorModel, testBenchDescription prj ]
+        tb = S.replace ".v" "" $ last files
+    in (tb, files)
+    where
+        args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
+        args p (Aggregate Nothing subInstances) = concatMap (args $ joinPath [p]) subInstances
+        args p (Immidiate fn _) = [ joinPath [ p, fn ] ]
+        args _ (FromLibrary fn) = [ joinPath [ "lib", T.unpack $ L.last $ T.split (=='/') (T.pack fn) ] ]
+        args _ Empty = []
+
+projectFiles' prj@Project{ projectName, libraryPath, processorModel }
     = let
         files = L.nub $ concatMap (args "") [ hardware projectName processorModel, testBenchDescription prj ]
         tb = S.replace ".v" "" $ last files
