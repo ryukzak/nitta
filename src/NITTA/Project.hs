@@ -21,9 +21,7 @@ module NITTA.Project
     -- *Snippets for Verilog code-generation
     , snippetClkGen
     , snippetDumpFile
-    , snippetDumpFile'
     , snippetInitialFinish
-    , snippetInitialFinish'
     , snippetTestBench
     ) where
 
@@ -49,7 +47,7 @@ import           System.Info.Extra             (isWindows)
 import           System.IO                     (IOMode (WriteMode), hPutStrLn,
                                                 stderr, withFile)
 import           System.Process
-import           Text.InterpolatedString.Perl6 (qq)
+import           Text.InterpolatedString.Perl6 (qc)
 
 
 -- |Данный класс позволяет для реализующих его вычислительных блоков сгенировать test bench.
@@ -266,7 +264,7 @@ projectFiles prj@Project{ projectName, libraryPath, processorModel }
 
 
 snippetClkGen :: String
-snippetClkGen = [qq|initial begin
+snippetClkGen = [qc|initial begin
     clk = 1'b0;
     rst = 1'b1;
     repeat(4) #1 clk = ~clk;
@@ -276,33 +274,18 @@ end
 |]
 
 snippetDumpFile :: String -> String
-snippetDumpFile mn = [qq|initial begin
-    \$dumpfile("{ mn }_tb.vcd");
-    \$dumpvars(0, { mn }_tb);
-end
-|]
-
-snippetDumpFile' :: String -> String
-snippetDumpFile' mn = [qq|initial begin
-    \\\$dumpfile("{ mn }_tb.vcd");
-    \\\$dumpvars(0, { mn }_tb);
+snippetDumpFile mn = [qc|initial begin
+    $dumpfile("{ mn }_tb.vcd");
+    $dumpvars(0, { mn }_tb);
 end
 |]
 
 snippetInitialFinish :: String -> String
-snippetInitialFinish block = [qq|initial begin
+snippetInitialFinish block = [qc|initial begin
 $block
-    \$finish;
+    $finish;
 end
 |]
-
-snippetInitialFinish' :: String -> String
-snippetInitialFinish' block = [qq|initial begin
-$block
-    \\\$finish;
-end
-|]
-
 
 snippetTestBench
         Project{ projectName, processorModel=pu, testCntx }
@@ -331,7 +314,7 @@ snippetTestBench
                 }
             tbcPorts
 
-        controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pu t) ++ [qq| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
+        controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pu t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
             , Just val <- F.get cntx v
@@ -344,16 +327,16 @@ snippetTestBench
                     | Just (Source vs) <- endpointAt t p
                     , let v = oneOf vs
                     , let (Just val) = F.get cntx v
-                    = [qq|    @(posedge clk);
-        \$write( "data_out: %d == %d    (%s)", data_out, { val }, { v } );
-        if ( !( data_out === { val } ) ) \$display(" FAIL");
-        else \$display();
+                    = [qc|    @(posedge clk);
+        $write( "data_out: %d == %d    (%s)", data_out, { val }, { v } );
+        if ( !( data_out === { val } ) ) $display(" FAIL");
+        else $display();
 |]
                     | otherwise
-                    = [qq|    @(posedge clk); \$display( "data_out: %d", data_out );
+                    = [qc|    @(posedge clk); $display( "data_out: %d", data_out );
 |]
 
-    in [qq|{"module"} {mn}_tb();
+    in [qc|{"module"} {mn}_tb();
 
 parameter DATA_WIDTH = 32;
 parameter ATTR_WIDTH = 4;
