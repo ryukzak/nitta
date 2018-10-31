@@ -441,66 +441,69 @@ instance ( Title title, Var v, Time t
         = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
         where
             ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
-            testBenchImp = renderMST
-                [ "`timescale 1 ps / 1 ps"
-                , "module $moduleName$_tb();                                                                                 "
-                , ""
-                , "/* Functions:"
-                , S.join "\n" $ map show $ functions n
-                , "*/"
-                , "                                                                                                          "
-                , "/* Steps:"
-                , S.join "\n" $ map show $ reverse $ steps $ process n
-                , "*/"
-                , ""
-                , "reg clk, rst;                                                                                             "
-                , if null ports
-                    then ""
-                    else "wire " ++ S.join ", " ports ++ ";"
-                , ""
-                , "wire [32-1:0] data_bus_hack = 0;"
-                , ""
-                , "$moduleName$                                                                                           "
-                , "  #( .DATA_WIDTH( 32 )"
-                , "   , .ATTR_WIDTH( 4 )"
-                , "   ) net"
-                , "  ( .clk( clk )                                                                                           "
-                , "  , .rst( rst )                                                                                           "
-                , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
-                , "// if 1 - The process cycle are indipendent from a SPI."
-                , "// else - The process cycle are wait for the SPI."
-                , "  , .is_drop_allow( " ++ maybe "is_drop_allow" bool2verilog bnAllowDrop ++ " )"
-                , "  , .data_bus_hack( data_bus_hack )"
-                , "  );                                                                                                      "
-                , "                                                                                                          "
-                , S.join "\n\n"
-                    [ tbEnv
-                    | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus
-                    , let t' = filter (/= '"') $ show t
-                    , let tbEnv = componentTestEnviroment t' unit systemEnv links
-                    , not $ null tbEnv
-                    ]
-                , "                                                                                                          "
-                , snippetDumpFile' $ moduleName projectName n
-                , "                                                                                                          "
-                , snippetClkGen
-                , "                                                                                                          "
-                , "initial                                                                                                 "
-                , "  begin                                                                                                 "
-                , "    // microcode when rst == 1 -> program[0], and must be nop for all PUs                               "
-                , "    @(negedge rst); // Turn processor on.                                                         "
-                , "    // Start computational cycle from program[1] to program[n] and repeat.                              "
-                , "    // Signals effect to processor state after first clk posedge.                                       "
-                , "    @(posedge clk);"
-                , concatMap assertion simulationInfo
-                , "  repeat ( 2000 ) @(posedge clk);"
-                , "    \\$finish;                                                                                          "
-                , "  end                                                                                                   "
-                , "                                                                                                          "
-                , "endmodule                                                                                                 "
+            -- FIXME: Назначить корректное имя для temporary_one
+            temporary_one = S.join "\\n\\n"
+                [ tbEnv
+                | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus
+                , let t' = filter (/= '"') $ show t
+                , let tbEnv = componentTestEnviroment t' unit systemEnv links
+                , not $ null tbEnv
                 ]
-                [ ( "moduleName", moduleName projectName n )
-                ]
+            -- FIXME: Назначить корректное имя для temporary_two
+            temporary_two = S.join ", " (map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
+            testBenchImp = [qc|
+`timescale 1 ps / 1 ps
+module { moduleName projectName n }_tb();
+
+/* Functions:
+{ S.join "\\n" $ map show $ functions n }
+*/
+
+/* Steps:
+{ S.join "\\n" $ map show $ reverse $ steps $ process n }
+*/
+
+reg clk, rst;
+{ if null ports then "" else "wire " ++ S.join ", " ports ++ ";" }
+
+wire [32-1:0] data_bus_hack = 0;
+
+{ moduleName projectName n }
+    #( .DATA_WIDTH( 32 )
+     , .ATTR_WIDTH( 4 )
+     ) net
+    ( .clk( clk )
+    , .rst( rst )
+    , { temporary_two }
+// if 1 - The process cycle are indipendent from a SPI.
+// else - The process cycle are wait for the SPI.
+    , .is_drop_allow( { maybe "is_drop_allow" bool2verilog bnAllowDrop } )
+    , .data_bus_hack( data_bus_hack )
+    );
+
+{ temporary_one }
+
+{ snippetDumpFile $ moduleName projectName n }
+
+{ snippetClkGen }
+
+initial
+    begin
+        // microcode when rst == 1 -> program[0], and must be nop for all PUs
+        @(negedge rst); // Turn processor on.
+        // Start computational cycle from program[1] to program[n] and repeat.
+        // Signals effect to processor state after first clk posedge.
+        @(posedge clk);
+{ concatMap assertion simulationInfo }
+    repeat ( 2000 ) @(posedge clk);
+        $finish;
+    end
+
+endmodule
+|]
+
+                -- [ ( "moduleName", moduleName projectName n )
+                -- ]
 
             -- TODO: Количество циклов для тестирования должно задаваться пользователем.
             cntxs = take 3 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n
@@ -508,15 +511,15 @@ instance ( Title title, Var v, Time t
             simulationInfo = -- (trace ("cntxs: \n" ++ concatMap ((++ "\n") . show) cntxs) 0, head cntxs) :
                 concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
             assertion (t, cntx) =
-                [qc|    @(posedge clk); \\$write("tick: { t }; net.data_bus == %h ", net.data_bus);|]
+                [qc|        @(posedge clk); $write("tick: { t }; net.data_bus == %h ", net.data_bus);|]
                 ++ case extractInstructionAt n t of
                     Transport v _ _ : _ -> [qc|
-        \\$write("=== %h (var: %s)", { get' cntx v }, { v } );
-        if ( !( net.data_bus === { get' cntx v } ) )
-            \\$display( " FAIL");
-        else
-            \\$display();
+            $write("=== %h (var: %s)", { get' cntx v }, { v } );
+            if ( !( net.data_bus === { get' cntx v } ) )
+                $display( " FAIL");
+            else
+                $display();
 |]
                     [] -> [qc|
-        \\$display();
+            $display();
 |]
