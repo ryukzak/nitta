@@ -596,7 +596,7 @@ wire [ATTR_WIDTH-1:0] attr_out;
 
 initial
   begin
-    $dumpfile(\"{ moduleName projectName pu }_tb.vcd\");
+    $dumpfile("{ moduleName projectName pu }_tb.vcd");
     $dumpvars(0, { moduleName projectName pu }_tb);
     @(negedge rst);
     forever @(posedge clk);
@@ -632,13 +632,13 @@ testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
       | Just (Source vs) <- endpointAt t p, let v = oneOf vs
       = checkBus v $ maybe (error $ show ("checkBus" ++ show v ++ show cntx) ) show (get cntx v)
       | otherwise
-      = "\\$display( \"data_out: %d\", data_out ); "
+      = "$display( \"data_out: %d\", data_out ); "
 
     checkBus v value = concat
-      [ "\\$write( \"data_out: %d == %d\t(%s)\", data_out, " ++ show value ++ ", " ++ show v ++ " ); "
+      [ "$write( \"data_out: %d == %d\t(%s)\", data_out, " ++ show value ++ ", " ++ show v ++ " ); "
       ,  "if ( !( data_out === " ++ value ++ " ) ) "
-      ,   "\\$display(\" FAIL\");"
-      ,  "else \\$display();"
+      ,   "$display(\" FAIL\");"
+      ,  "else $display();"
       ]
 
     bankCheck
@@ -656,7 +656,7 @@ testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
     checkBank addr v value = concatMap ("    " ++)
       [ "if ( !( " ++ title ++ ".bank[" ++ show addr ++ "] === " ++ show value ++ " ) ) "
-      ,   "\\$display("
+      ,   "$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
       ,       "(got: %h expect: %h)"

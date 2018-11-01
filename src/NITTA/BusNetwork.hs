@@ -356,7 +356,7 @@ instance
         where
             mn = moduleName title pu
             iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
-                in [qc|{ "module" } { mn }
+                in [qc|{"module"} { mn }
     #( parameter DATA_WIDTH = 32
      , parameter ATTR_WIDTH = 4
      )
@@ -450,10 +450,10 @@ instance ( Title title, Var v, Time t
                 , not $ null tbEnv
                 ]
             -- FIXME: Назначить корректное имя для temporary_two
-            temporary_two = S.join ", " (map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
+            temporary_two = S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
             testBenchImp = [qc|
 `timescale 1 ps / 1 ps
-module { moduleName projectName n }_tb();
+{"module"} { moduleName projectName n }_tb();
 
 /* Functions:
 { S.join "\\n" $ map show $ functions n }
@@ -474,7 +474,7 @@ wire [32-1:0] data_bus_hack = 0;
      ) net
     ( .clk( clk )
     , .rst( rst )
-    , { temporary_two }
+    { temporary_two }
 // if 1 - The process cycle are indipendent from a SPI.
 // else - The process cycle are wait for the SPI.
     , .is_drop_allow( { maybe "is_drop_allow" bool2verilog bnAllowDrop } )
@@ -501,9 +501,6 @@ initial
 
 endmodule
 |]
-
-                -- [ ( "moduleName", moduleName projectName n )
-                -- ]
 
             -- TODO: Количество циклов для тестирования должно задаваться пользователем.
             cntxs = take 3 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n

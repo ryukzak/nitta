@@ -29,7 +29,7 @@ module NITTA.Project
 
 -- TODO: Сделать выбор вендора, сейчас это Quartus и IcarusVerilog.
 
-import           Control.Monad                 (mapM, when)
+import           Control.Monad                 (mapM_, when)
 import           Data.FileEmbed
 import           Data.List                     (isSubsequenceOf)
 import qualified Data.List                     as L
@@ -47,7 +47,7 @@ import           System.Info.Extra             (isWindows)
 import           System.IO                     (IOMode (WriteMode), hPutStrLn,
                                                 stderr, withFile)
 import           System.Process
-import           Text.InterpolatedString.Perl6 (qc)
+import           Text.InterpolatedString.Perl6 (qc, qq)
 
 
 -- |Данный класс позволяет для реализующих его вычислительных блоков сгенировать test bench.
@@ -110,7 +110,7 @@ writeProject prj@Project{ projectName, projectPath, processorModel } = do
     writeModelsimDo prj
     writeQuartus prj
 
-    _ <- copyLibraryFiles prj
+    copyLibraryFiles prj
     writeFile (joinPath [ projectPath, "Makefile" ])
         $ renderST $(embedStringFile "template/Makefile")
             [ ( "iverilog_args", S.join " " $ snd $ projectFiles prj ) ]
@@ -198,7 +198,7 @@ copyLibraryFile file Project{ projectPath, libraryPath }
 
 copyLibraryFiles prj@Project{} =
     let (_tb, files) = projectFiles' prj in
-        mapM (\f -> copyLibraryFile f prj) files
+        mapM_ (\f -> copyLibraryFile f prj) files
 
 -- |Запустить testbench в указанной директории.
 
@@ -313,7 +313,7 @@ end
 
 snippetInitialFinish :: String -> String
 snippetInitialFinish block = [qc|initial begin
-$block
+{block}
     $finish;
 end
 |]

@@ -23,7 +23,7 @@ import           Data.Typeable
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
-import           NITTA.Utils
+-- import           NITTA.Utils
 import           Numeric.Interval                    ((...))
 import           Text.InterpolatedString.Perl6       (qc)
 
@@ -161,7 +161,7 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
     #( .DATA_WIDTH( { show parameterDataWidth } )
      , .ATTR_WIDTH( { show parameterAttrWidth } )
      , .BOUNCE_FILTER( { show spiBounceFilter } )
-     ) { name }
+     ) { title }
     ( .clk( { signalClk } )
     , .rst( { signalRst } )
     , .signal_cycle( { signalCycle } )
@@ -178,8 +178,6 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
     , .cs( { inputPort cs } )
     );
     |]
-      where
-        name = title
 
   -- TODO: Превратить в настоящий тест, а не заглушку. Скорей всего затронет не только эту функцию, а всю инфраструктуру
   -- тестирования.
