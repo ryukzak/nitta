@@ -47,7 +47,7 @@ import           System.Info.Extra             (isWindows)
 import           System.IO                     (IOMode (WriteMode), hPutStrLn,
                                                 stderr, withFile)
 import           System.Process
-import           Text.InterpolatedString.Perl6 (qc, qq)
+import           Text.InterpolatedString.Perl6 (qc)
 
 
 -- |Данный класс позволяет для реализующих его вычислительных блоков сгенировать test bench.
