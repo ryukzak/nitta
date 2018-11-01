@@ -21,35 +21,33 @@ module NITTA.Project
     -- *Snippets for Verilog code-generation
     , snippetClkGen
     , snippetDumpFile
-    , snippetDumpFile'
     , snippetInitialFinish
-    , snippetInitialFinish'
     , snippetTestBench
     ) where
-
--- FIXME: Файлы библиотек должны копироваться в проект.
 
 -- TODO: Добавить информацию о происхождении в автоматически генерируемые файлы.
 
 -- TODO: Сделать выбор вендора, сейчас это Quartus и IcarusVerilog.
 
-import           Control.Monad                 (when)
+import           Control.Monad                 (mapM_, when)
 import           Data.FileEmbed
 import           Data.List                     (isSubsequenceOf)
 import qualified Data.List                     as L
 import qualified Data.String.Utils             as S
+import qualified Data.Text                     as T
 import           GHC.Generics                  (Generic)
 import           NITTA.Functions               as F
 import           NITTA.Types
 import           NITTA.Utils
 import           System.Directory
+import           System.Directory              (copyFile)
 import           System.Exit
 import           System.FilePath.Posix         (joinPath, pathSeparator)
 import           System.Info.Extra             (isWindows)
 import           System.IO                     (IOMode (WriteMode), hPutStrLn,
                                                 stderr, withFile)
 import           System.Process
-import           Text.InterpolatedString.Perl6 (qq)
+import           Text.InterpolatedString.Perl6 (qc, qq)
 
 
 -- |Данный класс позволяет для реализующих его вычислительных блоков сгенировать test bench.
@@ -111,6 +109,8 @@ writeProject prj@Project{ projectName, projectPath, processorModel } = do
     writeImplementation projectPath $ testBenchDescription prj
     writeModelsimDo prj
     writeQuartus prj
+
+    copyLibraryFiles prj
     writeFile (joinPath [ projectPath, "Makefile" ])
         $ renderST $(embedStringFile "template/Makefile")
             [ ( "iverilog_args", S.join " " $ snd $ projectFiles prj ) ]
@@ -132,6 +132,9 @@ writeModelsimDo prj@Project{ projectPath } = do
             [ ( "top_level", tb )
             , ( "verilog_files", S.join "\n" $ map (\fn -> "vlog -vlog01compat -work work +incdir+$path $path/" ++ fn) files )
             ]
+
+-- writeVFiles name = do
+--     copyFile
 
 -- |Сгенерировать служебные файлы для Quartus.
 writeQuartus prj@Project{ projectName, projectPath, processorModel } = do
@@ -181,8 +184,21 @@ writeImplementation pwd impl = writeImpl "" impl
         writeImpl _ (FromLibrary _) = return ()
         writeImpl _ Empty = return ()
 
+-- |Скопировать файл в lib, если он находится в libraryPath
+copyLibraryFile file Project{ projectPath, libraryPath }
+    | T.isPrefixOf (T.pack libraryPath) (T.pack file) = do
+        let newFilePath = T.drop 6 (T.pack file)
+        let fileName = T.unpack $ L.last $ T.split (=='/') newFilePath
+        path <- makeAbsolute $ joinPath [projectPath, file]
+        newPath <- makeAbsolute $ joinPath [projectPath, "lib", fileName]
+        libPath <- makeAbsolute $ joinPath [projectPath, "lib"]
+        createDirectoryIfMissing True libPath
+        copyFile path newPath
+    | otherwise = return ()
 
-
+copyLibraryFiles prj@Project{} =
+    let (_tb, files) = projectFiles' prj in
+        mapM_ (\f -> copyLibraryFile f prj) files
 
 -- |Запустить testbench в указанной директории.
 
@@ -249,7 +265,20 @@ runTestBench h prj@Project{ projectPath, processorModel } = do
 -- окружения.
 createIVerilogProcess workdir files = (proc "iverilog" files){ cwd=Just workdir }
 
-projectFiles prj@Project{ projectName, libraryPath, processorModel }
+
+projectFiles prj@Project{ projectName, processorModel }
+    = let
+        files = L.nub $ concatMap (args "") [ hardware projectName processorModel, testBenchDescription prj ]
+        tb = S.replace ".v" "" $ last files
+    in (tb, files)
+    where
+        args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
+        args p (Aggregate Nothing subInstances) = concatMap (args $ joinPath [p]) subInstances
+        args p (Immidiate fn _) = [ joinPath [ p, fn ] ]
+        args _ (FromLibrary fn) = [ joinPath [ "lib", T.unpack $ L.last $ T.split (=='/') (T.pack fn) ] ]
+        args _ Empty = []
+
+projectFiles' prj@Project{ projectName, libraryPath, processorModel }
     = let
         files = L.nub $ concatMap (args "") [ hardware projectName processorModel, testBenchDescription prj ]
         tb = S.replace ".v" "" $ last files
@@ -266,7 +295,7 @@ projectFiles prj@Project{ projectName, libraryPath, processorModel }
 
 
 snippetClkGen :: String
-snippetClkGen = [qq|initial begin
+snippetClkGen = [qc|initial begin
     clk = 1'b0;
     rst = 1'b1;
     repeat(4) #1 clk = ~clk;
@@ -276,33 +305,18 @@ end
 |]
 
 snippetDumpFile :: String -> String
-snippetDumpFile mn = [qq|initial begin
-    \$dumpfile("{ mn }_tb.vcd");
-    \$dumpvars(0, { mn }_tb);
-end
-|]
-
-snippetDumpFile' :: String -> String
-snippetDumpFile' mn = [qq|initial begin
-    \\\$dumpfile("{ mn }_tb.vcd");
-    \\\$dumpvars(0, { mn }_tb);
+snippetDumpFile mn = [qc|initial begin
+    $dumpfile("{ mn }_tb.vcd");
+    $dumpvars(0, { mn }_tb);
 end
 |]
 
 snippetInitialFinish :: String -> String
-snippetInitialFinish block = [qq|initial begin
-$block
-    \$finish;
+snippetInitialFinish block = [qc|initial begin
+{block}
+    $finish;
 end
 |]
-
-snippetInitialFinish' :: String -> String
-snippetInitialFinish' block = [qq|initial begin
-$block
-    \\\$finish;
-end
-|]
-
 
 snippetTestBench
         Project{ projectName, processorModel=pu, testCntx }
@@ -331,7 +345,7 @@ snippetTestBench
                 }
             tbcPorts
 
-        controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pu t) ++ [qq| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
+        controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pu t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
             , Just val <- F.get cntx v
@@ -344,16 +358,16 @@ snippetTestBench
                     | Just (Source vs) <- endpointAt t p
                     , let v = oneOf vs
                     , let (Just val) = F.get cntx v
-                    = [qq|    @(posedge clk);
-        \$write( "data_out: %d == %d    (%s)", data_out, { val }, { v } );
-        if ( !( data_out === { val } ) ) \$display(" FAIL");
-        else \$display();
+                    = [qc|    @(posedge clk);
+        $write( "data_out: %d == %d    (%s)", data_out, { val }, { v } );
+        if ( !( data_out === { val } ) ) $display(" FAIL");
+        else $display();
 |]
                     | otherwise
-                    = [qq|    @(posedge clk); \$display( "data_out: %d", data_out );
+                    = [qc|    @(posedge clk); $display( "data_out: %d", data_out );
 |]
 
-    in [qq|{"module"} {mn}_tb();
+    in [qc|{"module"} {mn}_tb();
 
 parameter DATA_WIDTH = 32;
 parameter ATTR_WIDTH = 4;

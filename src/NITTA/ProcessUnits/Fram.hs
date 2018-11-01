@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -56,27 +57,28 @@ module NITTA.ProcessUnits.Fram
   , PUPorts(..)
   ) where
 
-import           Control.Monad         ((>=>))
+import           Control.Monad                 ((>=>))
 import           Data.Array
-import           Data.Bits             (testBit)
+import           Data.Bits                     (testBit)
 import           Data.Default
 import           Data.Either
 import           Data.Foldable
-import           Data.Generics.Aliases (orElse)
-import           Data.List             (find)
-import qualified Data.Map              as M
+import           Data.Generics.Aliases         (orElse)
+import           Data.List                     (find)
+import qualified Data.Map                      as M
 import           Data.Maybe
-import qualified Data.Set              as S
-import qualified Data.String.Utils     as S
+import qualified Data.Set                      as S
+import qualified Data.String.Utils             as S
 import           Data.Typeable
 import           NITTA.Compiler
 import           NITTA.Functions
 import           NITTA.Project
-import           NITTA.Types           hiding (Undef)
-import qualified NITTA.Types           as T
+import           NITTA.Types                   hiding (Undef)
+import qualified NITTA.Types                   as T
 import           NITTA.Utils
 import           NITTA.Utils.Lens
-import           Numeric.Interval      ((...))
+import           Numeric.Interval              ((...))
+import           Text.InterpolatedString.Perl6 (qc)
 import           Text.Printf
 
 
@@ -541,72 +543,70 @@ instance ( Var v
     = Immidiate (moduleName projectName pu ++ "_tb.v") testBenchImp
     where
       Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx $ functions pu
-      testBenchImp = renderMST
-        [ "module $moduleName$_tb();                                                                                 "
-        , "parameter DATA_WIDTH = 32;                                                                                "
-        , "parameter ATTR_WIDTH = 4;                                                                                 "
-        , "                                                                                                          "
-        , "/*                                                                                                        "
-        , "Context:"
-        , show cntx
-        , ""
-        , "Algorithm:"
-        , unlines $ map show $ functions pu
-        , ""
-        , "Process:"
-        , unlines $ map show steps
-        , "*/                                                                                                        "
-        , "                                                                                                          "
-        , "reg clk, rst, wr, oe;                                                                                     "
-        , "reg [3:0] addr;                                                                                           "
-        , "reg [DATA_WIDTH-1:0]  data_in;                                                                            "
-        , "reg [ATTR_WIDTH-1:0]  attr_in;                                                                            "
-        , "wire [DATA_WIDTH-1:0] data_out;                                                                           "
-        , "wire [ATTR_WIDTH-1:0] attr_out;                                                                           "
-        , "                                                                                                          "
-        , hardwareInstance projectName pu
-            Enviroment{ signalClk="clk"
-                      , signalRst="rst"
-                      , signalCycle="cycle"
-                      , inputPort=undefined
-                      , outputPort=undefined
-                      , net=NetEnv
-                        { parameterDataWidth=IntParam 32
-                        , parameterAttrWidth=IntParam 4
-                        , dataIn="data_in"
-                        , attrIn="attr_in"
-                        , dataOut="data_out"
-                        , attrOut="attr_out"
-                        , signal= \(Signal i) -> case i of
-                          0 -> "oe"
-                          1 -> "wr"
-                          j -> "addr[" ++ show (3 - (j - 2)) ++ "]"
-                        }
-                      }
-            PUPorts{ oe=Signal 0
-                   , wr=Signal 1
-                   , addr=map Signal [ 2, 3, 4, 5 ]
-                   }
-        , "                                                                                                          "
-        , snippetDumpFile' $ moduleName projectName pu
-        , snippetClkGen
-        , "                                                                                                          "
-        , "initial                                                                                                   "
-        , "  begin                                                                                                   "
-        , "    \\$dumpfile(\"$moduleName$_tb.vcd\");                                                                 "
-        , "    \\$dumpvars(0, $moduleName$_tb);                                                                      "
-        , "    @(negedge rst);                                                                                       "
-        , "    forever @(posedge clk);                                                                               "
-        , "  end                                                                                                     "
-        , "                                                                                                          "
-        , snippetInitialFinish' $ controlSignals pu
-        , snippetInitialFinish' $ testDataInput pu cntx
-        , snippetInitialFinish' $ testDataOutput projectName pu cntx
-        , "                                                                                                          "
-        , "endmodule                                                                                                 "
-        ]
-        [ ( "moduleName", moduleName projectName pu )
-        ]
+      hardwareInstance' = hardwareInstance projectName pu
+        Enviroment{ signalClk="clk"
+                , signalRst="rst"
+                , signalCycle="cycle"
+                , inputPort=undefined
+                , outputPort=undefined
+                , net=NetEnv
+                  { parameterDataWidth=IntParam 32
+                  , parameterAttrWidth=IntParam 4
+                  , dataIn="data_in"
+                  , attrIn="attr_in"
+                  , dataOut="data_out"
+                  , attrOut="attr_out"
+                  , signal= \(Signal i) -> case i of
+                    0 -> "oe"
+                    1 -> "wr"
+                    j -> "addr[" ++ show (3 - (j - 2)) ++ "]"
+                  }
+                }
+        PUPorts{ oe=Signal 0
+               , wr=Signal 1
+               , addr=map Signal [ 2, 3, 4, 5 ]
+               }
+      testBenchImp =
+        [qc|module { moduleName projectName pu }_tb();
+parameter DATA_WIDTH = 32;
+parameter ATTR_WIDTH = 4;
+
+/*
+Context:
+{ show cntx }
+
+Algorithm:
+{ unlines $ map show $ functions pu }
+
+Process:
+{ unlines $ map show steps }
+*/
+
+reg clk, rst, wr, oe;
+reg [3:0] addr;
+reg [DATA_WIDTH-1:0]  data_in;
+reg [ATTR_WIDTH-1:0]  attr_in;
+wire [DATA_WIDTH-1:0] data_out;
+wire [ATTR_WIDTH-1:0] attr_out;
+
+{ hardwareInstance' }
+
+{ snippetDumpFile $ moduleName projectName pu }
+{ snippetClkGen }
+
+initial
+  begin
+    $dumpfile("{ moduleName projectName pu }_tb.vcd");
+    $dumpvars(0, { moduleName projectName pu }_tb);
+    @(negedge rst);
+    forever @(posedge clk);
+  end
+
+{ snippetInitialFinish $ controlSignals pu }
+{ snippetInitialFinish $ testDataInput pu cntx }
+{ snippetInitialFinish $ testDataOutput projectName pu cntx }
+
+endmodule|]
 
 controlSignals pu@Fram{ frProcess=Process{..}, ..}
   = concatMap ( ("      " ++) . (++ " @(posedge clk)\n") . showMicrocode . microcodeAt pu) [ 0 .. nextTick + 1 ]
@@ -632,13 +632,13 @@ testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
       | Just (Source vs) <- endpointAt t p, let v = oneOf vs
       = checkBus v $ maybe (error $ show ("checkBus" ++ show v ++ show cntx) ) show (get cntx v)
       | otherwise
-      = "\\$display( \"data_out: %d\", data_out ); "
+      = "$display( \"data_out: %d\", data_out ); "
 
     checkBus v value = concat
-      [ "\\$write( \"data_out: %d == %d\t(%s)\", data_out, " ++ show value ++ ", " ++ show v ++ " ); "
+      [ "$write( \"data_out: %d == %d\t(%s)\", data_out, " ++ show value ++ ", " ++ show v ++ " ); "
       ,  "if ( !( data_out === " ++ value ++ " ) ) "
-      ,   "\\$display(\" FAIL\");"
-      ,  "else \\$display();"
+      ,   "$display(\" FAIL\");"
+      ,  "else $display();"
       ]
 
     bankCheck
@@ -656,7 +656,7 @@ testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
     checkBank addr v value = concatMap ("    " ++)
       [ "if ( !( " ++ title ++ ".bank[" ++ show addr ++ "] === " ++ show value ++ " ) ) "
-      ,   "\\$display("
+      ,   "$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
       ,       "(got: %h expect: %h)"
@@ -689,25 +689,22 @@ instance ( Time t, Var v, PrintfArg x ) => TargetSystemComponent (Fram v x t) wh
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software title pu@Fram{ frMemory }
     = Immidiate (softwareFile title pu) $ unlines $ map (printf "%08x" . initialValue) $ elems frMemory
-  hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
-    [ "pu_fram "
-    , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
-    , "   , .RAM_SIZE( " ++ show frSize ++ " )"
-    , "   , .FRAM_DUMP( \"\\$path\\$$softwareFile$\" )"
-    , "   ) " ++ title
-    , "  ( .clk( " ++ signalClk ++ " )"
-    , "  , .signal_addr( { " ++ S.join ", " (map signal addr) ++ " } )"
-    , ""
-    , "  , .signal_wr( " ++ signal wr ++ " )"
-    , "  , .data_in( " ++ dataIn ++ " )"
-    , "  , .attr_in( " ++ attrIn ++ " )"
-    , ""
-    , "  , .signal_oe( " ++ signal oe ++ " )"
-    , "  , .data_out( " ++ dataOut ++ " )"
-    , "  , .attr_out( " ++ attrOut ++ " )"
-    , "  );"
-    ] [ ( "name", title )
-      , ( "size", show frSize )
-      , ( "softwareFile", softwareFile title pu )
-      ]
+  hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
+    [qc|pu_fram
+    #( .DATA_WIDTH( { show parameterDataWidth } )
+     , .ATTR_WIDTH( { show parameterAttrWidth } )
+     , .RAM_SIZE( { show frSize } )
+     , .FRAM_DUMP( "$path${ softwareFile title pu }" )
+     ) { title }
+    ( .clk( { signalClk } )
+    , .signal_addr( \{ { S.join ", " (map signal addr) } } )
+
+    , .signal_wr( { signal wr } )
+    , .data_in( { dataIn } )
+    , .attr_in( { attrIn } )
+
+    , .signal_oe( { signal oe } )
+    , .data_out( { dataOut } )
+    , .attr_out( { attrOut } )
+    );
+    |]

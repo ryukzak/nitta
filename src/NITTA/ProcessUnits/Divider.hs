@@ -29,7 +29,7 @@ import           NITTA.Utils
 import           NITTA.Utils.Process
 import           Numeric.Interval              (Interval, inf, intersection,
                                                 singleton, sup, width, (...))
-import           Text.InterpolatedString.Perl6 (qq)
+import           Text.InterpolatedString.Perl6 (qc)
 
 
 data InputDesc
@@ -338,26 +338,25 @@ instance ( Time t, Var v
                 , signalClk
                 , signalRst
                 }
-            PUPorts{ oe, oeSel, wr, wrSel } = renderMST
-        [ "pu_div"
-        , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
-        , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
-        , "   , .INVALID( 0 )" -- FIXME: Сделать и протестировать работу с атрибутами.
-        , "   , .PIPELINE( " ++ show pipeline ++ " )"
-        , "   , .MOCK_DIV( " ++ bool2verilog mock ++ " )"
-        , "   ) $name$"
-        , "  ( .clk( " ++ signalClk ++ " )"
-        , "  , .rst( " ++ signalRst ++ " )"
-        , "  , .signal_wr( " ++ signal wr ++ " )"
-        , "  , .signal_wr_sel( " ++ signal wrSel ++ " )"
-        , "  , .data_in( " ++ dataIn ++ " )"
-        , "  , .attr_in( " ++ attrIn ++ " )"
-        , "  , .signal_oe( " ++ signal oe ++ " )"
-        , "  , .signal_oe_sel( " ++ signal oeSel ++ " )"
-        , "  , .data_out( " ++ dataOut ++ " )"
-        , "  , .attr_out( " ++ attrOut ++ " )"
-        , "  );"
-        ] [("name", title)]
+            PUPorts{ oe, oeSel, wr, wrSel } =
+        [qc|pu_div
+    #( .DATA_WIDTH( { show parameterDataWidth } )
+     , .ATTR_WIDTH( { show parameterAttrWidth } )
+     , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
+     , .PIPELINE( { show pipeline } )
+     , .MOCK_DIV( { bool2verilog mock } )
+     ) { title }
+    ( .clk( { signalClk } )
+    , .rst( { signalRst } )
+    , .signal_wr( { signal wr } )
+    , .signal_wr_sel( { signal wrSel } )
+    , .data_in( { dataIn } )
+    , .attr_in( { attrIn } )
+    , .signal_oe( { signal oe } )
+    , .signal_oe_sel( { signal oeSel } )
+    , .data_out( { dataOut } )
+    , .attr_out( { attrOut } )
+    );|]
 
 
 instance ( Var v, Time t
@@ -380,5 +379,5 @@ instance ( Var v, Time t
                     (Signal 3) -> "wrSel"
                     _ -> error "testBenchDescription wrong signal"
                 , tbcCtrl= \Microcode{ oeSignal, oeSelSignal, wrSignal, wrSelSignal } ->
-                    [qq|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]
+                    [qc|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]
                 }
