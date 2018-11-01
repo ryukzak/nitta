@@ -23,7 +23,6 @@ import           Data.Typeable
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
--- import           NITTA.Utils
 import           Numeric.Interval                    ((...))
 import           Text.InterpolatedString.Perl6       (qc)
 

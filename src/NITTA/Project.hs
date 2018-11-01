@@ -40,7 +40,6 @@ import           NITTA.Functions               as F
 import           NITTA.Types
 import           NITTA.Utils
 import           System.Directory
-import           System.Directory              (copyFile)
 import           System.Exit
 import           System.FilePath.Posix         (joinPath, pathSeparator)
 import           System.Info.Extra             (isWindows)
@@ -133,8 +132,6 @@ writeModelsimDo prj@Project{ projectPath } = do
             , ( "verilog_files", S.join "\n" $ map (\fn -> "vlog -vlog01compat -work work +incdir+$path $path/" ++ fn) files )
             ]
 
--- writeVFiles name = do
---     copyFile
 
 -- |Сгенерировать служебные файлы для Quartus.
 writeQuartus prj@Project{ projectName, projectPath, processorModel } = do

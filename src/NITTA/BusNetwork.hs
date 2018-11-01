@@ -441,16 +441,14 @@ instance ( Title title, Var v, Time t
         = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
         where
             ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
-            -- FIXME: Назначить корректное имя для temporary_one
-            temporary_one = S.join "\\n\\n"
+            testEnv = S.join "\\n\\n"
                 [ tbEnv
                 | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus
                 , let t' = filter (/= '"') $ show t
                 , let tbEnv = componentTestEnviroment t' unit systemEnv links
                 , not $ null tbEnv
                 ]
-            -- FIXME: Назначить корректное имя для temporary_two
-            temporary_two = S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
+            externalIO = S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
             testBenchImp = [qc|
 `timescale 1 ps / 1 ps
 {"module"} { moduleName projectName n }_tb();
@@ -474,14 +472,14 @@ wire [32-1:0] data_bus_hack = 0;
      ) net
     ( .clk( clk )
     , .rst( rst )
-    { temporary_two }
+    { externalIO }
 // if 1 - The process cycle are indipendent from a SPI.
 // else - The process cycle are wait for the SPI.
     , .is_drop_allow( { maybe "is_drop_allow" bool2verilog bnAllowDrop } )
     , .data_bus_hack( data_bus_hack )
     );
 
-{ temporary_one }
+{ testEnv }
 
 { snippetDumpFile $ moduleName projectName n }
 
