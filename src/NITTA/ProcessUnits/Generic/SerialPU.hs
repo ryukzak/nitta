@@ -50,12 +50,12 @@ data SerialPU st v x t
   -- к вычислительному блоку.
   , spuRemain  :: [(F (Parcel v x), ProcessUid)]
   -- | Описание вычислительного процесса.
-  , spuProcess :: Process (Parcel v x) t
+  , spuProcess :: Process v x t
   , spuFBs     :: [F (Parcel v x)]
   }
 
 instance ( Show st
-         , Show (Process (Parcel v x) t)
+         , Show (Process v x t)
          ) => Show (SerialPU st v x t) where
   show SerialPU{ spuState, spuProcess }
     = "SerialPU{spuState=" ++ show spuState
@@ -96,7 +96,7 @@ class SerialPUState st v x t | st -> v x t where
   -- - состояние после выполнения вычислительного процесса;
   -- - монада State, которая сформирует необходимое описание многоуровневого вычислительного
   --   процессса.
-  simpleSynthesis :: st -> Decision (EndpointDT v t) -> (st, State (Process (Parcel v x) t) [ProcessUid])
+  simpleSynthesis :: st -> Decision (EndpointDT v t) -> (st, State (Process v x t) [ProcessUid])
 
 
 
@@ -154,7 +154,7 @@ instance ( Var v, Time t
 instance ( Var v, Time t
          , Default st
          , SerialPUState st v x t
-         ) => ProcessUnit (SerialPU st v x t) (Parcel v x) t where
+         ) => ProcessUnit (SerialPU st v x t) v x t where
 
   tryBind fb pu@SerialPU{ spuFBs, spuRemain, spuProcess }
     -- Почему делается попытка привязать функцию к нулевому состоянию последовательного вычислителя,
@@ -193,7 +193,7 @@ instance Locks (SerialPU st v x t) v where
 
 serialSchedule
   :: ( Show (Instruction pu), Controllable pu, Var v, Time t, Typeable pu )
-  => Instruction pu -> Decision (EndpointDT v t) -> State (Process (Parcel v x) t) [ProcessUid]
+  => Instruction pu -> Decision (EndpointDT v t) -> State (Process v x t) [ProcessUid]
 serialSchedule instr act = do
   e <- addActivity (act^.at) $ EndpointRoleStep $ epdRole act
   i <- addActivity (act^.at) $ InstructionStep instr

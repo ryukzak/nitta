@@ -39,9 +39,10 @@ import           Debug.Trace
 -- вычислительным процессом и алгоритм.
 processGen pu gens = onlyUniqueVar <$> listOf1 (oneof gens) >>= processGen' pu
     where
-        processGen' :: ( DecisionProblem (EndpointDT String Int) EndpointDT pu
-                        , ProcessUnit pu (Parcel String Int) Int
-                        ) => pu -> [F (Parcel String Int)] -> Gen (pu, [F (Parcel String Int)])
+        processGen' :: 
+            ( DecisionProblem (EndpointDT String Int) EndpointDT pu
+            , ProcessUnit pu String Int Int
+            ) => pu -> [F (Parcel String Int)] -> Gen (pu, [F (Parcel String Int)])
         processGen' pu' specialAlg = endpointWorkGen pu' specialAlg
         onlyUniqueVar = snd . foldl (\(used, fbs) fb -> let vs = variables fb
                                                         in if null (vs `intersection` used)

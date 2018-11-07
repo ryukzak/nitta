@@ -50,7 +50,7 @@ data Divider v x t
         , remains         :: [F (Parcel v x)]
         , targetIntervals :: [Interval t]
         , sourceIntervals :: [Interval t]
-        , process_        :: Process (Parcel v x) t
+        , process_        :: Process v x t
         , latency         :: t
         , pipeline        :: t
         , mock            :: Bool
@@ -163,7 +163,7 @@ pushOutput pu@Divider{ jobs }
 
 
 instance ( Var v, Time t
-         ) => ProcessUnit (Divider v x t) (Parcel v x) t where
+         ) => ProcessUnit (Divider v x t) v x t where
     tryBind f pu@Divider{ remains }
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f
         = Right pu

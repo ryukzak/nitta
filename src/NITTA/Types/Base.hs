@@ -215,38 +215,32 @@ instance FunctionSimulation (F (Parcel v x)) v x where
 
 
 -- |Описание многоуровневого вычислительного процесса PU. Подход к моделированию вдохновлён ISO
--- 15926. Имеются следующие варианты использования:
---
--- 1. Хранение многоуровневого описания вычислительного процесса отдельного PU (одного структурного
---    элемента процессора).
--- 2. Формирование многоуровневого описания вычислительного процесса для отдельного PU и входящих в
---    его состав структурных элементов (Nested). К примеру: вычислительный процесс сети и
---    подключённых к ней PU. (доступно через функцию process)
-data Process io t
+-- 15926. Процесс описывается относительно вычислительных блоков. При наличии вложенных блоков -
+--        структура сохраняется.
+data Process v x t
     = Process
-        { steps     :: [Step io t] -- ^Список шагов вычислительного процесса.
-
+        { steps     :: [Step v x t] -- ^Список шагов вычислительного процесса.
         , relations :: [Relation] -- ^Список отношений между шагами вычислительного процесса
                                   -- (отношения описываются через "кортежи" из ProcessUid).
         , nextTick  :: t          -- ^Номер первого свободного такта.
         , nextUid   :: ProcessUid -- ^Следующий свободный идентификатор шага вычислительного процесса.
-        }
-deriving instance ( Show v, Show t ) => Show ( Process (Parcel v x) t )
+        } 
+    deriving ( Show )
 
-instance ( Default t ) => Default (Process io t) where
+instance ( Default t ) => Default (Process v x t) where
     def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
 
 
 type ProcessUid = Int -- ^Уникальный идентификатор шага вычислительного процесса.
 
 -- |Описание шага вычислительного процесса.
-data Step io t
+data Step v x t
     = Step
         { sKey  :: ProcessUid    -- ^Уникальный идентификатор шага.
         , sTime :: PlaceInTime t -- ^Описание типа и положения шага во времени.
-        , sDesc :: StepInfo io t -- ^Описание действия описываемого шага.
+        , sDesc :: StepInfo v x t -- ^Описание действия описываемого шага.
         }
-deriving instance ( Show v, Show t ) => Show ( Step (Parcel v x) t )
+    deriving ( Show )
 
 -- |Описание положения события во времени и типа события:
 data PlaceInTime t
@@ -256,19 +250,19 @@ data PlaceInTime t
 
 -- |Описание события, соответсвующего шага вычислительного процесса. Каждый вариант соответствует
 -- соответствующему отдельному уровню организации вычислительного процесса.
-data StepInfo io t where
+data StepInfo v x t where
     -- |Решения, принятые на уровне САПР.
-    CADStep :: String -> StepInfo io t
+    CADStep :: String -> StepInfo v x t
     -- |Время работы над функциональным блоком функционального алгоритма.
-    FStep :: F io -> StepInfo io t
+    FStep :: F (Parcel v x) -> StepInfo v x t
     -- |Описание использования вычислительного блока с точки зрения передачи данных.
-    EndpointRoleStep :: ( io ~ _io v x, Show v, Typeable v ) => EndpointRole v -> StepInfo io t
+    EndpointRoleStep :: EndpointRole v -> StepInfo v x t
     -- |Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
     -- определяется типом вычислительного блока.
     InstructionStep :: 
         ( Show (Instruction pu)
         , Typeable (Instruction pu)
-        ) => Instruction pu -> StepInfo io t
+        ) => Instruction pu -> StepInfo v x t
     -- |Используется для описания вычислительного процесса вложенных структурных элементов. Как
     -- правило не хранится в структурах данных, а генерируется автоматически по требованию при
     -- помощи опроса вложенных структурных элементов.
@@ -276,13 +270,13 @@ data StepInfo io t where
         ( Eq title, Show title, Ord title
         ) => 
             { nTitle :: title
-            , nStep :: Step io t 
-            } -> StepInfo io t
+            , nStep :: Step v x t
+            } -> StepInfo v x t
 
 descent Step{ sDesc=NestedStep _ step } = descent step
 descent step                            = step
 
-instance (Show (Step io t)) => Show (StepInfo io t) where
+instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show (CADStep s)                 = s
     show (FStep (F f))               = show f
     show (EndpointRoleStep eff)      = show eff
@@ -299,7 +293,6 @@ level (NestedStep _ step) = level $ sDesc $ descent step
 
 showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
     where
-        showPU' :: StepInfo (Parcel v x) t -> [String]
         showPU' (NestedStep title Step{ sDesc }) = show title : showPU' sDesc
         showPU' _                                = []
 
@@ -401,14 +394,14 @@ instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t))
 --    блока. Его модельное время продвигается вперёд, в описании вычислительного процесса
 --    дополняется записями относительно сделанных шагов вычислительного процесса.
 -- 4. Повторение, пока список возможных вариантов не станет пустым.
-class ProcessUnit pu io t | pu -> io t where
+class ProcessUnit pu v x t | pu -> v x t where
     -- |Назначить исполнение функционального блока вычислительному узлу.
-    tryBind :: F io -> pu -> Either String pu
+    tryBind :: F (Parcel v x) -> pu -> Either String pu
     -- |Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
     -- процесс вложенных структурных элементов.
     --
     -- Результат вычисления данной функции не должен редактироваться и возкращаться на место!
-    process :: pu -> Process io t
+    process :: pu -> Process v x t
     -- |Установить модельное время вычислительного блока.
     --
     -- История вопроса: Изначально, данный метод был добавлен для работы в ращеплённом времени, но он:

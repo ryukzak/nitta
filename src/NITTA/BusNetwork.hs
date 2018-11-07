@@ -62,7 +62,7 @@ data GBusNetwork title spu v x t = BusNetwork
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
     , bnBinded         :: M.Map title [F (Parcel v x)]
     -- | Описание вычислительного процесса сети, как элемента процессора.
-    , bnProcess        :: Process (Parcel v x) t
+    , bnProcess        :: Process v x t
     -- | Словарь вложенных вычислительных блоков по именам.
     , bnPus            :: M.Map title spu
     -- | Ширина шины управления.
@@ -195,7 +195,7 @@ instance ( Title title, Var v, Time t
 
 
 instance ( Title title, Time t, Var v, Typeable x
-         ) => ProcessUnit (BusNetwork title v x t) (Parcel v x) t where
+         ) => ProcessUnit (BusNetwork title v x t) v x t where
 
     tryBind f net@BusNetwork{ bnRemains, bnPus }
         | any (allowToProcess f) $ M.elems bnPus

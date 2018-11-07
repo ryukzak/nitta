@@ -25,7 +25,7 @@ data PU v x t where
         , Connected pu
         , DecisionProblem (EndpointDT v t)
                EndpointDT  pu
-        , ProcessUnit pu (Parcel v x) t
+        , ProcessUnit pu v x t
         , Show (Instruction pu)
         , Simulatable pu v x
         , Typeable pu
@@ -49,7 +49,7 @@ instance ( Var v, Time t
     decision proxy PU{ unit, links, systemEnv } d
         = PU{ unit=decision proxy unit d, links, systemEnv }
 
-instance ProcessUnit (PU v x t) (Parcel v x) t where
+instance ProcessUnit (PU v x t) v x t where
     tryBind fb PU{ unit, links, systemEnv }
         = case tryBind fb unit of
             Right unit' -> Right PU { unit=unit', links, systemEnv }
@@ -76,7 +76,7 @@ castPU ::
     , DecisionProblem (EndpointDT v t)
             EndpointDT  pu
     , TargetSystemComponent pu
-    , ProcessUnit pu v t
+    , ProcessUnit pu v x t
     , Show (Instruction pu)
     , Simulatable pu v x
     , Typeable pu

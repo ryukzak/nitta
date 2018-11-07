@@ -244,7 +244,7 @@ data Multiplier v x t
         , currentWorkEndpoints :: [ ProcessUid ]
           -- |Описание вычислительного процесса, спланированного для данного вычислительного блока
           -- 'NITTA.Types.Base.Process'.
-        , process_             :: Process (Parcel v x) t
+        , process_             :: Process v x t
         , tick                 :: t
           -- |В реализации данного вычислительного блока используется IP ядро поставляемое вместе с
           -- Altera Quartus. Это не позволяет осуществлять симуляцию при помощи Icarus Verilog.
@@ -300,7 +300,7 @@ multiplier mock = Multiplier
 -- Привязка может быть выполнена как постепенно по мере планирования вычислительного процесса, так и
 -- одновременно для всех функций в самом начале.
 instance ( Var v, Time t
-         ) => ProcessUnit (Multiplier v x t) (Parcel v x) t where
+         ) => ProcessUnit (Multiplier v x t) v x t where
     -- |Привязка к вычислительному блоку осуществялется этой функцией.
     tryBind f pu@Multiplier{ remain }
         -- Для этого осуществляется проверка, приводится ли тип функции к одному из поддерживаемых

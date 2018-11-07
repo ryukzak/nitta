@@ -90,7 +90,7 @@ data Fram v x t = Fram
   -- привязку к ячейке памяти, так как это будет неэффективно.
   , frRemains  :: [ (F (Parcel v x), ProcessUid) ]
   , frBindedFB :: [ F (Parcel v x) ]
-  , frProcess  :: Process (Parcel v x) t
+  , frProcess  :: Process v x t
   , frSize     :: Int
   } deriving ( Show )
 
@@ -232,7 +232,7 @@ instance ( IOType (Parcel v x) v x
          , Eq x
          , Show x
          , WithFunctions (Fram v x t) (F (Parcel v x))
-         ) => ProcessUnit (Fram v x t) (Parcel v x) t where
+         ) => ProcessUnit (Fram v x t) v x t where
     tryBind f Fram{ frBindedFB }
         | not $ null (variables f `S.intersection` S.unions (map variables frBindedFB))
         = Left "Can't bind, because needed self transaction."
@@ -537,7 +537,7 @@ instance ( Var v
          , Default x
          , Eq x
          , PrintfArg x
-         , ProcessUnit (Fram v x t) (Parcel v x) t
+         , ProcessUnit (Fram v x t) v x t
          ) => TestBench (Fram v x t) v x where
   testBenchDescription Project{ projectName, processorModel=pu@Fram{ frProcess=Process{ steps }, .. }, testCntx }
     = Immidiate (moduleName projectName pu ++ "_tb.v") testBenchImp
@@ -677,7 +677,6 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
         variableSendAt v = [ t | Step{ sTime=Activity t, sDesc=info } <- steps
                            , v `elem` f info
                            ]
-        f :: StepInfo (_io v x) t -> S.Set v
         f (EndpointRoleStep rule) = variables rule
         f _                       = S.empty
 

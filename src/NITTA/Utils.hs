@@ -64,7 +64,7 @@ import           Text.StringTemplate
 
 instance ( Show (Instruction pu)
          , Default (Microcode pu)
-         , ProcessUnit pu v t
+         , ProcessUnit pu v x t
          , UnambiguouslyDecode pu
          , Time t
          , Typeable pu
@@ -75,7 +75,7 @@ instance ( Show (Instruction pu)
         [i] -> decodeInstruction i
         is  -> error $ "Ambiguously instruction at " ++ show t ++ ": " ++ show is
 
-instance ( Ord t ) => WithFunctions (Process (Parcel v x) t) (F (Parcel v x)) where
+instance ( Ord t ) => WithFunctions (Process v x t) (F (Parcel v x)) where
     functions = getFBs
 
 
@@ -147,7 +147,7 @@ setProcessTime t = do
 
 bindFB fb t = addStep (Event t) $ CADStep $ "Bind " ++ show fb
 
-addInstr :: ( Typeable pu, Show (Instruction pu) ) => pu -> I.Interval t -> Instruction pu -> State (Process v t) ProcessUid
+addInstr :: ( Typeable pu, Show (Instruction pu) ) => pu -> I.Interval t -> Instruction pu -> State (Process v x t) ProcessUid
 addInstr _pu t i = addStep (Activity t) $ InstructionStep i
 
 
@@ -167,7 +167,6 @@ getFB _    = Nothing
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
 
-getEndpoint :: Step (Parcel v x) t -> Maybe (EndpointRole v)
 getEndpoint step | Step{ sDesc=EndpointRoleStep role } <- descent step = Just role
 getEndpoint _                                                          = Nothing
 
@@ -175,7 +174,7 @@ getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 transfered pu = nub $ concatMap (elems . variables) $ getEndpoints $ process pu
 
 
-extractInstruction :: ( Typeable (Instruction pu) ) => pu -> Step v t -> Maybe (Instruction pu)
+extractInstruction :: ( Typeable (Instruction pu) ) => pu -> Step v x t -> Maybe (Instruction pu)
 extractInstruction _ Step{ sDesc=InstructionStep instr } = cast instr
 extractInstruction _ _                                   = Nothing
 

@@ -99,7 +99,7 @@ instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
          ) => ToJSON (ModelState title tag x v t)
 
 instance ( ToJSON t, Time t, Show v
-         ) => ToJSON (Process (Parcel v x) t) where
+         ) => ToJSON (Process v x t) where
     toJSON Process{ steps, nextTick, relations } = object
         [ "steps" .= steps
         , "nextTick" .= nextTick
@@ -107,7 +107,7 @@ instance ( ToJSON t, Time t, Show v
         ]
 
 instance ( ToJSON t, Time t, Show v
-         ) => ToJSON (Step (Parcel v x) t) where
+         ) => ToJSON (Step v x t) where
     toJSON Step{ sKey, sTime, sDesc } = object
         [ "sKey" .= sKey
         , "sDesc" .= show sDesc
