@@ -33,7 +33,7 @@ import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
-import           NITTA.Types                   (F, Parcel)
+import           NITTA.Types                   (F)
 import           Text.InterpolatedString.Perl6 (qq)
 
 -- import Debug.Trace

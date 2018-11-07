@@ -50,7 +50,7 @@ Ok, 10 modules loaded.
 Создаём функцию и начальное состояние модели вычислительного блока умножителя. К сожалению, GHC не
 хватает информации из контекста, чтобы вывести их типы, по этому зададим их явно.
 
->>> let f = multiply "a" "b" ["c", "d"] :: F (Parcel String Int)
+>>> let f = multiply "a" "b" ["c", "d"] :: F String Int
 >>> f
 <Multiply (I "a") (I "b") (O (fromList ["c","d"]))>
 >>> let st0 = multiplier True :: Multiplier String Int Int
@@ -299,7 +299,7 @@ multiplier mock = Multiplier
 -- вычислительных блоков, количество и тип ещё не привязанных функций) выбирается лучший вариант.
 -- Привязка может быть выполнена как постепенно по мере планирования вычислительного процесса, так и
 -- одновременно для всех функций в самом начале.
-instance ( Var v, Time t
+instance ( Var v, Time t, Typeable x
          ) => ProcessUnit (Multiplier v x t) v x t where
     -- |Привязка к вычислительному блоку осуществялется этой функцией.
     tryBind f pu@Multiplier{ remain }
@@ -541,6 +541,7 @@ instance Connected (Multiplier v x t) where
 -- осуществляется данным классом.
 instance ( Var v
          , Integral x
+         , Typeable x
          ) => Simulatable (Multiplier v x t) v x where
     simulateOn cntx _ f
         -- Определяем функцию и делегируем ее расчет реализации по умолчанию.

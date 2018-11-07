@@ -128,10 +128,10 @@ instance Connected (Shift v x t) where
       ]
 
 
-instance ( Var v, B.Bits x ) => Simulatable (Shift v x t) v x where
-  simulateOn cntx _ fb
-    | Just (fb' :: ShiftLR (Parcel v x)) <- castF fb = simulate cntx fb'
-    | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
+instance ( Var v, B.Bits x, Typeable x ) => Simulatable (Shift v x t) v x where
+  simulateOn cntx _ f
+    | Just (f' :: ShiftLR v x) <- castF f = simulate cntx f'
+    | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
 
 
 instance TargetSystemComponent (Shift v x t) where

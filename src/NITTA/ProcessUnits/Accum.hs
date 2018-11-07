@@ -103,11 +103,12 @@ instance UnambiguouslyDecode (Accum v x t) where
 
 instance ( Var v
          , Num x
+         , Typeable x
          ) => Simulatable (Accum v x t) v x where
-  simulateOn cntx _ fb
-    | Just fb'@Add{} <- castF fb = simulate cntx fb'
-    | Just fb'@Sub{} <- castF fb = simulate cntx fb'
-    | otherwise = error $ "Can't simulate " ++ show fb ++ " on Accum."
+  simulateOn cntx _ f
+    | Just f'@Add{} <- castF f = simulate cntx f'
+    | Just f'@Sub{} <- castF f = simulate cntx f'
+    | otherwise = error $ "Can't simulate " ++ show f ++ " on Accum."
 
 
 instance Connected (Accum v x t) where

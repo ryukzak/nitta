@@ -141,17 +141,17 @@ main = do
       ]
 
 framGen = processGen (def :: (Fram String Int Int))
-    [ F <$> (arbitrary :: Gen (Constant (Parcel String Int)))
-    , F <$> (arbitrary :: Gen (FramInput (Parcel String Int)))
-    , F <$> (arbitrary :: Gen (FramOutput (Parcel String Int)))
-    , F <$> (arbitrary :: Gen (Loop (Parcel String Int)))
-    , F <$> (arbitrary :: Gen (Reg (Parcel String Int)))
+    [ F <$> (arbitrary :: Gen (Constant String Int))
+    , F <$> (arbitrary :: Gen (FramInput String Int))
+    , F <$> (arbitrary :: Gen (FramOutput String Int))
+    , F <$> (arbitrary :: Gen (Loop String Int))
+    , F <$> (arbitrary :: Gen (Reg String Int))
     ]
 
 multiplierGen = processGen (multiplier True)
-    [ F <$> (arbitrary :: Gen (Multiply (Parcel String Int)))
+    [ F <$> (arbitrary :: Gen (Multiply String Int))
     ]
 
 dividerGen = processGen (divider 4 True)
-    [ F <$> (arbitrary :: Gen (Division (Parcel String Int)))
+    [ F <$> (arbitrary :: Gen (Division String Int))
     ]

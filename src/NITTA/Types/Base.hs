@@ -47,49 +47,17 @@ class Variables a v | a -> v where
 
 
 
--- |Семейство типов для описания входов/выходов для функциональных блоков. Необходимо чтобы описание
--- функционального блока можно было использовать для:
---
--- - логического описания вычислительного значения (выход из f подаётся на вход g и h);
--- - фактического (Parcel) описания пересылок (выход из f формирует значения а и b, значение a
---   загружается в g, значение b загружается в h).
-class IOTypeFamily io where
-    -- |Тип для описания загружаемого значения.
-    data I io :: *
-    -- |Тип для описания выгружаемого значения.
-    data O io :: *
-    -- |Тип значения.
-    data X io :: *
+-- |Группа типов данных для описания параметров функций
+data I v = I v -- ^Загружаемые значения.
+    deriving (Show, Eq, Ord)
+data O v = O (S.Set v) -- ^Выгружаемые значения.
+    deriving (Show, Eq, Ord)
+data X x = X x -- ^Выгружаемые значения.
+    deriving (Show, Eq)
 
-
-class ( Show (I io), Variables (I io) v, Eq (I io)
-      , Show (O io), Variables (O io) v, Eq (O io)
-      , Show (X io), Eq (X io)
-      , Typeable io, Var v
-      ) => IOType io v x | io -> v x
-instance ( Show (I io), Variables (I io) v, Eq (I io)
-         , Show (O io), Variables (O io) v, Eq (O io)
-         , Show (X io), Eq (X io)
-         , Typeable io, Var v, io ~ io' v x
-         ) => IOType io v x
-
-
-
--- |Идентификатор типа для описания физически фактических пересылаемых значений. Конструктор не
--- нужен, так как фактические значения будут описываться в рамках IOTypeFamily.
-data Parcel v x
-
-instance ( Var v ) => IOTypeFamily (Parcel v x) where
-    data I (Parcel v x) = I v -- ^Загружаемые значения.
-        deriving (Show, Eq, Ord)
-    data O (Parcel v x) = O (S.Set v) -- ^Выгружаемые значения.
-        deriving (Show, Eq, Ord)
-    data X (Parcel v x) = X x -- ^Выгружаемые значения.
-        deriving (Show, Eq)
-
-instance Variables (I (Parcel v x)) v where
+instance Variables (I v) v where
     variables (I v) = S.singleton v
-instance Variables (O (Parcel v x)) v where
+instance Variables (O v) v where
     variables (O v) = v
 
 
@@ -170,17 +138,15 @@ class FunctionSimulation f v x | f -> v x where
 
 
 
-
-
 -- |Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
 data F v x where
     F ::
-        ( IOType (Parcel v x) v x
+        ( Ord v
         , Function f v
         , Locks f v
         , Show f
-        , Typeable f
         , FunctionSimulation f v x
+        , Typeable f, Typeable v, Typeable x
         ) => f -> F v x
 instance Show (F v x) where
     show (F f) = S.replace "\"" "" $ show f

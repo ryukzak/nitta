@@ -36,25 +36,25 @@ inputVarGen = I <$> vectorOf varNameSize (elements ['a'..'z'])
 uniqueVars fb = S.null (inputs fb `intersection` outputs fb)
 
 
-instance Arbitrary (FramInput (Parcel String Int)) where
+instance Arbitrary (FramInput String Int) where
     arbitrary = suchThat (FramInput <$> framAddrGen <*> outputVarsGen) uniqueVars
 
-instance Arbitrary (FramOutput (Parcel String Int)) where
+instance Arbitrary (FramOutput String Int) where
     arbitrary = suchThat (FramOutput <$> framAddrGen <*> inputVarGen) uniqueVars
 
-instance Arbitrary (Loop (Parcel String Int)) where
+instance Arbitrary (Loop String Int) where
     arbitrary = suchThat (Loop <$> (X <$> choose (0, 256)) <*> outputVarsGen <*> inputVarGen) uniqueVars
 
-instance Arbitrary (Reg (Parcel String Int)) where
+instance Arbitrary (Reg String Int) where
     arbitrary = suchThat (Reg <$> inputVarGen <*> outputVarsGen) uniqueVars
 
-instance Arbitrary (Constant (Parcel String Int)) where
+instance Arbitrary (Constant String Int) where
     arbitrary = suchThat (Constant <$> (X <$> choose (10, 16)) <*> outputVarsGen) uniqueVars
 
-instance Arbitrary (Multiply (Parcel String Int)) where
+instance Arbitrary (Multiply String Int) where
     arbitrary = suchThat (Multiply <$> inputVarGen <*> inputVarGen <*> outputVarsGen) uniqueVars
 
-instance Arbitrary (Division (Parcel String Int)) where
+instance Arbitrary (Division String Int) where
     arbitrary = suchThat (Division <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
 
 reorderAlgorithmTest = do

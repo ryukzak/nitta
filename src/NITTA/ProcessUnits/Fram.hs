@@ -223,8 +223,7 @@ bindToCell _ f cell = Left $ "Can't bind " ++ show f ++ " to " ++ show cell
 
 
 
-instance ( IOType (Parcel v x) v x
-         , Var v
+instance ( Var v
          , Time t
          , Typeable x
          , Default x

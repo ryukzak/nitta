@@ -162,7 +162,7 @@ pushOutput pu@Divider{ jobs }
 
 
 
-instance ( Var v, Time t
+instance ( Var v, Time t, Typeable x
          ) => ProcessUnit (Divider v x t) v x t where
     tryBind f pu@Divider{ remains }
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f
@@ -270,10 +270,11 @@ instance ( Var v, Time t
 
 instance ( Var v
          , Integral x
+         , Typeable x
          ) => Simulatable (Divider v x t) v x where
-    simulateOn cntx _ fb
-        | Just fb'@F.Division{} <- castF fb = simulate cntx fb'
-        | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
+    simulateOn cntx _ f
+        | Just f'@F.Division{} <- castF f = simulate cntx f'
+        | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
 
 
 

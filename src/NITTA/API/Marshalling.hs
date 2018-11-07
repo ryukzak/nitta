@@ -67,17 +67,11 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
          , Typeable x, ToJSON x, ToJSONKey x
          ) => ToJSON (BusNetwork title v x t) where
     toJSON n@BusNetwork{..} = object
-        -- , bnSignalBusWidth     :: Int
         [ "width" .= bnSignalBusWidth
-        --   bnRemains            :: [F (Parcel v) v]
         , "remain" .= bnRemains
-        -- , bnForwardedVariables :: [v]
         , "forwardedVariables" .= map (String . T.pack . show) (transfered n)
-        -- , bnBinded             :: M.Map title [F (Parcel v) v]
         , "binds" .= bnBinded
-        -- , bnProcess            :: Process v t
         , "processLength" .= nextTick (process n)
-        -- , bnPus                :: M.Map title spu
         , "processUnits" .= M.keys bnPus
         , "process" .= process n
         ]

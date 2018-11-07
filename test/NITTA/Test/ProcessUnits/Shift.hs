@@ -22,7 +22,7 @@ proxy = Proxy :: Proxy (Shift String Int Int)
 
 -- shiftBiDirection = unitTestBench "shiftBiDirection" proxy
 --   (Just def)
---   [ F.loop 16 "g1" ["f1"] :: F (Parcel String Int)
+--   [ F.loop 16 "g1" ["f1"] :: F String Int
 --   , F.shiftL "f1" ["g1"]
 --   , F.loop 16 "g2" ["f2"]
 --   , F.shiftR "f2" ["g2"]

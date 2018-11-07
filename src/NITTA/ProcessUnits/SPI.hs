@@ -120,11 +120,14 @@ instance UnambiguouslyDecode (SPI v x t) where
 
 
 
-instance ( Ord v, Show v, Show x ) => Simulatable (SPI v x t) v x where
-  simulateOn cntx _ fb
-    | Just fb'@Send{} <- castF fb = simulate cntx fb'
-    | Just fb'@Receive{} <- castF fb = simulate cntx fb'
-    | otherwise = error $ "Can't simulate " ++ show fb ++ " on SPI."
+instance 
+        ( Ord v, Show v, Show x 
+        , Typeable v, Typeable x
+        ) => Simulatable (SPI v x t) v x where
+    simulateOn cntx _ f
+        | Just f'@Send{} <- castF f = simulate cntx f'
+        | Just f'@Receive{} <- castF f = simulate cntx f'
+        | otherwise = error $ "Can't simulate " ++ show f ++ " on SPI."
 
 instance Connected (SPI v x t) where
   data PUPorts (SPI v x t)
