@@ -16,11 +16,11 @@ module NITTA.Utils
     , minimumOn
     , maximumOn
     , shift
+    , fixIndent
     -- *HDL generation
     , bool2verilog
     , values2dump
     -- *HDL generation (depricated)
-    , renderMST
     , renderST
     -- *Process construction (depricated)
     , modifyProcess
@@ -117,9 +117,21 @@ values2dump vs
 
 
 
-renderMST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP st
 
+
+fixIndent s = unlines $ map f ls
+    where 
+        _:ls = lines s
+        tabSize = length $ takeWhile (`elem` "| ") $ last ls 
+        f l@('|':l')
+            | let indent = takeWhile (== ' ') l'
+            , tabSize <= length indent + 1
+            = drop tabSize l
+            | all (== ' ') l'
+            = []
+            | otherwise = error $ "fixIndent error " ++ show tabSize ++ " \"" ++ l ++ "\""
+        f l = l
 
 
 modifyProcess p st = runState st p

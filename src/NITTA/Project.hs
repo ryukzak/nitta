@@ -29,7 +29,7 @@ module NITTA.Project
 
 -- TODO: Сделать выбор вендора, сейчас это Quartus и IcarusVerilog.
 
-import           Control.Monad                 (mapM_, when)
+import           Control.Monad                 (mapM_, unless)
 import           Data.FileEmbed
 import           Data.List                     (isSubsequenceOf)
 import qualified Data.List                     as L
@@ -42,9 +42,7 @@ import           NITTA.Utils
 import           System.Directory
 import           System.Exit
 import           System.FilePath.Posix         (joinPath, pathSeparator)
-import           System.Info.Extra             (isWindows)
-import           System.IO                     (IOMode (WriteMode), hPutStrLn,
-                                                stderr, withFile)
+import           System.IO                     (hPutStrLn, stderr)
 import           System.Process
 import           Text.InterpolatedString.Perl6 (qc)
 
@@ -64,14 +62,12 @@ data TestBenchSetup pu
 
 data TestBenchReport
     = TestBenchReport
-        { tbStatus           :: Bool
-        , tbPath             :: String
-        , tbFiles            :: [String]
-        , tbFunctions        :: [String]
-        , tbCompilerStdout   :: String
-        , tbCompilerErrout   :: String
-        , tbSimulationStdout :: String
-        , tbSimulationErrout :: String
+        { tbStatus         :: Bool
+        , tbPath           :: String
+        , tbFiles          :: [String]
+        , tbFunctions      :: [String]
+        , tbCompilerDump   :: String
+        , tbSimulationDump :: String
         }
     deriving (Generic)
 
@@ -90,14 +86,16 @@ data Project pu v x
 -- |Сохранить проект и выполнить test bench.
 writeAndRunTestBench prj = do
     writeProject prj
-    runTestBench stderr prj
+    report@TestBenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestBench prj
+    unless tbStatus $ hPutStrLn stderr (tbCompilerDump ++ tbSimulationDump)
+    return report
 
 
 -- |Сохранить проект и выполнить test bench. При этом вывод текста будет отправлен в @/dev/null@.
 -- Используется для unittest-ов, которые должны "падать".
 writeAndRunTestBenchDevNull prj = do
     writeProject prj
-    withFile (if isWindows then "NUL" else "/dev/null") WriteMode (`runTestBench` prj)
+    runTestBench prj
 
 
 -- |Записать на диск проект вычислителя.
@@ -182,7 +180,7 @@ writeImplementation pwd impl = writeImpl "" impl
         writeImpl _ Empty = return ()
 
 -- |Скопировать файл в lib, если он находится в libraryPath
-copyLibraryFile file Project{ projectPath, libraryPath }
+copyLibraryFile Project{ projectPath, libraryPath } file
     | T.isPrefixOf (T.pack libraryPath) (T.pack file) = do
         let newFilePath = T.drop 6 (T.pack file)
         let fileName = T.unpack $ L.last $ T.split (=='/') newFilePath
@@ -195,66 +193,44 @@ copyLibraryFile file Project{ projectPath, libraryPath }
 
 copyLibraryFiles prj@Project{} =
     let (_tb, files) = projectFiles' prj in
-        mapM_ (\f -> copyLibraryFile f prj) files
+        mapM_ (copyLibraryFile prj) files
 
 -- |Запустить testbench в указанной директории.
 
 -- TODO: Добавить сохранение вывода в память для дальнейшей обработки.
-runTestBench h prj@Project{ projectPath, processorModel } = do
+runTestBench prj@Project{ projectPath, processorModel } = do
     let (_tb, files) = projectFiles prj
+
+    let dump type_ out err = fixIndent [qc|
+|           Project: { projectPath }
+|           Type: { type_ }
+|           Files: { S.join ", " files }
+|           Functional blocks:
+|               { S.join "\n    " $ map show $ functions processorModel }
+|           -------------------------
+|           stdout:
+|           { out }
+|           -------------------------
+|           stderr:
+|           { err }
+|           |]
+
     ( compileExitCode, compileOut, compileErr )
         <- readCreateProcessWithExitCode (createIVerilogProcess projectPath files) []
+    let isCompileOk = compileExitCode == ExitSuccess && null compileErr
 
-    let header = unlines
-            [ "Project: " ++ projectPath
-            , "Files: " ++ S.join ", " files
-            , "Functional blocks: "
-            , S.join "\n" $ map show $ functions processorModel
-            ]
-    let compilerOutputDump = unlines
-            [ header
-            , "-------------------------"
-            , "compiler stdout:"
-            , "-------------------------"
-            , compileOut
-            , "-------------------------"
-            , "compiler stderr:"
-            , "-------------------------"
-            , compileErr
-            ]
-
-    when (compileExitCode /= ExitSuccess || not (null compileErr)) $ do
-        hPutStrLn h compilerOutputDump
-        die "Verilog compilation failed!"
 
     (simExitCode, simOut, simErr)
         <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just projectPath } []
-
-    let icarusOutputDump = unlines
-            [ header
-            , "-------------------------"
-            , "compiler stdout:"
-            , "-------------------------"
-            , simOut
-            , "-------------------------"
-            , "compiler stderr:"
-            , "-------------------------"
-            , simErr
-            ]
-
-    -- Yep, we can't stop simulation with bad ExitCode...
-    when (simExitCode /= ExitSuccess || "FAIL" `isSubsequenceOf` simOut)
-        $ hPutStrLn h icarusOutputDump
+    let isSimOk = simExitCode == ExitSuccess && not ("FAIL" `isSubsequenceOf` simOut)
 
     return TestBenchReport
-        { tbStatus=not ("FAIL" `isSubsequenceOf` simOut)
+        { tbStatus=isCompileOk && isSimOk
         , tbPath=projectPath
         , tbFiles=files
         , tbFunctions=map show $ functions processorModel
-        , tbCompilerStdout=compileOut
-        , tbCompilerErrout=compileErr
-        , tbSimulationStdout=simOut
-        , tbSimulationErrout=simErr
+        , tbCompilerDump=dump "Compiler" compileOut compileErr
+        , tbSimulationDump=dump "Simulation" simOut simErr
         }
 
 
