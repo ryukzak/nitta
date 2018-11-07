@@ -75,7 +75,7 @@ instance ( Show (Instruction pu)
         [i] -> decodeInstruction i
         is  -> error $ "Ambiguously instruction at " ++ show t ++ ": " ++ show is
 
-instance ( Ord t ) => WithFunctions (Process v x t) (F (Parcel v x)) where
+instance ( Ord t ) => WithFunctions (Process v x t) (F v x) where
     functions = getFBs
 
 

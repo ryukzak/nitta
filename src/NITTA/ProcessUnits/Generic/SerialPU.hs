@@ -44,14 +44,14 @@ data SerialPU st v x t
   = SerialPU
   { -- | Внутрее состояние вычислительного блока. Конкретное состояние зависит от конкретного типа.
     spuState   :: st
-  , spuCurrent :: Maybe (CurrentJob (Parcel v x) t)
+  , spuCurrent :: Maybe (CurrentJob v x t)
   -- | Список привязанных к вычислительному блоку функций, но работа над которыми ещё не началась.
   -- Второе значение - ссылка на шаг вычислительного процесса, описывающий привязку функции
   -- к вычислительному блоку.
-  , spuRemain  :: [(F (Parcel v x), ProcessUid)]
+  , spuRemain  :: [(F v x, ProcessUid)]
   -- | Описание вычислительного процесса.
   , spuProcess :: Process v x t
-  , spuFBs     :: [F (Parcel v x)]
+  , spuFBs     :: [F v x]
   }
 
 instance ( Show st
@@ -65,14 +65,14 @@ instance ( Show st
 instance ( Time t, Var v, Default st ) => Default (SerialPU st v x t) where
   def = SerialPU def def def def def
 
-instance WithFunctions (SerialPU st v x t) (F (Parcel v x)) where
+instance WithFunctions (SerialPU st v x t) (F v x) where
   functions SerialPU{ spuFBs } = spuFBs
 
 
 -- | Описание текущей работы вычислительного блока.
-data CurrentJob io t
+data CurrentJob v x t
   = CurrentJob
-  { cFB    :: F io -- ^ Текущая функция.
+  { cFB    :: F v x -- ^ Текущая функция.
   , cStart :: t -- ^ Момент времни, когда функция начала вычисляться.
   -- | Выполненные для данной функции вычислительные шаги. Необходимо в значительной
   -- степени для того, чтобы корректно задать все вертикальные отношения между уровнями по
@@ -87,7 +87,7 @@ data CurrentJob io t
 class SerialPUState st v x t | st -> v x t where
   -- | Привязать функцию к текущему состоянию вычислительного блока. В один момент времени только
   -- один функциональный блок.
-  bindToState :: F (Parcel v x) -> st -> Either String st
+  bindToState :: F v x -> st -> Either String st
   -- | Получить список вариантов развития вычислительного процесса, на основе предоставленного
   -- состояния последовательного вычислительного блока.
   stateOptions :: st -> t -> [Option (EndpointDT v t)]

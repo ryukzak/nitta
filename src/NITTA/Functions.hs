@@ -126,7 +126,7 @@ reorderAlgorithm alg = orderAlgorithm' [] alg
         orderAlgorithm' _ _ = error "Can't sort algorithm."
 
 
-castF :: ( Typeable f ) => F io -> Maybe (f io)
+castF :: ( Typeable f ) => F v x -> Maybe (f (Parcel v x))
 castF (F f) = cast f
 
 ----------------------------------------

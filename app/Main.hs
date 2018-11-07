@@ -137,6 +137,6 @@ testWithInput n is model@Frame{ processor } = do
 -----------------------------------------------------------
 
 
-funSim n cntx (alg :: [F (Parcel String Int)])
+funSim n cntx (alg :: [F String Int])
     = let cntxs = F.simulateAlgByCycle cntx alg
     in mapM_ putStrLn $ map (("---------------------\n"++) . filter (/= '"') . show) $ take n cntxs

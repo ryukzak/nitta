@@ -186,12 +186,12 @@ compiler = Proxy :: Proxy CompilerDT
 
 instance DecisionType (CompilerDT title tag v t) where
     data Option (CompilerDT title tag v t)
-        = BindingOption (F (Parcel v Int)) title
+        = BindingOption (F v Int) title
         | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
         deriving ( Generic, Show )
 
     data Decision (CompilerDT title tag v t)
-        = BindingDecision (F (Parcel v Int)) title
+        = BindingDecision (F v Int) title
         | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
         deriving ( Generic, Show )
 

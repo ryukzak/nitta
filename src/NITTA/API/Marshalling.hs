@@ -50,11 +50,11 @@ instance ( ToJSON title
          , ToJSON (TimeConstrain t), Time t
          ) => ToJSON (Decision (DataFlowDT title v t))
 instance ( Show title
-         ) => ToJSON (Option (BindingDT title io)) where
-    toJSON (BindingO fb title) = toJSON [ show fb, show title ]
+         ) => ToJSON (Option (BindingDT title v x)) where
+    toJSON (BindingO f title) = toJSON [ show f, show title ]
 instance ( Show title
-         ) => ToJSON (Decision (BindingDT title io)) where
-    toJSON (BindingD fb title) = toJSON [ show fb, show title ]
+         ) => ToJSON (Decision (BindingDT title v x)) where
+    toJSON (BindingD f title) = toJSON [ show f, show title ]
 -- instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
 -- instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
 
@@ -156,7 +156,7 @@ instance ( ToJSON t, Time t ) => ToJSON (PlaceInTime t) where
     toJSON (Event t)    = toJSON [ fromEnum t, fromEnum t ]
     toJSON (Activity i) = toJSON [ fromEnum $ inf i, fromEnum $ sup i ]
 
-instance ( Show v ) => ToJSON (F (Parcel v x)) where
+instance ( Show v ) => ToJSON (F v x) where
     toJSON = String . T.pack . show
 
 instance ( ToJSON t, Time t ) => ToJSON (TimeConstrain t) where

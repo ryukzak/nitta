@@ -47,7 +47,7 @@ data OutputDesc
 data Divider v x t
     = Divider
         { jobs            :: [Job v x t]
-        , remains         :: [F (Parcel v x)]
+        , remains         :: [F v x]
         , targetIntervals :: [Interval t]
         , sourceIntervals :: [Interval t]
         , process_        :: Process v x t
@@ -70,7 +70,7 @@ divider pipeline mock = Divider
 instance ( Time t ) => Default (Divider v x t) where
     def = divider 4 True
 
-instance ( Ord t ) => WithFunctions (Divider v x t) (F (Parcel v x)) where
+instance ( Ord t ) => WithFunctions (Divider v x t) (F v x) where
     functions Divider{ process_, remains, jobs }
         = functions process_
         ++ remains
@@ -78,17 +78,17 @@ instance ( Ord t ) => WithFunctions (Divider v x t) (F (Parcel v x)) where
 
 data Job v x t
     = Input
-        { function :: F (Parcel v x)
+        { function :: F v x
         , startAt  :: t
         , inputSeq :: [(InputDesc, v)]
         }
     | InProgress
-        { function :: F (Parcel v x)
+        { function :: F v x
         , startAt  :: t
         , finishAt :: t
         }
     | Output
-        { function  :: F (Parcel v x)
+        { function  :: F v x
         , startAt   :: t
         , rottenAt  :: Maybe t
         , finishAt  :: t

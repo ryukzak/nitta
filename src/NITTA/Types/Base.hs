@@ -173,40 +173,39 @@ class FunctionSimulation f v x | f -> v x where
 
 
 -- |Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
-data F io where
+data F v x where
     F ::
-        ( io ~ (io' v x)
-        , IOType io v x
+        ( IOType (Parcel v x) v x
         , Function f v
         , Locks f v
         , Show f
         , Typeable f
         , FunctionSimulation f v x
-        ) => f -> F io
-instance Show (F io) where
+        ) => f -> F v x
+instance Show (F v x) where
     show (F f) = S.replace "\"" "" $ show f
 
 instance ( Var v
          , Typeable x
-         ) => Function (F (Parcel v x)) v where
+         ) => Function (F v x) v where
     insideOut (F f) = insideOut f
     isCritical (F f) = isCritical f
     inputs (F f) = inputs f
     outputs (F f) = outputs f
 
-instance Locks (F (Parcel v x)) v where 
+instance Locks (F v x) v where 
     locks (F f) = locks f
 
-instance Variables (F (Parcel v x)) v where
+instance Variables (F v x) v where
     variables (F f) = inputs f `S.union` outputs f
 
-instance Eq (F io) where
+instance Eq (F v x) where
     F a == F b = show a == show b
 
-instance Ord (F (Parcel v x)) where
+instance Ord (F v x) where
     (F a) `compare` (F b) = show a `compare` show b
 
-instance FunctionSimulation (F (Parcel v x)) v x where
+instance FunctionSimulation (F v x) v x where
     simulate cntx (F f) = simulate cntx f
 
 
@@ -254,7 +253,7 @@ data StepInfo v x t where
     -- |Решения, принятые на уровне САПР.
     CADStep :: String -> StepInfo v x t
     -- |Время работы над функциональным блоком функционального алгоритма.
-    FStep :: F (Parcel v x) -> StepInfo v x t
+    FStep :: F v x -> StepInfo v x t
     -- |Описание использования вычислительного блока с точки зрения передачи данных.
     EndpointRoleStep :: EndpointRole v -> StepInfo v x t
     -- |Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
@@ -314,12 +313,12 @@ data Relation
 
 -- |Решение в области привязки функционального блока к вычислительному. Определяется только для
 -- вычислительных блоков, организующих работу со множеством вложенных блоков, адресуемым по title.
-data BindingDT title io
+data BindingDT title v x
 binding = Proxy :: Proxy BindingDT
 
-instance DecisionType (BindingDT title io) where
-    data Option (BindingDT title io) = BindingO (F io) title deriving ( Generic )
-    data Decision (BindingDT title io) = BindingD (F io) title deriving ( Generic )
+instance DecisionType (BindingDT title v x) where
+    data Option (BindingDT title v x) = BindingO (F v x) title deriving ( Generic )
+    data Decision (BindingDT title v x) = BindingD (F v x) title deriving ( Generic )
 
 
 -- |Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
@@ -396,7 +395,7 @@ instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t))
 -- 4. Повторение, пока список возможных вариантов не станет пустым.
 class ProcessUnit pu v x t | pu -> v x t where
     -- |Назначить исполнение функционального блока вычислительному узлу.
-    tryBind :: F (Parcel v x) -> pu -> Either String pu
+    tryBind :: F v x -> pu -> Either String pu
     -- |Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
     -- процесс вложенных структурных элементов.
     --
@@ -510,5 +509,5 @@ class Simulatable pu v x | pu -> v x where
         :: Cntx v x -- ^Контекст вычислительного процесса, содержащий уже
                     -- известные значения переменных.
             -> pu -- ^Вычислительный блок.
-            -> F (Parcel v x) -- ^Функциональный блок, оперируйщий интересующим значением.
+            -> F v x -- ^Функциональный блок, оперируйщий интересующим значением.
             -> Maybe (Cntx v x)

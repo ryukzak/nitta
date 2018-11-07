@@ -307,7 +307,7 @@ teacupAlg2 =
     , F.constant 125 ["time_step_constant#2_1", "time_step_constant#2_0"]
     , F.constant 70000 ["temp_room_constant#1_0"]
     , F.constant 10000 ["temp_ch_constant#0_0"]
-    ] :: [F (Parcel String Int)]
+    ] :: [F String Int]
 
 teacupLua =
     [qq|function teacup(time, temp_cup)

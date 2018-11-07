@@ -58,9 +58,9 @@ type Title v = ( Typeable v, Ord v, Show v )
 data GBusNetwork title spu v x t = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
-      bnRemains        :: [F (Parcel v x)]
+      bnRemains        :: [F v x]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded         :: M.Map title [F (Parcel v x)]
+    , bnBinded         :: M.Map title [F v x]
     -- | Описание вычислительного процесса сети, как элемента процессора.
     , bnProcess        :: Process v x t
     -- | Словарь вложенных вычислительных блоков по именам.
@@ -103,7 +103,7 @@ instance ( Title title
          , Time t
          , Var v
          , Typeable x
-         ) => WithFunctions (BusNetwork title v x t) (F (Parcel v x)) where
+         ) => WithFunctions (BusNetwork title v x t) (F v x) where
     functions BusNetwork{..} = sortFBs binded []
         where
             binded = bnRemains ++ concat (M.elems bnBinded)
@@ -303,7 +303,7 @@ instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v x t) 
 -- 2. Эти функции должны быть представленны классом типов.
 instance ( Var v
          , Typeable x
-         ) => DecisionProblem (BindingDT String (Parcel v x))
+         ) => DecisionProblem (BindingDT String v x)
                     BindingDT (BusNetwork String v x t)
          where
     options _ BusNetwork{..} = concatMap bindVariants' bnRemains

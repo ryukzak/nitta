@@ -58,7 +58,7 @@ instance Arbitrary (Division (Parcel String Int)) where
     arbitrary = suchThat (Division <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
 
 reorderAlgorithmTest = do
-    let f = reorderAlgorithm :: [F (Parcel String Int)] -> [F (Parcel String Int)]
+    let f = reorderAlgorithm :: [F String Int] -> [F String Int]
     let l1 = loop 0 "b2" ["a1"      ]
     let l2 = loop 1 "c" ["b1", "b2"]
     let a = add "a1" "b1" ["c"]
@@ -69,7 +69,7 @@ simulateFibonacciTest = do
     let cntxs = simulateAlg (def :: Cntx String Int)
             [ loop 0 "b2" ["a1"      ]
             , loop 1 "c" ["b1", "b2"]
-            , add "a1" "b1" ["c"] :: F (Parcel String Int)
+            , add "a1" "b1" ["c"] :: F String Int
             ]
     let fibs = reverse (cntxVars (cntxs !! 20) M.! "a1")
     [0, 1, 1, 2, 3, 5, 8] @=? fibs

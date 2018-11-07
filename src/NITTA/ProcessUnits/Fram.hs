@@ -88,8 +88,8 @@ data Fram v x t = Fram
   -- | Информация о функциональных блоках, которые необходимо обработать fram-у. Требуют хранения
   -- дополнительной информации, такой как время привязки функционального блока. Нельзя сразу делать
   -- привязку к ячейке памяти, так как это будет неэффективно.
-  , frRemains  :: [ (F (Parcel v x), ProcessUid) ]
-  , frBindedFB :: [ F (Parcel v x) ]
+  , frRemains  :: [ (F v x, ProcessUid) ]
+  , frBindedFB :: [ F v x ]
   , frProcess  :: Process v x t
   , frSize     :: Int
   } deriving ( Show )
@@ -109,7 +109,7 @@ instance ( Default t
       defaultSize = 16
       cells = map (\(i, c) -> c{ initialValue=0x1000 + i }) $ zip [0..] $ repeat def
 
-instance WithFunctions (Fram v x t) (F (Parcel v x)) where
+instance WithFunctions (Fram v x t) (F v x) where
     functions Fram{ frBindedFB } = frBindedFB
 
 
@@ -156,7 +156,7 @@ data Job v x t
           -- | Время начала выполнения работы.
         , startAt                       :: Maybe t
           -- | Функция, выполняемая в рамках описываемой работы.
-        , function                      :: F (Parcel v x)
+        , function                      :: F v x
           -- | Список действие, которые необходимо выполнить для завершения работы.
         , actions                       :: [ EndpointRole v ]
         }
@@ -231,7 +231,7 @@ instance ( IOType (Parcel v x) v x
          , Num x
          , Eq x
          , Show x
-         , WithFunctions (Fram v x t) (F (Parcel v x))
+         , WithFunctions (Fram v x t) (F v x)
          ) => ProcessUnit (Fram v x t) v x t where
     tryBind f Fram{ frBindedFB }
         | not $ null (variables f `S.intersection` S.unions (map variables frBindedFB))

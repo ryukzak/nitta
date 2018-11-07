@@ -46,7 +46,7 @@ import           NITTA.Utils
 -- FIXME: Сделать визуализацию DataFlowGraph через graphviz. В первую очередь DFG.
 data DataFlowGraph v
     -- |Вершина графа, соответствует фунциональному блоку.
-    = DFGNode (F (Parcel v Int))
+    = DFGNode (F v Int)
     -- |Граф, где информация о вершинах хранится внутри функциональных блоков.
     | DFG [DataFlowGraph v]
     --  |Множество взаимозаменяемых подграфов.
@@ -61,13 +61,13 @@ instance ( Var v ) => Variables (DataFlowGraph v) v where
     variables (DFG g)      = unionsMap variables g
     -- variables DFGSwitch{ dfgKey, dfgCases } = singleton dfgKey `union` unionsMap (variables . snd) dfgCases
 
-instance WithFunctions (DataFlowGraph v) (F (Parcel v Int)) where
-    functions (DFGNode fb) = [ fb ]
-    functions (DFG g)      = concatMap functions g
+instance WithFunctions (DataFlowGraph v) (F v Int) where
+    functions (DFGNode f) = [ f ]
+    functions (DFG g)     = concatMap functions g
     -- functions DFGSwitch{ dfgCases } = concatMap (functions . snd) dfgCases
 
 -- dfgInputs g = algInputs $ functions g
-node (fb :: F (Parcel v Int)) = DFGNode fb
+node (f :: F v Int) = DFGNode f
 
 -- |Для описания текущего состояния вычислительной системы (с учётом алгоритма, потока управления,
 -- "текущего места" исполнения алгоритма, микроархитектуры и расписния) необходима работа со стеком.
@@ -101,7 +101,7 @@ data ModelState title tag v x t
 
 instance ( Var v
          , Typeable x
-         ) => DecisionProblem (BindingDT String (Parcel v x))
+         ) => DecisionProblem (BindingDT String v x)
                     BindingDT (ModelState String tag v x t)
          where
     options _ Frame{ processor }    = options binding processor
