@@ -21,6 +21,7 @@ import           Control.Monad                 (when)
 import           Data.Default                  as D
 import qualified Data.Map                      as M
 import           Data.Maybe
+import qualified Data.Text.IO                  as T
 import           Demo
 import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
@@ -39,7 +40,7 @@ import           NITTA.Types
 import           NITTA.Types.Synthesis
 import           System.Console.CmdArgs
 import           System.FilePath               (joinPath)
-import           Text.InterpolatedString.Perl6 (qq)
+import           Text.InterpolatedString.Perl6 (qc)
 
 microarch = busNetwork 31 (Just True)
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
@@ -68,6 +69,7 @@ data Nitta
         { web           :: Bool
         , no_static_gen :: Bool
         , no_api_gen    :: Bool
+        , file          :: Maybe FilePath
         }
     deriving (Show, Data, Typeable)
 
@@ -75,35 +77,42 @@ nittaArgs = Nitta
     { web=False &= help "Run web server"
     , no_static_gen=False &= help "No regenerate WebUI static files"
     , no_api_gen=False &= help "No regenerate rest_api.js library"
+    , file=D.def &= args &= typ "LUA_FILE"
     }
 
 
 main = do
-    -- teacupDemo
-    -- fibonacciDemo
+    Nitta{ web, no_static_gen, no_api_gen, file } <- cmdArgs nittaArgs
+    case file of
+        Just fn -> do
+            putStrLn [qc|> readFile: { fn }|]
+            buf <- T.readFile fn
+            if web
+                then backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch $ lua2functions buf
+                else test "main" $ simpleSynthesis $ mkModelWithOneNetwork microarch $ lua2functions buf
+        Nothing -> do
+            putStrLn "-- hardcoded begin --"
+            -- teacupDemo
+            -- fibonacciDemo
 
-    -- putStrLn "--------------------------------"
-    -- funSim 5 D.def{ cntxInputs=M.fromList [("b_0", [1..5])] } $ lua2functions
-    --     [qq|function fib(a)
-    --             local b = receive()
-    --             local c = a + b
-    --             fib(c)
-    --         end
-    --         fib(1)|]
-    -- putStrLn "--------------------------------"
+            -- putStrLn "--------------------------------"
+            -- funSim 5 D.def{ cntxInputs=M.fromList [("b_0", [1..5])] } $ lua2functions
+            --     [qc|function fib(a)
+            --             local b = receive()
+            --             local c = a + b
+            --             fib(c)
+            --         end
+            --         fib(1)|]
+            -- putStrLn "--------------------------------"
 
-    -- FIXME: why it's don't work?
-    testWithInput "lua_test" [("b_0", [1..5])] $ simpleSynthesis $ mkModelWithOneNetwork microarch fibonacciAlg -- $ lua2functions
-        -- [qq|function fib(a)
-        --         local b = receive()
-        --         local c = a + b
-        --         fib(c)
-        --     end
-        --     fib(1)|]
-
-    when False $ do
-        Nitta{ web, no_static_gen, no_api_gen } <- cmdArgs nittaArgs
-        when web $ backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch teacupAlg
+            -- testWithInput "lua_test" [("b_0", [1..5])] $ simpleSynthesis $ mkModelWithOneNetwork microarch fibonacciAlg -- $ lua2functions
+            --     [qc|function fib(a)
+            --             local b = receive()
+            --             local c = a + b
+            --             fib(c)
+            --         end
+            --         fib(1)|]
+            putStrLn "-- hardcoded end --"
     putStrLn "-- the end --"
 
 
@@ -120,9 +129,9 @@ testWithInput n is model@Frame{ processor } = do
     if isSchedulingComplete model
         then do
             TestBenchReport{ tbStatus } <- writeAndRunTestBench prj
-            if tbStatus then putStrLn $ n ++ " test - Success"
-            else putStrLn $ n ++ " test - Fail"
-        else putStrLn $ n ++ " not isSchedulingComplete"
+            if tbStatus then putStrLn [qc|> test { n } - Success|]
+            else putStrLn [qc|> test { n } - Fail|]
+        else putStrLn [qc|> test { n } not isSchedulingComplete|]
 
 
 -----------------------------------------------------------
