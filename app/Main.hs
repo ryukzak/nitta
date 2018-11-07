@@ -38,6 +38,7 @@ import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Types.Synthesis
+import           NITTA.Utils.Test
 import           System.Console.CmdArgs
 import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
@@ -89,7 +90,7 @@ main = do
             buf <- T.readFile fn
             if web
                 then backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch $ lua2functions buf
-                else test "main" $ simpleSynthesis $ mkModelWithOneNetwork microarch $ lua2functions buf
+                else print =<< testLua "main" microarch buf
         Nothing -> do
             putStrLn "-- hardcoded begin --"
             -- teacupDemo
@@ -105,38 +106,21 @@ main = do
             --         fib(1)|]
             -- putStrLn "--------------------------------"
 
-            -- testWithInput "lua_test" [("b_0", [1..5])] $ simpleSynthesis $ mkModelWithOneNetwork microarch fibonacciAlg -- $ lua2functions
-            --     [qc|function fib(a)
-            --             local b = receive()
-            --             local c = a + b
-            --             fib(c)
-            --         end
-            --         fib(1)|]
+            -- print =<< testWithInput "lua_test" [("b_0", [1..5])] microarch fibonacciAlg
+            -- $ lua2functions
+                -- [qc|function fib(a)
+                --         local b = receive()
+                --         local c = a + b
+                --         fib(c)
+                --     end
+                --     fib(1)|]
             putStrLn "-- hardcoded end --"
     putStrLn "-- the end --"
-
-
-test n model = testWithInput n [] model
-
-testWithInput n is model@Frame{ processor } = do
-    let prj = Project
-            { projectName=n
-            , libraryPath="../.."
-            , projectPath=joinPath ["hdl", "gen", n]
-            , processorModel=processor
-            , testCntx=Just D.def{ cntxInputs=M.fromList is }
-            }
-    if isSchedulingComplete model
-        then do
-            TestBenchReport{ tbStatus } <- writeAndRunTestBench prj
-            if tbStatus then putStrLn [qc|> test { n } - Success|]
-            else putStrLn [qc|> test { n } - Fail|]
-        else putStrLn [qc|> test { n } not isSchedulingComplete|]
 
 
 -----------------------------------------------------------
 
 
-funSim n cntx (alg :: [F String Int])
+funSim n cntx alg
     = let cntxs = F.simulateAlgByCycle cntx alg
-    in mapM_ putStrLn $ map (("---------------------\n"++) . filter (/= '"') . show) $ take n cntxs
+    in mapM_ (putStrLn . ("---------------------\n"++) . filter (/= '"') . show) $ take n cntxs
