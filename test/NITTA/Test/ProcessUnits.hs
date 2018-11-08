@@ -94,7 +94,7 @@ inputsGen (pu, fbs) = do
 prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
     i <- run $ incrCounter 1 counter
     let path = joinPath ["hdl", "gen", n ++ show i]
-    res <- run $ writeAndRunTestBench $ Project n "../.." path pu values
+    res <- run $ writeAndRunTestBench $ Project n "../.." path pu values [IcarusVerilog]
     assert $ tbStatus res
 
 
@@ -123,7 +123,7 @@ unitTestBench title proxy cntx alg = do
         lib = joinPath ["..", ".."]
         wd = joinPath ["hdl", "gen", title]
         pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
-    (tbStatus <$> writeAndRunTestBench (Project title lib wd pu cntx)) @? title
+    (tbStatus <$> writeAndRunTestBench (Project title lib wd pu cntx [IcarusVerilog])) @? title
 
 
 

@@ -10,14 +10,13 @@
 -- |Модуль отвечающий за генерацию проектов на базе процессора NITTA.
 module NITTA.Project
     ( Project(..)
+    , TargetPlatform(..)
     , writeProject
+    , writeAndRunTestBench
     -- *Test bench
     , TestBench(..)
     , TestBenchReport(..)
     , TestBenchSetup(..)
-    -- *Utils
-    , writeAndRunTestBench
-    , writeAndRunTestBenchDevNull
     -- *Snippets for Verilog code-generation
     , snippetClkGen
     , snippetDumpFile
@@ -25,9 +24,6 @@ module NITTA.Project
     , snippetTestBench
     ) where
 
--- TODO: Добавить информацию о происхождении в автоматически генерируемые файлы.
-
--- TODO: Сделать выбор вендора, сейчас это Quartus и IcarusVerilog.
 
 import           Control.Monad                 (mapM_, unless)
 import           Data.FileEmbed
@@ -47,39 +43,17 @@ import           System.Process
 import           Text.InterpolatedString.Perl6 (qc)
 
 
--- |Данный класс позволяет для реализующих его вычислительных блоков сгенировать test bench.
-class TestBench pu v x | pu -> v x where
-    testBenchDescription :: Project pu v x -> Implementation
-
-
-data TestBenchSetup pu
-    = TestBenchSetup
-        { tbcSignals       :: [String]
-        , tbcPorts         :: PUPorts pu
-        , tbcSignalConnect :: Signal -> String
-        , tbcCtrl          :: Microcode pu -> String
-        }
-
-data TestBenchReport
-    = TestBenchReport
-        { tbStatus         :: Bool
-        , tbPath           :: String
-        , tbFiles          :: [String]
-        , tbFunctions      :: [String]
-        , tbCompilerDump   :: String
-        , tbSimulationDump :: String
-        }
-    deriving (Generic)
-
+-- * Project
 
 -- |Проект вычислителя NITTA.
 data Project pu v x
     = Project
-        { projectName    :: String -- ^Наименование проекта.
-        , libraryPath    :: String -- ^Директория библиотеки с вычислительными блоками.
-        , projectPath    :: String -- ^Директория проекта, куда будут размещены его файлы.
-        , processorModel :: pu     -- ^Модель вычислительного блока.
-        , testCntx       :: Maybe (Cntx v x) -- ^Контекст для генерации test bench.
+        { projectName     :: String -- ^Наименование проекта.
+        , libraryPath     :: String -- ^Директория библиотеки с вычислительными блоками.
+        , projectPath     :: String -- ^Директория проекта, куда будут размещены его файлы.
+        , processorModel  :: pu     -- ^Модель вычислительного блока.
+        , testCntx        :: Maybe (Cntx v x) -- ^Контекст для генерации test bench.
+        , targetPlatforms :: [TargetPlatform]
         } deriving ( Show )
 
 
@@ -91,26 +65,38 @@ writeAndRunTestBench prj = do
     return report
 
 
--- |Сохранить проект и выполнить test bench. При этом вывод текста будет отправлен в @/dev/null@.
--- Используется для unittest-ов, которые должны "падать".
-writeAndRunTestBenchDevNull prj = do
-    writeProject prj
-    runTestBench prj
-
-
 -- |Записать на диск проект вычислителя.
-writeProject prj@Project{ projectName, projectPath, processorModel } = do
+writeProject prj@Project{ projectName, projectPath, processorModel, targetPlatforms } = do
     createDirectoryIfMissing True projectPath
     writeImplementation projectPath $ hardware projectName processorModel
     writeImplementation projectPath $ software projectName processorModel
     writeImplementation projectPath $ testBenchDescription prj
+    copyLibraryFiles prj
+    mapM_ (writePlatformSpecific prj) targetPlatforms
+
+
+
+-- * Platform specific
+
+-- |Target platform specific files.
+data TargetPlatform
+    = IcarusVerilog -- ^ Makefile
+    | DE0Nano -- ^ Modelsim and Quartus
+    deriving ( Show )
+
+
+writePlatformSpecific prj@Project{ projectPath } IcarusVerilog
+    = writeFile (joinPath [ projectPath, "Makefile" ]) $ space2tab $ fixIndent [qc|
+|           icarus:
+|               iverilog { S.join " " $ snd $ projectFiles prj }
+|               vvp a.out
+|           modelsim:
+|               modelsim -do sim.do
+|           |]
+
+writePlatformSpecific prj DE0Nano = do
     writeModelsimDo prj
     writeQuartus prj
-
-    copyLibraryFiles prj
-    writeFile (joinPath [ projectPath, "Makefile" ])
-        $ renderST $(embedStringFile "template/Makefile")
-            [ ( "iverilog_args", S.join " " $ snd $ projectFiles prj ) ]
 
 
 -- |Сгенерировать служебные файлы для симуляции при помощи ModelSim.
@@ -168,7 +154,7 @@ quartusSDC = $(embedStringFile "template/quartus/synopsys_design_constraint.sdc"
 -- DIR лежит два файла f1 и f2, и при этом f1 импортирует в себя f2. Для этого, зачастую, необходимо
 -- указать его адресс относительно рабочего каталога, что осуществляется путём вставки этого адреса
 -- на место ключа $path$.
-writeImplementation pwd impl = writeImpl "" impl
+writeImplementation pwd = writeImpl ""
     where
         writeImpl p (Immidiate fn src)
             = writeFile (joinPath [pwd, p, fn]) $ S.replace "$path$" (if null p then "" else p ++ [pathSeparator]) src
@@ -179,21 +165,55 @@ writeImplementation pwd impl = writeImpl "" impl
         writeImpl _ (FromLibrary _) = return ()
         writeImpl _ Empty = return ()
 
--- |Скопировать файл в lib, если он находится в libraryPath
-copyLibraryFile Project{ projectPath, libraryPath } file
-    | T.isPrefixOf (T.pack libraryPath) (T.pack file) = do
-        let newFilePath = T.drop 6 (T.pack file)
-        let fileName = T.unpack $ L.last $ T.split (=='/') newFilePath
-        path <- makeAbsolute $ joinPath [projectPath, file]
-        newPath <- makeAbsolute $ joinPath [projectPath, "lib", fileName]
-        libPath <- makeAbsolute $ joinPath [projectPath, "lib"]
-        createDirectoryIfMissing True libPath
-        copyFile path newPath
-    | otherwise = return ()
 
-copyLibraryFiles prj@Project{} =
-    let (_tb, files) = projectFiles' prj in
-        mapM_ (copyLibraryFile prj) files
+-- |Скопировать файл в lib, если он находится в libraryPath
+copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
+
+copyLibraryFile Project{ projectPath } file = do
+    libraryPath' <- makeAbsolute $ joinPath [projectPath, "lib"]
+    createDirectoryIfMissing True libraryPath'
+    let fileName = last $ S.split "/" file
+    from <- makeAbsolute $ joinPath [projectPath, file]
+    to <- makeAbsolute $ joinPath [projectPath, "lib", fileName]
+    copyFile from to
+
+libraryFiles prj@Project{ projectName, libraryPath, processorModel }
+    = L.nub $ concatMap (args "") [ hardware projectName processorModel, testBenchDescription prj ]
+    where
+        args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
+        args p (Aggregate Nothing subInstances) = concatMap (args $ joinPath [p]) subInstances
+        args _ (FromLibrary fn) = [ joinPath [ libraryPath, fn ] ]
+        args _ _ = []
+
+
+
+-- * Test bench
+
+-- |Данный класс позволяет для реализующих его вычислительных блоков сгенировать test bench.
+class TestBench pu v x | pu -> v x where
+    testBenchDescription :: Project pu v x -> Implementation
+
+
+data TestBenchSetup pu
+    = TestBenchSetup
+        { tbcSignals       :: [String]
+        , tbcPorts         :: PUPorts pu
+        , tbcSignalConnect :: Signal -> String
+        , tbcCtrl          :: Microcode pu -> String
+        }
+
+data TestBenchReport
+    = TestBenchReport
+        { tbStatus         :: Bool
+        , tbPath           :: String
+        , tbFiles          :: [String]
+        , tbFunctions      :: [String]
+        , tbCompilerDump   :: String
+        , tbSimulationDump :: String
+        }
+    deriving ( Generic )
+
+
 
 -- |Запустить testbench в указанной директории.
 
@@ -232,11 +252,9 @@ runTestBench prj@Project{ projectPath, processorModel } = do
         , tbCompilerDump=dump "Compiler" compileOut compileErr
         , tbSimulationDump=dump "Simulation" simOut simErr
         }
+    where
+        createIVerilogProcess workdir files = (proc "iverilog" files){ cwd=Just workdir }
 
-
--- |Сгенерировать команду для компиляции icarus verilog-ом вычислительного блока и его тестового
--- окружения.
-createIVerilogProcess workdir files = (proc "iverilog" files){ cwd=Just workdir }
 
 
 projectFiles prj@Project{ projectName, processorModel }
@@ -251,20 +269,6 @@ projectFiles prj@Project{ projectName, processorModel }
         args _ (FromLibrary fn) = [ joinPath [ "lib", T.unpack $ L.last $ T.split (=='/') (T.pack fn) ] ]
         args _ Empty = []
 
-projectFiles' prj@Project{ projectName, libraryPath, processorModel }
-    = let
-        files = L.nub $ concatMap (args "") [ hardware projectName processorModel, testBenchDescription prj ]
-        tb = S.replace ".v" "" $ last files
-    in (tb, files)
-    where
-        args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
-        args p (Aggregate Nothing subInstances) = concatMap (args $ joinPath [p]) subInstances
-        args p (Immidiate fn _) = [ joinPath [ p, fn ] ]
-        args _ (FromLibrary fn) = [ joinPath [ libraryPath, fn ] ]
-        args _ Empty = []
-
-
------------------------------------------------------------
 
 
 snippetClkGen :: String
@@ -331,41 +335,44 @@ snippetTestBench
                     | Just (Source vs) <- endpointAt t p
                     , let v = oneOf vs
                     , let (Just val) = F.get cntx v
-                    = [qc|    @(posedge clk);
-        $write( "data_out: %d == %d    (%s)", data_out, { val }, { v } );
-        if ( !( data_out === { val } ) ) $display(" FAIL");
-        else $display();
-|]
+                    = fixIndent [qc|
+|                       @(posedge clk);
+|                           $write( "data_out: %d == %d    (%s)", data_out, { val }, { v } );
+|                           if ( !( data_out === { val } ) ) $display(" FAIL");
+|                           else $display();
+|                   |]
                     | otherwise
-                    = [qc|    @(posedge clk); $display( "data_out: %d", data_out );
-|]
+                    = fixIndent [qc|
+|                        @(posedge clk); $display( "data_out: %d", data_out );
+|                   |]
 
-    in [qc|{"module"} {mn}_tb();
-
-parameter DATA_WIDTH = 32;
-parameter ATTR_WIDTH = 4;
-
-/*
-Algorithm:
-{ unlines $ map show $ functions pu }
-Process:
-{ unlines $ map show $ reverse steps }
-Context:
-{ show cntx }
-*/
-
-reg clk, rst;
-reg { S.join ", " tbcSignals };
-reg [DATA_WIDTH-1:0]  data_in;
-reg [ATTR_WIDTH-1:0]  attr_in;
-wire [DATA_WIDTH-1:0] data_out;
-wire [ATTR_WIDTH-1:0] attr_out;
-
-{ inst }
-
-{ snippetClkGen }
-{ snippetDumpFile mn }
-{ snippetInitialFinish $ "    @(negedge rst);\\n    " ++ controlSignals }
-{ snippetInitialFinish $ "    @(negedge rst);\\n" ++ busCheck }
-endmodule
-|] :: String
+    in fixIndent [qc|
+|       {"module"} {mn}_tb();
+|
+|       parameter DATA_WIDTH = 32;
+|       parameter ATTR_WIDTH = 4;
+|
+|       /*
+|       Algorithm:
+|       { unlines $ map show $ functions pu }
+|       Process:
+|       { unlines $ map show $ reverse steps }
+|       Context:
+|       { show cntx }
+|       */
+|
+|       reg clk, rst;
+|       reg { S.join ", " tbcSignals };
+|       reg [DATA_WIDTH-1:0]  data_in;
+|       reg [ATTR_WIDTH-1:0]  attr_in;
+|       wire [DATA_WIDTH-1:0] data_out;
+|       wire [ATTR_WIDTH-1:0] attr_out;
+|
+|       { inst }
+|
+|       { snippetClkGen }
+|       { snippetDumpFile mn }
+|       { snippetInitialFinish $ "    @(negedge rst);\\n    " ++ controlSignals }
+|       { snippetInitialFinish $ "    @(negedge rst);\\n" ++ busCheck }
+|       endmodule
+|       |] :: String

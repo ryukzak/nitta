@@ -17,6 +17,7 @@ module NITTA.Utils
     , maximumOn
     , shift
     , fixIndent
+    , space2tab
     -- *HDL generation
     , bool2verilog
     , values2dump
@@ -52,6 +53,7 @@ import           Data.Default
 import           Data.List           (maximumBy, minimumBy, nub, sortOn)
 import           Data.Maybe          (isJust, mapMaybe)
 import           Data.Set            (difference, elems, unions)
+import qualified Data.String.Utils   as S
 import           Data.Typeable       (Typeable, cast)
 import           NITTA.Types
 import           NITTA.Utils.Lens
@@ -121,9 +123,9 @@ renderST st attrs = render $ setManyAttrib attrs $ newSTMP st
 
 
 fixIndent s = unlines $ map f ls
-    where 
+    where
         _:ls = lines s
-        tabSize = length $ takeWhile (`elem` "| ") $ last ls 
+        tabSize = length $ takeWhile (`elem` "| ") $ last ls
         f l@('|':l')
             | let indent = takeWhile (== ' ') l'
             , tabSize <= length indent + 1
@@ -132,6 +134,9 @@ fixIndent s = unlines $ map f ls
             = []
             | otherwise = error $ "fixIndent error " ++ show tabSize ++ " \"" ++ l ++ "\""
         f l = l
+
+
+space2tab = S.replace "    " "\t"
 
 
 modifyProcess p st = runState st p

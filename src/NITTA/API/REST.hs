@@ -32,8 +32,8 @@ import           GHC.Generics
 import           NITTA.API.Marshalling  ()
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import           NITTA.Project          (Project (..), TestBenchReport,
-                                         writeAndRunTestBench)
+import           NITTA.Project          (Project (..), TargetPlatform (..),
+                                         TestBenchReport, writeAndRunTestBench)
 import           NITTA.Types
 import           NITTA.Types.Synthesis
 import           Servant
@@ -142,6 +142,7 @@ getTestBenchOutput st _nid name = do
             , projectPath=joinPath ["hdl", "gen", name]
             , processorModel=processor $ simpleSynthesis sModel
             , testCntx=Nothing
+            , targetPlatforms=[ IcarusVerilog ]
             }
     liftIO $ writeAndRunTestBench prj
 
