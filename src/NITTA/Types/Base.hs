@@ -47,49 +47,17 @@ class Variables a v | a -> v where
 
 
 
--- |Семейство типов для описания входов/выходов для функциональных блоков. Необходимо чтобы описание
--- функционального блока можно было использовать для:
---
--- - логического описания вычислительного значения (выход из f подаётся на вход g и h);
--- - фактического (Parcel) описания пересылок (выход из f формирует значения а и b, значение a
---   загружается в g, значение b загружается в h).
-class IOTypeFamily io where
-    -- |Тип для описания загружаемого значения.
-    data I io :: *
-    -- |Тип для описания выгружаемого значения.
-    data O io :: *
-    -- |Тип значения.
-    data X io :: *
+-- |Группа типов данных для описания параметров функций
+data I v = I v -- ^Загружаемые значения.
+    deriving (Show, Eq, Ord)
+data O v = O (S.Set v) -- ^Выгружаемые значения.
+    deriving (Show, Eq, Ord)
+data X x = X x -- ^Выгружаемые значения.
+    deriving (Show, Eq)
 
-
-class ( Show (I io), Variables (I io) v, Eq (I io)
-      , Show (O io), Variables (O io) v, Eq (O io)
-      , Show (X io), Eq (X io)
-      , Typeable io, Var v
-      ) => IOType io v x | io -> v x
-instance ( Show (I io), Variables (I io) v, Eq (I io)
-         , Show (O io), Variables (O io) v, Eq (O io)
-         , Show (X io), Eq (X io)
-         , Typeable io, Var v, io ~ io' v x
-         ) => IOType io v x
-
-
-
--- |Идентификатор типа для описания физически фактических пересылаемых значений. Конструктор не
--- нужен, так как фактические значения будут описываться в рамках IOTypeFamily.
-data Parcel v x
-
-instance ( Var v ) => IOTypeFamily (Parcel v x) where
-    data I (Parcel v x) = I v -- ^Загружаемые значения.
-        deriving (Show, Eq, Ord)
-    data O (Parcel v x) = O (S.Set v) -- ^Выгружаемые значения.
-        deriving (Show, Eq, Ord)
-    data X (Parcel v x) = X x -- ^Выгружаемые значения.
-        deriving (Show, Eq)
-
-instance Variables (I (Parcel v x)) v where
+instance Variables (I v) v where
     variables (I v) = S.singleton v
-instance Variables (O (Parcel v x)) v where
+instance Variables (O v) v where
     variables (O v) = v
 
 
@@ -150,12 +118,15 @@ data Cntx v x
         , cntxFram    :: M.Map (Int, v) [x]
         }
 
+-- FIXME: Incorrect output if cntxInput has different amount of data. 
 instance ( Show v, Show x ) => Show (Cntx v x) where
-    show Cntx{ cntxVars, cntxOutputs }
+    show Cntx{ cntxVars, cntxInputs, cntxOutputs }
         = let 
-            vs = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxVars
-            os = map (\(v, xs) -> show v : reverse (map show xs)) $ M.assocs cntxOutputs
-            dt = vs ++ os
+            dt = concat
+                [ map (\(v, xs) -> reverse $ map ( filter (/= '"') . (("q." ++ show v ++ ":") ++) . show ) xs) $ M.assocs cntxInputs
+                , map (\(v, xs) -> reverse $ map ( filter (/= '"') . ((show v ++ ":") ++) . show ) xs) $ M.assocs cntxOutputs
+                , map (\(v, xs) -> reverse $ map ( filter (/= '"') . ((show v ++ ":") ++) . show ) xs) $ M.assocs cntxVars
+                ]
         in S.join "\n" $ map (S.join "\t") $ transpose dt
 
 instance Default (Cntx v x) where
@@ -167,43 +138,40 @@ class FunctionSimulation f v x | f -> v x where
 
 
 
-
-
 -- |Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
-data F io where
+data F v x where
     F ::
-        ( io ~ (io' v x)
-        , IOType io v x
+        ( Ord v
         , Function f v
         , Locks f v
         , Show f
-        , Typeable f
         , FunctionSimulation f v x
-        ) => f -> F io
-instance Show (F io) where
+        , Typeable f, Typeable v, Typeable x
+        ) => f -> F v x
+instance Show (F v x) where
     show (F f) = S.replace "\"" "" $ show f
 
 instance ( Var v
          , Typeable x
-         ) => Function (F (Parcel v x)) v where
+         ) => Function (F v x) v where
     insideOut (F f) = insideOut f
     isCritical (F f) = isCritical f
     inputs (F f) = inputs f
     outputs (F f) = outputs f
 
-instance Locks (F (Parcel v x)) v where 
+instance Locks (F v x) v where 
     locks (F f) = locks f
 
-instance Variables (F (Parcel v x)) v where
+instance Variables (F v x) v where
     variables (F f) = inputs f `S.union` outputs f
 
-instance Eq (F io) where
+instance Eq (F v x) where
     F a == F b = show a == show b
 
-instance Ord (F (Parcel v x)) where
+instance Ord (F v x) where
     (F a) `compare` (F b) = show a `compare` show b
 
-instance FunctionSimulation (F (Parcel v x)) v x where
+instance FunctionSimulation (F v x) v x where
     simulate cntx (F f) = simulate cntx f
 
 
@@ -212,38 +180,32 @@ instance FunctionSimulation (F (Parcel v x)) v x where
 
 
 -- |Описание многоуровневого вычислительного процесса PU. Подход к моделированию вдохновлён ISO
--- 15926. Имеются следующие варианты использования:
---
--- 1. Хранение многоуровневого описания вычислительного процесса отдельного PU (одного структурного
---    элемента процессора).
--- 2. Формирование многоуровневого описания вычислительного процесса для отдельного PU и входящих в
---    его состав структурных элементов (Nested). К примеру: вычислительный процесс сети и
---    подключённых к ней PU. (доступно через функцию process)
-data Process io t
+-- 15926. Процесс описывается относительно вычислительных блоков. При наличии вложенных блоков -
+--        структура сохраняется.
+data Process v x t
     = Process
-        { steps     :: [Step io t] -- ^Список шагов вычислительного процесса.
-
+        { steps     :: [Step v x t] -- ^Список шагов вычислительного процесса.
         , relations :: [Relation] -- ^Список отношений между шагами вычислительного процесса
                                   -- (отношения описываются через "кортежи" из ProcessUid).
         , nextTick  :: t          -- ^Номер первого свободного такта.
         , nextUid   :: ProcessUid -- ^Следующий свободный идентификатор шага вычислительного процесса.
-        }
-deriving instance ( Show v, Show t ) => Show ( Process (Parcel v x) t )
+        } 
+    deriving ( Show )
 
-instance ( Default t ) => Default (Process io t) where
+instance ( Default t ) => Default (Process v x t) where
     def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
 
 
 type ProcessUid = Int -- ^Уникальный идентификатор шага вычислительного процесса.
 
 -- |Описание шага вычислительного процесса.
-data Step io t
+data Step v x t
     = Step
         { sKey  :: ProcessUid    -- ^Уникальный идентификатор шага.
         , sTime :: PlaceInTime t -- ^Описание типа и положения шага во времени.
-        , sDesc :: StepInfo io t -- ^Описание действия описываемого шага.
+        , sDesc :: StepInfo v x t -- ^Описание действия описываемого шага.
         }
-deriving instance ( Show v, Show t ) => Show ( Step (Parcel v x) t )
+    deriving ( Show )
 
 -- |Описание положения события во времени и типа события:
 data PlaceInTime t
@@ -253,19 +215,19 @@ data PlaceInTime t
 
 -- |Описание события, соответсвующего шага вычислительного процесса. Каждый вариант соответствует
 -- соответствующему отдельному уровню организации вычислительного процесса.
-data StepInfo io t where
+data StepInfo v x t where
     -- |Решения, принятые на уровне САПР.
-    CADStep :: String -> StepInfo io t
+    CADStep :: String -> StepInfo v x t
     -- |Время работы над функциональным блоком функционального алгоритма.
-    FStep :: F io -> StepInfo io t
+    FStep :: F v x -> StepInfo v x t
     -- |Описание использования вычислительного блока с точки зрения передачи данных.
-    EndpointRoleStep :: ( io ~ _io v x, Show v, Typeable v ) => EndpointRole v -> StepInfo io t
+    EndpointRoleStep :: EndpointRole v -> StepInfo v x t
     -- |Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
     -- определяется типом вычислительного блока.
     InstructionStep :: 
         ( Show (Instruction pu)
         , Typeable (Instruction pu)
-        ) => Instruction pu -> StepInfo io t
+        ) => Instruction pu -> StepInfo v x t
     -- |Используется для описания вычислительного процесса вложенных структурных элементов. Как
     -- правило не хранится в структурах данных, а генерируется автоматически по требованию при
     -- помощи опроса вложенных структурных элементов.
@@ -273,13 +235,13 @@ data StepInfo io t where
         ( Eq title, Show title, Ord title
         ) => 
             { nTitle :: title
-            , nStep :: Step io t 
-            } -> StepInfo io t
+            , nStep :: Step v x t
+            } -> StepInfo v x t
 
 descent Step{ sDesc=NestedStep _ step } = descent step
 descent step                            = step
 
-instance (Show (Step io t)) => Show (StepInfo io t) where
+instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show (CADStep s)                 = s
     show (FStep (F f))               = show f
     show (EndpointRoleStep eff)      = show eff
@@ -296,7 +258,6 @@ level (NestedStep _ step) = level $ sDesc $ descent step
 
 showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
     where
-        showPU' :: StepInfo (Parcel v x) t -> [String]
         showPU' (NestedStep title Step{ sDesc }) = show title : showPU' sDesc
         showPU' _                                = []
 
@@ -318,12 +279,12 @@ data Relation
 
 -- |Решение в области привязки функционального блока к вычислительному. Определяется только для
 -- вычислительных блоков, организующих работу со множеством вложенных блоков, адресуемым по title.
-data BindingDT title io
+data BindingDT title v x
 binding = Proxy :: Proxy BindingDT
 
-instance DecisionType (BindingDT title io) where
-    data Option (BindingDT title io) = BindingO (F io) title deriving ( Generic )
-    data Decision (BindingDT title io) = BindingD (F io) title deriving ( Generic )
+instance DecisionType (BindingDT title v x) where
+    data Option (BindingDT title v x) = BindingO (F v x) title deriving ( Generic )
+    data Decision (BindingDT title v x) = BindingD (F v x) title deriving ( Generic )
 
 
 -- |Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
@@ -398,14 +359,14 @@ instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t))
 --    блока. Его модельное время продвигается вперёд, в описании вычислительного процесса
 --    дополняется записями относительно сделанных шагов вычислительного процесса.
 -- 4. Повторение, пока список возможных вариантов не станет пустым.
-class ProcessUnit pu io t | pu -> io t where
+class ProcessUnit pu v x t | pu -> v x t where
     -- |Назначить исполнение функционального блока вычислительному узлу.
-    tryBind :: F io -> pu -> Either String pu
+    tryBind :: F v x -> pu -> Either String pu
     -- |Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
     -- процесс вложенных структурных элементов.
     --
     -- Результат вычисления данной функции не должен редактироваться и возкращаться на место!
-    process :: pu -> Process io t
+    process :: pu -> Process v x t
     -- |Установить модельное время вычислительного блока.
     --
     -- История вопроса: Изначально, данный метод был добавлен для работы в ращеплённом времени, но он:
@@ -514,5 +475,5 @@ class Simulatable pu v x | pu -> v x where
         :: Cntx v x -- ^Контекст вычислительного процесса, содержащий уже
                     -- известные значения переменных.
             -> pu -- ^Вычислительный блок.
-            -> F (Parcel v x) -- ^Функциональный блок, оперируйщий интересующим значением.
+            -> F v x -- ^Функциональный блок, оперируйщий интересующим значением.
             -> Maybe (Cntx v x)

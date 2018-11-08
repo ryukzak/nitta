@@ -26,6 +26,7 @@ import           NITTA.DataFlow
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Types.Synthesis
+import           NITTA.Utils           (transfered)
 import           Numeric.Interval
 import           Servant
 
@@ -49,13 +50,13 @@ instance ( ToJSON title
          , ToJSON (TimeConstrain t), Time t
          ) => ToJSON (Decision (DataFlowDT title v t))
 instance ( Show title
-         ) => ToJSON (Option (BindingDT title io)) where
-    toJSON (BindingO fb title) = toJSON [ show fb, show title ]
+         ) => ToJSON (Option (BindingDT title v x)) where
+    toJSON (BindingO f title) = toJSON [ show f, show title ]
 instance ( Show title
-         ) => ToJSON (Decision (BindingDT title io)) where
-    toJSON (BindingD fb title) = toJSON [ show fb, show title ]
-instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
-instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
+         ) => ToJSON (Decision (BindingDT title v x)) where
+    toJSON (BindingD f title) = toJSON [ show f, show title ]
+-- instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
+-- instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
 
 
 
@@ -66,17 +67,11 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
          , Typeable x, ToJSON x, ToJSONKey x
          ) => ToJSON (BusNetwork title v x t) where
     toJSON n@BusNetwork{..} = object
-        -- , bnSignalBusWidth     :: Int
         [ "width" .= bnSignalBusWidth
-        --   bnRemains            :: [F (Parcel v) v]
         , "remain" .= bnRemains
-        -- , bnForwardedVariables :: [v]
         , "forwardedVariables" .= map (String . T.pack . show) (transfered n)
-        -- , bnBinded             :: M.Map title [F (Parcel v) v]
         , "binds" .= bnBinded
-        -- , bnProcess            :: Process v t
         , "processLength" .= nextTick (process n)
-        -- , bnPus                :: M.Map title spu
         , "processUnits" .= M.keys bnPus
         , "process" .= process n
         ]
@@ -98,7 +93,7 @@ instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
          ) => ToJSON (ModelState title tag x v t)
 
 instance ( ToJSON t, Time t, Show v
-         ) => ToJSON (Process (Parcel v x) t) where
+         ) => ToJSON (Process v x t) where
     toJSON Process{ steps, nextTick, relations } = object
         [ "steps" .= steps
         , "nextTick" .= nextTick
@@ -106,7 +101,7 @@ instance ( ToJSON t, Time t, Show v
         ]
 
 instance ( ToJSON t, Time t, Show v
-         ) => ToJSON (Step (Parcel v x) t) where
+         ) => ToJSON (Step v x t) where
     toJSON Step{ sKey, sTime, sDesc } = object
         [ "sKey" .= sKey
         , "sDesc" .= show sDesc
@@ -142,11 +137,10 @@ instance ToJSON TestBenchReport
 -- *Simple compiler
 instance ToJSON SynthesisSetup
 instance ToJSON SpecialMetrics
-instance ToJSON GlobalMetrics
 
-instance ToJSON (WithMetric (CompilerDT String String String (TaggedTime String Int))) where 
-    toJSON WithMetric{ mIntegral, mGlobal, mSpecial, mOption, mDecision } 
-        = toJSON ( mIntegral, mGlobal, mSpecial, mOption, mDecision )
+instance ToJSON (WithMetric (CompilerDT String String String (TaggedTime String Int))) where
+    toJSON WithMetric{ mIntegral, mSpecial, mOption, mDecision }
+        = toJSON ( mIntegral, mSpecial, mOption, mDecision )
 
 
 -- *Basic data
@@ -156,7 +150,7 @@ instance ( ToJSON t, Time t ) => ToJSON (PlaceInTime t) where
     toJSON (Event t)    = toJSON [ fromEnum t, fromEnum t ]
     toJSON (Activity i) = toJSON [ fromEnum $ inf i, fromEnum $ sup i ]
 
-instance ( Show v ) => ToJSON (F (Parcel v x)) where
+instance ( Show v ) => ToJSON (F v x) where
     toJSON = String . T.pack . show
 
 instance ( ToJSON t, Time t ) => ToJSON (TimeConstrain t) where

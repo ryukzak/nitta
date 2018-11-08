@@ -38,7 +38,7 @@ import           Text.Read                     (readMaybe)
 import           Data.Bool                     (bool)
 import           Language.Lua
 import qualified NITTA.Functions               as F
-import           NITTA.Types                   (F, Parcel)
+import           NITTA.Types                   (F)
 import           Text.InterpolatedString.Perl6 (qq)
 
 -- import Debug.Trace
@@ -131,7 +131,7 @@ buildAlg arithmeticType proc
     = execState proc AlgBuilder
         { algItems=[]
         , algBuffer=[]
-        , algVarGen=map (\i -> [qq|#$i|]) [(0::Int)..]
+        , algVarGen=map (\i -> [qq|#{i}|]) [(0::Int)..]
         , algVars=[]
         , algArithmetic=arithmeticType
         }
@@ -151,7 +151,7 @@ function2nitta Function{ fName="divide",   fIn=[d, n], fOut=[q, r], fValues=[]  
 function2nitta Function{ fName="receive",  fIn=[],     fOut=[o],    fValues=[]  } = F.receive <$> output o
 function2nitta Function{ fName="shiftL",   fIn=[a],    fOut=[c],    fValues=[]  } = F.shiftL <$> input a <*> output c
 function2nitta Function{ fName="shiftR",   fIn=[a],    fOut=[c],    fValues=[]  } = F.shiftR <$> input a <*> output c
-function2nitta f = error $ "unknown function: " ++ show f
+function2nitta f = error $ "frontend don't known function: " ++ show f
 
 
 
@@ -248,7 +248,7 @@ processStatement fn (LocalAssign names (Just [rexp])) = do
 processStatement _fn (LocalAssign names Nothing) = do
     AlgBuilder{ algVars } <- get
     forM_ names $ \(Name n) ->
-        when (n `elem` algVars) $ error "local variable alredy defined"
+        when (n `elem` algVars) $ error "local variable already defined"
 
 processStatement _fn st@(Assign lexps rexps)
     = if

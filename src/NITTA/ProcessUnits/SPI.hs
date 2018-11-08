@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
@@ -22,8 +23,8 @@ import           Data.Typeable
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
-import           NITTA.Utils
 import           Numeric.Interval                    ((...))
+import           Text.InterpolatedString.Perl6       (qc)
 
 
 type SPI v x t = SerialPU (State v x t) v x t
@@ -119,11 +120,14 @@ instance UnambiguouslyDecode (SPI v x t) where
 
 
 
-instance ( Ord v ) => Simulatable (SPI v x t) v x where
-  simulateOn cntx _ fb
-    | Just fb'@Send{} <- castF fb = simulate cntx fb'
-    | Just fb'@Receive{} <- castF fb = simulate cntx fb'
-    | otherwise = error $ "Can't simulate " ++ show fb ++ " on SPI."
+instance 
+        ( Ord v, Show v, Show x 
+        , Typeable v, Typeable x
+        ) => Simulatable (SPI v x t) v x where
+    simulateOn cntx _ f
+        | Just f'@Send{} <- castF f = simulate cntx f'
+        | Just f'@Receive{} <- castF f = simulate cntx f'
+        | otherwise = error $ "Can't simulate " ++ show f ++ " on SPI."
 
 instance Connected (SPI v x t) where
   data PUPorts (SPI v x t)
@@ -154,107 +158,108 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
         , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
         ]
   software _ pu = Immidiate "transport.txt" $ show pu
-  hardwareInstance title SerialPU{ spuState=State{ spiBounceFilter } } Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} = renderMST
-    [ "pu_slave_spi"
-    , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
-    , "   , .BOUNCE_FILTER( " ++ show spiBounceFilter ++ " )"
-    , "   ) $name$"
-    , "  ( .clk( " ++ signalClk ++ " )"
-    , "  , .rst( " ++ signalRst ++ " )"
-    , "  , .signal_cycle( " ++ signalCycle ++ " )"
-    , "  , .signal_oe( " ++ signal oe ++ " )"
-    , "  , .signal_wr( " ++ signal wr ++ " )"
-    , "  , .flag_stop( " ++ stop ++ " )"
-    , "  , .data_in( " ++ dataIn ++ " )"
-    , "  , .attr_in( " ++ attrIn ++ " )"
-    , "  , .data_out( " ++ dataOut ++ " )"
-    , "  , .attr_out( " ++ attrOut ++ " )"
-    , "  , .mosi( " ++ inputPort mosi ++ " )"
-    , "  , .miso( " ++ outputPort miso ++ " )"
-    , "  , .sclk( " ++ inputPort sclk ++ " )"
-    , "  , .cs( " ++ inputPort cs ++ " )"
-    , "  );"
-    ] [ ( "name", title ) ]
+  hardwareInstance title SerialPU{ spuState=State{ spiBounceFilter } } Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort } PUPorts{..} =
+    [qc|pu_slave_spi
+    #( .DATA_WIDTH( { show parameterDataWidth } )
+     , .ATTR_WIDTH( { show parameterAttrWidth } )
+     , .BOUNCE_FILTER( { show spiBounceFilter } )
+     ) { title }
+    ( .clk( { signalClk } )
+    , .rst( { signalRst } )
+    , .signal_cycle( { signalCycle } )
+    , .signal_oe( { signal oe } )
+    , .signal_wr( { signal wr } )
+    , .flag_stop( { stop } )
+    , .data_in( { dataIn } )
+    , .attr_in( { attrIn } )
+    , .data_out( { dataOut } )
+    , .attr_out( { attrOut } )
+    , .mosi( { inputPort mosi } )
+    , .miso( { outputPort miso } )
+    , .sclk( { inputPort sclk } )
+    , .cs( { inputPort cs } )
+    );
+    |]
 
   -- TODO: Превратить в настоящий тест, а не заглушку. Скорей всего затронет не только эту функцию, а всю инфраструктуру
   -- тестирования.
-  componentTestEnviroment title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..} = renderMST
-    [ "reg $name$_start_transaction;"
-     , "reg  [64-1:0] $name$_master_in;"
-    , "wire [64-1:0] $name$_master_out;"
-    , "wire $name$_ready;"
-    , "spi_master_driver "
-    , "  #( .DATA_WIDTH( 64 ) "
-    , "   , .SCLK_HALFPERIOD( 1 )"
-    , "   ) $name$_master"
-    , "  ( .clk( $clk$ )"
-    , "  , .rst( $rst$ )"
-    , "  , .start_transaction( $name$_start_transaction )"
-    , "  , .data_in( $name$_master_in )"
-    , "  , .data_out( $name$_master_out )"
-    , "  , .ready( $name$_ready )"
-    , "  , .mosi( " ++ inputPort mosi ++ " )"
-    , "  , .miso( " ++ outputPort miso ++ " )"
-    , "  , .sclk( " ++ inputPort sclk ++ " )"
-    , "  , .cs( " ++ inputPort cs ++ " )"
-    , "  );"
-    , "initial $name$_master.inner.shiftreg <= 0;"
-    , ""
-    , "initial begin"
-    , "  $name$_start_transaction <= 0; $name$_master_in <= 0;"
-    , "  @(negedge $rst$);"
-    , "  repeat(8) @(posedge $clk$); "
-    , ""
-    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
-    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
-    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
-    , "  repeat(200) @(posedge $clk$); "
-    , ""
-    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
-    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
-    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
-    , "  repeat(200) @(posedge $clk$); "
-    , ""
-    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
-    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
-    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
-    , "  repeat(200) @(posedge $clk$); "
-    , ""
-    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
-    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
-    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
-    , "  repeat(200) @(posedge $clk$); "
-    , ""
-    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
-    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
-    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
-    , "  repeat(200) @(posedge $clk$); "
-    , ""
-    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
-    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
-    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
-    , "  repeat(200) @(posedge $clk$); "
-    , ""
-    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
-    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
-    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
-    , "  repeat(200) @(posedge $clk$); "
-    , ""
-    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
-    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
-    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
-    , "  repeat(200) @(posedge $clk$); "
-    , ""
-    , "  $name$_master_in = 64'h0123456789ABCDEF;                @(posedge $clk$);"
-    , "  $name$_start_transaction = 1;                           @(posedge $clk$);"
-    , "  $name$_start_transaction = 0;                           @(posedge $clk$);"
-    , "  repeat(200) @(posedge $clk$); "
-    , ""
-    , "  repeat(70) @(posedge $clk$); "
-    , "end"
-    , "                                                                                                          "
-    ] [ ( "name", title )
-      , ( "clk", signalClk )
-      , ( "rst", signalRst )
-      ]
+  componentTestEnviroment title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..} =
+    [qc|reg { name }_start_transaction;
+reg  [64-1:0] { name }_master_in;
+wire [64-1:0] { name }_master_out;
+wire { name }_ready;
+spi_master_driver
+    #( .DATA_WIDTH( 64 )
+    , .SCLK_HALFPERIOD( 1 )
+    ) { name }_master
+    ( .clk( { clk } )
+    , .rst( { rst } )
+    , .start_transaction( { name }_start_transaction )
+    , .data_in( { name }_master_in )
+    , .data_out( { name }_master_out )
+    , .ready( { name }_ready )
+    , .mosi( { inputPort mosi } )
+    , .miso( { outputPort miso } )
+    , .sclk( { inputPort sclk } )
+    , .cs( { inputPort cs } )
+    );
+initial { name }_master.inner.shiftreg <= 0;
+
+initial begin
+    { name }_start_transaction <= 0; { name }_master_in <= 0;
+    @(negedge { rst });
+    repeat(8) @(posedge { clk });
+
+    { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
+    { name }_start_transaction = 1;                           @(posedge { clk });
+    { name }_start_transaction = 0;                           @(posedge { clk });
+    repeat(200) @(posedge { clk });
+
+    { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
+    { name }_start_transaction = 1;                           @(posedge { clk });
+    { name }_start_transaction = 0;                           @(posedge { clk });
+    repeat(200) @(posedge { clk });
+
+    { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
+    { name }_start_transaction = 1;                           @(posedge { clk });
+    { name }_start_transaction = 0;                           @(posedge { clk });
+    repeat(200) @(posedge { clk });
+
+    { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
+    { name }_start_transaction = 1;                           @(posedge { clk });
+    { name }_start_transaction = 0;                           @(posedge { clk });
+    repeat(200) @(posedge { clk });
+
+    { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
+    { name }_start_transaction = 1;                           @(posedge { clk });
+    { name }_start_transaction = 0;                           @(posedge { clk });
+    repeat(200) @(posedge { clk });
+
+    { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
+    { name }_start_transaction = 1;                           @(posedge { clk });
+    { name }_start_transaction = 0;                           @(posedge { clk });
+    repeat(200) @(posedge { clk });
+
+    { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
+    { name }_start_transaction = 1;                           @(posedge { clk });
+    { name }_start_transaction = 0;                           @(posedge { clk });
+    repeat(200) @(posedge { clk });
+
+    { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
+    { name }_start_transaction = 1;                           @(posedge { clk });
+    { name }_start_transaction = 0;                           @(posedge { clk });
+    repeat(200) @(posedge { clk });
+
+    { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
+    { name }_start_transaction = 1;                           @(posedge { clk });
+    { name }_start_transaction = 0;                           @(posedge { clk });
+    repeat(200) @(posedge { clk });
+
+    repeat(70) @(posedge { clk });
+end
+
+    |]
+      where
+        name = title
+        clk = signalClk
+        rst = signalRst

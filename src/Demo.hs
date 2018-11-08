@@ -172,23 +172,25 @@ Start Compilation@. Затем вам необходимо прошить в П�
 
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
-{-# LANGUAGE QuasiQuotes      #-}
+{-# LANGUAGE TemplateHaskell  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 module Demo
     ( -- * Демо
       fibonacciDemo
     , teacupDemo
       -- * Описание алгоритмов
-    , fibonacciAlg
+    , fibonacciAlg, fibonacciLua
     , teacupAlg, teacupLua, teacupAlg2
       -- * Описание процессоров
     , nittaArch
     ) where
 
 import           Data.Default
+import           Data.FileEmbed                (embedStringFile)
 import           Data.Text                     (Text)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
+import           NITTA.DataFlow
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divider    as D
@@ -198,7 +200,6 @@ import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
-import           Text.InterpolatedString.Perl6 (qq)
 
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
@@ -237,7 +238,7 @@ fibonacciDemo = demo Project
     { projectName="fibonacciDemo"
     , libraryPath="../.."
     , projectPath="hdl/gen/fibonacciDemo"
-    , model=mkModelWithOneNetwork nittaArch fibonacciAlg
+    , processorModel=mkModelWithOneNetwork nittaArch fibonacciAlg
     , testCntx=Nothing
     }
 
@@ -246,12 +247,14 @@ fibonacciAlg = [ F.loop 0 "a_new" ["a", "a_send"]
                , F.add "a" "b" ["b_new"]
                , F.send "a_send"
 
-               , F.loop 0  "index_new" ["index", "index_send"]
+               , F.loop 0  "i_new" ["i", "i_send"]
                , F.constant 1 ["one"]
-               , F.add "index" "one" ["index_new"]
-               , F.send "index_send"
+               , F.add "i" "one" ["i_new"]
+               , F.send "i_send"
                ]
 
+fibonacciLua :: Text
+fibonacciLua = $(embedStringFile "examples/fibonacci.lua")
 
 
 -- |Классический пример из области системной динамики. Описание самой модели приведено здесь:
@@ -270,27 +273,28 @@ teacupDemo = demo Project
     { projectName="teacupDemo"
     , libraryPath="../.."
     , projectPath="hdl/gen/teacupDemo"
-    , model=mkModelWithOneNetwork nittaArch teacupAlg
+    , processorModel=mkModelWithOneNetwork nittaArch teacupAlg
     , testCntx=Nothing
     }
 
-teacupAlg = [ F.loop 0 "time_new" ["time", "time_send"]
-            , F.constant 125 ["time_step_1", "time_step_2"]
-            , F.add "time" "time_step_1" ["time_new"]
-            , F.send "time_send"
+teacupAlg =
+    [ F.loop 0 "time_new" ["time", "time_send"]
+    , F.constant 125 ["time_step_1", "time_step_2"]
+    , F.add "time" "time_step_1" ["time_new"]
+    , F.send "time_send"
 
-            , F.constant 70000 ["temp_room"]
-            , F.constant 10000 ["temp_ch"]
-            , F.loop 180000 "temp_cup_new" ["temp_cup_1", "temp_cup_2", "temp_cup_send"]
-            -- (Teacup Temperature - temp_room) / temp_ch
-            , F.sub "temp_room" "temp_cup_1" ["acc"]
-            , F.division "acc" "temp_ch" ["temp_loss"] []
+    , F.constant 70000 ["temp_room"]
+    , F.constant 10000 ["temp_ch"]
+    , F.loop 180000 "temp_cup_new" ["temp_cup_1", "temp_cup_2", "temp_cup_send"]
+    -- (Teacup Temperature - temp_room) / temp_ch
+    , F.sub "temp_room" "temp_cup_1" ["acc"]
+    , F.division "acc" "temp_ch" ["temp_loss"] []
 
-            -- INTEG ( -temp_loss to Room
-            , F.multiply "temp_loss" "time_step_2" ["delta"]
-            , F.add "temp_cup_2" "delta" ["temp_cup_new"]
-            , F.send "temp_cup_send"
-            ]
+    -- INTEG ( -temp_loss to Room
+    , F.multiply "temp_loss" "time_step_2" ["delta"]
+    , F.add "temp_cup_2" "delta" ["temp_cup_new"]
+    , F.send "temp_cup_send"
+    ]
 
 teacupAlg2 =
     [ F.send "time#3_1"
@@ -306,33 +310,14 @@ teacupAlg2 =
     , F.constant 125 ["time_step_constant#2_1", "time_step_constant#2_0"]
     , F.constant 70000 ["temp_room_constant#1_0"]
     , F.constant 10000 ["temp_ch_constant#0_0"]
-    ] :: [F (Parcel String Int)]
+    ] :: [F String Int]
 
-teacupLua =
-    [qq|function teacup(time, temp_cup)
-            local temp_ch = 10000
-            local temp_room = 70000
-            local time_step = 125
-
-            send(time)
-            send(temp_cup)
-
-            time = time + time_step
-            local acc = temp_room - temp_cup
-            local temp_loss, _ = acc / temp_ch
-
-            local delta = temp_loss * time_step
-            temp_cup = temp_cup + delta
-
-            teacup(time, temp_cup)
-        end
-        teacup(0, 180000)|] :: Text
-
-
+teacupLua :: Text
+teacupLua = $(embedStringFile "examples/teacup.lua")
 
 -----------------------------------------------------------
 
-demo prj@Project{ projectPath, model } = do
-    let prj' = prj{ model=simpleSynthesis model }
+demo prj@Project{ projectPath, processorModel } = do
+    let prj' = prj{ processorModel=processor $ simpleSynthesis processorModel }
     writeProject prj'
     putStrLn $ "Demo project in " ++ projectPath

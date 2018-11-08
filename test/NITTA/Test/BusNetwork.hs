@@ -8,8 +8,8 @@
 module NITTA.Test.BusNetwork where
 
 import           Data.Default
+import           Data.Either                   (isRight)
 import           NITTA.BusNetwork
-import           NITTA.Compiler
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divider    as D
@@ -17,9 +17,8 @@ import qualified NITTA.ProcessUnits.Fram       as FR
 import qualified NITTA.ProcessUnits.Multiplier as M
 import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
-import           NITTA.Project
 import           NITTA.Types
-import           System.FilePath.Posix         (joinPath)
+import           NITTA.Utils.Test
 import           Test.Tasty.HUnit
 
 
@@ -48,8 +47,7 @@ netWithArithm = busNetwork 31 (Just True) [] []
   ]
 
 
-testAccumAndFram = unitTest "unittestAccumAndFram" netWithArithm
-  def
+testAccumAndFram = algTestCase "unittestAccumAndFram" netWithArithm
   [ F.framInput 3 [ "d", "p" ]
   , F.framInput 4 [ "e", "k" ]
   , F.framOutput 5 "p"
@@ -60,31 +58,27 @@ testAccumAndFram = unitTest "unittestAccumAndFram" netWithArithm
   ]
 
 
-testShiftAndFram = unitTest "unitShiftAndFram" netWithArithm
-  def
+testShiftAndFram = algTestCase "unitShiftAndFram" netWithArithm
   [ F.loop 16 "g1" ["f1"]
   , F.shiftL "f1" ["g1"]
   , F.loop 16 "g2" ["f2"]
   , F.shiftR "f2" ["g2"]
   ]
 
-testFibonacci = unitTest "testFibonacci" netWithArithm
-  def
+testFibonacci = algTestCase "testFibonacci" netWithArithm
   [ F.loop 0  "b2" ["a1"      ]
   , F.loop 1  "c"  ["b1", "b2"]
   , F.add "a1" "b1" ["c"]
   ]
 
-testFibonacciWithSPI = unitTest "testFibonacciWithSPI" netWithArithmAndSPI
-  def
+testFibonacciWithSPI = algTestCase "testFibonacciWithSPI" netWithArithmAndSPI
   [ F.loop 0 "b2" ["a1"      ]
   , F.loop 1 "c"  ["b1", "b2"]
   , F.add "a1" "b1" ["c", "c_copy"]
   , F.send "c_copy"
   ]
 
-testDiv4 = unitTest "testDiv4" netWithArithm
-  def
+testDiv4 = algTestCase "testDiv4" netWithArithm
   [ F.constant 100 ["a"]
   , F.loop 2 "e" ["b"]
   , F.division "a" "b" ["c"] ["d"]
@@ -96,8 +90,7 @@ testDiv4 = unitTest "testDiv4" netWithArithm
   , F.add "c1" "d1" ["e1"]
   ]
 
-testMultiplier = unitTest "testMultiplier" netWithArithm
-  def
+testMultiplier = algTestCase "testMultiplier" netWithArithm
   [ F.constant 2 ["a"]
   , F.loop 1 "c" ["b"]
   , F.multiply "a" "b" ["c"]
@@ -107,18 +100,12 @@ testMultiplier = unitTest "testMultiplier" netWithArithm
   , F.multiply "y" "x" ["z"]
   ]
 
-
-
 -----------------------------------------------
 
-processorTest name alg = testCase name $ unitTest ("processorTest_" ++ name) netWithArithmAndSPI def alg
+luaTestCase name lua = testCase name $ do
+    res <- testLua ("luaTestCase" ++ name) netWithArithmAndSPI lua
+    isRight res @? show res
 
-unitTest name n cntx alg = do
-  let n' = simpleSynthesis $ mkModelWithOneNetwork n alg
-  TestBenchReport{ tbStatus } <- writeAndRunTestBench $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
-  tbStatus @? name
-
-badUnitTest name n cntx alg = do
-  let n' = simpleSynthesis $ mkModelWithOneNetwork n alg
-  TestBenchReport{ tbStatus } <- writeAndRunTestBenchDevNull $ Project name "../.." (joinPath ["hdl", "gen", name]) n' cntx
-  not tbStatus @? name
+algTestCase name arch alg = testCase name $ do
+    res <- test ("algTestCase" ++ name) arch alg
+    isRight res @? show res

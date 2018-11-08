@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -27,11 +27,11 @@ module NITTA.Compiler
 
       -- *Metrics
     , WithMetric(..)
-    , GlobalMetrics(..)
     , SpecialMetrics(..)
     , optionsWithMetrics
 
       -- *Utils
+    , isSchedulingComplete
     , isSchedulingCompletable
     , endpointOption2action
     , compiler
@@ -41,11 +41,11 @@ module NITTA.Compiler
 
 import           Control.Arrow         (second)
 import           Data.Default
-import           Data.List             (find, sort)
+import           Data.List             (find)
 import qualified Data.Map              as M
 import           Data.Maybe
 import           Data.Proxy
-import           Data.Set              (intersection, member, singleton)
+import           Data.Set              (Set, fromList, intersection, member)
 import qualified Data.Set              as S
 import           Data.Tree
 import           GHC.Generics
@@ -66,21 +66,21 @@ simpleSynthesis model
         n = rootSynthesis model
         (n', nid') = synthesisObviousBind n
         Just (n'', nid'') = update (Just . simpleSynthesisAllThreads simple 1) nid' n'
-        Synthesis{ sModel=Frame{ processor } } = getSynthesis nid'' n''
-    in processor
+        Synthesis{ sModel } = getSynthesis nid'' n''
+    in sModel
 
 
 
 simpleSynthesisStep info SynthesisStep{ ix } Synthesis{ sModel }
-    = case optionsWithMetrics sModel of
+    = case optionsWithMetrics simple sModel of
         [] -> Nothing
-        opts -> 
+        opts ->
             let
                 ix' = fromMaybe (fst $ maximumOn (mIntegral . snd) $ zip [0..] opts) ix
                 sModel' = decision compiler sModel $ mDecision (opts !! ix')
-            in Just $ Synthesis
+            in Just Synthesis
                 { sModel=sModel'
-                , sCntx=[comment info]
+                , sCntx=[ comment info ]
                 , sStatus=status sModel'
                 , sCache=def
                 }
@@ -97,20 +97,20 @@ simpleSynthesisStep info SynthesisStep{ ix } Synthesis{ sModel }
 synthesisObviousBind n = recApply inner (SynthesisStep UnambiguousBind Nothing) n
     where
         inner _ syn@Synthesis{ sModel }
-            = case find 
+            = case find
                     (   (\case
                             BindingMetrics{ alternative } -> alternative == 1
                             _                             -> False
                         ) . mSpecial . snd
-                    ) $ zip [0..] $ optionsWithMetrics sModel of
-                Just (ix, _) -> simpleSynthesisStep "obliousBind" SynthesisStep{ setup=UnambiguousBind, ix=Just ix } syn 
+                    ) $ zip [0..] $ optionsWithMetrics simple sModel of
+                Just (ix, _) -> simpleSynthesisStep "obliousBind" SynthesisStep{ setup=UnambiguousBind, ix=Just ix } syn
                 Nothing -> Nothing
 
 
 
 simpleSynthesisAllThreads setup (1 :: Int) rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
-        mds = map Just [ 0 .. length (optionsWithMetrics sModel) - 1 ]
+        mds = map Just [ 0 .. length (optionsWithMetrics setup sModel) - 1 ]
         (rootN', nids) = foldl
             (\(n1, nids1) ix ->
                 let Just (n2, nid2) = apply (simpleSynthesisStep "allThreads") SynthesisStep{ setup, ix } n1
@@ -121,7 +121,7 @@ simpleSynthesisAllThreads setup (1 :: Int) rootN@Node{ rootLabel=Synthesis{ sMod
     in (rootN', bestNids rootN' nids)
 simpleSynthesisAllThreads setup deep rootN@Node{ rootLabel=Synthesis{ sModel } }
     = let
-        mds = map Just [ 0 .. length (optionsWithMetrics sModel) - 1 ]
+        mds = map Just [ 0 .. length (optionsWithMetrics setup sModel) - 1 ]
         (rootN', nids) = foldl
             (\(n1, nids1) ix ->
                 let Just (n2, nid2) = apply (simpleSynthesisStep "allThreads") SynthesisStep{ setup, ix } n1
@@ -172,7 +172,6 @@ isSchedulingComplete Frame{ processor, dfg }
     | let inWork = S.fromList $ transfered processor
     , let inAlg = variables dfg
     = inWork == inAlg
-isSchedulingComplete _ = undefined
 
 
 
@@ -187,27 +186,22 @@ compiler = Proxy :: Proxy CompilerDT
 
 instance DecisionType (CompilerDT title tag v t) where
     data Option (CompilerDT title tag v t)
-        = ControlFlowOption (DataFlowGraph v)
-        | BindingOption (F (Parcel v Int)) title
+        = BindingOption (F v Int) title
         | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
         deriving ( Generic, Show )
 
     data Decision (CompilerDT title tag v t)
-        = ControlFlowDecision (DataFlowGraph v)
-        | BindingDecision (F (Parcel v Int)) title
+        = BindingDecision (F v Int) title
         | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
         deriving ( Generic, Show )
 
-
 isBinding = \case BindingOption{} -> True; _ -> False
-isControlFlow = \case ControlFlowOption{} -> True; _ -> False
 isDataFlow = \case DataFlowOption{} -> True; _ -> False
 
 specializeDataFlowOption (DataFlowOption s t) = DataFlowO s t
 specializeDataFlowOption _ = error "Can't specialize non DataFlow option!"
 
 generalizeDataFlowOption (DataFlowO s t) = DataFlowOption s t
-generalizeControlFlowOption (ControlFlowO x) = ControlFlowOption x
 generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
@@ -215,35 +209,14 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 instance ( Time t, Var v
          ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
                    CompilerDT (ModelState String String v Int (TaggedTime String t))
-         where
-    options _ Level{ currentFrame } = options compiler currentFrame
-    options _ f@Frame{ processor, dfg } = concat
-        [ map generalizeDataFlowOption dataFlowOptions
-        , map generalizeControlFlowOption $ options controlDT f
-        , map generalizeBindingOption $ options binding f
-        ]
         where
-            dataFlowOptions = sensibleOptions $ filterByDFG $ options dataFlowDT processor
-            allowByDFG = allowByDFG' dfg
-            allowByDFG' (DFGNode fb)        = variables fb
-            allowByDFG' (DFG g)             = unionsMap allowByDFG' g
-            allowByDFG' DFGSwitch{ dfgKey } = singleton dfgKey
-            filterByDFG
-                = map (\t@DataFlowO{ dfoTargets } -> t
-                    { dfoTargets=M.fromList $ map (\(v, desc) -> (v, if v `member` allowByDFG
-                                                                        then desc
-                                                                        else Nothing)
-                                                    ) $ M.assocs dfoTargets
-                    })
-            sensibleOptions = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
+    options _ f@Frame{ processor }
+        =  map generalizeBindingOption (options binding f)
+        ++ map generalizeDataFlowOption (options dataFlowDT processor)
 
-    decision _ l@Level{ currentFrame } d = tryMakeLevelDone l{ currentFrame=decision compiler currentFrame d }
     decision _ f (BindingDecision fb title) = decision binding f $ BindingD fb title
-    decision _ f (ControlFlowDecision d) = decision controlDT f $ ControlFlowD d
     decision _ f@Frame{ processor } (DataFlowDecision src trg) = f{ processor=decision dataFlowDT processor $ DataFlowD src trg }
 
-
-option2decision (ControlFlowOption cf)   = ControlFlowDecision cf
 option2decision (BindingOption fb title) = BindingDecision fb title
 option2decision (DataFlowOption src trg)
     = let
@@ -263,132 +236,146 @@ option2decision (DataFlowOption src trg)
 
 data WithMetric dt
     = WithMetric
-        { mIntegral :: Int
-        , mGlobal   :: GlobalMetrics
-        , mSpecial  :: SpecialMetrics
-        , mOption   :: Option dt
+        { mOption   :: Option dt
         , mDecision :: Decision dt
+        , mSpecial  :: SpecialMetrics
+        , mIntegral :: Int
         }
 
-instance Eq (WithMetric dt) where
-    WithMetric{ mIntegral=a } == WithMetric{ mIntegral=b } = a == b
 
-instance Ord (WithMetric dt) where
-    WithMetric{ mIntegral=a } `compare` WithMetric{ mIntegral=b } = a `compare` b
+data MeasureCntx f o m
+    = MeasureCntx
+        { possibleDeadlockBinds :: Set f
+        , numberOfBindOptions   :: Int
+        , numberOfDFOptions     :: Int
+        , dataflowThreshhold    :: Int
+        , allOptions            :: o
+        , model                 :: m
+        }
 
 
+optionsWithMetrics Simple{ threshhold } model@Frame{ processor=BusNetwork{ bnBinded } }
+    = let
+        allOptions = options compiler model
 
+        notBindedFunctions = map (\(BindingOption f _) -> f) $ filter isBinding allOptions
+        bindedVar = unionsMap variables $ concat $ M.elems bnBinded
+        possibleDeadlockBinds = fromList
+            [ f
+            | f <- notBindedFunctions
+            , Lock{ locked } <- locks f
+            , locked `member` bindedVar
+            ]
 
-optionsWithMetrics model
-    = reverse $ sort $ map measure' opts
-    where
-        opts = options compiler model
-        gm = measureG opts model
-        measure' o
-            = let m = measure opts model o
-            in WithMetric
-                { mIntegral=integral gm m
-                , mGlobal=gm
-                , mSpecial=m
-                , mOption=o
-                , mDecision=option2decision o
+        cntx = MeasureCntx
+            { numberOfBindOptions=length $ filter isBinding allOptions
+            , numberOfDFOptions=length $ filter isDataFlow allOptions
+            , dataflowThreshhold=threshhold
+            , possibleDeadlockBinds
+            , allOptions
+            , model
+            }
+
+        measure' mOption
+            | let mSpecial = measure cntx mOption
+            = WithMetric
+                { mOption
+                , mDecision=option2decision mOption
+                , mSpecial
+                , mIntegral=integral cntx mSpecial
                 }
+    in map measure' allOptions
+
+optionsWithMetrics _ _ = error "Wrong setup for compiler!"
 
 
-
-data GlobalMetrics
-    = GlobalMetrics
-        { bindingOptions, dataFlowOptions, controlFlowOptions :: Int
-        } deriving ( Show, Generic )
-
-measureG opts _
-    = GlobalMetrics
-        { bindingOptions=length $ filter isBinding opts
-        , dataFlowOptions=length $ filter isDataFlow opts
-        , controlFlowOptions=length $ filter isControlFlow opts
-        }
 
 -- | Метрики для принятия решения компилятором.
 data SpecialMetrics
     = -- | Решения о привязке функциональных блоков к ВУ.
         BindingMetrics
-        { -- | Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
+        { -- |Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
           -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
-          critical      :: Bool
-            -- | Колличество альтернативных привязок для функционального блока.
-        , alternative   :: Int
-            -- | Привязка данного функционального блока может быть активировано только спустя указанное
-            -- колличество тактов.
-        , restless      :: Int
-            -- | Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
-            -- количества пересылок.
-        , allowDataFlow :: Int
+          critical         :: Bool
+          -- |Колличество альтернативных привязок для функционального блока.
+        , alternative      :: Int
+          -- |Привязка данного функционального блока может быть активировано только спустя указанное
+          -- колличество тактов.
+        , restless         :: Int
+          -- |Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
+          -- количества пересылок.
+        , allowDataFlow    :: Int
+          -- |Если была выполнена привязка функции из серидины алгоритма, то это может
+          -- привести к deadlock-у. В такой ситуации может быть активирована пересылка
+          -- в вычислительный блок, в то время как часть из входных данных не доступна,
+          -- так как требуемая функция ещё не привязана, а после привязки не сможет быть
+          -- вычисленна, так как ресурс уже занят.
+        , possibleDeadlock :: Bool
         }
     | DataFlowMetrics { waitTime :: Int, restrictedTime :: Bool }
-    | ControlFlowMetrics
     deriving ( Show, Generic )
 
 
-measure opts Level{ currentFrame } opt = measure opts currentFrame opt
-measure opts Frame{ processor=net@BusNetwork{ bnPus } } (BindingOption fb title) = BindingMetrics
-    { critical=isCritical fb
-    , alternative=length (howManyOptionAllow (filter isBinding opts) M.! fb)
-    , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind fb (bnPus M.! title)
-    , restless=fromMaybe 0 $ do
-        (_var, tcFrom) <- find (\(v, _) -> v `elem` variables fb) $ waitingTimeOfVariables net
-        return $ fromEnum tcFrom
-    }
-measure _ _ ControlFlowOption{} = ControlFlowMetrics
-measure _ _ opt@DataFlowOption{} = DataFlowMetrics
+measure
+        MeasureCntx{ possibleDeadlockBinds, allOptions, model=Frame{ processor=net@BusNetwork{ bnPus } } }
+        (BindingOption f title)
+    = BindingMetrics
+        { critical=isCritical f
+        , alternative=length (howManyOptionAllow (filter isBinding allOptions) M.! f)
+        , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind f (bnPus M.! title)
+        , restless=fromMaybe 0 $ do
+            (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables net
+            return $ fromEnum tcFrom
+        , possibleDeadlock=f `member` possibleDeadlockBinds
+        }
+measure MeasureCntx{} opt@DataFlowOption{} = DataFlowMetrics
     { waitTime=fromEnum (specializeDataFlowOption opt^.at.avail.infimum)
     , restrictedTime=fromEnum (specializeDataFlowOption opt^.at.dur.supremum) /= maxBound
     }
 
-
-integral GlobalMetrics{..} DataFlowMetrics{..}
-    | dataFlowOptions >= 2                                   = 10000 + 200 - waitTime
-integral GlobalMetrics{..} BindingMetrics{ critical=True } = 2000
-integral GlobalMetrics{..} BindingMetrics{ alternative=1 } = 500
-integral GlobalMetrics{..} BindingMetrics{..}              = 200 + allowDataFlow * 10 - restless * 2
-integral GlobalMetrics{..} DataFlowMetrics{..} | restrictedTime = 200 + 100
-integral GlobalMetrics{..} DataFlowMetrics{..}             = 200 - waitTime
-integral GlobalMetrics{..} _                               = 0
+integral MeasureCntx{} BindingMetrics{ possibleDeadlock=True }            = 2000000
+integral MeasureCntx{ numberOfDFOptions, dataflowThreshhold } DataFlowMetrics{ waitTime }
+    | numberOfDFOptions >= dataflowThreshhold                             = 10000 + 200 - waitTime
+integral MeasureCntx{} BindingMetrics{ critical=True }                    = 2000
+integral MeasureCntx{} BindingMetrics{ alternative=1 }                    = 500
+integral MeasureCntx{} BindingMetrics{ allowDataFlow, restless }          = 200 + allowDataFlow * 10 - restless * 2
+integral MeasureCntx{} DataFlowMetrics{ restrictedTime } | restrictedTime = 200 + 100
+integral MeasureCntx{} DataFlowMetrics{ waitTime }                        = 200 - waitTime
 
 
 
 -- * Работа с потоком управления.
 
-
-tryMakeLevelDone l@Level{ currentFrame=f@Frame{} }
-    | opts <- options compiler f
-    , null $ filter isBinding opts ++ filter isDataFlow opts
-    = makeLevelDone l
-tryMakeLevelDone l = l
+-- tryMakeLevelDone l@Level{ currentFrame=f@Frame{} }
+--     | opts <- options compiler f
+--     , null $ filter isBinding opts ++ filter isDataFlow opts
+--     = makeLevelDone l
+-- tryMakeLevelDone l = l
 
 -- | Функция завершения текущего фрейма. Есть два сценария: 1) поменять фрейм не меняя уровень, 2)
 -- свернуть уровень и перейти в нажележащему фрейму.
-makeLevelDone l@Level{ remainFrames=f:fs, currentFrame, completedFrames }
-    = l
-        { currentFrame=f
-        , remainFrames=fs
-        , completedFrames=currentFrame : completedFrames
-        }
-makeLevelDone Level{ initialFrame, currentFrame, completedFrames }
-    = let
-        fs = currentFrame : completedFrames
-        mergeTime = (maximum $ map (nextTick . process . processor) fs){ tag=timeTag initialFrame }
-        Frame{ processor=net@BusNetwork{ bnProcess } } = currentFrame
-    in initialFrame
-        { processor=setTime mergeTime net
-            { bnProcess=snd $ modifyProcess bnProcess $
-                mapM_ (\Step{ sTime, sDesc } -> addStep sTime sDesc) $ concatMap stepsFromFrame fs
-            }
-        }
-    where
-        stepsFromFrame Frame{ timeTag, processor } = whatsHappenWith timeTag processor
-        stepsFromFrame Level{}   = error "stepsFromFrame: wrong args"
+-- makeLevelDone l@Level{ remainFrames=f:fs, currentFrame, completedFrames }
+--     = l
+--         { currentFrame=f
+--         , remainFrames=fs
+--         , completedFrames=currentFrame : completedFrames
+--         }
+-- makeLevelDone Level{ initialFrame, currentFrame, completedFrames }
+--     = let
+--         fs = currentFrame : completedFrames
+--         mergeTime = (maximum $ map (nextTick . process . processor) fs){ tag=timeTag initialFrame }
+--         Frame{ processor=net@BusNetwork{ bnProcess } } = currentFrame
+--     in initialFrame
+--         { processor=setTime mergeTime net
+--             { bnProcess=snd $ modifyProcess bnProcess $
+--                 mapM_ (\Step{ sTime, sDesc } -> addStep sTime sDesc) $ concatMap stepsFromFrame fs
+--             }
+--         }
+--     where
+--         stepsFromFrame Frame{ timeTag, processor } = whatsHappenWith timeTag processor
+--         stepsFromFrame Level{}   = error "stepsFromFrame: wrong args"
 
-makeLevelDone _ = error "makeFrameDone: argument must be Level."
+-- makeLevelDone _ = error "makeFrameDone: argument must be Level."
 
 
 
@@ -430,8 +417,8 @@ endpointOption2action o@EndpointO{ epoRole }
 
 
 
-whatsHappenWith tag pu =
-    [ st
-    | st@Step{ sTime } <- steps $ process pu
-    , tag == placeInTimeTag sTime
-    ]
+-- whatsHappenWith tag pu =
+--     [ st
+--     | st@Step{ sTime } <- steps $ process pu
+--     , tag == placeInTimeTag sTime
+--     ]

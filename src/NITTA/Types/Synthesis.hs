@@ -95,7 +95,7 @@ instance Read Nid where
     readsPrec _ _ = []
 
 
-nidsTree n = inner [] n
+nidsTree = inner []
     where
         inner is Node{ subForest } = Node
             { rootLabel=Nid $ reverse is
@@ -115,7 +115,7 @@ data SynthesisSetup
     deriving ( Generic, Show, Eq, Ord )
 
 simple = Simple
-    { threshhold=1000
+    { threshhold=2
     }
 
 data SynthesisStep = SynthesisStep
@@ -138,7 +138,6 @@ rootSynthesis m = Node
     }
 
 targetProcessDuration Frame{ processor } = nextTick $ process processor
-targetProcessDuration _                  = undefined
 
 
 -- *Synthesis context

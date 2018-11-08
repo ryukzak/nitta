@@ -20,7 +20,7 @@ values2dumpTests = do
   "000000" @=? values2dump (replicate 24 $ Bool False)
 
 inputsOfFBsTests = do
-  let f = algInputs :: [F (Parcel String Int)] -> Set String
+  let f = algInputs :: [F String Int] -> Set String
   fromList []         @=? f [ framInput 3 [ "a" ] ] -- F $ FramInput 3 $ O $ fromList [ "a" ] ]
   fromList ["a", "b"] @=? f [ add "a" "b" ["c"] ]
   fromList ["c"]      @=? f [ framOutput 0 "c" ]
@@ -31,7 +31,7 @@ inputsOfFBsTests = do
                             ]
 
 outputsOfFBsTests = do
-  let f = algOutputs :: [F (Parcel String Int)] -> Set String
+  let f = algOutputs :: [F String Int] -> Set String
   fromList ["a"] @=? f [ framInput 3 [ "a" ] ]
   fromList ["c"] @=? f [ add "a" "b" ["c"] ]
   fromList []    @=? f [ framOutput 0 "c" ]

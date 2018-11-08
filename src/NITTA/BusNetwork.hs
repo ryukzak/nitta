@@ -48,7 +48,7 @@ import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           NITTA.Utils.Process
 import           Numeric.Interval              (inf, width, (...))
-import           Text.InterpolatedString.Perl6 (qq)
+import           Text.InterpolatedString.Perl6 (qc)
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
@@ -58,11 +58,11 @@ type Title v = ( Typeable v, Ord v, Show v )
 data GBusNetwork title spu v x t = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
-      bnRemains        :: [F (Parcel v x)]
+      bnRemains        :: [F v x]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded         :: M.Map title [F (Parcel v x)]
+    , bnBinded         :: M.Map title [F v x]
     -- | Описание вычислительного процесса сети, как элемента процессора.
-    , bnProcess        :: Process (Parcel v x) t
+    , bnProcess        :: Process v x t
     -- | Словарь вложенных вычислительных блоков по именам.
     , bnPus            :: M.Map title spu
     -- | Ширина шины управления.
@@ -72,15 +72,6 @@ data GBusNetwork title spu v x t = BusNetwork
     , bnAllowDrop      :: Maybe Bool
     }
 type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
-
-transfered net@BusNetwork{ bnProcess }
-    = mapMaybe
-        (\Step{ sDesc } -> case sDesc of
-            (InstructionStep i) | Just (Transport v _ _) <- cast i `maybeInstructionOf` net
-                -> Just v
-            _ -> Nothing
-        )
-        $ steps bnProcess
 
 
 -- TODO: Проверка подключения сигнальных линий.
@@ -112,7 +103,7 @@ instance ( Title title
          , Time t
          , Var v
          , Typeable x
-         ) => WithFunctions (BusNetwork title v x t) (F (Parcel v x)) where
+         ) => WithFunctions (BusNetwork title v x t) (F v x) where
     functions BusNetwork{..} = sortFBs binded []
         where
             binded = bnRemains ++ concat (M.elems bnBinded)
@@ -130,7 +121,7 @@ instance ( Title title, Var v, Time t
                    DataFlowDT (BusNetwork title v x t)
     where
     options _proxy n@BusNetwork{..}
-        = concat
+        = notEmptyDestination $ concat
             [
                 [ DataFlowO (srcTitle, fixPullConstrain pullAt) $ M.fromList pushs
                 | pushs <- mapM pushOptionsFor $ elems pullVars
@@ -141,6 +132,7 @@ instance ( Title title, Var v, Time t
             , EndpointO (Source pullVars) pullAt <- opts
             ]
         where
+            notEmptyDestination = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
             now = nextTick bnProcess
             fixPullConstrain constrain
                 = let
@@ -165,7 +157,7 @@ instance ( Title title, Var v, Time t
                         (\dict Lock{ locked=a, lockBy=b } -> M.adjust ((:) b) a dict)
                         (M.fromList [(v, []) | v <- elems $ unionsMap variables fbs])
                         $ filter (\Lock{ lockBy } -> lockBy `notElem` bnForwardedVariables)
-                        $ concatMap locks fbs
+                        $ concatMap locks fbs ++ concatMap locks (M.elems bnPus)
                     notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
                 in notBlockedVariables \\ bnForwardedVariables
 
@@ -203,7 +195,7 @@ instance ( Title title, Var v, Time t
 
 
 instance ( Title title, Time t, Var v, Typeable x
-         ) => ProcessUnit (BusNetwork title v x t) (Parcel v x) t where
+         ) => ProcessUnit (BusNetwork title v x t) v x t where
 
     tryBind f net@BusNetwork{ bnRemains, bnPus }
         | any (allowToProcess f) $ M.elems bnPus
@@ -311,7 +303,7 @@ instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v x t) 
 -- 2. Эти функции должны быть представленны классом типов.
 instance ( Var v
          , Typeable x
-         ) => DecisionProblem (BindingDT String (Parcel v x))
+         ) => DecisionProblem (BindingDT String v x)
                     BindingDT (BusNetwork String v x t)
          where
     options _ BusNetwork{..} = concatMap bindVariants' bnRemains
@@ -364,7 +356,7 @@ instance
         where
             mn = moduleName title pu
             iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
-                in [qq|{"module"} $mn
+                in [qc|{"module"} { mn }
     #( parameter DATA_WIDTH = 32
      , parameter ATTR_WIDTH = 4
      )
@@ -376,9 +368,10 @@ instance
     , output              [7:0] debug_bus1
     , output              [7:0] debug_bus2
     , input                     is_drop_allow
+    , input    [DATA_WIDTH-1:0] data_bus_hack
     );
 
-parameter MICROCODE_WIDTH = $bnSignalBusWidth;
+parameter MICROCODE_WIDTH = { bnSignalBusWidth };
 // Sub module_ instances
 wire [MICROCODE_WIDTH-1:0] control_bus;
 wire [DATA_WIDTH-1:0] data_bus;
@@ -386,13 +379,13 @@ wire [ATTR_WIDTH-1:0] attr_bus;
 wire cycle, start, stop;
 
 wire [7:0] debug_pc;
-assign debug_status = \{ cycle, debug_pc[6:0] \};
+assign debug_status = \{ cycle, debug_pc[6:0] };
 assign debug_bus1 = data_bus[7:0];
 assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
 
 pu_simple_control
     #( .MICROCODE_WIDTH( MICROCODE_WIDTH )
-     , .PROGRAM_DUMP( "\$path\${mn}.dump" )
+     , .PROGRAM_DUMP( "$path${ mn }.dump" )
      , .MEMORY_SIZE( { length $ programTicks pu } ) // 0 - address for nop microcode
      ) control_unit
     ( .clk( clk )
@@ -405,14 +398,14 @@ pu_simple_control
 
 { S.join "\\n\\n" instances }
 
-assign data_bus = { S.join " | " $ map snd valuesRegs };
+assign data_bus = { S.join " | " $ "data_bus_hack" : map snd valuesRegs };
 assign attr_bus = { S.join " | " $ map fst valuesRegs };
 
 endmodule
 |]
 
             regInstance (t :: String)
-                = [qq|wire [DATA_WIDTH-1:0] {t}_data_out;
+                = [qc|wire [DATA_WIDTH-1:0] {t}_data_out;
 wire [ATTR_WIDTH-1:0] {t}_attr_out;|]
 
 
@@ -444,79 +437,84 @@ instance ( Title title, Var v, Time t
          , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x
          ) => TestBench (BusNetwork title v x t) v x where
-    testBenchDescription Project{ projectName, model=n@BusNetwork{..}, testCntx }
+    testBenchDescription Project{ projectName, processorModel=n@BusNetwork{..}, testCntx }
         = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
         where
             ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
-            testBenchImp = renderMST
-                [ "`timescale 1 ps / 1 ps"
-                , "module $moduleName$_tb();                                                                                 "
-                , ""
-                , "/* Functions:"
-                , S.join "\n" $ map show $ functions n
-                , "*/"
-                , "                                                                                                          "
-                , "/* Steps:"
-                , S.join "\n" $ map show $ reverse $ steps $ process n
-                , "*/"
-                , ""
-                , "reg clk, rst;                                                                                             "
-                , if null ports
-                    then ""
-                    else "wire " ++ S.join ", " ports ++ ";"
-                , ""
-                , "$moduleName$                                                                                           "
-                , "  #( .DATA_WIDTH( 32 )"
-                , "   , .ATTR_WIDTH( 4 )"
-                , "   ) net"
-                , "  ( .clk( clk )                                                                                           "
-                , "  , .rst( rst )                                                                                           "
-                , S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
-                , "// if 1 - The process cycle are indipendent from a SPI."
-                , "// else - The process cycle are wait for the SPI."
-                , "  , .is_drop_allow( " ++ maybe "is_drop_allow" bool2verilog bnAllowDrop ++ " )"
-                , "  );                                                                                                      "
-                , "                                                                                                          "
-                , S.join "\n\n"
+            testEnv = S.join "\\n\\n"
                 [ tbEnv
                 | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus
                 , let t' = filter (/= '"') $ show t
                 , let tbEnv = componentTestEnviroment t' unit systemEnv links
                 , not $ null tbEnv
                 ]
-                , "                                                                                                          "
-                , snippetDumpFile' $ moduleName projectName n
-                , "                                                                                                          "
-                , snippetClkGen
-                , "                                                                                                          "
-                , "initial                                                                                                 "
-                , "  begin                                                                                                 "
-                , "    // microcode when rst == 1 -> program[0], and must be nop for all PUs                               "
-                , "    @(negedge rst); // Turn processor on.                                                         "
-                , "    // Start computational cycle from program[1] to program[n] and repeat.                              "
-                , "    // Signals effect to processor state after first clk posedge.                                       "
-                , assertions
-                , "  repeat ( 2000 ) @(posedge clk);"
-                , "    \\$finish;                                                                                          "
-                , "  end                                                                                                   "
-                , "                                                                                                          "
-                , "endmodule                                                                                                 "
-                ]
-                [ ( "moduleName", moduleName projectName n )
-                ]
+            externalIO = S.join ", " ("  " : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
+            testBenchImp = [qc|
+`timescale 1 ps / 1 ps
+{"module"} { moduleName projectName n }_tb();
+
+/* Functions:
+{ S.join "\\n" $ map show $ functions n }
+*/
+
+/* Steps:
+{ S.join "\\n" $ map show $ reverse $ steps $ process n }
+*/
+
+reg clk, rst;
+{ if null ports then "" else "wire " ++ S.join ", " ports ++ ";" }
+
+wire [32-1:0] data_bus_hack = 0;
+
+{ moduleName projectName n }
+    #( .DATA_WIDTH( 32 )
+     , .ATTR_WIDTH( 4 )
+     ) net
+    ( .clk( clk )
+    , .rst( rst )
+    { externalIO }
+// if 1 - The process cycle are indipendent from a SPI.
+// else - The process cycle are wait for the SPI.
+    , .is_drop_allow( { maybe "is_drop_allow" bool2verilog bnAllowDrop } )
+    , .data_bus_hack( data_bus_hack )
+    );
+
+{ testEnv }
+
+{ snippetDumpFile $ moduleName projectName n }
+
+{ snippetClkGen }
+
+initial
+    begin
+        // microcode when rst == 1 -> program[0], and must be nop for all PUs
+        @(negedge rst); // Turn processor on.
+        // Start computational cycle from program[1] to program[n] and repeat.
+        // Signals effect to processor state after first clk posedge.
+        @(posedge clk);
+{ concatMap assertion simulationInfo }
+    repeat ( 2000 ) @(posedge clk);
+        $finish;
+    end
+
+endmodule
+|]
 
             -- TODO: Количество циклов для тестирования должно задаваться пользователем.
-            cntxs = take 5 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n
+            cntxs = take 3 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n
             cycleTicks = tail $ programTicks n  -- because program[0] is skiped
-            simulationInfo = (0, def) : concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
-            assertions = concatMap ( ("    @(posedge clk); " ++) . (++ "\n") . assert ) simulationInfo
-                where
-                    assert (t, cntx)
-                        = "\\$write(\"%d, bus actual: %h\", " ++ show t ++ ", net.data_bus); "
-                        ++ case extractInstructionAt n t of
-                            Transport v _ _ : _ -> concat
-                                [ "\\$write(\" expected: %h (%s)\", " ++ show (get' cntx v) ++ ", " ++ show v ++ ");"
-                                , "if ( !( net.data_bus === " ++ show (get' cntx v) ++ ") ) "
-                                ,   "\\$display(\" FAIL\"); else \\$display();"
-                                ]
-                            [] -> "\\$display();"
+            simulationInfo = -- (trace ("cntxs: \n" ++ concatMap ((++ "\n") . show) cntxs) 0, head cntxs) :
+                concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
+            assertion (t, cntx) =
+                [qc|        @(posedge clk); $write("tick: { t }; net.data_bus == %h ", net.data_bus);|]
+                ++ case extractInstructionAt n t of
+                    Transport v _ _ : _ -> [qc|
+            $write("=== %h (var: %s)", { get' cntx v }, { v } );
+            if ( !( net.data_bus === { get' cntx v } ) )
+                $display( " FAIL");
+            else
+                $display();
+|]
+                    [] -> [qc|
+            $display();
+|]

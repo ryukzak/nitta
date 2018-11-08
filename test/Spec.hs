@@ -11,7 +11,6 @@ import           Control.Applicative           ((<$>))
 import           Data.Atomics.Counter          (newCounter)
 import           Data.Default                  (def)
 import           Demo
-import           NITTA.Frontend
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Divider
 import           NITTA.ProcessUnits.Fram
@@ -49,13 +48,13 @@ main = do
             , testProperty "simulation" $ fmap (prop_simulation "prop_simulation_multiplier" counter) $ inputsGen =<< multiplierGen
             ]
         ,  testGroup "Divider process unit"
-            [ processorTest "lua_divider_test_1" $ lua2functions
+            [ luaTestCase "divider_test_1"
                 [qq|function f(a)
                         a, _b = a / 2
                         f(a)
                     end
                     f(1024)|]
-            , processorTest "lua_divider_test_2" $ lua2functions
+            , luaTestCase "divider_test_2" 
                 [qq|function f(a, b)
                         a, _ = a / 2
                         b, _ = b / 3
@@ -76,12 +75,12 @@ main = do
             , testCase "fibonacci" simulateFibonacciTest
             ]
         , testGroup "BusNetwork"
-            [ testCase "testShiftAndFram" testShiftAndFram
-            , testCase "testAccumAndFram" testAccumAndFram
-            , testCase "testMultiplier" testMultiplier
-            , testCase "testDiv4" testDiv4
-            , testCase "testFibonacci" testFibonacci
-            , testCase "testFibonacciWithSPI" testFibonacciWithSPI
+            [ testShiftAndFram
+            , testAccumAndFram
+            , testMultiplier
+            , testDiv4
+            , testFibonacci
+            , testFibonacciWithSPI
             ]
         , testGroup "Utils"
             [ testCase "values2dump" values2dumpTests
@@ -90,7 +89,7 @@ main = do
             , testCase "endpointRoleEq" endpointRoleEq
             ]
         , testGroup "lua frontend"
-            [ processorTest "lua_counter_void_function" $ lua2functions
+            [ luaTestCase "counter_void_function"
                 [qq|function counter(i)
                         send(i)
                         i = i + 1
@@ -98,60 +97,55 @@ main = do
                     end
                     counter(0)
                 |]
-            , processorTest "lua_counter_local_var" $ lua2functions
+            , luaTestCase "counter_local_var"
                 [qq|function counter(i)
                         local i2 = i + 1
                         counter(i2)
                     end
                     counter(0)
                 |]
-            , processorTest "lua_counter_function" $ lua2functions
+            , luaTestCase "counter_function"
                 [qq|function counter(i)
                         i = reg(i + 1)
                         counter(i)
                     end
                     counter(0)
                 |]
-            , processorTest "lua_fibonacci_a_b" $ lua2functions
-                [qq|function fib(a, b)
-                        a, b = b, a + b
-                        fib(a, b)
-                    end
-                    fib(0, 1)|]
-            , processorTest "lua_fibonacci_b_a" $ lua2functions
+            , luaTestCase "fibonacci_a_b" fibonacciLua
+            , luaTestCase "fibonacci_b_a"
                 [qq|function fib(a, b)
                         b, a = a + b, b
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "lua_fibonacci_nested_fun_call1" $ lua2functions
+            , luaTestCase "fibonacci_nested_fun_call1"
                 [qq|function fib(a, b)
                         a, b = b, reg(a + reg(b)) + 0
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "lua_fibonacci_nested_fun_call2" $ lua2functions
+            , luaTestCase "fibonacci_nested_fun_call2"
                 [qq|function fib(a, b)
                         a, b = b, reg(a + reg(b + 0)) + 0
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , processorTest "lua_teacup" $ lua2functions teacupLua
+            , luaTestCase "teacup" teacupLua
             ]
       ]
 
 framGen = processGen (def :: (Fram String Int Int))
-    [ F <$> (arbitrary :: Gen (Constant (Parcel String Int)))
-    , F <$> (arbitrary :: Gen (FramInput (Parcel String Int)))
-    , F <$> (arbitrary :: Gen (FramOutput (Parcel String Int)))
-    , F <$> (arbitrary :: Gen (Loop (Parcel String Int)))
-    , F <$> (arbitrary :: Gen (Reg (Parcel String Int)))
+    [ F <$> (arbitrary :: Gen (Constant String Int))
+    , F <$> (arbitrary :: Gen (FramInput String Int))
+    , F <$> (arbitrary :: Gen (FramOutput String Int))
+    , F <$> (arbitrary :: Gen (Loop String Int))
+    , F <$> (arbitrary :: Gen (Reg String Int))
     ]
 
 multiplierGen = processGen (multiplier True)
-    [ F <$> (arbitrary :: Gen (Multiply (Parcel String Int)))
+    [ F <$> (arbitrary :: Gen (Multiply String Int))
     ]
 
 dividerGen = processGen (divider 4 True)
-    [ F <$> (arbitrary :: Gen (Division (Parcel String Int)))
+    [ F <$> (arbitrary :: Gen (Division String Int))
     ]

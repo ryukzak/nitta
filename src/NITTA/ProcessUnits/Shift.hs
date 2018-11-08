@@ -1,16 +1,17 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
-module NITTA.ProcessUnits.Shift 
+module NITTA.ProcessUnits.Shift
   ( Shift
   , PUPorts(..)
-  ) 
+  )
   where
 
 import qualified Data.Bits                           as B
@@ -25,6 +26,7 @@ import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval                    (singleton, (...))
 import           Prelude                             hiding (init)
+import           Text.InterpolatedString.Perl6       (qc)
 
 
 type Shift v x t = SerialPU (State v x t) v x t
@@ -126,27 +128,27 @@ instance Connected (Shift v x t) where
       ]
 
 
-instance ( Var v, B.Bits x ) => Simulatable (Shift v x t) v x where
-  simulateOn cntx _ fb
-    | Just (fb' :: ShiftLR (Parcel v x)) <- castF fb = simulate cntx fb'
-    | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
+instance ( Var v, B.Bits x, Typeable x ) => Simulatable (Shift v x t) v x where
+  simulateOn cntx _ f
+    | Just (f' :: ShiftLR v x) <- castF f = simulate cntx f'
+    | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
 
 
 instance TargetSystemComponent (Shift v x t) where
   moduleName _ _ = "pu_shift"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software _ _ = Empty
-  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} = renderMST
-    [ "pu_shift #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
-    , "          , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
-    , "          ) $name$"
-    , "  ( .clk( " ++ signalClk ++ " )"
-    , "  , .signal_work( " ++ signal work ++ " ), .signal_direction( " ++ signal direction ++ " )"
-    , "  , .signal_mode( " ++ signal mode ++ " ), .signal_step( " ++ signal step ++ " )"
-    , "  , .signal_init( " ++ signal init ++ " ), .signal_oe( " ++ signal oe ++ " )"
-    , "  , .data_in( " ++ dataIn ++ " )"
-    , "  , .attr_in( " ++ attrIn ++ " )"
-    , "  , .data_out( " ++ dataOut ++ " )"
-    , "  , .attr_out( " ++ attrOut ++ " )"
-    , "  );"
-    ] [ ( "name", title ) ]
+  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
+    [qc|pu_shift
+    #( .DATA_WIDTH( { show parameterDataWidth } )
+     , .ATTR_WIDTH( { show parameterAttrWidth } )
+     ) { title }
+    ( .clk( { signalClk } )
+    , .signal_work( { signal work } ), .signal_direction( { signal direction } )
+    , .signal_mode( { signal mode } ), .signal_step( { signal step } )
+    , .signal_init( { signal init } ), .signal_oe( { signal oe } )
+    , .data_in( { dataIn } )
+    , .attr_in( { attrIn } )
+    , .data_out( { dataOut } )
+    , .attr_out( { attrOut } )
+    );|]
