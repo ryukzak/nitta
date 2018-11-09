@@ -200,6 +200,7 @@ import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Project
 
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
@@ -240,7 +241,7 @@ fibonacciDemo = demo Project
     , projectPath="hdl/gen/fibonacciDemo"
     , processorModel=mkModelWithOneNetwork nittaArch fibonacciAlg
     , testCntx=Nothing
-    , targetPlatforms=[ IcarusVerilog, DE0Nano ]    
+    , targetPlatforms=[ Makefile, DE0Nano ]
     }
 
 fibonacciAlg = [ F.loop 0 "a_new" ["a", "a_send"]
@@ -276,7 +277,7 @@ teacupDemo = demo Project
     , projectPath="hdl/gen/teacupDemo"
     , processorModel=mkModelWithOneNetwork nittaArch teacupAlg
     , testCntx=Nothing
-    , targetPlatforms=[ IcarusVerilog, DE0Nano ]
+    , targetPlatforms=[ Makefile, DE0Nano ]
     }
 
 teacupAlg =

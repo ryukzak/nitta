@@ -44,6 +44,7 @@ import           Data.Typeable
 import           NITTA.Functions               (get', simulateAlgByCycle)
 import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Project
 import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           NITTA.Utils.Process
