@@ -20,14 +20,14 @@ Stability   : experimental
 
 module NITTA.Frontend
     ( lua2functions
-    , ArithmeticType(..)
+    , ValueType(..)
     , NumberReprType(..)
     , transformToFixPoint
     ) where
 
 import           Control.Monad                 (when)
 import           Control.Monad.State
-import           Data.Default                  (def)
+import           Data.Default
 import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
 import           Data.Maybe                    (catMaybes, fromMaybe, listToMaybe)
@@ -50,16 +50,16 @@ import           Text.InterpolatedString.Perl6 (qq)
 -- end
 -- f(1025, 0)
 
-lua2functions arithmeticType src
+lua2functions valueType src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         --ast = trace ("ast = " ++ show ast') ast'
         Right (fn, call, funAssign) = findMain ast
-        AlgBuilder{ algItems } = buildAlg arithmeticType $ do
+        AlgBuilder{ algItems } = buildAlg valueType $ do
             addMainInputs call funAssign
             let statements = funAssignStatments funAssign
             forM_ statements $ processStatement fn
-            preprocessFunctions $ reprType arithmeticType
+            preprocessFunctions $ reprType valueType
             addConstants
         -- fs = filter (\case Function{} -> True; _ -> False) $ trace (S.join "\n" $ map show algItems) algItems
         fs = filter (\case Function{} -> True; _ -> False) algItems
@@ -79,19 +79,22 @@ data NumberReprType
     -- |В алгоритме не поддерживаются вещественные числа.
     = IntRepr
     -- |Представление вещественных чисел как целочисленных, умножением на 10 в заданной степени.
-    | DecimalFP Int 
+    | DecimalFixedPoint Int 
     -- |Представление вещественных чисел как целочисленных, умножением на 2 в заданной степени.
-    | BinaryFP Int 
+    | BinaryFixedPoint Int 
     deriving Show
 
 -- |Описывает формат представления чисел в алгоритме.
-data ArithmeticType
-    = ArithmeticType 
-        { reprType  :: NumberReprType -- ^Представление вещественных чисел в алгоритме
-        , bitsCount :: Int            -- ^Количество бит требующихся на представление числа (по модулю)
-        , negNumber :: Bool           -- ^Возможность использования отрицательных чисел
+data ValueType
+    = ValueType 
+        { reprType      :: NumberReprType -- ^Представление вещественных чисел в алгоритме
+        , valueWidth    :: Int            -- ^Количество бит требующихся на представление числа (по модулю)
+        , isValueSigned :: Bool           -- ^Возможность использования отрицательных чисел
         } 
     deriving Show
+
+instance Default ValueType where
+    def = ValueType{ reprType=IntRepr, valueWidth=32, isValueSigned=True }
 
 data AlgBuilder
     = AlgBuilder
@@ -99,7 +102,7 @@ data AlgBuilder
         , algBuffer     :: [AlgBuilderItem]
         , algVarGen     :: [Text]
         , algVars       :: [Text]
-        , algArithmetic :: ArithmeticType
+        , algArithmetic :: ValueType
         }
 
 instance Show AlgBuilder where
@@ -127,13 +130,13 @@ data AlgBuilderItem
 
 
 
-buildAlg arithmeticType proc
+buildAlg valueType proc
     = execState proc AlgBuilder
         { algItems=[]
         , algBuffer=[]
         , algVarGen=map (\i -> [qq|#{i}|]) [(0::Int)..]
         , algVars=[]
-        , algArithmetic=arithmeticType
+        , algArithmetic=valueType
         }
 
 
@@ -216,25 +219,25 @@ preprocessFunctions rt = do
             cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
             modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of 
                 -- FIXME: add shift for more than 1
-                BinaryFP  1 -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
-                               Function{ fName="shiftR", fIn=[v], fOut=[c], fValues=[] } :
-                               algItems
-                _           -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
-                               Function{ fName="divide", fIn=[v, cnst], fOut=[c, q], fValues=[] } :
-                               algItems
+                BinaryFixedPoint  1 -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
+                                       Function{ fName="shiftR", fIn=[v], fOut=[c], fValues=[] } :
+                                       algItems
+                _                   -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
+                                       Function{ fName="divide", fIn=[v, cnst], fOut=[c, q], fValues=[] } :
+                                       algItems
             }
 
         preprocessFunctions' Function{ fName="divide", fIn=[d, n], fOut=[q, r], fValues=[] } = do
             v <- genVar "tmp"
             cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
-            modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems= case rt of 
-                BinaryFP  1 -> Function{ fName="shiftL", fIn=[d], fOut=[v], fValues=[] } :
-                               Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
-                               algItems
-                               
-                _           -> Function{ fName="multiply", fIn=[d, cnst], fOut=[v], fValues=[] } :
-                               Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
-                               algItems
+            modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of 
+                BinaryFixedPoint  1 -> Function{ fName="shiftL", fIn=[d], fOut=[v], fValues=[] } :
+                                       Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
+                                       algItems
+                                       
+                _                   -> Function{ fName="multiply", fIn=[d, cnst], fOut=[v], fValues=[] } :
+                                       Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
+                                       algItems
             }
                                
         preprocessFunctions' item = modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems=item : algItems }
@@ -371,13 +374,13 @@ expConstant _ _ = undefined
 
 
 transformToFixPoint algArithmetic x
-        | IntRepr       <- rt = maybe (Left "Float values is unsupported") checkInt $ readMaybe x
-        | (DecimalFP n) <- rt = maybe (readDouble 10 n x) (checkInt . (* 10^n)) $ readMaybe x
-        | (BinaryFP  n) <- rt = maybe (readDouble 2  n x) (checkInt . (* 2 ^n)) $ readMaybe x
+        | IntRepr               <- rt = maybe (Left "Float values is unsupported") checkInt $ readMaybe x
+        | (DecimalFixedPoint n) <- rt = maybe (readDouble 10 n x) (checkInt . (* 10^n)) $ readMaybe x
+        | (BinaryFixedPoint  n) <- rt = maybe (readDouble 2  n x) (checkInt . (* 2 ^n)) $ readMaybe x
     where 
         rt             = reprType algArithmetic
-        maxNum         = 2 ^ bitsCount algArithmetic - 1
-        minNum         = bool 0 (-maxNum - 1) $ negNumber algArithmetic
+        maxNum         = 2 ^ valueWidth algArithmetic - 1
+        minNum         = bool 0 (-maxNum - 1) $ isValueSigned algArithmetic
         readDouble t n = checkInt . fst . properFraction . (* t^n) . (read :: String -> Double)
         checkInt v     | v <= maxNum && v >= minNum = Right $ fromInteger v 
                        | otherwise                  = Left  $ unpack [qq|The value is outside the allowed limits [$minNum, $maxNum]: $v ($x)|]

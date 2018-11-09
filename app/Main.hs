@@ -89,8 +89,8 @@ main = do
             putStrLn [qc|> readFile: { fn }|]
             buf <- T.readFile fn
             if web
-                then backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch $ lua2functions buf
-                else print =<< testLua "main" microarch buf
+                then backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch $ lua2functions D.def buf
+                else print =<< testLua "main" microarch D.def buf
         Nothing -> do
             putStrLn "-- hardcoded begin --"
             -- teacupDemo

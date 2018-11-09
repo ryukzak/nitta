@@ -30,7 +30,7 @@ import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
 
 test name ma alg = testWithInput name [] ma alg
-testLua name ma lua = testWithInput name [] ma $ lua2functions lua
+testLua name ma vt lua = testWithInput name [] ma $ lua2functions vt lua
 
 testWithInput :: _ -> _ -> _ -> _ -> IO (Either String String)
 testWithInput name cntx ma alg = runExceptT $ do
