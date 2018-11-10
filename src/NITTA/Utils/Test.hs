@@ -14,7 +14,10 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Utils.Test where
+module NITTA.Utils.Test
+    ( test
+    , testLua
+    ) where
 
 import           Control.Monad                 (unless)
 import           Control.Monad.Trans.Class     (lift)
@@ -29,6 +32,7 @@ import           NITTA.Types
 import           NITTA.Types.Project
 import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
+
 
 test name = testWithInput name []
 testLua name ma = testWithInput name [] ma . lua2functions
