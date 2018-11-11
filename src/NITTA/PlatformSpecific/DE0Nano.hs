@@ -12,21 +12,12 @@ module NITTA.PlatformSpecific.DE0Nano
     ( de0nano
     ) where
 
-import           Control.Monad                 (mapM_, unless)
 import           Data.FileEmbed
-import           Data.List                     (isSubsequenceOf)
-import qualified Data.List                     as L
 import qualified Data.String.Utils             as S
-import           NITTA.Functions               as F
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Utils
-import           System.Directory
-import           System.Exit
-import           System.FilePath.Posix         (joinPath, pathSeparator)
-import           System.IO                     (hPutStrLn, stderr)
-import           System.Process
-import           Text.InterpolatedString.Perl6 (qc)
+import           System.FilePath.Posix         (joinPath)
 
 -- FIXME: Replace embedStringFile by fixIndent + qc
 
