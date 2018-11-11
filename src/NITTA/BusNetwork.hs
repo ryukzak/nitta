@@ -348,67 +348,66 @@ instance
 
     hardware title pu@BusNetwork{..}
         = let
-            pus = map (uncurry hardware) $ M.assocs bnPus
-            net =
-                [ Immidiate (mn ++ ".v") iml
-                , FromLibrary "pu_simple_control.v"
-                ]
-        in Aggregate (Just mn) (pus ++ net)
-        where
+            (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
             mn = moduleName title pu
-            iml = let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
-                in [qc|{"module"} { mn }
-    #( parameter DATA_WIDTH = 32
-     , parameter ATTR_WIDTH = 4
-     )
-    ( input                     clk
-    , input                     rst
-{ S.join "\\n" $ map (\\(InputPort p) -> ("    , input " ++ p)) bnInputPorts }
-{ S.join "\\n" $ map (\\(OutputPort p) -> ("    , output " ++ p)) bnOutputPorts }
-    , output              [7:0] debug_status
-    , output              [7:0] debug_bus1
-    , output              [7:0] debug_bus2
-    , input                     is_drop_allow
-    , input    [DATA_WIDTH-1:0] data_bus_hack
-    );
-
-parameter MICROCODE_WIDTH = { bnSignalBusWidth };
-// Sub module_ instances
-wire [MICROCODE_WIDTH-1:0] control_bus;
-wire [DATA_WIDTH-1:0] data_bus;
-wire [ATTR_WIDTH-1:0] attr_bus;
-wire cycle, start, stop;
-
-wire [7:0] debug_pc;
-assign debug_status = \{ cycle, debug_pc[6:0] };
-assign debug_bus1 = data_bus[7:0];
-assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
-
-pu_simple_control
-    #( .MICROCODE_WIDTH( MICROCODE_WIDTH )
-     , .PROGRAM_DUMP( "$path${ mn }.dump" )
-     , .MEMORY_SIZE( { length $ programTicks pu } ) // 0 - address for nop microcode
-     ) control_unit
-    ( .clk( clk )
-    , .rst( rst )
-    , .start_cycle( { maybe "is_drop_allow" bool2verilog bnAllowDrop } || stop )
-    , .cycle( cycle )
-    , .signals_out( control_bus )
-    , .trace_pc( debug_pc )
-    );
-
-{ S.join "\\n\\n" instances }
-
-assign data_bus = { S.join " | " $ "data_bus_hack" : map snd valuesRegs };
-assign attr_bus = { S.join " | " $ map fst valuesRegs };
-
-endmodule
-|]
-
+            iml = fixIndent [qc|
+|                   {"module"} { mn }
+|                       #( parameter DATA_WIDTH = 32
+|                        , parameter ATTR_WIDTH = 4
+|                        )
+|                       ( input                     clk
+|                       , input                     rst
+|                   { S.join "\\n" $ map (\\(InputPort p) -> ("    , input " ++ p)) bnInputPorts }
+|                   { S.join "\\n" $ map (\\(OutputPort p) -> ("    , output " ++ p)) bnOutputPorts }
+|                       , output              [7:0] debug_status
+|                       , output              [7:0] debug_bus1
+|                       , output              [7:0] debug_bus2
+|                       , input                     is_drop_allow
+|                       , input    [DATA_WIDTH-1:0] data_bus_hack
+|                       );
+|                   
+|                   parameter MICROCODE_WIDTH = { bnSignalBusWidth };
+|                   // Sub module_ instances
+|                   wire [MICROCODE_WIDTH-1:0] control_bus;
+|                   wire [DATA_WIDTH-1:0] data_bus;
+|                   wire [ATTR_WIDTH-1:0] attr_bus;
+|                   wire cycle, start, stop;
+|                   
+|                   wire [7:0] debug_pc;
+|                   assign debug_status = \{ cycle, debug_pc[6:0] };
+|                   assign debug_bus1 = data_bus[7:0];
+|                   assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
+|                   
+|                   pu_simple_control
+|                       #( .MICROCODE_WIDTH( MICROCODE_WIDTH )
+|                        , .PROGRAM_DUMP( "$path${ mn }.dump" )
+|                        , .MEMORY_SIZE( { length $ programTicks pu } ) // 0 - address for nop microcode
+|                        ) control_unit
+|                       ( .clk( clk )
+|                       , .rst( rst )
+|                       , .start_cycle( { maybe "is_drop_allow" bool2verilog bnAllowDrop } || stop )
+|                       , .cycle( cycle )
+|                       , .signals_out( control_bus )
+|                       , .trace_pc( debug_pc )
+|                       );
+|                   
+|                   { S.join "\\n\\n" instances }
+|                   
+|                   assign data_bus = { S.join " | " $ "data_bus_hack" : map snd valuesRegs };
+|                   assign attr_bus = { S.join " | " $ map fst valuesRegs };
+|                   
+|                   endmodule
+|                   |]
+        in Aggregate (Just mn) $ 
+            [ Immidiate (mn ++ ".v") iml
+            , FromLibrary "pu_simple_control.v"
+            ] ++ map (uncurry hardware) (M.assocs bnPus)
+        where
             regInstance (t :: String)
-                = [qc|wire [DATA_WIDTH-1:0] {t}_data_out;
-wire [ATTR_WIDTH-1:0] {t}_attr_out;|]
-
+                = fixIndent [qc|
+|                   wire [DATA_WIDTH-1:0] {t}_data_out;
+|                   wire [ATTR_WIDTH-1:0] {t}_attr_out;
+|                   |]
 
             renderInstance insts regs [] = ( reverse insts, reverse regs )
             renderInstance insts regs ((t, PU{ unit, systemEnv, links }) : xs)
