@@ -25,6 +25,7 @@ import           Data.Set                (difference, elems, empty, fromList,
 import           NITTA.Compiler
 import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Project
 import           NITTA.Utils
 import           System.FilePath.Posix   (joinPath)
 import           Test.QuickCheck
@@ -39,7 +40,7 @@ import           Debug.Trace
 -- вычислительным процессом и алгоритм.
 processGen pu gens = onlyUniqueVar <$> listOf1 (oneof gens) >>= processGen' pu
     where
-        processGen' :: 
+        processGen' ::
             ( DecisionProblem (EndpointDT String Int) EndpointDT pu
             , ProcessUnit pu String Int Int
             ) => pu -> [F String Int] -> Gen (pu, [F String Int])
@@ -94,7 +95,7 @@ inputsGen (pu, fbs) = do
 prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
     i <- run $ incrCounter 1 counter
     let path = joinPath ["hdl", "gen", n ++ show i]
-    res <- run $ writeAndRunTestBench $ Project n "../.." path pu values
+    res <- run $ writeAndRunTestBench $ Project n "../.." path pu values [Makefile]
     assert $ tbStatus res
 
 
@@ -123,7 +124,7 @@ unitTestBench title proxy cntx alg = do
         lib = joinPath ["..", ".."]
         wd = joinPath ["hdl", "gen", title]
         pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
-    (tbStatus <$> writeAndRunTestBench (Project title lib wd pu cntx)) @? title
+    (tbStatus <$> writeAndRunTestBench (Project title lib wd pu cntx [Makefile])) @? title
 
 
 

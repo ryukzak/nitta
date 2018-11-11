@@ -25,6 +25,8 @@ library
                      , NITTA.DataFlow
                      , NITTA.Frontend
                      , NITTA.Functions
+                     , NITTA.PlatformSpecific.DE0Nano
+                     , NITTA.PlatformSpecific.Makefile
                      , NITTA.ProcessUnits.Accum
                      , NITTA.ProcessUnits.Divider
                      , NITTA.ProcessUnits.Fram
@@ -37,6 +39,7 @@ library
                      , NITTA.Types.Base
                      , NITTA.Types.Network
                      , NITTA.Types.Poly
+                     , NITTA.Types.Project
                      , NITTA.Types.Synthesis
                      , NITTA.Types.Time
                      , NITTA.Utils

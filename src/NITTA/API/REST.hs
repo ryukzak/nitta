@@ -32,9 +32,9 @@ import           GHC.Generics
 import           NITTA.API.Marshalling  ()
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import           NITTA.Project          (Project (..), TestBenchReport,
-                                         writeAndRunTestBench)
+import           NITTA.Project          (writeAndRunTestBench)
 import           NITTA.Types
+import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
 import           Servant
 import           System.FilePath        (joinPath)
@@ -142,6 +142,7 @@ getTestBenchOutput st _nid name = do
             , projectPath=joinPath ["hdl", "gen", name]
             , processorModel=processor $ simpleSynthesis sModel
             , testCntx=Nothing
+            , targetPlatforms=[ Makefile ]
             }
     liftIO $ writeAndRunTestBench prj
 

@@ -14,7 +14,10 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Utils.Test where
+module NITTA.Utils.Test
+    ( test
+    , testLua
+    ) where
 
 import           Control.Monad                 (unless)
 import           Control.Monad.Trans.Class     (lift)
@@ -26,11 +29,13 @@ import           NITTA.DataFlow
 import           NITTA.Frontend
 import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Project
 import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
 
-test name ma alg = testWithInput name [] ma alg
-testLua name ma vt lua = testWithInput name [] ma $ lua2functions vt lua
+
+test name = testWithInput name []
+testLua name ma = testWithInput name [] ma . lua2functions
 
 testWithInput :: _ -> _ -> _ -> _ -> IO (Either String String)
 testWithInput name cntx ma alg = runExceptT $ do
@@ -44,6 +49,7 @@ testWithInput name cntx ma alg = runExceptT $ do
             , projectPath=joinPath ["hdl", "gen", name]
             , processorModel=processor
             , testCntx=Just D.def{ cntxInputs=M.fromList cntx }
+            , targetPlatforms=[ Makefile, DE0Nano ]
             }
     TestBenchReport{ tbStatus } <- lift $ writeAndRunTestBench prj
     unless tbStatus $ throwE [qc|> test { name } - Fail|]

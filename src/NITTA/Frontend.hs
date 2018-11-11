@@ -50,7 +50,9 @@ import           Text.InterpolatedString.Perl6 (qq)
 -- end
 -- f(1025, 0)
 
-lua2functions valueType src
+lua2functions src = lua2functions' def src 
+
+lua2functions' valueType src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         --ast = trace ("ast = " ++ show ast') ast'

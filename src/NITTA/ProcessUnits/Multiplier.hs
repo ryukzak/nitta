@@ -129,6 +129,7 @@ import           Data.Typeable
 import qualified NITTA.Functions               as F
 import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Project
 import           NITTA.Utils
 import           NITTA.Utils.Process
 import           Numeric.Interval              (inf, sup, (...))

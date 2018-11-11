@@ -25,6 +25,7 @@ import           NITTA.Functions               (castF)
 import qualified NITTA.Functions               as F
 import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Project
 import           NITTA.Utils
 import           NITTA.Utils.Process
 import           Numeric.Interval              (Interval, inf, intersection,

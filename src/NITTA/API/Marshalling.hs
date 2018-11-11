@@ -23,8 +23,8 @@ import           Data.Typeable
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
 import           NITTA.API.GraphConverter
 import           NITTA.Utils           (transfered)

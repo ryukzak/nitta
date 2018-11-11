@@ -75,6 +75,7 @@ import           NITTA.Functions
 import           NITTA.Project
 import           NITTA.Types                   hiding (Undef)
 import qualified NITTA.Types                   as T
+import           NITTA.Types.Project
 import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval              ((...))
