@@ -19,6 +19,7 @@ library
                      , NITTA.API
                      , NITTA.API.Marshalling
                      , NITTA.API.REST
+                     , NITTA.API.GraphConverter
                      , NITTA.BusNetwork
                      , NITTA.Compiler
                      , NITTA.DataFlow
