@@ -81,6 +81,7 @@ main = do
             , testDiv4
             , testFibonacci
             , testFibonacciWithSPI
+            , testFibonacciWithSPINoDataDrop
             ]
         , testGroup "Utils"
             [ testCase "values2dump" values2dumpTests

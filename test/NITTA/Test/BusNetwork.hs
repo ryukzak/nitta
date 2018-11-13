@@ -37,6 +37,8 @@ netWithArithmAndSPI = busNetwork 31 (Just True)
   , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 28, M.wrSel=Signal 29, M.oe=Signal 30 } )
   ]
 
+netWithArithmAndSPINoDropData = netWithArithmAndSPI{ bnAllowDrop=Just False }
+
 netWithArithm = busNetwork 31 (Just True) [] []
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
   , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
@@ -71,12 +73,15 @@ testFibonacci = algTestCase "testFibonacci" netWithArithm
   , F.add "a1" "b1" ["c"]
   ]
 
-testFibonacciWithSPI = algTestCase "testFibonacciWithSPI" netWithArithmAndSPI
+fibWithSPI = 
   [ F.loop 0 "b2" ["a1"      ]
   , F.loop 1 "c"  ["b1", "b2"]
   , F.add "a1" "b1" ["c", "c_copy"]
   , F.send "c_copy"
   ]
+
+testFibonacciWithSPI = algTestCase "testFibonacciWithSPI" netWithArithmAndSPI fibWithSPI
+testFibonacciWithSPINoDataDrop = algTestCase "testFibonacciWithSPINoDataDrop" netWithArithmAndSPINoDropData fibWithSPI
 
 testDiv4 = algTestCase "testDiv4" netWithArithm
   [ F.constant 100 ["a"]

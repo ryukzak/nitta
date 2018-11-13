@@ -367,6 +367,7 @@ instance
 |                        )
 |                       ( input                     clk
 |                       , input                     rst
+|                       , output                    cycle
 |                   { S.join "\\n" $ map (\\(InputPort p) -> ("    , input " ++ p)) bnInputPorts }
 |                   { S.join "\\n" $ map (\\(OutputPort p) -> ("    , output " ++ p)) bnOutputPorts }
 |                       , output              [7:0] debug_status
@@ -381,7 +382,7 @@ instance
 |                   wire [MICROCODE_WIDTH-1:0] control_bus;
 |                   wire [DATA_WIDTH-1:0] data_bus;
 |                   wire [ATTR_WIDTH-1:0] attr_bus;
-|                   wire cycle, start, stop;
+|                   wire   start, stop;
 |
 |                   wire [7:0] debug_pc;
 |                   assign debug_status = \{ cycle, debug_pc[6:0] };
@@ -408,7 +409,7 @@ instance
 |
 |                   endmodule
 |                   |]
-        in Aggregate (Just mn) $ 
+        in Aggregate (Just mn) $
             [ Immidiate (mn ++ ".v") iml
             , FromLibrary "pu_simple_control.v"
             ] ++ map (uncurry hardware) (M.assocs bnPus)
@@ -475,6 +476,7 @@ instance ( Title title, Var v, Time t
 |               { if null ports then "" else "wire " ++ S.join ", " ports ++ ";" }
 |
 |               wire [32-1:0] data_bus_hack = 0;
+|               wire cycle;
 |
 |               { moduleName projectName n }
 |                   #( .DATA_WIDTH( 32 )
@@ -482,6 +484,7 @@ instance ( Title title, Var v, Time t
 |                    ) net
 |                   ( .clk( clk )
 |                   , .rst( rst )
+|                   , .cycle( cycle )
 |                   { externalIO }
 |                   // if 1 - The process cycle are indipendent from a SPI.
 |                   // else - The process cycle are wait for the SPI.
@@ -514,9 +517,16 @@ instance ( Title title, Var v, Time t
             cntxs = take 3 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n
             cycleTicks = tail $ programTicks n  -- because program[0] is skiped
             simulationInfo = -- (trace ("cntxs: \n" ++ concatMap ((++ "\n") . show) cntxs) 0, head cntxs) :
-                concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
-            assertion (t, cntx) =
-                [qc|        @(posedge clk); $write("tick: { t }; net.data_bus == %h ", net.data_bus);|]
+                concatMap (\cntx -> Nothing {- compute loop end -} :  map (Just . (, cntx)) cycleTicks) cntxs
+            assertion Nothing = fixIndent [qc|
+|
+|                       //-----------------------------------------------------------------
+|                       @(posedge cycle);
+|               |]
+            assertion (Just (t, cntx))
+                = fixIndentNoLn [qc|
+|                       @(posedge clk); $write("tick: { t }; net.data_bus == %h ", net.data_bus);
+|               |]
                 ++ case extractInstructionAt n t of
                     Transport v _ _ : _ -> fixIndent [qc|
 |                                   $write("=== %h (var: %s)", { get' cntx v }, { v } );
