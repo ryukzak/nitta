@@ -54,7 +54,7 @@ main = do
                         f(a)
                     end
                     f(1024)|]
-            , luaTestCase "divider_test_2" 
+            , luaTestCase "divider_test_2"
                 [qq|function f(a, b)
                         a, _ = a / 2
                         b, _ = b / 3
