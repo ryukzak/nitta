@@ -135,7 +135,76 @@ import           NITTA.Utils.Process
 import           Numeric.Interval              (inf, sup, (...))
 import           Text.InterpolatedString.Perl6 (qq)
 
+{-
+= Computing unit
+
+Computing unit can realize:
+
+- data storage and processing;
+- interaction with the periphery;
+- management and control of the computer.
+
+Wherein, they are characterized by complicated behavior, that is expressed in:
+
+- multifunctionality
+- internal parallelism
+- superscalar
+- pipelining
+- availability of internal resources
+
+Considered computation unit is one of the easiest from this point of view because it realize only 
+data processing by one function.
+
+Computation unit behavior determined by applied algorhytm that is compose of function with data dependencies. 
+process evolution.
+
+Any computation unit means three components:
+
+- computation unit hardware - set of prepared in advance or generated automatically hardware description files 
+on Hardware Description Language (@/hdl/multiplier@); 
+- computation unit software - set of binary files, that determines:
+	- computation unit's initial state and setting
+	- control programm;
+- computation unit model in CAD - CAD component, that realize computation unit support 
+(hardware and software generation, computation unit union to processors, computation process planning
+and etc).
+
+Wherein all of three components are hardly related to each other and needed to strictly comply to 
+each other. For deeper understanding if computation unit functioning needed to have an idea about all 
+of all of its components. Model of multiplier computation unit and how it is realized will be considered above.
+
+-}
+
+{-
+*Computation unit model
+
+Computation unit model objective is "teaching" CAD to work with computation unit:
+
+- which functions could be computated with its help (see 'NITTA.Type.ProcessUnit');
+- assign computation unit instance to execution of function (see 'NITTA.Type.Controllable');
+- transform instructions to microcode (see 'NITTA.Type.UnambiguouslyDecode')
+- which options (@options@)  of computation process development is (upload or download 
+one or second variable of variables group);
+- computation process planning, which is deescribed by upload or download to pr from computation unit. 
+(see @decision@)
+-}
+
+{-|
+The basis of computation units model is data structure, that fixes:
+
+- conputation unit state while computation process planning;
+- computation unit desciption (fully or fragmentary), which can be translated to software.
+
+Exactly around this data structure all algorhitmic part of computation unit is developed. 
+Data structure is parametrizes by following variables types:
+- v - variable id;
+- x - type of value, with that multiplier works;
+- t - time moment id.
 
 
+
+
+
+|-}
 
 
