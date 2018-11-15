@@ -43,6 +43,10 @@ import           System.Console.CmdArgs
 import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
 
+-- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
+
+-- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
+-- с задачей о целевой платформе.
 microarch = busNetwork 31 (Just True)
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
     [ OutputPort "miso" ]

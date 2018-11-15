@@ -96,6 +96,26 @@ executable nitta
                      , text
   default-language:    Haskell2010
 
+executable nitta-teacup-demo
+  hs-source-dirs:      app
+  main-is:             TeacupDemo.hs
+  build-depends:       base
+                     , file-embed
+                     , data-default
+                     , interpolatedstring-perl6
+                     , nitta
+  default-language:    Haskell2010
+
+executable nitta-fibonacci-demo
+  hs-source-dirs:      app
+  main-is:             FibonacciDemo.hs
+  build-depends:       base
+                     , file-embed
+                     , data-default
+                     , interpolatedstring-perl6
+                     , nitta
+  default-language:    Haskell2010
+
 test-suite nitta-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
