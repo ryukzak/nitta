@@ -60,7 +60,7 @@ A user and the test bench communicate throughout electricimp cloud-based IDE
 +--------------------------------+
 ```
 
-= Схема подключение интерфейса SPI к imp001
+# Схема подключение интерфейса SPI к imp001
 
 ```
                     +--------------------------------+

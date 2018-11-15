@@ -1,5 +1,6 @@
-# Executables
+# Here you can find:
 
-- Main - NITTA compiler
-- Teacup Demo
-- Fibonacci Demo
+- `Main.hs` - NITTA compiler
+- `TeacupDemo.hs` - Teacup Demo
+- `FibonacciDemo.hs` - Fibonacci Demo
+- and test bench instructions.
