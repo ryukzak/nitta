@@ -22,7 +22,6 @@ import           Data.Default                  as D
 import qualified Data.Map                      as M
 import           Data.Maybe
 import qualified Data.Text.IO                  as T
-import           Demo
 import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
@@ -109,15 +108,15 @@ main = do
             --         end
             --         fib(1)|]
             -- putStrLn "--------------------------------"
-
-            -- print =<< testWithInput "lua_test" [("b_0", [1..5])] microarch fibonacciAlg
-            -- $ lua2functions
-                -- [qc|function fib(a)
-                --         local b = receive()
-                --         local c = a + b
-                --         fib(c)
-                --     end
-                --     fib(1)|]
+            -- print =<< testWithInput "lua_test" [("a_0", [1..5])] microarch
+            --     ( lua2functions
+            --         [qc|function fib()
+            --                 local a = receive()
+            --                 local b = a + 1
+            --                 send(b)
+            --                 fib()
+            --             end
+            --             fib()|] )
             putStrLn "-- hardcoded end --"
     putStrLn "-- the end --"
 

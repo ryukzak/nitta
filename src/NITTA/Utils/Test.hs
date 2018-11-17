@@ -18,6 +18,7 @@ module NITTA.Utils.Test
     ( test
     , testLua
     , demo
+    , testWithInput
     ) where
 
 import           Control.Monad                 (unless)
