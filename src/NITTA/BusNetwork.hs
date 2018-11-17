@@ -70,6 +70,7 @@ data GBusNetwork title spu v x t = BusNetwork
     , bnSignalBusWidth :: Int
     , bnInputPorts     :: [InputPort]
     , bnOutputPorts    :: [OutputPort]
+    -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
     , bnAllowDrop      :: Maybe Bool
     }
 type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
@@ -78,7 +79,16 @@ type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 -- TODO: Проверка подключения сигнальных линий.
 
 -- TODO: Вариант функции, где провода будут подключаться автоматически.
-busNetwork w allowDrop ips ops pus = BusNetwork [] (M.fromList []) def (M.fromList pus') w ips ops allowDrop
+busNetwork w allowDrop ips ops pus = BusNetwork
+        { bnRemains=[]
+        , bnBinded=M.fromList []
+        , bnProcess=def
+        , bnPus=M.fromList pus'
+        , bnSignalBusWidth=w
+        , bnInputPorts=ips
+        , bnOutputPorts=ops
+        , bnAllowDrop=allowDrop
+        }
     where
         pus' = map (\(title, f) ->
             ( title
@@ -357,6 +367,7 @@ instance
 |                        )
 |                       ( input                     clk
 |                       , input                     rst
+|                       , output                    cycle
 |                   { S.join "\\n" $ map (\\(InputPort p) -> ("    , input " ++ p)) bnInputPorts }
 |                   { S.join "\\n" $ map (\\(OutputPort p) -> ("    , output " ++ p)) bnOutputPorts }
 |                       , output              [7:0] debug_status
@@ -365,19 +376,19 @@ instance
 |                       , input                     is_drop_allow
 |                       , input    [DATA_WIDTH-1:0] data_bus_hack
 |                       );
-|                   
+|
 |                   parameter MICROCODE_WIDTH = { bnSignalBusWidth };
 |                   // Sub module_ instances
 |                   wire [MICROCODE_WIDTH-1:0] control_bus;
 |                   wire [DATA_WIDTH-1:0] data_bus;
 |                   wire [ATTR_WIDTH-1:0] attr_bus;
-|                   wire cycle, start, stop;
-|                   
+|                   wire   start, stop;
+|
 |                   wire [7:0] debug_pc;
 |                   assign debug_status = \{ cycle, debug_pc[6:0] };
 |                   assign debug_bus1 = data_bus[7:0];
 |                   assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
-|                   
+|
 |                   pu_simple_control
 |                       #( .MICROCODE_WIDTH( MICROCODE_WIDTH )
 |                        , .PROGRAM_DUMP( "$path${ mn }.dump" )
@@ -390,15 +401,15 @@ instance
 |                       , .signals_out( control_bus )
 |                       , .trace_pc( debug_pc )
 |                       );
-|                   
+|
 |                   { S.join "\\n\\n" instances }
-|                   
+|
 |                   assign data_bus = { S.join " | " $ "data_bus_hack" : map snd valuesRegs };
 |                   assign attr_bus = { S.join " | " $ map fst valuesRegs };
-|                   
+|
 |                   endmodule
 |                   |]
-        in Aggregate (Just mn) $ 
+        in Aggregate (Just mn) $
             [ Immidiate (mn ++ ".v") iml
             , FromLibrary "pu_simple_control.v"
             ] ++ map (uncurry hardware) (M.assocs bnPus)
@@ -465,6 +476,7 @@ instance ( Title title, Var v, Time t
 |               { if null ports then "" else "wire " ++ S.join ", " ports ++ ";" }
 |
 |               wire [32-1:0] data_bus_hack = 0;
+|               wire cycle;
 |
 |               { moduleName projectName n }
 |                   #( .DATA_WIDTH( 32 )
@@ -472,6 +484,7 @@ instance ( Title title, Var v, Time t
 |                    ) net
 |                   ( .clk( clk )
 |                   , .rst( rst )
+|                   , .cycle( cycle )
 |                   { externalIO }
 |                   // if 1 - The process cycle are indipendent from a SPI.
 |                   // else - The process cycle are wait for the SPI.
@@ -504,16 +517,21 @@ instance ( Title title, Var v, Time t
             cntxs = take 3 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n
             cycleTicks = tail $ programTicks n  -- because program[0] is skiped
             simulationInfo = -- (trace ("cntxs: \n" ++ concatMap ((++ "\n") . show) cntxs) 0, head cntxs) :
-                concatMap (\cntx -> map (, cntx) cycleTicks) cntxs
-            assertion (t, cntx) =
-                [qc|        @(posedge clk); $write("tick: { t }; net.data_bus == %h ", net.data_bus);|]
+                concatMap (\cntx -> Nothing {- compute loop end -} :  map (Just . (, cntx)) cycleTicks) cntxs
+            assertion Nothing = fixIndent [qc|
+|
+|                       //-----------------------------------------------------------------
+|                       @(posedge cycle);
+|               |]
+            assertion (Just (t, cntx))
+                = fixIndentNoLn [qc|
+|                       @(posedge clk); $write("tick: { t }; net.data_bus == %h ", net.data_bus);
+|               |]
                 ++ case extractInstructionAt n t of
                     Transport v _ _ : _ -> fixIndent [qc|
 |                                   $write("=== %h (var: %s)", { get' cntx v }, { v } );
-|                                   if ( !( net.data_bus === { get' cntx v } ) )
-|                                       $display( " FAIL");
-|                                   else
-|                                       $display();
+|                                   if ( !( net.data_bus === { get' cntx v } ) ) $display( " FAIL");
+|                                   else $display();
 |                       |]
                     [] -> fixIndent [qc|
 |                                   $display();

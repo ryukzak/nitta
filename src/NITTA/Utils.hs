@@ -17,6 +17,7 @@ module NITTA.Utils
     , maximumOn
     , shift
     , fixIndent
+    , fixIndentNoLn
     , space2tab
     -- *HDL generation
     , bool2verilog
@@ -134,6 +135,11 @@ fixIndent s = unlines $ map f ls
             = []
             | otherwise = error $ "fixIndent error " ++ show tabSize ++ " \"" ++ l ++ "\""
         f l = l
+
+fixIndentNoLn s 
+    = let 
+        s' = fixIndent s
+    in take (length s' - 1) s'
 
 
 space2tab = S.replace "    " "\t"

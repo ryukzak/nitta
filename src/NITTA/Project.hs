@@ -17,7 +17,6 @@ module NITTA.Project
 
 
 import           Control.Monad                   (mapM_, unless)
-import           Data.List                       (isSubsequenceOf)
 import qualified Data.List                       as L
 import qualified Data.String.Utils               as S
 import           NITTA.Functions                 as F
@@ -68,7 +67,7 @@ runTestBench prj@Project{ projectPath, processorModel } = do
 
     (simExitCode, simOut, simErr)
         <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just projectPath } []
-    let isSimOk = simExitCode == ExitSuccess && not ("FAIL" `isSubsequenceOf` simOut)
+    let isSimOk = simExitCode == ExitSuccess && not ("FAIL" `L.isSubsequenceOf` simOut)
 
     return TestBenchReport
         { tbStatus=isCompileOk && isSimOk

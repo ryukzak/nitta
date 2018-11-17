@@ -17,6 +17,7 @@ Stability   : experimental
 module NITTA.Utils.Test
     ( test
     , testLua
+    , demo
     ) where
 
 import           Control.Monad                 (unless)
@@ -55,3 +56,8 @@ testWithInput name cntx ma alg = runExceptT $ do
     unless tbStatus $ throwE [qc|> test { name } - Fail|]
 
     return [qc|> test { name } - Success|]
+
+demo prj@Project{ projectPath, processorModel } = do
+    let prj' = prj{ processorModel=processor $ simpleSynthesis processorModel }
+    writeProject prj'
+    putStrLn $ "Demo project in " ++ projectPath
