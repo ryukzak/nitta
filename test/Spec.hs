@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 module Main where
@@ -10,7 +11,7 @@ module Main where
 import           Control.Applicative           ((<$>))
 import           Data.Atomics.Counter          (newCounter)
 import           Data.Default                  (def)
-import           Demo
+import           Data.FileEmbed                (embedStringFile)
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Divider
 import           NITTA.ProcessUnits.Fram
@@ -112,7 +113,6 @@ main = do
                     end
                     counter(0)
                 |]
-            , luaTestCase "fibonacci_a_b" fibonacciLua
             , luaTestCase "fibonacci_b_a"
                 [qq|function fib(a, b)
                         b, a = a + b, b
@@ -131,7 +131,7 @@ main = do
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , luaTestCase "teacup" teacupLua
+            , luaTestCase "teacup" $(embedStringFile "examples/teacup.lua")
             ]
       ]
 
