@@ -1,3 +1,16 @@
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE FunctionalDependencies  #-}
+{-# LANGUAGE FlexibleContexts  #-} 
+
+{-|
+Module      : NITTA.API.Marshalling
+Description : Marshalling data for REST API
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
+
 module NITTA.API.GraphConverter 
     ( GraphStructure(..)
     , NodeElement(..)
@@ -16,10 +29,20 @@ import qualified NITTA.Functions       as F
 
 
 
-data GraphStructure = GraphStructure {
+data GraphStructure v = GraphStructure {
     nodes :: [NodeElement],
-    edges :: [GraphEdge]
+    edges :: [v]
 }
+
+configureNode nodeParam xs ys = GraphStructure [NodeElement 1 nodeParam] $
+                                               map (\c -> GraphVertex InVertex  (show c) 1) xs ++ 
+                                                map (\c -> GraphVertex OutVertex (show c) 1) ys
+
+configureLoopNodes nodeParamS nodeParamE x ys = 
+    GraphStructure [NodeElement 1 nodeParamS, 
+                    NodeElement 2 nodeParamE] $
+                   GraphVertex InVertex (show x) 2 : 
+                    map (\c -> GraphVertex OutVertex (show c) 1) ys
 
 data NodeElement = NodeElement {
     nodeId    :: Int,
@@ -58,47 +81,42 @@ data GraphVertex = GraphVertex {
     vertexNodeId :: Int
 }
 
-transformElement fb n constNodes
-        | Just (F.Add          (I a) (I b) (O cs))        <- F.castF fb = configure box n "#e04141" (show fb) [a, b] $ toList cs
-        | Just (F.Sub          (I a) (I b) (O cs))        <- F.castF fb = configure box n "#7fffd4" (show fb) [a, b] $ toList cs
-        | Just (F.Multiply     (I a) (I b) (O cs))        <- F.castF fb = configure box n "#0099bf" (show fb) [a, b] $ toList cs
-        | Just (F.Division     (I a) (I b) (O cs) (O ds)) <- F.castF fb = configure box n "#fa8072" (show fb) [a, b] $ on (++) toList cs ds
-        | Just (F.ShiftL       (I a) (O cs))              <- F.castF fb = configure box n "#fff68f" (show fb) [a]    $ toList cs
-        | Just (F.ShiftR       (I a) (O cs))              <- F.castF fb = configure box n "#fff68f" (show fb) [a]    $ toList cs
-        | Just (F.Send         (I a))                     <- F.castF fb = configure box n "#088da5" (show fb) [a]    []
-        | Just (F.Receive      (O cs))                    <- F.castF fb = configure box n "#6897bb" (show fb) []     $ toList cs
-        | Just (F.FramOutput _ (I a))                     <- F.castF fb = configure box n "#daa520" (show fb) [a]    []
-        | Just (F.FramInput  _ (O cs))                    <- F.castF fb = configure box n "#ffa500" (show fb) []     $ toList cs
-        | Just (F.Reg          (I a) (O cs))              <- F.castF fb = configure box n "#c0c0c0" (show fb) [a]    $ toList cs
-        | Just (F.Loop         (X _) (O cs) (I a))        <- F.castF fb = configureLoopNodes n "#cbbeb5" "#808080" (show fb) ("next -> " ++ a) a $ toList cs
-        | Just (F.Constant     (X _) (O cs))              <- F.castF fb = configureConstantNodes n "#6dc066" (show fb) $ toList cs
-        | otherwise                                                     = error $ "The functional block is unsupported: " ++ show fb
-    where
-        configure shape m color name xs ys = ([NodeElement m $ shape name color], 
-                                              map (\c -> GraphVertex InVertex  c m) xs ++ 
-                                              map (\c -> GraphVertex OutVertex c m) ys)
 
-        configureLoopNodes m colorS colorE nameS nameE x ys = ([NodeElement m     $ box     nameS colorS, 
-                                                                NodeElement (m+1) $ ellipse nameE colorE],
-                                                               GraphVertex InVertex  x (m+1) : 
-                                                               map (\c -> GraphVertex OutVertex c m) ys)
+class ToGraphStructure f e | f -> e where
+    toGraphStructure :: f -> GraphStructure e
 
-        configureConstantNodes m color name ys = if constNodes
-                                                 then let additional = map (\(y, i) -> configure ellipse i color y [' ' : y] [y]) $ zip ys [m+1 ..]
-                                                          root = configure box m color name [] $ map (' ' :) ys
-                                                      in foldl (\(b1, b2) (a1, a2) -> (b1 ++ a1, b2 ++ a2)) root additional
-                                                 else configure box m color name [] ys
+instance (Var v, Typeable x) => ToGraphStructure (F v x) GraphVertex where
+    toGraphStructure fb | insideOut fb = configureLoopNodes (box "#6dc066" $ show fb) 
+                                                            (ellipse  "#fa8072" $ "next -> " ++ show inVar)
+                                                            inVar outVars
+                        | otherwise    = configureNode (box "#cbbeb5" $ show fb) inVars outVars
+        where 
+            inVars  = toList $ inputs fb
+            outVars = toList $ outputs fb
+            inVar   = (\(x:xs) -> if null xs
+                                  then x
+                                  else error "Input vars of loop node greater than one") inVars
 
-transformElements fbs constNodes = foldl (\(b1, b2) (a1, a2) -> (b1 ++ a1, b2 ++ a2)) ([], []) $ transformElements' fbs 1
-    where transformElements' (f:fs) n = (\nodes -> nodes : transformElements' fs ((n +) $ length $ fst nodes)) $! transformElement f n constNodes 
-          transformElements' []     _ = []
+instance ToGraphStructure t GraphVertex => ToGraphStructure [t] GraphEdge where
+    toGraphStructure fbs = let graphs                        = map toGraphStructure fbs
+                               GraphStructure nodes vertexes = connectGraph $ calculateIndexes graphs 0
+                               eges                          = bindVertexes vertexes
+                           in GraphStructure nodes eges
+        where
+            calculateIndexes []                           _ = []
+            calculateIndexes (GraphStructure ns vs : gss) t = 
+                GraphStructure (map (\ n -> n{nodeId = t + nodeId n}) ns)
+                                 (map (\ v -> v{vertexNodeId = t + vertexNodeId v}) vs)
+                : calculateIndexes gss (t + length ns)
 
-bindVertexes vs = let !inVertexes  = filter ((InVertex  ==) . vertexType) vs
-                      !outVertexes = filter ((OutVertex ==) . vertexType) vs
-                  in concatMap (\(GraphVertex _ name inId) -> 
-                                   map (\(GraphVertex _ _ outId) -> 
-                                       GraphEdge (arrow name) inId outId) $ filter ((name ==) . vertexName) outVertexes) inVertexes
+            connectGraph = foldl (\ (GraphStructure n1 v1) (GraphStructure n2 v2) 
+                                      -> GraphStructure (n1 ++ n2) (v1 ++ v2)) 
+                                 (GraphStructure [] [])
 
-toGraphStructure fbs constNodes = let (nodes, vertexes) = transformElements fbs constNodes
-                                      eges              = bindVertexes vertexes
-                                  in GraphStructure nodes eges
+            bindVertexes vs = let !inVertexes  = filter ((InVertex  ==) . vertexType) vs
+                                  !outVertexes = filter ((OutVertex ==) . vertexType) vs
+                              in concatMap (\(GraphVertex _ name inId) -> 
+                                               map (\(GraphVertex _ _ outId) -> 
+                                                       GraphEdge (arrow name) inId outId)
+                                                   $ filter ((name ==) . vertexName)
+                                                            outVertexes) inVertexes
