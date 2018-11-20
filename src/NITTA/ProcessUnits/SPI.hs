@@ -197,6 +197,8 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
 |               );
 |           |]
 
+
+instance ( Var v, Show t ) => IOTest (SPI v x t) v x where
     -- TODO: Превратить в настоящий тест, а не заглушку. Скорей всего затронет не только эту функцию, а всю инфраструктуру
     -- тестирования.
     componentTestEnviroment title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..}

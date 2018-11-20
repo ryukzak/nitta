@@ -359,6 +359,8 @@ instance ( Time t, Var v
     , .data_out( { dataOut } )
     , .attr_out( { attrOut } )
     );|]
+    
+instance IOTest (Divider v x t) v x 
 
 
 instance ( Var v, Time t
