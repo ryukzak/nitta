@@ -211,8 +211,9 @@ instance ( Var v, Show t, Show x ) => IOTest (SPI v x t) v x where
             PUPorts{..}
             cntxs
         | let
+            wordWidth = 32 :: Int -- FIXME: hardcode
             frameWordCount = max (length $ receiveSequenece pu) (length $ sendSequenece pu)
-            frameWidth = frameWordCount * 32 :: Int -- FIXME: 32
+            frameWidth = frameWordCount * wordWidth
             ioCycle cntx = fixIndent [qc|
 |
 |                   { title }_master_in = \{ { dt' } }; // { dt }
@@ -222,7 +223,7 @@ instance ( Var v, Show t, Show x ) => IOTest (SPI v x t) v x where
 |               |]
                 where 
                     dt = receiveData pu cntx
-                    dt' = S.join ", " $ map (\d -> [qc|32'sd{ d }|]) dt ++ replicate (frameWordCount - length dt) "32'd00"
+                    dt' = S.join ", " $ map (\d -> [qc|{ wordWidth }'sd{ d }|]) dt ++ replicate (frameWordCount - length dt) [qc|{ wordWidth }'d00|]
         , frameWordCount > 0
         = fixIndent [qc|
 |           // { show pu }
