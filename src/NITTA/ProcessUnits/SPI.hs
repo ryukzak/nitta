@@ -19,6 +19,7 @@ import           Data.Default
 import           Data.Maybe                          (catMaybes)
 import           Data.Set                            (elems, fromList,
                                                       singleton)
+import qualified Data.String.Utils                   as S
 import           Data.Typeable
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
@@ -198,86 +199,56 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
 |           |]
 
 
-instance ( Var v, Show t ) => IOTest (SPI v x t) v x where
-    -- TODO: Превратить в настоящий тест, а не заглушку. Скорей всего затронет не только эту функцию, а всю инфраструктуру
-    -- тестирования.
-    componentTestEnviroment title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..}
-        = fixIndent [qc|
-|           reg { name }_start_transaction;
-|           reg  [64-1:0] { name }_master_in;
-|           wire [64-1:0] { name }_master_out;
-|           wire { name }_ready;
+receiveSequenece SerialPU{ spuState=State{ spiReceive } } = reverse $ fst spiReceive
+receiveData pu cntx = map (get' cntx . head) $ receiveSequenece pu
+
+instance ( Var v, Show t, Show x ) => IOTest (SPI v x t) v x where
+    componentTestEnviroment
+            title
+            pu
+            Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort }
+            PUPorts{..}
+            cntxs
+        = let
+            frameWidth = length (receiveSequenece pu) * 32 :: Int
+            ioCycle cntx = fixIndent [qc|
+|
+|                   { title }_master_in = \{ { dt' } }; // { dt }
+|                   { title }_start_transaction = 1;                           @(posedge { signalClk });
+|                   { title }_start_transaction = 0;                           @(posedge { signalClk });
+|                   repeat(200) @(posedge { signalClk });
+|               |]
+                where 
+                    dt = receiveData pu cntx
+                    dt' = S.join ", " $ map (\d -> [qc|32'sd{ d }|]) dt
+        in fixIndent [qc|
+|           // { show pu }
+|           reg { title }_start_transaction;
+|           reg  [{ frameWidth }-1:0] { title }_master_in;
+|           wire { title }_ready;
+|           wire [{ frameWidth }-1:0] { title }_master_out;
 |           spi_master_driver
-|               #( .DATA_WIDTH( 64 )
-|               , .SCLK_HALFPERIOD( 1 )
-|               ) { name }_master
-|               ( .clk( { clk } )
-|               , .rst( { rst } )
-|               , .start_transaction( { name }_start_transaction )
-|               , .data_in( { name }_master_in )
-|               , .data_out( { name }_master_out )
-|               , .ready( { name }_ready )
+|               #( .DATA_WIDTH( { frameWidth } )
+|                , .SCLK_HALFPERIOD( 1 )
+|                ) { title }_master
+|               ( .clk( { signalClk } )
+|               , .rst( { signalRst } )
+|               , .start_transaction( { title }_start_transaction )
+|               , .data_in( { title }_master_in )
+|               , .data_out( { title }_master_out )
+|               , .ready( { title }_ready )
 |               , .mosi( { inputPort mosi } )
 |               , .miso( { outputPort miso } )
 |               , .sclk( { inputPort sclk } )
 |               , .cs( { inputPort cs } )
 |               );
-|           initial { name }_master.inner.shiftreg <= 0;
+|           initial { title }_master.inner.shiftreg <= 0;
 |
 |           initial begin
-|               { name }_start_transaction <= 0; { name }_master_in <= 0;
-|               @(negedge { rst });
-|               repeat(8) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               repeat(70) @(posedge { clk });
+|               { title }_start_transaction <= 0; { title }_master_in <= 0;
+|               @(negedge { signalRst });
+|               repeat(8) @(posedge { signalClk });
+|               { S.join "" $ map ioCycle cntxs }
+|               repeat(70) @(posedge { signalClk });
 |           end
 |           |]
-        where
-            name = title
-            clk = signalClk
-            rst = signalRst

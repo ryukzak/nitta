@@ -73,8 +73,8 @@ instance TargetSystemComponent (PU v x t) where
     hardwareInstance name pu = hardwareInstance name pu
 
 instance IOTest (PU v x t) v x where
-    componentTestEnviroment name PU{ unit, systemEnv, links } _systemEnv _links
-        = componentTestEnviroment name unit systemEnv links
+    componentTestEnviroment name PU{ unit, systemEnv, links } _systemEnv _links cntxs
+        = componentTestEnviroment name unit systemEnv links cntxs
 
 
 castPU :: 
@@ -174,8 +174,8 @@ class TargetSystemComponent pu where
 class IOTest pu v x | pu -> v x where
     -- |Для автоматизированного тестирования компонент со внешними портами ввода/вывода необходимо
     -- специализированное тестовое окружение, имитирующее ввод/вывод.
-    componentTestEnviroment :: String -> pu -> Enviroment -> PUPorts pu -> String
-    componentTestEnviroment _title _pu _env _ports = ""
+    componentTestEnviroment :: String -> pu -> Enviroment -> PUPorts pu -> [Cntx v x] -> String
+    componentTestEnviroment _title _pu _env _ports _cntxs = ""
 
 
 -- |Описание подключения сигнальных шин управления.
