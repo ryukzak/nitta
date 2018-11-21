@@ -82,7 +82,7 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
 
 
 -- *Model
-instance ( ToJSON v, Var v ) => ToJSON (DataFlowGraph v)
+instance ( ToJSON v, Var v, ToJSON x ) => ToJSON (DataFlowGraph v x)
 
 instance ToJSON Relation where
     toJSON (Vertical a b) = toJSON [ a, b ]

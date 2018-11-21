@@ -42,11 +42,11 @@ import           NITTA.Utils
 -- подграфом можно заменить графом с выборкой результата через мультиплексор.
 
 -- FIXME: Сделать визуализацию DataFlowGraph через graphviz. В первую очередь DFG.
-data DataFlowGraph v
+data DataFlowGraph v x
     -- |Вершина графа, соответствует фунциональному блоку.
-    = DFGNode (F v Int)
+    = DFGNode (F v x)
     -- |Граф, где информация о вершинах хранится внутри функциональных блоков.
-    | DFG [DataFlowGraph v]
+    | DFG [DataFlowGraph v x]
     --  |Множество взаимозаменяемых подграфов.
     --  | DFGSwitch
     --     { dfgKey   :: v -- ^ключ, по которому осуществляется выбор подграфа.
@@ -54,18 +54,17 @@ data DataFlowGraph v
     --     }
     deriving ( Show, Generic )
 
-instance ( Var v ) => Variables (DataFlowGraph v) v where
+instance ( Var v ) => Variables (DataFlowGraph v x) v where
     variables (DFGNode fb) = variables fb
     variables (DFG g)      = unionsMap variables g
     -- variables DFGSwitch{ dfgKey, dfgCases } = singleton dfgKey `union` unionsMap (variables . snd) dfgCases
 
-instance WithFunctions (DataFlowGraph v) (F v Int) where
+instance WithFunctions (DataFlowGraph v x) (F v x) where
     functions (DFGNode f) = [ f ]
     functions (DFG g)     = concatMap functions g
     -- functions DFGSwitch{ dfgCases } = concatMap (functions . snd) dfgCases
 
--- dfgInputs g = algInputs $ functions g
-node (f :: F v Int) = DFGNode f
+node = DFGNode
 
 -- |Для описания текущего состояния вычислительной системы (с учётом алгоритма, потока управления,
 -- "текущего места" исполнения алгоритма, микроархитектуры и расписния) необходима работа со стеком.
@@ -83,7 +82,7 @@ node (f :: F v Int) = DFGNode f
 data ModelState title tag v x t
     = Frame
         { processor :: BusNetwork title v x t
-        , dfg       :: DataFlowGraph v
+        , dfg       :: DataFlowGraph v x
         , timeTag   :: Maybe tag
         }
     --  | Level
