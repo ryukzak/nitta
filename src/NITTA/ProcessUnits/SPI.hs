@@ -199,8 +199,9 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
 |           |]
 
 
-receiveSequenece SerialPU{ spuState=State{ spiReceive } } = reverse $ fst spiReceive
-receiveData pu cntx = map (get' cntx . head) $ receiveSequenece pu
+receiveSequenece SerialPU{ spuState=State{ spiReceive } } = reverse $ map head $ fst spiReceive
+sendSequenece SerialPU{ spuState=State{ spiSend } } = reverse $ fst spiSend
+receiveData pu cntx = map (get' cntx) $ receiveSequenece pu
 
 instance ( Var v, Show t, Show x ) => IOTest (SPI v x t) v x where
     componentTestEnviroment
@@ -209,19 +210,21 @@ instance ( Var v, Show t, Show x ) => IOTest (SPI v x t) v x where
             Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort }
             PUPorts{..}
             cntxs
-        = let
-            frameWidth = length (receiveSequenece pu) * 32 :: Int
+        | let
+            frameWordCount = max (length $ receiveSequenece pu) (length $ sendSequenece pu)
+            frameWidth = frameWordCount * 32 :: Int -- FIXME: 32
             ioCycle cntx = fixIndent [qc|
 |
 |                   { title }_master_in = \{ { dt' } }; // { dt }
 |                   { title }_start_transaction = 1;                           @(posedge { signalClk });
 |                   { title }_start_transaction = 0;                           @(posedge { signalClk });
-|                   repeat(200) @(posedge { signalClk });
+|                   repeat(200) @(posedge { signalClk }); // FIXME: 200
 |               |]
                 where 
                     dt = receiveData pu cntx
-                    dt' = S.join ", " $ map (\d -> [qc|32'sd{ d }|]) dt
-        in fixIndent [qc|
+                    dt' = S.join ", " $ map (\d -> [qc|32'sd{ d }|]) dt ++ replicate (frameWordCount - length dt) "32'd00"
+        , frameWordCount > 0
+        = fixIndent [qc|
 |           // { show pu }
 |           reg { title }_start_transaction;
 |           reg  [{ frameWidth }-1:0] { title }_master_in;
@@ -252,3 +255,4 @@ instance ( Var v, Show t, Show x ) => IOTest (SPI v x t) v x where
 |               repeat(70) @(posedge { signalClk });
 |           end
 |           |]
+        | otherwise = ""
