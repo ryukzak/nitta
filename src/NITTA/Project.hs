@@ -24,6 +24,7 @@ import           NITTA.PlatformSpecific.DE0Nano
 import           NITTA.PlatformSpecific.Makefile
 import           NITTA.Types
 import           NITTA.Types.Project
+import           Data.Text (pack)
 import           NITTA.Utils
 import           System.Directory
 import           System.Exit
@@ -49,16 +50,20 @@ runTestBench prj@Project{ projectPath, processorModel } = do
     let dump type_ out err = fixIndent [qc|
 |           Project: { projectPath }
 |           Type: { type_ }
-|           Files: { S.join ", " files }
+|           Files: 
+|               { files' }
 |           Functional blocks:
-|               { S.join "\n    " $ map show $ functions processorModel }
+|               { functions' }
 |           -------------------------
 |           stdout:
-|           { out }
+|           { pack out }
 |           -------------------------
 |           stderr:
-|           { err }
+|           { pack err }
 |           |]
+            where 
+                files' = S.join "\n    " files
+                functions' = S.join "\n    " $ map show $ functions processorModel
 
     ( compileExitCode, compileOut, compileErr )
         <- readCreateProcessWithExitCode (createIVerilogProcess projectPath files) []
