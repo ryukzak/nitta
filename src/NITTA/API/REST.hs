@@ -95,7 +95,7 @@ withSynthesis st nid
 
 
 type SimpleCompilerAPI
-    =    "simple" :> "options" :> Get '[JSON] [ WithMetric (CompilerDT String String String (TaggedTime String Int)) ]
+    =    "simple" :> "options" :> Get '[JSON] [ WithMetric (CompilerDT String String String Int (TaggedTime String Int)) ]
     :<|> "simple" :> "obviousBind" :> Post '[JSON] Nid
     :<|> "simple" :> "allThreads" :> QueryParam' '[Required] "deep" Int :> Post '[JSON] Nid
     :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep

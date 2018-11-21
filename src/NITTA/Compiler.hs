@@ -48,6 +48,7 @@ import           Data.Proxy
 import           Data.Set              (Set, fromList, intersection, member)
 import qualified Data.Set              as S
 import           Data.Tree
+import           Data.Typeable
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.DataFlow
@@ -180,18 +181,18 @@ isSchedulingComplete Frame{ processor, dfg }
 -- * Представление решения компилятора.
 
 
-data CompilerDT title tag v t
+data CompilerDT title tag v x t
 compiler = Proxy :: Proxy CompilerDT
 
 
-instance DecisionType (CompilerDT title tag v t) where
-    data Option (CompilerDT title tag v t)
-        = BindingOption (F v Int) title
+instance DecisionType (CompilerDT title tag v x t) where
+    data Option (CompilerDT title tag v x t)
+        = BindingOption (F v x) title
         | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
         deriving ( Generic, Show )
 
-    data Decision (CompilerDT title tag v t)
-        = BindingDecision (F v Int) title
+    data Decision (CompilerDT title tag v x t)
+        = BindingDecision (F v x) title
         | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
         deriving ( Generic, Show )
 
@@ -206,16 +207,16 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
 
-instance ( Time t, Var v
-         ) => DecisionProblem (CompilerDT String String v (TaggedTime String t))
-                   CompilerDT (ModelState String String v Int (TaggedTime String t))
+instance ( Var v, Typeable x, Time t
+         ) => DecisionProblem (CompilerDT String String v x (TaggedTime String t))
+                   CompilerDT (ModelState String String v x (TaggedTime String t))
         where
     options _ f@Frame{ processor }
         =  map generalizeBindingOption (options binding f)
         ++ map generalizeDataFlowOption (options dataFlowDT processor)
 
-    decision _ f (BindingDecision fb title) = decision binding f $ BindingD fb title
-    decision _ f@Frame{ processor } (DataFlowDecision src trg) = f{ processor=decision dataFlowDT processor $ DataFlowD src trg }
+    decision _ fr (BindingDecision f title) = decision binding fr $ BindingD f title
+    decision _ fr@Frame{ processor } (DataFlowDecision src trg) = fr{ processor=decision dataFlowDT processor $ DataFlowD src trg }
 
 option2decision (BindingOption fb title) = BindingDecision fb title
 option2decision (DataFlowOption src trg)

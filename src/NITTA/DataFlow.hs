@@ -98,6 +98,7 @@ data ModelState title tag v x t
 
 instance ( Var v
          , Typeable x
+         , Time t
          ) => DecisionProblem (BindingDT String v x)
                     BindingDT (ModelState String tag v x t)
          where

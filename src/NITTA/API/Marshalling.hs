@@ -39,11 +39,11 @@ import           Servant
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t)
-         ) => ToJSON (Option (CompilerDT title tag v t))
+         ) => ToJSON (Option (CompilerDT title tag v x t))
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t), Time t
-         ) => ToJSON (Decision (CompilerDT title tag v t))
+         ) => ToJSON (Decision (CompilerDT title tag v x t))
 instance ( ToJSON title
          , ToJSONKey v
          , ToJSON (TimeConstrain t)
@@ -141,7 +141,7 @@ instance ToJSON TestBenchReport
 instance ToJSON SynthesisSetup
 instance ToJSON SpecialMetrics
 
-instance ToJSON (WithMetric (CompilerDT String String String (TaggedTime String Int))) where
+instance ToJSON (WithMetric (CompilerDT String String String Int (TaggedTime String Int))) where
     toJSON WithMetric{ mIntegral, mSpecial, mOption, mDecision }
         = toJSON ( mIntegral, mSpecial, mOption, mDecision )
 
