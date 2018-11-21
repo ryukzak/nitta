@@ -39,11 +39,11 @@ import           Servant
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t)
-         ) => ToJSON (Option (CompilerDT title tag v x t))
+         ) => ToJSON (Option (CompilerDT title v x t))
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t), Time t
-         ) => ToJSON (Decision (CompilerDT title tag v x t))
+         ) => ToJSON (Decision (CompilerDT title v x t))
 instance ( ToJSON title
          , ToJSONKey v
          , ToJSON (TimeConstrain t)
@@ -88,12 +88,11 @@ instance ToJSON Relation where
     toJSON (Vertical a b) = toJSON [ a, b ]
 
 instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
-         , ToJSON tag
          , ToJSON v, Var v
          , ToJSON t, Time t
          , ToJSONKey v
          , Show x, Ord x, Typeable x, ToJSON x, ToJSONKey x
-         ) => ToJSON (ModelState title tag x v t)
+         ) => ToJSON (ModelState title x v t)
 
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Process v x t) where
@@ -126,7 +125,7 @@ instance FromHttpApiData Nid where
     parseUrlPiece = Right . read . T.unpack
 
 
-instance ToJSON (Synthesis String String String Int (TaggedTime String Int)) where
+instance ToJSON (Synthesis String String Int (TaggedTime String Int)) where
     toJSON Synthesis{ sModel, sCntx, sStatus } = object
         [ "sModel" .= sModel
         , "sCntx" .= map show sCntx
@@ -141,7 +140,7 @@ instance ToJSON TestBenchReport
 instance ToJSON SynthesisSetup
 instance ToJSON SpecialMetrics
 
-instance ToJSON (WithMetric (CompilerDT String String String Int (TaggedTime String Int))) where
+instance ToJSON (WithMetric (CompilerDT String String Int (TaggedTime String Int))) where
     toJSON WithMetric{ mIntegral, mSpecial, mOption, mDecision }
         = toJSON ( mIntegral, mSpecial, mOption, mDecision )
 

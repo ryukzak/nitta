@@ -56,7 +56,7 @@ import           NITTA.Types     (nextTick, process)
 
 
 
-type SynthesisTree title tag v x t = Tree (Synthesis title tag v x t)
+type SynthesisTree title v x t = Tree (Synthesis title v x t)
 
 data SynthesisStatus
     = InProgress
@@ -64,9 +64,9 @@ data SynthesisStatus
     | DeadEnd
     deriving ( Show, Generic, Eq )
 
-data Synthesis title tag v x t
+data Synthesis title v x t
     = Synthesis
-        { sModel  :: ModelState title tag v x t
+        { sModel  :: ModelState title v x t
         , sCntx   :: [SynthCntx]
         , sStatus :: SynthesisStatus
         , sCache  :: M.Map SynthesisStep Int

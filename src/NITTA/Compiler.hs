@@ -149,8 +149,7 @@ bestNids root nids
 mkModelWithOneNetwork arch alg = Frame
     { processor=foldl (flip bind) arch alg
     , dfg=DFG $ map node alg
-    , timeTag=Nothing
-    } :: ModelState String String String Int (TaggedTime String Int)
+    } :: ModelState String String Int (TaggedTime String Int)
 
 
 
@@ -181,17 +180,17 @@ isSchedulingComplete Frame{ processor, dfg }
 -- * Представление решения компилятора.
 
 
-data CompilerDT title tag v x t
+data CompilerDT title v x t
 compiler = Proxy :: Proxy CompilerDT
 
 
-instance DecisionType (CompilerDT title tag v x t) where
-    data Option (CompilerDT title tag v x t)
+instance DecisionType (CompilerDT title v x t) where
+    data Option (CompilerDT title v x t)
         = BindingOption (F v x) title
         | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
         deriving ( Generic, Show )
 
-    data Decision (CompilerDT title tag v x t)
+    data Decision (CompilerDT title v x t)
         = BindingDecision (F v x) title
         | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
         deriving ( Generic, Show )
@@ -208,8 +207,8 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
 instance ( Var v, Typeable x, Time t
-         ) => DecisionProblem (CompilerDT String String v x (TaggedTime String t))
-                   CompilerDT (ModelState String String v x (TaggedTime String t))
+         ) => DecisionProblem (CompilerDT String v x (TaggedTime String t))
+                   CompilerDT (ModelState String v x (TaggedTime String t))
         where
     options _ f@Frame{ processor }
         =  map generalizeBindingOption (options binding f)

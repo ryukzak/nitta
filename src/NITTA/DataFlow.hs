@@ -79,11 +79,10 @@ node = DFGNode
 --   планирования вычислительного процесса, то необходимо пройти все варианты развития
 --   вычислительного процесса, следовательно, на каждом уровне стека может присутствовать несколько
 --   кадров.
-data ModelState title tag v x t
+data ModelState title v x t
     = Frame
         { processor :: BusNetwork title v x t
         , dfg       :: DataFlowGraph v x
-        , timeTag   :: Maybe tag
         }
     --  | Level
     --     { currentFrame    :: ModelState title tag v x t
@@ -100,7 +99,7 @@ instance ( Var v
          , Typeable x
          , Time t
          ) => DecisionProblem (BindingDT String v x)
-                    BindingDT (ModelState String tag v x t)
+                    BindingDT (ModelState String v x t)
          where
     options _ Frame{ processor }    = options binding processor
     -- options _ Level{ currentFrame } = options binding currentFrame
@@ -110,7 +109,7 @@ instance ( Var v
 instance ( Typeable title, Ord title, Show title, Var v, Time t
          , Typeable x
          ) => DecisionProblem (DataFlowDT title v t)
-                   DataFlowDT (ModelState title tag v x t)
+                   DataFlowDT (ModelState title v x t)
          where
     options _ Frame{ processor }    = options dataFlowDT processor
     -- options _ Level{ currentFrame } = options dataFlowDT currentFrame

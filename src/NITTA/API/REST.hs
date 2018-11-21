@@ -41,7 +41,7 @@ import           System.FilePath        (joinPath)
 
 
 
-type SYN = SynthesisTree String String String Int (TaggedTime String Int)
+type SYN = SynthesisTree String String Int (TaggedTime String Int)
 
 
 -- *REST API Projections.
@@ -82,7 +82,7 @@ synthesisServer st
 
 type WithSynthesis
     =    Get '[JSON] SYN
-    :<|> "model" :> Get '[JSON] (ModelState String String String Int (TaggedTime String Int))
+    :<|> "model" :> Get '[JSON] (ModelState String String Int (TaggedTime String Int))
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
     :<|> SimpleCompilerAPI
 
@@ -95,7 +95,7 @@ withSynthesis st nid
 
 
 type SimpleCompilerAPI
-    =    "simple" :> "options" :> Get '[JSON] [ WithMetric (CompilerDT String String String Int (TaggedTime String Int)) ]
+    =    "simple" :> "options" :> Get '[JSON] [ WithMetric (CompilerDT String String Int (TaggedTime String Int)) ]
     :<|> "simple" :> "obviousBind" :> Post '[JSON] Nid
     :<|> "simple" :> "allThreads" :> QueryParam' '[Required] "deep" Int :> Post '[JSON] Nid
     :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
