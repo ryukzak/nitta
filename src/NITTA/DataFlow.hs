@@ -16,8 +16,6 @@ Stability   : experimental
 -}
 
 module NITTA.DataFlow
-    -- ( controlDT
-    -- , ControlDT
     ( DataFlowGraph(..)
     , Decision(..)
     , node
