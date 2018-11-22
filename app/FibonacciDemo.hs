@@ -18,6 +18,8 @@ Stability   : experimental
 -}
 
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DataKinds      #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns   #-}
 {-# LANGUAGE TemplateHaskell  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -65,6 +67,7 @@ fibonacciLua = $(embedStringFile "examples/fibonacci.lua")
 --                , F.send "i_send"
 --                ]
 -- @
+-- fibonacciAlg :: [F String (IntX 42)]
 fibonacciAlg :: [F String Int]
 fibonacciAlg = lua2functions fibonacciLua
 
