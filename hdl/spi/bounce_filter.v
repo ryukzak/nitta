@@ -4,7 +4,10 @@
 // это 4 лаба по ИУС))) Там все написано. Необходимо протестировать в железе.
   
 module bounce_filter #
-        ( parameter DIV = 20
+        ( parameter DIV = 4
+        , parameter CNT = 5 // Учитывается два последних бита
+                            // CNT лежит в диапазоне
+                            // 2 <= CNT <= 5
         )
     ( input rst
     , input clk
@@ -12,27 +15,18 @@ module bounce_filter #
     , output out
     );
 
-localparam CNT_WIDTH = $clog2( DIV );
+reg [CNT-1:0] cnt;
 
-reg [CNT_WIDTH-1:0] cnt;
-
-generate
-    if ( DIV == 0 ) begin
-        assign out = in;
+always @(posedge clk) begin
+    if (rst) begin
+        cnt <= 0;
+    end else if (in) begin
+        if (cnt != {CNT{1'b1}}) cnt <= cnt + 1;
     end else begin
-        reg buffer;
-        assign out = buffer;
-        always @(posedge clk) begin
-            if ( rst ) begin
-                cnt <= 0;
-            end else if ( cnt == DIV ) begin
-                cnt <= 0;
-                buffer <= in;
-            end else begin
-                cnt <= cnt + 1;
-            end
-        end
+        if (cnt != {CNT{1'b0}}) cnt <= cnt - 1;
     end
-endgenerate
+end
+
+assign out = cnt[CNT-1] & cnt[CNT-2] ? 1 : 0;
 	
 endmodule
