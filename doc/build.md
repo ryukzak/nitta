@@ -1,8 +1,8 @@
 # Building and testing
 Before start, you should:
-- [clone](doc/sourcetree-install.md) or download project from repositories;
-- install [The Haskell Tool Stack](doc/stack-install.md);
-- install [Icarus Verilog](doc/hdl-install.md).
+- [clone](../doc/sourcetree-install.md) or download project from repositories;
+- install [The Haskell Tool Stack](../doc/stack-install.md);
+- install [Icarus Verilog](../doc/hdl-install.md).
 - change current directory to the project path.
 
 To build project you can run:

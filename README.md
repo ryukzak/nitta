@@ -33,7 +33,7 @@ Project status: early prototype.
 
 # Newcomers
 
-Meeting with the project should be started from [Demo](src/Demo.hs) module. The
+Meeting with the project should be started from [Demo](app/README.md) module. The
 module include several examples and demo application of NITTA platform. It
 should be enough to introduce to the project briefly.
 
@@ -50,7 +50,7 @@ Actual tasks you can find in the project [bug tracker](https://nitta.io/nitta-co
 1. [Abbreviation](doc/abbreviation.md)
 1. [Recommendations](doc/rules.md)
 1. [Process unit example (haddock)](src/NITTA/ProcessUnits/Multiplier.hs)
-1. [Demos](src/Demo.hs)
+1. [Demos](app/README.md)
 
 ## Info
 1. [Why haskell?](/doc/why-haskell.md)
