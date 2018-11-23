@@ -57,7 +57,7 @@ nittaArch = busNetwork 31 Nothing
                     })
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
     , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
-    ]
+    ] :: BusNetwork String String Int Int
 
 teacupLua = $(embedStringFile "examples/teacup.lua")
 

@@ -35,7 +35,7 @@ netWithArithmAndSPI = busNetwork 31 (Just True)
                               })
   , ("div", PU (D.divider 8 True) D.PUPorts{ D.wr=Signal 24, D.wrSel=Signal 25, D.oe=Signal 26, D.oeSel=Signal 27 } )
   , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 28, M.wrSel=Signal 29, M.oe=Signal 30 } )
-  ]
+  ] :: BusNetwork String String Int Int
 
 netWithArithmAndSPINoDropData = netWithArithmAndSPI{ bnAllowDrop=Just False }
 
@@ -46,7 +46,7 @@ netWithArithm = busNetwork 31 (Just True) [] []
   , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
   , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 22, M.wrSel=Signal 23, M.oe=Signal 24 } )
   , ("div", PU (D.divider 8 True) D.PUPorts{ D.wr=Signal 25, D.wrSel=Signal 26, D.oe=Signal 27, D.oeSel=Signal 28 } )
-  ]
+  ] :: BusNetwork String String Int Int
 
 
 testAccumAndFram = algTestCase "unittestAccumAndFram" netWithArithm

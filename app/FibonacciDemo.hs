@@ -50,7 +50,7 @@ nittaArch = busNetwork 20 Nothing
                     , SPI.stop="stop"
                     , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                     })
-    ]
+    ] :: BusNetwork String String Int Int
 
 fibonacciLua = $(embedStringFile "examples/fibonacci.lua")
 
