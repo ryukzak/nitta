@@ -22,7 +22,6 @@ module NITTA.Frontend
     ( lua2functions
     , ValueType(..)
     , NumberReprType(..)
-    , transformToFixPoint
     ) where
 
 import           Control.Monad                 (when)
@@ -39,7 +38,7 @@ import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
-import           NITTA.Types                   (F)
+import           NITTA.Types                   (F, IntX, toX)
 import           Text.InterpolatedString.Perl6 (qq)
 import           Text.Read                     (readMaybe)
 
@@ -52,18 +51,16 @@ import           Text.Read                     (readMaybe)
 -- end
 -- f(1025, 0)
 
-lua2functions src = lua2functions' def src
-
-lua2functions' valueType src
+lua2functions src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         --ast = trace ("ast = " ++ show ast') ast'
-        Right (fn, call, funAssign) = findMain ast
-        AlgBuilder{ algItems } :: AlgBuilder Int = buildAlg valueType $ do
-            addMainInputs call funAssign
-            let statements = funAssignStatments funAssign
+        Right (fn, mainCall, mainFunDef) = findMain ast
+        AlgBuilder{ algItems } :: AlgBuilder Int = buildAlg $ do
+            addMainInputs mainFunDef mainCall
+            let statements = funAssignStatments mainFunDef
             forM_ statements $ processStatement fn
-            preprocessFunctions $ reprType valueType
+            patchAlgForType
             addConstants
         -- fs = filter (\case Function{} -> True; _ -> False) $ trace (S.join "\n" $ map show algItems) algItems
         fs = filter (\case Function{} -> True; _ -> False) algItems
@@ -102,27 +99,25 @@ instance Default ValueType where
 
 data AlgBuilder x
     = AlgBuilder
-        { algItems      :: [AlgBuilderItem x]
-        , algBuffer     :: [AlgBuilderItem x]
-        , algVarGen     :: [Text]
-        , algVars       :: [Text]
-        , algArithmetic :: ValueType
+        { algItems  :: [AlgBuilderItem x]
+        , algBuffer :: [AlgBuilderItem x]
+        , algVarGen :: [Text]
+        , algVars   :: [Text]
         }
 
 instance ( Show x ) => Show (AlgBuilder x) where
-    show (AlgBuilder algItems algBuffer _algVarGen algVars algArithmetic )
+    show AlgBuilder{ algItems, algBuffer, algVars }
         = "AlgBuilder\n{ algItems=\n"
         ++ S.join "\n" (map show $ reverse algItems)
         ++ "\nalgBuffer: " ++ show algBuffer
         ++ "\nalgVars: " ++ show algVars
-        ++ "\nalgArithmetic: " ++ show algArithmetic
         ++ "\n}"
 
 data AlgBuilderItem x
     = InputVar
         { iIx  :: Int -- ^Index
-        , iX   :: x -- ^Initial value
         , iVar :: Text  -- ^Symbol
+        , iX   :: x -- ^Initial value
         }
     | Constant{ cX :: x, cVar :: Text }
     | Alias{ aFrom :: Text, aTo :: Text }
@@ -138,13 +133,12 @@ data AlgBuilderItem x
 
 
 
-buildAlg valueType proc
+buildAlg proc
     = execState proc AlgBuilder
         { algItems=[]
         , algBuffer=[]
         , algVarGen=map (\i -> [qq|#{i}|]) [(0::Int)..]
         , algVars=[]
-        , algArithmetic=valueType
         }
 
 
@@ -194,14 +188,17 @@ findMain _ = error "can't find main function in lua source code"
 
 
 addMainInputs
-        (FunCall (NormalFunCall _ (Args callArgs)))
-        (FunAssign (FunName (Name _funName) _ _) (FunBody declArgs _ _)) = do
+        (FunAssign (FunName (Name _funName) _ _) (FunBody declArgs _ _))
+        (FunCall (NormalFunCall _ (Args callArgs))) = do
     let vars = map (\case (Name v) -> v) declArgs
-    AlgBuilder{ algArithmetic } <- get
-    let values = map (\case (Number _ s) -> (either error id $ transformToFixPoint algArithmetic $ unpack s); _ -> undefined) callArgs
-    when (length vars /= length values)
+
+    let values = map (\case (Number _ s) -> unpack s; _ -> error "lua: wrong main argument") callArgs
+    let values' = map toX values
+    when (length vars /= length values')
         $ error "a different number of arguments in main a function declaration and call"
-    mapM_ (\(iIx, iX, iVar) -> addItem InputVar{ iIx, iX, iVar } [iVar]) $ zip3 [0..] values vars
+
+    forM_ (zip3 [0..] vars values')
+        $ \(iIx, iVar, iX) -> addItem InputVar{ iIx, iVar, iX } [iVar]
 
 addMainInputs _ _ = error "bad main function description"
 
@@ -215,40 +212,50 @@ addConstants = do
 
 
 
-preprocessFunctions IntRepr = return ()
-preprocessFunctions rt = do
-    alg@AlgBuilder{ algItems } <- get
-    put alg{ algItems=[] }
-    mapM_ preprocessFunctions' algItems
-    where
-        preprocessFunctions' Function{ fName="multiply", fIn=[a, b], fOut=[c], fValues=[] } = do
-            v <- genVar "tmp"
-            q <- genVar "_mod"
-            cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
-            modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
-                -- FIXME: add shift for more than 1
-                BinaryFixedPoint  1 -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
-                                       Function{ fName="shiftR", fIn=[v], fOut=[c], fValues=[] } :
-                                       algItems
-                _                   -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
-                                       Function{ fName="divide", fIn=[v, cnst], fOut=[c, q], fValues=[] } :
-                                       algItems
-            }
+class PatchAlgForType x where
+    patchAlgForType :: State (AlgBuilder x) ()
 
-        preprocessFunctions' Function{ fName="divide", fIn=[d, n], fOut=[q, r], fValues=[] } = do
-            v <- genVar "tmp"
-            cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
-            modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
-                BinaryFixedPoint  1 -> Function{ fName="shiftL", fIn=[d], fOut=[v], fValues=[] } :
-                                       Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
-                                       algItems
+instance PatchAlgForType Int where
+    patchAlgForType = return ()
 
-                _                   -> Function{ fName="multiply", fIn=[d, cnst], fOut=[v], fValues=[] } :
-                                       Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
-                                       algItems
-            }
+instance PatchAlgForType Integer where
+    patchAlgForType = return ()
 
-        preprocessFunctions' item = modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems=item : algItems }
+instance PatchAlgForType (IntX w) where
+    patchAlgForType = do
+        alg@AlgBuilder{ algItems } <- get
+        put alg{ algItems=[] }
+        mapM_ preprocessFunctions' algItems
+        where
+            rt = BinaryFixedPoint 1
+            preprocessFunctions' Function{ fName="multiply", fIn=[a, b], fOut=[c], fValues=[] } = do
+                v <- genVar "tmp"
+                q <- genVar "_mod"
+                cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
+                modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
+                    -- FIXME: add shift for more than 1
+                    BinaryFixedPoint  1 -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
+                                        Function{ fName="shiftR", fIn=[v], fOut=[c], fValues=[] } :
+                                        algItems
+                    _                   -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
+                                        Function{ fName="divide", fIn=[v, cnst], fOut=[c, q], fValues=[] } :
+                                        algItems
+                }
+
+            preprocessFunctions' Function{ fName="divide", fIn=[d, n], fOut=[q, r], fValues=[] } = do
+                v <- genVar "tmp"
+                cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
+                modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
+                    BinaryFixedPoint  1 -> Function{ fName="shiftL", fIn=[d], fOut=[v], fValues=[] } :
+                                        Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
+                                        algItems
+
+                    _                   -> Function{ fName="multiply", fIn=[d, cnst], fOut=[v], fValues=[] } :
+                                        Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
+                                        algItems
+                }
+
+            preprocessFunctions' item = modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems=item : algItems }
 
 
 
@@ -368,8 +375,8 @@ expArg _diff a = error $ "expArg: " ++ show a
 -- *Internal
 
 expConstant prefix (Number _ textX) = do
-    AlgBuilder{ algItems, algArithmetic } <- get
-    let x = either error id $ transformToFixPoint algArithmetic $ unpack textX
+    AlgBuilder{ algItems } <- get
+    let x = toX $ unpack textX
     case find (\case Constant{ cX } | cX == x -> True; _ -> False) algItems of
         Just Constant{ cVar } -> return cVar
         Nothing -> do
@@ -378,20 +385,6 @@ expConstant prefix (Number _ textX) = do
             return g
         Just _ -> error "internal error"
 expConstant _ _ = undefined
-
-
-
-transformToFixPoint algArithmetic x
-        | IntRepr               <- rt = maybe (Left "Float values is unsupported") checkInt $ readMaybe x
-        | (DecimalFixedPoint n) <- rt = maybe (readDouble 10 n x) (checkInt . (* 10^n)) $ readMaybe x
-        | (BinaryFixedPoint  n) <- rt = maybe (readDouble 2  n x) (checkInt . (* 2 ^n)) $ readMaybe x
-    where
-        rt             = reprType algArithmetic
-        maxNum         = 2 ^ valueWidth algArithmetic - 1
-        minNum         = bool 0 (-maxNum - 1) $ isValueSigned algArithmetic
-        readDouble t n = checkInt . fst . properFraction . (* t^n) . (read :: String -> Double)
-        checkInt v     | v <= maxNum && v >= minNum = Right $ fromInteger v
-                       | otherwise                  = Left  $ unpack [qq|The value is outside the allowed limits [$minNum, $maxNum]: $v ($x)|]
 
 
 
