@@ -40,6 +40,7 @@ import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
 import           NITTA.Types                   (IntX, toX)
+import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
 -- import Debug.Trace
@@ -81,7 +82,7 @@ buildAlg ast
             mapM_ (processStatement mainName) $ funAssignStatments mainFunDef
             patchAlgForType
             addConstants
-    in execState builder alg0 :: AlgBuilder Int
+    in execState builder alg0
 
 -- |Описание способа представления вещественных чисел в алгоритме
 data NumberReprType
@@ -168,7 +169,7 @@ output v
     | otherwise = gets $ \(dict, _fs) ->
         snd (fromMaybe (error [qq|unknown variable: $v|]) (dict M.!? v))
 
-store f = modify' $ \(dict, fs) -> (dict, f:fs)
+store f = modify'_ $ \(dict, fs) -> (dict, f:fs)
 
 
 
@@ -228,7 +229,7 @@ instance PatchAlgForType (IntX w) where
                 v <- genVar "tmp"
                 q <- genVar "_mod"
                 cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
-                modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
+                modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
                     -- FIXME: add shift for more than 1
                     BinaryFixedPoint  1 -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
                                         Function{ fName="shiftR", fIn=[v], fOut=[c], fValues=[] } :
@@ -241,7 +242,7 @@ instance PatchAlgForType (IntX w) where
             preprocessFunctions' Function{ fName="divide", fIn=[d, n], fOut=[q, r], fValues=[] } = do
                 v <- genVar "tmp"
                 cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
-                modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
+                modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
                     BinaryFixedPoint  1 -> Function{ fName="shiftL", fIn=[d], fOut=[v], fValues=[] } :
                                         Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
                                         algItems
@@ -251,7 +252,7 @@ instance PatchAlgForType (IntX w) where
                                         algItems
                 }
 
-            preprocessFunctions' item = modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems=item : algItems }
+            preprocessFunctions' item = modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=item : algItems }
 
 
 
@@ -288,7 +289,7 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
             f InputVar{ iX, iVar } rexp = do
                 i <- expArg [] rexp
                 let fun = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
-                modify' $ \alg@AlgBuilder{ algItems } -> alg{ algItems=fun : algItems }
+                modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=fun : algItems }
             f _ _ = undefined
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
@@ -387,16 +388,14 @@ expConstant _ _ = undefined
 addFunction f@Function{ fOut } = do
     diff <- renameVarsIfNeeded fOut
     patchAndAddFunction f diff
-addFunction e = error $ "addFunction try to add: " ++ show e
+addFunction _ = error "addFunction error"
 
 
 
 patchAndAddFunction f@Function{ fIn } diff = do
     let fIn' = map (applyPatch diff) fIn
-    alg@AlgBuilder{ algItems } <- get
-    put alg
-        { algItems=f{ fIn=fIn' } : algItems
-        }
+    modify'_ $ \alg@AlgBuilder{ algItems } ->
+        alg { algItems=f{ fIn=fIn' } : algItems }
 patchAndAddFunction _ _ = undefined
 
 
@@ -434,20 +433,20 @@ funAssignStatments (FunAssign _ (FunBody _ _ (Block statments _))) = statments
 funAssignStatments _                                               = error "funAssignStatments : not function assignment"
 
 
-flushBuffer = modify'
+flushBuffer = modify'_
     $ \alg@AlgBuilder{ algBuffer, algItems } -> alg
         { algItems=algBuffer ++ algItems
         , algBuffer=[]
         }
 
 
-addItemToBuffer item = modify'
+addItemToBuffer item = modify'_
     $ \alg@AlgBuilder{ algBuffer } -> alg
         { algBuffer=item : algBuffer
         }
 
 
-addItem item vars = modify'
+addItem item vars = modify'_
     $ \alg@AlgBuilder{ algItems, algVars } -> alg
         { algItems=item : algItems
         , algVars=vars ++ algVars
