@@ -6,8 +6,11 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-unused-imports #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -fno-cse #-}
+
+
+--  {-# LANGUAGE NoMonomorphismRestriction           #-}
 
 {-|
 Module      : NITTA.Frontend
@@ -27,20 +30,17 @@ module NITTA.Frontend
 import           Control.Monad                 (when)
 import           Control.Monad.Identity
 import           Control.Monad.State
-import           Data.Bool                     (bool)
 import           Data.Default
 import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
-import           Data.Maybe                    (catMaybes, fromMaybe,
-                                                listToMaybe)
+import           Data.Maybe                    (fromMaybe)
 import qualified Data.String.Utils             as S
-import           Data.Text                     (Text, pack, unpack)
+import           Data.Text                     (Text, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
-import           NITTA.Types                   (F, IntX, toX)
+import           NITTA.Types                   (IntX, toX)
 import           Text.InterpolatedString.Perl6 (qq)
-import           Text.Read                     (readMaybe)
 
 -- import Debug.Trace
 
@@ -54,15 +54,7 @@ import           Text.Read                     (readMaybe)
 lua2functions src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
-        --ast = trace ("ast = " ++ show ast') ast'
-        Right (fn, mainCall, mainFunDef) = findMain ast
-        AlgBuilder{ algItems } :: AlgBuilder Int = buildAlg $ do
-            addMainInputs mainFunDef mainCall
-            let statements = funAssignStatments mainFunDef
-            forM_ statements $ processStatement fn
-            patchAlgForType
-            addConstants
-        -- fs = filter (\case Function{} -> True; _ -> False) $ trace (S.join "\n" $ map show algItems) algItems
+        AlgBuilder{ algItems } = buildAlg ast
         fs = filter (\case Function{} -> True; _ -> False) algItems
         varDict = M.fromList
             $ map varRow
@@ -70,10 +62,26 @@ lua2functions src
     in snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
     where
         varRow lst@(x:_)
-            = let vs = zipWith (\v i -> [qq|{unpack v}_{i}|]) lst ([0..] :: [Int])
+            = let vs = zipWith (\v i -> [qq|{unpack v}_{i}|]) lst [0..]
             in (x, (vs, vs))
         varRow _ = undefined
 
+
+buildAlg ast
+    = let
+        Right (mainName, mainCall, mainFunDef) = findMain ast
+        alg0 = AlgBuilder
+            { algItems=[]
+            , algBuffer=[]
+            , algVarGen=map (\i -> [qq|#{i}|]) [0..]
+            , algVars=[]
+            }
+        builder = do
+            addMainInputs mainFunDef mainCall
+            mapM_ (processStatement mainName) $ funAssignStatments mainFunDef
+            patchAlgForType
+            addConstants
+    in execState builder alg0 :: AlgBuilder Int
 
 -- |Описание способа представления вещественных чисел в алгоритме
 data NumberReprType
@@ -119,7 +127,7 @@ data AlgBuilderItem x
         , iVar :: Text  -- ^Symbol
         , iX   :: x -- ^Initial value
         }
-    | Constant{ cX :: x, cVar :: Text }
+    | Constant{ cVar :: Text, cX :: x }
     | Alias{ aFrom :: Text, aTo :: Text }
     | Renamed{ rFrom :: Text, rTo :: Text }
     | Function
@@ -133,18 +141,7 @@ data AlgBuilderItem x
 
 
 
-buildAlg proc
-    = execState proc AlgBuilder
-        { algItems=[]
-        , algBuffer=[]
-        , algVarGen=map (\i -> [qq|#{i}|]) [(0::Int)..]
-        , algVars=[]
-        }
-
-
-
 -- *Translate AlgBuiler functions to nitta functions
-
 function2nitta Function{ fName="loop",     fIn=[i],    fOut=[o],    fValues=[x] } = F.loop x <$> input i <*> output o
 function2nitta Function{ fName="reg",      fIn=[i],    fOut=[o],    fValues=[]  } = F.reg <$> input i <*> output o
 function2nitta Function{ fName="constant", fIn=[],     fOut=[o],    fValues=[x] } = F.constant x <$> output o
@@ -203,11 +200,10 @@ addMainInputs
 addMainInputs _ _ = error "bad main function description"
 
 
-
 addConstants = do
     AlgBuilder{ algItems } <- get
     let constants = filter (\case Constant{} -> True; _ -> False) algItems
-    forM_ constants $ \Constant{ cX, cVar } ->
+    forM_ constants $ \Constant{ cVar, cX } ->
         addFunction Function{ fName="constant", fIn=[], fOut=[cVar], fValues=[cX] }
 
 
@@ -423,7 +419,7 @@ renameFromTo rFrom rTo = do
     where
         patch [] = []
         patch (i@InputVar{ iVar } : xs) = i{ iVar=rn iVar } : patch xs
-        patch (Constant x v : xs) = Constant x (rn v) : patch xs
+        patch (Constant{ cX, cVar } : xs) = Constant{ cX, cVar=rn cVar } : patch xs
         patch (Alias{ aFrom, aTo } : xs) = Alias (rn aFrom) (rn aTo) : patch xs
         patch (f@Function{ fIn, fOut } : xs) = f{ fIn=map rn fIn, fOut=map rn fOut } : patch xs
         patch (x:xs) = x : patch xs
