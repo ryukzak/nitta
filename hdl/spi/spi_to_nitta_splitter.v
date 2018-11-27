@@ -20,7 +20,8 @@ localparam SUBFRAME_COUNTER_WIDTH = $clog2( SUBFRAME_NUMBER );
 
 reg [DATA_WIDTH-1:0] data;
 always @( posedge clk )
-    if(spi_ready) data = {from_spi, data[DATA_WIDTH - 1:SPI_DATA_WIDTH]};
+    //if(spi_ready) data = {from_spi, data[DATA_WIDTH - 1:SPI_DATA_WIDTH]};
+    if(spi_ready) data = { data[DATA_WIDTH - SPI_DATA_WIDTH - 1:0], from_spi };
 
 reg [SUBFRAME_COUNTER_WIDTH:0] counter;
 reg                            wait_spi_ready;

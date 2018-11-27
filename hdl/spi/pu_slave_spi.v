@@ -104,6 +104,7 @@ wire spi_ready;
 wire [SPI_DATA_WIDTH-1:0] splitter_from_spi;
 wire splitter_ready_sn;
 wire [DATA_WIDTH-1:0] splitter_to_nitta;
+wire [DATA_WIDTH-1:0] to_nitta;
 spi_to_nitta_splitter #
         ( .DATA_WIDTH( DATA_WIDTH )
         , .ATTR_WIDTH( ATTR_WIDTH )
@@ -117,7 +118,7 @@ spi_to_nitta_splitter #
 
     , .splitter_ready( splitter_ready_sn )
 
-    , .to_nitta( data_out )
+    , .to_nitta( to_nitta )
     );
 
 // SPI driver
@@ -162,7 +163,6 @@ always @( posedge clk ) begin
     else flag_stop <= 0;
 end
 
-assign data_out = 0;
-assign attr_out = 0;
+assign data_out = signal_oe ? to_nitta : 32'h00000000;
 
 endmodule

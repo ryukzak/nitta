@@ -163,6 +163,7 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
         = Aggregate Nothing
             [ FromLibrary "spi/pu_slave_spi_driver.v"
             , FromLibrary "spi/spi_slave_driver.v"
+            , FromLibrary "spi/spi_to_nitta_splitter.v"
             , FromLibrary "spi/buffer.v"
             , FromLibrary "spi/bounce_filter.v"
             , FromLibrary "spi/spi_master_driver.v"
