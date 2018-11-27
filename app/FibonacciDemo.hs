@@ -50,7 +50,7 @@ nittaArch = busNetwork 20 Nothing
                     , SPI.stop="stop"
                     , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                     })
-    ] :: BusNetwork String String Int Int
+    ] :: BusNetwork String String (IntX 32) Int
 
 fibonacciLua = $(embedStringFile "examples/fibonacci.lua")
 
@@ -68,7 +68,6 @@ fibonacciLua = $(embedStringFile "examples/fibonacci.lua")
 --                ]
 -- @
 -- fibonacciAlg :: [F String (IntX 42)]
-fibonacciAlg :: [F String Int]
 fibonacciAlg = lua2functions fibonacciLua
 
 main = demo Project

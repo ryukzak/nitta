@@ -536,7 +536,7 @@ instance ( Var v
          , Num x
          , Default x
          , Eq x
-         , PrintfArg x
+         , Enum x
          , ProcessUnit (Fram v x t) v x t
          ) => TestBench (Fram v x t) v x where
   testBenchDescription Project{ projectName, processorModel=pu@Fram{ frProcess=Process{ steps }, .. }, testCntx }
@@ -683,11 +683,11 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
 
 softwareFile title pu = moduleName title pu ++ "." ++ title ++ ".dump"
 
-instance ( Time t, Var v, PrintfArg x ) => TargetSystemComponent (Fram v x t) where
+instance ( Time t, Var v, Enum x ) => TargetSystemComponent (Fram v x t) where
   moduleName _ _ = "pu_fram"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software title pu@Fram{ frMemory }
-    = Immidiate (softwareFile title pu) $ unlines $ map (printf "%08x" . initialValue) $ elems frMemory
+    = Immidiate (softwareFile title pu) $ unlines $ map (printf "%08x" . fromEnum . initialValue) $ elems frMemory
   hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
     [qc|pu_fram
     #( .DATA_WIDTH( { show parameterDataWidth } )
