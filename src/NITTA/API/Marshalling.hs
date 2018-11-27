@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns    #-}
@@ -17,19 +18,19 @@ Stability   : experimental
 module NITTA.API.Marshalling where
 
 import           Data.Aeson
-import qualified Data.Map              as M
-import qualified Data.Text             as T
-import           Data.Set              (toList)
 import           Data.Function         (on)
+import qualified Data.Map              as M
+import           Data.Set              (toList)
+import qualified Data.Text             as T
 import           Data.Typeable
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
+import qualified NITTA.Functions       as F
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
 import           NITTA.Utils           (transfered)
-import qualified NITTA.Functions       as F
 import           Numeric.Interval
 import           Servant
 
@@ -125,7 +126,10 @@ instance FromHttpApiData Nid where
     parseUrlPiece = Right . read . T.unpack
 
 
-instance ToJSON (Synthesis String String Int (TaggedTime String Int)) where
+instance
+        ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
+        , ToJSON t, Time t
+        ) => ToJSON (Synthesis String String x t) where
     toJSON Synthesis{ sModel, sCntx, sStatus } = object
         [ "sModel" .= sModel
         , "sCntx" .= map show sCntx
@@ -140,7 +144,10 @@ instance ToJSON TestBenchReport
 instance ToJSON SynthesisSetup
 instance ToJSON SpecialMetrics
 
-instance ToJSON (WithMetric (CompilerDT String String Int (TaggedTime String Int))) where
+instance
+        ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
+        , ToJSON t, Time t
+        ) => ToJSON (WithMetric (CompilerDT String String x t)) where
     toJSON WithMetric{ mIntegral, mSpecial, mOption, mDecision }
         = toJSON ( mIntegral, mSpecial, mOption, mDecision )
 
@@ -160,6 +167,16 @@ instance ( ToJSON t, Time t ) => ToJSON (TimeConstrain t) where
         [ "available" .= tcAvailable
         , "duration" .= tcDuration
         ]
+
+instance ToJSONKey (IntX w) where
+    toJSONKey
+        = let
+            ToJSONKeyText f g = toJSONKey
+        in ToJSONKeyText (\(IntX x) -> f x) (\(IntX x) -> g x)
+
+
+instance ToJSON (IntX w) where
+    toJSON ( IntX x ) = toJSON x
 
 
 
@@ -205,7 +222,7 @@ instance ToJSON NodeElement where
         , "color" .= nodeColor
         , "shape" .= nodeShape
         , "size"  .= nodeSize
-        , "font"  .= object 
+        , "font"  .= object
             [
                 "size" .= fontSize
             ]
@@ -232,7 +249,7 @@ instance ToJSON GraphEdge where
         , "to"    .= inNodeId
         , "label" .= edgeName
         , "width" .= edgeWidth
-        , "font"  .= object 
+        , "font"  .= object
             [
                 "allign" .= fontAllign
             ]
@@ -264,14 +281,14 @@ transformElement fb n constNodes
         | otherwise                                                     = error $ "The functional block is unsupported: " ++ show fb
     where
         configure :: (String -> String -> NodeParam)-> Int -> String -> String -> [String] -> [String] -> ([NodeElement], [GraphVertex])
-        configure shape m color name xs ys = ([NodeElement m $ shape name color], 
-                                              map (\c -> GraphVertex InVertex  c m) xs ++ 
+        configure shape m color name xs ys = ([NodeElement m $ shape name color],
+                                              map (\c -> GraphVertex InVertex  c m) xs ++
                                               map (\c -> GraphVertex OutVertex c m) ys)
 
         configureLoopNodes :: Int -> String -> String -> String -> String -> String -> [String] -> ([NodeElement], [GraphVertex])
-        configureLoopNodes m colorS colorE nameS nameE x ys = ([NodeElement m     $ box     nameS colorS, 
+        configureLoopNodes m colorS colorE nameS nameE x ys = ([NodeElement m     $ box     nameS colorS,
                                                                 NodeElement (m+1) $ ellipse nameE colorE],
-                                                               GraphVertex InVertex  x (m+1) : 
+                                                               GraphVertex InVertex  x (m+1) :
                                                                map (\c -> GraphVertex OutVertex c m) ys)
 
         configureConstantNodes :: Int -> String -> String -> [String] -> ([NodeElement], [GraphVertex])
@@ -283,14 +300,14 @@ transformElement fb n constNodes
 
 transformElements :: (Typeable x) => [F String x] -> Bool -> ([NodeElement], [GraphVertex])
 transformElements fbs constNodes = foldl (\(b1, b2) (a1, a2) -> (b1 ++ a1, b2 ++ a2)) ([], []) $ transformElements' fbs 1
-    where transformElements' (f:fs) n = (\nodes -> nodes : transformElements' fs ((n +) $ length $ fst nodes)) $! transformElement f n constNodes 
+    where transformElements' (f:fs) n = (\nodes -> nodes : transformElements' fs ((n +) $ length $ fst nodes)) $! transformElement f n constNodes
           transformElements' []     _ = []
 
 bindVertexes :: [GraphVertex] -> [GraphEdge]
 bindVertexes vs = let !inVertexes  = filter ((InVertex  ==) . vertexType) vs
                       !outVertexes = filter ((OutVertex ==) . vertexType) vs
-                  in concatMap (\(GraphVertex _ name inId) -> 
-                                   map (\(GraphVertex _ _ outId) -> 
+                  in concatMap (\(GraphVertex _ name inId) ->
+                                   map (\(GraphVertex _ _ outId) ->
                                        GraphEdge (arrow name) inId outId) $ filter ((name ==) . vertexName) outVertexes) inVertexes
 
 toGraphStructure :: (Typeable x) => [F String x] -> Bool -> GraphStructure
