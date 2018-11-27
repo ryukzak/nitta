@@ -62,7 +62,7 @@ instance Bits ( IntX w ) where
 
 
 class ToX x where
-    toX :: String -> x
+    toX :: String -> x -- FIXME: move to read
 
 instance ToX Int where
     toX = read
