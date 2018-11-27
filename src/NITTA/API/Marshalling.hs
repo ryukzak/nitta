@@ -169,7 +169,7 @@ instance ( Show a ) => ToJSON (Interval a) where
 
 
 -- *Graph converting
-instance ToJSON GraphStructure where
+instance ToJSON (GraphStructure GraphEdge) where
     toJSON GraphStructure{ nodes, edges } =  object
         [ "nodes" .= nodes
         , "edges" .= edges

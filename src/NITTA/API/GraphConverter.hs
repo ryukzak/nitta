@@ -21,11 +21,8 @@ module NITTA.API.GraphConverter
     ) where
 
 import           Data.Typeable
-import           NITTA.BusNetwork
 import           NITTA.Types
 import           Data.Set              (toList)
-import           Data.Function         (on)
-import qualified NITTA.Functions       as F
 
 
 
