@@ -83,12 +83,14 @@ synthesisServer st
 type WithSynthesis
     =    Get '[JSON] SYN
     :<|> "model" :> Get '[JSON] (ModelState String String Int (TaggedTime String Int))
+    :<|> "model" :> "alg" :> Get '[JSON] [F String Int]
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
     :<|> SimpleCompilerAPI
 
 withSynthesis st nid
     =    get st nid
     :<|> getModel st nid
+    :<|> ( (\Frame{ dfg=DFG nodes } -> map (\(DFGNode f) -> f) nodes) <$> getModel st nid )
     :<|> ( \name -> getTestBenchOutput st nid name )
     :<|> simpleCompilerServer st nid
 
