@@ -444,7 +444,7 @@ instance
 
 
 instance ( Title title, Var v, Time t
-         , Show x
+         , Show x, Enum x
          , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x
          ) => TestBench (BusNetwork title v x t) v x where
@@ -529,8 +529,8 @@ instance ( Title title, Var v, Time t
 |               |]
                 ++ case extractInstructionAt n t of
                     Transport v _ _ : _ -> fixIndent [qc|
-|                                   $write("=== %h (var: %s)", { get' cntx v }, { v } );
-|                                   if ( !( net.data_bus === { get' cntx v } ) ) $display( " FAIL");
+|                                   $write("=== %h (var: %s)", { fromEnum $ get' cntx v }, { v } );
+|                                   if ( !( net.data_bus === { fromEnum $ get' cntx v } ) ) $display( " FAIL");
 |                                   else $display();
 |                       |]
                     [] -> fixIndent [qc|
