@@ -15,6 +15,7 @@ import           NITTA.Types.Poly
 
 import           Data.Bits
 import           Data.Default
+import           Data.Maybe
 import           Data.Proxy
 import           GHC.TypeLits
 
@@ -53,7 +54,7 @@ instance Bits ( IntX w ) where
     shift ( IntX a ) i = IntX $ shift a i
     rotate ( IntX a ) i = IntX $ rotate a i
 
-    bitSize ( IntX a ) = maybe undefined id $ bitSizeMaybe a
+    bitSize ( IntX a ) = fromMaybe undefined $ bitSizeMaybe a
     bitSizeMaybe ( IntX a ) = bitSizeMaybe a
     isSigned ( IntX a ) = isSigned a
     testBit ( IntX a ) = testBit a
