@@ -1,38 +1,124 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 module NITTA.Test.ProcessUnits
     ( unitTestBench
+    , processUnitTests
     -- *Generators
     , inputsGen
     , processGen
     -- *Properties
-    , prop_completness
-    , prop_simulation
+    , isFinished
+    , coSimulation
     ) where
 
 import           Data.Atomics.Counter
 import           Data.Default
-import qualified Data.Map                as M
+import qualified Data.Map                      as M
 import           Data.Proxy
-import           Data.Set                (difference, elems, empty, fromList,
-                                          intersection, union)
+import           Data.Set                      (difference, elems, empty,
+                                                fromList, intersection, union)
+import           Debug.Trace
 import           NITTA.Compiler
+import qualified NITTA.Functions               as F
+import           NITTA.ProcessUnits.Fram
 import           NITTA.Project
+import           NITTA.Test.LuaFrontend
+import           NITTA.Test.Microarchitectures
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Utils
-import           System.FilePath.Posix   (joinPath)
+import           System.FilePath.Posix         (joinPath)
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
-import           Test.Tasty.HUnit        ((@?))
+import           Test.Tasty                    (TestTree, testGroup)
+import           Test.Tasty.HUnit              (testCase, (@?))
+import           Test.Tasty.TH
+import           Text.InterpolatedString.Perl6 (qc)
 
-import           Debug.Trace
+
+test_fram =
+    [ testCase "reg_out" $ unitTestBench "reg_out" proxy
+        (Just def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] })
+        [ F.reg "aa" ["ab"]
+        , F.framOutput 9 "ac"
+        ]
+    , testCase "reg_constant" $ unitTestBench "reg_constant" proxy
+        (Just def{ cntxVars=M.fromList [("dzw", [975])] })
+        [ F.reg "dzw" ["act","mqt"]
+        , F.constant 11 ["ovj"]
+        ]
+    ]
+    where
+        proxy = Proxy :: Proxy (Fram String Int Int)
+
+
+test_shift =
+    [ algTestCase "left_right" march
+        [ F.loop 16 "g1" ["f1"]
+        , F.shiftL "f1" ["g1"]
+        , F.loop 16 "g2" ["f2"]
+        , F.shiftR "f2" ["g2"]
+        ]
+    ]
+
+
+test_multiplier =
+    [ algTestCase "simple_mul" march
+        [ F.constant 2 ["a"]
+        , F.loop 1 "c" ["b"]
+        , F.multiply "a" "b" ["c"]
+
+        , F.constant 3 ["x"]
+        , F.loop 1 "z" ["y"]
+        , F.multiply "y" "x" ["z"]
+        ]
+    ]
+
+
+test_divider =
+    [ algTestCase "simple_div" march
+        [ F.constant 100 ["a"]
+        , F.loop 2 "e" ["b"]
+        , F.division "a" "b" ["c"] ["d"]
+        , F.add "c" "d" ["e"]
+
+        , F.constant 200 ["a1"]
+        , F.loop 2 "e1" ["b1"]
+        , F.division "a1" "b1" ["c1"] ["d1"]
+        , F.add "c1" "d1" ["e1"]
+        ]
+    , luaTestCase "single"
+        [qc|function f(a)
+                a, _b = a / 2
+                f(a)
+            end
+            f(1024)
+        |]
+    , luaTestCase "pair"
+        [qc|function f(a, b)
+                a, _ = a / 2
+                b, _ = b / 3
+                f(a, b)
+            end
+            f(1024, 1024)
+        |]
+
+    ]
+
+
+processUnitTests :: TestTree
+processUnitTests = $(testGroupGenerator)
+
+
+-----------------------------------------------------------
 
 
 -- |В значительной степени служебная функция, используемая для генерации процесса указанного
@@ -92,7 +178,7 @@ inputsGen (pu, fbs) = do
 
 -- |Проверка вычислительного блока на соответсвие работы аппаратной реализации и его модельного
 -- поведения.
-prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
+coSimulation n counter (pu, _fbs, values) = monadicIO $ do
     i <- run $ incrCounter 1 counter
     let path = joinPath ["hdl", "gen", n ++ show i]
     res <- run $ writeAndRunTestBench $ Project n "../.." path pu values [Makefile]
@@ -100,7 +186,7 @@ prop_simulation n counter (pu, _fbs, values) = monadicIO $ do
 
 
 -- |Формальнаяа проверка полноты выполнения работы вычислительного блока.
-prop_completness (pu, fbs0)
+isFinished (pu, fbs0)
     = let
         p = process pu
         processVars = unionsMap variables $ getEndpoints p
@@ -115,7 +201,6 @@ prop_completness (pu, fbs0)
                 ++ "fbs: " ++ show processFBs ++ "\n"
                 ++ "algVars: " ++ show algVars ++ "\n"
                 ++ "processVars: " ++ show processVars ++ "\n"
-                -- ++ show pu
                 ) False
 
 

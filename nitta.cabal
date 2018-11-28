@@ -121,8 +121,9 @@ test-suite nitta-test
   main-is:             Spec.hs
   other-modules:       NITTA.Test.BusNetwork
                      , NITTA.Test.Functions
+                     , NITTA.Test.LuaFrontend
+                     , NITTA.Test.Microarchitectures
                      , NITTA.Test.ProcessUnits
-                     , NITTA.Test.ProcessUnits.Fram
                      , NITTA.Test.Utils
   build-depends:       atomic-primops
                      , base
@@ -138,5 +139,6 @@ test-suite nitta-test
                      , tasty
                      , tasty-hunit
                      , tasty-quickcheck
+                     , tasty-th
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
