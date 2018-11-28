@@ -23,6 +23,7 @@ import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Types
 import           NITTA.Utils.Test
+import           Test.Tasty                    (testGroup)
 import           Test.Tasty.HUnit
 
 
@@ -116,13 +117,21 @@ testMultiplier = algTestCase "testMultiplier" netWithArithm
 
 -----------------------------------------------
 
-luaTestCase name lua = testCase name $ do
-    res <- testLua ("luaTestCase" ++ name) (netWithArithmAndSPI proxyInt) lua
-    isRight res @? show res
+luaTestCase name lua
+    = let
+        fn = "lua_" ++ name
+    in testGroup name
+        [ luaTestCaseX fn (Proxy :: Proxy Int) lua
+        , luaTestCaseX fn (Proxy :: Proxy (IntX 32)) lua
+        ]
 
-luaTestCaseX name proxy lua = testCase name $ do
-    res <- testLua ("lua_" ++ name) (netWithArithmAndSPI proxy) lua
-    isRight res @? show res
+luaTestCaseX fn proxy lua
+    = let
+        name = showType proxy
+        fn' = fn ++ "_" ++ showType proxy
+    in testCase (name ++ " <" ++ fn' ++ ">") $ do
+        res <- testLua fn' (netWithArithmAndSPI proxy) lua
+        isRight res @? show res
 
 algTestCase name arch alg = testCase name $ do
     res <- test ("algTestCase" ++ name) arch alg
