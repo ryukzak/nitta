@@ -131,7 +131,9 @@ main = do
                         fib(a, b)
                     end
                     fib(0, 1)|]
-            , luaTestCase "teacup" $(embedStringFile "examples/teacup.lua")
+            -- FIXME: Add proxy type to test name
+            , luaTestCaseX "teacup" proxyInt $(embedStringFile "examples/teacup.lua")
+            -- FIXME: , luaTestCaseX "teacup" proxyIntX32 $(embedStringFile "examples/teacup.lua")
             ]
       ]
 

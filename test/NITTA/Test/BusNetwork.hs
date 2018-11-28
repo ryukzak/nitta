@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -7,8 +8,11 @@
 
 module NITTA.Test.BusNetwork where
 
+import           Data.Bits
 import           Data.Default
 import           Data.Either                   (isRight)
+import           Data.Proxy
+import           Data.Typeable
 import           NITTA.BusNetwork
 import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
@@ -22,7 +26,12 @@ import           NITTA.Utils.Test
 import           Test.Tasty.HUnit
 
 
-netWithArithmAndSPI = busNetwork 31 (Just True)
+proxyInt = Proxy :: Proxy Int
+proxyIntX32 = Proxy :: Proxy (IntX 32)
+
+
+netWithArithmAndSPI :: ( Integral x, Bits x, Eq x, Default x, Show x, Typeable x ) => Proxy x -> BusNetwork String String x Int
+netWithArithmAndSPI _proxy = busNetwork 31 (Just True)
   [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
   [ OutputPort "miso" ]
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -35,9 +44,9 @@ netWithArithmAndSPI = busNetwork 31 (Just True)
                               })
   , ("div", PU (D.divider 8 True) D.PUPorts{ D.wr=Signal 24, D.wrSel=Signal 25, D.oe=Signal 26, D.oeSel=Signal 27 } )
   , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 28, M.wrSel=Signal 29, M.oe=Signal 30 } )
-  ] :: BusNetwork String String Int Int
+  ]
 
-netWithArithmAndSPINoDropData = netWithArithmAndSPI{ bnAllowDrop=Just False }
+netWithArithmAndSPINoDropData proxy = (netWithArithmAndSPI proxy){ bnAllowDrop=Just False }
 
 netWithArithm = busNetwork 31 (Just True) [] []
   [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
@@ -73,15 +82,15 @@ testFibonacci = algTestCase "testFibonacci" netWithArithm
   , F.add "a1" "b1" ["c"]
   ]
 
-fibWithSPI = 
+fibWithSPI =
   [ F.loop 0 "b2" ["a1"      ]
   , F.loop 1 "c"  ["b1", "b2"]
   , F.add "a1" "b1" ["c", "c_copy"]
   , F.send "c_copy"
   ]
 
-testFibonacciWithSPI = algTestCase "testFibonacciWithSPI" netWithArithmAndSPI fibWithSPI
-testFibonacciWithSPINoDataDrop = algTestCase "testFibonacciWithSPINoDataDrop" netWithArithmAndSPINoDropData fibWithSPI
+testFibonacciWithSPI = algTestCase "testFibonacciWithSPI" (netWithArithmAndSPI proxyInt) fibWithSPI
+testFibonacciWithSPINoDataDrop = algTestCase "testFibonacciWithSPINoDataDrop" (netWithArithmAndSPINoDropData proxyInt) fibWithSPI
 
 testDiv4 = algTestCase "testDiv4" netWithArithm
   [ F.constant 100 ["a"]
@@ -108,7 +117,11 @@ testMultiplier = algTestCase "testMultiplier" netWithArithm
 -----------------------------------------------
 
 luaTestCase name lua = testCase name $ do
-    res <- testLua ("luaTestCase" ++ name) netWithArithmAndSPI lua
+    res <- testLua ("luaTestCase" ++ name) (netWithArithmAndSPI proxyInt) lua
+    isRight res @? show res
+
+luaTestCaseX name proxy lua = testCase name $ do
+    res <- testLua ("luaTestCase" ++ name) (netWithArithmAndSPI proxy) lua
     isRight res @? show res
 
 algTestCase name arch alg = testCase name $ do
