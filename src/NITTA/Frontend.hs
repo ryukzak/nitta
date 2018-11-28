@@ -219,40 +219,43 @@ instance PatchAlgForType Integer where
     patchAlgForType = return ()
 
 instance PatchAlgForType (IntX w) where
-    patchAlgForType = do
-        alg@AlgBuilder{ algItems } <- get
-        put alg{ algItems=[] }
-        mapM_ preprocessFunctions' algItems
-        where
-            rt = BinaryFixedPoint 1
-            preprocessFunctions' Function{ fName="multiply", fIn=[a, b], fOut=[c], fValues=[] } = do
-                v <- genVar "tmp"
-                q <- genVar "_mod"
-                cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
-                modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
-                    -- FIXME: add shift for more than 1
-                    BinaryFixedPoint  1 -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
-                                        Function{ fName="shiftR", fIn=[v], fOut=[c], fValues=[] } :
-                                        algItems
-                    _                   -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
-                                        Function{ fName="divide", fIn=[v, cnst], fOut=[c, q], fValues=[] } :
-                                        algItems
-                }
+    patchAlgForType = return ()
 
-            preprocessFunctions' Function{ fName="divide", fIn=[d, n], fOut=[q, r], fValues=[] } = do
-                v <- genVar "tmp"
-                cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
-                modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
-                    BinaryFixedPoint  1 -> Function{ fName="shiftL", fIn=[d], fOut=[v], fValues=[] } :
-                                        Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
-                                        algItems
+-- instance PatchAlgForType (IntX w) where
+--     patchAlgForType = do
+--         alg@AlgBuilder{ algItems } <- get
+--         put alg{ algItems=[] }
+--         mapM_ preprocessFunctions' algItems
+--         where
+--             rt = BinaryFixedPoint 1
+--             preprocessFunctions' Function{ fName="multiply", fIn=[a, b], fOut=[c], fValues=[] } = do
+--                 v <- genVar "tmp"
+--                 q <- genVar "_mod"
+--                 cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
+--                 modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
+--                     -- FIXME: add shift for more than 1
+--                     BinaryFixedPoint  1 -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
+--                                         Function{ fName="shiftR", fIn=[v], fOut=[c], fValues=[] } :
+--                                         algItems
+--                     _                   -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
+--                                         Function{ fName="divide", fIn=[v, cnst], fOut=[c, q], fValues=[] } :
+--                                         algItems
+--                 }
 
-                    _                   -> Function{ fName="multiply", fIn=[d, cnst], fOut=[v], fValues=[] } :
-                                        Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
-                                        algItems
-                }
+--             preprocessFunctions' Function{ fName="divide", fIn=[d, n], fOut=[q, r], fValues=[] } = do
+--                 v <- genVar "tmp"
+--                 cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
+--                 modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
+--                     BinaryFixedPoint  1 -> Function{ fName="shiftL", fIn=[d], fOut=[v], fValues=[] } :
+--                                         Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
+--                                         algItems
 
-            preprocessFunctions' item = modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=item : algItems }
+--                     _                   -> Function{ fName="multiply", fIn=[d, cnst], fOut=[v], fValues=[] } :
+--                                         Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
+--                                         algItems
+--                 }
+
+--             preprocessFunctions' item = modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=item : algItems }
 
 
 
