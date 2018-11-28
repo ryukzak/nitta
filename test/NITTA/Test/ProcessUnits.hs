@@ -19,7 +19,7 @@ module NITTA.Test.ProcessUnits
     , coSimulation
     ) where
 
-import           Data.Atomics.Counter
+import           Data.Atomics.Counter          (incrCounter)
 import           Data.Default
 import qualified Data.Map                      as M
 import           Data.Proxy
@@ -27,9 +27,13 @@ import           Data.Set                      (difference, elems, empty,
                                                 fromList, intersection, union)
 import           Debug.Trace
 import           NITTA.Compiler
+import           NITTA.Functions
 import qualified NITTA.Functions               as F
+import           NITTA.ProcessUnits.Divider
 import           NITTA.ProcessUnits.Fram
+import           NITTA.ProcessUnits.Multiplier
 import           NITTA.Project
+import           NITTA.Test.Functions          ()
 import           NITTA.Test.LuaFrontend
 import           NITTA.Test.Microarchitectures
 import           NITTA.Types
@@ -40,6 +44,7 @@ import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
 import           Test.Tasty                    (TestTree, testGroup)
 import           Test.Tasty.HUnit              (testCase, (@?))
+import           Test.Tasty.QuickCheck         (Gen, arbitrary, testProperty)
 import           Test.Tasty.TH
 import           Text.InterpolatedString.Perl6 (qc)
 
@@ -55,9 +60,18 @@ test_fram =
         [ F.reg "dzw" ["act","mqt"]
         , F.constant 11 ["ovj"]
         ]
+    , testProperty "isFinished" $ isFinished <$> gen
+    , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_fram") $ inputsGen =<< gen
     ]
     where
         proxy = Proxy :: Proxy (Fram String Int Int)
+        gen = processGen (def :: (Fram String Int Int))
+            [ F <$> (arbitrary :: Gen (Constant String Int))
+            , F <$> (arbitrary :: Gen (FramInput String Int))
+            , F <$> (arbitrary :: Gen (FramOutput String Int))
+            , F <$> (arbitrary :: Gen (Loop String Int))
+            , F <$> (arbitrary :: Gen (Reg String Int))
+            ]
 
 
 test_shift =
@@ -80,7 +94,14 @@ test_multiplier =
         , F.loop 1 "z" ["y"]
         , F.multiply "y" "x" ["z"]
         ]
+    , testProperty "isFinished" $ isFinished <$> gen
+    , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_multiplier") $ inputsGen =<< gen
     ]
+    where
+        gen = processGen (multiplier True)
+            [ F <$> (arbitrary :: Gen (Multiply String Int))
+            ]
+
 
 
 test_divider =
@@ -110,8 +131,16 @@ test_divider =
             end
             f(1024, 1024)
         |]
-
+    -- FIXME: Auto text can't work correctly, because processGen don't take into account the
+    -- facts that some variables may go out.
+    -- , testProperty "isFinished" $ isFinished <$> dividerGen
+    -- , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_divider") $ inputsGen =<< dividerGen
     ]
+    where
+        _gen = processGen (divider 4 True)
+            [ F <$> (arbitrary :: Gen (Division String Int))
+            ]
+
 
 
 processUnitTests :: TestTree
@@ -178,9 +207,9 @@ inputsGen (pu, fbs) = do
 
 -- |Проверка вычислительного блока на соответсвие работы аппаратной реализации и его модельного
 -- поведения.
-coSimulation n counter (pu, _fbs, values) = monadicIO $ do
-    i <- run $ incrCounter 1 counter
-    let path = joinPath ["hdl", "gen", n ++ show i]
+coSimulation n (pu, _fbs, values) = monadicIO $ do
+    i <- run $ incrCounter 1 externalTestCntr
+    let path = joinPath ["hdl", "gen", n ++ "_" ++ show i]
     res <- run $ writeAndRunTestBench $ Project n "../.." path pu values [Makefile]
     assert $ tbStatus res
 

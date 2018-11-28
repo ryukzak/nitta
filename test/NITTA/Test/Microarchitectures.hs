@@ -13,8 +13,10 @@ module NITTA.Test.Microarchitectures
     , proxyInt
     , proxyIntX32
     , algTestCase
+    , externalTestCntr
     ) where
 
+import           Data.Atomics.Counter          (incrCounter, newCounter)
 import           Data.Bits
 import           Data.Default
 import           Data.Either                   (isRight)
@@ -29,6 +31,7 @@ import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Types
 import           NITTA.Utils.Test
+import           System.IO.Unsafe              (unsafePerformIO)
 import           Test.Tasty.HUnit
 
 
@@ -72,10 +75,15 @@ marchSPIDropData proxy = (marchSPI proxy){ bnAllowDrop=Just True }
 -----------------------------------------------------------
 
 
+-- |Dirty hack to avoid collision with parallel QuickCheck.
+externalTestCntr = unsafePerformIO $ newCounter 0
+{-# NOINLINE externalTestCntr #-}
+
+
 algTestCase name arch alg
     = let
             fn = "bn_" ++ name
-    in
-        testCase (name ++ " <" ++ fn ++ ">") $ do
-            res <- test fn arch alg
-            isRight res @? show res
+    in testCase (name ++ " <" ++ fn ++ "_*>") $ do
+        i <- incrCounter 1 externalTestCntr
+        res <- test (fn ++ "_" ++ show i) arch alg
+        isRight res @? show res
