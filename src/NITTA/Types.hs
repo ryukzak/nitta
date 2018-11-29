@@ -66,23 +66,27 @@ instance Bits ( IntX w ) where
 class ToX x where
     toX :: String -> x -- FIXME: move to read
     showType :: Proxy x -> String
+    widthX :: Proxy x -> Integer
+
 
 instance ToX Int where
     toX = read
     showType _ = "Int"
+    widthX _ = 32
 
 instance ToX Integer where
     toX = read
     showType _ = "Integer"
+    widthX _ = 32
 
 instance ( KnownNat w ) => ToX (IntX w) where
     toX = IntX . read
-    showType p = "IntX" ++ show (width p)
+    showType p = "IntX" ++ show (widthX p)
+    widthX p = natVal $ widthProxy p
+        where
+            widthProxy :: Proxy (IntX w) -> Proxy w
+            widthProxy _ = Proxy
 
-widthProxy :: ( KnownNat w ) => Proxy (IntX w) -> Proxy w
-widthProxy _ = Proxy
-
-width p = natVal $ widthProxy p
 
 -- transformToFixPoint algArithmetic x
 --         | IntRepr               <- rt = maybe (Left "Float values is unsupported") checkInt $ readMaybe x

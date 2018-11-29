@@ -47,7 +47,7 @@ import           Text.InterpolatedString.Perl6 (qc)
 
 -- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
 -- с задачей о целевой платформе.
-microarch = busNetwork 31 (Just True)
+microarch = busNetwork 31 (Just False)
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
     [ OutputPort "miso" ]
     [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -109,15 +109,15 @@ main = do
             --         end
             --         fib(1)|]
             -- putStrLn "--------------------------------"
-            -- print =<< testWithInput "lua_test" [("a_0", [1..5])] microarch
-            --     ( lua2functions
-            --         [qc|function fib()
-            --                 local a = receive()
-            --                 local b = a + 1
-            --                 send(b)
-            --                 fib()
-            --             end
-            --             fib()|] )
+            print =<< testWithInput "hardcoded" [] microarch
+                ( lua2functions
+                    [qc|function counter(i)
+                            i = i + 1
+                            counter(i)
+                        end
+                        counter(0)
+                    |]
+                )
             putStrLn "-- hardcoded end --"
     putStrLn "-- the end --"
 

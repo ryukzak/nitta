@@ -19,12 +19,12 @@ module NITTA.Project
 import           Control.Monad                   (mapM_, unless)
 import qualified Data.List                       as L
 import qualified Data.String.Utils               as S
+import           Data.Text                       (pack)
 import           NITTA.Functions                 as F
 import           NITTA.PlatformSpecific.DE0Nano
 import           NITTA.PlatformSpecific.Makefile
 import           NITTA.Types
 import           NITTA.Types.Project
-import           Data.Text (pack)
 import           NITTA.Utils
 import           System.Directory
 import           System.Exit
@@ -50,7 +50,7 @@ runTestBench prj@Project{ projectPath, processorModel } = do
     let dump type_ out err = fixIndent [qc|
 |           Project: { projectPath }
 |           Type: { type_ }
-|           Files: 
+|           Files:
 |               { files' }
 |           Functional blocks:
 |               { functions' }
@@ -61,7 +61,7 @@ runTestBench prj@Project{ projectPath, processorModel } = do
 |           stderr:
 |           { pack err }
 |           |]
-            where 
+            where
                 files' = S.join "\n    " files
                 functions' = S.join "\n    " $ map show $ functions processorModel
 
@@ -187,7 +187,7 @@ snippetTestBench
                 , inputPort=undefined
                 , outputPort=undefined
                 , net=NetEnv
-                    { parameterDataWidth=IntParam 32
+                    { parameterDataWidth=IntParam 32 -- $ fromEnum $ widthX $ proxyX pu
                     , parameterAttrWidth=IntParam 4
                     , dataIn="data_in"
                     , attrIn="attr_in"

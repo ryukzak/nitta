@@ -56,6 +56,11 @@ import           Text.InterpolatedString.Perl6 (qc)
 type Title v = ( Typeable v, Ord v, Show v )
 
 
+proxyX :: BusNetwork title v x t -> Proxy x
+proxyX _ = Proxy
+
+
+
 data GBusNetwork title spu v x t = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
@@ -353,6 +358,7 @@ programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
 instance
         ( Time t
+        , ToX x
         ) => TargetSystemComponent (BusNetwork String v x t) where
     moduleName title BusNetwork{..} = title ++ "_net"
 
@@ -362,7 +368,7 @@ instance
             mn = moduleName title pu
             iml = fixIndent [qc|
 |                   {"module"} { mn }
-|                       #( parameter DATA_WIDTH = 32
+|                       #( parameter DATA_WIDTH = { widthX $ proxyX pu }
 |                        , parameter ATTR_WIDTH = 4
 |                        )
 |                       ( input                     clk
@@ -445,7 +451,7 @@ instance
 instance ( Title title, Var v, Time t
          , Show x, Enum x
          , TargetSystemComponent (BusNetwork title v x t)
-         , Typeable x
+         , Typeable x, ToX x
          ) => TestBench (BusNetwork title v x t) v x where
     testBenchDescription Project{ projectName, processorModel=n@BusNetwork{..}, testCntx }
         = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
@@ -477,7 +483,7 @@ instance ( Title title, Var v, Time t
 |               wire cycle;
 |
 |               { moduleName projectName n }
-|                   #( .DATA_WIDTH( 32 )
+|                   #( .DATA_WIDTH( { widthX $ proxyX n } )
 |                    , .ATTR_WIDTH( 4 )
 |                    ) net
 |                   ( .clk( clk )
