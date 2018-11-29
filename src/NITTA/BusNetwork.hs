@@ -374,7 +374,6 @@ instance
 |                       , output              [7:0] debug_bus1
 |                       , output              [7:0] debug_bus2
 |                       , input                     is_drop_allow
-|                       , input    [DATA_WIDTH-1:0] data_bus_hack
 |                       );
 |
 |                   parameter MICROCODE_WIDTH = { bnSignalBusWidth };
@@ -404,7 +403,7 @@ instance
 |
 |                   { S.join "\\n\\n" instances }
 |
-|                   assign data_bus = { S.join " | " $ "data_bus_hack" : map snd valuesRegs };
+|                   assign data_bus = { S.join " | " $ map snd valuesRegs };
 |                   assign attr_bus = { S.join " | " $ map fst valuesRegs };
 |
 |                   endmodule
@@ -475,7 +474,6 @@ instance ( Title title, Var v, Time t
 |               reg clk, rst;
 |               { if null ports then "" else "wire " ++ S.join ", " ports ++ ";" }
 |
-|               wire [32-1:0] data_bus_hack = 0;
 |               wire cycle;
 |
 |               { moduleName projectName n }
@@ -489,7 +487,6 @@ instance ( Title title, Var v, Time t
 |                   // if 1 - The process cycle are indipendent from a SPI.
 |                   // else - The process cycle are wait for the SPI.
 |                   , .is_drop_allow( { maybe "is_drop_allow" bool2verilog bnAllowDrop } )
-|                   , .data_bus_hack( data_bus_hack )
 |                   );
 |
 |               { testEnv }
