@@ -187,7 +187,7 @@ snippetTestBench
                 , inputPort=undefined
                 , outputPort=undefined
                 , net=NetEnv
-                    { parameterDataWidth=IntParam 32 -- $ fromEnum $ widthX $ proxyX pu
+                    { parameterDataWidth=IntParam 32 --  $ fromEnum $ widthX $ proxyX pu
                     , parameterAttrWidth=IntParam 4
                     , dataIn="data_in"
                     , attrIn="attr_in"
