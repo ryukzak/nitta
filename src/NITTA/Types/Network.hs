@@ -94,7 +94,7 @@ class Connected pu where
     data PUPorts pu :: *
     -- |Отображение микрокода на сигнальные линии. Необходимо для "сведения" микрокоманд отдельных
     -- вычислительных блоков в микрокоманды сети.
-    transmitToLink :: Microcode pu -> PUPorts pu -> [(Signal, Value)]
+    transmitToLink :: Microcode pu -> PUPorts pu -> [(Signal, SignalValue)]
 
 
 

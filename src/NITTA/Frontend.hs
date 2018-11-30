@@ -39,7 +39,7 @@ import           Data.Text                     (Text, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
-import           NITTA.Types                   (IntX, toX)
+import           NITTA.Types                   (IntX)
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
@@ -191,7 +191,7 @@ addMainInputs
     let vars = map (\case (Name v) -> v) declArgs
 
     let values = map (\case (Number _ s) -> unpack s; _ -> error "lua: wrong main argument") callArgs
-    let values' = map toX values
+    let values' = map read values
     when (length vars /= length values')
         $ error "a different number of arguments in main a function declaration and call"
 
@@ -376,7 +376,7 @@ expArg _diff a = error $ "expArg: " ++ show a
 
 expConstant prefix (Number _ textX) = do
     AlgBuilder{ algItems } <- get
-    let x = toX $ unpack textX
+    let x = read $ unpack textX
     case find (\case Constant{ cX } | cX == x -> True; _ -> False) algItems of
         Just Constant{ cVar } -> return cVar
         Nothing -> do

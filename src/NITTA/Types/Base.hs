@@ -383,6 +383,8 @@ class ProcessUnit pu v x t | pu -> v x t where
     -- TODO: Необходимо преобразовать в setTimeTag. Добавить метод skip, для того что бы вычислительный блок мог
     -- пропускать отдельный переменные (необходимо для ветвления вычислительного процесса).
     setTime :: t -> pu -> pu
+    proxyX :: pu -> Proxy x
+    proxyX _ = Proxy
 
 
 bind fb pu = case tryBind fb pu of
@@ -431,7 +433,7 @@ class UnambiguouslyDecode pu where
 
 
 -- |Значение сигнальной линии.
-data Value
+data SignalValue
     -- |Значение не определено.
     = Undef
     -- |Значение сигнальной линии установлено в логическое значение.
@@ -441,10 +443,10 @@ data Value
     | Broken
     deriving ( Eq )
 
-instance Default Value where
+instance Default SignalValue where
     def = Undef
 
-instance Show Value where
+instance Show SignalValue where
     show Undef        = "x"
     show (Bool True)  = "1"
     show (Bool False) = "0"

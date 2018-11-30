@@ -88,8 +88,8 @@ luaTestCase name lua
 
 luaTestCase' fn proxy lua
     = let
-        name = showType proxy
-        fn' = fn ++ "_" ++ showType proxy
+        name = showTypeOf proxy
+        fn' = fn ++ "_" ++ showTypeOf proxy
     in testCase (name ++ " <" ++ fn' ++ ">") $ do
         res <- testLua fn' (marchSPIDropData proxy) lua
         isRight res @? show res

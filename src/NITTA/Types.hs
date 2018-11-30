@@ -6,7 +6,8 @@ module NITTA.Types
   , module NITTA.Types.Network
   , module NITTA.Types.Poly
   , IntX(..)
-  , ToX(..)
+  , Val(..)
+  , widthX
   ) where
 
 import           NITTA.Types.Base
@@ -17,6 +18,7 @@ import           Data.Bits
 import           Data.Default
 import           Data.Maybe
 import           Data.Proxy
+import           Data.Typeable
 import           GHC.TypeLits
 
 newtype IntX (w :: Nat) = IntX Int
@@ -63,30 +65,31 @@ instance Bits ( IntX w ) where
 
 
 
-class ToX x where
-    toX :: String -> x -- FIXME: move to read
-    showType :: Proxy x -> String
-    widthX :: Proxy x -> Integer
+class ( Typeable x, Read x ) => Val x where
+    showTypeOf :: Proxy x -> String
+    valueWidth :: Proxy x -> Integer
 
 
-instance ToX Int where
-    toX = read
-    showType _ = "Int"
-    widthX _ = 32
+instance Read (IntX w) where
+    readsPrec d r = let [(x, "")] = readsPrec d r
+        in [(IntX x, "")]
 
-instance ToX Integer where
-    toX = read
-    showType _ = "Integer"
-    widthX _ = 32
+instance Val Int where
+    showTypeOf _ = "Int"
+    valueWidth _ = 32
 
-instance ( KnownNat w ) => ToX (IntX w) where
-    toX = IntX . read
-    showType p = "IntX" ++ show (widthX p)
-    widthX p = natVal $ widthProxy p
+instance Val Integer where
+    showTypeOf _ = "Integer"
+    valueWidth _ = 32
+
+instance ( KnownNat w ) => Val (IntX w) where
+    showTypeOf p = "IntX" ++ show (valueWidth p)
+    valueWidth p = natVal $ widthProxy p
         where
             widthProxy :: Proxy (IntX w) -> Proxy w
             widthProxy _ = Proxy
 
+widthX pu = valueWidth $ proxyX pu
 
 -- transformToFixPoint algArithmetic x
 --         | IntRepr               <- rt = maybe (Left "Float values is unsupported") checkInt $ readMaybe x
