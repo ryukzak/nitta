@@ -10,7 +10,12 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 {-|
-Module : Multiplier (модель вычислительного блока умножителя)
+Module      : Multiplier
+Description : CAD model of Multiplier processor
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
 
 В данном модуле реализуется модель вычислительного блока умножителя для САПР. Он может вычислять
 следующие функции:
