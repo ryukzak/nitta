@@ -84,6 +84,7 @@ luaTestCase name lua
     in testGroup name
         [ luaTestCase' fn (Proxy :: Proxy Int) lua
         , luaTestCase' fn (Proxy :: Proxy (IntX 32)) lua
+        , luaTestCase' fn (Proxy :: Proxy (IntX 48)) lua
         ]
 
 luaTestCase' fn proxy lua
