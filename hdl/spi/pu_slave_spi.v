@@ -39,8 +39,6 @@ module pu_slave_spi #
 ///////////////////////////////////////////////////////////
 // [NITTA >>> SPI]
 
-
-
 // send_buffers
 reg send_buffer_sel;
 
@@ -78,8 +76,6 @@ assign send_buffer_oe[0] = !send_buffer_sel ? splitter_ready : 1'h0;
 assign send_buffer_oe[1] =  send_buffer_sel ? splitter_ready : 1'h0;
 wire [DATA_WIDTH-1:0] nitta_to_splitter =  send_buffer_data_out[send_buffer_sel];
 
-
-
 // splitter: translate from DATA_WIDTH to SPI_DATA_WIDTH
 wire splitter_ready;
 wire [SPI_DATA_WIDTH-1:0] splitter_to_spi;
@@ -99,7 +95,27 @@ nitta_to_spi_splitter #
     , .from_nitta( nitta_to_splitter )
     );
 
+// splitter: translate from SPI_DATA_WIDTH to DATA_WIDTH
+wire spi_ready;
+wire [SPI_DATA_WIDTH-1:0] splitter_from_spi;
+wire splitter_ready_sn;
+wire [DATA_WIDTH-1:0] splitter_to_nitta;
+wire [DATA_WIDTH-1:0] to_nitta;
+spi_to_nitta_splitter #
+        ( .DATA_WIDTH( DATA_WIDTH )
+        , .ATTR_WIDTH( ATTR_WIDTH )
+        , .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
+        ) spi_to_nitta_splitter 
+    ( .clk( clk )
+    , .rst( rst || flag_stop )
 
+    , .spi_ready( spi_ready )
+    , .from_spi( splitter_from_spi )
+
+    , .splitter_ready( splitter_ready_sn )
+
+    , .to_nitta( to_nitta )
+    );
 
 // SPI driver
 wire f_mosi, f_cs, f_sclk;
@@ -110,8 +126,8 @@ pu_slave_spi_driver #
     ( .clk( clk )
     , .rst( rst )
     , .data_in( splitter_to_spi )
-    // , .data_out(  )
-    // , .ready(  )
+    , .data_out( splitter_from_spi )
+    , .ready( spi_ready )
     , .prepare( spi_prepare )
     , .mosi( f_mosi )
     , .miso( miso )
@@ -143,7 +159,7 @@ always @( posedge clk ) begin
     else flag_stop <= 0;
 end
 
-assign data_out = 0;
+assign data_out = signal_oe ? to_nitta : 32'h00000000;
 assign attr_out = 0;
 
 endmodule
