@@ -385,6 +385,11 @@ class ProcessUnit pu v x t | pu -> v x t where
     setTime :: t -> pu -> pu
 
 
+class WithX pu x | pu -> x where
+    proxyX :: pu -> Proxy x
+    proxyX _ = Proxy
+
+
 bind fb pu = case tryBind fb pu of
     Right pu' -> pu'
     Left err  -> error $ "Can't bind F to PU: " ++ err
@@ -431,7 +436,7 @@ class UnambiguouslyDecode pu where
 
 
 -- |Значение сигнальной линии.
-data Value
+data SignalValue
     -- |Значение не определено.
     = Undef
     -- |Значение сигнальной линии установлено в логическое значение.
@@ -441,10 +446,10 @@ data Value
     | Broken
     deriving ( Eq )
 
-instance Default Value where
+instance Default SignalValue where
     def = Undef
 
-instance Show Value where
+instance Show SignalValue where
     show Undef        = "x"
     show (Bool True)  = "1"
     show (Bool False) = "0"

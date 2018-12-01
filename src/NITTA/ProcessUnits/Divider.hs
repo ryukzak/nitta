@@ -71,6 +71,8 @@ divider pipeline mock = Divider
 instance ( Time t ) => Default (Divider v x t) where
     def = divider 4 True
 
+instance WithX (Divider v x t) x
+
 instance ( Ord t ) => WithFunctions (Divider v x t) (F v x) where
     functions Divider{ process_, remains, jobs }
         = functions process_
@@ -320,7 +322,7 @@ instance Connected (Divider v x t) where
             ]
 
 
-instance ( Time t, Var v
+instance ( Val x, Show t
          ) => TargetSystemComponent (Divider v x t) where
     moduleName _ _ = "pu_div"
     software _ _ = Empty
@@ -330,11 +332,11 @@ instance ( Time t, Var v
             else FromLibrary "div/div.v"
         , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
         ]
-    hardwareInstance title Divider{ mock, pipeline }
+    hardwareInstance title pu@Divider{ mock, pipeline }
             Enviroment
                 { net=NetEnv
                     { signal
-                    , parameterDataWidth, dataIn, dataOut
+                    , dataIn, dataOut
                     , parameterAttrWidth, attrIn, attrOut
                     }
                 , signalClk
@@ -342,10 +344,10 @@ instance ( Time t, Var v
                 }
             PUPorts{ oe, oeSel, wr, wrSel } =
         [qc|pu_div
-    #( .DATA_WIDTH( { show parameterDataWidth } )
-     , .ATTR_WIDTH( { show parameterAttrWidth } )
+    #( .DATA_WIDTH( { widthX pu } )
+     , .ATTR_WIDTH( { parameterAttrWidth } )
      , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
-     , .PIPELINE( { show pipeline } )
+     , .PIPELINE( { pipeline } )
      , .MOCK_DIV( { bool2verilog mock } )
      ) { title }
     ( .clk( { signalClk } )
@@ -362,7 +364,7 @@ instance ( Time t, Var v
 
 
 instance ( Var v, Time t
-         , Typeable x, Show x, Integral x
+         , Typeable x, Show x, Integral x, Val x
          ) => TestBench (Divider v x t) v x where
     testBenchDescription prj@Project{ projectName, processorModel }
         = Immidiate (moduleName projectName processorModel ++ "_tb.v")

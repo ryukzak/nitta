@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns    #-}
@@ -123,7 +124,10 @@ instance FromHttpApiData Nid where
     parseUrlPiece = Right . read . T.unpack
 
 
-instance ToJSON (Synthesis String String Int (TaggedTime String Int)) where
+instance
+        ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
+        , ToJSON t, Time t
+        ) => ToJSON (Synthesis String String x t) where
     toJSON Synthesis{ sModel, sCntx, sStatus } = object
         [ "sModel" .= sModel
         , "sCntx" .= map show sCntx
@@ -138,7 +142,10 @@ instance ToJSON TestBenchReport
 instance ToJSON SynthesisSetup
 instance ToJSON SpecialMetrics
 
-instance ToJSON (WithMetric (CompilerDT String String Int (TaggedTime String Int))) where
+instance
+        ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
+        , ToJSON t, Time t
+        ) => ToJSON (WithMetric (CompilerDT String String x t)) where
     toJSON WithMetric{ mIntegral, mSpecial, mOption, mDecision }
         = toJSON ( mIntegral, mSpecial, mOption, mDecision )
 
@@ -158,6 +165,16 @@ instance ( ToJSON t, Time t ) => ToJSON (TimeConstrain t) where
         [ "available" .= tcAvailable
         , "duration" .= tcDuration
         ]
+
+instance ToJSONKey (IntX w) where
+    toJSONKey
+        = let
+            ToJSONKeyText f g = toJSONKey
+        in ToJSONKeyText (\(IntX x) -> f x) (\(IntX x) -> g x)
+
+
+instance ToJSON (IntX w) where
+    toJSON ( IntX x ) = toJSON x
 
 
 
@@ -181,7 +198,7 @@ instance ToJSON NodeElement where
         , "color" .= nodeColor
         , "shape" .= nodeShape
         , "size"  .= nodeSize
-        , "font"  .= object 
+        , "font"  .= object
             [
                 "size" .= fontSize
             ]
@@ -193,7 +210,7 @@ instance ToJSON GraphEdge where
         , "to"    .= inNodeId
         , "label" .= edgeName
         , "width" .= edgeWidth
-        , "font"  .= object 
+        , "font"  .= object
             [
                 "allign" .= fontAllign
             ]

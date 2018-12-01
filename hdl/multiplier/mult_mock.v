@@ -1,11 +1,12 @@
-module mult_inner (
-	dataa,
+module mult_inner #
+		( parameter DATA_WIDTH = 32 )
+	(dataa,
 	datab,
 	result);
 
-	input	signed [15:0]  dataa;
-	input	signed [15:0]  datab;
-	output signed [31:0]  result;
+	input	signed [DATA_WIDTH/2-1:0]  dataa;
+	input	signed [DATA_WIDTH/2-1:0]  datab;
+	output signed [DATA_WIDTH-1:0]  result;
 
 assign result = dataa * datab;
 
