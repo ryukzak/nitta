@@ -66,9 +66,10 @@ wire [DATA_WIDTH-1:0]         remain_result;
 
 generate
   if ( MOCK_DIV ) begin
-    div 
-      #( .PIPELINE( PIPELINE ) 
-       ) div_inner
+    div #
+        ( .DATA_WIDTH( DATA_WIDTH )
+        , .PIPELINE( PIPELINE ) 
+        ) div_inner
       ( .numer( arg[0] )
       , .denom( arg[1] )
       , .quotient( quotient_result )
@@ -76,15 +77,16 @@ generate
       , .clock( clk )
       );
   end else begin
-    div div_inner
+    div #
+        ( .DATA_WIDTH( DATA_WIDTH )
+        , .PIPELINE( PIPELINE ) 
+        ) div_inner
       ( .numer( arg[0] )
       , .denom( arg[1] )
       , .quotient( quotient_result )
       , .remain( remain_result )
       , .clock( clk )
       );
-      defparam
-        div_inner.LPM_DIVIDE_component.lpm_pipeline = PIPELINE;
   end
 endgenerate
   
