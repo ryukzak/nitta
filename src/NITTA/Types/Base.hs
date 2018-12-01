@@ -383,6 +383,9 @@ class ProcessUnit pu v x t | pu -> v x t where
     -- TODO: Необходимо преобразовать в setTimeTag. Добавить метод skip, для того что бы вычислительный блок мог
     -- пропускать отдельный переменные (необходимо для ветвления вычислительного процесса).
     setTime :: t -> pu -> pu
+
+
+class WithX pu x | pu -> x where
     proxyX :: pu -> Proxy x
     proxyX _ = Proxy
 

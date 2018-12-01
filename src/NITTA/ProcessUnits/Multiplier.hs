@@ -553,7 +553,7 @@ instance ( Var v
 -- |Для генерации процессоров и тестов использующих данный вычислительный блок используются
 -- реализованные ниже функции. Вызов этих методов выполняется при генерации проекта с сетью,
 -- включающей данный вычислительный блок или при генерации тестов.
-instance ( Time t, Var v
+instance ( Time t, Var v, Val x
          ) => TargetSystemComponent (Multiplier v x t) where
     -- |Наименование аппаратного модуля, экземпляр которого создаётся для его встраивания в
     -- процессор. В данном случае задается в файле @/hdl/multiplier/pu_multiplier.v@.
@@ -587,23 +587,30 @@ instance ( Time t, Var v
     -- |Генерация фрагмента исходного кода для создания экземпляра вычислительного блока в рамках
     -- процессора. Основная задача данной функции - корректно включить вычислительный блок в
     -- инфраструктуру процессора, установив все параметры, имена и провода.
-    hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
-        = [qc|pu_multiplier #
-        ( .DATA_WIDTH( {parameterDataWidth} )
-        , .ATTR_WIDTH( {parameterAttrWidth} )
-        , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
-        ) { title }
-    ( .clk( {signalClk} )
-    , .rst( {signalRst} )
-    , .signal_wr( { signal wr } )
-    , .signal_sel( { signal wrSel } )
-    , .data_in( { dataIn } )
-    , .attr_in( { attrIn } )
-    , .signal_oe( { signal oe } )
-    , .data_out( { dataOut } )
-    , .attr_out( { attrOut } )
-    );|]
+    --
+    -- Take attention to function @fixIndent@. This function allows a programmer to use 
+    -- normal code block indentation.
+    hardwareInstance title pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
+        = fixIndent [qc|
+|           pu_multiplier #
+|                   ( .DATA_WIDTH( { widthX pu } )
+|                   , .ATTR_WIDTH( { parameterAttrWidth } )
+|                   , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
+|                   ) { title }
+|               ( .clk( {signalClk} )
+|               , .rst( {signalRst} )
+|               , .signal_wr( { signal wr } )
+|               , .signal_sel( { signal wrSel } )
+|               , .data_in( { dataIn } )
+|               , .attr_in( { attrIn } )
+|               , .signal_oe( { signal oe } )
+|               , .data_out( { dataOut } )
+|               , .attr_out( { attrOut } )
+|               );
+|           |]
 
+-- As you can see ahead, this class uses to get data bus width from the type level (@x@ type variable).
+instance WithX (Multiplier v x t) x
 
 -- |Данный класс является служебным и предназначен для того, что бы извлекать из вычислительного
 -- блока все функции, привязанные к вычислительному блоку. Реализация данного класс проста: у модели
@@ -629,7 +636,7 @@ instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
 -- сравниваются с результатами функциональной симуляции и если они не совпадают, то выводится
 -- соответствующее сообщение об ошибке.
 instance ( Var v, Time t
-         , Typeable x, Show x, Integral x
+         , Typeable x, Show x, Integral x, Val x
          ) => TestBench (Multiplier v x t) v x where
     testBenchDescription prj@Project{ projectName, processorModel }
         -- Test bench представляет из себя один файл описанный ниже. Для его генерации используется

@@ -122,13 +122,13 @@ instance Connected (Accum v x t) where
       ]
 
 
-instance TargetSystemComponent (Accum v x t) where
+instance ( Val x ) => TargetSystemComponent (Accum v x t) where
   moduleName _ _ = "pu_accum"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software _ _ = Empty
-  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} =
+  hardwareInstance title pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} =
     [qc|pu_accum
-    #( .DATA_WIDTH( { show parameterDataWidth } )
+    #( .DATA_WIDTH( { widthX pu } )
      , .ATTR_WIDTH( { show parameterAttrWidth } )
      ) { title }
     ( .clk( { signalClk } )

@@ -101,8 +101,7 @@ busNetwork w allowDrop ips ops pus = BusNetwork
                 , inputPort= \(InputPort n) -> n
                 , outputPort= \(OutputPort n) -> n
                 , net=NetEnv
-                    { parameterDataWidth=InlineParam "DATA_WIDTH"
-                    , parameterAttrWidth=InlineParam "ATTR_WIDTH"
+                    { parameterAttrWidth=InlineParam "ATTR_WIDTH"
                     , dataIn="data_bus"
                     , dataOut=title ++ "_data_out"
                     , attrIn="attr_bus"
@@ -111,6 +110,8 @@ busNetwork w allowDrop ips ops pus = BusNetwork
                     }
                 })
             ) pus
+
+instance WithX (BusNetwork title v x t) x
 
 instance ( Title title
          , Time t

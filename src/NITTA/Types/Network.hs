@@ -185,8 +185,7 @@ instance Show Parameter where
 
 data NetEnv
     = NetEnv
-        { parameterDataWidth :: Parameter
-        , parameterAttrWidth :: Parameter
+        { parameterAttrWidth :: Parameter
         , dataIn, attrIn     :: String
         , dataOut, attrOut   :: String
         , signal             :: Signal -> String -- ^Функция позволяющая подставить индекс на шину управления.

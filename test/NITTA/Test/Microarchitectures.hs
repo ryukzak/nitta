@@ -51,7 +51,7 @@ march = busNetwork 31 (Just True) [] []
 
 
 marchSPI ::
-    ( Integral x, Bits x, Eq x, Default x, Show x, Typeable x
+    ( Integral x, Bits x, Eq x, Default x, Show x, Typeable x, Val x
     ) => Proxy x -> BusNetwork String String x Int
 marchSPI _proxy = busNetwork 31 (Just False)
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
