@@ -42,7 +42,7 @@ instance Default (State v x t) where
     def = State def def 20
 
 slaveSPI :: ( Var v, Time t ) => Int -> SPI v x t
-slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def def
+slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def{ nextTick = 1 } def
 
 
 

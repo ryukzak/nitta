@@ -95,11 +95,13 @@ nitta_to_spi_splitter #
     , .from_nitta( nitta_to_splitter )
     );
 
+///////////////////////////////////////////////////////////
+// [SPI >>> NITTA]
+
 // splitter: translate from SPI_DATA_WIDTH to DATA_WIDTH
 wire spi_ready;
 wire [SPI_DATA_WIDTH-1:0] splitter_from_spi;
 wire splitter_ready_sn;
-wire [DATA_WIDTH-1:0] splitter_to_nitta;
 wire [DATA_WIDTH-1:0] to_nitta;
 spi_to_nitta_splitter #
         ( .DATA_WIDTH( DATA_WIDTH )
@@ -108,14 +110,44 @@ spi_to_nitta_splitter #
         ) spi_to_nitta_splitter 
     ( .clk( clk )
     , .rst( rst || flag_stop )
-
     , .spi_ready( spi_ready )
     , .from_spi( splitter_from_spi )
-
     , .splitter_ready( splitter_ready_sn )
-
     , .to_nitta( to_nitta )
     );
+
+wire receive_buffer_wr[1:0];
+wire receive_buffer_oe[1:0];
+wire receive_buffer_fs[1:0];
+wire [DATA_WIDTH-1:0] receive_buffer_data_in[1:0];
+wire [DATA_WIDTH-1:0] receive_buffer_data_out[1:0];
+
+generate
+    genvar j;
+    for ( j = 0; j < 2; j = j + 1 ) begin : receive_buffer_j
+        buffer #
+                ( .BUF_SIZE( BUF_SIZE )
+                ) receive_buffer
+            ( .clk( clk )
+            , .rst( rst || receive_buffer_fs[j] )
+
+            , .wr( receive_buffer_wr[j] )
+            , .data_in( receive_buffer_data_in[j] )
+
+            , .oe_other( receive_buffer_oe[j] )
+            , .data_out_other( receive_buffer_data_out[j] )
+            ); 
+    end
+endgenerate
+
+assign receive_buffer_wr[0] =  send_buffer_sel ? splitter_ready_sn : 1'h0;
+assign receive_buffer_wr[1] = !send_buffer_sel ? splitter_ready_sn : 1'h0;
+assign receive_buffer_fs[0] = !send_buffer_sel ? flag_stop : 1'h0;
+assign receive_buffer_fs[1] =  send_buffer_sel ? flag_stop : 1'h0;
+assign receive_buffer_data_in[0] =  send_buffer_sel ? to_nitta : 0;
+assign receive_buffer_data_in[1] = !send_buffer_sel ? to_nitta : 0;
+assign receive_buffer_oe[0] = !send_buffer_sel ? signal_oe : 1'h0;
+assign receive_buffer_oe[1] =  send_buffer_sel ? signal_oe : 1'h0;
 
 // SPI driver
 wire f_mosi, f_cs, f_sclk;
@@ -140,8 +172,6 @@ bounce_filter #( .DIV(BOUNCE_FILTER) ) f_mosi_filter ( rst, clk, mosi, f_mosi );
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_cs_filter   ( rst, clk, cs,   f_cs   );
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_sclk_filter ( rst, clk, sclk, f_sclk );
 
-
-
 ///////////////////////////////////////////////////////////
 // Control logic
 
@@ -159,7 +189,8 @@ always @( posedge clk ) begin
     else flag_stop <= 0;
 end
 
-assign data_out = signal_oe ? to_nitta : 32'h00000000;
+assign data_out   = receive_buffer_oe[1] ? receive_buffer_data_out[1] : 
+                    receive_buffer_oe[0] ? receive_buffer_data_out[0] : {DATA_WIDTH{1'b0}};
 assign attr_out = 0;
 
 endmodule
