@@ -20,6 +20,7 @@ Stability   : experimental
 конфигурацией процессора. В данном примере это интерфейс SPI (`NITTA.ProcessUnit.SPI`).
 -}
 
+{-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
 {-# LANGUAGE TemplateHaskell  #-}
@@ -57,7 +58,7 @@ nittaArch = busNetwork 31 Nothing
                     })
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
     , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
-    ]
+    ] :: BusNetwork String String (IntX 32) Int
 
 teacupLua = $(embedStringFile "examples/teacup.lua")
 
@@ -68,21 +69,20 @@ teacupLua = $(embedStringFile "examples/teacup.lua")
 --     , F.constant 125 ["time_step_1", "time_step_2"]
 --     , F.add "time" "time_step_1" ["time_new"]
 --     , F.send "time_send"
--- 
+--
 --     , F.constant 70000 ["temp_room"]
 --     , F.constant 10000 ["temp_ch"]
 --     , F.loop 180000 "temp_cup_new" ["temp_cup_1", "temp_cup_2", "temp_cup_send"]
 --     -- (Teacup Temperature - temp_room) / temp_ch
 --     , F.sub "temp_room" "temp_cup_1" ["acc"]
 --     , F.division "acc" "temp_ch" ["temp_loss"] []
--- 
+--
 --     -- INTEG ( -temp_loss to Room
 --     , F.multiply "temp_loss" "time_step_2" ["delta"]
 --     , F.add "temp_cup_2" "delta" ["temp_cup_new"]
 --     , F.send "temp_cup_send"
 --     ]
 -- @
-teacupAlg :: [F String Int]
 teacupAlg = lua2functions teacupLua
 
 main = demo Project

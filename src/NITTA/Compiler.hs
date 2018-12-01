@@ -4,7 +4,6 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
@@ -62,6 +61,7 @@ import           Numeric.Interval      (Interval, (...))
 -- FIXME: Dijkstra algorithm as a Synthesiser method.
 
 -- |Schedule process by simple synthesis.
+-- simpleSynthesis :: ( Title title, Var v, Typeable x, Time t ) => ModelState title v x t -> ModelState title v x t
 simpleSynthesis model
     = let
         n = rootSynthesis model
@@ -149,7 +149,7 @@ bestNids root nids
 mkModelWithOneNetwork arch alg = Frame
     { processor=foldl (flip bind) arch alg
     , dfg=DFG $ map node alg
-    } :: ModelState String String Int (TaggedTime String Int)
+    }
 
 
 
@@ -207,8 +207,8 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
 instance ( Var v, Typeable x, Time t
-         ) => DecisionProblem (CompilerDT String v x (TaggedTime String t))
-                   CompilerDT (ModelState String v x (TaggedTime String t))
+         ) => DecisionProblem (CompilerDT String v x t)
+                   CompilerDT (ModelState String v x t)
         where
     options _ f@Frame{ processor }
         =  map generalizeBindingOption (options binding f)

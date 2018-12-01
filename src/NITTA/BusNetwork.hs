@@ -56,6 +56,8 @@ import           Text.InterpolatedString.Perl6 (qc)
 type Title v = ( Typeable v, Ord v, Show v )
 
 
+
+
 data GBusNetwork title spu v x t = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
@@ -99,8 +101,7 @@ busNetwork w allowDrop ips ops pus = BusNetwork
                 , inputPort= \(InputPort n) -> n
                 , outputPort= \(OutputPort n) -> n
                 , net=NetEnv
-                    { parameterDataWidth=InlineParam "DATA_WIDTH"
-                    , parameterAttrWidth=InlineParam "ATTR_WIDTH"
+                    { parameterAttrWidth=InlineParam "ATTR_WIDTH"
                     , dataIn="data_bus"
                     , dataOut=title ++ "_data_out"
                     , attrIn="attr_bus"
@@ -109,6 +110,8 @@ busNetwork w allowDrop ips ops pus = BusNetwork
                     }
                 })
             ) pus
+
+instance WithX (BusNetwork title v x t) x
 
 instance ( Title title
          , Time t
@@ -277,7 +280,7 @@ instance Controllable (BusNetwork title v x t) where
         deriving (Typeable, Show)
 
     data Microcode (BusNetwork title v x t)
-        = BusNetworkMC (A.Array Signal Value)
+        = BusNetworkMC (A.Array Signal SignalValue)
 
 
 instance {-# OVERLAPS #-}
@@ -353,6 +356,8 @@ programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
 instance
         ( Time t
+        , Val x
+        , Var v
         ) => TargetSystemComponent (BusNetwork String v x t) where
     moduleName title BusNetwork{..} = title ++ "_net"
 
@@ -362,7 +367,7 @@ instance
             mn = moduleName title pu
             iml = fixIndent [qc|
 |                   {"module"} { mn }
-|                       #( parameter DATA_WIDTH = 32
+|                       #( parameter DATA_WIDTH = { widthX pu }
 |                        , parameter ATTR_WIDTH = 4
 |                        )
 |                       ( input                     clk
@@ -374,7 +379,6 @@ instance
 |                       , output              [7:0] debug_bus1
 |                       , output              [7:0] debug_bus2
 |                       , input                     is_drop_allow
-|                       , input    [DATA_WIDTH-1:0] data_bus_hack
 |                       );
 |
 |                   parameter MICROCODE_WIDTH = { bnSignalBusWidth };
@@ -404,7 +408,7 @@ instance
 |
 |                   { S.join "\\n\\n" instances }
 |
-|                   assign data_bus = { S.join " | " $ "data_bus_hack" : map snd valuesRegs };
+|                   assign data_bus = { S.join " | " $ map snd valuesRegs };
 |                   assign attr_bus = { S.join " | " $ map fst valuesRegs };
 |
 |                   endmodule
@@ -444,9 +448,9 @@ instance
 
 
 instance ( Title title, Var v, Time t
-         , Show x
+         , Show x, Enum x
          , TargetSystemComponent (BusNetwork title v x t)
-         , Typeable x
+         , Typeable x, Val x
          ) => TestBench (BusNetwork title v x t) v x where
     testBenchDescription Project{ projectName, processorModel=n@BusNetwork{..}, testCntx }
         = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
@@ -475,11 +479,10 @@ instance ( Title title, Var v, Time t
 |               reg clk, rst;
 |               { if null ports then "" else "wire " ++ S.join ", " ports ++ ";" }
 |
-|               wire [32-1:0] data_bus_hack = 0;
 |               wire cycle;
 |
 |               { moduleName projectName n }
-|                   #( .DATA_WIDTH( 32 )
+|                   #( .DATA_WIDTH( { widthX n } )
 |                    , .ATTR_WIDTH( 4 )
 |                    ) net
 |                   ( .clk( clk )
@@ -489,7 +492,6 @@ instance ( Title title, Var v, Time t
 |                   // if 1 - The process cycle are indipendent from a SPI.
 |                   // else - The process cycle are wait for the SPI.
 |                   , .is_drop_allow( { maybe "is_drop_allow" bool2verilog bnAllowDrop } )
-|                   , .data_bus_hack( data_bus_hack )
 |                   );
 |
 |               { testEnv }
@@ -529,8 +531,8 @@ instance ( Title title, Var v, Time t
 |               |]
                 ++ case extractInstructionAt n t of
                     Transport v _ _ : _ -> fixIndent [qc|
-|                                   $write("=== %h (var: %s)", { get' cntx v }, { v } );
-|                                   if ( !( net.data_bus === { get' cntx v } ) ) $display( " FAIL");
+|                                   $write("=== %h (var: %s)", { fromEnum $ get' cntx v }, { v } );
+|                                   if ( !( net.data_bus === { fromEnum $ get' cntx v } ) ) $display( " FAIL");
 |                                   else $display();
 |                       |]
                     [] -> fixIndent [qc|

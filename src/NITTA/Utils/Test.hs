@@ -39,7 +39,6 @@ import           Text.InterpolatedString.Perl6 (qc)
 test name = testWithInput name []
 testLua name ma = testWithInput name [] ma . lua2functions
 
-testWithInput :: _ -> _ -> _ -> _ -> IO (Either String String)
 testWithInput name cntx ma alg = runExceptT $ do
     let model@Frame{ processor } = simpleSynthesis $ mkModelWithOneNetwork ma alg
     let isComplete = isSchedulingComplete model
@@ -54,9 +53,9 @@ testWithInput name cntx ma alg = runExceptT $ do
             , targetPlatforms=[ Makefile, DE0Nano ]
             }
     TestBenchReport{ tbStatus } <- lift $ writeAndRunTestBench prj
-    unless tbStatus $ throwE [qc|> test { name } - Fail|]
+    unless tbStatus $ throwE ([qc|> test { name } - Fail|] :: String)
 
-    return [qc|> test { name } - Success|]
+    return ([qc|> test { name } - Success|] :: String)
 
 demo prj@Project{ projectPath, processorModel } = do
     let prj' = prj{ processorModel=processor $ simpleSynthesis processorModel }

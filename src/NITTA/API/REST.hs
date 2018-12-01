@@ -33,15 +33,12 @@ import           NITTA.API.Marshalling  ()
 import           NITTA.Compiler
 import           NITTA.DataFlow
 import           NITTA.Project          (writeAndRunTestBench)
-import           NITTA.Types
+import           NITTA.Types            (F)
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
 import           Servant
 import           System.FilePath        (joinPath)
 
-
-
-type SYN = SynthesisTree String String Int (TaggedTime String Int)
 
 
 -- *REST API Projections.
@@ -70,9 +67,9 @@ view n = f <$> mzip (nidsTree n) n
 
 -- *REST API
 
-type SynthesisAPI
+type SynthesisAPI x t
     =    "synthesis" :> Get '[JSON] (Tree SynthesisView)
-    :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis
+    :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis x t
 
 synthesisServer st
     =    ( view <$> liftSTM (readTVar st))
@@ -80,22 +77,24 @@ synthesisServer st
 
 
 
-type WithSynthesis
-    =    Get '[JSON] SYN
-    :<|> "model" :> Get '[JSON] (ModelState String String Int (TaggedTime String Int))
+type WithSynthesis x t
+    =    Get '[JSON] (SynthesisTree String String x t)
+    :<|> "model" :> Get '[JSON] (ModelState String String x t)
+    :<|> "model" :> "alg" :> Get '[JSON] [F String x]
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
-    :<|> SimpleCompilerAPI
+    :<|> SimpleCompilerAPI x t
 
 withSynthesis st nid
     =    get st nid
     :<|> getModel st nid
+    :<|> ( (\Frame{ dfg=DFG nodes } -> map (\(DFGNode f) -> f) nodes) <$> getModel st nid )
     :<|> ( \name -> getTestBenchOutput st nid name )
     :<|> simpleCompilerServer st nid
 
 
 
-type SimpleCompilerAPI
-    =    "simple" :> "options" :> Get '[JSON] [ WithMetric (CompilerDT String String Int (TaggedTime String Int)) ]
+type SimpleCompilerAPI x t
+    =    "simple" :> "options" :> Get '[JSON] [ WithMetric (CompilerDT String String x t) ]
     :<|> "simple" :> "obviousBind" :> Post '[JSON] Nid
     :<|> "simple" :> "allThreads" :> QueryParam' '[Required] "deep" Int :> Post '[JSON] Nid
     :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
