@@ -167,6 +167,7 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
             , FromLibrary "spi/bounce_filter.v"
             , FromLibrary "spi/spi_master_driver.v"
             , FromLibrary "spi/nitta_to_spi_splitter.v"
+            , FromLibrary "spi/spi_to_nitta_splitter.v"
             , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
             ]
     software _ pu = Immidiate "transport.txt" $ show pu
