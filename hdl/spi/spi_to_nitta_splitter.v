@@ -41,7 +41,7 @@ always @( posedge clk ) begin
 end
 
 always @( posedge clk ) begin
-    if(counter[SUBFRAME_COUNTER_WIDTH] & !wait_spi_ready) begin 
+    if(counter == SUBFRAME_NUMBER & !wait_spi_ready) begin 
        splitter_ready <= 1;
        to_nitta <= data;
     end else begin
