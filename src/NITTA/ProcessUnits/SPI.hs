@@ -256,6 +256,7 @@ instance ( Var v, Show t, Show x, Enum x ) => IOTest (SPI v x t) v x where
 |               repeat(8) @(posedge { signalClk });
 |               { S.join "" $ map ioCycle cntxs }
 |               repeat(70) @(posedge { signalClk });
+|               $finish;
 |           end
 |           |]
         | otherwise = ""
