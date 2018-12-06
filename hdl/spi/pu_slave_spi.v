@@ -127,7 +127,8 @@ generate
     genvar j;
     for ( j = 0; j < 2; j = j + 1 ) begin : receive_buffer_j
         buffer #
-                ( .BUF_SIZE( BUF_SIZE )
+                ( .DATA_WIDTH( DATA_WIDTH )
+                , .BUF_SIZE( BUF_SIZE )
                 ) receive_buffer
             ( .clk( clk )
             , .rst( rst || receive_buffer_fs[j] )
