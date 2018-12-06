@@ -31,5 +31,5 @@ generate
         end        
     end
 endgenerate
-	
+    
 endmodule

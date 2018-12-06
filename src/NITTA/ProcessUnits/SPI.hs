@@ -42,7 +42,7 @@ instance Default (State v x t) where
     def = State def def 20
 
 slaveSPI :: ( Var v, Time t ) => Int -> SPI v x t
-slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def def
+slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def{ nextTick = 1 } def
 
 
 
@@ -168,6 +168,7 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
             , FromLibrary "spi/bounce_filter.v"
             , FromLibrary "spi/spi_master_driver.v"
             , FromLibrary "spi/nitta_to_spi_splitter.v"
+            , FromLibrary "spi/spi_to_nitta_splitter.v"
             , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
             ]
     software _ pu = Immidiate "transport.txt" $ show pu
