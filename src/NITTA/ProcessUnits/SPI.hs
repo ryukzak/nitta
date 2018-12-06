@@ -157,7 +157,7 @@ instance Connected (SPI v x t) where
 
 
 
-instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
+instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
     moduleName _ _ = "pu_slave_spi"
     hardware title pu
         = Aggregate Nothing
@@ -174,12 +174,12 @@ instance ( Var v, Show t ) => TargetSystemComponent (SPI v x t) where
     software _ pu = Immidiate "transport.txt" $ show pu
     hardwareInstance
             title
-            SerialPU{ spuState=State{ spiBounceFilter } }
+            pu@SerialPU{ spuState=State{ spiBounceFilter } }
             Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
             PUPorts{..}
         = fixIndent [qc|
 |           pu_slave_spi
-|               #( .DATA_WIDTH( { show parameterDataWidth } )
+|               #( .DATA_WIDTH( { widthX pu } )
 |                , .ATTR_WIDTH( { show parameterAttrWidth } )
 |                , .BOUNCE_FILTER( { show spiBounceFilter } )
 |                ) { title }
@@ -205,7 +205,7 @@ receiveSequenece SerialPU{ spuState=State{ spiReceive } } = reverse $ map head $
 sendSequenece SerialPU{ spuState=State{ spiSend } } = reverse $ fst spiSend
 receiveData pu cntx = map (get' cntx) $ receiveSequenece pu
 
-instance ( Var v, Show t, Show x ) => IOTest (SPI v x t) v x where
+instance ( Var v, Show t, Show x, Enum x ) => IOTest (SPI v x t) v x where
     componentTestEnviroment
             title
             pu
@@ -225,7 +225,7 @@ instance ( Var v, Show t, Show x ) => IOTest (SPI v x t) v x where
 |               |]
                 where 
                     dt = receiveData pu cntx
-                    dt' = S.join ", " $ map (\d -> [qc|{ wordWidth }'sd{ d }|]) dt ++ replicate (frameWordCount - length dt) [qc|{ wordWidth }'d00|]
+                    dt' = S.join ", " $ map (\d -> [qc|{ wordWidth }'sd{ fromEnum d }|]) dt ++ replicate (frameWordCount - length dt) [qc|{ wordWidth }'d00|]
         , frameWordCount > 0
         = fixIndent [qc|
 |           // { show pu }

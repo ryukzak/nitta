@@ -36,7 +36,10 @@
 // synopsys translate_off
 `timescale 1 ps / 1 ps
 // synopsys translate_on
-module div (
+module div 
+	#( parameter DATA_WIDTH = 32
+     , parameter PIPELINE   = 4
+	(
 	clock,
 	denom,
 	numer,
@@ -44,15 +47,15 @@ module div (
 	remain);
 
 	input	  clock;
-	input	[31:0]  denom;
-	input	[31:0]  numer;
-	output	[31:0]  quotient;
-	output	[31:0]  remain;
+	input	[DATA_WIDTH-1:0]  denom;
+	input	[DATA_WIDTH-1:0]  numer;
+	output	[DATA_WIDTH-1:0]  quotient;
+	output	[DATA_WIDTH-1:0]  remain;
 
-	wire [31:0] sub_wire0;
-	wire [31:0] sub_wire1;
-	wire [31:0] quotient = sub_wire0[31:0];
-	wire [31:0] remain = sub_wire1[31:0];
+	wire [DATA_WIDTH-1:0] sub_wire0;
+	wire [DATA_WIDTH-1:0] sub_wire1;
+	wire [DATA_WIDTH-1:0] quotient = sub_wire0[DATA_WIDTH-1:0];
+	wire [DATA_WIDTH-1:0] remain = sub_wire1[DATA_WIDTH-1:0];
 
 	lpm_divide	LPM_DIVIDE_component (
 				.clock (clock),
@@ -66,10 +69,10 @@ module div (
 		LPM_DIVIDE_component.lpm_drepresentation = "SIGNED",
 		LPM_DIVIDE_component.lpm_hint = "MAXIMIZE_SPEED=6,LPM_REMAINDERPOSITIVE=TRUE",
 		LPM_DIVIDE_component.lpm_nrepresentation = "SIGNED",
-		LPM_DIVIDE_component.lpm_pipeline = 4,
+		LPM_DIVIDE_component.lpm_pipeline = PIPELINE,
 		LPM_DIVIDE_component.lpm_type = "LPM_DIVIDE",
-		LPM_DIVIDE_component.lpm_widthd = 32,
-		LPM_DIVIDE_component.lpm_widthn = 32;
+		LPM_DIVIDE_component.lpm_widthd = DATA_WIDTH,
+		LPM_DIVIDE_component.lpm_widthn = DATA_WIDTH;
 
 
 endmodule

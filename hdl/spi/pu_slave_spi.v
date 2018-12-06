@@ -52,6 +52,7 @@ generate
     for ( i = 0; i < 2; i = i + 1 ) begin : send_buffer_i
         buffer #
                 ( .BUF_SIZE( BUF_SIZE )
+                , .DATA_WIDTH( DATA_WIDTH )
                 ) send_buffer // from nitta to spi
             ( .clk( clk )
             , .rst( rst || flag_stop )

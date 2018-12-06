@@ -19,6 +19,7 @@ module NITTA.Utils
     , fixIndent
     , fixIndentNoLn
     , space2tab
+    , modify'_
     -- *HDL generation
     , bool2verilog
     , values2dump
@@ -50,6 +51,7 @@ module NITTA.Utils
     ) where
 
 import           Control.Monad.State
+import           Control.Monad.State (modify')
 import           Data.Default
 import           Data.List           (maximumBy, minimumBy, nub, sortOn)
 import           Data.Maybe          (isJust, mapMaybe)
@@ -85,6 +87,10 @@ instance ( Ord t ) => WithFunctions (Process v x t) (F v x) where
 
 unionsMap f lst = unions $ map f lst
 oneOf = head . elems
+
+
+modify'_ :: (s -> s) -> State s ()
+modify'_ = modify'
 
 
 -- |Собрать список переменных подаваемых на вход указанных функций. При формировании результата
@@ -136,8 +142,8 @@ fixIndent s = unlines $ map f ls
             | otherwise = error $ "fixIndent error " ++ show tabSize ++ " \"" ++ l ++ "\""
         f l = l
 
-fixIndentNoLn s 
-    = let 
+fixIndentNoLn s
+    = let
         s' = fixIndent s
     in take (length s' - 1) s'
 

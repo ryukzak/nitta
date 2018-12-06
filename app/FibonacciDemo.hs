@@ -17,6 +17,7 @@ Stability   : experimental
 конфигурацией процессора. В данном примере это интерфейс SPI ('NITTA.ProcessUnit.SPI').
 -}
 
+{-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
 {-# LANGUAGE TemplateHaskell  #-}
@@ -25,16 +26,16 @@ Stability   : experimental
 module Main ( main ) where
 
 import           Data.Default
-import           Data.FileEmbed                (embedStringFile)
+import           Data.FileEmbed           (embedStringFile)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.Frontend
-import qualified NITTA.ProcessUnits.Accum      as A
-import qualified NITTA.ProcessUnits.Fram       as FR
-import qualified NITTA.ProcessUnits.SPI        as SPI
+import qualified NITTA.ProcessUnits.Accum as A
+import qualified NITTA.ProcessUnits.Fram  as FR
+import qualified NITTA.ProcessUnits.SPI   as SPI
 import           NITTA.Types
 import           NITTA.Types.Project
-import           NITTA.Utils.Test              (demo)
+import           NITTA.Utils.Test         (demo)
 
 nittaArch = busNetwork 20 Nothing
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
@@ -48,7 +49,7 @@ nittaArch = busNetwork 20 Nothing
                     , SPI.stop="stop"
                     , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                     })
-    ]
+    ] :: BusNetwork String String (IntX 32) Int
 
 fibonacciLua = $(embedStringFile "examples/fibonacci.lua")
 
@@ -65,7 +66,7 @@ fibonacciLua = $(embedStringFile "examples/fibonacci.lua")
 --                , F.send "i_send"
 --                ]
 -- @
-fibonacciAlg :: [F String Int]
+-- fibonacciAlg :: [F String (IntX 42)]
 fibonacciAlg = lua2functions fibonacciLua
 
 main = demo Project

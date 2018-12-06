@@ -134,13 +134,13 @@ instance ( Var v, B.Bits x, Typeable x ) => Simulatable (Shift v x t) v x where
     | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
 
 
-instance TargetSystemComponent (Shift v x t) where
+instance ( Val x ) => TargetSystemComponent (Shift v x t) where
   moduleName _ _ = "pu_shift"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software _ _ = Empty
-  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
+  hardwareInstance title pu Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
     [qc|pu_shift
-    #( .DATA_WIDTH( { show parameterDataWidth } )
+    #( .DATA_WIDTH( { widthX pu } )
      , .ATTR_WIDTH( { show parameterAttrWidth } )
      ) { title }
     ( .clk( { signalClk } )

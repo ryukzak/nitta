@@ -1,12 +1,15 @@
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-
 Данный модуль реализует функции для генерации функциональных блоков.
 -}
-module NITTA.Test.Functions where
+module NITTA.Test.Functions
+    ( functionTests
+    ) where
 
 import           Data.Default
 import           Data.List               (permutations)
@@ -17,7 +20,9 @@ import           NITTA.Functions
 import           NITTA.ProcessUnits.Fram
 import           NITTA.Types
 import           Test.QuickCheck
+import           Test.Tasty              (TestTree)
 import           Test.Tasty.HUnit
+import           Test.Tasty.TH
 
 
 framDefSize = frSize (def :: Fram () Int ())
@@ -57,7 +62,8 @@ instance Arbitrary (Multiply String Int) where
 instance Arbitrary (Division String Int) where
     arbitrary = suchThat (Division <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
 
-reorderAlgorithmTest = do
+
+case_reorderAlgorithm = do
     let f = reorderAlgorithm :: [F String Int] -> [F String Int]
     let l1 = loop 0 "b2" ["a1"      ]
     let l2 = loop 1 "c" ["b1", "b2"]
@@ -65,7 +71,7 @@ reorderAlgorithmTest = do
     mapM_ (([ l1, l2, a ] @=?) . f) $ permutations [ l1, l2, a ]
 
 
-simulateFibonacciTest = do
+case_simulateFibonacci = do
     let cntxs = simulateAlg (def :: Cntx String Int)
             [ loop 0 "b2" ["a1"      ]
             , loop 1 "c" ["b1", "b2"]
@@ -73,3 +79,7 @@ simulateFibonacciTest = do
             ]
     let fibs = reverse (cntxVars (cntxs !! 20) M.! "a1")
     [0, 1, 1, 2, 3, 5, 8] @=? fibs
+
+
+functionTests :: TestTree
+functionTests = $(testGroupGenerator)

@@ -1,8 +1,8 @@
 # Building and testing
 Before start, you should:
-- [clone](doc/sourcetree-install.md) or download project from repositories;
-- install [The Haskell Tool Stack](doc/stack-install.md);
-- install [Icarus Verilog](doc/hdl-install.md).
+- [clone](../doc/sourcetree-install.md) or download project from repositories;
+- install [The Haskell Tool Stack](../doc/stack-install.md);
+- install [Icarus Verilog](../doc/hdl-install.md).
 - change current directory to the project path.
 
 To build project you can run:
@@ -14,9 +14,11 @@ To execute without UI (<app/Main.hs>):
 > stack exec nitta
 
 To execute with UI (<app/Main.hs>):
-> stack exec nitta -- --web
+> stack exec nitta -- --web examples/fibonacci.lua
 
 For repeated execution add `--no-static-gen` option, it should significantly reduce run time.
+
+To open UI in web browser you should go to: <http://localhost:8080/index.html>
 
 To test (<test/Spec.hs>):
 > stack test --fast

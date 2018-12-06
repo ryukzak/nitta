@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE NamedFieldPuns      #-}
@@ -46,7 +47,7 @@ import           Text.InterpolatedString.Perl6 (qc)
 
 -- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
 -- с задачей о целевой платформе.
-microarch = busNetwork 31 (Just True)
+microarch = busNetwork 31 (Just False)
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
     [ OutputPort "miso" ]
     [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -62,7 +63,7 @@ microarch = busNetwork 31 (Just True)
             })
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
     , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
-    ]
+    ] :: BusNetwork String String (IntX 32) Int
 
 
 ---------------------------------------------------------------------------------
@@ -120,7 +121,7 @@ main = do
                             , SPI.stop="stop"
                             , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                             })
-                    ]
+                    ] :: BusNetwork String String (IntX 32) Int
             print =<< testWithInput "hardcode" [("a_0", [10..15]),("b_0", [20..25])] microarchHC
                 ( lua2functions
                     [qc|function fib()

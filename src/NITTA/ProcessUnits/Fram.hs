@@ -110,6 +110,8 @@ instance ( Default t
       defaultSize = 16
       cells = map (\(i, c) -> c{ initialValue=0x1000 + i }) $ zip [0..] $ repeat def
 
+instance WithX (Fram v x t) x
+
 instance WithFunctions (Fram v x t) (F v x) where
     functions Fram{ frBindedFB } = frBindedFB
 
@@ -536,7 +538,8 @@ instance ( Var v
          , Num x
          , Default x
          , Eq x
-         , PrintfArg x
+         , Enum x
+         , Val x
          , ProcessUnit (Fram v x t) v x t
          ) => TestBench (Fram v x t) v x where
   testBenchDescription Project{ projectName, processorModel=pu@Fram{ frProcess=Process{ steps }, .. }, testCntx }
@@ -550,8 +553,7 @@ instance ( Var v
                 , inputPort=undefined
                 , outputPort=undefined
                 , net=NetEnv
-                  { parameterDataWidth=IntParam 32
-                  , parameterAttrWidth=IntParam 4
+                  { parameterAttrWidth=IntParam 4
                   , dataIn="data_in"
                   , attrIn="attr_in"
                   , dataOut="data_out"
@@ -683,14 +685,14 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
 
 softwareFile title pu = moduleName title pu ++ "." ++ title ++ ".dump"
 
-instance ( Time t, Var v, PrintfArg x ) => TargetSystemComponent (Fram v x t) where
+instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) where
   moduleName _ _ = "pu_fram"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software title pu@Fram{ frMemory }
-    = Immidiate (softwareFile title pu) $ unlines $ map (printf "%08x" . initialValue) $ elems frMemory
+    = Immidiate (softwareFile title pu) $ unlines $ map (printf "%08x" . fromEnum . initialValue) $ elems frMemory
   hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
     [qc|pu_fram
-    #( .DATA_WIDTH( { show parameterDataWidth } )
+    #( .DATA_WIDTH( { widthX pu } )
      , .ATTR_WIDTH( { show parameterAttrWidth } )
      , .RAM_SIZE( { show frSize } )
      , .FRAM_DUMP( "$path${ softwareFile title pu }" )

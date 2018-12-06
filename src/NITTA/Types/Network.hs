@@ -101,7 +101,7 @@ class Connected pu where
     data PUPorts pu :: *
     -- |Отображение микрокода на сигнальные линии. Необходимо для "сведения" микрокоманд отдельных
     -- вычислительных блоков в микрокоманды сети.
-    transmitToLink :: Microcode pu -> PUPorts pu -> [(Signal, Value)]
+    transmitToLink :: Microcode pu -> PUPorts pu -> [(Signal, SignalValue)]
 
 
 
@@ -194,8 +194,7 @@ instance Show Parameter where
 
 data NetEnv
     = NetEnv
-        { parameterDataWidth :: Parameter
-        , parameterAttrWidth :: Parameter
+        { parameterAttrWidth :: Parameter
         , dataIn, attrIn     :: String
         , dataOut, attrOut   :: String
         , signal             :: Signal -> String -- ^Функция позволяющая подставить индекс на шину управления.
