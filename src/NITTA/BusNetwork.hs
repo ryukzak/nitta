@@ -508,7 +508,7 @@ instance ( Title title, Var v, Time t
 |                       // Signals effect to processor state after first clk posedge.
 |                       @(posedge clk);
 |               { concatMap assertion simulationInfo }
-|                   repeat ( 2000 ) @(posedge clk);
+|                       repeat ( 2000 ) @(posedge clk);
 |                       $finish;
 |                   end
 |

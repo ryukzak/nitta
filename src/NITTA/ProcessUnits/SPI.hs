@@ -39,7 +39,7 @@ data State v x t
     deriving ( Show )
 
 instance Default (State v x t) where
-    def = State def def 20
+    def = State def def 2
 
 slaveSPI :: ( Var v, Time t ) => Int -> SPI v x t
 slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def{ nextTick = 1 } def
@@ -208,7 +208,7 @@ receiveData pu cntx = map (get' cntx) $ receiveSequenece pu
 instance ( Var v, Show t, Show x, Enum x ) => IOTest (SPI v x t) v x where
     componentTestEnviroment
             title
-            pu
+            pu@SerialPU{ spuState=State{ spiBounceFilter } }
             Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort }
             PUPorts{..}
             cntxs
@@ -221,7 +221,7 @@ instance ( Var v, Show t, Show x, Enum x ) => IOTest (SPI v x t) v x where
 |                   { title }_master_in = \{ { dt' } }; // { dt }
 |                   { title }_start_transaction = 1;                           @(posedge { signalClk });
 |                   { title }_start_transaction = 0;                           @(posedge { signalClk });
-|                   repeat( { frameWidth * 2 + 10 } ) @(posedge { signalClk });
+|                   repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
 |               |]
                 where 
                     dt = receiveData pu cntx
@@ -256,7 +256,7 @@ instance ( Var v, Show t, Show x, Enum x ) => IOTest (SPI v x t) v x where
 |               repeat(8) @(posedge { signalClk });
 |               { S.join "" $ map ioCycle cntxs }
 |               repeat(70) @(posedge { signalClk });
-|               $finish;
+|               // $finish; // DON'T DO THAT (with this line test can pass without data checking)
 |           end
 |           |]
         | otherwise = ""

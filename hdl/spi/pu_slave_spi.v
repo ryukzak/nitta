@@ -11,7 +11,7 @@ module pu_slave_spi #
         , parameter ATTR_WIDTH     = 4
         , parameter SPI_DATA_WIDTH = 8
         , parameter BUF_SIZE       = 6
-        , parameter BOUNCE_FILTER  = 20
+        , parameter BOUNCE_FILTER  = 4
         )
     ( input                     clk
     , input                     rst

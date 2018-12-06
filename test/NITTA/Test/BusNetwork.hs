@@ -37,7 +37,7 @@ test_fibonacci =
         , F.add "a1" "b1" ["c"]
         ]
     , algTestCase "drop_data" (marchSPIDropData proxyInt) alg
-    -- , algTestCase "no_drop_data" (marchSPI proxyInt) alg
+    , algTestCase "no_drop_data" (marchSPI proxyInt) alg
     ]
     where
         alg =

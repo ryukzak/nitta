@@ -51,7 +51,7 @@ nittaArch = busNetwork 31 Nothing
     , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
     , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
     , ("spi", PU
-        (SPI.slaveSPI 10)
+        (SPI.slaveSPI 4)
         SPI.PUPorts{ SPI.wr=Signal 22, SPI.oe=Signal 23
                     , SPI.stop="stop"
                     , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
