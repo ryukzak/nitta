@@ -221,7 +221,7 @@ instance ( Var v, Show t, Show x ) => IOTest (SPI v x t) v x where
 |                   { title }_master_in = \{ { dt' } }; // { dt }
 |                   { title }_start_transaction = 1;                           @(posedge { signalClk });
 |                   { title }_start_transaction = 0;                           @(posedge { signalClk });
-|                   repeat(200) @(posedge { signalClk }); // FIXME: 200
+|                   repeat( { frameWidth * 2 + 10 } ) @(posedge { signalClk });
 |               |]
                 where 
                     dt = receiveData pu cntx

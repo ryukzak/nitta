@@ -121,12 +121,13 @@ main = do
                             , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                             })
                     ]
-            print =<< testWithInput "hardcode" [("a_0", [1..5])] microarchHC
+            print =<< testWithInput "hardcode" [("a_0", [10..15]),("b_0", [20..25])] microarchHC
                 ( lua2functions
                     [qc|function fib()
                             local a = receive()
-                            local b = a + 1
-                            send(b)
+                            local b = receive()
+                            local c = a + b
+                            send(c)
                             fib()
                         end
                         fib()|] )
