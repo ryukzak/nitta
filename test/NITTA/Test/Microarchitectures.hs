@@ -13,6 +13,7 @@ module NITTA.Test.Microarchitectures
     , proxyInt
     , proxyIntX32
     , algTestCase
+    , algTestCaseWithInput
     , externalTestCntr
     ) where
 
@@ -81,10 +82,13 @@ externalTestCntr = unsafePerformIO $ newCounter 0
 {-# NOINLINE externalTestCntr #-}
 
 
-algTestCase name arch alg
-    = let
-            fn = "bn_" ++ name
-    in testCase (name ++ " <" ++ fn ++ "_*>") $ do
+algTestCase name arch alg = algTestCaseWithInput name [] arch alg
+
+
+algTestCaseWithInput name is arch alg
+    = testCase (name ++ " <" ++ fn ++ "_*>") $ do
         i <- incrCounter 1 externalTestCntr
-        res <- test (fn ++ "_" ++ show i) arch alg
+        res <- testWithInput (fn ++ "_" ++ show i) is arch alg
         isRight res @? show res
+    where 
+        fn = "bn_" ++ name

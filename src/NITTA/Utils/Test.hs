@@ -19,6 +19,7 @@ module NITTA.Utils.Test
     , testLua
     , demo
     , testWithInput
+    , testLuaWithInput
     ) where
 
 import           Control.Monad                 (unless)
@@ -38,6 +39,7 @@ import           Text.InterpolatedString.Perl6 (qc)
 
 test name = testWithInput name []
 testLua name ma = testWithInput name [] ma . lua2functions
+testLuaWithInput name is ma = testWithInput name is ma . lua2functions
 
 testWithInput name cntx ma alg = runExceptT $ do
     let model@Frame{ processor } = simpleSynthesis $ mkModelWithOneNetwork ma alg
