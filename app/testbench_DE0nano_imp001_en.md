@@ -120,6 +120,8 @@ Make sure that dip switches position match to one shown on the diagram above.
 
 Now prepare to work the controller. For do this you need:
 
+Instruction, if you use account @aleksandpenskoi@::
+
 1. Set up the wi-fi network and connect the controller to it accordance with the instructions
 	<https://developer.electricimp.com/gettingstarted/explorer/blinkup>.
 2. In case you use @aleksandpenskoi@ account, in @SPI_testbench@ line choose 
