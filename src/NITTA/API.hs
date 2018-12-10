@@ -1,10 +1,11 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE TypeOperators     #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
 {-|
 Module      : NITTA.API
@@ -19,8 +20,6 @@ module NITTA.API
     ( backendServer
     ) where
 
-import           NITTA.API.REST
-
 import           Control.Concurrent.STM
 import           Control.Monad                 (unless, when)
 import           Data.Monoid                   ((<>))
@@ -28,6 +27,7 @@ import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
 import           Network.Wai.Handler.Warp      (run)
 import           Network.Wai.Middleware.Cors   (simpleCors)
 import           NITTA.API.Marshalling         ()
+import           NITTA.API.REST
 import           NITTA.Types.Synthesis
 import           Servant
 import qualified Servant.JS                    as SJS
@@ -50,7 +50,7 @@ export default api;|]
             , SJS.moduleName="api"
             }
     createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
-    SJS.writeJSForAPI (Proxy :: Proxy SynthesisAPI) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
+    SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI Int Int)) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
     putStrLn "Generate rest_api.js library...OK"
 
 
@@ -75,7 +75,7 @@ application compilerState = do
     st <- newTVarIO $ rootSynthesis compilerState
     return $ serve
         ( Proxy :: Proxy
-            (    SynthesisAPI
+            (    SynthesisAPI _ _
             :<|> Raw
             ) )
         (    synthesisServer st

@@ -47,7 +47,9 @@ function invalid_value1;
 endfunction
 
 wire [DATA_WIDTH-1:0]         mult_result;
-mult_inner mult_i1
+mult_inner #
+        ( .DATA_WIDTH( DATA_WIDTH )
+        ) mult_i1
     ( .dataa( arg[0][DATA_WIDTH/2-1:0] )
     , .datab( arg[1][DATA_WIDTH/2-1:0] )
     , .result( mult_result )

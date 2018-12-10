@@ -25,11 +25,12 @@ import           NITTA.Functions               (castF)
 import qualified NITTA.Functions               as F
 import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Project
 import           NITTA.Utils
 import           NITTA.Utils.Process
 import           Numeric.Interval              (Interval, inf, intersection,
                                                 singleton, sup, width, (...))
-import           Text.InterpolatedString.Perl6 (qq)
+import           Text.InterpolatedString.Perl6 (qc)
 
 
 data InputDesc
@@ -47,10 +48,10 @@ data OutputDesc
 data Divider v x t
     = Divider
         { jobs            :: [Job v x t]
-        , remains         :: [F (Parcel v x)]
+        , remains         :: [F v x]
         , targetIntervals :: [Interval t]
         , sourceIntervals :: [Interval t]
-        , process_        :: Process (Parcel v x) t
+        , process_        :: Process v x t
         , latency         :: t
         , pipeline        :: t
         , mock            :: Bool
@@ -70,7 +71,9 @@ divider pipeline mock = Divider
 instance ( Time t ) => Default (Divider v x t) where
     def = divider 4 True
 
-instance ( Ord t ) => WithFunctions (Divider v x t) (F (Parcel v x)) where
+instance WithX (Divider v x t) x
+
+instance ( Ord t ) => WithFunctions (Divider v x t) (F v x) where
     functions Divider{ process_, remains, jobs }
         = functions process_
         ++ remains
@@ -78,17 +81,17 @@ instance ( Ord t ) => WithFunctions (Divider v x t) (F (Parcel v x)) where
 
 data Job v x t
     = Input
-        { function :: F (Parcel v x)
+        { function :: F v x
         , startAt  :: t
         , inputSeq :: [(InputDesc, v)]
         }
     | InProgress
-        { function :: F (Parcel v x)
+        { function :: F v x
         , startAt  :: t
         , finishAt :: t
         }
     | Output
-        { function  :: F (Parcel v x)
+        { function  :: F v x
         , startAt   :: t
         , rottenAt  :: Maybe t
         , finishAt  :: t
@@ -162,8 +165,8 @@ pushOutput pu@Divider{ jobs }
 
 
 
-instance ( Var v, Time t
-         ) => ProcessUnit (Divider v x t) (Parcel v x) t where
+instance ( Var v, Time t, Typeable x
+         ) => ProcessUnit (Divider v x t) v x t where
     tryBind f pu@Divider{ remains }
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f
         = Right pu
@@ -172,6 +175,11 @@ instance ( Var v, Time t
         | otherwise = Left $ "Unknown functional block: " ++ show f
     process = process_
     setTime t pu@Divider{ process_ } = pu{ process_=process_{ nextTick=t } }
+
+
+instance Locks (Divider v x t) v where
+    -- FIXME:
+    locks _ = []
 
 
 instance ( Var v, Time t
@@ -265,10 +273,11 @@ instance ( Var v, Time t
 
 instance ( Var v
          , Integral x
+         , Typeable x
          ) => Simulatable (Divider v x t) v x where
-    simulateOn cntx _ fb
-        | Just fb'@F.Division{} <- castF fb = simulate cntx fb'
-        | otherwise = error $ "Can't simulate " ++ show fb ++ " on Shift."
+    simulateOn cntx _ f
+        | Just f'@F.Division{} <- castF f = simulate cntx f'
+        | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
 
 
 
@@ -313,7 +322,7 @@ instance Connected (Divider v x t) where
             ]
 
 
-instance ( Time t, Var v
+instance ( Val x, Show t
          ) => TargetSystemComponent (Divider v x t) where
     moduleName _ _ = "pu_div"
     software _ _ = Empty
@@ -323,43 +332,42 @@ instance ( Time t, Var v
             else FromLibrary "div/div.v"
         , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
         ]
-    hardwareInstance title Divider{ mock, pipeline }
+    hardwareInstance title pu@Divider{ mock, pipeline }
             Enviroment
                 { net=NetEnv
                     { signal
-                    , parameterDataWidth, dataIn, dataOut
+                    , dataIn, dataOut
                     , parameterAttrWidth, attrIn, attrOut
                     }
                 , signalClk
                 , signalRst
                 }
-            PUPorts{ oe, oeSel, wr, wrSel } = renderMST
-        [ "pu_div"
-        , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
-        , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
-        , "   , .INVALID( 0 )" -- FIXME: Сделать и протестировать работу с атрибутами.
-        , "   , .PIPELINE( " ++ show pipeline ++ " )"
-        , "   , .MOCK_DIV( " ++ bool2verilog mock ++ " )"
-        , "   ) $name$"
-        , "  ( .clk( " ++ signalClk ++ " )"
-        , "  , .rst( " ++ signalRst ++ " )"
-        , "  , .signal_wr( " ++ signal wr ++ " )"
-        , "  , .signal_wr_sel( " ++ signal wrSel ++ " )"
-        , "  , .data_in( " ++ dataIn ++ " )"
-        , "  , .attr_in( " ++ attrIn ++ " )"
-        , "  , .signal_oe( " ++ signal oe ++ " )"
-        , "  , .signal_oe_sel( " ++ signal oeSel ++ " )"
-        , "  , .data_out( " ++ dataOut ++ " )"
-        , "  , .attr_out( " ++ attrOut ++ " )"
-        , "  );"
-        ] [("name", title)]
+            PUPorts{ oe, oeSel, wr, wrSel } =
+        [qc|pu_div
+    #( .DATA_WIDTH( { widthX pu } )
+     , .ATTR_WIDTH( { parameterAttrWidth } )
+     , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
+     , .PIPELINE( { pipeline } )
+     , .MOCK_DIV( { bool2verilog mock } )
+     ) { title }
+    ( .clk( { signalClk } )
+    , .rst( { signalRst } )
+    , .signal_wr( { signal wr } )
+    , .signal_wr_sel( { signal wrSel } )
+    , .data_in( { dataIn } )
+    , .attr_in( { attrIn } )
+    , .signal_oe( { signal oe } )
+    , .signal_oe_sel( { signal oeSel } )
+    , .data_out( { dataOut } )
+    , .attr_out( { attrOut } )
+    );|]
 
 
 instance ( Var v, Time t
-         , Typeable x, Show x, Integral x
+         , Typeable x, Show x, Integral x, Val x
          ) => TestBench (Divider v x t) v x where
-    testBenchDescription prj@Project{ projectName, model=pu }
-        = Immidiate (moduleName projectName pu ++ "_tb.v")
+    testBenchDescription prj@Project{ projectName, processorModel }
+        = Immidiate (moduleName projectName processorModel ++ "_tb.v")
             $ snippetTestBench prj TestBenchSetup
                 { tbcSignals=["oe", "oeSel", "wr", "wrSel"]
                 , tbcPorts=PUPorts
@@ -375,5 +383,5 @@ instance ( Var v, Time t
                     (Signal 3) -> "wrSel"
                     _ -> error "testBenchDescription wrong signal"
                 , tbcCtrl= \Microcode{ oeSignal, oeSelSignal, wrSignal, wrSelSignal } ->
-                    [qq|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]
+                    [qc|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]
                 }

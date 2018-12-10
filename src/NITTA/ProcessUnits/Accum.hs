@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
@@ -23,6 +24,7 @@ import           NITTA.Types
 import           NITTA.Utils
 import           Numeric.Interval                    (singleton, (...))
 import           Prelude                             hiding (init)
+import           Text.InterpolatedString.Perl6       (qc)
 
 
 
@@ -57,18 +59,18 @@ instance ( Var v
     = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 2 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
-  schedule st@Accum{ acIn=vs@(_:_) } act
+  simpleSynthesis st@Accum{ acIn=vs@(_:_) } act
     | let actV = oneOf $ variables act
     , ([(neg, _)], remain) <- partition ((== actV) . snd) vs
     = let i = if length vs == 2 then Init neg else Load neg
           work = serialSchedule @(Accum v x t) i act
       in (st{ acIn=remain }, work)
-  schedule st@Accum{ acIn=[], acOut=vs } act
+  simpleSynthesis st@Accum{ acIn=[], acOut=vs } act
     | not $ null $ vs `intersect` elems (variables act)
     = let st' = st{ acOut=vs \\ elems (variables act) }
           work = serialSchedule @(Accum v x t) Out $ shift (-1) act
       in (st', work)
-  schedule _ _ = error "Accum schedule error!"
+  simpleSynthesis _ _ = error "Accum simpleSynthesis error!"
 
 
 instance Controllable (Accum v x t) where
@@ -101,11 +103,12 @@ instance UnambiguouslyDecode (Accum v x t) where
 
 instance ( Var v
          , Num x
+         , Typeable x
          ) => Simulatable (Accum v x t) v x where
-  simulateOn cntx _ fb
-    | Just fb'@Add{} <- castF fb = simulate cntx fb'
-    | Just fb'@Sub{} <- castF fb = simulate cntx fb'
-    | otherwise = error $ "Can't simulate " ++ show fb ++ " on Accum."
+  simulateOn cntx _ f
+    | Just f'@Add{} <- castF f = simulate cntx f'
+    | Just f'@Sub{} <- castF f = simulate cntx f'
+    | otherwise = error $ "Can't simulate " ++ show f ++ " on Accum."
 
 
 instance Connected (Accum v x t) where
@@ -119,24 +122,23 @@ instance Connected (Accum v x t) where
       ]
 
 
-instance TargetSystemComponent (Accum v x t) where
+instance ( Val x ) => TargetSystemComponent (Accum v x t) where
   moduleName _ _ = "pu_accum"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software _ _ = Empty
-  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} = renderMST
-    [ "pu_accum "
-    , "  #( .DATA_WIDTH( " ++ show parameterDataWidth ++ " )"
-    , "   , .ATTR_WIDTH( " ++ show parameterAttrWidth ++ " )"
-    , "   ) $name$"
-    , "  ( .clk( " ++ signalClk ++ " )"
-    , "  , .rst( " ++ signalRst ++ " )"
-    , "  , .signal_init( " ++ signal init ++ " )"
-    , "  , .signal_load( " ++ signal load ++ " )"
-    , "  , .signal_neg( " ++ signal neg ++ " )"
-    , "  , .signal_oe( " ++ signal oe ++ " )"
-    , "  , .data_in( " ++ dataIn ++ " )"
-    , "  , .attr_in( " ++ attrIn ++ " )"
-    , "  , .data_out( " ++ dataOut ++ " )"
-    , "  , .attr_out( " ++ attrOut ++ " )"
-    , "  );"
-    ] [ ( "name", title ) ]
+  hardwareInstance title pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} =
+    [qc|pu_accum
+    #( .DATA_WIDTH( { widthX pu } )
+     , .ATTR_WIDTH( { show parameterAttrWidth } )
+     ) { title }
+    ( .clk( { signalClk } )
+    , .rst( { signalRst } )
+    , .signal_init( { signal init } )
+    , .signal_load( { signal load } )
+    , .signal_neg( { signal neg } )
+    , .signal_oe( { signal oe } )
+    , .data_in( { dataIn } )
+    , .attr_in( { attrIn } )
+    , .data_out( { dataOut } )
+    , .attr_out( { attrOut } )
+    );|]

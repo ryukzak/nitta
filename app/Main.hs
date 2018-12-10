@@ -1,7 +1,9 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE FlexibleContexts   #-}
-{-# LANGUAGE NamedFieldPuns     #-}
-{-# LANGUAGE QuasiQuotes        #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE DeriveDataTypeable  #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
@@ -20,7 +22,7 @@ import           Control.Monad                 (when)
 import           Data.Default                  as D
 import qualified Data.Map                      as M
 import           Data.Maybe
-import           Demo
+import qualified Data.Text.IO                  as T
 import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
 import           NITTA.Compiler
@@ -36,11 +38,16 @@ import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Types.Synthesis
+import           NITTA.Utils.Test
 import           System.Console.CmdArgs
 import           System.FilePath               (joinPath)
-import           Text.InterpolatedString.Perl6 (qq)
+import           Text.InterpolatedString.Perl6 (qc)
 
-microarch = busNetwork 31 (Just True)
+-- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
+
+-- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
+-- с задачей о целевой платформе.
+microarch = busNetwork 31 (Just False)
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
     [ OutputPort "miso" ]
     [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
@@ -56,24 +63,7 @@ microarch = busNetwork 31 (Just True)
             })
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
     , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
-    ]
-
-
-divAndMulAlg =
-    [ F.constant 100 ["a"] :: F (Parcel String Int)
-    , F.loop 2 "e" ["b"]
-    , F.division "a" "b" ["c"] ["d"]
-    -- , F.add "c" "d" ["e"]
-    , F.add "c" "d" ["e", "e'"]
-
-    , F.constant 200 ["a1"]
-    , F.loop 2 "e1" ["b1"]
-    , F.division "a1" "b1" ["c1"] ["d1"]
-    , F.add "c1" "d1" ["e1"]
-
-    , F.loop 1 "y" ["x"]
-    , F.multiply "x" "e'" ["y"]
-    ]
+    ] :: BusNetwork String String (IntX 32) Int
 
 
 ---------------------------------------------------------------------------------
@@ -84,80 +74,57 @@ data Nitta
         { web           :: Bool
         , no_static_gen :: Bool
         , no_api_gen    :: Bool
+        , file          :: Maybe FilePath
         }
     deriving (Show, Data, Typeable)
-    
+
 nittaArgs = Nitta
     { web=False &= help "Run web server"
     , no_static_gen=False &= help "No regenerate WebUI static files"
     , no_api_gen=False &= help "No regenerate rest_api.js library"
+    , file=D.def &= args &= typ "LUA_FILE"
     }
-
-        -- [qq|function fib(i, a, b)
-        --         send(i)
-        --         send(a)
-        --         local i2 = i + 1
-
-        --         local a_tmp = a
-        --         a = b
-        --         b = reg(a_tmp+b)
-        --         fib(i2, a, b)
-        --     end
-        --     fib(0, 0, 1)
-        -- |]
-
-        -- [qq|function fib(i, a, b)
-        --         send(i)
-        --         send(a)
-        --         local i2 = i + 1
-
-        --         local a_tmp = a
-        --         a = b
-        --         b = reg(a_tmp+b)
-        --         fib(i2, a, b)
-        --     end
-        --     fib(0, 0, 1)
-        -- |]
 
 
 main = do
-    -- teacupDemo
-    -- fibonacciDemo
+    Nitta{ web, no_static_gen, no_api_gen, file } <- cmdArgs nittaArgs
+    case file of
+        Just fn -> do
+            putStrLn [qc|> readFile: { fn }|]
+            buf <- T.readFile fn
+            if web
+                then backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch $ lua2functions buf
+                else print =<< testLua "main" microarch buf
+        Nothing -> do
+            putStrLn "-- hardcoded begin --"
+            -- teacupDemo
+            -- fibonacciDemo
 
-    -- FIXME: why it's don't work?
-    -- test "lua_test" $ schedule $ mkModelWithOneNetwork microarch $ lua2functions
-    --     [qq|function fib(a, b)
-    --             a, b = b, reg(a + reg(b + 0)) + 0
-    --             fib(a, b)
-    --         end
-    --         fib(0, 1)|]
-
-    -- putStrLn "funSim teacup:"
-    -- test "teacup" $ schedule $ mkModelWithOneNetwork microarch teacupAlg
-    -- funSim 5 D.def teacupAlg
-
-    -- putStrLn "funSim fibonacci:"
-    -- funSim 5 D.def divAndMulAlg
-
-    Nitta{ web, no_static_gen, no_api_gen } <- cmdArgs nittaArgs
-    when web $ backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch teacupAlg
+            -- putStrLn "--------------------------------"
+            -- funSim 5 D.def{ cntxInputs=M.fromList [("b_0", [1..5])] } $ lua2functions
+            --     [qc|function fib(a)
+            --             local b = receive()
+            --             local c = a + b
+            --             fib(c)
+            --         end
+            --         fib(1)|]
+            -- putStrLn "--------------------------------"
+            print =<< testWithInput "hardcoded" [] microarch
+                ( lua2functions
+                    [qc|function counter(i)
+                            i = i + 1
+                            counter(i)
+                        end
+                        counter(0)
+                    |]
+                )
+            putStrLn "-- hardcoded end --"
     putStrLn "-- the end --"
-
-
-test n pu = do
-    let prj = Project
-            { projectName=n
-            , libraryPath="../.."
-            , projectPath=joinPath ["hdl", "gen", n]
-            , model=pu
-            , testCntx=Nothing
-            }
-    TestBenchReport{ tbStatus } <- writeAndRunTestBench prj
-    if tbStatus then putStrLn $ n ++ " test - Success"
-    else putStrLn $ n ++ " test - Fail"
 
 
 -----------------------------------------------------------
 
 
-funSim n cntx alg = putStrLn $ (!! (n - 1)) $ map (filter (/= '"') . show) $ F.simulateAlgByCycle cntx alg
+funSim n cntx alg
+    = let cntxs = F.simulateAlgByCycle cntx alg
+    in mapM_ (putStrLn . ("---------------------\n"++) . filter (/= '"') . show) $ take n cntxs

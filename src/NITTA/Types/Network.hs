@@ -25,7 +25,7 @@ data PU v x t where
         , Connected pu
         , DecisionProblem (EndpointDT v t)
                EndpointDT  pu
-        , ProcessUnit pu (Parcel v x) t
+        , ProcessUnit pu v x t
         , Show (Instruction pu)
         , Simulatable pu v x
         , Typeable pu
@@ -34,6 +34,7 @@ data PU v x t where
         , Typeable x
         , Show x
         , Num x
+        , Locks pu v
         ) => 
             { unit :: pu
             , links :: PUPorts pu
@@ -48,7 +49,7 @@ instance ( Var v, Time t
     decision proxy PU{ unit, links, systemEnv } d
         = PU{ unit=decision proxy unit d, links, systemEnv }
 
-instance ProcessUnit (PU v x t) (Parcel v x) t where
+instance ProcessUnit (PU v x t) v x t where
     tryBind fb PU{ unit, links, systemEnv }
         = case tryBind fb unit of
             Right unit' -> Right PU { unit=unit', links, systemEnv }
@@ -57,6 +58,9 @@ instance ProcessUnit (PU v x t) (Parcel v x) t where
     setTime t PU{ unit, links, systemEnv }
         = PU{ unit=setTime t unit, links, systemEnv }
 
+instance Locks (PU v x t) v where 
+    locks PU{ unit } = locks unit
+        
 instance Simulatable (PU v x t) v x where
     simulateOn cntx PU{ unit } fb = simulateOn cntx unit fb
 
@@ -72,7 +76,7 @@ castPU ::
     , DecisionProblem (EndpointDT v t)
             EndpointDT  pu
     , TargetSystemComponent pu
-    , ProcessUnit pu v t
+    , ProcessUnit pu v x t
     , Show (Instruction pu)
     , Simulatable pu v x
     , Typeable pu
@@ -90,7 +94,7 @@ class Connected pu where
     data PUPorts pu :: *
     -- |Отображение микрокода на сигнальные линии. Необходимо для "сведения" микрокоманд отдельных
     -- вычислительных блоков в микрокоманды сети.
-    transmitToLink :: Microcode pu -> PUPorts pu -> [(Signal, Value)]
+    transmitToLink :: Microcode pu -> PUPorts pu -> [(Signal, SignalValue)]
 
 
 
@@ -181,8 +185,7 @@ instance Show Parameter where
 
 data NetEnv
     = NetEnv
-        { parameterDataWidth :: Parameter
-        , parameterAttrWidth :: Parameter
+        { parameterAttrWidth :: Parameter
         , dataIn, attrIn     :: String
         , dataOut, attrOut   :: String
         , signal             :: Signal -> String -- ^Функция позволяющая подставить индекс на шину управления.

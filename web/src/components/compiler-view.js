@@ -65,8 +65,8 @@ export class SimpleCompilerView extends Component {
                   }}> { row.value }
                   </a>
               },
-              {Header: 'Description', accessor: '3', Cell: row => <pre> {JSON.stringify(row.value)} </pre>},
-              {Header: 'Metrics', accessor: '2', Cell: row => <pre> {JSON.stringify(row.value) } </pre>}
+              {Header: 'Description', accessor: '2', Cell: row => <pre> {JSON.stringify(row.value)} </pre>},
+              {Header: 'Metrics', accessor: '1', Cell: row => <pre> {JSON.stringify(row.value) } </pre>}
             ]
           }
           data={this.state.options}

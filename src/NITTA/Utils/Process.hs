@@ -40,7 +40,7 @@ import           Numeric.Interval    (inf, sup, (...))
 data Schedule pu v x t
     = Schedule
         { -- |Defining process.
-          schProcess :: Process (Parcel v x) t 
+          schProcess :: Process v x t 
           -- |Proxy for process unit instruction, which is needed for API simplify. Without that,
           -- for some function, the user needs to describe type explicitly.
         , iProxy     :: Proxy (Instruction pu) 
@@ -128,7 +128,7 @@ scheduleNestedStep title step@Step{ sTime } = do
     return $ head sKey
 
 -- |Get a current slice of the computational process.
-getProcessSlice :: State (Schedule pu v x t) (Process (Parcel v x) t)
+getProcessSlice :: State (Schedule pu v x t) (Process v x t)
 getProcessSlice = do
     Schedule{ schProcess } <- get
     return schProcess

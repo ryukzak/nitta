@@ -56,7 +56,7 @@ import           NITTA.Types     (nextTick, process)
 
 
 
-type SynthesisTree title tag v x t = Tree (Synthesis title tag v x t)
+type SynthesisTree title v x t = Tree (Synthesis title v x t)
 
 data SynthesisStatus
     = InProgress
@@ -64,9 +64,9 @@ data SynthesisStatus
     | DeadEnd
     deriving ( Show, Generic, Eq )
 
-data Synthesis title tag v x t
+data Synthesis title v x t
     = Synthesis
-        { sModel  :: ModelState title tag v x t
+        { sModel  :: ModelState title v x t
         , sCntx   :: [SynthCntx]
         , sStatus :: SynthesisStatus
         , sCache  :: M.Map SynthesisStep Int
@@ -95,7 +95,7 @@ instance Read Nid where
     readsPrec _ _ = []
 
 
-nidsTree n = inner [] n
+nidsTree = inner []
     where
         inner is Node{ subForest } = Node
             { rootLabel=Nid $ reverse is
@@ -115,12 +115,12 @@ data SynthesisSetup
     deriving ( Generic, Show, Eq, Ord )
 
 simple = Simple
-    { threshhold=1000
+    { threshhold=2
     }
 
 data SynthesisStep = SynthesisStep
     { setup :: SynthesisSetup
-    , ix    :: Int
+    , ix    :: Maybe Int -- ^Nothing means best from the synthesis point of view.
     }
     deriving ( Show, Eq, Ord )
 
@@ -138,7 +138,6 @@ rootSynthesis m = Node
     }
 
 targetProcessDuration Frame{ processor } = nextTick $ process processor
-targetProcessDuration _                  = undefined
 
 
 -- *Synthesis context

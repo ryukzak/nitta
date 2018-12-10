@@ -1,14 +1,4 @@
-{-|
-Module      : Demo
-Description : NITTA project demos
-Copyright   : (c) Aleksandr Penskoi, 2018
-License     : BSD3
-Maintainer  : aleksandr.penskoi@gmail.com
-Stability   : experimental
-
-В данном модуле описано несколько демо для вычислительной платформы NITTA.
-
-= Test bench organisation
+# Test bench organisation
 Test bench was designed with the following components:
 
 1.  The tool computer (imp001). It provides control of a
@@ -23,7 +13,7 @@ interfaces. Those interfaces were chosen because they are ubiquitous.
 A user and the test bench communicate throughout electricimp cloud-based IDE
 <https://impcentral.electricimp.com>.
 
-@
+```
 +---------------------------------------------+
 | Browser: https://impcentral.electricimp.com |
 +---------------------------------------------+
@@ -39,13 +29,13 @@ A user and the test bench communicate throughout electricimp cloud-based IDE
 +--------+   SPI   +----------+
 | imp001 |---------| DE0-nano |
 +--------+         +----------+
-@
+```
 
-= Схема подключение интерфейса SPI к DE0-nano
+# Схема подключение интерфейса SPI к DE0-nano
 
 В скобках указан рекомендованный цвет провода. Пропорции нарушены.
 
-@
+```
            +--------------------------------------- GND (черный)
 +----------|---------------------+
 |    ooooo *oooo ooooo ooooo     |
@@ -68,11 +58,11 @@ A user and the test bench communicate throughout electricimp cloud-based IDE
 |    ooooo ooooo ooooo ooooo     |
 |    ooooo ooooo ooooo ooooo     |
 +--------------------------------+
-@
+```
 
-= Схема подключение интерфейса SPI к imp001
+# Схема подключение интерфейса SPI к imp001
 
-@
+```
                     +--------------------------------+
                     | o GND                          |
                     | o VIN                          |
@@ -86,9 +76,9 @@ A user and the test bench communicate throughout electricimp cloud-based IDE
                     | o 3V3   +-----+                |
 (черный)     GND -----* GND   | USB |                |
                     +---------+-----+----------------+
-@
+```
 
-= Требуемоемое программное обеспечение
+# Требуемоемое программное обеспечение
 
 Для запуска и наладки испытательного стенда необходимо следующее программное обеспечение:
 
@@ -102,7 +92,7 @@ Also, you need an account on <https://impcentral.electricimp.com> for getting da
 processor. You can manually register and creating the project for that purpose or request login and
 password from the project maintainer.
 
-= Запуск демо
+# Запуск демо
 
 У вас на столе лежит собранный и подключённый стенд, на компьютере установлено всё необходимо
 программное обеспечение и вы открыли консоль на соответсвующем каталоге. Дальнейшее описание
@@ -114,13 +104,18 @@ password from the project maintainer.
 Для начала работы с демо необходимо либо вставить вызов функции в функцию 'Main.main', либо
 осуществить запуск из @stack repl@.
 
+```
 >>> :m Demo
 >>> fibonacciDemo
 Demo project in hdl/gen/fibonacciDemo
+```
 
 Откройте сгенерированный проект в @Quartus@ (файл @nitta.qpf@) и синтезируйте его: @Processing ->
-Start Compilation@. Затем вам необходимо прошить в ПЛИС результат. Для этого @Tools -> Programmer@,
-затем кнопка @Start@. Если кнопка неактивна:
+Start Compilation@. Затем вам необходимо прошить в ПЛИС результат. Для этого выбираем пункт
+@Tools -> Programmer@. В поле File должен быть указан путь до прошивки nitta.sof, если в поле 
+написано <none>, нужно два раза нажать на это поле и выбрать прошивку по 
+пути output_files/nitta.sof, затем установить checkbox Program/Configure в активное состояние.
+Прошиваем результат в ПЛИС нажав на кнопку @Start@. Если кнопка неактивна:
 
 - проверьте подключение платы DE0-Nano;
 - нажмите @Hardware Setup@ и выберите @USB-Blaster@;
@@ -129,7 +124,9 @@ Start Compilation@. Затем вам необходимо прошить в П�
 
 Убедитесь, что положение дип переключателей соответствует указанному на схеме выше.
 
-Теперь подготовьте к работе управляющий конроллер. Для этого вам необходимо:
+Теперь подготовьте к работе управляющий конроллер. Для этого вам необходимо
+
+Инструкции если используется аккаунт @aleksandpenskoi@:
 
 1. Поднять Wi-Fi сеть и подключить к ней контроллер в соответствии с инструкцией
    <https://developer.electricimp.com/gettingstarted/explorer/blinkup>.
@@ -142,7 +139,127 @@ Start Compilation@. Затем вам необходимо прошить в П�
 5. В терминале снизу справа должен будет появиться журнал передачи данных на подобие приведённого
    ниже.
 
-@
+Инструкции если используется новосозданный аккаунт @new_account@:
+
+1. Поднять Wi-Fi сеть и подключить к ней контроллер в соответствии с инструкцией
+   <https://developer.electricimp.com/gettingstarted/explorer/blinkup>.
+2. Зарегестрировать акаунт на стайте electric imp
+   <https://impcentral.electricimp.com>.
+3. Слева в меню  выбрать вкладку @Development Device Group Devices@ и нажать на кнопку @Assign@. 
+   В пункте Device Group указать Development Device Group и название DDG которые вы давали 
+   при создании проекта, после нажать на @Assign Devices@. Должно появиться поле с DEVICE ID со 
+   статусом online.
+4. Слева в меню переходим во вкладку @Code@ и в поле Device Code вставляем код расположенный ниже:
+
+```
+sc <- hardware.pin8;
+sc.configure(DIGITAL_OUT, 1);
+
+spi1 <- hardware.spi257;
+spi1.configure( CLOCK_IDLE_LOW | CLOCK_2ND_EDGE, 1000 )
+
+function echoTest_2bytes() {
+    local tmp;
+    local i = 0;   
+    
+    while ( i <= 0xFF) {
+        local b = blob(2);
+        b.writen( i, 'c' );
+        b.writen( i + 1, 'c' );
+        sc.write(0);
+        tmp = spi1.writeread(b);
+        sc.write(1);
+        i += 2;
+    }
+}
+
+function fibonacciTest(n) {
+    local tmp;
+    local i = 0;   
+    
+    while ( i < n ) {
+        local b = blob(8);
+        sc.write(0);
+        tmp = spi1.writeread(b);
+        sc.write(1);
+        i += 1;
+        server.log(tmp)
+    }
+}
+
+function getTest(n, size) {
+    local i = 0;   
+    
+    while ( i < n ) {
+        local b = blob(size);
+        sc.write(0);
+        local tmp = spi1.writeread(b);
+        sc.write(1);
+        i += 1;
+
+        server.log(tmp);
+        tmp.swap4();
+        local a = tmp.readn('i');
+        local b = tmp.readn('i');
+        server.log( format("> %d\t%d", a, b) );
+    }
+}
+
+function fibonacciDemo(n) {
+    local i = 0;   
+    
+    while ( i < n ) {
+        local b = blob(8);
+        sc.write(0);
+        local tmp = spi1.writeread(b);
+        sc.write(1);
+        i += 1;
+
+        server.log(tmp);
+        tmp.swap4();
+        local a = tmp.readn('i');
+        local b = tmp.readn('i');
+        server.log( format("> Номер: %d\tЗначение:%d", b, a) );
+    }
+}
+
+function teacupDemo(n) {
+    local i = 0;   
+    
+    while ( i < n ) {
+        local b = blob(8);
+        sc.write(0);
+        local tmp = spi1.writeread(b);
+        sc.write(1);
+        i += 1;
+
+        server.log(tmp);
+        tmp.swap4();
+        local a = tmp.readn('i');
+        local b = tmp.readn('i');
+        server.log( format("> Номер: %d\tЗначение:%d", b, a) );
+    }
+}
+
+// getTest(20, 8)
+// getTest(4, 12)
+// getTest(4, 8)
+// getTest(4, 12)
+// getTest(10, 4)
+
+// echoTest_2bytes()
+// echoTest_4bytes()
+
+// fibonacciTest(10)
+
+fibonacciDemo(10)
+```
+
+5. В терминале снизу справа должен будет появиться журнал передачи данных на подобие приведённого
+   ниже.
+
+
+```
 2018-08-20 16:19:27 +03:00 	[Status] 	Agent restarted: reload.
 2018-08-20 16:19:28 +03:00 	[Status] 	Device connected
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 00 00 00 00 00
@@ -165,174 +282,6 @@ Start Compilation@. Затем вам необходимо прошить в П�
 2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 8	Значение: 21
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 22 00 00 00 09
 2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 9	Значение: 34
-@
+```
 
 Аналогичным образом выглядят будет выглядеть работу других демо.
--}
-
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns   #-}
-{-# LANGUAGE QuasiQuotes      #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
-module Demo
-    ( -- * Демо
-      fibonacciDemo
-    , teacupDemo
-      -- * Описание алгоритмов
-    , fibonacciAlg
-    , teacupAlg, teacupLua, teacupAlg2
-      -- * Описание процессоров
-    , nittaArch
-    ) where
-
-import           Data.Default
-import           Data.Text                     (Text)
-import           NITTA.BusNetwork
-import           NITTA.Compiler
-import qualified NITTA.Functions               as F
-import qualified NITTA.ProcessUnits.Accum      as A
-import qualified NITTA.ProcessUnits.Divider    as D
-import qualified NITTA.ProcessUnits.Fram       as FR
-import qualified NITTA.ProcessUnits.Multiplier as M
-import qualified NITTA.ProcessUnits.Shift      as S
-import qualified NITTA.ProcessUnits.SPI        as SPI
-import           NITTA.Project
-import           NITTA.Types
-import           Text.InterpolatedString.Perl6 (qq)
-
-
--- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
-
--- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
--- с задачей о целевой платформе.
-nittaArch = busNetwork 31 Nothing
-    [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
-    [ OutputPort "miso" ]
-    [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
-    , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
-    , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
-    , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-    , ("spi", PU
-        (SPI.slaveSPI 10)
-        SPI.PUPorts{ SPI.wr=Signal 22, SPI.oe=Signal 23
-                    , SPI.stop="stop"
-                    , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
-                    })
-    , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-    , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
-    ]
-
-
--- |Одним из классических примеров алгоритмов является расчёт последовательности Фибоначчи: 0, 1, 2,
--- 3, 5, 8, 13.
---
--- Описанная ниже программа реализует два независимых процесса:
---
--- - расчёт последовательности Фибоначчи;
--- - расчёт последовательности целых чисел (номера элемента).
---
--- Каждый элемент этих последовательностей отправляется на внешний интерфейс, определяемый
--- конфигурацией процессора. В данном примере это интерфейс SPI ('NITTA.ProcessUnit.SPI').
-fibonacciDemo = demo Project
-    { projectName="fibonacciDemo"
-    , libraryPath="../.."
-    , projectPath="hdl/gen/fibonacciDemo"
-    , model=mkModelWithOneNetwork nittaArch fibonacciAlg
-    , testCntx=Nothing
-    }
-
-fibonacciAlg = [ F.loop 0 "a_new" ["a", "a_send"]
-               , F.loop 1 "b_new" ["b", "a_new"]
-               , F.add "a" "b" ["b_new"]
-               , F.send "a_send"
-
-               , F.loop 0  "index_new" ["index", "index_send"]
-               , F.constant 1 ["one"]
-               , F.add "index" "one" ["index_new"]
-               , F.send "index_send"
-               ]
-
-
-
--- |Классический пример из области системной динамики. Описание самой модели приведено здесь:
--- <https://pysd-cookbook.readthedocs.io/en/latest/analyses/getting_started/Hello_World_Teacup.html>.
--- Вычисления производятся в числах с фиксированной запятой. Перевод в десятичные дроби не
--- осуществляется.
---
--- Выходные данные модели:
---
--- - температура чашки;
--- - время с начала эксперимента.
---
--- Каждый элемент этих последовательностей отправляется на внешний интерфейс, определяемый
--- конфигурацией процессора. В данном примере это интерфейс SPI ('NITTA.ProcessUnit.SPI').
-teacupDemo = demo Project
-    { projectName="teacupDemo"
-    , libraryPath="../.."
-    , projectPath="hdl/gen/teacupDemo"
-    , model=mkModelWithOneNetwork nittaArch teacupAlg
-    , testCntx=Nothing
-    }
-
-teacupAlg = [ F.loop 0 "time_new" ["time", "time_send"]
-            , F.constant 125 ["time_step_1", "time_step_2"]
-            , F.add "time" "time_step_1" ["time_new"]
-            , F.send "time_send"
-
-            , F.constant 70000 ["temp_room"]
-            , F.constant 10000 ["temp_ch"]
-            , F.loop 180000 "temp_cup_new" ["temp_cup_1", "temp_cup_2", "temp_cup_send"]
-            -- (Teacup Temperature - temp_room) / temp_ch
-            , F.sub "temp_room" "temp_cup_1" ["acc"]
-            , F.division "acc" "temp_ch" ["temp_loss"] []
-
-            -- INTEG ( -temp_loss to Room
-            , F.multiply "temp_loss" "time_step_2" ["delta"]
-            , F.add "temp_cup_2" "delta" ["temp_cup_new"]
-            , F.send "temp_cup_send"
-            ]
-
-teacupAlg2 =
-    [ F.send "time#3_1"
-    , F.send "temp_cup#4_2"
-    , F.add "time#3_0" "time_step_constant#2_1" ["time_0"]
-    , F.sub "temp_room_constant#1_0" "temp_cup#4_1" ["acc_0"]
-    , F.division "acc_0" "temp_ch_constant#0_0" ["temp_loss_0"] []
-    , F.multiply "temp_loss_0" "time_step_constant#2_0" ["delta_0"]
-    , F.add "temp_cup#4_0" "delta_0" ["temp_cup_0"]
-
-    , F.loop 0 "time_0" ["time#3_0", "time#3_1"]
-    , F.loop 180000 "temp_cup_0" [ "temp_cup#4_0", "temp_cup#4_1","temp_cup#4_2"]
-    , F.constant 125 ["time_step_constant#2_1", "time_step_constant#2_0"]
-    , F.constant 70000 ["temp_room_constant#1_0"]
-    , F.constant 10000 ["temp_ch_constant#0_0"]
-    ] :: [F (Parcel String Int)]
-
-teacupLua =
-    [qq|function teacup(time, temp_cup)
-            local temp_ch = 10000
-            local temp_room = 70000
-            local time_step = 125
-
-            send(time)
-            send(temp_cup)
-
-            time = time + time_step
-            local acc = temp_room - temp_cup
-            local temp_loss, _ = acc / temp_ch
-
-            local delta = temp_loss * time_step
-            temp_cup = temp_cup + delta
-
-            teacup(time, temp_cup)
-        end
-        teacup(0, 180000)|] :: Text
-
-
-
------------------------------------------------------------
-
-demo prj@Project{ projectPath, model } = do
-    let prj' = prj{ model=schedule model }
-    writeProject prj'
-    putStrLn $ "Demo project in " ++ projectPath

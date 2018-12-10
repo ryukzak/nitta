@@ -15,15 +15,17 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Demo
-                     , NITTA.API
+  exposed-modules:     NITTA.API
                      , NITTA.API.Marshalling
                      , NITTA.API.REST
+                     , NITTA.API.GraphConverter
                      , NITTA.BusNetwork
                      , NITTA.Compiler
                      , NITTA.DataFlow
                      , NITTA.Frontend
                      , NITTA.Functions
+                     , NITTA.PlatformSpecific.DE0Nano
+                     , NITTA.PlatformSpecific.Makefile
                      , NITTA.ProcessUnits.Accum
                      , NITTA.ProcessUnits.Divider
                      , NITTA.ProcessUnits.Fram
@@ -36,11 +38,13 @@ library
                      , NITTA.Types.Base
                      , NITTA.Types.Network
                      , NITTA.Types.Poly
+                     , NITTA.Types.Project
                      , NITTA.Types.Synthesis
                      , NITTA.Types.Time
                      , NITTA.Utils
                      , NITTA.Utils.Lens
                      , NITTA.Utils.Process
+                     , NITTA.Utils.Test
   build-depends:       aeson
                      , array
                      , base
@@ -70,6 +74,7 @@ library
                      , stm-containers 
                      , syb
                      , text
+                     , transformers
                      , wai-cors
                      , warp
   default-language:    Haskell2010
@@ -88,6 +93,27 @@ executable nitta
                      , interpolatedstring-perl6
                      , MissingH
                      , nitta
+                     , text
+  default-language:    Haskell2010
+
+executable nitta-teacup-demo
+  hs-source-dirs:      app
+  main-is:             TeacupDemo.hs
+  build-depends:       base
+                     , file-embed
+                     , data-default
+                     , interpolatedstring-perl6
+                     , nitta
+  default-language:    Haskell2010
+
+executable nitta-fibonacci-demo
+  hs-source-dirs:      app
+  main-is:             FibonacciDemo.hs
+  build-depends:       base
+                     , file-embed
+                     , data-default
+                     , interpolatedstring-perl6
+                     , nitta
   default-language:    Haskell2010
 
 test-suite nitta-test
@@ -96,13 +122,15 @@ test-suite nitta-test
   main-is:             Spec.hs
   other-modules:       NITTA.Test.BusNetwork
                      , NITTA.Test.Functions
+                     , NITTA.Test.LuaFrontend
+                     , NITTA.Test.Microarchitectures
                      , NITTA.Test.ProcessUnits
-                     , NITTA.Test.ProcessUnits.Fram
                      , NITTA.Test.Utils
   build-depends:       atomic-primops
                      , base
                      , containers
                      , data-default
+                     , file-embed
                      , filepath
                      , interpolatedstring-perl6
                      , mtl
@@ -112,5 +140,6 @@ test-suite nitta-test
                      , tasty
                      , tasty-hunit
                      , tasty-quickcheck
+                     , tasty-th
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010

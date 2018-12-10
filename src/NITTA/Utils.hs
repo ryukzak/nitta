@@ -14,12 +14,16 @@ module NITTA.Utils
     , isTimeWrap
     , timeWrapError
     , minimumOn
+    , maximumOn
     , shift
+    , fixIndent
+    , fixIndentNoLn
+    , space2tab
+    , modify'_
     -- *HDL generation
     , bool2verilog
     , values2dump
     -- *HDL generation (depricated)
-    , renderMST
     , renderST
     -- *Process construction (depricated)
     , modifyProcess
@@ -35,6 +39,7 @@ module NITTA.Utils
     , extractInstruction
     , extractInstructionAt
     , getEndpoints
+    , transfered
     , getFBs
     , isFB
     , isInstruction
@@ -46,10 +51,12 @@ module NITTA.Utils
     ) where
 
 import           Control.Monad.State
+import           Control.Monad.State (modify')
 import           Data.Default
-import           Data.List           (minimumBy, sortOn)
+import           Data.List           (maximumBy, minimumBy, nub, sortOn)
 import           Data.Maybe          (isJust, mapMaybe)
 import           Data.Set            (difference, elems, unions)
+import qualified Data.String.Utils   as S
 import           Data.Typeable       (Typeable, cast)
 import           NITTA.Types
 import           NITTA.Utils.Lens
@@ -62,7 +69,7 @@ import           Text.StringTemplate
 
 instance ( Show (Instruction pu)
          , Default (Microcode pu)
-         , ProcessUnit pu v t
+         , ProcessUnit pu v x t
          , UnambiguouslyDecode pu
          , Time t
          , Typeable pu
@@ -73,13 +80,17 @@ instance ( Show (Instruction pu)
         [i] -> decodeInstruction i
         is  -> error $ "Ambiguously instruction at " ++ show t ++ ": " ++ show is
 
-instance ( Ord t ) => WithFunctions (Process (Parcel v x) t) (F (Parcel v x)) where
+instance ( Ord t ) => WithFunctions (Process v x t) (F v x) where
     functions = getFBs
 
 
 
 unionsMap f lst = unions $ map f lst
 oneOf = head . elems
+
+
+modify'_ :: (s -> s) -> State s ()
+modify'_ = modify'
 
 
 -- |Собрать список переменных подаваемых на вход указанных функций. При формировании результата
@@ -92,6 +103,7 @@ isTimeWrap p act = nextTick p > act^.at.infimum
 timeWrapError p act = error $ "You can't start work yesterday :) fram time: " ++ show (nextTick p) ++ " action start at: " ++ show (act^.at.infimum)
 
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
+maximumOn f = maximumBy (\a b -> f a `compare` f b)
 
 shift n d@EndpointD{ epdAt } = d{ epdAt=(I.inf epdAt + n) ... (I.sup epdAt + n) }
 
@@ -114,9 +126,29 @@ values2dump vs
 
 
 
-renderMST st attrs = render $ setManyAttrib attrs $ newSTMP $ unlines st
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP st
 
+
+fixIndent s = unlines $ map f ls
+    where
+        _:ls = lines s
+        tabSize = length $ takeWhile (`elem` "| ") $ last ls
+        f l@('|':l')
+            | let indent = takeWhile (== ' ') l'
+            , tabSize <= length indent + 1
+            = drop tabSize l
+            | all (== ' ') l'
+            = []
+            | otherwise = error $ "fixIndent error " ++ show tabSize ++ " \"" ++ l ++ "\""
+        f l = l
+
+fixIndentNoLn s
+    = let
+        s' = fixIndent s
+    in take (length s' - 1) s'
+
+
+space2tab = S.replace "    " "\t"
 
 
 modifyProcess p st = runState st p
@@ -144,7 +176,7 @@ setProcessTime t = do
 
 bindFB fb t = addStep (Event t) $ CADStep $ "Bind " ++ show fb
 
-addInstr :: ( Typeable pu, Show (Instruction pu) ) => pu -> I.Interval t -> Instruction pu -> State (Process v t) ProcessUid
+addInstr :: ( Typeable pu, Show (Instruction pu) ) => pu -> I.Interval t -> Instruction pu -> State (Process v x t) ProcessUid
 addInstr _pu t i = addStep (Activity t) $ InstructionStep i
 
 
@@ -164,14 +196,14 @@ getFB _    = Nothing
 getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
 
 
-getEndpoint :: Step (Parcel v x) t -> Maybe (EndpointRole v)
 getEndpoint step | Step{ sDesc=EndpointRoleStep role } <- descent step = Just role
 getEndpoint _                                                          = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
+transfered pu = nub $ concatMap (elems . variables) $ getEndpoints $ process pu
 
 
-extractInstruction :: ( Typeable (Instruction pu) ) => pu -> Step v t -> Maybe (Instruction pu)
+extractInstruction :: ( Typeable (Instruction pu) ) => pu -> Step v x t -> Maybe (Instruction pu)
 extractInstruction _ Step{ sDesc=InstructionStep instr } = cast instr
 extractInstruction _ _                                   = Nothing
 

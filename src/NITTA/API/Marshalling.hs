@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns    #-}
@@ -23,9 +24,11 @@ import           Data.Typeable
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
-import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
+import           NITTA.API.GraphConverter
+import           NITTA.Utils           (transfered)
 import           Numeric.Interval
 import           Servant
 
@@ -35,11 +38,11 @@ import           Servant
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t)
-         ) => ToJSON (Option (CompilerDT title tag v t))
+         ) => ToJSON (Option (CompilerDT title v x t))
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t), Time t
-         ) => ToJSON (Decision (CompilerDT title tag v t))
+         ) => ToJSON (Decision (CompilerDT title v x t))
 instance ( ToJSON title
          , ToJSONKey v
          , ToJSON (TimeConstrain t)
@@ -49,13 +52,13 @@ instance ( ToJSON title
          , ToJSON (TimeConstrain t), Time t
          ) => ToJSON (Decision (DataFlowDT title v t))
 instance ( Show title
-         ) => ToJSON (Option (BindingDT title io)) where
-    toJSON (BindingO fb title) = toJSON [ show fb, show title ]
+         ) => ToJSON (Option (BindingDT title v x)) where
+    toJSON (BindingO f title) = toJSON [ show f, show title ]
 instance ( Show title
-         ) => ToJSON (Decision (BindingDT title io)) where
-    toJSON (BindingD fb title) = toJSON [ show fb, show title ]
-instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
-instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
+         ) => ToJSON (Decision (BindingDT title v x)) where
+    toJSON (BindingD f title) = toJSON [ show f, show title ]
+-- instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
+-- instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
 
 
 
@@ -66,17 +69,11 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
          , Typeable x, ToJSON x, ToJSONKey x
          ) => ToJSON (BusNetwork title v x t) where
     toJSON n@BusNetwork{..} = object
-        -- , bnSignalBusWidth     :: Int
         [ "width" .= bnSignalBusWidth
-        --   bnRemains            :: [F (Parcel v) v]
         , "remain" .= bnRemains
-        -- , bnForwardedVariables :: [v]
         , "forwardedVariables" .= map (String . T.pack . show) (transfered n)
-        -- , bnBinded             :: M.Map title [F (Parcel v) v]
         , "binds" .= bnBinded
-        -- , bnProcess            :: Process v t
         , "processLength" .= nextTick (process n)
-        -- , bnPus                :: M.Map title spu
         , "processUnits" .= M.keys bnPus
         , "process" .= process n
         ]
@@ -84,21 +81,20 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
 
 
 -- *Model
-instance ( ToJSON v, Var v ) => ToJSON (DataFlowGraph v)
+instance ( ToJSON v, Var v, ToJSON x ) => ToJSON (DataFlowGraph v x)
 
 instance ToJSON Relation where
     toJSON (Vertical a b) = toJSON [ a, b ]
 
 instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
-         , ToJSON tag
          , ToJSON v, Var v
          , ToJSON t, Time t
          , ToJSONKey v
          , Show x, Ord x, Typeable x, ToJSON x, ToJSONKey x
-         ) => ToJSON (ModelState title tag x v t)
+         ) => ToJSON (ModelState title x v t)
 
 instance ( ToJSON t, Time t, Show v
-         ) => ToJSON (Process (Parcel v x) t) where
+         ) => ToJSON (Process v x t) where
     toJSON Process{ steps, nextTick, relations } = object
         [ "steps" .= steps
         , "nextTick" .= nextTick
@@ -106,7 +102,7 @@ instance ( ToJSON t, Time t, Show v
         ]
 
 instance ( ToJSON t, Time t, Show v
-         ) => ToJSON (Step (Parcel v x) t) where
+         ) => ToJSON (Step v x t) where
     toJSON Step{ sKey, sTime, sDesc } = object
         [ "sKey" .= sKey
         , "sDesc" .= show sDesc
@@ -128,7 +124,10 @@ instance FromHttpApiData Nid where
     parseUrlPiece = Right . read . T.unpack
 
 
-instance ToJSON (Synthesis String String String Int (TaggedTime String Int)) where
+instance
+        ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
+        , ToJSON t, Time t
+        ) => ToJSON (Synthesis String String x t) where
     toJSON Synthesis{ sModel, sCntx, sStatus } = object
         [ "sModel" .= sModel
         , "sCntx" .= map show sCntx
@@ -141,10 +140,14 @@ instance ToJSON TestBenchReport
 
 -- *Simple compiler
 instance ToJSON SynthesisSetup
-instance ToJSON (CompilerStep String String String Int (TaggedTime String Int))
 instance ToJSON SpecialMetrics
-instance ToJSON GlobalMetrics
 
+instance
+        ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
+        , ToJSON t, Time t
+        ) => ToJSON (WithMetric (CompilerDT String String x t)) where
+    toJSON WithMetric{ mIntegral, mSpecial, mOption, mDecision }
+        = toJSON ( mIntegral, mSpecial, mOption, mDecision )
 
 
 -- *Basic data
@@ -154,7 +157,7 @@ instance ( ToJSON t, Time t ) => ToJSON (PlaceInTime t) where
     toJSON (Event t)    = toJSON [ fromEnum t, fromEnum t ]
     toJSON (Activity i) = toJSON [ fromEnum $ inf i, fromEnum $ sup i ]
 
-instance ( Show v ) => ToJSON (F (Parcel v x)) where
+instance ( Show v ) => ToJSON (F v x) where
     toJSON = String . T.pack . show
 
 instance ( ToJSON t, Time t ) => ToJSON (TimeConstrain t) where
@@ -163,8 +166,52 @@ instance ( ToJSON t, Time t ) => ToJSON (TimeConstrain t) where
         , "duration" .= tcDuration
         ]
 
+instance ToJSONKey (IntX w) where
+    toJSONKey
+        = let
+            ToJSONKeyText f g = toJSONKey
+        in ToJSONKeyText (\(IntX x) -> f x) (\(IntX x) -> g x)
+
+
+instance ToJSON (IntX w) where
+    toJSON ( IntX x ) = toJSON x
+
 
 
 -- *System
 instance ( Show a ) => ToJSON (Interval a) where
     toJSON = String . T.pack . show
+
+
+
+-- *Graph converting
+instance ToJSON (GraphStructure GraphEdge) where
+    toJSON GraphStructure{ nodes, edges } =  object
+        [ "nodes" .= nodes
+        , "edges" .= edges
+        ]
+
+instance ToJSON NodeElement where
+    toJSON NodeElement{ nodeId, nodeParam = NodeParam{ nodeName, nodeColor, nodeShape, fontSize, nodeSize } } =  object
+        [ "id"    .= nodeId
+        , "label" .= nodeName
+        , "color" .= nodeColor
+        , "shape" .= nodeShape
+        , "size"  .= nodeSize
+        , "font"  .= object
+            [
+                "size" .= fontSize
+            ]
+        ]
+
+instance ToJSON GraphEdge where
+    toJSON GraphEdge{ edgeParam = EdgeParam { edgeName, edgeWidth, fontAllign }, inNodeId, outNodeId } =  object
+        [ "from"  .= outNodeId
+        , "to"    .= inNodeId
+        , "label" .= edgeName
+        , "width" .= edgeWidth
+        , "font"  .= object
+            [
+                "allign" .= fontAllign
+            ]
+        ]

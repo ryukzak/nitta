@@ -36,17 +36,19 @@
 // synopsys translate_off
 `timescale 1 ps / 1 ps
 // synopsys translate_on
-module mult_inner (
+module mult_inner #
+	( parameter DATA_WIDTH = 32 
+	) (
 	dataa,
 	datab,
 	result);
 
-	input	[15:0]  dataa;
-	input	[15:0]  datab;
-	output	[31:0]  result;
+	input	[DATA_WIDTH/2-1:0]  dataa;
+	input	[DATA_WIDTH/2-1:0]  datab;
+	output	[DATA_WIDTH-1:0]  result;
 
-	wire [31:0] sub_wire0;
-	wire [31:0] result = sub_wire0[31:0];
+	wire [DATA_WIDTH-1:0] sub_wire0;
+	wire [DATA_WIDTH-1:0] result = sub_wire0[DATA_WIDTH-1:0];
 
 	lpm_mult	lpm_mult_component (
 				.dataa (dataa),
@@ -61,9 +63,9 @@ module mult_inner (
 		lpm_mult_component.lpm_hint = "MAXIMIZE_SPEED=5",
 		lpm_mult_component.lpm_representation = "SIGNED",
 		lpm_mult_component.lpm_type = "LPM_MULT",
-		lpm_mult_component.lpm_widtha = 16,
-		lpm_mult_component.lpm_widthb = 16,
-		lpm_mult_component.lpm_widthp = 32;
+		lpm_mult_component.lpm_widtha = DATA_WIDTH/2,
+		lpm_mult_component.lpm_widthb = DATA_WIDTH/2,
+		lpm_mult_component.lpm_widthp = DATA_WIDTH;
 
 
 endmodule

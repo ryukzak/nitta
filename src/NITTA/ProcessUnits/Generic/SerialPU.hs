@@ -28,6 +28,7 @@ import           Control.Monad.State
 import           Data.Default
 import           Data.Either
 import           Data.List           (find)
+import           Data.Set            (elems)
 import qualified Data.Set            as S
 import           Data.Typeable
 import           NITTA.Types
@@ -43,18 +44,18 @@ data SerialPU st v x t
   = SerialPU
   { -- | Внутрее состояние вычислительного блока. Конкретное состояние зависит от конкретного типа.
     spuState   :: st
-  , spuCurrent :: Maybe (CurrentJob (Parcel v x) t)
+  , spuCurrent :: Maybe (CurrentJob v x t)
   -- | Список привязанных к вычислительному блоку функций, но работа над которыми ещё не началась.
   -- Второе значение - ссылка на шаг вычислительного процесса, описывающий привязку функции
   -- к вычислительному блоку.
-  , spuRemain  :: [(F (Parcel v x), ProcessUid)]
+  , spuRemain  :: [(F v x, ProcessUid)]
   -- | Описание вычислительного процесса.
-  , spuProcess :: Process (Parcel v x) t
-  , spuFBs     :: [F (Parcel v x)]
+  , spuProcess :: Process v x t
+  , spuFBs     :: [F v x]
   }
 
 instance ( Show st
-         , Show (Process (Parcel v x) t)
+         , Show (Process v x t)
          ) => Show (SerialPU st v x t) where
   show SerialPU{ spuState, spuProcess }
     = "SerialPU{spuState=" ++ show spuState
@@ -64,14 +65,16 @@ instance ( Show st
 instance ( Time t, Var v, Default st ) => Default (SerialPU st v x t) where
   def = SerialPU def def def def def
 
-instance WithFunctions (SerialPU st v x t) (F (Parcel v x)) where
+instance WithX (SerialPU st v x t) x
+
+instance WithFunctions (SerialPU st v x t) (F v x) where
   functions SerialPU{ spuFBs } = spuFBs
 
 
 -- | Описание текущей работы вычислительного блока.
-data CurrentJob io t
+data CurrentJob v x t
   = CurrentJob
-  { cFB    :: F io -- ^ Текущая функция.
+  { cFB    :: F v x -- ^ Текущая функция.
   , cStart :: t -- ^ Момент времни, когда функция начала вычисляться.
   -- | Выполненные для данной функции вычислительные шаги. Необходимо в значительной
   -- степени для того, чтобы корректно задать все вертикальные отношения между уровнями по
@@ -86,7 +89,7 @@ data CurrentJob io t
 class SerialPUState st v x t | st -> v x t where
   -- | Привязать функцию к текущему состоянию вычислительного блока. В один момент времени только
   -- один функциональный блок.
-  bindToState :: F (Parcel v x) -> st -> Either String st
+  bindToState :: F v x -> st -> Either String st
   -- | Получить список вариантов развития вычислительного процесса, на основе предоставленного
   -- состояния последовательного вычислительного блока.
   stateOptions :: st -> t -> [Option (EndpointDT v t)]
@@ -95,7 +98,7 @@ class SerialPUState st v x t | st -> v x t where
   -- - состояние после выполнения вычислительного процесса;
   -- - монада State, которая сформирует необходимое описание многоуровневого вычислительного
   --   процессса.
-  schedule :: st -> Decision (EndpointDT v t) -> (st, State (Process (Parcel v x) t) [ProcessUid])
+  simpleSynthesis :: st -> Decision (EndpointDT v t) -> (st, State (Process v x t) [ProcessUid])
 
 
 
@@ -115,19 +118,21 @@ instance ( Var v, Time t
   decision proxy pu@SerialPU{ spuCurrent=Nothing, spuRemain, spuState } act
     | Just (fb, compilerKey) <- find (not . S.null . (variables act `S.intersection`) . variables . fst) spuRemain
     , Right spuState' <- bindToState fb spuState
-    = decision proxy pu{ spuState=spuState'
-               , spuCurrent=Just CurrentJob
-                             { cFB=fb
-                             , cStart=act^.at.infimum
-                             , cSteps=[ compilerKey ]
-                             }
-              } act
+    = decision proxy pu
+        { spuState=spuState'
+        , spuCurrent=Just CurrentJob
+                      { cFB=fb
+                      , cStart=act^.at.infimum
+                      , cSteps=[ compilerKey ]
+                      }
+        , spuRemain=filter ((/= fb) . fst) spuRemain
+        } act
     | otherwise = error "Variable not found in binded functional blocks."
   decision _proxy pu@SerialPU{ spuCurrent=Just cur, spuState, spuProcess } act
    | nextTick spuProcess > act^.at.infimum
    = error $ "Time wrap! Time: " ++ show (nextTick spuProcess) ++ " Act start at: " ++ show (act^.at.infimum)
    | otherwise
-    = let (spuState', work) = schedule spuState act
+    = let (spuState', work) = simpleSynthesis spuState act
           (steps, spuProcess') = modifyProcess spuProcess work
           cur' = cur{ cSteps=steps ++ cSteps cur }
           pu' = pu{ spuState=spuState'
@@ -151,7 +156,7 @@ instance ( Var v, Time t
 instance ( Var v, Time t
          , Default st
          , SerialPUState st v x t
-         ) => ProcessUnit (SerialPU st v x t) (Parcel v x) t where
+         ) => ProcessUnit (SerialPU st v x t) v x t where
 
   tryBind fb pu@SerialPU{ spuFBs, spuRemain, spuProcess }
     -- Почему делается попытка привязать функцию к нулевому состоянию последовательного вычислителя,
@@ -171,6 +176,15 @@ instance ( Var v, Time t
   setTime t pu@SerialPU{ spuProcess } = pu{ spuProcess=spuProcess{ nextTick=t } }
 
 
+instance Locks (SerialPU st v x t) v where
+  locks SerialPU{ spuCurrent=Nothing } = []
+  locks SerialPU{ spuCurrent=Just CurrentJob{ cFB }, spuRemain } =
+    [ Lock{ locked, lockBy }
+    | locked <- concatMap (elems . variables . fst) spuRemain
+    , lockBy <- elems $ variables cFB
+    ]
+
+
 -- * Утилиты --------------------------------------------------------
 
 -- | Простой способ спланировать вычислительный процесс последовательного вычислительного блока.
@@ -181,7 +195,7 @@ instance ( Var v, Time t
 
 serialSchedule
   :: ( Show (Instruction pu), Controllable pu, Var v, Time t, Typeable pu )
-  => Instruction pu -> Decision (EndpointDT v t) -> State (Process (Parcel v x) t) [ProcessUid]
+  => Instruction pu -> Decision (EndpointDT v t) -> State (Process v x t) [ProcessUid]
 serialSchedule instr act = do
   e <- addActivity (act^.at) $ EndpointRoleStep $ epdRole act
   i <- addActivity (act^.at) $ InstructionStep instr
