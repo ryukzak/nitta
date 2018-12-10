@@ -10,7 +10,12 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 {-|
-Module: Multiplier (model of computational multiplier block)
+Module      : Multiplier
+Description : CAD model of Multiplier processor
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
 
 In this module model of computational multiplier block is developing for CAD. 
 It can count the following functions:
@@ -152,50 +157,50 @@ Wherein, they are characterized by complicated behavior, that is expressed in:
 - pipelining
 - availability of internal resources
 
-Considered computation unit is one of the easiest from this point of view because it realize only 
+Considered processor is one of the easiest from this point of view because it realize only 
 data processing by one function.
 
-Computation unit behavior determined by applied algorhytm that is compose of function with data dependencies. 
+processor behavior determined by applied algorhytm that is compose of function with data dependencies. 
 process evolution.
 
-Any computation unit means three components:
+Any processor means three components:
 
-- computation unit hardware - set of prepared in advance or generated automatically hardware description files 
+- processor hardware - set of prepared in advance or generated automatically hardware description files 
 on Hardware Description Language (@/hdl/multiplier@); 
-- computation unit software - set of binary files, that determines:
-	- computation unit's initial state and setting
+- processor software - set of binary files, that determines:
+	- processor's initial state and setting
 	- control programm;
-- computation unit model in CAD - CAD component, that realize computation unit support 
-(hardware and software generation, computation unit union to processors, computation process planning
+- processor model in CAD - CAD component, that realize processor support 
+(hardware and software generation, processor union to processors, computation process planning
 and etc).
 
 Wherein all of three components are hardly related to each other and needed to strictly comply to 
-each other. For deeper understanding if computation unit functioning needed to have an idea about all 
-of all of its components. Model of multiplier computation unit and how it is realized will be considered above.
+each other. For deeper understanding if processor functioning needed to have an idea about all 
+of all of its components. Model of multiplier processor and how it is realized will be considered above.
 
 -}
 
 {-
-*Computation unit model
+*Processor model
 
-Computation unit model objective is "teaching" CAD to work with computation unit:
+Processor model objective is "teaching" CAD to work with processor:
 
 - which functions could be computated with its help (see 'NITTA.Type.ProcessUnit');
-- assign computation unit instance to execution of function (see 'NITTA.Type.Controllable');
+- assign processor instance to execution of function (see 'NITTA.Type.Controllable');
 - transform instructions to microcode (see 'NITTA.Type.UnambiguouslyDecode')
 - which options (@options@)  of computation process development is (upload or download 
 one or second variable of variables group);
-- computation process planning, which is deescribed by upload or download to pr from computation unit. 
+- computation process planning, which is deescribed by upload or download to pr from processor. 
 (see @decision@)
 -}
 
 {-|
-The basis of computation units model is data structure, that fixes:
+The basis of processors model is data structure, that fixes:
 
 - conputation unit state while computation process planning;
-- computation unit desciption (fully or fragmentary), which can be translated to software.
+- processor desciption (fully or fragmentary), which can be translated to software.
 
-Exactly around this data structure all algorhitmic part of computation unit is developed. 
+Exactly around this data structure all algorhitmic part of processor is developed. 
 Data structure is parametrizes by following variables types:
 - v - variable id;
 - x - type of value, with that multiplier works;
@@ -225,10 +230,10 @@ data Multiplier v x t
       -- explicitly does not carried out, because it is in description os computation
       -- process 'process_
       remain               :: [F (Parcel v x)]'
-      -- |List of variables, which are needed to upwnload to computation unit for
+      -- |List of variables, which are needed to upwnload to processor for
       -- current function computation.
       , targets              :: [v]
-      -- |List of variables, which are needed to download from computation unit for
+      -- |List of variables, which are needed to download from processor for
       -- current function computation. Download order is arbitrary. Necessary to notice that
       -- all downloading variables match to one value - multipliing result.
       , sources              :: [v]
@@ -238,14 +243,14 @@ data Multiplier v x t
   	  , doneAt               :: Maybe t
       , currentWork          :: Maybe (t, F (Parcel v x))
       -- | While planning of execution of function necessery to define undefined value of uploading /
-      -- downloading of data to / from computation unit, to then set up vertical behavior between
+      -- downloading of data to / from processor, to then set up vertical behavior between
       -- information about executing function and this send.
       , currentWorkEndpoints :: [ ProcessUid ]
-      -- | Description of computation process, planned to the computation unit 
+      -- | Description of computation process, planned to the processor 
       -- 'NITTA.Types.Base.Process'.
       , process_             :: Process (Parcel v x) t
       , tick                 :: t
-      -- | In realisation of the computation unit IP kernel that supplied with Altera Quartus used.
+      -- | In realisation of the processor IP kernel that supplied with Altera Quartus used.
       -- This is don't allow to simulate with Icarus Verilog.
       -- To get around with the restriction the mock was created, that connect instrad of IP kernel
       -- ig the flag is set up.
@@ -586,38 +591,54 @@ instance ( Time t, Var v
     , .attr_out( $attrOut )
     );|]	
 
+-- As you can see ahead, this class uses to get data bus width from the type level (@x@ type variable).
+instance WithX (Multiplier v x t) x
 
+--| This class is service and used to extract all functions binding to processor. This class is easy
+--  realized: we take process description (all planned functions) from processor, and function in progress,
+-- if it is.
+instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
+    functions Multiplier{ process_, remain, currentWork }
+        = functions process_
+        ++ remain
+        ++ case currentWork of
+            Just (_, f) -> [f]
+            Nothing     -> []
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- The main purpose of this class is to generate auto tests isolated to the processor.
+-- In case of this it allows to generate test bench for computational unit according to its model
+-- and planned computational process. Use can see tests in 'Spec'.
+--
+-- Testing is carried out as follows: om the base of processor description it generate sequence
+-- of outer influence o processor (signals and input data), and also check sequence of output signals
+-- and data. Output data is compared with results of functional simulations and if they doesn't match
+-- then error message is displaing.
+instance ( Var v, Time t
+         , Typeable x, Show x, Integral x, Val x
+         ) => TestBench (Multiplier v x t) v x where
+    testBenchDescription prj@Project{ projectName, processorModel }
+    -- Test bech is one file described below. We use ready snippet for it generation, because
+    -- in most cases they will be similar. The data structure 'NITTA.Project.TestBenchSetup' has the
+    -- key role and describes this module specific.
+     = Immidiate (moduleName projectName processorModel ++ "_tb.v")
+            $ snippetTestBench prj TestBenchSetup
+            -- List of control signals. It is needed to initialize registers with the same names.
+             { tbcSignals=["oe", "wr", "wrSel"]
+             --Processor to environment connect function and signal lines IDs. In @tbcPorts@ describes 
+             -- to what connect signal lines of test block. In @tbcSignalConnect@  how abstract numbers
+             -- is displays to generated source code.
+              , tbcPorts=PUPorts
+                  { oe=Signal 0
+                  , wr=Signal 1
+                  , wrSel=Signal 2
+                  }
+              , tbcSignalConnect= \case
+                  (Signal 0) -> "oe"
+                  (Signal 1) -> "wr"
+                  (Signal 2) -> "wrSel"
+                  _ -> error "testBenchDescription wrong signal"             
+                  -- While test bench generation know how processors control signal is defined.
+                  -- This is described below. Notice, that work with data bus is realized in snippet.
+                  , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
+                  [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
+                  } 
