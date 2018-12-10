@@ -17,6 +17,16 @@ Stability   : experimental
 конфигурацией процессора. В данном примере это интерфейс SPI ('NITTA.ProcessUnit.SPI').
 -}
 
+{- The Fibonacci sequency calcutation is the one of classical examples of algoritms: 0, 1, 2, 3, 5, 8, 13...|
+
+Program that described below realise 2 independent processes:
+- Fibonacci sequency calcutation;
+- Integers calculation (element's number).
+
+Every element of the sequences sends to the external interface, definable by the processor configuration. 
+It is SPI Interface in this example ('NITTA.ProcessUnit.SPI').
+-}
+
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
