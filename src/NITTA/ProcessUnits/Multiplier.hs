@@ -361,13 +361,14 @@ instance ( Var v, Time t, Typeable x
 
     --list of variants of uploading to processor variables, which are needed to function
     --that is in work;
-    options _proxy Multiplier{ targets=vs@(_:_), tick }
-        = map (\v -> EndpointO (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
+    options _proxy Multiplier{ sources, doneAt=Just at, tick }
+        | not $ null sources
+        = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
 
      --   list of variants of downloading from processor variables;
      options _proxy Multiplier{ sources, doneAt=Just at, tick }
-        | not $ null sources
-        = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
+          | not $ null sources
+          = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
 
     -- list of variables of uploading to processor variables, upload any one of that 
     -- will cause to actual start of working with mathched function.
@@ -391,18 +392,18 @@ instance ( Var v, Time t, Typeable x
     --
     --		1. If model wait variable uploading:
     decision _proxy pu@Multiplier{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
-	 	-- From the list of uploading value we get a needed value, and remainder is saved 
-	 	-- for the next steps. 
-	 	| ([_], xs) <- partition (== v) vs
-	 	-- @sel@ veriable is used for uploading queuing of variable to hardware block, that is 
-	 	-- requred because of realisation. 
-	 	, let sel = if null xs then B else A
-	 	--  Computation process planning is carried out.
-	 	, let (newEndpoints, process_') = runSchedule pu $ do
- 				-- this is required for correct work of automatically generated tests,
- 				-- that takes information about time from Process
-                updateTick (sup epdAt)
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
+    	 	-- From the list of uploading value we get a needed value, and remainder is saved 
+    	 	-- for the next steps. 
+    	 	| ([_], xs) <- partition (== v) vs
+    	 	-- @sel@ veriable is used for uploading queuing of variable to hardware block, that is 
+    	 	-- requred because of realisation. 
+    	 	, let sel = if null xs then B else A
+    	 	--  Computation process planning is carried out.
+    	 	, let (newEndpoints, process_') = runSchedule pu $ do
+         			-- this is required for correct work of automatically generated tests,
+         			-- that takes information about time from Process
+              updateTick (sup epdAt)
+              scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
         = pu
             { process_=process_'
             -- The remainder of the work is saved for the next loop
