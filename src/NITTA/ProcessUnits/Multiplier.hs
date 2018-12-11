@@ -219,7 +219,7 @@ Data structure is parametrizes by following variables types:
 
 data Multiplier v x t
     = Multiplier
-    { --| List of the assigned, but still not processed or cannot be processed functions.
+    { -- | List of the assigned, but still not processed or cannot be processed functions.
       -- Functions execution starts with:
       --
       -- - deleting functions from this list;
@@ -229,7 +229,7 @@ data Multiplier v x t
       -- Assigned function can be executed in random order. Information about executed functions storaging
       -- explicitly does not carried out, because it is in description os computation
       -- process 'process_
-      remain               :: [F (Parcel v x)]'
+      remain               :: [F (Parcel v x)]
       -- |List of variables, which are needed to upwnload to processor for
       -- current function computation.
       , targets              :: [v]
@@ -307,7 +307,7 @@ multiplier mock = Multiplier
 -- at the same time on the start for all functions. 
 instance ( Var v, Time t
          ) => ProcessUnit (Multiplier v x t) (Parcel v x) t where
-	--| Binding to processor is carried out by this function.
+	-- | Binding to processor is carried out by this function.
 	tryBind f pu@Multiplier{ remain }
 		-- To do this, it is checked whether the function type is reduced to one of the supported 
 		-- by ('NITTA.FunctionalBlocks.castF')  and in case of success model conditions is returned
