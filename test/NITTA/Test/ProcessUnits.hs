@@ -26,7 +26,6 @@ import           Data.Proxy
 import           Data.Set                      (difference, elems, empty,
                                                 fromList, intersection, union)
 import           Debug.Trace
-import           NITTA.Compiler
 import           NITTA.Functions
 import qualified NITTA.Functions               as F
 import           NITTA.ProcessUnits.Divider
@@ -38,6 +37,7 @@ import           NITTA.Test.LuaFrontend
 import           NITTA.Test.Microarchitectures
 import           NITTA.Types
 import           NITTA.Types.Project
+import           NITTA.Types.Synthesis         (endpointOption2action)
 import           NITTA.Utils
 import           System.FilePath.Posix         (joinPath)
 import           Test.QuickCheck

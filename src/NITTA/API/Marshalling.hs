@@ -22,7 +22,6 @@ import qualified Data.Map              as M
 import qualified Data.Text             as T
 import           Data.Typeable
 import           NITTA.BusNetwork
-import           NITTA.Compiler
 import           NITTA.DataFlow
 import           NITTA.Types
 import           NITTA.Types.Project
@@ -124,17 +123,16 @@ instance FromHttpApiData Nid where
     parseUrlPiece = Right . read . T.unpack
 
 
-instance
-        ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
-        , ToJSON t, Time t
-        ) => ToJSON (Synthesis String String x t) where
-    toJSON Synthesis{ sModel, sCntx, sStatus } = object
-        [ "sModel" .= sModel
-        , "sCntx" .= map show sCntx
-        , "sStatus" .= show sStatus
-        ]
+-- instance
+--         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
+--         , ToJSON t, Time t
+--         ) => ToJSON (Synthesis String String x t) where
+--     toJSON Synthesis{ sModel, sCntx, sStatus } = object
+--         [ "sModel" .= sModel
+--         , "sCntx" .= map show sCntx
+--         , "sStatus" .= show sStatus
+--         ]
 
-instance ToJSON SynthesisStatus
 instance ToJSON TestBenchReport
 
 

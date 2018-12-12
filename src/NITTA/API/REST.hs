@@ -69,45 +69,45 @@ view n = f <$> mzip (nidsTree n) n
 
 type SynthesisAPI x t
     =    "synthesis" :> Get '[JSON] (Tree SynthesisView)
-    :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis x t
+    -- :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis x t
 
 synthesisServer st
     =    ( view <$> liftSTM (readTVar st))
-    :<|> \nid -> withSynthesis st nid
+    -- :<|> \nid -> withSynthesis st nid
 
 
 
-type WithSynthesis x t
-    =    Get '[JSON] (SynthesisTree String String x t)
-    :<|> "model" :> Get '[JSON] (ModelState String String x t)
-    :<|> "model" :> "alg" :> Get '[JSON] [F String x]
-    :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
-    :<|> SimpleCompilerAPI x t
+-- type WithSynthesis x t
+--     =    Get '[JSON] (SynthesisTree String String x t)
+--     :<|> "model" :> Get '[JSON] (ModelState String String x t)
+--     :<|> "model" :> "alg" :> Get '[JSON] [F String x]
+--     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
+--     :<|> SimpleCompilerAPI x t
 
-withSynthesis st nid
-    =    get st nid
-    :<|> getModel st nid
-    :<|> ( (\Frame{ dfg=DFG nodes } -> map (\(DFGNode f) -> f) nodes) <$> getModel st nid )
-    :<|> ( \name -> getTestBenchOutput st nid name )
-    :<|> simpleCompilerServer st nid
+-- withSynthesis st nid
+--     =    get st nid
+--     :<|> getModel st nid
+--     :<|> ( (\Frame{ dfg=DFG nodes } -> map (\(DFGNode f) -> f) nodes) <$> getModel st nid )
+--     :<|> ( \name -> getTestBenchOutput st nid name )
+--     :<|> simpleCompilerServer st nid
 
 
 
-type SimpleCompilerAPI x t
-    =    "simple" :> "options" :> Get '[JSON] [ WithMetric (CompilerDT String String x t) ]
-    :<|> "simple" :> "obviousBind" :> Post '[JSON] Nid
-    :<|> "simple" :> "allThreads" :> QueryParam' '[Required] "deep" Int :> Post '[JSON] Nid
-    :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
-    :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
+-- type SimpleCompilerAPI x t
+--     =    "simple" :> "options" :> Get '[JSON] [ WithMetric (CompilerDT String String x t) ]
+--     -- :<|> "simple" :> "obviousBind" :> Post '[JSON] Nid
+--     -- :<|> "simple" :> "allThreads" :> QueryParam' '[Required] "deep" Int :> Post '[JSON] Nid
+--     -- :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
+--     -- :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
 
-simpleCompilerServer st nid
-    =    simpleCompilerOptions st nid
-    :<|> updateSynthesis (Just . synthesisObviousBind) st nid
-    :<|> ( \deep -> updateSynthesis (Just . simpleSynthesisAllThreads simple deep) st nid )
-    :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix=Just ix }) st nid )
-    :<|> \case
-            True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
-            False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
+-- simpleCompilerServer st nid
+--     =    simpleCompilerOptions st nid
+--     -- :<|> updateSynthesis (Just . synthesisObviousBind) st nid
+--     -- :<|> ( \deep -> updateSynthesis (Just . simpleSynthesisAllThreads simple deep) st nid )
+--     -- :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix=Just ix }) st nid )
+--     -- :<|> \case
+--     --         True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
+--     --         False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
 
 
 
@@ -125,13 +125,13 @@ getModel st nid = do
     let Synthesis{ sModel } = getSynthesis nid root
     return sModel
 
-updateSynthesis f st nid = liftSTM $ do
-    n <- readTVar st
-    case update f nid n of
-        Just (n', nid') -> do
-            writeTVar st n'
-            return nid'
-        Nothing -> return nid
+-- updateSynthesis f st nid = liftSTM $ do
+--     n <- readTVar st
+--     case update f nid n of
+--         Just (n', nid') -> do
+--             writeTVar st n'
+--             return nid'
+--         Nothing -> return nid
 
 getTestBenchOutput st _nid name = do
     Node{ rootLabel=Synthesis{ sModel } } <- liftSTM $ readTVar st

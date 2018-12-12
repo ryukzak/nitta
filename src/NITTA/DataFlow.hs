@@ -18,7 +18,6 @@ Stability   : experimental
 module NITTA.DataFlow
     ( DataFlowGraph(..)
     , Decision(..)
-    , node
     , Option(..)
     , ModelState(..)
     ) where
@@ -63,8 +62,6 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
     functions (DFGNode f) = [ f ]
     functions (DFG g)     = concatMap functions g
     -- functions DFGSwitch{ dfgCases } = concatMap (functions . snd) dfgCases
-
-node = DFGNode
 
 -- |Для описания текущего состояния вычислительной системы (с учётом алгоритма, потока управления,
 -- "текущего места" исполнения алгоритма, микроархитектуры и расписния) необходима работа со стеком.
