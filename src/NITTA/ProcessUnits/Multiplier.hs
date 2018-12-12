@@ -399,12 +399,12 @@ instance ( Var v, Time t, Typeable x
     	 	-- requred because of realisation. 
     	 	, let sel = if null xs then B else A
     	 	--  Computation process planning is carried out.
-    	 	, let (newEndpoints, process_') = runSchedule pu $ do
-         			-- this is required for correct work of automatically generated tests,
-         			-- that takes information about time from Process
-              updateTick (sup epdAt)
-              scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
-        = pu
+        , let (newEndpoints, process_') = runSchedule pu $ do
+                -- this is required for correct work of automatically generated tests,
+                -- that takes information about time from Process
+                updateTick (sup epdAt)
+                scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
+        = pu        
             { process_=process_'
             -- The remainder of the work is saved for the next loop
             , targets=xs
@@ -430,39 +430,38 @@ instance ( Var v, Time t, Typeable x
                 when (null sources') $ do
                     high <- scheduleFunction a (sup epdAt) f
                     let low = endpoints ++ currentWorkEndpoints
-                 	-- Set up the vertical relantions between functional unit
-                 	-- and related to that data sending.
-                 	establishVerticalRelations high low
-                 	-- this is needed to correct work of automatically generated tests
-                 	-- that takes time about time from Process
-                     updateTick (sup epdAt)
-                	return endpoints
-        	= pu
-            	{ process_=process_'
-            	-- In case if not all variables what asked - remaining are saved.        	
-
+                    -- Set up the vertical relantions between functional unit
+                    -- and related to that data sending.
+                    establishVerticalRelations high low
+                -- this is needed to correct work of automatically generated tests
+                -- that takes time about time from Process
+                updateTick (sup epdAt)
+                return endpoints
+        = pu
+            { process_=process_'
+              -- In case if not all variables what asked - remaining are saved.        	
              , sources=sources'
-             -- if all of works is done, then time when result is ready, 
-             -- current work and data transfering, what is done is the current function is reset.
+              -- if all of works is done, then time when result is ready, 
+              -- current work and data transfering, what is done is the current function is reset.
             , doneAt=if null sources' then Nothing else doneAt
             , currentWork=if null sources' then Nothing else Just (a, f)
             , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
-            -- Model time is running up
- 			, tick=sup epdAt
-    	    }
-   	-- 		3. If no function is executed at the moment, then we need to find function in the list
-   	-- 		of assigned function, executed it to work and only then make decision 
-   	-- 		and plan a fragment of computation process with call recursion in situation 1.
-   	 decision proxy pu@Multiplier{ targets=[], sources=[], remain } d
-    | let v = oneOf $ variables d
-    , Just f <- find (\f -> v `member` variables f) remain
-    = decision proxy (assignment pu f) d
+              -- Model time is running up
+            , tick=sup epdAt
+            }
+    --    3. If no function is executed at the moment, then we need to find function in the list
+    --    of assigned function, executed it to work and only then make decision 
+    --    and plan a fragment of computation process with call recursion in situation 1.
+    decision proxy pu@Multiplier{ targets=[], sources=[], remain } d
+        | let v = oneOf $ variables d
+        , Just f <- find (\f -> v `member` variables f) remain
+        = decision proxy (assignment pu f) d
     -- If smth went wrong. 
-	decision _ pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
+    decision _ pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
 
 
---| Multiplications argument id
+-- |Multiplications argument id
 --
 -- As we said before, because of some hardware organisation features, we need to take in 
 -- mind operators boot sequence in planned process on instruction level. This type os defined to do it.
@@ -474,7 +473,7 @@ data ArgumentSelector = A | B
 
 
 
---| Now we will consider questions of computation process planning organisation on hardware level.
+-- |Now we will consider questions of computation process planning organisation on hardware level.
 -- For do this on model level two levels of view is defined:
 --
 -- - instructions level, where  describes computation process in 
@@ -482,17 +481,17 @@ data ArgumentSelector = A | B
 -- - microcode level, where describes structure of processors controls  signals and
 -- values. 
 instance Controllable (Multiplier v x t) where
---| Instructions for multiplier processor controlling. Multiplier can only 
--- upload arguments A and B, and download multiplication result. This construction 
--- are used in computation process planning by 'schedule' function. Instead of them,
--- there is a @nop@ function - when no actions execute.
-data Instruction (Multiplier v x t)
-       = Load ArgumentSelector
-       | Out
-       deriving (Show)
+    -- |Instructions for multiplier processor controlling. Multiplier can only 
+    -- upload arguments A and B, and download multiplication result. This construction 
+    -- are used in computation process planning by 'schedule' function. Instead of them,
+    -- there is a @nop@ function - when no actions execute.
+    data Instruction (Multiplier v x t)
+           = Load ArgumentSelector
+           | Out
+           deriving (Show)
 
-	-- Set of signals for processor control and microcode view for 
-	-- the processor
+    -- Set of signals for processor control and microcode view for 
+    -- the processor
     data Microcode (Multiplier v x t)
         = Microcode
           { -- | Write to processor signal.
@@ -504,7 +503,7 @@ data Instruction (Multiplier v x t)
             }
         deriving ( Show, Eq, Ord )
 
---|Also we need to define default state for microcode (that is match to implicit @nop@ function)
+-- |Also we need to define default state for microcode (that is match to implicit @nop@ function)
 -- This state mean that processor is in inaction state, but doesn't busy the bus and storage 
 -- inner state in predictable view. In multiplier case - it doesn't reset multiplication result and
 -- doesn't work with bus. Default state is using for processor stop, pause or waiting
@@ -543,7 +542,7 @@ instance Connected (Multiplier v x t) where
             , (oe, Bool oeSignal)
             ]
 
---|The availability of standart values, with which actual result of processor in simlator 
+-- |The availability of standart values, with which actual result of processor in simlator 
 -- is compared, has the main role in testing. This class carry on Standart values generation. 
 
 instance ( Var v
@@ -556,28 +555,28 @@ instance ( Var v
 
 
 
---| We use functions that is realized below to generate processors and tests, that use this 
+-- | We use functions that is realized below to generate processors and tests, that use this 
 -- processor. These methods are called while generation of project with net, that include this 
 -- processor or also with tests generation.
 instance ( Time t, Var v
          ) => TargetSystemComponent (Multiplier v x t) where
-	--| Naming of hardwawre module, instance of which is creting for embedding to processor.
+	-- | Naming of hardwawre module, instance of which is creting for embedding to processor.
 	-- In this case it is defined in @/hdl/multiplier/pu_multiplier.v@.
-	moduleName _title _pu = "pu_multiplier"
+    moduleName _title _pu = "pu_multiplier"
 
-	--| Processors software generator. In case of multiplier this is no software. 
+	-- | Processors software generator. In case of multiplier this is no software. 
 	--Let's figure it out. Before we said, that software has two components:
 	--
 	-- 1.	Setting and begin states. In case of multiplier there is no specific settings  
 	-- 		for the applied algorhytm.
 	-- 2. 	Microprogram. Processor cannot be user not in processor ner sructure, we needn't to
-	--		determine software in context of separate unit. Besides, signal lines of separated 
-	--		processors can be multiplexed. Thereby, microprogram is formed for
-	--		processors net just at once in way of merge of the microprogramms, that are
-	--		generated on the base of computational planning description
-	--		(look. 'NITTA.BusNetwork').
+  --		determine software in context of separate unit. Besides, signal lines of separated 
+  --    processors can be multiplexed. Thereby, microprogram is formed for
+  --    processors net just at once in way of merge of the microprogramms, that are
+  --    generated on the base of computational planning description
+  --    (look. 'NITTA.BusNetwork').
     software _ _ = Empty
-    
+
     --	|Processor hardware generator. In case of multiplier, there is no generation.
     --	Multiplier is described by two files: (1) directly multiplier, that is realized
     --	by IP kernel or functional stub. (2) module. that realize interface between
@@ -589,7 +588,7 @@ instance ( Time t, Var v
                 else FromLibrary "multiplier/mult_inner.v"
             , FromLibrary $ "multiplier/" ++ moduleName title pu ++ ".v"
             ]
-    
+
 
     --	|Source code fragment generation for create processor instance within the processorю 
     -- 	The main task of the function is to include processor to processor infostructure correctly.
@@ -597,31 +596,36 @@ instance ( Time t, Var v
     --
     -- Take attention to function @fixIndent@. This function allows a programmer to use 
     -- normal code block indentation.
-    hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
-        = [qq|pu_multiplier #
-        ( .DATA_WIDTH( $parameterDataWidth )
-        , .ATTR_WIDTH( $parameterAttrWidth )
-        , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
-        ) $title
-    ( .clk( $signalClk )
-    , .rst( $signalRst )
-    , .signal_wr( {signal wr} )
-    , .signal_sel( {signal wrSel} )
-    , .data_in( $dataIn )
-    , .attr_in( $attrIn )
-    , .signal_oe( {signal oe} )
-    , .data_out( $dataOut )
-    , .attr_out( $attrOut )
-    );|]	
+    hardwareInstance title pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
+        = fixIndent [qc|
+|           pu_multiplier #
+|                   ( .DATA_WIDTH( { widthX pu } )
+|                   , .ATTR_WIDTH( { parameterAttrWidth } )
+|                   , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
+|                   ) { title }
+|               ( .clk( {signalClk} )
+|               , .rst( {signalRst} )
+|               , .signal_wr( { signal wr } )
+|               , .signal_sel( { signal wrSel } )
+|               , .data_in( { dataIn } )
+|               , .attr_in( { attrIn } )
+|               , .signal_oe( { signal oe } )
+|               , .data_out( { dataOut } )
+|               , .attr_out( { attrOut } )
+|               );
+|           |]
+
 
 -- As you can see ahead, this class uses to get data bus width from the type level (@x@ type variable).
 instance WithX (Multiplier v x t) x
 
 
---| This class is service and used to extract all functions binding to processor. 
+-- | This class is service and used to extract all functions binding to processor. 
 -- This class is easy realized: we take process description 
 -- (all planned functions) from processor, and function in progress,
 -- if it is.
+
+
 instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
     functions Multiplier{ process_, remain, currentWork }
         = functions process_
@@ -645,28 +649,29 @@ instance ( Var v, Time t
          , Typeable x, Show x, Integral x, Val x
          ) => TestBench (Multiplier v x t) v x where
     testBenchDescription prj@Project{ projectName, processorModel }
-    -- Test bech is one file described below. We use ready snippet for it generation, because
-    -- in most cases they will be similar. The data structure 'NITTA.Project.TestBenchSetup' has the
-    -- key role and describes this module specific.
-     = Immidiate (moduleName projectName processorModel ++ "_tb.v")
+        -- Test bech is one file described below. We use ready snippet for it generation, because
+        -- in most cases they will be similar. The data structure 'NITTA.Project.TestBenchSetup' has the
+        -- key role and describes this module specific.
+        = Immidiate (moduleName projectName processorModel ++ "_tb.v")
             $ snippetTestBench prj TestBenchSetup
             -- List of control signals. It is needed to initialize registers with the same names.
-             { tbcSignals=["oe", "wr", "wrSel"]
+                { tbcSignals=["oe", "wr", "wrSel"]
              --Processor to environment connect function and signal lines IDs. In @tbcPorts@ describes 
              -- to what connect signal lines of test block. In @tbcSignalConnect@  how abstract numbers
              -- is displays to generated source code.
-              , tbcPorts=PUPorts
-                  { oe=Signal 0
-                  , wr=Signal 1
-                  , wrSel=Signal 2
-                  }
-              , tbcSignalConnect= \case
-                  (Signal 0) -> "oe"
-                  (Signal 1) -> "wr"
-                  (Signal 2) -> "wrSel"
-                  _ -> error "testBenchDescription wrong signal"             
+                , tbcPorts=PUPorts
+                    { oe=Signal 0
+                    , wr=Signal 1
+                    , wrSel=Signal 2
+                    }
+                , tbcSignalConnect= \case
+                    (Signal 0) -> "oe"
+                    (Signal 1) -> "wr"
+                    (Signal 2) -> "wrSel"
+                    _ -> error "testBenchDescription wrong signal"
                   -- While test bench generation know how processors control signal is defined.
                   -- This is described below. Notice, that work with data bus is realized in snippet.
-                  , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
-                  [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
-                  } 
+                , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
+                    [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
+                }
+
