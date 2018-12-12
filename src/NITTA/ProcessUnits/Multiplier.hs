@@ -55,7 +55,7 @@ Ok, 10 modules loaded.
 Now create function and initial state multiplier computing unit. Unfortunately, it is not ehoght information for GHC
 from context to print it types, so lets set up clearly.
 
->>> let f = multiply "a" "b" ["c", "d"] :: F (Parcel String Int)
+>>> let f = multiply "a" "b" ["c", "d"] :: F String Int
 >>> f
 <Multiply (I "a") (I "b") (O (fromList ["c","d"]))>
 >>> let st0 = multiplier True :: Multiplier String Int Int
@@ -135,10 +135,11 @@ import           Data.Typeable
 import qualified NITTA.Functions               as F
 import           NITTA.Project
 import           NITTA.Types
+import           NITTA.Types.Project
 import           NITTA.Utils
 import           NITTA.Utils.Process
 import           Numeric.Interval              (inf, sup, (...))
-import           Text.InterpolatedString.Perl6 (qq)
+import           Text.InterpolatedString.Perl6 (qc)
 
 {-
 = Computing unit
@@ -229,34 +230,35 @@ data Multiplier v x t
       -- Assigned function can be executed in random order. Information about executed functions storaging
       -- explicitly does not carried out, because it is in description os computation
       -- process 'process_
-      remain               :: [F (Parcel v x)]
+          remain               :: [F v x]
       -- |List of variables, which are needed to upwnload to processor for
       -- current function computation.
-      , targets              :: [v]
+        , targets              :: [v]
       -- |List of variables, which are needed to download from processor for
       -- current function computation. Download order is arbitrary. Necessary to notice that
       -- all downloading variables match to one value - multipliing result.
-      , sources              :: [v]
+        , sources              :: [v]
       -- Actual process of multipliing will be finished in the specified moment and its
       -- result will be availible for download. Value is established after uploading of 
       -- all arguments.
-  	  , doneAt               :: Maybe t
-      , currentWork          :: Maybe (t, F (Parcel v x))
+        , doneAt               :: Maybe t
+        , currentWork          :: Maybe (t, F v x)
       -- | While planning of execution of function necessery to define undefined value of uploading /
       -- downloading of data to / from processor, to then set up vertical behavior between
       -- information about executing function and this send.
-      , currentWorkEndpoints :: [ ProcessUid ]
+        , currentWorkEndpoints :: [ ProcessUid ]
       -- | Description of computation process, planned to the processor 
       -- 'NITTA.Types.Base.Process'.
-      , process_             :: Process (Parcel v x) t
-      , tick                 :: t
+        , process_             :: Process v x t
+        , tick                 :: t
       -- | In realisation of the processor IP kernel that supplied with Altera Quartus used.
       -- This is don't allow to simulate with Icarus Verilog.
       -- To get around with the restriction the mock was created, that connect instrad of IP kernel
       -- ig the flag is set up.
-      , isMocked             :: Bool
-       }
+        , isMocked             :: Bool
+        }
     deriving ( Show )
+
 
 
 
@@ -277,11 +279,9 @@ instance Locks (Multiplier v x t) v where
         , lockBy <- sources ++ targets
         ]
 
-	-- | Multiplier processor construction. Argument define inner organisation of the computation
-	-- unit:  using of multiplier IP kernel (False) or mock (True). For more information look hardware function
-	-- in 'TargetSystemComponent' class.
-
-
+-- |Multiplier processor construction. Argument define inner organisation of the computation
+-- unit:  using of multiplier IP kernel (False) or mock (True). For more information look hardware function
+-- in 'TargetSystemComponent' class.
 multiplier mock = Multiplier
     { remain=[]
     , targets=[]
@@ -305,26 +305,26 @@ multiplier mock = Multiplier
 -- on the different metrics (for example, uploading of processors, number and types of still not binded functions)
 -- the best variant is choosed. Binding can be done either gradully while computation process planning or
 -- at the same time on the start for all functions. 
-instance ( Var v, Time t
-         ) => ProcessUnit (Multiplier v x t) (Parcel v x) t where
-	-- | Binding to processor is carried out by this function.
-	tryBind f pu@Multiplier{ remain }
-		-- To do this, it is checked whether the function type is reduced to one of the supported 
-		-- by ('NITTA.FunctionalBlocks.castF')  and in case of success model conditions is returned
-		-- after binding with 'Right' mark.
-		--
-		-- Important to notice, that "binding" doesn't mean actually beginning of work, that
-		-- allows firstly make bindings of all tasks and after plan computation process.
-		| Just F.Multiply{} <- F.castF f = Right pu{ remain=f : remain }
-		-- In case of impossibility of binding string with short description of renouncement 
-		--cause and 'Left' is returned.
-		| otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
-	--Unificated interface for get computation process description.
-	process = process_
-	-- | This method is used for set up processor time outside. 
-  -- At the time this is needed only for realisation 
-	-- of branching, which is on the prototyping stage.
-	setTime t pu@Multiplier{} = pu{ tick=t }
+instance ( Var v, Time t, Typeable x
+         ) => ProcessUnit (Multiplier v x t) v x t where
+    -- |Binding to processor is carried out by this function.
+    tryBind f pu@Multiplier{ remain }
+        -- To do this, it is checked whether the function type is reduced to one of the supported 
+        -- by ('NITTA.FunctionalBlocks.castF')  and in case of success model conditions is returned
+        -- after binding with 'Right' mark.
+        --
+        -- Important to notice, that "binding" doesn't mean actually beginning of work, that
+        -- allows firstly make bindings of all tasks and after plan computation process.
+        | Just F.Multiply{} <- F.castF f = Right pu{ remain=f : remain }
+        -- In case of impossibility of binding string with short description of renouncement 
+        --cause and 'Left' is returned.
+        | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
+  --Unificated interface for get computation process description.
+    process = process_
+    -- | This method is used for set up processor time outside. 
+    -- At the time this is needed only for realisation 
+    -- of branching, which is on the prototyping stage.
+    setTime t pu@Multiplier{} = pu{ tick=t }
 
 
 -- |This function carry out actual take functional block to work.
@@ -361,14 +361,13 @@ instance ( Var v, Time t, Typeable x
 
     --list of variants of uploading to processor variables, which are needed to function
     --that is in work;
+    options _proxy Multiplier{ targets=vs@(_:_), tick }
+        = map (\v -> EndpointO (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
+
+     --   list of variants of downloading from processor variables;
     options _proxy Multiplier{ sources, doneAt=Just at, tick }
         | not $ null sources
         = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
-
-     --   list of variants of downloading from processor variables;
-     options _proxy Multiplier{ sources, doneAt=Just at, tick }
-          | not $ null sources
-          = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
 
     -- list of variables of uploading to processor variables, upload any one of that 
     -- will cause to actual start of working with mathched function.
@@ -392,12 +391,12 @@ instance ( Var v, Time t, Typeable x
     --
     --		1. If model wait variable uploading:
     decision _proxy pu@Multiplier{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
-    	 	-- From the list of uploading value we get a needed value, and remainder is saved 
-    	 	-- for the next steps. 
-    	 	| ([_], xs) <- partition (== v) vs
+       	-- From the list of uploading value we get a needed value, and remainder is saved 
+       	-- for the next steps. 
+        | ([_], xs) <- partition (== v) vs
     	 	-- @sel@ veriable is used for uploading queuing of variable to hardware block, that is 
     	 	-- requred because of realisation. 
-    	 	, let sel = if null xs then B else A
+        , let sel = if null xs then B else A
     	 	--  Computation process planning is carried out.
         , let (newEndpoints, process_') = runSchedule pu $ do
                 -- this is required for correct work of automatically generated tests,
@@ -486,9 +485,9 @@ instance Controllable (Multiplier v x t) where
     -- are used in computation process planning by 'schedule' function. Instead of them,
     -- there is a @nop@ function - when no actions execute.
     data Instruction (Multiplier v x t)
-           = Load ArgumentSelector
-           | Out
-           deriving (Show)
+        = Load ArgumentSelector
+        | Out
+        deriving (Show)
 
     -- Set of signals for processor control and microcode view for 
     -- the processor
@@ -531,9 +530,9 @@ instance UnambiguouslyDecode (Multiplier v x t) where
 instance Connected (Multiplier v x t) where
     data PUPorts (Multiplier v x t)
         = PUPorts
-            { wr           -- ˆUpload argument
-            , wrSel        -- ˆSelect uploading argument (A | B).
-            , oe :: Signal -- ˆDownload work result
+            { wr           -- ˆЗагрузить аргумент.
+            , wrSel        -- ˆВыбор загружаемого аргумента (A | B).
+            , oe :: Signal -- ˆВыгрузить результат работы.
             } deriving ( Show )
     transmitToLink Microcode{..} PUPorts{..}
         =
@@ -547,6 +546,7 @@ instance Connected (Multiplier v x t) where
 
 instance ( Var v
          , Integral x
+         , Typeable x
          ) => Simulatable (Multiplier v x t) v x where
     simulateOn cntx _ f
         -- We define the function and delegate its calculation to default realization.
@@ -558,23 +558,23 @@ instance ( Var v
 -- | We use functions that is realized below to generate processors and tests, that use this 
 -- processor. These methods are called while generation of project with net, that include this 
 -- processor or also with tests generation.
-instance ( Time t, Var v
+instance ( Time t, Var v, Val x
          ) => TargetSystemComponent (Multiplier v x t) where
-	-- | Naming of hardwawre module, instance of which is creting for embedding to processor.
-	-- In this case it is defined in @/hdl/multiplier/pu_multiplier.v@.
+    -- | Naming of hardwawre module, instance of which is creting for embedding to processor.
+    -- In this case it is defined in @/hdl/multiplier/pu_multiplier.v@.
     moduleName _title _pu = "pu_multiplier"
 
-	-- | Processors software generator. In case of multiplier this is no software. 
-	--Let's figure it out. Before we said, that software has two components:
-	--
-	-- 1.	Setting and begin states. In case of multiplier there is no specific settings  
-	-- 		for the applied algorhytm.
-	-- 2. 	Microprogram. Processor cannot be user not in processor ner sructure, we needn't to
-  --		determine software in context of separate unit. Besides, signal lines of separated 
-  --    processors can be multiplexed. Thereby, microprogram is formed for
-  --    processors net just at once in way of merge of the microprogramms, that are
-  --    generated on the base of computational planning description
-  --    (look. 'NITTA.BusNetwork').
+    -- | Processors software generator. In case of multiplier this is no software. 
+    --Let's figure it out. Before we said, that software has two components:
+    --
+    -- 1. Setting and begin states. In case of multiplier there is no specific settings  
+    --    for the applied algorhytm.
+    -- 2. Microprogram. Processor cannot be user not in processor ner sructure, we needn't to
+    --    determine software in context of separate unit. Besides, signal lines of separated 
+    --    processors can be multiplexed. Thereby, microprogram is formed for
+    --    processors net just at once in way of merge of the microprogramms, that are
+    --    generated on the base of computational planning description
+    --    (look. 'NITTA.BusNetwork').
     software _ _ = Empty
 
     --	|Processor hardware generator. In case of multiplier, there is no generation.
@@ -588,7 +588,6 @@ instance ( Time t, Var v
                 else FromLibrary "multiplier/mult_inner.v"
             , FromLibrary $ "multiplier/" ++ moduleName title pu ++ ".v"
             ]
-
 
     --	|Source code fragment generation for create processor instance within the processorю 
     -- 	The main task of the function is to include processor to processor infostructure correctly.
@@ -618,6 +617,7 @@ instance ( Time t, Var v
 
 -- As you can see ahead, this class uses to get data bus width from the type level (@x@ type variable).
 instance WithX (Multiplier v x t) x
+instance IOTest (Multiplier v x t) v x 
 
 
 -- | This class is service and used to extract all functions binding to processor. 
