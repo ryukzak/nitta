@@ -30,8 +30,8 @@ module NITTA.Types.Synthesis
     , SynthesisSetup(..)
     , simple
       -- *Processing SynthesisTree
+    , getSynthesisNodeIO
     , getSynthesisNode
-    , getSynthesis
     , getSynthesisSubNodesIO, getSynthesisSubNodes
     , SpecialMetrics(..)
     , optionsWithMetrics
@@ -53,11 +53,13 @@ module NITTA.Types.Synthesis
 
 import           Control.Arrow          (second)
 import           Control.Concurrent.STM
+import           Control.Monad          (unless)
 import           Data.List              (find)
 import           Data.List.Split
 import qualified Data.Map               as M
 import           Data.Maybe
 import           Data.Proxy
+import           Data.Semigroup         (Semigroup, (<>))
 import           Data.Set               (Set, fromList, intersection, member)
 import qualified Data.Set               as S
 import           Data.Tree
@@ -74,7 +76,8 @@ import           Numeric.Interval       (Interval, (...))
 
 data SynthesisNode title v x t
     = SynthesisNode
-        { sModel     :: ModelState title v x t
+        { nid        :: Nid
+        , sModel     :: ModelState title v x t
         , sCntx      :: [SynthCntx]
         , isComplete :: Bool
         , sSubNodes  :: TVar (Maybe [SynthesisSubNode title v x t])
@@ -93,12 +96,13 @@ data SynthesisSubNode title v x t
 
 
 -- |Create initial synthesis.
-synthesisNodeIO m = atomically $ synthesisNode m
+synthesisNodeIO nid m = atomically $ synthesisNode nid m
 
-synthesisNode m = do
+synthesisNode nid m = do
     sSubNodes <- newTVar Nothing
     return SynthesisNode
-        { sModel=m
+        { nid=nid
+        , sModel=m
         , isComplete=isSchedulingComplete m
         , sCntx=[]
         , sSubNodes
@@ -108,22 +112,34 @@ synthesisNode m = do
 
 getSynthesisSubNodesIO node = atomically $ getSynthesisSubNodes node
 
-getSynthesisSubNodes SynthesisNode{ sModel, sSubNodes } = do
+getSynthesisSubNodes SynthesisNode{ nid, sModel, sSubNodes } = do
     optsM <- readTVar sSubNodes
     case optsM of
         Just opts -> return opts
         Nothing -> do
             let opts = optionsWithMetrics simple sModel
-            subNodes <- mapM (\WithMetric{ mDecision, mIntegral, mSpecial } -> do
-                node <- synthesisNode $ decision compiler sModel mDecision
+            subNodes <- mapM (\(i, WithMetric{ mDecision, mIntegral, mSpecial }) -> do
+                node <- synthesisNode (nid <> Nid [i]) $ decision compiler sModel mDecision
                 return SubNode
                     { subNode=node
                     , characteristic=fromIntegral mIntegral
                     , characteristics=mSpecial
                     }
-                ) opts
+                ) $ zip [0..] opts
             writeTVar sSubNodes $ Just subNodes
             return subNodes
+
+
+
+-- |Get specific by @nid@ node from a synthesis tree.
+getSynthesisNodeIO nid node = atomically $ getSynthesisNode nid node
+
+getSynthesisNode (Nid []) node = return node
+getSynthesisNode nid@(Nid (i:is)) node = do
+    subNodes <- getSynthesisSubNodes node
+    unless (i < length subNodes) $ error $ "getSynthesisNode - wrong nid: " ++ show nid
+    getSynthesisNode (Nid is) (subNode $ subNodes !! i)
+
 
 
 
@@ -147,6 +163,12 @@ instance Read Nid where
         = [(Nid $ map fst $ concat is, "")]
     readsPrec _ _ = []
 
+instance Semigroup Nid where
+    (Nid a) <> (Nid b) = Nid (a <> b)
+
+instance Monoid Nid where
+    mempty = Nid []
+    mappend = (<>)
 
 nidsTree = inner []
     where
@@ -155,11 +177,6 @@ nidsTree = inner []
             , subForest=zipWith (\i subN -> inner (i:is) subN) [0..] subForest
             }
 
-
-
-
-
-targetProcessDuration Frame{ processor } = nextTick $ process processor
 
 
 -- *Synthesis context
@@ -195,18 +212,6 @@ instance SynthCntxCls Comment where
         deriving ( Show )
 
 comment = SynthCntx . Comment
-
-
-
--- *Processing
-
--- |Get specific by @nid@ node from a synthesis tree.
-getSynthesisNode (Nid []) n = n
-getSynthesisNode nid@(Nid (i:is)) Node{ subForest }
-    | length subForest <= i = error $ "getSynthesisNode: wrong nid: " ++ show nid
-    | otherwise = getSynthesisNode (Nid is) (subForest !! i)
-
-getSynthesis nid n = rootLabel $ getSynthesisNode nid n
 
 
 
@@ -403,6 +408,9 @@ howManyOptionAllow bOptions
     where
         countOption title (Just titles) = Just $ title : titles
         countOption title Nothing       = Just [ title ]
+
+
+targetProcessDuration Frame{ processor } = nextTick $ process processor
 
 
 -- | Время ожидания переменных.

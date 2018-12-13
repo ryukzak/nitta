@@ -34,7 +34,7 @@ import           NITTA.Utils
 simpleSynthesisIO m = atomically $ simpleSynthesis m
 
 simpleSynthesis model = do
-    node <- synthesisNode model >>= obliousBindThread >>= allBestThread 1
+    node <- synthesisNode mempty model >>= obliousBindThread >>= allBestThread 1
     return $ sModel node
 
 
@@ -72,18 +72,6 @@ allBestThread n node = do
 
 -----------------------------------------------------------
 -- LEGACY
-
-
--- -- |Get specific by @nid@ node from a synthesis tree.
--- getSynthesisNode (Nid []) n = return n
--- getSynthesisNode nid@(Nid (i:is)) SynthesisNode{ sOptions } = do
---     opts <- liftSTM $ do
---         cached <- isEmptyTMVar sOptions
---         unless cached $ putTMVar sOptions $ optionsWithMetrics simple sModel
---         takeTMVar sOptions
---     when (length opts <= i) $ error $ "getSynthesisNode: wrong nid: " ++ show nid
---     getSynthesisNode (Nid is) (sOptions !! i)
-
 
 
 -- simpleSynthesisStep info SynthesisStep{ ix } Synthesis{ sModel }

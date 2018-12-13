@@ -72,7 +72,7 @@ prepareStaticFiles = do
 
 
 application compilerState = do
-    st <- atomically $ synthesisNode compilerState
+    st <- atomically $ synthesisNode mempty compilerState
     return $ serve
         ( Proxy :: Proxy
             (    Raw
