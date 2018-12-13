@@ -152,3 +152,5 @@ instance ( Val x ) => TargetSystemComponent (Shift v x t) where
     , .data_out( { dataOut } )
     , .attr_out( { attrOut } )
     );|]
+
+instance IOTest (Shift v x t) v x 

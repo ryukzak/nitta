@@ -15,13 +15,16 @@ module NITTA.Test.LuaFrontend
 import           Data.Either                   (isRight)
 import           Data.FileEmbed                (embedStringFile)
 import           Data.Proxy
+import           Data.Text                     (pack)
 import           NITTA.Test.Microarchitectures
 import           NITTA.Types
+import           NITTA.Utils                   (fixIndent)
 import           NITTA.Utils.Test
 import           Test.Tasty                    (TestTree, testGroup)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 import           Text.InterpolatedString.Perl6 (qc)
+
 
 test_counter =
     [ luaTestCase "simple"
@@ -71,26 +74,51 @@ test_fibonacci =
             fib(0, 1)|]
     ]
 
+
+test_io =
+    [ luaTestCaseWithInput "double_receive" [("a_0", [10..15]),("b_0", [20..25])] $ pack $ fixIndent [qc|
+|       function fib()
+|          local a = receive()
+|          local b = receive()
+|          local c = a + b
+|          send(c)
+|          fib()
+|       end
+|       fib()
+|       |]
+    ]
+
 luaTests :: TestTree
 luaTests = $(testGroupGenerator)
 
 
 -----------------------------------------------------------
 
-
-luaTestCase name lua
-    = let
-        fn = "lua_" ++ name
-    in testGroup name
-        [ luaTestCase' fn (Proxy :: Proxy Int) lua
-        , luaTestCase' fn (Proxy :: Proxy (IntX 32)) lua
-        , luaTestCase' fn (Proxy :: Proxy (IntX 48)) lua
+luaTestCase name lua = testGroup name
+        [ inner marchSPIDropData (Proxy :: Proxy Int)
+        , inner marchSPIDropData (Proxy :: Proxy (IntX 32))
+        , inner marchSPIDropData (Proxy :: Proxy (IntX 48))
         ]
+    where
+        fn = "lua_" ++ name
+        inner ma xProxy
+            = testCase (showTypeOf xProxy ++ " <" ++ fn' ++ ">") $ do
+                res <- testLuaWithInput fn' [] (ma xProxy) lua
+                isRight res @? show res
+            where
+                fn' = fn ++ "_" ++ showTypeOf xProxy
 
-luaTestCase' fn proxy lua
-    = let
-        name = showTypeOf proxy
-        fn' = fn ++ "_" ++ showTypeOf proxy
-    in testCase (name ++ " <" ++ fn' ++ ">") $ do
-        res <- testLua fn' (marchSPIDropData proxy) lua
-        isRight res @? show res
+
+luaTestCaseWithInput name is lua = testGroup name
+        [ inner marchSPI (Proxy :: Proxy Int)
+        , inner marchSPI (Proxy :: Proxy (IntX 32))
+        -- FIXME: , inner marchSPI (Proxy :: Proxy (IntX 48))
+        ]
+    where
+        fn = "lua_" ++ name
+        inner ma xProxy
+            = testCase (showTypeOf xProxy ++ " <" ++ fn' ++ ">") $ do
+                res <- testLuaWithInput fn' (map (\(v, x) -> (v, map toEnum x)) is) (ma xProxy) lua
+                isRight res @? show res
+            where
+                fn' = fn ++ "_" ++ showTypeOf xProxy

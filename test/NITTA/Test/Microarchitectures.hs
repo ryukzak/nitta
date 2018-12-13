@@ -13,6 +13,7 @@ module NITTA.Test.Microarchitectures
     , proxyInt
     , proxyIntX32
     , algTestCase
+    , algTestCaseWithInput
     , externalTestCntr
     ) where
 
@@ -60,10 +61,11 @@ marchSPI _proxy = busNetwork 31 (Just False)
     , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
     , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
     , ("accum", PU def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-    , ("spi", PU def SPI.PUPorts{ SPI.wr=Signal 22, SPI.oe=Signal 23
-                                , SPI.stop="stop"
-                                , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
-                                })
+    , ("spi", PU (SPI.slaveSPI 0) SPI.PUPorts
+        { SPI.wr=Signal 22, SPI.oe=Signal 23
+        , SPI.stop="stop"
+        , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
+        })
     , ("div", PU (D.divider 8 True) D.PUPorts{ D.wr=Signal 24, D.wrSel=Signal 25, D.oe=Signal 26, D.oeSel=Signal 27 } )
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 28, M.wrSel=Signal 29, M.oe=Signal 30 } )
     ]
@@ -80,10 +82,13 @@ externalTestCntr = unsafePerformIO $ newCounter 0
 {-# NOINLINE externalTestCntr #-}
 
 
-algTestCase name arch alg
-    = let
-            fn = "bn_" ++ name
-    in testCase (name ++ " <" ++ fn ++ "_*>") $ do
+algTestCase name arch alg = algTestCaseWithInput name [] arch alg
+
+
+algTestCaseWithInput name is arch alg
+    = testCase (name ++ " <" ++ fn ++ "_*>") $ do
         i <- incrCounter 1 externalTestCntr
-        res <- test (fn ++ "_" ++ show i) arch alg
+        res <- testWithInput (fn ++ "_" ++ show i) is arch alg
         isRight res @? show res
+    where 
+        fn = "bn_" ++ name

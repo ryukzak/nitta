@@ -19,6 +19,7 @@ import           Data.Default
 import           Data.Maybe                          (catMaybes)
 import           Data.Set                            (elems, fromList,
                                                       singleton)
+import qualified Data.String.Utils                   as S
 import           Data.Typeable
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
@@ -38,10 +39,10 @@ data State v x t
     deriving ( Show )
 
 instance Default (State v x t) where
-    def = State def def 20
+    def = State def def 2
 
 slaveSPI :: ( Var v, Time t ) => Int -> SPI v x t
-slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def def
+slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def{ nextTick = 1 } def
 
 
 
@@ -162,10 +163,12 @@ instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
         = Aggregate Nothing
             [ FromLibrary "spi/pu_slave_spi_driver.v"
             , FromLibrary "spi/spi_slave_driver.v"
+            , FromLibrary "spi/spi_to_nitta_splitter.v"
             , FromLibrary "spi/buffer.v"
             , FromLibrary "spi/bounce_filter.v"
             , FromLibrary "spi/spi_master_driver.v"
             , FromLibrary "spi/nitta_to_spi_splitter.v"
+            , FromLibrary "spi/spi_to_nitta_splitter.v"
             , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
             ]
     software _ pu = Immidiate "transport.txt" $ show pu
@@ -197,85 +200,63 @@ instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
 |               );
 |           |]
 
-    -- TODO: Превратить в настоящий тест, а не заглушку. Скорей всего затронет не только эту функцию, а всю инфраструктуру
-    -- тестирования.
-    componentTestEnviroment title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort } PUPorts{..}
+
+receiveSequenece SerialPU{ spuState=State{ spiReceive } } = reverse $ map head $ fst spiReceive
+sendSequenece SerialPU{ spuState=State{ spiSend } } = reverse $ fst spiSend
+receiveData pu cntx = map (get' cntx) $ receiveSequenece pu
+
+instance ( Var v, Show t, Show x, Enum x ) => IOTest (SPI v x t) v x where
+    componentTestEnviroment
+            title
+            pu@SerialPU{ spuState=State{ spiBounceFilter } }
+            Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort }
+            PUPorts{..}
+            cntxs
+        | let
+            wordWidth = 32 :: Int -- FIXME: hardcode
+            frameWordCount = max (length $ receiveSequenece pu) (length $ sendSequenece pu)
+            frameWidth = frameWordCount * wordWidth
+            ioCycle cntx = fixIndent [qc|
+|
+|                   { title }_master_in = \{ { dt' } }; // { dt }
+|                   { title }_start_transaction = 1;                           @(posedge { signalClk });
+|                   { title }_start_transaction = 0;                           @(posedge { signalClk });
+|                   repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
+|               |]
+                where 
+                    dt = receiveData pu cntx
+                    dt' = S.join ", " $ map (\d -> [qc|{ wordWidth }'sd{ fromEnum d }|]) dt ++ replicate (frameWordCount - length dt) [qc|{ wordWidth }'d00|]
+        , frameWordCount > 0
         = fixIndent [qc|
-|           reg { name }_start_transaction;
-|           reg  [64-1:0] { name }_master_in;
-|           wire [64-1:0] { name }_master_out;
-|           wire { name }_ready;
+|           // { show pu }
+|           reg { title }_start_transaction;
+|           reg  [{ frameWidth }-1:0] { title }_master_in;
+|           wire { title }_ready;
+|           wire [{ frameWidth }-1:0] { title }_master_out;
 |           spi_master_driver
-|               #( .DATA_WIDTH( 64 )
-|               , .SCLK_HALFPERIOD( 1 )
-|               ) { name }_master
-|               ( .clk( { clk } )
-|               , .rst( { rst } )
-|               , .start_transaction( { name }_start_transaction )
-|               , .data_in( { name }_master_in )
-|               , .data_out( { name }_master_out )
-|               , .ready( { name }_ready )
+|               #( .DATA_WIDTH( { frameWidth } )
+|                , .SCLK_HALFPERIOD( 1 )
+|                ) { title }_master
+|               ( .clk( { signalClk } )
+|               , .rst( { signalRst } )
+|               , .start_transaction( { title }_start_transaction )
+|               , .data_in( { title }_master_in )
+|               , .data_out( { title }_master_out )
+|               , .ready( { title }_ready )
 |               , .mosi( { inputPort mosi } )
 |               , .miso( { outputPort miso } )
 |               , .sclk( { inputPort sclk } )
 |               , .cs( { inputPort cs } )
 |               );
-|           initial { name }_master.inner.shiftreg <= 0;
+|           initial { title }_master.inner.shiftreg <= 0;
 |
 |           initial begin
-|               { name }_start_transaction <= 0; { name }_master_in <= 0;
-|               @(negedge { rst });
-|               repeat(8) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               { name }_master_in = 64'h0123456789ABCDEF;                @(posedge { clk });
-|               { name }_start_transaction = 1;                           @(posedge { clk });
-|               { name }_start_transaction = 0;                           @(posedge { clk });
-|               repeat(200) @(posedge { clk });
-|
-|               repeat(70) @(posedge { clk });
+|               { title }_start_transaction <= 0; { title }_master_in <= 0;
+|               @(negedge { signalRst });
+|               repeat(8) @(posedge { signalClk });
+|               { S.join "" $ map ioCycle cntxs }
+|               repeat(70) @(posedge { signalClk });
+|               // $finish; // DON'T DO THAT (with this line test can pass without data checking)
 |           end
 |           |]
-        where
-            name = title
-            clk = signalClk
-            rst = signalRst
+        | otherwise = ""

@@ -460,7 +460,7 @@ instance ( Title title, Var v, Time t
                 [ tbEnv
                 | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus
                 , let t' = filter (/= '"') $ show t
-                , let tbEnv = componentTestEnviroment t' unit systemEnv links
+                , let tbEnv = componentTestEnviroment t' unit systemEnv links cntxs
                 , not $ null tbEnv
                 ]
             externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
@@ -508,7 +508,7 @@ instance ( Title title, Var v, Time t
 |                       // Signals effect to processor state after first clk posedge.
 |                       @(posedge clk);
 |               { concatMap assertion simulationInfo }
-|                   repeat ( 2000 ) @(posedge clk);
+|                       repeat ( 2000 ) @(posedge clk);
 |                       $finish;
 |                   end
 |

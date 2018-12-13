@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
@@ -31,6 +32,7 @@ data PU v x t where
         , Typeable pu
         , UnambiguouslyDecode pu
         , TargetSystemComponent pu
+        , IOTest pu v x
         , Typeable x
         , Show x
         , Num x
@@ -69,6 +71,11 @@ instance TargetSystemComponent (PU v x t) where
     hardware name PU{ unit } = hardware name unit
     software name PU{ unit } = software name unit
     hardwareInstance name pu = hardwareInstance name pu
+
+instance IOTest (PU v x t) v x where
+    componentTestEnviroment name PU{ unit, systemEnv, links } _systemEnv _links cntxs
+        = componentTestEnviroment name unit systemEnv links cntxs
+
 
 castPU :: 
     ( ByTime pu t
@@ -163,10 +170,12 @@ class TargetSystemComponent pu where
     -- вычислительной платформы NITTA.
     hardwareInstance :: String -> pu -> Enviroment -> PUPorts pu -> String
 
+
+class IOTest pu v x | pu -> v x where
     -- |Для автоматизированного тестирования компонент со внешними портами ввода/вывода необходимо
     -- специализированное тестовое окружение, имитирующее ввод/вывод.
-    componentTestEnviroment :: String -> pu -> Enviroment -> PUPorts pu -> String
-    componentTestEnviroment _ _ _ _ = ""
+    componentTestEnviroment :: String -> pu -> Enviroment -> PUPorts pu -> [Cntx v x] -> String
+    componentTestEnviroment _title _pu _env _ports _cntxs = ""
 
 
 -- |Описание подключения сигнальных шин управления.
