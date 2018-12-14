@@ -18,14 +18,12 @@ Stability   : experimental
 -}
 
 module NITTA.API.REST
-    ( Synthesis(..)
-    , SynthesisAPI
+    ( SynthesisAPI
     , synthesisServer
     ) where
 
 import           Control.Concurrent.STM
 import           Control.Monad.Except
-import           Control.Monad.Zip      (mzip)
 import           Data.Aeson
 import           Data.Tree
 import           GHC.Generics
@@ -41,55 +39,45 @@ import           System.FilePath        (joinPath)
 
 
 
--- *REST API Projections.
-
-data SynthesisView
-    = SynthesisView
-        { svNnid     :: Nid
-        , svCntx     :: [String]
-        , svStatus   :: SynthesisStatus
-        , svDuration :: Int
-        }
-    deriving (Generic)
-
-instance ToJSON SynthesisView
-
-view n = f <$> mzip (nidsTree n) n
-    where
-        f ( nid, Synthesis sModel sCntx sStatus _sCache ) = SynthesisView
-            { svNnid=nid
-            , svCntx=map show sCntx
-            , svStatus=sStatus
-            , svDuration=fromEnum $ targetProcessDuration sModel
-            }
-
-
-
 -- *REST API
 
-type SynthesisAPI x t
-    =    "synthesis" :> Get '[JSON] (Tree SynthesisView)
-    -- :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis x t
+type SynthesisAPI title v x t
+    =    "synthesis" :> Get '[JSON] (Tree SynthesisNodeView)
+    :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis title v x t
 
-synthesisServer st
-    =    ( view <$> liftSTM (readTVar st))
-    -- :<|> \nid -> withSynthesis st nid
+synthesisServer root
+    =    liftIO ( synthesisNodeView root )
+    :<|> \nid -> withSynthesis root nid
 
 
 
--- type WithSynthesis x t
---     =    Get '[JSON] (SynthesisTree String String x t)
---     :<|> "model" :> Get '[JSON] (ModelState String String x t)
---     :<|> "model" :> "alg" :> Get '[JSON] [F String x]
---     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
+type WithSynthesis title v x t
+    =    Get '[JSON] (SynthesisNode title v x t)
+    :<|> "model" :> Get '[JSON] (ModelState title v x t)
+    :<|> "model" :> "alg" :> Get '[JSON] [F v x]
+    :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
 --     :<|> SimpleCompilerAPI x t
 
--- withSynthesis st nid
---     =    get st nid
---     :<|> getModel st nid
---     :<|> ( (\Frame{ dfg=DFG nodes } -> map (\(DFGNode f) -> f) nodes) <$> getModel st nid )
---     :<|> ( \name -> getTestBenchOutput st nid name )
+withSynthesis root nid
+    =    liftIO ( getSynthesisNodeIO root nid )
+    :<|> liftIO ( sModel <$> getSynthesisNodeIO root nid )
+    :<|> liftIO ( alg . sModel <$> getSynthesisNodeIO root nid )
+    :<|> \name -> liftIO ( do
+        sModel <- sModel <$> getSynthesisNodeIO root nid
+        node <- simpleSynthesisIO sModel
+        writeAndRunTestBench Project
+            { projectName=name
+            , libraryPath="../.."
+            , projectPath=joinPath ["hdl", "gen", name]
+            , processorModel=processor node
+            , testCntx=Nothing
+            , targetPlatforms=[ Makefile ]
+            }
+    )
 --     :<|> simpleCompilerServer st nid
+    where
+        alg Frame{ dfg=DFG nodes } = map (\(DFGNode f) -> f) nodes
+        alg _                      = error "unsupported algorithm structure"
 
 
 
@@ -111,19 +99,10 @@ synthesisServer st
 
 
 
-get st nid = do
-    root <- liftSTM $ readTVar st
-    return $ getSynthesisNode nid root
-
-simpleCompilerOptions st nid = do
-    root <- liftSTM $ readTVar st
-    let Synthesis{ sModel } = getSynthesis nid root
-    return $ optionsWithMetrics simple sModel
-
-getModel st nid = do
-    root <- liftSTM $ readTVar st
-    let Synthesis{ sModel } = getSynthesis nid root
-    return sModel
+-- simpleCompilerOptions st nid = do
+--     root <- liftSTM $ readTVar st
+--     let Synthesis{ sModel } = getSynthesis nid root
+--     return $ optionsWithMetrics simple sModel
 
 -- updateSynthesis f st nid = liftSTM $ do
 --     n <- readTVar st
@@ -133,21 +112,31 @@ getModel st nid = do
 --             return nid'
 --         Nothing -> return nid
 
-getTestBenchOutput st _nid name = do
-    Node{ rootLabel=Synthesis{ sModel } } <- liftSTM $ readTVar st
-    let prj = Project
-            { projectName=name
-            , libraryPath="../.."
-            , projectPath=joinPath ["hdl", "gen", name]
-            , processorModel=processor $ simpleSynthesis sModel
-            , testCntx=Nothing
-            , targetPlatforms=[ Makefile ]
-            }
-    liftIO $ writeAndRunTestBench prj
-
 
 -- *Internal
 
-liftSTM stm = do
-    e <- liftIO (atomically $ catchSTM (Right <$> stm) (return . Left))
-    either throwError return e
+data SynthesisNodeView
+    = SynthesisNodeView
+        { svNnid     :: Nid
+        , svCntx     :: [String]
+        , svStatus   :: Bool
+        , svDuration :: Int
+        }
+    deriving (Generic)
+
+instance ToJSON SynthesisNodeView
+
+synthesisNodeView SynthesisNode{ nid, isComplete, sModel, sSubNodes } = do
+    nodesM <- readTVarIO sSubNodes
+    nodes <- case nodesM of
+        Just ns -> mapM (synthesisNodeView . subNode) ns
+        Nothing -> return []
+    return Node
+        { rootLabel=SynthesisNodeView
+            { svNnid=nid
+            , svCntx=[]
+            , svStatus=isComplete
+            , svDuration=fromEnum $ targetProcessDuration sModel
+            }
+        , subForest=nodes
+        }

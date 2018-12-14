@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns    #-}
@@ -18,16 +17,16 @@ Stability   : experimental
 module NITTA.API.Marshalling where
 
 import           Data.Aeson
-import qualified Data.Map              as M
-import qualified Data.Text             as T
+import qualified Data.Map                 as M
+import qualified Data.Text                as T
 import           Data.Typeable
+import           NITTA.API.GraphConverter
 import           NITTA.BusNetwork
 import           NITTA.DataFlow
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
-import           NITTA.API.GraphConverter
-import           NITTA.Utils           (transfered)
+import           NITTA.Utils              (transfered)
 import           Numeric.Interval
 import           Servant
 
@@ -123,15 +122,15 @@ instance FromHttpApiData Nid where
     parseUrlPiece = Right . read . T.unpack
 
 
--- instance
---         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
---         , ToJSON t, Time t
---         ) => ToJSON (Synthesis String String x t) where
---     toJSON Synthesis{ sModel, sCntx, sStatus } = object
---         [ "sModel" .= sModel
---         , "sCntx" .= map show sCntx
---         , "sStatus" .= show sStatus
---         ]
+instance
+        ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
+        , ToJSON t, Time t
+        ) => ToJSON (SynthesisNode String String x t) where
+    toJSON SynthesisNode{ sModel, sCntx, isComplete } = object
+        [ "sModel" .= sModel
+        , "sCntx" .= map show sCntx
+        , "isComplete" .= show isComplete
+        ]
 
 instance ToJSON TestBenchReport
 

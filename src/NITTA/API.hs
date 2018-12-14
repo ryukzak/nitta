@@ -27,7 +27,7 @@ import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
 import           Network.Wai.Handler.Warp      (run)
 import           Network.Wai.Middleware.Cors   (simpleCors)
 import           NITTA.API.Marshalling         ()
--- import           NITTA.API.REST
+import           NITTA.API.REST
 import           NITTA.Types.Synthesis
 import           Servant
 import qualified Servant.JS                    as SJS
@@ -50,7 +50,7 @@ export default api;|]
             , SJS.moduleName="api"
             }
     createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
-    -- SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI Int Int)) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
+    SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI String String Int Int)) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
     putStrLn "Generate rest_api.js library...OK"
 
 
@@ -75,17 +75,12 @@ application compilerState = do
     st <- atomically $ synthesisNode mempty compilerState
     return $ serve
         ( Proxy :: Proxy
-            (    Raw
+            (    SynthesisAPI _ _ _ _
+            :<|> Raw
             ) )
-        (    serveDirectoryWebApp (joinPath ["web", "build"])
+        (    synthesisServer st
+        :<|> serveDirectoryWebApp (joinPath ["web", "build"])
         )
-        -- ( Proxy :: Proxy
-        --     (    SynthesisAPI _ _
-        --     :<|> Raw
-        --     ) )
-        -- (    synthesisServer st
-        -- :<|> serveDirectoryWebApp (joinPath ["web", "build"])
-        -- )
 
 
 -- |Run backend server. Parameters:

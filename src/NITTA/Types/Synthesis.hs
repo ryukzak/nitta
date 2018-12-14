@@ -26,7 +26,6 @@ module NITTA.Types.Synthesis
     ( SynthesisNode(..)
     , synthesisNode, synthesisNodeIO
     , Nid(..)
-    , nidsTree
     , SynthesisSetup(..)
     , simple
       -- *Processing SynthesisTree
@@ -62,7 +61,6 @@ import           Data.Proxy
 import           Data.Semigroup         (Semigroup, (<>))
 import           Data.Set               (Set, fromList, intersection, member)
 import qualified Data.Set               as S
-import           Data.Tree
 import           Data.Typeable          (Typeable, cast)
 import           GHC.Generics
 import           NITTA.BusNetwork
@@ -132,13 +130,13 @@ getSynthesisSubNodes SynthesisNode{ nid, sModel, sSubNodes } = do
 
 
 -- |Get specific by @nid@ node from a synthesis tree.
-getSynthesisNodeIO nid node = atomically $ getSynthesisNode nid node
+getSynthesisNodeIO node nid = atomically $ getSynthesisNode node nid
 
-getSynthesisNode (Nid []) node = return node
-getSynthesisNode nid@(Nid (i:is)) node = do
+getSynthesisNode node (Nid []) = return node
+getSynthesisNode node nid@(Nid (i:is)) = do
     subNodes <- getSynthesisSubNodes node
     unless (i < length subNodes) $ error $ "getSynthesisNode - wrong nid: " ++ show nid
-    getSynthesisNode (Nid is) (subNode $ subNodes !! i)
+    getSynthesisNode (subNode $ subNodes !! i) (Nid is)
 
 
 
@@ -170,12 +168,6 @@ instance Monoid Nid where
     mempty = Nid []
     mappend = (<>)
 
-nidsTree = inner []
-    where
-        inner is Node{ subForest } = Node
-            { rootLabel=Nid $ reverse is
-            , subForest=zipWith (\i subN -> inner (i:is) subN) [0..] subForest
-            }
 
 
 
