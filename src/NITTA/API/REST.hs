@@ -56,61 +56,48 @@ type WithSynthesis title v x t
     :<|> "model" :> Get '[JSON] (ModelState title v x t)
     :<|> "model" :> "alg" :> Get '[JSON] [F v x]
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
---     :<|> SimpleCompilerAPI x t
+    :<|> SimpleCompilerAPI title v x t
 
 withSynthesis root nid
     =    liftIO ( getSynthesisNodeIO root nid )
     :<|> liftIO ( sModel <$> getSynthesisNodeIO root nid )
     :<|> liftIO ( alg . sModel <$> getSynthesisNodeIO root nid )
-    :<|> \name -> liftIO ( do
-        sModel <- sModel <$> getSynthesisNodeIO root nid
-        node <- simpleSynthesisIO sModel
+    :<|> (\name -> liftIO ( do
+        node <- getSynthesisNodeIO root nid
         writeAndRunTestBench Project
             { projectName=name
             , libraryPath="../.."
             , projectPath=joinPath ["hdl", "gen", name]
-            , processorModel=processor node
+            , processorModel=processor $ sModel node
             , testCntx=Nothing
             , targetPlatforms=[ Makefile ]
             }
-    )
---     :<|> simpleCompilerServer st nid
+    ))
+    :<|> simpleCompilerServer root nid
     where
         alg Frame{ dfg=DFG nodes } = map (\(DFGNode f) -> f) nodes
         alg _                      = error "unsupported algorithm structure"
 
 
 
--- type SimpleCompilerAPI x t
---     =    "simple" :> "options" :> Get '[JSON] [ WithMetric (CompilerDT String String x t) ]
---     -- :<|> "simple" :> "obviousBind" :> Post '[JSON] Nid
---     -- :<|> "simple" :> "allThreads" :> QueryParam' '[Required] "deep" Int :> Post '[JSON] Nid
---     -- :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
---     -- :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
+type SimpleCompilerAPI title v x t
+    =    "simple" :> "options" :> Get '[JSON] [ SynthesisSubNode title v x t ]
+    -- :<|> "simpleSynthesis" :> Post '[JSON] Nid
+    :<|> "obliousBindThread" :> Post '[JSON] Nid
+    :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] Nid
+    -- :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
+    -- :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
 
--- simpleCompilerServer st nid
---     =    simpleCompilerOptions st nid
---     -- :<|> updateSynthesis (Just . synthesisObviousBind) st nid
---     -- :<|> ( \deep -> updateSynthesis (Just . simpleSynthesisAllThreads simple deep) st nid )
---     -- :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix=Just ix }) st nid )
---     -- :<|> \case
---     --         True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
---     --         False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
+simpleCompilerServer root n
+    =    liftIO ( getSynthesisSubNodesIO =<< getSynthesisNodeIO root n )
+    -- :<|> liftIO ( nid <$> (simpleSynthesisIO =<< getSynthesisNodeIO root n))
+    :<|> liftIO ( nid <$> (obliousBindThreadIO =<< getSynthesisNodeIO root n))
+    :<|> ( \deep -> liftIO ( nid <$> (allBestThreadIO deep =<< getSynthesisNodeIO root n)) )
+    -- :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix=Just ix }) st nid )
+    -- :<|> \case
+    --     True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
+    --     False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
 
-
-
--- simpleCompilerOptions st nid = do
---     root <- liftSTM $ readTVar st
---     let Synthesis{ sModel } = getSynthesis nid root
---     return $ optionsWithMetrics simple sModel
-
--- updateSynthesis f st nid = liftSTM $ do
---     n <- readTVar st
---     case update f nid n of
---         Just (n', nid') -> do
---             writeTVar st n'
---             return nid'
---         Nothing -> return nid
 
 
 -- *Internal
@@ -127,8 +114,7 @@ data SynthesisNodeView
 instance ToJSON SynthesisNodeView
 
 synthesisNodeView SynthesisNode{ nid, isComplete, sModel, sSubNodes } = do
-    nodesM <- readTVarIO sSubNodes
-    nodes <- case nodesM of
+    nodes <- readTVarIO sSubNodes >>= \case
         Just ns -> mapM (synthesisNodeView . subNode) ns
         Nothing -> return []
     return Node

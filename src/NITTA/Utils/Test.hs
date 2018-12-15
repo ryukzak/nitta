@@ -34,7 +34,9 @@ import           NITTA.Frontend
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Types.Project
-import           NITTA.Types.Synthesis         (isSchedulingComplete)
+import           NITTA.Types.Synthesis         (SynthesisNode (..),
+                                                isSchedulingComplete,
+                                                synthesisNodeIO)
 import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
 
@@ -44,9 +46,11 @@ testLua name ma = testWithInput name [] ma . lua2functions
 testLuaWithInput name is ma = testWithInput name is ma . lua2functions
 
 testWithInput name cntx ma alg = runExceptT $ do
-    model@Frame{ processor } <- lift $ simpleSynthesisIO $ mkModelWithOneNetwork ma alg
-    let isComplete = isSchedulingComplete model
-    unless isComplete $ throwE [qc|> test { name } not isSchedulingComplete|]
+    model@Frame{ processor } <- lift $ do
+        node0 <- synthesisNodeIO mempty $ mkModelWithOneNetwork ma alg
+        sModel <$> simpleSynthesisIO node0
+    unless (isSchedulingComplete model)
+        $ throwE [qc|> test { name } not isSchedulingComplete|]
 
     let prj = Project
             { projectName=name
@@ -62,7 +66,7 @@ testWithInput name cntx ma alg = runExceptT $ do
     return ([qc|> test { name } - Success|] :: String)
 
 demo prj@Project{ projectPath, processorModel } = do
-    processorModel' <- processor <$> simpleSynthesisIO processorModel
+    processorModel' <- processor . sModel <$> (simpleSynthesisIO =<< synthesisNodeIO mempty processorModel)
     let prj' = prj{ processorModel=processorModel' }
     writeProject prj'
     putStrLn $ "Demo project in " ++ projectPath

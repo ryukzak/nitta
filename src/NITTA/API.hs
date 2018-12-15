@@ -72,13 +72,13 @@ prepareStaticFiles = do
 
 
 application compilerState = do
-    st <- atomically $ synthesisNode mempty compilerState
+    root <- atomically $ synthesisNode mempty compilerState
     return $ serve
         ( Proxy :: Proxy
             (    SynthesisAPI _ _ _ _
             :<|> Raw
             ) )
-        (    synthesisServer st
+        (    synthesisServer root
         :<|> serveDirectoryWebApp (joinPath ["web", "build"])
         )
 

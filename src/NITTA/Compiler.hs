@@ -19,6 +19,8 @@ Stability   : experimental
 
 module NITTA.Compiler
     ( simpleSynthesis, simpleSynthesisIO
+    , obliousBindThread, obliousBindThreadIO
+    , allBestThread, allBestThreadIO
     ) where
 
 import           Control.Concurrent.STM
@@ -33,9 +35,10 @@ import           NITTA.Utils
 -- |Schedule process by simple synthesis.
 simpleSynthesisIO m = atomically $ simpleSynthesis m
 
-simpleSynthesis model = do
-    node <- synthesisNode mempty model >>= obliousBindThread >>= allBestThread 1
-    return $ sModel node
+simpleSynthesis root 
+    = return root
+    >>= obliousBindThread
+    >>= allBestThread 1
 
 
 
@@ -46,6 +49,8 @@ bestThread node@SynthesisNode{} = do
         _  -> bestThread $ subNode $ maximumOn characteristic subNodes
 
 
+
+obliousBindThreadIO node = atomically $ obliousBindThread node
 
 obliousBindThread node = do
     subNodes <- getSynthesisSubNodes node
@@ -60,6 +65,7 @@ obliousBindThread node = do
         Nothing                 -> return node
 
 
+allBestThreadIO n node = atomically $ allBestThread n node
 
 allBestThread (0 :: Int) node = bestThread node
 allBestThread n node = do

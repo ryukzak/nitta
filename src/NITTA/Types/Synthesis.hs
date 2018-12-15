@@ -88,6 +88,8 @@ data SynthesisSubNode title v x t
         { subNode         :: SynthesisNode title v x t
         , characteristic  :: Float
         , characteristics :: SpecialMetrics
+        , snOption        :: Option (CompilerDT title v x t)
+        , snDecision      :: Decision (CompilerDT title v x t)
         }
     deriving ( Generic )
 
@@ -116,12 +118,14 @@ getSynthesisSubNodes SynthesisNode{ nid, sModel, sSubNodes } = do
         Just opts -> return opts
         Nothing -> do
             let opts = optionsWithMetrics simple sModel
-            subNodes <- mapM (\(i, WithMetric{ mDecision, mIntegral, mSpecial }) -> do
+            subNodes <- mapM (\(i, WithMetric{ mOption, mDecision, mIntegral, mSpecial }) -> do
                 node <- synthesisNode (nid <> Nid [i]) $ decision compiler sModel mDecision
                 return SubNode
                     { subNode=node
                     , characteristic=fromIntegral mIntegral
                     , characteristics=mSpecial
+                    , snOption=mOption
+                    , snDecision=mDecision
                     }
                 ) $ zip [0..] opts
             writeTVar sSubNodes $ Just subNodes

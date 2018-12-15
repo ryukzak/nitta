@@ -142,9 +142,19 @@ instance ToJSON SpecialMetrics
 instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
-        ) => ToJSON (WithMetric (CompilerDT String String x t)) where
-    toJSON WithMetric{ mIntegral, mSpecial, mOption, mDecision }
-        = toJSON ( mIntegral, mSpecial, mOption, mDecision )
+        ) => ToJSON (SynthesisSubNode String String x t) where
+    toJSON SubNode{ characteristic, characteristics, snOption, snDecision }
+        = toJSON ( characteristic, characteristics, snOption, snDecision )
+
+
+-- instance
+--         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
+--         , ToJSON t, Time t
+--         ) => ToJSON (WithMetric (CompilerDT String String x t)) where
+--     toJSON WithMetric{ mIntegral, mSpecial, mOption, mDecision }
+--         = toJSON ( mIntegral, mSpecial, mOption, mDecision )
+
+
 
 
 -- *Basic data
