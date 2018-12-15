@@ -65,6 +65,7 @@ withSynthesis root nId
     :<|> liftIO ( alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
+        unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
         writeAndRunTestBench Project
             { projectName=name
             , libraryPath="../.."

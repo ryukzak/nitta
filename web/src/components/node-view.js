@@ -90,7 +90,10 @@ export class NodeView extends Component {
           view: view
         })
       })
-      .catch(err => console.log(err))
+      .catch(err => {
+        alert('Can not take testbench, maybe, because it is not completed synthesis!\n' + err)
+        this.handleViewChange(this.state.currentNId, this.state.synthesisStatus, 'synthesisNode')
+      })
   }
 
   render (props) {
@@ -104,7 +107,7 @@ export class NodeView extends Component {
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNId, this.state.synthesisStatus, 'synthesisNode')}>synthesis node</a>
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNId, this.state.synthesisStatus, 'process')}>process</a>
               <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNId, this.state.synthesisStatus, 'edges')}>edges</a>
-              <a className='button primary' disabled={this.state.synthesisStatus !== 'Finished'} onClick={() => this.handleViewChange(this.state.currentNId, this.state.synthesisStatus, 'testbench')}>testbench</a>
+              <a className='button primary' onClick={() => this.handleViewChange(this.state.currentNId, this.state.synthesisStatus, 'testbench')}>testbench</a>
             </div>
             <div className='tiny button-group'>
               <a className='button primary' onClick={() => this.simpleSynthesis(this.state.currentNId)}>simple synthesis</a>
@@ -125,10 +128,7 @@ export class NodeView extends Component {
               currentNId={this.state.currentNId}
               onCurrentNIdChange={nid => this.onCurrentNIdChange(nid)}
             /> }
-            { this.state.view === 'testbench' && this.state.synthesisStatus !== 'Finished' &&
-              <pre>Synthesis is not Finished.</pre>
-            }
-            { this.state.view === 'testbench' && this.state.synthesisStatus === 'Finished' &&
+            { this.state.view === 'testbench' && 
               <div>
                 Status: <pre> { JSON.stringify(this.state.testBenchDump.tbStatus) } </pre>
                 Stdout:
