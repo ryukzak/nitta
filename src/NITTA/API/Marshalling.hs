@@ -112,24 +112,24 @@ instance ( ToJSON t, Time t, Show v
 
 
 -- *Synthesis
-instance ToJSON Nid where
-    toJSON nid = toJSON $ show nid
+instance ToJSON NId where
+    toJSON nId = toJSON $ show nId
 
-instance FromJSON Nid where
+instance FromJSON NId where
     parseJSON v = read <$> parseJSON v
 
-instance FromHttpApiData Nid where
+instance FromHttpApiData NId where
     parseUrlPiece = Right . read . T.unpack
 
 
 instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
-        ) => ToJSON (SynthesisNode String String x t) where
-    toJSON SynthesisNode{ sModel, sCntx, isComplete } = object
-        [ "sModel" .= sModel
-        , "sCntx" .= map show sCntx
-        , "isComplete" .= show isComplete
+        ) => ToJSON (Node String String x t) where
+    toJSON Node{ nModel, nCntx, nIsComplete } = object
+        [ "nModel" .= nModel
+        , "nCntx" .= map show nCntx
+        , "nIsComplete" .= show nIsComplete
         ]
 
 instance ToJSON TestBenchReport
@@ -142,9 +142,9 @@ instance ToJSON SpecialMetrics
 instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
-        ) => ToJSON (SynthesisSubNode String String x t) where
-    toJSON SubNode{ characteristic, characteristics, snOption, snDecision }
-        = toJSON ( characteristic, characteristics, snOption, snDecision )
+        ) => ToJSON (Edge String String x t) where
+    toJSON Edge{ eCharacteristic, eCharacteristics, eOption, eDecision }
+        = toJSON ( eCharacteristic, eCharacteristics, eOption, eDecision )
 
 
 -- instance

@@ -23,15 +23,15 @@ Stability   : experimental
 -}
 
 module NITTA.Types.Synthesis
-    ( SynthesisNode(..)
-    , synthesisNode, synthesisNodeIO
-    , Nid(..)
+    ( Node(..)
+    , mkNode, mkNodeIO
+    , NId(..)
     , SynthesisSetup(..)
     , simple
       -- *Processing SynthesisTree
-    , getSynthesisNodeIO
-    , getSynthesisNode
-    , getSynthesisSubNodesIO, getSynthesisSubNodes
+    , getNodeIO
+    , getNode
+    , getEdgesIO, getEdges
     , SpecialMetrics(..)
     , optionsWithMetrics
     , CompilerDT, compiler
@@ -46,7 +46,7 @@ module NITTA.Types.Synthesis
     , isSchedulingCompletable
     , findCntx
     , option2decision
-    , SynthesisSubNode(..)
+    , Edge(..)
     , endpointOption2action
     ) where
 
@@ -72,104 +72,103 @@ import           Numeric.Interval       (Interval, (...))
 
 
 
-data SynthesisNode title v x t
-    = SynthesisNode
-        { nid        :: Nid
-        , sModel     :: ModelState title v x t
-        , sCntx      :: [SynthCntx]
-        , isComplete :: Bool
-        , sSubNodes  :: TVar (Maybe [SynthesisSubNode title v x t])
+data Node title v x t
+    = Node
+        { nId         :: NId
+        , nModel      :: ModelState title v x t
+        , nCntx       :: [SynthCntx]
+        , nIsComplete :: Bool
+        , nEdges      :: TVar (Maybe [Edge title v x t])
         }
     deriving ( Generic )
 
 
-data SynthesisSubNode title v x t
-    = SubNode
-        { subNode         :: SynthesisNode title v x t
-        , characteristic  :: Float
-        , characteristics :: SpecialMetrics
-        , snOption        :: Option (CompilerDT title v x t)
-        , snDecision      :: Decision (CompilerDT title v x t)
+data Edge title v x t
+    = Edge
+        { eNode            :: Node title v x t
+        , eCharacteristic  :: Float
+        , eCharacteristics :: SpecialMetrics
+        , eOption          :: Option (CompilerDT title v x t)
+        , eDecision        :: Decision (CompilerDT title v x t)
         }
     deriving ( Generic )
 
 
 
 -- |Create initial synthesis.
-synthesisNodeIO nid m = atomically $ synthesisNode nid m
+mkNodeIO nId model = atomically $ mkNode nId model
 
-synthesisNode nid m = do
-    sSubNodes <- newTVar Nothing
-    return SynthesisNode
-        { nid=nid
-        , sModel=m
-        , isComplete=isSchedulingComplete m
-        , sCntx=[]
-        , sSubNodes
+mkNode nId model = do
+    nEdges <- newTVar Nothing
+    return Node
+        { nId=nId
+        , nModel=model
+        , nIsComplete=isSchedulingComplete model
+        , nCntx=[]
+        , nEdges
         }
 
 
 
-getSynthesisSubNodesIO node = atomically $ getSynthesisSubNodes node
+getEdgesIO node = atomically $ getEdges node
 
-getSynthesisSubNodes SynthesisNode{ nid, sModel, sSubNodes } = do
-    optsM <- readTVar sSubNodes
-    case optsM of
-        Just opts -> return opts
+getEdges Node{ nId, nModel, nEdges }
+    = readTVar nEdges >>= \case
+        Just edges -> return edges
         Nothing -> do
-            let opts = optionsWithMetrics simple sModel
-            subNodes <- mapM (\(i, WithMetric{ mOption, mDecision, mIntegral, mSpecial }) -> do
-                node <- synthesisNode (nid <> Nid [i]) $ decision compiler sModel mDecision
-                return SubNode
-                    { subNode=node
-                    , characteristic=fromIntegral mIntegral
-                    , characteristics=mSpecial
-                    , snOption=mOption
-                    , snDecision=mDecision
+            let opts = optionsWithMetrics simple nModel
+            edges <- mapM (\(i, WithMetric{ mOption, mDecision, mIntegral, mSpecial }) -> do
+                node <- mkNode (nId <> NId [i]) $ decision compiler nModel mDecision
+                return Edge
+                    { eNode=node
+                    , eCharacteristic=fromIntegral mIntegral
+                    , eCharacteristics=mSpecial
+                    , eOption=mOption
+                    , eDecision=mDecision
                     }
                 ) $ zip [0..] opts
-            writeTVar sSubNodes $ Just subNodes
-            return subNodes
+            writeTVar nEdges $ Just edges
+            return edges
 
 
 
--- |Get specific by @nid@ node from a synthesis tree.
-getSynthesisNodeIO node nid = atomically $ getSynthesisNode node nid
+-- |Get specific by @nId@ node from a synthesis tree.
+getNodeIO node nId = atomically $ getNode node nId
 
-getSynthesisNode node (Nid []) = return node
-getSynthesisNode node nid@(Nid (i:is)) = do
-    subNodes <- getSynthesisSubNodes node
-    unless (i < length subNodes) $ error $ "getSynthesisNode - wrong nid: " ++ show nid
-    getSynthesisNode (subNode $ subNodes !! i) (Nid is)
+getNode node (NId []) = return node
+getNode node nId@(NId (i:is)) = do
+    edges <- getEdges node
+    unless (i < length edges) $ error $ "getNode - wrong nId: " ++ show nId
+    getNode (eNode $ edges !! i) (NId is)
 
 
 
 
 -- |Synthesis identical.
-newtype Nid = Nid [Int]
-nidSep = ':'
+newtype NId = NId [Int]
+nIdSep = ':'
 
-instance Show Nid where
-    show (Nid []) = [nidSep]
-    show (Nid is) = show' is
+instance Show NId where
+    show (NId []) = [nIdSep]
+    show (NId is) = show' is
         where
             show' []     = ""
-            show' (x:xs) = nidSep : show x ++ show' xs
+            show' (x:xs) = nIdSep : show x ++ show' xs
 
-instance Read Nid where
-    readsPrec _ [x] | x == nidSep    = [(Nid [], "")]
+instance Read NId where
+    readsPrec _ [x] | x == nIdSep    = [(NId [], "")]
     readsPrec d (x:xs)
-        | x == nidSep
-        , let is = map (readsPrec d) $ splitOn [nidSep] xs
+        | x == nIdSep
+        , let is = map (readsPrec d) $ splitOn [nIdSep] xs
         , all (not . null) is
-        = [(Nid $ map fst $ concat is, "")]
+        = [(NId $ map fst $ concat is, "")]
     readsPrec _ _ = []
 
-instance Semigroup Nid where
-    (Nid a) <> (Nid b) = Nid (a <> b)
+instance Semigroup NId where
+    (NId a) <> (NId b) = NId (a <> b)
 
-instance Monoid Nid where
-    mempty = Nid []
+instance Monoid NId where
+    mempty = NId []
     mappend = (<>)
 
 
@@ -268,7 +267,7 @@ option2decision (DataFlowOption src trg)
 
 
 -----------------------------------------------------------
--- *Metrics
+-- *Characteristics
 
 
 -- |Synthesis process setup, which determines next synthesis step selection.
@@ -286,7 +285,7 @@ simple = Simple
     }
 
 
-data WithMetric dt -- FIXME: rename to SubNode
+data WithMetric dt -- FIXME: rename to Edge
     = WithMetric
         { mOption   :: Option dt
         , mDecision :: Decision dt

@@ -25,10 +25,10 @@ module NITTA.API.REST
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Data.Aeson
-import           Data.Tree
+import qualified Data.Tree              as T
 import           GHC.Generics
 import           NITTA.API.Marshalling  ()
-import           NITTA.Compiler
+import           NITTA.SymthesisMethod
 import           NITTA.DataFlow
 import           NITTA.Project          (writeAndRunTestBench)
 import           NITTA.Types            (F)
@@ -42,38 +42,38 @@ import           System.FilePath        (joinPath)
 -- *REST API
 
 type SynthesisAPI title v x t
-    =    "synthesis" :> Get '[JSON] (Tree SynthesisNodeView)
-    :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis title v x t
+    =    "synthesis" :> Get '[JSON] (T.Tree SynthesisNodeView)
+    :<|> "synthesis" :> Capture "nId" NId :> WithSynthesis title v x t
 
 synthesisServer root
     =    liftIO ( synthesisNodeView root )
-    :<|> \nid -> withSynthesis root nid
+    :<|> \nId -> withSynthesis root nId
 
 
 
 type WithSynthesis title v x t
-    =    Get '[JSON] (SynthesisNode title v x t)
+    =    Get '[JSON] (Node title v x t)
     :<|> "model" :> Get '[JSON] (ModelState title v x t)
     :<|> "model" :> "alg" :> Get '[JSON] [F v x]
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
     :<|> SimpleCompilerAPI title v x t
 
-withSynthesis root nid
-    =    liftIO ( getSynthesisNodeIO root nid )
-    :<|> liftIO ( sModel <$> getSynthesisNodeIO root nid )
-    :<|> liftIO ( alg . sModel <$> getSynthesisNodeIO root nid )
+withSynthesis root nId
+    =    liftIO ( getNodeIO root nId )
+    :<|> liftIO ( nModel <$> getNodeIO root nId )
+    :<|> liftIO ( alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
-        node <- getSynthesisNodeIO root nid
+        node <- getNodeIO root nId
         writeAndRunTestBench Project
             { projectName=name
             , libraryPath="../.."
             , projectPath=joinPath ["hdl", "gen", name]
-            , processorModel=processor $ sModel node
+            , processorModel=processor $ nModel node
             , testCntx=Nothing
             , targetPlatforms=[ Makefile ]
             }
     ))
-    :<|> simpleCompilerServer root nid
+    :<|> simpleCompilerServer root nId
     where
         alg Frame{ dfg=DFG nodes } = map (\(DFGNode f) -> f) nodes
         alg _                      = error "unsupported algorithm structure"
@@ -81,22 +81,22 @@ withSynthesis root nid
 
 
 type SimpleCompilerAPI title v x t
-    =    "simple" :> "options" :> Get '[JSON] [ SynthesisSubNode title v x t ]
-    -- :<|> "simpleSynthesis" :> Post '[JSON] Nid
-    :<|> "obliousBindThread" :> Post '[JSON] Nid
-    :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] Nid
-    -- :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
-    -- :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
+    =    "simple" :> "options" :> Get '[JSON] [ Edge title v x t ]
+    :<|> "simpleSynthesis" :> Post '[JSON] NId
+    :<|> "obliousBindThread" :> Post '[JSON] NId
+    :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
+    -- :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] NId -- manualStep
+    -- :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] NId
 
 simpleCompilerServer root n
-    =    liftIO ( getSynthesisSubNodesIO =<< getSynthesisNodeIO root n )
-    -- :<|> liftIO ( nid <$> (simpleSynthesisIO =<< getSynthesisNodeIO root n))
-    :<|> liftIO ( nid <$> (obliousBindThreadIO =<< getSynthesisNodeIO root n))
-    :<|> ( \deep -> liftIO ( nid <$> (allBestThreadIO deep =<< getSynthesisNodeIO root n)) )
-    -- :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix=Just ix }) st nid )
+    =    liftIO ( getEdgesIO =<< getNodeIO root n )
+    :<|> liftIO ( nId <$> (simpleSynthesisIO =<< getNodeIO root n))
+    :<|> liftIO ( nId <$> (obliousBindThreadIO =<< getNodeIO root n))
+    :<|> ( \deep -> liftIO ( nId <$> (allBestThreadIO deep =<< getNodeIO root n)) )
+    -- :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix=Just ix }) st nId )
     -- :<|> \case
-    --     True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
-    --     False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
+    --     True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nId
+    --     False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nId
 
 
 
@@ -104,7 +104,7 @@ simpleCompilerServer root n
 
 data SynthesisNodeView
     = SynthesisNodeView
-        { svNnid     :: Nid
+        { svNnid     :: NId
         , svCntx     :: [String]
         , svStatus   :: Bool
         , svDuration :: Int
@@ -113,16 +113,16 @@ data SynthesisNodeView
 
 instance ToJSON SynthesisNodeView
 
-synthesisNodeView SynthesisNode{ nid, isComplete, sModel, sSubNodes } = do
-    nodes <- readTVarIO sSubNodes >>= \case
-        Just ns -> mapM (synthesisNodeView . subNode) ns
+synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges } = do
+    nodes <- readTVarIO nEdges >>= \case
+        Just ns -> mapM (synthesisNodeView . eNode) ns
         Nothing -> return []
-    return Node
-        { rootLabel=SynthesisNodeView
-            { svNnid=nid
+    return T.Node
+        { T.rootLabel=SynthesisNodeView
+            { svNnid=nId
             , svCntx=[]
-            , svStatus=isComplete
-            , svDuration=fromEnum $ targetProcessDuration sModel
+            , svStatus=nIsComplete
+            , svDuration=fromEnum $ targetProcessDuration nModel
             }
-        , subForest=nodes
+        , T.subForest=nodes
         }
