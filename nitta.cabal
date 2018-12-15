@@ -33,7 +33,7 @@ library
                      , NITTA.ProcessUnits.Shift
                      , NITTA.ProcessUnits.SPI
                      , NITTA.Project
-                     , NITTA.SymthesisMethod
+                     , NITTA.SynthesisMethod
                      , NITTA.Types
                      , NITTA.Types.Base
                      , NITTA.Types.Network

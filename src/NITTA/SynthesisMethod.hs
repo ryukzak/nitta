@@ -9,7 +9,7 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures #-}
 
 {-|
-Module      : NITTA.SymthesisMethod
+Module      : NITTA.SynthesisMethod
 Description : Synthesis methods and its parts implementation.
 Copyright   : (c) Aleksandr Penskoi, 2018
 License     : BSD3
@@ -17,9 +17,9 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 
-module NITTA.SymthesisMethod
+module NITTA.SynthesisMethod
     ( simpleSynthesis, simpleSynthesisIO
-    , obliousBindThread, obliousBindThreadIO
+    , obviousBindThread, obviousBindThreadIO
     , allBestThread, allBestThreadIO
     ) where
 
@@ -34,7 +34,7 @@ simpleSynthesisIO m = atomically $ simpleSynthesis m
 
 simpleSynthesis root
     =   return root
-    >>= obliousBindThread
+    >>= obviousBindThread
     >>= allBestThread 1
 
 
@@ -47,9 +47,9 @@ bestThread node = do
 
 
 
-obliousBindThreadIO node = atomically $ obliousBindThread node
+obviousBindThreadIO node = atomically $ obviousBindThread node
 
-obliousBindThread node = do
+obviousBindThread node = do
     edges <- getEdges node
     let obliousBind = find
             ((\case
@@ -58,7 +58,7 @@ obliousBindThread node = do
             ) . eCharacteristics)
             edges
     case obliousBind of
-        Just Edge{ eNode } -> obliousBindThread eNode
+        Just Edge{ eNode } -> obviousBindThread eNode
         Nothing            -> return node
 
 

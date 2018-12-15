@@ -25,7 +25,7 @@ import           Data.Maybe
 import qualified Data.Text.IO                  as T
 import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
-import           NITTA.SymthesisMethod
+import           NITTA.SynthesisMethod
 import           NITTA.DataFlow
 import           NITTA.Frontend
 import qualified NITTA.Functions               as F

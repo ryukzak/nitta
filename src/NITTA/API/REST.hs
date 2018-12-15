@@ -28,9 +28,9 @@ import           Data.Aeson
 import qualified Data.Tree              as T
 import           GHC.Generics
 import           NITTA.API.Marshalling  ()
-import           NITTA.SymthesisMethod
 import           NITTA.DataFlow
 import           NITTA.Project          (writeAndRunTestBench)
+import           NITTA.SynthesisMethod
 import           NITTA.Types            (F)
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
@@ -81,9 +81,9 @@ withSynthesis root nId
 
 
 type SimpleCompilerAPI title v x t
-    =    "simple" :> "options" :> Get '[JSON] [ Edge title v x t ]
+    =    "edges" :> Get '[JSON] [ Edge title v x t ]
     :<|> "simpleSynthesis" :> Post '[JSON] NId
-    :<|> "obliousBindThread" :> Post '[JSON] NId
+    :<|> "obviousBindThread" :> Post '[JSON] NId
     :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
     -- :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] NId -- manualStep
     -- :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] NId
@@ -91,7 +91,7 @@ type SimpleCompilerAPI title v x t
 simpleCompilerServer root n
     =    liftIO ( getEdgesIO =<< getNodeIO root n )
     :<|> liftIO ( nId <$> (simpleSynthesisIO =<< getNodeIO root n))
-    :<|> liftIO ( nId <$> (obliousBindThreadIO =<< getNodeIO root n))
+    :<|> liftIO ( nId <$> (obviousBindThreadIO =<< getNodeIO root n))
     :<|> ( \deep -> liftIO ( nId <$> (allBestThreadIO deep =<< getNodeIO root n)) )
     -- :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix=Just ix }) st nId )
     -- :<|> \case
@@ -104,10 +104,10 @@ simpleCompilerServer root n
 
 data SynthesisNodeView
     = SynthesisNodeView
-        { svNnid     :: NId
-        , svCntx     :: [String]
-        , svStatus   :: Bool
-        , svDuration :: Int
+        { svNnid       :: NId
+        , svCntx       :: [String]
+        , svIsComplete :: Bool
+        , svDuration   :: Int
         }
     deriving (Generic)
 
@@ -121,7 +121,7 @@ synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges } = do
         { T.rootLabel=SynthesisNodeView
             { svNnid=nId
             , svCntx=[]
-            , svStatus=nIsComplete
+            , svIsComplete=nIsComplete
             , svDuration=fromEnum $ targetProcessDuration nModel
             }
         , T.subForest=nodes

@@ -67,13 +67,13 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
          , Typeable x, ToJSON x, ToJSONKey x
          ) => ToJSON (BusNetwork title v x t) where
     toJSON n@BusNetwork{..} = object
-        [ "width" .= bnSignalBusWidth
-        , "remain" .= bnRemains
+        [ "width"              .= bnSignalBusWidth
+        , "remain"             .= bnRemains
         , "forwardedVariables" .= map (String . T.pack . show) (transfered n)
-        , "binds" .= bnBinded
-        , "processLength" .= nextTick (process n)
-        , "processUnits" .= M.keys bnPus
-        , "process" .= process n
+        , "binds"              .= bnBinded
+        , "processLength"      .= nextTick (process n)
+        , "processUnits"       .= M.keys bnPus
+        , "process"            .= process n
         ]
 
 
@@ -94,19 +94,19 @@ instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Process v x t) where
     toJSON Process{ steps, nextTick, relations } = object
-        [ "steps" .= steps
-        , "nextTick" .= nextTick
+        [ "steps"     .= steps
+        , "nextTick"  .= nextTick
         , "relations" .= relations
         ]
 
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Step v x t) where
     toJSON Step{ sKey, sTime, sDesc } = object
-        [ "sKey" .= sKey
-        , "sDesc" .= show sDesc
-        , "sTime" .= sTime
+        [ "sKey"   .= sKey
+        , "sDesc"  .= show sDesc
+        , "sTime"  .= sTime
         , "sLevel" .= level sDesc
-        , "sPU" .= showPU sDesc
+        , "sPU"    .= showPU sDesc
         ]
 
 
@@ -127,9 +127,9 @@ instance
         , ToJSON t, Time t
         ) => ToJSON (Node String String x t) where
     toJSON Node{ nModel, nCntx, nIsComplete } = object
-        [ "nModel" .= nModel
-        , "nCntx" .= map show nCntx
-        , "nIsComplete" .= show nIsComplete
+        [ "nModel"      .= nModel
+        , "nCntx"       .= map show nCntx
+        , "nIsComplete" .= nIsComplete
         ]
 
 instance ToJSON TestBenchReport
@@ -143,17 +143,12 @@ instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
         ) => ToJSON (Edge String String x t) where
-    toJSON Edge{ eCharacteristic, eCharacteristics, eOption, eDecision }
-        = toJSON ( eCharacteristic, eCharacteristics, eOption, eDecision )
-
-
--- instance
---         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
---         , ToJSON t, Time t
---         ) => ToJSON (WithMetric (CompilerDT String String x t)) where
---     toJSON WithMetric{ mIntegral, mSpecial, mOption, mDecision }
---         = toJSON ( mIntegral, mSpecial, mOption, mDecision )
-
+    toJSON Edge{ eCharacteristic, eCharacteristics, eOption, eDecision } = object
+        [ "eCharacteristic"  .= eCharacteristic
+        , "eCharacteristics" .= eCharacteristics
+        , "eOption"          .= eOption
+        , "eDecision"        .= eDecision
+        ]
 
 
 
@@ -170,7 +165,7 @@ instance ( Show v ) => ToJSON (F v x) where
 instance ( ToJSON t, Time t ) => ToJSON (TimeConstrain t) where
     toJSON TimeConstrain{..} = object
         [ "available" .= tcAvailable
-        , "duration" .= tcDuration
+        , "duration"  .= tcDuration
         ]
 
 instance ToJSONKey (IntX w) where

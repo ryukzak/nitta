@@ -28,7 +28,7 @@ import           Control.Monad.Trans.Class     (lift)
 import           Control.Monad.Trans.Except
 import           Data.Default                  as D
 import qualified Data.Map                      as M
-import           NITTA.SymthesisMethod
+import           NITTA.SynthesisMethod
 import           NITTA.DataFlow
 import           NITTA.Frontend
 import           NITTA.Project
