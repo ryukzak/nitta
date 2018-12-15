@@ -128,16 +128,15 @@ export class NodeView extends Component {
               currentNId={this.state.currentNId}
               onCurrentNIdChange={nid => this.onCurrentNIdChange(nid)}
             /> }
-            { this.state.view === 'testbench' && 
+            { this.state.view === 'testbench' &&
               <div>
                 Status: <pre> { JSON.stringify(this.state.testBenchDump.tbStatus) } </pre>
-                Stdout:
                 <hr />
-                <pre> { this.state.testBenchDump.tbSimulationStdout } </pre>
+                Compiler output:
+                <pre> { this.state.testBenchDump.tbCompilerDump } </pre>
                 <hr />
-                Stderr:
-                <hr />
-                <pre> { this.state.testBenchDump.tbSimulationErrout } </pre>
+                Simulation output:
+                <pre> { this.state.testBenchDump.tbSimulationDump } </pre>
                 <hr />
                 <pre> { JSON.stringify(this.state.testBenchDump, null, 2) } </pre>
               </div>
