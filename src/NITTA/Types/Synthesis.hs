@@ -23,31 +23,26 @@ Stability   : experimental
 -}
 
 module NITTA.Types.Synthesis
-    ( Node(..)
-    , mkNode, mkNodeIO
+    ( -- *Synthesis graph
+      Node(..)
+    , Edge(..)
     , NId(..)
-    , SynthesisSetup(..)
-    , simple
-      -- *Processing SynthesisTree
-    , getNodeIO
-    , getNode
-    , getEdgesIO, getEdges
-    , SpecialMetrics(..)
-    , optionsWithMetrics
+    , mkNode, mkNodeIO
+    , getNode, getNodeIO
+    , getEdges, getEdgesIO
+      -- *Characteristics & synthesis decision type
     , CompilerDT, compiler
     , WithMetric(..)
-    , targetProcessDuration
-      -- *Synhesis context
-    , SynthCntxCls(..)
-    , SynthCntx(..)
-    , comment
-    , setCntx
-    , isSchedulingComplete
-    , isSchedulingCompletable
-    , findCntx
-    , option2decision
-    , Edge(..)
+    , SynthesisSetup(..)
+    , SpecialMetrics(..)
+    , optionsWithMetrics
+    , simple
+      -- *Utils
     , endpointOption2action
+    , isSchedulingCompletable
+    , isSchedulingComplete
+    , option2decision
+    , targetProcessDuration
     ) where
 
 import           Control.Arrow          (second)
@@ -76,7 +71,6 @@ data Node title v x t
     = Node
         { nId         :: NId
         , nModel      :: ModelState title v x t
-        , nCntx       :: [SynthCntx]
         , nIsComplete :: Bool
         , nEdges      :: TVar (Maybe [Edge title v x t])
         }
@@ -104,7 +98,6 @@ mkNode nId model = do
         { nId=nId
         , nModel=model
         , nIsComplete=isSchedulingComplete model
-        , nCntx=[]
         , nEdges
         }
 
@@ -170,43 +163,6 @@ instance Semigroup NId where
 instance Monoid NId where
     mempty = NId []
     mappend = (<>)
-
-
-
-
--- *Synthesis context
-
-class SynthCntxCls a where
-    data SynthCntx' a :: *
-
-data SynthCntx = forall a. ( Show (SynthCntx' a), Typeable (SynthCntx' a) ) => SynthCntx (SynthCntx' a)
-
-instance Show SynthCntx where
-    show (SynthCntx e) = show e
-
-findCntx [] = Nothing
-findCntx (SynthCntx c : cs)
-    | Just cntx <- cast c = Just cntx
-    | otherwise = findCntx cs
-
-setCntx newCntx [] = [SynthCntx newCntx]
-setCntx newCntx (SynthCntx c : cs)
-    | Just c' <- cast c
-    , let _ = c' `asTypeOf` newCntx
-    = SynthCntx newCntx : cs
-    | otherwise
-    = SynthCntx c : setCntx newCntx cs
-
-
---------------------
-
-data Comment
-
-instance SynthCntxCls Comment where
-    data SynthCntx' Comment = Comment String
-        deriving ( Show )
-
-comment = SynthCntx . Comment
 
 
 

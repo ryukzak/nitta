@@ -126,9 +126,8 @@ instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
         ) => ToJSON (Node String String x t) where
-    toJSON Node{ nModel, nCntx, nIsComplete } = object
+    toJSON Node{ nModel, nIsComplete } = object
         [ "nModel"      .= nModel
-        , "nCntx"       .= map show nCntx
         , "nIsComplete" .= nIsComplete
         ]
 
