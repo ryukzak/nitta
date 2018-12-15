@@ -57,9 +57,9 @@ export class EdgesView extends Component {
                 maxWidth: 70,
                 Cell: row =>
                   <a onClick={() => {
-                    hapi.manualDecision(this.state.currentNId, row.index)
+                    hapi.getNode(this.state.currentNId === ':' ? ':' + row.index : this.state.currentNId + ':' + row.index)
                       .then(response => {
-                        this.onCurrentNIdChange(response.data)
+                        this.onCurrentNIdChange(response.data.nId)
                       })
                       .catch(err => alert(err))
                   }}> { row.value }

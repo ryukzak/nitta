@@ -126,9 +126,10 @@ instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
         ) => ToJSON (Node String String x t) where
-    toJSON Node{ nModel, nIsComplete } = object
+    toJSON Node{ nId, nModel, nIsComplete } = object
         [ "nModel"      .= nModel
         , "nIsComplete" .= nIsComplete
+        , "nId"         .= nId
         ]
 
 instance ToJSON TestBenchReport
