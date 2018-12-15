@@ -6,47 +6,47 @@ import Tree from 'react-d3-tree'
 export class SynthesisGraph extends Component {
   constructor (props) {
     super(props)
-    this.onCurrentNidChange = props.onCurrentNidChange
+    this.onCurrentNIdChange = props.onCurrentNIdChange
     this.onSynthesisStatusChange = props.onSynthesisStatusChange
     this.state = {
       graph: null,
-      nids: null,
-      currentNid: null,
-      height: 200,
+      nIds: null,
+      currentNId: null,
+      height: 200
     }
     this.reloadSynthesis()
   }
 
   componentWillReceiveProps (props) {
-    console.debug('SynthesisGraph:componentWillReceiveProps() // props.currentNid, this.state.currentNid:', props.currentNid, this.state.currentNid)
+    console.debug('SynthesisGraph:componentWillReceiveProps() // props.currentNId, this.state.currentNId:', props.currentNId, this.state.currentNId)
 
-    if (props.currentNid !== null && !(props.currentNid in this.state.nids)) {
+    if (props.currentNId !== null && !(props.currentNId in this.state.nIds)) {
       this.setState({
-        currentNid: props.currentNid
+        currentNId: props.currentNId
       })
       this.reloadSynthesis()
       return
     }
-    if (props.currentNid !== null && this.state.currentNid !== props.currentNid) {
-      this.unmarkNode(this.state.currentNid)
-      this.markNode(props.currentNid)
+    if (props.currentNId !== null && this.state.currentNId !== props.currentNId) {
+      this.unmarkNode(this.state.currentNId)
+      this.markNode(props.currentNId)
       this.setState({
-        currentNid: props.currentNid,
+        currentNId: props.currentNId,
         graph: [this.state.graph[0]] // force rerender Tree
       })
     }
   }
 
-  markNode (nid, nids, color) {
+  markNode (nid, nIds, color) {
     if (color === undefined) color = 'blue'
-    if (nids === undefined) nids = this.state.nids
-    if (nid === null || nids === null) return
+    if (nIds === undefined) nIds = this.state.nIds
+    if (nid === null || nIds === null) return
 
     if (color === 'blue') {
-      nids[nid].nodeSvgShapeOriginal = nids[nid].nodeSvgShape
+      nIds[nid].nodeSvgShapeOriginal = nIds[nid].nodeSvgShape
     }
-    console.debug('SynthesisGraph:markNode(', nid, nids, color, ')')
-    nids[nid].nodeSvgShape = {
+    console.debug('SynthesisGraph:markNode(', nid, nIds, color, ')')
+    nIds[nid].nodeSvgShape = {
       shape: 'circle',
       shapeProps: {
         r: 10,
@@ -60,7 +60,7 @@ export class SynthesisGraph extends Component {
   unmarkNode (nid) {
     console.debug('SynthesisGraph:unmarkNode(', nid, ')')
     if (nid === null) return
-    this.state.nids[nid].nodeSvgShape = this.state.nids[nid].nodeSvgShapeOriginal
+    this.state.nIds[nid].nodeSvgShape = this.state.nIds[nid].nodeSvgShapeOriginal
   }
 
   reloadSynthesis () {
@@ -68,15 +68,14 @@ export class SynthesisGraph extends Component {
     var reLastNidStep = /:[^:]*$/
     hapi.getSynthesis()
       .then(response => {
-        var nids = {}
+        var nIds = {}
         var buildGraph = (gNode, dNode) => {
           gNode.name = reLastNidStep.exec(dNode[0].svNnid)[0]
           gNode.nid = dNode[0].svNnid
-          nids[dNode[0].svNnid] = gNode
-          if (dNode[0].svStatus === 'Finished') this.markNode(gNode.nid, nids, 'lime')
-          if (dNode[0].svStatus === 'DeadEnd') this.markNode(gNode.nid, nids, 'red')
+          nIds[dNode[0].svNnid] = gNode
+          if (dNode[0].svIsComplete) this.markNode(gNode.nid, nIds, 'lime')
           gNode.attributes = { dur: dNode[0].svDuration }
-          gNode.status = dNode[0].svStatus
+          gNode.status = dNode[0].svIsComplete
           dNode[0].svCntx.forEach((e, i) => {
             gNode.attributes[i] = e
           })
@@ -86,26 +85,26 @@ export class SynthesisGraph extends Component {
             gNode.children.push(tmp)
             buildGraph(tmp, e)
           })
-          console.log('>', dNode[0].svNnid, ' --> ', dNode[0].svStatus)
+          console.log('>', dNode[0].svNnid, ' --> ', dNode[0].svIsComplete)
 
           return gNode
         }
         var graph = buildGraph({}, response.data)
-        nids['.'] = graph
-        if (this.state.currentNid !== null) this.markNode(this.state.currentNid, nids)
+        nIds['.'] = graph
+        if (this.state.currentNId !== null) this.markNode(this.state.currentNId, nIds)
 
         this.setState({
           graph: [graph],
-          nids: nids
+          nIds: nIds
         })
       })
       .catch(err => console.log(err))
   }
 
   stepsNumber () {
-    if (this.state.currentNid === null) return 'NaN'
-    if (this.state.currentNid === ':') return 0
-    return this.state.currentNid.split(':').length - 1
+    if (this.state.currentNId === null) return 'NaN'
+    if (this.state.currentNId === ':') return 0
+    return this.state.currentNId.split(':').length - 1
   }
 
   render () {
@@ -116,15 +115,15 @@ export class SynthesisGraph extends Component {
           [<a onClick={() => this.setState({height: this.state.height + 100})}> expand </a>] /
           [<a onClick={() => this.setState({height: this.state.height - 100})}> reduce </a>]
           [<a onClick={() => this.reloadSynthesis()}> refresh </a>]
-          steps: {this.stepsNumber()}; selected synthesis nid - {this.state.currentNid}
+          steps: {this.stepsNumber()}; selected synthesis nid - {this.state.currentNId}
         </pre>
         <div style={{width: '100%', height: this.state.height + 'px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
           <Tree
             data={this.state.graph}
             nodeSize={{x: 200, y: 80}}
-            separation={{siblings: 1, nonSiblings: 1}}
-            pathFunc='elbow'
-            translate={{x: 20, y: 70}}
+            separation={{siblings: 0.5, nonSiblings: 1}}
+            pathFunc='diagonal'
+            translate={{x: 20, y: 40}}
             collapsible={false}
             zoom={0.7}
             transitionDuration={0}
@@ -148,13 +147,13 @@ export class SynthesisGraph extends Component {
               }
             }}}
             onClick={(node) => {
-              console.debug('SynthesisGraph: onCurrentNidChange(', node.nid, ')')
-              this.onCurrentNidChange(node.nid)
+              console.debug('SynthesisGraph: onCurrentNIdChange(', node.nid, ')')
+              this.onCurrentNIdChange(node.nid)
               this.onSynthesisStatusChange(node.status)
             }}
           />
         </div>
-        <pre class='text-right'>red - dead end; green - finished; blue - current</pre>
+        <pre className='text-right'>red - dead end; green - finished; blue - current</pre>
       </div>
     )
   }

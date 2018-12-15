@@ -1,4 +1,4 @@
-import api from './gen/nitta-api.js'
+import api from './gen/rest_api.js'
 
 export const hapi = {
   getSynthesis: (nid) => {
@@ -9,11 +9,10 @@ export const hapi = {
       return api.getSynthesisByNid(nid)
     }
   },
-  getModel: (nid) => api.getSynthesisByNidModel(nid),
-  simpleCompiler: (nid, onlyOneStep) => api.postSynthesisByNidSimple(nid, onlyOneStep),
-  simpleCompilerOptions: (nid) => api.getSynthesisByNidSimpleOptions(nid),
-  manualDecision: (nid, m) => api.postSynthesisByNidSimpleManual(nid, m),
-  obviousBind: (nid) => api.postSynthesisByNidSimpleObviousBind(nid),
-  simpleAllThreads: (nid, deep) => api.postSynthesisByNidSimpleAllThreads(nid, deep),
+  getNode: (nid) => api.getSynthesisByNId(nid),
+  getEdges: (nid) => api.getSynthesisByNIdEdges(nid),
+  simpleSynthesis: (nid) => api.postSynthesisByNIdSimpleSynthesis(nid),
+  allBestThread: (nid, n) => api.postSynthesisByNIdAllBestThread(nid, n),
+  obviousBindThread: (nid) => api.postSynthesisByNIdObviousBindThread(nid),
   runTestBench: (nid, name) => api.getSynthesisByNidTestBenchOutput(nid, name)
 }

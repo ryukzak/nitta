@@ -3,30 +3,30 @@ import { hapi } from '../hapi'
 import ReactTable from 'react-table'
 import { LineChart } from 'react-easy-chart'
 
-export class SimpleCompilerView extends Component {
+export class EdgesView extends Component {
   constructor (props) {
     super(props)
-    this.onCurrentNidChange = props.onCurrentNidChange
+    this.onCurrentNIdChange = props.onCurrentNIdChange
     this.state = {
-      currentNid: props.currentNid,
+      currentNId: props.currentNId,
       options: null
     }
-    this.updateSCOptions(props.currentNid)
+    this.updateSCOptions(props.currentNId)
   }
 
   componentWillReceiveProps (props) {
-    console.debug('SimpleCompilerView:componentWillReceiveProps(', props, ')')
-    if (this.state.currentNid !== props.currentNid) this.updateSCOptions(props.currentNid)
-    this.setState({currentNid: props.currentNid})
+    console.debug('EdgesView:componentWillReceiveProps(', props, ')')
+    if (this.state.currentNId !== props.currentNId) this.updateSCOptions(props.currentNId)
+    this.setState({currentNId: props.currentNId})
   }
 
   updateSCOptions (nid) {
     if (nid === undefined || nid === null) return
-    console.debug('SimpleCompilerView:updateSCOptions§(', nid, ')')
-    hapi.simpleCompilerOptions(nid)
+    console.debug('EdgesView:updateSCOptions§(', nid, ')')
+    hapi.getEdges(nid)
       .then(response => {
         this.setState({
-          options: response.data
+          options: response.data.map(e => { return [e.eCharacteristic, e.eCharacteristics, e.eOption, e.eDecision] })
         })
       })
       .catch(err => console.log(err))
@@ -57,9 +57,9 @@ export class SimpleCompilerView extends Component {
                 maxWidth: 70,
                 Cell: row =>
                   <a onClick={() => {
-                    hapi.manualDecision(this.state.currentNid, row.index)
+                    hapi.manualDecision(this.state.currentNId, row.index)
                       .then(response => {
-                        this.onCurrentNidChange(response.data)
+                        this.onCurrentNIdChange(response.data)
                       })
                       .catch(err => alert(err))
                   }}> { row.value }

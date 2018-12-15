@@ -85,18 +85,12 @@ type SimpleCompilerAPI title v x t
     :<|> "simpleSynthesis" :> Post '[JSON] NId
     :<|> "obviousBindThread" :> Post '[JSON] NId
     :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
-    -- :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] NId -- manualStep
-    -- :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] NId
 
 simpleCompilerServer root n
     =    liftIO ( getEdgesIO =<< getNodeIO root n )
     :<|> liftIO ( nId <$> (simpleSynthesisIO =<< getNodeIO root n))
     :<|> liftIO ( nId <$> (obviousBindThreadIO =<< getNodeIO root n))
     :<|> ( \deep -> liftIO ( nId <$> (allBestThreadIO deep =<< getNodeIO root n)) )
-    -- :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix=Just ix }) st nId )
-    -- :<|> \case
-    --     True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nId
-    --     False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nId
 
 
 
