@@ -73,6 +73,7 @@ export class SynthesisGraph extends Component {
           gNode.name = reLastNidStep.exec(dNode[0].svNnid)[0]
           gNode.nid = dNode[0].svNnid
           nIds[dNode[0].svNnid] = gNode
+          if (dNode[0].svIsEdgesProcessed) this.markNode(gNode.nid, nIds, 'black')
           if (dNode[0].svIsComplete) this.markNode(gNode.nid, nIds, 'lime')
           gNode.attributes = { dur: dNode[0].svDuration }
           gNode.status = dNode[0].svIsComplete
@@ -120,7 +121,7 @@ export class SynthesisGraph extends Component {
         <div style={{width: '100%', height: this.state.height + 'px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
           <Tree
             data={this.state.graph}
-            nodeSize={{x: 200, y: 80}}
+            nodeSize={{x: 160, y: 60}}
             separation={{siblings: 0.5, nonSiblings: 1}}
             pathFunc='diagonal'
             translate={{x: 20, y: 40}}
@@ -153,7 +154,7 @@ export class SynthesisGraph extends Component {
             }}
           />
         </div>
-        <pre className='text-right'>red - dead end; green - finished; blue - current</pre>
+        <pre className='text-right'>black - processed node; white - in progress node; green - success synthesis</pre>
       </div>
     )
   }

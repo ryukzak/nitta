@@ -25,6 +25,7 @@ module NITTA.API.REST
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Data.Aeson
+import           Data.Maybe
 import qualified Data.Tree              as T
 import           GHC.Generics
 import           NITTA.API.Marshalling  ()
@@ -98,17 +99,19 @@ simpleCompilerServer root n
 
 data SynthesisNodeView
     = SynthesisNodeView
-        { svNnid       :: NId
-        , svCntx       :: [String]
-        , svIsComplete :: Bool
-        , svDuration   :: Int
+        { svNnid             :: NId
+        , svCntx             :: [String]
+        , svIsComplete       :: Bool
+        , svIsEdgesProcessed :: Bool
+        , svDuration         :: Int
         }
     deriving (Generic)
 
 instance ToJSON SynthesisNodeView
 
 synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges } = do
-    nodes <- readTVarIO nEdges >>= \case
+    nodesM <- readTVarIO nEdges
+    nodes <- case nodesM of
         Just ns -> mapM (synthesisNodeView . eNode) ns
         Nothing -> return []
     return T.Node
@@ -116,6 +119,7 @@ synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges } = do
             { svNnid=nId
             , svCntx=[]
             , svIsComplete=nIsComplete
+            , svIsEdgesProcessed=isJust nodesM
             , svDuration=fromEnum $ targetProcessDuration nModel
             }
         , T.subForest=nodes

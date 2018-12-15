@@ -23,10 +23,10 @@ module NITTA.SynthesisMethod
     , allBestThread, allBestThreadIO
     ) where
 
-import           Control.Concurrent.STM
+import           Control.Concurrent.STM (atomically)
 import           Data.List              (find)
 import           NITTA.Types.Synthesis
-import           NITTA.Utils
+import           NITTA.Utils            (maximumOn, minimumOn)
 
 
 -- |Schedule process by simple synthesis.
