@@ -11,7 +11,8 @@ export class SynthesisGraph extends Component {
     this.state = {
       graph: null,
       nids: null,
-      currentNid: null
+      currentNid: null,
+      height: 200,
     }
     this.reloadSynthesis()
   }
@@ -112,10 +113,12 @@ export class SynthesisGraph extends Component {
     return (
       <div>
         <pre>
+          [<a onClick={() => this.setState({height: this.state.height + 100})}> expand </a>] /
+          [<a onClick={() => this.setState({height: this.state.height - 100})}> reduce </a>]
           [<a onClick={() => this.reloadSynthesis()}> refresh </a>]
           steps: {this.stepsNumber()}; selected synthesis nid - {this.state.currentNid}
         </pre>
-        <div style={{width: '100%', height: '200px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
+        <div style={{width: '100%', height: this.state.height + 'px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
           <Tree
             data={this.state.graph}
             nodeSize={{x: 200, y: 80}}
