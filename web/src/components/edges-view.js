@@ -6,28 +6,29 @@ import { LineChart } from 'react-easy-chart'
 export class EdgesView extends Component {
   constructor (props) {
     super(props)
-    this.onCurrentNIdChange = props.onCurrentNIdChange
+    this.onNIdChange = props.onNIdChange
     this.state = {
-      currentNId: props.currentNId,
+      selectedNId: props.selectedNId,
       options: null
     }
-    this.updateSCOptions(props.currentNId)
+    this.reloadEdges(props.selectedNId)
   }
 
   componentWillReceiveProps (props) {
     console.debug('EdgesView:componentWillReceiveProps(', props, ')')
-    if (this.state.currentNId !== props.currentNId) this.updateSCOptions(props.currentNId)
-    this.setState({currentNId: props.currentNId})
+    if (this.state.selectedNId !== props.selectedNId) this.reloadEdges(props.selectedNId)
+    this.setState({selectedNId: props.selectedNId})
   }
 
-  updateSCOptions (nid) {
+  reloadEdges (nid) {
     if (nid === undefined || nid === null) return
-    console.debug('EdgesView:updateSCOptions§(', nid, ')')
+    console.debug('EdgesView:reloadEdges(', nid, ')')
     hapi.getEdges(nid)
       .then(response => {
         this.setState({
           options: response.data.map(e => { return [e.eCharacteristic, e.eCharacteristics, e.eOption, e.eDecision] })
         })
+        this.onNIdChange('reload')
       })
       .catch(err => console.log(err))
   }
@@ -57,9 +58,9 @@ export class EdgesView extends Component {
                 maxWidth: 70,
                 Cell: row =>
                   <a onClick={() => {
-                    hapi.getNode(this.state.currentNId === ':' ? ':' + row.index : this.state.currentNId + ':' + row.index)
+                    hapi.getNode(this.state.selectedNId === ':' ? ':' + row.index : this.state.selectedNId + ':' + row.index)
                       .then(response => {
-                        this.onCurrentNIdChange(response.data.nId)
+                        this.onNIdChange(response.data.nId)
                       })
                       .catch(err => alert(err))
                   }}> { row.value }

@@ -8,34 +8,32 @@ class App extends Component {
   constructor () {
     super()
     this.state = {
-      currentNId: null,
-      synthesisStatus: null
+      selectedNId: null
     }
   }
 
-  onSynthesisChange (sNode) {
-    console.debug('App:onSynthesisChange(', sNode, ')')
-    if (sNode && sNode !== this.state.currentNId) {
-      this.setState({
-        currentNId: sNode
-      })
+  onNIdChange (nId) {
+    console.debug('App:onNIdChange(', nId, ')')
+    if (nId === 'reload') {
+      this.setState({selectedNId: this.state.selectedNId})
+      return
     }
-  }
-
-  onSynthesisStatusChange (status) {
-    console.debug('App:onSynthesisStatusChange(', status, ')')
-    if (status && status !== this.state.currentNId) {
-      this.setState({
-        synthesisStatus: status
-      })
+    if (nId && nId !== this.state.selectedNId) {
+      this.setState({selectedNId: nId})
     }
   }
 
   render () {
     return (
       <div>
-        <SynthesisGraph currentNId={this.state.currentNId} onCurrentNIdChange={nid => this.onSynthesisChange(nid)} onSynthesisStatusChange={status => this.onSynthesisStatusChange(status)} />
-        <NodeView currentNId={this.state.currentNId} synthesisStatus={this.state.synthesisStatus} onCurrentNIdChange={nid => this.onSynthesisChange(nid)} />
+        <SynthesisGraph
+          selectedNId={this.state.selectedNId}
+          onNIdChange={nid => this.onNIdChange(nid)}
+        />
+        <NodeView
+          selectedNId={this.state.selectedNId}
+          onNIdChange={nid => this.onNIdChange(nid)}
+        />
       </div>
     )
   }

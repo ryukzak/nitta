@@ -6,32 +6,31 @@ import Tree from 'react-d3-tree'
 export class SynthesisGraph extends Component {
   constructor (props) {
     super(props)
-    this.onCurrentNIdChange = props.onCurrentNIdChange
-    this.onSynthesisStatusChange = props.onSynthesisStatusChange
+    this.onNIdChange = props.onNIdChange
     this.state = {
+      selectedNId: null,
       graph: null,
       nIds: null,
-      currentNId: null,
       height: 200
     }
-    this.reloadSynthesis()
+    this.reloadSynthesisGraph()
   }
 
   componentWillReceiveProps (props) {
-    console.debug('SynthesisGraph:componentWillReceiveProps() // props.currentNId, this.state.currentNId:', props.currentNId, this.state.currentNId)
+    console.debug('SynthesisGraph:componentWillReceiveProps() // props.selectedNId, this.state.selectedNId:', props.selectedNId, this.state.selectedNId)
 
-    if (props.currentNId !== null && !(props.currentNId in this.state.nIds)) {
+    if (props.selectedNId !== null && !(props.selectedNId in this.state.nIds)) {
       this.setState({
-        currentNId: props.currentNId
+        selectedNId: props.selectedNId
       })
-      this.reloadSynthesis()
+      this.reloadSynthesisGraph()
       return
     }
-    if (props.currentNId !== null && this.state.currentNId !== props.currentNId) {
-      this.unmarkNode(this.state.currentNId)
-      this.markNode(props.currentNId)
+    if (props.selectedNId !== null && this.state.selectedNId !== props.selectedNId) {
+      this.unmarkNode(this.state.selectedNId)
+      this.markNode(props.selectedNId)
       this.setState({
-        currentNId: props.currentNId,
+        selectedNId: props.selectedNId,
         graph: [this.state.graph[0]] // force rerender Tree
       })
     }
@@ -63,8 +62,8 @@ export class SynthesisGraph extends Component {
     this.state.nIds[nid].nodeSvgShape = this.state.nIds[nid].nodeSvgShapeOriginal
   }
 
-  reloadSynthesis () {
-    console.debug('SynthesisGraph:reloadSynthesis()')
+  reloadSynthesisGraph () {
+    console.debug('SynthesisGraph:reloadSynthesisGraph()')
     var reLastNidStep = /:[^:]*$/
     hapi.getSynthesis()
       .then(response => {
@@ -92,7 +91,7 @@ export class SynthesisGraph extends Component {
         }
         var graph = buildGraph({}, response.data)
         nIds['.'] = graph
-        if (this.state.currentNId !== null) this.markNode(this.state.currentNId, nIds)
+        if (this.state.selectedNId !== null) this.markNode(this.state.selectedNId, nIds)
 
         this.setState({
           graph: [graph],
@@ -103,9 +102,9 @@ export class SynthesisGraph extends Component {
   }
 
   stepsNumber () {
-    if (this.state.currentNId === null) return 'NaN'
-    if (this.state.currentNId === ':') return 0
-    return this.state.currentNId.split(':').length - 1
+    if (this.state.selectedNId === null) return 'NaN'
+    if (this.state.selectedNId === ':') return 0
+    return this.state.selectedNId.split(':').length - 1
   }
 
   render () {
@@ -115,8 +114,8 @@ export class SynthesisGraph extends Component {
         <pre>
           [<a onClick={() => this.setState({height: this.state.height + 100})}> expand </a>] /
           [<a onClick={() => this.setState({height: this.state.height - 100})}> reduce </a>]
-          [<a onClick={() => this.reloadSynthesis()}> refresh </a>]
-          steps: {this.stepsNumber()}; selected synthesis nid - {this.state.currentNId}
+          [<a onClick={() => this.reloadSynthesisGraph()}> refresh </a>]
+          steps: {this.stepsNumber()}; selected synthesis nid - {this.state.selectedNId}
         </pre>
         <div style={{width: '100%', height: this.state.height + 'px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
           <Tree
@@ -148,9 +147,8 @@ export class SynthesisGraph extends Component {
               }
             }}}
             onClick={(node) => {
-              console.debug('SynthesisGraph: onCurrentNIdChange(', node.nid, ')')
-              this.onCurrentNIdChange(node.nid)
-              this.onSynthesisStatusChange(node.status)
+              console.debug('SynthesisGraph: onNIdChange(', node.nid, ')')
+              this.onNIdChange(node.nid)
             }}
           />
         </div>
