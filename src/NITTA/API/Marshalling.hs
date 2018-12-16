@@ -36,11 +36,11 @@ import           Servant
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t)
-         ) => ToJSON (Option (CompilerDT title v x t))
+         ) => ToJSON (Option (SynthesisDT title v x t))
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t), Time t
-         ) => ToJSON (Decision (CompilerDT title v x t))
+         ) => ToJSON (Decision (SynthesisDT title v x t))
 instance ( ToJSON title
          , ToJSONKey v
          , ToJSON (TimeConstrain t)
@@ -135,8 +135,8 @@ instance
 instance ToJSON TestBenchReport
 
 
--- *Simple compiler
-instance ToJSON SynthesisSetup
+-- *Simple synthesis
+instance ToJSON Conf
 instance ToJSON SpecialMetrics
 
 instance

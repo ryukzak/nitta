@@ -31,12 +31,9 @@ module NITTA.Types.Synthesis
     , getNode, getNodeIO
     , getEdges, getEdgesIO
       -- *Characteristics & synthesis decision type
-    , CompilerDT, compiler
-    , WithMetric(..)
-    , SynthesisSetup(..)
+    , SynthesisDT, synthesis
+    , Conf(..)
     , SpecialMetrics(..)
-    , optionsWithMetrics
-    , simple
       -- *Utils
     , endpointOption2action
     , isSchedulingCompletable
@@ -48,6 +45,8 @@ module NITTA.Types.Synthesis
 import           Control.Arrow          (second)
 import           Control.Concurrent.STM
 import           Control.Monad          (unless)
+import           Control.Monad          (forM)
+import           Data.Default
 import           Data.List              (find)
 import           Data.List.Split
 import qualified Data.Map               as M
@@ -56,7 +55,7 @@ import           Data.Proxy
 import           Data.Semigroup         (Semigroup, (<>))
 import           Data.Set               (Set, fromList, intersection, member)
 import qualified Data.Set               as S
-import           Data.Typeable          (Typeable, cast)
+import           Data.Typeable          (Typeable)
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.DataFlow         (ModelState (..))
@@ -82,8 +81,8 @@ data Edge title v x t
         { eNode            :: Node title v x t
         , eCharacteristic  :: Float
         , eCharacteristics :: SpecialMetrics
-        , eOption          :: Option (CompilerDT title v x t)
-        , eDecision        :: Decision (CompilerDT title v x t)
+        , eOption          :: Option (SynthesisDT title v x t)
+        , eDecision        :: Decision (SynthesisDT title v x t)
         }
     deriving ( Generic )
 
@@ -105,23 +104,40 @@ mkNode nId model = do
 
 getEdgesIO node = atomically $ getEdges node
 
-getEdges Node{ nId, nModel, nEdges }
+getEdges node@Node{ nEdges }
     = readTVar nEdges >>= \case
         Just edges -> return edges
         Nothing -> do
-            let opts = optionsWithMetrics simple nModel
-            edges <- mapM (\(i, WithMetric{ mOption, mDecision, mIntegral, mSpecial }) -> do
-                node <- mkNode (nId <> NId [i]) $ decision compiler nModel mDecision
-                return Edge
-                    { eNode=node
-                    , eCharacteristic=fromIntegral mIntegral
-                    , eCharacteristics=mSpecial
-                    , eOption=mOption
-                    , eDecision=mDecision
-                    }
-                ) $ zip [0..] opts
+            edges <- mkEdges node
             writeTVar nEdges $ Just edges
             return edges
+
+
+
+mkEdges Node{ nId, nModel } = do
+    let Conf{ threshhold } = def
+        opts = options synthesis nModel
+        bindedVars = unionsMap variables $ concat $ M.elems $ bnBinded $ processor nModel
+        possibleDeadlockBinds = fromList [ f
+            | (BindingOption f _) <- opts
+            , Lock{ locked } <- locks f
+            , locked `member` bindedVars
+            ]
+        cntx = MeasureCntx
+            { numberOfBindOptions=length $ filter isBinding opts
+            , numberOfDFOptions=length $ filter isDataFlow opts
+            , dataflowThreshhold=threshhold
+            , possibleDeadlockBinds
+            , allOptions=opts
+            , model=nModel
+            }
+
+    forM (zip [0..] opts) $ \(i, eOption) -> do
+        let eDecision = option2decision eOption
+            eCharacteristics = measure cntx eOption
+            eCharacteristic = fromIntegral $ integral cntx eCharacteristics
+        eNode <- mkNode (nId <> NId [i]) $ decision synthesis nModel eDecision
+        return Edge{ eOption, eDecision, eCharacteristic, eCharacteristics, eNode }
 
 
 
@@ -170,18 +186,17 @@ instance Monoid NId where
 -- *Compiler Decision Type
 
 
-data CompilerDT title v x t
-compiler = Proxy :: Proxy CompilerDT
+data SynthesisDT title v x t
+synthesis = Proxy :: Proxy SynthesisDT
 
 
-
-instance DecisionType (CompilerDT title v x t) where
-    data Option (CompilerDT title v x t)
+instance DecisionType (SynthesisDT title v x t) where
+    data Option (SynthesisDT title v x t)
         = BindingOption (F v x) title
         | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
         deriving ( Generic, Show )
 
-    data Decision (CompilerDT title v x t)
+    data Decision (SynthesisDT title v x t)
         = BindingDecision (F v x) title
         | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
         deriving ( Generic, Show )
@@ -198,8 +213,8 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
 instance ( Var v, Typeable x, Time t
-         ) => DecisionProblem (CompilerDT String v x t)
-                   CompilerDT (ModelState String v x t)
+         ) => DecisionProblem (SynthesisDT String v x t)
+                  SynthesisDT (ModelState String v x t)
         where
     options _ f@Frame{ processor }
         =  map generalizeBindingOption (options binding f)
@@ -227,27 +242,19 @@ option2decision (DataFlowOption src trg)
 
 
 -- |Synthesis process setup, which determines next synthesis step selection.
-data SynthesisSetup
-    = Simple
+newtype Conf
+    = Conf
         { -- |Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
           -- привязка функциональных блоков.
           threshhold :: Int
         }
-    | UnambiguousBind
     deriving ( Generic, Show, Eq, Ord )
 
-simple = Simple
-    { threshhold=2
-    }
-
-
-data WithMetric dt -- FIXME: rename to Edge
-    = WithMetric
-        { mOption   :: Option dt
-        , mDecision :: Decision dt
-        , mSpecial  :: SpecialMetrics
-        , mIntegral :: Int
+instance Default Conf where
+    def = Conf
+        { threshhold=2
         }
+
 
 
 -- | Метрики для принятия решения компилятором.
@@ -286,41 +293,6 @@ data MeasureCntx f o m
         , allOptions            :: o
         , model                 :: m
         }
-
-
-optionsWithMetrics Simple{ threshhold } model@Frame{ processor=BusNetwork{ bnBinded } }
-    = let
-        allOptions = options compiler model
-
-        notBindedFunctions = map (\(BindingOption f _) -> f) $ filter isBinding allOptions
-        bindedVar = unionsMap variables $ concat $ M.elems bnBinded
-        possibleDeadlockBinds = fromList
-            [ f
-            | f <- notBindedFunctions
-            , Lock{ locked } <- locks f
-            , locked `member` bindedVar
-            ]
-
-        cntx = MeasureCntx
-            { numberOfBindOptions=length $ filter isBinding allOptions
-            , numberOfDFOptions=length $ filter isDataFlow allOptions
-            , dataflowThreshhold=threshhold
-            , possibleDeadlockBinds
-            , allOptions
-            , model
-            }
-
-        measure' mOption
-            | let mSpecial = measure cntx mOption
-            = WithMetric
-                { mOption
-                , mDecision=option2decision mOption
-                , mSpecial
-                , mIntegral=integral cntx mSpecial
-                }
-    in map measure' allOptions
-
-optionsWithMetrics _ _ = error "Wrong setup for compiler!"
 
 
 
