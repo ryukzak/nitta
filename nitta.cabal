@@ -125,6 +125,7 @@ test-suite nitta-test
                      , NITTA.Test.LuaFrontend
                      , NITTA.Test.Microarchitectures
                      , NITTA.Test.ProcessUnits
+                     , NITTA.Test.Types
                      , NITTA.Test.Utils
   build-depends:       atomic-primops
                      , base

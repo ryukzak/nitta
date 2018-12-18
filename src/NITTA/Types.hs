@@ -7,9 +7,11 @@ module NITTA.Types
   , module NITTA.Types.Network
   , module NITTA.Types.Poly
   , IntX(..)
-  , FixPointX(..)
+  , FX(..)
   , Val(..)
   , widthX
+  , scalingFactorPower
+  , scalingFactor
   ) where
 
 import           NITTA.Types.Base
@@ -45,7 +47,7 @@ instance Val Integer where
 newtype IntX (w :: Nat) = IntX Int
     deriving ( Show, Eq, Ord )
 
-instance Read (IntX w) where
+instance Read ( IntX w ) where
     readsPrec d r = let [(x, "")] = readsPrec d r
         in [(IntX x, "")]
 
@@ -93,69 +95,84 @@ instance ( KnownNat w ) => Val ( IntX w ) where
     valueWidth p = natVal (Proxy :: Proxy w)
 
 
--- FixPointX width neg_radix_power_of_2
-newtype FixPointX (w :: Nat) (r :: Nat) = FixPointX Int
+-- FX m b where
+--   m the number of magnitude or integer bits
+--   b the total number of bits
+--
+-- fxm.b: The "fx" prefix is similar to the above, but uses the word length as
+-- the second item in the dotted pair. For example, fx1.16 describes a number
+-- with 1 magnitude bit and 15 fractional bits in a 16 bit word.[3]
+newtype FX (m :: Nat) (b :: Nat) = FX Int
     deriving ( Eq, Ord )
 
-radix x
+scalingFactorPower x
     = let
-        proxy :: ( KnownNat r ) => FixPointX w r -> Proxy r
-        proxy _ = Proxy
-        radixPower = negate $ fromIntegral $ natVal $ proxy x
-    in 2 ** radixPower
+        proxyM :: ( KnownNat m ) => FX m b -> Proxy m
+        proxyM _ = Proxy
+        m = natVal $ proxyM x
+        proxyB :: ( KnownNat m ) => FX m b -> Proxy b
+        proxyB _ = Proxy
+        b = natVal $ proxyB x
+    in b - m
 
-instance ( KnownNat r ) => Show ( FixPointX w r) where
-    show t@(FixPointX x) = show (fromIntegral x * radix t)
+scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 
-instance ( KnownNat r ) => Read (FixPointX w r) where
+instance ( KnownNat m, KnownNat b ) => Show ( FX m b ) where
+    show t@(FX x) = show (fromIntegral x / scalingFactor t)
+
+instance ( KnownNat m, KnownNat b ) => Read ( FX m b ) where
     readsPrec d r
         = let
             [(x, "")] = readsPrec d r
-            result = FixPointX $ round (x / radix result)
+            result = FX $ truncate (x * scalingFactor result)
         in [(result, "")]
 
-instance Default ( FixPointX w r ) where
-    def = FixPointX 0
+instance Default ( FX m b ) where
+    def = FX 0
 
-instance Enum ( FixPointX w r ) where
-    toEnum = FixPointX
-    fromEnum (FixPointX x) = x
+instance ( KnownNat m, KnownNat b ) => Enum ( FX m b ) where
+    toEnum x
+        = let res = FX (x * truncate (scalingFactor res))
+        in res
+    fromEnum t@(FX x) = truncate (fromIntegral x / scalingFactor t)
 
-instance ( KnownNat r ) => Num ( FixPointX w r ) where
-    ( FixPointX a ) + ( FixPointX b ) = FixPointX ( a + b )
-    t@( FixPointX a ) * ( FixPointX b ) = FixPointX ( round (fromIntegral (a * b) * radix t) )
-    abs ( FixPointX a ) = FixPointX $ abs a
-    signum ( FixPointX a ) = FixPointX $ signum a
-    fromInteger a = FixPointX $ fromInteger a
-    negate ( FixPointX a ) = FixPointX $ negate a
+instance ( KnownNat m, KnownNat b ) => Num ( FX m b ) where
+    ( FX a ) + ( FX b ) = FX ( a + b )
+    t@( FX a ) * ( FX b ) = FX ( truncate (fromIntegral (a * b) / scalingFactor t) )
+    abs ( FX a ) = FX $ abs a
+    signum ( FX a ) = toEnum $ signum a
+    fromInteger x
+        = let res = FX $ fromIntegral (x * truncate (scalingFactor res))
+        in res
+    negate ( FX a ) = FX $ negate a
 
-instance ( KnownNat r ) => Real ( FixPointX w r ) where
-    toRational ( FixPointX x ) = toRational x
+-- instance ( KnownNat m, KnownNat b ) => Real ( FX m b ) where
+--     toRational ( FX x ) = toRational x
 
-instance ( KnownNat r ) => Integral ( FixPointX w r ) where
-    toInteger ( FixPointX x ) = toInteger x
-    ( FixPointX a ) `quotRem` ( FixPointX b )
-        = let (a', b') =  a `quotRem` b
-        in ( FixPointX a', FixPointX b' )
+-- instance ( KnownNat m, KnownNat b ) => Integral ( FX m b ) where
+--     toInteger ( FX x ) = toInteger x
+--     ( FX a ) `quotRem` ( FX b )
+--         = let (a', b') =  a `quotRem` b
+--         in ( FX a', FX b' )
 
-instance Bits ( FixPointX w r ) where
-    ( FixPointX a ) .&. ( FixPointX b ) = FixPointX ( a .&. b )
-    ( FixPointX a ) .|. ( FixPointX b ) = FixPointX ( a .|. b )
-    ( FixPointX a ) `xor` ( FixPointX b ) = FixPointX ( a `xor` b )
-    complement ( FixPointX a ) = FixPointX $ complement a
-    shift ( FixPointX a ) i = FixPointX $ shift a i
-    rotate ( FixPointX a ) i = FixPointX $ rotate a i
+-- instance Bits ( FX m b ) where
+--     ( FX a ) .&. ( FX b ) = FX ( a .&. b )
+--     ( FX a ) .|. ( FX b ) = FX ( a .|. b )
+--     ( FX a ) `xor` ( FX b ) = FX ( a `xor` b )
+--     complement ( FX a ) = FX $ complement a
+--     shift ( FX a ) i = FX $ shift a i
+--     rotate ( FX a ) i = FX $ rotate a i
 
-    bitSize ( FixPointX a ) = fromMaybe undefined $ bitSizeMaybe a
-    bitSizeMaybe ( FixPointX a ) = bitSizeMaybe a
-    isSigned ( FixPointX a ) = isSigned a
-    testBit ( FixPointX a ) = testBit a
-    bit i = FixPointX $ bit i
-    popCount ( FixPointX a ) = popCount a
+--     bitSize ( FX a ) = fromMaybe undefined $ bitSizeMaybe a
+--     bitSizeMaybe ( FX a ) = bitSizeMaybe a
+--     isSigned ( FX a ) = isSigned a
+--     testBit ( FX a ) = testBit a
+--     bit i = FX $ bit i
+--     popCount ( FX a ) = popCount a
 
-instance ( KnownNat w, KnownNat r ) => Val ( FixPointX w r ) where
-    showTypeOf p = "FixPointX" ++ show (valueWidth p)
-    valueWidth p = natVal (Proxy :: Proxy w)
+instance ( KnownNat m, KnownNat b ) => Val ( FX m b ) where
+    showTypeOf p = "FX" ++ show (valueWidth p)
+    valueWidth p = natVal (Proxy :: Proxy b)
 
 
 -- transformToFixPoint algArithmetic x
