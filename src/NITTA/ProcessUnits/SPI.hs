@@ -205,7 +205,7 @@ receiveSequenece SerialPU{ spuState=State{ spiReceive } } = reverse $ map head $
 sendSequenece SerialPU{ spuState=State{ spiSend } } = reverse $ fst spiSend
 receiveData pu cntx = map (get' cntx) $ receiveSequenece pu
 
-instance ( Var v, Show t, Show x, Enum x ) => IOTest (SPI v x t) v x where
+instance ( Var v, Show t, Show x, Enum x, Val x ) => IOTest (SPI v x t) v x where
     componentTestEnviroment
             title
             pu@SerialPU{ spuState=State{ spiBounceFilter } }
@@ -213,7 +213,7 @@ instance ( Var v, Show t, Show x, Enum x ) => IOTest (SPI v x t) v x where
             PUPorts{..}
             cntxs
         | let
-            wordWidth = 32 :: Int -- FIXME: hardcode
+            wordWidth = fromIntegral $ widthX pu
             frameWordCount = max (length $ receiveSequenece pu) (length $ sendSequenece pu)
             frameWidth = frameWordCount * wordWidth
             ioCycle cntx = fixIndent [qc|
