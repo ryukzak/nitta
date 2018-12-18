@@ -4,7 +4,7 @@
 // это 4 лаба по ИУС))) Там все написано. Необходимо протестировать в железе.
   
 module bounce_filter #
-        ( parameter DIV = 20
+        ( parameter DIV = 5
         )
     ( input rst
     , input clk
@@ -12,27 +12,24 @@ module bounce_filter #
     , output out
     );
 
-localparam CNT_WIDTH = $clog2( DIV );
 
-reg [CNT_WIDTH-1:0] cnt;
+reg [DIV-1:0] cnt;
 
 generate
-    if ( DIV == 0 ) begin
+    if ( DIV == 0 || DIV == 1 ) begin
         assign out = in;
     end else begin
-        reg buffer;
-        assign out = buffer;
+        assign out = cnt[DIV-1] & cnt[DIV-2] ? 1 : 0;
         always @(posedge clk) begin
-            if ( rst ) begin
+            if (rst) begin
                 cnt <= 0;
-            end else if ( cnt == DIV ) begin
-                cnt <= 0;
-                buffer <= in;
+            end else if (in) begin
+                if (cnt != {DIV{1'b1}}) cnt <= cnt + 1;
             end else begin
-                cnt <= cnt + 1;
+                if (cnt != {DIV{1'b0}}) cnt <= cnt - 1;
             end
-        end
+        end        
     end
 endgenerate
-	
+    
 endmodule

@@ -142,3 +142,5 @@ instance ( Val x ) => TargetSystemComponent (Accum v x t) where
     , .data_out( { dataOut } )
     , .attr_out( { attrOut } )
     );|]
+
+instance IOTest (Accum v x t) v x 

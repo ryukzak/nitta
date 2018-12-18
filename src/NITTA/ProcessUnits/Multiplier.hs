@@ -616,6 +616,7 @@ instance ( Time t, Var v, Val x
 
 -- As you can see ahead, this class uses to get data bus width from the type level (@x@ type variable).
 instance WithX (Multiplier v x t) x
+instance IOTest (Multiplier v x t) v x 
 
 -- |Данный класс является служебным и предназначен для того, что бы извлекать из вычислительного
 -- блока все функции, привязанные к вычислительному блоку. Реализация данного класс проста: у модели
