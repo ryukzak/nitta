@@ -709,3 +709,5 @@ instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) 
     , .attr_out( { attrOut } )
     );
     |]
+
+instance IOTest (Fram v x t) v x 

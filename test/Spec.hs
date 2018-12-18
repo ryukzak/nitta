@@ -6,12 +6,13 @@
 
 module Main where
 
+import           Data.Maybe
 import           NITTA.Test.BusNetwork
 import           NITTA.Test.Functions
 import           NITTA.Test.LuaFrontend
 import           NITTA.Test.ProcessUnits
 import           NITTA.Test.Utils
-import           System.Environment      (setEnv)
+import           System.Environment      (lookupEnv, setEnv)
 import           Test.Tasty              (defaultMain, testGroup)
 
 
@@ -19,9 +20,8 @@ import           Test.Tasty              (defaultMain, testGroup)
 -- hdl/gen в ramfs. Это и ускорит тестирование, и сбережёт железо. Необходимо это сделать для Linux,
 -- но код должен корректно запускаться на Windows / OS X.
 main = do
-    -- FIXME: Сделать так, что бы при тестировании данная настройка могла определяться снаружи. А 10
-    -- выставлялось только при быстром тестировании.
-    setEnv "TASTY_QUICKCHECK_TESTS" "10"
+    qtests <- fromMaybe "10" <$> lookupEnv "TASTY_QUICKCHECK_TESTS"
+    setEnv "TASTY_QUICKCHECK_TESTS" qtests
     defaultMain $ testGroup "NITTA"
         [ utilTests
         , functionTests

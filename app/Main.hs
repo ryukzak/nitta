@@ -108,16 +108,30 @@ main = do
             --             fib(c)
             --         end
             --         fib(1)|]
-            -- putStrLn "--------------------------------"
-            print =<< testWithInput "hardcoded" [] microarch
+            putStrLn "--------------------------------"
+            let microarchHC = busNetwork 31 (Just False)
+                    [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
+                    [ OutputPort "miso" ]
+                    [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
+                    , ("accum", PU D.def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
+                    , ("spi", PU
+                        (SPI.slaveSPI 0)
+                        SPI.PUPorts
+                            { SPI.wr=Signal 22, SPI.oe=Signal 23
+                            , SPI.stop="stop"
+                            , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
+                            })
+                    ] :: BusNetwork String String (IntX 32) Int
+            print =<< testWithInput "hardcode" [("a_0", [10..15]),("b_0", [20..25])] microarchHC
                 ( lua2functions
-                    [qc|function counter(i)
-                            i = i + 1
-                            counter(i)
+                    [qc|function fib()
+                            local a = receive()
+                            local b = receive()
+                            local c = a + b
+                            send(c)
+                            fib()
                         end
-                        counter(0)
-                    |]
-                )
+                        fib()|] )
             putStrLn "-- hardcoded end --"
     putStrLn "-- the end --"
 

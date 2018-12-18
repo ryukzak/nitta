@@ -36,8 +36,8 @@ test_fibonacci =
         , F.loop 1  "c"  ["b1", "b2"]
         , F.add "a1" "b1" ["c"]
         ]
-    , algTestCase "drop_data" (marchSPIDropData proxyInt) alg
-    , algTestCase "no_drop_data" (marchSPI proxyInt) alg
+    , algTestCase "io_drop_data" (marchSPIDropData proxyInt) alg
+    , algTestCase "io_no_drop_data" (marchSPI proxyInt) alg
     ]
     where
         alg =
@@ -46,6 +46,16 @@ test_fibonacci =
             , F.add "a1" "b1" ["c", "c_copy"]
             , F.send "c_copy"
             ]
+
+
+test_io =
+    [ algTestCaseWithInput "double_receive" [("a", [10..15]),("b", [20..25])] (marchSPI proxyInt)
+        [ F.receive ["a"]
+        , F.receive ["b"]
+        , F.add "a" "b" ["c"]
+        , F.send "c"
+        ]
+    ]
 
 
 busNetworkTests :: TestTree

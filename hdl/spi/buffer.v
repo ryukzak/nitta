@@ -13,6 +13,9 @@ module buffer #
 
     , input                   oe 
     , output reg [DATA_WIDTH-1:0] data_out
+
+    , input                   oe_other
+    , output     [DATA_WIDTH-1:0] data_out_other
     );
 
 localparam ADDR_WIDTH = $clog2( BUF_SIZE );
@@ -36,5 +39,15 @@ always @( posedge clk ) begin
         addr <= addr + 1;
     end
 end
+
+reg [ADDR_WIDTH-1:0] addr_other;
+always @( posedge clk ) begin
+    if ( rst ) begin
+        addr_other <= 0;
+    end else if ( oe_other ) begin
+        addr_other <= addr_other + 1;
+    end
+end
+assign data_out_other = memory[ addr_other ];
 
 endmodule
