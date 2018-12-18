@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns    #-}
@@ -18,17 +17,17 @@ Stability   : experimental
 module NITTA.API.Marshalling where
 
 import           Data.Aeson
-import qualified Data.Map              as M
-import qualified Data.Text             as T
+import qualified Data.Map                 as M
+import qualified Data.Text                as T
 import           Data.Typeable
+import           NITTA.API.GraphConverter
 import           NITTA.BusNetwork
 import           NITTA.Compiler
 import           NITTA.DataFlow
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
-import           NITTA.API.GraphConverter
-import           NITTA.Utils           (transfered)
+import           NITTA.Utils              (transfered)
 import           Numeric.Interval
 import           Servant
 
@@ -175,6 +174,15 @@ instance ToJSONKey (IntX w) where
 
 instance ToJSON (IntX w) where
     toJSON ( IntX x ) = toJSON x
+
+instance ToJSONKey (FX m b) where
+    toJSONKey
+        = let
+            ToJSONKeyText f g = toJSONKey
+        in ToJSONKeyText (\( FX x ) -> f $ show x) (\( FX x ) -> g $ show x)
+
+instance ToJSON (FX m b) where
+    toJSON ( FX x ) = toJSON $ show x
 
 
 

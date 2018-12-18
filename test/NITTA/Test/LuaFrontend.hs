@@ -112,6 +112,7 @@ luaTestCase name lua = testGroup name
 luaTestCaseWithInput name is lua = testGroup name
         [ inner marchSPI (Proxy :: Proxy Int)
         , inner marchSPI (Proxy :: Proxy (IntX 32))
+        , inner marchSPI (Proxy :: Proxy (FX 32 32))
         -- FIXME: , inner marchSPI (Proxy :: Proxy (IntX 48))
         ]
     where

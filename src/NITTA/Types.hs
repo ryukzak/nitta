@@ -33,15 +33,20 @@ class ( Typeable x, Read x ) => Val x where
 widthX pu = valueWidth $ proxyX pu
 
 
+
 -- for Int
 instance Val Int where
     showTypeOf _ = "Int"
     valueWidth _ = 32
 
+
+
 -- for Integer
 instance Val Integer where
     showTypeOf _ = "Integer"
     valueWidth _ = 32
+
+
 
 -- for IntX width
 newtype IntX (w :: Nat) = IntX Int
@@ -95,6 +100,7 @@ instance ( KnownNat w ) => Val ( IntX w ) where
     valueWidth p = natVal (Proxy :: Proxy w)
 
 
+
 -- FX m b where
 --   m the number of magnitude or integer bits
 --   b the total number of bits
@@ -105,14 +111,17 @@ instance ( KnownNat w ) => Val ( IntX w ) where
 newtype FX (m :: Nat) (b :: Nat) = FX Int
     deriving ( Eq, Ord )
 
-scalingFactorPower x
+fxMB x
     = let
         proxyM :: ( KnownNat m ) => FX m b -> Proxy m
         proxyM _ = Proxy
-        m = natVal $ proxyM x
         proxyB :: ( KnownNat m ) => FX m b -> Proxy b
         proxyB _ = Proxy
-        b = natVal $ proxyB x
+    in (natVal $ proxyM x, natVal $ proxyB x)
+
+scalingFactorPower x
+    = let
+        (m, b) = fxMB x
     in b - m
 
 scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
@@ -146,32 +155,47 @@ instance ( KnownNat m, KnownNat b ) => Num ( FX m b ) where
         in res
     negate ( FX a ) = FX $ negate a
 
--- instance ( KnownNat m, KnownNat b ) => Real ( FX m b ) where
---     toRational ( FX x ) = toRational x
+instance ( KnownNat m, KnownNat b ) => Real ( FX m b ) where
+    toRational t@( FX x ) = toRational (fromIntegral x / scalingFactor t)
 
--- instance ( KnownNat m, KnownNat b ) => Integral ( FX m b ) where
---     toInteger ( FX x ) = toInteger x
---     ( FX a ) `quotRem` ( FX b )
---         = let (a', b') =  a `quotRem` b
---         in ( FX a', FX b' )
+instance ( KnownNat m, KnownNat b ) => Integral ( FX m b ) where
+    toInteger t@( FX x ) = toInteger $ fromEnum t
+    t@( FX a ) `quotRem` ( FX b )
+        = let
+            (a', b') = a `quotRem` b
+            sf = scalingFactor t
+        in ( FX $ truncate (fromIntegral a' * sf), FX b' )
 
--- instance Bits ( FX m b ) where
---     ( FX a ) .&. ( FX b ) = FX ( a .&. b )
---     ( FX a ) .|. ( FX b ) = FX ( a .|. b )
---     ( FX a ) `xor` ( FX b ) = FX ( a `xor` b )
---     complement ( FX a ) = FX $ complement a
---     shift ( FX a ) i = FX $ shift a i
---     rotate ( FX a ) i = FX $ rotate a i
+instance Bits ( FX m b ) where
+    (.&.) = undefined
+    -- ( FX a ) .&. ( FX b ) = FX ( a .&. b )
+    (.|.) = undefined
+    -- ( FX a ) .|. ( FX b ) = FX ( a .|. b )
+    xor = undefined
+    -- ( FX a ) `xor` ( FX b ) = FX ( a `xor` b )
+    complement = undefined
+    -- complement ( FX a ) = FX $ complement a
+    shift ( FX a ) i = FX $ shift a i
+    rotate ( FX a ) i = FX $ rotate a i
 
---     bitSize ( FX a ) = fromMaybe undefined $ bitSizeMaybe a
---     bitSizeMaybe ( FX a ) = bitSizeMaybe a
---     isSigned ( FX a ) = isSigned a
---     testBit ( FX a ) = testBit a
---     bit i = FX $ bit i
---     popCount ( FX a ) = popCount a
+    bitSize = undefined
+    -- bitSize ( FX a ) = fromMaybe undefined $ bitSizeMaybe a
+    bitSizeMaybe = undefined
+    -- bitSizeMaybe ( FX a ) = bitSizeMaybe a
+    isSigned = undefined
+    -- isSigned ( FX a ) = isSigned a
+    testBit = undefined
+    -- testBit ( FX a ) = testBit a
+    bit = undefined
+    -- bit i = FX $ bit i
+    popCount = undefined
+    -- popCount ( FX a ) = popCount a
+
 
 instance ( KnownNat m, KnownNat b ) => Val ( FX m b ) where
-    showTypeOf p = "FX" ++ show (valueWidth p)
+    showTypeOf p = let
+            (m, b) = fxMB (undefined :: FX m b)
+        in "FX" ++ show m ++ "_" ++ show b
     valueWidth p = natVal (Proxy :: Proxy b)
 
 
