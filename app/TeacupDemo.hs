@@ -20,6 +20,20 @@ Stability   : experimental
 конфигурацией процессора. В данном примере это интерфейс SPI (`NITTA.ProcessUnit.SPI`).
 -}
 
+{-
+ This is the classical example of system dinamic. The model description presented here:
+ <https://pysd-cookbook.readthedocs.io/en/latest/analyses/getting_started/Hello_World_Teacup.html>.
+ Calculations are performed in fixed-point numbers. Decimals are not converted.
+
+ Model's outputs:
+
+- cups temperature;
+- time from experiment beginning.
+
+Every element of the sequences sends to the external interface, definable by the processor configuration. 
+It is SPI Interface in this example ('NITTA.ProcessUnit.SPI').
+-}
+
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
