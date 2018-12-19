@@ -3,30 +3,38 @@ import { hapi } from '../hapi'
 import ReactTable from 'react-table'
 import { LineChart } from 'react-easy-chart'
 
-export class SimpleCompilerView extends Component {
+export class EdgesView extends Component {
   constructor (props) {
     super(props)
-    this.onCurrentNidChange = props.onCurrentNidChange
+    this.onNIdChange = props.onNIdChange
     this.state = {
-      currentNid: props.currentNid,
-      options: null
+      selectedNId: props.selectedNId,
+      options: null,
+      edge: null
     }
-    this.updateSCOptions(props.currentNid)
+    this.reloadEdges(props.selectedNId)
   }
 
   componentWillReceiveProps (props) {
-    console.debug('SimpleCompilerView:componentWillReceiveProps(', props, ')')
-    if (this.state.currentNid !== props.currentNid) this.updateSCOptions(props.currentNid)
-    this.setState({currentNid: props.currentNid})
+    console.debug('EdgesView:componentWillReceiveProps(', props, ')')
+    if (this.state.selectedNId !== props.selectedNId) this.reloadEdges(props.selectedNId)
+    this.setState({selectedNId: props.selectedNId})
   }
 
-  updateSCOptions (nid) {
+  reloadEdges (nid) {
     if (nid === undefined || nid === null) return
-    console.debug('SimpleCompilerView:updateSCOptions§(', nid, ')')
-    hapi.simpleCompilerOptions(nid)
+    console.debug('EdgesView:reloadEdges(', nid, ')')
+    hapi.getEdges(nid)
       .then(response => {
         this.setState({
-          options: response.data
+          options: response.data.map(e => { return [e.eCharacteristic, e.eCharacteristics, e.eOption, e.eDecision] })
+        })
+      })
+      .catch(err => console.log(err))
+    hapi.getEdge(nid)
+      .then(response => {
+        this.setState({
+          edge: response.data
         })
       })
       .catch(err => console.log(err))
@@ -38,9 +46,12 @@ export class SimpleCompilerView extends Component {
 
     return (
       <div>
+        <pre>current edge:</pre>
+        <small><pre>{ JSON.stringify(this.state.edge, null, 2) }</pre></small>
+        <pre>sub edges:</pre>
         <div className='grid-x'>
           <div className='cell small-4'>
-            <pre>{ JSON.stringify(this.state.options[0][1], null, 2) }</pre>
+            <small><pre>{ JSON.stringify(this.state.options[0][1], null, 2) }</pre></small>
           </div>
           <div className='cell small-8'>
             <LineChart data={[ this.state.options.map((e, index) => { return { x: index, y: e[0] } }) ]}
@@ -57,9 +68,9 @@ export class SimpleCompilerView extends Component {
                 maxWidth: 70,
                 Cell: row =>
                   <a onClick={() => {
-                    hapi.manualDecision(this.state.currentNid, row.index)
+                    hapi.getNode(this.state.selectedNId === ':' ? ':' + row.index : this.state.selectedNId + ':' + row.index)
                       .then(response => {
-                        this.onCurrentNidChange(response.data)
+                        this.onNIdChange(response.data.nId)
                       })
                       .catch(err => alert(err))
                   }}> { row.value }

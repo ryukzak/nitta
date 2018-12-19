@@ -45,7 +45,6 @@ module Main ( main ) where
 import           Data.Default
 import           Data.FileEmbed                (embedStringFile)
 import           NITTA.BusNetwork
-import           NITTA.Compiler
 import           NITTA.Frontend
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divider    as D
@@ -55,7 +54,7 @@ import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Types
 import           NITTA.Types.Project
-import           NITTA.Utils.Test              (demo)
+import           NITTA.Utils.Test              (demo, mkModelWithOneNetwork)
 
 nittaArch = busNetwork 31 Nothing
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]

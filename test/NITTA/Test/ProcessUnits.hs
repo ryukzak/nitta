@@ -26,7 +26,7 @@ import           Data.Proxy
 import           Data.Set                      (difference, elems, empty,
                                                 fromList, intersection, union)
 import           Debug.Trace
-import           NITTA.Compiler
+import           NITTA.DataFlow                (endpointOption2action)
 import           NITTA.Functions
 import qualified NITTA.Functions               as F
 import           NITTA.ProcessUnits.Divider

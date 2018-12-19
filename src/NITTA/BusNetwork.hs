@@ -83,7 +83,7 @@ type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 -- TODO: Вариант функции, где провода будут подключаться автоматически.
 busNetwork w allowDrop ips ops pus = BusNetwork
         { bnRemains=[]
-        , bnBinded=M.fromList []
+        , bnBinded=M.empty
         , bnProcess=def
         , bnPus=M.fromList pus'
         , bnSignalBusWidth=w

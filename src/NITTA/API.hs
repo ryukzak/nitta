@@ -50,7 +50,7 @@ export default api;|]
             , SJS.moduleName="api"
             }
     createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
-    SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI Int Int)) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
+    SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI String String Int Int)) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "rest_api.js"]
     putStrLn "Generate rest_api.js library...OK"
 
 
@@ -72,13 +72,13 @@ prepareStaticFiles = do
 
 
 application compilerState = do
-    st <- newTVarIO $ rootSynthesis compilerState
+    root <- atomically $ mkNode mempty compilerState
     return $ serve
         ( Proxy :: Proxy
-            (    SynthesisAPI _ _
+            (    SynthesisAPI _ _ _ _
             :<|> Raw
             ) )
-        (    synthesisServer st
+        (    synthesisServer root
         :<|> serveDirectoryWebApp (joinPath ["web", "build"])
         )
 

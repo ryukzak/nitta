@@ -1,8 +1,11 @@
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE DeriveGeneric             #-}
+{-# LANGUAGE DuplicateRecordFields     #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE LambdaCase                #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
@@ -21,216 +24,337 @@ Stability   : experimental
 -}
 
 module NITTA.Types.Synthesis
-    ( SynthesisTree
-    , Synthesis(..)
-    , SynthesisStatus(..)
-    , rootSynthesis
-    , Nid(..)
-    , nidsTree
-    , SynthesisSetup(..)
-    , SynthesisStep(..)
-    , simple
-      -- *Processing SynthesisTree
-    , getSynthesisNode
-    , getSynthesis
-    , update
-    , apply
-    , recApply
-    , targetProcessDuration
-      -- *Synhesis context
-    , SynthCntxCls(..)
-    , SynthCntx(..)
-    , comment
-    , setCntx
-    , findCntx
+    ( -- *Synthesis graph
+      Node(..)
+    , Edge(..)
+    , NId(..)
+    , mkNode, mkNodeIO
+    , getNode, getNodeIO
+    , getEdge, getEdgeIO
+    , getEdges, getEdgesIO
+      -- *Characteristics & synthesis decision type
+    , SynthesisDT, synthesis
+    , ChConf(..)
+    , Characteristics(..)
+      -- *Utils
+    , option2decision
     ) where
 
+import           Control.Arrow          (second)
+import           Control.Concurrent.STM
+import           Control.Monad          (forM)
 import           Data.Default
+import           Data.List              (find)
 import           Data.List.Split
-import qualified Data.Map        as M
-import           Data.Tree
-import           Data.Typeable   (Typeable, cast)
+import qualified Data.Map               as M
+import           Data.Maybe
+import           Data.Proxy
+import           Data.Semigroup         (Semigroup, (<>))
+import           Data.Set               (Set, fromList, intersection, member)
+import qualified Data.Set               as S
+import           Data.Typeable          (Typeable)
 import           GHC.Generics
-import           NITTA.DataFlow  (ModelState (..))
-import           NITTA.Types     (nextTick, process)
+import           NITTA.BusNetwork
+import           NITTA.DataFlow         (ModelState (..), isSchedulingComplete)
+import           NITTA.Types
+import           NITTA.Utils
+import           NITTA.Utils.Lens
+import           Numeric.Interval       (Interval, (...))
 
 
 
-type SynthesisTree title v x t = Tree (Synthesis title v x t)
-
-data SynthesisStatus
-    = InProgress
-    | Finished
-    | DeadEnd
-    deriving ( Show, Generic, Eq )
-
-data Synthesis title v x t
-    = Synthesis
-        { sModel  :: ModelState title v x t
-        , sCntx   :: [SynthCntx]
-        , sStatus :: SynthesisStatus
-        , sCache  :: M.Map SynthesisStep Int
+data Node title v x t
+    = Node
+        { nId         :: NId
+        , nModel      :: ModelState title v x t
+        , nIsComplete :: Bool
+        , nEdges      :: TVar (Maybe [Edge title v x t])
         }
     deriving ( Generic )
 
 
--- |Synthesis identical.
-newtype Nid = Nid [Int]
-nidSep = ':'
-
-instance Show Nid where
-    show (Nid []) = [nidSep]
-    show (Nid is) = show' is
-        where
-            show' []     = ""
-            show' (x:xs) = nidSep : show x ++ show' xs
-
-instance Read Nid where
-    readsPrec _ [x] | x == nidSep    = [(Nid [], "")]
-    readsPrec d (x:xs)
-        | x == nidSep
-        , let is = map (readsPrec d) $ splitOn [nidSep] xs
-        , all (not . null) is
-        = [(Nid $ map fst $ concat is, "")]
-    readsPrec _ _ = []
-
-
-nidsTree = inner []
-    where
-        inner is Node{ subForest } = Node
-            { rootLabel=Nid $ reverse is
-            , subForest=zipWith (\i subN -> inner (i:is) subN) [0..] subForest
-            }
-
-
-
--- |Synthesis process setup, which determines next synthesis step selection.
-data SynthesisSetup
-    = Simple
-        { -- |Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
-          -- привязка функциональных блоков.
-          threshhold :: Int
+data Edge title v x t
+    = Edge
+        { eNode            :: Node title v x t
+        , eCharacteristic  :: Float
+        , eCharacteristics :: Characteristics
+        , eOption          :: Option (SynthesisDT title v x t)
+        , eDecision        :: Decision (SynthesisDT title v x t)
         }
-    | UnambiguousBind
-    deriving ( Generic, Show, Eq, Ord )
-
-simple = Simple
-    { threshhold=2
-    }
-
-data SynthesisStep = SynthesisStep
-    { setup :: SynthesisSetup
-    , ix    :: Maybe Int -- ^Nothing means best from the synthesis point of view.
-    }
-    deriving ( Show, Eq, Ord )
+    deriving ( Generic )
 
 
 
 -- |Create initial synthesis.
-rootSynthesis m = Node
-    { rootLabel=Synthesis
-        { sModel=m
-        , sCntx=[]
-        , sStatus=InProgress
-        , sCache=def
+mkNodeIO nId model = atomically $ mkNode nId model
+
+mkNode nId model = do
+    nEdges <- newTVar Nothing
+    return Node
+        { nId=nId
+        , nModel=model
+        , nIsComplete=isSchedulingComplete model
+        , nEdges
         }
-    , subForest=[]
-    }
-
-targetProcessDuration Frame{ processor } = nextTick $ process processor
-
-
--- *Synthesis context
-
-class SynthCntxCls a where
-    data SynthCntx' a :: *
-
-data SynthCntx = forall a. ( Show (SynthCntx' a), Typeable (SynthCntx' a) ) => SynthCntx (SynthCntx' a)
-
-instance Show SynthCntx where
-    show (SynthCntx e) = show e
-
-findCntx [] = Nothing
-findCntx (SynthCntx c : cs)
-    | Just cntx <- cast c = Just cntx
-    | otherwise = findCntx cs
-
-setCntx newCntx [] = [SynthCntx newCntx]
-setCntx newCntx (SynthCntx c : cs)
-    | Just c' <- cast c
-    , let _ = c' `asTypeOf` newCntx
-    = SynthCntx newCntx : cs
-    | otherwise
-    = SynthCntx c : setCntx newCntx cs
-
-
---------------------
-
-data Comment
-
-instance SynthCntxCls Comment where
-    data SynthCntx' Comment = Comment String
-        deriving ( Show )
-
-comment = SynthCntx . Comment
 
 
 
--- *Processing
+getEdgesIO node = atomically $ getEdges node
 
--- |Get specific by @nid@ node from a synthesis tree.
-getSynthesisNode (Nid []) n = n
-getSynthesisNode nid@(Nid (i:is)) Node{ subForest }
-    | length subForest <= i = error $ "getSynthesisNode: wrong nid: " ++ show nid
-    | otherwise = getSynthesisNode (Nid is) (subForest !! i)
+getEdges node@Node{ nEdges }
+    = readTVar nEdges >>= \case
+        Just edges -> return edges
+        Nothing -> do
+            edges <- mkEdges node
+            writeTVar nEdges $ Just edges
+            return edges
 
-getSynthesis nid n = rootLabel $ getSynthesisNode nid n
 
 
--- FIXME: swap nid and root in output (as in args)
+-- |Get specific by @nId@ node from a synthesis tree.
+getNodeIO node nId = atomically $ getNode node nId
 
--- |Update specific by @nid@ node in a synthesis tree by the @f@.
-update f nid rootN = inner nid rootN
+getNode node (NId []) = return node
+getNode node nId = eNode . fromMaybe (error "node not found") <$> getEdge node nId
+
+
+
+getEdgeIO node nId = atomically $ getEdge node nId
+
+getEdge _ (NId []) = return Nothing
+getEdge node (NId (i:is)) = do
+    edges <- getEdges node
+    case is of
+        [] -> return $ Just (edges !! i)
+        _  -> getEdge (eNode $ edges !! i) (NId is)
+
+
+
+-- |Synthesis identical.
+newtype NId = NId [Int]
+nIdSep = ':'
+
+instance Show NId where
+    show (NId []) = [nIdSep]
+    show (NId is) = show' is
+        where
+            show' []     = ""
+            show' (x:xs) = nIdSep : show x ++ show' xs
+
+instance Read NId where
+    readsPrec _ [x] | x == nIdSep    = [(NId [], "")]
+    readsPrec d (x:xs)
+        | x == nIdSep
+        , let is = map (readsPrec d) $ splitOn [nIdSep] xs
+        , all (not . null) is
+        = [(NId $ map fst $ concat is, "")]
+    readsPrec _ _ = []
+
+instance Semigroup NId where
+    (NId a) <> (NId b) = NId (a <> b)
+
+instance Monoid NId where
+    mempty = NId []
+    mappend = (<>)
+
+
+
+---------------------------------------------------------------------
+-- *Compiler Decision Type
+
+
+data SynthesisDT title v x t
+synthesis = Proxy :: Proxy SynthesisDT
+
+
+instance DecisionType (SynthesisDT title v x t) where
+    data Option (SynthesisDT title v x t)
+        = BindingOption (F v x) title
+        | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
+        deriving ( Generic, Show )
+
+    data Decision (SynthesisDT title v x t)
+        = BindingDecision (F v x) title
+        | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
+        deriving ( Generic, Show )
+
+isBinding = \case BindingOption{} -> True; _ -> False
+isDataFlow = \case DataFlowOption{} -> True; _ -> False
+
+specializeDataFlowOption (DataFlowOption s t) = DataFlowO s t
+specializeDataFlowOption _ = error "Can't specialize non DataFlow option!"
+
+generalizeDataFlowOption (DataFlowO s t) = DataFlowOption s t
+generalizeBindingOption (BindingO s t) = BindingOption s t
+
+
+
+instance ( Var v, Typeable x, Time t
+         ) => DecisionProblem (SynthesisDT String v x t)
+                  SynthesisDT (ModelState String v x t)
+        where
+    options _ f@Frame{ processor }
+        =  map generalizeBindingOption (options binding f)
+        ++ map generalizeDataFlowOption (options dataFlowDT processor)
+
+    decision _ fr (BindingDecision f title) = decision binding fr $ BindingD f title
+    decision _ fr@Frame{ processor } (DataFlowDecision src trg) = fr{ processor=decision dataFlowDT processor $ DataFlowD src trg }
+
+option2decision (BindingOption fb title) = BindingDecision fb title
+option2decision (DataFlowOption src trg)
+    = let
+        pushTimeConstrains = map snd $ catMaybes $ M.elems trg
+        pullStart    = maximum $ (snd src^.avail.infimum) : map (\o -> o^.avail.infimum) pushTimeConstrains
+        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd src : pushTimeConstrains
+        pullEnd = pullStart + pullDuration - 1
+        pushStart = pullStart
+        mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
+        pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
+    in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
+
+
+
+-----------------------------------------------------------
+-- *Characteristics
+
+
+data Characteristics
+    = -- |Binding Data Flow Characteristics
+      BindCh
+        { -- |Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
+          -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
+          critical         :: Bool
+          -- |Колличество альтернативных привязок для функционального блока.
+        , alternative      :: Float
+          -- |Привязка данного функционального блока может быть активировано только спустя указанное
+          -- колличество тактов.
+        , restless         :: Float
+          -- |Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
+          -- количества пересылок.
+        , allowDataFlow    :: Float
+          -- |Если была выполнена привязка функции из серидины алгоритма, то это может
+          -- привести к deadlock-у. В такой ситуации может быть активирована пересылка
+          -- в вычислительный блок, в то время как часть из входных данных не доступна,
+          -- так как требуемая функция ещё не привязана, а после привязки не сможет быть
+          -- вычисленна, так как ресурс уже занят.
+        , possibleDeadlock :: Bool
+        }
+    | -- |Data Flow Characteristics
+      DFCh
+        { waitTime       :: Float
+        , restrictedTime :: Bool
+        }
+    deriving ( Show, Generic )
+
+
+
+-- |Synthesis process setup, which determines next synthesis step selection.
+newtype ChConf
+    = ChConf
+        { -- |Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
+          -- привязка функциональных блоков.
+          threshhold :: Int
+        }
+    deriving ( Generic, Show, Eq, Ord )
+
+instance Default ChConf where
+    def = ChConf
+        { threshhold=2
+        }
+
+
+
+mkEdges Node{ nId, nModel } = do
+    let conf = def
+        opts = options synthesis nModel
+        bindedVars = unionsMap variables $ concat $ M.elems $ bnBinded $ processor nModel
+        possibleDeadlockBinds = fromList
+            [ f
+            | (BindingOption f _) <- opts
+            , Lock{ locked } <- locks f
+            , locked `member` bindedVars
+            ]
+        cntx = ChCntx
+            { nModel, possibleDeadlockBinds
+            , bindingAlternative=foldl
+                ( \st (BindingOption fb title) -> M.alter (collect title) fb st )
+                M.empty
+                $ filter isBinding opts
+            , numberOfBindOptions=length $ filter isBinding opts
+            , numberOfDFOptions=length $ filter isDataFlow opts
+            }
+
+    forM (zip [0..] opts) $ \(i, eOption) -> do
+        let eDecision = option2decision eOption
+            eCharacteristics = measure conf cntx eOption
+            eCharacteristic = integral conf cntx eCharacteristics
+        eNode <- mkNode (nId <> NId [i]) $ decision synthesis nModel eDecision
+        return Edge{ eOption, eDecision, eCharacteristic, eCharacteristics, eNode }
+
+
+
+data ChCntx m title v x
+    = ChCntx
+        { nModel                :: m
+        , possibleDeadlockBinds :: Set (F v x)
+        , bindingAlternative    :: M.Map (F v x) [title]
+        , numberOfBindOptions   :: Int
+        , numberOfDFOptions     :: Int
+        }
+
+
+
+measure
+        ChConf{}
+        ChCntx{ possibleDeadlockBinds, bindingAlternative, nModel }
+        (BindingOption f title)
+    = BindCh
+        { critical=isCritical f
+        , alternative=fromIntegral $ length (bindingAlternative M.! f)
+        , allowDataFlow=fromIntegral $ length $ unionsMap variables $ filter isTarget $ optionsAfterBind f title nModel
+        , restless=fromMaybe 0 $ do
+            (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables nModel
+            return $ fromIntegral tcFrom
+        , possibleDeadlock=f `member` possibleDeadlockBinds
+        }
+measure ChConf{} ChCntx{} opt@DataFlowOption{}
+    = DFCh
+        { waitTime=fromIntegral (specializeDataFlowOption opt^.at.avail.infimum)
+        , restrictedTime=fromEnum (specializeDataFlowOption opt^.at.dur.supremum) /= maxBound
+        }
+
+
+
+integral ChConf{} ChCntx{} BindCh{ possibleDeadlock=True }         = 2000000
+integral ChConf{ threshhold } ChCntx{ numberOfDFOptions } DFCh{ waitTime }
+    | numberOfDFOptions >= threshhold                              = 10000 + 200 - waitTime
+integral ChConf{} ChCntx{} BindCh{ critical=True }                 = 2000
+integral ChConf{} ChCntx{} BindCh{ alternative=1 }                 = 500
+integral ChConf{} ChCntx{} BindCh{ allowDataFlow, restless }       = 200 + allowDataFlow * 10 - restless * 2
+integral ChConf{} ChCntx{} DFCh{ restrictedTime } | restrictedTime = 200 + 100
+integral ChConf{} ChCntx{} DFCh{ waitTime }                        = 200 - waitTime
+
+
+
+-- *Internal
+
+collect x (Just xs) = Just $ x : xs
+collect x Nothing   = Just [ x ]
+
+
+-- | Время ожидания переменных.
+waitingTimeOfVariables net =
+    [ (variable, tc^.avail.infimum)
+    | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- options dataFlowDT net
+    , (variable, Nothing) <- M.assocs dfoTargets
+    ]
+
+
+-- | Оценить, сколько новых вариантов развития вычислительного процесса даёт привязка
+-- функциоанльного блока.
+optionsAfterBind f title Frame{ processor=BusNetwork{ bnPus } }
+    = case tryBind f (bnPus M.! title) of
+        Right pu' -> filter (\(EndpointO act _) -> act `optionOf` f) $ options endpointDT pu'
+        _         -> []
     where
-        inner (Nid []) n = f n
-        inner (Nid (i:is)) n@Node{ subForest }
-            = let
-                (before, subN : after) = splitAt i subForest
-            in case inner (Nid is) subN of
-                Just (subN', Nid is') -> Just (n{ subForest=before ++ (subN' : after) }, Nid (i:is'))
-                Nothing -> Nothing
-
-
-
--- |Recursively apply @rec@ to a synthesis while it is applicable (returning Just value).
-recApply rec step nRoot = inner nRoot
-    where
-        inner n@Node{ subForest }
-            = case apply rec step n of
-                Just (n'@Node{ subForest=subForest' }, Nid [i]) ->
-                    let sub = subForest' !! i
-                        (sub', Nid subIxs) = inner sub
-                    in (n'{ subForest=setSubNode i sub' subForest }, Nid (i : subIxs) )
-                Nothing -> (n, Nid [])
-                _ -> error "Synthesis: recApply internal error"
-        setSubNode i n forest
-            | length forest == i = forest ++ [n]
-            | let (before, _subN : after) = splitAt i forest
-            = before ++ (n : after)
-
-
-
--- |Apply @f@ to a synthesis in a node.
-apply f step n@Node{ rootLabel=rootLabel@Synthesis{ sCache }, subForest }
-    = case sCache M.!? step of
-        Just i -> Just (n, Nid [i])
-        Nothing -> case f step rootLabel of
-            Just sub ->
-                let subN = Node
-                        { rootLabel=sub
-                        , subForest=[]
-                        }
-                    i = length subForest
-                    rootLabel' = rootLabel{ sCache=M.insert step i sCache }
-                in Just (n{ rootLabel=rootLabel', subForest=subForest ++ [subN]}, Nid [i])
-            Nothing -> Nothing
+        act `optionOf` f' = not $ S.null (variables act `intersection` variables f')

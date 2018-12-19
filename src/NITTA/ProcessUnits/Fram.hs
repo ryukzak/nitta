@@ -70,7 +70,7 @@ import           Data.Maybe
 import qualified Data.Set                      as S
 import qualified Data.String.Utils             as S
 import           Data.Typeable
-import           NITTA.Compiler
+import           NITTA.DataFlow                (isSchedulingCompletable)
 import           NITTA.Functions
 import           NITTA.Project
 import           NITTA.Types                   hiding (Undef)
@@ -710,4 +710,4 @@ instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) 
     );
     |]
 
-instance IOTest (Fram v x t) v x 
+instance IOTest (Fram v x t) v x
