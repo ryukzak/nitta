@@ -70,12 +70,12 @@ import           Data.Maybe
 import qualified Data.Set                      as S
 import qualified Data.String.Utils             as S
 import           Data.Typeable
+import           NITTA.DataFlow                (isSchedulingCompletable)
 import           NITTA.Functions
 import           NITTA.Project
 import           NITTA.Types                   hiding (Undef)
 import qualified NITTA.Types                   as T
 import           NITTA.Types.Project
-import           NITTA.Types.Synthesis         (isSchedulingCompletable)
 import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval              ((...))

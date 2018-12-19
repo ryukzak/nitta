@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE DeriveGeneric             #-}
+{-# LANGUAGE DuplicateRecordFields     #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
@@ -32,20 +33,15 @@ module NITTA.Types.Synthesis
     , getEdges, getEdgesIO
       -- *Characteristics & synthesis decision type
     , SynthesisDT, synthesis
-    , Conf(..)
-    , SpecialMetrics(..)
+    , ChConf(..)
+    , Characteristics(..)
       -- *Utils
-    , endpointOption2action
-    , isSchedulingCompletable
-    , isSchedulingComplete
     , option2decision
-    , targetProcessDuration
     ) where
 
 import           Control.Arrow          (second)
 import           Control.Concurrent.STM
-import           Control.Monad          (unless)
-import           Control.Monad          (forM)
+import           Control.Monad          (forM, unless)
 import           Data.Default
 import           Data.List              (find)
 import           Data.List.Split
@@ -58,7 +54,7 @@ import qualified Data.Set               as S
 import           Data.Typeable          (Typeable)
 import           GHC.Generics
 import           NITTA.BusNetwork
-import           NITTA.DataFlow         (ModelState (..))
+import           NITTA.DataFlow         (ModelState (..), isSchedulingComplete)
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
@@ -80,7 +76,7 @@ data Edge title v x t
     = Edge
         { eNode            :: Node title v x t
         , eCharacteristic  :: Float
-        , eCharacteristics :: SpecialMetrics
+        , eCharacteristics :: Characteristics
         , eOption          :: Option (SynthesisDT title v x t)
         , eDecision        :: Decision (SynthesisDT title v x t)
         }
@@ -111,33 +107,6 @@ getEdges node@Node{ nEdges }
             edges <- mkEdges node
             writeTVar nEdges $ Just edges
             return edges
-
-
-
-mkEdges Node{ nId, nModel } = do
-    let Conf{ threshhold } = def
-        opts = options synthesis nModel
-        bindedVars = unionsMap variables $ concat $ M.elems $ bnBinded $ processor nModel
-        possibleDeadlockBinds = fromList [ f
-            | (BindingOption f _) <- opts
-            , Lock{ locked } <- locks f
-            , locked `member` bindedVars
-            ]
-        cntx = MeasureCntx
-            { numberOfBindOptions=length $ filter isBinding opts
-            , numberOfDFOptions=length $ filter isDataFlow opts
-            , dataflowThreshhold=threshhold
-            , possibleDeadlockBinds
-            , allOptions=opts
-            , model=nModel
-            }
-
-    forM (zip [0..] opts) $ \(i, eOption) -> do
-        let eDecision = option2decision eOption
-            eCharacteristics = measure cntx eOption
-            eCharacteristic = fromIntegral $ integral cntx eCharacteristics
-        eNode <- mkNode (nId <> NId [i]) $ decision synthesis nModel eDecision
-        return Edge{ eOption, eDecision, eCharacteristic, eCharacteristics, eNode }
 
 
 
@@ -241,37 +210,20 @@ option2decision (DataFlowOption src trg)
 -- *Characteristics
 
 
--- |Synthesis process setup, which determines next synthesis step selection.
-newtype Conf
-    = Conf
-        { -- |Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
-          -- привязка функциональных блоков.
-          threshhold :: Int
-        }
-    deriving ( Generic, Show, Eq, Ord )
-
-instance Default Conf where
-    def = Conf
-        { threshhold=2
-        }
-
-
-
--- | Метрики для принятия решения компилятором.
-data SpecialMetrics
-    = -- | Решения о привязке функциональных блоков к ВУ.
-        BindingMetrics
+data Characteristics
+    = -- |Binding Data Flow Characteristics
+      BindCh
         { -- |Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
           -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
           critical         :: Bool
           -- |Колличество альтернативных привязок для функционального блока.
-        , alternative      :: Int
+        , alternative      :: Float
           -- |Привязка данного функционального блока может быть активировано только спустя указанное
           -- колличество тактов.
-        , restless         :: Int
+        , restless         :: Float
           -- |Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
           -- количества пересылок.
-        , allowDataFlow    :: Int
+        , allowDataFlow    :: Float
           -- |Если была выполнена привязка функции из серидины алгоритма, то это может
           -- привести к deadlock-у. В такой ситуации может быть активирована пересылка
           -- в вычислительный блок, в то время как часть из входных данных не доступна,
@@ -279,61 +231,107 @@ data SpecialMetrics
           -- вычисленна, так как ресурс уже занят.
         , possibleDeadlock :: Bool
         }
-    | DataFlowMetrics { waitTime :: Int, restrictedTime :: Bool }
+    | -- |Data Flow Characteristics
+      DFCh
+        { waitTime       :: Float
+        , restrictedTime :: Bool
+        }
     deriving ( Show, Generic )
 
 
 
-data MeasureCntx f o m
-    = MeasureCntx
-        { possibleDeadlockBinds :: Set f
+-- |Synthesis process setup, which determines next synthesis step selection.
+newtype ChConf
+    = ChConf
+        { -- |Порог колличества вариантов, после которого пересылка данных станет приоритетнее, чем
+          -- привязка функциональных блоков.
+          threshhold :: Int
+        }
+    deriving ( Generic, Show, Eq, Ord )
+
+instance Default ChConf where
+    def = ChConf
+        { threshhold=2
+        }
+
+
+
+mkEdges Node{ nId, nModel } = do
+    let conf = def
+        opts = options synthesis nModel
+        bindedVars = unionsMap variables $ concat $ M.elems $ bnBinded $ processor nModel
+        possibleDeadlockBinds = fromList
+            [ f
+            | (BindingOption f _) <- opts
+            , Lock{ locked } <- locks f
+            , locked `member` bindedVars
+            ]
+        cntx = ChCntx
+            { nModel, possibleDeadlockBinds
+            , bindingAlternative=foldl
+                ( \st (BindingOption fb title) -> M.alter (collect title) fb st )
+                M.empty
+                $ filter isBinding opts
+            , numberOfBindOptions=length $ filter isBinding opts
+            , numberOfDFOptions=length $ filter isDataFlow opts
+            }
+
+    forM (zip [0..] opts) $ \(i, eOption) -> do
+        let eDecision = option2decision eOption
+            eCharacteristics = measure conf cntx eOption
+            eCharacteristic = integral conf cntx eCharacteristics
+        eNode <- mkNode (nId <> NId [i]) $ decision synthesis nModel eDecision
+        return Edge{ eOption, eDecision, eCharacteristic, eCharacteristics, eNode }
+
+
+
+data ChCntx m title v x
+    = ChCntx
+        { nModel                :: m
+        , possibleDeadlockBinds :: Set (F v x)
+        , bindingAlternative    :: M.Map (F v x) [title]
         , numberOfBindOptions   :: Int
         , numberOfDFOptions     :: Int
-        , dataflowThreshhold    :: Int
-        , allOptions            :: o
-        , model                 :: m
         }
 
 
 
 measure
-        MeasureCntx{ possibleDeadlockBinds, allOptions, model=Frame{ processor=net@BusNetwork{ bnPus } } }
+        ChConf{}
+        ChCntx{ possibleDeadlockBinds, bindingAlternative, nModel }
         (BindingOption f title)
-    = BindingMetrics
+    = BindCh
         { critical=isCritical f
-        , alternative=length (howManyOptionAllow (filter isBinding allOptions) M.! f)
-        , allowDataFlow=sum $ map (length . variables) $ filter isTarget $ optionsAfterBind f (bnPus M.! title)
+        , alternative=fromIntegral $ length (bindingAlternative M.! f)
+        , allowDataFlow=fromIntegral $ length $ unionsMap variables $ filter isTarget $ optionsAfterBind f title nModel
         , restless=fromMaybe 0 $ do
-            (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables net
-            return $ fromEnum tcFrom
+            (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables nModel
+            return $ fromIntegral tcFrom
         , possibleDeadlock=f `member` possibleDeadlockBinds
         }
-measure MeasureCntx{} opt@DataFlowOption{} = DataFlowMetrics
-    { waitTime=fromEnum (specializeDataFlowOption opt^.at.avail.infimum)
-    , restrictedTime=fromEnum (specializeDataFlowOption opt^.at.dur.supremum) /= maxBound
-    }
-
-integral MeasureCntx{} BindingMetrics{ possibleDeadlock=True }            = 2000000
-integral MeasureCntx{ numberOfDFOptions, dataflowThreshhold } DataFlowMetrics{ waitTime }
-    | numberOfDFOptions >= dataflowThreshhold                             = 10000 + 200 - waitTime
-integral MeasureCntx{} BindingMetrics{ critical=True }                    = 2000
-integral MeasureCntx{} BindingMetrics{ alternative=1 }                    = 500
-integral MeasureCntx{} BindingMetrics{ allowDataFlow, restless }          = 200 + allowDataFlow * 10 - restless * 2
-integral MeasureCntx{} DataFlowMetrics{ restrictedTime } | restrictedTime = 200 + 100
-integral MeasureCntx{} DataFlowMetrics{ waitTime }                        = 200 - waitTime
+measure ChConf{} ChCntx{} opt@DataFlowOption{}
+    = DFCh
+        { waitTime=fromIntegral (specializeDataFlowOption opt^.at.avail.infimum)
+        , restrictedTime=fromEnum (specializeDataFlowOption opt^.at.dur.supremum) /= maxBound
+        }
 
 
 
--- | Подсчитать, сколько вариантов для привязки функционального блока определено.
--- Если вариант всего один, может быть стоит его использовать сразу?
-howManyOptionAllow bOptions
-    = foldl ( \st (BindingOption fb title) -> M.alter (countOption title) fb st ) (M.fromList []) bOptions
-    where
-        countOption title (Just titles) = Just $ title : titles
-        countOption title Nothing       = Just [ title ]
+integral ChConf{} ChCntx{} BindCh{ possibleDeadlock=True }         = 2000000
+integral ChConf{ threshhold } ChCntx{ numberOfDFOptions } DFCh{ waitTime }
+    | numberOfDFOptions >= threshhold                              = 10000 + 200 - waitTime
+integral ChConf{} ChCntx{} BindCh{ critical=True }                 = 2000
+integral ChConf{} ChCntx{} BindCh{ alternative=1 }                 = 500
+integral ChConf{} ChCntx{} BindCh{ allowDataFlow, restless }       = 200 + allowDataFlow * 10 - restless * 2
+integral ChConf{} ChCntx{} DFCh{ restrictedTime } | restrictedTime = 200 + 100
+integral ChConf{} ChCntx{} DFCh{ waitTime }                        = 200 - waitTime
 
 
-targetProcessDuration Frame{ processor } = nextTick $ process processor
+
+-- *Internal
+
+collect x (Just xs) = Just $ x : xs
+collect x Nothing   = Just [ x ]
 
 
 -- | Время ожидания переменных.
@@ -346,41 +344,9 @@ waitingTimeOfVariables net =
 
 -- | Оценить, сколько новых вариантов развития вычислительного процесса даёт привязка
 -- функциоанльного блока.
-optionsAfterBind fb pu = case tryBind fb pu of
-    Right pu' -> filter (\(EndpointO act _) -> act `optionOf` fb) $ options endpointDT pu'
-    _         -> []
+optionsAfterBind f title Frame{ processor=BusNetwork{ bnPus } }
+    = case tryBind f (bnPus M.! title) of
+        Right pu' -> filter (\(EndpointO act _) -> act `optionOf` f) $ options endpointDT pu'
+        _         -> []
     where
-        act `optionOf` fb' = not $ S.null (variables act `intersection` variables fb')
-
-
--- * Утилиты
-
-endpointOption2action o@EndpointO{ epoRole }
-    = let
-        a = o^.at.avail.infimum
-        -- "-1" - необходимо, что бы не затягивать процесс на лишний такт, так как интервал включает
-        -- граничные значения.
-        b = o^.at.avail.infimum + o^.at.dur.infimum - 1
-    in EndpointD epoRole (a ... b)
-
-
-isSchedulingComplete Frame{ processor, dfg }
-    | let inWork = S.fromList $ transfered processor
-    , let inAlg = variables dfg
-    = inWork == inAlg
-
-
-
--- | Проверка является процесс планирования вычислительного процесса полностью завершимым (все
--- функционаные блоки могут быть выполнены). Данная функция используется для проверки возможности
--- привязки функционального блока.
-isSchedulingCompletable pu
-    = case options endpointDT pu of
-        (o:_os) -> let
-                d = endpointOption2action o
-                pu' = decision endpointDT pu d
-                in isSchedulingCompletable pu'
-        _ -> let
-                algVars = unionsMap variables $ functions pu
-                processVars = unionsMap variables $ getEndpoints $ process  pu
-            in algVars == processVars
+        act `optionOf` f' = not $ S.null (variables act `intersection` variables f')

@@ -28,14 +28,13 @@ import           Control.Monad.Trans.Class     (lift)
 import           Control.Monad.Trans.Except
 import           Data.Default                  as D
 import qualified Data.Map                      as M
-import           NITTA.SynthesisMethod
 import           NITTA.DataFlow
 import           NITTA.Frontend
 import           NITTA.Project
+import           NITTA.SynthesisMethod
 import           NITTA.Types
 import           NITTA.Types.Project
-import           NITTA.Types.Synthesis         (Node (..), isSchedulingComplete,
-                                                mkNodeIO)
+import           NITTA.Types.Synthesis         (Node (..), mkNodeIO)
 import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
 

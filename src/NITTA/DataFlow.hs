@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
@@ -20,13 +21,20 @@ module NITTA.DataFlow
     , Decision(..)
     , Option(..)
     , ModelState(..)
+    , targetProcessDuration
+    , endpointOption2action
+    , isSchedulingCompletable
+    , isSchedulingComplete
     ) where
 
+import           Data.Set         (fromList)
 import           Data.Typeable
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.Types
 import           NITTA.Utils
+import           NITTA.Utils.Lens
+import           Numeric.Interval ((...))
 
 
 -- * Модифицированый граф потока данных.
@@ -112,6 +120,41 @@ instance ( Typeable title, Ord title, Show title, Var v, Time t
     -- options _ Level{ currentFrame } = options dataFlowDT currentFrame
     decision _ f@Frame{ processor } d = f{ processor=decision dataFlowDT processor d }
     -- decision _ l@Level{ currentFrame } d = l{ currentFrame=decision dataFlowDT currentFrame d }
+
+
+
+targetProcessDuration Frame{ processor } = nextTick $ process processor
+
+
+endpointOption2action o@EndpointO{ epoRole }
+    = let
+        a = o^.at.avail.infimum
+        -- "-1" - необходимо, что бы не затягивать процесс на лишний такт, так как интервал включает
+        -- граничные значения.
+        b = o^.at.avail.infimum + o^.at.dur.infimum - 1
+    in EndpointD epoRole (a ... b)
+
+
+isSchedulingComplete Frame{ processor, dfg }
+    | let inWork = fromList $ transfered processor
+    , let inAlg = variables dfg
+    = inWork == inAlg
+
+
+
+-- | Проверка является процесс планирования вычислительного процесса полностью завершимым (все
+-- функционаные блоки могут быть выполнены). Данная функция используется для проверки возможности
+-- привязки функционального блока.
+isSchedulingCompletable pu
+    = case options endpointDT pu of
+        (o:_os) -> let
+                d = endpointOption2action o
+                pu' = decision endpointDT pu d
+                in isSchedulingCompletable pu'
+        _ -> let
+                algVars = unionsMap variables $ functions pu
+                processVars = unionsMap variables $ getEndpoints $ process  pu
+            in algVars == processVars
 
 
 ---------------------------------------------------------------------

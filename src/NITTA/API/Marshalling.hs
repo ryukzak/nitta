@@ -55,8 +55,6 @@ instance ( Show title
 instance ( Show title
          ) => ToJSON (Decision (BindingDT title v x)) where
     toJSON (BindingD f title) = toJSON [ show f, show title ]
--- instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
--- instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
 
 
 
@@ -136,8 +134,8 @@ instance ToJSON TestBenchReport
 
 
 -- *Simple synthesis
-instance ToJSON Conf
-instance ToJSON SpecialMetrics
+instance ToJSON ChConf
+instance ToJSON Characteristics
 
 instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x

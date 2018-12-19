@@ -25,6 +25,7 @@ module NITTA.SynthesisMethod
 
 import           Control.Concurrent.STM (atomically)
 import           Data.List              (find)
+import           NITTA.DataFlow         (targetProcessDuration)
 import           NITTA.Types.Synthesis
 import           NITTA.Utils            (maximumOn, minimumOn)
 
@@ -53,7 +54,7 @@ obviousBindThread node = do
     edges <- getEdges node
     let obliousBind = find
             ((\case
-                BindingMetrics{ alternative } -> alternative == 1
+                BindCh{ alternative } -> alternative == 1
                 _                             -> False
             ) . eCharacteristics)
             edges
