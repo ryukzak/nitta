@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE TypeFamilies           #-}
-{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.Types.Poly

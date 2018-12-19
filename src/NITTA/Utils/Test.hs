@@ -3,7 +3,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|

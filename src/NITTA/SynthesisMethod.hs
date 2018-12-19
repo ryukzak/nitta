@@ -6,7 +6,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.SynthesisMethod

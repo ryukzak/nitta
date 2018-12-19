@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
-{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 {-|
 Module      : NITTA.Utils.Process

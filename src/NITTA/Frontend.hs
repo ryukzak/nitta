@@ -6,8 +6,10 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
+{-# OPTIONS -Wall -Wsemigroup -Wnoncanonical-monoid-instances -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -fno-cse #-}
+
+-- FIXME: -Wmissing-monadfail-instances -> -Wcompat
 
 {-|
 Module      : NITTA.Frontend

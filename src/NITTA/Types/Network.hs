@@ -6,7 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE TypeFamilies           #-}
-{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.Types.Network

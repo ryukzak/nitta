@@ -4,7 +4,7 @@
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-unused-imports #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|

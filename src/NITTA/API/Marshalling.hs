@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.API.Marshalling

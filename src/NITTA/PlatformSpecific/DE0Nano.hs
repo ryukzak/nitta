@@ -5,7 +5,7 @@
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE QuasiQuotes            #-}
 {-# LANGUAGE TemplateHaskell        #-}
-{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.PlatformSpecific.DE0Nano
