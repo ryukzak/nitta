@@ -2,11 +2,10 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.API.REST
@@ -16,23 +15,21 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
 module NITTA.API.REST
-    ( Synthesis(..)
-    , SynthesisAPI
+    ( SynthesisAPI
     , synthesisServer
     ) where
 
 import           Control.Concurrent.STM
 import           Control.Monad.Except
-import           Control.Monad.Zip      (mzip)
 import           Data.Aeson
-import           Data.Tree
+import           Data.Maybe
+import qualified Data.Tree              as T
 import           GHC.Generics
 import           NITTA.API.Marshalling  ()
-import           NITTA.Compiler
 import           NITTA.DataFlow
 import           NITTA.Project          (writeAndRunTestBench)
+import           NITTA.SynthesisMethod
 import           NITTA.Types            (F)
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
@@ -41,113 +38,90 @@ import           System.FilePath        (joinPath)
 
 
 
--- *REST API Projections.
-
-data SynthesisView
-    = SynthesisView
-        { svNnid     :: Nid
-        , svCntx     :: [String]
-        , svStatus   :: SynthesisStatus
-        , svDuration :: Int
-        }
-    deriving (Generic)
-
-instance ToJSON SynthesisView
-
-view n = f <$> mzip (nidsTree n) n
-    where
-        f ( nid, Synthesis sModel sCntx sStatus _sCache ) = SynthesisView
-            { svNnid=nid
-            , svCntx=map show sCntx
-            , svStatus=sStatus
-            , svDuration=fromEnum $ targetProcessDuration sModel
-            }
-
-
-
 -- *REST API
 
-type SynthesisAPI x t
-    =    "synthesis" :> Get '[JSON] (Tree SynthesisView)
-    :<|> "synthesis" :> Capture "nid" Nid :> WithSynthesis x t
+type SynthesisAPI title v x t
+    =    "synthesis" :> Get '[JSON] (T.Tree SynthesisNodeView)
+    :<|> "synthesis" :> Capture "nId" NId :> WithSynthesis title v x t
 
-synthesisServer st
-    =    ( view <$> liftSTM (readTVar st))
-    :<|> \nid -> withSynthesis st nid
+synthesisServer root
+    =    liftIO ( synthesisNodeView root )
+    :<|> \nId -> withSynthesis root nId
 
 
 
-type WithSynthesis x t
-    =    Get '[JSON] (SynthesisTree String String x t)
-    :<|> "model" :> Get '[JSON] (ModelState String String x t)
-    :<|> "model" :> "alg" :> Get '[JSON] [F String x]
+type WithSynthesis title v x t
+    =    Get '[JSON] (Node title v x t)
+    :<|> "edge" :> Get '[JSON] (Maybe (Edge title v x t))
+    :<|> "model" :> Get '[JSON] (ModelState title v x t)
+    :<|> "model" :> "alg" :> Get '[JSON] [F v x]
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
-    :<|> SimpleCompilerAPI x t
+    :<|> SimpleCompilerAPI title v x t
 
-withSynthesis st nid
-    =    get st nid
-    :<|> getModel st nid
-    :<|> ( (\Frame{ dfg=DFG nodes } -> map (\(DFGNode f) -> f) nodes) <$> getModel st nid )
-    :<|> ( \name -> getTestBenchOutput st nid name )
-    :<|> simpleCompilerServer st nid
-
-
-
-type SimpleCompilerAPI x t
-    =    "simple" :> "options" :> Get '[JSON] [ WithMetric (CompilerDT String String x t) ]
-    :<|> "simple" :> "obviousBind" :> Post '[JSON] Nid
-    :<|> "simple" :> "allThreads" :> QueryParam' '[Required] "deep" Int :> Post '[JSON] Nid
-    :<|> "simpleManual" :> QueryParam' '[Required] "manual" Int :> Post '[JSON] Nid -- manualStep
-    :<|> "simple" :> QueryParam' '[Required] "onlyOneStep" Bool :> Post '[JSON] Nid
-
-simpleCompilerServer st nid
-    =    simpleCompilerOptions st nid
-    :<|> updateSynthesis (Just . synthesisObviousBind) st nid
-    :<|> ( \deep -> updateSynthesis (Just . simpleSynthesisAllThreads simple deep) st nid )
-    :<|> ( \ix -> updateSynthesis (apply (simpleSynthesisStep "manual") SynthesisStep{ setup=simple, ix=Just ix }) st nid )
-    :<|> \case
-            True -> updateSynthesis (apply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
-            False -> updateSynthesis (Just . recApply (simpleSynthesisStep "auto") SynthesisStep{ setup=simple, ix=Nothing }) st nid
-
-
-
-get st nid = do
-    root <- liftSTM $ readTVar st
-    return $ getSynthesisNode nid root
-
-simpleCompilerOptions st nid = do
-    root <- liftSTM $ readTVar st
-    let Synthesis{ sModel } = getSynthesis nid root
-    return $ optionsWithMetrics simple sModel
-
-getModel st nid = do
-    root <- liftSTM $ readTVar st
-    let Synthesis{ sModel } = getSynthesis nid root
-    return sModel
-
-updateSynthesis f st nid = liftSTM $ do
-    n <- readTVar st
-    case update f nid n of
-        Just (n', nid') -> do
-            writeTVar st n'
-            return nid'
-        Nothing -> return nid
-
-getTestBenchOutput st _nid name = do
-    Node{ rootLabel=Synthesis{ sModel } } <- liftSTM $ readTVar st
-    let prj = Project
+withSynthesis root nId
+    =    liftIO ( getNodeIO root nId )
+    :<|> liftIO ( nOrigin <$> getNodeIO root nId )
+    :<|> liftIO ( nModel <$> getNodeIO root nId )
+    :<|> liftIO ( alg . nModel <$> getNodeIO root nId )
+    :<|> (\name -> liftIO ( do
+        node <- getNodeIO root nId
+        unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
+        writeAndRunTestBench Project
             { projectName=name
             , libraryPath="../.."
             , projectPath=joinPath ["hdl", "gen", name]
-            , processorModel=processor $ simpleSynthesis sModel
+            , processorModel=processor $ nModel node
             , testCntx=Nothing
             , targetPlatforms=[ Makefile ]
             }
-    liftIO $ writeAndRunTestBench prj
+    ))
+    :<|> simpleCompilerServer root nId
+    where
+        alg Frame{ dfg=DFG nodes } = map (\(DFGNode f) -> f) nodes
+        alg _                      = error "unsupported algorithm structure"
+
+
+
+type SimpleCompilerAPI title v x t
+    =    "edges" :> Get '[JSON] [ Edge title v x t ]
+    :<|> "simpleSynthesis" :> Post '[JSON] NId
+    :<|> "obviousBindThread" :> Post '[JSON] NId
+    :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
+
+simpleCompilerServer root n
+    =    liftIO ( getEdgesIO =<< getNodeIO root n )
+    :<|> liftIO ( nId <$> (simpleSynthesisIO =<< getNodeIO root n))
+    :<|> liftIO ( nId <$> (obviousBindThreadIO =<< getNodeIO root n))
+    :<|> ( \deep -> liftIO ( nId <$> (allBestThreadIO deep =<< getNodeIO root n)) )
+
 
 
 -- *Internal
 
-liftSTM stm = do
-    e <- liftIO (atomically $ catchSTM (Right <$> stm) (return . Left))
-    either throwError return e
+data SynthesisNodeView
+    = SynthesisNodeView
+        { svNnid             :: NId
+        , svCntx             :: [String]
+        , svIsComplete       :: Bool
+        , svIsEdgesProcessed :: Bool
+        , svDuration         :: Int
+        }
+    deriving (Generic)
+
+instance ToJSON SynthesisNodeView
+
+synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges } = do
+    nodesM <- readTVarIO nEdges
+    nodes <- case nodesM of
+        Just ns -> mapM (synthesisNodeView . eNode) ns
+        Nothing -> return []
+    return T.Node
+        { T.rootLabel=SynthesisNodeView
+            { svNnid=nId
+            , svCntx=[]
+            , svIsComplete=nIsComplete
+            , svIsEdgesProcessed=isJust nodesM
+            , svDuration=fromEnum $ targetProcessDuration nModel
+            }
+        , T.subForest=nodes
+        }

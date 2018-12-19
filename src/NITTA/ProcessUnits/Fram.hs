@@ -7,9 +7,16 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
+Module      : NITTA.ProcessUnits.Fram
+Description : Register file
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
 Вычислительный блок fram является одним из наиболее простых блоков с точки хрения аппаратной
 реализации. Его внутренее устройство представляет из себя:
 
@@ -70,7 +77,7 @@ import           Data.Maybe
 import qualified Data.Set                      as S
 import qualified Data.String.Utils             as S
 import           Data.Typeable
-import           NITTA.Compiler
+import           NITTA.DataFlow                (isSchedulingCompletable)
 import           NITTA.Functions
 import           NITTA.Project
 import           NITTA.Types                   hiding (Undef)
@@ -507,7 +514,7 @@ instance UnambiguouslyDecode (Fram v x t) where
 
 
 
-instance ( Var v, Time t
+instance ( Var v
          , Num x
          , Typeable x
          ) => Simulatable (Fram v x t) v x where
@@ -540,7 +547,6 @@ instance ( Var v
          , Eq x
          , Enum x
          , Val x
-         , ProcessUnit (Fram v x t) v x t
          ) => TestBench (Fram v x t) v x where
   testBenchDescription Project{ projectName, processorModel=pu@Fram{ frProcess=Process{ steps }, .. }, testCntx }
     = Immidiate (moduleName projectName pu ++ "_tb.v") testBenchImp
@@ -710,4 +716,4 @@ instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) 
     );
     |]
 
-instance IOTest (Fram v x t) v x 
+instance IOTest (Fram v x t) v x

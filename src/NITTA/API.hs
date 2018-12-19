@@ -5,22 +5,20 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE TypeOperators         #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
 {-|
 Module      : NITTA.API
-Description : HTTP backend for the NITTA web UI.
+Description : HTTP backend for the NITTA web UI
 Copyright   : (c) Aleksandr Penskoi, 2018
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
 module NITTA.API
     ( backendServer
     ) where
 
-import           Control.Concurrent.STM
 import           Control.Monad                 (unless, when)
 import           Data.Monoid                   ((<>))
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
@@ -50,7 +48,7 @@ export default api;|]
             , SJS.moduleName="api"
             }
     createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
-    SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI Int Int)) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "nitta-api.js"]
+    SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI String String Int Int)) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "rest_api.js"]
     putStrLn "Generate rest_api.js library...OK"
 
 
@@ -72,13 +70,13 @@ prepareStaticFiles = do
 
 
 application compilerState = do
-    st <- newTVarIO $ rootSynthesis compilerState
+    root <- mkNodeIO mempty compilerState
     return $ serve
         ( Proxy :: Proxy
-            (    SynthesisAPI _ _
+            (    SynthesisAPI _ _ _ _
             :<|> Raw
             ) )
-        (    synthesisServer st
+        (    synthesisServer root
         :<|> serveDirectoryWebApp (joinPath ["web", "build"])
         )
 

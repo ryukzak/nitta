@@ -2,9 +2,16 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE QuasiQuotes           #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
--- |Модуль отвечающий за генерацию проектов на базе процессора NITTA.
+{-|
+Module      : NITTA.Project
+Description : Target system project generation
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Project
     ( writeProject
     , writeAndRunTestBench

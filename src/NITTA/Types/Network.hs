@@ -6,8 +6,16 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE TypeFamilies           #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
+{-|
+Module      : NITTA.Types.Network
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Types.Network where
 
 import           Data.Ix
@@ -43,9 +51,8 @@ data PU v x t where
             , systemEnv :: Enviroment
             } -> PU v x t
 
-instance ( Var v, Time t
-         ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (PU v x t)
+instance DecisionProblem (EndpointDT v t)
+              EndpointDT (PU v x t)
          where
     options proxy PU{ unit } = options proxy unit
     decision proxy PU{ unit, links, systemEnv } d
@@ -60,9 +67,9 @@ instance ProcessUnit (PU v x t) v x t where
     setTime t PU{ unit, links, systemEnv }
         = PU{ unit=setTime t unit, links, systemEnv }
 
-instance Locks (PU v x t) v where 
+instance Locks (PU v x t) v where
     locks PU{ unit } = locks unit
-        
+
 instance Simulatable (PU v x t) v x where
     simulateOn cntx PU{ unit } fb = simulateOn cntx unit fb
 
@@ -77,21 +84,7 @@ instance IOTest (PU v x t) v x where
         = componentTestEnviroment name unit systemEnv links cntxs
 
 
-castPU :: 
-    ( ByTime pu t
-    , Connected pu
-    , DecisionProblem (EndpointDT v t)
-            EndpointDT  pu
-    , TargetSystemComponent pu
-    , ProcessUnit pu v x t
-    , Show (Instruction pu)
-    , Simulatable pu v x
-    , Typeable pu
-    , UnambiguouslyDecode pu
-    , Typeable x
-    , Show x
-    , Num x
-    ) => PU v x t -> Maybe pu
+castPU :: ( Typeable pu ) => PU v x t -> Maybe pu
 castPU PU{ unit } = cast unit
 
 
@@ -183,14 +176,14 @@ newtype Signal = Signal Int deriving ( Show, Eq, Ord, Ix )
 -- |Описание подключения шин ввода вывода.
 newtype InputPort = InputPort String deriving ( Show, Eq, Ord )
 newtype OutputPort = OutputPort String deriving ( Show, Eq, Ord )
-data Parameter 
+data Parameter
     = InlineParam String
     | IntParam Int
     deriving ( Eq, Ord )
 instance Show Parameter where
-    show (IntParam i) = show i
+    show (IntParam i)    = show i
     show (InlineParam s) = s
-  
+
 
 data NetEnv
     = NetEnv

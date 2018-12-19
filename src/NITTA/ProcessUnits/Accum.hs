@@ -6,8 +6,16 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
+{-|
+Module      : NITTA.ProcessUnits.Accum
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.ProcessUnits.Accum
   ( Accum
   , PUPorts(..)
@@ -143,4 +151,4 @@ instance ( Val x ) => TargetSystemComponent (Accum v x t) where
     , .attr_out( { attrOut } )
     );|]
 
-instance IOTest (Accum v x t) v x 
+instance IOTest (Accum v x t) v x

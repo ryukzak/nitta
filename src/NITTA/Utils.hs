@@ -4,8 +4,16 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
+{-|
+Module      : NITTA.Utils
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Utils
     ( unionsMap
     , oneOf
@@ -73,7 +81,6 @@ instance ( Show (Instruction pu)
          , UnambiguouslyDecode pu
          , Time t
          , Typeable pu
-         , Controllable pu
          ) => ByTime pu t where
     microcodeAt pu t = case mapMaybe (extractInstruction pu) $ whatsHappen t (process pu) of
         []  -> def

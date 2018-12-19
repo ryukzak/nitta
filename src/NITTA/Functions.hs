@@ -4,18 +4,27 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
--- |В данном модуле описываются все функции доступные в системе. Функции (ранее функциональные
--- блоки) могут быть поддержаны вычислительными блоками в любых вариантах (связь многие ко многим).
--- Описание того, какие функции поддерживает конретный PU можно посмотреть в:
---
--- - bindToState (класс SerialPUState) для последовательных вычислительных узлов;
--- - bind (класс ProcessUnit) для остальных
---
--- [@Функция (функциональный блок)@] Оператор прикладного алгоритма. Может обладать внутренним
--- состояние (между циклами), подразумевать внутренний процесс.
+{-|
+Module      : NITTA.Functions
+Description : Functions for an application algorithm
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
 
+В данном модуле описываются все функции доступные в системе. Функции (ранее
+функциональные блоки) могут быть поддержаны вычислительными блоками в любых
+вариантах (связь многие ко многим). Описание того, какие функции поддерживает
+конретный PU можно посмотреть в:
+
+- bindToState (класс SerialPUState) для последовательных вычислительных узлов;
+- bind (класс ProcessUnit) для остальных.
+
+[@Функция (функциональный блок)@] Оператор прикладного алгоритма. Может обладать
+внутренним состояние (между циклами), подразумевать внутренний процесс.
+-}
 module NITTA.Functions
     ( -- *Arithmetics
       Add(..), add
@@ -34,6 +43,7 @@ module NITTA.Functions
     , Receive(..), receive
     , Send(..), send
     -- *Simulation
+    , funSim
     , reorderAlgorithm
     , simulateAlg
     , simulateAlgByCycle
@@ -81,14 +91,18 @@ sendSim cntx@Cntx{ cntxOutputs } k v = do
     let cntxOutputs' = M.alter (Just . maybe [v] (v:)) k cntxOutputs
     return cntx{ cntxOutputs=cntxOutputs' }
 
-inputsLockOutputs f = 
-    [ Lock{ locked=y, lockBy=x } 
+inputsLockOutputs f =
+    [ Lock{ locked=y, lockBy=x }
     | x <- elems $ inputs f
     , y <- elems $ outputs f
     ]
 
 
 -- |Симмулировать алгоритм.
+
+funSim n cntx alg
+    = let cntxs = simulateAlgByCycle cntx alg
+    in mapM_ (putStrLn . ("---------------------\n"++) . filter (/= '"') . show) $ take n cntxs
 
 -- FIXME: Заменить симуляцию [Function] на DataFlowGraph в simulateAlg и simulateAlgByCycle. В случае
 -- "расщеплённого времени" останавливаться с ошибкой.
@@ -170,7 +184,7 @@ reg a b = F $ Reg (I a) (O $ fromList b)
 instance ( Ord v ) => Function (Reg v x) v where
     inputs  (Reg a _b) = variables a
     outputs (Reg _a b) = variables b
-instance ( Ord v ) => Locks (Reg v x) v where 
+instance ( Ord v ) => Locks (Reg v x) v where
     locks = inputsLockOutputs
 instance ( Ord v ) => FunctionSimulation (Reg v x) v x where
     simulate cntx (Reg (I k1) (O k2)) = do
@@ -190,7 +204,7 @@ instance ( Ord v ) => Function (Loop v x) v where
     outputs (Loop _ a _b) = variables a
     insideOut _ = True
 instance Locks (Loop v x) v where locks _ = []
-instance ( Ord v, Show v, Show x ) => FunctionSimulation (Loop v x) v x where
+instance ( Ord v ) => FunctionSimulation (Loop v x) v x where
     simulate cntx (Loop (X x) (O v2) (I v1)) = do
         let x' = fromMaybe x $ cntx `get` v1
         set cntx v2 x'
@@ -205,7 +219,7 @@ add a b c = F $ Add (I a) (I b) $ O $ fromList c
 instance ( Ord v ) => Function (Add v x) v where
     inputs  (Add  a  b _c) = variables a `union` variables b
     outputs (Add _a _b  c) = variables c
-instance ( Ord v ) => Locks (Add v x) v where 
+instance ( Ord v ) => Locks (Add v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Add v x) v x where
     simulate cntx (Add (I k1) (I k2) (O k3)) = do
@@ -224,7 +238,7 @@ sub a b c = F $ Sub (I a) (I b) $ O $ fromList c
 instance ( Ord v ) => Function (Sub v x) v where
     inputs  (Sub  a  b _c) = variables a `union` variables b
     outputs (Sub _a _b  c) = variables c
-instance ( Ord v ) => Locks (Sub v x) v where 
+instance ( Ord v ) => Locks (Sub v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Sub v x) v x where
     simulate cntx (Sub (I k1) (I k2) (O k3)) = do
@@ -243,7 +257,7 @@ multiply a b c = F $ Multiply (I a) (I b) $ O $ fromList c
 instance ( Ord v ) => Function (Multiply v x) v where
     inputs  (Multiply  a  b _c) = variables a `union` variables b
     outputs (Multiply _a _b  c) = variables c
-instance ( Ord v ) => Locks (Multiply v x) v where 
+instance ( Ord v ) => Locks (Multiply v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Multiply v x) v x where
     simulate cntx (Multiply (I k1) (I k2) (O k3)) = do
@@ -272,9 +286,9 @@ division d n q r = F Division
 instance ( Ord v ) => Function (Division v x) v where
     inputs  Division{ denom, numer } = variables denom `union` variables numer
     outputs Division{ quotient, remain } = variables quotient `union` variables remain
-instance ( Ord v ) => Locks (Division v x) v where 
+instance ( Ord v ) => Locks (Division v x) v where
     locks = inputsLockOutputs
-instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Division v x) v x where
+instance ( Ord v, Integral x ) => FunctionSimulation (Division v x) v x where
     simulate cntx Division{ denom=I d, numer=I n, quotient=O q, remain=O r } = do
         v1 <- cntx `get` d
         v2 <- cntx `get` n
@@ -313,7 +327,7 @@ shiftR a b = F $ ShiftR (I a) $ O $ fromList b
 instance ( Ord v ) => Function (ShiftLR v x) v where
     outputs (ShiftL i o) = variables i `union` variables o
     outputs (ShiftR i o) = variables i `union` variables o
-instance ( Ord v ) => Locks (ShiftLR v x) v where 
+instance ( Ord v ) => Locks (ShiftLR v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
     simulate cntx (ShiftL (I k1) (O k2)) = do
@@ -344,7 +358,7 @@ receive a = F $ Receive $ O $ fromList a
 instance ( Ord v ) => Function (Receive v x) v where
     outputs (Receive o) = variables o
 instance Locks (Receive v x) v where locks _ = []
-instance ( Ord v, Show v, Show x ) => FunctionSimulation (Receive v x) v x where
+instance ( Ord v ) => FunctionSimulation (Receive v x) v x where
     simulate cntx (Receive (O ks)) = do
         let k = oneOf ks
         (cntx', v) <- cntx `receiveSim` k

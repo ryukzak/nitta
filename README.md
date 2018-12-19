@@ -33,7 +33,7 @@ Project status: early prototype.
 
 # Newcomers
 
-Meeting with the project should be started from [Demo](app/README.md) module. The
+Meeting with the project should be started from [this readme](app/README.md). The
 module include several examples and demo application of NITTA platform. It
 should be enough to introduce to the project briefly.
 

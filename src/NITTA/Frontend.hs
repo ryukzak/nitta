@@ -6,11 +6,10 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
+{-# OPTIONS -Wall -Wsemigroup -Wnoncanonical-monoid-instances -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
-
---  {-# LANGUAGE NoMonomorphismRestriction           #-}
+-- FIXME: -Wmissing-monadfail-instances -> -Wcompat
 
 {-|
 Module      : NITTA.Frontend
@@ -20,7 +19,6 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
 module NITTA.Frontend
     ( lua2functions
     , ValueType(..)

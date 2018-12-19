@@ -1,19 +1,26 @@
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE NamedFieldPuns       #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
+{-|
+Module      : NITTA.Types.Time
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Types.Time where
 
 import           Data.Default
 import           Data.Typeable
 import           GHC.Generics
 import           Numeric.Interval
-
 
 
 ---------------------------------------------------------------------

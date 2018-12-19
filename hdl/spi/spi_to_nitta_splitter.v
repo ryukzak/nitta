@@ -44,6 +44,7 @@ always @( posedge clk ) begin
     if(counter == SUBFRAME_NUMBER & !wait_spi_ready) begin 
        splitter_ready <= 1;
        to_nitta <= data;
+       counter <= 0;
     end else begin
        splitter_ready <= 0;
     end

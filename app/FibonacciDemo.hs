@@ -1,3 +1,9 @@
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns   #-}
+{-# LANGUAGE TemplateHaskell  #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+
 {-|
 Module      : Main
 Description : Fibonacci demo
@@ -6,46 +12,35 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
-Одним из классических примеров алгоритмов является расчёт последовательности Фибоначчи: 0, 1, 2, 3, 5, 8, 13.
+The Fibonacci sequency calcutation is the one of classical examples of
+algoritms: 0, 1, 2, 3, 5, 8, 13...|
 
-Описанная ниже программа реализует два независимых процесса:
+The program that described below realize 2 independent processes:
+- fibonacci sequence calculation;
+- natural counter.
 
-- расчёт последовательности Фибоначчи;
-- расчёт последовательности целых чисел (номера элемента).
+Every element of the sequences sends to the external interface, definable by the
+processor configuration. It is SPI Interface in this example
+('NITTA.ProcessUnit.SPI').
 
-Каждый элемент этих последовательностей отправляется на внешний интерфейс, определяемый
-конфигурацией процессора. В данном примере это интерфейс SPI ('NITTA.ProcessUnit.SPI').
+To execute the demo:
+1. Build NITTA project by @stack build --fast@.
+2. Generate target system demo project for the demo by @stack exec
+   nitta-fibonacci-demo@.
+3. Execute the target system demo project on a hardware test bench.
 -}
-
-{- The Fibonacci sequency calcutation is the one of classical examples of algoritms: 0, 1, 2, 3, 5, 8, 13...|
-
-Program that described below realise 2 independent processes:
-- Fibonacci sequency calcutation;
-- Integers calculation (element's number).
-
-Every element of the sequences sends to the external interface, definable by the processor configuration. 
-It is SPI Interface in this example ('NITTA.ProcessUnit.SPI').
--}
-
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns   #-}
-{-# LANGUAGE TemplateHaskell  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
-
 module Main ( main ) where
 
 import           Data.Default
 import           Data.FileEmbed           (embedStringFile)
 import           NITTA.BusNetwork
-import           NITTA.Compiler
 import           NITTA.Frontend
 import qualified NITTA.ProcessUnits.Accum as A
 import qualified NITTA.ProcessUnits.Fram  as FR
 import qualified NITTA.ProcessUnits.SPI   as SPI
 import           NITTA.Types
 import           NITTA.Types.Project
-import           NITTA.Utils.Test         (demo)
+import           NITTA.Utils.Test         (demo, mkModelWithOneNetwork)
 
 nittaArch = busNetwork 20 Nothing
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
