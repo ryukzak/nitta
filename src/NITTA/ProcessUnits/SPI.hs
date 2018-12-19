@@ -6,9 +6,18 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures #-}
 
--- slave / master / slave-master?
+{-|
+Module      : NITTA.ProcessUnits.SPI
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
+slave / master / slave-master?
+-}
 module NITTA.ProcessUnits.SPI
     ( PUPorts(..)
     , SPI
@@ -41,7 +50,7 @@ data State v x t
 instance Default (State v x t) where
     def = State def def 2
 
-slaveSPI :: ( Var v, Time t ) => Int -> SPI v x t
+slaveSPI :: ( Time t ) => Int -> SPI v x t
 slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def{ nextTick = 1 } def
 
 
@@ -130,7 +139,7 @@ instance UnambiguouslyDecode (SPI v x t) where
 
 
 instance
-        ( Ord v, Show v, Show x
+        ( Ord v
         , Typeable v, Typeable x
         ) => Simulatable (SPI v x t) v x where
     simulateOn cntx _ f
@@ -223,7 +232,7 @@ instance ( Var v, Show t, Show x, Enum x, Val x ) => IOTest (SPI v x t) v x wher
 |                   { title }_start_transaction = 0;                           @(posedge { signalClk });
 |                   repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
 |               |]
-                where 
+                where
                     dt = receiveData pu cntx
                     dt' = S.join ", " $ map (\d -> [qc|{ wordWidth }'sd{ fromEnum d }|]) dt ++ replicate (frameWordCount - length dt) [qc|{ wordWidth }'d00|]
         , frameWordCount > 0

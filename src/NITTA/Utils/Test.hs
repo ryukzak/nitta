@@ -3,12 +3,12 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
+{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
-Module      : Test
-Description : Utils for testing.
+Module      : NITTA.Utils.Test
+Description : Testing utility
 Copyright   : (c) Aleksandr Penskoi, 2018
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com

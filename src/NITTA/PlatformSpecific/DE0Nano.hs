@@ -5,19 +5,26 @@
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE QuasiQuotes            #-}
 {-# LANGUAGE TemplateHaskell        #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures #-}
 
--- |Модуль отвечающий за генерацию проектов на базе процессора NITTA.
+{-|
+Module      : NITTA.PlatformSpecific.DE0Nano
+Description : DE0Nano platform specific files
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.PlatformSpecific.DE0Nano
     ( de0nano
     ) where
 
 import           Data.FileEmbed
-import qualified Data.String.Utils             as S
+import qualified Data.String.Utils     as S
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Utils
-import           System.FilePath.Posix         (joinPath)
+import           System.FilePath.Posix (joinPath)
 
 -- FIXME: Replace embedStringFile by fixIndent + qc
 

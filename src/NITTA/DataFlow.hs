@@ -5,17 +5,16 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.DataFlow
-Description :
+Description : Processor and algorithm model
 Copyright   : (c) Aleksandr Penskoi, 2018
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
 module NITTA.DataFlow
     ( DataFlowGraph(..)
     , Decision(..)
@@ -101,8 +100,6 @@ data ModelState title v x t
 
 
 instance ( Var v
-         , Typeable x
-         , Time t
          ) => DecisionProblem (BindingDT String v x)
                     BindingDT (ModelState String v x t)
          where

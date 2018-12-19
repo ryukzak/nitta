@@ -1,3 +1,9 @@
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns   #-}
+{-# LANGUAGE TemplateHaskell  #-}
+{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures #-}
+
 {-|
 Module      : Main
 Description : Fibonacci demo
@@ -22,15 +28,7 @@ To execute the demo:
 2. Generate target system demo project for the demo by @stack exec
    nitta-fibonacci-demo@.
 3. Execute the target system demo project on a hardware test bench.
-
 -}
-
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns   #-}
-{-# LANGUAGE TemplateHaskell  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
-
 module Main ( main ) where
 
 import           Data.Default

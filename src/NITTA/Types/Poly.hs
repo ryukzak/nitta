@@ -1,9 +1,17 @@
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE PolyKinds              #-}
 {-# LANGUAGE TypeFamilies           #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures #-}
 
-{-
+{-|
+Module      : NITTA.Types.Poly
+Description : Decision types
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
 По большому счёту выносить это объявление типа в отдельный модуль обусловлено расширением PolyKinds,
 из-за которого компилятор перестают правильно воспринимать переменные типов без аннотаций и надо
 существенно переписывать код.

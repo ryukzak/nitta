@@ -6,9 +6,16 @@
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
+Module      : NITTA.ProcessUnits.Generic.SerialPU
+Description : Generic serial processor model
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
 В общем случае, вычислительный блок может обладать произвольным поведением, в том числе и выпонять
 несоколько функциональных блоков параллельно. Как правило, это не так, и вычислительный блок может
 выполнять функциональные блоки строго последовательно, один за другим. Для таких вычислительных
@@ -62,7 +69,7 @@ instance ( Show st
       ++ "spuProcess=" ++ show spuProcess
       ++ "}"
 
-instance ( Time t, Var v, Default st ) => Default (SerialPU st v x t) where
+instance ( Time t, Default st ) => Default (SerialPU st v x t) where
   def = SerialPU def def def def def
 
 instance WithX (SerialPU st v x t) x
@@ -153,8 +160,7 @@ instance ( Var v, Time t
 
 
 
-instance ( Var v, Time t
-         , Default st
+instance ( Default st
          , SerialPUState st v x t
          ) => ProcessUnit (SerialPU st v x t) v x t where
 
@@ -194,7 +200,7 @@ instance Locks (SerialPU st v x t) v where
 -- вычислительного процесса State.
 
 serialSchedule
-  :: ( Show (Instruction pu), Controllable pu, Var v, Time t, Typeable pu )
+  :: ( Show (Instruction pu), Time t, Typeable pu )
   => Instruction pu -> Decision (EndpointDT v t) -> State (Process v x t) [ProcessUid]
 serialSchedule instr act = do
   e <- addActivity (act^.at) $ EndpointRoleStep $ epdRole act

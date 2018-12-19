@@ -6,8 +6,16 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
+{-|
+Module      : NITTA.Test.ProcessUnits
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Test.ProcessUnits
     ( unitTestBench
     , processUnitTests

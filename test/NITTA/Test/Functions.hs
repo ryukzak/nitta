@@ -2,10 +2,15 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
-{-
-Данный модуль реализует функции для генерации функциональных блоков.
+{-|
+Module      : NITTA.Test.Functions
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
 -}
 module NITTA.Test.Functions
     ( functionTests

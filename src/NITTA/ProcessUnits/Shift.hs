@@ -6,8 +6,16 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures #-}
 
+{-|
+Module      : NITTA.ProcessUnits.Shift
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.ProcessUnits.Shift
   ( Shift
   , PUPorts(..)
@@ -153,4 +161,4 @@ instance ( Val x ) => TargetSystemComponent (Shift v x t) where
     , .attr_out( { attrOut } )
     );|]
 
-instance IOTest (Shift v x t) v x 
+instance IOTest (Shift v x t) v x

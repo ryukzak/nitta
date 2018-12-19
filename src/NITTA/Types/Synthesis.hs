@@ -12,17 +12,16 @@
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE TypeSynonymInstances      #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.Types.Synthesis
-Description : Types to describe synthesis process
+Description : Types for describe synthesis process
 Copyright   : (c) Aleksandr Penskoi, 2018
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
 module NITTA.Types.Synthesis
     ( -- *Synthesis graph
       Node(..)
@@ -59,7 +58,6 @@ import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval       (Interval, (...))
-
 
 
 data Node title v x t
