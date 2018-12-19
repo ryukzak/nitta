@@ -28,10 +28,9 @@ module NITTA.Types.Synthesis
       Node(..)
     , Edge(..)
     , NId(..)
-    , mkNode, mkNodeIO
-    , getNode, getNodeIO
-    , getEdge, getEdgeIO
-    , getEdges, getEdgesIO
+    , mkNodeIO
+    , getNodeIO
+    , getEdgesIO
       -- *Characteristics & synthesis decision type
     , SynthesisDT, synthesis
     , ChConf(..)
@@ -42,7 +41,7 @@ module NITTA.Types.Synthesis
 
 import           Control.Arrow          (second)
 import           Control.Concurrent.STM
-import           Control.Monad          (forM)
+import           Control.Monad          (forM, unless)
 import           Data.Default
 import           Data.List              (find)
 import           Data.List.Split
@@ -68,6 +67,7 @@ data Node title v x t
         { nId         :: NId
         , nModel      :: ModelState title v x t
         , nIsComplete :: Bool
+        , nOrigin     :: Maybe (Edge title v x t)
         , nEdges      :: TVar (Maybe [Edge title v x t])
         }
     deriving ( Generic )
@@ -86,23 +86,21 @@ data Edge title v x t
 
 
 -- |Create initial synthesis.
-mkNodeIO nId model = atomically $ mkNode nId model
-
-mkNode nId model = do
+mkNodeIO nId model = atomically $ do
     nEdges <- newTVar Nothing
-    return Node
-        { nId=nId
-        , nModel=model
-        , nIsComplete=isSchedulingComplete model
-        , nEdges
-        }
+    return $ mkNode' nId model Nothing nEdges
+
+mkNode' nId nModel nOrigin nEdges = Node
+    { nId, nModel
+    , nIsComplete=isSchedulingComplete nModel
+    , nOrigin
+    , nEdges
+    }
 
 
 
-getEdgesIO node = atomically $ getEdges node
-
-getEdges node@Node{ nEdges }
-    = readTVar nEdges >>= \case
+getEdgesIO node@Node{ nEdges } = atomically $
+    readTVar nEdges >>= \case
         Just edges -> return edges
         Nothing -> do
             edges <- mkEdges node
@@ -112,21 +110,11 @@ getEdges node@Node{ nEdges }
 
 
 -- |Get specific by @nId@ node from a synthesis tree.
-getNodeIO node nId = atomically $ getNode node nId
-
-getNode node (NId []) = return node
-getNode node nId = eNode . fromMaybe (error "node not found") <$> getEdge node nId
-
-
-
-getEdgeIO node nId = atomically $ getEdge node nId
-
-getEdge _ (NId []) = return Nothing
-getEdge node (NId (i:is)) = do
-    edges <- getEdges node
-    case is of
-        [] -> return $ Just (edges !! i)
-        _  -> getEdge (eNode $ edges !! i) (NId is)
+getNodeIO node (NId []) = return node
+getNodeIO node nId@(NId (i:is)) = do
+    edges <- getEdgesIO node
+    unless (i < length edges) $ error $ "getNode - wrong nId: " ++ show nId
+    getNodeIO (eNode $ edges !! i) (NId is)
 
 
 
@@ -284,12 +272,16 @@ mkEdges Node{ nId, nModel } = do
             , numberOfDFOptions=length $ filter isDataFlow opts
             }
 
-    forM (zip [0..] opts) $ \(i, eOption) -> do
-        let eDecision = option2decision eOption
+    forM (zip [0..] opts) $ \(i, eOption) ->
+        newTVar Nothing >>= \nEdges ->
+        let
+            eDecision = option2decision eOption
             eCharacteristics = measure conf cntx eOption
             eCharacteristic = integral conf cntx eCharacteristics
-        eNode <- mkNode (nId <> NId [i]) $ decision synthesis nModel eDecision
-        return Edge{ eOption, eDecision, eCharacteristic, eCharacteristics, eNode }
+
+            eNode = mkNode' (nId <> NId [i]) (decision synthesis nModel eDecision) (Just origin) nEdges
+            origin = Edge{ eOption, eDecision, eCharacteristics, eCharacteristic, eNode }
+        in return origin
 
 
 

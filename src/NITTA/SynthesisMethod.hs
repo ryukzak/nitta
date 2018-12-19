@@ -18,40 +18,35 @@ Stability   : experimental
 -}
 
 module NITTA.SynthesisMethod
-    ( simpleSynthesis, simpleSynthesisIO
-    , obviousBindThread, obviousBindThreadIO
-    , allBestThread, allBestThreadIO
+    ( simpleSynthesisIO
+    , obviousBindThreadIO
+    , allBestThreadIO
     ) where
 
-import           Control.Concurrent.STM (atomically)
-import           Data.List              (find)
-import           NITTA.DataFlow         (targetProcessDuration)
+import           Data.List             (find)
+import           NITTA.DataFlow        (targetProcessDuration)
 import           NITTA.Types.Synthesis
-import           NITTA.Utils            (maximumOn, minimumOn)
+import           NITTA.Utils           (maximumOn, minimumOn)
 
 
 -- |Schedule process by simple synthesis.
-simpleSynthesisIO m = atomically $ simpleSynthesis m
-
-simpleSynthesis root
+simpleSynthesisIO root
     =   return root
-    >>= obviousBindThread
-    >>= allBestThread 1
+    >>= obviousBindThreadIO
+    >>= allBestThreadIO 1
 
 
 
-bestThread node = do
-    edges <- getEdges node
+bestThreadIO node = do
+    edges <- getEdgesIO node
     case edges of
         [] -> return node
-        _  -> bestThread $ eNode $ maximumOn eCharacteristic edges
+        _  -> bestThreadIO $ eNode $ maximumOn eCharacteristic edges
 
 
 
-obviousBindThreadIO node = atomically $ obviousBindThread node
-
-obviousBindThread node = do
-    edges <- getEdges node
+obviousBindThreadIO node = do
+    edges <- getEdgesIO node
     let obliousBind = find
             ((\case
                 BindCh{ alternative } -> alternative == 1
@@ -59,16 +54,14 @@ obviousBindThread node = do
             ) . eCharacteristics)
             edges
     case obliousBind of
-        Just Edge{ eNode } -> obviousBindThread eNode
+        Just Edge{ eNode } -> obviousBindThreadIO eNode
         Nothing            -> return node
 
 
 
-allBestThreadIO n node = atomically $ allBestThread n node
-
-allBestThread (0 :: Int) node = bestThread node
-allBestThread n node = do
-    edges <- getEdges node
-    lastNodes <- mapM (\Edge{ eNode } -> allBestThread (n-1) eNode) edges
+allBestThreadIO (0 :: Int) node = bestThreadIO node
+allBestThreadIO n node = do
+    edges <- getEdgesIO node
+    lastNodes <- mapM (\Edge{ eNode } -> allBestThreadIO (n-1) eNode) edges
     return $ minimumOn (targetProcessDuration . nModel)
         $ filter nIsComplete lastNodes

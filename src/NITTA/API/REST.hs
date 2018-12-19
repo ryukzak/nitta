@@ -62,7 +62,7 @@ type WithSynthesis title v x t
 
 withSynthesis root nId
     =    liftIO ( getNodeIO root nId )
-    :<|> liftIO ( getEdgeIO root nId )
+    :<|> liftIO ( nOrigin <$> getNodeIO root nId )
     :<|> liftIO ( nModel <$> getNodeIO root nId )
     :<|> liftIO ( alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do

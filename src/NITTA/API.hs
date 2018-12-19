@@ -20,7 +20,6 @@ module NITTA.API
     ( backendServer
     ) where
 
-import           Control.Concurrent.STM
 import           Control.Monad                 (unless, when)
 import           Data.Monoid                   ((<>))
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
@@ -72,7 +71,7 @@ prepareStaticFiles = do
 
 
 application compilerState = do
-    root <- atomically $ mkNode mempty compilerState
+    root <- mkNodeIO mempty compilerState
     return $ serve
         ( Proxy :: Proxy
             (    SynthesisAPI _ _ _ _
