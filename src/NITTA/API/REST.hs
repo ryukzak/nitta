@@ -54,6 +54,7 @@ synthesisServer root
 
 type WithSynthesis title v x t
     =    Get '[JSON] (Node title v x t)
+    :<|> "edge" :> Get '[JSON] (Maybe (Edge title v x t))
     :<|> "model" :> Get '[JSON] (ModelState title v x t)
     :<|> "model" :> "alg" :> Get '[JSON] [F v x]
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
@@ -61,6 +62,7 @@ type WithSynthesis title v x t
 
 withSynthesis root nId
     =    liftIO ( getNodeIO root nId )
+    :<|> liftIO ( getEdgeIO root nId )
     :<|> liftIO ( nModel <$> getNodeIO root nId )
     :<|> liftIO ( alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do

@@ -30,6 +30,7 @@ module NITTA.Types.Synthesis
     , NId(..)
     , mkNode, mkNodeIO
     , getNode, getNodeIO
+    , getEdge, getEdgeIO
     , getEdges, getEdgesIO
       -- *Characteristics & synthesis decision type
     , SynthesisDT, synthesis
@@ -41,7 +42,7 @@ module NITTA.Types.Synthesis
 
 import           Control.Arrow          (second)
 import           Control.Concurrent.STM
-import           Control.Monad          (forM, unless)
+import           Control.Monad          (forM)
 import           Data.Default
 import           Data.List              (find)
 import           Data.List.Split
@@ -114,11 +115,18 @@ getEdges node@Node{ nEdges }
 getNodeIO node nId = atomically $ getNode node nId
 
 getNode node (NId []) = return node
-getNode node nId@(NId (i:is)) = do
-    edges <- getEdges node
-    unless (i < length edges) $ error $ "getNode - wrong nId: " ++ show nId
-    getNode (eNode $ edges !! i) (NId is)
+getNode node nId = eNode . fromMaybe (error "node not found") <$> getEdge node nId
 
+
+
+getEdgeIO node nId = atomically $ getEdge node nId
+
+getEdge _ (NId []) = return Nothing
+getEdge node (NId (i:is)) = do
+    edges <- getEdges node
+    case is of
+        [] -> return $ Just (edges !! i)
+        _  -> getEdge (eNode $ edges !! i) (NId is)
 
 
 

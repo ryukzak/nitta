@@ -9,7 +9,8 @@ export class EdgesView extends Component {
     this.onNIdChange = props.onNIdChange
     this.state = {
       selectedNId: props.selectedNId,
-      options: null
+      options: null,
+      edge: null
     }
     this.reloadEdges(props.selectedNId)
   }
@@ -28,7 +29,13 @@ export class EdgesView extends Component {
         this.setState({
           options: response.data.map(e => { return [e.eCharacteristic, e.eCharacteristics, e.eOption, e.eDecision] })
         })
-        this.onNIdChange('reload')
+      })
+      .catch(err => console.log(err))
+    hapi.getEdge(nid)
+      .then(response => {
+        this.setState({
+          edge: response.data
+        })
       })
       .catch(err => console.log(err))
   }
@@ -39,9 +46,12 @@ export class EdgesView extends Component {
 
     return (
       <div>
+        <pre>current edge:</pre>
+        <small><pre>{ JSON.stringify(this.state.edge, null, 2) }</pre></small>
+        <pre>sub edges:</pre>
         <div className='grid-x'>
           <div className='cell small-4'>
-            <pre>{ JSON.stringify(this.state.options[0][1], null, 2) }</pre>
+            <small><pre>{ JSON.stringify(this.state.options[0][1], null, 2) }</pre></small>
           </div>
           <div className='cell small-8'>
             <LineChart data={[ this.state.options.map((e, index) => { return { x: index, y: e[0] } }) ]}

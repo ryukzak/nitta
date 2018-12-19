@@ -6,6 +6,7 @@ export const hapi = {
     return api.getSynthesis()
   },
   getNode: (nid) => api.getSynthesisByNId(nid),
+  getEdge: (nid) => api.getSynthesisByNIdEdge(nid),
   getEdges: (nid) => api.getSynthesisByNIdEdges(nid),
   simpleSynthesis: (nid) => api.postSynthesisByNIdSimpleSynthesis(nid),
   allBestThread: (nid, n) => api.postSynthesisByNIdAllBestThread(nid, n),
