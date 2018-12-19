@@ -6,32 +6,25 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
-Классический пример из области системной динамики. Описание самой модели приведено здесь:
+This is a classic example of the system dynamic model. The model description
+presented here:
 <https://pysd-cookbook.readthedocs.io/en/latest/analyses/getting_started/Hello_World_Teacup.html>.
-Вычисления производятся в числах с фиксированной запятой. Перевод в десятичные дроби не
-осуществляется.
-
-Выходные данные модели:
-
-- температура чашки;
-- время с начала эксперимента.
-
-Каждый элемент этих последовательностей отправляется на внешний интерфейс, определяемый
-конфигурацией процессора. В данном примере это интерфейс SPI (`NITTA.ProcessUnit.SPI`).
--}
-
-{-
- This is the classical example of system dinamic. The model description presented here:
- <https://pysd-cookbook.readthedocs.io/en/latest/analyses/getting_started/Hello_World_Teacup.html>.
- Calculations are performed in fixed-point numbers. Decimals are not converted.
+Calculations are performed in fixed-point numbers. Decimals are not converted.
 
  Model's outputs:
 
-- cups temperature;
-- time from experiment beginning.
+ - cup temperature;
+ - time from experiment beginning.
 
-Every element of the sequences sends to the external interface, definable by the processor configuration. 
-It is SPI Interface in this example ('NITTA.ProcessUnit.SPI').
+ Every element of the sequence sends to the external interface, definable by the
+ processor configuration. It is SPI in this example ('NITTA.ProcessUnit.SPI').
+
+To execute the demo:
+1. Build NITTA project by @stack build --fast@.
+2. Generate target system demo project for the demo by @stack exec
+   nitta-teacup-demo@.
+3. Execute the target system demo project on a hardware test bench.
+
 -}
 
 {-# LANGUAGE DataKinds        #-}

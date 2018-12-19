@@ -1,6 +1,9 @@
 # Here you can find:
 
-- `Main.hs` - NITTA compiler
-- `TeacupDemo.hs` - Teacup Demo
-- `FibonacciDemo.hs` - Fibonacci Demo
-- and test bench instructions. *Read this in other languages: [English](testbench_DE0nano_imp001_en.md), [Russian](testbench_DE0nano_imp001.md).*
+- [NITTA compiler](Main.hs);
+- [Teacup Demo](TeacupDemo.hs);
+- [Fibonacci Demo](FibonacciDemo.hs);
+- [How-to build and test project](../doc/build.md);
+- instructions for hardware test bench setup:
+    - [Raspberry Pi 3](RaspberryPi3.md);
+    - [DE0nano + Electric Imp imp001](testbench_DE0nano_imp001.md).
