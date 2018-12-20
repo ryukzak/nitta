@@ -9,7 +9,18 @@ module nitta
   , output miso
   , input sclk
   , input cs
+  
+  , output mosi_lg
+  , output miso_lg
+  , output sclk_lg
+  , output cs_lg
+  
   ); 
+  
+assign mosi_lg = mosi;
+assign miso_lg = miso;
+assign sclk_lg = sclk;
+assign cs_lg = cs;
  
 wire clk_200MHz, clk_5kHz, clk_1Hz;
 
