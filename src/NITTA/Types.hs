@@ -10,8 +10,8 @@ module NITTA.Types
   , FX(..)
   , Val(..)
   , widthX
-  , scalingFactorPower
   , scalingFactor
+  , scalingFactorPowerOfProxy
   ) where
 
 import           NITTA.Types.Base
@@ -29,15 +29,19 @@ import           GHC.TypeLits
 class ( Typeable x, Read x ) => Val x where
     showTypeOf :: Proxy x -> String
     valueWidth :: Proxy x -> Integer
+    scalingFactorPower :: x -> Integer
+    verilogInt :: x -> Int
 
 widthX pu = valueWidth $ proxyX pu
-
+scalingFactorPowerOfProxy p = scalingFactorPower (undefined `asProxyTypeOf` p)
 
 
 -- for Int
 instance Val Int where
     showTypeOf _ = "Int"
     valueWidth _ = 32
+    scalingFactorPower _ = 0
+    verilogInt = id
 
 
 
@@ -45,6 +49,8 @@ instance Val Int where
 instance Val Integer where
     showTypeOf _ = "Integer"
     valueWidth _ = 32
+    scalingFactorPower _ = 0
+    verilogInt = fromInteger
 
 
 
@@ -98,6 +104,8 @@ instance Bits ( IntX w ) where
 instance ( KnownNat w ) => Val ( IntX w ) where
     showTypeOf p = "IntX" ++ show (valueWidth p)
     valueWidth p = natVal (Proxy :: Proxy w)
+    scalingFactorPower _ = 0
+    verilogInt (IntX x) = x
 
 
 
@@ -119,10 +127,6 @@ fxMB x
         proxyB _ = Proxy
     in (natVal $ proxyM x, natVal $ proxyB x)
 
-scalingFactorPower x
-    = let
-        (m, b) = fxMB x
-    in b - m
 
 scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 
@@ -197,16 +201,8 @@ instance ( KnownNat m, KnownNat b ) => Val ( FX m b ) where
             (m, b) = fxMB (undefined :: FX m b)
         in "FX" ++ show m ++ "_" ++ show b
     valueWidth p = natVal (Proxy :: Proxy b)
-
-
--- transformToFixPoint algArithmetic x
---         | IntRepr               <- rt = maybe (Left "Float values is unsupported") checkInt $ readMaybe x
---         | (DecimalFixedPoint n) <- rt = maybe (readDouble 10 n x) (checkInt . (* 10^n)) $ readMaybe x
---         | (BinaryFixedPoint  n) <- rt = maybe (readDouble 2  n x) (checkInt . (* 2 ^n)) $ readMaybe x
---     where
---         rt             = reprType algArithmetic
---         maxNum         = 2 ^ valueWidth algArithmetic - 1
---         minNum         = bool 0 (-maxNum - 1) $ isValueSigned algArithmetic
---         readDouble t n = checkInt . fst . properFraction . (* t^n) . (read :: String -> Double)
---         checkInt v     | v <= maxNum && v >= minNum = Right $ fromInteger v
---                        | otherwise                  = Left  $ unpack [qq|The value is outside the allowed limits [$minNum, $maxNum]: $v ($x)|]
+    scalingFactorPower x
+        = let
+            (m, b) = fxMB x
+        in b - m
+    verilogInt (FX x) = x

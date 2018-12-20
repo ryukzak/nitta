@@ -11,7 +11,7 @@ module div
   , remain
   );
 
-input  signed                    clock;
+input  signed                     clock;
 input  signed [DATA_WIDTH-1:0]    denom;
 input  signed [DATA_WIDTH-1:0]    numer;
 output signed [DATA_WIDTH-1:0] quotient;

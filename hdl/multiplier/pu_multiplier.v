@@ -1,7 +1,8 @@
 module pu_multiplier #
-        ( parameter DATA_WIDTH = 32
-        , parameter ATTR_WIDTH = 4
-        , parameter INVALID    = 0 
+        ( parameter DATA_WIDTH           = 32
+        , parameter ATTR_WIDTH           = 4
+        , parameter SCALING_FACTOR_POWER = 0
+        , parameter INVALID              = 0 
         )
     ( input  wire                  clk
     , input  wire                  rst
@@ -81,7 +82,7 @@ always @(posedge clk) begin
     end else begin
         if ( write_multresult ) begin
             invalid_result <= invalid_value;
-            data_multresult <= mult_result;
+            data_multresult <= mult_result >> SCALING_FACTOR_POWER;
         end
     end
 end

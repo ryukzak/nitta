@@ -205,7 +205,7 @@ receiveSequenece SerialPU{ spuState=State{ spiReceive } } = reverse $ map head $
 sendSequenece SerialPU{ spuState=State{ spiSend } } = reverse $ fst spiSend
 receiveData pu cntx = map (get' cntx) $ receiveSequenece pu
 
-instance ( Var v, Show t, Show x, Enum x ) => IOTest (SPI v x t) v x where
+instance ( Var v, Show t, Show x, Enum x, Val x ) => IOTest (SPI v x t) v x where
     componentTestEnviroment
             title
             pu@SerialPU{ spuState=State{ spiBounceFilter } }
@@ -223,9 +223,9 @@ instance ( Var v, Show t, Show x, Enum x ) => IOTest (SPI v x t) v x where
 |                   { title }_start_transaction = 0;                           @(posedge { signalClk });
 |                   repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
 |               |]
-                where 
+                where
                     dt = receiveData pu cntx
-                    dt' = S.join ", " $ map (\d -> [qc|{ wordWidth }'sd{ fromEnum d }|]) dt ++ replicate (frameWordCount - length dt) [qc|{ wordWidth }'d00|]
+                    dt' = S.join ", " $ map (\d -> [qc|{ wordWidth }'sd{ verilogInt d }|]) dt ++ replicate (frameWordCount - length dt) [qc|{ wordWidth }'d00|]
         , frameWordCount > 0
         = fixIndent [qc|
 |           // { show pu }
@@ -260,3 +260,4 @@ instance ( Var v, Show t, Show x, Enum x ) => IOTest (SPI v x t) v x where
 |           end
 |           |]
         | otherwise = ""
+

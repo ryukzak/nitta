@@ -81,8 +81,8 @@ sendSim cntx@Cntx{ cntxOutputs } k v = do
     let cntxOutputs' = M.alter (Just . maybe [v] (v:)) k cntxOutputs
     return cntx{ cntxOutputs=cntxOutputs' }
 
-inputsLockOutputs f = 
-    [ Lock{ locked=y, lockBy=x } 
+inputsLockOutputs f =
+    [ Lock{ locked=y, lockBy=x }
     | x <- elems $ inputs f
     , y <- elems $ outputs f
     ]
@@ -170,7 +170,7 @@ reg a b = F $ Reg (I a) (O $ fromList b)
 instance ( Ord v ) => Function (Reg v x) v where
     inputs  (Reg a _b) = variables a
     outputs (Reg _a b) = variables b
-instance ( Ord v ) => Locks (Reg v x) v where 
+instance ( Ord v ) => Locks (Reg v x) v where
     locks = inputsLockOutputs
 instance ( Ord v ) => FunctionSimulation (Reg v x) v x where
     simulate cntx (Reg (I k1) (O k2)) = do
@@ -205,7 +205,7 @@ add a b c = F $ Add (I a) (I b) $ O $ fromList c
 instance ( Ord v ) => Function (Add v x) v where
     inputs  (Add  a  b _c) = variables a `union` variables b
     outputs (Add _a _b  c) = variables c
-instance ( Ord v ) => Locks (Add v x) v where 
+instance ( Ord v ) => Locks (Add v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Add v x) v x where
     simulate cntx (Add (I k1) (I k2) (O k3)) = do
@@ -224,7 +224,7 @@ sub a b c = F $ Sub (I a) (I b) $ O $ fromList c
 instance ( Ord v ) => Function (Sub v x) v where
     inputs  (Sub  a  b _c) = variables a `union` variables b
     outputs (Sub _a _b  c) = variables c
-instance ( Ord v ) => Locks (Sub v x) v where 
+instance ( Ord v ) => Locks (Sub v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Sub v x) v x where
     simulate cntx (Sub (I k1) (I k2) (O k3)) = do
@@ -243,7 +243,7 @@ multiply a b c = F $ Multiply (I a) (I b) $ O $ fromList c
 instance ( Ord v ) => Function (Multiply v x) v where
     inputs  (Multiply  a  b _c) = variables a `union` variables b
     outputs (Multiply _a _b  c) = variables c
-instance ( Ord v ) => Locks (Multiply v x) v where 
+instance ( Ord v ) => Locks (Multiply v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Multiply v x) v x where
     simulate cntx (Multiply (I k1) (I k2) (O k3)) = do
@@ -272,18 +272,15 @@ division d n q r = F Division
 instance ( Ord v ) => Function (Division v x) v where
     inputs  Division{ denom, numer } = variables denom `union` variables numer
     outputs Division{ quotient, remain } = variables quotient `union` variables remain
-instance ( Ord v ) => Locks (Division v x) v where 
+instance ( Ord v ) => Locks (Division v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Division v x) v x where
     simulate cntx Division{ denom=I d, numer=I n, quotient=O q, remain=O r } = do
         v1 <- cntx `get` d
         v2 <- cntx `get` n
-        let quotient' = fromIntegral v1 / fromIntegral v2 :: Double
-        -- The rounding function is selected according to the mock behaviur.
-        -- The IP-block have different behaviour.
-        cntx' <- set cntx q $ truncate quotient'
-        let remain' = v1 `mod` v2
-        set cntx' r remain'
+        let (q', r') = v1 `quotRem` v2
+        cntx' <- set cntx q q'
+        set cntx' r r'
 
 
 data Constant v x = Constant (X x) (O v) deriving ( Typeable, Eq )
@@ -313,7 +310,7 @@ shiftR a b = F $ ShiftR (I a) $ O $ fromList b
 instance ( Ord v ) => Function (ShiftLR v x) v where
     outputs (ShiftL i o) = variables i `union` variables o
     outputs (ShiftR i o) = variables i `union` variables o
-instance ( Ord v ) => Locks (ShiftLR v x) v where 
+instance ( Ord v ) => Locks (ShiftLR v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
     simulate cntx (ShiftL (I k1) (O k2)) = do

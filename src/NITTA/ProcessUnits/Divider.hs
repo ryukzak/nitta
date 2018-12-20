@@ -348,6 +348,7 @@ instance ( Val x, Show t
      , .ATTR_WIDTH( { parameterAttrWidth } )
      , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
      , .PIPELINE( { pipeline } )
+     , .SCALING_FACTOR_POWER( { scalingFactorPowerOfProxy $ proxyX pu } )
      , .MOCK_DIV( { bool2verilog mock } )
      ) { title }
     ( .clk( { signalClk } )
@@ -361,8 +362,8 @@ instance ( Val x, Show t
     , .data_out( { dataOut } )
     , .attr_out( { attrOut } )
     );|]
-    
-instance IOTest (Divider v x t) v x 
+
+instance IOTest (Divider v x t) v x
 
 
 instance ( Var v, Time t

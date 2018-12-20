@@ -3,6 +3,7 @@ module pu_div #
         , parameter ATTR_WIDTH           = 4
         , parameter INVALID              = 0 
         , parameter PIPELINE             = 4
+        , parameter SCALING_FACTOR_POWER = 0
         , parameter MOCK_DIV             = 0
         )
     ( input  wire                  clk
@@ -106,7 +107,7 @@ always @(posedge clk) begin
     end
 end
 
-assign data_out = signal_oe ? (signal_oe_sel ? remain_result : quotient_result) : 0;
+assign data_out = signal_oe ? (signal_oe_sel ? remain_result : quotient_result << SCALING_FACTOR_POWER) : 0;
 assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INVALID) 
                               | {(ATTR_WIDTH-1){1'b0}} 
                             : 0;

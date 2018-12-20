@@ -76,6 +76,8 @@ case_fixpointIntegral = do
 
     ( read "2.0", read "1.0" :: FX 30 32 ) @?= read "5.0" `quotRem` read "2.0"
     ( read "1.0", read "0.25" :: FX 25 32 ) @?= read "0.75" `quotRem` read "0.5"
+    ( read "1.0", read "0.25" :: FX 30 32 ) @?= read "0.75" `quotRem` read "0.5"
+    ( read "0.0", read "0.25" :: FX 25 32 ) @?= read "0.25" `quotRem` read "0.75"
 
 
 typesTests :: TestTree

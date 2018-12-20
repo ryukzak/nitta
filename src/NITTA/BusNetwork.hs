@@ -527,12 +527,12 @@ instance ( Title title, Var v, Time t
 |               |]
             assertion (Just (t, cntx))
                 = fixIndentNoLn [qc|
-|                       @(posedge clk); $write("tick: { t }; net.data_bus == %h ", net.data_bus);
+|                       @(posedge clk); $write("tick: { t };\tnet.data_bus == %h ", net.data_bus);
 |               |]
                 ++ case extractInstructionAt n t of
                     Transport v _ _ : _ -> fixIndent [qc|
-|                                   $write("=== %h (var: %s)", { fromEnum $ get' cntx v }, { v } );
-|                                   if ( !( net.data_bus === { fromEnum $ get' cntx v } ) ) $display( " FAIL");
+|                                   $write("=== %h (var: %s)", { verilogInt $ get' cntx v }, { v } );
+|                                   if ( !( net.data_bus === { verilogInt $ get' cntx v } ) ) $display( " FAIL");
 |                                   else $display();
 |                       |]
                     [] -> fixIndent [qc|
