@@ -177,6 +177,27 @@ function fibonacciTest(n) {
     }
 }
 
+function getSum(n) {
+    local i = 0;
+    while(i < n) {
+        local a = blob();
+        local b = blob();
+        a.writen(i, 'i');
+        a.swap4();
+        b.writen(i, 'i');
+        b.swap4();
+        
+        sc.write(0);
+        local tmp1 = spi1.writeread(a);
+        local tmp2 = spi1.writeread(b);
+        tmp1.swap4();
+        tmp2.swap4();
+        sc.write(1);
+        i += 1;
+        server.log( format("> %d %d\t%d", i, tmp1.readn('i'), tmp2.readn('i')) )
+    }
+}
+
 function getTest(n, size) {
     local i = 0;   
     
@@ -236,7 +257,7 @@ function teacupDemo(n) {
 // getTest(4, 8)
 // getTest(4, 12)
 // getTest(10, 4)
-
+// getSum(10);
 // echoTest_2bytes()
 // echoTest_4bytes()
 
