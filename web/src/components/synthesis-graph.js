@@ -74,7 +74,7 @@ export class SynthesisGraph extends Component {
           nIds[dNode[0].svNnid] = gNode
           if (dNode[0].svIsEdgesProcessed) this.markNode(gNode.nid, nIds, 'black')
           if (dNode[0].svIsComplete) this.markNode(gNode.nid, nIds, 'lime')
-          gNode.attributes = { dur: dNode[0].svDuration }
+          gNode.attributes = { dur: dNode[0].svDuration, ch: dNode[0].svCharacteristic }
           gNode.status = dNode[0].svIsComplete
           dNode[0].svCntx.forEach((e, i) => {
             gNode.attributes[i] = e
@@ -121,7 +121,7 @@ export class SynthesisGraph extends Component {
           <Tree
             data={this.state.graph}
             nodeSize={{x: 160, y: 60}}
-            separation={{siblings: 0.5, nonSiblings: 1}}
+            separation={{siblings: 1, nonSiblings: 1}}
             pathFunc='diagonal'
             translate={{x: 20, y: 40}}
             collapsible={false}
