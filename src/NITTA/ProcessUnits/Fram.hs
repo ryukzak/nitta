@@ -689,7 +689,7 @@ instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) 
   moduleName _ _ = "pu_fram"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software title pu@Fram{ frMemory }
-    = Immidiate (softwareFile title pu) $ unlines $ map (printf "%08x" . fromEnum . initialValue) $ elems frMemory
+    = Immidiate (softwareFile title pu) $ unlines $ map (printf "%08x" . verilogInt . initialValue) $ elems frMemory
   hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
     [qc|pu_fram
     #( .DATA_WIDTH( { widthX pu } )
