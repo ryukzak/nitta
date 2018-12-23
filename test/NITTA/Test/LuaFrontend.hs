@@ -74,28 +74,11 @@ test_signed =
             end
             counter()
         |]
-    --     FIXME:
-    -- , luaTestCase "div"
-    --     [qc|function counter()
-    --             a, b = -10 / 2
-    --             send(a)
-    --             send(b)
-    --             c, d = 10 / -2
-    --             send(c)
-    --             send(d)
-    --         end
-    --         counter()
-    --     |]
-    , luaTestCase "div1"
+    , luaTestCase "div"
         [qc|function counter()
                 a, b = -10 / 2
                 send(a)
                 send(b)
-            end
-            counter()
-        |]
-    , luaTestCase "div2"
-        [qc|function counter()
                 c, d = 10 / -2
                 send(c)
                 send(d)
