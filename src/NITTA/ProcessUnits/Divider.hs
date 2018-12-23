@@ -7,8 +7,16 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
+{-|
+Module      : NITTA.ProcessUnits.Divider
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.ProcessUnits.Divider
     ( divider
     , PUPorts(..)
@@ -165,7 +173,7 @@ pushOutput pu@Divider{ jobs }
 
 
 
-instance ( Var v, Time t, Typeable x
+instance ( Var v, Typeable x
          ) => ProcessUnit (Divider v x t) v x t where
     tryBind f pu@Divider{ remains }
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f

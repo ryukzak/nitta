@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 {-|
 Module      : NITTA.Utils.Process
@@ -40,10 +40,10 @@ import           Numeric.Interval    (inf, sup, (...))
 data Schedule pu v x t
     = Schedule
         { -- |Defining process.
-          schProcess :: Process v x t 
+          schProcess :: Process v x t
           -- |Proxy for process unit instruction, which is needed for API simplify. Without that,
           -- for some function, the user needs to describe type explicitly.
-        , iProxy     :: Proxy (Instruction pu) 
+        , iProxy     :: Proxy (Instruction pu)
         }
 
 -- |Execute process builder and return new process description. The initial process state is getting
@@ -123,7 +123,7 @@ scheduleInstruction start finish instr = do
 
 -- |Add to the process description information about nested step.
 scheduleNestedStep title step@Step{ sTime } = do
-    sKey <- scheduleStep' (\uid -> Step uid sTime $ NestedStep title step) 
+    sKey <- scheduleStep' (\uid -> Step uid sTime $ NestedStep title step)
     when (length sKey /= 1) $ error "scheduleNestedStep internal error."
     return $ head sKey
 

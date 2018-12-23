@@ -6,8 +6,16 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
+{-|
+Module      : NITTA.Test.ProcessUnits
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Test.ProcessUnits
     ( unitTestBench
     , processUnitTests
@@ -26,7 +34,7 @@ import           Data.Proxy
 import           Data.Set                      (difference, elems, empty,
                                                 fromList, intersection, union)
 import           Debug.Trace
-import           NITTA.Compiler
+import           NITTA.DataFlow                (endpointOption2action)
 import           NITTA.Functions
 import qualified NITTA.Functions               as F
 import           NITTA.ProcessUnits.Divider

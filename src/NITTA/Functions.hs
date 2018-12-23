@@ -4,18 +4,27 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
--- |В данном модуле описываются все функции доступные в системе. Функции (ранее функциональные
--- блоки) могут быть поддержаны вычислительными блоками в любых вариантах (связь многие ко многим).
--- Описание того, какие функции поддерживает конретный PU можно посмотреть в:
---
--- - bindToState (класс SerialPUState) для последовательных вычислительных узлов;
--- - bind (класс ProcessUnit) для остальных
---
--- [@Функция (функциональный блок)@] Оператор прикладного алгоритма. Может обладать внутренним
--- состояние (между циклами), подразумевать внутренний процесс.
+{-|
+Module      : NITTA.Functions
+Description : Functions for an application algorithm
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
 
+В данном модуле описываются все функции доступные в системе. Функции (ранее
+функциональные блоки) могут быть поддержаны вычислительными блоками в любых
+вариантах (связь многие ко многим). Описание того, какие функции поддерживает
+конретный PU можно посмотреть в:
+
+- bindToState (класс SerialPUState) для последовательных вычислительных узлов;
+- bind (класс ProcessUnit) для остальных.
+
+[@Функция (функциональный блок)@] Оператор прикладного алгоритма. Может обладать
+внутренним состояние (между циклами), подразумевать внутренний процесс.
+-}
 module NITTA.Functions
     ( -- *Arithmetics
       Add(..), add
@@ -34,6 +43,7 @@ module NITTA.Functions
     , Receive(..), receive
     , Send(..), send
     -- *Simulation
+    , funSim
     , reorderAlgorithm
     , simulateAlg
     , simulateAlgByCycle
@@ -89,6 +99,10 @@ inputsLockOutputs f =
 
 
 -- |Симмулировать алгоритм.
+
+funSim n cntx alg
+    = let cntxs = simulateAlgByCycle cntx alg
+    in mapM_ (putStrLn . ("---------------------\n"++) . filter (/= '"') . show) $ take n cntxs
 
 -- FIXME: Заменить симуляцию [Function] на DataFlowGraph в simulateAlg и simulateAlgByCycle. В случае
 -- "расщеплённого времени" останавливаться с ошибкой.
@@ -190,7 +204,7 @@ instance ( Ord v ) => Function (Loop v x) v where
     outputs (Loop _ a _b) = variables a
     insideOut _ = True
 instance Locks (Loop v x) v where locks _ = []
-instance ( Ord v, Show v, Show x ) => FunctionSimulation (Loop v x) v x where
+instance ( Ord v ) => FunctionSimulation (Loop v x) v x where
     simulate cntx (Loop (X x) (O v2) (I v1)) = do
         let x' = fromMaybe x $ cntx `get` v1
         set cntx v2 x'
@@ -274,7 +288,7 @@ instance ( Ord v ) => Function (Division v x) v where
     outputs Division{ quotient, remain } = variables quotient `union` variables remain
 instance ( Ord v ) => Locks (Division v x) v where
     locks = inputsLockOutputs
-instance ( Ord v, Num x, Integral x ) => FunctionSimulation (Division v x) v x where
+instance ( Ord v, Integral x ) => FunctionSimulation (Division v x) v x where
     simulate cntx Division{ denom=I d, numer=I n, quotient=O q, remain=O r } = do
         v1 <- cntx `get` d
         v2 <- cntx `get` n
@@ -341,7 +355,7 @@ receive a = F $ Receive $ O $ fromList a
 instance ( Ord v ) => Function (Receive v x) v where
     outputs (Receive o) = variables o
 instance Locks (Receive v x) v where locks _ = []
-instance ( Ord v, Show v, Show x ) => FunctionSimulation (Receive v x) v x where
+instance ( Ord v ) => FunctionSimulation (Receive v x) v x where
     simulate cntx (Receive (O ks)) = do
         let k = oneOf ks
         (cntx', v) <- cntx `receiveSim` k

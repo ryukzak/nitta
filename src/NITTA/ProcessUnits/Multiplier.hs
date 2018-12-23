@@ -7,36 +7,35 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
-Module      : Multiplier
-Description : CAD model of Multiplier processor
+Module      : NITTA.ProcessUnits.Multiplier
+Description :
 Copyright   : (c) Aleksandr Penskoi, 2018
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
-В данном модуле реализуется модель вычислительного блока умножителя для САПР. Он может вычислять
-следующие функции:
+Multiplier processor can evaluate the following function type:
 
 - 'NITTA.Functions.Multiply'.
 
-В один момент времени может вычисляться только одна функция, при этом ее выполнение не может быть
-прервано.
+In one moment of time only one function can be processing, and its execution
+cannot be interrupted.
 
-Данный модуль следует рассматривать как образец при реализации других моделей вычислительных блоков.
-Его исходный код написан практически в «литературном стиле», в связи с чем рекомендуем продолжить
-чтение из исходного кода.
+This module should be considered as a template of development another models of
+computational blocks. Its source code is written almost literally, so we
+recommend to continue reading within the source code.
 
+= Work example
 
-= Пример работы
+We will consider the example of computation process planning for one function.
+For do this, we will start up GHCI interpreter with execution @stack repl@
+process from the project directory. It is the high probability that output of
+products actual version will differ.
 
-Рассмотрим пример планирования вычислительного процесса для одной функции. Для этого, запустим
-интерпретатор ghci, для чего из папки проекта необходимо выполнить @stack repl@. Высока вероятность,
-что с актуальной версией проекта вывод может незначительно отличаться.
-
-Подключаем необходимые модули и настраиваем вид приглашения терминала.
+Connect necessary modules and set up terminals prompt string.
 
 >>> :l NITTA.ProcessUnits.Multiplier
 [ 1 of 10] Compiling NITTA.Types.Poly ( /Users/penskoi/Documents/src/nitta/src/NITTA/Types/Poly.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Types/Poly.o ) [flags changed]
@@ -52,8 +51,9 @@ Ok, 10 modules loaded.
 >>> :module +NITTA.Types NITTA.Functions Numeric.Interval Data.Set
 >>> :set prompt "\ESC[34mλ> \ESC[m"
 
-Создаём функцию и начальное состояние модели вычислительного блока умножителя. К сожалению, GHC не
-хватает информации из контекста, чтобы вывести их типы, по этому зададим их явно.
+Now create the function and multiplier initial state. Unfortunately, it is not
+enough information for GHC deduction of its type, so let's define its
+implicitly.
 
 >>> let f = multiply "a" "b" ["c", "d"] :: F String Int
 >>> f
@@ -64,11 +64,12 @@ Multiplier {puRemain = [], targets = [], sources = [], doneAt = Nothing, process
 >>> options endpointDT st0
 []
 
-Назначим функцию на выполнение вычислительному блоку. Данная операция может быть выполнена в любой
-момент работы с моделью, в том числе когда вычислительный процесс уже полностью спланирован
-(добавление новой работы). Главное правило - если работа назначена, то она обязана быть выполнена и
-не может быть "потеряна" внутри модели. Если у вычислительного блока есть внутренние ресурсы - то их
-должно быть достаточно для завершения планирования, даже если оно неэффективно.
+Bind a function to the multiplier. This operation could be executed at any time
+of working with the model, including when a computation process is fully planned
+(new work can be added). The main rule is: if work is fully planned, then it is
+necessary to perform it and any part of it cannot be "lost" inside the model. If
+a processor has his own interior resources, there should be enough to finish
+planning, even it is inefficient.
 
 >>> let Right st1 = tryBind f st0
 >>> st1
@@ -77,13 +78,13 @@ Multiplier {puRemain = [<Multiply (I "a") (I "b") (O (fromList ["c","d"]))>], ta
 ?Target "a"@(0..∞ /P 1..∞)
 ?Target "b"@(0..∞ /P 1..∞)
 
-Как можно видеть, после назначения у нас появилось два варианта развития вычислительного процесса,
-соответствующих разным последовательностям загрузки аргументов: сперва загрузить переменную @a@ или
-@b@. При этом видно, что они идентичны с точки зрения времени исполнения: загрузка может быть начата
-с 0 такта или спустя произвольную задержку; для загрузки аргумента необходим 1 такт, но она может
-длиться произвольное время. Выберем один из вариантов (отметим, если решение соответствует
-предложенным вариантам - то при его принятии не могут возникнуть ошибки или не могут быть полностью
-заблокированы другие функции):
+As we can see, after binding we have two different options of computational
+process planning, that match different argument loading sequences: @a@ or @b@.
+We can see that they are similar from an execution time point of view: loading
+can be started from 0 tick or after an arbitrary delay; for loading of one
+argument needed only one tick, but it can continue for an arbitrary time. Choose
+the variant (note, that if decision matches to proposed options then it cannot
+cause a mistake or block another function).
 
 >>> let st2 = decision endpointDT st1 $ EndpointD (Target "a") (0...2)
 >>> st2
@@ -96,10 +97,10 @@ Multiplier {puRemain = [], targets = [], sources = ["c","d"], doneAt = Just 6, p
 >>> mapM_ print $ options endpointDT st3
 ?Source (fromList ["c","d"])@(6..∞ /P 1..∞)
 
-После загрузки всех аргументов можно видеть, что следующим вариантом является выгрузка переменных
-@c@ и @d@ из вычислительного блока умножителя. Важно отметить, что переменные могут выгружаться как
-параллельно, так и последовательно (подробнее, см. принципы работы архитектуры процессора).
-Рассмотрим второй вариант:
+After loading of all arguments, we can see that the next option is unloading @c@
+and @d@ variables. Note, these variables can be unloaded ether concurrently or
+sequentially (for details, see how the multiplier works). Consider the second
+option:
 
 >>> let st4 = decision endpointDT st3 $ EndpointD (Source $ fromList ["c"]) (6...6)
 >>> st4
@@ -112,13 +113,15 @@ Multiplier {puRemain = [], targets = [], sources = [], doneAt = Nothing, process
 >>> options endpointDT st5
 []
 
-Варианты развития вычислительного процесса закончились. Все назначеные функции выполнены. Далее
-может быть сгенерирован микрокод, организующий описанный вычислительный процесс.
+All options of computing process planning are run out. All bound functions
+planned. Further microcode can be generated, which can be organizing the
+described computational process on the multiplier.
 -}
 
--- FIXME: Перспективным направлением по развитию данного вычислительного блока является внедрение в него регистра
--- накопителя, что позволит перемножать произвольное количество аргументов, что сократит количество транзакций по шине
--- данных при перемножении более двух переменных одной функцией.
+-- FIXME: A promising direction for the improvement is the implementation of the
+-- accumulator into it. It allows multiplying an arbitrary number of arguments,
+-- which will reduce the number of data transactions on the bus when multiplying
+-- more than two variables by one function.
 
 module NITTA.ProcessUnits.Multiplier
     ( multiplier
@@ -141,146 +144,144 @@ import           Numeric.Interval              (inf, sup, (...))
 import           Text.InterpolatedString.Perl6 (qc)
 
 {-
-= Вычислительный блок
+= Processor (or process unit in an early version)
 
-Вычислительные блоки могут реализовывать:
+A processor with any type can be used for:
 
-- хранение и обработку данных;
-- взаимодействие с периферией;
-- управление и контроль за вычислителем.
+- data storage and processing;
+- interaction with the periphery;
+- control of a NITTA processor.
 
-При этом, они характеризуются сложным поведением, выраженным в:
+Wherein, they are characterized by complicated behavior, that is expressed in:
 
-- многофункциональности;
-- внутреннем параллелизме;
-- суперскалярности;
-- конвейеризации;
-- наличие внутренних ресурсов.
+- multifunctionality
+- internal parallelism
+- superscalar
+- pipelining
+- availability of internal resources
 
-Рассматриваемый вычислительный блок с этих точек зрения является одним из простейших, Так как
-реализует только обработку данных согласно одной функции.
+The multiplier is one of the easiest processors from this point of view because
+it realizes only data processing by only one function
+('NITTA.Functions.Multiply'). Processor behavior in a specific application
+determined by the applied algorithm (composition of function with data
+dependencies).
 
-Поведение вычислительного блока определяется прикладным алгоритмом, являющимся композицией функций с
-зависимостями по данным ('NITTA.Functions'). САПР назначает (привязывает) функции к конкретным
-вычислительным блокам, а те, в свою очередь, определяют возможные варианты развития процесса.
+Any processor may have three components:
 
-Любой вычислительный блок подразумевает три составляющие:
+- hardware - set of prepared or automatically generated hardware descriptions
+  (@/hdl/multiplier@);
+- software - set of binary files, that determines:
+    - processor's initial state and setting (optional) ;
+    - a control program for the specific processor;
+- CAD model - CAD component, that realizes processor support (hardware and
+  software generation, instance generation, computation process planning and
+  etc).
 
-- аппаратное обеспечение вычислительного блока - набор заранее подготовленных либо автоматически
-  генерируемых файлов описания аппаратруры на Hardware Description Language (@/hdl/multiplier@);
-- программное обеспечение вычислительного блока - набор бинарных файлов задающих:
-  - начальное состояние и настройки вычислительного блока;
-  - управляющую программу;
-- модель вычислительного блока в САПР - компонент САПР, реализующий поддержку вычислительного блока
-  (генерация аппаратной и программной составляющей, объединение вычислительных блоков в процессора,
-  планирование вычислительного процесса и т.д.).
-
-При этом все три составляющие являются сильно связанными между собой и должны строго друг-другу
-соответствовать. Для глубокого понимания принципов функционирования вычислительного блока необходимо
-иметь представление обо всех его частях. Ниже будет подробно рассмотрена модель вычислительного
-блока умножителя и то, как она реализована.
+Wherein all of three components are hardly related to each other and needed to
+strictly comply to each other. For a deeper understanding, processor developer
+should understand all of its components. Multiplier model will be described
+above.
 -}
 
 {-
-* Модель вычислительного блока
+*CAD processor model
 
-Целью модели вычислительного блока является «научить» САПР работать с вычислительным блоком, а
-именно:
+A processor model purpose is "teaching" CAD how to work with the processor:
 
-- какие функции могут быть вычислены с его помощью (см. 'NITTA.Type.ProcessUnit');
-- назначить экземпляру вычислительного блока выполнение указанной функции (см.
-  'NITTA.Type.ProcessUnit');
-- система команд вычислительного блока и структура микрокода, позволяющая им управлять (см.
-  'NITTA.Type.Controllable');
-- преобразовать инструкции в микрокод (см. 'NITTA.Type.UnambiguouslyDecode');
-- какие есть варианты (@options@) развития вычислительного процесса (загрузить или выгрузить ту или
-  иную переменную или группу переменных);
-- спланировать вычислительный процесс, описываемый загрузкой или выгрузкой переменных в или из
-  вычислительного блока (см. @decision@).
+- which functions could be evaluated (see 'NITTA.Types', class @ProcessUnit@,
+  function @tryBind@);
+- how to controlling of the processor for evaluating specific function (see
+  'NITTA.Type', class @ProcessUnit@ and @Controllable@);
+- how to translating instructions to microcode (see 'NITTA.Type', class
+  @UnambiguouslyDecode@);
+- which options of processor computation process are available (see
+  'NITTA.Types.Poly', class @ProcessUnit@, function @options@ and @EndpointDT@):
+  - push variable to the processor (@Target@);
+  - pull at least one variable from the processor (@Source@);
+- computation process planning ('NITTA.Types.Poly', class @ProcessUnit@,
+  function @decision@ and @EndpointDT@).
 -}
 
 {-|
-Основой модели вычислительного блока является структура данных, фиксирующая:
+The basis of a processor model is a data structure, that represents:
 
-- состояние вычислительного блока на протяжении всего планирования вычислительного процесса;
-- описание вычислительного процесса (целиком или фрагмента), которое может быть транслировано в
-  программное обеспечение.
+- processor state while computation process planning;
+- process description (fully or fragmentary), which can be translated to
+  software.
 
-Именно вокруг данной структуры данных и строится вся алгоритмическая часть модели вычислительного
-блока. Структура данных параметризуется следующими переменными типа:
-
-- v - идентификатор перемменой;
-- x - тип значений, с которыми работает умножитель;
-- t - идентификатор момента времени.
+Exactly around this data structure, all algorithmic part of processor model is
+developed. The data structure is parametrized by the following variables types:
+- v - variable id (usually @String@);
+- x - a type of value (see 'NITTA.Types', @IntX@ and @FX@), with which
+  multiplier works;
+- t - time moment id (usually @Int@).
 -}
 
--- FIXME: Разработать safeDecision, которая будет проверять осуществлять дополнительные проверки
--- корректности принятого решения.
+-- FIXME: Add assertion, which checks that all synthesis decision compliant
+-- available options.
 
--- FIXME: Убрать сигнал wrSignal.
 data Multiplier v x t
     = Multiplier
-        { -- |Список назначенных, но еще необработанных или необрабатываемых функций.
-          -- Выполнение функции начинается с:
-          --
-          -- - удаления функции из данного списка;
-          -- - переноса информации из функции в поля 'targets' и 'sources' ('assignment'), далее
-          --   такая функция будет именоваться текущей.
-          --
-          -- Назначенные функции могут выполняться в произвольном порядке. Явное хранение информации
-          -- о выполненных функциях не осуществляется, так как она есть в описание вычислительного
-          -- процесса 'process_'.
+    { -- | List of the assigned, but still not processed or cannot be processed functions.
+      -- Functions execution starts with:
+      --
+      -- - deleting functions from this list;
+      -- - transfering information from function to 'targets' and 'sources' ('assignment') fields,
+      --   furtherly this function will be current.
+      --
+      -- Assigned function can be executed in random order. Information about executed functions storaging
+      -- explicitly does not carried out, because it is in description os computation
+      -- process 'process_
           remain               :: [F v x]
-          -- |Список переменных, которые необходимо загрузить в вычислительный блок для вычисления
-          -- текущей функции.
+      -- |List of variables, which are needed to upwnload to processor for
+      -- current function computation.
         , targets              :: [v]
-          -- |Список переменных, которые необходимо выгрузить из вычислительного блока для
-          -- вычисления текущей функции. Порядок выгрузки - произвольный. Важно отметить, что все
-          -- выгружаемые переменные соответствуют одному значению - результату умножения.
+      -- |List of variables, which are needed to download from processor for
+      -- current function computation. Download order is arbitrary. Necessary to notice that
+      -- all downloading variables match to one value - multipliing result.
         , sources              :: [v]
-          -- |Фактический процесс умножения будет завершён в указанный момент времени и его
-          -- результат будет доступен для выгрузки. Значение устанавливается сразу после загрузки
-          -- всех аргументов.
+      -- Actual process of multipliing will be finished in the specified moment and its
+      -- result will be availible for download. Value is established after uploading of
+      -- all arguments.
         , doneAt               :: Maybe t
         , currentWork          :: Maybe (t, F v x)
-          -- |В процессе планирования вычисления функции необходимо определить неопределённое
-          -- количество загрузок / выгрузок данных в / из вычислительного блока, что бы затем
-          -- установить вертикальную взаимосвязь между информацией о выполняемой функции и этими
-          -- пересылками.
+      -- | While planning of execution of function necessery to define undefined value of uploading /
+      -- downloading of data to / from processor, to then set up vertical behavior between
+      -- information about executing function and this send.
         , currentWorkEndpoints :: [ ProcessUid ]
-          -- |Описание вычислительного процесса, спланированного для данного вычислительного блока
-          -- 'NITTA.Types.Base.Process'.
+      -- | Description of computation process, planned to the processor
+      -- 'NITTA.Types.Base.Process'.
         , process_             :: Process v x t
         , tick                 :: t
-          -- |В реализации данного вычислительного блока используется IP ядро поставляемое вместе с
-          -- Altera Quartus. Это не позволяет осуществлять симуляцию при помощи Icarus Verilog.
-          -- Чтобы обойти данное ограничение была создана заглушка, подключаемая вместо IP ядра если
-          -- установлен данный флаг.
+      -- | In realisation of the processor IP kernel that supplied with Altera Quartus used.
+      -- This is don't allow to simulate with Icarus Verilog.
+      -- To get around with the restriction the mock was created, that connect instrad of IP kernel
+      -- ig the flag is set up.
         , isMocked             :: Bool
         }
     deriving ( Show )
 
 
--- |Отслеживание внутренних зависимостей по данным, формируемым вычислительным блоком.
+
+-- |Tracking internal dependencies on the data generated by the processor.
 instance Locks (Multiplier v x t) v where
     locks Multiplier{ remain, sources, targets } =
-        -- Зависимость выходных данных от загружаемых аргументов. Если @sources@ пустой список,
-        -- то и зависимостей не будет.
+        -- The dependence of the output of the loaded arguments. If @ sources @ is an empty list,
+        -- then there will be no dependencies.
         [ Lock{ lockBy, locked }
         | locked <- sources
         , lockBy <- targets
         ]
         ++
-        -- Зависимости функций в очереди от выполняемой в настоящий момент.
+        -- The dependencies of the functions in the queue on the current moment.
         [ Lock{ lockBy, locked }
         | locked <- concatMap (elems . variables) remain
         , lockBy <- sources ++ targets
         ]
 
-
--- |Конструктор модели умножителя вычислительного блока. Аргумент определяет внутреннюю оранизацию
--- вычислительного блока: использование IP ядра умножителя (False) или заглушки (True). Подробнее
--- см. функцию hardware в классе 'TargetSystemComponent'.
+-- |Multiplier processor construction. Argument define inner organisation of the computation
+-- unit:  using of multiplier IP kernel (False) or mock (True). For more information look hardware function
+-- in 'TargetSystemComponent' class.
 multiplier mock = Multiplier
     { remain=[]
     , targets=[]
@@ -294,40 +295,39 @@ multiplier mock = Multiplier
     }
 
 
--- |Привязку функций к вычислительным блокам осуществляет данный класс типов. Он позволяет
--- проверить, может ли функция быть вычислена данным вычислительным блоком и если да - осуществляет
--- ее назначение. При этом отказ в привязке может быть связан как с тем, что данный тип функций не
--- поддерживается, так и с тем что исчерпаны внутрении ресурсы вычислительного блока.
+-- | This type class carry out binding of functions to computational blocks. It lets to check,
+-- can function be computated by this processor and if can - carry out functuons assignment.
+-- Within it binding renouncement can be related  either to that type of functions doesn't supporting
+-- or with that inner resources of processor are empty.
 --
--- С точки зрения САПР привязка выглядит следующим образом: САПР опрашивает модели всех
--- наличиствующих экземпляров вычислительных блоков и получает список тех, которые готовы взять в
--- работу рассматриваемую функцию. Затем, на основании различных метрик (как например загрузка
--- вычислительных блоков, количество и тип ещё не привязанных функций) выбирается лучший вариант.
--- Привязка может быть выполнена как постепенно по мере планирования вычислительного процесса, так и
--- одновременно для всех функций в самом начале.
-instance ( Var v, Time t, Typeable x
+-- From CAD point of view bind looks like: CAD aks models from all available instances of
+-- processor and get list of instances ready to start work with considered function. After this, based
+-- on the different metrics (for example, uploading of processors, number and types of still not binded functions)
+-- the best variant is choosed. Binding can be done either gradully while computation process planning or
+-- at the same time on the start for all functions.
+instance ( Var v, Typeable x
          ) => ProcessUnit (Multiplier v x t) v x t where
-    -- |Привязка к вычислительному блоку осуществялется этой функцией.
+    -- |Binding to processor is carried out by this function.
     tryBind f pu@Multiplier{ remain }
-        -- Для этого осуществляется проверка, приводится ли тип функции к одному из поддерживаемых
-        -- ('NITTA.FunctionalBlocks.castF') и в случае успеха возвращается состояние модели после
-        -- привязки с меткой 'Right'.
+        -- To do this, it is checked whether the function type is reduced to one of the supported
+        -- by ('NITTA.FunctionalBlocks.castF')  and in case of success model conditions is returned
+        -- after binding with 'Right' mark.
         --
-        -- Важно отметить, что "привязка" не означается фактическое начало работы, что позволяет
-        -- сперва осуществить привязку всех задач, а уже потом планировать вычислительный процесс.
+        -- Important to notice, that "binding" doesn't mean actually beginning of work, that
+        -- allows firstly make bindings of all tasks and after plan computation process.
         | Just F.Multiply{} <- F.castF f = Right pu{ remain=f : remain }
-        -- В случае невозможности привязки возвращается строка с кратким описание причины отказа и
-        -- меткой 'Left'.
+        -- In case of impossibility of binding string with short description of renouncement
+        --cause and 'Left' is returned.
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
-    -- |Унифицированный интерфейс для получения описания вычислительного процесса.
+  --Unificated interface for get computation process description.
     process = process_
-    -- |Данный метод используется для установки времени вычислительного блока снаружи. В настоящий
-    -- момент это необходимо только для реализации ветвления, которое находится на стадии
-    -- прототипирования.
+    -- | This method is used for set up processor time outside.
+    -- At the time this is needed only for realisation
+    -- of branching, which is on the prototyping stage.
     setTime t pu@Multiplier{} = pu{ tick=t }
 
 
--- |Данная функция осуществляет фактическое взятие функционального блока в работу.
+-- |This function carry out actual take functional block to work.
 assignment pu@Multiplier{ targets=[], sources=[], remain, tick } f
     | Just (F.Multiply (I a) (I b) (O c)) <- F.castF f
     = pu
@@ -340,174 +340,173 @@ assignment _ _ = error "Multiplier: internal assignment error."
 
 
 {-
-Результатом планирования является описание одного вычислительного цикла, которое в последствии может
-быть транслировано в микрокод, непосредственно управляющий вычислительным блоком. С точки зрения
-архитектуры NITTA, процесс может быть описан как последовательное выполнение вычислительным блоком
-двух ролей:
+Result of planning is description of one computation cycle, which later can be translated to microcode,
+directly control processor. From NITTA architecture point of view, process can be described as
+consistent execution two roles by processoe:
 
-- источника данных ('Source');
-- получателя данных ('Target').
+- data source ('Source');
+- data target ('Target');
 
-Сам же процесс планирования состоит из двух операций выполняемых в цикле:
+The planning process itself consists of two operations performed in a cycle:
 -}
 instance ( Var v, Time t, Typeable x
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (Multiplier v x t)
         where
 
-    -- 1. Опрос вычислительного блока относительно того, в каких ролях он готов выступить (другими
-    --    словами, как может развиваться вычислительный процесс). Он реализуется фунцией @options@,
-    --    результатом которой является один из следующих списков:
 
-    --    - список вариантов загружаемых в вычислительный блок переменных, необходимых для
-    --      находящейся в работе функции;
+    --1. Processors is asked about roles it can realise (in the other words, how computation
+    --process can develop). It is realised by @options@ functions, result of which is
+    --one of the further list:
+
+    --list of variants of uploading to processor variables, which are needed to function
+    --that is in work;
     options _proxy Multiplier{ targets=vs@(_:_), tick }
         = map (\v -> EndpointO (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
 
-    --    - список вариантов выгружаемых из вычислительного блока переменных;
+     --   list of variants of downloading from processor variables;
     options _proxy Multiplier{ sources, doneAt=Just at, tick }
         | not $ null sources
         = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
 
-    --    - список вариантов загружаемых в вычислительный блок переменных, загрузка любой из которых
-    --      приведёт к фактическу началу работы над соответствующей функцией.
+    -- list of variables of uploading to processor variables, upload any one of that
+    -- will cause to actual start of working with mathched function.
     options proxy pu@Multiplier{ remain } = concatMap (options proxy . assignment pu) remain
 
-    --    Отметим, что предоставляемые данной функцией варианты требуют уточнений, так как:
+    -- Note, that options provided by this function require clarification, because:
 
-    --    1. Указывают не конкретный момент времени для работы, а на доступный интервал
-    --       ('NITTA.Types.Base.TimeConstrain'), описывающий с и по какой момент может
-    --       осуществляться загрузка/выгрузка, а также сколько этот процесс может длиться.
-    --    2. Одно значение может выгружаться из вычислительного блока как несколько различных
-    --       переменных. Это может осуществляться как единомоментно (на уровне аппаратуры на шину
-    --       выставляется значение и считывается сразу несколькими вычислительными блоками), так и
-    --       последовательно (сперва значение на шину будет выставлено для одного вычислительного
-    --       блока, а затем для другого), что также должно быть уточнено.
+    --	1.	They point to not specific moment for work, but to available interval
+    --		('NITTA.Types.Base.TimeConstrain'), that describe from and to which time
+    -- 		uploading and downloading can be done, and how much time the process can continue.
+    -- 	2.	One value can be download from processor as several different variables. This can
+    --		be done either all at once (on the hardware level the value writed to the bus and
+    -- 		read by several processors), as a consistent (firstly value on the bus can be writed for
+    --		one processor, and after for next one), what should be specified too.
 
-    -- 2. Планирование процесса или применение решения о развитии вычислительного процесса к
-    --    состоянию модели вычислительного блока осуществляется функцией @decision@. Преобразование
-    --    варианта полученного из @options@ осуществляется САПР за пределами модели вычислительного
-    --    блока. Можно выделить следующие варианты решений:
+
+    -- 2. 	Process planning or making decision about compuatation process development to
+    --	  	processor model state is carried out by @decision@. Variant transformation
+    --		from got from @options@ is carried out by CAD outside the processor model.
+    --		We can distinguish the following solutions:
     --
-    --    1. Если модель ожидает, что в неё загрузят переменную, тогда:
+    --		1. If model wait variable uploading:
     decision _proxy pu@Multiplier{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
-        -- Из списка загружаемых значений извлекается трубуемая переменная, а остаток - сохраняется
-        -- для следующих шагов.
+           -- From the list of uploading value we get a needed value, and remainder is saved
+           -- for the next steps.
         | ([_], xs) <- partition (== v) vs
-        -- Переменная @sel@ используется для того, что бы зафиксировать очерёдность загрузки
-        -- переменных в аппаратный блок, что необходимо из-за особенностей реализации.
+             -- @sel@ veriable is used for uploading queuing of variable to hardware block, that is
+             -- requred because of realisation.
         , let sel = if null xs then B else A
-        -- Осуществляется планирование вычислительного процесса.
+             --  Computation process planning is carried out.
         , let (newEndpoints, process_') = runSchedule pu $ do
-                -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
-                -- которые берут информацию о времени из Process
+                -- this is required for correct work of automatically generated tests,
+                -- that takes information about time from Process
                 updateTick (sup epdAt)
                 scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
         = pu
             { process_=process_'
-              -- Сохраняется остаток работы на следующий цикл.
+            -- The remainder of the work is saved for the next loop
             , targets=xs
-              -- Сохраняем информацию тех событиях процесса, которые описываются отправку /
-              -- получение данных для текущего функционального блока.
+            -- We save information about events that describe sending or recieving data for
+            -- current functionatl unit.
             , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-              -- Если загружены все необходимые аргументы (@null xs@), то сохраняется момент
-              -- времени, когда будет получен результат.
-            , doneAt=if null xs
+            -- If all required arguments are upload (@null xs@), then the moment of time
+            -- when we get a result is saved.
+             , doneAt=if null xs
                 then Just $ sup epdAt + 3
                 else Nothing
-              -- Продвигается вперёд модельное время.
-            , tick=sup epdAt
+            -- Model time is running
+             , tick=sup epdAt
             }
-    --    2. Если модель ожидает, что из неё выгрузят переменные.
+--	2. If model is waiting, that we will download variables from it.
     decision _proxy pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointD{ epdRole=Source v, epdAt }
         | not $ null sources
         , let sources' = sources \\ elems v
         , sources' /= sources
-        -- Осуществляется планирование вычислительного процесса.
+        -- Compututation process planning is carring on.
         , let (newEndpoints, process_') = runSchedule pu $ do
                 endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Out
                 when (null sources') $ do
                     high <- scheduleFunction a (sup epdAt) f
                     let low = endpoints ++ currentWorkEndpoints
-                    -- Устанавливаем вертикальную взаимосвязь между функциональным блоком и
-                    -- связанными с ним пересылками данных.
+                    -- Set up the vertical relantions between functional unit
+                    -- and related to that data sending.
                     establishVerticalRelations high low
-                -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
-                -- которые берут информацию о времени из Process
+                -- this is needed to correct work of automatically generated tests
+                -- that takes time about time from Process
                 updateTick (sup epdAt)
                 return endpoints
         = pu
             { process_=process_'
-              -- В случае если не все переменные были запрошены - сохраняются оставшиеся.
-            , sources=sources'
-              -- Если вся работа выполнена, то сбрасывается время готовности результата, текущая
-              -- работа и перечисление передач, выполненных в рамках текущей функции.
+              -- In case if not all variables what asked - remaining are saved.
+             , sources=sources'
+              -- if all of works is done, then time when result is ready,
+              -- current work and data transfering, what is done is the current function is reset.
             , doneAt=if null sources' then Nothing else doneAt
             , currentWork=if null sources' then Nothing else Just (a, f)
             , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
-              -- Продвигается вперёд модельное время.
+              -- Model time is running up
             , tick=sup epdAt
             }
-    --    3. Если никакая функция в настоящий момент не выполняется, значит необходимо найти в
-    --       списке назначенных функций требуемую, запустить ее в работу, и только затем принять
-    --       решение и спланировать фрагмент вычислительного процесса при помощи рекурсивного вызова
-    --       в ситуации 1.
+    --    3. If no function is executed at the moment, then we need to find function in the list
+    --    of assigned function, executed it to work and only then make decision
+    --    and plan a fragment of computation process with call recursion in situation 1.
     decision proxy pu@Multiplier{ targets=[], sources=[], remain } d
         | let v = oneOf $ variables d
         , Just f <- find (\f -> v `member` variables f) remain
         = decision proxy (assignment pu f) d
-    --    4. Если что-то пошло не так.
+    -- If smth went wrong.
     decision _ pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
 
 
--- |Идентификатор аргумента операции умножения.
+-- |Multiplications argument id
 --
--- Как ранее говорилось, из-за особенностей аппаратной реализации, в спланированом процессе на
--- уровне инструкций необходимо учитывать последовательность загрузки операндов. Для этого и
--- определён данный тип. При этом необходимо отметить, что с точки зрения алгоритма и модели порядок
--- аргументов не имеет значения, что отражено в реализованном выше классе, отвечающем за
--- планирование вычислительного процесса.
+-- As we said before, because of some hardware organisation features, we need to take in
+-- mind operators boot sequence in planned process on instruction level. This type os defined to do it.
+-- But instide of this we need to notice, that from algorhytm and model  way of view
+-- argument order doesn't mean, that is represented in class computation process'
+-- planning responding  that realised above.
 data ArgumentSelector = A | B
     deriving ( Show, Eq )
 
 
 
--- |Перейдём непосредственно к вопросам организации вычислительного процесса на уровне аппаратуры.
--- Для этого на уровне модели определено два уровня представления:
+-- |Now we will consider questions of computation process planning organisation on hardware level.
+-- For do this on model level two levels of view is defined:
 --
--- - уровень инструкций, в рамках которого описывается вычислительный процесс в понятной для
---   разработчика форме;
--- - уровень микрокода, в рамках которого описывается структура управляющих вычислительным блоком
---   сигналов и их значения.
+-- - instructions level, where  describes computation process in
+-- convienment to develover form.
+-- - microcode level, where describes structure of processors controls  signals and
+-- values.
 instance Controllable (Multiplier v x t) where
-    -- |Инструкции, для управления вычислительным блоком умножителя. Умножитель может только
-    -- загружать аргументы A и B, а также выгрузить результат умножения. Именно эти инструкции
-    -- используются при планировании вычислительного процесса функцией 'simpleSynthesis'. Кроме них, неявно
-    -- присутствует инструкция @nop@ - когда никаких действий не выполняется.
+    -- |Instructions for multiplier processor controlling. Multiplier can only
+    -- upload arguments A and B, and download multiplication result. This construction
+    -- are used in computation process planning by 'schedule' function. Instead of them,
+    -- there is a @nop@ function - when no actions execute.
     data Instruction (Multiplier v x t)
         = Load ArgumentSelector
         | Out
         deriving (Show)
 
-    -- |Набор сигналов для управления вычислительным блоком и представления микрокода для данного
-    -- вычислительного блока.
+    -- Set of signals for processor control and microcode view for
+    -- the processor
     data Microcode (Multiplier v x t)
         = Microcode
-            { -- |Сигнал записи в вычислительный блок.
+          { -- | Write to processor signal.
               wrSignal :: Bool
-              -- |Селектор аргумента, загружаемого в вычислительный блок.
+              -- |Uploading to processor argument selector.
             , selSignal :: Bool
-              -- |Сигнал выгрузки результата из вычислительного блока.
+              -- |Downloading from processor signal.
             , oeSignal :: Bool
             }
         deriving ( Show, Eq, Ord )
 
--- |Также, для микрокода необходимо определить состояние по умолчанию (соответствует неявной
--- инструкции @nop@), которое означает, что вычислительный блок находится в состоянии бездействия,
--- при этом не занимает шину и хранит своё внутренее состояние в предсказуемом виде. В случае
--- умножителя - не сбрасывает результат умножения и не работает с шиной. Состояние по умолчанию
--- используется для остановки, паузы или ожидания вычислительного блока.
+-- |Also we need to define default state for microcode (that is match to implicit @nop@ function)
+-- This state mean that processor is in inaction state, but doesn't busy the bus and storage
+-- inner state in predictable view. In multiplier case - it doesn't reset multiplication result and
+-- doesn't work with bus. Default state is using for processor stop, pause or waiting
+
 instance Default (Microcode (Multiplier v x t)) where
     def = Microcode
         { wrSignal=False
@@ -515,19 +514,16 @@ instance Default (Microcode (Multiplier v x t)) where
         , oeSignal=False
         }
 
--- |Связка инструкций и микрокода осуществляется данным классом, который требует их однозначного
--- соответствия, а также независимо от состояния и настроек модели.
-
--- TODO: Требуется привязка к PU, так как в настройках модели может определяться ширина тех или иных
--- значений (как в случае с addr у Fram)
+-- |Instuction  and microcode binding is carried up by this class, which requires their
+-- unambiguous matching, as well as regardless of the status and settings of the model.
 instance UnambiguouslyDecode (Multiplier v x t) where
     decodeInstruction (Load A) = def{ wrSignal=True, selSignal=False }
     decodeInstruction (Load B) = def{ wrSignal=True, selSignal=True }
     decodeInstruction Out      = def{ oeSignal=True }
 
--- |Определение сигнальных линий вычислительного блока, используемого для их ручного подключения к
--- сигнальной шине на уровне сети, а также функция отображения микрокода на линии. В будущем данный
--- класс будет перерабатываться с целью автоматизации данного процесса.
+-- |Processor signal lines define, this is using for manual connect to
+-- signal bus on net level, and also microcode mapping on line. In the future this class
+-- will be recycle to make process automation.
 instance Connected (Multiplier v x t) where
     data PUPorts (Multiplier v x t)
         = PUPorts
@@ -542,45 +538,46 @@ instance Connected (Multiplier v x t) where
             , (oe, Bool oeSignal)
             ]
 
--- |Ключевую роль при тестировании играет наличие эталонных значений, с которыми сравнивается
--- фактическая работы вычислительного блока в симуляторе. Генерация эталонных значений
--- осуществляется данным классом.
+-- |The availability of standart values, with which actual result of processor in simlator
+-- is compared, has the main role in testing. This class carry on Standart values generation.
+
 instance ( Var v
          , Integral x
          , Typeable x
          ) => Simulatable (Multiplier v x t) v x where
     simulateOn cntx _ f
-        -- Определяем функцию и делегируем ее расчет реализации по умолчанию.
+        -- We define the function and delegate its calculation to default realization.
         | Just f'@F.Multiply{} <- F.castF f = simulate cntx f'
         | otherwise = error $ "Can't simultate on Multiplier: " ++ show f
 
 
--- |Для генерации процессоров и тестов использующих данный вычислительный блок используются
--- реализованные ниже функции. Вызов этих методов выполняется при генерации проекта с сетью,
--- включающей данный вычислительный блок или при генерации тестов.
+
+-- | We use functions that is realized below to generate processors and tests, that use this
+-- processor. These methods are called while generation of project with net, that include this
+-- processor or also with tests generation.
 instance ( Time t, Var v, Val x
          ) => TargetSystemComponent (Multiplier v x t) where
-    -- |Наименование аппаратного модуля, экземпляр которого создаётся для его встраивания в
-    -- процессор. В данном случае задается в файле @/hdl/multiplier/pu_multiplier.v@.
+    -- | Naming of hardwawre module, instance of which is creting for embedding to processor.
+    -- In this case it is defined in @/hdl/multiplier/pu_multiplier.v@.
     moduleName _title _pu = "pu_multiplier"
 
-    -- |Генератор программного обеспечения вычислительного блока. В случае умножителя ПО
-    -- отсутствует. Разберёмся почему так. Ранее говорилось, что ПО имеет две составляющие:
+    -- | Processors software generator. In case of multiplier this is no software.
+    --Let's figure it out. Before we said, that software has two components:
     --
-    -- 1. Настройки и начальные состояния, в случае с умножителем настройки специфичные для
-    --    конкретного прикладного алгоритма отсутствуют.
-    -- 2. Микропрограмма. В связи с тем, что вычислительный блок не может использоваться вне сетевой
-    --    структуры процессора, определять ПО в контексте отдельного блока не является
-    --    целесообразным. Кроме того, сигнальные линии отдельных вычислительных блоков могут быть
-    --    мультиплексированы. В связи с этим, микропрограмма формируется сразу для сети
-    --    вычислительных блоков путём слияния их микрограмм, генерируемых на базе описаний
-    --    вычислительного процесса (см. 'NITTA.BusNetwork').
+    -- 1. Setting and begin states. In case of multiplier there is no specific settings
+    --    for the applied algorhytm.
+    -- 2. Microprogram. Processor cannot be user not in processor ner sructure, we needn't to
+    --    determine software in context of separate unit. Besides, signal lines of separated
+    --    processors can be multiplexed. Thereby, microprogram is formed for
+    --    processors net just at once in way of merge of the microprogramms, that are
+    --    generated on the base of computational planning description
+    --    (look. 'NITTA.BusNetwork').
     software _ _ = Empty
 
-    -- |Генератор аппаратного обеспечения вычислительного блока. В случае с умножителем, генерация
-    -- как таковая не производится. Умножитель описывается двумя файлами: (1) умножитель
-    -- непосредственно, реализуемый либо IP ядром, либо функциональной заглушкой; (2) модуль
-    -- реализующий интерфейс между непосредственно умножителем и инфраструктурой процессора.
+    --	|Processor hardware generator. In case of multiplier, there is no generation.
+    --	Multiplier is described by two files: (1) directly multiplier, that is realized
+    --	by IP kernel or functional stub. (2) module. that realize interface between
+    --	multuplier and processors infostructure.
     hardware title pu@Multiplier{ isMocked }
         = Aggregate Nothing
             [ if isMocked
@@ -589,9 +586,9 @@ instance ( Time t, Var v, Val x
             , FromLibrary $ "multiplier/" ++ moduleName title pu ++ ".v"
             ]
 
-    -- |Генерация фрагмента исходного кода для создания экземпляра вычислительного блока в рамках
-    -- процессора. Основная задача данной функции - корректно включить вычислительный блок в
-    -- инфраструктуру процессора, установив все параметры, имена и провода.
+    --	|Source code fragment generation for create processor instance within the processorю
+    -- 	The main task of the function is to include processor to processor infostructure correctly.
+      --	and set uo all parameters, names and wires.
     --
     -- Take attention to function @fixIndent@. This function allows a programmer to use
     -- normal code block indentation.
@@ -615,14 +612,16 @@ instance ( Time t, Var v, Val x
 |               );
 |           |]
 
+
 -- As you can see ahead, this class uses to get data bus width from the type level (@x@ type variable).
 instance WithX (Multiplier v x t) x
 instance IOTest (Multiplier v x t) v x
 
--- |Данный класс является служебным и предназначен для того, что бы извлекать из вычислительного
--- блока все функции, привязанные к вычислительному блоку. Реализация данного класс проста: у модели
--- вычистельного блока берётся описание процесса (все спланированные функции), берутся все функции в
--- очереди и, в случае наличия, функция находящаяся в работе.
+
+-- | This class is service and used to extract all functions binding to processor.
+-- This class is easy realized: we take process description
+-- (all planned functions) from processor, and function in progress,
+-- if it is.
 instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
     functions Multiplier{ process_, remain, currentWork }
         = functions process_
@@ -632,31 +631,30 @@ instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
             Nothing     -> []
 
 
--- |Основное назначение данного класс - генерация автоматизированных тестов изолировано для данного
--- вычислительного блока. Для этого он позволяет сгенерировать test bench для вычисилтельного блока
--- в соответствии с его моделью и спланированным вычислительным процессом. С самими тестами следует
--- ознакомиться в 'Spec'.
+-- The main purpose of this class is to generate auto tests isolated to the processor.
+-- In case of this it allows to generate test bench for computational unit according to its model
+-- and planned computational process. Use can see tests in 'Spec'.
 --
--- Тестирование осуществляется следующим образом: на основании имеющегося описания вычислительного
--- процесса генерируется последовательность внешних воздействия на вычислительный блок (сигналы и
--- входные данные), а также последовательность проверок выходных сигналов и данных. Выходные данные
--- сравниваются с результатами функциональной симуляции и если они не совпадают, то выводится
--- соответствующее сообщение об ошибке.
+-- Testing is carried out as follows: om the base of processor description it generate sequence
+-- of outer influence o processor (signals and input data), and also check sequence of output signals
+-- and data. Output data is compared with results of functional simulations and if they doesn't match
+-- then error message is displaing.
+
+
 instance ( Var v, Time t
          , Typeable x, Show x, Integral x, Val x
          ) => TestBench (Multiplier v x t) v x where
     testBenchDescription prj@Project{ projectName, processorModel }
-        -- Test bench представляет из себя один файл описанный ниже. Для его генерации используется
-        -- готовый snippet, так как в большинстве случаев они будут подобны. Ключевое значение имеет
-        -- структура данных 'NITTA.Project.TestBenchSetup', описывающая специфику данного модуля.
+        -- Test bech is one file described below. We use ready snippet for it generation, because
+        -- in most cases they will be similar. The data structure 'NITTA.Project.TestBenchSetup' has the
+        -- key role and describes this module specific.
         = Immidiate (moduleName projectName processorModel ++ "_tb.v")
             $ snippetTestBench prj TestBenchSetup
-                -- Список управляющих сигналов. Необходим для инициализации одноименных регистров.
+            -- List of control signals. It is needed to initialize registers with the same names.
                 { tbcSignals=["oe", "wr", "wrSel"]
-                -- Функция подключения вычислительного блока к окружению и идентификаторы сигнальных
-                -- линий. В структуре @tbcPorts@ описывается к чему именно подключаются сигнальные
-                -- линии тестируемого блока. А в @tbcSignalConnect@ как эти абстрактные номера
-                -- отображаются в генерируемом исходном коде.
+             --Processor to environment connect function and signal lines IDs. In @tbcPorts@ describes
+             -- to what connect signal lines of test block. In @tbcSignalConnect@  how abstract numbers
+             -- is displays to generated source code.
                 , tbcPorts=PUPorts
                     { oe=Signal 0
                     , wr=Signal 1
@@ -667,8 +665,9 @@ instance ( Var v, Time t
                     (Signal 1) -> "wr"
                     (Signal 2) -> "wrSel"
                     _ -> error "testBenchDescription wrong signal"
-                -- При генерации test bench-а знать, как задаются управляющие сигналы
-                -- вычислительного блока. Именно это и описано ниже. Отметим, что работа с шиной данных полностью реализуется в рамках snippet-а.
+                  -- While test bench generation know how processors control signal is defined.
+                  -- This is described below. Notice, that work with data bus is realized in snippet.
                 , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
                     [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
                 }
+

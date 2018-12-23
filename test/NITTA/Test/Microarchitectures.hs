@@ -4,8 +4,16 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
+{-|
+Module      : NITTA.Test.Microarchitectures
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Test.Microarchitectures
     ( march
     , marchSPI
@@ -22,7 +30,6 @@ import           Data.Bits
 import           Data.Default
 import           Data.Either                   (isRight)
 import           Data.Proxy
-import           Data.Typeable
 import           NITTA.BusNetwork
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divider    as D
@@ -52,7 +59,7 @@ march = busNetwork 31 (Just True) [] []
 
 
 marchSPI ::
-    ( Integral x, Bits x, Eq x, Default x, Show x, Typeable x, Val x
+    ( Integral x, Bits x, Default x, Show x, Val x
     ) => Proxy x -> BusNetwork String String x Int
 marchSPI _proxy = busNetwork 31 (Just False)
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
@@ -90,5 +97,5 @@ algTestCaseWithInput name is arch alg
         i <- incrCounter 1 externalTestCntr
         res <- testWithInput (fn ++ "_" ++ show i) is arch alg
         isRight res @? show res
-    where 
+    where
         fn = "bn_" ++ name

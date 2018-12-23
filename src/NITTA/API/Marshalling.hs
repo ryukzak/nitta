@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.API.Marshalling
@@ -13,7 +13,6 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
 module NITTA.API.Marshalling where
 
 import           Data.Aeson
@@ -22,7 +21,6 @@ import qualified Data.Text                as T
 import           Data.Typeable
 import           NITTA.API.GraphConverter
 import           NITTA.BusNetwork
-import           NITTA.Compiler
 import           NITTA.DataFlow
 import           NITTA.Types
 import           NITTA.Types.Project
@@ -37,11 +35,11 @@ import           Servant
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t)
-         ) => ToJSON (Option (CompilerDT title v x t))
+         ) => ToJSON (Option (SynthesisDT title v x t))
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t), Time t
-         ) => ToJSON (Decision (CompilerDT title v x t))
+         ) => ToJSON (Decision (SynthesisDT title v x t))
 instance ( ToJSON title
          , ToJSONKey v
          , ToJSON (TimeConstrain t)
@@ -56,8 +54,6 @@ instance ( Show title
 instance ( Show title
          ) => ToJSON (Decision (BindingDT title v x)) where
     toJSON (BindingD f title) = toJSON [ show f, show title ]
--- instance ( ToJSON v, Var v ) => ToJSON (Option (ControlDT v))
--- instance ( ToJSON v, Var v ) => ToJSON (Decision (ControlDT v))
 
 
 
@@ -68,13 +64,13 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
          , Typeable x, ToJSON x, ToJSONKey x
          ) => ToJSON (BusNetwork title v x t) where
     toJSON n@BusNetwork{..} = object
-        [ "width" .= bnSignalBusWidth
-        , "remain" .= bnRemains
+        [ "width"              .= bnSignalBusWidth
+        , "remain"             .= bnRemains
         , "forwardedVariables" .= map (String . T.pack . show) (transfered n)
-        , "binds" .= bnBinded
-        , "processLength" .= nextTick (process n)
-        , "processUnits" .= M.keys bnPus
-        , "process" .= process n
+        , "binds"              .= bnBinded
+        , "processLength"      .= nextTick (process n)
+        , "processUnits"       .= M.keys bnPus
+        , "process"            .= process n
         ]
 
 
@@ -95,58 +91,62 @@ instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Process v x t) where
     toJSON Process{ steps, nextTick, relations } = object
-        [ "steps" .= steps
-        , "nextTick" .= nextTick
+        [ "steps"     .= steps
+        , "nextTick"  .= nextTick
         , "relations" .= relations
         ]
 
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Step v x t) where
     toJSON Step{ sKey, sTime, sDesc } = object
-        [ "sKey" .= sKey
-        , "sDesc" .= show sDesc
-        , "sTime" .= sTime
+        [ "sKey"   .= sKey
+        , "sDesc"  .= show sDesc
+        , "sTime"  .= sTime
         , "sLevel" .= level sDesc
-        , "sPU" .= showPU sDesc
+        , "sPU"    .= showPU sDesc
         ]
 
 
 
 -- *Synthesis
-instance ToJSON Nid where
-    toJSON nid = toJSON $ show nid
+instance ToJSON NId where
+    toJSON nId = toJSON $ show nId
 
-instance FromJSON Nid where
+instance FromJSON NId where
     parseJSON v = read <$> parseJSON v
 
-instance FromHttpApiData Nid where
+instance FromHttpApiData NId where
     parseUrlPiece = Right . read . T.unpack
 
 
 instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
-        ) => ToJSON (Synthesis String String x t) where
-    toJSON Synthesis{ sModel, sCntx, sStatus } = object
-        [ "sModel" .= sModel
-        , "sCntx" .= map show sCntx
-        , "sStatus" .= show sStatus
+        ) => ToJSON (Node String String x t) where
+    toJSON Node{ nId, nModel, nIsComplete } = object
+        [ "nModel"      .= nModel
+        , "nIsComplete" .= nIsComplete
+        , "nId"         .= nId
         ]
 
-instance ToJSON SynthesisStatus
 instance ToJSON TestBenchReport
 
 
--- *Simple compiler
-instance ToJSON SynthesisSetup
-instance ToJSON SpecialMetrics
+-- *Simple synthesis
+instance ToJSON ChConf
+instance ToJSON Characteristics
 
 instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
-        ) => ToJSON (WithMetric (CompilerDT String String x t)) where
-    toJSON WithMetric{ mIntegral, mSpecial, mOption, mDecision }
-        = toJSON ( mIntegral, mSpecial, mOption, mDecision )
+        ) => ToJSON (Edge String String x t) where
+    toJSON Edge{ eCharacteristic, eCharacteristics, eOption, eDecision } = object
+        [ "eCharacteristic"  .= eCharacteristic
+        , "eCharacteristics" .= eCharacteristics
+        , "eOption"          .= eOption
+        , "eDecision"        .= eDecision
+        ]
+
 
 
 -- *Basic data
@@ -162,7 +162,7 @@ instance ( Show v ) => ToJSON (F v x) where
 instance ( ToJSON t, Time t ) => ToJSON (TimeConstrain t) where
     toJSON TimeConstrain{..} = object
         [ "available" .= tcAvailable
-        , "duration" .= tcDuration
+        , "duration"  .= tcDuration
         ]
 
 instance ToJSONKey (IntX w) where

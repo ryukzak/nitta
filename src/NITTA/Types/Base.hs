@@ -9,8 +9,16 @@
 {-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
+{-|
+Module      : NITTA.Types.Base
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Types.Base
     ( module NITTA.Types.Base
     , module NITTA.Types.Time
@@ -91,13 +99,13 @@ class Function f v | f -> v where
 
 
 data Lock v
-    = Lock 
+    = Lock
         { locked :: v
-        , lockBy :: v 
+        , lockBy :: v
         }
     deriving ( Show )
 
-class Locks x v | x -> v where 
+class Locks x v | x -> v where
     -- |Возвращает зависимости между аргументами функционального блока. Формат: (заблокированное
     -- значение, блокирующее значение).
     locks :: x -> [Lock v]
@@ -111,17 +119,17 @@ class WithFunctions a f | a -> f where
 
 
 data Cntx v x
-    = Cntx 
+    = Cntx
         { cntxVars    :: M.Map v [x]
         , cntxInputs  :: M.Map v [x]
         , cntxOutputs :: M.Map v [x]
         , cntxFram    :: M.Map (Int, v) [x]
         }
 
--- FIXME: Incorrect output if cntxInput has different amount of data. 
+-- FIXME: Incorrect output if cntxInput has different amount of data.
 instance ( Show v, Show x ) => Show (Cntx v x) where
     show Cntx{ cntxVars, cntxInputs, cntxOutputs }
-        = let 
+        = let
             dt = concat
                 [ map (\(v, xs) -> reverse $ map ( filter (/= '"') . (("q." ++ show v ++ ":") ++) . show ) xs) $ M.assocs cntxInputs
                 , map (\(v, xs) -> reverse $ map ( filter (/= '"') . ((show v ++ ":") ++) . show ) xs) $ M.assocs cntxOutputs
@@ -151,15 +159,13 @@ data F v x where
 instance Show (F v x) where
     show (F f) = S.replace "\"" "" $ show f
 
-instance ( Var v
-         , Typeable x
-         ) => Function (F v x) v where
+instance Function (F v x) v where
     insideOut (F f) = insideOut f
     isCritical (F f) = isCritical f
     inputs (F f) = inputs f
     outputs (F f) = outputs f
 
-instance Locks (F v x) v where 
+instance Locks (F v x) v where
     locks (F f) = locks f
 
 instance Variables (F v x) v where
@@ -189,7 +195,7 @@ data Process v x t
                                   -- (отношения описываются через "кортежи" из ProcessUid).
         , nextTick  :: t          -- ^Номер первого свободного такта.
         , nextUid   :: ProcessUid -- ^Следующий свободный идентификатор шага вычислительного процесса.
-        } 
+        }
     deriving ( Show )
 
 instance ( Default t ) => Default (Process v x t) where
@@ -250,10 +256,10 @@ instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
 
 
 -- |Получить строку с название уровня указанного шага вычислительного процесса.
-level CADStep{}          = "CAD"
-level FStep{}            = "Function"
-level EndpointRoleStep{} = "Endpoint"
-level InstructionStep{}  = "Instruction"
+level CADStep{}           = "CAD"
+level FStep{}             = "Function"
+level EndpointRoleStep{}  = "Endpoint"
+level InstructionStep{}   = "Instruction"
 level (NestedStep _ step) = level $ sDesc $ descent step
 
 showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
@@ -476,7 +482,7 @@ _ +++ _ = Broken
 -- стороны - это позволяет учитывать внутренее состояние вычислительного блока, что может быть
 -- полезным при работе со значеними по умолчанию).
 class Simulatable pu v x | pu -> v x where
-    simulateOn 
+    simulateOn
         :: Cntx v x -- ^Контекст вычислительного процесса, содержащий уже
                     -- известные значения переменных.
             -> pu -- ^Вычислительный блок.

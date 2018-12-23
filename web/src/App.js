@@ -2,40 +2,38 @@ import './App.css'
 import 'react-table/react-table.css'
 import React, { Component } from 'react'
 import { SynthesisGraph } from './components/synthesis-graph'
-import { SynthesisView } from './components/synthesis-view'
+import { NodeView } from './components/node-view'
 
 class App extends Component {
   constructor () {
     super()
     this.state = {
-      currentNid: null,
-      synthesisStatus: null
+      selectedNId: null
     }
   }
 
-  onSynthesisChange (sNode) {
-    console.debug('App:onSynthesisChange(', sNode, ')')
-    if (sNode && sNode !== this.state.currentNid) {
-      this.setState({
-        currentNid: sNode
-      })
+  onNIdChange (nId) {
+    console.debug('App:onNIdChange(', nId, ')')
+    if (nId === 'reload') {
+      this.setState({selectedNId: this.state.selectedNId})
+      return
     }
-  }
-
-  onSynthesisStatusChange (status) {
-    console.debug('App:onSynthesisStatusChange(', status, ')')
-    if (status && status !== this.state.currentNid) {
-      this.setState({
-        synthesisStatus: status
-      })
+    if (nId && nId !== this.state.selectedNId) {
+      this.setState({selectedNId: nId})
     }
   }
 
   render () {
     return (
       <div>
-        <SynthesisGraph currentNid={this.state.currentNid} onCurrentNidChange={nid => this.onSynthesisChange(nid)} onSynthesisStatusChange={status => this.onSynthesisStatusChange(status)} />
-        <SynthesisView currentNid={this.state.currentNid} synthesisStatus={this.state.synthesisStatus} onCurrentNidChange={nid => this.onSynthesisChange(nid)} />
+        <SynthesisGraph
+          selectedNId={this.state.selectedNId}
+          onNIdChange={nid => this.onNIdChange(nid)}
+        />
+        <NodeView
+          selectedNId={this.state.selectedNId}
+          onNIdChange={nid => this.onNIdChange(nid)}
+        />
       </div>
     )
   }

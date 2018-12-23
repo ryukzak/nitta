@@ -1,3 +1,9 @@
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns   #-}
+{-# LANGUAGE TemplateHaskell  #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+
 {-|
 Module      : Main
 Description : Teacup demo
@@ -6,32 +12,30 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
-Классический пример из области системной динамики. Описание самой модели приведено здесь:
+This is a classic example of the system dynamic model. The model description
+presented here:
 <https://pysd-cookbook.readthedocs.io/en/latest/analyses/getting_started/Hello_World_Teacup.html>.
-Вычисления производятся в числах с фиксированной запятой. Перевод в десятичные дроби не
-осуществляется.
+Calculations are performed in fixed-point numbers. Decimals are not converted.
 
-Выходные данные модели:
+ Model's outputs:
 
-- температура чашки;
-- время с начала эксперимента.
+ - cup temperature;
+ - time from experiment beginning.
 
-Каждый элемент этих последовательностей отправляется на внешний интерфейс, определяемый
-конфигурацией процессора. В данном примере это интерфейс SPI (`NITTA.ProcessUnit.SPI`).
+ Every element of the sequence sends to the external interface, definable by the
+ processor configuration. It is SPI in this example ('NITTA.ProcessUnit.SPI').
+
+To execute the demo:
+1. Build NITTA project by @stack build --fast@.
+2. Generate target system demo project for the demo by @stack exec
+   nitta-teacup-demo@.
+3. Execute the target system demo project on a hardware test bench.
 -}
-
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns   #-}
-{-# LANGUAGE TemplateHaskell  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
-
 module Main ( main ) where
 
 import           Data.Default
 import           Data.FileEmbed                (embedStringFile)
 import           NITTA.BusNetwork
-import           NITTA.Compiler
 import           NITTA.Frontend
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divider    as D
@@ -41,7 +45,7 @@ import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Types
 import           NITTA.Types.Project
-import           NITTA.Utils.Test              (demo)
+import           NITTA.Utils.Test              (demo, mkModelWithOneNetwork)
 
 nittaArch = busNetwork 31 Nothing
     [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]

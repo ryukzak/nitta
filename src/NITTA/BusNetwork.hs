@@ -11,9 +11,16 @@
 {-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
-{-
+{-|
+Module      : NITTA.BusNetwork
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
 Есть следующие подходы к реализации множественных сетей:
 
 1. Сеть представляется в виде вычислительного блока жадно вычисляющая все функции привязанные к ней.
@@ -83,7 +90,7 @@ type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 -- TODO: Вариант функции, где провода будут подключаться автоматически.
 busNetwork w allowDrop ips ops pus = BusNetwork
         { bnRemains=[]
-        , bnBinded=M.fromList []
+        , bnBinded=M.empty
         , bnProcess=def
         , bnPus=M.fromList pus'
         , bnSignalBusWidth=w
@@ -113,10 +120,7 @@ busNetwork w allowDrop ips ops pus = BusNetwork
 
 instance WithX (BusNetwork title v x t) x
 
-instance ( Title title
-         , Time t
-         , Var v
-         , Typeable x
+instance ( Var v
          ) => WithFunctions (BusNetwork title v x t) (F v x) where
     functions BusNetwork{..} = sortFBs binded []
         where
@@ -284,8 +288,7 @@ instance Controllable (BusNetwork title v x t) where
 
 
 instance {-# OVERLAPS #-}
-         ( Time t
-         ) => ByTime (BusNetwork title v x t) t where
+        ByTime (BusNetwork title v x t) t where
     microcodeAt BusNetwork{..} t
         = BusNetworkMC $ foldl merge initSt $ M.elems bnPus
         where
@@ -296,7 +299,7 @@ instance {-# OVERLAPS #-}
 
 
 
-instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v x t) v x where
+instance ( Title title ) => Simulatable (BusNetwork title v x t) v x where
     simulateOn cntx BusNetwork{..} fb
         = let
             Just (title, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
@@ -316,7 +319,6 @@ instance ( Title title, Var v, Time t ) => Simulatable (BusNetwork title v x t) 
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
 instance ( Var v
-         , Typeable x
          ) => DecisionProblem (BindingDT String v x)
                     BindingDT (BusNetwork String v x t)
          where

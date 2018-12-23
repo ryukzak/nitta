@@ -5,8 +5,16 @@
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
+{-|
+Module      : NITTA.Test.LuaFrontend
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Test.LuaFrontend
     ( luaTestCase
     , luaTests
@@ -143,9 +151,11 @@ luaTests = $(testGroupGenerator)
 luaTestCase name lua = testGroup name
         [ inner marchSPIDropData (Proxy :: Proxy Int)
         , inner marchSPIDropData (Proxy :: Proxy (IntX 32))
+        , inner marchSPIDropData (Proxy :: Proxy (IntX 40))
         , inner marchSPIDropData (Proxy :: Proxy (IntX 48))
-        , inner marchSPIDropData (Proxy :: Proxy (FX 24 32))
-        , inner marchSPIDropData (Proxy :: Proxy (FX 32 32))
+        , inner marchSPIDropData (Proxy :: Proxy (IntX 64))
+        , inner marchSPIDropData (Proxy :: Proxy (IntX 96))
+        , inner marchSPIDropData (Proxy :: Proxy (IntX 128))
         ]
     where
         fn = "lua_" ++ name
@@ -159,9 +169,13 @@ luaTestCase name lua = testGroup name
 
 luaTestCaseWithInput name is lua = testGroup name
         [ inner marchSPI (Proxy :: Proxy Int)
+        , inner marchSPI (Proxy :: Proxy (IntX 24))
         , inner marchSPI (Proxy :: Proxy (IntX 32))
-        , inner marchSPI (Proxy :: Proxy (FX 32 32))
-        -- FIXME: , inner marchSPI (Proxy :: Proxy (IntX 48))
+        , inner marchSPI (Proxy :: Proxy (IntX 40))
+        , inner marchSPI (Proxy :: Proxy (IntX 48))
+        , inner marchSPI (Proxy :: Proxy (IntX 64))
+        , inner marchSPI (Proxy :: Proxy (IntX 96))
+        , inner marchSPI (Proxy :: Proxy (IntX 128))
         ]
     where
         fn = "lua_" ++ name

@@ -4,7 +4,7 @@
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-unused-imports #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
@@ -15,8 +15,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
-module Main where
+module Main ( main ) where
 
 import           Control.Monad                 (when)
 import           Data.Default                  as D
@@ -25,7 +24,6 @@ import           Data.Maybe
 import qualified Data.Text.IO                  as T
 import           NITTA.API                     (backendServer)
 import           NITTA.BusNetwork
-import           NITTA.Compiler
 import           NITTA.DataFlow
 import           NITTA.Frontend
 import qualified NITTA.Functions               as F
@@ -36,6 +34,7 @@ import qualified NITTA.ProcessUnits.Multiplier as M
 import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
 import           NITTA.Project
+import           NITTA.SynthesisMethod
 import           NITTA.Types
 import           NITTA.Types.Synthesis
 import           NITTA.Utils.Test
@@ -141,11 +140,3 @@ main = do
                         fib()|] )
             putStrLn "-- hardcoded end --"
     putStrLn "-- the end --"
-
-
------------------------------------------------------------
-
-
-funSim n cntx alg
-    = let cntxs = F.simulateAlgByCycle cntx alg
-    in mapM_ (putStrLn . ("---------------------\n"++) . filter (/= '"') . show) $ take n cntxs

@@ -30,20 +30,19 @@ A user and the test bench communicate throughout electricimp cloud-based IDE
 | imp001 |---------| DE0-nano |
 +--------+         +----------+
 ```
+#SPI - DEO-nano сonnection diagram.
 
-# Схема подключение интерфейса SPI к DE0-nano
-
-В скобках указан рекомендованный цвет провода. Пропорции нарушены.
+There is recommended color of wire in the brackets. The proportions are broken.
 
 ```
-           +--------------------------------------- GND (черный)
+           +--------------------------------------- GND (black)
 +----------|---------------------+
 |    ooooo *oooo ooooo ooooo     |
 |    ooooo ooooo ooooo o****     |
-|                       |||+------------------------ CS   (белый)
-+-----+                 ||+------------------------- SCLK (жёлтый)
-| USB |                 |+-------------------------- MISO (синий)
-+-----+                 +--------------------------- MOSI (оранжевый)
+|                       |||+------------------------ CS   (white)
++-----+                 ||+------------------------- SCLK (yellow)
+| USB |                 |+-------------------------- MISO (blue)
++-----+                 +--------------------------- MOSI (orange)
 |                    +--------+  |
 |  +--------------+  | ALTERA |  |
 |  |        =     |  +--------+  |
@@ -59,9 +58,7 @@ A user and the test bench communicate throughout electricimp cloud-based IDE
 |    ooooo ooooo ooooo ooooo     |
 +--------------------------------+
 ```
-
-# Схема подключение интерфейса SPI к imp001
-
+SPI - imp001 connection diagram
 ```
                     +--------------------------------+
                     | o GND                          |
@@ -77,14 +74,13 @@ A user and the test bench communicate throughout electricimp cloud-based IDE
 (черный)     GND -----* GND   | USB |                |
                     +---------+-----+----------------+
 ```
+# Software requirments:
 
-# Требуемоемое программное обеспечение
+The software that is required to run and set up the test bench:
 
-Для запуска и наладки испытательного стенда необходимо следующее программное обеспечение:
-
-1. Проект [САПР NITTA]<https://nitta.io/nitta-corp/nitta>, включая реализацию данного модуля.
-2. [haskell stack]<https://nitta.io/penskoi/nitta/src/master/doc/stack-install.md>, необходим для
-   сборки САПР и генерации демонстрационного проекта.
+1. Project [NITTA CAD] <https://nitta.io/nitta-corp/nitta>, this module realisation included.
+2. [Haskell stack] <https://nitta.io/penskoi/nitta/src/master/doc/stack-install.md>. 
+Its required for CAD set up and demo generation.
 3. [Quartus Prime Lite Edition]<https://fpgasoftware.intel.com/?edition=lite> and Cyclone IV device
    support. It's needed for synthesis and uploading a demo project into DE0-nano evaluation board.
 
@@ -92,64 +88,58 @@ Also, you need an account on <https://impcentral.electricimp.com> for getting da
 processor. You can manually register and creating the project for that purpose or request login and
 password from the project maintainer.
 
-# Запуск демо
+# Demo start up
 
-У вас на столе лежит собранный и подключённый стенд, на компьютере установлено всё необходимо
-программное обеспечение и вы открыли консоль на соответсвующем каталоге. Дальнейшее описание
-приведено для Windows 10, но также должно быть справедливо для Linux.
+You have collected and pluged in stand on your table, on your computer you have already installed 
+all needed software and you have opened the terminal in suitable catalog. Furthern instructions 
+is written for Wndows 10, but it can be used for Linux too. 
 
-Каждое демо представляет из себя функцию, выполнение которой приведёт к генерации проекта, который
-можно будет синтезировать, загрузить в испытательный стенд и проверить работоспособность. Её
-выполнение приведет к генерации одноименного каталога с проектом в директории @/hdl/gen/DEMO_NAME@.
-Для начала работы с демо необходимо либо вставить вызов функции в функцию 'Main.main', либо
-осуществить запуск из @stack repl@.
-
+Each demo is a function, the execution of which will cause generation of project, that you 
+can synthesize, upload to test bench and test perfomance. Its execution will cause generation 
+of directory with te same name with project in directory @/hdl/gen/DEMO_NAME@.
+To start working with the demo, you have to insert a function call into the function 'Main.main', 
+or start from @stack repl @.
 ```
 >>> :m Demo
 >>> fibonacciDemo
 Demo project in hdl/gen/fibonacciDemo
 ```
 
-Откройте сгенерированный проект в @Quartus@ (файл @nitta.qpf@) и синтезируйте его: @Processing ->
-Start Compilation@. Затем вам необходимо прошить в ПЛИС результат. Для этого выбираем пункт
-@Tools -> Programmer@. В поле File должен быть указан путь до прошивки nitta.sof, если в поле 
-написано <none>, нужно два раза нажать на это поле и выбрать прошивку по 
-пути output_files/nitta.sof, затем установить checkbox Program/Configure в активное состояние.
-Прошиваем результат в ПЛИС нажав на кнопку @Start@. Если кнопка неактивна:
 
-- проверьте подключение платы DE0-Nano;
-- нажмите @Hardware Setup@ и выберите @USB-Blaster@;
-- обратитесь к руководству пользователя отладочной платы:
-  <http://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=165&No=593&PartNo=4>.
+Open generated project in @Quartus@ (@nitta.qpf@ file) and synthesize it: @Processing ->
+Start Compilation@. After this you need to flash result in FPG. To do this you need @Tools -> Programmer@. In File field you need to write path to firmware nitta.sof, if you see <none> in field, you need to press the field twice and choose firmware by path output_files/nitta.sof, and after set checkbox Program/Configure to active. 
+After press @Start@ button. If the button is deactiveted:
 
-Убедитесь, что положение дип переключателей соответствует указанному на схеме выше.
+- check DE0-Nano board connection.
+- press @Hardware Setup@ and choose @USB-Blaster@;
+- refer to the user manual of debug board:
+<http://www.terasic.com.tw/cgi-bin/page/
+archive.pl?Language=English&CategoryNo=165&No=593&PartNo=4>.
 
-Теперь подготовьте к работе управляющий конроллер. Для этого вам необходимо
+Make sure that dip switches position match to one shown on the diagram above.
 
-Инструкции если используется аккаунт @aleksandpenskoi@:
+Now prepare to work the controller. For do this you need:
 
-1. Поднять Wi-Fi сеть и подключить к ней контроллер в соответствии с инструкцией
-   <https://developer.electricimp.com/gettingstarted/explorer/blinkup>.
-2. В случае если вы используете аккаунт @aleksandpenskoi@ зайдите в строке @SPI_testbench@ выберите
-   @Development Zone@, затем @Code@.
-3. Убедитесь, что последней вызываемой функцией в правой части экрана (Device Code) является
-   функция, одноименная названию демо.
-4. Внизу слева вы увидете список подключённых к проекту устройств. Напротив нужного нажмите кнопку с
-   иконкой On/Off.
-5. В терминале снизу справа должен будет появиться журнал передачи данных на подобие приведённого
-   ниже.
+Instruction, if you use account @aleksandpenskoi@::
 
-Инструкции если используется новосозданный аккаунт @new_account@:
+1. Set up the wi-fi network and connect the controller to it accordance with the instructions
+	<https://developer.electricimp.com/gettingstarted/explorer/blinkup>.
+2. In case you use @aleksandpenskoi@ account, in @SPI_testbench@ line choose 
+	@Development Zone@, and after @Code@.
+3. Make sure that the last called function in the right part of screen (Device code) is 
+	function with name similar to demo.
+4. You will see the connection devices list in the left side of footer. Press the On/Off button opposite to 
+	the needed device.
+5. The data transfer journal should appear in the bottom right side of terminal. 
+It should look like you will see below. 
 
-1. Поднять Wi-Fi сеть и подключить к ней контроллер в соответствии с инструкцией
-   <https://developer.electricimp.com/gettingstarted/explorer/blinkup>.
-2. Зарегестрировать акаунт на стайте electric imp
-   <https://impcentral.electricimp.com>.
-3. Слева в меню  выбрать вкладку @Development Device Group Devices@ и нажать на кнопку @Assign@. 
-   В пункте Device Group указать Development Device Group и название DDG которые вы давали 
-   при создании проекта, после нажать на @Assign Devices@. Должно появиться поле с DEVICE ID со 
-   статусом online.
-4. Слева в меню переходим во вкладку @Code@ и в поле Device Code вставляем код расположенный ниже:
+Instruction, if you use new account @new_account@:
+
+1. Set up Wi-Fi network and connect controller as in instruction
+ <https://developer.electricimp.com/gettingstarted/explorer/blinkup>.
+2. Register account on electric imp site    <https://impcentral.electricimp.com>.
+3. In the left part of menu choose @Development Device Group Devices@  Tab and press @Assign@ button. In Device Group item set Development Device Group and name of DDG, that you give while project creation, after press @Assign Devices@. Field with DEVICE ID must appear with online status. 
+4. On the left in the menu go to @Code@ tab and in the Device Code field insert code below:
 
 ```
 sc <- hardware.pin8;
@@ -255,9 +245,8 @@ function teacupDemo(n) {
 fibonacciDemo(10)
 ```
 
-5. В терминале снизу справа должен будет появиться журнал передачи данных на подобие приведённого
-   ниже.
-
+5. The data transfer journal should appear in the bottom right side of terminal. 
+It should look like this:
 
 ```
 2018-08-20 16:19:27 +03:00 	[Status] 	Agent restarted: reload.
@@ -283,5 +272,9 @@ fibonacciDemo(10)
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 22 00 00 00 09
 2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 9	Значение: 34
 ```
+The work of another demos will look like simirarly.
 
-Аналогичным образом выглядят будет выглядеть работу других демо.
+
+
+
+
