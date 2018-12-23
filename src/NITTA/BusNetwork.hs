@@ -450,7 +450,7 @@ instance
 
 
 instance ( Title title, Var v, Time t
-         , Show x, Enum x
+         , Show x
          , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x, Val x
          ) => TestBench (BusNetwork title v x t) v x where

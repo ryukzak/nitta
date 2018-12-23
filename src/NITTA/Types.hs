@@ -1,7 +1,17 @@
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE KindSignatures      #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE KindSignatures        #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
+{-|
+Module      : NITTA.Types
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Types
   ( module NITTA.Types.Base
   , module NITTA.Types.Network
@@ -26,7 +36,7 @@ import           Data.Typeable
 import           GHC.TypeLits
 
 
-class ( Typeable x, Read x ) => Val x where
+class ( Typeable x, Read x, WithX x x ) => Val x where
     showTypeOf :: Proxy x -> String
     valueWidth :: Proxy x -> Integer
     scalingFactorPower :: x -> Integer
@@ -37,6 +47,8 @@ scalingFactorPowerOfProxy p = scalingFactorPower (undefined `asProxyTypeOf` p)
 
 
 -- for Int
+instance WithX Int Int
+
 instance Val Int where
     showTypeOf _ = "Int"
     valueWidth _ = 32
@@ -46,6 +58,8 @@ instance Val Int where
 
 
 -- for Integer
+instance WithX Integer Integer
+
 instance Val Integer where
     showTypeOf _ = "Integer"
     valueWidth _ = 32
@@ -101,9 +115,11 @@ instance Bits ( IntX w ) where
     bit i = IntX $ bit i
     popCount ( IntX a ) = popCount a
 
+instance WithX (IntX w) (IntX w)
+
 instance ( KnownNat w ) => Val ( IntX w ) where
     showTypeOf p = "IntX" ++ show (valueWidth p)
-    valueWidth p = natVal (Proxy :: Proxy w)
+    valueWidth _ = natVal (Proxy :: Proxy w)
     scalingFactorPower _ = 0
     verilogInt (IntX x) = x
 
@@ -121,9 +137,9 @@ newtype FX (m :: Nat) (b :: Nat) = FX Int
 
 fxMB x
     = let
-        proxyM :: ( KnownNat m ) => FX m b -> Proxy m
+        proxyM :: FX m b -> Proxy m
         proxyM _ = Proxy
-        proxyB :: ( KnownNat m ) => FX m b -> Proxy b
+        proxyB :: FX m b -> Proxy b
         proxyB _ = Proxy
     in (natVal $ proxyM x, natVal $ proxyB x)
 
@@ -131,13 +147,13 @@ fxMB x
 scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 
 instance ( KnownNat m, KnownNat b ) => Show ( FX m b ) where
-    show t@(FX x) = show (fromIntegral x / scalingFactor t)
+    show t@(FX x) = show (fromIntegral x / scalingFactor t :: Double)
 
 instance ( KnownNat m, KnownNat b ) => Read ( FX m b ) where
     readsPrec d r
         = let
             [(x, "")] = readsPrec d r
-            result = FX $ truncate (x * scalingFactor result)
+            result = FX $ truncate (x * scalingFactor result :: Double)
         in [(result, "")]
 
 instance Default ( FX m b ) where
@@ -145,30 +161,30 @@ instance Default ( FX m b ) where
 
 instance ( KnownNat m, KnownNat b ) => Enum ( FX m b ) where
     toEnum x
-        = let res = FX (x * truncate (scalingFactor res))
+        = let res = FX (x * truncate (scalingFactor res :: Double))
         in res
-    fromEnum t@(FX x) = truncate (fromIntegral x / scalingFactor t)
+    fromEnum t@(FX x) = truncate (fromIntegral x / scalingFactor t :: Double)
 
 instance ( KnownNat m, KnownNat b ) => Num ( FX m b ) where
     ( FX a ) + ( FX b ) = FX ( a + b )
-    t@( FX a ) * ( FX b ) = FX ( truncate (fromIntegral (a * b) / scalingFactor t) )
+    t@( FX a ) * ( FX b ) = FX ( truncate (fromIntegral (a * b) / scalingFactor t :: Double) )
     abs ( FX a ) = FX $ abs a
     signum ( FX a ) = toEnum $ signum a
     fromInteger x
-        = let res = FX $ fromIntegral (x * truncate (scalingFactor res))
+        = let res = FX $ fromIntegral (x * truncate (scalingFactor res :: Double))
         in res
     negate ( FX a ) = FX $ negate a
 
 instance ( KnownNat m, KnownNat b ) => Real ( FX m b ) where
-    toRational t@( FX x ) = toRational (fromIntegral x / scalingFactor t)
+    toRational t@( FX x ) = toRational (fromIntegral x / scalingFactor t :: Double)
 
 instance ( KnownNat m, KnownNat b ) => Integral ( FX m b ) where
-    toInteger t@( FX x ) = toInteger $ fromEnum t
+    toInteger t = toInteger $ fromEnum t
     t@( FX a ) `quotRem` ( FX b )
         = let
             (a', b') = a `quotRem` b
             sf = scalingFactor t
-        in ( FX $ truncate (fromIntegral a' * sf), FX b' )
+        in ( FX $ truncate (fromIntegral a' * sf :: Double), FX b' )
 
 instance Bits ( FX m b ) where
     (.&.) = undefined
@@ -196,11 +212,13 @@ instance Bits ( FX m b ) where
     -- popCount ( FX a ) = popCount a
 
 
+instance WithX ( FX m b ) ( FX m b )
+
 instance ( KnownNat m, KnownNat b ) => Val ( FX m b ) where
-    showTypeOf p = let
+    showTypeOf _ = let
             (m, b) = fxMB (undefined :: FX m b)
         in "FX" ++ show m ++ "_" ++ show b
-    valueWidth p = natVal (Proxy :: Proxy b)
+    valueWidth _ = natVal (Proxy :: Proxy b)
     scalingFactorPower x
         = let
             (m, b) = fxMB x
