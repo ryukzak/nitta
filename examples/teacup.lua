@@ -1,7 +1,7 @@
 function teacup(time, temp_cup)
-    local temp_ch = 10000
-    local temp_room = 70000
-    local time_step = 125
+    local temp_ch =   10
+    local temp_room = 70
+    local time_step = 0.125
 
     send(time)
     send(temp_cup)
@@ -15,4 +15,4 @@ function teacup(time, temp_cup)
 
     teacup(time, temp_cup)
 end
-teacup(0, 180000)
+teacup(0, 180)

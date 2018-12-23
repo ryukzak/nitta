@@ -62,7 +62,7 @@ microarch = busNetwork 31 (Just False)
             })
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
     , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
-    ] :: BusNetwork String String (FX 32 32) Int
+    ] :: BusNetwork String String (FX 22 32) Int
 
 
 ---------------------------------------------------------------------------------
@@ -130,11 +130,8 @@ main = do
                 microarchHC
                 ( lua2functions
                     [qc|function fib()
-                            local a = receive()
-                            local b = receive()
-                            local c, d = a / b
-                            send(c)
-                            send(d)
+                            a = 0.5 + 0.5
+                            send(a)
                             fib()
                         end
                         fib()|] )
