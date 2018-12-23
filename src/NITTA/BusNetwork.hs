@@ -63,9 +63,7 @@ import           Text.InterpolatedString.Perl6 (qc)
 type Title v = ( Typeable v, Ord v, Show v )
 
 
-
-
-data GBusNetwork title spu v x t = BusNetwork
+data BusNetwork title v x t = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
       bnRemains        :: [F v x]
@@ -74,7 +72,7 @@ data GBusNetwork title spu v x t = BusNetwork
     -- | Описание вычислительного процесса сети, как элемента процессора.
     , bnProcess        :: Process v x t
     -- | Словарь вложенных вычислительных блоков по именам.
-    , bnPus            :: M.Map title spu
+    , bnPus            :: M.Map title (PU v x t)
     -- | Ширина шины управления.
     , bnSignalBusWidth :: Int
     , bnInputPorts     :: [InputPort]
@@ -82,7 +80,6 @@ data GBusNetwork title spu v x t = BusNetwork
     -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
     , bnAllowDrop      :: Maybe Bool
     }
-type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 
 
 -- TODO: Проверка подключения сигнальных линий.
