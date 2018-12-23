@@ -47,7 +47,7 @@ function invalid_value1;
     end
 endfunction
 
-wire [DATA_WIDTH-1:0]         mult_result;
+wire signed [DATA_WIDTH-1:0]         mult_result;
 mult_inner #
         ( .DATA_WIDTH( DATA_WIDTH )
         ) mult_i1
@@ -82,7 +82,7 @@ always @(posedge clk) begin
     end else begin
         if ( write_multresult ) begin
             invalid_result <= invalid_value;
-            data_multresult <= mult_result >> SCALING_FACTOR_POWER;
+            data_multresult <= mult_result >>> SCALING_FACTOR_POWER;
         end
     end
 end

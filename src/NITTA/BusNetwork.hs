@@ -532,7 +532,7 @@ instance ( Title title, Var v, Time t
                 ++ case extractInstructionAt n t of
                     Transport v _ _ : _ -> fixIndent [qc|
 |                                   $write("=== %h (var: %s)", { verilogInt $ get' cntx v }, { v } );
-|                                   if ( !( net.data_bus === { verilogInt $ get' cntx v } ) ) $display( " FAIL");
+|                                   if ( !( net.data_bus === { verilogInt $ get' cntx v } ) ) $display( "\tFAIL");
 |                                   else $display();
 |                       |]
                     [] -> fixIndent [qc|

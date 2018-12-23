@@ -51,6 +51,52 @@ test_counter =
     ]
 
 
+test_signed =
+    [ luaTestCase "sub"
+        [qc|function counter()
+                send(10 - 20)
+                send(-30 + 40)
+            end
+            counter()
+        |]
+    , luaTestCase "mul"
+        [qc|function counter()
+                send(10 * -1)
+                send(-20 * -30)
+            end
+            counter()
+        |]
+    --     FIXME:
+    -- , luaTestCase "div"
+    --     [qc|function counter()
+    --             a, b = -10 / 2
+    --             send(a)
+    --             send(b)
+    --             c, d = 10 / -2
+    --             send(c)
+    --             send(d)
+    --         end
+    --         counter()
+    --     |]
+    , luaTestCase "div1"
+        [qc|function counter()
+                a, b = -10 / 2
+                send(a)
+                send(b)
+            end
+            counter()
+        |]
+    , luaTestCase "div2"
+        [qc|function counter()
+                c, d = 10 / -2
+                send(c)
+                send(d)
+            end
+            counter()
+        |]
+    ]
+
+
 test_fibonacci =
     [ luaTestCase "example" $(embedStringFile "examples/teacup.lua")
     , luaTestCase "def_b_a"
@@ -98,6 +144,8 @@ luaTestCase name lua = testGroup name
         [ inner marchSPIDropData (Proxy :: Proxy Int)
         , inner marchSPIDropData (Proxy :: Proxy (IntX 32))
         , inner marchSPIDropData (Proxy :: Proxy (IntX 48))
+        , inner marchSPIDropData (Proxy :: Proxy (FX 24 32))
+        , inner marchSPIDropData (Proxy :: Proxy (FX 32 32))
         ]
     where
         fn = "lua_" ++ name
