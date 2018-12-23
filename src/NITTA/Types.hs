@@ -69,7 +69,7 @@ instance Val Integer where
 
 
 -- for IntX width
-newtype IntX (w :: Nat) = IntX Int
+newtype IntX (w :: Nat) = IntX Integer
     deriving ( Show, Eq, Ord )
 
 instance Read ( IntX w ) where
@@ -80,8 +80,8 @@ instance Default ( IntX w ) where
     def = IntX 0
 
 instance Enum ( IntX w ) where
-    toEnum = IntX
-    fromEnum (IntX x) = x
+    toEnum = IntX . toInteger
+    fromEnum (IntX x) = fromInteger x
 
 instance Num ( IntX w ) where
     ( IntX a ) + ( IntX b ) = IntX ( a + b )
@@ -125,14 +125,14 @@ instance ( KnownNat w ) => Val ( IntX w ) where
 
 
 
--- FX m b where
---   m the number of magnitude or integer bits
---   b the total number of bits
+-- |FX m b where
+--   - m the number of magnitude or integer bits
+--   - b the total number of bits
 --
 -- fxm.b: The "fx" prefix is similar to the above, but uses the word length as
 -- the second item in the dotted pair. For example, fx1.16 describes a number
 -- with 1 magnitude bit and 15 fractional bits in a 16 bit word.[3]
-newtype FX (m :: Nat) (b :: Nat) = FX Int
+newtype FX (m :: Nat) (b :: Nat) = FX Integer
     deriving ( Eq, Ord )
 
 fxMB x
@@ -161,7 +161,7 @@ instance Default ( FX m b ) where
 
 instance ( KnownNat m, KnownNat b ) => Enum ( FX m b ) where
     toEnum x
-        = let res = FX (x * truncate (scalingFactor res :: Double))
+        = let res = FX $ toInteger (x * truncate (scalingFactor res :: Double))
         in res
     fromEnum t@(FX x) = truncate (fromIntegral x / scalingFactor t :: Double)
 
@@ -169,7 +169,7 @@ instance ( KnownNat m, KnownNat b ) => Num ( FX m b ) where
     ( FX a ) + ( FX b ) = FX ( a + b )
     t@( FX a ) * ( FX b ) = FX ( truncate (fromIntegral (a * b) / scalingFactor t :: Double) )
     abs ( FX a ) = FX $ abs a
-    signum ( FX a ) = toEnum $ signum a
+    signum ( FX a ) = fromInteger $ signum a
     fromInteger x
         = let res = FX $ fromIntegral (x * truncate (scalingFactor res :: Double))
         in res
