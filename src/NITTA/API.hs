@@ -85,10 +85,10 @@ application compilerState = do
 --
 -- - if true - prepare static files for the web UI by @npm@;
 -- - initial model state.
-backendServer no_api_gen no_static_gen modelState = do
+backendServer no_api_gen npm_build modelState = do
     let port = 8080
     unless no_api_gen $ prepareJSAPI port
-    unless no_static_gen prepareStaticFiles
+    when npm_build prepareStaticFiles
 
     putStrLn $ "Running NITTA server on port: " ++ show port
 
