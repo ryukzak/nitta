@@ -234,7 +234,7 @@ instance ( Var v, Show t, Show x, Val x ) => IOTest (SPI v x t) v x where
 |               |]
                 where
                     dt = receiveData pu cntx
-                    dt' = S.join ", " $ map (\d -> [qc|{ wordWidth }'sd{ verilogInt d }|]) dt ++ replicate (frameWordCount - length dt) [qc|{ wordWidth }'d00|]
+                    dt' = S.join ", " $ map (\d -> [qc|{ wordWidth }'sd{ verilogInteger d }|]) dt ++ replicate (frameWordCount - length dt) [qc|{ wordWidth }'d00|]
         , frameWordCount > 0
         = fixIndent [qc|
 |           // { show pu }

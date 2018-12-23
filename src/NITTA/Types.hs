@@ -40,7 +40,7 @@ class ( Typeable x, Read x, WithX x x ) => Val x where
     showTypeOf :: Proxy x -> String
     valueWidth :: Proxy x -> Integer
     scalingFactorPower :: x -> Integer
-    verilogInt :: x -> Int
+    verilogInteger :: x -> Integer
 
 widthX pu = valueWidth $ proxyX pu
 scalingFactorPowerOfProxy p = scalingFactorPower (undefined `asProxyTypeOf` p)
@@ -53,7 +53,7 @@ instance Val Int where
     showTypeOf _ = "Int"
     valueWidth _ = 32
     scalingFactorPower _ = 0
-    verilogInt = id
+    verilogInteger = fromIntegral
 
 
 
@@ -64,7 +64,7 @@ instance Val Integer where
     showTypeOf _ = "Integer"
     valueWidth _ = 32
     scalingFactorPower _ = 0
-    verilogInt = fromInteger
+    verilogInteger = id
 
 
 
@@ -121,7 +121,7 @@ instance ( KnownNat w ) => Val ( IntX w ) where
     showTypeOf p = "IntX" ++ show (valueWidth p)
     valueWidth _ = natVal (Proxy :: Proxy w)
     scalingFactorPower _ = 0
-    verilogInt (IntX x) = x
+    verilogInteger (IntX x) = fromIntegral x
 
 
 
@@ -223,4 +223,4 @@ instance ( KnownNat m, KnownNat b ) => Val ( FX m b ) where
         = let
             (m, b) = fxMB x
         in b - m
-    verilogInt (FX x) = x
+    verilogInteger (FX x) = fromIntegral x

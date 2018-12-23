@@ -87,7 +87,6 @@ import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval              ((...))
 import           Text.InterpolatedString.Perl6 (qc)
-import           Text.Printf
 
 
 
@@ -721,9 +720,3 @@ instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) 
         |]
 
 instance IOTest (Fram v x t) v x
-
-hdlValDump x
-    = let
-        v = verilogInt x
-        w = valueWidth $ proxyX x
-    in printf (concat ["%0", show w, "x"]) v
