@@ -44,7 +44,6 @@ Actual tasks you can find in the project [bug tracker](https://nitta.io/nitta-co
 1. [The Haskell Tool Stack (build system)](doc/stack-install.md)
 1. [Icarus Verilog (simulator)](doc/hdl-install.md)
 1. [Visual Studio Code (editor)](doc/vscode-install.md)
-1. [Build and test project](doc/build.md)
 
 ## Project rules
 1. [Abbreviation](doc/abbreviation.md)

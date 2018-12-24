@@ -90,11 +90,12 @@ nittaArgs = Nitta
 
 main = do
     Nitta{ web, npm_build, no_api_gen, file, type_ } <- cmdArgs nittaArgs
+    when npm_build prepareStaticFiles
     case file of
         Just fn -> do
             putStrLn [qc|> readFile: { fn }|]
             buf <- T.readFile fn
-            let exec = mainWithFile web npm_build no_api_gen buf
+            let exec = mainWithFile web no_api_gen buf
             case type_ of
                 "fx24.32" -> exec (microarch :: BusNetwork String String (FX 24 32) Int)
                 "fx32.32" -> exec (microarch :: BusNetwork String String (FX 32 32) Int)
@@ -140,6 +141,6 @@ main = do
     putStrLn "-- the end --"
 
 
-mainWithFile web npm_build no_api_gen buf ma
-    | web = backendServer no_api_gen npm_build $ mkModelWithOneNetwork ma $ lua2functions buf
+mainWithFile web no_api_gen buf ma
+    | web = backendServer no_api_gen $ mkModelWithOneNetwork ma $ lua2functions buf
     | otherwise = print =<< testLua "main" ma buf
