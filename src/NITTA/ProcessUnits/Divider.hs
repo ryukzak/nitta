@@ -356,6 +356,7 @@ instance ( Val x, Show t
      , .ATTR_WIDTH( { parameterAttrWidth } )
      , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
      , .PIPELINE( { pipeline } )
+     , .SCALING_FACTOR_POWER( { scalingFactorPowerOfProxy $ proxyX pu } )
      , .MOCK_DIV( { bool2verilog mock } )
      ) { title }
     ( .clk( { signalClk } )

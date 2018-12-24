@@ -17,6 +17,7 @@ Stability   : experimental
 -}
 module NITTA.API
     ( backendServer
+    , prepareStaticFiles
     ) where
 
 import           Control.Monad                 (unless, when)
@@ -53,7 +54,6 @@ export default api;|]
 
 
 prepareStaticFiles = do
-    -- TODO: Rebuild at each run.
     putStrLn "Generate statis files..."
     ( exitCode, out, err )
         <- readCreateProcessWithExitCode
@@ -85,10 +85,9 @@ application compilerState = do
 --
 -- - if true - prepare static files for the web UI by @npm@;
 -- - initial model state.
-backendServer no_api_gen no_static_gen modelState = do
+backendServer no_api_gen modelState = do
     let port = 8080
     unless no_api_gen $ prepareJSAPI port
-    unless no_static_gen prepareStaticFiles
 
     putStrLn $ "Running NITTA server on port: " ++ show port
 

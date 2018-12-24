@@ -1,9 +1,10 @@
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE DeriveDataTypeable  #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE QuasiQuotes         #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE DeriveDataTypeable        #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE NamedFieldPuns            #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE QuasiQuotes               #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
@@ -51,7 +52,7 @@ microarch = busNetwork 31 (Just False)
     [ OutputPort "miso" ]
     [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
     , ("fram2", PU D.def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
-    , ("shift", PU D.def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
+    -- , ("shift", PU D.def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
     , ("accum", PU D.def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
     , ("spi", PU
         (SPI.slaveSPI 0)
@@ -62,7 +63,7 @@ microarch = busNetwork 31 (Just False)
             })
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
     , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
-    ] :: BusNetwork String String (IntX 32) Int
+    ]
 
 
 ---------------------------------------------------------------------------------
@@ -70,36 +71,37 @@ microarch = busNetwork 31 (Just False)
 -- |Command line interface.
 data Nitta
     = Nitta
-        { web           :: Bool
-        , no_static_gen :: Bool
-        , no_api_gen    :: Bool
-        , file          :: Maybe FilePath
+        { web        :: Bool
+        , npm_build  :: Bool
+        , no_api_gen :: Bool
+        , type_      :: String
+        , file       :: Maybe FilePath
         }
     deriving (Show, Data, Typeable)
 
 nittaArgs = Nitta
     { web=False &= help "Run web server"
-    , no_static_gen=False &= help "No regenerate WebUI static files"
+    , npm_build=False &= help "No regenerate WebUI static files"
     , no_api_gen=False &= help "No regenerate rest_api.js library"
+    , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
     , file=D.def &= args &= typ "LUA_FILE"
     }
 
 
 main = do
-    Nitta{ web, no_static_gen, no_api_gen, file } <- cmdArgs nittaArgs
+    Nitta{ web, npm_build, no_api_gen, file, type_ } <- cmdArgs nittaArgs
+    when npm_build prepareStaticFiles
     case file of
         Just fn -> do
             putStrLn [qc|> readFile: { fn }|]
             buf <- T.readFile fn
-            if web
-                then backendServer no_api_gen no_static_gen $ mkModelWithOneNetwork microarch $ lua2functions buf
-                else print =<< testLua "main" microarch buf
+            let exec = mainWithFile web no_api_gen buf
+            case type_ of
+                "fx24.32" -> exec (microarch :: BusNetwork String String (FX 24 32) Int)
+                "fx32.32" -> exec (microarch :: BusNetwork String String (FX 32 32) Int)
+                _ -> error "Wrong bus type"
         Nothing -> do
             putStrLn "-- hardcoded begin --"
-            -- teacupDemo
-            -- fibonacciDemo
-
-            -- putStrLn "--------------------------------"
             -- funSim 5 D.def{ cntxInputs=M.fromList [("b_0", [1..5])] } $ lua2functions
             --     [qc|function fib(a)
             --             local b = receive()
@@ -120,16 +122,25 @@ main = do
                             , SPI.stop="stop"
                             , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
                             })
-                    ] :: BusNetwork String String (IntX 32) Int
-            print =<< testWithInput "hardcode" [("a_0", [10..15]),("b_0", [20..25])] microarchHC
+                    , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
+                    , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+                    ] :: BusNetwork String String (FX 30 32) Int
+            print =<< testWithInput "hardcode"
+                [ ("a_0", [ read "5", read "0.75", read "0.75" ])
+                , ("b_0", [ read "2", read "0.25", read "0.5" ])
+                ]
+                microarchHC
                 ( lua2functions
                     [qc|function fib()
-                            local a = receive()
-                            local b = receive()
-                            local c = a + b
-                            send(c)
+                            a = 0.5 + 0.5
+                            send(a)
                             fib()
                         end
                         fib()|] )
             putStrLn "-- hardcoded end --"
     putStrLn "-- the end --"
+
+
+mainWithFile web no_api_gen buf ma
+    | web = backendServer no_api_gen $ mkModelWithOneNetwork ma $ lua2functions buf
+    | otherwise = print =<< testLua "main" ma buf

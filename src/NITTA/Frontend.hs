@@ -37,7 +37,7 @@ import           Data.Text                     (Text, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
-import           NITTA.Types                   (IntX)
+import           NITTA.Types                   (IntX, FX)
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
@@ -150,8 +150,8 @@ function2nitta Function{ fName="sub",      fIn=[a, b], fOut=[c],    fValues=[]  
 function2nitta Function{ fName="multiply", fIn=[a, b], fOut=[c],    fValues=[]  } = F.multiply <$> input a <*> input b <*> output c
 function2nitta Function{ fName="divide",   fIn=[d, n], fOut=[q, r], fValues=[]  } = F.division <$> input d <*> input n <*> output q <*> output r
 function2nitta Function{ fName="receive",  fIn=[],     fOut=[o],    fValues=[]  } = F.receive <$> output o
-function2nitta Function{ fName="shiftL",   fIn=[a],    fOut=[c],    fValues=[]  } = F.shiftL <$> input a <*> output c
-function2nitta Function{ fName="shiftR",   fIn=[a],    fOut=[c],    fValues=[]  } = F.shiftR <$> input a <*> output c
+-- function2nitta Function{ fName="shiftL",   fIn=[a],    fOut=[c],    fValues=[]  } = F.shiftL <$> input a <*> output c
+-- function2nitta Function{ fName="shiftR",   fIn=[a],    fOut=[c],    fValues=[]  } = F.shiftR <$> input a <*> output c
 function2nitta f = error $ "frontend don't known function: " ++ show f
 
 
@@ -217,6 +217,9 @@ instance PatchAlgForType Integer where
     patchAlgForType = return ()
 
 instance PatchAlgForType (IntX w) where
+    patchAlgForType = return ()
+
+instance PatchAlgForType (FX m b) where
     patchAlgForType = return ()
 
 -- instance PatchAlgForType (IntX w) where

@@ -87,7 +87,6 @@ import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval              ((...))
 import           Text.InterpolatedString.Perl6 (qc)
-import           Text.Printf
 
 
 
@@ -692,28 +691,32 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
 softwareFile title pu = moduleName title pu ++ "." ++ title ++ ".dump"
 
 instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) where
-  moduleName _ _ = "pu_fram"
-  hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
-  software title pu@Fram{ frMemory }
-    = Immidiate (softwareFile title pu) $ unlines $ map (printf "%08x" . fromEnum . initialValue) $ elems frMemory
-  hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
-    [qc|pu_fram
-    #( .DATA_WIDTH( { widthX pu } )
-     , .ATTR_WIDTH( { show parameterAttrWidth } )
-     , .RAM_SIZE( { show frSize } )
-     , .FRAM_DUMP( "$path${ softwareFile title pu }" )
-     ) { title }
-    ( .clk( { signalClk } )
-    , .signal_addr( \{ { S.join ", " (map signal addr) } } )
+    moduleName _ _ = "pu_fram"
+    hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
+    software title pu@Fram{ frMemory }
+        = Immidiate
+            (softwareFile title pu)
+            $ unlines $ map
+                (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
+                $ elems frMemory
+    hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
+        [qc|pu_fram
+        #( .DATA_WIDTH( { widthX pu } )
+        , .ATTR_WIDTH( { show parameterAttrWidth } )
+        , .RAM_SIZE( { show frSize } )
+        , .FRAM_DUMP( "$path${ softwareFile title pu }" )
+        ) { title }
+        ( .clk( { signalClk } )
+        , .signal_addr( \{ { S.join ", " (map signal addr) } } )
 
-    , .signal_wr( { signal wr } )
-    , .data_in( { dataIn } )
-    , .attr_in( { attrIn } )
+        , .signal_wr( { signal wr } )
+        , .data_in( { dataIn } )
+        , .attr_in( { attrIn } )
 
-    , .signal_oe( { signal oe } )
-    , .data_out( { dataOut } )
-    , .attr_out( { attrOut } )
-    );
-    |]
+        , .signal_oe( { signal oe } )
+        , .data_out( { dataOut } )
+        , .attr_out( { attrOut } )
+        );
+        |]
 
 instance IOTest (Fram v x t) v x

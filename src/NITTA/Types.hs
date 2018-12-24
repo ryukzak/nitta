@@ -1,13 +1,27 @@
-{-# LANGUAGE DataKinds      #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE KindSignatures        #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
+{-|
+Module      : NITTA.Types
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2018
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Types
   ( module NITTA.Types.Base
   , module NITTA.Types.Network
   , module NITTA.Types.Poly
   , IntX(..)
+  , FX(..)
   , Val(..)
   , widthX
+  , scalingFactor
+  , scalingFactorPowerOfProxy
   ) where
 
 import           NITTA.Types.Base
@@ -21,11 +35,53 @@ import           Data.Proxy
 import           Data.Typeable
 import           GHC.TypeLits
 
-newtype IntX (w :: Nat) = IntX Int
+
+class ( Typeable x, Read x, WithX x x ) => Val x where
+    showTypeOf :: Proxy x -> String
+    valueWidth :: Proxy x -> Integer
+    scalingFactorPower :: x -> Integer
+    verilogInteger :: x -> Integer
+
+widthX pu = valueWidth $ proxyX pu
+scalingFactorPowerOfProxy p = scalingFactorPower (undefined `asProxyTypeOf` p)
+
+
+-- for Int
+instance WithX Int Int
+
+instance Val Int where
+    showTypeOf _ = "Int"
+    valueWidth _ = 32
+    scalingFactorPower _ = 0
+    verilogInteger = fromIntegral
+
+
+
+-- for Integer
+instance WithX Integer Integer
+
+instance Val Integer where
+    showTypeOf _ = "Integer"
+    valueWidth _ = 32
+    scalingFactorPower _ = 0
+    verilogInteger = id
+
+
+
+-- for IntX width
+newtype IntX (w :: Nat) = IntX Integer
     deriving ( Show, Eq, Ord )
+
+instance Read ( IntX w ) where
+    readsPrec d r = let [(x, "")] = readsPrec d r
+        in [(IntX x, "")]
 
 instance Default ( IntX w ) where
     def = IntX 0
+
+instance Enum ( IntX w ) where
+    toEnum = IntX . toInteger
+    fromEnum (IntX x) = fromInteger x
 
 instance Num ( IntX w ) where
     ( IntX a ) + ( IntX b ) = IntX ( a + b )
@@ -37,10 +93,6 @@ instance Num ( IntX w ) where
 
 instance Real ( IntX w ) where
     toRational ( IntX x ) = toRational x
-
-instance Enum ( IntX x ) where
-    toEnum = IntX
-    fromEnum (IntX x) = x
 
 instance Integral ( IntX w ) where
     toInteger ( IntX x ) = toInteger x
@@ -63,42 +115,112 @@ instance Bits ( IntX w ) where
     bit i = IntX $ bit i
     popCount ( IntX a ) = popCount a
 
+instance WithX (IntX w) (IntX w)
 
-
-class ( Typeable x, Read x ) => Val x where
-    showTypeOf :: Proxy x -> String
-    valueWidth :: Proxy x -> Integer
-
-
-instance Read (IntX w) where
-    readsPrec d r = let [(x, "")] = readsPrec d r
-        in [(IntX x, "")]
-
-instance Val Int where
-    showTypeOf _ = "Int"
-    valueWidth _ = 32
-
-instance Val Integer where
-    showTypeOf _ = "Integer"
-    valueWidth _ = 32
-
-instance ( KnownNat w ) => Val (IntX w) where
+instance ( KnownNat w ) => Val ( IntX w ) where
     showTypeOf p = "IntX" ++ show (valueWidth p)
-    valueWidth p = natVal $ widthProxy p
-        where
-            widthProxy :: Proxy (IntX w) -> Proxy w
-            widthProxy _ = Proxy
+    valueWidth _ = natVal (Proxy :: Proxy w)
+    scalingFactorPower _ = 0
+    verilogInteger (IntX x) = fromIntegral x
 
-widthX pu = valueWidth $ proxyX pu
 
--- transformToFixPoint algArithmetic x
---         | IntRepr               <- rt = maybe (Left "Float values is unsupported") checkInt $ readMaybe x
---         | (DecimalFixedPoint n) <- rt = maybe (readDouble 10 n x) (checkInt . (* 10^n)) $ readMaybe x
---         | (BinaryFixedPoint  n) <- rt = maybe (readDouble 2  n x) (checkInt . (* 2 ^n)) $ readMaybe x
---     where
---         rt             = reprType algArithmetic
---         maxNum         = 2 ^ valueWidth algArithmetic - 1
---         minNum         = bool 0 (-maxNum - 1) $ isValueSigned algArithmetic
---         readDouble t n = checkInt . fst . properFraction . (* t^n) . (read :: String -> Double)
---         checkInt v     | v <= maxNum && v >= minNum = Right $ fromInteger v
---                        | otherwise                  = Left  $ unpack [qq|The value is outside the allowed limits [$minNum, $maxNum]: $v ($x)|]
+
+-- |FX m b where
+--   - m the number of magnitude or integer bits
+--   - b the total number of bits
+--
+-- fxm.b: The "fx" prefix is similar to the above, but uses the word length as
+-- the second item in the dotted pair. For example, fx1.16 describes a number
+-- with 1 magnitude bit and 15 fractional bits in a 16 bit word.[3]
+newtype FX (m :: Nat) (b :: Nat) = FX Integer
+    deriving ( Eq, Ord )
+
+fxMB x
+    = let
+        proxyM :: FX m b -> Proxy m
+        proxyM _ = Proxy
+        proxyB :: FX m b -> Proxy b
+        proxyB _ = Proxy
+    in (natVal $ proxyM x, natVal $ proxyB x)
+
+
+scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
+
+instance ( KnownNat m, KnownNat b ) => Show ( FX m b ) where
+    show t@(FX x) = show (fromIntegral x / scalingFactor t :: Double)
+
+instance ( KnownNat m, KnownNat b ) => Read ( FX m b ) where
+    readsPrec d r
+        = let
+            [(x, "")] = readsPrec d r
+            result = FX $ truncate (x * scalingFactor result :: Double)
+        in [(result, "")]
+
+instance Default ( FX m b ) where
+    def = FX 0
+
+instance ( KnownNat m, KnownNat b ) => Enum ( FX m b ) where
+    toEnum x
+        = let res = FX $ toInteger (x * truncate (scalingFactor res :: Double))
+        in res
+    fromEnum t@(FX x) = truncate (fromIntegral x / scalingFactor t :: Double)
+
+instance ( KnownNat m, KnownNat b ) => Num ( FX m b ) where
+    ( FX a ) + ( FX b ) = FX ( a + b )
+    t@( FX a ) * ( FX b ) = FX ( truncate (fromIntegral (a * b) / scalingFactor t :: Double) )
+    abs ( FX a ) = FX $ abs a
+    signum ( FX a ) = fromInteger $ signum a
+    fromInteger x
+        = let res = FX $ fromIntegral (x * truncate (scalingFactor res :: Double))
+        in res
+    negate ( FX a ) = FX $ negate a
+
+instance ( KnownNat m, KnownNat b ) => Real ( FX m b ) where
+    toRational t@( FX x ) = toRational (fromIntegral x / scalingFactor t :: Double)
+
+instance ( KnownNat m, KnownNat b ) => Integral ( FX m b ) where
+    toInteger t = toInteger $ fromEnum t
+    t@( FX a ) `quotRem` ( FX b )
+        = let
+            (a', b') = a `quotRem` b
+            sf = scalingFactor t
+        in ( FX $ truncate (fromIntegral a' * sf :: Double), FX b' )
+
+instance Bits ( FX m b ) where
+    (.&.) = undefined
+    -- ( FX a ) .&. ( FX b ) = FX ( a .&. b )
+    (.|.) = undefined
+    -- ( FX a ) .|. ( FX b ) = FX ( a .|. b )
+    xor = undefined
+    -- ( FX a ) `xor` ( FX b ) = FX ( a `xor` b )
+    complement = undefined
+    -- complement ( FX a ) = FX $ complement a
+    shift ( FX a ) i = FX $ shift a i
+    rotate ( FX a ) i = FX $ rotate a i
+
+    bitSize = undefined
+    -- bitSize ( FX a ) = fromMaybe undefined $ bitSizeMaybe a
+    bitSizeMaybe = undefined
+    -- bitSizeMaybe ( FX a ) = bitSizeMaybe a
+    isSigned = undefined
+    -- isSigned ( FX a ) = isSigned a
+    testBit = undefined
+    -- testBit ( FX a ) = testBit a
+    bit = undefined
+    -- bit i = FX $ bit i
+    popCount = undefined
+    -- popCount ( FX a ) = popCount a
+
+
+instance WithX ( FX m b ) ( FX m b )
+
+instance ( KnownNat m, KnownNat b ) => Val ( FX m b ) where
+    showTypeOf _ = let
+            (m, b) = fxMB (undefined :: FX m b)
+        in "FX" ++ show m ++ "_" ++ show b
+    valueWidth _ = natVal (Proxy :: Proxy b)
+    scalingFactorPower x
+        = let
+            (m, b) = fxMB x
+        in b - m
+    verilogInteger (FX x) = fromIntegral x

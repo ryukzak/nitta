@@ -105,12 +105,13 @@ data SynthesisNodeView
         , svIsComplete       :: Bool
         , svIsEdgesProcessed :: Bool
         , svDuration         :: Int
+        , svCharacteristic   :: Float
         }
-    deriving (Generic)
+    deriving ( Generic )
 
 instance ToJSON SynthesisNodeView
 
-synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges } = do
+synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
     nodesM <- readTVarIO nEdges
     nodes <- case nodesM of
         Just ns -> mapM (synthesisNodeView . eNode) ns
@@ -122,6 +123,7 @@ synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges } = do
             , svIsComplete=nIsComplete
             , svIsEdgesProcessed=isJust nodesM
             , svDuration=fromEnum $ targetProcessDuration nModel
+            , svCharacteristic=maybe (read "NaN") eCharacteristic nOrigin
             }
         , T.subForest=nodes
         }

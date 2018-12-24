@@ -19,6 +19,7 @@ import           NITTA.Test.BusNetwork
 import           NITTA.Test.Functions
 import           NITTA.Test.LuaFrontend
 import           NITTA.Test.ProcessUnits
+import           NITTA.Test.Types
 import           NITTA.Test.Utils
 import           System.Environment      (lookupEnv, setEnv)
 import           Test.Tasty              (defaultMain, testGroup)
@@ -32,6 +33,7 @@ main = do
     setEnv "TASTY_QUICKCHECK_TESTS" qtests
     defaultMain $ testGroup "NITTA"
         [ utilTests
+        , typesTests
         , functionTests
         , processUnitTests
         , busNetworkTests

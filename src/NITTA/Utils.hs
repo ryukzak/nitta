@@ -31,6 +31,7 @@ module NITTA.Utils
     -- *HDL generation
     , bool2verilog
     , values2dump
+    , hdlValDump
     -- *HDL generation (depricated)
     , renderST
     -- *Process construction (depricated)
@@ -58,8 +59,8 @@ module NITTA.Utils
     , maybeInstructionOf
     ) where
 
-import           Control.Monad.State
-import           Control.Monad.State (modify')
+import           Control.Monad.State (State, get, modify', put, runState)
+import           Data.Bits           (setBit, testBit)
 import           Data.Default
 import           Data.List           (maximumBy, minimumBy, nub, sortOn)
 import           Data.Maybe          (isJust, mapMaybe)
@@ -131,6 +132,23 @@ values2dump vs
         readBin :: String -> Int
         readBin = fst . head . readInt 2 (`elem` "x01") (\case '1' -> 1; _ -> 0)
 
+
+hdlValDump x
+    = let
+        v = verilogInteger x
+        w = valueWidth $ proxyX x
+        bins = map (testBit v) $ reverse [0 .. fromInteger w - 1]
+
+        lMod = length bins `mod` 4
+        bins' = groupBy4 $ if lMod == 0
+            then bins
+            else replicate (4 - lMod) (head bins) ++ bins
+        hs = map (foldr (\(i, a) acc -> if a then setBit acc i else acc) (0 :: Int) . zip [3,2,1,0]) bins'
+    in concatMap (`showHex` "") hs
+
+    where
+        groupBy4 [] = []
+        groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)
 
 
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP st

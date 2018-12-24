@@ -63,9 +63,7 @@ import           Text.InterpolatedString.Perl6 (qc)
 type Title v = ( Typeable v, Ord v, Show v )
 
 
-
-
-data GBusNetwork title spu v x t = BusNetwork
+data BusNetwork title v x t = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
       bnRemains        :: [F v x]
@@ -74,7 +72,7 @@ data GBusNetwork title spu v x t = BusNetwork
     -- | Описание вычислительного процесса сети, как элемента процессора.
     , bnProcess        :: Process v x t
     -- | Словарь вложенных вычислительных блоков по именам.
-    , bnPus            :: M.Map title spu
+    , bnPus            :: M.Map title (PU v x t)
     -- | Ширина шины управления.
     , bnSignalBusWidth :: Int
     , bnInputPorts     :: [InputPort]
@@ -82,7 +80,6 @@ data GBusNetwork title spu v x t = BusNetwork
     -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
     , bnAllowDrop      :: Maybe Bool
     }
-type BusNetwork title v x t = GBusNetwork title (PU v x t) v x t
 
 
 -- TODO: Проверка подключения сигнальных линий.
@@ -450,7 +447,7 @@ instance
 
 
 instance ( Title title, Var v, Time t
-         , Show x, Enum x
+         , Show x
          , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x, Val x
          ) => TestBench (BusNetwork title v x t) v x where
@@ -529,12 +526,12 @@ instance ( Title title, Var v, Time t
 |               |]
             assertion (Just (t, cntx))
                 = fixIndentNoLn [qc|
-|                       @(posedge clk); $write("tick: { t }; net.data_bus == %h ", net.data_bus);
+|                       @(posedge clk); $write("tick: { t };\tnet.data_bus == %h ", net.data_bus);
 |               |]
                 ++ case extractInstructionAt n t of
                     Transport v _ _ : _ -> fixIndent [qc|
-|                                   $write("=== %h (var: %s)", { fromEnum $ get' cntx v }, { v } );
-|                                   if ( !( net.data_bus === { fromEnum $ get' cntx v } ) ) $display( " FAIL");
+|                                   $write("=== %h (var: %s := { get' cntx v })", { verilogInteger $ get' cntx v }, { v } );
+|                                   if ( !( net.data_bus === { verilogInteger $ get' cntx v } ) ) $display( "\tFAIL");
 |                                   else $display();
 |                       |]
                     [] -> fixIndent [qc|

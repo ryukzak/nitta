@@ -59,9 +59,37 @@ test_counter =
     ]
 
 
+test_signed =
+    [ luaTestCase "sub"
+        [qc|function counter()
+                send(10 - 20)
+                send(-30 + 40)
+            end
+            counter()
+        |]
+    , luaTestCase "mul"
+        [qc|function counter()
+                send(10 * -1)
+                send(-20 * -30)
+            end
+            counter()
+        |]
+    , luaTestCase "div"
+        [qc|function counter()
+                a, b = -10 / 2
+                send(a)
+                send(b)
+                c, d = 10 / -2
+                send(c)
+                send(d)
+            end
+            counter()
+        |]
+    ]
+
+
 test_fibonacci =
-    [ luaTestCase "example" $(embedStringFile "examples/teacup.lua")
-    , luaTestCase "def_b_a"
+    [ luaTestCase "def_b_a"
         [qc|function fib(a, b)
                 b, a = a + b, b
                 fib(a, b)
@@ -80,6 +108,40 @@ test_fibonacci =
                 fib(a, b)
             end
             fib(0, 1)|]
+    ]
+
+
+test_teacup =
+    [ luaTestCaseFP "example" $(embedStringFile "examples/teacup.lua")
+    ]
+
+
+test_fixedpoint =
+    [ luaTestCaseFP "sub"
+        [qc|function counter()
+                send(0.5 - 0.25)
+                send(-1.25 + 2.5)
+            end
+            counter()
+        |]
+    , luaTestCaseFP "mul"
+        [qc|function counter()
+                send(0.5 * -0.5)
+                send(-20.5 * -2)
+            end
+            counter()
+        |]
+    , luaTestCaseFP "div"
+        [qc|function counter()
+                a, b = -1.25 / 0.5
+                send(a)
+                send(b)
+                c, d = 75 / -2
+                send(c)
+                send(d)
+            end
+            counter()
+        |]
     ]
 
 
@@ -110,6 +172,21 @@ luaTestCase name lua = testGroup name
         , inner marchSPIDropData (Proxy :: Proxy (IntX 64))
         , inner marchSPIDropData (Proxy :: Proxy (IntX 96))
         , inner marchSPIDropData (Proxy :: Proxy (IntX 128))
+        , inner marchSPIDropData (Proxy :: Proxy (FX 22 32))
+        , inner marchSPIDropData (Proxy :: Proxy (FX 42 64))
+        ]
+    where
+        fn = "lua_" ++ name
+        inner ma xProxy
+            = testCase (showTypeOf xProxy ++ " <" ++ fn' ++ ">") $ do
+                res <- testLuaWithInput fn' [] (ma xProxy) lua
+                isRight res @? show res
+            where
+                fn' = fn ++ "_" ++ showTypeOf xProxy
+
+luaTestCaseFP name lua = testGroup name
+        [ inner marchSPIDropData (Proxy :: Proxy (FX 22 32))
+        , inner marchSPIDropData (Proxy :: Proxy (FX 40 64))
         ]
     where
         fn = "lua_" ++ name

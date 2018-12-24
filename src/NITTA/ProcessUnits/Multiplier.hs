@@ -597,6 +597,7 @@ instance ( Time t, Var v, Val x
 |           pu_multiplier #
 |                   ( .DATA_WIDTH( { widthX pu } )
 |                   , .ATTR_WIDTH( { parameterAttrWidth } )
+|                   , .SCALING_FACTOR_POWER( { scalingFactorPowerOfProxy $ proxyX pu } )
 |                   , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
 |                   ) { title }
 |               ( .clk( {signalClk} )
@@ -621,8 +622,6 @@ instance IOTest (Multiplier v x t) v x
 -- This class is easy realized: we take process description
 -- (all planned functions) from processor, and function in progress,
 -- if it is.
-
-
 instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
     functions Multiplier{ process_, remain, currentWork }
         = functions process_

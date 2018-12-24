@@ -175,6 +175,15 @@ instance ToJSONKey (IntX w) where
 instance ToJSON (IntX w) where
     toJSON ( IntX x ) = toJSON x
 
+instance ToJSONKey (FX m b) where
+    toJSONKey
+        = let
+            ToJSONKeyText f g = toJSONKey
+        in ToJSONKeyText (\( FX x ) -> f $ show x) (\( FX x ) -> g $ show x)
+
+instance ToJSON (FX m b) where
+    toJSON ( FX x ) = toJSON $ show x
+
 
 
 -- *System
