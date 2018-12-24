@@ -23,7 +23,8 @@ import           Data.Default                  as D
 import qualified Data.Map                      as M
 import           Data.Maybe
 import qualified Data.Text.IO                  as T
-import           NITTA.API                     (backendServer)
+import           NITTA.API                     (backendServer,
+                                                prepareStaticFiles)
 import           NITTA.BusNetwork
 import           NITTA.DataFlow
 import           NITTA.Frontend
