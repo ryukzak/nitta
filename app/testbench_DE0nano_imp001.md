@@ -35,9 +35,14 @@ A user and the test bench communicate throughout electricimp cloud-based IDE
 There is recommended color of wire in the brackets. The proportions are broken.
 
 ```
-           +--------------------------------------- GND (black)
-+----------|---------------------+
-|    ooooo *oooo ooooo ooooo     |
+
+           +---------------------------------------- GND     (black)
+           |            +--------------------------- MOSI_lg (orange)
+           |            |+-------------------------- MISO_lg (blue)
+           |            ||+------------------------- SCLK_lg (yellow)          
+           |            |||+------------------------ CS_lg   (white)
++----------|------------||||-----+
+|    ooooo *oooo ooooo o****     |
 |    ooooo ooooo ooooo o****     |
 |                       |||+------------------------ CS   (white)
 +-----+                 ||+------------------------- SCLK (yellow)
