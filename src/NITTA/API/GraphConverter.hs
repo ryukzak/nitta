@@ -1,6 +1,6 @@
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE FunctionalDependencies  #-}
-{-# LANGUAGE FlexibleContexts  #-} 
 
 {-|
 Module      : NITTA.API.Marshalling
@@ -11,7 +11,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 
-module NITTA.API.GraphConverter 
+module NITTA.API.GraphConverter
     ( GraphStructure(..)
     , NodeElement(..)
     , NodeParam(..)
@@ -20,9 +20,9 @@ module NITTA.API.GraphConverter
     , toGraphStructure
     ) where
 
+import           Data.Set      (toList)
 import           Data.Typeable
 import           NITTA.Types
-import           Data.Set              (toList)
 
 
 
@@ -32,13 +32,13 @@ data GraphStructure v = GraphStructure {
 }
 
 configureNode nodeParam xs ys = GraphStructure [NodeElement 1 nodeParam] $
-                                               map (\c -> GraphVertex InVertex  (show c) 1) xs ++ 
+                                               map (\c -> GraphVertex InVertex  (show c) 1) xs ++
                                                 map (\c -> GraphVertex OutVertex (show c) 1) ys
 
-configureLoopNodes nodeParamS nodeParamE x ys = 
-    GraphStructure [NodeElement 1 nodeParamS, 
+configureLoopNodes nodeParamS nodeParamE x ys =
+    GraphStructure [NodeElement 1 nodeParamS,
                     NodeElement 2 nodeParamE] $
-                   GraphVertex InVertex (show x) 2 : 
+                   GraphVertex InVertex (show x) 2 :
                     map (\c -> GraphVertex OutVertex (show c) 1) ys
 
 data NodeElement = NodeElement {
@@ -83,11 +83,11 @@ class ToGraphStructure f e | f -> e where
     toGraphStructure :: f -> GraphStructure e
 
 instance (Var v, Typeable x) => ToGraphStructure (F v x) GraphVertex where
-    toGraphStructure fb | insideOut fb = configureLoopNodes (box "#6dc066" $ show fb) 
+    toGraphStructure fb | insideOut fb = configureLoopNodes (box "#6dc066" $ show fb)
                                                             (ellipse  "#fa8072" $ "next -> " ++ show inVar)
                                                             inVar outVars
                         | otherwise    = configureNode (box "#cbbeb5" $ show fb) inVars outVars
-        where 
+        where
             inVars  = toList $ inputs fb
             outVars = toList $ outputs fb
             inVar   = (\(x:xs) -> if null xs
@@ -101,19 +101,19 @@ instance ToGraphStructure t GraphVertex => ToGraphStructure [t] GraphEdge where
                            in GraphStructure nodes eges
         where
             calculateIndexes []                           _ = []
-            calculateIndexes (GraphStructure ns vs : gss) t = 
+            calculateIndexes (GraphStructure ns vs : gss) t =
                 GraphStructure (map (\ n -> n{nodeId = t + nodeId n}) ns)
                                  (map (\ v -> v{vertexNodeId = t + vertexNodeId v}) vs)
                 : calculateIndexes gss (t + length ns)
 
-            connectGraph = foldl (\ (GraphStructure n1 v1) (GraphStructure n2 v2) 
-                                      -> GraphStructure (n1 ++ n2) (v1 ++ v2)) 
+            connectGraph = foldl (\ (GraphStructure n1 v1) (GraphStructure n2 v2)
+                                      -> GraphStructure (n1 ++ n2) (v1 ++ v2))
                                  (GraphStructure [] [])
 
-            bindVertexes vs = let !inVertexes  = filter ((InVertex  ==) . vertexType) vs
-                                  !outVertexes = filter ((OutVertex ==) . vertexType) vs
-                              in concatMap (\(GraphVertex _ name inId) -> 
-                                               map (\(GraphVertex _ _ outId) -> 
+            bindVertexes vs = let inVertexes  = filter ((InVertex  ==) . vertexType) vs
+                                  outVertexes = filter ((OutVertex ==) . vertexType) vs
+                              in concatMap (\(GraphVertex _ name inId) ->
+                                               map (\(GraphVertex _ _ outId) ->
                                                        GraphEdge (arrow name) inId outId)
                                                    $ filter ((name ==) . vertexName)
                                                             outVertexes) inVertexes

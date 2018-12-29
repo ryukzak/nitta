@@ -30,13 +30,12 @@ import           NITTA.API.REST
 import           NITTA.Types.Synthesis
 import           Servant
 import qualified Servant.JS                    as SJS
-import           Servant.Utils.StaticFiles     (serveDirectoryWebApp)
+import           Servant.Server.StaticFiles    (serveDirectoryWebApp)
 import           System.Directory              (createDirectoryIfMissing)
 import           System.Exit                   (ExitCode (..), die)
 import           System.FilePath.Posix         (joinPath)
 import           System.Process
 import           Text.InterpolatedString.Perl6 (qq)
--- import           Servant.Server.StaticFiles (serveDirectoryWebApp) -- update on servant 14+
 
 
 prepareJSAPI port = do

@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
@@ -184,7 +185,8 @@ snippetTestBench
     = let
         mn = moduleName projectName pu
         p@Process{ steps, nextTick } = process pu
-        Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx $ functions pu
+        fs = functions pu
+        Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx fs
 
         inst = hardwareInstance projectName pu
             Enviroment
@@ -236,7 +238,7 @@ snippetTestBench
 |
 |       /*
 |       Algorithm:
-|       { unlines $ map show $ functions pu }
+|       { unlines $ map show $ fs }
 |       Process:
 |       { unlines $ map show $ reverse steps }
 |       Context:

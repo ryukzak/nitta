@@ -6,10 +6,8 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS -Wall -Wsemigroup -Wnoncanonical-monoid-instances -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -fno-cse #-}
-
--- FIXME: -Wmissing-monadfail-instances -> -Wcompat
 
 {-|
 Module      : NITTA.Frontend
@@ -37,7 +35,7 @@ import           Data.Text                     (Text, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
-import           NITTA.Types                   (IntX, FX)
+import           NITTA.Types                   (FX, IntX)
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
@@ -457,11 +455,11 @@ addItem item vars = modify'_
         }
 
 
-
 genVar prefix = do
-    alg@AlgBuilder{ algVarGen=g:gs } <- get
-    put alg{ algVarGen=gs }
-    return $ T.concat [prefix, g]
+    alg@AlgBuilder{ algVarGen } <- get
+    when (null algVarGen) $ error "internal error"
+    put alg{ algVarGen=tail algVarGen }
+    return $ T.concat [prefix, head algVarGen]
 
 
 
