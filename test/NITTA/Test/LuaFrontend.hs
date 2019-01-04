@@ -146,7 +146,7 @@ test_fixedpoint =
 
 
 test_io =
-    [ luaTestCaseWithInput "double_receive" [("a_0", [10..15]),("b_0", [20..25])] $ pack $ fixIndent [qc|
+    [ luaTestCaseWithInput "double_receive" [("a:0", [10..15]),("b:0", [20..25])] $ pack $ fixIndent [qc|
 |       function fib()
 |          local a = receive()
 |          local b = receive()

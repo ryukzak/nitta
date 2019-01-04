@@ -31,7 +31,7 @@ import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
 import           Data.Maybe                    (fromMaybe)
 import qualified Data.String.Utils             as S
-import           Data.Text                     (Text, unpack)
+import           Data.Text                     (Text, unpack, pack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
@@ -59,7 +59,7 @@ lua2functions src
     in snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
     where
         varRow lst@(x:_)
-            = let vs = zipWith (\v i -> [qq|{unpack v}_{i}|]) lst [0..]
+            = let vs = zipWith (\v i -> [qq|{unpack v}:{i}|]) lst [0..]
             in (x, (vs, vs))
         varRow _ = undefined
 
@@ -70,7 +70,7 @@ buildAlg ast
         alg0 = AlgBuilder
             { algItems=[]
             , algBuffer=[]
-            , algVarGen=map (\i -> [qq|#{i}|]) [0..]
+            , algVarGen=map (pack . show) [0..]
             , algVars=[]
             }
         builder = do
@@ -124,7 +124,7 @@ data AlgBuilderItem x
         , iVar :: Text  -- ^Symbol
         , iX   :: x -- ^Initial value
         }
-    | Constant{ cVar :: Text, cX :: x }
+    | Constant{ cVar :: Text, cX :: x, cTextX :: Text }
     | Alias{ aFrom :: Text, aTo :: Text }
     | Renamed{ rFrom :: Text, rTo :: Text }
     | Function
@@ -329,7 +329,7 @@ rightExp diff [a] (PrefixExp (PEVar (VarName (Name b)))) -- a = b
     = addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }
 
 rightExp diff [a] n@(Number _ _) = do -- a = 42
-    b <- expConstant (T.concat [a, "_constant"]) n
+    b <- expConstant (T.concat ["const_", a]) n
     addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }
 
 -- FIXME: add negative function
@@ -343,7 +343,7 @@ rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
 
 
-expArg _diff n@(Number _ _) = expConstant "constant" n
+expArg _diff n@(Number _ _) = expConstant "const_inline" n
 
 expArg _diff (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
 
@@ -359,7 +359,7 @@ expArg diff binop@Binop{} = do
     rightExp diff [c] binop
     return c
 
-expArg _diff (Unop Neg (Number numType n)) = expConstant "constant" $ Number numType $ T.cons '-' n
+expArg _diff (Unop Neg (Number numType n)) = expConstant "const_inline" $ Number numType $ T.cons '-' n
 
 expArg diff (Unop Neg expr@(PrefixExp _)) = do
     c <- genVar "tmp"
@@ -375,13 +375,17 @@ expArg _diff a = error $ "expArg: " ++ show a
 
 expConstant prefix (Number _ textX) = do
     AlgBuilder{ algItems } <- get
-    let x = read $ unpack textX
-    case find (\case Constant{ cX } | cX == x -> True; _ -> False) algItems of
+    case find (\case Constant{ cTextX } | cTextX == textX -> True; _ -> False) algItems of
         Just Constant{ cVar } -> return cVar
         Nothing -> do
-            g <- genVar prefix
-            addItem Constant{ cX=x, cVar=g } []
-            return g
+            cVar <- genVar $ T.concat [ prefix, "_", textX ]
+            addItem Constant
+                { cX=read $ unpack textX
+                , cVar
+                , cTextX=textX 
+                } 
+                []
+            return cVar
         Just _ -> error "internal error"
 expConstant _ _ = undefined
 
@@ -420,7 +424,7 @@ renameFromTo rFrom rTo = do
     where
         patch [] = []
         patch (i@InputVar{ iVar } : xs) = i{ iVar=rn iVar } : patch xs
-        patch (Constant{ cX, cVar } : xs) = Constant{ cX, cVar=rn cVar } : patch xs
+        patch (Constant{ cX, cVar, cTextX } : xs) = Constant{ cX, cVar=rn cVar, cTextX } : patch xs
         patch (Alias{ aFrom, aTo } : xs) = Alias (rn aFrom) (rn aTo) : patch xs
         patch (f@Function{ fIn, fOut } : xs) = f{ fIn=map rn fIn, fOut=map rn fOut } : patch xs
         patch (x:xs) = x : patch xs
@@ -459,7 +463,7 @@ genVar prefix = do
     alg@AlgBuilder{ algVarGen } <- get
     when (null algVarGen) $ error "internal error"
     put alg{ algVarGen=tail algVarGen }
-    return $ T.concat [prefix, head algVarGen]
+    return $ T.concat [ prefix, "_", head algVarGen ]
 
 
 
