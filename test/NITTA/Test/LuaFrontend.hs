@@ -74,6 +74,13 @@ test_signed =
             end
             counter()
         |]
+    , luaTestCase "quad"
+        [qc|function counter()
+                local x = 10
+                send(x * x)
+            end
+            counter()
+        |]
     , luaTestCase "div"
         [qc|function counter()
                 a, b = -10 / 2
