@@ -22,6 +22,7 @@ module NITTA.API.REST
 
 import           Control.Concurrent.STM
 import           Control.Monad.Except
+-- import NITTA.API.GraphConverter
 import           Data.Aeson
 import           Data.Maybe
 import qualified Data.Tree              as T
@@ -54,7 +55,7 @@ type WithSynthesis title v x t
     =    Get '[JSON] (Node title v x t)
     :<|> "edge" :> Get '[JSON] (Maybe (Edge title v x t))
     :<|> "model" :> Get '[JSON] (ModelState title v x t)
-    :<|> "model" :> "alg" :> Get '[JSON] [F v x]
+    -- :<|> "model" :> "alg" :> Get '[JSON] (GraphStructure v)
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
     :<|> SimpleCompilerAPI title v x t
 
@@ -62,7 +63,7 @@ withSynthesis root nId
     =    liftIO ( getNodeIO root nId )
     :<|> liftIO ( nOrigin <$> getNodeIO root nId )
     :<|> liftIO ( nModel <$> getNodeIO root nId )
-    :<|> liftIO ( alg . nModel <$> getNodeIO root nId )
+    -- :<|> liftIO ( toGraphStructure . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
         unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
