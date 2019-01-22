@@ -19,14 +19,11 @@ Stability   : experimental
 -}
 module NITTA.Frontend
     ( lua2functions
-    , ValueType(..)
-    , NumberReprType(..)
     ) where
 
 import           Control.Monad                 (when)
 import           Control.Monad.Identity
 import           Control.Monad.State
-import           Data.Default
 import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
 import           Data.Maybe                    (fromMaybe)
@@ -35,7 +32,6 @@ import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
-import           NITTA.Types                   (FX, IntX)
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
@@ -72,27 +68,6 @@ buildAlg ast
             addConstants
     in execState builder alg0
 
--- |Описание способа представления вещественных чисел в алгоритме
-data NumberReprType
-    -- |В алгоритме не поддерживаются вещественные числа.
-    = IntRepr
-    -- |Представление вещественных чисел как целочисленных, умножением на 10 в заданной степени.
-    | DecimalFixedPoint Int
-    -- |Представление вещественных чисел как целочисленных, умножением на 2 в заданной степени.
-    | BinaryFixedPoint Int
-    deriving Show
-
--- |Описывает формат представления чисел в алгоритме.
-data ValueType
-    = ValueType
-        { reprType      :: NumberReprType -- ^Представление вещественных чисел в алгоритме
-        , valueWidth    :: Int            -- ^Количество бит требующихся на представление числа (по модулю)
-        , isValueSigned :: Bool           -- ^Возможность использования отрицательных чисел
-        }
-    deriving Show
-
-instance Default ValueType where
-    def = ValueType{ reprType=IntRepr, valueWidth=32, isValueSigned=True }
 
 data AlgBuilder x
     = AlgBuilder
@@ -340,7 +315,7 @@ addFunction _ = error "addFunction error"
 patchAndAddFunction f@Function{ fIn } diff = do
     let fIn' = map (applyPatch diff) fIn
     modify'_ $ \alg@AlgBuilder{ algItems } ->
-        alg { algItems=f{ fIn=fIn' } : algItems }
+        alg{ algItems=f{ fIn=fIn' } : algItems }
 patchAndAddFunction _ _ = undefined
 
 
