@@ -3,9 +3,9 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 
 {-|
-Module      : NITTA.API.Marshalling
-Description : Marshalling data for REST API
-Copyright   : (c) Aleksandr Penskoi, 2018
+Module      : NITTA.API.GraphConverter
+Description : Graph for https://github.com/crubier/react-graph-vis/blob/master/README.md
+Copyright   : (c) Dmitriy Anoshchenkov, Aleksandr Penskoi, 2018
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
