@@ -194,13 +194,13 @@ instance ( Show a ) => ToJSON (Interval a) where
 
 -- *Graph converting
 instance ToJSON (GraphStructure GraphEdge) where
-    toJSON GraphStructure{ nodes, edges } =  object
+    toJSON GraphStructure{ nodes, edges } = object
         [ "nodes" .= nodes
         , "edges" .= edges
         ]
 
 instance ToJSON NodeElement where
-    toJSON NodeElement{ nodeId, nodeParam = NodeParam{ nodeName, nodeColor, nodeShape, fontSize, nodeSize } } =  object
+    toJSON NodeElement{ nodeId, nodeParam = NodeParam{ nodeName, nodeColor, nodeShape, fontSize, nodeSize } } = object
         [ "id"    .= nodeId
         , "label" .= nodeName
         , "color" .= nodeColor
@@ -213,7 +213,7 @@ instance ToJSON NodeElement where
         ]
 
 instance ToJSON GraphEdge where
-    toJSON GraphEdge{ edgeParam = EdgeParam { edgeName, edgeWidth, fontAllign }, inNodeId, outNodeId } =  object
+    toJSON GraphEdge{ edgeParam = EdgeParam { edgeName, edgeWidth, fontAllign }, inNodeId, outNodeId } = object
         [ "from"  .= outNodeId
         , "to"    .= inNodeId
         , "label" .= edgeName
