@@ -24,17 +24,18 @@ import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Maybe
-import qualified Data.Tree              as T
+import qualified Data.Tree                as T
 import           GHC.Generics
-import           NITTA.API.Marshalling  ()
+import           NITTA.API.GraphConverter (toGraphStructure, GraphStructure, GraphEdge)
+import           NITTA.API.Marshalling    ()
 import           NITTA.DataFlow
-import           NITTA.Project          (writeAndRunTestBench)
+import           NITTA.Project            (writeAndRunTestBench)
 import           NITTA.SynthesisMethod
-import           NITTA.Types            (F)
+import           NITTA.Types              (F)
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
 import           Servant
-import           System.FilePath        (joinPath)
+import           System.FilePath          (joinPath)
 
 
 
@@ -54,7 +55,7 @@ type WithSynthesis title v x t
     =    Get '[JSON] (Node title v x t)
     :<|> "edge" :> Get '[JSON] (Maybe (Edge title v x t))
     :<|> "model" :> Get '[JSON] (ModelState title v x t)
-    :<|> "model" :> "alg" :> Get '[JSON] [F v x]
+    :<|> "model" :> "alg" :> Get '[JSON] (GraphStructure GraphEdge)
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
     :<|> SimpleCompilerAPI title v x t
 
@@ -62,7 +63,7 @@ withSynthesis root nId
     =    liftIO ( getNodeIO root nId )
     :<|> liftIO ( nOrigin <$> getNodeIO root nId )
     :<|> liftIO ( nModel <$> getNodeIO root nId )
-    :<|> liftIO ( alg . nModel <$> getNodeIO root nId )
+    :<|> liftIO ( toGraphStructure . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
         unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
