@@ -25,7 +25,7 @@ always @( posedge clk )
 reg [SUBFRAME_COUNTER_WIDTH:0] counter;
 reg                            wait_spi_ready;
 always @( posedge clk ) begin
-    if ( rst ) begin
+    if ( rst | (counter == SUBFRAME_NUMBER & !wait_spi_ready) ) begin
         counter <= 0;
         wait_spi_ready <= 0;
     end else if(spi_ready && wait_spi_ready) begin
@@ -44,7 +44,6 @@ always @( posedge clk ) begin
     if(counter == SUBFRAME_NUMBER & !wait_spi_ready) begin 
        splitter_ready <= 1;
        to_nitta <= data;
-       counter <= 0;
     end else begin
        splitter_ready <= 0;
     end
