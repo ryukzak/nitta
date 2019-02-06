@@ -10,6 +10,7 @@ module pu_master_spi #
     ( input                     clk
     , input                     rst
     , input                     signal_cycle
+    , input                     start_transaction
 
     // nitta interface
     , input                     signal_wr
@@ -23,33 +24,44 @@ module pu_master_spi #
     , output reg                flag_stop
 
     // SPI interface
-    , input                     cs
-    , input                     sclk
-    , input                     mosi
-    , output                    miso
+    , output                    cs
+    , output                    sclk
+    , input                     miso
+    , output                    mosi
     );
+
+pu_slave_spi #
+  ( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
+  , .BUF_SIZE( BUF_SIZE )
+  , .BOUNCE_FILTER( 0 )
+  ) pu
+  ( .clk( clk )
+  , .rst( rst )
+  , .signal_cycle( signal_cycle )
+
+  , .signal_wr( signal_wr )
+  , .data_in( data_in )
+  , .attr_in( attr_in )
+
+  , .signal_oe( signal_oe )
+  , .data_out( data_out )
+  , .attr_out( attr_out )
+
+  , .mosi( miso )
+  , .miso( mosi )
+  , .sclk( sclk )
+  , .cs( cs )
+  );
 
 spi_master_driver #
-    ( .DATA_WIDTH( 32 )
-    ) spi_driver
-    ( .clk( clk )
-    );
-
-// pu_slave_spi_driver #
-//         ( .DATA_WIDTH( SPI_DATA_WIDTH )
-//         ) spi_driver
-//     ( .clk( clk )
-//     , .rst( rst )
-//     , .data_in( splitter_to_spi )
-//     , .data_out( splitter_from_spi )
-//     , .ready( spi_ready )
-//     , .prepare( spi_prepare )
-//     , .mosi( f_mosi )
-//     , .miso( miso )
-//     , .sclk( f_sclk )
-//     , .cs( f_cs )
-//     );
-
-
+   ( .DATA_WIDTH( DATA_WIDTH * 2 ) 
+   , .SCLK_HALFPERIOD( 1 )
+   ) master
+  ( .clk( clk )
+  , .rst( rst )
+  , .start_transaction( start_transaction )
+  , .cs( cs )
+  , .sclk( sclk )
+  );
 
 endmodule
