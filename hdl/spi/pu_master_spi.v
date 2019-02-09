@@ -10,7 +10,6 @@ module pu_master_spi #
     ( input                     clk
     , input                     rst
     , input                     signal_cycle
-    , input                     start_transaction
 
     // nitta interface
     , input                     signal_wr
@@ -59,9 +58,19 @@ spi_master_driver #
    ) master
   ( .clk( clk )
   , .rst( rst )
-  , .start_transaction( start_transaction )
+  , .start_transaction( signal_cycle )
   , .cs( cs )
   , .sclk( sclk )
   );
+
+reg prev_f_cs;
+always @( posedge clk ) prev_f_cs <= cs;
+
+always @( posedge clk ) begin
+    if ( rst | !prev_f_cs && cs) flag_stop <= 1;
+    else if ( prev_f_cs && cs )  flag_stop <= 0;
+    else flag_stop <= 0;
+end
+
 
 endmodule
