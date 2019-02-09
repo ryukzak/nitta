@@ -29,6 +29,9 @@ module pu_master_spi #
     , output                    mosi
     );
 
+wire f_miso;
+bounce_filter #( .DIV(BOUNCE_FILTER) ) f_mosi_filter ( rst, clk, miso, f_miso );
+
 pu_slave_spi #
   ( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
   , .BUF_SIZE( BUF_SIZE )
@@ -46,7 +49,7 @@ pu_slave_spi #
   , .data_out( data_out )
   , .attr_out( attr_out )
 
-  , .mosi( miso )
+  , .mosi( f_miso )
   , .miso( mosi )
   , .sclk( sclk )
   , .cs( cs )
