@@ -40,13 +40,27 @@ export class EdgesView extends Component {
       .catch(err => console.log(err))
   }
 
+  renderPreviousEdge () {
+    return <div>
+      <pre>previous edge:</pre>
+      <small><pre>{ JSON.stringify(this.state.edge, null, 2) }</pre></small>
+    </div>
+  }
+
   render () {
     if (this.state.options === undefined || this.state.options === null) return <div />
-    if (this.state.options.length === 0) return <pre> Process is over. Options not allow. </pre>
+    if (this.state.options.length === 0) {
+      return (
+        <div>
+          { this.renderPreviousEdge() }
+          <pre> Process is over. Options not allow. </pre>
+        </div>)
+    }
 
     return (
       <div>
-        <pre>current edge:</pre>
+        { this.renderPreviousEdge() }
+        <pre>previous edge:</pre>
         <small><pre>{ JSON.stringify(this.state.edge, null, 2) }</pre></small>
         <pre>sub edges:</pre>
         <div className='grid-x'>
