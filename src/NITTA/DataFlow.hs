@@ -97,6 +97,9 @@ data ModelState title v x t
     deriving ( Generic )
 
 
+instance ( Var v
+         ) => WithFunctions (ModelState title v x t) (F v x) where
+    functions Frame{ processor } = functions processor
 
 
 instance ( Var v

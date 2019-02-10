@@ -48,7 +48,7 @@ import qualified Data.Map               as M
 import           Data.Maybe
 import           Data.Proxy
 import           Data.Semigroup         (Semigroup, (<>))
-import           Data.Set               (Set, fromList, intersection, member)
+import           Data.Set               (Set, fromList, intersection, member, (\\))
 import qualified Data.Set               as S
 import           Data.Typeable          (Typeable)
 import           GHC.Generics
@@ -224,11 +224,14 @@ data Characteristics
           -- так как требуемая функция ещё не привязана, а после привязки не сможет быть
           -- вычисленна, так как ресурс уже занят.
         , possibleDeadlock :: Bool
+        , numberOfBindedFunctions :: Float
         }
     | -- |Data Flow Characteristics
       DFCh
         { waitTime       :: Float
         , restrictedTime :: Bool
+        -- |Number of variables, which is not transferable for affected functions.
+        , notTransferableInputs :: [Float]
         }
     deriving ( Show, Generic )
 
@@ -245,7 +248,7 @@ newtype ChConf
 
 instance Default ChConf where
     def = ChConf
-        { threshhold=2
+        { threshhold=20
         }
 
 
@@ -260,8 +263,13 @@ mkEdges Node{ nId, nModel } = do
             , Lock{ locked } <- locks f
             , locked `member` bindedVars
             ]
+        transferableVars = fromList
+            [ v
+            | (DataFlowOption _ targets) <- opts
+            , (v, Just _) <- M.assocs targets
+            ]
         cntx = ChCntx
-            { nModel, possibleDeadlockBinds
+            { nModel, possibleDeadlockBinds, transferableVars
             , bindingAlternative=foldl
                 ( \st (BindingOption fb title) -> M.alter (collect title) fb st )
                 M.empty
@@ -287,6 +295,7 @@ data ChCntx m title v x
     = ChCntx
         { nModel                :: m
         , possibleDeadlockBinds :: Set (F v x)
+        , transferableVars      :: Set v
         , bindingAlternative    :: M.Map (F v x) [title]
         , numberOfBindOptions   :: Int
         , numberOfDFOptions     :: Int
@@ -306,23 +315,31 @@ measure
             (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables nModel
             return $ fromIntegral tcFrom
         , possibleDeadlock=f `member` possibleDeadlockBinds
+        , numberOfBindedFunctions=fromIntegral $ length $ bindedFunctions (bnBinded $ processor nModel) title
         }
-measure ChConf{} ChCntx{} opt@DataFlowOption{}
+measure ChConf{} ChCntx{ transferableVars, nModel } opt@(DataFlowOption _ targets)
     = DFCh
         { waitTime=fromIntegral (specializeDataFlowOption opt^.at.avail.infimum)
         , restrictedTime=fromEnum (specializeDataFlowOption opt^.at.dur.supremum) /= maxBound
+        , notTransferableInputs
+            = let
+                fs = functions nModel
+                vs = fromList [ v | (v, Just _) <- M.assocs targets ]
+                affectedFunctions = filter (\f -> not $ null (inputs f `intersection` vs)) fs
+                notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
+            in map (fromIntegral . length) notTransferableVars
         }
 
 
 
-integral ChConf{} ChCntx{} BindCh{ possibleDeadlock=True }         = 2000000
+integral ChConf{} ChCntx{} BindCh{ possibleDeadlock=True, numberOfBindedFunctions } = 2000000 - numberOfBindedFunctions * 100
+integral ChConf{} ChCntx{} BindCh{ critical=True }                 = 5000
+integral ChConf{} ChCntx{} BindCh{ alternative=1 }                 = 2000
+integral ChConf{} ChCntx{} BindCh{ allowDataFlow, restless, numberOfBindedFunctions } = 1000 + allowDataFlow * 10 - restless * 4 - numberOfBindedFunctions * 2
 integral ChConf{ threshhold } ChCntx{ numberOfDFOptions } DFCh{ waitTime }
     | numberOfDFOptions >= threshhold                              = 10000 + 200 - waitTime
-integral ChConf{} ChCntx{} BindCh{ critical=True }                 = 2000
-integral ChConf{} ChCntx{} BindCh{ alternative=1 }                 = 500
-integral ChConf{} ChCntx{} BindCh{ allowDataFlow, restless }       = 200 + allowDataFlow * 10 - restless * 2
-integral ChConf{} ChCntx{} DFCh{ restrictedTime } | restrictedTime = 200 + 100
-integral ChConf{} ChCntx{} DFCh{ waitTime }                        = 200 - waitTime
+integral ChConf{} ChCntx{} DFCh{ restrictedTime, notTransferableInputs } | restrictedTime = 500 - sum notTransferableInputs * 10
+integral ChConf{} ChCntx{} DFCh{ waitTime, notTransferableInputs }                        = 200 - waitTime - sum notTransferableInputs * 10
 
 
 

@@ -319,21 +319,17 @@ instance ( Var v
          ) => DecisionProblem (BindingDT String v x)
                     BindingDT (BusNetwork String v x t)
          where
-    options _ BusNetwork{..} = concatMap bindVariants' bnRemains
+    options _ BusNetwork{ bnBinded, bnRemains, bnPus } = concatMap optionsFor bnRemains
         where
-            bindVariants' fb =
-                [ BindingO fb puTitle
-                | (puTitle, pu) <- sortOn (length . binded . fst) $ M.assocs bnPus
-                , allowToProcess fb pu
-                , not $ selfTransport fb puTitle
+            optionsFor f =
+                [ BindingO f puTitle
+                | ( puTitle, pu ) <- M.assocs bnPus
+                , allowToProcess f pu
+                , not $ isSelfTransport f puTitle
                 ]
 
-            selfTransport fb puTitle =
-                not $ null $ variables fb `intersection` unionsMap variables (binded puTitle)
-
-            binded puTitle
-                | puTitle `M.member` bnBinded = bnBinded M.! puTitle
-                | otherwise = []
+            isSelfTransport f puTitle =
+                not $ null $ variables f `intersection` unionsMap variables (bindedFunctions bnBinded puTitle)
 
     decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
         = bn
@@ -346,6 +342,11 @@ instance ( Var v
                 addStep (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
             , bnRemains=filter (/= fb) bnRemains
         }
+
+
+bindedFunctions bnBinded puTitle
+    | puTitle `M.member` bnBinded = bnBinded M.! puTitle
+    | otherwise = []
 
 
 --------------------------------------------------------------------------
