@@ -60,8 +60,6 @@ export class EdgesView extends Component {
     return (
       <div>
         { this.renderPreviousEdge() }
-        <pre>previous edge:</pre>
-        <small><pre>{ JSON.stringify(this.state.edge, null, 2) }</pre></small>
         <pre>sub edges:</pre>
         <div className='grid-x'>
           <div className='cell small-4'>
