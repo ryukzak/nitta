@@ -1,8 +1,9 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
@@ -17,6 +18,7 @@ module NITTA.API.Marshalling where
 
 import           Data.Aeson
 import qualified Data.Map                 as M
+import qualified Data.String.Utils        as S
 import qualified Data.Text                as T
 import           Data.Typeable
 import           NITTA.API.GraphConverter
@@ -187,8 +189,8 @@ instance ToJSON (FX m b) where
 
 
 -- *System
-instance ( Show a ) => ToJSON (Interval a) where
-    toJSON = String . T.pack . show
+instance ( Show a, Bounded a ) => ToJSON (Interval a) where
+    toJSON = String . T.pack . S.replace (show (maxBound :: a)) "∞" . show
 
 
 
