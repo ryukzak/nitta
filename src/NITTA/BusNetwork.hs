@@ -36,7 +36,11 @@ Stability   : experimental
 относительно пересылок данных между ними, при этом время в сетях должно быть максимально выравнено.
 Любая сетевая структура становится плоской с точки зрения наблюдателя.
 -}
-module NITTA.BusNetwork where
+module NITTA.BusNetwork  
+    ( busNetwork
+    , BusNetwork(..)
+    , bindedFunctions
+    ) where
 
 import           Control.Monad.State
 import qualified Data.Array                    as A
