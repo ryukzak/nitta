@@ -111,33 +111,23 @@ main = do
             --         end
             --         fib(1)|]
             putStrLn "--------------------------------"
-            let microarchHC = busNetwork 31 (Just False)
-                    [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
-                    [ OutputPort "miso" ]
+            let microarchHC = busNetwork 31 (Just True)
+                    [  ]
+                    [  ]
                     [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
                     , ("accum", PU D.def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-                    , ("spi", PU
-                        (SPI.slaveSPI 0)
-                        SPI.PUPorts
-                            { SPI.wr=Signal 22, SPI.oe=Signal 23
-                            , SPI.stop="stop"
-                            , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
-                            })
                     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
                     , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
                     ] :: BusNetwork String String (FX 30 32) Int
-            print =<< testWithInput "hardcode"
-                [ ("a_0", [ read "5", read "0.75", read "0.75" ])
-                , ("b_0", [ read "2", read "0.25", read "0.5" ])
-                ]
-                microarchHC
-                ( lua2functions
-                    [qc|function fib()
-                            a = 0.5 + 0.5
-                            send(a)
-                            fib()
+            let algHC = lua2functions
+                    [qc|function fib(x)
+                            y = x + x + x
+                            fib(y)
                         end
-                        fib()|] )
+                        fib(1)|]
+
+            -- backendServer True $ mkModelWithOneNetwork microarchHC algHC
+            print =<< testWithInput "hardcode" [  ] microarchHC algHC
             putStrLn "-- hardcoded end --"
     putStrLn "-- the end --"
 
