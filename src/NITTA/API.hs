@@ -88,7 +88,7 @@ backendServer no_api_gen modelState = do
     let port = 8080
     unless no_api_gen $ prepareJSAPI port
 
-    putStrLn $ "Running NITTA server on port: " ++ show port
+    putStrLn $ "Running NITTA server at http://localhost:" ++ show port ++ "/index.html"
 
     -- let initialCompilerState = def{ state=modelState }
     app <- application modelState
