@@ -179,6 +179,11 @@ instance Connected (SPI v x t) where
         , (oe, Bool oeSignal)
         ]
 
+    externalInputPorts PUPorts{ externalPorts=Slave{ slave_mosi, slave_sclk, slave_cs } }
+        = [ slave_mosi, slave_sclk, slave_cs ]
+
+    externalOutputPorts PUPorts{ externalPorts=Slave{ slave_miso } }
+        = [ slave_miso ]
 
 
 instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where

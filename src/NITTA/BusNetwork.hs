@@ -80,8 +80,6 @@ data BusNetwork title v x t = BusNetwork
     , bnPus            :: M.Map title (PU v x t)
     -- | Ширина шины управления.
     , bnSignalBusWidth :: Int
-    , bnInputPorts     :: [InputPort]
-    , bnOutputPorts    :: [OutputPort]
     -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
     , bnAllowDrop      :: Maybe Bool
     }
@@ -90,14 +88,12 @@ data BusNetwork title v x t = BusNetwork
 -- TODO: Проверка подключения сигнальных линий.
 
 -- TODO: Вариант функции, где провода будут подключаться автоматически.
-busNetwork w allowDrop ips ops pus = BusNetwork
+busNetwork w allowDrop pus = BusNetwork
         { bnRemains=[]
         , bnBinded=M.empty
         , bnProcess=def
         , bnPus=M.fromList pus'
         , bnSignalBusWidth=w
-        , bnInputPorts=ips
-        , bnOutputPorts=ops
         , bnAllowDrop=allowDrop
         }
     where
@@ -357,6 +353,8 @@ instance ( Var v
 
 programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
+allExternalInputs pus = map (\(InputPort n) -> n) $ concatMap (\PU{ links } -> externalInputPorts links ) $ M.elems pus
+allExternalOutputs pus = map (\(OutputPort n) -> n) $ concatMap (\PU{ links } -> externalOutputPorts links ) $ M.elems pus
 
 instance
         ( Time t
@@ -377,8 +375,8 @@ instance
 |                       ( input                     clk
 |                       , input                     rst
 |                       , output                    cycle
-|                   { S.join "\\n" $ map (\\(InputPort p) -> ("    , input " ++ p)) bnInputPorts }
-|                   { S.join "\\n" $ map (\\(OutputPort p) -> ("    , output " ++ p)) bnOutputPorts }
+|                   { S.join "\\n" $ map ("    , input " ++) $ allExternalInputs bnPus }
+|                   { S.join "\\n" $ map ("    , output " ++) $ allExternalOutputs bnPus }
 |                       , output              [7:0] debug_status
 |                       , output              [7:0] debug_bus1
 |                       , output              [7:0] debug_bus2
@@ -459,7 +457,10 @@ instance ( Title title, Var v, Time t
     testBenchDescription Project{ projectName, processorModel=n@BusNetwork{..}, testCntx }
         = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
         where
-            ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
+            ports = concat
+                [ allExternalInputs bnPus
+                , allExternalOutputs bnPus
+                ]
             testEnv = S.join "\\n\\n"
                 [ tbEnv
                 | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus

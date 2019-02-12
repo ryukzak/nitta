@@ -49,8 +49,6 @@ import           Text.InterpolatedString.Perl6 (qc)
 -- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
 -- с задачей о целевой платформе.
 microarch = busNetwork 31 (Just False)
-    [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
-    [ OutputPort "miso" ]
     [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
     , ("fram2", PU D.def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
     -- , ("shift", PU D.def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
@@ -117,8 +115,6 @@ main = do
             --         fib(1)|]
             putStrLn "--------------------------------"
             let microarchHC = busNetwork 31 (Just False)
-                    [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
-                    [ OutputPort "miso" ]
                     [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
                     , ("accum", PU D.def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
                     , ("spi", PU

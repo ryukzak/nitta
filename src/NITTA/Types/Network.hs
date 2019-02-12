@@ -95,6 +95,12 @@ class Connected pu where
     -- |Отображение микрокода на сигнальные линии. Необходимо для "сведения" микрокоманд отдельных
     -- вычислительных блоков в микрокоманды сети.
     transmitToLink :: Microcode pu -> PUPorts pu -> [(Signal, SignalValue)]
+    -- |External input ports, which go outside of NITTA processor.
+    externalInputPorts :: PUPorts pu -> [InputPort]
+    externalInputPorts _ = []
+    -- |External output ports, which go outside of NITTA processor.
+    externalOutputPorts :: PUPorts pu -> [OutputPort]
+    externalOutputPorts _ = []
 
 
 
