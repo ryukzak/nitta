@@ -71,7 +71,12 @@ marchSPI _proxy = busNetwork 31 (Just False)
     , ("spi", PU (SPI.slaveSPI 0) SPI.PUPorts
         { SPI.wr=Signal 22, SPI.oe=Signal 23
         , SPI.stop="stop"
-        , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
+        , SPI.externalPorts=SPI.Slave
+            { SPI.slave_mosi=InputPort "mosi"
+            , SPI.slave_miso=OutputPort "miso"
+            , SPI.slave_sclk=InputPort "sclk"
+            , SPI.slave_cs=InputPort "cs"
+            }
         })
     , ("div", PU (D.divider 8 True) D.PUPorts{ D.wr=Signal 24, D.wrSel=Signal 25, D.oe=Signal 26, D.oeSel=Signal 27 } )
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 28, M.wrSel=Signal 29, M.oe=Signal 30 } )

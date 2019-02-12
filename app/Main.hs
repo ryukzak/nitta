@@ -60,7 +60,12 @@ microarch = busNetwork 31 (Just False)
         SPI.PUPorts
             { SPI.wr=Signal 22, SPI.oe=Signal 23
             , SPI.stop="stop"
-            , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
+            , SPI.externalPorts=SPI.Slave
+                { SPI.slave_mosi=InputPort "mosi"
+                , SPI.slave_miso=OutputPort "miso"
+                , SPI.slave_sclk=InputPort "sclk"
+                , SPI.slave_cs=InputPort "cs"
+                }
             })
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
     , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
@@ -121,7 +126,12 @@ main = do
                         SPI.PUPorts
                             { SPI.wr=Signal 22, SPI.oe=Signal 23
                             , SPI.stop="stop"
-                            , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
+                            , SPI.externalPorts=SPI.Slave
+                                { SPI.slave_mosi=InputPort "mosi"
+                                , SPI.slave_miso=OutputPort "miso"
+                                , SPI.slave_sclk=InputPort "sclk"
+                                , SPI.slave_cs=InputPort "cs"
+                                }
                             })
                     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
                     , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
