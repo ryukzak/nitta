@@ -332,14 +332,23 @@ measure ChConf{} ChCntx{ transferableVars, nModel } opt@(DataFlowOption _ target
 
 
 
-integral ChConf{} ChCntx{} BindCh{ possibleDeadlock=True, numberOfBindedFunctions } = 2000000 - numberOfBindedFunctions * 100
-integral ChConf{} ChCntx{} BindCh{ critical=True }                 = 5000
-integral ChConf{} ChCntx{} BindCh{ alternative=1 }                 = 2000
-integral ChConf{} ChCntx{} BindCh{ allowDataFlow, restless, numberOfBindedFunctions } = 1000 + allowDataFlow * 10 - restless * 4 - numberOfBindedFunctions * 2
-integral ChConf{ threshhold } ChCntx{ numberOfDFOptions } DFCh{ waitTime }
-    | numberOfDFOptions >= threshhold                              = 10000 + 200 - waitTime
-integral ChConf{} ChCntx{} DFCh{ restrictedTime, notTransferableInputs } | restrictedTime = 500 - sum notTransferableInputs * 10
-integral ChConf{} ChCntx{} DFCh{ waitTime, notTransferableInputs }                        = 200 - waitTime - sum notTransferableInputs * 10
+True <?> v = v
+False <?> _ = 0
+
+integral ChConf{} ChCntx{} BindCh{ possibleDeadlock, critical, alternative, allowDataFlow, restless, numberOfBindedFunctions }
+    = 1000
+    + 10 * allowDataFlow
+    + possibleDeadlock <?> 2000000
+    + critical <?> 5000
+    + (alternative == 1) <?> 2000
+    - numberOfBindedFunctions * 100
+    - 4 * restless
+
+integral ChConf{ threshhold } ChCntx{ numberOfDFOptions } DFCh{ waitTime, notTransferableInputs, restrictedTime }
+    = (numberOfDFOptions >= threshhold) <?> 1000
+    + restrictedTime <?> 500
+    - sum notTransferableInputs * 10
+    - waitTime
 
 
 
