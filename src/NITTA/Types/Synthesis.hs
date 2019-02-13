@@ -338,7 +338,7 @@ False <?> _ = 0
 integral ChConf{} ChCntx{} BindCh{ possibleDeadlock, critical, alternative, allowDataFlow, restless, numberOfBindedFunctions }
     = 1000
     + 10 * allowDataFlow
-    + possibleDeadlock <?> 2000000
+    + not possibleDeadlock <?> 2000000
     + critical <?> 5000
     + (alternative == 1) <?> 2000
     - numberOfBindedFunctions * 100
