@@ -49,7 +49,7 @@ import           Data.List                     (find, nub, partition, sortOn,
                                                 (\\))
 import qualified Data.Map                      as M
 import           Data.Maybe                    (fromMaybe, isJust, mapMaybe)
-import           Data.Set                      (elems, fromList)
+import           Data.Set                      (elems, fromList, member)
 import qualified Data.String.Utils             as S
 import           Data.Typeable
 import           NITTA.Functions               (get', simulateAlgByCycle)
@@ -341,6 +341,25 @@ instance DecisionProblem (BindingDT String v x)
                 addStep (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
             , bnRemains=filter (/= fb) bnRemains
         }
+
+
+
+instance ( Ord v, Eq v
+        ) => DecisionProblem (RefactorDT v)
+                  RefactorDT (BusNetwork String v x t)
+        where
+    options _ bn
+        = let 
+            bVars = bindedVars bn
+        in nub
+            [ InsertRegisterO locked
+            | (BindingO f _) <- options binding bn
+            , Lock{ locked } <- locks f
+            , locked `member` bVars
+            ]
+
+    decision = undefined
+
 
 
 bindedVars BusNetwork{ bnBinded } = unionsMap variables $ concat $ M.elems bnBinded

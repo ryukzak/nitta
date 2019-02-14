@@ -126,7 +126,7 @@ main = do
                         end
                         fib(1)|]
 
-            -- backendServer True $ mkModelWithOneNetwork microarchHC algHC
+            backendServer True $ mkModelWithOneNetwork microarchHC algHC
             print =<< testWithInput "hardcode" [  ] microarchHC algHC
             putStrLn "-- hardcoded end --"
     putStrLn "-- the end --"

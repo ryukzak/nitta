@@ -158,11 +158,13 @@ instance DecisionType (SynthesisDT title v x t) where
     data Option (SynthesisDT title v x t)
         = BindingOption (F v x) title
         | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
+        | RefactorOption (Option (RefactorDT v))
         deriving ( Generic, Show )
 
     data Decision (SynthesisDT title v x t)
         = BindingDecision (F v x) title
         | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
+        | RefactorDecision (Decision (RefactorDT v))
         deriving ( Generic, Show )
 
 isBinding = \case BindingOption{} -> True; _ -> False
@@ -184,9 +186,12 @@ instance ( Var v, Typeable x, Time t
         = let
             binds = map generalizeBindingOption $ options binding f
             transfers = map generalizeDataFlowOption $ options dataFlowDT processor
-        in concat [ binds, transfers ]
+            regs = map RefactorOption $ refactorOptions processor
+        in concat [ binds, transfers, regs ]
+
     decision _ fr (BindingDecision f title) = decision binding fr $ BindingD f title
     decision _ fr@Frame{ processor } (DataFlowDecision src trg) = fr{ processor=decision dataFlowDT processor $ DataFlowD src trg }
+    decision _ fr RefactorDecision{} = fr -- FIXME:
 
 option2decision (BindingOption fb title) = BindingDecision fb title
 option2decision (DataFlowOption src trg)
@@ -199,6 +204,7 @@ option2decision (DataFlowOption src trg)
         mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
     in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
+option2decision (RefactorOption (InsertRegisterO v)) = RefactorDecision (InsertRegisterD v)
 
 
 
@@ -235,6 +241,7 @@ data Characteristics
         -- |Number of variables, which is not transferable for affected functions.
         , notTransferableInputs :: [Float]
         }
+    | RefactorCh
     deriving ( Show, Generic )
 
 
@@ -331,6 +338,7 @@ measure ChConf{} ChCntx{ transferableVars, nModel } opt@(DataFlowOption _ target
                 notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
             in map (fromIntegral . length) notTransferableVars
         }
+measure ChConf{} ChCntx{} RefactorOption{} = RefactorCh
 
 
 
@@ -351,6 +359,8 @@ integral ChConf{ threshhold } ChCntx{ numberOfDFOptions } DFCh{ waitTime, notTra
     + restrictedTime <?> 500
     - sum notTransferableInputs * 10
     - waitTime
+
+integral ChConf{} ChCntx{} RefactorCh{} = 0
 
 
 

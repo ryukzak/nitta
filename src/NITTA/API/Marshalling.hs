@@ -56,6 +56,8 @@ instance ( Show title
 instance ( Show title
          ) => ToJSON (Decision (BindingDT title v x)) where
     toJSON (BindingD f title) = toJSON [ show f, show title ]
+instance ( ToJSON v ) => ToJSON (Option (RefactorDT v))
+instance ( ToJSON v ) => ToJSON (Decision (RefactorDT v))
 
 
 

@@ -350,6 +350,25 @@ instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t))
 
 
 
+data RefactorDT v
+refactorOptions m = options (Proxy :: Proxy RefactorDT) m
+refactorDecision m d = decision (Proxy :: Proxy RefactorDT) m d
+
+instance DecisionType (RefactorDT v) where
+    data Option (RefactorDT v)
+        = InsertRegisterO v
+        deriving ( Generic, Show, Eq, Ord )
+    data Decision (RefactorDT v)
+        = InsertRegisterD v
+        deriving ( Generic, Show )
+
+instance Variables (Option (RefactorDT v)) v where
+    variables (InsertRegisterO v) = S.singleton v
+instance Variables (Decision (RefactorDT v)) v where
+    variables (InsertRegisterD v) = S.singleton v
+
+
+
 ---------------------------------------------------------------------
 -- * Вычислительные блоки (PU)
 
