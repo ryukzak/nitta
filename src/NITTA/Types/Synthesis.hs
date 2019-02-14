@@ -258,12 +258,12 @@ instance Default ChConf where
 mkEdges Node{ nId, nModel } = do
     let conf = def
         opts = synthesisOptions nModel
-        bindedVars = unionsMap variables $ concat $ M.elems $ bnBinded $ processor nModel
+        bVars = bindedVars $ processor nModel
         possibleDeadlockBinds = fromList
             [ f
             | (BindingOption f _) <- opts
             , Lock{ locked } <- locks f
-            , locked `member` bindedVars
+            , locked `member` bVars
             ]
         transferableVars = fromList
             [ v
@@ -317,7 +317,7 @@ measure
             (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables nModel
             return $ fromIntegral tcFrom
         , possibleDeadlock=f `member` possibleDeadlockBinds
-        , numberOfBindedFunctions=fromIntegral $ length $ bindedFunctions (bnBinded $ processor nModel) title
+        , numberOfBindedFunctions=fromIntegral $ length $ bindedFunctions title $ processor nModel
         }
 measure ChConf{} ChCntx{ transferableVars, nModel } opt@(DataFlowOption _ targets)
     = DFCh

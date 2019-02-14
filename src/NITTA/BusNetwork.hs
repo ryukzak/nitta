@@ -39,7 +39,7 @@ Stability   : experimental
 module NITTA.BusNetwork  
     ( busNetwork
     , BusNetwork(..)
-    , bindedFunctions
+    , bindedFunctions, bindedVars
     ) where
 
 import           Control.Monad.State
@@ -343,7 +343,9 @@ instance DecisionProblem (BindingDT String v x)
         }
 
 
-bindedFunctions bnBinded puTitle
+bindedVars BusNetwork{ bnBinded } = unionsMap variables $ concat $ M.elems bnBinded
+
+bindedFunctions puTitle BusNetwork{ bnBinded }
     | puTitle `M.member` bnBinded = bnBinded M.! puTitle
     | otherwise = []
 
