@@ -108,6 +108,7 @@ data SynthesisNodeView
         , svIsEdgesProcessed :: Bool
         , svDuration         :: Int
         , svCharacteristic   :: Float
+        , svOptionType       :: String
         }
     deriving ( Generic )
 
@@ -126,6 +127,11 @@ synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
             , svIsEdgesProcessed=isJust nodesM
             , svDuration=fromEnum $ targetProcessDuration nModel
             , svCharacteristic=maybe (read "NaN") eCharacteristic nOrigin
+            , svOptionType=case nOrigin of
+                Just Edge{ eOption=BindingOption{} } -> "Bind"
+                Just Edge{ eOption=DataFlowOption{} } -> "Transport"
+                Just Edge{ eOption=RefactorOption{} } -> "Refactor"
+                Nothing -> "-"
             }
         , T.subForest=nodes
         }

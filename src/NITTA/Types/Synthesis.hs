@@ -31,7 +31,7 @@ module NITTA.Types.Synthesis
     , getNodeIO
     , getEdgesIO
       -- *Characteristics & synthesis decision type
-    , SynthesisDT, synthesisOptions, synthesisDecision
+    , SynthesisDT, synthesisOptions, synthesisDecision, Option(..)
     , ChConf(..)
     , Characteristics(..)
       -- *Utils
@@ -348,7 +348,7 @@ False <?> _ = 0
 integral ChConf{} ChCntx{} BindCh{ possibleDeadlock, critical, alternative, allowDataFlow, restless, numberOfBindedFunctions }
     = 1000
     + 10 * allowDataFlow
-    + not possibleDeadlock <?> 2000000
+    + not possibleDeadlock <?> 10000
     + critical <?> 5000
     + (alternative == 1) <?> 2000
     - numberOfBindedFunctions * 100
