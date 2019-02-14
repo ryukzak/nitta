@@ -102,9 +102,8 @@ instance ( Var v
     functions Frame{ processor } = functions processor
 
 
-instance ( Var v
-         ) => DecisionProblem (BindingDT String v x)
-                    BindingDT (ModelState String v x t)
+instance DecisionProblem (BindingDT String v x)
+               BindingDT (ModelState String v x t)
          where
     options _ Frame{ processor }    = options binding processor
     -- options _ Level{ currentFrame } = options binding currentFrame

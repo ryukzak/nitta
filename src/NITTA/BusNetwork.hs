@@ -49,7 +49,7 @@ import           Data.List                     (find, nub, partition, sortOn,
                                                 (\\))
 import qualified Data.Map                      as M
 import           Data.Maybe                    (fromMaybe, isJust, mapMaybe)
-import           Data.Set                      (elems, fromList, intersection)
+import           Data.Set                      (elems, fromList)
 import qualified Data.String.Utils             as S
 import           Data.Typeable
 import           NITTA.Functions               (get', simulateAlgByCycle)
@@ -319,21 +319,16 @@ instance ( Title title ) => Simulatable (BusNetwork title v x t) v x where
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( Var v
-         ) => DecisionProblem (BindingDT String v x)
-                    BindingDT (BusNetwork String v x t)
+instance DecisionProblem (BindingDT String v x)
+               BindingDT (BusNetwork String v x t)
          where
-    options _ BusNetwork{ bnBinded, bnRemains, bnPus } = concatMap optionsFor bnRemains
+    options _ BusNetwork{ bnRemains, bnPus } = concatMap optionsFor bnRemains
         where
             optionsFor f =
                 [ BindingO f puTitle
                 | ( puTitle, pu ) <- M.assocs bnPus
                 , allowToProcess f pu
-                , not $ isSelfTransport f puTitle
                 ]
-
-            isSelfTransport f puTitle =
-                not $ null $ variables f `intersection` unionsMap variables (bindedFunctions bnBinded puTitle)
 
     decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
         = bn
