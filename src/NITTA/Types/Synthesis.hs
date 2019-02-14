@@ -191,7 +191,7 @@ instance ( Var v, Typeable x, Time t
 
     decision _ fr (BindingDecision f title) = decision binding fr $ BindingD f title
     decision _ fr@Frame{ processor } (DataFlowDecision src trg) = fr{ processor=decision dataFlowDT processor $ DataFlowD src trg }
-    decision _ fr RefactorDecision{} = fr -- FIXME:
+    decision _ fr RefactorDecision{} = fr -- FIXME: = Frame{ processor :: BusNetwork title v x t, dfg       :: DataFlowGraph v x }
 
 option2decision (BindingOption fb title) = BindingDecision fb title
 option2decision (DataFlowOption src trg)
