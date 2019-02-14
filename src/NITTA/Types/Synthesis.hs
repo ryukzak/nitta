@@ -31,7 +31,7 @@ module NITTA.Types.Synthesis
     , getNodeIO
     , getEdgesIO
       -- *Characteristics & synthesis decision type
-    , SynthesisDT, synthesis
+    , SynthesisDT, synthesisOptions, synthesisDecision
     , ChConf(..)
     , Characteristics(..)
       -- *Utils
@@ -150,7 +150,8 @@ instance Monoid NId where
 
 
 data SynthesisDT title v x t
-synthesis = Proxy :: Proxy SynthesisDT
+synthesisOptions m = options (Proxy :: Proxy SynthesisDT) m
+synthesisDecision m d = decision (Proxy :: Proxy SynthesisDT) m d
 
 
 instance DecisionType (SynthesisDT title v x t) where
@@ -180,9 +181,10 @@ instance ( Var v, Typeable x, Time t
                   SynthesisDT (ModelState String v x t)
         where
     options _ f@Frame{ processor }
-        =  map generalizeBindingOption (options binding f)
-        ++ map generalizeDataFlowOption (options dataFlowDT processor)
-
+        = let
+            binds = map generalizeBindingOption $ options binding f
+            transfers = map generalizeDataFlowOption $ options dataFlowDT processor
+        in concat [ binds, transfers ]
     decision _ fr (BindingDecision f title) = decision binding fr $ BindingD f title
     decision _ fr@Frame{ processor } (DataFlowDecision src trg) = fr{ processor=decision dataFlowDT processor $ DataFlowD src trg }
 
@@ -255,7 +257,7 @@ instance Default ChConf where
 
 mkEdges Node{ nId, nModel } = do
     let conf = def
-        opts = options synthesis nModel
+        opts = synthesisOptions nModel
         bindedVars = unionsMap variables $ concat $ M.elems $ bnBinded $ processor nModel
         possibleDeadlockBinds = fromList
             [ f
@@ -285,7 +287,7 @@ mkEdges Node{ nId, nModel } = do
             eCharacteristics = measure conf cntx eOption
             eCharacteristic = integral conf cntx eCharacteristics
 
-            eNode = mkNode' (nId <> NId [i]) (decision synthesis nModel eDecision) (Just origin) nEdges
+            eNode = mkNode' (nId <> NId [i]) (synthesisDecision nModel eDecision) (Just origin) nEdges
             origin = Edge{ eOption, eDecision, eCharacteristics, eCharacteristic, eNode }
         in return origin
 

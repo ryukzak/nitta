@@ -29,10 +29,9 @@ import           NITTA.Utils           (maximumOn, minimumOn)
 
 
 -- |Schedule process by simple synthesis.
-simpleSynthesisIO root
-    =   return root
-    >>= obviousBindThreadIO
-    >>= allBestThreadIO 1
+simpleSynthesisIO root = do
+    lastObliviusNode <- obviousBindThreadIO root
+    allBestThreadIO 1 lastObliviusNode
 
 
 
