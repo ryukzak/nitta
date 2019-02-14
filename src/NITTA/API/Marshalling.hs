@@ -42,20 +42,6 @@ instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t), Time t
          ) => ToJSON (Decision (SynthesisDT title v x t))
-instance ( ToJSON title
-         , ToJSONKey v
-         , ToJSON (TimeConstrain t)
-         ) => ToJSON (Option (DataFlowDT title v t))
-instance ( ToJSON title
-         , ToJSONKey v
-         , ToJSON (TimeConstrain t), Time t
-         ) => ToJSON (Decision (DataFlowDT title v t))
-instance ( Show title
-         ) => ToJSON (Option (BindingDT title v x)) where
-    toJSON (BindingO f title) = toJSON [ show f, show title ]
-instance ( Show title
-         ) => ToJSON (Decision (BindingDT title v x)) where
-    toJSON (BindingD f title) = toJSON [ show f, show title ]
 instance ( ToJSON v ) => ToJSON (Option (RefactorDT v))
 instance ( ToJSON v ) => ToJSON (Decision (RefactorDT v))
 
