@@ -186,12 +186,16 @@ instance ( Var v, Typeable x, Time t
         = let
             binds = map generalizeBindingOption $ options binding f
             transfers = map generalizeDataFlowOption $ options dataFlowDT processor
-            regs = map RefactorOption $ refactorOptions processor
-        in concat [ binds, transfers, regs ]
+            refactors = [] -- map RefactorOption $ refactorOptions processor
+        in concat [ binds, transfers, refactors ]
 
     decision _ fr (BindingDecision f title) = decision binding fr $ BindingD f title
     decision _ fr@Frame{ processor } (DataFlowDecision src trg) = fr{ processor=decision dataFlowDT processor $ DataFlowD src trg }
-    decision _ fr RefactorDecision{} = fr -- FIXME: = Frame{ processor :: BusNetwork title v x t, dfg       :: DataFlowGraph v x }
+    decision _ Frame{ processor, dfg } (RefactorDecision d@(InsertOutRegisterD v v')) 
+        = Frame
+            { dfg=patch v v' dfg
+            , processor=refactorDecision processor d
+            }
 
 option2decision (BindingOption fb title) = BindingDecision fb title
 option2decision (DataFlowOption src trg)

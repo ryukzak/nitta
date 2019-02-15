@@ -358,7 +358,8 @@ instance ( Ord v, Eq v
             , locked `member` bVars
             ]
 
-    decision = undefined
+    decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v') 
+        = bn{ bnRemains=patch v v' bnRemains }
 
 
 
