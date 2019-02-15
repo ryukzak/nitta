@@ -376,16 +376,25 @@ refactorDecision m d = decision (Proxy :: Proxy RefactorDT) m d
 
 instance DecisionType (RefactorDT v) where
     data Option (RefactorDT v)
-        = InsertRegisterO v
+        -- |Example:
+        --
+        -- >>> f1 :: (...) -> (a)
+        -- f2 :: (a, ...) -> (...)
+        -- f1 and f2 process on same processor
+        -- In this case, we have deadlock, witch can be fixed by insetion of register between functions:
+        -- f1 :: (...) -> (a)
+        -- reg :: a -> buf_a
+        -- f2 :: (buf_a, ...) -> (...)    
+        = InsertOutRegisterO v
         deriving ( Generic, Show, Eq, Ord )
     data Decision (RefactorDT v)
-        = InsertRegisterD v
+        = InsertOutRegisterD v v
         deriving ( Generic, Show )
 
-instance Variables (Option (RefactorDT v)) v where
-    variables (InsertRegisterO v) = S.singleton v
-instance Variables (Decision (RefactorDT v)) v where
-    variables (InsertRegisterD v) = S.singleton v
+-- instance Variables (Option (RefactorDT v)) v where
+--     variables (InsertOutRegisterO v) = S.singleton v
+-- instance Variables (Decision (RefactorDT v)) v where
+--     variables (InsertOutRegisterD v v') = S.singleton v
 
 
 

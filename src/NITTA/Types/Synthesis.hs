@@ -204,8 +204,8 @@ option2decision (DataFlowOption src trg)
         mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
     in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
-option2decision (RefactorOption (InsertRegisterO v)) = RefactorDecision (InsertRegisterD v)
-
+option2decision (RefactorOption (InsertOutRegisterO v)) 
+    = RefactorDecision (InsertOutRegisterD v ("buf_" ++ v))
 
 
 -----------------------------------------------------------

@@ -352,7 +352,7 @@ instance ( Ord v, Eq v
         = let 
             bVars = bindedVars bn
         in nub
-            [ InsertRegisterO locked
+            [ InsertOutRegisterO locked
             | (BindingO f _) <- options binding bn
             , Lock{ locked } <- locks f
             , locked `member` bVars
