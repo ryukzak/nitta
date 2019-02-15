@@ -68,6 +68,15 @@ instance Variables (I v) v where
 instance Variables (O v) v where
     variables (O v) = v
 
+instance ( Eq v ) => Patch (I v) v where
+    patch v v' i@(I v0)
+        | v0 == v = I v'
+        | otherwise = i
+instance ( Ord v ) => Patch (O v) v where
+    patch v v' o@(O vs)
+        | v `S.member` vs = O $ S.fromList (v':(S.elems vs \\ [v]))
+        | otherwise = o
+
 
 
 ---------------------------------------------------------------------
@@ -96,6 +105,10 @@ class Function f v | f -> v where
     -- связкой f + pu. К примеру - использование Loop для Accum.
     isCritical :: f -> Bool
     isCritical _ = False
+
+-- |Patch class allows replacing one variable by another. Especially for algorithm refactor.
+class Patch f v | f -> v where
+    patch :: v -> v -> f -> f
 
 
 data Lock v
@@ -151,6 +164,7 @@ data F v x where
     F ::
         ( Ord v
         , Function f v
+        , Patch f v
         , Locks f v
         , Show f
         , FunctionSimulation f v x
@@ -164,6 +178,12 @@ instance Function (F v x) v where
     isCritical (F f) = isCritical f
     inputs (F f) = inputs f
     outputs (F f) = outputs f
+
+instance Patch (F v x) v where
+    patch v v' (F f) = F $ patch v v' f
+
+instance Patch [F v x] v where
+    patch v v' fs = map (patch v v') fs
 
 instance Locks (F v x) v where
     locks (F f) = locks f
