@@ -47,7 +47,8 @@ obviousBindThreadIO node = do
     edges <- getEdgesIO node
     let obliousBind = find
             ((\case
-                BindCh{ alternative=1, possibleDeadlock=False } -> True
+                BindCh{ possibleDeadlock=True } -> False
+                BindCh{ alternative=1 } -> True
                 _ -> False
             ) . eCharacteristics)
             edges

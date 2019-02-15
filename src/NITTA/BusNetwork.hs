@@ -36,7 +36,7 @@ Stability   : experimental
 относительно пересылок данных между ними, при этом время в сетях должно быть максимально выравнено.
 Любая сетевая структура становится плоской с точки зрения наблюдателя.
 -}
-module NITTA.BusNetwork  
+module NITTA.BusNetwork
     ( busNetwork
     , BusNetwork(..)
     , bindedFunctions, bindedVars
@@ -52,7 +52,7 @@ import           Data.Maybe                    (fromMaybe, isJust, mapMaybe)
 import           Data.Set                      (elems, fromList, member)
 import qualified Data.String.Utils             as S
 import           Data.Typeable
-import           NITTA.Functions               (get', simulateAlgByCycle)
+import           NITTA.Functions               (get', reg, simulateAlgByCycle)
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Types.Project
@@ -344,22 +344,20 @@ instance DecisionProblem (BindingDT String v x)
 
 
 
-instance ( Ord v, Eq v
+instance ( Var v, Typeable x
         ) => DecisionProblem (RefactorDT v)
                   RefactorDT (BusNetwork String v x t)
         where
     options _ bn
-        = let 
-            bVars = bindedVars bn
-        in nub
-            [ InsertOutRegisterO locked
-            | (BindingO f _) <- options binding bn
-            , Lock{ locked } <- locks f
-            , locked `member` bVars
+        = nub
+            [ InsertOutRegisterO lockBy
+            | (BindingO f title) <- options binding bn
+            , Lock{ lockBy } <- locks f
+            , lockBy `member` unionsMap variables (bindedFunctions title bn)
             ]
 
-    decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v') 
-        = bn{ bnRemains=patch v v' bnRemains }
+    decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v')
+        = bn{ bnRemains=reg v [v'] : patch v v' bnRemains }
 
 
 

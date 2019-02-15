@@ -186,7 +186,7 @@ instance ( Var v, Typeable x, Time t
         = let
             binds = map generalizeBindingOption $ options binding f
             transfers = map generalizeDataFlowOption $ options dataFlowDT processor
-            refactors = [] -- map RefactorOption $ refactorOptions processor
+            refactors = map RefactorOption $ refactorOptions processor
         in concat [ binds, transfers, refactors ]
 
     decision _ fr (BindingDecision f title) = decision binding fr $ BindingD f title
