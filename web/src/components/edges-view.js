@@ -59,11 +59,9 @@ export class EdgesView extends Component {
 
     return (
       <div>
-        { this.renderPreviousEdge() }
-        <pre>sub edges:</pre>
         <div className='grid-x'>
           <div className='cell small-4'>
-            <small><pre>{ JSON.stringify(this.state.options[0][1], null, 2) }</pre></small>
+            { this.renderPreviousEdge() }
           </div>
           <div className='cell small-8'>
             <LineChart data={[ this.state.options.map((e, index) => { return { x: index, y: e[0] } }) ]}

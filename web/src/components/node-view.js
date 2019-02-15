@@ -119,7 +119,21 @@ export class NodeView extends Component {
               <a className='button primary' onClick={() => this.allBestThread(this.state.selectedNId, 2)}>all best thread 2</a>
             </div>
             { this.state.view === 'update' && <pre> updating... </pre> }
-            { this.state.view === 'synthesisNode' && <pre> { JSON.stringify(this.state.synthesisNode, null, 2) } </pre> }
+            { this.state.view === 'synthesisNode' &&
+              <div className='grid-x'>
+                <div className='cell small-4'>
+                  <small><pre> processor: </pre></small>
+                  <small><pre> { JSON.stringify(this.state.synthesisNode.nModel.processor, null, 2) } </pre></small>
+                </div>
+                <div className='cell small-4'>
+                  <small><pre> data flow graph: </pre></small>
+                  <small><pre> { JSON.stringify(this.state.synthesisNode.nModel.dfg, null, 2) } </pre></small>
+                </div>
+                <div className='cell small-4'>
+                  <small><pre> nId: { JSON.stringify(this.state.synthesisNode.nId, null, 2) } </pre></small>
+                  <small><pre> nIsComplete: { JSON.stringify(this.state.synthesisNode.nIsComplete, null, 2) } </pre></small>
+                </div>
+              </div> }
             { this.state.view === 'process' && <ProcessView
               steps={this.state.synthesisNode.nModel.processor.process.steps}
               relations={this.state.synthesisNode.nModel.processor.process.relations}
