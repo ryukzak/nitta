@@ -87,12 +87,14 @@ withSynthesis root nId
 type SimpleCompilerAPI title v x t
     =    "edges" :> Get '[JSON] [ Edge title v x t ]
     :<|> "simpleSynthesis" :> Post '[JSON] NId
+    :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
     :<|> "obviousBindThread" :> Post '[JSON] NId
     :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
 
 simpleCompilerServer root n
     =    liftIO ( getEdgesIO =<< getNodeIO root n )
     :<|> liftIO ( nId <$> (simpleSynthesisIO =<< getNodeIO root n))
+    :<|> liftIO ( nId <$> (smartBindSynthesisIO =<< getNodeIO root n))
     :<|> liftIO ( nId <$> (obviousBindThreadIO =<< getNodeIO root n))
     :<|> ( \deep -> liftIO ( nId <$> (allBestThreadIO deep =<< getNodeIO root n)) )
 

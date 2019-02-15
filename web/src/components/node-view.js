@@ -71,6 +71,17 @@ export class NodeView extends Component {
       .catch(err => alert(err))
   }
 
+  smartBindSynthesisIO (nid, deep) {
+    if (nid === undefined || nid === null) return
+    console.debug('NodeView:simpleSynthesis(', nid, ')')
+    hapi.smartBindSynthesisIO(nid, deep)
+      .then(response => {
+        var newNid = response.data
+        this.onNIdChange(newNid)
+      })
+      .catch(err => alert(err))
+  }
+
   updateModel (nid, view) {
     hapi.getNode(nid)
       .then(response => {
@@ -111,6 +122,7 @@ export class NodeView extends Component {
             </div>
             <div className='tiny button-group'>
               <a className='button primary' onClick={() => this.simpleSynthesis(this.state.selectedNId)}>simple synthesis</a>
+              <a className='button primary' onClick={() => this.smartBindSynthesisIO(this.state.selectedNId)}>smart bind synthesis</a>
             </div>
             <div className='tiny button-group'>
               <a className='button primary' onClick={() => this.obviousBindThread(this.state.selectedNId)}>oblious bind thread</a>

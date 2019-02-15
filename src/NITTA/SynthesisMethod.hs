@@ -18,11 +18,13 @@ Stability   : experimental
 -}
 module NITTA.SynthesisMethod
     ( simpleSynthesisIO
+    , smartBindSynthesisIO
     , obviousBindThreadIO
     , allBestThreadIO
     ) where
 
-import           Data.List             (find)
+import           Data.List             (find, sortOn)
+import           Data.Ord              (Down (..))
 import           NITTA.DataFlow        (targetProcessDuration)
 import           NITTA.Types.Synthesis
 import           NITTA.Utils           (maximumOn, minimumOn)
@@ -33,6 +35,10 @@ simpleSynthesisIO root = do
     lastObliviusNode <- obviousBindThreadIO root
     allBestThreadIO 1 lastObliviusNode
 
+
+smartBindSynthesisIO root = do
+    node <- smartBindThreadIO root
+    allBestThreadIO 1 node
 
 
 bestThreadIO node = do
@@ -55,6 +61,35 @@ obviousBindThreadIO node = do
     case obliousBind of
         Just Edge{ eNode } -> obviousBindThreadIO eNode
         Nothing            -> return node
+
+
+
+refactorThreadIO node = do
+    edges <- getEdgesIO node
+    let refEdge = find
+            ((\case
+                RefactorCh{} -> True
+                _ -> False
+            ) . eCharacteristics)
+            edges
+    case refEdge of
+        Just Edge{ eNode } -> refactorThreadIO eNode
+        Nothing            -> return node
+
+
+
+smartBindThreadIO node = do
+    node' <- refactorThreadIO node
+    edges <- getEdgesIO node'
+    let binds = sortOn (Down . eCharacteristic) $ filter
+            ((\case
+                BindCh{} -> True
+                _ -> False
+            ) . eCharacteristics)
+            edges
+    case binds of
+        Edge{ eNode }:_ -> smartBindThreadIO eNode
+        []              -> return node'
 
 
 

@@ -9,6 +9,7 @@ export const hapi = {
   getEdge: (nid) => api.getSynthesisByNIdEdge(nid),
   getEdges: (nid) => api.getSynthesisByNIdEdges(nid),
   simpleSynthesis: (nid) => api.postSynthesisByNIdSimpleSynthesis(nid),
+  smartBindSynthesisIO: (nid) => api.postSynthesisByNIdSmartBindSynthesisIO(nid),
   allBestThread: (nid, n) => api.postSynthesisByNIdAllBestThread(nid, n),
   obviousBindThread: (nid) => api.postSynthesisByNIdObviousBindThread(nid),
   runTestBench: (nid, name) => api.getSynthesisByNIdTestBenchOutput(nid, name)
