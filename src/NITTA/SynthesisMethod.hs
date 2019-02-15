@@ -42,7 +42,7 @@ smartBindSynthesisIO root = do
 
 
 bestThreadIO node = do
-    edges <- getEdgesIO node
+    edges <- filter ((> 0) . eCharacteristic) <$> getEdgesIO node
     case edges of
         [] -> return node
         _  -> bestThreadIO $ eNode $ maximumOn eCharacteristic edges

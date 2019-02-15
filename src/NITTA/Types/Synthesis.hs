@@ -276,9 +276,9 @@ mkEdges Node{ nId, nModel } = do
         bindableFunctions = [ f | (BindingOption f _) <- opts ]
         possibleDeadlockBinds = fromList
             [ f
-            | f <- bindableFunctions
-            , Lock{ locked } <- locks f
-            , locked `member` alreadyBindedVariables
+            | (BindingOption f title) <- opts
+            , Lock{ lockBy } <- locks f
+            , lockBy `member` unionsMap variables (bindedFunctions title $ processor nModel)
             ]
         transferableVars = fromList
             [ v
@@ -356,7 +356,7 @@ measure
                 is = inputs f
                 n = fromIntegral $ length $ intersection is alreadyBindedVariables
                 nAll = fromIntegral $ length is
-            in n / nAll
+            in if nAll == 0 then 1 else n / nAll 
         , wave=if insideOut f 
             then 0 
             else let
@@ -384,24 +384,26 @@ measure ChConf{} ChCntx{} RefactorOption{} = RefactorCh
 True <?> v = v
 False <?> _ = 0
 
-integral ChConf{} ChCntx{} BindCh{ possibleDeadlock, critical, alternative, allowDataFlow, restless, numberOfBindedFunctions, wave, percentOfBindedInputs }
+integral ChConf{} ChCntx{} BindCh{ possibleDeadlock=True } = -1
+
+integral ChConf{} ChCntx{} BindCh{ critical, alternative, allowDataFlow, restless, numberOfBindedFunctions, wave, percentOfBindedInputs }
     = 1000
-    - wave * 1000
-    + 10 * allowDataFlow
-    + not possibleDeadlock <?> 10000
-    + critical <?> 5000
+    + critical <?> 1000
     + (alternative == 1) <?> 500
-    - numberOfBindedFunctions * 100
-    - 4 * restless
-    + percentOfBindedInputs * 300
+    + allowDataFlow * 10
+    + percentOfBindedInputs * 50
+    - wave * 50
+    - numberOfBindedFunctions * 10
+    - restless * 4
 
 integral ChConf{ threshhold } ChCntx{ numberOfDFOptions } DFCh{ waitTime, notTransferableInputs, restrictedTime }
-    = (numberOfDFOptions >= threshhold) <?> 1000
-    + restrictedTime <?> 500
-    - sum notTransferableInputs * 10
+    = 100
+    + (numberOfDFOptions >= threshhold) <?> 1000
+    + restrictedTime <?> 200
+    - sum notTransferableInputs * 5
     - waitTime
 
-integral ChConf{} ChCntx{} RefactorCh{} = 0
+integral ChConf{} ChCntx{} RefactorCh{} = 2000
 
 
 
