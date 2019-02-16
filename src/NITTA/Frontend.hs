@@ -19,34 +19,23 @@ Stability   : experimental
 -}
 module NITTA.Frontend
     ( lua2functions
-    , ValueType(..)
-    , NumberReprType(..)
     ) where
 
 import           Control.Monad                 (when)
 import           Control.Monad.Identity
 import           Control.Monad.State
-import           Data.Default
 import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
 import           Data.Maybe                    (fromMaybe)
 import qualified Data.String.Utils             as S
-import           Data.Text                     (Text, unpack, pack)
+import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
-import           NITTA.Types                   (FX, IntX)
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
 -- import Debug.Trace
-
--- FIXME: Variable b don't consume anywhere, except recursive call and it causes the exception.
--- function f(a, b)
---     a, b = a / 2
---     f(a, b)
--- end
--- f(1025, 0)
 
 lua2functions src
     = let
@@ -66,7 +55,7 @@ lua2functions src
 
 buildAlg ast
     = let
-        Right (mainName, mainCall, mainFunDef) = findMain ast
+        Right ( mainName, mainCall, mainFunDef ) = findMain ast
         alg0 = AlgBuilder
             { algItems=[]
             , algBuffer=[]
@@ -76,31 +65,9 @@ buildAlg ast
         builder = do
             addMainInputs mainFunDef mainCall
             mapM_ (processStatement mainName) $ funAssignStatments mainFunDef
-            patchAlgForType
             addConstants
     in execState builder alg0
 
--- |Описание способа представления вещественных чисел в алгоритме
-data NumberReprType
-    -- |В алгоритме не поддерживаются вещественные числа.
-    = IntRepr
-    -- |Представление вещественных чисел как целочисленных, умножением на 10 в заданной степени.
-    | DecimalFixedPoint Int
-    -- |Представление вещественных чисел как целочисленных, умножением на 2 в заданной степени.
-    | BinaryFixedPoint Int
-    deriving Show
-
--- |Описывает формат представления чисел в алгоритме.
-data ValueType
-    = ValueType
-        { reprType      :: NumberReprType -- ^Представление вещественных чисел в алгоритме
-        , valueWidth    :: Int            -- ^Количество бит требующихся на представление числа (по модулю)
-        , isValueSigned :: Bool           -- ^Возможность использования отрицательных чисел
-        }
-    deriving Show
-
-instance Default ValueType where
-    def = ValueType{ reprType=IntRepr, valueWidth=32, isValueSigned=True }
 
 data AlgBuilder x
     = AlgBuilder
@@ -205,59 +172,6 @@ addConstants = do
 
 
 
-class PatchAlgForType x where
-    patchAlgForType :: State (AlgBuilder x) ()
-
-instance PatchAlgForType Int where
-    patchAlgForType = return ()
-
-instance PatchAlgForType Integer where
-    patchAlgForType = return ()
-
-instance PatchAlgForType (IntX w) where
-    patchAlgForType = return ()
-
-instance PatchAlgForType (FX m b) where
-    patchAlgForType = return ()
-
--- instance PatchAlgForType (IntX w) where
---     patchAlgForType = do
---         alg@AlgBuilder{ algItems } <- get
---         put alg{ algItems=[] }
---         mapM_ preprocessFunctions' algItems
---         where
---             rt = BinaryFixedPoint 1
---             preprocessFunctions' Function{ fName="multiply", fIn=[a, b], fOut=[c], fValues=[] } = do
---                 v <- genVar "tmp"
---                 q <- genVar "_mod"
---                 cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
---                 modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
---                     -- FIXME: add shift for more than 1
---                     BinaryFixedPoint  1 -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
---                                         Function{ fName="shiftR", fIn=[v], fOut=[c], fValues=[] } :
---                                         algItems
---                     _                   -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
---                                         Function{ fName="divide", fIn=[v, cnst], fOut=[c, q], fValues=[] } :
---                                         algItems
---                 }
-
---             preprocessFunctions' Function{ fName="divide", fIn=[d, n], fOut=[q, r], fValues=[] } = do
---                 v <- genVar "tmp"
---                 cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
---                 modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
---                     BinaryFixedPoint  1 -> Function{ fName="shiftL", fIn=[d], fOut=[v], fValues=[] } :
---                                         Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
---                                         algItems
-
---                     _                   -> Function{ fName="multiply", fIn=[d, cnst], fOut=[v], fValues=[] } :
---                                         Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
---                                         algItems
---                 }
-
---             preprocessFunctions' item = modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=item : algItems }
-
-
-
 processStatement fn (LocalAssign names (Just [rexp])) = do
     processStatement fn $ LocalAssign names Nothing
     processStatement fn $ Assign (map VarName names) [rexp]
@@ -332,10 +246,10 @@ rightExp diff [a] n@(Number _ _) = do -- a = 42
     b <- expConstant (T.concat ["const_", a]) n
     addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }
 
--- FIXME: add negative function
 rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] $ Number numType $ T.cons '-' n
 
 rightExp diff [a] (Unop Neg expr@(PrefixExp _)) =
+    -- FIXME: add negative function
     let binop = Binop Sub (Number IntNum "0") expr
     in rightExp diff [a] binop
 
@@ -382,8 +296,8 @@ expConstant prefix (Number _ textX) = do
             addItem Constant
                 { cX=read $ unpack textX
                 , cVar
-                , cTextX=textX 
-                } 
+                , cTextX=textX
+                }
                 []
             return cVar
         Just _ -> error "internal error"
@@ -401,7 +315,7 @@ addFunction _ = error "addFunction error"
 patchAndAddFunction f@Function{ fIn } diff = do
     let fIn' = map (applyPatch diff) fIn
     modify'_ $ \alg@AlgBuilder{ algItems } ->
-        alg { algItems=f{ fIn=fIn' } : algItems }
+        alg{ algItems=f{ fIn=fIn' } : algItems }
 patchAndAddFunction _ _ = undefined
 
 

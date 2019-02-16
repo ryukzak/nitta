@@ -31,7 +31,6 @@ import           NITTA.API.Marshalling    ()
 import           NITTA.DataFlow
 import           NITTA.Project            (writeAndRunTestBench)
 import           NITTA.SynthesisMethod
-import           NITTA.Types              (F)
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
 import           Servant
@@ -86,12 +85,14 @@ withSynthesis root nId
 type SimpleCompilerAPI title v x t
     =    "edges" :> Get '[JSON] [ Edge title v x t ]
     :<|> "simpleSynthesis" :> Post '[JSON] NId
+    :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
     :<|> "obviousBindThread" :> Post '[JSON] NId
     :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
 
 simpleCompilerServer root n
     =    liftIO ( getEdgesIO =<< getNodeIO root n )
     :<|> liftIO ( nId <$> (simpleSynthesisIO =<< getNodeIO root n))
+    :<|> liftIO ( nId <$> (smartBindSynthesisIO =<< getNodeIO root n))
     :<|> liftIO ( nId <$> (obviousBindThreadIO =<< getNodeIO root n))
     :<|> ( \deep -> liftIO ( nId <$> (allBestThreadIO deep =<< getNodeIO root n)) )
 
@@ -107,6 +108,7 @@ data SynthesisNodeView
         , svIsEdgesProcessed :: Bool
         , svDuration         :: Int
         , svCharacteristic   :: Float
+        , svOptionType       :: String
         }
     deriving ( Generic )
 
@@ -125,6 +127,11 @@ synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
             , svIsEdgesProcessed=isJust nodesM
             , svDuration=fromEnum $ targetProcessDuration nModel
             , svCharacteristic=maybe (read "NaN") eCharacteristic nOrigin
+            , svOptionType=case nOrigin of
+                Just Edge{ eOption=BindingOption{} } -> "Bind"
+                Just Edge{ eOption=DataFlowOption{} } -> "Transport"
+                Just Edge{ eOption=RefactorOption{} } -> "Refactor"
+                Nothing -> "-"
             }
         , T.subForest=nodes
         }

@@ -17,7 +17,6 @@ Stability   : experimental
 module NITTA.Utils.Test
     ( test
     , testLua
-    , demo
     , testWithInput
     , testLuaWithInput
     , mkModelWithOneNetwork
@@ -44,7 +43,7 @@ testLua name ma = testWithInput name [] ma . lua2functions
 testLuaWithInput name is ma = testWithInput name is ma . lua2functions
 
 testWithInput name cntx ma alg = runExceptT $ do
-    node <- lift $ simpleSynthesisIO =<< mkNodeIO mempty (mkModelWithOneNetwork ma alg)
+    node <- lift $ simpleSynthesisIO =<< mkNodeIO (mkModelWithOneNetwork ma alg)
     unless (isSchedulingComplete $ nModel node)
         $ throwE [qc|> test { name } not isSchedulingComplete|]
 
@@ -60,12 +59,6 @@ testWithInput name cntx ma alg = runExceptT $ do
     unless tbStatus $ throwE ([qc|> test { name } - Fail|] :: String)
 
     return ([qc|> test { name } - Success|] :: String)
-
-demo prj@Project{ projectPath, processorModel } = do
-    node <- simpleSynthesisIO =<< mkNodeIO mempty processorModel
-    let prj' = prj{ processorModel=processor $ nModel node }
-    writeProject prj'
-    putStrLn $ "Demo project in " ++ projectPath
 
 
 -- |Make a model of NITTA process with one network and a specific algorithm. All functions are

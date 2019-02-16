@@ -74,7 +74,10 @@ export class SynthesisGraph extends Component {
           nIds[dNode[0].svNnid] = gNode
           if (dNode[0].svIsEdgesProcessed) this.markNode(gNode.nid, nIds, 'black')
           if (dNode[0].svIsComplete) this.markNode(gNode.nid, nIds, 'lime')
-          gNode.attributes = { dur: dNode[0].svDuration, ch: dNode[0].svCharacteristic }
+          gNode.attributes = {
+            dec: dNode[0].svOptionType,
+            ch: dNode[0].svDuration + ' / ' + dNode[0].svCharacteristic
+          }
           gNode.status = dNode[0].svIsComplete
           dNode[0].svCntx.forEach((e, i) => {
             gNode.attributes[i] = e

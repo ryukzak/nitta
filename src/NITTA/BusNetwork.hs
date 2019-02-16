@@ -36,10 +36,10 @@ Stability   : experimental
 относительно пересылок данных между ними, при этом время в сетях должно быть максимально выравнено.
 Любая сетевая структура становится плоской с точки зрения наблюдателя.
 -}
-module NITTA.BusNetwork  
+module NITTA.BusNetwork
     ( busNetwork
     , BusNetwork(..)
-    , bindedFunctions
+    , bindedFunctions, bindedVars
     ) where
 
 import           Control.Monad.State
@@ -49,10 +49,10 @@ import           Data.List                     (find, nub, partition, sortOn,
                                                 (\\))
 import qualified Data.Map                      as M
 import           Data.Maybe                    (fromMaybe, isJust, mapMaybe)
-import           Data.Set                      (elems, fromList, intersection)
+import           Data.Set                      (elems, fromList, member)
 import qualified Data.String.Utils             as S
 import           Data.Typeable
-import           NITTA.Functions               (get', simulateAlgByCycle)
+import           NITTA.Functions               (get', reg, simulateAlgByCycle)
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Types.Project
@@ -62,7 +62,6 @@ import           NITTA.Utils.Process
 import           Numeric.Interval              (inf, width, (...))
 import           Text.InterpolatedString.Perl6 (qc)
 
-bindedFunctions = undefined 
 
 -- | Класс идентификатора вложенного вычислительного блока.
 type Title v = ( Typeable v, Ord v, Show v )
@@ -320,25 +319,16 @@ instance ( Title title ) => Simulatable (BusNetwork title v x t) v x where
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( Var v
-         ) => DecisionProblem (BindingDT String v x)
-                    BindingDT (BusNetwork String v x t)
+instance DecisionProblem (BindingDT String v x)
+               BindingDT (BusNetwork String v x t)
          where
-    options _ BusNetwork{..} = concatMap bindVariants' bnRemains
+    options _ BusNetwork{ bnRemains, bnPus } = concatMap optionsFor bnRemains
         where
-            bindVariants' fb =
-                [ BindingO fb puTitle
-                | (puTitle, pu) <- sortOn (length . binded . fst) $ M.assocs bnPus
-                , allowToProcess fb pu
-                , not $ selfTransport fb puTitle
+            optionsFor f =
+                [ BindingO f puTitle
+                | ( puTitle, pu ) <- M.assocs bnPus
+                , allowToProcess f pu
                 ]
-
-            selfTransport fb puTitle =
-                not $ null $ variables fb `intersection` unionsMap variables (binded puTitle)
-
-            binded puTitle
-                | puTitle `M.member` bnBinded = bnBinded M.! puTitle
-                | otherwise = []
 
     decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
         = bn
@@ -351,6 +341,31 @@ instance ( Var v
                 addStep (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
             , bnRemains=filter (/= fb) bnRemains
         }
+
+
+
+instance ( Var v, Typeable x
+        ) => DecisionProblem (RefactorDT v)
+                  RefactorDT (BusNetwork String v x t)
+        where
+    options _ bn
+        = nub
+            [ InsertOutRegisterO lockBy
+            | (BindingO f title) <- options binding bn
+            , Lock{ lockBy } <- locks f
+            , lockBy `member` unionsMap variables (bindedFunctions title bn)
+            ]
+
+    decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v')
+        = bn{ bnRemains=reg v [v'] : patch v v' bnRemains }
+
+
+
+bindedVars BusNetwork{ bnBinded } = unionsMap variables $ concat $ M.elems bnBinded
+
+bindedFunctions puTitle BusNetwork{ bnBinded }
+    | puTitle `M.member` bnBinded = bnBinded M.! puTitle
+    | otherwise = []
 
 
 --------------------------------------------------------------------------

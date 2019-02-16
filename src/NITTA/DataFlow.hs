@@ -26,10 +26,11 @@ module NITTA.DataFlow
     , isSchedulingComplete
     ) where
 
-import           Data.Set         (fromList)
+import           Data.Set         (fromList, member)
 import           Data.Typeable
 import           GHC.Generics
 import           NITTA.BusNetwork
+import           NITTA.Functions  (reg)
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
@@ -59,6 +60,13 @@ data DataFlowGraph v x
     --     , dfgCases :: [(Int, DataFlowGraph v)] -- ^таблица значений ключей и соответствующих подграфов.
     --     }
     deriving ( Show, Generic )
+
+instance ( Var v, Typeable x ) => Patch (DataFlowGraph v x) v where
+    -- FIXME: on complex DFG don't work correct
+    patch v v' (DFG dfgs) = DFG $ (DFGNode $ reg v [v']) : map (patch v v') dfgs
+    patch v v' n@(DFGNode f)
+        | v `member` inputs f = DFGNode $ patch v v' f
+        | otherwise = n
 
 instance ( Var v ) => Variables (DataFlowGraph v x) v where
     variables (DFGNode fb) = variables fb
@@ -97,11 +105,13 @@ data ModelState title v x t
     deriving ( Generic )
 
 
-
-
 instance ( Var v
-         ) => DecisionProblem (BindingDT String v x)
-                    BindingDT (ModelState String v x t)
+         ) => WithFunctions (ModelState title v x t) (F v x) where
+    functions Frame{ processor } = functions processor
+
+
+instance DecisionProblem (BindingDT String v x)
+               BindingDT (ModelState String v x t)
          where
     options _ Frame{ processor }    = options binding processor
     -- options _ Level{ currentFrame } = options binding currentFrame

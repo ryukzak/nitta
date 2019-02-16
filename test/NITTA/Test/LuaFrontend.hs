@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
@@ -20,14 +21,22 @@ module NITTA.Test.LuaFrontend
     , luaTests
     ) where
 
+import           Control.Monad                 (unless)
 import           Data.Either                   (isRight)
 import           Data.FileEmbed                (embedStringFile)
 import           Data.Proxy
 import           Data.Text                     (pack)
+import           NITTA.DataFlow
+import           NITTA.Frontend
+import           NITTA.Project
+import           NITTA.SynthesisMethod
 import           NITTA.Test.Microarchitectures
 import           NITTA.Types
+import           NITTA.Types.Project
+import           NITTA.Types.Synthesis         (Node (..), mkNodeIO)
 import           NITTA.Utils                   (fixIndent)
 import           NITTA.Utils.Test
+import           System.FilePath               (joinPath)
 import           Test.Tasty                    (TestTree, testGroup)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
@@ -164,6 +173,34 @@ test_io =
 |       fib()
 |       |]
     ]
+
+
+test_refactor =
+    [ testCase "insertOutRegister" $ do
+        let alg = lua2functions
+                [qc|function fib(x)
+                    y = x + x + x
+                    fib(y)
+                end
+                fib(1)|]
+            ma = march
+            symthesisMethod = smartBindSynthesisIO
+        node <- symthesisMethod =<< mkNodeIO (mkModelWithOneNetwork ma alg)
+
+        unless (isSchedulingComplete $ nModel node) $ error "synthesis process is not completed!"
+
+        let prj = Project
+                { projectName="insertOutRegister"
+                , libraryPath="../.."
+                , projectPath=joinPath ["hdl", "gen", "insertOutRegister"]
+                , processorModel=processor $ nModel node
+                , testCntx=Nothing
+                , targetPlatforms=[ Makefile ]
+                }
+        TestBenchReport{ tbStatus } <- writeAndRunTestBench prj
+        unless tbStatus $ error "simulation do not complience to the functional model"
+    ]
+
 
 luaTests :: TestTree
 luaTests = $(testGroupGenerator)
