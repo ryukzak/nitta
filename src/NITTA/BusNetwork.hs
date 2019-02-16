@@ -36,7 +36,11 @@ Stability   : experimental
 относительно пересылок данных между ними, при этом время в сетях должно быть максимально выравнено.
 Любая сетевая структура становится плоской с точки зрения наблюдателя.
 -}
-module NITTA.BusNetwork where
+module NITTA.BusNetwork
+    ( busNetwork
+    , BusNetwork(..)
+    , bindedFunctions, bindedVars
+    ) where
 
 import           Control.Monad.State
 import qualified Data.Array                    as A
@@ -45,10 +49,10 @@ import           Data.List                     (find, nub, partition, sortOn,
                                                 (\\))
 import qualified Data.Map                      as M
 import           Data.Maybe                    (fromMaybe, isJust, mapMaybe)
-import           Data.Set                      (elems, fromList, intersection)
+import           Data.Set                      (elems, fromList, member)
 import qualified Data.String.Utils             as S
 import           Data.Typeable
-import           NITTA.Functions               (get', simulateAlgByCycle)
+import           NITTA.Functions               (get', reg, simulateAlgByCycle)
 import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Types.Project
@@ -75,8 +79,6 @@ data BusNetwork title v x t = BusNetwork
     , bnPus            :: M.Map title (PU v x t)
     -- | Ширина шины управления.
     , bnSignalBusWidth :: Int
-    , bnInputPorts     :: [InputPort]
-    , bnOutputPorts    :: [OutputPort]
     -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
     , bnAllowDrop      :: Maybe Bool
     }
@@ -85,14 +87,12 @@ data BusNetwork title v x t = BusNetwork
 -- TODO: Проверка подключения сигнальных линий.
 
 -- TODO: Вариант функции, где провода будут подключаться автоматически.
-busNetwork w allowDrop ips ops pus = BusNetwork
+busNetwork w allowDrop pus = BusNetwork
         { bnRemains=[]
         , bnBinded=M.empty
         , bnProcess=def
         , bnPus=M.fromList pus'
         , bnSignalBusWidth=w
-        , bnInputPorts=ips
-        , bnOutputPorts=ops
         , bnAllowDrop=allowDrop
         }
     where
@@ -315,25 +315,16 @@ instance ( Title title ) => Simulatable (BusNetwork title v x t) v x where
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( Var v
-         ) => DecisionProblem (BindingDT String v x)
-                    BindingDT (BusNetwork String v x t)
+instance DecisionProblem (BindingDT String v x)
+               BindingDT (BusNetwork String v x t)
          where
-    options _ BusNetwork{..} = concatMap bindVariants' bnRemains
+    options _ BusNetwork{ bnRemains, bnPus } = concatMap optionsFor bnRemains
         where
-            bindVariants' fb =
-                [ BindingO fb puTitle
-                | (puTitle, pu) <- sortOn (length . binded . fst) $ M.assocs bnPus
-                , allowToProcess fb pu
-                , not $ selfTransport fb puTitle
+            optionsFor f =
+                [ BindingO f puTitle
+                | ( puTitle, pu ) <- M.assocs bnPus
+                , allowToProcess f pu
                 ]
-
-            selfTransport fb puTitle =
-                not $ null $ variables fb `intersection` unionsMap variables (binded puTitle)
-
-            binded puTitle
-                | puTitle `M.member` bnBinded = bnBinded M.! puTitle
-                | otherwise = []
 
     decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
         = bn
@@ -348,10 +339,37 @@ instance ( Var v
         }
 
 
+
+instance ( Var v, Typeable x
+        ) => DecisionProblem (RefactorDT v)
+                  RefactorDT (BusNetwork String v x t)
+        where
+    options _ bn
+        = nub
+            [ InsertOutRegisterO lockBy
+            | (BindingO f title) <- options binding bn
+            , Lock{ lockBy } <- locks f
+            , lockBy `member` unionsMap variables (bindedFunctions title bn)
+            ]
+
+    decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v')
+        = bn{ bnRemains=reg v [v'] : patch v v' bnRemains }
+
+
+
+bindedVars BusNetwork{ bnBinded } = unionsMap variables $ concat $ M.elems bnBinded
+
+bindedFunctions puTitle BusNetwork{ bnBinded }
+    | puTitle `M.member` bnBinded = bnBinded M.! puTitle
+    | otherwise = []
+
+
 --------------------------------------------------------------------------
 
 programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
+allExternalInputs pus = map (\(InputPort n) -> n) $ concatMap (\PU{ links } -> externalInputPorts links ) $ M.elems pus
+allExternalOutputs pus = map (\(OutputPort n) -> n) $ concatMap (\PU{ links } -> externalOutputPorts links ) $ M.elems pus
 
 instance
         ( Time t
@@ -372,8 +390,8 @@ instance
 |                       ( input                     clk
 |                       , input                     rst
 |                       , output                    cycle
-|                   { S.join "\\n" $ map (\\(InputPort p) -> ("    , input " ++ p)) bnInputPorts }
-|                   { S.join "\\n" $ map (\\(OutputPort p) -> ("    , output " ++ p)) bnOutputPorts }
+|                   { S.join "\\n" $ map ("    , input " ++) $ allExternalInputs bnPus }
+|                   { S.join "\\n" $ map ("    , output " ++) $ allExternalOutputs bnPus }
 |                       , output              [7:0] debug_status
 |                       , output              [7:0] debug_bus1
 |                       , output              [7:0] debug_bus2
@@ -454,7 +472,10 @@ instance ( Title title, Var v, Time t
     testBenchDescription Project{ projectName, processorModel=n@BusNetwork{..}, testCntx }
         = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
         where
-            ports = map (\(InputPort n') -> n') bnInputPorts ++ map (\(OutputPort n') -> n') bnOutputPorts
+            ports = concat
+                [ allExternalInputs bnPus
+                , allExternalOutputs bnPus
+                ]
             testEnv = S.join "\\n\\n"
                 [ tbEnv
                 | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus

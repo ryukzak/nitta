@@ -39,7 +39,10 @@ set_location_assignment PIN_C11 -to miso
 set_location_assignment PIN_A12 -to sclk
 set_location_assignment PIN_D12 -to cs
 
-
+set_location_assignment PIN_E10 -to mosi_lg
+set_location_assignment PIN_B11 -to miso_lg
+set_location_assignment PIN_D11 -to sclk_lg
+set_location_assignment PIN_B12 -to cs_lg
 
 set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to external_clk
 set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to rst
@@ -66,6 +69,10 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to miso
 set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sclk
 set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to cs
 
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to mosi_lg
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to miso_lg
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sclk_lg
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to cs_lg
 
 
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top

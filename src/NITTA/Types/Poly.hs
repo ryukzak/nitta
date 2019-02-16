@@ -7,7 +7,7 @@
 {-|
 Module      : NITTA.Types.Poly
 Description : Decision types
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -20,10 +20,16 @@ module NITTA.Types.Poly where
 
 import           Data.Proxy
 
--- | Общий класс для описания варантов и решений.
+-- |It's a general class for a description of all options and decisions in the
+-- system.
 --
--- Инстансы данного класса должны оканчиваться иметь суфикс DT. Например: BindingDT. Конктрукторы
--- опций должны иметь суфикс O, а решений - D.
+-- An instance of this class should end with DT suffix. For example BindingDT.
+-- Constructors of options should have suffix I, decision - D.
+--
+-- Right now, I don't sure, that this class is the correct choice. It makes
+-- source code more complicated (@synthesisOptions@, @synthesisDecision@), rise
+-- some architectural problem (see @RefactorDT@, which need separate @options@ and
+-- @decision@ implementation), and benefits are not incomprehensible.
 class DecisionType (t :: *) where
   data Option t :: *
   data Decision t :: *

@@ -30,13 +30,12 @@ import           NITTA.API.REST
 import           NITTA.Types.Synthesis
 import           Servant
 import qualified Servant.JS                    as SJS
-import           Servant.Utils.StaticFiles     (serveDirectoryWebApp)
+import           Servant.Server.StaticFiles    (serveDirectoryWebApp)
 import           System.Directory              (createDirectoryIfMissing)
 import           System.Exit                   (ExitCode (..), die)
 import           System.FilePath.Posix         (joinPath)
 import           System.Process
 import           Text.InterpolatedString.Perl6 (qq)
--- import           Servant.Server.StaticFiles (serveDirectoryWebApp) -- update on servant 14+
 
 
 prepareJSAPI port = do
@@ -70,7 +69,7 @@ prepareStaticFiles = do
 
 
 application compilerState = do
-    root <- mkNodeIO mempty compilerState
+    root <- mkNodeIO compilerState
     return $ serve
         ( Proxy :: Proxy
             (    SynthesisAPI _ _ _ _
@@ -89,7 +88,7 @@ backendServer no_api_gen modelState = do
     let port = 8080
     unless no_api_gen $ prepareJSAPI port
 
-    putStrLn $ "Running NITTA server on port: " ++ show port
+    putStrLn $ "Running NITTA server at http://localhost:" ++ show port ++ "/index.html"
 
     -- let initialCompilerState = def{ state=modelState }
     app <- application modelState

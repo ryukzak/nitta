@@ -16,7 +16,19 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Types.Network where
+module NITTA.Types.Network
+    ( Connected(..)
+    , DataFlowDT, dataFlowDT, Option(..), Decision(..)
+    , Enviroment(..)
+    , Implementation(..)
+    , IOTest(..)
+    , NetEnv(..)
+    , Parameter(..)
+    , PU(..), castPU
+    , Signal(..), InputPort(..), OutputPort(..)
+    , Source, Target
+    , TargetSystemComponent(..)
+    ) where
 
 import           Data.Ix
 import qualified Data.Map         as M
@@ -95,6 +107,12 @@ class Connected pu where
     -- |Отображение микрокода на сигнальные линии. Необходимо для "сведения" микрокоманд отдельных
     -- вычислительных блоков в микрокоманды сети.
     transmitToLink :: Microcode pu -> PUPorts pu -> [(Signal, SignalValue)]
+    -- |External input ports, which go outside of NITTA processor.
+    externalInputPorts :: PUPorts pu -> [InputPort]
+    externalInputPorts _ = []
+    -- |External output ports, which go outside of NITTA processor.
+    externalOutputPorts :: PUPorts pu -> [OutputPort]
+    externalOutputPorts _ = []
 
 
 

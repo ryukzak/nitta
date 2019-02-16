@@ -6,10 +6,8 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS -Wall -Wsemigroup -Wnoncanonical-monoid-instances -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -fno-cse #-}
-
--- FIXME: -Wmissing-monadfail-instances -> -Wcompat
 
 {-|
 Module      : NITTA.Frontend
@@ -21,34 +19,23 @@ Stability   : experimental
 -}
 module NITTA.Frontend
     ( lua2functions
-    , ValueType(..)
-    , NumberReprType(..)
     ) where
 
 import           Control.Monad                 (when)
 import           Control.Monad.Identity
 import           Control.Monad.State
-import           Data.Default
 import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
 import           Data.Maybe                    (fromMaybe)
 import qualified Data.String.Utils             as S
-import           Data.Text                     (Text, unpack)
+import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
-import           NITTA.Types                   (IntX, FX)
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
 -- import Debug.Trace
-
--- FIXME: Variable b don't consume anywhere, except recursive call and it causes the exception.
--- function f(a, b)
---     a, b = a / 2
---     f(a, b)
--- end
--- f(1025, 0)
 
 lua2functions src
     = let
@@ -61,48 +48,26 @@ lua2functions src
     in snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
     where
         varRow lst@(x:_)
-            = let vs = zipWith (\v i -> [qq|{unpack v}_{i}|]) lst [0..]
+            = let vs = zipWith (\v i -> [qq|{unpack v}:{i}|]) lst [0..]
             in (x, (vs, vs))
         varRow _ = undefined
 
 
 buildAlg ast
     = let
-        Right (mainName, mainCall, mainFunDef) = findMain ast
+        Right ( mainName, mainCall, mainFunDef ) = findMain ast
         alg0 = AlgBuilder
             { algItems=[]
             , algBuffer=[]
-            , algVarGen=map (\i -> [qq|#{i}|]) [0..]
+            , algVarGen=map (pack . show) [0..]
             , algVars=[]
             }
         builder = do
             addMainInputs mainFunDef mainCall
             mapM_ (processStatement mainName) $ funAssignStatments mainFunDef
-            patchAlgForType
             addConstants
     in execState builder alg0
 
--- |Описание способа представления вещественных чисел в алгоритме
-data NumberReprType
-    -- |В алгоритме не поддерживаются вещественные числа.
-    = IntRepr
-    -- |Представление вещественных чисел как целочисленных, умножением на 10 в заданной степени.
-    | DecimalFixedPoint Int
-    -- |Представление вещественных чисел как целочисленных, умножением на 2 в заданной степени.
-    | BinaryFixedPoint Int
-    deriving Show
-
--- |Описывает формат представления чисел в алгоритме.
-data ValueType
-    = ValueType
-        { reprType      :: NumberReprType -- ^Представление вещественных чисел в алгоритме
-        , valueWidth    :: Int            -- ^Количество бит требующихся на представление числа (по модулю)
-        , isValueSigned :: Bool           -- ^Возможность использования отрицательных чисел
-        }
-    deriving Show
-
-instance Default ValueType where
-    def = ValueType{ reprType=IntRepr, valueWidth=32, isValueSigned=True }
 
 data AlgBuilder x
     = AlgBuilder
@@ -126,7 +91,7 @@ data AlgBuilderItem x
         , iVar :: Text  -- ^Symbol
         , iX   :: x -- ^Initial value
         }
-    | Constant{ cVar :: Text, cX :: x }
+    | Constant{ cVar :: Text, cX :: x, cTextX :: Text }
     | Alias{ aFrom :: Text, aTo :: Text }
     | Renamed{ rFrom :: Text, rTo :: Text }
     | Function
@@ -207,59 +172,6 @@ addConstants = do
 
 
 
-class PatchAlgForType x where
-    patchAlgForType :: State (AlgBuilder x) ()
-
-instance PatchAlgForType Int where
-    patchAlgForType = return ()
-
-instance PatchAlgForType Integer where
-    patchAlgForType = return ()
-
-instance PatchAlgForType (IntX w) where
-    patchAlgForType = return ()
-
-instance PatchAlgForType (FX m b) where
-    patchAlgForType = return ()
-
--- instance PatchAlgForType (IntX w) where
---     patchAlgForType = do
---         alg@AlgBuilder{ algItems } <- get
---         put alg{ algItems=[] }
---         mapM_ preprocessFunctions' algItems
---         where
---             rt = BinaryFixedPoint 1
---             preprocessFunctions' Function{ fName="multiply", fIn=[a, b], fOut=[c], fValues=[] } = do
---                 v <- genVar "tmp"
---                 q <- genVar "_mod"
---                 cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
---                 modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
---                     -- FIXME: add shift for more than 1
---                     BinaryFixedPoint  1 -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
---                                         Function{ fName="shiftR", fIn=[v], fOut=[c], fValues=[] } :
---                                         algItems
---                     _                   -> Function{ fName="multiply", fIn=[a, b], fOut=[v], fValues=[] } :
---                                         Function{ fName="divide", fIn=[v, cnst], fOut=[c, q], fValues=[] } :
---                                         algItems
---                 }
-
---             preprocessFunctions' Function{ fName="divide", fIn=[d, n], fOut=[q, r], fValues=[] } = do
---                 v <- genVar "tmp"
---                 cnst <- expConstant "arithmetic_constant" $ Number IntNum "1"
---                 modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems = case rt of
---                     BinaryFixedPoint  1 -> Function{ fName="shiftL", fIn=[d], fOut=[v], fValues=[] } :
---                                         Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
---                                         algItems
-
---                     _                   -> Function{ fName="multiply", fIn=[d, cnst], fOut=[v], fValues=[] } :
---                                         Function{ fName="divide", fIn=[v, n], fOut=[q, r], fValues=[] } :
---                                         algItems
---                 }
-
---             preprocessFunctions' item = modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=item : algItems }
-
-
-
 processStatement fn (LocalAssign names (Just [rexp])) = do
     processStatement fn $ LocalAssign names Nothing
     processStatement fn $ Assign (map VarName names) [rexp]
@@ -331,13 +243,13 @@ rightExp diff [a] (PrefixExp (PEVar (VarName (Name b)))) -- a = b
     = addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }
 
 rightExp diff [a] n@(Number _ _) = do -- a = 42
-    b <- expConstant (T.concat [a, "_constant"]) n
+    b <- expConstant (T.concat ["const_", a]) n
     addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }
 
--- FIXME: add negative function
 rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] $ Number numType $ T.cons '-' n
 
 rightExp diff [a] (Unop Neg expr@(PrefixExp _)) =
+    -- FIXME: add negative function
     let binop = Binop Sub (Number IntNum "0") expr
     in rightExp diff [a] binop
 
@@ -345,7 +257,7 @@ rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
 
 
-expArg _diff n@(Number _ _) = expConstant "constant" n
+expArg _diff n@(Number _ _) = expConstant "const_inline" n
 
 expArg _diff (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
 
@@ -361,7 +273,7 @@ expArg diff binop@Binop{} = do
     rightExp diff [c] binop
     return c
 
-expArg _diff (Unop Neg (Number numType n)) = expConstant "constant" $ Number numType $ T.cons '-' n
+expArg _diff (Unop Neg (Number numType n)) = expConstant "const_inline" $ Number numType $ T.cons '-' n
 
 expArg diff (Unop Neg expr@(PrefixExp _)) = do
     c <- genVar "tmp"
@@ -377,13 +289,17 @@ expArg _diff a = error $ "expArg: " ++ show a
 
 expConstant prefix (Number _ textX) = do
     AlgBuilder{ algItems } <- get
-    let x = read $ unpack textX
-    case find (\case Constant{ cX } | cX == x -> True; _ -> False) algItems of
+    case find (\case Constant{ cTextX } | cTextX == textX -> True; _ -> False) algItems of
         Just Constant{ cVar } -> return cVar
         Nothing -> do
-            g <- genVar prefix
-            addItem Constant{ cX=x, cVar=g } []
-            return g
+            cVar <- genVar $ T.concat [ prefix, "_", textX ]
+            addItem Constant
+                { cX=read $ unpack textX
+                , cVar
+                , cTextX=textX
+                }
+                []
+            return cVar
         Just _ -> error "internal error"
 expConstant _ _ = undefined
 
@@ -399,7 +315,7 @@ addFunction _ = error "addFunction error"
 patchAndAddFunction f@Function{ fIn } diff = do
     let fIn' = map (applyPatch diff) fIn
     modify'_ $ \alg@AlgBuilder{ algItems } ->
-        alg { algItems=f{ fIn=fIn' } : algItems }
+        alg{ algItems=f{ fIn=fIn' } : algItems }
 patchAndAddFunction _ _ = undefined
 
 
@@ -422,7 +338,7 @@ renameFromTo rFrom rTo = do
     where
         patch [] = []
         patch (i@InputVar{ iVar } : xs) = i{ iVar=rn iVar } : patch xs
-        patch (Constant{ cX, cVar } : xs) = Constant{ cX, cVar=rn cVar } : patch xs
+        patch (Constant{ cX, cVar, cTextX } : xs) = Constant{ cX, cVar=rn cVar, cTextX } : patch xs
         patch (Alias{ aFrom, aTo } : xs) = Alias (rn aFrom) (rn aTo) : patch xs
         patch (f@Function{ fIn, fOut } : xs) = f{ fIn=map rn fIn, fOut=map rn fOut } : patch xs
         patch (x:xs) = x : patch xs
@@ -457,11 +373,11 @@ addItem item vars = modify'_
         }
 
 
-
 genVar prefix = do
-    alg@AlgBuilder{ algVarGen=g:gs } <- get
-    put alg{ algVarGen=gs }
-    return $ T.concat [prefix, g]
+    alg@AlgBuilder{ algVarGen } <- get
+    when (null algVarGen) $ error "internal error"
+    put alg{ algVarGen=tail algVarGen }
+    return $ T.concat [ prefix, "_", head algVarGen ]
 
 
 

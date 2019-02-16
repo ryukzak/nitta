@@ -31,7 +31,7 @@ module NITTA.Types.Synthesis
     , getNodeIO
     , getEdgesIO
       -- *Characteristics & synthesis decision type
-    , SynthesisDT, synthesis
+    , SynthesisDT, synthesisOptions, synthesisDecision, Option(..)
     , ChConf(..)
     , Characteristics(..)
       -- *Utils
@@ -48,7 +48,7 @@ import qualified Data.Map               as M
 import           Data.Maybe
 import           Data.Proxy
 import           Data.Semigroup         (Semigroup, (<>))
-import           Data.Set               (Set, fromList, intersection, member)
+import           Data.Set               (Set, fromList, intersection, member, (\\))
 import qualified Data.Set               as S
 import           Data.Typeable          (Typeable)
 import           GHC.Generics
@@ -84,9 +84,9 @@ data Edge title v x t
 
 
 -- |Create initial synthesis.
-mkNodeIO nId model = atomically $ do
+mkNodeIO model = atomically $ do
     nEdges <- newTVar Nothing
-    return $ mkNode' nId model Nothing nEdges
+    return $ mkNode' mempty model Nothing nEdges
 
 mkNode' nId nModel nOrigin nEdges = Node
     { nId, nModel
@@ -150,18 +150,21 @@ instance Monoid NId where
 
 
 data SynthesisDT title v x t
-synthesis = Proxy :: Proxy SynthesisDT
+synthesisOptions m = options (Proxy :: Proxy SynthesisDT) m
+synthesisDecision m d = decision (Proxy :: Proxy SynthesisDT) m d
 
 
 instance DecisionType (SynthesisDT title v x t) where
     data Option (SynthesisDT title v x t)
         = BindingOption (F v x) title
         | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
+        | RefactorOption (Option (RefactorDT v))
         deriving ( Generic, Show )
 
     data Decision (SynthesisDT title v x t)
         = BindingDecision (F v x) title
         | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
+        | RefactorDecision (Decision (RefactorDT v))
         deriving ( Generic, Show )
 
 isBinding = \case BindingOption{} -> True; _ -> False
@@ -180,11 +183,19 @@ instance ( Var v, Typeable x, Time t
                   SynthesisDT (ModelState String v x t)
         where
     options _ f@Frame{ processor }
-        =  map generalizeBindingOption (options binding f)
-        ++ map generalizeDataFlowOption (options dataFlowDT processor)
+        = let
+            binds = map generalizeBindingOption $ options binding f
+            transfers = map generalizeDataFlowOption $ options dataFlowDT processor
+            refactors = map RefactorOption $ refactorOptions processor
+        in concat [ binds, transfers, refactors ]
 
     decision _ fr (BindingDecision f title) = decision binding fr $ BindingD f title
     decision _ fr@Frame{ processor } (DataFlowDecision src trg) = fr{ processor=decision dataFlowDT processor $ DataFlowD src trg }
+    decision _ Frame{ processor, dfg } (RefactorDecision d@(InsertOutRegisterD v v')) 
+        = Frame
+            { dfg=patch v v' dfg
+            , processor=refactorDecision processor d
+            }
 
 option2decision (BindingOption fb title) = BindingDecision fb title
 option2decision (DataFlowOption src trg)
@@ -197,7 +208,8 @@ option2decision (DataFlowOption src trg)
         mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
     in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
-
+option2decision (RefactorOption (InsertOutRegisterO v)) 
+    = RefactorDecision (InsertOutRegisterD v ("buf_" ++ v))
 
 
 -----------------------------------------------------------
@@ -224,12 +236,19 @@ data Characteristics
           -- так как требуемая функция ещё не привязана, а после привязки не сможет быть
           -- вычисленна, так как ресурс уже занят.
         , possibleDeadlock :: Bool
+        , numberOfBindedFunctions :: Float
+        -- |number of binded input variables / number of all input variables
+        , percentOfBindedInputs :: Float
+        , wave :: Float
         }
     | -- |Data Flow Characteristics
       DFCh
         { waitTime       :: Float
         , restrictedTime :: Bool
+        -- |Number of variables, which is not transferable for affected functions.
+        , notTransferableInputs :: [Float]
         }
+    | RefactorCh
     deriving ( Show, Generic )
 
 
@@ -245,29 +264,50 @@ newtype ChConf
 
 instance Default ChConf where
     def = ChConf
-        { threshhold=2
+        { threshhold=20
         }
 
 
 
 mkEdges Node{ nId, nModel } = do
     let conf = def
-        opts = options synthesis nModel
-        bindedVars = unionsMap variables $ concat $ M.elems $ bnBinded $ processor nModel
+        opts = synthesisOptions nModel
+        alreadyBindedVariables = bindedVars $ processor nModel
+        bindableFunctions = [ f | (BindingOption f _) <- opts ]
         possibleDeadlockBinds = fromList
             [ f
-            | (BindingOption f _) <- opts
-            , Lock{ locked } <- locks f
-            , locked `member` bindedVars
+            | (BindingOption f title) <- opts
+            , Lock{ lockBy } <- locks f
+            , lockBy `member` unionsMap variables (bindedFunctions title $ processor nModel)
             ]
+        transferableVars = fromList
+            [ v
+            | (DataFlowOption _ targets) <- opts
+            , (v, Just _) <- M.assocs targets
+            ]
+        allLocks = concatMap locks bindableFunctions
+
+        mkWaves n pool lockedVars 
+            | pool == S.empty = []
+            | pool `intersection` lockedVars == S.empty = zip (S.elems lockedVars) (repeat n)
+        mkWaves n pool lockedVars
+            = let currentWave = pool `intersection` lockedVars
+            in zip (S.elems currentWave) (repeat n)
+                ++ mkWaves (n+1) (pool \\ currentWave) (currentWave `S.union` lockedVars)
+
+        waves = M.fromList $ mkWaves 0
+            (unionsMap variables bindableFunctions)
+            (fromList (map locked allLocks))
+
         cntx = ChCntx
-            { nModel, possibleDeadlockBinds
+            { nModel, possibleDeadlockBinds, transferableVars, alreadyBindedVariables, waves
             , bindingAlternative=foldl
                 ( \st (BindingOption fb title) -> M.alter (collect title) fb st )
                 M.empty
                 $ filter isBinding opts
             , numberOfBindOptions=length $ filter isBinding opts
             , numberOfDFOptions=length $ filter isDataFlow opts
+            , outputOfBindableFunctions=unionsMap outputs bindableFunctions
             }
 
     forM (zip [0..] opts) $ \(i, eOption) ->
@@ -277,7 +317,7 @@ mkEdges Node{ nId, nModel } = do
             eCharacteristics = measure conf cntx eOption
             eCharacteristic = integral conf cntx eCharacteristics
 
-            eNode = mkNode' (nId <> NId [i]) (decision synthesis nModel eDecision) (Just origin) nEdges
+            eNode = mkNode' (nId <> NId [i]) (synthesisDecision nModel eDecision) (Just origin) nEdges
             origin = Edge{ eOption, eDecision, eCharacteristics, eCharacteristic, eNode }
         in return origin
 
@@ -287,16 +327,20 @@ data ChCntx m title v x
     = ChCntx
         { nModel                :: m
         , possibleDeadlockBinds :: Set (F v x)
+        , transferableVars      :: Set v
         , bindingAlternative    :: M.Map (F v x) [title]
         , numberOfBindOptions   :: Int
         , numberOfDFOptions     :: Int
+        , alreadyBindedVariables :: Set v
+        , outputOfBindableFunctions :: Set v
+        , waves :: M.Map v Int
         }
 
 
 
 measure
         ChConf{}
-        ChCntx{ possibleDeadlockBinds, bindingAlternative, nModel }
+        ChCntx{ possibleDeadlockBinds, bindingAlternative, nModel, alreadyBindedVariables, waves }
         (BindingOption f title)
     = BindCh
         { critical=isCritical f
@@ -306,23 +350,60 @@ measure
             (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables nModel
             return $ fromIntegral tcFrom
         , possibleDeadlock=f `member` possibleDeadlockBinds
+        , numberOfBindedFunctions=fromIntegral $ length $ bindedFunctions title $ processor nModel
+        , percentOfBindedInputs
+            = let 
+                is = inputs f
+                n = fromIntegral $ length $ intersection is alreadyBindedVariables
+                nAll = fromIntegral $ length is
+            in if nAll == 0 then 1 else n / nAll 
+        , wave=if insideOut f 
+            then 0 
+            else let
+                    allInputs = S.elems $ inputs f 
+                    ns = map (\v -> fromMaybe 0 (waves M.!? v)) allInputs
+                in fromIntegral $ maximum (0 : ns)
+            
         }
-measure ChConf{} ChCntx{} opt@DataFlowOption{}
+measure ChConf{} ChCntx{ transferableVars, nModel } opt@(DataFlowOption _ targets)
     = DFCh
         { waitTime=fromIntegral (specializeDataFlowOption opt^.at.avail.infimum)
         , restrictedTime=fromEnum (specializeDataFlowOption opt^.at.dur.supremum) /= maxBound
+        , notTransferableInputs
+            = let
+                fs = functions nModel
+                vs = fromList [ v | (v, Just _) <- M.assocs targets ]
+                affectedFunctions = filter (\f -> not $ null (inputs f `intersection` vs)) fs
+                notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
+            in map (fromIntegral . length) notTransferableVars
         }
+measure ChConf{} ChCntx{} RefactorOption{} = RefactorCh
 
 
 
-integral ChConf{} ChCntx{} BindCh{ possibleDeadlock=True }         = 2000000
-integral ChConf{ threshhold } ChCntx{ numberOfDFOptions } DFCh{ waitTime }
-    | numberOfDFOptions >= threshhold                              = 10000 + 200 - waitTime
-integral ChConf{} ChCntx{} BindCh{ critical=True }                 = 2000
-integral ChConf{} ChCntx{} BindCh{ alternative=1 }                 = 500
-integral ChConf{} ChCntx{} BindCh{ allowDataFlow, restless }       = 200 + allowDataFlow * 10 - restless * 2
-integral ChConf{} ChCntx{} DFCh{ restrictedTime } | restrictedTime = 200 + 100
-integral ChConf{} ChCntx{} DFCh{ waitTime }                        = 200 - waitTime
+True <?> v = v
+False <?> _ = 0
+
+integral ChConf{} ChCntx{} BindCh{ possibleDeadlock=True } = -1
+
+integral ChConf{} ChCntx{} BindCh{ critical, alternative, allowDataFlow, restless, numberOfBindedFunctions, wave, percentOfBindedInputs }
+    = 1000
+    + critical <?> 1000
+    + (alternative == 1) <?> 500
+    + allowDataFlow * 10
+    + percentOfBindedInputs * 50
+    - wave * 50
+    - numberOfBindedFunctions * 10
+    - restless * 4
+
+integral ChConf{ threshhold } ChCntx{ numberOfDFOptions } DFCh{ waitTime, notTransferableInputs, restrictedTime }
+    = 100
+    + (numberOfDFOptions >= threshhold) <?> 1000
+    + restrictedTime <?> 200
+    - sum notTransferableInputs * 5
+    - waitTime
+
+integral ChConf{} ChCntx{} RefactorCh{} = 2000
 
 
 

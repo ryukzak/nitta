@@ -1,8 +1,9 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
@@ -17,6 +18,7 @@ module NITTA.API.Marshalling where
 
 import           Data.Aeson
 import qualified Data.Map                 as M
+import qualified Data.String.Utils        as S
 import qualified Data.Text                as T
 import           Data.Typeable
 import           NITTA.API.GraphConverter
@@ -40,20 +42,8 @@ instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t), Time t
          ) => ToJSON (Decision (SynthesisDT title v x t))
-instance ( ToJSON title
-         , ToJSONKey v
-         , ToJSON (TimeConstrain t)
-         ) => ToJSON (Option (DataFlowDT title v t))
-instance ( ToJSON title
-         , ToJSONKey v
-         , ToJSON (TimeConstrain t), Time t
-         ) => ToJSON (Decision (DataFlowDT title v t))
-instance ( Show title
-         ) => ToJSON (Option (BindingDT title v x)) where
-    toJSON (BindingO f title) = toJSON [ show f, show title ]
-instance ( Show title
-         ) => ToJSON (Decision (BindingDT title v x)) where
-    toJSON (BindingD f title) = toJSON [ show f, show title ]
+instance ( ToJSON v ) => ToJSON (Option (RefactorDT v))
+instance ( ToJSON v ) => ToJSON (Decision (RefactorDT v))
 
 
 
@@ -187,20 +177,20 @@ instance ToJSON (FX m b) where
 
 
 -- *System
-instance ( Show a ) => ToJSON (Interval a) where
-    toJSON = String . T.pack . show
+instance ( Show a, Bounded a ) => ToJSON (Interval a) where
+    toJSON = String . T.pack . S.replace (show (maxBound :: a)) "∞" . show
 
 
 
 -- *Graph converting
 instance ToJSON (GraphStructure GraphEdge) where
-    toJSON GraphStructure{ nodes, edges } =  object
+    toJSON GraphStructure{ nodes, edges } = object
         [ "nodes" .= nodes
         , "edges" .= edges
         ]
 
 instance ToJSON NodeElement where
-    toJSON NodeElement{ nodeId, nodeParam = NodeParam{ nodeName, nodeColor, nodeShape, fontSize, nodeSize } } =  object
+    toJSON NodeElement{ nodeId, nodeParam = NodeParam{ nodeName, nodeColor, nodeShape, fontSize, nodeSize } } = object
         [ "id"    .= nodeId
         , "label" .= nodeName
         , "color" .= nodeColor
@@ -213,7 +203,7 @@ instance ToJSON NodeElement where
         ]
 
 instance ToJSON GraphEdge where
-    toJSON GraphEdge{ edgeParam = EdgeParam { edgeName, edgeWidth, fontAllign }, inNodeId, outNodeId } =  object
+    toJSON GraphEdge{ edgeParam = EdgeParam { edgeName, edgeWidth, fontAllign }, inNodeId, outNodeId } = object
         [ "from"  .= outNodeId
         , "to"    .= inNodeId
         , "label" .= edgeName

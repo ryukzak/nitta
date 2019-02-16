@@ -48,7 +48,7 @@ proxyIntX32 = Proxy :: Proxy (IntX 32)
 
 
 march :: BusNetwork String String Int Int
-march = busNetwork 31 (Just True) [] []
+march = busNetwork 31 (Just True)
     [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 0, FR.wr=Signal 1, FR.addr=map Signal [2, 3, 4, 5] } )
     , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 6, FR.wr=Signal 7, FR.addr=map Signal [8, 9, 10, 11] } )
     , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
@@ -62,8 +62,6 @@ marchSPI ::
     ( Integral x, Bits x, Default x, Show x, Val x
     ) => Proxy x -> BusNetwork String String x Int
 marchSPI _proxy = busNetwork 31 (Just False)
-    [ InputPort "mosi", InputPort "sclk", InputPort "cs" ]
-    [ OutputPort "miso" ]
     [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
     , ("fram2", PU def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
     , ("shift", PU def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
@@ -71,7 +69,12 @@ marchSPI _proxy = busNetwork 31 (Just False)
     , ("spi", PU (SPI.slaveSPI 0) SPI.PUPorts
         { SPI.wr=Signal 22, SPI.oe=Signal 23
         , SPI.stop="stop"
-        , SPI.mosi=InputPort "mosi", SPI.miso=OutputPort "miso", SPI.sclk=InputPort "sclk", SPI.cs=InputPort "cs"
+        , SPI.externalPorts=SPI.Slave
+            { SPI.slave_mosi=InputPort "mosi"
+            , SPI.slave_miso=OutputPort "miso"
+            , SPI.slave_sclk=InputPort "sclk"
+            , SPI.slave_cs=InputPort "cs"
+            }
         })
     , ("div", PU (D.divider 8 True) D.PUPorts{ D.wr=Signal 24, D.wrSel=Signal 25, D.oe=Signal 26, D.oeSel=Signal 27 } )
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 28, M.wrSel=Signal 29, M.oe=Signal 30 } )
