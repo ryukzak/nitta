@@ -12,6 +12,8 @@ module pu_slave_spi #
         , parameter SPI_DATA_WIDTH = 8
         , parameter BUF_SIZE       = 6
         , parameter BOUNCE_FILTER  = 4
+        , parameter INVALID        = 0
+        , parameter SIZE_WORDS     = 2
         )
     ( input                     clk
     , input                     rst
@@ -191,8 +193,22 @@ always @( posedge clk ) begin
     else flag_stop <= 0;
 end
 
+reg [1:0] count_word;
+always @( posedge clk ) begin
+    if ( rst | flag_stop )        count_word <= 0;
+    else if ( splitter_ready_sn ) count_word <= count_word + 1;
+end
+
+reg capture_word;
+always @(posedge clk) begin
+    if ( rst )            capture_word <= 0;
+    else if ( flag_stop ) capture_word <= count_word != SIZE_WORDS; // TODO: Фиксированное значение 
+end
+
+assign attr_out[3:1] = 3'b000;
+assign attr_out[INVALID] = capture_word;
+
 assign data_out   = receive_buffer_oe[1] ? receive_buffer_data_out[1] : 
                     receive_buffer_oe[0] ? receive_buffer_data_out[0] : {DATA_WIDTH{1'b0}};
-assign attr_out = 0;
 
 endmodule
