@@ -391,11 +391,6 @@ instance DecisionType (RefactorDT v) where
         = InsertOutRegisterD v v
         deriving ( Generic, Show )
 
--- instance Variables (Option (RefactorDT v)) v where
---     variables (InsertOutRegisterO v) = S.singleton v
--- instance Variables (Decision (RefactorDT v)) v where
---     variables (InsertOutRegisterD v v') = S.singleton v
-
 
 
 ---------------------------------------------------------------------
