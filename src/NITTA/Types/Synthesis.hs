@@ -84,9 +84,9 @@ data Edge title v x t
 
 
 -- |Create initial synthesis.
-mkNodeIO nId model = atomically $ do
+mkNodeIO model = atomically $ do
     nEdges <- newTVar Nothing
-    return $ mkNode' nId model Nothing nEdges
+    return $ mkNode' mempty model Nothing nEdges
 
 mkNode' nId nModel nOrigin nEdges = Node
     { nId, nModel

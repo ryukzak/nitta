@@ -69,7 +69,7 @@ prepareStaticFiles = do
 
 
 application compilerState = do
-    root <- mkNodeIO mempty compilerState
+    root <- mkNodeIO compilerState
     return $ serve
         ( Proxy :: Proxy
             (    SynthesisAPI _ _ _ _

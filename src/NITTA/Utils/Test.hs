@@ -43,7 +43,7 @@ testLua name ma = testWithInput name [] ma . lua2functions
 testLuaWithInput name is ma = testWithInput name is ma . lua2functions
 
 testWithInput name cntx ma alg = runExceptT $ do
-    node <- lift $ simpleSynthesisIO =<< mkNodeIO mempty (mkModelWithOneNetwork ma alg)
+    node <- lift $ simpleSynthesisIO =<< mkNodeIO (mkModelWithOneNetwork ma alg)
     unless (isSchedulingComplete $ nModel node)
         $ throwE [qc|> test { name } not isSchedulingComplete|]
 
