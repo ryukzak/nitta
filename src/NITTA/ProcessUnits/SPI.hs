@@ -20,6 +20,7 @@ slave / master / slave-master?
 -}
 module NITTA.ProcessUnits.SPI
     ( PUPorts(..)
+    , ExternalPorts(..)
     , SPI
     , slaveSPI
     ) where
@@ -147,6 +148,21 @@ instance
         | Just f'@Receive{} <- castF f = simulate cntx f'
         | otherwise = error $ "Can't simulate " ++ show f ++ " on SPI."
 
+data ExternalPorts
+    = Master
+        { master_mosi :: OutputPort
+        , master_miso :: InputPort
+        , master_sclk :: OutputPort
+        , master_cs   :: OutputPort
+        }
+    | Slave
+        { slave_mosi :: InputPort
+        , slave_miso :: OutputPort
+        , slave_sclk :: InputPort
+        , slave_cs   :: InputPort
+        }
+    deriving ( Show )
+
 instance Connected (SPI v x t) where
     data PUPorts (SPI v x t)
         = PUPorts
@@ -154,8 +170,7 @@ instance Connected (SPI v x t) where
              -- |Данный сигнал используется для оповещения процессора о завершении передачи данных. Необходимо для
              -- приостановки работы пока передача не будет завершена, так как в противном случае данные будут потеряны.
             , stop :: String
-            , mosi, sclk, cs :: InputPort
-            , miso :: OutputPort
+            , externalPorts :: ExternalPorts
             }
         deriving ( Show )
 
@@ -164,6 +179,11 @@ instance Connected (SPI v x t) where
         , (oe, Bool oeSignal)
         ]
 
+    externalInputPorts PUPorts{ externalPorts=Slave{ slave_mosi, slave_sclk, slave_cs } }
+        = [ slave_mosi, slave_sclk, slave_cs ]
+
+    externalOutputPorts PUPorts{ externalPorts=Slave{ slave_miso } }
+        = [ slave_miso ]
 
 
 instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
@@ -185,7 +205,7 @@ instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
             title
             pu@SerialPU{ spuState=State{ spiBounceFilter } }
             Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
-            PUPorts{..}
+            PUPorts{ externalPorts=Slave{..}, .. }
         = fixIndent [qc|
 |           pu_slave_spi
 |               #( .DATA_WIDTH( { widthX pu } )
@@ -202,10 +222,10 @@ instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
 |               , .attr_in( { attrIn } )
 |               , .data_out( { dataOut } )
 |               , .attr_out( { attrOut } )
-|               , .mosi( { inputPort mosi } )
-|               , .miso( { outputPort miso } )
-|               , .sclk( { inputPort sclk } )
-|               , .cs( { inputPort cs } )
+|               , .mosi( { inputPort slave_mosi } )
+|               , .miso( { outputPort slave_miso } )
+|               , .sclk( { inputPort slave_sclk } )
+|               , .cs( { inputPort slave_cs } )
 |               );
 |           |]
 
@@ -219,7 +239,7 @@ instance ( Var v, Show t, Show x, Val x ) => IOTest (SPI v x t) v x where
             title
             pu@SerialPU{ spuState=State{ spiBounceFilter } }
             Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort }
-            PUPorts{..}
+            PUPorts{ externalPorts=Slave{..}, .. }
             cntxs
         | let
             wordWidth = fromIntegral $ widthX pu
@@ -252,10 +272,10 @@ instance ( Var v, Show t, Show x, Val x ) => IOTest (SPI v x t) v x where
 |               , .data_in( { title }_master_in )
 |               , .data_out( { title }_master_out )
 |               , .ready( { title }_ready )
-|               , .mosi( { inputPort mosi } )
-|               , .miso( { outputPort miso } )
-|               , .sclk( { inputPort sclk } )
-|               , .cs( { inputPort cs } )
+|               , .mosi( { inputPort slave_mosi } )
+|               , .miso( { outputPort slave_miso } )
+|               , .sclk( { inputPort slave_sclk } )
+|               , .cs( { inputPort slave_cs } )
 |               );
 |           initial { title }_master.inner.shiftreg <= 0;
 |
