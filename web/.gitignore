@@ -20,3 +20,9 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+.idea/
+.vscode/
+src/**/*.jsx
+tests/__coverage__/
+tests/**/*.jsx
