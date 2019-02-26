@@ -12,5 +12,6 @@ export const hapi = {
   smartBindSynthesisIO: (nid) => api.postSynthesisByNIdSmartBindSynthesisIO(nid),
   allBestThread: (nid, n) => api.postSynthesisByNIdAllBestThread(nid, n),
   obviousBindThread: (nid) => api.postSynthesisByNIdObviousBindThread(nid),
-  runTestBench: (nid, name) => api.getSynthesisByNIdTestBenchOutput(nid, name)
+  runTestBench: (nid, name) => api.getSynthesisByNIdTestBenchOutput(nid, name),
+  getEndpointOptions: (nid) => api.getSynthesisByNIdEndpointOptions(nid)
 }

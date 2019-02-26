@@ -18,6 +18,7 @@ module NITTA.API.Marshalling where
 
 import           Data.Aeson
 import qualified Data.Map                 as M
+import qualified Data.Set                 as S
 import qualified Data.String.Utils        as S
 import qualified Data.Text                as T
 import           Data.Typeable
@@ -44,6 +45,9 @@ instance ( ToJSON title
          ) => ToJSON (Decision (SynthesisDT title v x t))
 instance ( ToJSON v ) => ToJSON (Option (RefactorDT v))
 instance ( ToJSON v ) => ToJSON (Decision (RefactorDT v))
+instance ( ToJSON t, Time t ) => ToJSON (Option (EndpointDT String t)) where
+    toJSON EndpointO{ epoRole=Source vs, epoAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epoAt)
+    toJSON EndpointO{ epoRole=Target v, epoAt } = toJSON ("Target: " ++ v ++ " at " ++ show epoAt)
 
 
 

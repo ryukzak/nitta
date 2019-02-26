@@ -1,17 +1,15 @@
-function pid(I, prev_error) 
+function pid(prev_error) 
     local temperature_desired = 50
     local getValueSPI = receive()
     
     error = temperature_desired - getValueSPI
-    D = error - prev_error
+    D = error - reg(prev_error)
     send(D)
 
-    pid(I, error)
+    pid(error)
 end
 
-pid(0, 0)
-
-
+pid(0)
 
 
 
