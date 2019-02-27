@@ -52,6 +52,7 @@
     "react-d3-tree": "^1.12.2",
     "react-dom": "^16.8.1",
     "react-easy-chart": "^1.0.0",
+    "react-graph-vis": "^1.0.2",
     "react-table": "^6.9.0",
     "typescript": "^3.2.2"
   }
