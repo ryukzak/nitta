@@ -8,13 +8,15 @@ module pu_slave_i2c
 
   // i2c interface
   , input                   scl
-  , inout                   sda  
+  , inout                   sda
   );
 
 localparam STATE_IDLE           = 0;
 localparam STATE_RECEIVE_ADDRES = 1;
 localparam STATE_SEND_ACK       = 2;
-localparam STATE_FINALIZE       = 3;
+localparam STATE_SEND_BYTE      = 3;
+localparam STATE_FINALIZE       = 4;
+localparam STATE_WAIT           = 5;
 reg [2:0] state_ms;
 
 localparam STATE_WAIT_SCL_0     = 0;
@@ -23,14 +25,20 @@ reg       state_scl;
 
 reg [I2C_DATA_WIDTH-1:0] shiftreg;
 reg [3:0] data_counter;
+reg start_sent_sda;
+reg  stop_sent_sda;
+reg signal_wr;
 reg sda_o;
-reg start_sent_sdo;
+reg flag;
 
 always @(negedge rst, negedge clk) begin
   if ( ~rst ) begin
     data_counter   <= 0;
     sda_o          <= 0;
-    start_sent_sdo <= 0;
+    start_sent_sda <= 0;
+    stop_sent_sda  <= 0;
+    signal_wr      <= 0;
+    flag           <= 1;
     state_scl <= STATE_WAIT_SCL_1;
     state_ms  <= STATE_IDLE;
   end else begin 		
@@ -50,8 +58,10 @@ always @(negedge rst, negedge clk) begin
             if (!scl) begin
               if (data_counter == I2C_DATA_WIDTH) begin
                 state_scl <= STATE_WAIT_SCL_1;
-                sda_o <= shiftreg[7:1] == ADDRES_DEVICE;
-                start_sent_sdo <= 1'b1;
+                sda_o <= ~(shiftreg[7:1] == ADDRES_DEVICE);
+                signal_wr <= shiftreg[0];
+                start_sent_sda <= 1'b1;
+                stop_sent_sda <= 1;
                 state_ms <= STATE_SEND_ACK; 
               end else begin
                 state_scl <= STATE_WAIT_SCL_1;  
@@ -67,13 +77,14 @@ always @(negedge rst, negedge clk) begin
           end
         endcase
       end
-      STATE_SEND_ACK: begin        
+      STATE_SEND_ACK: begin  
+
         case ( state_scl )
           STATE_WAIT_SCL_0: begin
             if (!scl) begin
               sda_o <= 1'b0;
-              start_sent_sdo <= 1'b0;
-              state_scl <= STATE_WAIT_SCL_1;  
+              start_sent_sda <= 1'b0;
+              state_ms <= STATE_WAIT;  
             end            
           end
           STATE_WAIT_SCL_1: begin
@@ -82,12 +93,46 @@ always @(negedge rst, negedge clk) begin
             end            
           end
         endcase
+       
+      end
+      STATE_WAIT: begin
         if (t_start_stop) begin
           state_ms <= STATE_FINALIZE;
+        end else 
+        if (signal_wr && stop_sent_sda) begin
+          shiftreg <= 8'h8F;
+          data_counter <= 0;
+          state_scl <= STATE_WAIT_SCL_0;
+          state_ms <= STATE_SEND_BYTE;
         end
       end
+      STATE_SEND_BYTE: begin
+
+        case ( state_scl )
+          STATE_WAIT_SCL_0: begin
+            if (!scl) begin
+              start_sent_sda <= 1;                
+              sda_o <= shiftreg[I2C_DATA_WIDTH-1];
+              data_counter <= data_counter + 1;
+              state_scl <= STATE_WAIT_SCL_1;
+              if (data_counter == I2C_DATA_WIDTH) begin
+                start_sent_sda <= 0;
+                stop_sent_sda <= 0;
+                state_ms <= STATE_SEND_ACK;
+              end
+            end            
+          end
+          STATE_WAIT_SCL_1: begin
+            if (scl) begin
+              shiftreg <= {shiftreg[I2C_DATA_WIDTH - 2:0], 1'b0};
+              state_scl <= STATE_WAIT_SCL_0;  
+            end            
+          end
+        endcase
+
+      end
       STATE_FINALIZE: begin 
-        start_sent_sdo <= 1'b0;
+        start_sent_sda <= 1'b0;
         state_ms <= STATE_IDLE;
       end
     endcase
@@ -127,6 +172,6 @@ always @(negedge rst, posedge clk) begin
   end
 end
 
-assign sda = start_sent_sdo ? ~sda_o : 1'bz;
+assign sda = start_sent_sda ? sda_o : 1'bz;
 
 endmodule
