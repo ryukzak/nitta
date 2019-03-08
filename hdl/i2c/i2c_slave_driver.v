@@ -1,15 +1,15 @@
 module i2c_slave_driver 
   #( parameter I2C_DATA_WIDTH = 8
    , parameter DATA_WIDTH     = 32
-   , parameter ATTR_WIDTH     = 4
-   , parameter ADDRES_DEVICE  = 7'h17
+   , parameter ADDRES_DEVICE  = 7'h25
    )
   ( input                   clk
   , input                   rst
+
   // system interface
   , input  [I2C_DATA_WIDTH-1:0] data_in  
   , output [I2C_DATA_WIDTH-1:0] data_out 
-  , output                  ready
+  , output reg                  ready
 
   // i2c interface
   , input                   scl
@@ -18,129 +18,181 @@ module i2c_slave_driver
 
 localparam STATE_IDLE           = 0;
 localparam STATE_RECEIVE_ADDRES = 1;
-localparam STATE_RECEIVE_BYTE   = 2;
+localparam STATE_SEND_ACK       = 2;
 localparam STATE_SEND_BYTE      = 3;
-localparam STATE_SEND_ACK       = 4;
-localparam STATE_RECEIVE_ACK    = 5;
-localparam STATE_FINALIZE       = 6;
+localparam STATE_FINALIZE       = 4;
+localparam STATE_WAIT           = 5;
 reg [2:0] state_ms;
-reg highz_mode;
-reg rw;
 
-reg sda_o;
-reg [I2C_DATA_WIDTH-1:0] shiftreg;
-reg [I2C_DATA_WIDTH-1:0] shiftreg_send;
-
-localparam BYTE_COUNTER_WIDTH = $clog2( DATA_WIDTH / 8 + 1 );
-reg [BYTE_COUNTER_WIDTH-1:0] byte_counter;
+localparam STATE_WAIT_SCL_0     = 0;
+localparam STATE_WAIT_SCL_1     = 1;
+reg       state_scl;
 
 localparam DATA_COUNTER_WIDTH = $clog2( I2C_DATA_WIDTH + 1 );
-reg [DATA_COUNTER_WIDTH-1:0] data_counter;
-reg validation;
-reg ready_slave;
+reg [DATA_COUNTER_WIDTH:0] data_counter; 
 
-always @(posedge rst, posedge clk) begin
-  if ( rst ) begin
-    sda_o <= 0;
-    highz_mode <= 1;
-    data_counter <= 0;
-    byte_counter <= 0;
-    validation <= 0;
-    rw <= 0;
-    ready_slave <= 0;
-    state_ms <= STATE_IDLE;
-  end
-  else begin
+localparam BYTE_COUNTER_WIDTH = $clog2( DATA_WIDTH / 8 + 1 );
+reg [BYTE_COUNTER_WIDTH:0] byte_counter;
+
+reg [I2C_DATA_WIDTH-1:0] shiftreg;
+reg start_sent_sda;
+reg stop_sent_sda;
+reg signal_wr;
+reg sda_o;
+
+always @(negedge rst, negedge clk) begin
+  if ( ~rst ) begin
+    data_counter   <= 0;
+    ready          <= 0;
+    byte_counter   <= 0;
+    sda_o          <= 0;
+    start_sent_sda <= 0;
+    stop_sent_sda  <= 0;
+    signal_wr      <= 0;
+    state_scl <= STATE_WAIT_SCL_1;
+    state_ms  <= STATE_IDLE;
+  end else begin    
     case ( state_ms )
       STATE_IDLE: begin
-        if ( !sda && scl ) begin
+        if ( !sda && !scl ) begin
           data_counter <= 0;
           byte_counter <= 0;
-          state_ms <= STATE_RECEIVE_ADDRES;
+          shiftreg     <= 0;
+          sda_o        <= 0;
+          ready        <= 0;
+          state_scl <= STATE_WAIT_SCL_1;
+          state_ms  <= STATE_RECEIVE_ADDRES;
         end
       end
       STATE_RECEIVE_ADDRES: begin
-        if (scl) begin
-          data_counter <= data_counter + 1;
-          shiftreg <= {shiftreg[I2C_DATA_WIDTH - 2:0], sda};       
-        end else begin
-          if ( data_counter == I2C_DATA_WIDTH ) begin
-            highz_mode <= 0;
-            sda_o <= !(shiftreg[7:1] == ADDRES_DEVICE);
-            validation <= !(shiftreg[7:1] == ADDRES_DEVICE);
-            rw <= shiftreg[0];
-            ready_slave <= shiftreg[0] ? 1 : 0;
-            state_ms <= STATE_SEND_ACK; 
-          end  
-        end
+        case ( state_scl )
+          STATE_WAIT_SCL_0: begin
+            if (!scl) begin
+              if (data_counter == I2C_DATA_WIDTH) begin
+                state_scl <= STATE_WAIT_SCL_1;
+                sda_o <= ~(shiftreg[7:1] == ADDRES_DEVICE);
+                signal_wr <= shiftreg[0];
+                start_sent_sda <= 1'b1;
+                stop_sent_sda <= 1;
+                state_ms <= STATE_SEND_ACK; 
+              end else begin
+                state_scl <= STATE_WAIT_SCL_1;  
+              end              
+            end            
+          end
+          STATE_WAIT_SCL_1: begin
+            if (scl) begin
+              shiftreg <= {shiftreg[I2C_DATA_WIDTH - 2:0], sda};
+              data_counter <= data_counter + 1;
+              state_scl <= STATE_WAIT_SCL_0;  
+            end            
+          end
+        endcase
       end
-      STATE_SEND_ACK: begin
-        if (!scl) begin
-          data_counter <= 0;
-          highz_mode <= !rw;
-          state_ms <= rw ? STATE_SEND_BYTE : STATE_RECEIVE_BYTE;
+      STATE_SEND_ACK: begin  
+
+        case ( state_scl )
+          STATE_WAIT_SCL_0: begin
+            if (!scl) begin
+              sda_o <= 1'b0;
+              start_sent_sda <= 1'b0;
+              ready <= stop_sent_sda;
+              state_ms <= STATE_WAIT;  
+            end            
+          end
+          STATE_WAIT_SCL_1: begin
+            if (scl) begin
+              state_scl <= STATE_WAIT_SCL_0;  
+            end            
+          end
+        endcase
+       
+      end
+      STATE_WAIT: begin
+        if (t_start_stop) begin
+          ready    <= 0;
+          state_ms <= STATE_FINALIZE;
         end else 
-        if (byte_counter == DATA_WIDTH / 8) begin
-          highz_mode <= 1;
-          state_ms <= STATE_FINALIZE; 
-        end else begin
-          shiftreg_send <= data_in;
-          ready_slave <= 0;
-        end
-      end
-      STATE_RECEIVE_BYTE: begin
-        if (scl) begin
-          data_counter <= data_counter + 1;
-          shiftreg <= {shiftreg[I2C_DATA_WIDTH - 2:0], sda};       
-        end else begin
-          if ( data_counter == I2C_DATA_WIDTH ) begin
-            highz_mode <= 0;
-            sda_o <= 0;
-            byte_counter <= byte_counter + 1;
-            state_ms <= STATE_SEND_ACK; 
-          end  
+        if (signal_wr && stop_sent_sda) begin
+          shiftreg <= data_in;
+          data_counter <= 0;
+          ready <= 0;
+          state_scl <= STATE_WAIT_SCL_0;
+          state_ms  <= STATE_SEND_BYTE;
         end
       end
       STATE_SEND_BYTE: begin
-        ready_slave <= 0;
-        if (!scl) begin          
-          shiftreg_send <= {shiftreg_send[I2C_DATA_WIDTH - 2:0], 1'b0};         
-          sda_o <= shiftreg_send[I2C_DATA_WIDTH-1];
-          data_counter <= data_counter + 1;
-          if ( data_counter == I2C_DATA_WIDTH ) begin
-            highz_mode <= 1;
-            sda_o <= 0;
-            byte_counter <= byte_counter + 1;
-            state_ms <= STATE_RECEIVE_ACK; 
+
+        case ( state_scl )
+          STATE_WAIT_SCL_0: begin
+            if (!scl) begin
+              start_sent_sda <= 1;                
+              sda_o <= shiftreg[I2C_DATA_WIDTH-1];
+              data_counter <= data_counter + 1;
+              state_scl <= STATE_WAIT_SCL_1;
+              if (data_counter == I2C_DATA_WIDTH) begin
+                start_sent_sda <= 0;
+                
+                if (byte_counter == DATA_WIDTH / I2C_DATA_WIDTH - 1) begin
+                  stop_sent_sda <= 0;
+                end else begin
+                  byte_counter <= byte_counter + 1;  
+                end
+
+                state_ms <= STATE_SEND_ACK;
+              end
+            end            
           end
-        end  
+          STATE_WAIT_SCL_1: begin
+            if (scl) begin
+              shiftreg <= {shiftreg[I2C_DATA_WIDTH - 2:0], 1'b0};
+              state_scl <= STATE_WAIT_SCL_0;  
+            end            
+          end
+        endcase
+
       end
-      STATE_RECEIVE_ACK: begin
-        if (!sda && !scl) begin
-          highz_mode <= 0;
-          data_counter <= 0;
-          shiftreg_send <= data_in;
-          ready_slave <= 0;
-          state_ms <= rw ? STATE_SEND_BYTE : STATE_RECEIVE_BYTE; 
-        end else 
-        if (byte_counter == DATA_WIDTH / 8) begin
-          highz_mode <= 1;
-          sda_o <= 0;
-          state_ms <= STATE_FINALIZE; 
-        end else begin
-          ready_slave <= 1;
-        end
-      end
-      STATE_FINALIZE: begin
-        highz_mode <= 1;
-        if ( !sda && scl ) state_ms <= STATE_IDLE;
+      STATE_FINALIZE: begin 
+        start_sent_sda <= 1'b0;
+        state_ms <= STATE_IDLE;
       end
     endcase
   end
 end
 
-assign sda = highz_mode ? 1'bz : sda_o;
-assign ready = (state_ms == STATE_RECEIVE_BYTE && data_counter == I2C_DATA_WIDTH) || ready_slave;
-assign data_out = shiftreg;
+// Получаем текущее значение sda и сохраняем его.
+// Нужно для нахождения начала и конца передачи.
+reg curr_sda;
+always @(negedge rst, posedge clk) begin
+  if (~rst) begin
+    curr_sda   <= 1'b1;
+  end else begin
+    curr_sda <= sda;
+  end
+end
+
+// Определение начала и конца передачи через
+// предыдущее значение curr_sda. 
+reg t_start_stop;
+reg prev_sda;
+always @(negedge rst, posedge clk) begin
+  if (~rst) begin
+    t_start_stop <= 1'b0;
+    prev_sda <= curr_sda;
+  end else begin
+    if (scl) begin
+      if (prev_sda != sda) begin
+        t_start_stop <= 1'b1;
+        prev_sda <= curr_sda;
+      end else begin
+        t_start_stop <= 1'b0;
+      end
+    end else begin
+      prev_sda <= curr_sda;  
+    end    
+  end
+end
+
+assign sda = start_sent_sda ? sda_o : 1'bz;
 
 endmodule
