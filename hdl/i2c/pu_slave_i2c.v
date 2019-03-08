@@ -1,6 +1,6 @@
 module pu_slave_i2c 
   #( parameter I2C_DATA_WIDTH = 8
-   , parameter DATA_WIDTH     = 8
+   , parameter DATA_WIDTH     = 32
    , parameter ADDRES_DEVICE  = 7'h47
    )
   ( input                   clk
@@ -9,6 +9,16 @@ module pu_slave_i2c
   // i2c interface
   , input                   scl
   , inout                   sda
+    
+  , output                  D0
+  , output                  D1
+  , output                  D2
+  , output                  D3
+  , output                  D4
+  , output                  D5
+  , output                  D6
+  , output                  D7
+  
   );
 
 localparam STATE_IDLE           = 0;
@@ -23,8 +33,13 @@ localparam STATE_WAIT_SCL_0     = 0;
 localparam STATE_WAIT_SCL_1     = 1;
 reg       state_scl;
 
+localparam DATA_COUNTER_WIDTH = $clog2( I2C_DATA_WIDTH + 1 );
+reg [DATA_COUNTER_WIDTH:0] data_counter; 
+
+localparam BYTE_COUNTER_WIDTH = $clog2( DATA_WIDTH / 8 + 1 );
+reg [BYTE_COUNTER_WIDTH:0] byte_counter;
+
 reg [I2C_DATA_WIDTH-1:0] shiftreg;
-reg [3:0] data_counter;
 reg start_sent_sda;
 reg  stop_sent_sda;
 reg signal_wr;
@@ -34,6 +49,7 @@ reg flag;
 always @(negedge rst, negedge clk) begin
   if ( ~rst ) begin
     data_counter   <= 0;
+    byte_counter   <= 0;
     sda_o          <= 0;
     start_sent_sda <= 0;
     stop_sent_sda  <= 0;
@@ -46,6 +62,7 @@ always @(negedge rst, negedge clk) begin
       STATE_IDLE: begin
         if ( !sda && !scl ) begin
           data_counter <= 0;
+          byte_counter <= 0;
           shiftreg     <= 0;
           sda_o        <= 0;
           state_scl <= STATE_WAIT_SCL_1;
@@ -117,7 +134,13 @@ always @(negedge rst, negedge clk) begin
               state_scl <= STATE_WAIT_SCL_1;
               if (data_counter == I2C_DATA_WIDTH) begin
                 start_sent_sda <= 0;
-                stop_sent_sda <= 0;
+                
+                if (byte_counter == DATA_WIDTH / I2C_DATA_WIDTH - 1) begin
+                  stop_sent_sda <= 0;
+                end else begin
+                  byte_counter <= byte_counter + 1;  
+                end
+
                 state_ms <= STATE_SEND_ACK;
               end
             end            
@@ -173,5 +196,13 @@ always @(negedge rst, posedge clk) begin
 end
 
 assign sda = start_sent_sda ? sda_o : 1'bz;
+
+assign D0 = sda;
+assign D1 = scl;
+assign D2 = sda_o;
+assign D3 = start_sent_sda;
+assign D4 = stop_sent_sda;
+assign D5 = flag;
+assign D6 = t_start_stop;
 
 endmodule
