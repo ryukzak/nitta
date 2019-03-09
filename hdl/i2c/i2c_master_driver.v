@@ -78,7 +78,7 @@ reg [I2C_DATA_WIDTH-1:0] shiftreg;
 localparam DATA_COUNTER_WIDTH = $clog2( I2C_DATA_WIDTH + 1 );
 reg [DATA_COUNTER_WIDTH-1:0] data_counter;
 
-localparam BYTE_COUNTER_WIDTH = $clog2( DATA_WIDTH / 8 + 1 );
+localparam BYTE_COUNTER_WIDTH = $clog2( DATA_WIDTH / 8 + 2 );
 reg [BYTE_COUNTER_WIDTH-1:0] byte_counter;
 
 always @(posedge rst, posedge clk) begin
@@ -143,7 +143,7 @@ always @(posedge rst, posedge clk) begin
         end else begin
           if ( data_counter == I2C_DATA_WIDTH ) begin
             highz_mode <= 0;
-            sda_o <= 0;
+            sda_o <= byte_counter == DATA_WIDTH / 8 ? 1 : 0; // here
             ready <= 1;
             byte_counter <= byte_counter + 1;
             state_ms <= STATE_SEND_ACK; 

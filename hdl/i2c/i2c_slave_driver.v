@@ -3,157 +3,204 @@ module i2c_slave_driver
    , parameter DATA_WIDTH     = 32
    , parameter ADDRES_DEVICE  = 7'h25
    )
-  ( input                   clk
-  , input                   rst
-
+  ( input                           clk
+  , input                           rst
   // system interface
-  , input  [I2C_DATA_WIDTH-1:0] data_in  
-  , output [I2C_DATA_WIDTH-1:0] data_out 
-  , output reg                  ready
-
+  , input      [I2C_DATA_WIDTH-1:0] data_in  
+  , output reg [I2C_DATA_WIDTH-1:0] data_out 
+  // Так как по I2C в один момент могут либо передаваться, либо приниматься
+  // данные, то требуется два сигнала  ready.  Иначе  могут  быть  проблемы
+  // с чтением из буфера данных.
+  , output reg                      ready_write
+  , output reg                      ready_read
   // i2c interface
-  , input                   scl
-  , inout                   sda
+  , input                           scl
+  , inout                           sda
+
+  , output                  D0
+  , output                  D1
+  , output                  D2
+  , output                  D3
+  , output                  D4
+  , output                  D5
+  , output                  D6
+  , output                  D7
   );
 
 localparam STATE_IDLE           = 0;
 localparam STATE_RECEIVE_ADDRES = 1;
 localparam STATE_SEND_ACK       = 2;
 localparam STATE_SEND_BYTE      = 3;
-localparam STATE_FINALIZE       = 4;
-localparam STATE_WAIT           = 5;
+localparam STATE_RECEIVE_BYTE   = 4;
+localparam STATE_FINALIZE       = 5;
+localparam STATE_WAIT           = 6;
 reg [2:0] state_ms;
 
 localparam STATE_WAIT_SCL_0     = 0;
 localparam STATE_WAIT_SCL_1     = 1;
 reg       state_scl;
 
+localparam ENABLE               = 1;
+localparam DISABLE              = 0;
+
 localparam DATA_COUNTER_WIDTH = $clog2( I2C_DATA_WIDTH + 1 );
-reg [DATA_COUNTER_WIDTH:0] data_counter; 
+reg [DATA_COUNTER_WIDTH-1:0] data_counter; 
 
 localparam BYTE_COUNTER_WIDTH = $clog2( DATA_WIDTH / 8 + 1 );
-reg [BYTE_COUNTER_WIDTH:0] byte_counter;
+reg [BYTE_COUNTER_WIDTH-1:0] byte_counter;
 
 reg [I2C_DATA_WIDTH-1:0] shiftreg;
-reg start_sent_sda;
-reg stop_sent_sda;
-reg signal_wr;
-reg sda_o;
+reg sda_en_o;     // Сигнал переключения направлением передачи. 
+reg start_sda_t;  // Сигнал управления передачей/приемом данных. 
+reg signal_wr;    // 1 - передача данных, 0 - прием данных.
+reg sda_o;        // Регистр для передачи данных управляющему устройству. 
 
 always @(negedge rst, negedge clk) begin
   if ( ~rst ) begin
-    data_counter   <= 0;
-    ready          <= 0;
-    byte_counter   <= 0;
-    sda_o          <= 0;
-    start_sent_sda <= 0;
-    stop_sent_sda  <= 0;
-    signal_wr      <= 0;
-    state_scl <= STATE_WAIT_SCL_1;
-    state_ms  <= STATE_IDLE;
+    data_counter <= {DATA_COUNTER_WIDTH{1'b0}};
+    byte_counter <= {BYTE_COUNTER_WIDTH{1'b0}};
+    shiftreg     <= {I2C_DATA_WIDTH{1'b0}};
+    sda_o        <= 1'b0;
+    ready_read   <= DISABLE;
+    ready_write  <= DISABLE;
+    sda_en_o     <= DISABLE;
+    start_sda_t  <= DISABLE;
+    signal_wr    <= DISABLE;
+    state_scl    <= STATE_WAIT_SCL_1;
+    state_ms     <= STATE_IDLE;
   end else begin    
     case ( state_ms )
       STATE_IDLE: begin
-        if ( !sda && !scl ) begin
-          data_counter <= 0;
-          byte_counter <= 0;
-          shiftreg     <= 0;
+        if ( ~sda && ~scl ) begin
+          data_counter <= {DATA_COUNTER_WIDTH{1'b0}};
+          byte_counter <= {BYTE_COUNTER_WIDTH{1'b0}};
+          data_out     <= {I2C_DATA_WIDTH{1'b0}};
+          shiftreg     <= {I2C_DATA_WIDTH{1'b0}};
           sda_o        <= 0;
-          ready        <= 0;
-          state_scl <= STATE_WAIT_SCL_1;
-          state_ms  <= STATE_RECEIVE_ADDRES;
+          ready_read   <= DISABLE;
+          ready_write  <= DISABLE;
+          state_scl    <= STATE_WAIT_SCL_1;
+          state_ms     <= STATE_RECEIVE_ADDRES;
         end
       end
       STATE_RECEIVE_ADDRES: begin
         case ( state_scl )
           STATE_WAIT_SCL_0: begin
-            if (!scl) begin
+            if (~scl) begin
               if (data_counter == I2C_DATA_WIDTH) begin
-                state_scl <= STATE_WAIT_SCL_1;
-                sda_o <= ~(shiftreg[7:1] == ADDRES_DEVICE);
-                signal_wr <= shiftreg[0];
-                start_sent_sda <= 1'b1;
-                stop_sent_sda <= 1;
-                state_ms <= STATE_SEND_ACK; 
-              end else begin
-                state_scl <= STATE_WAIT_SCL_1;  
-              end              
+                data_counter <= {DATA_COUNTER_WIDTH{1'b0}};
+                sda_o        <= ~(shiftreg[7:1] == ADDRES_DEVICE);
+                signal_wr    <= shiftreg[0];
+                sda_en_o     <= ENABLE;
+                start_sda_t  <= ENABLE;                
+                state_ms     <= STATE_SEND_ACK; 
+              end 
+              state_scl      <= STATE_WAIT_SCL_1;              
             end            
           end
           STATE_WAIT_SCL_1: begin
             if (scl) begin
-              shiftreg <= {shiftreg[I2C_DATA_WIDTH - 2:0], sda};
+              shiftreg     <= {shiftreg[I2C_DATA_WIDTH - 2:0], sda};
               data_counter <= data_counter + 1;
-              state_scl <= STATE_WAIT_SCL_0;  
+              state_scl    <= STATE_WAIT_SCL_0;  
             end            
           end
         endcase
       end
-      STATE_SEND_ACK: begin  
-
+      STATE_SEND_ACK: begin 
+        ready_write <= DISABLE; 
         case ( state_scl )
           STATE_WAIT_SCL_0: begin
-            if (!scl) begin
-              sda_o <= 1'b0;
-              start_sent_sda <= 1'b0;
-              ready <= stop_sent_sda;
-              state_ms <= STATE_WAIT;  
+            if (~scl) begin
+              sda_o       <= 1'b0; 
+              sda_en_o    <= DISABLE;        
+              ready_read  <= signal_wr && start_sda_t;
+              state_ms    <= STATE_WAIT;  
             end            
           end
           STATE_WAIT_SCL_1: begin
-            if (scl) begin
+            if (scl) begin              
               state_scl <= STATE_WAIT_SCL_0;  
             end            
           end
-        endcase
-       
+        endcase       
       end
       STATE_WAIT: begin
         if (t_start_stop) begin
-          ready    <= 0;
-          state_ms <= STATE_FINALIZE;
+          ready_read   <= DISABLE;
+          ready_write  <= DISABLE;
+          state_ms     <= STATE_FINALIZE;
         end else 
-        if (signal_wr && stop_sent_sda) begin
-          shiftreg <= data_in;
-          data_counter <= 0;
-          ready <= 0;
-          state_scl <= STATE_WAIT_SCL_0;
-          state_ms  <= STATE_SEND_BYTE;
+        if (signal_wr && start_sda_t) begin
+          data_counter <= {DATA_COUNTER_WIDTH{1'b0}};
+          shiftreg     <= data_in;
+          ready_read   <= DISABLE;
+          state_scl    <= STATE_WAIT_SCL_0;
+          state_ms     <= STATE_SEND_BYTE;
+        end else 
+        if (~signal_wr && start_sda_t) begin
+          data_counter <= {DATA_COUNTER_WIDTH{1'b0}};
+          state_scl    <= STATE_WAIT_SCL_0;
+          state_ms     <= STATE_RECEIVE_BYTE;
         end
       end
       STATE_SEND_BYTE: begin
-
         case ( state_scl )
           STATE_WAIT_SCL_0: begin
-            if (!scl) begin
-              start_sent_sda <= 1;                
-              sda_o <= shiftreg[I2C_DATA_WIDTH-1];
+            if (~scl) begin
+              sda_en_o     <= ENABLE;                
+              sda_o        <= shiftreg[I2C_DATA_WIDTH-1];
               data_counter <= data_counter + 1;
-              state_scl <= STATE_WAIT_SCL_1;
+              state_scl    <= STATE_WAIT_SCL_1;
               if (data_counter == I2C_DATA_WIDTH) begin
-                start_sent_sda <= 0;
-                
-                if (byte_counter == DATA_WIDTH / I2C_DATA_WIDTH - 1) begin
-                  stop_sent_sda <= 0;
-                end else begin
-                  byte_counter <= byte_counter + 1;  
-                end
-
-                state_ms <= STATE_SEND_ACK;
+                if (byte_counter == (DATA_WIDTH / I2C_DATA_WIDTH - 1)) begin
+                  start_sda_t <= DISABLE;
+                end 
+                byte_counter  <= byte_counter + 1;
+                sda_en_o      <= DISABLE;           
+                state_scl     <= STATE_WAIT_SCL_1;
+                state_ms      <= STATE_SEND_ACK;
               end
             end            
           end
           STATE_WAIT_SCL_1: begin
             if (scl) begin
-              shiftreg <= {shiftreg[I2C_DATA_WIDTH - 2:0], 1'b0};
+              shiftreg  <= {shiftreg[I2C_DATA_WIDTH - 2:0], 1'b0};
               state_scl <= STATE_WAIT_SCL_0;  
             end            
           end
         endcase
-
+      end
+      STATE_RECEIVE_BYTE: begin
+        case ( state_scl )
+          STATE_WAIT_SCL_0: begin
+            if (~scl) begin
+              data_counter <= data_counter + 1;
+              sda_en_o     <= DISABLE;                
+              state_scl    <= STATE_WAIT_SCL_1;
+              if (data_counter == I2C_DATA_WIDTH) begin 
+                if (byte_counter == (DATA_WIDTH / I2C_DATA_WIDTH - 1)) begin
+                  start_sda_t <= DISABLE;
+                end 
+                byte_counter  <= byte_counter + 1;                
+                sda_en_o      <= ENABLE;
+                ready_write   <= ENABLE;
+                data_out      <= shiftreg;
+                sda_o         <= 1'b0;
+                state_ms      <= STATE_SEND_ACK;
+              end
+            end            
+          end
+          STATE_WAIT_SCL_1: begin
+            if (scl) begin
+              shiftreg  <= {shiftreg[I2C_DATA_WIDTH - 2:0], sda};
+              state_scl <= STATE_WAIT_SCL_0;  
+            end            
+          end
+        endcase        
       end
       STATE_FINALIZE: begin 
-        start_sent_sda <= 1'b0;
+        sda_en_o <= DISABLE;
         state_ms <= STATE_IDLE;
       end
     endcase
@@ -193,6 +240,11 @@ always @(negedge rst, posedge clk) begin
   end
 end
 
-assign sda = start_sent_sda ? sda_o : 1'bz;
+assign sda = sda_en_o ? sda_o : 1'bz;
+
+assign D0 = sda;
+assign D1 = scl;
+assign D2 = ready_read;
+assign D3 = ready_write;
 
 endmodule
