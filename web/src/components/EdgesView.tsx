@@ -94,7 +94,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
                         />
                     </div>
                     <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top', 'width': '270px'}}>
-                        <EdgeJSON edge={this.state.edge} />
+                        <EdgeJSON edge={this.state.edge} label={"previous edge"} />
                     </div>
                 </div>
                 </div>

@@ -164,9 +164,21 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         selectedNId = { this.state.selectedNId }
                         />  
                     </div> 
-                    <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
-                        <EdgeJSON edge={ this.state.synthesisNode } />
+                    <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top', 'width': '270px'}}>
+                        <EdgeJSON edge={ this.state.synthesisNode.nModel.processor} label={"nModel.processor"}  />
                     </div> 
+                    <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
+                        <EdgeJSON edge={ this.state.synthesisNode.nModel.dfg} label={"nModel.dfg"}  />
+                    </div> 
+                    <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
+                        <div  >
+                            <EdgeJSON edge={ this.state.synthesisNode.nId} label={"nId"}  />
+                        </div> 
+                        <br></br>
+                        <div  >
+                            <EdgeJSON edge={ this.state.synthesisNode.nIsComplete} label={"nIsComplete"}  />
+                        </div> 
+                    </div>
                 </div>
                 }
                  {/* this.state.synthesisNode.nModel.processor

@@ -19,9 +19,10 @@ $button-color: #1779ba;
 //Edge's Styles
 .jsonContainer {
   margin: 1% ;
-  width: 400px;
+  width: 240px;
   display: inline-block;
-  overflow-y: scroll;
+  overflow-y: auto;
+  overflow-x: hidden;
   max-height: 400px;
   button {
     color: $button-color;
@@ -41,7 +42,7 @@ $button-color: #1779ba;
 
 .edgeGraphContainer {
   @extend .window;
-  width: 500px;
+  width: 490px;
   height: 400px;
 }
 
