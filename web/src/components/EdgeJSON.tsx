@@ -42,9 +42,11 @@ export class EdgeJSON extends React.Component<EdgesCardProps, EdgesCardState> {
     render() {
         return (
             <div>
-                <button onClick={this.toggleDiv}>[Show/Hide] JSON</button>
+                <pre>
+                [<a onClick={ this.toggleDiv }> show/hide JSON </a>]
+                </pre>
                 { this.state.isHiddenEdgeJSON && 
-                <div className="jsonContainer">
+                <div >
                     <pre>previous edge:</pre>
                     <small><pre>{ JSON.stringify(this.state.selectedEdge, null, 2) }</pre></small>
                 </div>

@@ -18,26 +18,38 @@ $button-color: #1779ba;
 
 //Edge's Styles
 .jsonContainer {
-  margin: 1% 2% 3% 2%;
-  
+  margin: 1% ;
+  width: 400px;
+  display: inline-block;
+  overflow-y: scroll;
+  max-height: 400px;
   button {
     color: $button-color;
   }
 }
 
 .lineChartContainer {
-  float: right;
   margin: 1%;
   width: 45%;
 }
 
-.edgeCardContainer {
-  float: left;
-  border: 2px dashed black;
+.window {
+  border: 1px dashed black;
+  background-color: white;
   margin: 1%;
+}
+
+.edgeGraphContainer {
+  @extend .window;
+  width: 500px;
+  height: 400px;
+}
+
+.edgeCardContainer {
+  @extend .window;
+  float: left;
   padding: 10px;
   width: 35%;
-  background-color: white;
 
   p {
     font-size: 14px;

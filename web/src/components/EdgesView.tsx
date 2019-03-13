@@ -73,26 +73,30 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
 
         return (
         <div>
-            <div className="grid-x">
+            <div className="grid-x" style = {{'width': '100%'}}>
                 <div className="edgeCardContainer">
                     {
                         this.state.isDataResived &&
                         <EdgesCard edge = {this.state.edge}/>
                     }
                 </div>
-                <div className="lineChartContainer">
-                    <LineChart data={[ this.state.options.map((e: any, index: any) => { return { x: index, y: e[0] }; }) ]}
-                    width={750} height={250}
-                    axes />
-                </div>
+                <div className="edgeCardContents" >
+                    <div className="lineChartContainer">
+                        <LineChart data={[ this.state.options.map((e: any, index: any) => { return { x: index, y: e[0] }; }) ]}
+                            width={750} height={250}
+                        axes />
+                    </div>
                 <div>
-                    <GraphView 
-                        selectedNId = { this.state.selectedNId }
-                        view = " edges"
-                    />
+                    <div className="edgeGraphContainer" style={{'display': "inline-block", 'width': '450px'}}>
+                        <GraphView 
+                            selectedNId = { this.state.selectedNId }
+                            view = " edges"
+                        />
+                    </div>
+                    <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top', 'width': '270px'}}>
+                        <EdgeJSON edge={this.state.edge} />
+                    </div>
                 </div>
-                <div className="jsonContainer">
-                    <EdgeJSON edge={this.state.edge} />
                 </div>
             </div>
             

@@ -97,7 +97,7 @@ export class GraphView extends Component {
 
       render () {
         return (
-          <div style={{width: '600px', height: 400 + 'px', 'borderStyle': 'dashed', 'borderWidth': '1px'}}>
+          <div >
             { this.state.status === true &&
                 <Graph graph={this.state.graph} options={this.state.options} events={this.state.events} style={{ height: "400px" }} />
             }
