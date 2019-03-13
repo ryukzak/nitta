@@ -3,6 +3,7 @@ import { haskellAPI } from "../middleware/haskell-api";
 import ReactTable from "react-table";
 import { LineChart } from "react-easy-chart";
 import { EdgesCard } from "./EdgeCard";
+import { EdgeJSON } from "./EdgeJSON";
 
 interface EdgesViewProps {
     onNIdChange: any;
@@ -15,6 +16,7 @@ interface EdgesViewState {
     edge: any;
     options: any;
     isDataResived: boolean;
+    isHiddenEdgeJSON: boolean;
 }
 
 export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
@@ -29,7 +31,9 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
             options: null,
             edge: null,
             isDataResived: false,
+            isHiddenEdgeJSON: false,
         };
+        this.toggleDiv = this.toggleDiv.bind(this);
         this.reloadEdges(props.selectedNId);
     }
 
@@ -37,6 +41,12 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         console.debug("EdgesView:componentWillReceiveProps(", props, ")");
         if (this.state.selectedNId !== props.selectedNId) this.reloadEdges(props.selectedNId);
         this.setState({selectedNId: props.selectedNId});
+    }
+
+    toggleDiv = () => {
+        this.setState({
+            isHiddenEdgeJSON: !this.state.isHiddenEdgeJSON
+        });
     }
 
     reloadEdges (nid: any) {
@@ -59,21 +69,12 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         .catch(err => console.log(err));
     }
 
-    renderPreviousEdge () {
-        return (
-            <div>
-            <pre>previous edge:</pre>
-            <small><pre>{ JSON.stringify(this.state.edge, null, 2) }</pre></small>
-            </div>
-        );
-    }
-
     render () {
         if (this.state.options === undefined || this.state.options === null) return <div />;
         if (this.state.options.length === 0) {
             return (
                 <div>
-                    { this.renderPreviousEdge() }
+                    { <EdgeJSON edge={this.state.edge}/> }
                     <pre> Process is over. Options not allow. </pre>
                 </div>
             );
@@ -82,20 +83,21 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         return (
         <div>
             <div className="grid-x">
-                <div className="cell small-4">
-                    { this.renderPreviousEdge() }
+                <div className="edgeCardContainer">
+                    {
+                        this.state.isDataResived &&
+                        <EdgesCard edge = {this.state.edge}/>
+                    }
                 </div>
-                <div className="cell small-8">
+                <div className="lineChartContainer">
                     <LineChart data={[ this.state.options.map((e: any, index: any) => { return { x: index, y: e[0] }; }) ]}
                     width={750} height={250}
                     axes />
                 </div>
             </div>
-            <div>
-                {
-                    this.state.isDataResived &&
-                    <EdgesCard edge = {this.state.edge}/>
-                }
+            <div className="jsonContainer">
+                    <button onClick={this.toggleDiv}>[Show/Hide] JSON</button>
+                    { this.state.isHiddenEdgeJSON && <EdgeJSON edge={this.state.edge} /> }
             </div>
             <ReactTable
                 columns={

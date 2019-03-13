@@ -79,7 +79,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
         };
 
         return(
-            <div className="edgeCardContainer">
+            <div>
                 <div>
                     <h5><b>Previous Edge</b> [{this.state.eChar}]</h5>
                 </div>
@@ -108,7 +108,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
 
     renderDataFlow() {
         return (
-            <div className="edgeCardContainer">
+            <div>
             <div>
                 <h5><b>Previous Edge</b> [{this.state.eChar}]</h5>
             </div>

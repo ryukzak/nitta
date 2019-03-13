@@ -2,6 +2,7 @@
 
 $bg-color: yellow;
 $border-color: red;
+$button-color: #1779ba;
 
 .app {
   font-family: helvetica, arial, sans-serif;
@@ -13,11 +14,29 @@ $border-color: red;
   }
 }
 
+
+
+//Edge's Styles
+.jsonContainer {
+  margin: 1% 2% 3% 2%;
+  
+  button {
+    color: $button-color;
+  }
+}
+
+.lineChartContainer {
+  float: right;
+  margin: 1%;
+  width: 45%;
+}
+
 .edgeCardContainer {
+  float: left;
   border: 2px dashed black;
-  margin: 5% 5% 5% 5%;
+  margin: 1%;
   padding: 10px;
-  width: 40%;
+  width: 35%;
   background-color: white;
 
   p {
