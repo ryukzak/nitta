@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Radar} from 'react-chartjs-2';
+import {Radar} from "react-chartjs-2";
 
 interface EdgesCardProps {
     edge: any;
@@ -17,9 +17,6 @@ interface EdgesCardState {
 
 
 export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
-
-
-
     constructor (props: EdgesCardProps) {
         super(props);
         this.state = {
