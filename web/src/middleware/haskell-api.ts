@@ -9,6 +9,7 @@ export const haskellAPI = {
   getEdge: (nid: any) => api.getSynthesisByNIdEdge(nid),
   getEdges: (nid: any) => api.getSynthesisByNIdEdges(nid),
   simpleSynthesis: (nid: any) => api.postSynthesisByNIdSimpleSynthesis(nid),
+  simpleSynthesisGraph: (nid: any) => api.getSynthesisByNIdModelAlg(nid),
   smartBindSynthesisIO: (nid: any) => api.postSynthesisByNIdSmartBindSynthesisIO(nid),
   allBestThread: (nid: any, n: any) => api.postSynthesisByNIdAllBestThread(nid, n),
   obviousBindThread: (nid: any) => api.postSynthesisByNIdObviousBindThread(nid),

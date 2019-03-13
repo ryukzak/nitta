@@ -3,6 +3,8 @@ import "react-table/react-table.css";
 import { ProcessView } from "./ProcessView";
 import { haskellAPI } from "../middleware/haskell-api";
 import { EdgesView } from "./EdgesView";
+import { GraphView } from "./GraphView.js";
+import { EdgeJSON } from "./EdgeJSON";
 
 interface NodeViewProps {
     onNIdChange: any;
@@ -155,20 +157,21 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                 </div>
                 { this.state.view === " update"  && <pre> updating... </pre> }
                 { this.state.view === " synthesisNode"  &&
-                <div className=" grid-x" >
-                    <div className=" cell small-4" >
-                        <small><pre> processor: </pre></small>
-                        <small><pre> { JSON.stringify(this.state.synthesisNode.nModel.processor, null, 2) } </pre></small>
-                    </div>
-                    <div className=" cell small-4" >
-                        <small><pre> data flow graph: </pre></small>
-                        <small><pre> { JSON.stringify(this.state.synthesisNode.nModel.dfg, null, 2) } </pre></small>
-                    </div>
-                    <div className=" cell small-4" >
-                        <small><pre> nId: { JSON.stringify(this.state.synthesisNode.nId, null, 2) } </pre></small>
-                        <small><pre> nIsComplete: { JSON.stringify(this.state.synthesisNode.nIsComplete, null, 2) } </pre></small>
-                    </div>
-                </div> }
+                    <div>
+                        <GraphView 
+                        view = { this.state.view }
+                        selectedNId = { this.state.selectedNId }
+                        />  
+                        <div className="jsonContainer">
+                            <EdgeJSON edge={ this.state.synthesisNode } />
+                        </div> 
+                    </div> 
+                }
+                 {/* this.state.synthesisNode.nModel.processor
+                 this.state.synthesisNode.nModel.dfg 
+                 this.state.synthesisNode.nId
+                 this.state.synthesisNode.nIsComplete */}
+            
                 { this.state.view === " process"  &&
                     <ProcessView
                         steps={this.state.synthesisNode.nModel.processor.process.steps}

@@ -4,11 +4,11 @@ import ReactTable from "react-table";
 import { LineChart } from "react-easy-chart";
 import { EdgesCard } from "./EdgeCard";
 import { EdgeJSON } from "./EdgeJSON";
+import { GraphView } from "./GraphView.js"
 
 interface EdgesViewProps {
     onNIdChange: any;
     selectedNId: any;
-    // synthesisStatus: any;
 }
 
 interface EdgesViewState {
@@ -16,7 +16,6 @@ interface EdgesViewState {
     edge: any;
     options: any;
     isDataResived: boolean;
-    isHiddenEdgeJSON: boolean;
 }
 
 export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
@@ -31,9 +30,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
             options: null,
             edge: null,
             isDataResived: false,
-            isHiddenEdgeJSON: false,
         };
-        this.toggleDiv = this.toggleDiv.bind(this);
         this.reloadEdges(props.selectedNId);
     }
 
@@ -41,12 +38,6 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         console.debug("EdgesView:componentWillReceiveProps(", props, ")");
         if (this.state.selectedNId !== props.selectedNId) this.reloadEdges(props.selectedNId);
         this.setState({selectedNId: props.selectedNId});
-    }
-
-    toggleDiv = () => {
-        this.setState({
-            isHiddenEdgeJSON: !this.state.isHiddenEdgeJSON
-        });
     }
 
     reloadEdges (nid: any) {
@@ -94,11 +85,17 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
                     width={750} height={250}
                     axes />
                 </div>
+                <div>
+                    <GraphView 
+                        selectedNId = { this.state.selectedNId }
+                        view = " edges"
+                    />
+                </div>
+                <div className="jsonContainer">
+                    <EdgeJSON edge={this.state.edge} />
+                </div>
             </div>
-            <div className="jsonContainer">
-                    <button onClick={this.toggleDiv}>[Show/Hide] JSON</button>
-                    { this.state.isHiddenEdgeJSON && <EdgeJSON edge={this.state.edge} /> }
-            </div>
+            
             <ReactTable
                 columns={
                     [
