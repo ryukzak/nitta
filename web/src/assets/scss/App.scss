@@ -12,3 +12,19 @@ $border-color: red;
     background-color: $bg-color;
   }
 }
+
+.edgeCardContainer {
+  border: 2px dashed black;
+  margin: 5% 5% 5% 5%;
+  padding: 10px;
+  width: 40%;
+  background-color: white;
+
+  p {
+    font-size: 14px;
+  }
+}
+
+.edgeCardContents {
+  float: left;
+}

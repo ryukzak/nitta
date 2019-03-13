@@ -2,6 +2,7 @@ import * as React from "react";
 import { haskellAPI } from "../middleware/haskell-api";
 import ReactTable from "react-table";
 import { LineChart } from "react-easy-chart";
+import { EdgesCard } from "./EdgeCard";
 
 interface EdgesViewProps {
     onNIdChange: any;
@@ -13,6 +14,7 @@ interface EdgesViewState {
     selectedNId: any;
     edge: any;
     options: any;
+    isDataResived: boolean;
 }
 
 export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
@@ -25,7 +27,8 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         this.state = {
             selectedNId: props.selectedNId,
             options: null,
-            edge: null
+            edge: null,
+            isDataResived: false,
         };
         this.reloadEdges(props.selectedNId);
     }
@@ -49,7 +52,8 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         haskellAPI.getEdge(nid)
         .then((response: any) => {
             this.setState({
-                edge: response.data
+                edge: response.data,
+                isDataResived: true
             });
         })
         .catch(err => console.log(err));
@@ -78,14 +82,20 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         return (
         <div>
             <div className="grid-x">
-            <div className="cell small-4">
-                { this.renderPreviousEdge() }
+                <div className="cell small-4">
+                    { this.renderPreviousEdge() }
+                </div>
+                <div className="cell small-8">
+                    <LineChart data={[ this.state.options.map((e: any, index: any) => { return { x: index, y: e[0] }; }) ]}
+                    width={750} height={250}
+                    axes />
+                </div>
             </div>
-            <div className="cell small-8">
-                <LineChart data={[ this.state.options.map((e: any, index: any) => { return { x: index, y: e[0] }; }) ]}
-                width={750} height={250}
-                axes />
-            </div>
+            <div>
+                {
+                    this.state.isDataResived &&
+                    <EdgesCard edge = {this.state.edge}/>
+                }
             </div>
             <ReactTable
                 columns={
