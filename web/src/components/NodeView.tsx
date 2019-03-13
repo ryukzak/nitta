@@ -157,7 +157,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                 </div>
                 { this.state.view === " update"  && <pre> updating... </pre> }
                 { this.state.view === " synthesisNode"  &&
-                    <div>
+                <div>
                     <div className="edgeGraphContainer" style={{'display': "inline-block"}}>
                         <GraphView 
                         view = { this.state.view }
@@ -165,9 +165,9 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         />  
                     </div> 
                     <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
-                    <EdgeJSON edge={ this.state.synthesisNode } />
+                        <EdgeJSON edge={ this.state.synthesisNode } />
                     </div> 
-                    </div>
+                </div>
                 }
                  {/* this.state.synthesisNode.nModel.processor
                  this.state.synthesisNode.nModel.dfg 

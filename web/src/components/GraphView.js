@@ -21,7 +21,9 @@ export class GraphView extends Component {
 
           options: {
             layout: {  hierarchical: false },
-            edges: {  color: "#000000" }
+            edges: {  color: "#000000" },
+            nodes: {},
+            physics: { enabled: false }
           },
 
           graph: {
@@ -50,9 +52,10 @@ export class GraphView extends Component {
             var tag = data.eCharacteristics.tag;
             if(tag === 'BindCh'){
               var label = data.eDecision.contents[0];
+              var act = this;
               this.state.graph.nodes.map(function(anObjectMapped, index){
                 if( anObjectMapped.label === label ){
-                  anObjectMapped.color = "#efe300";
+                    anObjectMapped.shadow = { enabled: true, color: '#efe300', x: 3, y: 3, size: 10};
                 }
               })
             } else if( tag === 'DFCh' || tag === 'Refactorch'){
@@ -61,7 +64,8 @@ export class GraphView extends Component {
               label.map(function(anObjectMapped, index){
                 act.state.graph.edges.map(function(anObjectMapped2, index2){
                   if(anObjectMapped2.label === ("\""+anObjectMapped+"\"")){
-                    anObjectMapped2.color =  {color: '#efe300', inherit: false};
+                    anObjectMapped2.width = 3;
+                    anObjectMapped2.shadow = { enabled: true, color: '#efe300', x: 3, y: 3, size: 10};
                   }
                 })
               })

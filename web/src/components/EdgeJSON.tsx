@@ -47,7 +47,7 @@ export class EdgeJSON extends React.Component<EdgesCardProps, EdgesCardState> {
                 </pre>
                 { this.state.isHiddenEdgeJSON && 
                 <div >
-                    <pre>previous edge:</pre>
+                    {/* <pre>previous edge:</pre> */}
                     <small><pre>{ JSON.stringify(this.state.selectedEdge, null, 2) }</pre></small>
                 </div>
                 }
