@@ -40,7 +40,6 @@ export class GraphView extends Component {
             this.setState({status: false})
             this.setState({view: props.view})
             this.graphMaker(props.selectedNId);
-            // alert("Receive");
         }
     }
 

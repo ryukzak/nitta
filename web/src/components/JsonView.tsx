@@ -1,8 +1,7 @@
 import * as React from "react";
-import { EdgesCard } from "./EdgeCard";
 
 interface EdgesCardProps {
-    edge: any;
+    jsonData: any;
     label: any;
 }
 
@@ -12,22 +11,22 @@ interface EdgesCardState {
     isHiddenEdgeJSON: any;
 }
 
-export class EdgeJSON extends React.Component<EdgesCardProps, EdgesCardState> {
+export class JsonView extends React.Component<EdgesCardProps, EdgesCardState> {
 
     constructor (props: EdgesCardProps) {
         super(props);
         this.state = {
             selectedLabel: props.label,
-            selectedEdge: props.edge,
+            selectedEdge: props.jsonData,
             isHiddenEdgeJSON: false
         };
         this.toggleDiv = this.toggleDiv.bind(this);
-        this.reloadChart(props.edge);
+        this.reloadChart(props.jsonData);
     }
 
     componentWillReceiveProps(props: any) {
-        if (this.state.selectedEdge !== props.edge) this.reloadChart(props.edge);
-        this.setState({selectedEdge: props.edge});
+        if (this.state.selectedEdge !== props.jsonData) this.reloadChart(props.jsonData);
+        this.setState({selectedEdge: props.jsonData});
     }
 
     toggleDiv = () => {
@@ -37,9 +36,9 @@ export class EdgeJSON extends React.Component<EdgesCardProps, EdgesCardState> {
     }
 
 
-    reloadChart(edge: any) {
+    reloadChart(jsonData: any) {
         this.setState({
-            selectedEdge: edge
+            selectedEdge: jsonData
         });
     }
 
@@ -51,7 +50,6 @@ export class EdgeJSON extends React.Component<EdgesCardProps, EdgesCardState> {
                 </pre>
                 { this.state.isHiddenEdgeJSON && 
                 <div >
-                    {/* <pre>previous edge:</pre> */}
                     <small><pre>{ JSON.stringify(this.state.selectedEdge, null, 2) }</pre></small>
                 </div>
                 }

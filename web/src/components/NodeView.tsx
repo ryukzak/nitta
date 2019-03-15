@@ -4,7 +4,7 @@ import { ProcessView } from "./ProcessView";
 import { haskellAPI } from "../middleware/haskell-api";
 import { EdgesView } from "./EdgesView";
 import { GraphView } from "./GraphView.js";
-import { EdgeJSON } from "./EdgeJSON";
+import { JsonView } from "./JsonView";
 
 interface NodeViewProps {
     onNIdChange: any;
@@ -165,18 +165,18 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         />  
                     </div> 
                     <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top', 'width': '270px'}}>
-                        <EdgeJSON edge={ this.state.synthesisNode.nModel.processor} label={"nModel.processor"}  />
+                        <JsonView jsonData={ this.state.synthesisNode.nModel.processor} label={"nModel.processor"}  />
                     </div> 
                     <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
-                        <EdgeJSON edge={ this.state.synthesisNode.nModel.dfg} label={"nModel.dfg"}  />
+                        <JsonView jsonData={ this.state.synthesisNode.nModel.dfg} label={"nModel.dfg"}  />
                     </div> 
                     <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
                         <div  >
-                            <EdgeJSON edge={ this.state.synthesisNode.nId} label={"nId"}  />
+                            <JsonView jsonData={ this.state.synthesisNode.nId} label={"nId"}  />
                         </div> 
                         <br></br>
                         <div  >
-                            <EdgeJSON edge={ this.state.synthesisNode.nIsComplete} label={"nIsComplete"}  />
+                            <JsonView jsonData={ this.state.synthesisNode.nIsComplete} label={"nIsComplete"}  />
                         </div> 
                     </div>
                 </div>

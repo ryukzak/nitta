@@ -3,7 +3,7 @@ import { haskellAPI } from "../middleware/haskell-api";
 import ReactTable from "react-table";
 import { LineChart } from "react-easy-chart";
 import { EdgesCard } from "./EdgeCard";
-import { EdgeJSON } from "./EdgeJSON";
+import { JsonView } from "./JsonView";
 import { GraphView } from "./GraphView.js"
 
 interface EdgesViewProps {
@@ -94,7 +94,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
                         />
                     </div>
                     <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top', 'width': '270px'}}>
-                        <EdgeJSON edge={this.state.edge} label={"previous edge"} />
+                        <JsonView jsonData={this.state.edge} label={"previous edge"} />
                     </div>
                 </div>
                 </div>
