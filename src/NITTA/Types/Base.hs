@@ -59,7 +59,9 @@ class Variables a v | a -> v where
 data I v = I v -- ^Загружаемые значения.
     deriving (Show, Eq, Ord)
 data O v = O (S.Set v) -- ^Выгружаемые значения.
-    deriving (Show, Eq, Ord)
+    deriving (Eq, Ord)
+instance ( Show v ) => Show (O v) where
+    show (O vs) = "O " ++ show (S.elems vs)
 data X x = X x -- ^Выгружаемые значения.
     deriving (Show, Eq)
 

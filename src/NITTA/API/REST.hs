@@ -23,14 +23,18 @@ module NITTA.API.REST
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Data.Aeson
+import qualified Data.Map                 as M
 import           Data.Maybe
 import qualified Data.Tree                as T
 import           GHC.Generics
-import           NITTA.API.GraphConverter (toGraphStructure, GraphStructure, GraphEdge)
+import           NITTA.API.GraphConverter (GraphEdge, GraphStructure,
+                                           toGraphStructure)
 import           NITTA.API.Marshalling    ()
+import           NITTA.BusNetwork
 import           NITTA.DataFlow
 import           NITTA.Project            (writeAndRunTestBench)
 import           NITTA.SynthesisMethod
+import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
 import           Servant
@@ -54,6 +58,7 @@ type WithSynthesis title v x t
     =    Get '[JSON] (Node title v x t)
     :<|> "edge" :> Get '[JSON] (Maybe (Edge title v x t))
     :<|> "model" :> Get '[JSON] (ModelState title v x t)
+    :<|> "endpointOptions" :> Get '[JSON] [(title, Option (EndpointDT v t))]
     :<|> "model" :> "alg" :> Get '[JSON] (GraphStructure GraphEdge)
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
     :<|> SimpleCompilerAPI title v x t
@@ -62,6 +67,7 @@ withSynthesis root nId
     =    liftIO ( getNodeIO root nId )
     :<|> liftIO ( nOrigin <$> getNodeIO root nId )
     :<|> liftIO ( nModel <$> getNodeIO root nId )
+    :<|> liftIO ( endpointOptions . processor . nModel <$> getNodeIO root nId )
     :<|> liftIO ( toGraphStructure . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
@@ -79,6 +85,9 @@ withSynthesis root nId
     where
         alg Frame{ dfg=DFG nodes } = map (\(DFGNode f) -> f) nodes
         alg _                      = error "unsupported algorithm structure"
+        endpointOptions BusNetwork{ bnPus }
+            = let f (title, pu) = zip (repeat title) $ options endpointDT pu
+            in concatMap f $ M.assocs bnPus
 
 
 
@@ -128,10 +137,10 @@ synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
             , svDuration=fromEnum $ targetProcessDuration nModel
             , svCharacteristic=maybe (read "NaN") eCharacteristic nOrigin
             , svOptionType=case nOrigin of
-                Just Edge{ eOption=BindingOption{} } -> "Bind"
+                Just Edge{ eOption=BindingOption{} }  -> "Bind"
                 Just Edge{ eOption=DataFlowOption{} } -> "Transport"
                 Just Edge{ eOption=RefactorOption{} } -> "Refactor"
-                Nothing -> "-"
+                Nothing                               -> "-"
             }
         , T.subForest=nodes
         }
