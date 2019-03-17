@@ -7,7 +7,7 @@ import { GraphView } from "./GraphView.js";
 import { JsonView } from "./JsonView";
 
 interface NodeViewProps {
-    onNIdChange: any;
+    onNIdChange: (string) => void;
     selectedNId: any;
     synthesisStatus?: any;
 }
@@ -17,15 +17,15 @@ interface NodeViewState {
     synthesisNode: any;
     selectedNId: any;
     synthesisStatus: any;
-    view: any;
+    view: string;
     model: any;
-    endpointOptions: any;
+    endpointOptions: any[];
     scOptions: any;
 }
 
 export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
 
-    onNIdChange: any;
+    onNIdChange: (string) => void;
 
     constructor (props: NodeViewProps) {
         super(props);
@@ -43,7 +43,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
         this.handleViewChange(props.selectedNId, props.synthesisStatus, " synthesisNode" );
     }
 
-    handleViewChange (nid: any, synthesisStatus: any, view: any) {
+    handleViewChange (nid: any, synthesisStatus: any, view: string) {
         console.debug(" NodeView:handleViewChange(" , nid, view, " ) // this.state.view:" , this.state.view);
         if (nid === undefined || nid === null) return;
 

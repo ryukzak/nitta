@@ -38,7 +38,7 @@ export default class App extends React.Component<any, AppState> {
                 />
                 <NodeView
                     selectedNId={ this.state.selectedNId }
-                    onNIdChange={ (nid: any) => this.onNIdChange(nid) }
+                    onNIdChange={ (nid: string) => this.onNIdChange(nid) }
                 />
             </div>
         );
