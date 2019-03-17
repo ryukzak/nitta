@@ -13,5 +13,6 @@ export const haskellAPI = {
   smartBindSynthesisIO: (nid: any) => api.postSynthesisByNIdSmartBindSynthesisIO(nid),
   allBestThread: (nid: any, n: any) => api.postSynthesisByNIdAllBestThread(nid, n),
   obviousBindThread: (nid: any) => api.postSynthesisByNIdObviousBindThread(nid),
-  runTestBench: (nid: any, name: any) => api.getSynthesisByNIdTestBenchOutput(nid, name)
+  runTestBench: (nid: any, name: any) => api.getSynthesisByNIdTestBenchOutput(nid, name),
+  getEndpointOptions: (nid) => api.getSynthesisByNIdEndpointOptions(nid)
 };
