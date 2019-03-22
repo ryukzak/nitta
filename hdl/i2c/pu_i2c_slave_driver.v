@@ -1,4 +1,8 @@
-module i2c_slave_driver 
+//////////////////////////////////////////////////////////////////////////////////
+// Simple I2C slave controller
+//////////////////////////////////////////////////////////////////////////////////
+
+module pu_i2c_slave_driver 
   #( parameter I2C_DATA_WIDTH = 8
    , parameter DATA_WIDTH     = 32
    , parameter ADDRES_DEVICE  = 7'h25
@@ -8,23 +12,12 @@ module i2c_slave_driver
   // system interface
   , input      [I2C_DATA_WIDTH-1:0] data_in  
   , output reg [I2C_DATA_WIDTH-1:0] data_out 
-  // Так как по I2C в один момент могут либо передаваться, либо приниматься
-  // данные, то требуется два сигнала  ready.  Иначе  могут  быть  проблемы
-  // с чтением из буфера данных.
   , output reg                      ready_write
   , output reg                      ready_read
+  , output reg                      i2c_prepare
   // i2c interface
   , input                           scl
   , inout                           sda
-
-  , output                  D0
-  , output                  D1
-  , output                  D2
-  , output                  D3
-  , output                  D4
-  , output                  D5
-  , output                  D6
-  , output                  D7
   );
 
 localparam STATE_IDLE           = 0;
@@ -36,8 +29,8 @@ localparam STATE_FINALIZE       = 5;
 localparam STATE_WAIT           = 6;
 reg [2:0] state_ms;
 
-localparam STATE_WAIT_SCL_0     = 0;
-localparam STATE_WAIT_SCL_1     = 1;
+localparam STATE_WAIT_SCL_0     = 1;
+localparam STATE_WAIT_SCL_1     = 0;
 reg       state_scl;
 
 localparam ENABLE               = 1;
@@ -50,19 +43,22 @@ localparam BYTE_COUNTER_WIDTH = $clog2( DATA_WIDTH / 8 + 1 );
 reg [BYTE_COUNTER_WIDTH-1:0] byte_counter;
 
 reg [I2C_DATA_WIDTH-1:0] shiftreg;
-reg sda_en_o;     // Сигнал переключения направлением передачи. 
-reg start_sda_t;  // Сигнал управления передачей/приемом данных. 
-reg signal_wr;    // 1 - передача данных, 0 - прием данных.
-reg sda_o;        // Регистр для передачи данных управляющему устройству. 
+reg sda_en_o;   
+reg start_sda_t; 
+reg signal_wr;    
+reg sda_o;       
+reg valid_addr;   
 
-always @(negedge rst, negedge clk) begin
-  if ( ~rst ) begin
+always @(negedge clk) begin
+  if ( rst ) begin
     data_counter <= {DATA_COUNTER_WIDTH{1'b0}};
     byte_counter <= {BYTE_COUNTER_WIDTH{1'b0}};
     shiftreg     <= {I2C_DATA_WIDTH{1'b0}};
     sda_o        <= 1'b0;
+    valid_addr   <= 1'b0;
     ready_read   <= DISABLE;
     ready_write  <= DISABLE;
+    i2c_prepare  <= DISABLE;
     sda_en_o     <= DISABLE;
     start_sda_t  <= DISABLE;
     signal_wr    <= DISABLE;
@@ -90,6 +86,7 @@ always @(negedge rst, negedge clk) begin
               if (data_counter == I2C_DATA_WIDTH) begin
                 data_counter <= {DATA_COUNTER_WIDTH{1'b0}};
                 sda_o        <= ~(shiftreg[7:1] == ADDRES_DEVICE);
+                valid_addr   <= shiftreg[7:1] == ADDRES_DEVICE;
                 signal_wr    <= shiftreg[0];
                 sda_en_o     <= ENABLE;
                 start_sda_t  <= ENABLE;                
@@ -115,11 +112,17 @@ always @(negedge rst, negedge clk) begin
               sda_o       <= 1'b0; 
               sda_en_o    <= DISABLE;        
               ready_read  <= signal_wr && start_sda_t;
-              state_ms    <= STATE_WAIT;  
-            end            
+              if( valid_addr ) begin
+                state_ms    <= STATE_WAIT;  
+              end else begin
+                state_ms    <= STATE_FINALIZE;
+              end              
+            end
+            i2c_prepare <= 1'b0;            
           end
           STATE_WAIT_SCL_1: begin
-            if (scl) begin              
+            if (scl) begin    
+              i2c_prepare <= signal_wr && byte_counter != (DATA_WIDTH / I2C_DATA_WIDTH);         
               state_scl <= STATE_WAIT_SCL_0;  
             end            
           end
@@ -200,30 +203,36 @@ always @(negedge rst, negedge clk) begin
         endcase        
       end
       STATE_FINALIZE: begin 
-        sda_en_o <= DISABLE;
-        state_ms <= STATE_IDLE;
+        data_counter <= {DATA_COUNTER_WIDTH{1'b0}};
+        byte_counter <= {BYTE_COUNTER_WIDTH{1'b0}};
+        shiftreg     <= {I2C_DATA_WIDTH{1'b0}};
+        sda_o        <= 1'b0;
+        valid_addr   <= 1'b0;
+        ready_read   <= DISABLE;
+        ready_write  <= DISABLE;
+        sda_en_o     <= DISABLE;
+        start_sda_t  <= DISABLE;
+        signal_wr    <= DISABLE;
+        state_scl    <= STATE_WAIT_SCL_1;
+        if(t_start_stop) state_ms <= STATE_IDLE;
       end
     endcase
   end
 end
 
-// Получаем текущее значение sda и сохраняем его.
-// Нужно для нахождения начала и конца передачи.
 reg curr_sda;
-always @(negedge rst, posedge clk) begin
-  if (~rst) begin
+always @(posedge clk) begin
+  if (rst) begin
     curr_sda   <= 1'b1;
   end else begin
     curr_sda <= sda;
   end
 end
 
-// Определение начала и конца передачи через
-// предыдущее значение curr_sda. 
 reg t_start_stop;
 reg prev_sda;
-always @(negedge rst, posedge clk) begin
-  if (~rst) begin
+always @(posedge clk) begin
+  if (rst) begin
     t_start_stop <= 1'b0;
     prev_sda <= curr_sda;
   end else begin
@@ -241,10 +250,5 @@ always @(negedge rst, posedge clk) begin
 end
 
 assign sda = sda_en_o ? sda_o : 1'bz;
-
-assign D0 = sda;
-assign D1 = scl;
-assign D2 = ready_read;
-assign D3 = ready_write;
 
 endmodule
