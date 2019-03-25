@@ -1,5 +1,6 @@
 import * as React from "react";
 import {Radar} from "react-chartjs-2";
+import { haskellAPI } from "../middleware/haskell-api";
 
 interface EdgesCardProps {
     edge: any;
@@ -12,6 +13,8 @@ interface EdgesCardState {
     contentsEDecision: any;
     contentsEOption: any;
     eCharacteristics: any;
+    isShown: boolean;
+    nIds: any;
 }
 
 
@@ -25,7 +28,9 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
             tag: props.edge.eDecision.tag,
             contentsEDecision: props.edge.eDecision.contents,
             contentsEOption: props.edge.eOption.contents,
-            eCharacteristics: props.edge.eCharacteristics
+            eCharacteristics: props.edge.eCharacteristics,
+            isShown: false,
+            nIds: null
         };
         this.reloadChart(props.edge);
     }
@@ -35,6 +40,42 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
         this.setState({selectedEdge: props.edge});
     }
 
+    toggleDiv = () => {
+        this.setState({
+            isShown: !this.state.isShown
+        });
+    }
+
+    loadIds(nid: any) {
+        if (nid === undefined || nid === null) return;
+        let nIds = {};
+        var index = 0;
+        let reLastNidStep = /:[^:]*$/;
+        let childNid = new RegExp( "^" + nid + ":[0-9]*$");
+        haskellAPI.getSynthesis()
+            .then((response: any) => {
+                let ids = {};
+                let buildGraph = (gNode: any, dNode: any) => {
+                    gNode.name = reLastNidStep.exec(dNode[0].svNnid)[0];
+                    gNode.nid = dNode[0].svNnid;
+                    if(gNode.nid === nid || childNid.test(gNode.nid)){
+                        nIds[index] = gNode.nid;
+                        index++;
+                        alert(gNode.nid)
+                    }
+                    nIds[dNode[0].svNnid] = gNode;
+                    gNode.children = [];
+                    dNode[1].forEach((e: any) => {
+                        let tmp = {};
+                        gNode.children.push(tmp);
+                        buildGraph(tmp, e);
+                    });
+                };
+                buildGraph({}, response.data);   
+                this.setState({nIds: ids}) 
+            })
+            .catch((err: any) => console.log(err));
+    }
 
     reloadChart(edge: any) {
         this.setState({
@@ -106,49 +147,55 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
     renderDataFlow() {
         return (
             <div>
-            <div>
-                <h5><b>Previous Edge</b> [{this.state.eChar}]</h5>
+                <div>
+                    <h5><b>Previous Edge</b> [{this.state.eChar}]</h5>
+                </div>
+                <div>
+                    <h6><b>tag: </b>{ String(this.state.tag).replace("Decision", "") }</h6>
+                </div>
+                <br/>
+                <div>
+                    <h6><b>eCharacteristics:</b></h6>
+                    <p>
+                        {/* &emsp; - is tabulation */}
+                        <b>&emsp;tag: </b>{String(this.state.eCharacteristics.tag)}
+                        <br/>
+                        <b>&emsp;isRestrictedTime: </b>{String(this.state.eCharacteristics.restrictedTime)}
+                        <br/>
+                        <b>&emsp;WaitTime: </b>{String(this.state.eCharacteristics.waitTime)}
+                        <br/>
+                        <b>&emsp;NotTransferableInputs: </b>{JSON.stringify(this.state.eCharacteristics.notTransferableInputs, null, 2)}
+                    </p>
+                </div>
+                <div>
+                    <h6><b>eDecision:</b></h6>
+                    <small>
+                        <pre> { JSON.stringify(this.state.contentsEDecision, null, 2) } </pre>
+                    </small>
+                    <h6><b>eOption:</b></h6>
+                    <small>
+                        <pre> { JSON.stringify(this.state.contentsEOption, null, 2) } </pre>
+                    </small>
+                </div>
             </div>
-            <div>
-                <h6><b>tag: </b>{ String(this.state.tag).replace("Decision", "") }</h6>
-            </div>
-            <br/>
-            <div>
-                <h6><b>eCharacteristics:</b></h6>
-                <p>
-                    {/* &emsp; - is tabulation */}
-                    <b>&emsp;tag: </b>{String(this.state.eCharacteristics.tag)}
-                    <br/>
-                    <b>&emsp;isRestrictedTime: </b>{String(this.state.eCharacteristics.restrictedTime)}
-                    <br/>
-                    <b>&emsp;WaitTime: </b>{String(this.state.eCharacteristics.waitTime)}
-                    <br/>
-                    <b>&emsp;NotTransferableInputs: </b>{JSON.stringify(this.state.eCharacteristics.notTransferableInputs, null, 2)}
-                </p>
-            </div>
-            <div>
-                <h6><b>eDecision:</b></h6>
-                <small>
-                    <pre> { JSON.stringify(this.state.contentsEDecision, null, 2) } </pre>
-                </small>
-                <h6><b>eOption:</b></h6>
-                <small>
-                    <pre> { JSON.stringify(this.state.contentsEOption, null, 2) } </pre>
-                </small>
-            </div>
-        </div>
         );
     }
 
     render() {
 
-        if (String(this.state.contentsEDecision) === String(this.state.contentsEOption)) {
+        if(this.state.isShown === false){
+            return (
+                <div style={{"width": "14px", "word-wrap": "break-word"}} onClick={this.toggleDiv} >
+                    <h5>1:3:2:1:0</h5>
+                </div>
+            );
+        } else if (String(this.state.contentsEDecision) === String(this.state.contentsEOption)) {
             return(
-                    <div>{ this.renderBinding() }</div>
-                );
+                    <div onClick={this.toggleDiv}>{ this.renderBinding() }</div>
+            );
         } else {
             return(
-                <div>{ this.renderDataFlow() }</div>
+                <div onClick={this.toggleDiv}>{ this.renderDataFlow() }</div>
             );
         }
     }
