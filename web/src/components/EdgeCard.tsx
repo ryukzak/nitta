@@ -132,7 +132,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                 <h5><b>Previous Edge</b> [{this.state.eChar}]</h5>
             </div>
             <div>
-                <h6><b>tag: </b>{ String(this.state.tag).replace("Decision", "") }</h6>
+                <h6><b>tag: </b>{ this.state.tag }</h6>
             </div>
             <div>
                 <div>
@@ -156,7 +156,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                     <pre>{ JSON.stringify(this.state.contentsEDecision, null, 2) }</pre>
                 </small>
             </div>
-            
+
             <br/>
             <div>
                 <h6><b>eCharacteristics:</b></h6>
