@@ -2,16 +2,16 @@ import * as React from "react";
 import {Radar} from "react-chartjs-2";
 
 interface EdgesCardProps {
-    edge: any;
+    edge: Object;
 }
 
 interface EdgesCardState {
-    selectedEdge: any;
+    selectedEdge: Object;
     eChar: number;
-    tag: any;
-    contentsEDecision: any;
-    contentsEOption: any;
-    eCharacteristics: any;
+    tag: string;
+    contentsEDecision: Object;
+    contentsEOption: Object;
+    eCharacteristics: Object;
 }
 
 
@@ -22,7 +22,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
         this.state = {
             selectedEdge: props.edge,
             eChar: props.edge.eCharacteristic,
-            tag: props.edge.eDecision.tag,
+            tag: props.edge.eDecision.tag.replace("Decision", ""),
             contentsEDecision: props.edge.eDecision.contents,
             contentsEOption: props.edge.eOption.contents,
             eCharacteristics: props.edge.eCharacteristics
@@ -30,13 +30,13 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
         this.reloadChart(props.edge);
     }
 
-    componentWillReceiveProps(props: any) {
+    componentWillReceiveProps(props: Object) {
         if (this.state.selectedEdge !== props.edge) this.reloadChart(props.edge);
         this.setState({selectedEdge: props.edge});
     }
 
 
-    reloadChart(edge: any) {
+    reloadChart(edge: Object) {
         this.setState({
             selectedEdge: edge,
             eChar: edge.eCharacteristic,
@@ -81,11 +81,33 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                     <h5><b>Previous Edge</b> [{this.state.eChar}]</h5>
                 </div>
                 <div>
-                    <h6><b>tag: </b>{ String(this.state.tag).replace("Decision", "") }</h6>
-                    <h6><b>eDecision and eOption:</b></h6>
-                    <small>
-                        <pre>{ JSON.stringify(this.state.contentsEDecision, null, 2) }</pre>
-                    </small>
+                    <div>
+                        <h6><b>tag: </b>{ this.state.tag }</h6>
+                    </div>
+
+                    <div>
+                        <div>
+                            <div style={{display: 'inline'}}>
+                                <b>eDecision and </b>
+                            </div>
+                            <div className="hoverWrapper" style={{display: 'inline'}}>
+                                <b style={{color: 'blue'}}>eOption:</b>
+                                <div id="hoverShow1">
+                                    <small> 
+                                        <pre>{ JSON.stringify(this.state.contentsEOption, null, 2) }</pre>
+                                    </small>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <small>
+                            <pre>{ JSON.stringify(this.state.contentsEDecision, null, 2) }</pre>
+                        </small>
+                    </div>
+                    
                 </div>
                 <br/>
                 <div>
@@ -112,29 +134,42 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
             <div>
                 <h6><b>tag: </b>{ String(this.state.tag).replace("Decision", "") }</h6>
             </div>
+            <div>
+                <div>
+                    <div style={{display: 'inline'}}>
+                        <b>eDecision and </b>
+                    </div>
+                    <div className="hoverWrapper" style={{display: 'inline'}}>
+                        <b style={{color: 'blue'}}>eOption:</b>
+                        <div id="hoverShow1">
+                            <small> 
+                                 <pre>{ JSON.stringify(this.state.contentsEOption, null, 2) }</pre>
+                            </small>
+                        </div>
+                                
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <small>
+                    <pre>{ JSON.stringify(this.state.contentsEDecision, null, 2) }</pre>
+                </small>
+            </div>
+            
             <br/>
             <div>
                 <h6><b>eCharacteristics:</b></h6>
                 <p>
                     {/* &emsp; - is tabulation */}
-                    <b>&emsp;tag: </b>{String(this.state.eCharacteristics.tag)}
+                    <b>&emsp;tag: </b>{this.state.eCharacteristics.tag}
                     <br/>
-                    <b>&emsp;isRestrictedTime: </b>{String(this.state.eCharacteristics.restrictedTime)}
+                    <b>&emsp;isRestrictedTime: </b>{this.state.eCharacteristics.restrictedTime}
                     <br/>
-                    <b>&emsp;WaitTime: </b>{String(this.state.eCharacteristics.waitTime)}
+                    <b>&emsp;WaitTime: </b>{this.state.eCharacteristics.waitTime}
                     <br/>
                     <b>&emsp;NotTransferableInputs: </b>{JSON.stringify(this.state.eCharacteristics.notTransferableInputs, null, 2)}
                 </p>
-            </div>
-            <div>
-                <h6><b>eDecision:</b></h6>
-                <small>
-                    <pre> { JSON.stringify(this.state.contentsEDecision, null, 2) } </pre>
-                </small>
-                <h6><b>eOption:</b></h6>
-                <small>
-                    <pre> { JSON.stringify(this.state.contentsEOption, null, 2) } </pre>
-                </small>
             </div>
         </div>
         );

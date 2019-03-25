@@ -59,3 +59,13 @@ $button-color: #1779ba;
 .edgeCardContents {
   float: left;
 }
+
+.hoverWrapper #hoverShow1 {
+  display: none;
+  position: absolute;
+  background-color: #60bfff;
+}
+
+.hoverWrapper:hover #hoverShow1 {
+  display: block;
+}
