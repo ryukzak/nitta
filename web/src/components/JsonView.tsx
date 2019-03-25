@@ -2,19 +2,21 @@ import * as React from "react";
 
 /**
  * Component to display JSON data. 
- * Takes two arguments: 
+ * Takes three arguments: 
  * label - label of the json data that will be displayed on the button;
  * jsonData - data of json which will be displayed in the body of JsonView.
+ * show - collapse or open body of JsonView by default
  */
 
 interface JsonViewProps {
     jsonData: any;
     label: string;
+    show: boolean;
 }
 
 interface JsonViewState {
-    selectedLabel: string;
     selectedData: any;
+    selectedLabel: string;
     isHiddenJsonView: boolean;
 }
 
@@ -25,7 +27,7 @@ export class JsonView extends React.Component<JsonViewProps, JsonViewState> {
         this.state = {
             selectedLabel: props.label,
             selectedData: props.jsonData,
-            isHiddenJsonView: false
+            isHiddenJsonView: props.show
         };
         this.toggleDiv = this.toggleDiv.bind(this);
         this.reloadChart(props.jsonData);
@@ -53,10 +55,11 @@ export class JsonView extends React.Component<JsonViewProps, JsonViewState> {
         return (
             <div>
                 <pre>
-                [<a onClick={ this.toggleDiv }> show/hide {this.state.selectedLabel} </a>]
+                [<a onClick={ this.toggleDiv }> JSON: {this.state.selectedLabel} </a>]
                 </pre>
+                {/* <input type="checkbox"/> */}
                 { this.state.isHiddenJsonView && 
-                <div >
+                <div className="jsonViewBody">
                     <small><pre>{ JSON.stringify(this.state.selectedData, null, 2) }</pre></small>
                 </div>
                 }

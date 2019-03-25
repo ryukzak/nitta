@@ -1,17 +1,20 @@
 import * as React from "react";
 import {Radar} from "react-chartjs-2";
+import { haskellAPI } from "../middleware/haskell-api";
 
 interface EdgesCardProps {
-    edge: Object;
+    edge: any;
 }
 
 interface EdgesCardState {
-    selectedEdge: Object;
+    selectedEdge: any;
     eChar: number;
     tag: string;
-    contentsEDecision: Object;
-    contentsEOption: Object;
-    eCharacteristics: Object;
+    contentsEDecision: any;
+    contentsEOption: any;
+    eCharacteristics: any;
+    isShown: boolean;
+    nIds: any;
 }
 
 
@@ -25,18 +28,56 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
             tag: props.edge.eDecision.tag.replace("Decision", ""),
             contentsEDecision: props.edge.eDecision.contents,
             contentsEOption: props.edge.eOption.contents,
-            eCharacteristics: props.edge.eCharacteristics
+            eCharacteristics: props.edge.eCharacteristics,
+            isShown: false,
+            nIds: null
         };
         this.reloadChart(props.edge);
     }
 
-    componentWillReceiveProps(props: Object) {
+    componentWillReceiveProps(props: EdgesCardProps) {
         if (this.state.selectedEdge !== props.edge) this.reloadChart(props.edge);
         this.setState({selectedEdge: props.edge});
     }
 
+    toggleDiv = () => {
+        this.setState({
+            isShown: !this.state.isShown
+        });
+    }
 
-    reloadChart(edge: Object) {
+    loadIds(nid: any) {
+        if (nid === undefined || nid === null) return;
+        let nIds = {};
+        var index = 0;
+        let reLastNidStep = /:[^:]*$/;
+        let childNid = new RegExp( "^" + nid + ":[0-9]*$");
+        haskellAPI.getSynthesis()
+            .then((response: any) => {
+                let ids = {};
+                let buildGraph = (gNode: any, dNode: any) => {
+                    gNode.name = reLastNidStep.exec(dNode[0].svNnid)[0];
+                    gNode.nid = dNode[0].svNnid;
+                    if(gNode.nid === nid || childNid.test(gNode.nid)){
+                        nIds[index] = gNode.nid;
+                        index++;
+                        alert(gNode.nid)
+                    }
+                    nIds[dNode[0].svNnid] = gNode;
+                    gNode.children = [];
+                    dNode[1].forEach((e: any) => {
+                        let tmp = {};
+                        gNode.children.push(tmp);
+                        buildGraph(tmp, e);
+                    });
+                };
+                buildGraph({}, response.data);   
+                this.setState({nIds: ids}) 
+            })
+            .catch((err: any) => console.log(err));
+    }
+
+    reloadChart(edge: any) {
         this.setState({
             selectedEdge: edge,
             eChar: edge.eCharacteristic,
@@ -177,13 +218,19 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
 
     render() {
 
-        if (String(this.state.contentsEDecision) === String(this.state.contentsEOption)) {
+        if(this.state.isShown === false){
+            return (
+                <div style={{"width": "14px", "word-wrap": "break-word"}} onClick={this.toggleDiv} >
+                    <h5>1:3:2:1:0</h5>
+                </div>
+            );
+        } else if (String(this.state.contentsEDecision) === String(this.state.contentsEOption)) {
             return(
-                    <div>{ this.renderBinding() }</div>
-                );
+                    <div onClick={this.toggleDiv}>{ this.renderBinding() }</div>
+            );
         } else {
             return(
-                <div>{ this.renderDataFlow() }</div>
+                <div onClick={this.toggleDiv}>{ this.renderDataFlow() }</div>
             );
         }
     }

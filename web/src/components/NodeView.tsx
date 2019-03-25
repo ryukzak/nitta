@@ -180,19 +180,19 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         selectedNId = { this.state.selectedNId }
                         />  
                     </div> 
-                    <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top', 'width': '270px'}}>
-                        <JsonView jsonData={ this.state.synthesisNode.nModel.processor} label={"nModel.processor"}  />
+                    <div className="jsonViewContainer" style={{'vertical-align': 'top', 'width': '270px'}}>
+                        <JsonView jsonData={ this.state.synthesisNode.nModel.processor} label={"nModel.processor"} show={false}  />
                     </div> 
-                    <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
-                        <JsonView jsonData={ this.state.synthesisNode.nModel.dfg} label={"nModel.dfg"}  />
+                    <div className="jsonViewContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
+                        <JsonView jsonData={ this.state.synthesisNode.nModel.dfg} label={"nModel.dfg"} show={false} />
                     </div> 
-                    <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
+                    <div className="jsonViewContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
                         <div  >
-                            <JsonView jsonData={ this.state.synthesisNode.nId} label={"nId"}  />
+                            <JsonView jsonData={ this.state.synthesisNode.nId} label={"nId"} show={false} />
                         </div> 
                         <br></br>
                         <div  >
-                            <JsonView jsonData={ this.state.synthesisNode.nIsComplete} label={"nIsComplete"}  />
+                            <JsonView jsonData={ this.state.synthesisNode.nIsComplete} label={"nIsComplete"} show={false}  />
                         </div> 
                     </div>
                 </div>

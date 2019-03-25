@@ -17,15 +17,18 @@ $button-color: #1779ba;
 
 
 //Edge's Styles
-.jsonContainer {
+.jsonViewContainer {
   margin: 1% ;
   width: 240px;
   display: inline-block;
-  overflow-y: auto;
-  max-height: 400px;
   button {
     color: $button-color;
   }
+}
+
+.jsonViewBody {
+  overflow-y: auto;
+  max-height: 400px;
 }
 
 .lineChartContainer {
@@ -47,9 +50,8 @@ $button-color: #1779ba;
 
 .edgeCardContainer {
   @extend .window;
-  float: left;
   padding: 10px;
-  width: 35%;
+  display: inline;
 
   p {
     font-size: 14px;
