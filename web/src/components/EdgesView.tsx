@@ -4,7 +4,7 @@ import ReactTable from "react-table";
 import { LineChart } from "react-easy-chart";
 import { EdgesCard } from "./EdgeCard";
 import { JsonView } from "./JsonView";
-import { GraphView } from "./GraphView.js"
+import { GraphView } from "./GraphView"
 
 interface EdgesViewProps {
     onNIdChange: any;
@@ -62,14 +62,6 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
 
     render () {
         if (this.state.options === undefined || this.state.options === null) return <div />;
-        if (this.state.options.length === 0) {
-            return (
-                <div>
-                    { <EdgeJSON edge={this.state.edge}/> }
-                    <pre> Process is over. Options not allow. </pre>
-                </div>
-            );
-        }
 
         return (
         <div>
@@ -90,7 +82,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
                     <div className="edgeGraphContainer" style={{'display': "inline-block", 'width': '450px'}}>
                         <GraphView 
                             selectedNId = { this.state.selectedNId }
-                            view = " edges"
+                            view = "edges"
                         />
                     </div>
                     <div className="jsonContainer" style={{'display': "inline-block", 'vertical-align': 'top', 'width': '270px'}}>

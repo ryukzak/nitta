@@ -3,7 +3,7 @@ import "react-table/react-table.css";
 import { ProcessView } from "./ProcessView";
 import { haskellAPI } from "../middleware/haskell-api";
 import { EdgesView } from "./EdgesView";
-import { GraphView } from "./GraphView.js";
+import { GraphView } from "./GraphView";
 import { JsonView } from "./JsonView";
 
 interface NodeViewProps {
@@ -35,30 +35,30 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
             synthesisNode: null,
             selectedNId: props.selectedNId,
             synthesisStatus: props.synthesisStatus,
-            view: " update" ,
+            view: "update" ,
             model: null,
             endpointOptions: null,
             scOptions: null
         };
-        this.handleViewChange(props.selectedNId, props.synthesisStatus, " synthesisNode" );
+        this.handleViewChange(props.selectedNId, props.synthesisStatus, "synthesisNode" );
     }
 
     handleViewChange (nid: any, synthesisStatus: any, view: string) {
-        console.debug(" NodeView:handleViewChange(" , nid, view, " ) // this.state.view:" , this.state.view);
+        console.debug("NodeView:handleViewChange(" , nid, view, " ) // this.state.view:" , this.state.view);
         if (nid === undefined || nid === null) return;
 
-        this.setState({selectedNId: nid, synthesisStatus: synthesisStatus, view: " update" });
-        if (view === " process" ) this.updateModel(nid, " process" );
-        if (view === " synthesisNode" ) this.updateModel(nid, " synthesisNode" );
-        if (view === " testbench" ) this.updateTestBench(nid, " testbench" );
-        if (view === " edges" ) this.setState({view: " edges" });
-        if (view === 'endpointOptions') this.updateEndpointOptions(nid, 'endpointOptions')
+        this.setState({selectedNId: nid, synthesisStatus: synthesisStatus, view: "update" });
+        if (view === "process" ) this.updateModel(nid, "process" );
+        if (view === "synthesisNode" ) this.updateModel(nid, "synthesisNode" );
+        if (view === "testbench" ) this.updateTestBench(nid, "testbench" );
+        if (view === "edges" ) this.setState({view: "edges" });
+        if (view === "endpointOptions") this.updateEndpointOptions(nid, "endpointOptions")
     }
 
-    componentWillReceiveProps (props) {
-        console.debug(" NodeView:componentWillReceiveProps(" , props, " )" );
+    componentWillReceiveProps (props: NodeViewProps) {
+        console.debug("NodeView:componentWillReceiveProps(" , props, " )" );
         let view = this.state.view;
-        if (view === " update" ) view = " synthesisNode";
+        if (view === "update" ) view = "synthesisNode";
         if (this.state.selectedNId !== props.selectedNId) {
             this.handleViewChange(props.selectedNId, props.synthesisStatus, view);
         }
@@ -66,7 +66,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
 
     allBestThread (nid: any, n: any) {
         if (nid === undefined || nid === null) return;
-        console.debug(" NodeView:allBestThread(" , nid, n, " )" );
+        console.debug("NodeView:allBestThread(" , nid, n, " )" );
         haskellAPI.allBestThread(nid, n)
         .then((response: any) => {
             let newNid = response.data;
@@ -77,7 +77,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
 
     obviousBindThread (nid: any) {
         if (nid === undefined || nid === null) return;
-        console.debug(" NodeView:obviousBindThread(" , nid, " )" );
+        console.debug("NodeView:obviousBindThread(" , nid, " )" );
         haskellAPI.obviousBindThread(nid)
         .then((response: any) => {
             let newNid = response.data;
@@ -88,7 +88,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
 
     simpleSynthesis (nid: any, deep?: any) {
         if (nid === undefined || nid === null) return;
-        console.debug(" NodeView:simpleSynthesis(" , nid, " )" );
+        console.debug("NodeView:simpleSynthesis(" , nid, " )" );
         // FIXME: simpleSynthesis(nid, deep) Expected 1 arguments, but got 2
         haskellAPI.simpleSynthesis(nid)
         .then((response: any) => {
@@ -100,7 +100,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
 
     smartBindSynthesisIO (nid: any, deep?: any) {
         if (nid === undefined || nid === null) return;
-        console.debug(" NodeView:simpleSynthesis(" , nid, " )" );
+        console.debug("NodeView:simpleSynthesis(" , nid, " )" );
         // FIXME: smartBindSynthesisIO(nid, deep) Expected 1 arguments, but got 2
         haskellAPI.smartBindSynthesisIO(nid)
         .then((response: any) => {
@@ -121,7 +121,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
         .catch((err: any) => console.log(err));
     }
 
-    updateEndpointOptions (nid, view) {
+    updateEndpointOptions (nid, view: string) {
         haskellAPI.getEndpointOptions(nid)
         .then(response => {
             this.setState({
@@ -129,11 +129,11 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                 view: view
             })
         })
-        .catch(err => console.log(err))
+        .catch((err: any) => console.log(err))
     }
 
-    updateTestBench (nid: any, view: any) {
-        haskellAPI.runTestBench(nid, " web_ui" )
+    updateTestBench (nid: any, view: string) {
+        haskellAPI.runTestBench(nid, "web_ui" )
         .then((response: any) => {
             this.setState({
                 testBenchDump: response.data,
@@ -141,8 +141,8 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
             });
         })
         .catch((err: any) => {
-            alert(" Can not take testbench, maybe, because it is not completed synthesis!\n"  + err);
-            this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, " synthesisNode" );
+            alert("Can not take testbench, maybe, because it is not completed synthesis!\n"  + err);
+            this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "synthesisNode" );
         });
     }
 
@@ -153,26 +153,26 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
 
             { this.state.selectedNId !== null &&
             <div>
-                <div className=" tiny button-group" >
-                    <a className=" button primary"  onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, " synthesisNode" )}>synthesis node</a>
-                    <a className=" button primary"  onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, " process" )}>process</a>
-                    <a className=" button primary"  onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, " edges" )}>edges</a>
-                    <a className='button primary' onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, 'endpointOptions')}>endpointOptions</a>
+                <div className="tiny button-group" >
+                    <a className="button primary"  onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "synthesisNode" )}>synthesis node</a>
+                    <a className="button primary"  onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "process" )}>process</a>
+                    <a className="button primary"  onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "edges" )}>edges</a>
+                    <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "endpointOptions")}>endpointOptions</a>
 
-                    <a className=" button primary"  onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, " testbench" )}>testbench</a>
+                    <a className="button primary"  onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "testbench" )}>testbench</a>
                 </div>
-                <div className=" tiny button-group" >
-                    <a className=" button primary"  onClick={() => this.simpleSynthesis(this.state.selectedNId)}>simple synthesis</a>
-                    <a className=" button primary"  onClick={() => this.smartBindSynthesisIO(this.state.selectedNId)}>smart bind synthesis</a>
+                <div className="tiny button-group" >
+                    <a className="button primary"  onClick={() => this.simpleSynthesis(this.state.selectedNId)}>simple synthesis</a>
+                    <a className="button primary"  onClick={() => this.smartBindSynthesisIO(this.state.selectedNId)}>smart bind synthesis</a>
                 </div>
-                <div className=" tiny button-group" >
-                    <a className=" button primary"  onClick={() => this.obviousBindThread(this.state.selectedNId)}>oblious bind thread</a>
-                    <a className=" button primary"  onClick={() => this.allBestThread(this.state.selectedNId, 0)}>best thread</a>
-                    <a className=" button primary"  onClick={() => this.allBestThread(this.state.selectedNId, 1)}>all best thread 1</a>
-                    <a className=" button primary"  onClick={() => this.allBestThread(this.state.selectedNId, 2)}>all best thread 2</a>
+                <div className="tiny button-group" >
+                    <a className="button primary"  onClick={() => this.obviousBindThread(this.state.selectedNId)}>oblious bind thread</a>
+                    <a className="button primary"  onClick={() => this.allBestThread(this.state.selectedNId, 0)}>best thread</a>
+                    <a className="button primary"  onClick={() => this.allBestThread(this.state.selectedNId, 1)}>all best thread 1</a>
+                    <a className="button primary"  onClick={() => this.allBestThread(this.state.selectedNId, 2)}>all best thread 2</a>
                 </div>
-                { this.state.view === " update"  && <pre> updating... </pre> }
-                { this.state.view === " synthesisNode"  &&
+                { this.state.view === "update"  && <pre> updating... </pre> }
+                { this.state.view === "synthesisNode"  &&
                 <div>
                     <div className="edgeGraphContainer" style={{'display': "inline-block"}}>
                         <GraphView 
@@ -202,23 +202,23 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                  this.state.synthesisNode.nId
                  this.state.synthesisNode.nIsComplete */}
             
-                { this.state.view === " process"  &&
+                { this.state.view === "process"  &&
                     <ProcessView
                         steps={this.state.synthesisNode.nModel.processor.process.steps}
                         relations={this.state.synthesisNode.nModel.processor.process.relations}
                     />
                 }
-                { this.state.view === " edges"  &&
+                { this.state.view === "edges"  &&
                     <EdgesView
                         selectedNId={ this.state.selectedNId }
                         onNIdChange={ (nid: any) => this.onNIdChange(nid)}
                     />
                 }
-                { this.state.view === 'endpointOptions' &&
+                { this.state.view === "endpointOptions" &&
                     <pre> { JSON.stringify(this.state.endpointOptions, null, 2) } </pre> 
                 }
 
-                { this.state.view === " testbench"  &&
+                { this.state.view === "testbench"  &&
                     <div>
                         Status: <pre> { JSON.stringify(this.state.testBenchDump.tbStatus) } </pre>
                         <hr />
