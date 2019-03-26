@@ -139,7 +139,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                             <div className="hoverWrapper" style={{display: "inline"}}>
                                 <b style={{color: "blue"}}>eOption:</b>
                                 <div id="hoverShow1">
-                                    <small> 
+                                    <small>
                                         <pre>{ JSON.stringify(this.state.contentsEOption, null, 2) }</pre>
                                     </small>
                                 </div>
@@ -187,7 +187,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                     <div className="hoverWrapper" style={{display: "inline"}}>
                         <b style={{color: "blue"}}>eOption:</b>
                         <div id="hoverShow1">
-                            <small> 
+                            <small>
                                  <pre>{ JSON.stringify(this.state.contentsEOption, null, 2) }</pre>
                             </small>
                         </div>
