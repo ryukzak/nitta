@@ -5,6 +5,7 @@ import { LineChart } from "react-easy-chart";
 import { EdgesCard } from "./EdgeCard";
 import { JsonView } from "./JsonView";
 import { GraphView } from "./GraphView"
+import { EdgesCardsHolder } from "./EdgesCardsHolder";
 
 interface EdgesViewProps {
     onNIdChange: any;
@@ -66,44 +67,29 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         return (
         <div>
             <div className="grid-x" >
-                <div className="edgeCardContainer">
-                    {
-                        // TODO: - change the maxValue on calculated max integral (eCharacteristics) value
-                        this.state.isDataResived &&
-                        <EdgesCard edge = {this.state.edge} maxValue={2000} />
-                    }
-                </div>
-                <div className="edgeCardContainer">
-                    {
-                        // TODO: - change the maxValue on calculated max integral (eCharacteristics) value
-                        this.state.isDataResived &&
-                        <EdgesCard edge = {this.state.edge} maxValue={2000}/>
-                    }
-                </div>
-                <div className="edgeCardContainer">
-                    {
-                        // TODO: - change the maxValue on calculated max integral (eCharacteristics) value
-                        this.state.isDataResived &&
-                        <EdgesCard edge = {this.state.edge} maxValue={2000}/>
-                    }
-                </div>
-            </div>
-            <div className="grid-x" >
                 <div className="edgeGraphContainer" style={{'display': "inline-block", 'width': '450px'}}>
                     <GraphView 
                         selectedNId = { this.state.selectedNId }
                         view = "edges"
                     />
                 </div>
-                <div className="jsonViewContainer" style={{'display': "inline-block", 'vertical-align': 'top', 'width': '270px'}}>
-                    <JsonView jsonData={this.state.edge} label={"previous edge"} show={false} />
-                </div>
+                
                 <div className="lineChartContainer">
                     <LineChart data={[ this.state.options.map((e: any, index: any) => { return { x: index, y: e[0] }; }) ]}
                         width={500} height={250}
                     axes />
                 </div>
+                <div className="jsonViewContainer" style={{'display': "inline-block", 'vertical-align': 'top', 'width': '270px'}}>
+                    <JsonView jsonData={this.state.edge} label={"previous edge"} show={false} />
+                </div>
             </div>
+
+            {
+                this.state.isDataResived &&
+                <div >
+                    <EdgesCardsHolder nid = {this.state.selectedNId}  />
+                </div>
+            }
 
             <ReactTable
                 columns={

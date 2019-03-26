@@ -28,12 +28,12 @@ $button-color: #1779ba;
 
 .jsonViewBody {
   overflow-y: auto;
-  max-height: 400px;
+  max-height: 370px;
 }
 
 .lineChartContainer {
   margin: 1%;
-  width: 45%;
+  display: inline-block;
 }
 
 .window {
