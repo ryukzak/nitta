@@ -3,16 +3,18 @@ import {Radar} from "react-chartjs-2";
 import { haskellAPI } from "../middleware/haskell-api";
 
 interface EdgesCardProps {
-    edge: any;
+    edge: JSON;
+    maxValue: number;
 }
 
 interface EdgesCardState {
-    selectedEdge: any;
+    selectedEdge: JSON;
+    maxValue: number;
     eChar: number;
     tag: string;
-    contentsEDecision: any;
-    contentsEOption: any;
-    eCharacteristics: any;
+    contentsEDecision: JSON;
+    contentsEOption: JSON;
+    eCharacteristics: JSON;
     isShown: boolean;
     nIds: any;
 }
@@ -24,6 +26,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
         super(props);
         this.state = {
             selectedEdge: props.edge,
+            maxValue: props.maxValue,
             eChar: props.edge.eCharacteristic,
             tag: props.edge.eDecision.tag.replace("Decision", ""),
             contentsEDecision: props.edge.eDecision.contents,
@@ -58,10 +61,10 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                 let buildGraph = (gNode: any, dNode: any) => {
                     gNode.name = reLastNidStep.exec(dNode[0].svNnid)[0];
                     gNode.nid = dNode[0].svNnid;
-                    if(gNode.nid === nid || childNid.test(gNode.nid)){
+                    if (gNode.nid === nid || childNid.test(gNode.nid)) {
                         nIds[index] = gNode.nid;
                         index++;
-                        alert(gNode.nid)
+                        alert(gNode.nid);
                     }
                     nIds[dNode[0].svNnid] = gNode;
                     gNode.children = [];
@@ -71,8 +74,8 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                         buildGraph(tmp, e);
                     });
                 };
-                buildGraph({}, response.data);   
-                this.setState({nIds: ids}) 
+                buildGraph({}, response.data);
+                this.setState({nIds: ids});
             })
             .catch((err: any) => console.log(err));
     }
@@ -118,6 +121,8 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
 
         return(
             <div>
+                {this.renderProgressBar()}
+
                 <div>
                     <h5><b>Previous Edge</b> [{this.state.eChar}]</h5>
                 </div>
@@ -128,17 +133,16 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
 
                     <div>
                         <div>
-                            <div style={{display: 'inline'}}>
+                            <div style={{display: "inline"}}>
                                 <b>eDecision and </b>
                             </div>
-                            <div className="hoverWrapper" style={{display: 'inline'}}>
-                                <b style={{color: 'blue'}}>eOption:</b>
+                            <div className="hoverWrapper" style={{display: "inline"}}>
+                                <b style={{color: "blue"}}>eOption:</b>
                                 <div id="hoverShow1">
                                     <small> 
                                         <pre>{ JSON.stringify(this.state.contentsEOption, null, 2) }</pre>
                                     </small>
                                 </div>
-                                
                             </div>
                         </div>
                     </div>
@@ -148,17 +152,16 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                             <pre>{ JSON.stringify(this.state.contentsEDecision, null, 2) }</pre>
                         </small>
                     </div>
-                    
                 </div>
                 <br/>
                 <div>
                     <h6><b>eCharacteristics:</b></h6>
                     <p>
-                        <b>&emsp;tag: </b>{String(this.state.eCharacteristics.tag)}
+                        <b>&emsp;tag: </b>{this.state.eCharacteristics.tag}
                         <br/>
-                        <b>&emsp;isCritical: </b>{String(this.state.eCharacteristics.critical)}
+                        <b>&emsp;isCritical: </b>{this.state.eCharacteristics.critical}
                         <br/>
-                        <b>&emsp;isPossibleDeadlock </b>{String(this.state.eCharacteristics.possibleDeadlock)}
+                        <b>&emsp;isPossibleDeadlock </b>{this.state.eCharacteristics.possibleDeadlock}
                     </p>
                     <Radar data={data} />
                 </div>
@@ -169,6 +172,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
     renderDataFlow() {
         return (
             <div>
+                {this.renderProgressBar()}
             <div>
                 <h5><b>Previous Edge</b> [{this.state.eChar}]</h5>
             </div>
@@ -177,17 +181,16 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
             </div>
             <div>
                 <div>
-                    <div style={{display: 'inline'}}>
+                    <div style={{display: "inline"}}>
                         <b>eDecision and </b>
                     </div>
-                    <div className="hoverWrapper" style={{display: 'inline'}}>
-                        <b style={{color: 'blue'}}>eOption:</b>
+                    <div className="hoverWrapper" style={{display: "inline"}}>
+                        <b style={{color: "blue"}}>eOption:</b>
                         <div id="hoverShow1">
                             <small> 
                                  <pre>{ JSON.stringify(this.state.contentsEOption, null, 2) }</pre>
                             </small>
                         </div>
-                                
                     </div>
                 </div>
             </div>
@@ -216,9 +219,16 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
         );
     }
 
-    render() {
+    renderProgressBar() {
+        return(
+            <div className="edgeCardProgressBar">
+                <progress max={this.state.maxValue} value={this.state.eChar} />
+            </div>
+        );
+    }
 
-        if(this.state.isShown === false){
+    render() {
+        if (this.state.isShown === false) {
             return (
                 <div style={{"width": "14px", "word-wrap": "break-word"}} onClick={this.toggleDiv} >
                     <h5>1:3:2:1:0</h5>

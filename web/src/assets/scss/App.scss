@@ -48,6 +48,12 @@ $button-color: #1779ba;
   height: 400px;
 }
 
+.edgeCardProgressBar {
+  progress {
+    width: 100%;
+  }
+}
+
 .edgeCardContainer {
   @extend .window;
   padding: 10px;

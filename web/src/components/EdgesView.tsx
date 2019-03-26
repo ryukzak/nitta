@@ -68,20 +68,23 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
             <div className="grid-x" >
                 <div className="edgeCardContainer">
                     {
+                        // TODO: - change the maxValue on calculated max integral (eCharacteristics) value
                         this.state.isDataResived &&
-                        <EdgesCard edge = {this.state.edge}/>
+                        <EdgesCard edge = {this.state.edge} maxValue={2000} />
                     }
                 </div>
                 <div className="edgeCardContainer">
                     {
+                        // TODO: - change the maxValue on calculated max integral (eCharacteristics) value
                         this.state.isDataResived &&
-                        <EdgesCard edge = {this.state.edge}/>
+                        <EdgesCard edge = {this.state.edge} maxValue={2000}/>
                     }
                 </div>
                 <div className="edgeCardContainer">
                     {
+                        // TODO: - change the maxValue on calculated max integral (eCharacteristics) value
                         this.state.isDataResived &&
-                        <EdgesCard edge = {this.state.edge}/>
+                        <EdgesCard edge = {this.state.edge} maxValue={2000}/>
                     }
                 </div>
             </div>
@@ -100,10 +103,8 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
                         width={500} height={250}
                     axes />
                 </div>
-               
             </div>
-            
-            
+
             <ReactTable
                 columns={
                     [
