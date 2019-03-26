@@ -3,7 +3,7 @@ import { haskellAPI } from "../middleware/haskell-api";
 import ReactTable from "react-table";
 import { LineChart } from "react-easy-chart";
 import { JsonView } from "./JsonView";
-import { GraphView } from "./GraphView"
+import { GraphView } from "./GraphView";
 import { EdgesCardsHolder } from "./EdgesCardsHolder";
 
 interface EdgesViewProps {
@@ -66,19 +66,19 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         return (
         <div>
             <div className="grid-x" >
-                <div className="edgeGraphContainer" style={{'display': "inline-block", 'width': '450px'}}>
-                    <GraphView 
+                <div className="edgeGraphContainer" style={{"display": "inline-block", "width": "450px"}}>
+                    <GraphView
                         selectedNId = { this.state.selectedNId }
                         view = "edges"
                     />
                 </div>
-                
+
                 <div className="lineChartContainer">
                     <LineChart data={[ this.state.options.map((e: any, index: any) => { return { x: index, y: e[0] }; }) ]}
                         width={500} height={250}
                     axes />
                 </div>
-                <div className="jsonViewContainer" style={{'display': "inline-block", 'vertical-align': 'top', 'width': '270px'}}>
+                <div className="jsonViewContainer" style={{"display": "inline-block", "vertical-align": "top", "width": "270px"}}>
                     <JsonView jsonData={this.state.edge} label={"previous edge"} show={false} />
                 </div>
             </div>

@@ -9,15 +9,15 @@ import { EdgesCard } from "./EdgeCard";
  */
 
 interface EdgesCardsHolderProps {
-    nid: string
+    nid: string;
 }
 
 interface EdgesCardsHolderState {
-    selectedNId: string,
-    maxECharacteristic: number,
-    idsForCard: string[],
-    edgesForCard: JSON[],
-    isLoad: boolean
+    selectedNId: string;
+    maxECharacteristic: number;
+    idsForCard: string[];
+    edgesForCard: JSON[];
+    isLoad: boolean;
 }
 
 export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, EdgesCardsHolderState> {
@@ -29,7 +29,7 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
             idsForCard: [],
             edgesForCard: [],
             isLoad: false
-        }
+        };
         this.loadIds(props.nid);
     }
 
@@ -79,7 +79,7 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
             })
             .catch((err: any) => console.log(err));
     }
-    
+
     loadEdge(ind: number) {
         let length = this.state.idsForCard.length;
         let maxEChar = 0;
@@ -89,10 +89,10 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
             haskellAPI.getEdge(id)
             .then((response: JSON) => {
                 curEdges.push(response.data);
-                if(maxEChar < response.data.eCharacteristic){
+                if (maxEChar < response.data.eCharacteristic) {
                     maxEChar = response.data.eCharacteristic;
                 }
-                if (index == length-1) {
+                if (index === length - 1) {
                         act.setState({
                             edgesForCard: curEdges,
                             maxECharacteristic: maxEChar,
@@ -100,10 +100,8 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
                         });
                     }
             })
-            .catch(err => {console.log(err)} );
-        }
-        );
-       
+            .catch(err => {console.log(err);} );
+        });
     }
 
     render() {
@@ -111,14 +109,14 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
         return(
             <div className = "grid-x" >
                 { this.state.isLoad && 
-                    this.state.edgesForCard.map(function(edge, index){
-                            return (
-                                <div className="edgeCardContainer" >
-                                    { <EdgesCard nid = {act.state.idsForCard[index]} edge = {edge} maxValue={act.state.maxECharacteristic}/> }
-                                </div>
-                            );                
+                    this.state.edgesForCard.map(function(edge, index) {
+                        return (
+                            <div className="edgeCardContainer" >
+                                { <EdgesCard nid = {act.state.idsForCard[index]} edge = {edge} maxValue={act.state.maxECharacteristic}/> }
+                            </div>
+                        );
                 })}
             </div>
-        )
+        );
     }
 }
