@@ -92,7 +92,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                 {this.renderProgressBar()}
 
                 <div>
-                    <h5><b>Previous Edge</b> [{this.state.eChar}]</h5>
+                    <h5><b>Edge</b> [{this.state.eChar}] {this.state.selectedNId}</h5>
                 </div>
                 <div>
                     <div>
@@ -142,7 +142,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
             <div>
                 {this.renderProgressBar()}
             <div>
-                <h5><b>Previous Edge</b> [{this.state.eChar}]</h5>
+                <h5><b>Edge</b> [{this.state.eChar}] {this.state.selectedNId}</h5>
             </div>
             <div>
                 <h6><b>tag: </b>{ this.state.tag }</h6>
@@ -191,7 +191,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
         return(
             <div className="edgeCardProgressBar">
                 <meter
-                    min={-200}
+                    min={0}
                     low={this.state.maxValue * 0.25}
                     optimum={this.state.maxValue}
                     high={this.state.maxValue * 0.75}
@@ -206,7 +206,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
     render() {
         if (this.state.isShown === false) {
             return (
-                <div style={{"width": "10px", "word-wrap": "break-word"}} onClick={this.toggleDiv} >
+                <div style={{"width": "10px", "height": "100%", "word-wrap": "break-word"}} onClick={this.toggleDiv} >
                     <h6>{this.state.selectedNId}</h6>
                 </div>
             );
