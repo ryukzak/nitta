@@ -50,7 +50,6 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
     }
 
     reloadChart(edge: any) {
-        // alert(this.state.maxValue);
         this.setState({
             selectedEdge: edge,
             eChar: edge.eCharacteristic,
@@ -128,9 +127,9 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                     <p>
                         <b>&emsp;tag: </b>{this.state.eCharacteristics.tag}
                         <br/>
-                        <b>&emsp;isCritical: </b>{this.state.eCharacteristics.critical}
+                        <b>&emsp;isCritical: </b>{String(this.state.eCharacteristics.critical)}
                         <br/>
-                        <b>&emsp;isPossibleDeadlock </b>{this.state.eCharacteristics.possibleDeadlock}
+                        <b>&emsp;isPossibleDeadlock </b>{String(this.state.eCharacteristics.possibleDeadlock)}
                     </p>
                     <Radar data={data} />
                 </div>
@@ -177,7 +176,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                     {/* &emsp; - is tabulation */}
                     <b>&emsp;tag: </b>{this.state.eCharacteristics.tag}
                     <br/>
-                    <b>&emsp;isRestrictedTime: </b>{this.state.eCharacteristics.restrictedTime}
+                    <b>&emsp;isRestrictedTime: </b>{String(this.state.eCharacteristics.restrictedTime)}
                     <br/>
                     <b>&emsp;WaitTime: </b>{this.state.eCharacteristics.waitTime}
                     <br/>
