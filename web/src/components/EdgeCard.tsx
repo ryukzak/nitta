@@ -222,7 +222,15 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
     renderProgressBar() {
         return(
             <div className="edgeCardProgressBar">
-                <progress max={this.state.maxValue} value={this.state.eChar} />
+                <meter
+                    min={-200}
+                    low={this.state.maxValue * 0.25}
+                    optimum={this.state.maxValue}
+                    high={this.state.maxValue * 0.75}
+                    max={this.state.maxValue}
+                    value={this.state.eChar}
+                />
+                {/* <progress max={this.state.maxValue} value={this.state.eChar} /> */}
             </div>
         );
     }
