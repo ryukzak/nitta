@@ -17,7 +17,6 @@ interface EdgesCardState {
     contentsEOption: JSON;
     eCharacteristics: JSON;
     isShown: boolean;
-    nIds: any;
 }
 
 
@@ -35,7 +34,6 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
             contentsEOption: props.edge.eOption.contents,
             eCharacteristics: props.edge.eCharacteristics,
             isShown: false,
-            nIds: null
         };
         this.reloadChart(props.edge);
     }
@@ -52,6 +50,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
     }
 
     reloadChart(edge: any) {
+        // alert(this.state.maxValue);
         this.setState({
             selectedEdge: edge,
             eChar: edge.eCharacteristic,

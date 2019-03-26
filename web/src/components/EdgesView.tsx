@@ -2,7 +2,6 @@ import * as React from "react";
 import { haskellAPI } from "../middleware/haskell-api";
 import ReactTable from "react-table";
 import { LineChart } from "react-easy-chart";
-import { EdgesCard } from "./EdgeCard";
 import { JsonView } from "./JsonView";
 import { GraphView } from "./GraphView"
 import { EdgesCardsHolder } from "./EdgesCardsHolder";

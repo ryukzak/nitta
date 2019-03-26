@@ -58,21 +58,23 @@ export class GraphView extends React.Component<GraphViewProps, GraphViewState> {
 
       componentWillReceiveProps (props: GraphViewProps) {
         if (this.state.selectedNId !== props.selectedNId) {
-            this.setState({status: false})
-            this.setState({view: props.view})
+            this.setState({
+              status: false, 
+              view: props.view
+            })
             this.graphMaker(props.selectedNId);
         }
     }
 
       graphUpdate(nid: number){
         haskellAPI.getEdge(nid)        
-        .then( (response: any) => {
+        .then( (response: JSON) => {
           let data = response.data;
           if( data.eCharacteristics !== null){
             let tag = data.eCharacteristics.tag;
             if(tag === "BindCh"){
               let label = data.eDecision.contents[0];
-              this.state.graph.nodes.map(function(anObjectMapped: any, index: number){
+              this.state.graph.nodes.map(function(anObjectMapped: JSON, index: number){
                 if( anObjectMapped.label === label ){
                     anObjectMapped.shadow = { enabled: true, color: '#efe300', x: 3, y: 3, size: 10};
                 }
@@ -100,10 +102,10 @@ export class GraphView extends React.Component<GraphViewProps, GraphViewState> {
         .then((response: any) => {
           let newNid = response.data
           let act = this;
-          newNid.nodes.map(function(anObjectMapped: any, index: number) {
+          newNid.nodes.map(function(anObjectMapped: JSON, index: number) {
             act.state.graph.nodes[index] = {id: index+1, label: String(anObjectMapped.color), color:anObjectMapped.label}
           })
-          newNid.edges.map(function(anObjectMapped: any, index:number){
+          newNid.edges.map(function(anObjectMapped: JSON, index:number){
             act.state.graph.edges[index] = ({from: anObjectMapped.from, to: anObjectMapped.to, label: anObjectMapped.label})
           })
 

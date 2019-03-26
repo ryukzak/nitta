@@ -36,6 +36,12 @@ $button-color: #1779ba;
   display: inline-block;
 }
 
+.edgesCardsHolderContainer {
+  overflow-x: scroll;
+  overflow-y: hidden;
+  white-space:nowrap
+}
+
 .window {
   border: 1px dashed black;
   background-color: white;
@@ -87,7 +93,7 @@ $button-color: #1779ba;
 .edgeCardContainer {
   @extend .window;
   padding: 10px;
-  display: inline;
+  display: inline-block;
 
   p {
     font-size: 14px;

@@ -29,7 +29,7 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
             idsForCard: [],
             edgesForCard: [],
             isLoad: false
-        };
+        }
         this.loadIds(props.nid);
     }
 
@@ -46,17 +46,6 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
         }
     }
 
-    // reloadChart(nid: string) {
-    //     this.setState({
-    //         selectedNId: nid,
-    //         isLoad: false,
-    //         maxECharacteristic: 0,
-    //         idsForCard: [],
-    //         edgesForCard: []
-    //     });
-    //     this.loadIds(nid);
-    // }
-
     loadIds(nid: string) {
         if (nid === undefined || nid === null || nid === "") return;
         let curIds: string[] = [];
@@ -66,11 +55,12 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
         let childNid = new RegExp( "^" + nid + ":[0-9]*$");
         haskellAPI.getSynthesis()
             .then((response: JSON) => {
-                let buildGraph = (gNode: JSON, dNode: JSON) => {
+                let buildHolder = (gNode: JSON, dNode: JSON) => {
                     gNode.name = reLastNidStep.exec(dNode[0].svNnid)[0];
                     gNode.nid = dNode[0].svNnid;
                     if (gNode.nid === nid || childNid.test(gNode.nid)) {
-                        curIds[index] = gNode.nid;
+                        // curIds[index] = gNode.nid;
+                        curIds.push(gNode.nid);
                         index++;
                     }
                     nIds[dNode[0].svNnid] = gNode;
@@ -78,46 +68,52 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
                     dNode[1].forEach((e: any) => {
                         let tmp = {};
                         gNode.children.push(tmp);
-                        buildGraph(tmp, e);
+                        buildHolder(tmp, e);
                     });
                 };
-                buildGraph({}, response.data);
+                buildHolder({}, response.data);
                 this.setState({
                     idsForCard: curIds,
                 });
-                this.loadEdge();
+                this.loadEdge(index);
             })
             .catch((err: any) => console.log(err));
     }
     
-    loadEdge() {
+    loadEdge(ind: number) {
+        let length = this.state.idsForCard.length;
         let maxEChar = 0;
-        let curEdges: any[] = [];
+        let curEdges: JSON[] = [];
+        let act = this;
         this.state.idsForCard.map(function(id, index){
             haskellAPI.getEdge(id)
-            .then((response: any) => {
-                curEdges[index] = response.data;
+            .then((response: JSON) => {
+                curEdges.push(response.data);
                 if(maxEChar < response.data.eCharacteristic){
                     maxEChar = response.data.eCharacteristic;
                 }
+                if (index == length-1) {
+                        act.setState({
+                            edgesForCard: curEdges,
+                            maxECharacteristic: maxEChar,
+                            isLoad: true,
+                        });
+                    }
             })
             .catch(err => {console.log(err)} );
-        });
-        this.setState({
-            edgesForCard: curEdges,
-            maxECharacteristic: maxEChar,
-            isLoad: true,
-        });
+        }
+        );
+       
     }
 
     render() {
         let act = this;
         return(
-            <div className="grid-x" >
-                { this.state.isLoad === true && 
+            <div className = "grid-x" >
+                { this.state.isLoad && 
                     this.state.edgesForCard.map(function(edge, index){
                             return (
-                                <div className="edgeCardContainer">
+                                <div className="edgeCardContainer" >
                                     { <EdgesCard nid = {act.state.idsForCard[index]} edge = {edge} maxValue={act.state.maxECharacteristic}/> }
                                 </div>
                             );                
