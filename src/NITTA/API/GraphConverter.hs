@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
 {-|
 Module      : NITTA.API.GraphConverter
@@ -20,9 +22,12 @@ module NITTA.API.GraphConverter
     , toGraphStructure
     ) where
 
-import           Data.Set      (toList)
+import           Data.Set          (elems, toList)
+import qualified Data.String.Utils as S
 import           Data.Typeable
+import           NITTA.Functions
 import           NITTA.Types
+import           NITTA.Utils       (oneOf)
 
 
 
@@ -31,15 +36,19 @@ data GraphStructure v = GraphStructure {
     edges :: [v]
 }
 
-configureNode nodeParam xs ys = GraphStructure [NodeElement 1 nodeParam] $
-                                               map (\c -> GraphVertex InVertex  (show c) 1) xs ++
-                                                map (\c -> GraphVertex OutVertex (show c) 1) ys
 
-configureLoopNodes nodeParamS nodeParamE x ys =
-    GraphStructure [NodeElement 1 nodeParamS,
-                    NodeElement 2 nodeParamE] $
-                   GraphVertex InVertex (show x) 2 :
-                    map (\c -> GraphVertex OutVertex (show c) 1) ys
+configureNode nodeParam xs ys = GraphStructure
+    { nodes=[ NodeElement 1 nodeParam ]
+    , edges=map (\c -> GraphVertex InVertex  (label c) 1) xs
+         ++ map (\c -> GraphVertex OutVertex (label c) 1) ys
+    }
+
+configureLoopNodes nodeParamS nodeParamE x ys = GraphStructure
+    { nodes=[ NodeElement 1 nodeParamS, NodeElement 2 nodeParamE ]
+    , edges=GraphVertex InVertex (label x) 2
+          : map (\c -> GraphVertex OutVertex (label c) 1) ys
+    }
+
 
 data NodeElement = NodeElement {
     nodeId    :: Int,
@@ -54,8 +63,8 @@ data NodeParam = NodeParam {
     nodeSize  :: String
 }
 
-box     name color = NodeParam{nodeName=name, nodeColor=color, nodeShape="box",     fontSize="20", nodeSize="30"}
-ellipse name color = NodeParam{nodeName=name, nodeColor=color, nodeShape="ellipse", fontSize="20", nodeSize="30"}
+box     name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="box",     fontSize="20", nodeSize="30" }
+ellipse name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="ellipse", fontSize="20", nodeSize="30" }
 
 data EdgeParam = EdgeParam {
     edgeName   :: String,
@@ -79,14 +88,16 @@ data GraphVertex = GraphVertex {
 }
 
 
+
+
 class ToGraphStructure f e | f -> e where
     toGraphStructure :: f -> GraphStructure e
 
-instance (Var v, Typeable x) => ToGraphStructure (F v x) GraphVertex where
-    toGraphStructure fb | insideOut fb = configureLoopNodes (box "#6dc066" $ show fb)
-                                                            (ellipse  "#fa8072" $ "next -> " ++ show inVar)
+instance (Var v, Typeable x, Show x) => ToGraphStructure (F v x) GraphVertex where
+    toGraphStructure fb | insideOut fb = configureLoopNodes (box "#6dc066" $ "prev: " ++ label (head outVars))
+                                                            (ellipse  "#fa8072" $ "throw: " ++ label inVar)
                                                             inVar outVars
-                        | otherwise    = configureNode (box "#cbbeb5" $ show fb) inVars outVars
+                        | otherwise    = configureNode (box "#cbbeb5" $ label fb) inVars outVars
         where
             inVars  = toList $ inputs fb
             outVars = toList $ outputs fb

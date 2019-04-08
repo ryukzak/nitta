@@ -113,6 +113,20 @@ class Patch f v | f -> v where
     patch :: v -> v -> f -> f
 
 
+-- |Type class for making fine label for Functions (mostly for graphviz).
+class Label a where
+    label :: a -> String
+
+instance {-# OVERLAPS #-} Label String where
+    label s = s
+
+instance ( Show s ) => Label s where
+    label s = S.replace "\"" "" $ show s
+
+instance {-# OVERLAPS #-} Label (F v x) where 
+    label (F f) = label f
+
+
 data Lock v
     = Lock
         { locked :: v
@@ -169,6 +183,7 @@ data F v x where
         , Patch f v
         , Locks f v
         , Show f
+        , Label f
         , FunctionSimulation f v x
         , Typeable f, Typeable v, Typeable x
         ) => f -> F v x

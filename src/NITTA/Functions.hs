@@ -63,6 +63,12 @@ import           NITTA.Types
 import           NITTA.Utils
 
 
+instance {-# OVERLAPS #-} ( Show x ) => Label (Constant v x) where label (Constant (X x) _) = show x
+instance {-# OVERLAPS #-} Label (Reg v x) where label Reg{} = ""
+instance {-# OVERLAPS #-} Label (Add v x) where label Add{} = "+"
+instance {-# OVERLAPS #-} Label (Sub v x) where label Sub{} = "-"
+instance {-# OVERLAPS #-} Label (Multiply v x) where label Multiply{} = "*"
+
 
 addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test bench initialization
 
