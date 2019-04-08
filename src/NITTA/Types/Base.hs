@@ -201,7 +201,7 @@ instance Function (F v x) v where
 instance Patch (F v x) v where
     patch v v' (F f) = F $ patch v v' f
 
-instance Patch [F v x] v where
+instance ( Patch b v ) => Patch [b] v where
     patch v v' fs = map (patch v v') fs
 
 instance Locks (F v x) v where
