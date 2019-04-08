@@ -4,7 +4,7 @@ import { haskellAPI } from "../middleware/haskell-api";
 import Graph from "react-graph-vis";
 
 /**
- * Component to display algorihm graph.
+ * Component to display algorithm graph.
  * Takes two arguments:
  * selectedNID - the node id that was selected;
  * view - the current view of program that determines the operation of the graph.
