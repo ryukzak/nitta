@@ -48,7 +48,7 @@ import           Numeric.Interval
 -- TODO: Видимо именно тут заложена самая страшная мина текущей реализации, а именно - отсутствие
 -- типизации. При этом в настоящий момент совершенно не понятно как и главное где учитывать
 -- типизацию данных ходящих по шине.
-type Var v = ( Typeable v, Ord v, Show v )
+type Var v = ( Typeable v, Ord v, Show v, Label v )
 
 class Variables a v | a -> v where
     -- |Получить список идентификаторов связанных переменных.
@@ -118,13 +118,13 @@ class Patch f v | f -> v where
 class Label a where
     label :: a -> String
 
-instance {-# OVERLAPS #-} Label String where
+instance Label String where
     label s = s
 
-instance ( Show s ) => Label s where
-    label s = S.replace "\"" "" $ show s
+instance ( Show (f v x) ) => Label (f v x) where
+    label f = S.replace "\"" "" $ show f
 
-instance {-# OVERLAPS #-} Label (F v x) where 
+instance Label (F v x) where 
     label (F f) = label f
 
 

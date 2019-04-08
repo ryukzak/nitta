@@ -234,7 +234,7 @@ instance ( Ord v ) => FunctionSimulation (Reg v x) v x where
 
 
 data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq )
-instance {-# OVERLAPS #-} ( Show x, Show b ) => Label (Loop b x) where
+instance {-# OVERLAPS #-} ( Show x, Label v ) => Label (Loop v x) where
     label (Loop (X x) _ (I b)) = show x ++ "->" ++ label b
 instance ( Show v, Show x ) => Show (Loop v x) where
     show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join ", " (map show $ elems k2)
