@@ -181,9 +181,11 @@ instance Connected (SPI v x t) where
 
     externalInputPorts PUPorts{ externalPorts=Slave{ slave_mosi, slave_sclk, slave_cs } }
         = [ slave_mosi, slave_sclk, slave_cs ]
+    externalInputPorts _ = undefined
 
     externalOutputPorts PUPorts{ externalPorts=Slave{ slave_miso } }
         = [ slave_miso ]
+    externalOutputPorts _ = undefined
 
 
 instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
@@ -228,6 +230,7 @@ instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
 |               , .cs( { inputPort slave_cs } )
 |               );
 |           |]
+    hardwareInstance _ _ _ _ = undefined
 
 
 receiveSequenece SerialPU{ spuState=State{ spiReceive } } = reverse $ map head $ fst spiReceive
@@ -289,3 +292,4 @@ instance ( Var v, Show t, Show x, Val x ) => IOTest (SPI v x t) v x where
 |           end
 |           |]
         | otherwise = ""
+    componentTestEnviroment _ _ _ _ _ = undefined
