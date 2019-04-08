@@ -34,6 +34,7 @@ import           Data.Typeable
 import           GHC.Generics
 import           NITTA.Types.Poly
 import           NITTA.Types.Time
+import           NITTA.Types.VisJS
 import           Numeric.Interval
 
 
@@ -184,6 +185,7 @@ data F v x where
         , Locks f v
         , Show f
         , Label f
+        , ToVizJS f
         , FunctionSimulation f v x
         , Typeable f, Typeable v, Typeable x
         ) => f -> F v x

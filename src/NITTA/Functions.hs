@@ -4,7 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.Functions
@@ -60,14 +60,40 @@ import           Data.Set          (elems, fromList, union)
 import qualified Data.String.Utils as S
 import           Data.Typeable
 import           NITTA.Types
+import           NITTA.Types.VisJS
 import           NITTA.Utils
 
 
-instance {-# OVERLAPS #-} ( Show x ) => Label (Constant v x) where label (Constant (X x) _) = show x
-instance {-# OVERLAPS #-} Label (Reg v x) where label Reg{} = ""
-instance {-# OVERLAPS #-} Label (Add v x) where label Add{} = "+"
-instance {-# OVERLAPS #-} Label (Sub v x) where label Sub{} = "-"
-instance {-# OVERLAPS #-} Label (Multiply v x) where label Multiply{} = "*"
+-----------------------------------------------------------
+-- *VizJS
+
+instance ( Function (f v x) v, Label (f v x), Var v ) => ToVizJS (f v x) where
+    toVizJS f = GraphStructure
+        { nodes=[ NodeElement 1 $ box "#cbbeb5" $ label f ]
+        , edges=mkEdges InVertex (inputs f) ++ mkEdges OutVertex (outputs f)
+        }
+        where   
+            mkEdges t = map ( \v -> GraphVertex t (label v) 1 ) . elems
+
+instance {-# OVERLAPS #-} ToVizJS (F v x) where
+    toVizJS (F f) = toVizJS f
+
+instance {-# OVERLAPS #-} ( Var v ) => ToVizJS (Loop v x) where
+    toVizJS (Loop _ (O a) (I b))
+        = GraphStructure
+            { nodes=
+                [ NodeElement 1 $ box "#6dc066" $ "prev: " ++ label b
+                , NodeElement 2 $ ellipse  "#fa8072" $ "throw: " ++ label b
+                ]
+            , edges=GraphVertex InVertex (label b) 2
+                :   map (\c -> GraphVertex OutVertex (label c) 1) (elems a)
+            }
+
+box     name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="box",     fontSize="20", nodeSize="30" }
+ellipse name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="ellipse", fontSize="20", nodeSize="30" }
+
+
+-----------------------------------------------------------
 
 
 addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test bench initialization
@@ -187,6 +213,7 @@ instance ( Ord v ) => FunctionSimulation (FramOutput v x) v x where
 
 
 data Reg v x = Reg (I v) (O v) deriving ( Typeable, Eq )
+instance {-# OVERLAPS #-} Label (Reg v x) where label Reg{} = "r"
 instance ( Show v ) => Show (Reg v x) where
     show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = reg(" ++ show k1 ++ ")"
 reg a b = F $ Reg (I a) (O $ fromList b)
@@ -207,6 +234,8 @@ instance ( Ord v ) => FunctionSimulation (Reg v x) v x where
 
 
 data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq )
+instance {-# OVERLAPS #-} ( Show x, Show b ) => Label (Loop b x) where
+    label (Loop (X x) _ (I b)) = show x ++ "->" ++ label b
 instance ( Show v, Show x ) => Show (Loop v x) where
     show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join ", " (map show $ elems k2)
 loop x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
@@ -226,6 +255,7 @@ instance ( Ord v ) => FunctionSimulation (Loop v x) v x where
 
 
 data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq )
+instance {-# OVERLAPS #-} Label (Add v x) where label Add{} = "+"
 instance ( Show v ) => Show (Add v x) where
     show (Add (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " + " ++ show k2
 add a b c = F $ Add (I a) (I b) $ O $ fromList c
@@ -247,6 +277,7 @@ instance ( Ord v, Num x ) => FunctionSimulation (Add v x) v x where
 
 
 data Sub v x = Sub (I v) (I v) (O v) deriving ( Typeable, Eq )
+instance {-# OVERLAPS #-} Label (Sub v x) where label Sub{} = "-"
 instance ( Show v ) => Show (Sub v x) where
     show (Sub (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " - " ++ show k2
 sub a b c = F $ Sub (I a) (I b) $ O $ fromList c
@@ -268,6 +299,7 @@ instance ( Ord v, Num x ) => FunctionSimulation (Sub v x) v x where
 
 
 data Multiply v x = Multiply (I v) (I v) (O v) deriving ( Typeable, Eq )
+instance {-# OVERLAPS #-} Label (Multiply v x) where label Multiply{} = "*"
 instance ( Show v ) => Show (Multiply v x) where
     show (Multiply (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " * " ++ show k2
 multiply a b c = F $ Multiply (I a) (I b) $ O $ fromList c
@@ -292,6 +324,7 @@ data Division v x = Division
     { denom, numer     :: I v
     , quotient, remain :: O v
     } deriving ( Typeable, Eq )
+instance {-# OVERLAPS #-} Label (Division v x) where label Division{} = "/"
 instance ( Show v ) => Show (Division v x) where
     show (Division (I k1) (I k2) (O k3) (O k4))
         =  S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " / " ++ show k2 ++ "; "
@@ -320,6 +353,7 @@ instance ( Ord v, Integral x ) => FunctionSimulation (Division v x) v x where
 
 
 data Constant v x = Constant (X x) (O v) deriving ( Typeable, Eq )
+instance {-# OVERLAPS #-} ( Show x ) => Label (Constant v x) where label (Constant (X x) _) = show x
 instance ( Show v, Show x ) => Show (Constant v x) where
     show (Constant (X x) (O k)) = S.join " = " (map show $ elems k) ++ " = const(" ++ show x ++ ")"
 constant x vs = F $ Constant (X x) $ O $ fromList vs
@@ -366,6 +400,7 @@ instance ( Ord v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
 
 
 newtype Send v x = Send (I v) deriving ( Typeable, Eq, Show )
+instance {-# OVERLAPS #-} Label (Send v x) where label Send{} = "send"
 send a = F $ Send $ I a
 instance ( Ord v ) => Function (Send v x) v where
     inputs (Send i) = variables i
@@ -380,6 +415,7 @@ instance ( Ord v ) => FunctionSimulation (Send v x) v x where
 
 
 newtype Receive v x = Receive (O v) deriving ( Typeable, Eq, Show )
+instance {-# OVERLAPS #-} Label (Receive v x) where label Receive{} = "receive"
 receive a = F $ Receive $ O $ fromList a
 instance ( Ord v ) => Function (Receive v x) v where
     outputs (Receive o) = variables o

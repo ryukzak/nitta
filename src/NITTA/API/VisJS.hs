@@ -27,82 +27,18 @@ import qualified Data.Text         as T
 import           Data.Typeable
 import           NITTA.Functions
 import           NITTA.Types
+import           NITTA.Types.VisJS
 import           NITTA.Utils       (oneOf)
-
-type VisJS = GraphStructure GraphEdge
-
-data GraphStructure v = GraphStructure 
-    { nodes :: [NodeElement]
-    , edges :: [v]
-    }
-
-data NodeElement = NodeElement 
-    { nodeId    :: Int
-    , nodeParam :: NodeParam
-    }
-
-data NodeParam = NodeParam 
-    { nodeName  :: String
-    , nodeColor :: String
-    , nodeShape :: String
-    , fontSize  :: String
-    , nodeSize  :: String
-    }
-
-
-class ToVizJS f where
-    toVizJS :: f -> GraphStructure GraphVertex
-
-
-box     name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="box",     fontSize="20", nodeSize="30" }
-ellipse name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="ellipse", fontSize="20", nodeSize="30" }
-
-data EdgeParam = EdgeParam 
-    { edgeName   :: String
-    , edgeWidth  :: String
-    , fontAllign :: String
-    }
 
 arrow name = EdgeParam name "2" "bottom"
 
-data GraphEdge = GraphEdge 
-    { edgeParam :: EdgeParam
-    , inNodeId  :: Int
-    , outNodeId :: Int
-    }
-
-data VertexType 
-    = InVertex 
-    | OutVertex 
-    deriving ( Eq )
-
-data GraphVertex = GraphVertex 
-    { vertexType   :: VertexType
-    , vertexName   :: String
-    , vertexNodeId :: Int
-    }
 
 
 
 
-instance ( Function (f v x) v, Show (f v x), Var v, Typeable x, Show x ) => ToVizJS (f v x) where
-    toVizJS f = GraphStructure
-        { nodes=[ NodeElement 1 $ box "#cbbeb5" $ label f ]
-        , edges=map (\c -> GraphVertex InVertex  (label c) 1) (S.elems $ inputs f)
-             ++ map (\c -> GraphVertex OutVertex (label c) 1) (S.elems $ outputs f)
-        }
 
 
-instance {-# OVERLAPS #-} ( Var v, Typeable x, Show x ) => ToVizJS (Loop v x) where
-    toVizJS fb@(Loop _ (O a) (I b))
-        = GraphStructure
-            { nodes=
-                [ NodeElement 1 $ box "#6dc066" $ "prev: " ++ label (oneOf a)
-                , NodeElement 2 $ ellipse  "#fa8072" $ "throw: " ++ label b
-                ]
-            , edges=GraphVertex InVertex (label b) 2
-                :   map (\c -> GraphVertex OutVertex (label c) 1) (S.elems a)
-            }
+
 
 
 
