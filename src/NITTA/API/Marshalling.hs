@@ -17,18 +17,17 @@ Stability   : experimental
 module NITTA.API.Marshalling where
 
 import           Data.Aeson
-import qualified Data.Map                 as M
-import qualified Data.Set                 as S
-import qualified Data.String.Utils        as S
-import qualified Data.Text                as T
+import qualified Data.Map              as M
+import qualified Data.Set              as S
+import qualified Data.String.Utils     as S
+import qualified Data.Text             as T
 import           Data.Typeable
-import           NITTA.API.GraphConverter
 import           NITTA.BusNetwork
 import           NITTA.DataFlow
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
-import           NITTA.Utils              (transfered)
+import           NITTA.Utils           (transfered)
 import           Numeric.Interval
 import           Servant
 
@@ -183,37 +182,3 @@ instance ToJSON (FX m b) where
 -- *System
 instance ( Show a, Bounded a ) => ToJSON (Interval a) where
     toJSON = String . T.pack . S.replace (show (maxBound :: a)) "∞" . show
-
-
-
--- *Graph converting
-instance ToJSON (GraphStructure GraphEdge) where
-    toJSON GraphStructure{ nodes, edges } = object
-        [ "nodes" .= nodes
-        , "edges" .= edges
-        ]
-
-instance ToJSON NodeElement where
-    toJSON NodeElement{ nodeId, nodeParam = NodeParam{ nodeName, nodeColor, nodeShape, fontSize, nodeSize } } = object
-        [ "id"    .= nodeId
-        , "label" .= nodeName
-        , "color" .= nodeColor
-        , "shape" .= nodeShape
-        , "size"  .= nodeSize
-        , "font"  .= object
-            [
-                "size" .= fontSize
-            ]
-        ]
-
-instance ToJSON GraphEdge where
-    toJSON GraphEdge{ edgeParam = EdgeParam { edgeName, edgeWidth, fontAllign }, inNodeId, outNodeId } = object
-        [ "from"  .= outNodeId
-        , "to"    .= inNodeId
-        , "label" .= edgeName
-        , "width" .= edgeWidth
-        , "font"  .= object
-            [
-                "allign" .= fontAllign
-            ]
-        ]

@@ -16,9 +16,9 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     NITTA.API
-                     , NITTA.API.GraphConverter
                      , NITTA.API.Marshalling
                      , NITTA.API.REST
+                     , NITTA.API.VisJS
                      , NITTA.BusNetwork
                      , NITTA.DataFlow
                      , NITTA.Frontend

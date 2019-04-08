@@ -23,22 +23,21 @@ module NITTA.API.REST
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Data.Aeson
-import qualified Data.Map                 as M
+import qualified Data.Map               as M
 import           Data.Maybe
-import qualified Data.Tree                as T
+import qualified Data.Tree              as T
 import           GHC.Generics
-import           NITTA.API.GraphConverter (GraphEdge, GraphStructure,
-                                           toGraphStructure)
-import           NITTA.API.Marshalling    ()
+import           NITTA.API.Marshalling  ()
+import           NITTA.API.VisJS        (VisJS, algToVizJS)
 import           NITTA.BusNetwork
 import           NITTA.DataFlow
-import           NITTA.Project            (writeAndRunTestBench)
+import           NITTA.Project          (writeAndRunTestBench)
 import           NITTA.SynthesisMethod
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
 import           Servant
-import           System.FilePath          (joinPath)
+import           System.FilePath        (joinPath)
 
 
 
@@ -59,7 +58,7 @@ type WithSynthesis title v x t
     :<|> "edge" :> Get '[JSON] (Maybe (Edge title v x t))
     :<|> "model" :> Get '[JSON] (ModelState title v x t)
     :<|> "endpointOptions" :> Get '[JSON] [(title, Option (EndpointDT v t))]
-    :<|> "model" :> "alg" :> Get '[JSON] (GraphStructure GraphEdge)
+    :<|> "model" :> "alg" :> Get '[JSON] VisJS
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
     :<|> SimpleCompilerAPI title v x t
 
@@ -68,7 +67,7 @@ withSynthesis root nId
     :<|> liftIO ( nOrigin <$> getNodeIO root nId )
     :<|> liftIO ( nModel <$> getNodeIO root nId )
     :<|> liftIO ( endpointOptions . processor . nModel <$> getNodeIO root nId )
-    :<|> liftIO ( toGraphStructure . alg . nModel <$> getNodeIO root nId )
+    :<|> liftIO ( algToVizJS . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
         unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
