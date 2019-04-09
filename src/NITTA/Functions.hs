@@ -158,7 +158,7 @@ reorderAlgorithm alg = orderAlgorithm' [] alg
      where
         orderAlgorithm' _ [] = []
         orderAlgorithm' vs fs
-            | let insideOuts = filter insideOut fs
+            | let insideOuts = filter isBreakLoop fs
             , not $ null insideOuts
             , let insideOutsOutputs = elems $ unionsMap outputs insideOuts
             = case filter (not . null . intersect insideOutsOutputs . elems . inputs) insideOuts of
@@ -182,7 +182,7 @@ framInput addr vs = F $ FramInput addr $ O $ fromList vs
 
 instance ( Ord v ) => Function (FramInput v x) v where
     outputs (FramInput _ o) = variables o
-    isCritical _ = True
+    isInternalLockPossible _ = True
 instance ( Ord v ) => Patch (FramInput v x) v where
     patch v v' (FramInput x a) = FramInput x $ patch v v' a
 instance Locks (FramInput v x) v where locks _ = []
@@ -200,7 +200,7 @@ framOutput addr v = F $ FramOutput addr $ I v
 
 instance ( Ord v ) => Function (FramOutput v x) v where
     inputs (FramOutput _ o) = variables o
-    isCritical _ = True
+    isInternalLockPossible _ = True
 instance ( Ord v ) => Patch (FramOutput v x) v where
     patch v v' (FramOutput x a) = FramOutput x $ patch v v' a
 instance Locks (FramOutput v x) v where locks _ = []
@@ -243,7 +243,7 @@ loop x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
 instance ( Ord v ) => Function (Loop v x) v where
     inputs  (Loop _ _a b) = variables b
     outputs (Loop _ a _b) = variables a
-    insideOut _ = True
+    isBreakLoop _ = True
 instance ( Ord v ) => Patch (Loop v x) v where
     patch v v' (Loop x a b) = Loop x (patch v v' a) (patch v v' b)
 instance Locks (Loop v x) v where locks _ = []

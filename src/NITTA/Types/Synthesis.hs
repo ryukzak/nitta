@@ -343,7 +343,7 @@ measure
         ChCntx{ possibleDeadlockBinds, bindingAlternative, nModel, alreadyBindedVariables, waves }
         (BindingOption f title)
     = BindCh
-        { critical=isCritical f
+        { critical=isInternalLockPossible f
         , alternative=fromIntegral $ length (bindingAlternative M.! f)
         , allowDataFlow=fromIntegral $ length $ unionsMap variables $ filter isTarget $ optionsAfterBind f title nModel
         , restless=fromMaybe 0 $ do
@@ -357,7 +357,7 @@ measure
                 n = fromIntegral $ length $ intersection is alreadyBindedVariables
                 nAll = fromIntegral $ length is
             in if nAll == 0 then 1 else n / nAll 
-        , wave=if insideOut f 
+        , wave=if isBreakLoop f 
             then 0 
             else let
                     allInputs = S.elems $ inputs f 

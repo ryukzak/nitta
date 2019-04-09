@@ -127,7 +127,7 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                     <p>
                         <b>&emsp;tag: </b>{this.state.eCharacteristics.tag}
                         <br/>
-                        <b>&emsp;isCritical: </b>{String(this.state.eCharacteristics.critical)}
+                        <b>&emsp;isInternalLockPossible: </b>{String(this.state.eCharacteristics.critical)}
                         <br/>
                         <b>&emsp;isPossibleDeadlock </b>{String(this.state.eCharacteristics.possibleDeadlock)}
                     </p>

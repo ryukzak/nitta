@@ -124,7 +124,7 @@ instance ( Var v
             binded = bnRemains ++ concat (M.elems bnBinded)
             sortFBs [] _ = []
             sortFBs fbs cntx
-                = let (ready, notReady) = partition (\fb -> insideOut fb || all (`elem` cntx) (inputs fb)) fbs
+                = let (ready, notReady) = partition (\fb -> isBreakLoop fb || all (`elem` cntx) (inputs fb)) fbs
                 in case ready of
                     [] -> error "Cycle in algorithm!"
                     _  -> ready ++ sortFBs notReady (elems (unionsMap outputs ready) ++ cntx)

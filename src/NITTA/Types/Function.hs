@@ -121,15 +121,11 @@ class Function f v | f -> v where
     outputs :: f -> S.Set v
     outputs _ = S.empty
     -- |Is function break eval loop.
-
-    -- FIXME: rename to isBreakLoop
-    insideOut :: f -> Bool
-    insideOut _ = False
-    -- |Sometimes, one function can cause internal process unit lock for another function.
-    
-    -- FIXME: rename to isInternalLockPossible
-    isCritical :: f -> Bool
-    isCritical _ = False
+    isBreakLoop :: f -> Bool
+    isBreakLoop _ = False
+    -- |Sometimes, one function can cause internal process unit lock for another function.    
+    isInternalLockPossible :: f -> Bool
+    isInternalLockPossible _ = False
 
 
 
@@ -151,8 +147,8 @@ instance Eq (F v x) where
     F a == F b = show a == show b
 
 instance Function (F v x) v where
-    insideOut (F f) = insideOut f
-    isCritical (F f) = isCritical f
+    isBreakLoop (F f) = isBreakLoop f
+    isInternalLockPossible (F f) = isInternalLockPossible f
     inputs (F f) = inputs f
     outputs (F f) = outputs f
 
