@@ -20,11 +20,16 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Types.Function
-    ( I(..), O(..), X(..)
-    , Var, Variables(..)
-    , F(..), Function(..)
+    ( -- *Variables
+      Var, Variables(..)
+      -- *Function interface description
+    , I(..), O(..), X(..)
     , Lock(..), Locks(..)
+      -- *Function description
+    , F(..), Function(..)
+      -- *Application level simulation
     , FunctionSimulation(..), Cntx(..)
+      -- *Other
     , Patch(..)
     , Label(..)
     ) where
@@ -40,10 +45,8 @@ import           NITTA.Types.VisJS
 
 
 -----------------------------------------------------------
--- *Variables
 
-
--- |Variable identifier.
+-- |Variable identifier. Used for simplify type description.
 type Var v = ( Typeable v, Ord v, Show v, Label v )
 
 -- |Type class of something, which is related to varibles.
@@ -54,8 +57,6 @@ class Variables a v | a -> v where
 
 
 -----------------------------------------------------------
--- *Function interface description
-
 
 -- |Input variable.
 newtype I v = I v
@@ -109,8 +110,6 @@ data Lock v
 
 
 -----------------------------------------------------------
--- *Function
-
 
 -- |Type class for application algorithm functions.
 class Function f v | f -> v where
@@ -178,10 +177,8 @@ instance Variables (F v x) v where
 
 
 
--- *Application level simulation
-
+-----------------------------------------------------------
 -- FIXME: Think about: implement algSimulation here..
-
 
 -- |The type class for function simulation.
 class FunctionSimulation f v x | f -> v x where
@@ -213,8 +210,6 @@ instance ( Show v, Show x ) => Show (Cntx v x) where
 
 
 -----------------------------------------------------------
--- *Other
-
 
 -- |Patch class allows replacing one variable by another. Especially for algorithm refactor.
 class Patch f v | f -> v where
