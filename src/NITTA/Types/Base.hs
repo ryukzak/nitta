@@ -9,7 +9,7 @@
 {-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.Types.Base
@@ -21,126 +21,24 @@ Stability   : experimental
 -}
 module NITTA.Types.Base
     ( module NITTA.Types.Base
+    , module NITTA.Types.Function
     , module NITTA.Types.Time
     ) where
 
 import           Data.Default
-import           Data.List
-import qualified Data.Map          as M
 import           Data.Proxy
 import qualified Data.Set          as S
 import qualified Data.String.Utils as S
 import           Data.Typeable
 import           GHC.Generics
 import           NITTA.Types.Poly
+import           NITTA.Types.Function
 import           NITTA.Types.Time
-import           NITTA.Types.VisJS
 import           Numeric.Interval
-
-
-
----------------------------------------------------------------------
--- * Переменные и пересылаемые данные
-
-
--- |Класс идентификатора переменной.
-
--- TODO: Видимо именно тут заложена самая страшная мина текущей реализации, а именно - отсутствие
--- типизации. При этом в настоящий момент совершенно не понятно как и главное где учитывать
--- типизацию данных ходящих по шине.
-type Var v = ( Typeable v, Ord v, Show v, Label v )
-
-class Variables a v | a -> v where
-    -- |Получить список идентификаторов связанных переменных.
-    variables :: a -> S.Set v
-
-
-
--- |Группа типов данных для описания параметров функций
-data I v = I v -- ^Загружаемые значения.
-    deriving (Show, Eq, Ord)
-data O v = O (S.Set v) -- ^Выгружаемые значения.
-    deriving (Eq, Ord)
-instance ( Show v ) => Show (O v) where
-    show (O vs) = "O " ++ show (S.elems vs)
-data X x = X x -- ^Выгружаемые значения.
-    deriving (Show, Eq)
-
-instance Variables (I v) v where
-    variables (I v) = S.singleton v
-instance Variables (O v) v where
-    variables (O v) = v
-
-instance ( Eq v ) => Patch (I v) v where
-    patch v v' i@(I v0)
-        | v0 == v = I v'
-        | otherwise = i
-instance ( Ord v ) => Patch (O v) v where
-    patch v v' o@(O vs)
-        | v `S.member` vs = O $ S.fromList (v':(S.elems vs \\ [v]))
-        | otherwise = o
-
 
 
 ---------------------------------------------------------------------
 -- * Функциональные блоки
-
--- |Класс функциональных блоков. Описывает все необходмые для работы компилятора свойства.
-class Function f v | f -> v where
-    inputs :: f -> S.Set v
-    inputs _ = S.empty
-    outputs :: f -> S.Set v
-    outputs _ = S.empty
-    -- |Необходимость "выворачивания" функций при визуализации вычислительного процесса. Выглядит
-    -- примерно так:
-    --
-    -- 1. Начинается вместе с вычислительным циклом.
-    -- 2. Прерывается.
-    -- 3. Возобнавляется и выполняется до конца вычислительного цикла.
-    insideOut :: f -> Bool
-    insideOut _ = False
-    -- |Информация для приоритизации функций в процессе диспетчеризации. Критические функциональные
-    -- блоки - блоки, жёстко блокирующие внутрении ресурсы PU. Такие блоки следует привязывать одними
-    -- из первых, так как в противном случае требуемые ресурс может быть занят другим ФБ, а
-    -- следовательно заблокировать процесс синтеза.
-    --
-    -- Примечание: на самом деле это не правильно, так как критичность на самом деле определяется
-    -- связкой f + pu. К примеру - использование Loop для Accum.
-    isCritical :: f -> Bool
-    isCritical _ = False
-
--- |Patch class allows replacing one variable by another. Especially for algorithm refactor.
-class Patch f v | f -> v where
-    patch :: v -> v -> f -> f
-
-
--- |Type class for making fine label for Functions (mostly for graphviz).
-class Label a where
-    label :: a -> String
-
-instance Label String where
-    label s = s
-
-instance ( Show (f v x) ) => Label (f v x) where
-    label f = S.replace "\"" "" $ show f
-
-instance Label (F v x) where 
-    label (F f) = label f
-
-
-data Lock v
-    = Lock
-        { locked :: v
-        , lockBy :: v
-        }
-    deriving ( Show )
-
-class Locks x v | x -> v where
-    -- |Возвращает зависимости между аргументами функционального блока. Формат: (заблокированное
-    -- значение, блокирующее значение).
-    locks :: x -> [Lock v]
-
-
 
 class WithFunctions a f | a -> f where
     -- |Получить список связанных функциональных блоков.
@@ -148,80 +46,8 @@ class WithFunctions a f | a -> f where
 
 
 
-data Cntx v x
-    = Cntx
-        { cntxVars    :: M.Map v [x]
-        , cntxInputs  :: M.Map v [x]
-        , cntxOutputs :: M.Map v [x]
-        , cntxFram    :: M.Map (Int, v) [x]
-        }
-
--- FIXME: Incorrect output if cntxInput has different amount of data.
-instance ( Show v, Show x ) => Show (Cntx v x) where
-    show Cntx{ cntxVars, cntxInputs, cntxOutputs }
-        = let
-            dt = concat
-                [ map (\(v, xs) -> reverse $ map ( filter (/= '"') . (("q." ++ show v ++ ":") ++) . show ) xs) $ M.assocs cntxInputs
-                , map (\(v, xs) -> reverse $ map ( filter (/= '"') . ((show v ++ ":") ++) . show ) xs) $ M.assocs cntxOutputs
-                , map (\(v, xs) -> reverse $ map ( filter (/= '"') . ((show v ++ ":") ++) . show ) xs) $ M.assocs cntxVars
-                ]
-        in S.join "\n" $ map (S.join "\t") $ transpose dt
-
-instance Default (Cntx v x) where
-    def = Cntx M.empty M.empty M.empty M.empty
-
-
-class FunctionSimulation f v x | f -> v x where
-    simulate :: Cntx v x -> f -> Maybe (Cntx v x)
-
-
-
--- |Контейнер для функциональных блоков. Необходимо для формирования гетерогенных списков.
-data F v x where
-    F ::
-        ( Ord v
-        , Function f v
-        , Patch f v
-        , Locks f v
-        , Show f
-        , Label f
-        , ToVizJS f
-        , FunctionSimulation f v x
-        , Typeable f, Typeable v, Typeable x
-        ) => f -> F v x
-instance Show (F v x) where
-    show (F f) = S.replace "\"" "" $ show f
-
-instance Function (F v x) v where
-    insideOut (F f) = insideOut f
-    isCritical (F f) = isCritical f
-    inputs (F f) = inputs f
-    outputs (F f) = outputs f
-
-instance Patch (F v x) v where
-    patch v v' (F f) = F $ patch v v' f
-
-instance ( Patch b v ) => Patch [b] v where
-    patch v v' fs = map (patch v v') fs
-
-instance Locks (F v x) v where
-    locks (F f) = locks f
-
-instance Variables (F v x) v where
-    variables (F f) = inputs f `S.union` outputs f
-
-instance Eq (F v x) where
-    F a == F b = show a == show b
-
-instance Ord (F v x) where
-    (F a) `compare` (F b) = show a `compare` show b
-
-instance FunctionSimulation (F v x) v x where
-    simulate cntx (F f) = simulate cntx f
-
-
 ---------------------------------------------------------------------
--- * Описание вычислительного процесса
+-- *Computational process
 
 
 -- |Описание многоуровневого вычислительного процесса PU. Подход к моделированию вдохновлён ISO
@@ -413,7 +239,7 @@ instance DecisionType (RefactorDT v) where
 
 
 ---------------------------------------------------------------------
--- * Вычислительные блоки (PU)
+-- * Processor & Process Unit (PU)
 
 
 -- |Описание вычислительного блока. Используется в совокупности с Decision по интересующим группам

@@ -36,6 +36,7 @@ library
                      , NITTA.SynthesisMethod
                      , NITTA.Types
                      , NITTA.Types.Base
+                     , NITTA.Types.Function
                      , NITTA.Types.Network
                      , NITTA.Types.Poly
                      , NITTA.Types.Project
