@@ -42,6 +42,7 @@ library
                      , NITTA.Types.Project
                      , NITTA.Types.Synthesis
                      , NITTA.Types.Time
+                     , NITTA.Types.Value
                      , NITTA.Types.VisJS
                      , NITTA.Utils
                      , NITTA.Utils.Lens

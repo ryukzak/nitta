@@ -279,10 +279,6 @@ class ProcessUnit pu v x t | pu -> v x t where
     setTime :: t -> pu -> pu
 
 
-class WithX pu x | pu -> x where
-    proxyX :: pu -> Proxy x
-    proxyX _ = Proxy
-
 
 bind fb pu = case tryBind fb pu of
     Right pu' -> pu'
