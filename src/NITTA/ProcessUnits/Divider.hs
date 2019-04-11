@@ -23,6 +23,7 @@ module NITTA.ProcessUnits.Divider
     ) where
 
 import           Control.Monad                 (void, when)
+import           Data.Bits                     (finiteBitSize)
 import           Data.Default
 import           Data.List                     (partition, sortBy)
 import           Data.Maybe                    (fromMaybe)
@@ -79,7 +80,6 @@ divider pipeline mock = Divider
 instance ( Time t ) => Default (Divider v x t) where
     def = divider 4 True
 
-instance WithX (Divider v x t) x
 
 instance ( Ord t ) => WithFunctions (Divider v x t) (F v x) where
     functions Divider{ process_, remains, jobs }
@@ -340,7 +340,7 @@ instance ( Val x, Show t
             else FromLibrary "div/div.v"
         , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
         ]
-    hardwareInstance title pu@Divider{ mock, pipeline }
+    hardwareInstance title _pu@Divider{ mock, pipeline }
             Enviroment
                 { net=NetEnv
                     { signal
@@ -352,11 +352,11 @@ instance ( Val x, Show t
                 }
             PUPorts{ oe, oeSel, wr, wrSel } =
         [qc|pu_div
-    #( .DATA_WIDTH( { widthX pu } )
+    #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
      , .ATTR_WIDTH( { parameterAttrWidth } )
      , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
      , .PIPELINE( { pipeline } )
-     , .SCALING_FACTOR_POWER( { scalingFactorPowerOfProxy $ proxyX pu } )
+     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
      , .MOCK_DIV( { bool2verilog mock } )
      ) { title }
     ( .clk( { signalClk } )
@@ -395,4 +395,5 @@ instance ( Var v, Time t
                     _ -> error "testBenchDescription wrong signal"
                 , tbcCtrl= \Microcode{ oeSignal, oeSelSignal, wrSignal, wrSelSignal } ->
                     [qc|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]
+                , tbDataBusWidth=finiteBitSize (def :: x)
                 }

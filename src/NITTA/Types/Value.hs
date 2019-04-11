@@ -1,8 +1,8 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE KindSignatures        #-}
+{-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE KindSignatures         #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
@@ -14,16 +14,14 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Types.Value
-  ( IntX(..)
-  , FX(..)
+  ( -- *Type classes
+    FixedPointCompatible(..)
   , Val(..)
-  , WithX(..)
-  , widthX
   , scalingFactor
-  , scalingFactorPowerOfProxy
+    -- *Value types
+  , IntX(..)
+  , FX(..)
   ) where
-
--- FIXME: documenting and refactore (move to FiniteBits)
 
 import           Data.Bits
 import           Data.Default
@@ -33,33 +31,33 @@ import           Data.Typeable
 import           GHC.TypeLits
 
 
-class WithX pu x | pu -> x where
-    proxyX :: pu -> Proxy x
-    proxyX _ = Proxy
-
-
-class ( Typeable x, Read x, WithX x x ) => Val x where
+-- |Type class for Value types.
+class ( Typeable x, Read x, FixedPointCompatible x, Default x ) => Val x where
     showTypeOf :: Proxy x -> String
-    valueWidth :: Proxy x -> Integer
-    scalingFactorPower :: x -> Integer
     verilogInteger :: x -> Integer
 
-widthX pu = valueWidth $ proxyX pu
-scalingFactorPowerOfProxy p = scalingFactorPower (undefined `asProxyTypeOf` p)
+
+-- |Type class for values, which contain information about fractional part of value (for fixed point arithmetics).
+class ( FiniteBits a ) => FixedPointCompatible a where
+    scalingFactorPower :: a -> Integer
+    fractionalBitSize :: a -> Int
+
+
+scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 
 
 -- for Int
-instance WithX Int Int
-
 instance Val Int where
     showTypeOf _ = "Int"
-    valueWidth _ = 32
-    scalingFactorPower _ = 0
     verilogInteger = fromIntegral
 
+instance FixedPointCompatible Int where
+    scalingFactorPower _ = 0
+    fractionalBitSize _ = 0
 
 
--- |Integer number with specific width.
+
+-- |Integer number with specific bit width.
 newtype IntX (w :: Nat) = IntX Integer
     deriving ( Show, Eq, Ord )
 
@@ -106,13 +104,16 @@ instance Bits ( IntX w ) where
     bit i = IntX $ bit i
     popCount ( IntX a ) = popCount a
 
-instance WithX (IntX w) (IntX w)
+instance ( KnownNat w ) => FiniteBits ( IntX w ) where
+    finiteBitSize _ = fromInteger $ natVal (Proxy :: Proxy w)
 
 instance ( KnownNat w ) => Val ( IntX w ) where
-    showTypeOf p = "IntX" ++ show (valueWidth p)
-    valueWidth _ = natVal (Proxy :: Proxy w)
-    scalingFactorPower _ = 0
+    showTypeOf _ = "IntX" ++ show (natVal (Proxy :: Proxy w))
     verilogInteger (IntX x) = fromIntegral x
+
+instance ( KnownNat w ) => FixedPointCompatible (IntX w) where
+    scalingFactorPower _ = 0
+    fractionalBitSize _ = 0
 
 
 
@@ -125,8 +126,6 @@ instance ( KnownNat w ) => Val ( IntX w ) where
 -- with 1 magnitude bit and 15 fractional bits in a 16 bit word.[3]
 newtype FX (m :: Nat) (b :: Nat) = FX Integer
     deriving ( Eq, Ord )
-
-scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 
 instance ( KnownNat m, KnownNat b ) => Show ( FX m b ) where
     show t@(FX x) = show (fromIntegral x / scalingFactor t :: Double)
@@ -193,24 +192,20 @@ instance Bits ( FX m b ) where
     popCount = undefined
     -- popCount ( FX a ) = popCount a
 
-
-instance WithX ( FX m b ) ( FX m b )
+instance ( KnownNat b ) => FiniteBits ( FX m b ) where
+    finiteBitSize _ = fromInteger $ natVal (Proxy :: Proxy b)
 
 instance ( KnownNat m, KnownNat b ) => Val ( FX m b ) where
     showTypeOf _ = let
-            (m, b) = fxMB (undefined :: FX m b)
+            m = natVal (Proxy :: Proxy m)
+            b = natVal (Proxy :: Proxy b)
         in "FX" ++ show m ++ "_" ++ show b
-    valueWidth _ = natVal (Proxy :: Proxy b)
-    scalingFactorPower x
-        = let
-            (m, b) = fxMB x
-        in b - m
     verilogInteger (FX x) = fromIntegral x
 
-fxMB x
-    = let
-        proxyM :: FX m b -> Proxy m
-        proxyM _ = Proxy
-        proxyB :: FX m b -> Proxy b
-        proxyB _ = Proxy
-    in (natVal $ proxyM x, natVal $ proxyB x)
+instance ( KnownNat m, KnownNat b ) => FixedPointCompatible ( FX m b ) where
+    fractionalBitSize x = finiteBitSize x - fromInteger (natVal (Proxy :: Proxy m))
+    scalingFactorPower _
+        = let
+            m = natVal (Proxy :: Proxy m)
+            b = natVal (Proxy :: Proxy b)
+        in b - m

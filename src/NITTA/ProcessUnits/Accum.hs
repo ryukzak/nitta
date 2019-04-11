@@ -21,6 +21,7 @@ module NITTA.ProcessUnits.Accum
   , PUPorts(..)
   ) where
 
+import           Data.Bits                           (finiteBitSize)
 import           Data.Default
 import           Data.List                           (intersect, partition,
                                                       (\\))
@@ -134,9 +135,9 @@ instance ( Val x ) => TargetSystemComponent (Accum v x t) where
   moduleName _ _ = "pu_accum"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software _ _ = Empty
-  hardwareInstance title pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} =
+  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..} =
     [qc|pu_accum
-    #( .DATA_WIDTH( { widthX pu } )
+    #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
      , .ATTR_WIDTH( { show parameterAttrWidth } )
      ) { title }
     ( .clk( { signalClk } )

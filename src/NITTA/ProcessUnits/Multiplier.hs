@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
@@ -130,6 +131,7 @@ module NITTA.ProcessUnits.Multiplier
     ) where
 
 import           Control.Monad                 (when)
+import           Data.Bits                     (finiteBitSize)
 import           Data.Default
 import           Data.List                     (find, partition, (\\))
 import           Data.Set                      (elems, fromList, member)
@@ -592,12 +594,12 @@ instance ( Time t, Var v, Val x
     --
     -- Take attention to function @fixIndent@. This function allows a programmer to use
     -- normal code block indentation.
-    hardwareInstance title pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
+    hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
         = fixIndent [qc|
 |           pu_multiplier #
-|                   ( .DATA_WIDTH( { widthX pu } )
+|                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                   , .ATTR_WIDTH( { parameterAttrWidth } )
-|                   , .SCALING_FACTOR_POWER( { scalingFactorPowerOfProxy $ proxyX pu } )
+|                   , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
 |                   , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
 |                   ) { title }
 |               ( .clk( {signalClk} )
@@ -614,7 +616,6 @@ instance ( Time t, Var v, Val x
 
 
 -- As you can see ahead, this class uses to get data bus width from the type level (@x@ type variable).
-instance WithX (Multiplier v x t) x
 instance IOTest (Multiplier v x t) v x
 
 
@@ -669,5 +670,6 @@ instance ( Var v, Time t
                   -- This is described below. Notice, that work with data bus is realized in snippet.
                 , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
                     [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
+                , tbDataBusWidth=finiteBitSize (def :: x)
                 }
 

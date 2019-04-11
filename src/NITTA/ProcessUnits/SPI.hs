@@ -25,6 +25,7 @@ module NITTA.ProcessUnits.SPI
     , slaveSPI
     ) where
 
+import           Data.Bits                           (finiteBitSize)
 import           Data.Default
 import           Data.Maybe                          (catMaybes)
 import           Data.Set                            (elems, fromList,
@@ -205,12 +206,12 @@ instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
     software _ pu = Immidiate "transport.txt" $ show pu
     hardwareInstance
             title
-            pu@SerialPU{ spuState=State{ spiBounceFilter } }
+            SerialPU{ spuState=State{ spiBounceFilter } }
             Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
             PUPorts{ externalPorts=Slave{..}, .. }
         = fixIndent [qc|
 |           pu_slave_spi
-|               #( .DATA_WIDTH( { widthX pu } )
+|               #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                , .ATTR_WIDTH( { show parameterAttrWidth } )
 |                , .BOUNCE_FILTER( { show spiBounceFilter } )
 |                ) { title }
@@ -245,7 +246,7 @@ instance ( Var v, Show t, Show x, Val x ) => IOTest (SPI v x t) v x where
             PUPorts{ externalPorts=Slave{..}, .. }
             cntxs
         | let
-            wordWidth = fromIntegral $ widthX pu
+            wordWidth = finiteBitSize (def :: x)
             frameWordCount = max (length $ receiveSequenece pu) (length $ sendSequenece pu)
             frameWidth = frameWordCount * wordWidth
             ioCycle cntx = fixIndent [qc|

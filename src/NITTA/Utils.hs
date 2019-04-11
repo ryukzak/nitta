@@ -60,7 +60,7 @@ module NITTA.Utils
     ) where
 
 import           Control.Monad.State (State, get, modify', put, runState)
-import           Data.Bits           (setBit, testBit)
+import           Data.Bits           (finiteBitSize, setBit, testBit)
 import           Data.Default
 import           Data.List           (maximumBy, minimumBy, nub, sortOn)
 import           Data.Maybe          (isJust, mapMaybe)
@@ -136,8 +136,8 @@ values2dump vs
 hdlValDump x
     = let
         v = verilogInteger x
-        w = valueWidth $ proxyX x
-        bins = map (testBit v) $ reverse [0 .. fromInteger w - 1]
+        w = finiteBitSize x
+        bins = map (testBit v) $ reverse [0 .. w - 1]
 
         lMod = length bins `mod` 4
         bins' = groupBy4 $ if lMod == 0

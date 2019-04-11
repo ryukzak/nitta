@@ -181,7 +181,7 @@ end
 
 snippetTestBench
         Project{ projectName, processorModel=pu, testCntx }
-        TestBenchSetup{ tbcSignals, tbcSignalConnect, tbcPorts, tbcCtrl }
+        TestBenchSetup{ tbcSignals, tbcSignalConnect, tbcPorts, tbcCtrl, tbDataBusWidth }
     = let
         mn = moduleName projectName pu
         p@Process{ steps, nextTick } = process pu
@@ -233,7 +233,7 @@ snippetTestBench
     in fixIndent [qc|
 |       {"module"} {mn}_tb();
 |
-|       parameter DATA_WIDTH = 32;
+|       parameter DATA_WIDTH = { tbDataBusWidth };
 |       parameter ATTR_WIDTH = 4;
 |
 |       /*

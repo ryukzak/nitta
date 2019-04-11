@@ -13,7 +13,6 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
 module NITTA.API.VisJS
     ( VisJS
     , algToVizJS
@@ -31,16 +30,6 @@ import           NITTA.Types.VisJS
 import           NITTA.Utils       (oneOf)
 
 arrow name = EdgeParam name "2" "bottom"
-
-
-
-
-
-
-
-
-
-
 
 algToVizJS fbs = let
         graphs                        = map toVizJS fbs

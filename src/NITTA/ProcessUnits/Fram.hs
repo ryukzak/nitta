@@ -66,7 +66,7 @@ module NITTA.ProcessUnits.Fram
 
 import           Control.Monad                 ((>=>))
 import           Data.Array
-import           Data.Bits                     (testBit)
+import           Data.Bits                     (finiteBitSize, testBit)
 import           Data.Default
 import           Data.Either
 import           Data.Foldable
@@ -116,7 +116,6 @@ instance ( Default t
       defaultSize = 16
       cells = map (\(i, c) -> c{ initialValue=0x1000 + i }) $ zip [0..] $ repeat def
 
-instance WithX (Fram v x t) x
 
 instance WithFunctions (Fram v x t) (F v x) where
     functions Fram{ frBindedFB } = frBindedFB
@@ -573,47 +572,48 @@ instance ( Var v
                , wr=Signal 1
                , addr=map Signal [ 2, 3, 4, 5 ]
                }
-      testBenchImp =
-        [qc|module { moduleName projectName pu }_tb();
-parameter DATA_WIDTH = 32;
-parameter ATTR_WIDTH = 4;
-
-/*
-Context:
-{ show cntx }
-
-Algorithm:
-{ unlines $ map show $ functions pu }
-
-Process:
-{ unlines $ map show steps }
-*/
-
-reg clk, rst, wr, oe;
-reg [3:0] addr;
-reg [DATA_WIDTH-1:0]  data_in;
-reg [ATTR_WIDTH-1:0]  attr_in;
-wire [DATA_WIDTH-1:0] data_out;
-wire [ATTR_WIDTH-1:0] attr_out;
-
-{ hardwareInstance' }
-
-{ snippetDumpFile $ moduleName projectName pu }
-{ snippetClkGen }
-
-initial
-  begin
-    $dumpfile("{ moduleName projectName pu }_tb.vcd");
-    $dumpvars(0, { moduleName projectName pu }_tb);
-    @(negedge rst);
-    forever @(posedge clk);
-  end
-
-{ snippetInitialFinish $ controlSignals pu }
-{ snippetInitialFinish $ testDataInput pu cntx }
-{ snippetInitialFinish $ testDataOutput projectName pu cntx }
-
-endmodule|]
+      testBenchImp = fixIndent [qc|
+|       module { moduleName projectName pu }_tb();
+|       parameter DATA_WIDTH = { finiteBitSize (def :: x) };
+|       parameter ATTR_WIDTH = 4;
+|
+|       /*
+|       Context:
+|       { show cntx }
+|
+|       Algorithm:
+|       { unlines $ map show $ functions pu }
+|
+|       Process:
+|       { unlines $ map show steps }
+|       */
+|
+|       reg clk, rst, wr, oe;
+|       reg [3:0] addr;
+|       reg [DATA_WIDTH-1:0]  data_in;
+|       reg [ATTR_WIDTH-1:0]  attr_in;
+|       wire [DATA_WIDTH-1:0] data_out;
+|       wire [ATTR_WIDTH-1:0] attr_out;
+|
+|       { hardwareInstance' }
+|
+|       { snippetDumpFile $ moduleName projectName pu }
+|       { snippetClkGen }
+|
+|       initial
+|         begin
+|           $dumpfile("{ moduleName projectName pu }_tb.vcd");
+|           $dumpvars(0, { moduleName projectName pu }_tb);
+|           @(negedge rst);
+|           forever @(posedge clk);
+|         end
+|
+|       { snippetInitialFinish $ controlSignals pu }
+|       { snippetInitialFinish $ testDataInput pu cntx }
+|       { snippetInitialFinish $ testDataOutput projectName pu cntx }
+|
+|       endmodule
+|       |]
 
 controlSignals pu@Fram{ frProcess=Process{..}, ..}
   = concatMap ( ("      " ++) . (++ " @(posedge clk)\n") . showMicrocode . microcodeAt pu) [ 0 .. nextTick + 1 ]
@@ -701,7 +701,7 @@ instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) 
                 $ elems frMemory
     hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
         [qc|pu_fram
-        #( .DATA_WIDTH( { widthX pu } )
+        #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
         , .ATTR_WIDTH( { show parameterAttrWidth } )
         , .RAM_SIZE( { show frSize } )
         , .FRAM_DUMP( "$path${ softwareFile title pu }" )

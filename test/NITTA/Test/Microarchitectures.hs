@@ -59,7 +59,7 @@ march = busNetwork 31 (Just True)
 
 
 marchSPI ::
-    ( Integral x, Bits x, Default x, Show x, Val x
+    ( Integral x, Show x, Val x
     ) => Proxy x -> BusNetwork String String x Int
 marchSPI _proxy = busNetwork 31 (Just False)
     [ ("fram1", PU def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )

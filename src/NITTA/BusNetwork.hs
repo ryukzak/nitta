@@ -44,6 +44,7 @@ module NITTA.BusNetwork
 
 import           Control.Monad.State
 import qualified Data.Array                    as A
+import           Data.Bits                     (FiniteBits (..))
 import           Data.Default
 import           Data.List                     (find, nub, partition, sortOn,
                                                 (\\))
@@ -115,7 +116,6 @@ busNetwork w allowDrop pus = BusNetwork
                 })
             ) pus
 
-instance WithX (BusNetwork title v x t) x
 
 instance ( Var v
          ) => WithFunctions (BusNetwork title v x t) (F v x) where
@@ -371,6 +371,8 @@ programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 allExternalInputs pus = map (\(InputPort n) -> n) $ concatMap (\PU{ links } -> externalInputPorts links ) $ M.elems pus
 allExternalOutputs pus = map (\(OutputPort n) -> n) $ concatMap (\PU{ links } -> externalOutputPorts links ) $ M.elems pus
 
+
+
 instance
         ( Time t
         , Val x
@@ -384,7 +386,7 @@ instance
             mn = moduleName title pu
             iml = fixIndent [qc|
 |                   {"module"} { mn }
-|                       #( parameter DATA_WIDTH = { widthX pu }
+|                       #( parameter DATA_WIDTH = { finiteBitSize (def :: x) }
 |                        , parameter ATTR_WIDTH = 4
 |                        )
 |                       ( input                     clk
@@ -502,7 +504,7 @@ instance ( Title title, Var v, Time t
 |               wire cycle;
 |
 |               { moduleName projectName n }
-|                   #( .DATA_WIDTH( { widthX n } )
+|                   #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                    , .ATTR_WIDTH( 4 )
 |                    ) net
 |                   ( .clk( clk )

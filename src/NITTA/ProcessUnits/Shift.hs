@@ -22,7 +22,7 @@ module NITTA.ProcessUnits.Shift
   )
   where
 
-import qualified Data.Bits                           as B
+import           Data.Bits                           (finiteBitSize)
 import           Data.Default
 import           Data.List                           (intersect, (\\))
 import           Data.Set                            (elems, fromList)
@@ -136,7 +136,7 @@ instance Connected (Shift v x t) where
       ]
 
 
-instance ( Var v, B.Bits x, Typeable x ) => Simulatable (Shift v x t) v x where
+instance ( Var v, Val x, Typeable x ) => Simulatable (Shift v x t) v x where
   simulateOn cntx _ f
     | Just (f' :: ShiftLR v x) <- castF f = simulate cntx f'
     | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
@@ -146,9 +146,9 @@ instance ( Val x ) => TargetSystemComponent (Shift v x t) where
   moduleName _ _ = "pu_shift"
   hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
   software _ _ = Empty
-  hardwareInstance title pu Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
+  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
     [qc|pu_shift
-    #( .DATA_WIDTH( { widthX pu } )
+    #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
      , .ATTR_WIDTH( { show parameterAttrWidth } )
      ) { title }
     ( .clk( { signalClk } )

@@ -72,7 +72,6 @@ instance ( Show st
 instance ( Time t, Default st ) => Default (SerialPU st v x t) where
   def = SerialPU def def def def def
 
-instance WithX (SerialPU st v x t) x
 
 instance WithFunctions (SerialPU st v x t) (F v x) where
   functions SerialPU{ spuFBs } = spuFBs

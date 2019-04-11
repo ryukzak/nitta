@@ -54,6 +54,7 @@ data TestBenchSetup pu
         , tbcPorts         :: PUPorts pu
         , tbcSignalConnect :: Signal -> String
         , tbcCtrl          :: Microcode pu -> String
+        , tbDataBusWidth   :: Int
         }
 
 data TestBenchReport
