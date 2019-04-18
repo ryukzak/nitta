@@ -1,12 +1,13 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans -fno-warn-partial-type-signatures #-}
 
 {-|
 Module      : NITTA.Test.ProcessUnits
@@ -19,9 +20,6 @@ Stability   : experimental
 module NITTA.Test.ProcessUnits
     ( unitTestBench
     , processUnitTests
-    -- *Generators
-    , inputsGen
-    , processGen
     -- *Properties
     , isFinished
     , coSimulation
@@ -37,7 +35,6 @@ import           Debug.Trace
 import           NITTA.DataFlow                (endpointOption2action)
 import           NITTA.Functions
 import qualified NITTA.Functions               as F
-import           NITTA.ProcessUnits.Divider
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnits.Multiplier
 import           NITTA.Project
@@ -68,18 +65,19 @@ test_fram =
         [ F.reg "dzw" ["act","mqt"]
         , F.constant 11 ["ovj"]
         ]
-    , testProperty "isFinished" $ isFinished <$> gen
+    , testProperty "isFinished" $ fmap isFinished gen
     , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_fram") $ inputsGen =<< gen
     ]
     where
         proxy = Proxy :: Proxy (Fram String Int Int)
-        gen = processGen (def :: (Fram String Int Int))
-            [ F <$> (arbitrary :: Gen (Constant String Int))
-            , F <$> (arbitrary :: Gen (FramInput String Int))
-            , F <$> (arbitrary :: Gen (FramOutput String Int))
-            , F <$> (arbitrary :: Gen (Loop String Int))
-            , F <$> (arbitrary :: Gen (Reg String Int))
+        gen = processAlgOnEndpointGen (def :: (Fram String Int Int)) $ algorithmGen
+            [ fmap F (arbitrary :: Gen (Constant _ _))
+            , fmap F (arbitrary :: Gen (FramInput _ _))
+            , fmap F (arbitrary :: Gen (FramOutput _ _))
+            , fmap F (arbitrary :: Gen (Loop _ _))
+            , fmap F (arbitrary :: Gen (Reg _ _))
             ]
+
 
 
 test_shift =
@@ -90,6 +88,7 @@ test_shift =
         , F.shiftR "f2" ["g2"]
         ]
     ]
+
 
 
 test_multiplier =
@@ -106,8 +105,8 @@ test_multiplier =
     , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_multiplier") $ inputsGen =<< gen
     ]
     where
-        gen = processGen (multiplier True)
-            [ F <$> (arbitrary :: Gen (Multiply String Int))
+        gen = processAlgOnEndpointGen (multiplier True :: Multiplier String Int Int) $ algorithmGen
+            [ fmap F (arbitrary :: Gen (Multiply _ _))
             ]
 
 
@@ -144,10 +143,10 @@ test_divider =
     -- , testProperty "isFinished" $ isFinished <$> dividerGen
     -- , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_divider") $ inputsGen =<< dividerGen
     ]
-    where
-        _gen = processGen (divider 4 True)
-            [ F <$> (arbitrary :: Gen (Division String Int))
-            ]
+    -- where
+        -- _gen = processAlgOnEndpointGen (divider 4 True :: Divider String Int Int)
+        --     [ fmap F (arbitrary :: Gen (Division _ _))
+        --     ]
 
 
 
@@ -158,59 +157,57 @@ processUnitTests = $(testGroupGenerator)
 -----------------------------------------------------------
 
 
--- |В значительной степени служебная функция, используемая для генерации процесса указанного
--- вычислительного блока под случайный алгоритм. Возвращает вычислительный блок со спланированым
--- вычислительным процессом и алгоритм.
-processGen pu gens = onlyUniqueVar <$> listOf1 (oneof gens) >>= processGen' pu
+algorithmGen fGenList = fmap onlyUniqueVar $ listOf1 $ oneof fGenList
     where
-        processGen' ::
-            ( DecisionProblem (EndpointDT String Int) EndpointDT pu
-            , ProcessUnit pu String Int Int
-            ) => pu -> [F String Int] -> Gen (pu, [F String Int])
-        processGen' pu' specialAlg = endpointWorkGen pu' specialAlg
         onlyUniqueVar = snd . foldl (\(used, fbs) fb -> let vs = variables fb
-                                                        in if null (vs `intersection` used)
-                                                            then ( vs `union` used, fb:fbs )
-                                                            else ( used, fbs ) )
-                                    (empty, [])
+                                                in if null (vs `intersection` used)
+                                                    then ( vs `union` used, fb:fbs )
+                                                    else ( used, fbs ) )
+                            (empty, [])
 
 
 
-data Opt a b = SchedOpt a | BindOpt b
+data Opt a b = EndpointOpt a | BindOpt b
+
 
 -- |Автоматическое планирование вычислительного процесса, в рамках которого решения принимаются
 -- случайным образом. В случае если какой-либо функциональный блок не может быть привязан к
 -- вычислительному блоку (например по причине закончившихся внутренних ресурсов), то он просто
 -- отбрасывается.
-endpointWorkGen pu0 alg0 = endpointWorkGen' pu0 alg0 []
+processAlgOnEndpointGen pu0 algGen = do
+        alg <- algGen
+        processAlgOnEndpointGen' pu0 alg []
     where
-        endpointWorkGen' pu alg passedAlg = do
-            let opts = map SchedOpt (options endpointDT pu) ++ map BindOpt alg
-            i <- choose (0 :: Int, length opts - 1)
+        processAlgOnEndpointGen' pu fRemain fPassed = do
+            let opts = map BindOpt fRemain
+                    ++ map EndpointOpt (options endpointDT pu)
+            i <- choose (0, length opts - 1)
             if null opts
-                then return (pu, passedAlg)
+                then return (pu, fPassed)
                 else case opts !! i of
-                    SchedOpt o -> do
-                        d <- endpointOption2action <$> endpointGen o
-                        endpointWorkGen' (decision endpointDT pu d) alg passedAlg
-                    BindOpt fb
-                        ->  let alg' = filter (/= fb) alg
-                            in case tryBind fb pu of
-                                Right pu' -> endpointWorkGen' pu' alg' (fb : passedAlg)
-                                Left _err -> endpointWorkGen' pu alg' passedAlg
+                    BindOpt f ->  let
+                            fRemain' = filter (/= f) fRemain
+                        in case tryBind f pu of
+                                Right pu' -> processAlgOnEndpointGen' pu' fRemain' (f : fPassed)
+                                Left _err -> processAlgOnEndpointGen' pu fRemain' fPassed
+                    EndpointOpt o -> do
+                        d <- fmap endpointOption2action $ endpointGen o
+                        let pu' = decision endpointDT pu d
+                        processAlgOnEndpointGen' pu' fRemain fPassed
             where
-                endpointGen o@EndpointO{ epoRole=s@Source{} } = do
-                    vs' <- suchThat (sublistOf $ elems $ variables s) (not . null)
-                    return o{ epoRole=Source $ fromList vs' }
+                endpointGen option@EndpointO{ epoRole=Source vs } = do
+                    vs' <- suchThat (sublistOf $ elems vs) (not . null)
+                    return option{ epoRole=Source $ fromList vs' }
                 endpointGen o = return o
 
 
 
 -- |Генерация случайных входных данных для заданного алгорима.
-inputsGen (pu, fbs) = do
+inputsGen (pu, fPassed) = do
     values <- infiniteListOf $ choose (0, 1000 :: Int)
-    let is = elems $ unionsMap inputs fbs
-    return (pu, fbs, Just def{ cntxVars=M.fromList $ zip is (map (:[]) values) })
+    let vars = elems $ unionsMap inputs fPassed
+    let varValues = M.fromList $ zip vars (map (:[]) values)
+    return (pu, fPassed, Just def{ cntxVars=varValues })
 
 
 -- |Проверка вычислительного блока на соответсвие работы аппаратной реализации и его модельного
@@ -223,12 +220,12 @@ coSimulation n (pu, _fbs, values) = monadicIO $ do
 
 
 -- |Формальнаяа проверка полноты выполнения работы вычислительного блока.
-isFinished (pu, fbs0)
+isFinished (pu, fPassed)
     = let
         p = process pu
         processVars = unionsMap variables $ getEndpoints p
         algVars = unionsMap variables $ elems fbs
-        fbs = fromList fbs0
+        fbs = fromList fPassed
         processFBs = fromList $ getFBs p
     in processFBs == fbs -- функции в алгоритме соответствуют выполненным функциям в процессе
         && processVars == algVars -- пересылаемые данные в алгоритме соответствуют пересылаемым данным в процессе
