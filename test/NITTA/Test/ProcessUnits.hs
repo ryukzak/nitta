@@ -18,11 +18,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Test.ProcessUnits
-    ( unitTestBench
-    , processUnitTests
-    -- *Properties
-    , isFinished
-    , coSimulation
+    ( processUnitTests
     ) where
 
 import           Data.Atomics.Counter          (incrCounter)
@@ -52,6 +48,7 @@ import           Test.Tasty.HUnit              (testCase, (@?))
 import           Test.Tasty.QuickCheck         (Gen, arbitrary, testProperty)
 import           Test.Tasty.TH
 import           Text.InterpolatedString.Perl6 (qc)
+
 
 
 test_fram =
