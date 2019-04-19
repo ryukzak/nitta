@@ -53,6 +53,7 @@ module NITTA.Functions
     ) where
 
 import qualified Data.Bits         as B
+import           Data.Default
 import           Data.List         (cycle, intersect, (\\))
 import qualified Data.Map          as M
 import           Data.Maybe
@@ -72,7 +73,7 @@ instance ( Function (f v x) v, Label (f v x), Var v ) => ToVizJS (f v x) where
         { nodes=[ NodeElement 1 $ box "#cbbeb5" $ label f ]
         , edges=mkEdges InVertex (inputs f) ++ mkEdges OutVertex (outputs f)
         }
-        where   
+        where
             mkEdges t = map ( \v -> GraphVertex t (label v) 1 ) . elems
 
 instance {-# OVERLAPS #-} ToVizJS (F v x) where
@@ -422,8 +423,8 @@ instance ( Ord v ) => Function (Receive v x) v where
 instance ( Ord v ) => Patch (Receive v x) v where
     patch v v' (Receive a) = Receive (patch v v' a)
 instance Locks (Receive v x) v where locks _ = []
-instance ( Ord v ) => FunctionSimulation (Receive v x) v x where
+instance ( Ord v, Default x ) => FunctionSimulation (Receive v x) v x where
     simulate cntx (Receive (O ks)) = do
         let k = oneOf ks
-        (cntx', v) <- cntx `receiveSim` k
+        let (cntx', v) = fromMaybe (cntx, def)  $ cntx `receiveSim` k
         set cntx' ks v

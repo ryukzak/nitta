@@ -142,7 +142,7 @@ instance UnambiguouslyDecode (SPI v x t) where
 
 instance
         ( Ord v
-        , Typeable v, Typeable x
+        , Typeable v, Typeable x, Default x
         ) => Simulatable (SPI v x t) v x where
     simulateOn cntx _ f
         | Just f'@Send{} <- castF f = simulate cntx f'
