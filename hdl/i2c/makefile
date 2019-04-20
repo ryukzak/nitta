@@ -2,13 +2,27 @@ CC          := iverilog
 CFLAGS      := -Wall
 FILE        := $(filter-out $(wildcard *_tb*.v), $(wildcard *.v))
 
-all: i2c_tb
+all: buffer_tb
 
 unix:
 	iverilog $(CFLAGS) $(FILE) && ./a.out
 
-i2c_tb: i2c_tb.out
-	vvp i2c_tb.out
+testbenchs: nitta_to_i2c_splitter_tb buffer_tb i2c_slave_driver_tb
 
-i2c_tb.out: $(FILE) i2c_tb.v
-	$(CC) -o i2c_tb.out $^
+buffer_tb: buffer_tb.out
+	vvp buffer_tb.out
+
+buffer_tb.out: $(FILE) buffer_tb.v
+	$(CC) -o buffer_tb.out $^
+
+bounce_filter_tb: bounce_filter.out
+	vvp bounce_filter.out
+
+bounce_filter.out: $(FILE) bounce_filter_tb.v
+	$(CC) -o bounce_filter.out $^
+
+nitta_to_i2c_splitter_tb: nitta_to_i2c_splitter_tb.out
+	vvp nitta_to_i2c_splitter_tb.out
+
+nitta_to_i2c_splitter_tb.out: $(FILE) nitta_to_i2c_splitter_tb.v
+	$(CC) -o nitta_to_i2c_splitter_tb.out $^

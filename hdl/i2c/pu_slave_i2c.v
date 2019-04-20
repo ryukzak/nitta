@@ -1,15 +1,9 @@
 `timescale 1 ms/ 1 ms
 
-// FIXME: Почистить реализацию модуля. Перенести модули тестового окружения в поддиректорию "test".
-
-// FIXME: Необходимо сделать получение данных через данный вычислительный блок.
-
-// FIXME: Необходимо сделать корректную работу с атрибутами (архитектура, testbench-и, испытания в железе).
-
-module pu_slave_spi #
+module pu_slave_i2c #
         ( parameter DATA_WIDTH     = 32
         , parameter ATTR_WIDTH     = 4
-        , parameter SPI_DATA_WIDTH = 8
+        , parameter I2C_DATA_WIDTH = 8
         , parameter BUF_SIZE       = 6
         , parameter BOUNCE_FILTER  = 4
         , parameter INVALID        = 0
@@ -34,15 +28,11 @@ module pu_slave_spi #
     , input scl
     , inout sda
 
-    , output D4
-    , output D5
-    , output D6
-    , output D7
     );
 
 
 ///////////////////////////////////////////////////////////
-// [NITTA >>> SPI]
+// [NITTA >>> I2C]
 
 // send_buffers
 reg send_buffer_sel;
@@ -58,7 +48,7 @@ generate
         buffer #
                 ( .BUF_SIZE( BUF_SIZE )
                 , .DATA_WIDTH( DATA_WIDTH )
-                ) send_buffer // from nitta to spi
+                ) send_buffer // from nitta to i2c
             ( .clk( clk )
             , .rst( rst || flag_stop )
 
@@ -74,49 +64,48 @@ endgenerate
 // signal_wr can be received only from the nitta's side.
 assign send_buffer_wr[0] =  send_buffer_sel ? signal_wr : 1'h0;
 assign send_buffer_wr[1] = !send_buffer_sel ? signal_wr : 1'h0;
-assign send_buffer_data_in[0] =  send_buffer_sel ? data_in : 0;
+assign send_buffer_data_in[0] = send_buffer_sel ? data_in : 0;
 assign send_buffer_data_in[1] = !send_buffer_sel ? data_in : 0;
 
-// signal_oe can be received only from the spi driver's side (splitter).
-assign send_buffer_oe[0] = !send_buffer_sel ? splitter_ready : 1'h0;
-assign send_buffer_oe[1] =  send_buffer_sel ? splitter_ready : 1'h0;
+// signal_oe can be received only from the i2c driver's side (splitter).
+assign send_buffer_oe[0] = send_buffer_sel ? splitter_ready : 1'h0;
+assign send_buffer_oe[1] = !send_buffer_sel ? splitter_ready : 1'h0;
 wire [DATA_WIDTH-1:0] nitta_to_splitter =  send_buffer_data_out[send_buffer_sel];
 
-// splitter: translate from DATA_WIDTH to SPI_DATA_WIDTH
+// splitter: translate from DATA_WIDTH to I2C_DATA_WIDTH
 wire splitter_ready;
-wire [SPI_DATA_WIDTH-1:0] splitter_to_spi;
-nitta_to_spi_splitter #
+wire [I2C_DATA_WIDTH-1:0] splitter_to_i2c;
+nitta_to_i2c_splitter #
         ( .DATA_WIDTH( DATA_WIDTH )
         , .ATTR_WIDTH( ATTR_WIDTH )
-        , .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
-        ) nitta_to_spi_splitter 
+        , .I2C_DATA_WIDTH( I2C_DATA_WIDTH )
+        ) nitta_to_i2c_splitter 
     ( .clk( clk )
     , .rst( rst || flag_stop )
 
-    , .spi_ready( i2c_prepare )
-    , .to_spi( splitter_to_spi )
+    , .i2c_ready( i2c_prepare )
+    , .to_i2c( splitter_to_i2c )
 
     , .splitter_ready( splitter_ready )
     , .from_nitta( nitta_to_splitter )
     );
 
 ///////////////////////////////////////////////////////////
-// [SPI >>> NITTA]
+// [I2C >>> NITTA]
 
-// splitter: translate from SPI_DATA_WIDTH to DATA_WIDTH
-wire spi_ready;
-wire [SPI_DATA_WIDTH-1:0] splitter_from_spi;
+// splitter: translate from I2C_DATA_WIDTH to DATA_WIDTH
+wire [I2C_DATA_WIDTH-1:0] splitter_from_i2c;
 wire splitter_ready_sn;
 wire [DATA_WIDTH-1:0] to_nitta;
-spi_to_nitta_splitter #
+i2c_to_nitta_splitter #
         ( .DATA_WIDTH( DATA_WIDTH )
         , .ATTR_WIDTH( ATTR_WIDTH )
-        , .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
-        ) spi_to_nitta_splitter 
+        , .I2C_DATA_WIDTH( I2C_DATA_WIDTH )
+        ) i2c_to_nitta_splitter 
     ( .clk( clk )
     , .rst( rst || flag_stop )
-    , .spi_ready( i2c_ready_write )
-    , .from_spi( splitter_from_spi )
+    , .i2c_ready( i2c_ready_write )
+    , .from_i2c( splitter_from_i2c )
     , .splitter_ready( splitter_ready_sn )
     , .to_nitta( to_nitta )
     );
@@ -156,18 +145,21 @@ assign receive_buffer_oe[0] = !send_buffer_sel ? signal_oe : 1'h0;
 assign receive_buffer_oe[1] =  send_buffer_sel ? signal_oe : 1'h0;
 
 wire f_scl;
-wire i2c_prepare, i2c_ready_write;
+//wire i2c_prepare, i2c_ready_write;
 
 pu_i2c_slave_driver #
-  ( .I2C_DATA_WIDTH( 8 )
-  , .DATA_WIDTH( 64 )
+  ( .I2C_DATA_WIDTH( I2C_DATA_WIDTH )
+  , .DATA_WIDTH( DATA_WIDTH * 2 )
   , .ADDRES_DEVICE( 7'h47 )
   ) driver_slave
   ( .clk( clk )
   , .rst( rst )
   , .scl( f_scl )
   , .sda( sda )
-  , .data_in( splitter_to_spi )
+  
+  , .data_in( splitter_to_i2c )
+  , .data_out( splitter_from_i2c )
+
   , .ready_write( i2c_ready_write )
   , .i2c_prepare( i2c_prepare )
   );
@@ -184,6 +176,16 @@ always @(posedge clk) begin
     curr_sda   <= 1'b1;
   end else begin
     curr_sda <= sda;
+  end
+end
+
+reg wr;
+always @(posedge clk) begin
+  if (rst) begin
+    wr <= 1'b0;
+  end else begin
+    if (i2c_ready_write) wr <= 0;
+    if (i2c_prepare)     wr <= 1;
   end
 end
 
