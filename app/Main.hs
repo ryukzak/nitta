@@ -44,6 +44,92 @@ import           System.Console.CmdArgs
 import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
 
+
+
+-- |Command line interface.
+data Nitta
+    = Nitta
+        { web        :: Bool
+        , npm_build  :: Bool
+        , no_api_gen :: Bool
+        , type_      :: String
+        , file       :: Maybe FilePath
+        }
+    deriving ( Show, Data, Typeable )
+
+
+nittaArgs = Nitta
+    { web=False &= help "Run web server"
+    , npm_build=False &= help "No regenerate WebUI static files"
+    , no_api_gen=False &= help "No regenerate rest_api.js library"
+    , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
+    , file=D.def &= args &= typ "LUA_FILE"
+    }
+
+
+main = do
+    Nitta{ web, npm_build, no_api_gen, file, type_ } <- cmdArgs nittaArgs
+    when npm_build prepareStaticFiles
+    case file of
+        Just fn -> do
+            putStrLn [qc|> readFile: { fn }|]
+            src <- T.readFile fn
+            let runner = if web
+                then runWebUI no_api_gen $ lua2functions src
+                else runTestbench $ lua2functions src
+            case type_ of
+                "fx24.32" -> runner (microarch :: BusNetwork String String (FX 24 32) Int)
+                "fx32.32" -> runner (microarch :: BusNetwork String String (FX 32 32) Int)
+                _ -> error "Wrong bus type"
+        Nothing -> runHardcoded
+    putStrLn "-- the end --"
+
+runWebUI no_api_gen alg ma = backendServer no_api_gen $ mkModelWithOneNetwork ma alg
+runTestbench alg ma = test "main" ma alg >>= print
+
+
+runHardcoded = do
+    putStrLn "-- hardcoded begin --"
+    -- funSim 5 D.def{ cntxInputs=M.fromList [("b_0", [1..5])] } $ lua2functions
+    --     [qc|function fib(a)
+    --             local b = receive()
+    --             local c = a + b
+    --             fib(c)
+    --         end
+    --         fib(1)|]
+    putStrLn "--------------------------------"
+    let microarchHC = busNetwork 31 (Just True)
+            [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
+            , ("fram2", PU D.def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
+            , ("accum", PU D.def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
+            , ("spi", PU
+                (SPI.slaveSPI 0)
+                SPI.PUPorts
+                    { SPI.wr=Signal 22, SPI.oe=Signal 23
+                    , SPI.stop="stop"
+                    , SPI.externalPorts=SPI.Slave
+                        { SPI.slave_mosi=InputPort "mosi"
+                        , SPI.slave_miso=OutputPort "miso"
+                        , SPI.slave_sclk=InputPort "sclk"
+                        , SPI.slave_cs=InputPort "cs"
+                        }
+                    })
+            , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
+            , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+            ] :: BusNetwork String String (FX 30 32) Int
+    let algHC = lua2functions
+            -- FIXME: Why not work with one fram?
+            [qc|function fib(x)
+                    y = x + x + x
+                    fib(y)
+                end
+                fib(1)|]
+
+    backendServer True $ mkModelWithOneNetwork microarchHC algHC
+    print =<< testWithInput "hardcode" [  ] microarchHC algHC
+    putStrLn "-- hardcoded end --"
+
+
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
 
 -- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
@@ -68,85 +154,3 @@ microarch = busNetwork 31 (Just False)
     , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
     , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
     ]
-
-
----------------------------------------------------------------------------------
-
--- |Command line interface.
-data Nitta
-    = Nitta
-        { web        :: Bool
-        , npm_build  :: Bool
-        , no_api_gen :: Bool
-        , type_      :: String
-        , file       :: Maybe FilePath
-        }
-    deriving (Show, Data, Typeable)
-
-nittaArgs = Nitta
-    { web=False &= help "Run web server"
-    , npm_build=False &= help "No regenerate WebUI static files"
-    , no_api_gen=False &= help "No regenerate rest_api.js library"
-    , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
-    , file=D.def &= args &= typ "LUA_FILE"
-    }
-
-
-main = do
-    Nitta{ web, npm_build, no_api_gen, file, type_ } <- cmdArgs nittaArgs
-    when npm_build prepareStaticFiles
-    case file of
-        Just fn -> do
-            putStrLn [qc|> readFile: { fn }|]
-            buf <- T.readFile fn
-            let exec = mainWithFile web no_api_gen buf
-            case type_ of
-                "fx24.32" -> exec (microarch :: BusNetwork String String (FX 24 32) Int)
-                "fx32.32" -> exec (microarch :: BusNetwork String String (FX 32 32) Int)
-                _ -> error "Wrong bus type"
-        Nothing -> do
-            putStrLn "-- hardcoded begin --"
-            -- funSim 5 D.def{ cntxInputs=M.fromList [("b_0", [1..5])] } $ lua2functions
-            --     [qc|function fib(a)
-            --             local b = receive()
-            --             local c = a + b
-            --             fib(c)
-            --         end
-            --         fib(1)|]
-            putStrLn "--------------------------------"
-            let microarchHC = busNetwork 31 (Just True)
-                    [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
-                    , ("fram2", PU D.def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
-                    , ("accum", PU D.def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-                    , ("spi", PU
-                        (SPI.slaveSPI 0)
-                        SPI.PUPorts
-                            { SPI.wr=Signal 22, SPI.oe=Signal 23
-                            , SPI.stop="stop"
-                            , SPI.externalPorts=SPI.Slave
-                                { SPI.slave_mosi=InputPort "mosi"
-                                , SPI.slave_miso=OutputPort "miso"
-                                , SPI.slave_sclk=InputPort "sclk"
-                                , SPI.slave_cs=InputPort "cs"
-                                }
-                            })
-                    , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-                    , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
-                    ] :: BusNetwork String String (FX 30 32) Int
-            let algHC = lua2functions
-                    -- FIXME: Why not work with one fram?
-                    [qc|function fib(x)
-                            y = x + x + x
-                            fib(y)
-                        end
-                        fib(1)|]
-
-            backendServer True $ mkModelWithOneNetwork microarchHC algHC
-            print =<< testWithInput "hardcode" [  ] microarchHC algHC
-            putStrLn "-- hardcoded end --"
-    putStrLn "-- the end --"
-
-
-mainWithFile web no_api_gen buf ma
-    | web = backendServer no_api_gen $ mkModelWithOneNetwork ma $ lua2functions buf
-    | otherwise = print =<< testLua "main" ma buf
