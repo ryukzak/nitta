@@ -62,8 +62,8 @@ class Variables a v | a -> v where
 newtype I v = I v
     deriving ( Show, Eq, Ord )
 
-instance ( Eq v ) => Patch (I v) v where
-    patch v v' i@(I v0)
+instance ( Eq v ) => Patch (I v) (v, v) where
+    patch (v, v') i@(I v0)
         | v0 == v = I v'
         | otherwise = i
 
@@ -76,8 +76,8 @@ instance Variables (I v) v where
 newtype O v = O (S.Set v)
     deriving ( Eq, Ord )
 
-instance ( Ord v ) => Patch (O v) v where
-    patch v v' o@(O vs)
+instance ( Ord v ) => Patch (O v) (v, v) where
+    patch (v, v') o@(O vs)
         | v `S.member` vs = O $ S.fromList (v':(S.elems vs \\ [v]))
         | otherwise = o
 
@@ -133,7 +133,7 @@ data F v x where
     F ::
         ( Ord v
         , Function f v
-        , Patch f v
+        , Patch f (v, v)
         , Locks f v
         , Show f
         , Label f
@@ -163,11 +163,11 @@ instance Locks (F v x) v where
 instance Ord (F v x) where
     (F a) `compare` (F b) = show a `compare` show b
 
-instance Patch (F v x) v where
-    patch v v' (F f) = F $ patch v v' f
+instance Patch (F v x) (v, v) where
+    patch diff (F f) = F $ patch diff f
 
 instance ( Patch b v ) => Patch [b] v where
-    patch v v' fs = map (patch v v') fs
+    patch diff fs = map (patch diff) fs
 
 instance Show (F v x) where
     show (F f) = S.replace "\"" "" $ show f
@@ -212,9 +212,8 @@ instance ( Show v, Show x ) => Show (Cntx v x) where
 -----------------------------------------------------------
 
 -- |Patch class allows replacing one variable by another. Especially for algorithm refactor.
-class Patch f v | f -> v where
-    patch :: v -> v -> f -> f
-
+class Patch f diff where
+    patch :: diff -> f -> f
 
 
 -- |Type class for making fine label for Functions (firtly for VisJS).

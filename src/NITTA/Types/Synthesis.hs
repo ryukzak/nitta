@@ -193,7 +193,7 @@ instance ( Var v, Typeable x, Time t
     decision _ fr@Frame{ processor } (DataFlowDecision src trg) = fr{ processor=decision dataFlowDT processor $ DataFlowD src trg }
     decision _ Frame{ processor, dfg } (RefactorDecision d@(InsertOutRegisterD v v')) 
         = Frame
-            { dfg=patch v v' dfg
+            { dfg=patch (v, v') dfg
             , processor=refactorDecision processor d
             }
 

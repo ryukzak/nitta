@@ -353,7 +353,7 @@ instance ( Var v, Typeable x
             ]
 
     decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v')
-        = bn{ bnRemains=reg v [v'] : patch v v' bnRemains }
+        = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
 
 
 

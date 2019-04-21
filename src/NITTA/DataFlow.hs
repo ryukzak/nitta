@@ -61,11 +61,11 @@ data DataFlowGraph v x
     --     }
     deriving ( Show, Generic )
 
-instance ( Var v, Typeable x ) => Patch (DataFlowGraph v x) v where
+instance ( Var v, Typeable x ) => Patch (DataFlowGraph v x) (v, v) where
     -- FIXME: on complex DFG don't work correct
-    patch v v' (DFG dfgs) = DFG $ (DFGNode $ reg v [v']) : map (patch v v') dfgs
-    patch v v' n@(DFGNode f)
-        | v `member` inputs f = DFGNode $ patch v v' f
+    patch diff@(v, v') (DFG dfgs) = DFG $ (DFGNode $ reg v [v']) : map (patch diff) dfgs
+    patch diff@(v, _) n@(DFGNode f)
+        | v `member` inputs f = DFGNode $ patch diff f
         | otherwise = n
 
 instance ( Var v ) => Variables (DataFlowGraph v x) v where
