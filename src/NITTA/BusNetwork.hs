@@ -315,9 +315,10 @@ instance ( Title title ) => Simulatable (BusNetwork title v x t) v x where
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance DecisionProblem (BindingDT String v x)
-               BindingDT (BusNetwork String v x t)
-         where
+instance ( Ord v ) =>
+        DecisionProblem (BindingDT String v x)
+              BindingDT (BusNetwork String v x t)
+        where
     options _ BusNetwork{ bnRemains, bnPus } = concatMap optionsFor bnRemains
         where
             optionsFor f =

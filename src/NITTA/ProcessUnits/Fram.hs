@@ -5,6 +5,7 @@
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
@@ -168,7 +169,9 @@ data Job v x t
           -- | Список действие, которые необходимо выполнить для завершения работы.
         , actions                       :: [ EndpointRole v ]
         }
-  deriving ( Show, Eq )
+  deriving ( Eq )
+
+deriving instance {-# INCOHERENT #-} ( Show v, Show x, Show t ) => Show (Job v x t)
 
 instance Default (Job v x t) where
   def = Job def def def def undefined def

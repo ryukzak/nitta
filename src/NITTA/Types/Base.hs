@@ -26,13 +26,15 @@ module NITTA.Types.Base
     ) where
 
 import           Data.Default
+import qualified Data.Map             as M
+import           Data.Maybe           (fromMaybe)
 import           Data.Proxy
-import qualified Data.Set          as S
-import qualified Data.String.Utils as S
+import qualified Data.Set             as S
+import qualified Data.String.Utils    as S
 import           Data.Typeable
 import           GHC.Generics
-import           NITTA.Types.Poly
 import           NITTA.Types.Function
+import           NITTA.Types.Poly
 import           NITTA.Types.Time
 import           Numeric.Interval
 
@@ -78,6 +80,10 @@ data Step v x t
         }
     deriving ( Show )
 
+instance ( Ord v ) => Patch (Step v x t) (Diff v) where
+    patch diff step@Step{ sDesc } = step{ sDesc=patch diff sDesc }
+
+
 -- |Описание положения события во времени и типа события:
 data PlaceInTime t
     = Event t -- ^Мгновенные события, используются главным образом для описания событий САПР.
@@ -118,6 +124,12 @@ instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show (EndpointRoleStep eff)      = show eff
     show (InstructionStep instr)     = show instr
     show NestedStep{ nTitle, nStep } = show nTitle ++ "." ++ show nStep
+
+instance ( Ord v ) => Patch (StepInfo v x t) (Diff v) where
+    patch diff (FStep f)                = FStep $ patch diff f
+    patch diff (EndpointRoleStep ep)    = EndpointRoleStep $ patch diff ep
+    patch diff (NestedStep title nStep) = NestedStep title $ patch diff nStep
+    patch diff i                        = i
 
 
 -- |Получить строку с название уровня указанного шага вычислительного процесса.
@@ -167,7 +179,20 @@ instance DecisionType (BindingDT title v x) where
 data EndpointRole v
     = Source (S.Set v) -- ^ Выгрузка данных из PU.
     | Target v   -- ^ Загрузка данных в PU.
-    deriving ( Show, Eq, Ord )
+    deriving ( Eq, Ord )
+
+instance {-# OVERLAPPABLE #-} ( Show v ) => Show (EndpointRole v) where
+    show (Source vs) = "Source " ++ S.join "," (map show $ S.elems vs)
+    show (Target v) = "Target " ++ show v
+
+instance {-# OVERLAPS #-} Show (EndpointRole String) where
+    show (Source vs) = "Source " ++ S.join "," (S.elems vs)
+    show (Target v) = "Target " ++ v
+
+instance ( Ord v ) => Patch (EndpointRole v) (Diff v) where
+    patch Diff{ diffI } (Target v) = Target $ fromMaybe v $ diffI M.!? v
+    patch Diff{ diffO } (Source vs)
+        = Source $ S.fromList $ map (\v -> fromMaybe v $ diffO M.!? v) $ S.elems vs
 
 (Target a) << (Target b) | a == b = True
 (Source a) << (Source b)          = all (`S.member` a) b
@@ -208,10 +233,16 @@ instance Variables (Option (EndpointDT v t)) v where
     variables EndpointO{ epoRole } = variables epoRole
 instance Variables (Decision (EndpointDT v t)) v where
     variables EndpointD{ epdRole } = variables epdRole
+
 instance ( Show v, Show t, Eq t, Bounded t ) => Show (Option (EndpointDT v t)) where
     show EndpointO{ epoRole, epoAt } = "?" ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
 instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t)) where
     show EndpointD{ epdRole, epdAt } = "!" ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
+
+instance ( Ord v ) => Patch (Option (EndpointDT v t)) (Diff v) where
+    patch diff ep@EndpointO{ epoRole } = ep{ epoRole=patch diff epoRole }
+instance ( Ord v ) => Patch (Decision (EndpointDT v t)) (Diff v) where
+    patch diff ep@EndpointD{ epdRole } = ep{ epdRole=patch diff epdRole }
 
 
 
@@ -229,7 +260,7 @@ instance DecisionType (RefactorDT v) where
         -- In this case, we have deadlock, witch can be fixed by insetion of register between functions:
         -- f1 :: (...) -> (a)
         -- reg :: a -> buf_a
-        -- f2 :: (buf_a, ...) -> (...)    
+        -- f2 :: (buf_a, ...) -> (...)
         = InsertOutRegisterO v
         deriving ( Generic, Show, Eq, Ord )
     data Decision (RefactorDT v)

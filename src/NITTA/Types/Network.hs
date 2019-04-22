@@ -30,8 +30,11 @@ module NITTA.Types.Network
     , TargetSystemComponent(..)
     ) where
 
+import           Data.Default
 import           Data.Ix
 import qualified Data.Map         as M
+import           Data.Maybe
+import qualified Data.Set         as S
 import           Data.Typeable
 import           GHC.Generics     (Generic)
 import           NITTA.Types.Base
@@ -58,26 +61,43 @@ data PU v x t where
         , Num x
         , Locks pu v
         ) => 
-            { unit :: pu
+            { diff :: Diff v
+            , unit :: pu
             , links :: PUPorts pu
             , systemEnv :: Enviroment
             } -> PU v x t
 
-instance DecisionProblem (EndpointDT v t)
-              EndpointDT (PU v x t)
+instance ( Ord v ) =>
+        DecisionProblem (EndpointDT v t)
+             EndpointDT (PU v x t)
          where
-    options proxy PU{ unit } = options proxy unit
-    decision proxy PU{ unit, links, systemEnv } d
-        = PU{ unit=decision proxy unit d, links, systemEnv }
+    options proxy PU{ diff, unit }
+        = map (patch diff) $ options proxy unit
+    decision proxy PU{ diff, unit, links, systemEnv } d
+        = PU
+            { diff
+            , unit=decision proxy unit $ patch (reverseDiff diff) d
+            , links
+            , systemEnv
+            }
 
-instance ProcessUnit (PU v x t) v x t where
-    tryBind fb PU{ unit, links, systemEnv }
+instance ( Ord v ) => ProcessUnit (PU v x t) v x t where
+    tryBind fb PU{ diff, unit, links, systemEnv }
         = case tryBind fb unit of
-            Right unit' -> Right PU { unit=unit', links, systemEnv }
+            Right unit' -> Right PU { diff, unit=unit', links, systemEnv }
             Left err    -> Left err
-    process PU{ unit } = process unit
-    setTime t PU{ unit, links, systemEnv }
-        = PU{ unit=setTime t unit, links, systemEnv }
+    process PU{ diff, unit } = let
+            p = process unit
+        in p{ steps=map (patch diff) $ steps p }
+    setTime t PU{ diff, unit, links, systemEnv }
+        = PU{ diff, unit=setTime t unit, links, systemEnv }
+
+instance ( Ord v ) => Patch (PU v x t) (I v, I v) where
+    patch (I v, I v') pu@PU{ diff=diff@Diff{ diffI } } = pu{ diff=diff{ diffI=M.insert v v' diffI }}
+
+instance ( Ord v ) => Patch (PU v x t) (O v, O v) where
+    patch (O vs, O vs') pu@PU{ diff=diff@Diff{ diffO } }
+        = pu{ diff=diff{ diffO=foldl (\s (v, v') -> M.insert v v' s) diffO $ zip (S.elems vs) (S.elems vs')  }}
 
 instance Locks (PU v x t) v where
     locks PU{ unit } = locks unit

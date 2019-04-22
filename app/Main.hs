@@ -99,10 +99,10 @@ runHardcoded = do
     --         fib(1)|]
     putStrLn "--------------------------------"
     let microarchHC = busNetwork 31 (Just True)
-            [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
-            , ("fram2", PU D.def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
-            , ("accum", PU D.def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-            , ("spi", PU
+            [ ("fram1", PU  D.def D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
+            , ("fram2", PU  D.def D.def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
+            , ("accum", PU  D.def D.def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
+            , ("spi", PU  D.def
                 (SPI.slaveSPI 0)
                 SPI.PUPorts
                     { SPI.wr=Signal 22, SPI.oe=Signal 23
@@ -114,8 +114,8 @@ runHardcoded = do
                         , SPI.slave_cs=InputPort "cs"
                         }
                     })
-            , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-            , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+            , ("mul", PU  D.def (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
+            , ("div", PU  D.def (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
             ] :: BusNetwork String String (FX 30 32) Int
     let algHC = lua2functions
             -- FIXME: Why not work with one fram?
@@ -135,11 +135,11 @@ runHardcoded = do
 -- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
 -- с задачей о целевой платформе.
 microarch = busNetwork 31 (Just False)
-    [ ("fram1", PU D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
-    , ("fram2", PU D.def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
+    [ ("fram1", PU D.def D.def FR.PUPorts{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
+    , ("fram2", PU D.def D.def FR.PUPorts{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
     -- , ("shift", PU D.def S.PUPorts{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
-    , ("accum", PU D.def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
-    , ("spi", PU
+    , ("accum", PU D.def D.def A.PUPorts{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
+    , ("spi", PU D.def
         (SPI.slaveSPI 0)
         SPI.PUPorts
             { SPI.wr=Signal 22, SPI.oe=Signal 23
@@ -151,6 +151,6 @@ microarch = busNetwork 31 (Just False)
                 , SPI.slave_cs=InputPort "cs"
                 }
             })
-    , ("mul", PU (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-    , ("div", PU (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+    , ("mul", PU D.def (M.multiplier True) M.PUPorts{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
+    , ("div", PU D.def (D.divider 4 True) D.PUPorts{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
     ]

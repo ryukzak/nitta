@@ -30,15 +30,17 @@ module NITTA.Types.Function
       -- *Application level simulation
     , FunctionSimulation(..), Cntx(..)
       -- *Other
-    , Patch(..)
+    , Patch(..), Diff(..), reverseDiff
     , Label(..)
     ) where
 
 import           Data.Default
 import           Data.List
 import qualified Data.Map          as M
+import           Data.Maybe
 import qualified Data.Set          as S
 import qualified Data.String.Utils as S
+import           Data.Tuple
 import           Data.Typeable
 import           NITTA.Types.VisJS
 
@@ -122,7 +124,7 @@ class Function f v | f -> v where
     -- |Is function break eval loop.
     isBreakLoop :: f -> Bool
     isBreakLoop _ = False
-    -- |Sometimes, one function can cause internal process unit lock for another function.    
+    -- |Sometimes, one function can cause internal process unit lock for another function.
     isInternalLockPossible :: f -> Bool
     isInternalLockPossible _ = False
 
@@ -165,6 +167,19 @@ instance Ord (F v x) where
 
 instance Patch (F v x) (v, v) where
     patch diff (F f) = F $ patch diff f
+
+instance ( Ord v ) => Patch (F v x) (Diff v) where
+    patch Diff{ diffI, diffO } f0 = let
+            diffI' = map (\v -> case diffI M.!? v of
+                    Just v' -> Just (v, v')
+                    Nothing -> Nothing
+                ) $ S.elems $ inputs f0
+            diffO' = map (\v -> case diffO M.!? v of
+                    Just v' -> Just (v, v')
+                    Nothing -> Nothing
+                ) $ S.elems $ outputs f0
+        in foldl (\f diff -> patch diff f) f0 $ catMaybes $ diffI' ++ diffO'
+
 
 instance ( Patch b v ) => Patch [b] v where
     patch diff fs = map (patch diff) fs
@@ -214,6 +229,20 @@ instance ( Show v, Show x ) => Show (Cntx v x) where
 -- |Patch class allows replacing one variable by another. Especially for algorithm refactor.
 class Patch f diff where
     patch :: diff -> f -> f
+
+data Diff v = Diff
+    { diffI :: M.Map v v
+    , diffO :: M.Map v v
+    }
+
+reverseDiff Diff{ diffI, diffO } = Diff
+    { diffI=M.fromList $ map swap $ M.assocs diffI
+    , diffO=M.fromList $ map swap $ M.assocs diffO
+    }
+
+instance Default (Diff v) where
+    def = Diff def def
+
 
 
 -- |Type class for making fine label for Functions (firtly for VisJS).
