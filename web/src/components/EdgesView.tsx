@@ -60,9 +60,46 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         .catch(err => console.log(err));
     }
 
+    table(name, data) {
+        return (
+            <div>
+                <pre>{ name }</pre>
+                <ReactTable
+                    defaultPageSize={ data.length }
+                    minRows={ data.length }  
+                    showPagination={ false }
+
+                    columns={
+                        [
+                            {
+                                Header: "Integral",
+                                accessor: "0",
+                                maxWidth: 70,
+                                Cell: row =>
+                                <a onClick={() => {
+                                    haskellAPI.getNode(this.state.selectedNId === ":" ? ":" + row.index : this.state.selectedNId + ":" + row.index)
+                                    .then((response: any) => {
+                                        this.onNIdChange(response.data.nId);
+                                    })
+                                    .catch((err: any) => alert(err));
+                                }}> { row.value }
+                                </a>
+                            },
+                            {Header: "Description", accessor: "2", Cell: (row: any) => <pre> { JSON.stringify(row.value) } </pre>},
+                            {Header: "Metrics", accessor: "1", Cell: (row: any) => <pre> { JSON.stringify(row.value) } </pre>}
+                        ]
+                    }
+                    data={ data } />
+                <br/>
+            </div>
+        )
+    }
+
     render () {
         if (this.state.options === undefined || this.state.options === null) return <div />;
 
+        var info = ""
+        if (this.state.edge) info = JSON.stringify(this.state.edge.eDecision)
         return (
         <div>
             <div className="grid-x" >
@@ -90,6 +127,13 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
                 </div>
             }
 
+            <pre>{ info }</pre>
+            <br/>
+            { this.table("Binds", this.state.options.filter( e => e[1].tag === 'BindCh')) }
+            { this.table("Transfers (DataFlow)", this.state.options.filter( e => e[1].tag === 'DFCh')) }
+            { this.table("Other", this.state.options.filter( e => e[1].tag != 'BindCh' && e[1].tag != 'DFCh')) }
+
+            {/* FIXME: add show/hide wrapper */}
             <ReactTable
                 columns={
                     [
