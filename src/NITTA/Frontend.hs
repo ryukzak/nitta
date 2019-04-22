@@ -242,6 +242,9 @@ rightExp
 rightExp diff [a] (PrefixExp (PEVar (VarName (Name b)))) -- a = b
     = addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }
 
+rightExp diff out (PrefixExp (Paren e)) -- a = (...)
+    = rightExp diff out e
+
 rightExp diff [a] n@(Number _ _) = do -- a = 42
     b <- expConstant (T.concat ["const_", a]) n
     addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }

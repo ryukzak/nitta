@@ -43,6 +43,24 @@ import           Test.Tasty.TH
 import           Text.InterpolatedString.Perl6 (qc)
 
 
+test_luaSupport =
+    [ luaSimpleTestCase "a = b + 1" "lua_rexp_not_in_paren"
+        [qc|function f(b)
+                a = b + 1
+                f(a)
+            end
+            f(0)
+        |]
+    , luaSimpleTestCase "a = (b + 1)" "lua_rexp_in_paren"
+        [qc|function f(b)
+                a = (b + 1)
+                f(a)
+            end
+            f(0)
+        |]
+    ]
+
+
 test_counter =
     [ luaTestCase "simple"
         [qc|function counter(i)
@@ -207,6 +225,10 @@ luaTests = $(testGroupGenerator)
 
 
 -----------------------------------------------------------
+
+luaSimpleTestCase name fn lua = testCase (name ++ " <" ++ fn ++ ">") $ do
+        res <- testLuaWithInput fn [] (marchSPIDropData (Proxy :: Proxy Int)) lua
+        isRight res @? show res
 
 luaTestCase name lua = testGroup name
         [ inner marchSPIDropData (Proxy :: Proxy Int)
