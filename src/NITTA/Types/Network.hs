@@ -30,10 +30,8 @@ module NITTA.Types.Network
     , TargetSystemComponent(..)
     ) where
 
-import           Data.Default
 import           Data.Ix
 import qualified Data.Map         as M
-import           Data.Maybe
 import qualified Data.Set         as S
 import           Data.Typeable
 import           GHC.Generics     (Generic)

@@ -129,7 +129,7 @@ instance ( Ord v ) => Patch (StepInfo v x t) (Diff v) where
     patch diff (FStep f)                = FStep $ patch diff f
     patch diff (EndpointRoleStep ep)    = EndpointRoleStep $ patch diff ep
     patch diff (NestedStep title nStep) = NestedStep title $ patch diff nStep
-    patch diff i                        = i
+    patch _    i                        = i
 
 
 -- |Получить строку с название уровня указанного шага вычислительного процесса.
