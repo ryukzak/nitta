@@ -66,7 +66,7 @@ data TestBenchReport
         , tbCompilerDump   :: String
         , tbSimulationDump :: String
         }
-    deriving ( Generic )
+    deriving ( Generic, Show )
 
 
 

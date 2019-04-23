@@ -15,11 +15,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Utils.Test
-    ( test
-    , testLua
-    , testWithInput
-    , testLuaWithInput
-    , mkModelWithOneNetwork
+    ( mkModelWithOneNetwork
     , Test(..), runTest
     ) where
 
@@ -28,12 +24,13 @@ import           Control.Monad.Trans.Class     (lift)
 import           Control.Monad.Trans.Except
 import           Data.Default                  as D
 import qualified Data.Map                      as M
+import           Data.Text                     (Text)
+import           NITTA.BusNetwork              (BusNetwork)
 import           NITTA.DataFlow
 import           NITTA.Frontend
 import           NITTA.Project
 import           NITTA.SynthesisMethod
 import           NITTA.Types
-import           NITTA.BusNetwork (BusNetwork)
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis         (Node (..), mkNodeIO)
 import           System.FilePath               (joinPath)
@@ -41,39 +38,49 @@ import           Text.InterpolatedString.Perl6 (qc)
 
 
 data Test title v x t = Test
-    { testName :: String
+    { testProjectName   :: String
     , microarchitecture :: BusNetwork title v x t
-    , alg :: [F v x]
-    , receiveValue :: [(v, [x])]
-    , verbose :: Bool
-    , platforms :: [TargetPlatform]
+    , sourceCode        :: Maybe Text
+    , alg               :: [F v x]
+    , receiveValues     :: [(v, [x])]
+    , verbose           :: Bool
+    , platforms         :: [TargetPlatform]
     }
 
 instance Default (Test title v x t) where
     def = Test
-        { testName=undefined
+        { testProjectName=undefined
         , microarchitecture=undefined
+        , sourceCode=Nothing
         , alg=undefined
-        , receiveValue=def
-        , verbose=False 
+        , receiveValues=def
+        , verbose=False
         , platforms=[ Makefile, DE0Nano ]
         }
 
-runTest Test{ testName, microarchitecture, alg, receiveValue, verbose } = runExceptT $ do
+runTest Test{ testProjectName, microarchitecture, sourceCode, alg, receiveValues, verbose } = runExceptT $ do
+    alg' <- case sourceCode of
+        Just src -> do
+            when verbose $ lift $ putStrLn "lua transpiler"
+            let tmp = lua2functions src
+            when verbose $ lift $ putStrLn "lua transpiler - ok"
+            return tmp
+        Nothing -> return alg
+
     when verbose $ lift $ putStrLn "synthesis process"
-    synthesisResult <- lift $ mkNodeIO (mkModelWithOneNetwork microarchitecture alg) >>= simpleSynthesisIO
+    synthesisResult <- lift $ mkNodeIO (mkModelWithOneNetwork microarchitecture alg') >>= simpleSynthesisIO
     let isComplete = isSchedulingComplete $ nModel synthesisResult
     when (verbose && isComplete) $ lift $ putStrLn "synthesis process - ok"
     when (verbose && not isComplete) $ lift $ putStrLn "synthesis process - fail"
-    when (not isComplete) $ throwE ([qc|> test { testName } synthesis fail|] :: String)
+    when (not isComplete) $ throwE ([qc|> test { testProjectName } synthesis fail|] :: String)
 
-    let path = joinPath ["hdl", "gen", testName]
+    let path = joinPath ["hdl", "gen", testProjectName]
     let prj = Project
-            { projectName=testName
+            { projectName=testProjectName
             , libraryPath="../.."
             , projectPath=path
             , processorModel=processor $ nModel synthesisResult
-            , testCntx=Just D.def{ cntxInputs=M.fromList receiveValue }
+            , testCntx=Just D.def{ cntxInputs=M.fromList receiveValues }
             , targetPlatforms=[ Makefile, DE0Nano ]
             }
     when verbose $ lift $ putStrLn $ "write target project (" ++ path ++ ")"
@@ -83,31 +90,10 @@ runTest Test{ testName, microarchitecture, alg, receiveValue, verbose } = runExc
     when verbose $ lift $ putStrLn "run testbench"
     report@TestBenchReport{ tbStatus } <- lift $ runTestBench prj
     when verbose $ lift $ putStrLn $ case tbStatus of
-        True -> "run testbench - ok"
+        True  -> "run testbench - ok"
         False -> "run testbench - fail"
     return report
 
-test name = testWithInput name []
-testLua name ma = testWithInput name [] ma . lua2functions
-testLuaWithInput name is ma = testWithInput name is ma . lua2functions
-
-testWithInput name cntx ma alg = runExceptT $ do
-    node <- lift $ simpleSynthesisIO =<< mkNodeIO (mkModelWithOneNetwork ma alg)
-    unless (isSchedulingComplete $ nModel node)
-        $ throwE [qc|> test { name } not isSchedulingComplete|]
-
-    let prj = Project
-            { projectName=name
-            , libraryPath="../.."
-            , projectPath=joinPath ["hdl", "gen", name]
-            , processorModel=processor $ nModel node
-            , testCntx=Just D.def{ cntxInputs=M.fromList cntx }
-            , targetPlatforms=[ Makefile, DE0Nano ]
-            }
-    TestBenchReport{ tbStatus } <- lift $ writeAndRunTestBench prj
-    unless tbStatus $ throwE ([qc|> test { name } - Fail|] :: String)
-
-    return ([qc|> test { name } - Success|] :: String)
 
 
 -- |Make a model of NITTA process with one network and a specific algorithm. All functions are

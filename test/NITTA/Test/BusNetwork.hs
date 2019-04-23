@@ -19,6 +19,7 @@ module NITTA.Test.BusNetwork
     ( busNetworkTests
     ) where
 
+import           Control.Monad                 (void)
 import           Data.Default
 import           Data.Map                      (fromList)
 import qualified Data.Set                      as S
@@ -27,6 +28,7 @@ import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import           NITTA.Test.Microarchitectures
 import           NITTA.Types
+import           NITTA.Utils.Test
 import           NITTA.Types.Function          (Diff (..), F, Patch (..))
 import           Test.Tasty                    (TestTree, testGroup)
 import           Test.Tasty.HUnit
@@ -52,11 +54,11 @@ test_fibonacci =
         , F.loop 1  "c"  ["b1", "b2"]
         , F.add "a1" "b1" ["c"]
         ]
-    , algTestCase "io_drop_data" (marchSPIDropData proxyInt) alg
-    , algTestCase "io_no_drop_data" (marchSPI proxyInt) alg
+    , algTestCase "io_drop_data" (marchSPIDropData proxyInt) algWithSend
+    , algTestCase "io_no_drop_data" (marchSPI proxyInt) algWithSend
     ]
     where
-        alg =
+        algWithSend =
             [ F.loop 0 "b2" ["a1"      ]
             , F.loop 1 "c"  ["b1", "b2"]
             , F.add "a1" "b1" ["c", "c_copy"]
@@ -65,12 +67,17 @@ test_fibonacci =
 
 
 test_io =
-    [ algTestCaseWithInput "double_receive" [("a", [10..15]),("b", [20..25])] (marchSPI proxyInt)
-        [ F.receive ["a"]
-        , F.receive ["b"]
-        , F.add "a" "b" ["c"]
-        , F.send "c"
-        ]
+    [ testCase "receive two variables" $ void $ runTest' def 
+        { testProjectName="double_receive"
+        , microarchitecture=marchSPI proxyInt
+        , receiveValues=[ ("a", [10..15]), ("b", [20..25]) ]
+        , alg=
+            [ F.receive ["a"]
+            , F.receive ["b"]
+            , F.add "a" "b" ["c"]
+            , F.send "c"
+            ]
+        }
     ]
 
 

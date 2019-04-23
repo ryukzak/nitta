@@ -39,7 +39,8 @@ import           NITTA.Project
 import           NITTA.SynthesisMethod
 import           NITTA.Types
 import           NITTA.Types.Synthesis
-import           NITTA.Utils.Test
+import           NITTA.Utils.Test              (Test (..),
+                                                mkModelWithOneNetwork, runTest)
 import           System.Console.CmdArgs
 import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
@@ -86,7 +87,7 @@ main = do
 runWebUI no_api_gen alg ma = backendServer no_api_gen $ mkModelWithOneNetwork ma alg
 runTestbench alg microarchitecture
     = void $ runTest D.def
-        { testName="main"
+        { testProjectName="main"
         , microarchitecture
         , alg
         , verbose=True
@@ -131,7 +132,12 @@ runHardcoded = do
                 fib(1)|]
 
     backendServer True $ mkModelWithOneNetwork microarchHC algHC
-    print =<< testWithInput "hardcode" [  ] microarchHC algHC
+    void $ runTest D.def
+        { testProjectName="hardcode"
+        , microarchitecture=microarchHC
+        , alg=algHC
+        , verbose=True
+        }
     putStrLn "-- hardcoded end --"
 
 

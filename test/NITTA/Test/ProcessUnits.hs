@@ -120,14 +120,14 @@ test_divider =
         , F.division "a1" "b1" ["c1"] ["d1"]
         , F.add "c1" "d1" ["e1"]
         ]
-    , luaTestCase "single"
+    , intLuaTestCases "single" "single"
         [qc|function f(a)
                 a, _b = a / 2
                 f(a)
             end
             f(1024)
         |]
-    , luaTestCase "pair"
+    , intLuaTestCases "pair" "pair"
         [qc|function f(a, b)
                 a, _ = a / 2
                 b, _ = b / 3

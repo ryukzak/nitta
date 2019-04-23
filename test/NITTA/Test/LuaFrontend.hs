@@ -11,17 +11,18 @@
 {-|
 Module      : NITTA.Test.LuaFrontend
 Description :
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Test.LuaFrontend
-    ( luaTestCase
+    ( intLuaTestCases
     , luaTests
     ) where
 
 import           Control.Monad                 (unless)
+import           Data.Default
 import           Data.Either                   (isRight)
 import           Data.FileEmbed                (embedStringFile)
 import           Data.Proxy
@@ -62,21 +63,21 @@ test_luaSupport =
 
 
 test_counter =
-    [ luaTestCase "simple"
+    [ intLuaTestCases "simple" "simple"
         [qc|function counter(i)
                 i = i + 1
                 counter(i)
             end
             counter(0)
         |]
-    , luaTestCase "with_local_var"
+    , intLuaTestCases "with_local_var" "with_local_var"
         [qc|function counter(i)
                 local i2 = i + 1
                 counter(i2)
             end
             counter(0)
         |]
-    , luaTestCase "with_reg"
+    , intLuaTestCases "with_reg" "with_reg"
         [qc|function counter(i)
                 i = reg(i + 1)
                 counter(i)
@@ -87,28 +88,28 @@ test_counter =
 
 
 test_signed =
-    [ luaTestCase "sub"
+    [ intLuaTestCases "sub" "sub"
         [qc|function counter()
                 send(10 - 20)
                 send(-30 + 40)
             end
             counter()
         |]
-    , luaTestCase "mul"
+    , intLuaTestCases "mul" "mul"
         [qc|function counter()
                 send(10 * -1)
                 send(-20 * -30)
             end
             counter()
         |]
-    , luaTestCase "quad"
+    , intLuaTestCases "quad" "quad"
         [qc|function counter()
                 local x = 10
                 send(x * x)
             end
             counter()
         |]
-    , luaTestCase "div"
+    , intLuaTestCases "div" "div"
         [qc|function counter()
                 a, b = -10 / 2
                 send(a)
@@ -123,20 +124,20 @@ test_signed =
 
 
 test_fibonacci =
-    [ luaTestCase "def_b_a"
+    [ intLuaTestCases "def_b_a" "def_b_a"
         [qc|function fib(a, b)
                 b, a = a + b, b
                 fib(a, b)
             end
             fib(0, 1)
         |]
-    , luaTestCase "nested_reg"
+    , intLuaTestCases "nested_reg" "nested_reg"
         [qc|function fib(a, b)
                 a, b = b, reg(reg(a) + reg(b))
                 fib(a, b)
             end
             fib(0, 1)|]
-    , luaTestCase "nested_reg_and_0"
+    , intLuaTestCases "nested_reg_and_0" "nested_reg_and_0"
         [qc|function fib(a, b)
                 a, b = b, reg(a + reg(b + 0)) + 0
                 fib(a, b)
@@ -146,26 +147,26 @@ test_fibonacci =
 
 
 test_teacup =
-    [ luaTestCaseFP "example" $(embedStringFile "examples/teacup.lua")
+    [ fixpLuaTestCases "example" "example" $(embedStringFile "examples/teacup.lua")
     ]
 
 
 test_fixedpoint =
-    [ luaTestCaseFP "sub"
+    [ fixpLuaTestCases "sub" "sub"
         [qc|function counter()
                 send(0.5 - 0.25)
                 send(-1.25 + 2.5)
             end
             counter()
         |]
-    , luaTestCaseFP "mul"
+    , fixpLuaTestCases "mul" "mul"
         [qc|function counter()
                 send(0.5 * -0.5)
                 send(-20.5 * -2)
             end
             counter()
         |]
-    , luaTestCaseFP "div"
+    , fixpLuaTestCases "div" "div"
         [qc|function counter()
                 a, b = -1.25 / 0.5
                 send(a)
@@ -180,7 +181,7 @@ test_fixedpoint =
 
 
 test_io =
-    [ luaTestCaseWithInput "double_receive" [("a:0", [10..15]),("b:0", [20..25])] $ pack $ fixIndent [qc|
+    [ intIOLuaTestCases "double_receive" [("a:0", [10..15]),("b:0", [20..25])] $ pack $ fixIndent [qc|
 |       function fib()
 |          local a = receive()
 |          local b = receive()
@@ -226,59 +227,54 @@ luaTests = $(testGroupGenerator)
 
 -----------------------------------------------------------
 
-luaSimpleTestCase name fn lua = testCase (name ++ " <" ++ fn ++ ">") $ do
-        res <- testLuaWithInput fn [] (marchSPIDropData (Proxy :: Proxy Int)) lua
-        isRight res @? show res
 
-luaTestCase name lua = testGroup name
-        [ inner marchSPIDropData (Proxy :: Proxy Int)
-        , inner marchSPIDropData (Proxy :: Proxy (IntX 32))
-        , inner marchSPIDropData (Proxy :: Proxy (IntX 40))
-        , inner marchSPIDropData (Proxy :: Proxy (IntX 48))
-        , inner marchSPIDropData (Proxy :: Proxy (IntX 64))
-        , inner marchSPIDropData (Proxy :: Proxy (IntX 96))
-        , inner marchSPIDropData (Proxy :: Proxy (IntX 128))
-        , inner marchSPIDropData (Proxy :: Proxy (FX 22 32))
-        , inner marchSPIDropData (Proxy :: Proxy (FX 42 64))
-        ]
-    where
-        fn = "lua_" ++ name
-        inner ma xProxy
-            = testCase (showTypeOf xProxy ++ " <" ++ fn' ++ ">") $ do
-                res <- testLuaWithInput fn' [] (ma xProxy) lua
-                isRight res @? show res
-            where
-                fn' = fn ++ "_" ++ showTypeOf xProxy
-
-luaTestCaseFP name lua = testGroup name
-        [ inner marchSPIDropData (Proxy :: Proxy (FX 22 32))
-        , inner marchSPIDropData (Proxy :: Proxy (FX 40 64))
-        ]
-    where
-        fn = "lua_" ++ name
-        inner ma xProxy
-            = testCase (showTypeOf xProxy ++ " <" ++ fn' ++ ">") $ do
-                res <- testLuaWithInput fn' [] (ma xProxy) lua
-                isRight res @? show res
-            where
-                fn' = fn ++ "_" ++ showTypeOf xProxy
+luaSimpleTestCase testCaseName testProjectName src
+    = testCase testCaseName $ do
+        report <- runTest' def
+            { testProjectName
+            , microarchitecture=marchSPIDropData (Proxy :: Proxy Int)
+            , sourceCode=Just src
+            }
+        isRight report @? show report
 
 
-luaTestCaseWithInput name is lua = testGroup name
-        [ inner marchSPI (Proxy :: Proxy Int)
-        , inner marchSPI (Proxy :: Proxy (IntX 24))
-        , inner marchSPI (Proxy :: Proxy (IntX 32))
-        , inner marchSPI (Proxy :: Proxy (IntX 40))
-        , inner marchSPI (Proxy :: Proxy (IntX 48))
-        , inner marchSPI (Proxy :: Proxy (IntX 64))
-        , inner marchSPI (Proxy :: Proxy (IntX 96))
-        , inner marchSPI (Proxy :: Proxy (IntX 128))
-        ]
-    where
-        fn = "lua_" ++ name
-        inner ma xProxy
-            = testCase (showTypeOf xProxy ++ " <" ++ fn' ++ ">") $ do
-                res <- testLuaWithInput fn' (map (\(v, x) -> (v, map toEnum x)) is) (ma xProxy) lua
-                isRight res @? show res
-            where
-                fn' = fn ++ "_" ++ showTypeOf xProxy
+genericLuaTestCase testProjectName receiveValues src ma xProxy
+    = testCase (showTypeOf xProxy) $ do
+        report <- runTest' def
+            { testProjectName="generic_lua_" ++ testProjectName
+            , microarchitecture=ma xProxy
+            , sourceCode=Just src
+            , receiveValues=map (\(v, x) -> (v, map fromInteger x)) receiveValues
+            }
+        isRight report @? show report
+
+
+intLuaTestCases testName projectName src = testGroup testName
+    [ genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy Int)
+    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 32))
+    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 40))
+    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 48))
+    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 64))
+    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 96))
+    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 128))
+    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (FX 22 32))
+    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (FX 42 64))
+    ]
+
+
+fixpLuaTestCases testName projectName src = testGroup testName
+    [ genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (FX 22 32))
+    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (FX 40 64))
+    ]
+
+
+intIOLuaTestCases projectName receiveValues src = testGroup projectName
+    [ genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy Int)
+    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 24))
+    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 32))
+    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 40))
+    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 48))
+    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 64))
+    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 96))
+    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 128))
+    ]

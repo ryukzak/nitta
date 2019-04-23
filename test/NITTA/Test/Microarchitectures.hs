@@ -21,12 +21,12 @@ module NITTA.Test.Microarchitectures
     , proxyInt
     , proxyIntX32
     , algTestCase
-    , algTestCaseWithInput
     , externalTestCntr
+    , runTest'
     ) where
 
+import           Control.Monad                 (void)
 import           Data.Atomics.Counter          (incrCounter, newCounter)
-import           Data.Bits
 import           Data.Default
 import           Data.Either                   (isRight)
 import           Data.Proxy
@@ -91,14 +91,13 @@ marchSPIDropData proxy = (marchSPI proxy){ bnAllowDrop=Just True }
 externalTestCntr = unsafePerformIO $ newCounter 0
 {-# NOINLINE externalTestCntr #-}
 
+runTest' t@Test{ testProjectName } = do
+    i <- incrCounter 1 externalTestCntr
+    runTest t{ testProjectName=testProjectName ++ "_" ++ show i }
 
-algTestCase name arch alg = algTestCaseWithInput name [] arch alg
-
-
-algTestCaseWithInput name is arch alg
-    = testCase (name ++ " <" ++ fn ++ "_*>") $ do
-        i <- incrCounter 1 externalTestCntr
-        res <- testWithInput (fn ++ "_" ++ show i) is arch alg
-        isRight res @? show res
-    where
-        fn = "bn_" ++ name
+algTestCase n microarchitecture alg 
+    = testCase n $ void $ runTest' def 
+        { testProjectName=n
+        , microarchitecture
+        , alg        
+        }
