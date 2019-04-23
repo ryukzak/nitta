@@ -21,6 +21,7 @@ module NITTA.Project
     , snippetDumpFile
     , snippetInitialFinish
     , snippetTestBench
+    , runTestBench
     ) where
 
 

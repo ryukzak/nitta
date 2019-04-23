@@ -18,7 +18,7 @@ Stability   : experimental
 -}
 module Main ( main ) where
 
-import           Control.Monad                 (when)
+import           Control.Monad                 (void, when)
 import           Data.Default                  as D
 import qualified Data.Map                      as M
 import           Data.Maybe
@@ -82,10 +82,15 @@ main = do
                 "fx32.32" -> runner (microarch :: BusNetwork String String (FX 32 32) Int)
                 _ -> error "Wrong bus type"
         Nothing -> runHardcoded
-    putStrLn "-- the end --"
 
 runWebUI no_api_gen alg ma = backendServer no_api_gen $ mkModelWithOneNetwork ma alg
-runTestbench alg ma = test "main" ma alg >>= print
+runTestbench alg microarchitecture
+    = void $ runTest D.def
+        { testName="main"
+        , microarchitecture
+        , alg
+        , verbose=True
+        }
 
 
 runHardcoded = do

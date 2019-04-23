@@ -20,9 +20,10 @@ module NITTA.Utils.Test
     , testWithInput
     , testLuaWithInput
     , mkModelWithOneNetwork
+    , Test(..), runTest
     ) where
 
-import           Control.Monad                 (unless)
+import           Control.Monad                 (unless, when)
 import           Control.Monad.Trans.Class     (lift)
 import           Control.Monad.Trans.Except
 import           Data.Default                  as D
@@ -32,11 +33,59 @@ import           NITTA.Frontend
 import           NITTA.Project
 import           NITTA.SynthesisMethod
 import           NITTA.Types
+import           NITTA.BusNetwork (BusNetwork)
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis         (Node (..), mkNodeIO)
 import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
 
+
+data Test title v x t = Test
+    { testName :: String
+    , microarchitecture :: BusNetwork title v x t
+    , alg :: [F v x]
+    , receiveValue :: [(v, [x])]
+    , verbose :: Bool
+    , platforms :: [TargetPlatform]
+    }
+
+instance Default (Test title v x t) where
+    def = Test
+        { testName=undefined
+        , microarchitecture=undefined
+        , alg=undefined
+        , receiveValue=def
+        , verbose=False 
+        , platforms=[ Makefile, DE0Nano ]
+        }
+
+runTest Test{ testName, microarchitecture, alg, receiveValue, verbose } = runExceptT $ do
+    when verbose $ lift $ putStrLn "synthesis process"
+    synthesisResult <- lift $ mkNodeIO (mkModelWithOneNetwork microarchitecture alg) >>= simpleSynthesisIO
+    let isComplete = isSchedulingComplete $ nModel synthesisResult
+    when (verbose && isComplete) $ lift $ putStrLn "synthesis process - ok"
+    when (verbose && not isComplete) $ lift $ putStrLn "synthesis process - fail"
+    when (not isComplete) $ throwE ([qc|> test { testName } synthesis fail|] :: String)
+
+    let path = joinPath ["hdl", "gen", testName]
+    let prj = Project
+            { projectName=testName
+            , libraryPath="../.."
+            , projectPath=path
+            , processorModel=processor $ nModel synthesisResult
+            , testCntx=Just D.def{ cntxInputs=M.fromList receiveValue }
+            , targetPlatforms=[ Makefile, DE0Nano ]
+            }
+    when verbose $ lift $ putStrLn $ "write target project (" ++ path ++ ")"
+    lift $ writeProject prj
+    when verbose $ lift $ putStrLn $ "write target project (" ++ path ++ ") - ok"
+
+    when verbose $ lift $ putStrLn "run testbench"
+    report@TestBenchReport{ tbStatus } <- lift $ runTestBench prj
+    when verbose $ lift $ putStrLn $ case tbStatus of
+        True -> "run testbench - ok"
+        False -> "run testbench - fail"
+    return report
 
 test name = testWithInput name []
 testLua name ma = testWithInput name [] ma . lua2functions
