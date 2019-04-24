@@ -210,7 +210,8 @@ option2decision (DataFlowOption src trg)
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
     in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
 option2decision (RefactorOption (InsertOutRegisterO v)) 
-    = RefactorDecision (InsertOutRegisterD v ("buf_" ++ v))
+    -- FIXME: v <> v
+    = RefactorDecision (InsertOutRegisterD v (v <> v))
 
 
 -----------------------------------------------------------

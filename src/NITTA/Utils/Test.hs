@@ -9,7 +9,7 @@
 {-|
 Module      : NITTA.Utils.Test
 Description : Testing utility
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -19,13 +19,13 @@ module NITTA.Utils.Test
     , Test(..), runTest
     ) where
 
-import           Control.Monad                 (unless, when)
+import           Control.Monad                 (when)
 import           Control.Monad.Trans.Class     (lift)
 import           Control.Monad.Trans.Except
 import           Data.Default                  as D
 import qualified Data.Map                      as M
 import           Data.Text                     (Text)
-import           NITTA.BusNetwork              (BusNetwork)
+import           NITTA.BusNetwork              (BusNetwork, Title)
 import           NITTA.DataFlow
 import           NITTA.Frontend
 import           NITTA.Project
@@ -44,10 +44,11 @@ data Test title v x t = Test
     , alg               :: [F v x]
     , receiveValues     :: [(v, [x])]
     , verbose           :: Bool
+    , synthesisMethod   :: Node title v x t -> IO (Node title v x t)
     , platforms         :: [TargetPlatform]
     }
 
-instance Default (Test title v x t) where
+instance ( Title title, Var v, Semigroup v, Val x, Time t ) => Default (Test title v x t) where
     def = Test
         { testProjectName=undefined
         , microarchitecture=undefined
@@ -55,10 +56,11 @@ instance Default (Test title v x t) where
         , alg=undefined
         , receiveValues=def
         , verbose=False
+        , synthesisMethod=simpleSynthesisIO
         , platforms=[ Makefile, DE0Nano ]
         }
 
-runTest Test{ testProjectName, microarchitecture, sourceCode, alg, receiveValues, verbose } = runExceptT $ do
+runTest Test{ testProjectName, microarchitecture, sourceCode, alg, receiveValues, synthesisMethod, verbose } = runExceptT $ do
     alg' <- case sourceCode of
         Just src -> do
             when verbose $ lift $ putStrLn "lua transpiler"
@@ -68,7 +70,7 @@ runTest Test{ testProjectName, microarchitecture, sourceCode, alg, receiveValues
         Nothing -> return alg
 
     when verbose $ lift $ putStrLn "synthesis process"
-    synthesisResult <- lift $ mkNodeIO (mkModelWithOneNetwork microarchitecture alg') >>= simpleSynthesisIO
+    synthesisResult <- lift $ mkNodeIO (mkModelWithOneNetwork microarchitecture alg') >>= synthesisMethod
     let isComplete = isSchedulingComplete $ nModel synthesisResult
     when (verbose && isComplete) $ lift $ putStrLn "synthesis process - ok"
     when (verbose && not isComplete) $ lift $ putStrLn "synthesis process - fail"

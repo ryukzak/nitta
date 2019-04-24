@@ -10,7 +10,7 @@
 {-|
 Module      : NITTA.Types.Time
 Description :
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -29,7 +29,7 @@ import           Numeric.Interval
 
 -- | Класс координаты во времени.
 
-type Time t = ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t )
+type Time t = ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, Integral t )
 
 -- | Описание временных ограничений на активности (Ativity). Используется при описании доступных
 -- опций для планирования вычислительного процесса.

@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
@@ -21,96 +22,92 @@ module NITTA.Test.LuaFrontend
     , luaTests
     ) where
 
-import           Control.Monad                 (unless)
 import           Data.Default
 import           Data.Either                   (isRight)
 import           Data.FileEmbed                (embedStringFile)
 import           Data.Proxy
-import           Data.Text                     (pack)
-import           NITTA.DataFlow
-import           NITTA.Frontend
-import           NITTA.Project
 import           NITTA.SynthesisMethod
 import           NITTA.Test.Microarchitectures
 import           NITTA.Types
-import           NITTA.Types.Project
-import           NITTA.Types.Synthesis         (Node (..), mkNodeIO)
-import           NITTA.Utils                   (fixIndent)
 import           NITTA.Utils.Test
-import           System.FilePath               (joinPath)
 import           Test.Tasty                    (TestTree, testGroup)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 import           Text.InterpolatedString.Perl6 (qc)
 
 
-test_luaSupport =
-    [ luaSimpleTestCase "a = b + 1" "lua_rexp_not_in_paren"
+test_support =
+    [ luaSimpleTestCase "a = b + 1;" "lua_rexp_not_in_paren"
         [qc|function f(b)
                 a = b + 1
                 f(a)
             end
             f(0)
         |]
-    , luaSimpleTestCase "a = (b + 1)" "lua_rexp_in_paren"
+    , luaSimpleTestCase "a = (b + 1);" "lua_rexp_in_paren"
         [qc|function f(b)
                 a = (b + 1)
                 f(a)
             end
             f(0)
         |]
-    ]
-
-
-test_counter =
-    [ intLuaTestCases "simple" "simple"
+    , intLuaTestCases "counter(i + 1);" "counter"
+        [qc|function counter(i)
+                counter(i + 1)
+            end
+            counter(0)
+        |]
+    , intLuaTestCases "i = i + 1; counter(i);" "counter_redefinition"
         [qc|function counter(i)
                 i = i + 1
                 counter(i)
             end
             counter(0)
         |]
-    , intLuaTestCases "with_local_var" "with_local_var"
+    , intLuaTestCases "local i2 = i + 1; counter(i2);" "counter_local_var"
         [qc|function counter(i)
                 local i2 = i + 1
                 counter(i2)
             end
             counter(0)
         |]
-    , intLuaTestCases "with_reg" "with_reg"
+    , intLuaTestCases "i = reg(i + 1); counter(i);" "counter_reg"
         [qc|function counter(i)
                 i = reg(i + 1)
                 counter(i)
             end
             counter(0)
         |]
-    ]
-
-
-test_signed =
-    [ intLuaTestCases "sub" "sub"
-        [qc|function counter()
+    , intLuaTestCases "i = i + 1; counter(reg(i));" "counter_reg"
+        [qc|function counter(i)
+                i = i + 1
+                counter(reg(i))
+            end
+            counter(0)
+        |]
+    , intLuaTestCases "send(10 - 20); send(-30 + 40);" "subtraction"
+        [qc|function f()
                 send(10 - 20)
                 send(-30 + 40)
             end
-            counter()
+            f()
         |]
-    , intLuaTestCases "mul" "mul"
-        [qc|function counter()
+    , intLuaTestCases "send(10 * -1); send(-20 * -30);" "multiplication"
+        [qc|function f()
                 send(10 * -1)
                 send(-20 * -30)
             end
-            counter()
+            f()
         |]
-    , intLuaTestCases "quad" "quad"
-        [qc|function counter()
+    , intLuaTestCases "x = 10; send(x * x);" "quad"
+        [qc|function f()
                 local x = 10
                 send(x * x)
             end
-            counter()
+            f()
         |]
-    , intLuaTestCases "div" "div"
-        [qc|function counter()
+    , intLuaTestCases "a, b = -10 / 2; c, d = 10 / -2" "division"
+        [qc|function f()
                 a, b = -10 / 2
                 send(a)
                 send(b)
@@ -118,26 +115,26 @@ test_signed =
                 send(c)
                 send(d)
             end
-            counter()
+            f()
         |]
     ]
 
 
 test_fibonacci =
-    [ intLuaTestCases "def_b_a" "def_b_a"
+    [ intLuaTestCases "b, a = a + b, b" "def_b_a"
         [qc|function fib(a, b)
                 b, a = a + b, b
                 fib(a, b)
             end
             fib(0, 1)
         |]
-    , intLuaTestCases "nested_reg" "nested_reg"
+    , intLuaTestCases "a, b = b, reg(reg(a) + reg(b))" "nested_reg"
         [qc|function fib(a, b)
                 a, b = b, reg(reg(a) + reg(b))
                 fib(a, b)
             end
             fib(0, 1)|]
-    , intLuaTestCases "nested_reg_and_0" "nested_reg_and_0"
+    , intLuaTestCases "a, b = b, reg(a + reg(b + 0)) + 0" "nested_reg_and_0"
         [qc|function fib(a, b)
                 a, b = b, reg(a + reg(b + 0)) + 0
                 fib(a, b)
@@ -146,28 +143,30 @@ test_fibonacci =
     ]
 
 
-test_teacup =
-    [ fixpLuaTestCases "example" "example" $(embedStringFile "examples/teacup.lua")
+test_examples =
+    [ fixpLuaTestCases "examples/teacup.lua" "teacup" $(embedStringFile "examples/teacup.lua")
+    , fixpLuaTestCases "examples/pid.lua" "pid" $(embedStringFile "examples/pid.lua")
+    , intLuaTestCases "examples/fibonacci.lua" "fibonacci" $(embedStringFile "examples/fibonacci.lua")
     ]
 
 
-test_fixedpoint =
-    [ fixpLuaTestCases "sub" "sub"
-        [qc|function counter()
+test_fixpoint =
+    [ fixpLuaTestCases "send(0.5 - 0.25); send(-1.25 + 2.5);" "add"
+        [qc|function f()
                 send(0.5 - 0.25)
                 send(-1.25 + 2.5)
             end
-            counter()
+            f()
         |]
-    , fixpLuaTestCases "mul" "mul"
-        [qc|function counter()
+    , fixpLuaTestCases "send(0.5 * -0.5); send(-20.5 * -2);" "mul"
+        [qc|function f()
                 send(0.5 * -0.5)
                 send(-20.5 * -2)
             end
-            counter()
+            f()
         |]
-    , fixpLuaTestCases "div" "div"
-        [qc|function counter()
+    , fixpLuaTestCases "a, b = -1.25 / 0.5; c, d = 75 / -2;" "div"
+        [qc|function f()
                 a, b = -1.25 / 0.5
                 send(a)
                 send(b)
@@ -175,49 +174,40 @@ test_fixedpoint =
                 send(c)
                 send(d)
             end
-            counter()
+            f()
         |]
     ]
 
 
 test_io =
-    [ intIOLuaTestCases "double_receive" [("a:0", [10..15]),("b:0", [20..25])] $ pack $ fixIndent [qc|
-|       function fib()
-|          local a = receive()
-|          local b = receive()
-|          local c = a + b
-|          send(c)
-|          fib()
-|       end
-|       fib()
-|       |]
+    [ intIOLuaTestCases "sum of received variables" "sum_of_receive" [ ("a:0", [10..15]),("b:0", [20..25] )] [qc|
+        function f()
+           local a = receive()
+           local b = receive()
+           local c = a + b
+           send(c)
+           f()
+        end
+        f()
+        |]
     ]
 
 
 test_refactor =
-    [ testCase "insertOutRegister" $ do
-        let alg = lua2functions
-                [qc|function fib(x)
-                    y = x + x + x
-                    fib(y)
-                end
-                fib(1)|]
-            ma = march
-            symthesisMethod = smartBindSynthesisIO
-        node <- symthesisMethod =<< mkNodeIO (mkModelWithOneNetwork ma alg)
-
-        unless (isSchedulingComplete $ nModel node) $ error "synthesis process is not completed!"
-
-        let prj = Project
-                { projectName="insertOutRegister"
-                , libraryPath="../.."
-                , projectPath=joinPath ["hdl", "gen", "insertOutRegister"]
-                , processorModel=processor $ nModel node
-                , testCntx=Nothing
-                , targetPlatforms=[ Makefile ]
-                }
-        TestBenchReport{ tbStatus } <- writeAndRunTestBench prj
-        unless tbStatus $ error "simulation do not complience to the functional model"
+    [ testCase "insert register before binding (y = x + x + x)" $ do
+        report <- runTest' ((def :: Test String String Int Int)
+            { testProjectName="regBeforeBind"
+            , microarchitecture=march
+            , synthesisMethod=smartBindSynthesisIO
+            , sourceCode=Just [qc|
+                    function f(x)
+                        y = x + x + x
+                        f(y)
+                    end
+                    f(1)
+                |]
+            })
+        isRight report @? show report
     ]
 
 
@@ -252,23 +242,18 @@ genericLuaTestCase testProjectName receiveValues src ma xProxy
 intLuaTestCases testName projectName src = testGroup testName
     [ genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy Int)
     , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 32))
-    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 40))
     , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 48))
-    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 64))
-    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 96))
     , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 128))
-    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (FX 22 32))
-    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (FX 42 64))
     ]
 
 
 fixpLuaTestCases testName projectName src = testGroup testName
     [ genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (FX 22 32))
-    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (FX 40 64))
+    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (FX 42 64))
     ]
 
 
-intIOLuaTestCases projectName receiveValues src = testGroup projectName
+intIOLuaTestCases testName projectName receiveValues src = testGroup testName
     [ genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy Int)
     , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 24))
     , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 32))
