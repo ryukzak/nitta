@@ -110,17 +110,16 @@ instance ( Var v
     functions Frame{ processor } = functions processor
 
 
-instance  ( Ord v ) =>
-        DecisionProblem (BindingDT String v x)
-              BindingDT (ModelState String v x t)
+instance  ( Title title, Ord v ) =>
+        DecisionProblem (BindingDT title v x)
+              BindingDT (ModelState title v x t)
         where
     options _ Frame{ processor }    = options binding processor
     -- options _ Level{ currentFrame } = options binding currentFrame
     decision _ f@Frame{ processor } d = f{ processor=decision binding processor d }
     -- decision _ l@Level{ currentFrame } d = l{ currentFrame=decision binding currentFrame d }
 
-instance ( Typeable title, Ord title, Show title, Var v, Time t
-         , Typeable x
+instance ( Title title, Var v, Time t, Typeable x
          ) => DecisionProblem (DataFlowDT title v t)
                    DataFlowDT (ModelState title v x t)
          where

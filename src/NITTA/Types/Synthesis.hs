@@ -178,9 +178,10 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
 
-instance ( Var v, Typeable x, Time t
-         ) => DecisionProblem (SynthesisDT String v x t)
-                  SynthesisDT (ModelState String v x t)
+
+instance ( Title title, Var v, Typeable x, Time t
+         ) => DecisionProblem (SynthesisDT title v x t)
+                  SynthesisDT (ModelState title v x t)
         where
     options _ f@Frame{ processor }
         = let

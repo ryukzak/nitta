@@ -40,6 +40,7 @@ module NITTA.BusNetwork
     ( busNetwork
     , BusNetwork(..)
     , bindedFunctions, bindedVars
+    , Title
     ) where
 
 import           Control.Monad.State
@@ -315,9 +316,9 @@ instance ( Title title ) => Simulatable (BusNetwork title v x t) v x where
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( Ord v ) =>
-        DecisionProblem (BindingDT String v x)
-              BindingDT (BusNetwork String v x t)
+instance ( Ord v, Title title ) =>
+        DecisionProblem (BindingDT title v x)
+              BindingDT (BusNetwork title v x t)
         where
     options _ BusNetwork{ bnRemains, bnPus } = concatMap optionsFor bnRemains
         where
@@ -335,15 +336,15 @@ instance ( Ord v ) =>
                         Nothing  -> Just [fb]
                 ) puTitle bnBinded
             , bnProcess=snd $ modifyProcess p $
-                addStep (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ puTitle
+                addStep (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ show puTitle
             , bnRemains=filter (/= fb) bnRemains
         }
 
 
 
-instance ( Var v, Typeable x
+instance ( Title title, Var v, Typeable x
         ) => DecisionProblem (RefactorDT v)
-                  RefactorDT (BusNetwork String v x t)
+                  RefactorDT (BusNetwork title v x t)
         where
     options _ bn
         = nub

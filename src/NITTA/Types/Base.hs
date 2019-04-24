@@ -109,7 +109,7 @@ data StepInfo v x t where
     -- правило не хранится в структурах данных, а генерируется автоматически по требованию при
     -- помощи опроса вложенных структурных элементов.
     NestedStep :: 
-        ( Eq title, Show title, Ord title
+        ( Show title, Ord title
         ) => 
             { nTitle :: title
             , nStep :: Step v x t
