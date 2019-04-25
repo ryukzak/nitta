@@ -247,7 +247,9 @@ instance ( Ord v ) => Function (Loop v x) v where
     isBreakLoop _ = True
 instance ( Ord v ) => Patch (Loop v x) (v, v) where
     patch diff (Loop x a b) = Loop x (patch diff a) (patch diff b)
-instance Locks (Loop v x) v where locks _ = []
+instance Locks (Loop v x) v where
+    -- locks (Loop _ (O as) (I b)) = map (\a -> Lock{ locked=a, lockBy=b }) $ elems as
+    locks _ = []
 instance ( Ord v ) => FunctionSimulation (Loop v x) v x where
     simulate cntx (Loop (X x) (O v2) (I v1)) = do
         let x' = fromMaybe x $ cntx `get` v1

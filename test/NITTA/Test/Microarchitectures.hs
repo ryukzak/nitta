@@ -28,7 +28,6 @@ module NITTA.Test.Microarchitectures
 import           Control.Monad                 (void)
 import           Data.Atomics.Counter          (incrCounter, newCounter)
 import           Data.Default
-import           Data.Either                   (isRight)
 import           Data.Proxy
 import           NITTA.BusNetwork
 import qualified NITTA.ProcessUnits.Accum      as A

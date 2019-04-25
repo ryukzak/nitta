@@ -47,10 +47,9 @@ import           Control.Monad.State
 import qualified Data.Array                    as A
 import           Data.Bits                     (FiniteBits (..))
 import           Data.Default
-import           Data.List                     (find, nub, partition, sortOn,
-                                                (\\))
+import           Data.List                     (find, groupBy, nub, sortOn)
 import qualified Data.Map                      as M
-import           Data.Maybe                    (fromMaybe, isJust, mapMaybe)
+import           Data.Maybe                    (fromMaybe, isJust)
 import           Data.Set                      (elems, fromList, member)
 import qualified Data.String.Utils             as S
 import           Data.Typeable
@@ -118,66 +117,42 @@ busNetwork w allowDrop pus = BusNetwork
             ) pus
 
 
-instance ( Var v
-         ) => WithFunctions (BusNetwork title v x t) (F v x) where
-    functions BusNetwork{..} = sortFBs binded []
-        where
-            binded = bnRemains ++ concat (M.elems bnBinded)
-            sortFBs [] _ = []
-            sortFBs fbs cntx
-                = let (ready, notReady) = partition (\fb -> isBreakLoop fb || all (`elem` cntx) (inputs fb)) fbs
-                in case ready of
-                    [] -> error "Cycle in algorithm!"
-                    _  -> ready ++ sortFBs notReady (elems (unionsMap outputs ready) ++ cntx)
-
+instance WithFunctions (BusNetwork title v x t) (F v x) where
+    functions BusNetwork{ bnRemains, bnBinded } = bnRemains ++ concat (M.elems bnBinded)
 
 instance ( Title title, Var v, Time t
          , Typeable x
          ) => DecisionProblem (DataFlowDT title v t)
                    DataFlowDT (BusNetwork title v x t)
     where
-    options _proxy n@BusNetwork{..}
+    options _proxy BusNetwork{ bnPus, bnProcess }
         = notEmptyDestination $ concat
-            [
-                [ DataFlowO (srcTitle, fixPullConstrain pullAt) $ M.fromList pushs
-                | pushs <- mapM pushOptionsFor $ elems pullVars
-                , let pushTo = mapMaybe (fmap fst . snd) pushs
-                , length (nub pushTo) == length pushTo
-                ]
-            | (srcTitle, opts) <- puOptions
-            , EndpointO (Source pullVars) pullAt <- opts
+            [ map (DataFlowO (source, fixConstrain pullAt)) $ targetOptionsFor $ elems vars
+            | (source, opts) <- puOptions
+            , EndpointO (Source vars) pullAt <- opts
             ]
         where
-            notEmptyDestination = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
-            now = nextTick bnProcess
-            fixPullConstrain constrain
+            puOptions = M.assocs $ M.map (options endpointDT) bnPus
+            targetOptionsFor vs = let
+                    conflictableTargets =
+                        [ (pushVar, Just (target, fixConstrain pushAt))
+                        | (target, opts) <- puOptions
+                        , EndpointO (Target pushVar) pushAt <- opts
+                        , pushVar `elem` vs
+                        ]
+                    targets = sequence $ groupBy (\a b -> tgr a == tgr b) $ sortOn tgr conflictableTargets
+                    zero = zip vs $ repeat Nothing
+                in map (M.fromList . (++) zero) targets
+
+            fixConstrain constrain
                 = let
-                    a = max now $ constrain^.avail.infimum
+                    a = max (nextTick bnProcess) $ constrain^.avail.infimum
                     b = constrain^.avail.supremum
                 in constrain & avail .~ (a ... b)
 
-            pushOptionsFor v | v `notElem` availableVars = [(v, Nothing)]
-            pushOptionsFor v = (v, Nothing) : pushOptionsFor' v
-
-            pushOptionsFor' v = [ (v, Just (pushTo, pushAt))
-                                --   | (pushTo, vars) <- trace ("\n==========" ++ S.join "\n" (map show puOptions)) puOptions
-                                | (pushTo, vars) <- puOptions
-                                , EndpointO (Target pushVar) pushAt <- vars
-                                , pushVar == v
-                                ]
-            bnForwardedVariables = transfered n
-            availableVars
-                = let
-                    fbs = bnRemains ++ concat (M.elems bnBinded)
-                    alg = foldl
-                        (\dict Lock{ locked=a, lockBy=b } -> M.adjust ((:) b) a dict)
-                        (M.fromList [(v, []) | v <- elems $ unionsMap variables fbs])
-                        $ filter (\Lock{ lockBy } -> lockBy `notElem` bnForwardedVariables)
-                        $ concatMap locks fbs ++ concatMap locks (M.elems bnPus)
-                    notBlockedVariables = map fst $ filter (null . snd) $ M.assocs alg
-                in notBlockedVariables \\ bnForwardedVariables
-
-            puOptions = M.assocs $ M.map (options endpointDT) bnPus
+            notEmptyDestination = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
+            tgr (_, Just (target, _)) = Just target
+            tgr _                     = Nothing
 
     decision _proxy n@BusNetwork{ bnProcess, bnPus } d@DataFlowD{ dfdSource=( srcTitle, pullAt ), dfdTargets }
         | nextTick bnProcess > d^.at.infimum
