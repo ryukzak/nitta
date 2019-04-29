@@ -90,10 +90,17 @@ runTest Test{ testProjectName, microarchitecture, sourceCode, alg, receiveValues
     when verbose $ lift $ putStrLn $ "write target project (" ++ path ++ ") - ok"
 
     when verbose $ lift $ putStrLn "run testbench"
-    report@TestBenchReport{ tbStatus } <- lift $ runTestBench prj
-    when verbose $ lift $ putStrLn $ case tbStatus of
-        True  -> "run testbench - ok"
-        False -> "run testbench - fail"
+    report@TestBenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- lift $ runTestBench prj
+    when verbose $ case tbStatus of
+        True  -> lift $ putStrLn "run testbench - ok"
+        False -> lift $ do
+            putStrLn "run testbench - fail"
+            putStrLn "-----------------------------------------------------------"
+            putStrLn "testbench compiler dump:"
+            putStrLn tbCompilerDump
+            putStrLn "-----------------------------------------------------------"
+            putStrLn "testbench simulation dump:"
+            putStrLn tbSimulationDump
     return report
 
 
