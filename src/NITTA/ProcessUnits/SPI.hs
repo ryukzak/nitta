@@ -207,7 +207,7 @@ instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
     hardwareInstance
             title
             SerialPU{ spuState=State{ spiBounceFilter } }
-            Enviroment{ net=NetEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
+            TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
             PUPorts{ externalPorts=Slave{..}, .. }
         = fixIndent [qc|
 |           pu_slave_spi
@@ -242,7 +242,7 @@ instance ( Var v, Show t, Show x, Val x ) => IOTest (SPI v x t) v x where
     componentTestEnviroment
             title
             pu@SerialPU{ spuState=State{ spiBounceFilter } }
-            Enviroment{ net=NetEnv{..}, signalClk, signalRst, inputPort, outputPort }
+            TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
             PUPorts{ externalPorts=Slave{..}, .. }
             cntxs
         | let

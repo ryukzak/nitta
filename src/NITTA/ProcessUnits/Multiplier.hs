@@ -590,11 +590,11 @@ instance ( Time t, Var v, Val x
 
     --	|Source code fragment generation for create processor instance within the processorю
     -- 	The main task of the function is to include processor to processor infostructure correctly.
-      --	and set uo all parameters, names and wires.
+    --	and set uo all parameters, names and wires.
     --
     -- Take attention to function @fixIndent@. This function allows a programmer to use
     -- normal code block indentation.
-    hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk, signalRst } PUPorts{..}
+    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } PUPorts{..}
         = fixIndent [qc|
 |           pu_multiplier #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -613,6 +613,8 @@ instance ( Time t, Var v, Val x
 |               , .attr_out( { attrOut } )
 |               );
 |           |]
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+        = error "Should be defined in network."
 
 
 -- As you can see ahead, this class uses to get data bus width from the type level (@x@ type variable).

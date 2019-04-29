@@ -63,13 +63,13 @@ snippetTestBench
         Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx fs
 
         inst = hardwareInstance projectName pu
-            Enviroment
+            TargetEnvironment
                 { signalClk="clk"
                 , signalRst="rst"
                 , signalCycle="cycle"
                 , inputPort=undefined
                 , outputPort=undefined
-                , net=NetEnv
+                , unitEnv=ProcessUnitEnv
                     { parameterAttrWidth=IntParam 4
                     , dataIn="data_in"
                     , attrIn="attr_in"

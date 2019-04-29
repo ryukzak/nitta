@@ -99,13 +99,13 @@ busNetwork w allowDrop pus = BusNetwork
     where
         pus' = map (\(title, f) ->
             ( title
-            , f Enviroment
+            , f TargetEnvironment
                 { signalClk="clk"
                 , signalRst="rst"
                 , signalCycle="cycle"
                 , inputPort= \(InputPort n) -> n
                 , outputPort= \(OutputPort n) -> n
-                , net=NetEnv
+                , unitEnv=ProcessUnitEnv
                     { parameterAttrWidth=InlineParam "ATTR_WIDTH"
                     , dataIn="data_bus"
                     , dataOut=title ++ "_data_out"

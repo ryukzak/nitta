@@ -554,12 +554,12 @@ instance ( Var v
     where
       Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx $ functions pu
       hardwareInstance' = hardwareInstance projectName pu
-        Enviroment{ signalClk="clk"
+        TargetEnvironment{ signalClk="clk"
                 , signalRst="rst"
                 , signalCycle="cycle"
                 , inputPort=undefined
                 , outputPort=undefined
-                , net=NetEnv
+                , unitEnv=ProcessUnitEnv
                   { parameterAttrWidth=IntParam 4
                   , dataIn="data_in"
                   , attrIn="attr_in"
@@ -702,7 +702,7 @@ instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) 
             $ unlines $ map
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
                 $ elems frMemory
-    hardwareInstance title pu@Fram{..} Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
+    hardwareInstance title pu@Fram{..} TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } PUPorts{..} =
         [qc|pu_fram
         #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
         , .ATTR_WIDTH( { show parameterAttrWidth } )
@@ -721,5 +721,7 @@ instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) 
         , .attr_out( { attrOut } )
         );
         |]
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+        = error "Should be defined in network."
 
 instance IOTest (Fram v x t) v x

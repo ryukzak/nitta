@@ -11,7 +11,7 @@
 {-|
 Module      : NITTA.Types.Network
 Description :
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -19,10 +19,10 @@ Stability   : experimental
 module NITTA.Types.Network
     ( Connected(..)
     , DataFlowDT, dataFlowDT, Option(..), Decision(..)
-    , Enviroment(..)
+    , TargetEnvironment(..)
     , Implementation(..)
     , IOTest(..)
-    , NetEnv(..)
+    , UnitEnv(..)
     , Parameter(..)
     , PU(..), castPU
     , Signal(..), InputPort(..), OutputPort(..)
@@ -62,7 +62,7 @@ data PU v x t where
             { diff :: Diff v
             , unit :: pu
             , links :: PUPorts pu
-            , systemEnv :: Enviroment
+            , systemEnv :: TargetEnvironment
             } -> PU v x t
 
 instance ( Ord v ) =>
@@ -197,13 +197,13 @@ class TargetSystemComponent pu where
 
     -- |Генерация фрагмента исходного кода для создания экземпляра вычислительного блока в рамках
     -- вычислительной платформы NITTA.
-    hardwareInstance :: String -> pu -> Enviroment -> PUPorts pu -> String
+    hardwareInstance :: String -> pu -> TargetEnvironment -> PUPorts pu -> String
 
 
 class IOTest pu v x | pu -> v x where
     -- |Для автоматизированного тестирования компонент со внешними портами ввода/вывода необходимо
     -- специализированное тестовое окружение, имитирующее ввод/вывод.
-    componentTestEnviroment :: String -> pu -> Enviroment -> PUPorts pu -> [Cntx v x] -> String
+    componentTestEnviroment :: String -> pu -> TargetEnvironment -> PUPorts pu -> [Cntx v x] -> String
     componentTestEnviroment _title _pu _env _ports _cntxs = ""
 
 
@@ -221,21 +221,24 @@ instance Show Parameter where
     show (InlineParam s) = s
 
 
-data NetEnv
-    = NetEnv
-        { parameterAttrWidth :: Parameter
-        , dataIn, attrIn     :: String
-        , dataOut, attrOut   :: String
-        , signal             :: Signal -> String -- ^Функция позволяющая подставить индекс на шину управления.
-        }
-
--- |Подключения к сети.
-data Enviroment
-    = Enviroment
-        { signalClk   :: String
-        , signalRst   :: String
-        , signalCycle :: String -- ^Сигнал о начале вычислительного цикла.
+-- |Target processor environment, including IO ports, clk, rst and cycle signals.
+data TargetEnvironment
+    = TargetEnvironment
+        { signalClk   :: String -- ^clock
+        , signalRst   :: String -- ^reset
+        , signalCycle :: String -- ^posedge on computation cycle start
         , inputPort   :: InputPort -> String
         , outputPort  :: OutputPort -> String
-        , net         :: NetEnv
+        , unitEnv     :: UnitEnv -- unit specific environment
         }
+
+data UnitEnv
+    -- |Environment of process unit.
+    = ProcessUnitEnv
+        { parameterAttrWidth :: Parameter
+        , dataIn, attrIn     :: String -- ^bus name
+        , dataOut, attrOut   :: String -- ^bus name
+        , signal             :: Signal -> String -- ^control signal
+        }
+    -- |Environment of network.
+    | NetworkEnv

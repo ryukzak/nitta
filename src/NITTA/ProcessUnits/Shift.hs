@@ -143,22 +143,25 @@ instance ( Var v, Val x, Typeable x ) => Simulatable (Shift v x t) v x where
 
 
 instance ( Val x ) => TargetSystemComponent (Shift v x t) where
-  moduleName _ _ = "pu_shift"
-  hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
-  software _ _ = Empty
-  hardwareInstance title _pu Enviroment{ net=NetEnv{..}, signalClk } PUPorts{..} =
-    [qc|pu_shift
-    #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-     , .ATTR_WIDTH( { show parameterAttrWidth } )
-     ) { title }
-    ( .clk( { signalClk } )
-    , .signal_work( { signal work } ), .signal_direction( { signal direction } )
-    , .signal_mode( { signal mode } ), .signal_step( { signal step } )
-    , .signal_init( { signal init } ), .signal_oe( { signal oe } )
-    , .data_in( { dataIn } )
-    , .attr_in( { attrIn } )
-    , .data_out( { dataOut } )
-    , .attr_out( { attrOut } )
-    );|]
+    moduleName _ _ = "pu_shift"
+    hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
+    software _ _ = Empty
+    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } PUPorts{..} 
+        = fixIndent [qc|
+|           pu_shift #
+|                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+|                   , .ATTR_WIDTH( { show parameterAttrWidth } )
+|                   ) { title }
+|               ( .clk( { signalClk } )
+|               , .signal_work( { signal work } ), .signal_direction( { signal direction } )
+|               , .signal_mode( { signal mode } ), .signal_step( { signal step } )
+|               , .signal_init( { signal init } ), .signal_oe( { signal oe } )
+|               , .data_in( { dataIn } )
+|               , .attr_in( { attrIn } )
+|               , .data_out( { dataOut } )
+|               , .attr_out( { attrOut } )
+|           |]
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+        = error "Should be defined in network."
 
 instance IOTest (Shift v x t) v x

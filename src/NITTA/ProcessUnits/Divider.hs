@@ -341,8 +341,8 @@ instance ( Val x, Show t
         , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
         ]
     hardwareInstance title _pu@Divider{ mock, pipeline }
-            Enviroment
-                { net=NetEnv
+            TargetEnvironment
+                { unitEnv=ProcessUnitEnv
                     { signal
                     , dataIn, dataOut
                     , parameterAttrWidth, attrIn, attrOut
@@ -350,26 +350,31 @@ instance ( Val x, Show t
                 , signalClk
                 , signalRst
                 }
-            PUPorts{ oe, oeSel, wr, wrSel } =
-        [qc|pu_div
-    #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-     , .ATTR_WIDTH( { parameterAttrWidth } )
-     , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
-     , .PIPELINE( { pipeline } )
-     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
-     , .MOCK_DIV( { bool2verilog mock } )
-     ) { title }
-    ( .clk( { signalClk } )
-    , .rst( { signalRst } )
-    , .signal_wr( { signal wr } )
-    , .signal_wr_sel( { signal wrSel } )
-    , .data_in( { dataIn } )
-    , .attr_in( { attrIn } )
-    , .signal_oe( { signal oe } )
-    , .signal_oe_sel( { signal oeSel } )
-    , .data_out( { dataOut } )
-    , .attr_out( { attrOut } )
-    );|]
+            PUPorts{ oe, oeSel, wr, wrSel } 
+        = fixIndent [qc|
+|           pu_div #
+|                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+|                   , .ATTR_WIDTH( { parameterAttrWidth } )
+|                   , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
+|                   , .PIPELINE( { pipeline } )
+|                   , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
+|                   , .MOCK_DIV( { bool2verilog mock } )
+|                   ) { title }
+|               ( .clk( { signalClk } )
+|               , .rst( { signalRst } )
+|               , .signal_wr( { signal wr } )
+|               , .signal_wr_sel( { signal wrSel } )
+|               , .data_in( { dataIn } )
+|               , .attr_in( { attrIn } )
+|               , .signal_oe( { signal oe } )
+|               , .signal_oe_sel( { signal oeSel } )
+|               , .data_out( { dataOut } )
+|               , .attr_out( { attrOut } )
+|               );
+|           |]
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+        = error "Should be defined in network."
+
 
 instance IOTest (Divider v x t) v x
 
