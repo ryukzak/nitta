@@ -32,7 +32,7 @@ import qualified Data.Set                      as S
 import           Data.Typeable
 import           NITTA.Functions               (castF)
 import qualified NITTA.Functions               as F
-import           NITTA.Project
+import           NITTA.Utils.Snippets
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Utils

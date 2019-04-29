@@ -47,6 +47,7 @@ library
                      , NITTA.Utils
                      , NITTA.Utils.Lens
                      , NITTA.Utils.Process
+                     , NITTA.Utils.Snippets
                      , NITTA.Utils.Test
   build-depends:       aeson
                      , array

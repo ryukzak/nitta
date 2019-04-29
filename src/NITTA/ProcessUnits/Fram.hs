@@ -70,6 +70,7 @@ import           Data.Array
 import           Data.Bits                     (finiteBitSize, testBit)
 import           Data.Default
 import           Data.Either
+import           NITTA.Utils.Snippets
 import           Data.Foldable
 import           Data.Generics.Aliases         (orElse)
 import           Data.List                     (find)
@@ -80,7 +81,6 @@ import qualified Data.String.Utils             as S
 import           Data.Typeable
 import           NITTA.DataFlow                (isSchedulingCompletable)
 import           NITTA.Functions
-import           NITTA.Project
 import           NITTA.Types                   hiding (Undef)
 import qualified NITTA.Types                   as T
 import           NITTA.Types.Project

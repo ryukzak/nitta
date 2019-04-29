@@ -49,17 +49,17 @@ import           Data.Bits                     (FiniteBits (..))
 import           Data.Default
 import           Data.List                     (find, groupBy, nub, sortOn)
 import qualified Data.Map                      as M
-import           Data.Maybe                    (fromMaybe, isJust)
+import           Data.Maybe                    (catMaybes, fromMaybe, isJust)
 import           Data.Set                      (elems, fromList, member)
 import qualified Data.String.Utils             as S
 import           Data.Typeable
 import           NITTA.Functions               (get', reg, simulateAlgByCycle)
-import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           NITTA.Utils.Process
+import           NITTA.Utils.Snippets
 import           Numeric.Interval              (inf, width, (...))
 import           Text.InterpolatedString.Perl6 (qc)
 
@@ -159,7 +159,11 @@ instance ( Title title, Var v, Time t
         = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (d^.at)
         | otherwise
         = let
-            pushs = M.map (fromMaybe undefined) $ M.filter isJust dfdTargets
+            pushs = M.fromList $ catMaybes
+                $ map (\case
+                    (k, Just v) -> Just (k,  v)
+                    (_, Nothing) -> Nothing
+                ) $ M.assocs dfdTargets
             transportStartAt = d^.at.infimum
             transportDuration = maximum $ map (\(_trg, time) -> (inf time - transportStartAt) + width time) $ M.elems pushs
             transportEndAt = transportStartAt + transportDuration

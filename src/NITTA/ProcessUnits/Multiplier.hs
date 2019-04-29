@@ -137,11 +137,11 @@ import           Data.List                     (find, partition, (\\))
 import           Data.Set                      (elems, fromList, member)
 import           Data.Typeable
 import qualified NITTA.Functions               as F
-import           NITTA.Project
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Utils
 import           NITTA.Utils.Process
+import           NITTA.Utils.Snippets
 import           Numeric.Interval              (inf, sup, (...))
 import           Text.InterpolatedString.Perl6 (qc)
 
