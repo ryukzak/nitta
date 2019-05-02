@@ -49,17 +49,8 @@ assign leds = show_bus_7_0 ? debug_bus1
             : show_bus_15_8 ? debug_bus2
             : debug_status;
 
-$top_level_module$ 
-  #( .DATA_WIDTH( 32 )
-   , .ATTR_WIDTH( 4 )
-   ) net 
-  ( .rst( rst )
-  , .clk( boost ? clk_200MHz : clk_1Hz )
-  , .mosi( mosi ), .sclk( sclk ), .cs( cs ), .miso( miso )
-  , .debug_status( debug_status )
-  , .debug_bus1( debug_bus1 )
-  , .debug_bus2( debug_bus2 )
-  , .is_drop_allow( rendezvous )
-  ); 
+wire clk = boost ? clk_200MHz : clk_1Hz;
+
+$top_level_module$
                
 endmodule

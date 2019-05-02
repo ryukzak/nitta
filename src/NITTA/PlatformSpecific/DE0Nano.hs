@@ -10,7 +10,7 @@
 {-|
 Module      : NITTA.PlatformSpecific.DE0Nano
 Description : DE0Nano platform specific files
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -21,6 +21,7 @@ module NITTA.PlatformSpecific.DE0Nano
 
 import           Data.FileEmbed
 import qualified Data.String.Utils     as S
+import           NITTA.BusNetwork      (bnEnv, bnPorts)
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Utils
@@ -62,7 +63,10 @@ writeQuartus prj@Project{ projectName, projectPath, processorModel } = do
     writeFile ( joinPath [ projectPath, "nitta.v" ] )
         $ renderST
             $(embedStringFile "template/quartus/nitta.v")
-            [ ( "top_level_module", moduleName projectName processorModel ) ]
+            [ ( "top_level_module"
+              , hardwareInstance (moduleName projectName processorModel) processorModel (bnEnv processorModel) (bnPorts processorModel) 
+              ) 
+            ]
     writeFile ( joinPath [ projectPath, "pll.v" ] )
         $(embedStringFile "template/quartus/pll.v")
 

@@ -82,40 +82,46 @@ data BusNetwork title v x t = BusNetwork
     , bnSignalBusWidth :: Int
     -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
     , bnAllowDrop      :: Maybe Bool
+    , bnEnv            :: TargetEnvironment
+    , bnPorts          :: PUPorts (BusNetwork title v x t)
     }
 
 
 -- TODO: Проверка подключения сигнальных линий.
 
 -- TODO: Вариант функции, где провода будут подключаться автоматически.
-busNetwork w allowDrop pus = BusNetwork
+busNetwork w bnAllowDrop pus = BusNetwork
         { bnRemains=[]
         , bnBinded=M.empty
         , bnProcess=def
         , bnPus=M.fromList pus'
         , bnSignalBusWidth=w
-        , bnAllowDrop=allowDrop
+        , bnAllowDrop
+        , bnPorts=NetPorts{ extInputs, extOutputs }
+        , bnEnv
         }
     where
-        pus' = map (\(title, f) ->
-            ( title
-            , f TargetEnvironment
-                { signalClk="clk"
-                , signalRst="rst"
-                , signalCycle="cycle"
-                , inputPort= \(InputPort n) -> n
-                , outputPort= \(OutputPort n) -> n
-                , unitEnv=ProcessUnitEnv
-                    { parameterAttrWidth=InlineParam "ATTR_WIDTH"
-                    , dataIn="data_bus"
-                    , dataOut=title ++ "_data_out"
-                    , attrIn="attr_bus"
-                    , attrOut=title ++ "_attr_out"
-                    , signal= \(Signal i) -> "control_bus[" ++ show i ++ "]"
-                    }
-                })
-            ) pus
-
+        bnEnv = TargetEnvironment
+            { signalClk="clk"
+            , signalRst="rst"
+            , signalCycle="cycle"
+            , inputPort= \(InputPort n) -> n
+            , outputPort= \(OutputPort n) -> n
+            , unitEnv=NetworkEnv
+            }
+        puEnv title = bnEnv
+            { unitEnv=ProcessUnitEnv
+                { parameterAttrWidth=InlineParam "ATTR_WIDTH"
+                , dataIn="data_bus"
+                , dataOut=title ++ "_data_out"
+                , attrIn="attr_bus"
+                , attrOut=title ++ "_attr_out"
+                , signal= \(Signal i) -> "control_bus[" ++ show i ++ "]"
+                }
+            }
+        pus' = map (\(title, f) -> ( title, f $ puEnv title ) ) pus
+        extInputs=nub $ concatMap (\(_, PU{ links }) -> externalInputPorts links ) pus'
+        extOutputs=nub $ concatMap (\(_, PU{ links }) -> externalOutputPorts links ) pus'
 
 instance WithFunctions (BusNetwork title v x t) (F v x) where
     functions BusNetwork{ bnRemains, bnBinded } = bnRemains ++ concat (M.elems bnBinded)
@@ -444,7 +450,43 @@ instance
             memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) $ programTicks pu
             values (BusNetworkMC arr) = reverse $ A.elems arr
 
-    hardwareInstance = undefined
+    hardwareInstance title BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } bnPorts
+        | let
+            io2v n = "    , " ++ n ++ "( " ++ n ++ " )"
+            is = map io2v $ map (\(InputPort n) -> n) $ externalInputPorts bnPorts
+            os = map io2v $ map (\(OutputPort n) -> n) $ externalOutputPorts bnPorts
+        = fixIndent [qc|
+|           { title } #
+|                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+|                   , .ATTR_WIDTH( 4 )
+|                   ) net
+|               ( .rst( { signalRst } )
+|               , .clk( { signalClk } )
+|               // inputs:
+|           { S.join "\\n" is }
+|               // outputs:
+|           { S.join "\\n" os }
+|               , .debug_status( debug_status ) // FIXME:
+|               , .debug_bus1( debug_bus1 )     // FIXME:
+|               , .debug_bus2( debug_bus2 )     // FIXME:
+|               , .is_drop_allow( rendezvous )  // FIXME:
+|               );
+|           |]
+    hardwareInstance _title _bn TargetEnvironment{ unitEnv=ProcessUnitEnv{} } _bnPorts
+        = error "BusNetwork should be NetworkEnv"
+
+
+instance Connected (BusNetwork String v x t) where
+    data PUPorts (BusNetwork String v x t)
+        = NetPorts
+            { extInputs :: [InputPort]
+            , extOutputs :: [OutputPort]
+            }
+        deriving ( Show )
+    transmitToLink BusNetworkMC{} NetPorts{} = []
+    externalInputPorts = extInputs
+    externalOutputPorts = extOutputs
+
 
 
 instance ( Title title, Var v, Time t
