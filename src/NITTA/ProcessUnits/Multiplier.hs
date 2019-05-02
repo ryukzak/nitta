@@ -646,13 +646,13 @@ instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
 
 instance ( Var v, Time t
          , Typeable x, Show x, Integral x, Val x
-         ) => TestBench (Multiplier v x t) v x where
+         ) => Testable (Multiplier v x t) v x where
     testBenchImplementation prj@Project{ projectName, processorModel }
         -- Test bech is one file described below. We use ready snippet for it generation, because
-        -- in most cases they will be similar. The data structure 'NITTA.Project.TestBenchSetup' has the
+        -- in most cases they will be similar. The data structure 'NITTA.Project.SnippetTestBenchConf' has the
         -- key role and describes this module specific.
         = Immidiate (moduleName projectName processorModel ++ "_tb.v")
-            $ snippetTestBench prj TestBenchSetup
+            $ snippetTestBench prj SnippetTestBenchConf
             -- List of control signals. It is needed to initialize registers with the same names.
                 { tbcSignals=["oe", "wr", "wrSel"]
              --Processor to environment connect function and signal lines IDs. In @tbcPorts@ describes

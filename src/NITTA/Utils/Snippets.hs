@@ -17,16 +17,16 @@ module NITTA.Utils.Snippets
     ( snippetClkGen
     , snippetDumpFile
     , snippetInitialFinish
-    , snippetTestBench
+    , snippetTestBench, SnippetTestBenchConf(..)
     ) where
 
 
-import qualified Data.String.Utils               as S
-import           NITTA.Functions                 as F
+import qualified Data.String.Utils             as S
+import           NITTA.Functions               as F
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Utils
-import           Text.InterpolatedString.Perl6   (qc)
+import           Text.InterpolatedString.Perl6 (qc)
 
 
 snippetClkGen :: String
@@ -53,9 +53,19 @@ snippetInitialFinish block = [qc|initial begin
 end
 |]
 
+
+data SnippetTestBenchConf m
+    = SnippetTestBenchConf
+        { tbcSignals       :: [String]
+        , tbcPorts         :: PUPorts m
+        , tbcSignalConnect :: Signal -> String
+        , tbcCtrl          :: Microcode m -> String
+        , tbDataBusWidth   :: Int
+        }
+
 snippetTestBench
         Project{ projectName, processorModel=pu, testCntx }
-        TestBenchSetup{ tbcSignals, tbcSignalConnect, tbcPorts, tbcCtrl, tbDataBusWidth }
+        SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcCtrl, tbDataBusWidth }
     = let
         mn = moduleName projectName pu
         p@Process{ steps, nextTick } = process pu

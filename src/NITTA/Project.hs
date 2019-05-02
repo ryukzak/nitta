@@ -10,7 +10,7 @@
 {-|
 Module      : NITTA.Project
 Description : Target system project generation
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -99,13 +99,13 @@ instance ( TargetSystemComponent (m v x t)
         writeImplementation projectPath $ software projectName processorModel
         copyLibraryFiles prj
 
-instance ( TestBench (m v x t) v x
-        ) => ProjectPart TestBenchT (Project (m v x t) v x) where
-    writePart TestBenchT prj@Project{ projectPath } = do
+instance ( Testable (m v x t) v x
+        ) => ProjectPart TestBench (Project (m v x t) v x) where
+    writePart TestBench prj@Project{ projectPath } = do
         createDirectoryIfMissing True projectPath
         writeImplementation projectPath $ testBenchImplementation prj
 
-instance ( TargetSystemComponent (m v x t), TestBench (m v x t) v x
+instance ( TargetSystemComponent (m v x t), Testable (m v x t) v x
         ) => ProjectPart IcarusMakefile (Project (m v x t) v x) where
     writePart IcarusMakefile prj@Project{ projectPath } = do
         createDirectoryIfMissing True projectPath

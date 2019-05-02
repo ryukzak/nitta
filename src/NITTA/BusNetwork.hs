@@ -493,7 +493,7 @@ instance ( Title title, Var v, Time t
          , Show x
          , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x, Val x
-         ) => TestBench (BusNetwork title v x t) v x where
+         ) => Testable (BusNetwork title v x t) v x where
     testBenchImplementation Project{ projectName, processorModel=n@BusNetwork{..}, testCntx }
         = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
         where

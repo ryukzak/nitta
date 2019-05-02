@@ -22,12 +22,12 @@ module NITTA.Types.Project
     , writeWholeProject
       -- *Project part types
     , ProjectPart(..)
-    , TestBenchT(..)
+    , TestBench(..)
     , TargetSystem(..)
     , QuartusProject(..)
     , IcarusMakefile(..)
       -- *Testbench
-    , TestBench(..), TestBenchSetup(..), TestBenchReport(..)
+    , Testable(..), TestBenchReport(..)
     , testBenchTopModule
       -- *Utils
     , projectFiles
@@ -63,16 +63,16 @@ class ProjectPart pt m where
     writePart :: pt -> m -> IO ()
 
 
--- |Write project with @TargetSystem@, @TestBenchT@ and @IcarusMakefile@ parts.
+-- |Write project with @TargetSystem@, @TestBench@ and @IcarusMakefile@ parts.
 writeProjectForText prj = do
     writePart TargetSystem prj
-    writePart TestBenchT prj
+    writePart TestBench prj
     writePart IcarusMakefile prj
 
 -- |Write project with all available parts.
 writeWholeProject prj = do
     writePart TargetSystem prj
-    writePart TestBenchT prj
+    writePart TestBench prj
     writePart QuartusProject prj
     writePart IcarusMakefile prj
 
@@ -85,24 +85,16 @@ data TargetSystem = TargetSystem
 data QuartusProject = QuartusProject
 
 -- |Test bench for a target system or a processor unit.
-data TestBenchT = TestBenchT
+data TestBench = TestBench
 
 -- |Makefile for running testbench by Icarus Verilog.
 data IcarusMakefile = IcarusMakefile
 
 
 
-class TestBench m v x | m -> v x where
+-- |Type class for all testable parts of a target system.
+class Testable m v x | m -> v x where
     testBenchImplementation :: Project m v x -> Implementation
-
-data TestBenchSetup m
-    = TestBenchSetup
-        { tbcSignals       :: [String]
-        , tbcPorts         :: PUPorts m
-        , tbcSignalConnect :: Signal -> String
-        , tbcCtrl          :: Microcode m -> String
-        , tbDataBusWidth   :: Int
-        }
 
 data TestBenchReport
     = TestBenchReport

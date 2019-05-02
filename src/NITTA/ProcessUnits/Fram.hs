@@ -548,7 +548,7 @@ instance ( Var v
          , Eq x
          , Enum x
          , Val x
-         ) => TestBench (Fram v x t) v x where
+         ) => Testable (Fram v x t) v x where
   testBenchImplementation Project{ projectName, processorModel=pu@Fram{ frProcess=Process{ steps }, .. }, testCntx }
     = Immidiate (moduleName projectName pu ++ "_tb.v") testBenchImp
     where

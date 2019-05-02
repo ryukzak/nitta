@@ -381,10 +381,10 @@ instance IOTest (Divider v x t) v x
 
 instance ( Var v, Time t
          , Typeable x, Show x, Integral x, Val x
-         ) => TestBench (Divider v x t) v x where
+         ) => Testable (Divider v x t) v x where
     testBenchImplementation prj@Project{ projectName, processorModel }
         = Immidiate (moduleName projectName processorModel ++ "_tb.v")
-            $ snippetTestBench prj TestBenchSetup
+            $ snippetTestBench prj SnippetTestBenchConf
                 { tbcSignals=["oe", "oeSel", "wr", "wrSel"]
                 , tbcPorts=PUPorts
                     { oe=Signal 0
