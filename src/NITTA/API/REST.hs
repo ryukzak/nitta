@@ -77,7 +77,6 @@ withSynthesis root nId
             , projectPath=joinPath ["hdl", "gen", name]
             , processorModel=processor $ nModel node
             , testCntx=Nothing
-            , targetPlatforms=[ Makefile ]
             }
     ))
     :<|> simpleCompilerServer root nId

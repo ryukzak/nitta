@@ -38,7 +38,8 @@ de0nano prj = do
 -- FIXME: Исправить интеграцию Modelsim и Quartus (прозрачный запуск симуляции по кнопке из
 -- Quartus).
 writeModelsimDo prj@Project{ projectPath } = do
-    let (tb, files) = projectFiles prj
+    let files = projectFiles prj
+        tb = testBenchTopModule prj
     writeFile ( joinPath [ projectPath, "wave.do" ] )
         $ renderST
             $(embedStringFile "template/modelsim/wave.do")
@@ -53,7 +54,8 @@ writeModelsimDo prj@Project{ projectPath } = do
 
 -- |Сгенерировать служебные файлы для Quartus.
 writeQuartus prj@Project{ projectName, projectPath, processorModel } = do
-    let (tb, files) = projectFiles prj
+    let files = projectFiles prj
+        tb = testBenchTopModule prj
     writeFile (joinPath [ projectPath, "nitta.qpf" ]) quartusQPF
     writeFile (joinPath [ projectPath, "nitta.qsf" ]) $ quartusQSF tb files
     writeFile (joinPath [ projectPath, "nitta.sdc" ]) quartusSDC

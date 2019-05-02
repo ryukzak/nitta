@@ -40,7 +40,7 @@ import           NITTA.Types.Poly
 import           Numeric.Interval hiding (elem)
 
 
--- |Контейнер для вычислительных узлов (PU). Необходимо для формирования гетерогенных списков.
+-- |Processor Unit existantional container.
 data PU v x t where
     PU :: 
         ( ByTime pu t
@@ -177,7 +177,7 @@ data Implementation
     -- |Реализация не требуется (к примеру: для многих вычислительных блоков ПО отсутствует).
     | Empty
 
--- |Класс для кодогенерации для встраивания вычислительного блока в процессор.
+-- |Type class for target components. Target - a target system project or a testbench.
 class TargetSystemComponent pu where
     -- |Наименование аппаратного модуля, соответствующего вычислительному блоку.
     moduleName :: String -> pu -> String

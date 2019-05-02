@@ -382,7 +382,7 @@ instance IOTest (Divider v x t) v x
 instance ( Var v, Time t
          , Typeable x, Show x, Integral x, Val x
          ) => TestBench (Divider v x t) v x where
-    testBenchDescription prj@Project{ projectName, processorModel }
+    testBenchImplementation prj@Project{ projectName, processorModel }
         = Immidiate (moduleName projectName processorModel ++ "_tb.v")
             $ snippetTestBench prj TestBenchSetup
                 { tbcSignals=["oe", "oeSel", "wr", "wrSel"]
@@ -397,7 +397,7 @@ instance ( Var v, Time t
                     (Signal 1) -> "oeSel"
                     (Signal 2) -> "wr"
                     (Signal 3) -> "wrSel"
-                    _ -> error "testBenchDescription wrong signal"
+                    _ -> error "testBenchImplementation wrong signal"
                 , tbcCtrl= \Microcode{ oeSignal, oeSelSignal, wrSignal, wrSelSignal } ->
                     [qc|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]
                 , tbDataBusWidth=finiteBitSize (def :: x)

@@ -27,7 +27,7 @@ import           Text.InterpolatedString.Perl6 (qc)
 makefile prj@Project{ projectPath }
     = writeFile (joinPath [ projectPath, "Makefile" ]) $ space2tab $ fixIndent [qc|
 |           icarus:
-|               iverilog { S.join " " $ snd $ projectFiles prj }
+|               iverilog { S.join " " $ projectFiles prj }
 |               vvp a.out
 |           modelsim:
 |               modelsim -do sim.do

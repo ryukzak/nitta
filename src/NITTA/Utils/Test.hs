@@ -45,7 +45,6 @@ data Test title v x t = Test
     , receiveValues     :: [(v, [x])]
     , verbose           :: Bool
     , synthesisMethod   :: Node title v x t -> IO (Node title v x t)
-    , platforms         :: [TargetPlatform]
     }
 
 instance ( Title title, Var v, Semigroup v, Val x, Time t ) => Default (Test title v x t) where
@@ -57,7 +56,6 @@ instance ( Title title, Var v, Semigroup v, Val x, Time t ) => Default (Test tit
         , receiveValues=def
         , verbose=False
         , synthesisMethod=simpleSynthesisIO
-        , platforms=[ Makefile, DE0Nano ]
         }
 
 runTest Test{ testProjectName, microarchitecture, sourceCode, alg, receiveValues, synthesisMethod, verbose } = runExceptT $ do
@@ -83,10 +81,9 @@ runTest Test{ testProjectName, microarchitecture, sourceCode, alg, receiveValues
             , projectPath=path
             , processorModel=processor $ nModel synthesisResult
             , testCntx=Just D.def{ cntxInputs=M.fromList receiveValues }
-            , targetPlatforms=[ Makefile, DE0Nano ]
             }
     when verbose $ lift $ putStrLn $ "write target project (" ++ path ++ ")"
-    lift $ writeProject prj
+    lift $ writeWholeProject prj
     when verbose $ lift $ putStrLn $ "write target project (" ++ path ++ ") - ok"
 
     when verbose $ lift $ putStrLn "run testbench"

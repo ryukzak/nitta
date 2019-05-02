@@ -647,7 +647,7 @@ instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
 instance ( Var v, Time t
          , Typeable x, Show x, Integral x, Val x
          ) => TestBench (Multiplier v x t) v x where
-    testBenchDescription prj@Project{ projectName, processorModel }
+    testBenchImplementation prj@Project{ projectName, processorModel }
         -- Test bech is one file described below. We use ready snippet for it generation, because
         -- in most cases they will be similar. The data structure 'NITTA.Project.TestBenchSetup' has the
         -- key role and describes this module specific.
@@ -667,7 +667,7 @@ instance ( Var v, Time t
                     (Signal 0) -> "oe"
                     (Signal 1) -> "wr"
                     (Signal 2) -> "wrSel"
-                    _ -> error "testBenchDescription wrong signal"
+                    _ -> error "testBenchImplementation wrong signal"
                   -- While test bench generation know how processors control signal is defined.
                   -- This is described below. Notice, that work with data bus is realized in snippet.
                 , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->

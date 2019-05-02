@@ -452,7 +452,7 @@ instance ( Title title, Var v, Time t
          , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x, Val x
          ) => TestBench (BusNetwork title v x t) v x where
-    testBenchDescription Project{ projectName, processorModel=n@BusNetwork{..}, testCntx }
+    testBenchImplementation Project{ projectName, processorModel=n@BusNetwork{..}, testCntx }
         = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
         where
             ports = concat

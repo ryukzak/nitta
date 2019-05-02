@@ -1,9 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE QuasiQuotes           #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE UndecidableInstances  #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.Project
@@ -14,8 +16,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Project
-    ( writeProject
-    , writeAndRunTestBench
+    ( writeAndRunTestBench
     , runTestBench
     ) where
 
@@ -24,6 +25,7 @@ import           Control.Monad                   (mapM_, unless)
 import qualified Data.List                       as L
 import qualified Data.String.Utils               as S
 import           Data.Text                       (pack)
+import           NITTA.BusNetwork
 import           NITTA.PlatformSpecific.DE0Nano
 import           NITTA.PlatformSpecific.Makefile
 import           NITTA.Types
@@ -40,7 +42,7 @@ import           Text.InterpolatedString.Perl6   (qc)
 
 -- |Сохранить проект и выполнить test bench.
 writeAndRunTestBench prj = do
-    writeProject prj
+    writeProjectForText prj
     report@TestBenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestBench prj
     unless tbStatus $ hPutStrLn stderr (tbCompilerDump ++ tbSimulationDump)
     return report
@@ -48,9 +50,8 @@ writeAndRunTestBench prj = do
 
 
 runTestBench prj@Project{ projectPath, processorModel } = do
-    let (_tb, files) = projectFiles prj
-
-    let dump type_ out err = fixIndent [qc|
+    let files = projectFiles prj
+        dump type_ out err = fixIndent [qc|
 |           Project: { projectPath }
 |           Type: { type_ }
 |           Files:
@@ -90,14 +91,32 @@ runTestBench prj@Project{ projectPath, processorModel } = do
 
 
 
--- |Записать на диск проект вычислителя.
-writeProject prj@Project{ projectName, projectPath, processorModel, targetPlatforms } = do
-    createDirectoryIfMissing True projectPath
-    writeImplementation projectPath $ hardware projectName processorModel
-    writeImplementation projectPath $ software projectName processorModel
-    writeImplementation projectPath $ testBenchDescription prj
-    copyLibraryFiles prj
-    mapM_ (`writePlatformSpecific` prj) targetPlatforms
+instance ( TargetSystemComponent (m v x t)
+        ) => ProjectPart TargetSystem (Project (m v x t) v x) where
+    writePart TargetSystem prj@Project{ projectName, projectPath, processorModel } = do
+        createDirectoryIfMissing True projectPath
+        writeImplementation projectPath $ hardware projectName processorModel
+        writeImplementation projectPath $ software projectName processorModel
+        copyLibraryFiles prj
+
+instance ( TestBench (m v x t) v x
+        ) => ProjectPart TestBenchT (Project (m v x t) v x) where
+    writePart TestBenchT prj@Project{ projectPath } = do
+        createDirectoryIfMissing True projectPath
+        writeImplementation projectPath $ testBenchImplementation prj
+
+instance ( TargetSystemComponent (m v x t), TestBench (m v x t) v x
+        ) => ProjectPart IcarusMakefile (Project (m v x t) v x) where
+    writePart IcarusMakefile prj@Project{ projectPath } = do
+        createDirectoryIfMissing True projectPath
+        makefile prj
+
+instance ( Var v, Time t, Val x, Show x
+        ) => ProjectPart QuartusProject (Project (BusNetwork String v x t) v x) where
+    writePart QuartusProject prj@Project{ projectPath } = do
+        createDirectoryIfMissing True projectPath
+        de0nano prj
+
 
 
 -- |Записать реализацию на диск. Данные размещаются в указанном рабочем каталоге.
@@ -120,26 +139,19 @@ writeImplementation pwd = writeImpl ""
 
 -- |Скопировать файл в lib, если он находится в libraryPath
 copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
-
-copyLibraryFile Project{ projectPath } file = do
-    libraryPath' <- makeAbsolute $ joinPath [projectPath, "lib"]
-    createDirectoryIfMissing True libraryPath'
-    let fileName = last $ S.split "/" file
-    from <- makeAbsolute $ joinPath [projectPath, file]
-    to <- makeAbsolute $ joinPath [projectPath, "lib", fileName]
-    copyFile from to
-
-libraryFiles prj@Project{ projectName, libraryPath, processorModel }
-    = L.nub $ concatMap (args "") [ hardware projectName processorModel, testBenchDescription prj ]
     where
-        args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
-        args p (Aggregate Nothing subInstances) = concatMap (args $ joinPath [p]) subInstances
-        args _ (FromLibrary fn) = [ joinPath [ libraryPath, fn ] ]
-        args _ _ = []
+        copyLibraryFile Project{ projectPath } file = do
+            libraryPath' <- makeAbsolute $ joinPath [projectPath, "lib"]
+            createDirectoryIfMissing True libraryPath'
+            let fileName = last $ S.split "/" file
+            from <- makeAbsolute $ joinPath [projectPath, file]
+            to <- makeAbsolute $ joinPath [projectPath, "lib", fileName]
+            copyFile from to
 
-
-
--- *Platform specific
-
-writePlatformSpecific Makefile = makefile
-writePlatformSpecific DE0Nano  = de0nano
+        libraryFiles Project{ projectName, libraryPath, processorModel }
+            = L.nub $ concatMap (args "") [ hardware projectName processorModel ]
+            where
+                args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
+                args p (Aggregate Nothing subInstances) = concatMap (args $ joinPath [p]) subInstances
+                args _ (FromLibrary fn) = [ joinPath [ libraryPath, fn ] ]
+                args _ _ = []
