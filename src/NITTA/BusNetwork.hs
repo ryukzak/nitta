@@ -83,7 +83,7 @@ data BusNetwork title v x t = BusNetwork
     -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
     , bnAllowDrop      :: Maybe Bool
     , bnEnv            :: TargetEnvironment
-    , bnPorts          :: PUPorts (BusNetwork title v x t)
+    , bnPorts          :: Ports (BusNetwork title v x t)
     }
 
 
@@ -477,7 +477,7 @@ instance
 
 
 instance Connected (BusNetwork String v x t) where
-    data PUPorts (BusNetwork String v x t)
+    data Ports (BusNetwork String v x t)
         = NetPorts
             { extInputs :: [InputPort]
             , extOutputs :: [OutputPort]

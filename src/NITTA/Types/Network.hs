@@ -61,7 +61,7 @@ data PU v x t where
         ) => 
             { diff :: Diff v
             , unit :: pu
-            , links :: PUPorts pu
+            , links :: Ports pu
             , systemEnv :: TargetEnvironment
             } -> PU v x t
 
@@ -121,15 +121,15 @@ castPU PU{ unit } = cast unit
 class Connected pu where
     -- |Линии специфичные для подключения вычислительного блока к рабочему окружению: управляющие
     -- сигналы, флаги, подключения к внешнему миру.
-    data PUPorts pu :: *
+    data Ports pu :: *
     -- |Отображение микрокода на сигнальные линии. Необходимо для "сведения" микрокоманд отдельных
     -- вычислительных блоков в микрокоманды сети.
-    transmitToLink :: Microcode pu -> PUPorts pu -> [(Signal, SignalValue)]
+    transmitToLink :: Microcode pu -> Ports pu -> [(Signal, SignalValue)]
     -- |External input ports, which go outside of NITTA processor.
-    externalInputPorts :: PUPorts pu -> [InputPort]
+    externalInputPorts :: Ports pu -> [InputPort]
     externalInputPorts _ = []
     -- |External output ports, which go outside of NITTA processor.
-    externalOutputPorts :: PUPorts pu -> [OutputPort]
+    externalOutputPorts :: Ports pu -> [OutputPort]
     externalOutputPorts _ = []
 
 
@@ -197,13 +197,13 @@ class TargetSystemComponent pu where
 
     -- |Генерация фрагмента исходного кода для создания экземпляра вычислительного блока в рамках
     -- вычислительной платформы NITTA.
-    hardwareInstance :: String -> pu -> TargetEnvironment -> PUPorts pu -> String
+    hardwareInstance :: String -> pu -> TargetEnvironment -> Ports pu -> String
 
 
 class IOTest pu v x | pu -> v x where
     -- |Для автоматизированного тестирования компонент со внешними портами ввода/вывода необходимо
     -- специализированное тестовое окружение, имитирующее ввод/вывод.
-    componentTestEnviroment :: String -> pu -> TargetEnvironment -> PUPorts pu -> [Cntx v x] -> String
+    componentTestEnviroment :: String -> pu -> TargetEnvironment -> Ports pu -> [Cntx v x] -> String
     componentTestEnviroment _title _pu _env _ports _cntxs = ""
 
 

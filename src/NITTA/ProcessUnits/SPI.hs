@@ -19,7 +19,7 @@ Stability   : experimental
 slave / master / slave-master?
 -}
 module NITTA.ProcessUnits.SPI
-    ( PUPorts(..)
+    ( Ports(..)
     , ExternalPorts(..)
     , SPI
     , slaveSPI
@@ -165,8 +165,8 @@ data ExternalPorts
     deriving ( Show )
 
 instance Connected (SPI v x t) where
-    data PUPorts (SPI v x t)
-        = PUPorts
+    data Ports (SPI v x t)
+        = Ports
             { wr, oe :: Signal
              -- |Данный сигнал используется для оповещения процессора о завершении передачи данных. Необходимо для
              -- приостановки работы пока передача не будет завершена, так как в противном случае данные будут потеряны.
@@ -175,16 +175,16 @@ instance Connected (SPI v x t) where
             }
         deriving ( Show )
 
-    transmitToLink Microcode{..} PUPorts{..} =
+    transmitToLink Microcode{..} Ports{..} =
         [ (wr, Bool wrSignal)
         , (oe, Bool oeSignal)
         ]
 
-    externalInputPorts PUPorts{ externalPorts=Slave{ slave_mosi, slave_sclk, slave_cs } }
+    externalInputPorts Ports{ externalPorts=Slave{ slave_mosi, slave_sclk, slave_cs } }
         = [ slave_mosi, slave_sclk, slave_cs ]
     externalInputPorts _ = undefined
 
-    externalOutputPorts PUPorts{ externalPorts=Slave{ slave_miso } }
+    externalOutputPorts Ports{ externalPorts=Slave{ slave_miso } }
         = [ slave_miso ]
     externalOutputPorts _ = undefined
 
@@ -208,7 +208,7 @@ instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
             title
             SerialPU{ spuState=State{ spiBounceFilter } }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
-            PUPorts{ externalPorts=Slave{..}, .. }
+            Ports{ externalPorts=Slave{..}, .. }
         = fixIndent [qc|
 |           pu_slave_spi
 |               #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -243,7 +243,7 @@ instance ( Var v, Show t, Show x, Val x ) => IOTest (SPI v x t) v x where
             title
             pu@SerialPU{ spuState=State{ spiBounceFilter } }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
-            PUPorts{ externalPorts=Slave{..}, .. }
+            Ports{ externalPorts=Slave{..}, .. }
             cntxs
         | let
             wordWidth = finiteBitSize (def :: x)

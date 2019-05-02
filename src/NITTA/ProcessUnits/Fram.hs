@@ -62,7 +62,7 @@ TODO: Каким образом необходимо работать со вн�
 -}
 module NITTA.ProcessUnits.Fram
   ( Fram(..)
-  , PUPorts(..)
+  , Ports(..)
   ) where
 
 import           Control.Monad                 ((>=>))
@@ -489,9 +489,9 @@ instance Controllable (Fram v x t) where
     deriving (Show, Eq, Ord)
 
 instance Connected (Fram v x t) where
-  data PUPorts (Fram v x t)
-    = PUPorts{ oe, wr :: Signal, addr :: [Signal] } deriving ( Show )
-  transmitToLink Microcode{ oeSignal, wrSignal, addrSignal } PUPorts{ oe, wr, addr }
+  data Ports (Fram v x t)
+    = Ports{ oe, wr :: Signal, addr :: [Signal] } deriving ( Show )
+  transmitToLink Microcode{ oeSignal, wrSignal, addrSignal } Ports{ oe, wr, addr }
     = [ (oe, Bool oeSignal)
       , (wr, Bool wrSignal)
       ] ++ addrs
@@ -571,7 +571,7 @@ instance ( Var v
                     j -> "addr[" ++ show (3 - (j - 2)) ++ "]"
                   }
                 }
-        PUPorts{ oe=Signal 0
+        Ports{ oe=Signal 0
                , wr=Signal 1
                , addr=map Signal [ 2, 3, 4, 5 ]
                }
@@ -702,7 +702,7 @@ instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) 
             $ unlines $ map
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
                 $ elems frMemory
-    hardwareInstance title pu@Fram{..} TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } PUPorts{..} =
+    hardwareInstance title pu@Fram{..} TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } Ports{..} =
         [qc|pu_fram
         #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
         , .ATTR_WIDTH( { show parameterAttrWidth } )

@@ -57,7 +57,7 @@ end
 data SnippetTestBenchConf m
     = SnippetTestBenchConf
         { tbcSignals       :: [String]
-        , tbcPorts         :: PUPorts m
+        , tbcPorts         :: Ports m
         , tbcSignalConnect :: Signal -> String
         , tbcCtrl          :: Microcode m -> String
         , tbDataBusWidth   :: Int

@@ -18,7 +18,7 @@ Stability   : experimental
 -}
 module NITTA.ProcessUnits.Shift
   ( Shift
-  , PUPorts(..)
+  , Ports(..)
   )
   where
 
@@ -124,9 +124,9 @@ instance UnambiguouslyDecode (Shift v x t) where
 
 
 instance Connected (Shift v x t) where
-  data PUPorts (Shift v x t)
-    = PUPorts{ work, direction, mode, step, init, oe :: Signal } deriving ( Show )
-  transmitToLink Microcode{..} PUPorts{..}
+  data Ports (Shift v x t)
+    = Ports{ work, direction, mode, step, init, oe :: Signal } deriving ( Show )
+  transmitToLink Microcode{..} Ports{..}
     = [ (work, Bool workSignal)
       , (direction, Bool directionSignal)
       , (mode, Bool modeSignal)
@@ -146,7 +146,7 @@ instance ( Val x ) => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"
     hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
     software _ _ = Empty
-    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } PUPorts{..} 
+    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } Ports{..} 
         = fixIndent [qc|
 |           pu_shift #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )

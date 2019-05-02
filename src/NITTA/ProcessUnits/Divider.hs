@@ -19,7 +19,7 @@ Stability   : experimental
 -}
 module NITTA.ProcessUnits.Divider
     ( divider
-    , PUPorts(..)
+    , Ports(..)
     ) where
 
 import           Control.Monad                 (void, when)
@@ -318,10 +318,10 @@ instance UnambiguouslyDecode (Divider v x t) where
 
 
 instance Connected (Divider v x t) where
-    data PUPorts (Divider v x t)
-        = PUPorts{ wr, wrSel, oe, oeSel :: Signal }
+    data Ports (Divider v x t)
+        = Ports{ wr, wrSel, oe, oeSel :: Signal }
         deriving ( Show )
-    transmitToLink Microcode{..} PUPorts{..}
+    transmitToLink Microcode{..} Ports{..}
         =
             [ (wr, Bool wrSignal)
             , (wrSel, Bool wrSelSignal)
@@ -350,7 +350,7 @@ instance ( Val x, Show t
                 , signalClk
                 , signalRst
                 }
-            PUPorts{ oe, oeSel, wr, wrSel } 
+            Ports{ oe, oeSel, wr, wrSel } 
         = fixIndent [qc|
 |           pu_div #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -386,7 +386,7 @@ instance ( Var v, Time t
         = Immidiate (moduleName projectName processorModel ++ "_tb.v")
             $ snippetTestBench prj SnippetTestBenchConf
                 { tbcSignals=["oe", "oeSel", "wr", "wrSel"]
-                , tbcPorts=PUPorts
+                , tbcPorts=Ports
                     { oe=Signal 0
                     , oeSel=Signal 1
                     , wr=Signal 2

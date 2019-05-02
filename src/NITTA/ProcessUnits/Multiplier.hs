@@ -127,7 +127,7 @@ described computational process on the multiplier.
 module NITTA.ProcessUnits.Multiplier
     ( multiplier
     , Multiplier
-    , PUPorts(..)
+    , Ports(..)
     ) where
 
 import           Control.Monad                 (when)
@@ -527,13 +527,13 @@ instance UnambiguouslyDecode (Multiplier v x t) where
 -- signal bus on net level, and also microcode mapping on line. In the future this class
 -- will be recycle to make process automation.
 instance Connected (Multiplier v x t) where
-    data PUPorts (Multiplier v x t)
-        = PUPorts
+    data Ports (Multiplier v x t)
+        = Ports
             { wr           -- ˆЗагрузить аргумент.
             , wrSel        -- ˆВыбор загружаемого аргумента (A | B).
             , oe :: Signal -- ˆВыгрузить результат работы.
             } deriving ( Show )
-    transmitToLink Microcode{..} PUPorts{..}
+    transmitToLink Microcode{..} Ports{..}
         =
             [ (wr, Bool wrSignal)
             , (wrSel, Bool selSignal)
@@ -594,7 +594,7 @@ instance ( Time t, Var v, Val x
     --
     -- Take attention to function @fixIndent@. This function allows a programmer to use
     -- normal code block indentation.
-    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } PUPorts{..}
+    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } Ports{..}
         = fixIndent [qc|
 |           pu_multiplier #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -658,7 +658,7 @@ instance ( Var v, Time t
              --Processor to environment connect function and signal lines IDs. In @tbcPorts@ describes
              -- to what connect signal lines of test block. In @tbcSignalConnect@  how abstract numbers
              -- is displays to generated source code.
-                , tbcPorts=PUPorts
+                , tbcPorts=Ports
                     { oe=Signal 0
                     , wr=Signal 1
                     , wrSel=Signal 2

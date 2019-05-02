@@ -18,7 +18,7 @@ Stability   : experimental
 -}
 module NITTA.ProcessUnits.Accum
   ( Accum
-  , PUPorts(..)
+  , Ports(..)
   ) where
 
 import           Data.Bits                           (finiteBitSize)
@@ -121,9 +121,9 @@ instance ( Var v
 
 
 instance Connected (Accum v x t) where
-  data PUPorts (Accum v x t)
-    = PUPorts{ init, load, neg, oe :: Signal } deriving ( Show )
-  transmitToLink Microcode{..} PUPorts{..}
+  data Ports (Accum v x t)
+    = Ports{ init, load, neg, oe :: Signal } deriving ( Show )
+  transmitToLink Microcode{..} Ports{..}
     = [ (init, Bool initSignal)
       , (load, Bool loadSignal)
       , (neg, maybe Undef Bool negSignal)
@@ -135,7 +135,7 @@ instance ( Val x ) => TargetSystemComponent (Accum v x t) where
     moduleName _ _ = "pu_accum"
     hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
     software _ _ = Empty
-    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } PUPorts{..} 
+    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } Ports{..} 
         = fixIndent [qc|
 |       pu_accum #
 |               ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
