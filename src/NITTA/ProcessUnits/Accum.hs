@@ -96,6 +96,13 @@ instance Controllable (Accum v x t) where
                , negSignal :: Maybe Bool
                } deriving ( Show, Eq, Ord )
 
+  mapMicrocodeToPorts Microcode{..} Ports{..}
+    = [ (init, Bool initSignal)
+      , (load, Bool loadSignal)
+      , (neg, maybe Undef Bool negSignal)
+      , (oe, Bool oeSignal)
+      ]
+      
 
 instance Default (Microcode (Accum v x t)) where
   def = Microcode{ oeSignal=False
@@ -122,13 +129,7 @@ instance ( Var v
 
 instance Connected (Accum v x t) where
   data Ports (Accum v x t)
-    = Ports{ init, load, neg, oe :: Signal } deriving ( Show )
-  transmitToLink Microcode{..} Ports{..}
-    = [ (init, Bool initSignal)
-      , (load, Bool loadSignal)
-      , (neg, maybe Undef Bool negSignal)
-      , (oe, Bool oeSignal)
-      ]
+    = Ports{ init, load, neg, oe :: SignalTag } deriving ( Show )
 
 
 instance ( Val x ) => TargetSystemComponent (Accum v x t) where

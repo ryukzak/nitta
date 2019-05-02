@@ -303,6 +303,14 @@ instance Controllable (Divider v x t) where
             , oeSelSignal :: Bool
             } deriving ( Show, Eq, Ord )
 
+    mapMicrocodeToPorts Microcode{..} Ports{..} =
+        [ (wr, Bool wrSignal)
+        , (wrSel, Bool wrSelSignal)
+        , (oe, Bool oeSignal)
+        , (oeSel, Bool oeSelSignal)
+        ]
+
+
 instance Default (Microcode (Divider v x t)) where
     def = Microcode
         { wrSignal=False
@@ -319,15 +327,8 @@ instance UnambiguouslyDecode (Divider v x t) where
 
 instance Connected (Divider v x t) where
     data Ports (Divider v x t)
-        = Ports{ wr, wrSel, oe, oeSel :: Signal }
+        = Ports{ wr, wrSel, oe, oeSel :: SignalTag }
         deriving ( Show )
-    transmitToLink Microcode{..} Ports{..}
-        =
-            [ (wr, Bool wrSignal)
-            , (wrSel, Bool wrSelSignal)
-            , (oe, Bool oeSignal)
-            , (oeSel, Bool oeSelSignal)
-            ]
 
 
 instance ( Val x, Show t
@@ -387,16 +388,16 @@ instance ( Var v, Time t
             $ snippetTestBench prj SnippetTestBenchConf
                 { tbcSignals=["oe", "oeSel", "wr", "wrSel"]
                 , tbcPorts=Ports
-                    { oe=Signal 0
-                    , oeSel=Signal 1
-                    , wr=Signal 2
-                    , wrSel=Signal 3
+                    { oe=SignalTag 0
+                    , oeSel=SignalTag 1
+                    , wr=SignalTag 2
+                    , wrSel=SignalTag 3
                     }
                 , tbcSignalConnect= \case
-                    (Signal 0) -> "oe"
-                    (Signal 1) -> "oeSel"
-                    (Signal 2) -> "wr"
-                    (Signal 3) -> "wrSel"
+                    (SignalTag 0) -> "oe"
+                    (SignalTag 1) -> "oeSel"
+                    (SignalTag 2) -> "wr"
+                    (SignalTag 3) -> "wrSel"
                     _ -> error "testBenchImplementation wrong signal"
                 , tbcCtrl= \Microcode{ oeSignal, oeSelSignal, wrSignal, wrSelSignal } ->
                     [qc|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]

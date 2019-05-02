@@ -504,6 +504,14 @@ instance Controllable (Multiplier v x t) where
             }
         deriving ( Show, Eq, Ord )
 
+    mapMicrocodeToPorts Microcode{..} Ports{..}
+        =
+            [ (wr, Bool wrSignal)
+            , (wrSel, Bool selSignal)
+            , (oe, Bool oeSignal)
+            ]
+
+
 -- |Also we need to define default state for microcode (that is match to implicit @nop@ function)
 -- This state mean that processor is in inaction state, but doesn't busy the bus and storage
 -- inner state in predictable view. In multiplier case - it doesn't reset multiplication result and
@@ -516,33 +524,24 @@ instance Default (Microcode (Multiplier v x t)) where
         , oeSignal=False
         }
 
--- |Instuction  and microcode binding is carried up by this class, which requires their
+-- |Instruction and microcode binding is carried up by this class, which requires their
 -- unambiguous matching, as well as regardless of the status and settings of the model.
 instance UnambiguouslyDecode (Multiplier v x t) where
     decodeInstruction (Load A) = def{ wrSignal=True, selSignal=False }
     decodeInstruction (Load B) = def{ wrSignal=True, selSignal=True }
     decodeInstruction Out      = def{ oeSignal=True }
 
--- |Processor signal lines define, this is using for manual connect to
--- signal bus on net level, and also microcode mapping on line. In the future this class
--- will be recycle to make process automation.
+-- |Processor signals. In @BusNetwork@ this signal directly connecting to ControlUnit.
 instance Connected (Multiplier v x t) where
-    data Ports (Multiplier v x t)
-        = Ports
-            { wr           -- ˆЗагрузить аргумент.
-            , wrSel        -- ˆВыбор загружаемого аргумента (A | B).
-            , oe :: Signal -- ˆВыгрузить результат работы.
-            } deriving ( Show )
-    transmitToLink Microcode{..} Ports{..}
-        =
-            [ (wr, Bool wrSignal)
-            , (wrSel, Bool selSignal)
-            , (oe, Bool oeSignal)
-            ]
+    data Ports (Multiplier v x t) = Ports
+        { wr    :: SignalTag -- ^get data from the bus (data_in)
+        , wrSel :: SignalTag -- ^determine argument on the bus (A | B)
+        , oe    :: SignalTag -- ^send result to the bus
+        } deriving ( Show )
+
 
 -- |The availability of standart values, with which actual result of processor in simlator
 -- is compared, has the main role in testing. This class carry on Standart values generation.
-
 instance ( Var v
          , Integral x
          , Typeable x
@@ -550,7 +549,7 @@ instance ( Var v
     simulateOn cntx _ f
         -- We define the function and delegate its calculation to default realization.
         | Just f'@F.Multiply{} <- F.castF f = simulate cntx f'
-        | otherwise = error $ "Can't simultate on Multiplier: " ++ show f
+        | otherwise = error $ "Can't simulate on Multiplier: " ++ show f
 
 
 
@@ -659,14 +658,14 @@ instance ( Var v, Time t
              -- to what connect signal lines of test block. In @tbcSignalConnect@  how abstract numbers
              -- is displays to generated source code.
                 , tbcPorts=Ports
-                    { oe=Signal 0
-                    , wr=Signal 1
-                    , wrSel=Signal 2
+                    { oe=SignalTag 0
+                    , wr=SignalTag 1
+                    , wrSel=SignalTag 2
                     }
                 , tbcSignalConnect= \case
-                    (Signal 0) -> "oe"
-                    (Signal 1) -> "wr"
-                    (Signal 2) -> "wrSel"
+                    (SignalTag 0) -> "oe"
+                    (SignalTag 1) -> "wr"
+                    (SignalTag 2) -> "wrSel"
                     _ -> error "testBenchImplementation wrong signal"
                   -- While test bench generation know how processors control signal is defined.
                   -- This is described below. Notice, that work with data bus is realized in snippet.

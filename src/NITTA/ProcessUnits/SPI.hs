@@ -126,6 +126,11 @@ instance Controllable (SPI v x t) where
             }
         deriving ( Show, Eq, Ord )
 
+    mapMicrocodeToPorts Microcode{..} Ports{..} =
+        [ (wr, Bool wrSignal)
+        , (oe, Bool oeSignal)
+        ]
+
 
 instance Default (Microcode (SPI v x t)) where
     def = Microcode
@@ -151,34 +156,29 @@ instance
 
 data ExternalPorts
     = Master
-        { master_mosi :: OutputPort
-        , master_miso :: InputPort
-        , master_sclk :: OutputPort
-        , master_cs   :: OutputPort
+        { master_mosi :: OutputPortTag
+        , master_miso :: InputPortTag
+        , master_sclk :: OutputPortTag
+        , master_cs   :: OutputPortTag
         }
     | Slave
-        { slave_mosi :: InputPort
-        , slave_miso :: OutputPort
-        , slave_sclk :: InputPort
-        , slave_cs   :: InputPort
+        { slave_mosi :: InputPortTag
+        , slave_miso :: OutputPortTag
+        , slave_sclk :: InputPortTag
+        , slave_cs   :: InputPortTag
         }
     deriving ( Show )
 
 instance Connected (SPI v x t) where
     data Ports (SPI v x t)
         = Ports
-            { wr, oe :: Signal
+            { wr, oe :: SignalTag
              -- |Данный сигнал используется для оповещения процессора о завершении передачи данных. Необходимо для
              -- приостановки работы пока передача не будет завершена, так как в противном случае данные будут потеряны.
             , stop :: String
             , externalPorts :: ExternalPorts
             }
         deriving ( Show )
-
-    transmitToLink Microcode{..} Ports{..} =
-        [ (wr, Bool wrSignal)
-        , (oe, Bool oeSignal)
-        ]
 
     externalInputPorts Ports{ externalPorts=Slave{ slave_mosi, slave_sclk, slave_cs } }
         = [ slave_mosi, slave_sclk, slave_cs ]

@@ -25,12 +25,11 @@ module NITTA.Types.Network
     , UnitEnv(..)
     , Parameter(..)
     , PU(..), castPU
-    , Signal(..), InputPort(..), OutputPort(..)
+    , SignalTag(..), InputPortTag(..), OutputPortTag(..)
     , Source, Target
     , TargetSystemComponent(..)
     ) where
 
-import           Data.Ix
 import qualified Data.Map         as M
 import qualified Data.Set         as S
 import           Data.Typeable
@@ -53,6 +52,7 @@ data PU v x t where
         , Typeable pu
         , UnambiguouslyDecode pu
         , TargetSystemComponent pu
+        , Controllable pu
         , IOTest pu v x
         , Typeable x
         , Show x
@@ -61,7 +61,7 @@ data PU v x t where
         ) => 
             { diff :: Diff v
             , unit :: pu
-            , links :: Ports pu
+            , ports :: Ports pu
             , systemEnv :: TargetEnvironment
             } -> PU v x t
 
@@ -71,24 +71,24 @@ instance ( Ord v ) =>
          where
     options proxy PU{ diff, unit }
         = map (patch diff) $ options proxy unit
-    decision proxy PU{ diff, unit, links, systemEnv } d
+    decision proxy PU{ diff, unit, ports, systemEnv } d
         = PU
             { diff
             , unit=decision proxy unit $ patch (reverseDiff diff) d
-            , links
+            , ports
             , systemEnv
             }
 
 instance ( Ord v ) => ProcessUnit (PU v x t) v x t where
-    tryBind fb PU{ diff, unit, links, systemEnv }
+    tryBind fb PU{ diff, unit, ports, systemEnv }
         = case tryBind fb unit of
-            Right unit' -> Right PU { diff, unit=unit', links, systemEnv }
+            Right unit' -> Right PU { diff, unit=unit', ports, systemEnv }
             Left err    -> Left err
     process PU{ diff, unit } = let
             p = process unit
         in p{ steps=map (patch diff) $ steps p }
-    setTime t PU{ diff, unit, links, systemEnv }
-        = PU{ diff, unit=setTime t unit, links, systemEnv }
+    setTime t PU{ diff, unit, ports, systemEnv }
+        = PU{ diff, unit=setTime t unit, ports, systemEnv }
 
 instance ( Ord v ) => Patch (PU v x t) (I v, I v) where
     patch (I v, I v') pu@PU{ diff=diff@Diff{ diffI } } = pu{ diff=diff{ diffI=M.insert v v' diffI }}
@@ -110,27 +110,12 @@ instance TargetSystemComponent (PU v x t) where
     hardwareInstance name pu = hardwareInstance name pu
 
 instance IOTest (PU v x t) v x where
-    componentTestEnviroment name PU{ unit, systemEnv, links } _systemEnv _links cntxs
-        = componentTestEnviroment name unit systemEnv links cntxs
+    componentTestEnviroment name PU{ unit, systemEnv, ports } _systemEnv _links cntxs
+        = componentTestEnviroment name unit systemEnv ports cntxs
 
 
 castPU :: ( Typeable pu ) => PU v x t -> Maybe pu
 castPU PU{ unit } = cast unit
-
-
-class Connected pu where
-    -- |Линии специфичные для подключения вычислительного блока к рабочему окружению: управляющие
-    -- сигналы, флаги, подключения к внешнему миру.
-    data Ports pu :: *
-    -- |Отображение микрокода на сигнальные линии. Необходимо для "сведения" микрокоманд отдельных
-    -- вычислительных блоков в микрокоманды сети.
-    transmitToLink :: Microcode pu -> Ports pu -> [(Signal, SignalValue)]
-    -- |External input ports, which go outside of NITTA processor.
-    externalInputPorts :: Ports pu -> [InputPort]
-    externalInputPorts _ = []
-    -- |External output ports, which go outside of NITTA processor.
-    externalOutputPorts :: Ports pu -> [OutputPort]
-    externalOutputPorts _ = []
 
 
 
@@ -207,11 +192,6 @@ class IOTest pu v x | pu -> v x where
     componentTestEnviroment _title _pu _env _ports _cntxs = ""
 
 
--- |Описание подключения сигнальных шин управления.
-newtype Signal = Signal Int deriving ( Show, Eq, Ord, Ix )
--- |Описание подключения шин ввода вывода.
-newtype InputPort = InputPort String deriving ( Show, Eq, Ord )
-newtype OutputPort = OutputPort String deriving ( Show, Eq, Ord )
 data Parameter
     = InlineParam String
     | IntParam Int
@@ -227,8 +207,8 @@ data TargetEnvironment
         { signalClk   :: String -- ^clock
         , signalRst   :: String -- ^reset
         , signalCycle :: String -- ^posedge on computation cycle start
-        , inputPort   :: InputPort -> String
-        , outputPort  :: OutputPort -> String
+        , inputPort   :: InputPortTag -> String
+        , outputPort  :: OutputPortTag -> String
         , unitEnv     :: UnitEnv -- unit specific environment
         }
 
@@ -238,7 +218,7 @@ data UnitEnv
         { parameterAttrWidth :: Parameter
         , dataIn, attrIn     :: String -- ^bus name
         , dataOut, attrOut   :: String -- ^bus name
-        , signal             :: Signal -> String -- ^control signal
+        , signal             :: SignalTag -> String -- ^control signal
         }
     -- |Environment of network.
     | NetworkEnv

@@ -488,10 +488,7 @@ instance Controllable (Fram v x t) where
                }
     deriving (Show, Eq, Ord)
 
-instance Connected (Fram v x t) where
-  data Ports (Fram v x t)
-    = Ports{ oe, wr :: Signal, addr :: [Signal] } deriving ( Show )
-  transmitToLink Microcode{ oeSignal, wrSignal, addrSignal } Ports{ oe, wr, addr }
+  mapMicrocodeToPorts Microcode{ oeSignal, wrSignal, addrSignal } Ports{ oe, wr, addr }
     = [ (oe, Bool oeSignal)
       , (wr, Bool wrSignal)
       ] ++ addrs
@@ -500,6 +497,11 @@ instance Connected (Fram v x t) where
                                    , maybe T.Undef Bool $ fmap (`testBit` i) addrSignal
                                    )
                   ) $ zip (reverse addr) [0..]
+
+
+instance Connected (Fram v x t) where
+  data Ports (Fram v x t)
+    = Ports{ oe, wr :: SignalTag, addr :: [SignalTag] } deriving ( Show )
 
 
 getAddr (Load addr) = Just addr
@@ -565,15 +567,15 @@ instance ( Var v
                   , attrIn="attr_in"
                   , dataOut="data_out"
                   , attrOut="attr_out"
-                  , signal= \(Signal i) -> case i of
+                  , signal= \(SignalTag i) -> case i of
                     0 -> "oe"
                     1 -> "wr"
                     j -> "addr[" ++ show (3 - (j - 2)) ++ "]"
                   }
                 }
-        Ports{ oe=Signal 0
-               , wr=Signal 1
-               , addr=map Signal [ 2, 3, 4, 5 ]
+        Ports{ oe=SignalTag 0
+               , wr=SignalTag 1
+               , addr=map SignalTag [ 2, 3, 4, 5 ]
                }
       testBenchImp = fixIndent [qc|
 |       module { moduleName projectName pu }_tb();

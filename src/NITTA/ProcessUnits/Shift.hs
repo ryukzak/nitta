@@ -103,6 +103,16 @@ instance Controllable (Shift v x t) where
                , oeSignal :: Bool
                } deriving ( Show, Eq, Ord )
 
+  mapMicrocodeToPorts Microcode{..} Ports{..}
+    = [ (work, Bool workSignal)
+      , (direction, Bool directionSignal)
+      , (mode, Bool modeSignal)
+      , (step, Bool stepSignal)
+      , (init, Bool initSignal)
+      , (oe, Bool oeSignal)
+      ]
+      
+
 instance Default (Microcode (Shift v x t)) where
   def = Microcode{ workSignal=False
                  , directionSignal=False
@@ -125,16 +135,8 @@ instance UnambiguouslyDecode (Shift v x t) where
 
 instance Connected (Shift v x t) where
   data Ports (Shift v x t)
-    = Ports{ work, direction, mode, step, init, oe :: Signal } deriving ( Show )
-  transmitToLink Microcode{..} Ports{..}
-    = [ (work, Bool workSignal)
-      , (direction, Bool directionSignal)
-      , (mode, Bool modeSignal)
-      , (step, Bool stepSignal)
-      , (init, Bool initSignal)
-      , (oe, Bool oeSignal)
-      ]
-
+    = Ports{ work, direction, mode, step, init, oe :: SignalTag } deriving ( Show )
+  
 
 instance ( Var v, Val x, Typeable x ) => Simulatable (Shift v x t) v x where
   simulateOn cntx _ f

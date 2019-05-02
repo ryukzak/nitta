@@ -105,23 +105,23 @@ runHardcoded = do
     --         fib(1)|]
     putStrLn "--------------------------------"
     let microarchHC = busNetwork 31 (Just True)
-            [ ("fram1", PU  D.def D.def FR.Ports{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
-            , ("fram2", PU  D.def D.def FR.Ports{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
-            , ("accum", PU  D.def D.def A.Ports{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
+            [ ("fram1", PU  D.def D.def FR.Ports{ FR.oe=SignalTag 11, FR.wr=SignalTag 10, FR.addr=map SignalTag [9, 8, 7, 6] } )
+            , ("fram2", PU  D.def D.def FR.Ports{ FR.oe=SignalTag 5, FR.wr=SignalTag 4, FR.addr=map SignalTag [3, 2, 1, 0] } )
+            , ("accum", PU  D.def D.def A.Ports{ A.init=SignalTag 18, A.load=SignalTag 19, A.neg=SignalTag 20, A.oe=SignalTag 21 } )
             , ("spi", PU  D.def
                 (SPI.slaveSPI 0)
                 SPI.Ports
-                    { SPI.wr=Signal 22, SPI.oe=Signal 23
+                    { SPI.wr=SignalTag 22, SPI.oe=SignalTag 23
                     , SPI.stop="stop"
                     , SPI.externalPorts=SPI.Slave
-                        { SPI.slave_mosi=InputPort "mosi"
-                        , SPI.slave_miso=OutputPort "miso"
-                        , SPI.slave_sclk=InputPort "sclk"
-                        , SPI.slave_cs=InputPort "cs"
+                        { SPI.slave_mosi=InputPortTag "mosi"
+                        , SPI.slave_miso=OutputPortTag "miso"
+                        , SPI.slave_sclk=InputPortTag "sclk"
+                        , SPI.slave_cs=InputPortTag "cs"
                         }
                     })
-            , ("mul", PU  D.def (M.multiplier True) M.Ports{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-            , ("div", PU  D.def (D.divider 4 True) D.Ports{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+            , ("mul", PU  D.def (M.multiplier True) M.Ports{ M.wr=SignalTag 24, M.wrSel=SignalTag 25, M.oe=SignalTag 26 } )
+            , ("div", PU  D.def (D.divider 4 True) D.Ports{ D.wr=SignalTag 27, D.wrSel=SignalTag 28, D.oe=SignalTag 29, D.oeSel=SignalTag 30 } )
             ] :: BusNetwork String String (FX 30 32) Int
     let algHC = lua2functions
             -- FIXME: Why not work with one fram?
@@ -146,22 +146,22 @@ runHardcoded = do
 -- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
 -- с задачей о целевой платформе.
 microarch = busNetwork 31 (Just False)
-    [ ("fram1", PU D.def D.def FR.Ports{ FR.oe=Signal 11, FR.wr=Signal 10, FR.addr=map Signal [9, 8, 7, 6] } )
-    , ("fram2", PU D.def D.def FR.Ports{ FR.oe=Signal 5, FR.wr=Signal 4, FR.addr=map Signal [3, 2, 1, 0] } )
-    -- , ("shift", PU D.def S.Ports{ S.work=Signal 12, S.direction=Signal 13, S.mode=Signal 14, S.step=Signal 15, S.init=Signal 16, S.oe=Signal 17 })
-    , ("accum", PU D.def D.def A.Ports{ A.init=Signal 18, A.load=Signal 19, A.neg=Signal 20, A.oe=Signal 21 } )
+    [ ("fram1", PU D.def D.def FR.Ports{ FR.oe=SignalTag 11, FR.wr=SignalTag 10, FR.addr=map SignalTag [9, 8, 7, 6] } )
+    , ("fram2", PU D.def D.def FR.Ports{ FR.oe=SignalTag 5, FR.wr=SignalTag 4, FR.addr=map SignalTag [3, 2, 1, 0] } )
+    -- , ("shift", PU D.def S.Ports{ S.work=SignalTag 12, S.direction=SignalTag 13, S.mode=SignalTag 14, S.step=SignalTag 15, S.init=SignalTag 16, S.oe=SignalTag 17 })
+    , ("accum", PU D.def D.def A.Ports{ A.init=SignalTag 18, A.load=SignalTag 19, A.neg=SignalTag 20, A.oe=SignalTag 21 } )
     , ("spi", PU D.def
         (SPI.slaveSPI 0)
         SPI.Ports
-            { SPI.wr=Signal 22, SPI.oe=Signal 23
+            { SPI.wr=SignalTag 22, SPI.oe=SignalTag 23
             , SPI.stop="stop"
             , SPI.externalPorts=SPI.Slave
-                { SPI.slave_mosi=InputPort "mosi"
-                , SPI.slave_miso=OutputPort "miso"
-                , SPI.slave_sclk=InputPort "sclk"
-                , SPI.slave_cs=InputPort "cs"
+                { SPI.slave_mosi=InputPortTag "mosi"
+                , SPI.slave_miso=OutputPortTag "miso"
+                , SPI.slave_sclk=InputPortTag "sclk"
+                , SPI.slave_cs=InputPortTag "cs"
                 }
             })
-    , ("mul", PU D.def (M.multiplier True) M.Ports{ M.wr=Signal 24, M.wrSel=Signal 25, M.oe=Signal 26 } )
-    , ("div", PU D.def (D.divider 4 True) D.Ports{ D.wr=Signal 27, D.wrSel=Signal 28, D.oe=Signal 29, D.oeSel=Signal 30 } )
+    , ("mul", PU D.def (M.multiplier True) M.Ports{ M.wr=SignalTag 24, M.wrSel=SignalTag 25, M.oe=SignalTag 26 } )
+    , ("div", PU D.def (D.divider 4 True) D.Ports{ D.wr=SignalTag 27, D.wrSel=SignalTag 28, D.oe=SignalTag 29, D.oeSel=SignalTag 30 } )
     ]

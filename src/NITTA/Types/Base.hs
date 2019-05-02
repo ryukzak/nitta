@@ -25,6 +25,7 @@ module NITTA.Types.Base
     , module NITTA.Types.Time
     ) where
 
+import           Data.Ix
 import           Data.Default
 import qualified Data.Map             as M
 import           Data.Maybe           (fromMaybe)
@@ -323,22 +324,37 @@ allowToProcess fb pu
 ---------------------------------------------------------------------
 -- * Сигналы и инструкции
 
--- |Класс управляемых вычислительных блоков.
---
--- Определяет низкоуровневые интерфейсы управления вычислительным блоком. Описываются два уровня
--- организации вычислительного процесса: на уровне инструкций вычислительного блока и на уровне
--- микрокоманд вычислительного блока.
+-- |Type class for controllable units. Defines two level of a unit behaviour representation (see
+-- ahead).
 class Controllable pu where
-    -- |Инструкции вычислительного блока описывают его поведения с точки зрения разработчика. Если
-    -- вычислительный блок не выполняет никаких операций (находится в состоянии ожидания), то его
-    -- поведение не описывается никакой инструкцией.
+    -- |Instruction describe unit behaviour on each processor cycle. If instruction not defined for
+    -- some cycles - it should be interpreted as NOP. In future, Instruction should be extracted, because 
     data Instruction pu :: *
 
-    -- |Структура микрокода управляющего поведением вычислительного блока.
-    -- Может быть использован непосредственно для управления аппаратной частью
-    -- вычислительного блока, так как содержит непосредственно значения управляющих
-    -- сигналов.
+    -- |Microcode desctibe controll signals on each processor cycle (without exclusion).
     data Microcode pu :: *
+
+    -- |Map microcode to unit signal ports.
+    mapMicrocodeToPorts :: Microcode pu -> Ports pu -> [(SignalTag, SignalValue)]
+
+
+
+-- |Type class of units with ports.
+class Connected u where
+    -- |Unit ports (external IO, signal, flag, etc).
+    data Ports u :: *
+    -- |External input ports, which go outside of NITTA processor.
+    externalInputPorts :: Ports u -> [InputPortTag]
+    externalInputPorts _ = []
+    -- |External output ports, which go outside of NITTA processor.
+    externalOutputPorts :: Ports u -> [OutputPortTag]
+    externalOutputPorts _ = []
+
+
+newtype SignalTag = SignalTag Int deriving ( Show, Eq, Ord, Ix )
+newtype InputPortTag = InputPortTag String deriving ( Show, Eq, Ord )
+newtype OutputPortTag = OutputPortTag String deriving ( Show, Eq, Ord )
+
 
 
 -- |Метод, необходимый для управляемых блоков обработки данных. Позволяет узнать микрокоманду

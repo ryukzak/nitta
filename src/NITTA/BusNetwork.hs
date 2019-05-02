@@ -105,8 +105,8 @@ busNetwork w bnAllowDrop pus = BusNetwork
             { signalClk="clk"
             , signalRst="rst"
             , signalCycle="cycle"
-            , inputPort= \(InputPort n) -> n
-            , outputPort= \(OutputPort n) -> n
+            , inputPort= \(InputPortTag n) -> n
+            , outputPort= \(OutputPortTag n) -> n
             , unitEnv=NetworkEnv
             }
         puEnv title = bnEnv
@@ -116,12 +116,12 @@ busNetwork w bnAllowDrop pus = BusNetwork
                 , dataOut=title ++ "_data_out"
                 , attrIn="attr_bus"
                 , attrOut=title ++ "_attr_out"
-                , signal= \(Signal i) -> "control_bus[" ++ show i ++ "]"
+                , signal= \(SignalTag i) -> "control_bus[" ++ show i ++ "]"
                 }
             }
         pus' = map (\(title, f) -> ( title, f $ puEnv title ) ) pus
-        extInputs=nub $ concatMap (\(_, PU{ links }) -> externalInputPorts links ) pus'
-        extOutputs=nub $ concatMap (\(_, PU{ links }) -> externalOutputPorts links ) pus'
+        extInputs=nub $ concatMap (\(_, PU{ ports }) -> externalInputPorts ports ) pus'
+        extOutputs=nub $ concatMap (\(_, PU{ ports }) -> externalOutputPorts ports ) pus'
 
 instance WithFunctions (BusNetwork title v x t) (F v x) where
     functions BusNetwork{ bnRemains, bnBinded } = bnRemains ++ concat (M.elems bnBinded)
@@ -267,7 +267,11 @@ instance Controllable (BusNetwork title v x t) where
         deriving (Typeable, Show)
 
     data Microcode (BusNetwork title v x t)
-        = BusNetworkMC (A.Array Signal SignalValue)
+        = BusNetworkMC (A.Array SignalTag SignalValue)
+
+    -- Right now, BusNetwork don't have external control (exclude rst signal and some hacks). All
+    -- signals starts and ends inside network unit.
+    mapMicrocodeToPorts BusNetworkMC{} NetPorts{} = []
 
 
 instance {-# OVERLAPS #-}
@@ -275,9 +279,9 @@ instance {-# OVERLAPS #-}
     microcodeAt BusNetwork{..} t
         = BusNetworkMC $ foldl merge initSt $ M.elems bnPus
         where
-            initSt = A.listArray (Signal 0, Signal $ bnSignalBusWidth - 1) $ repeat def
-            merge st PU{ unit, links }
-                = foldl merge' st $ transmitToLink (microcodeAt unit t) links
+            initSt = A.listArray (SignalTag 0, SignalTag $ bnSignalBusWidth - 1) $ repeat def
+            merge st PU{ unit, ports }
+                = foldl merge' st $ mapMicrocodeToPorts (microcodeAt unit t) ports
             merge' st (s, x) = st A.// [ (s, st A.! s +++ x) ]
 
 
@@ -355,8 +359,8 @@ bindedFunctions puTitle BusNetwork{ bnBinded }
 
 programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
-allExternalInputs pus = map (\(InputPort n) -> n) $ concatMap (\PU{ links } -> externalInputPorts links ) $ M.elems pus
-allExternalOutputs pus = map (\(OutputPort n) -> n) $ concatMap (\PU{ links } -> externalOutputPorts links ) $ M.elems pus
+allExternalInputs pus = map (\(InputPortTag n) -> n) $ concatMap (\PU{ ports } -> externalInputPorts ports ) $ M.elems pus
+allExternalOutputs pus = map (\(OutputPortTag n) -> n) $ concatMap (\PU{ ports } -> externalOutputPorts ports ) $ M.elems pus
 
 
 
@@ -431,9 +435,9 @@ instance
 |                   |]
 
             renderInstance insts regs [] = ( reverse insts, reverse regs )
-            renderInstance insts regs ((t, PU{ unit, systemEnv, links }) : xs)
+            renderInstance insts regs ((t, PU{ unit, systemEnv, ports }) : xs)
                 = let
-                    inst = hardwareInstance t unit systemEnv links
+                    inst = hardwareInstance t unit systemEnv ports
                     insts' = inst : regInstance t : insts
                     regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
                 in renderInstance insts' regs' xs
@@ -453,8 +457,8 @@ instance
     hardwareInstance title BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } bnPorts
         | let
             io2v n = "    , " ++ n ++ "( " ++ n ++ " )"
-            is = map io2v $ map (\(InputPort n) -> n) $ externalInputPorts bnPorts
-            os = map io2v $ map (\(OutputPort n) -> n) $ externalOutputPorts bnPorts
+            is = map io2v $ map (\(InputPortTag n) -> n) $ externalInputPorts bnPorts
+            os = map io2v $ map (\(OutputPortTag n) -> n) $ externalOutputPorts bnPorts
         = fixIndent [qc|
 |           { title } #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -476,14 +480,13 @@ instance
         = error "BusNetwork should be NetworkEnv"
 
 
-instance Connected (BusNetwork String v x t) where
-    data Ports (BusNetwork String v x t)
+instance Connected (BusNetwork title v x t) where
+    data Ports (BusNetwork title v x t)
         = NetPorts
-            { extInputs :: [InputPort]
-            , extOutputs :: [OutputPort]
+            { extInputs :: [InputPortTag]
+            , extOutputs :: [OutputPortTag]
             }
         deriving ( Show )
-    transmitToLink BusNetworkMC{} NetPorts{} = []
     externalInputPorts = extInputs
     externalOutputPorts = extOutputs
 
@@ -497,18 +500,18 @@ instance ( Title title, Var v, Time t
     testBenchImplementation Project{ projectName, processorModel=n@BusNetwork{..}, testCntx }
         = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
         where
-            ports = concat
+            ioPorts = concat
                 [ allExternalInputs bnPus
                 , allExternalOutputs bnPus
                 ]
             testEnv = S.join "\\n\\n"
                 [ tbEnv
-                | (t, PU{ unit, systemEnv, links }) <- M.assocs bnPus
+                | (t, PU{ unit, systemEnv, ports }) <- M.assocs bnPus
                 , let t' = filter (/= '"') $ show t
-                , let tbEnv = componentTestEnviroment t' unit systemEnv links cntxs
+                , let tbEnv = componentTestEnviroment t' unit systemEnv ports cntxs
                 , not $ null tbEnv
                 ]
-            externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ports)
+            externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ioPorts)
             testBenchImp = fixIndent [qc|
 |               `timescale 1 ps / 1 ps
 |               {"module"} { moduleName projectName n }_tb();
@@ -522,7 +525,7 @@ instance ( Title title, Var v, Time t
 |               */
 |
 |               reg clk, rst;
-|               { if null ports then "" else "wire " ++ S.join ", " ports ++ ";" }
+|               { if null ioPorts then "" else "wire " ++ S.join ", " ioPorts ++ ";" }
 |
 |               wire cycle;
 |
