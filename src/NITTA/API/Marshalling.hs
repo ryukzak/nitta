@@ -79,7 +79,7 @@ instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
          , ToJSON t, Time t
          , ToJSONKey v
          , Show x, Ord x, Typeable x, ToJSON x, ToJSONKey x
-         ) => ToJSON (ModelState title v x t)
+         ) => ToJSON (ModelState (BusNetwork title) v x t)
 
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Process v x t) where
@@ -115,7 +115,7 @@ instance FromHttpApiData NId where
 instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
-        ) => ToJSON (Node String String x t) where
+        ) => ToJSON (Node (ModelState (BusNetwork String) String x t) (SynthesisDT String String x t)) where
     toJSON Node{ nId, nModel, nIsComplete } = object
         [ "nModel"      .= nModel
         , "nIsComplete" .= nIsComplete
@@ -132,7 +132,7 @@ instance ToJSON Characteristics
 instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
-        ) => ToJSON (Edge String String x t) where
+        ) => ToJSON (Edge m (SynthesisDT String String x t)) where
     toJSON Edge{ eCharacteristic, eCharacteristics, eOption, eDecision } = object
         [ "eCharacteristic"  .= eCharacteristic
         , "eCharacteristics" .= eCharacteristics

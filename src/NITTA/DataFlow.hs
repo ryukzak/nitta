@@ -91,9 +91,9 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 --   планирования вычислительного процесса, то необходимо пройти все варианты развития
 --   вычислительного процесса, следовательно, на каждом уровне стека может присутствовать несколько
 --   кадров.
-data ModelState title v x t
+data ModelState m v x t
     = Frame
-        { processor :: BusNetwork title v x t
+        { processor :: m v x t
         , dfg       :: DataFlowGraph v x
         }
     --  | Level
@@ -105,13 +105,13 @@ data ModelState title v x t
     deriving ( Generic )
 
 
-instance WithFunctions (ModelState title v x t) (F v x) where
+instance WithFunctions (ModelState (BusNetwork title) v x t) (F v x) where
     functions Frame{ processor } = functions processor
 
 
 instance  ( Title title, Ord v ) =>
         DecisionProblem (BindingDT title v x)
-              BindingDT (ModelState title v x t)
+              BindingDT (ModelState (BusNetwork title) v x t)
         where
     options _ Frame{ processor }    = options binding processor
     -- options _ Level{ currentFrame } = options binding currentFrame
@@ -120,7 +120,7 @@ instance  ( Title title, Ord v ) =>
 
 instance ( Title title, Var v, Time t, Typeable x
          ) => DecisionProblem (DataFlowDT title v t)
-                   DataFlowDT (ModelState title v x t)
+                   DataFlowDT (ModelState (BusNetwork title) v x t)
          where
     options _ Frame{ processor }    = options dataFlowDT processor
     -- options _ Level{ currentFrame } = options dataFlowDT currentFrame

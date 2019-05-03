@@ -32,7 +32,8 @@ import           NITTA.Project
 import           NITTA.SynthesisMethod
 import           NITTA.Types
 import           NITTA.Types.Project
-import           NITTA.Types.Synthesis         (Node (..), mkNodeIO)
+import           NITTA.Types.Synthesis         (Node (..), SynthesisDT,
+                                                mkNodeIO)
 import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
 
@@ -44,7 +45,9 @@ data Test title v x t = Test
     , alg               :: [F v x]
     , receiveValues     :: [(v, [x])]
     , verbose           :: Bool
-    , synthesisMethod   :: Node title v x t -> IO (Node title v x t)
+    , synthesisMethod
+        :: Node (ModelState (BusNetwork title) v x t) (SynthesisDT title v x t)
+        -> IO (Node (ModelState (BusNetwork title) v x t) (SynthesisDT title v x t))
     }
 
 instance ( Title title, Var v, Semigroup v, Val x, Time t ) => Default (Test title v x t) where

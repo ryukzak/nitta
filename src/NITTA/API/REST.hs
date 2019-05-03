@@ -54,9 +54,9 @@ synthesisServer root
 
 
 type WithSynthesis title v x t
-    =    Get '[JSON] (Node title v x t)
-    :<|> "edge" :> Get '[JSON] (Maybe (Edge title v x t))
-    :<|> "model" :> Get '[JSON] (ModelState title v x t)
+    =    Get '[JSON] (Node (ModelState (BusNetwork title) v x t) (SynthesisDT title v x t))
+    :<|> "edge" :> Get '[JSON] (Maybe (Edge (ModelState (BusNetwork title) v x t) (SynthesisDT title v x t)))
+    :<|> "model" :> Get '[JSON] (ModelState (BusNetwork title) v x t)
     :<|> "endpointOptions" :> Get '[JSON] [(title, Option (EndpointDT v t))]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
@@ -90,7 +90,7 @@ withSynthesis root nId
 
 
 type SimpleCompilerAPI title v x t
-    =    "edges" :> Get '[JSON] [ Edge title v x t ]
+    =    "edges" :> Get '[JSON] [ Edge (ModelState (BusNetwork title) v x t) (SynthesisDT title v x t) ]
     :<|> "simpleSynthesis" :> Post '[JSON] NId
     :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
     :<|> "obviousBindThread" :> Post '[JSON] NId

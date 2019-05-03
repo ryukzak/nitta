@@ -48,7 +48,8 @@ import qualified Data.Map               as M
 import           Data.Maybe
 import           Data.Proxy
 import           Data.Semigroup         (Semigroup, (<>))
-import           Data.Set               (Set, fromList, intersection, member, (\\))
+import           Data.Set               (Set, fromList, intersection, member,
+                                         (\\))
 import qualified Data.Set               as S
 import           Data.Typeable          (Typeable)
 import           GHC.Generics
@@ -60,24 +61,24 @@ import           NITTA.Utils.Lens
 import           Numeric.Interval       (Interval, (...))
 
 
-data Node title v x t
+data Node m dt
     = Node
         { nId         :: NId
-        , nModel      :: ModelState title v x t
+        , nModel      :: m
         , nIsComplete :: Bool
-        , nOrigin     :: Maybe (Edge title v x t)
-        , nEdges      :: TVar (Maybe [Edge title v x t])
+        , nOrigin     :: Maybe (Edge m dt)
+        , nEdges      :: TVar (Maybe [Edge m dt])
         }
     deriving ( Generic )
 
 
-data Edge title v x t
+data Edge m dt
     = Edge
-        { eNode            :: Node title v x t
+        { eNode            :: Node m dt
         , eCharacteristic  :: Float
         , eCharacteristics :: Characteristics
-        , eOption          :: Option (SynthesisDT title v x t)
-        , eDecision        :: Decision (SynthesisDT title v x t)
+        , eOption          :: Option dt
+        , eDecision        :: Decision dt
         }
     deriving ( Generic )
 
@@ -181,7 +182,7 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 instance ( Title title, Var v, Typeable x, Time t
          ) => DecisionProblem (SynthesisDT title v x t)
-                  SynthesisDT (ModelState title v x t)
+                  SynthesisDT (ModelState (BusNetwork title) v x t)
         where
     options _ f@Frame{ processor }
         = let
@@ -192,7 +193,7 @@ instance ( Title title, Var v, Typeable x, Time t
 
     decision _ fr (BindingDecision f title) = decision binding fr $ BindingD f title
     decision _ fr@Frame{ processor } (DataFlowDecision src trg) = fr{ processor=decision dataFlowDT processor $ DataFlowD src trg }
-    decision _ Frame{ processor, dfg } (RefactorDecision d@(InsertOutRegisterD v v')) 
+    decision _ Frame{ processor, dfg } (RefactorDecision d@(InsertOutRegisterD v v'))
         = Frame
             { dfg=patch (v, v') dfg
             , processor=refactorDecision processor d
@@ -209,7 +210,7 @@ option2decision (DataFlowOption src trg)
         mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
     in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
-option2decision (RefactorOption (InsertOutRegisterO v)) 
+option2decision (RefactorOption (InsertOutRegisterO v))
     -- FIXME: v <> v
     = RefactorDecision (InsertOutRegisterD v (v <> v))
 
@@ -223,30 +224,30 @@ data Characteristics
       BindCh
         { -- |Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
           -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
-          critical         :: Bool
+          critical                :: Bool
           -- |Колличество альтернативных привязок для функционального блока.
-        , alternative      :: Float
+        , alternative             :: Float
           -- |Привязка данного функционального блока может быть активировано только спустя указанное
           -- колличество тактов.
-        , restless         :: Float
+        , restless                :: Float
           -- |Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
           -- количества пересылок.
-        , allowDataFlow    :: Float
+        , allowDataFlow           :: Float
           -- |Если была выполнена привязка функции из серидины алгоритма, то это может
           -- привести к deadlock-у. В такой ситуации может быть активирована пересылка
           -- в вычислительный блок, в то время как часть из входных данных не доступна,
           -- так как требуемая функция ещё не привязана, а после привязки не сможет быть
           -- вычисленна, так как ресурс уже занят.
-        , possibleDeadlock :: Bool
+        , possibleDeadlock        :: Bool
         , numberOfBindedFunctions :: Float
         -- |number of binded input variables / number of all input variables
-        , percentOfBindedInputs :: Float
-        , wave :: Float
+        , percentOfBindedInputs   :: Float
+        , wave                    :: Float
         }
     | -- |Data Flow Characteristics
       DFCh
-        { waitTime       :: Float
-        , restrictedTime :: Bool
+        { waitTime              :: Float
+        , restrictedTime        :: Bool
         -- |Number of variables, which is not transferable for affected functions.
         , notTransferableInputs :: [Float]
         }
@@ -289,7 +290,7 @@ mkEdges Node{ nId, nModel } = do
             ]
         allLocks = concatMap locks bindableFunctions
 
-        mkWaves n pool lockedVars 
+        mkWaves n pool lockedVars
             | pool == S.empty = []
             | pool `intersection` lockedVars == S.empty = zip (S.elems lockedVars) (repeat n)
         mkWaves n pool lockedVars
@@ -327,15 +328,15 @@ mkEdges Node{ nId, nModel } = do
 
 data ChCntx m title v x
     = ChCntx
-        { nModel                :: m
-        , possibleDeadlockBinds :: Set (F v x)
-        , transferableVars      :: Set v
-        , bindingAlternative    :: M.Map (F v x) [title]
-        , numberOfBindOptions   :: Int
-        , numberOfDFOptions     :: Int
-        , alreadyBindedVariables :: Set v
+        { nModel                    :: m
+        , possibleDeadlockBinds     :: Set (F v x)
+        , transferableVars          :: Set v
+        , bindingAlternative        :: M.Map (F v x) [title]
+        , numberOfBindOptions       :: Int
+        , numberOfDFOptions         :: Int
+        , alreadyBindedVariables    :: Set v
         , outputOfBindableFunctions :: Set v
-        , waves :: M.Map v Int
+        , waves                     :: M.Map v Int
         }
 
 
@@ -354,18 +355,18 @@ measure
         , possibleDeadlock=f `member` possibleDeadlockBinds
         , numberOfBindedFunctions=fromIntegral $ length $ bindedFunctions title $ processor nModel
         , percentOfBindedInputs
-            = let 
+            = let
                 is = inputs f
                 n = fromIntegral $ length $ intersection is alreadyBindedVariables
                 nAll = fromIntegral $ length is
-            in if nAll == 0 then 1 else n / nAll 
-        , wave=if isBreakLoop f 
-            then 0 
+            in if nAll == 0 then 1 else n / nAll
+        , wave=if isBreakLoop f
+            then 0
             else let
-                    allInputs = S.elems $ inputs f 
+                    allInputs = S.elems $ inputs f
                     ns = map (\v -> fromMaybe 0 (waves M.!? v)) allInputs
                 in fromIntegral $ maximum (0 : ns)
-            
+
         }
 measure ChConf{} ChCntx{ transferableVars, nModel } opt@(DataFlowOption _ targets)
     = DFCh
