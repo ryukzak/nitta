@@ -70,7 +70,6 @@ import           Data.Array
 import           Data.Bits                     (finiteBitSize, testBit)
 import           Data.Default
 import           Data.Either
-import           NITTA.Utils.Snippets
 import           Data.Foldable
 import           Data.Generics.Aliases         (orElse)
 import           Data.List                     (find)
@@ -79,13 +78,14 @@ import           Data.Maybe
 import qualified Data.Set                      as S
 import qualified Data.String.Utils             as S
 import           Data.Typeable
-import           NITTA.DataFlow                (isSchedulingCompletable)
 import           NITTA.Functions
+import           NITTA.Model                   (isPUSynthesisFinite)
 import           NITTA.Types                   hiding (Undef)
 import qualified NITTA.Types                   as T
 import           NITTA.Types.Project
 import           NITTA.Utils
 import           NITTA.Utils.Lens
+import           NITTA.Utils.Snippets
 import           Numeric.Interval              ((...))
 import           Text.InterpolatedString.Perl6 (qc)
 
@@ -249,7 +249,7 @@ instance ( Var v
 
     tryBind f pu@Fram{ frMemory, frBindedFB, frRemains, frProcess } = do
         pu' <- bind' f
-        if isSchedulingCompletable pu'
+        if isPUSynthesisFinite pu'
             then Right pu'
             else Left "Schedule can't complete stop."
         where
@@ -551,11 +551,11 @@ instance ( Var v
          , Enum x
          , Val x
          ) => Testable (Fram v x t) v x where
-  testBenchImplementation Project{ projectName, processorModel=pu@Fram{ frProcess=Process{ steps }, .. }, testCntx }
-    = Immidiate (moduleName projectName pu ++ "_tb.v") testBenchImp
+  testBenchImplementation Project{ pName, pUnit=pu@Fram{ frProcess=Process{ steps }, .. }, pTestCntx }
+    = Immediate (moduleName pName pu ++ "_tb.v") testBenchImp
     where
-      Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx $ functions pu
-      hardwareInstance' = hardwareInstance projectName pu
+      Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) pTestCntx $ functions pu
+      hardwareInstance' = hardwareInstance pName pu
         TargetEnvironment{ signalClk="clk"
                 , signalRst="rst"
                 , signalCycle="cycle"
@@ -578,7 +578,7 @@ instance ( Var v
                , addr=map SignalTag [ 2, 3, 4, 5 ]
                }
       testBenchImp = fixIndent [qc|
-|       module { moduleName projectName pu }_tb();
+|       module { moduleName pName pu }_tb();
 |       parameter DATA_WIDTH = { finiteBitSize (def :: x) };
 |       parameter ATTR_WIDTH = 4;
 |
@@ -602,20 +602,20 @@ instance ( Var v
 |
 |       { hardwareInstance' }
 |
-|       { snippetDumpFile $ moduleName projectName pu }
+|       { snippetDumpFile $ moduleName pName pu }
 |       { snippetClkGen }
 |
 |       initial
 |         begin
-|           $dumpfile("{ moduleName projectName pu }_tb.vcd");
-|           $dumpvars(0, { moduleName projectName pu }_tb);
+|           $dumpfile("{ moduleName pName pu }_tb.vcd");
+|           $dumpvars(0, { moduleName pName pu }_tb);
 |           @(negedge rst);
 |           forever @(posedge clk);
 |         end
 |
 |       { snippetInitialFinish $ controlSignals pu }
 |       { snippetInitialFinish $ testDataInput pu cntx }
-|       { snippetInitialFinish $ testDataOutput projectName pu cntx }
+|       { snippetInitialFinish $ testDataOutput pName pu cntx }
 |
 |       endmodule
 |       |]
@@ -699,7 +699,7 @@ instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) 
     moduleName _ _ = "pu_fram"
     hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
     software title pu@Fram{ frMemory }
-        = Immidiate
+        = Immediate
             (softwareFile title pu)
             $ unlines $ map
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)

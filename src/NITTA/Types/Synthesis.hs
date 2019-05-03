@@ -12,24 +12,22 @@
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE TypeSynonymInstances      #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
+{-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.Types.Synthesis
-Description : Types for describe synthesis process
-Copyright   : (c) Aleksandr Penskoi, 2018
+Description : Types for a synthesis graph representation and basic functions to work with that.
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Types.Synthesis
     ( -- *Synthesis graph
-      Node(..)
-    , Edge(..)
+      Node(..), Edge(..)
     , NId(..)
-    , mkNodeIO
-    , getNodeIO
-    , getEdgesIO
+    , mkNodeIO, getNodeIO, getEdgesIO
       -- *Characteristics & synthesis decision type
     , SynthesisDT, synthesisOptions, synthesisDecision, Option(..)
     , ChConf(..)
@@ -54,7 +52,7 @@ import qualified Data.Set               as S
 import           Data.Typeable          (Typeable)
 import           GHC.Generics
 import           NITTA.BusNetwork
-import           NITTA.DataFlow         (ModelState (..), isSchedulingComplete)
+import           NITTA.Model            (ModelState (..), isSynthesisFinish)
 import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
@@ -91,7 +89,7 @@ mkNodeIO model = atomically $ do
 
 mkNode' nId nModel nOrigin nEdges = Node
     { nId, nModel
-    , nIsComplete=isSchedulingComplete nModel
+    , nIsComplete=isSynthesisFinish nModel
     , nOrigin
     , nEdges
     }
@@ -150,19 +148,19 @@ instance Monoid NId where
 -- *Compiler Decision Type
 
 
-data SynthesisDT title v x t
+data SynthesisDT u
 synthesisOptions m = options (Proxy :: Proxy SynthesisDT) m
 synthesisDecision m d = decision (Proxy :: Proxy SynthesisDT) m d
 
 
-instance DecisionType (SynthesisDT title v x t) where
-    data Option (SynthesisDT title v x t)
+instance DecisionType (SynthesisDT (BusNetwork title v x t)) where
+    data Option (SynthesisDT (BusNetwork title v x t))
         = BindingOption (F v x) title
         | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
         | RefactorOption (Option (RefactorDT v))
         deriving ( Generic, Show )
 
-    data Decision (SynthesisDT title v x t)
+    data Decision (SynthesisDT (BusNetwork title v x t))
         = BindingDecision (F v x) title
         | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
         | RefactorDecision (Decision (RefactorDT v))
@@ -172,7 +170,7 @@ isBinding = \case BindingOption{} -> True; _ -> False
 isDataFlow = \case DataFlowOption{} -> True; _ -> False
 
 specializeDataFlowOption (DataFlowOption s t) = DataFlowO s t
-specializeDataFlowOption _ = error "Can't specialize non DataFlow option!"
+specializeDataFlowOption _ = error "Can't specialize non Model option!"
 
 generalizeDataFlowOption (DataFlowO s t) = DataFlowOption s t
 generalizeBindingOption (BindingO s t) = BindingOption s t
@@ -181,22 +179,22 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
 instance ( Title title, Var v, Typeable x, Time t
-         ) => DecisionProblem (SynthesisDT title v x t)
-                  SynthesisDT (ModelState (BusNetwork title) v x t)
+         ) => DecisionProblem (SynthesisDT (BusNetwork title v x t))
+                  SynthesisDT (ModelState (BusNetwork title v x t) v x)
         where
-    options _ f@Frame{ processor }
+    options _ f@ModelState{ mUnit }
         = let
             binds = map generalizeBindingOption $ options binding f
-            transfers = map generalizeDataFlowOption $ options dataFlowDT processor
-            refactors = map RefactorOption $ refactorOptions processor
+            transfers = map generalizeDataFlowOption $ options dataFlowDT mUnit
+            refactors = map RefactorOption $ refactorOptions mUnit
         in concat [ binds, transfers, refactors ]
 
     decision _ fr (BindingDecision f title) = decision binding fr $ BindingD f title
-    decision _ fr@Frame{ processor } (DataFlowDecision src trg) = fr{ processor=decision dataFlowDT processor $ DataFlowD src trg }
-    decision _ Frame{ processor, dfg } (RefactorDecision d@(InsertOutRegisterD v v'))
-        = Frame
-            { dfg=patch (v, v') dfg
-            , processor=refactorDecision processor d
+    decision _ fr@ModelState{ mUnit } (DataFlowDecision src trg) = fr{ mUnit=decision dataFlowDT mUnit $ DataFlowD src trg }
+    decision _ ModelState{ mUnit, mDataFlowGraph } (RefactorDecision d@(InsertOutRegisterD v v'))
+        = ModelState
+            { mDataFlowGraph=patch (v, v') mDataFlowGraph
+            , mUnit=refactorDecision mUnit d
             }
 
 option2decision (BindingOption fb title) = BindingDecision fb title
@@ -275,13 +273,13 @@ instance Default ChConf where
 mkEdges Node{ nId, nModel } = do
     let conf = def
         opts = synthesisOptions nModel
-        alreadyBindedVariables = bindedVars $ processor nModel
+        alreadyBindedVariables = bindedVars $ mUnit nModel
         bindableFunctions = [ f | (BindingOption f _) <- opts ]
         possibleDeadlockBinds = fromList
             [ f
             | (BindingOption f title) <- opts
             , Lock{ lockBy } <- locks f
-            , lockBy `member` unionsMap variables (bindedFunctions title $ processor nModel)
+            , lockBy `member` unionsMap variables (bindedFunctions title $ mUnit nModel)
             ]
         transferableVars = fromList
             [ v
@@ -353,7 +351,7 @@ measure
             (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables nModel
             return $ fromIntegral tcFrom
         , possibleDeadlock=f `member` possibleDeadlockBinds
-        , numberOfBindedFunctions=fromIntegral $ length $ bindedFunctions title $ processor nModel
+        , numberOfBindedFunctions=fromIntegral $ length $ bindedFunctions title $ mUnit nModel
         , percentOfBindedInputs
             = let
                 is = inputs f
@@ -426,7 +424,7 @@ waitingTimeOfVariables net =
 
 -- | Оценить, сколько новых вариантов развития вычислительного процесса даёт привязка
 -- функциоанльного блока.
-optionsAfterBind f title Frame{ processor=BusNetwork{ bnPus } }
+optionsAfterBind f title ModelState{ mUnit=BusNetwork{ bnPus } }
     = case tryBind f (bnPus M.! title) of
         Right pu' -> filter (\(EndpointO act _) -> act `optionOf` f) $ options endpointDT pu'
         _         -> []

@@ -110,8 +110,8 @@ instance TargetSystemComponent (PU v x t) where
     hardwareInstance name pu = hardwareInstance name pu
 
 instance IOTest (PU v x t) v x where
-    componentTestEnviroment name PU{ unit, systemEnv, ports } _systemEnv _links cntxs
-        = componentTestEnviroment name unit systemEnv ports cntxs
+    componentTestEnvironment name PU{ unit, systemEnv, ports } _systemEnv _links cntxs
+        = componentTestEnvironment name unit systemEnv ports cntxs
 
 
 castPU :: ( Typeable pu ) => PU v x t -> Maybe pu
@@ -120,7 +120,7 @@ castPU PU{ unit } = cast unit
 
 
 -- |Решения относительно пересылки данных между вычислитльными узлами (реализация прикладного
--- DataFlow).
+-- Model).
 data DataFlowDT title v t
 dataFlowDT = Proxy :: Proxy DataFlowDT
 
@@ -153,7 +153,7 @@ instance DecisionType (DataFlowDT title v t) where
 -- TODO: Рассмотреть возможность отказа от Empty в пользу оборачивания в Maybe.
 data Implementation
     -- |Непосредственно реализация компонента.
-    = Immidiate { impFileName, impText :: String }
+    = Immediate { impFileName, impText :: String }
     -- |Библиотечный элемент, приведённый в указанном файле.
     | FromLibrary { impFileName :: String }
     -- |Релизация описывается совокупностью файлов располагаемых в указанном каталоге относительно
@@ -188,8 +188,8 @@ class TargetSystemComponent pu where
 class IOTest pu v x | pu -> v x where
     -- |Для автоматизированного тестирования компонент со внешними портами ввода/вывода необходимо
     -- специализированное тестовое окружение, имитирующее ввод/вывод.
-    componentTestEnviroment :: String -> pu -> TargetEnvironment -> Ports pu -> [Cntx v x] -> String
-    componentTestEnviroment _title _pu _env _ports _cntxs = ""
+    componentTestEnvironment :: String -> pu -> TargetEnvironment -> Ports pu -> [Cntx v x] -> String
+    componentTestEnvironment _title _pu _env _ports _cntxs = ""
 
 
 data Parameter
@@ -201,7 +201,7 @@ instance Show Parameter where
     show (InlineParam s) = s
 
 
--- |Target processor environment, including IO ports, clk, rst and cycle signals.
+-- |Target mUnit environment, including IO ports, clk, rst and cycle signals.
 data TargetEnvironment
     = TargetEnvironment
         { signalClk   :: String -- ^clock

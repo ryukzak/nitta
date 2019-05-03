@@ -30,7 +30,7 @@ import           GHC.Generics
 import           NITTA.API.Marshalling  ()
 import           NITTA.API.VisJS        (VisJS, algToVizJS)
 import           NITTA.BusNetwork
-import           NITTA.DataFlow
+import           NITTA.Model
 import           NITTA.Project          (writeAndRunTestbench)
 import           NITTA.SynthesisMethod
 import           NITTA.Types
@@ -54,34 +54,34 @@ synthesisServer root
 
 
 type WithSynthesis title v x t
-    =    Get '[JSON] (Node (ModelState (BusNetwork title) v x t) (SynthesisDT title v x t))
-    :<|> "edge" :> Get '[JSON] (Maybe (Edge (ModelState (BusNetwork title) v x t) (SynthesisDT title v x t)))
-    :<|> "model" :> Get '[JSON] (ModelState (BusNetwork title) v x t)
+    =    Get '[JSON] (Node (ModelState (BusNetwork title v x t) v x) (SynthesisDT (BusNetwork title v x t)))
+    :<|> "edge" :> Get '[JSON] (Maybe (Edge (ModelState (BusNetwork title v x t) v x) (SynthesisDT (BusNetwork title v x t))))
+    :<|> "model" :> Get '[JSON] (ModelState (BusNetwork title v x t) v x)
     :<|> "endpointOptions" :> Get '[JSON] [(title, Option (EndpointDT v t))]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
-    :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestBenchReport
+    :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestbenchReport
     :<|> SimpleCompilerAPI title v x t
 
 withSynthesis root nId
     =    liftIO ( getNodeIO root nId )
     :<|> liftIO ( nOrigin <$> getNodeIO root nId )
     :<|> liftIO ( nModel <$> getNodeIO root nId )
-    :<|> liftIO ( endpointOptions . processor . nModel <$> getNodeIO root nId )
+    :<|> liftIO ( endpointOptions . mUnit . nModel <$> getNodeIO root nId )
     :<|> liftIO ( algToVizJS . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
         unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
         writeAndRunTestbench Project
-            { projectName=name
-            , libraryPath="../.."
-            , projectPath=joinPath ["hdl", "gen", name]
-            , processorModel=processor $ nModel node
-            , testCntx=Nothing
+            { pName=name
+            , pLibPath="../.."
+            , pPath=joinPath ["hdl", "gen", name]
+            , pUnit=mUnit $ nModel node
+            , pTestCntx=Nothing
             }
     ))
     :<|> simpleCompilerServer root nId
     where
-        alg Frame{ dfg=DFG nodes } = map (\(DFGNode f) -> f) nodes
+        alg ModelState{ mDataFlowGraph=DFCluster nodes } = map (\(DFLeaf f) -> f) nodes
         alg _                      = error "unsupported algorithm structure"
         endpointOptions BusNetwork{ bnPus }
             = let f (title, pu) = zip (repeat title) $ options endpointDT pu
@@ -90,7 +90,7 @@ withSynthesis root nId
 
 
 type SimpleCompilerAPI title v x t
-    =    "edges" :> Get '[JSON] [ Edge (ModelState (BusNetwork title) v x t) (SynthesisDT title v x t) ]
+    =    "edges" :> Get '[JSON] [ Edge (ModelState (BusNetwork title v x t) v x) (SynthesisDT (BusNetwork title v x t)) ]
     :<|> "simpleSynthesis" :> Post '[JSON] NId
     :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
     :<|> "obviousBindThread" :> Post '[JSON] NId

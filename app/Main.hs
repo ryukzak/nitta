@@ -30,9 +30,10 @@ import qualified NITTA.ProcessUnits.Divider    as D
 import qualified NITTA.ProcessUnits.Fram       as FR
 import qualified NITTA.ProcessUnits.Multiplier as M
 import qualified NITTA.ProcessUnits.SPI        as SPI
+import           NITTA.TargetSynthesis         (TargetSynthesis (..),
+                                                mkModelWithOneNetwork,
+                                                runTargetSynthesis)
 import           NITTA.Types
-import           NITTA.Utils.Test              (Test (..),
-                                                mkModelWithOneNetwork, runTest)
 import           System.Console.CmdArgs
 import           Text.InterpolatedString.Perl6 (qc)
 
@@ -76,12 +77,12 @@ main = do
         Nothing -> runHardcoded
 
 runWebUI no_api_gen alg ma = backendServer no_api_gen $ mkModelWithOneNetwork ma alg
-runTestbench alg microarchitecture
-    = void $ runTest D.def
-        { testProjectName="main"
-        , microarchitecture
-        , alg
-        , verbose=True
+runTestbench tAlg tMicroArch
+    = void $ runTargetSynthesis D.def
+        { tName="main"
+        , tMicroArch
+        , tAlg
+        , tVerbose=True
         }
 
 
@@ -123,11 +124,11 @@ runHardcoded = do
                 fib(1)|]
 
     backendServer True $ mkModelWithOneNetwork microarchHC algHC
-    void $ runTest D.def
-        { testProjectName="hardcode"
-        , microarchitecture=microarchHC
-        , alg=algHC
-        , verbose=True
+    void $ runTargetSynthesis D.def
+        { tName="hardcode"
+        , tMicroArch=microarchHC
+        , tAlg=algHC
+        , tVerbose=True
         }
     putStrLn "-- hardcoded end --"
 

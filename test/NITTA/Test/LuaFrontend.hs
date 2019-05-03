@@ -26,10 +26,11 @@ import           Data.Default
 import           Data.Either                   (isRight)
 import           Data.FileEmbed                (embedStringFile)
 import           Data.Proxy
+import           NITTA.BusNetwork
 import           NITTA.SynthesisMethod
+import           NITTA.TargetSynthesis
 import           NITTA.Test.Microarchitectures
 import           NITTA.Types
-import           NITTA.Utils.Test
 import           Test.Tasty                    (TestTree, testGroup)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
@@ -195,11 +196,11 @@ test_io =
 
 test_refactor =
     [ testCase "insert register before binding (y = x + x + x)" $ do
-        report <- runTest' ((def :: Test String String Int Int)
-            { testProjectName="regBeforeBind"
-            , microarchitecture=march
-            , synthesisMethod=smartBindSynthesisIO
-            , sourceCode=Just [qc|
+        report <- runTargetSynthesis' ((def :: TargetSynthesis (BusNetwork String) String Int Int)
+            { tName="regBeforeBind"
+            , tMicroArch=march
+            , tSynthesisMethod=smartBindSynthesisIO
+            , tSourceCode=Just [qc|
                     function f(x)
                         y = x + x + x
                         f(y)
@@ -218,48 +219,48 @@ luaTests = $(testGroupGenerator)
 -----------------------------------------------------------
 
 
-luaSimpleTestCase testCaseName testProjectName src
+luaSimpleTestCase testCaseName tName src
     = testCase testCaseName $ do
-        report <- runTest' def
-            { testProjectName
-            , microarchitecture=marchSPIDropData (Proxy :: Proxy Int)
-            , sourceCode=Just src
+        report <- runTargetSynthesis' def
+            { tName
+            , tMicroArch=marchSPIDropData (Proxy :: Proxy Int)
+            , tSourceCode=Just src
             }
         isRight report @? show report
 
 
-genericLuaTestCase testProjectName receiveValues src ma xProxy
+genericLuaTestCase tName tReceivedValues src ma xProxy
     = testCase (showTypeOf xProxy) $ do
-        report <- runTest' def
-            { testProjectName="generic_lua_" ++ testProjectName
-            , microarchitecture=ma xProxy
-            , sourceCode=Just src
-            , receiveValues=map (\(v, x) -> (v, map fromInteger x)) receiveValues
+        report <- runTargetSynthesis' def
+            { tName="generic_lua_" ++ tName
+            , tMicroArch=ma xProxy
+            , tSourceCode=Just src
+            , tReceivedValues=map (\(v, x) -> (v, map fromInteger x)) tReceivedValues
             }
         isRight report @? show report
 
 
-intLuaTestCases testName projectName src = testGroup testName
-    [ genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy Int)
-    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 32))
-    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 48))
-    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (IntX 128))
+intLuaTestCases testName pName src = testGroup testName
+    [ genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy Int)
+    , genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy (IntX 32))
+    , genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy (IntX 48))
+    , genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy (IntX 128))
     ]
 
 
-fixpLuaTestCases testName projectName src = testGroup testName
-    [ genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (FX 22 32))
-    , genericLuaTestCase projectName [] src marchSPIDropData (Proxy :: Proxy (FX 42 64))
+fixpLuaTestCases testName pName src = testGroup testName
+    [ genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy (FX 22 32))
+    , genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy (FX 42 64))
     ]
 
 
-intIOLuaTestCases testName projectName receiveValues src = testGroup testName
-    [ genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy Int)
-    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 24))
-    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 32))
-    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 40))
-    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 48))
-    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 64))
-    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 96))
-    , genericLuaTestCase projectName receiveValues src marchSPI (Proxy :: Proxy (IntX 128))
+intIOLuaTestCases testName pName tReceivedValues src = testGroup testName
+    [ genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy Int)
+    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 24))
+    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 32))
+    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 40))
+    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 48))
+    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 64))
+    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 96))
+    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 128))
     ]

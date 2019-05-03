@@ -10,7 +10,7 @@
 
 {-|
 Module      : NITTA.ProcessUnits.Generic.SerialPU
-Description : Generic serial processor model
+Description : Generic serial mUnit model
 Copyright   : (c) Aleksandr Penskoi, 2018
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com

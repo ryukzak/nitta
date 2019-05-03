@@ -22,7 +22,7 @@ module NITTA.Test.Microarchitectures
     , proxyIntX32
     , algTestCase
     , externalTestCntr
-    , runTest'
+    , runTargetSynthesis'
     ) where
 
 import           Control.Monad                 (void)
@@ -36,8 +36,8 @@ import qualified NITTA.ProcessUnits.Fram       as FR
 import qualified NITTA.ProcessUnits.Multiplier as M
 import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
+import           NITTA.TargetSynthesis
 import           NITTA.Types
-import           NITTA.Utils.Test
 import           System.IO.Unsafe              (unsafePerformIO)
 import           Test.Tasty.HUnit
 
@@ -90,13 +90,13 @@ marchSPIDropData proxy = (marchSPI proxy){ bnAllowDrop=Just True }
 externalTestCntr = unsafePerformIO $ newCounter 0
 {-# NOINLINE externalTestCntr #-}
 
-runTest' t@Test{ testProjectName } = do
+runTargetSynthesis' t@TargetSynthesis{ tName } = do
     i <- incrCounter 1 externalTestCntr
-    runTest t{ testProjectName=testProjectName ++ "_" ++ show i }
+    runTargetSynthesis t{ tName=tName ++ "_" ++ show i }
 
-algTestCase n microarchitecture alg 
-    = testCase n $ void $ runTest' def 
-        { testProjectName=n
-        , microarchitecture
-        , alg        
+algTestCase n tMicroArch tAlg
+    = testCase n $ void $ runTargetSynthesis' def
+        { tName=n
+        , tMicroArch
+        , tAlg
         }

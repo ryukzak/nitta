@@ -18,7 +18,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
-Multiplier processor can evaluate the following function type:
+Multiplier mUnit can evaluate the following function type:
 
 - 'NITTA.Functions.Multiply'.
 
@@ -69,7 +69,7 @@ Bind a function to the multiplier. This operation could be executed at any time
 of working with the model, including when a computation process is fully planned
 (new work can be added). The main rule is: if work is fully planned, then it is
 necessary to perform it and any part of it cannot be "lost" inside the model. If
-a processor has his own interior resources, there should be enough to finish
+a mUnit has his own interior resources, there should be enough to finish
 planning, even it is inefficient.
 
 >>> let Right st1 = tryBind f st0
@@ -148,11 +148,11 @@ import           Text.InterpolatedString.Perl6 (qc)
 {-
 = Processor (or process unit in an early version)
 
-A processor with any type can be used for:
+A mUnit with any type can be used for:
 
 - data storage and processing;
 - interaction with the periphery;
-- control of a NITTA processor.
+- control of a NITTA mUnit.
 
 Wherein, they are characterized by complicated behavior, that is expressed in:
 
@@ -168,50 +168,50 @@ it realizes only data processing by only one function
 determined by the applied algorithm (composition of function with data
 dependencies).
 
-Any processor may have three components:
+Any mUnit may have three components:
 
 - hardware - set of prepared or automatically generated hardware descriptions
   (@/hdl/multiplier@);
 - software - set of binary files, that determines:
-    - processor's initial state and setting (optional) ;
-    - a control program for the specific processor;
-- CAD model - CAD component, that realizes processor support (hardware and
+    - mUnit's initial state and setting (optional) ;
+    - a control program for the specific mUnit;
+- CAD model - CAD component, that realizes mUnit support (hardware and
   software generation, instance generation, computation process planning and
   etc).
 
 Wherein all of three components are hardly related to each other and needed to
-strictly comply to each other. For a deeper understanding, processor developer
+strictly comply to each other. For a deeper understanding, mUnit developer
 should understand all of its components. Multiplier model will be described
 above.
 -}
 
 {-
-*CAD processor model
+*CAD mUnit model
 
-A processor model purpose is "teaching" CAD how to work with the processor:
+A mUnit model purpose is "teaching" CAD how to work with the mUnit:
 
 - which functions could be evaluated (see 'NITTA.Types', class @ProcessUnit@,
   function @tryBind@);
-- how to controlling of the processor for evaluating specific function (see
+- how to controlling of the mUnit for evaluating specific function (see
   'NITTA.Type', class @ProcessUnit@ and @Controllable@);
 - how to translating instructions to microcode (see 'NITTA.Type', class
   @UnambiguouslyDecode@);
-- which options of processor computation process are available (see
+- which options of mUnit computation process are available (see
   'NITTA.Types.Poly', class @ProcessUnit@, function @options@ and @EndpointDT@):
-  - push variable to the processor (@Target@);
-  - pull at least one variable from the processor (@Source@);
+  - push variable to the mUnit (@Target@);
+  - pull at least one variable from the mUnit (@Source@);
 - computation process planning ('NITTA.Types.Poly', class @ProcessUnit@,
   function @decision@ and @EndpointDT@).
 -}
 
 {-|
-The basis of a processor model is a data structure, that represents:
+The basis of a mUnit model is a data structure, that represents:
 
-- processor state while computation process planning;
+- mUnit state while computation process planning;
 - process description (fully or fragmentary), which can be translated to
   software.
 
-Exactly around this data structure, all algorithmic part of processor model is
+Exactly around this data structure, all algorithmic part of mUnit model is
 developed. The data structure is parametrized by the following variables types:
 - v - variable id (usually @String@);
 - x - a type of value (see 'NITTA.Types', @IntX@ and @FX@), with which
@@ -235,10 +235,10 @@ data Multiplier v x t
       -- explicitly does not carried out, because it is in description os computation
       -- process 'process_
           remain               :: [F v x]
-      -- |List of variables, which are needed to upwnload to processor for
+      -- |List of variables, which are needed to upwnload to mUnit for
       -- current function computation.
         , targets              :: [v]
-      -- |List of variables, which are needed to download from processor for
+      -- |List of variables, which are needed to download from mUnit for
       -- current function computation. Download order is arbitrary. Necessary to notice that
       -- all downloading variables match to one value - multipliing result.
         , sources              :: [v]
@@ -248,14 +248,14 @@ data Multiplier v x t
         , doneAt               :: Maybe t
         , currentWork          :: Maybe (t, F v x)
       -- | While planning of execution of function necessery to define undefined value of uploading /
-      -- downloading of data to / from processor, to then set up vertical behavior between
+      -- downloading of data to / from mUnit, to then set up vertical behavior between
       -- information about executing function and this send.
         , currentWorkEndpoints :: [ ProcessUid ]
-      -- | Description of computation process, planned to the processor
+      -- | Description of computation process, planned to the mUnit
       -- 'NITTA.Types.Base.Process'.
         , process_             :: Process v x t
         , tick                 :: t
-      -- | In realisation of the processor IP kernel that supplied with Altera Quartus used.
+      -- | In realisation of the mUnit IP kernel that supplied with Altera Quartus used.
       -- This is don't allow to simulate with Icarus Verilog.
       -- To get around with the restriction the mock was created, that connect instrad of IP kernel
       -- ig the flag is set up.
@@ -265,7 +265,7 @@ data Multiplier v x t
 
 
 
--- |Tracking internal dependencies on the data generated by the processor.
+-- |Tracking internal dependencies on the data generated by the mUnit.
 instance Locks (Multiplier v x t) v where
     locks Multiplier{ remain, sources, targets } =
         -- The dependence of the output of the loaded arguments. If @ sources @ is an empty list,
@@ -281,7 +281,7 @@ instance Locks (Multiplier v x t) v where
         , lockBy <- sources ++ targets
         ]
 
--- |Multiplier processor construction. Argument define inner organisation of the computation
+-- |Multiplier mUnit construction. Argument define inner organisation of the computation
 -- unit:  using of multiplier IP kernel (False) or mock (True). For more information look hardware function
 -- in 'TargetSystemComponent' class.
 multiplier mock = Multiplier
@@ -298,18 +298,18 @@ multiplier mock = Multiplier
 
 
 -- | This type class carry out binding of functions to computational blocks. It lets to check,
--- can function be computated by this processor and if can - carry out functuons assignment.
+-- can function be computated by this mUnit and if can - carry out functuons assignment.
 -- Within it binding renouncement can be related  either to that type of functions doesn't supporting
--- or with that inner resources of processor are empty.
+-- or with that inner resources of mUnit are empty.
 --
 -- From CAD point of view bind looks like: CAD aks models from all available instances of
--- processor and get list of instances ready to start work with considered function. After this, based
+-- mUnit and get list of instances ready to start work with considered function. After this, based
 -- on the different metrics (for example, uploading of processors, number and types of still not binded functions)
 -- the best variant is choosed. Binding can be done either gradully while computation process planning or
 -- at the same time on the start for all functions.
 instance ( Var v, Typeable x
          ) => ProcessUnit (Multiplier v x t) v x t where
-    -- |Binding to processor is carried out by this function.
+    -- |Binding to mUnit is carried out by this function.
     tryBind f pu@Multiplier{ remain }
         -- To do this, it is checked whether the function type is reduced to one of the supported
         -- by ('NITTA.FunctionalBlocks.castF')  and in case of success model conditions is returned
@@ -323,7 +323,7 @@ instance ( Var v, Typeable x
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
   --Unificated interface for get computation process description.
     process = process_
-    -- | This method is used for set up processor time outside.
+    -- | This method is used for set up mUnit time outside.
     -- At the time this is needed only for realisation
     -- of branching, which is on the prototyping stage.
     setTime t pu@Multiplier{} = pu{ tick=t }
@@ -343,7 +343,7 @@ assignment _ _ = error "Multiplier: internal assignment error."
 
 {-
 Result of planning is description of one computation cycle, which later can be translated to microcode,
-directly control processor. From NITTA architecture point of view, process can be described as
+directly control mUnit. From NITTA architecture point of view, process can be described as
 consistent execution two roles by processoe:
 
 - data source ('Source');
@@ -361,17 +361,17 @@ instance ( Var v, Time t, Typeable x
     --process can develop). It is realised by @options@ functions, result of which is
     --one of the further list:
 
-    --list of variants of uploading to processor variables, which are needed to function
+    --list of variants of uploading to mUnit variables, which are needed to function
     --that is in work;
     options _proxy Multiplier{ targets=vs@(_:_), tick }
         = map (\v -> EndpointO (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
 
-     --   list of variants of downloading from processor variables;
+     --   list of variants of downloading from mUnit variables;
     options _proxy Multiplier{ sources, doneAt=Just at, tick }
         | not $ null sources
         = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
 
-    -- list of variables of uploading to processor variables, upload any one of that
+    -- list of variables of uploading to mUnit variables, upload any one of that
     -- will cause to actual start of working with mathched function.
     options proxy pu@Multiplier{ remain } = concatMap (options proxy . assignment pu) remain
 
@@ -380,15 +380,15 @@ instance ( Var v, Time t, Typeable x
     --	1.	They point to not specific moment for work, but to available interval
     --		('NITTA.Types.Base.TimeConstrain'), that describe from and to which time
     -- 		uploading and downloading can be done, and how much time the process can continue.
-    -- 	2.	One value can be download from processor as several different variables. This can
+    -- 	2.	One value can be download from mUnit as several different variables. This can
     --		be done either all at once (on the hardware level the value writed to the bus and
     -- 		read by several processors), as a consistent (firstly value on the bus can be writed for
-    --		one processor, and after for next one), what should be specified too.
+    --		one mUnit, and after for next one), what should be specified too.
 
 
     -- 2. 	Process planning or making decision about compuatation process development to
-    --	  	processor model state is carried out by @decision@. Variant transformation
-    --		from got from @options@ is carried out by CAD outside the processor model.
+    --	  	mUnit model state is carried out by @decision@. Variant transformation
+    --		from got from @options@ is carried out by CAD outside the mUnit model.
     --		We can distinguish the following solutions:
     --
     --		1. If model wait variable uploading:
@@ -482,7 +482,7 @@ data ArgumentSelector = A | B
 -- - microcode level, where describes structure of processors controls  signals and
 -- values.
 instance Controllable (Multiplier v x t) where
-    -- |Instructions for multiplier processor controlling. Multiplier can only
+    -- |Instructions for multiplier mUnit controlling. Multiplier can only
     -- upload arguments A and B, and download multiplication result. This construction
     -- are used in computation process planning by 'schedule' function. Instead of them,
     -- there is a @nop@ function - when no actions execute.
@@ -491,15 +491,15 @@ instance Controllable (Multiplier v x t) where
         | Out
         deriving (Show)
 
-    -- Set of signals for processor control and microcode view for
-    -- the processor
+    -- Set of signals for mUnit control and microcode view for
+    -- the mUnit
     data Microcode (Multiplier v x t)
         = Microcode
-          { -- | Write to processor signal.
+          { -- | Write to mUnit signal.
               wrSignal :: Bool
-              -- |Uploading to processor argument selector.
+              -- |Uploading to mUnit argument selector.
             , selSignal :: Bool
-              -- |Downloading from processor signal.
+              -- |Downloading from mUnit signal.
             , oeSignal :: Bool
             }
         deriving ( Show, Eq, Ord )
@@ -513,9 +513,9 @@ instance Controllable (Multiplier v x t) where
 
 
 -- |Also we need to define default state for microcode (that is match to implicit @nop@ function)
--- This state mean that processor is in inaction state, but doesn't busy the bus and storage
+-- This state mean that mUnit is in inaction state, but doesn't busy the bus and storage
 -- inner state in predictable view. In multiplier case - it doesn't reset multiplication result and
--- doesn't work with bus. Default state is using for processor stop, pause or waiting
+-- doesn't work with bus. Default state is using for mUnit stop, pause or waiting
 
 instance Default (Microcode (Multiplier v x t)) where
     def = Microcode
@@ -540,8 +540,8 @@ instance Connected (Multiplier v x t) where
         } deriving ( Show )
 
 
--- |The availability of standart values, with which actual result of processor in simlator
--- is compared, has the main role in testing. This class carry on Standart values generation.
+-- |The availability of standard values, with which actual result of mUnit in simlator
+-- is compared, has the main role in testing. This class carry on standard values generation.
 instance ( Var v
          , Integral x
          , Typeable x
@@ -554,11 +554,11 @@ instance ( Var v
 
 
 -- | We use functions that is realized below to generate processors and tests, that use this
--- processor. These methods are called while generation of project with net, that include this
--- processor or also with tests generation.
+-- mUnit. These methods are called while generation of project with net, that include this
+-- mUnit or also with tests generation.
 instance ( Time t, Var v, Val x
          ) => TargetSystemComponent (Multiplier v x t) where
-    -- | Naming of hardwawre module, instance of which is creting for embedding to processor.
+    -- | Naming of hardwawre module, instance of which is creting for embedding to mUnit.
     -- In this case it is defined in @/hdl/multiplier/pu_multiplier.v@.
     moduleName _title _pu = "pu_multiplier"
 
@@ -567,7 +567,7 @@ instance ( Time t, Var v, Val x
     --
     -- 1. Setting and begin states. In case of multiplier there is no specific settings
     --    for the applied algorhytm.
-    -- 2. Microprogram. Processor cannot be user not in processor ner sructure, we needn't to
+    -- 2. Microprogram. Processor cannot be user not in mUnit ner sructure, we needn't to
     --    determine software in context of separate unit. Besides, signal lines of separated
     --    processors can be multiplexed. Thereby, microprogram is formed for
     --    processors net just at once in way of merge of the microprogramms, that are
@@ -587,8 +587,8 @@ instance ( Time t, Var v, Val x
             , FromLibrary $ "multiplier/" ++ moduleName title pu ++ ".v"
             ]
 
-    --	|Source code fragment generation for create processor instance within the processorю
-    -- 	The main task of the function is to include processor to processor infostructure correctly.
+    --	|Source code fragment generation for create mUnit instance within the processorю
+    -- 	The main task of the function is to include mUnit to mUnit infostructure correctly.
     --	and set uo all parameters, names and wires.
     --
     -- Take attention to function @fixIndent@. This function allows a programmer to use
@@ -620,9 +620,9 @@ instance ( Time t, Var v, Val x
 instance IOTest (Multiplier v x t) v x
 
 
--- | This class is service and used to extract all functions binding to processor.
+-- | This class is service and used to extract all functions binding to mUnit.
 -- This class is easy realized: we take process description
--- (all planned functions) from processor, and function in progress,
+-- (all planned functions) from mUnit, and function in progress,
 -- if it is.
 instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
     functions Multiplier{ process_, remain, currentWork }
@@ -633,12 +633,12 @@ instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
             Nothing     -> []
 
 
--- The main purpose of this class is to generate auto tests isolated to the processor.
+-- The main purpose of this class is to generate auto tests isolated to the mUnit.
 -- In case of this it allows to generate test bench for computational unit according to its model
 -- and planned computational process. Use can see tests in 'Spec'.
 --
--- Testing is carried out as follows: om the base of processor description it generate sequence
--- of outer influence o processor (signals and input data), and also check sequence of output signals
+-- Testing is carried out as follows: om the base of mUnit description it generate sequence
+-- of outer influence o mUnit (signals and input data), and also check sequence of output signals
 -- and data. Output data is compared with results of functional simulations and if they doesn't match
 -- then error message is displaing.
 
@@ -646,11 +646,11 @@ instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
 instance ( Var v, Time t
          , Typeable x, Show x, Integral x, Val x
          ) => Testable (Multiplier v x t) v x where
-    testBenchImplementation prj@Project{ projectName, processorModel }
+    testBenchImplementation prj@Project{ pName, pUnit }
         -- Test bech is one file described below. We use ready snippet for it generation, because
         -- in most cases they will be similar. The data structure 'NITTA.Project.SnippetTestBenchConf' has the
         -- key role and describes this module specific.
-        = Immidiate (moduleName projectName processorModel ++ "_tb.v")
+        = Immediate (moduleName pName pUnit ++ "_tb.v")
             $ snippetTestBench prj SnippetTestBenchConf
             -- List of control signals. It is needed to initialize registers with the same names.
                 { tbcSignals=["oe", "wr", "wrSel"]

@@ -25,7 +25,7 @@ module NITTA.SynthesisMethod
 
 import           Data.List             (find, sortOn)
 import           Data.Ord              (Down (..))
-import           NITTA.DataFlow        (targetProcessDuration)
+import           NITTA.Model           (targetProcessDuration)
 import           NITTA.Types.Synthesis
 import           NITTA.Utils           (maximumOn, minimumOn)
 

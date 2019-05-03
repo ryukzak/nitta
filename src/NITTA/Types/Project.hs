@@ -27,7 +27,7 @@ module NITTA.Types.Project
     , QuartusProject(..)
     , IcarusMakefile(..)
       -- *Testbench
-    , Testable(..), TestBenchReport(..)
+    , Testable(..), TestbenchReport(..)
     , testBenchTopModule
       -- *Utils
     , projectFiles
@@ -46,14 +46,15 @@ import           System.FilePath.Posix (joinPath)
 -- be writable to disk.
 
 -- FIXME: collision between target project name and output directory. Maybe
--- projectName or projectPath should be maybe? Or both?
+-- pName or pPath should be maybe? Or both?
 data Project m v x
     = Project
-        { projectName    :: String -- ^target project name
-        , libraryPath    :: String -- ^processor unit library directory
-        , projectPath    :: String -- ^output directory
-        , processorModel :: m      -- ^processor model (a processor unit for testbench or network for complete NITTA processor)
-        , testCntx       :: Maybe (Cntx v x) -- ^testbench context with input values
+        { pName     :: String -- ^target project name
+        , pLibPath  :: String -- ^mUnit unit library directory
+        , pPath     :: String -- ^output directory
+        , pUnit     :: m      -- ^mUnit model (a mUnit unit for testbench or network for complete NITTA mUnit)
+        , pTestCntx :: Maybe (Cntx v x) -- ^testbench context with input values
+        -- FIXME: Should be a real Either Cntx, with functional simulation data.
         } deriving ( Show )
 
 
@@ -85,7 +86,7 @@ data TargetSystem = TargetSystem
 -- |Quartus project files.
 data QuartusProject = QuartusProject
 
--- |Test bench for a target system or a processor unit.
+-- |Test bench for a target system or a mUnit unit.
 data TestBench = TestBench
 
 -- |Makefile for running testbench by Icarus Verilog.
@@ -97,8 +98,8 @@ data IcarusMakefile = IcarusMakefile
 class Testable m v x | m -> v x where
     testBenchImplementation :: Project m v x -> Implementation
 
-data TestBenchReport
-    = TestBenchReport
+data TestbenchReport
+    = TestbenchReport
         { tbStatus         :: Bool
         , tbPath           :: String
         , tbFiles          :: [String]
@@ -110,12 +111,12 @@ data TestBenchReport
 
 
 -- |Generate list of project files (including testbench).
-projectFiles prj@Project{ projectName, processorModel }
-    = L.nub $ concatMap (addPath "") [ hardware projectName processorModel, testBenchImplementation prj ]
+projectFiles prj@Project{ pName, pUnit }
+    = L.nub $ concatMap (addPath "") [ hardware pName pUnit, testBenchImplementation prj ]
     where
         addPath p (Aggregate (Just p') subInstances) = concatMap (addPath $ joinPath [p, p']) subInstances
         addPath p (Aggregate Nothing subInstances) = concatMap (addPath $ joinPath [p]) subInstances
-        addPath p (Immidiate fn _) = [ joinPath [ p, fn ] ]
+        addPath p (Immediate fn _) = [ joinPath [ p, fn ] ]
         addPath _ (FromLibrary fn) = [ joinPath [ "lib", T.unpack $ L.last $ T.split (=='/') (T.pack fn) ] ]
         addPath _ Empty = []
 

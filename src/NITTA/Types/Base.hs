@@ -25,8 +25,8 @@ module NITTA.Types.Base
     , module NITTA.Types.Time
     ) where
 
-import           Data.Ix
 import           Data.Default
+import           Data.Ix
 import qualified Data.Map             as M
 import           Data.Maybe           (fromMaybe)
 import           Data.Proxy
@@ -102,7 +102,7 @@ data StepInfo v x t where
     EndpointRoleStep :: EndpointRole v -> StepInfo v x t
     -- |Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
     -- определяется типом вычислительного блока.
-    InstructionStep :: 
+    InstructionStep ::
         ( Show (Instruction pu)
         , Typeable (Instruction pu)
         ) => Instruction pu -> StepInfo v x t
@@ -184,11 +184,11 @@ data EndpointRole v
 
 instance {-# OVERLAPPABLE #-} ( Show v ) => Show (EndpointRole v) where
     show (Source vs) = "Source " ++ S.join "," (map show $ S.elems vs)
-    show (Target v) = "Target " ++ show v
+    show (Target v)  = "Target " ++ show v
 
 instance {-# OVERLAPS #-} Show (EndpointRole String) where
     show (Source vs) = "Source " ++ S.join "," (S.elems vs)
-    show (Target v) = "Target " ++ v
+    show (Target v)  = "Target " ++ v
 
 instance ( Ord v ) => Patch (EndpointRole v) (Diff v) where
     patch Diff{ diffI } (Target v) = Target $ fromMaybe v $ diffI M.!? v
@@ -257,7 +257,7 @@ instance DecisionType (RefactorDT v) where
         --
         -- >>> f1 :: (...) -> (a)
         -- f2 :: (a, ...) -> (...)
-        -- f1 and f2 process on same processor
+        -- f1 and f2 process on same mUnit
         -- In this case, we have deadlock, witch can be fixed by insetion of register between functions:
         -- f1 :: (...) -> (a)
         -- reg :: a -> buf_a
@@ -327,11 +327,11 @@ allowToProcess fb pu
 -- |Type class for controllable units. Defines two level of a unit behaviour representation (see
 -- ahead).
 class Controllable pu where
-    -- |Instruction describe unit behaviour on each processor cycle. If instruction not defined for
-    -- some cycles - it should be interpreted as NOP. In future, Instruction should be extracted, because 
+    -- |Instruction describe unit behaviour on each mUnit cycle. If instruction not defined for
+    -- some cycles - it should be interpreted as NOP. In future, Instruction should be extracted, because
     data Instruction pu :: *
 
-    -- |Microcode desctibe controll signals on each processor cycle (without exclusion).
+    -- |Microcode desctibe controll signals on each mUnit cycle (without exclusion).
     data Microcode pu :: *
 
     -- |Map microcode to unit signal ports.
@@ -343,10 +343,10 @@ class Controllable pu where
 class Connected u where
     -- |Unit ports (external IO, signal, flag, etc).
     data Ports u :: *
-    -- |External input ports, which go outside of NITTA processor.
+    -- |External input ports, which go outside of NITTA mUnit.
     externalInputPorts :: Ports u -> [InputPortTag]
     externalInputPorts _ = []
-    -- |External output ports, which go outside of NITTA processor.
+    -- |External output ports, which go outside of NITTA mUnit.
     externalOutputPorts :: Ports u -> [OutputPortTag]
     externalOutputPorts _ = []
 

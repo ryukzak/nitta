@@ -28,9 +28,9 @@ import           Data.Proxy
 import           Data.Set                      (difference, elems, empty,
                                                 fromList, intersection, union)
 import           Debug.Trace
-import           NITTA.DataFlow                (endpointOption2action)
 import           NITTA.Functions
 import qualified NITTA.Functions               as F
+import           NITTA.Model                   (endpointOptionToDecision)
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnits.Multiplier
 import           NITTA.Project
@@ -188,7 +188,7 @@ processAlgOnEndpointGen pu0 algGen = do
                                 Right pu' -> processAlgOnEndpointGen' pu' fRemain' (f : fPassed)
                                 Left _err -> processAlgOnEndpointGen' pu fRemain' fPassed
                     EndpointOpt o -> do
-                        d <- fmap endpointOption2action $ endpointGen o
+                        d <- fmap endpointOptionToDecision $ endpointGen o
                         let pu' = decision endpointDT pu d
                         processAlgOnEndpointGen' pu' fRemain fPassed
             where
@@ -249,5 +249,5 @@ unitTestBench title proxy cntx alg = do
 bindAllAndNaiveSchedule alg pu0 = naiveSchedule $ foldl (flip bind) pu0 alg
     where
         naiveSchedule pu
-            | opt : _ <- options endpointDT pu = naiveSchedule $ decision endpointDT pu $ endpointOption2action opt
+            | opt : _ <- options endpointDT pu = naiveSchedule $ decision endpointDT pu $ endpointOptionToDecision opt
             | otherwise = pu

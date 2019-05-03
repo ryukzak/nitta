@@ -24,8 +24,8 @@ import           System.FilePath.Posix         (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
 
 
-makefile prj@Project{ projectPath }
-    = writeFile (joinPath [ projectPath, "Makefile" ]) $ space2tab $ fixIndent [qc|
+makefile prj@Project{ pPath }
+    = writeFile (joinPath [ pPath, "Makefile" ]) $ space2tab $ fixIndent [qc|
 |           icarus:
 |               iverilog { S.join " " $ projectFiles prj }
 |               vvp a.out

@@ -23,12 +23,12 @@ import           Control.Monad                 (void)
 import           Data.Default
 import           Data.Map                      (fromList)
 import qualified Data.Set                      as S
-import           NITTA.DataFlow                (endpointOption2action)
 import qualified NITTA.Functions               as F
+import           NITTA.Model                   (endpointOptionToDecision)
 import qualified NITTA.ProcessUnits.Accum      as A
+import           NITTA.TargetSynthesis
 import           NITTA.Test.Microarchitectures
 import           NITTA.Types
-import           NITTA.Utils.Test
 import           NITTA.Types.Function          (Diff (..), F, Patch (..))
 import           Test.Tasty                    (TestTree, testGroup)
 import           Test.Tasty.HUnit
@@ -67,11 +67,11 @@ test_fibonacci =
 
 
 test_io =
-    [ testCase "receive two variables" $ void $ runTest' def 
-        { testProjectName="double_receive"
-        , microarchitecture=marchSPI proxyInt
-        , receiveValues=[ ("a", [10..15]), ("b", [20..25]) ]
-        , alg=
+    [ testCase "receive two variables" $ void $ runTargetSynthesis' def
+        { tName="double_receive"
+        , tMicroArch=marchSPI proxyInt
+        , tReceivedValues=[ ("a", [10..15]), ("b", [20..25]) ]
+        , tAlg=
             [ F.receive ["a"]
             , F.receive ["b"]
             , F.add "a" "b" ["c"]
@@ -133,9 +133,9 @@ test_patchEndpointOptions =
         opts = options endpointDT pu
         opts' = let
                 o1 = head opts
-                pu' = decision endpointDT pu $ endpointOption2action o1
+                pu' = decision endpointDT pu $ endpointOptionToDecision o1
                 o2 = head $ options endpointDT pu'
-                pu'' = decision endpointDT pu' $ endpointOption2action o2
+                pu'' = decision endpointDT pu' $ endpointOptionToDecision o2
             in options endpointDT pu''
         show' = show . map epoRole
 
@@ -155,11 +155,11 @@ test_patchPU =
         o1 = options endpointDT pu1
         pu2 = patch (O $ S.fromList ["d"], O $ S.fromList ["d'"]) pu1
         o2 = options endpointDT pu2
-        pu3 = decision endpointDT pu2 $ endpointOption2action $ head o2
+        pu3 = decision endpointDT pu2 $ endpointOptionToDecision $ head o2
         o3 = options endpointDT pu3
-        pu4 = decision endpointDT pu3 $ endpointOption2action $ head o3
+        pu4 = decision endpointDT pu3 $ endpointOptionToDecision $ head o3
         o4 = options endpointDT pu4
-        pu5 = decision endpointDT pu4 $ endpointOption2action $ head o4
+        pu5 = decision endpointDT pu4 $ endpointOptionToDecision $ head o4
         o5 = options endpointDT pu5
 
         show' = show . map epoRole

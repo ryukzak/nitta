@@ -23,11 +23,11 @@ import qualified Data.String.Utils     as S
 import qualified Data.Text             as T
 import           Data.Typeable
 import           NITTA.BusNetwork
-import           NITTA.DataFlow
+import           NITTA.Model
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Types.Synthesis
-import           NITTA.Utils           (transfered)
+import           NITTA.Utils           (transferred)
 import           Numeric.Interval
 import           Servant
 
@@ -37,11 +37,11 @@ import           Servant
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t)
-         ) => ToJSON (Option (SynthesisDT title v x t))
+         ) => ToJSON (Option (SynthesisDT (BusNetwork title v x t)))
 instance ( ToJSON title
          , ToJSONKey v, ToJSON v, Var v
          , ToJSON (TimeConstrain t), Time t
-         ) => ToJSON (Decision (SynthesisDT title v x t))
+         ) => ToJSON (Decision (SynthesisDT (BusNetwork title v x t)))
 instance ( ToJSON v ) => ToJSON (Option (RefactorDT v))
 instance ( ToJSON v ) => ToJSON (Decision (RefactorDT v))
 instance ( ToJSON t, Time t ) => ToJSON (Option (EndpointDT String t)) where
@@ -59,7 +59,7 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
     toJSON n@BusNetwork{..} = object
         [ "width"              .= bnSignalBusWidth
         , "remain"             .= bnRemains
-        , "forwardedVariables" .= map (String . T.pack . show) (transfered n)
+        , "forwardedVariables" .= map (String . T.pack . show) (transferred n)
         , "binds"              .= bnBinded
         , "processLength"      .= nextTick (process n)
         , "processUnits"       .= M.keys bnPus
@@ -79,7 +79,7 @@ instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
          , ToJSON t, Time t
          , ToJSONKey v
          , Show x, Ord x, Typeable x, ToJSON x, ToJSONKey x
-         ) => ToJSON (ModelState (BusNetwork title) v x t)
+         ) => ToJSON (ModelState (BusNetwork title v x t) v x)
 
 instance ( ToJSON t, Time t, Show v
          ) => ToJSON (Process v x t) where
@@ -115,14 +115,14 @@ instance FromHttpApiData NId where
 instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
-        ) => ToJSON (Node (ModelState (BusNetwork String) String x t) (SynthesisDT String String x t)) where
+        ) => ToJSON (Node (ModelState (BusNetwork String String x t) String x) (SynthesisDT (BusNetwork String String x t))) where
     toJSON Node{ nId, nModel, nIsComplete } = object
         [ "nModel"      .= nModel
         , "nIsComplete" .= nIsComplete
         , "nId"         .= nId
         ]
 
-instance ToJSON TestBenchReport
+instance ToJSON TestbenchReport
 
 
 -- *Simple synthesis
@@ -132,7 +132,7 @@ instance ToJSON Characteristics
 instance
         ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
         , ToJSON t, Time t
-        ) => ToJSON (Edge m (SynthesisDT String String x t)) where
+        ) => ToJSON (Edge m (SynthesisDT (BusNetwork String String x t))) where
     toJSON Edge{ eCharacteristic, eCharacteristics, eOption, eDecision } = object
         [ "eCharacteristic"  .= eCharacteristic
         , "eCharacteristics" .= eCharacteristics

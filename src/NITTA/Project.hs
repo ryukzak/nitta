@@ -43,16 +43,16 @@ import           Text.InterpolatedString.Perl6   (qc)
 -- |Сохранить проект и выполнить test bench.
 writeAndRunTestbench prj = do
     writeProjectForTest prj
-    report@TestBenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestbench prj
+    report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestbench prj
     unless tbStatus $ hPutStrLn stderr (tbCompilerDump ++ tbSimulationDump)
     return report
 
 
 
-runTestbench prj@Project{ projectPath, processorModel } = do
+runTestbench prj@Project{ pPath, pUnit } = do
     let files = projectFiles prj
         dump type_ out err = fixIndent [qc|
-|           Project: { projectPath }
+|           Project: { pPath }
 |           Type: { type_ }
 |           Files:
 |               { files' }
@@ -67,22 +67,22 @@ runTestbench prj@Project{ projectPath, processorModel } = do
 |           |]
             where
                 files' = S.join "\n    " files
-                functions' = S.join "\n    " $ map show $ functions processorModel
+                functions' = S.join "\n    " $ map show $ functions pUnit
 
     ( compileExitCode, compileOut, compileErr )
-        <- readCreateProcessWithExitCode (createIVerilogProcess projectPath files) []
+        <- readCreateProcessWithExitCode (createIVerilogProcess pPath files) []
     let isCompileOk = compileExitCode == ExitSuccess && null compileErr
 
 
     (simExitCode, simOut, simErr)
-        <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just projectPath } []
+        <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just pPath } []
     let isSimOk = simExitCode == ExitSuccess && not ("FAIL" `L.isSubsequenceOf` simOut)
 
-    return TestBenchReport
+    return TestbenchReport
         { tbStatus=isCompileOk && isSimOk
-        , tbPath=projectPath
+        , tbPath=pPath
         , tbFiles=files
-        , tbFunctions=map show $ functions processorModel
+        , tbFunctions=map show $ functions pUnit
         , tbCompilerDump=dump "Compiler" compileOut compileErr
         , tbSimulationDump=dump "Simulation" simOut simErr
         }
@@ -93,28 +93,28 @@ runTestbench prj@Project{ projectPath, processorModel } = do
 
 instance ( TargetSystemComponent (m v x t)
         ) => ProjectPart TargetSystem (Project (m v x t) v x) where
-    writePart TargetSystem prj@Project{ projectName, projectPath, processorModel } = do
-        createDirectoryIfMissing True projectPath
-        writeImplementation projectPath $ hardware projectName processorModel
-        writeImplementation projectPath $ software projectName processorModel
+    writePart TargetSystem prj@Project{ pName, pPath, pUnit } = do
+        createDirectoryIfMissing True pPath
+        writeImplementation pPath $ hardware pName pUnit
+        writeImplementation pPath $ software pName pUnit
         copyLibraryFiles prj
 
 instance ( Testable (m v x t) v x
         ) => ProjectPart TestBench (Project (m v x t) v x) where
-    writePart TestBench prj@Project{ projectPath } = do
-        createDirectoryIfMissing True projectPath
-        writeImplementation projectPath $ testBenchImplementation prj
+    writePart TestBench prj@Project{ pPath } = do
+        createDirectoryIfMissing True pPath
+        writeImplementation pPath $ testBenchImplementation prj
 
 instance ( TargetSystemComponent (m v x t), Testable (m v x t) v x
         ) => ProjectPart IcarusMakefile (Project (m v x t) v x) where
-    writePart IcarusMakefile prj@Project{ projectPath } = do
-        createDirectoryIfMissing True projectPath
+    writePart IcarusMakefile prj@Project{ pPath } = do
+        createDirectoryIfMissing True pPath
         makefile prj
 
 instance ( Var v, Time t, Val x, Show x
         ) => ProjectPart QuartusProject (Project (BusNetwork String v x t) v x) where
-    writePart QuartusProject prj@Project{ projectPath } = do
-        createDirectoryIfMissing True projectPath
+    writePart QuartusProject prj@Project{ pPath } = do
+        createDirectoryIfMissing True pPath
         de0nano prj
 
 
@@ -127,7 +127,7 @@ instance ( Var v, Time t, Val x, Show x
 -- на место ключа $path$.
 writeImplementation pwd = writeImpl ""
     where
-        writeImpl p (Immidiate fn src)
+        writeImpl p (Immediate fn src)
             = writeFile (joinPath [pwd, p, fn]) $ S.replace "$path$" (if null p then "" else p ++ [pathSeparator]) src
         writeImpl p (Aggregate p' subInstances) = do
             let path = joinPath $ maybe [p] (\x -> [p, x]) p'
@@ -137,21 +137,21 @@ writeImplementation pwd = writeImpl ""
         writeImpl _ Empty = return ()
 
 
--- |Скопировать файл в lib, если он находится в libraryPath
+-- |Скопировать файл в lib, если он находится в pLibPath
 copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
     where
-        copyLibraryFile Project{ projectPath } file = do
-            libraryPath' <- makeAbsolute $ joinPath [projectPath, "lib"]
-            createDirectoryIfMissing True libraryPath'
+        copyLibraryFile Project{ pPath } file = do
+            pLibPath' <- makeAbsolute $ joinPath [pPath, "lib"]
+            createDirectoryIfMissing True pLibPath'
             let fileName = last $ S.split "/" file
-            from <- makeAbsolute $ joinPath [projectPath, file]
-            to <- makeAbsolute $ joinPath [projectPath, "lib", fileName]
+            from <- makeAbsolute $ joinPath [pPath, file]
+            to <- makeAbsolute $ joinPath [pPath, "lib", fileName]
             copyFile from to
 
-        libraryFiles Project{ projectName, libraryPath, processorModel }
-            = L.nub $ concatMap (args "") [ hardware projectName processorModel ]
+        libraryFiles Project{ pName, pLibPath, pUnit }
+            = L.nub $ concatMap (args "") [ hardware pName pUnit ]
             where
                 args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
                 args p (Aggregate Nothing subInstances) = concatMap (args $ joinPath [p]) subInstances
-                args _ (FromLibrary fn) = [ joinPath [ libraryPath, fn ] ]
+                args _ (FromLibrary fn) = [ joinPath [ pLibPath, fn ] ]
                 args _ _ = []

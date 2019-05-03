@@ -48,7 +48,7 @@ module NITTA.Utils
     , extractInstruction
     , extractInstructionAt
     , getEndpoints
-    , transfered
+    , transferred
     , getFBs
     , isFB
     , isInstruction
@@ -225,7 +225,7 @@ getEndpoint step | Step{ sDesc=EndpointRoleStep role } <- descent step = Just ro
 getEndpoint _                                                          = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
-transfered pu = nub $ concatMap (elems . variables) $ getEndpoints $ process pu
+transferred pu = nub $ concatMap (elems . variables) $ getEndpoints $ process pu
 
 
 extractInstruction :: ( Typeable (Instruction pu) ) => pu -> Step v x t -> Maybe (Instruction pu)

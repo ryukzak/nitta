@@ -32,11 +32,11 @@ import qualified Data.Set                      as S
 import           Data.Typeable
 import           NITTA.Functions               (castF)
 import qualified NITTA.Functions               as F
-import           NITTA.Utils.Snippets
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Utils
 import           NITTA.Utils.Process
+import           NITTA.Utils.Snippets
 import           Numeric.Interval              (Interval, inf, intersection,
                                                 singleton, sup, width, (...))
 import           Text.InterpolatedString.Perl6 (qc)
@@ -351,7 +351,7 @@ instance ( Val x, Show t
                 , signalClk
                 , signalRst
                 }
-            Ports{ oe, oeSel, wr, wrSel } 
+            Ports{ oe, oeSel, wr, wrSel }
         = fixIndent [qc|
 |           pu_div #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -383,8 +383,8 @@ instance IOTest (Divider v x t) v x
 instance ( Var v, Time t
          , Typeable x, Show x, Integral x, Val x
          ) => Testable (Divider v x t) v x where
-    testBenchImplementation prj@Project{ projectName, processorModel }
-        = Immidiate (moduleName projectName processorModel ++ "_tb.v")
+    testBenchImplementation prj@Project{ pName, pUnit }
+        = Immediate (moduleName pName pUnit ++ "_tb.v")
             $ snippetTestBench prj SnippetTestBenchConf
                 { tbcSignals=["oe", "oeSel", "wr", "wrSel"]
                 , tbcPorts=Ports

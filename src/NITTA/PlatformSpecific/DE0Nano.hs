@@ -38,14 +38,14 @@ de0nano prj = do
 
 -- FIXME: Исправить интеграцию Modelsim и Quartus (прозрачный запуск симуляции по кнопке из
 -- Quartus).
-writeModelsimDo prj@Project{ projectPath } = do
+writeModelsimDo prj@Project{ pPath } = do
     let files = projectFiles prj
         tb = testBenchTopModule prj
-    writeFile ( joinPath [ projectPath, "wave.do" ] )
+    writeFile ( joinPath [ pPath, "wave.do" ] )
         $ renderST
             $(embedStringFile "template/modelsim/wave.do")
             [ ( "top_level", tb ) ]
-    writeFile ( joinPath [ projectPath, "sim.do" ] )
+    writeFile ( joinPath [ pPath, "sim.do" ] )
         $ renderST
             $(embedStringFile "template/modelsim/sim.do")
             [ ( "top_level", tb )
@@ -54,20 +54,20 @@ writeModelsimDo prj@Project{ projectPath } = do
 
 
 -- |Сгенерировать служебные файлы для Quartus.
-writeQuartus prj@Project{ projectName, projectPath, processorModel } = do
+writeQuartus prj@Project{ pName, pPath, pUnit } = do
     let files = projectFiles prj
         tb = testBenchTopModule prj
-    writeFile (joinPath [ projectPath, "nitta.qpf" ]) quartusQPF
-    writeFile (joinPath [ projectPath, "nitta.qsf" ]) $ quartusQSF tb files
-    writeFile (joinPath [ projectPath, "nitta.sdc" ]) quartusSDC
-    writeFile ( joinPath [ projectPath, "nitta.v" ] )
+    writeFile (joinPath [ pPath, "nitta.qpf" ]) quartusQPF
+    writeFile (joinPath [ pPath, "nitta.qsf" ]) $ quartusQSF tb files
+    writeFile (joinPath [ pPath, "nitta.sdc" ]) quartusSDC
+    writeFile ( joinPath [ pPath, "nitta.v" ] )
         $ renderST
             $(embedStringFile "template/quartus/nitta.v")
             [ ( "top_level_module"
-              , hardwareInstance (moduleName projectName processorModel) processorModel (bnEnv processorModel) (bnPorts processorModel) 
-              ) 
+              , hardwareInstance (moduleName pName pUnit) pUnit (bnEnv pUnit) (bnPorts pUnit)
+              )
             ]
-    writeFile ( joinPath [ projectPath, "pll.v" ] )
+    writeFile ( joinPath [ pPath, "pll.v" ] )
         $(embedStringFile "template/quartus/pll.v")
 
 quartusQPF = $(embedStringFile "template/quartus/project_file.qpf") :: String

@@ -7,7 +7,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Aleksandr Penskoi
 maintainer:          aleksandr.penskoi@gmail.com
-copyright:           2018 Aleksandr Penskoi
+copyright:           2019 Aleksandr Penskoi
 category:            hardware, library, program
 build-type:          Simple
 extra-source-files:  README.md
@@ -20,9 +20,9 @@ library
                      , NITTA.API.REST
                      , NITTA.API.VisJS
                      , NITTA.BusNetwork
-                     , NITTA.DataFlow
                      , NITTA.Frontend
                      , NITTA.Functions
+                     , NITTA.Model
                      , NITTA.PlatformSpecific.DE0Nano
                      , NITTA.PlatformSpecific.Makefile
                      , NITTA.ProcessUnits.Accum
@@ -34,6 +34,7 @@ library
                      , NITTA.ProcessUnits.SPI
                      , NITTA.Project
                      , NITTA.SynthesisMethod
+                     , NITTA.TargetSynthesis
                      , NITTA.Types
                      , NITTA.Types.Base
                      , NITTA.Types.Function
@@ -48,7 +49,6 @@ library
                      , NITTA.Utils.Lens
                      , NITTA.Utils.Process
                      , NITTA.Utils.Snippets
-                     , NITTA.Utils.Test
   build-depends:       aeson
                      , array
                      , base

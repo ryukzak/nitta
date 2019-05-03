@@ -424,7 +424,7 @@ instance
 |                   endmodule
 |                   |]
         in Aggregate (Just mn) $
-            [ Immidiate (mn ++ ".v") iml
+            [ Immediate (mn ++ ".v") iml
             , FromLibrary "pu_simple_control.v"
             ] ++ map (uncurry hardware) (M.assocs bnPus)
         where
@@ -445,7 +445,7 @@ instance
     software title pu@BusNetwork{ bnProcess=Process{..}, ..}
         = let
             subSW = map (uncurry software) (M.assocs bnPus)
-            sw = [ Immidiate (mn ++ ".dump") memoryDump ]
+            sw = [ Immediate (mn ++ ".dump") memoryDump ]
         in Aggregate (Just mn) $ subSW ++ sw
         where
             mn = moduleName title pu
@@ -497,8 +497,8 @@ instance ( Title title, Var v, Time t
          , TargetSystemComponent (BusNetwork title v x t)
          , Typeable x, Val x
          ) => Testable (BusNetwork title v x t) v x where
-    testBenchImplementation Project{ projectName, processorModel=n@BusNetwork{..}, testCntx }
-        = Immidiate (moduleName projectName n ++ "_tb.v") testBenchImp
+    testBenchImplementation Project{ pName, pUnit=n@BusNetwork{..}, pTestCntx }
+        = Immediate (moduleName pName n ++ "_tb.v") testBenchImp
         where
             ioPorts = concat
                 [ allExternalInputs bnPus
@@ -508,13 +508,13 @@ instance ( Title title, Var v, Time t
                 [ tbEnv
                 | (t, PU{ unit, systemEnv, ports }) <- M.assocs bnPus
                 , let t' = filter (/= '"') $ show t
-                , let tbEnv = componentTestEnviroment t' unit systemEnv ports cntxs
+                , let tbEnv = componentTestEnvironment t' unit systemEnv ports cntxs
                 , not $ null tbEnv
                 ]
             externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ioPorts)
             testBenchImp = fixIndent [qc|
 |               `timescale 1 ps / 1 ps
-|               {"module"} { moduleName projectName n }_tb();
+|               {"module"} { moduleName pName n }_tb();
 |
 |               /* Functions:
 |               { S.join "\\n" $ map show $ functions n }
@@ -529,7 +529,7 @@ instance ( Title title, Var v, Time t
 |
 |               wire cycle;
 |
-|               { moduleName projectName n }
+|               { moduleName pName n }
 |                   #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                    , .ATTR_WIDTH( 4 )
 |                    ) net
@@ -544,16 +544,16 @@ instance ( Title title, Var v, Time t
 |
 |               { testEnv }
 |
-|               { snippetDumpFile $ moduleName projectName n }
+|               { snippetDumpFile $ moduleName pName n }
 |
 |               { snippetClkGen }
 |
 |               initial
 |                   begin
 |                       // microcode when rst == 1 -> program[0], and must be nop for all PUs
-|                       @(negedge rst); // Turn processor on.
+|                       @(negedge rst); // Turn mUnit on.
 |                       // Start computational cycle from program[1] to program[n] and repeat.
-|                       // Signals effect to processor state after first clk posedge.
+|                       // Signals effect to mUnit state after first clk posedge.
 |                       @(posedge clk);
 |               { concatMap assertion simulationInfo }
 |                       repeat ( 2000 ) @(posedge clk);
@@ -564,7 +564,7 @@ instance ( Title title, Var v, Time t
 |               |]
 
             -- TODO: Количество циклов для тестирования должно задаваться пользователем.
-            cntxs = take 3 $ simulateAlgByCycle (fromMaybe def testCntx) $ functions n
+            cntxs = take 3 $ simulateAlgByCycle (fromMaybe def pTestCntx) $ functions n
             cycleTicks = tail $ programTicks n  -- because program[0] is skiped
             simulationInfo = -- (trace ("cntxs: \n" ++ concatMap ((++ "\n") . show) cntxs) 0, head cntxs) :
                 concatMap (\cntx -> Nothing {- compute loop end -} :  map (Just . (, cntx)) cycleTicks) cntxs

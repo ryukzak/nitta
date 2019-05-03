@@ -203,7 +203,7 @@ instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
             , FromLibrary "spi/spi_to_nitta_splitter.v"
             , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
             ]
-    software _ pu = Immidiate "transport.txt" $ show pu
+    software _ pu = Immediate "transport.txt" $ show pu
     hardwareInstance
             title
             SerialPU{ spuState=State{ spiBounceFilter } }
@@ -239,7 +239,7 @@ sendSequenece SerialPU{ spuState=State{ spiSend } } = reverse $ fst spiSend
 receiveData pu cntx = map (get' cntx) $ receiveSequenece pu
 
 instance ( Var v, Show t, Show x, Val x ) => IOTest (SPI v x t) v x where
-    componentTestEnviroment
+    componentTestEnvironment
             title
             pu@SerialPU{ spuState=State{ spiBounceFilter } }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
@@ -293,4 +293,4 @@ instance ( Var v, Show t, Show x, Val x ) => IOTest (SPI v x t) v x where
 |           end
 |           |]
         | otherwise = ""
-    componentTestEnviroment _ _ _ _ _ = undefined
+    componentTestEnvironment _ _ _ _ _ = undefined

@@ -64,15 +64,15 @@ data SnippetTestBenchConf m
         }
 
 snippetTestBench
-        Project{ projectName, processorModel=pu, testCntx }
+        Project{ pName, pUnit=pu, pTestCntx }
         SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcCtrl, tbDataBusWidth }
     = let
-        mn = moduleName projectName pu
+        mn = moduleName pName pu
         p@Process{ steps, nextTick } = process pu
         fs = functions pu
-        Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) testCntx fs
+        Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) pTestCntx fs
 
-        inst = hardwareInstance projectName pu
+        inst = hardwareInstance pName pu
             TargetEnvironment
                 { signalClk="clk"
                 , signalRst="rst"
