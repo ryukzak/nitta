@@ -68,7 +68,8 @@ runTest Test{ testProjectName, microarchitecture, sourceCode, alg, receiveValues
         Nothing -> return alg
 
     when verbose $ lift $ putStrLn "synthesis process"
-    synthesisResult <- lift $ mkNodeIO (mkModelWithOneNetwork microarchitecture alg') >>= synthesisMethod
+    zeroModel <- lift $ mkNodeIO (mkModelWithOneNetwork microarchitecture alg')
+    synthesisResult <- lift $ synthesisMethod zeroModel
     let isComplete = isSchedulingComplete $ nModel synthesisResult
     when (verbose && isComplete) $ lift $ putStrLn "synthesis process - ok"
     when (verbose && not isComplete) $ lift $ putStrLn "synthesis process - fail"
@@ -87,7 +88,7 @@ runTest Test{ testProjectName, microarchitecture, sourceCode, alg, receiveValues
     when verbose $ lift $ putStrLn $ "write target project (" ++ path ++ ") - ok"
 
     when verbose $ lift $ putStrLn "run testbench"
-    report@TestBenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- lift $ runTestBench prj
+    report@TestBenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- lift $ runTestbench prj
     when verbose $ case tbStatus of
         True  -> lift $ putStrLn "run testbench - ok"
         False -> lift $ do

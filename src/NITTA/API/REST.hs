@@ -31,7 +31,7 @@ import           NITTA.API.Marshalling  ()
 import           NITTA.API.VisJS        (VisJS, algToVizJS)
 import           NITTA.BusNetwork
 import           NITTA.DataFlow
-import           NITTA.Project          (writeAndRunTestBench)
+import           NITTA.Project          (writeAndRunTestbench)
 import           NITTA.SynthesisMethod
 import           NITTA.Types
 import           NITTA.Types.Project
@@ -71,7 +71,7 @@ withSynthesis root nId
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
         unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
-        writeAndRunTestBench Project
+        writeAndRunTestbench Project
             { projectName=name
             , libraryPath="../.."
             , projectPath=joinPath ["hdl", "gen", name]

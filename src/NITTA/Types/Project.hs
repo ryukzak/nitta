@@ -18,7 +18,7 @@ Stability   : experimental
 module NITTA.Types.Project
     ( -- *Project
       Project(..)
-    , writeProjectForText
+    , writeProjectForTest
     , writeWholeProject
       -- *Project part types
     , ProjectPart(..)
@@ -42,10 +42,11 @@ import           NITTA.Types.Network
 import           System.FilePath.Posix (joinPath)
 
 
--- |Target system project.
+-- |Target project for different purpose (testing, target system, etc). Should
+-- be writable to disk.
 
--- FIXME: colision between target project name and output directory. Maybe projectName or
--- projectPath should be maybe? Or both?
+-- FIXME: collision between target project name and output directory. Maybe
+-- projectName or projectPath should be maybe? Or both?
 data Project m v x
     = Project
         { projectName    :: String -- ^target project name
@@ -64,7 +65,7 @@ class ProjectPart pt m where
 
 
 -- |Write project with @TargetSystem@, @TestBench@ and @IcarusMakefile@ parts.
-writeProjectForText prj = do
+writeProjectForTest prj = do
     writePart TargetSystem prj
     writePart TestBench prj
     writePart IcarusMakefile prj

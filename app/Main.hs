@@ -5,13 +5,13 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-unused-imports #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
 Module      : Main
 Description : NITTA CAD executable
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -20,29 +20,20 @@ module Main ( main ) where
 
 import           Control.Monad                 (void, when)
 import           Data.Default                  as D
-import qualified Data.Map                      as M
-import           Data.Maybe
 import qualified Data.Text.IO                  as T
 import           NITTA.API                     (backendServer,
                                                 prepareStaticFiles)
 import           NITTA.BusNetwork
-import           NITTA.DataFlow
 import           NITTA.Frontend
-import qualified NITTA.Functions               as F
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divider    as D
 import qualified NITTA.ProcessUnits.Fram       as FR
 import qualified NITTA.ProcessUnits.Multiplier as M
-import qualified NITTA.ProcessUnits.Shift      as S
 import qualified NITTA.ProcessUnits.SPI        as SPI
-import           NITTA.Project
-import           NITTA.SynthesisMethod
 import           NITTA.Types
-import           NITTA.Types.Synthesis
 import           NITTA.Utils.Test              (Test (..),
                                                 mkModelWithOneNetwork, runTest)
 import           System.Console.CmdArgs
-import           System.FilePath               (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
 
 

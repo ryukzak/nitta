@@ -16,8 +16,8 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Project
-    ( writeAndRunTestBench
-    , runTestBench
+    ( writeAndRunTestbench
+    , runTestbench
     ) where
 
 
@@ -41,15 +41,15 @@ import           Text.InterpolatedString.Perl6   (qc)
 
 
 -- |Сохранить проект и выполнить test bench.
-writeAndRunTestBench prj = do
-    writeProjectForText prj
-    report@TestBenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestBench prj
+writeAndRunTestbench prj = do
+    writeProjectForTest prj
+    report@TestBenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestbench prj
     unless tbStatus $ hPutStrLn stderr (tbCompilerDump ++ tbSimulationDump)
     return report
 
 
 
-runTestBench prj@Project{ projectPath, processorModel } = do
+runTestbench prj@Project{ projectPath, processorModel } = do
     let files = projectFiles prj
         dump type_ out err = fixIndent [qc|
 |           Project: { projectPath }

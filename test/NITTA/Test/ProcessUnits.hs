@@ -212,7 +212,7 @@ inputsGen (pu, fPassed) = do
 coSimulation n (pu, _fbs, values) = monadicIO $ do
     i <- run $ incrCounter 1 externalTestCntr
     let path = joinPath ["hdl", "gen", n ++ "_" ++ show i]
-    res <- run $ writeAndRunTestBench $ Project n "../.." path pu values
+    res <- run $ writeAndRunTestbench $ Project n "../.." path pu values
     assert $ tbStatus res
 
 
@@ -240,7 +240,7 @@ unitTestBench title proxy cntx alg = do
         lib = joinPath ["..", ".."]
         wd = joinPath ["hdl", "gen", title]
         pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
-    (tbStatus <$> writeAndRunTestBench (Project title lib wd pu cntx)) @? title
+    (tbStatus <$> writeAndRunTestbench (Project title lib wd pu cntx)) @? title
 
 
 
