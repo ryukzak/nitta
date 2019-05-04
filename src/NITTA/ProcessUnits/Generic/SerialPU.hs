@@ -161,7 +161,7 @@ instance ( Var v, Time t
 
 instance ( Default st
          , SerialPUState st v x t
-         ) => ProcessUnit (SerialPU st v x t) v x t where
+         ) => ProcessorUnit (SerialPU st v x t) v x t where
 
   tryBind fb pu@SerialPU{ spuFBs, spuRemain, spuProcess }
     -- Почему делается попытка привязать функцию к нулевому состоянию последовательного вычислителя,

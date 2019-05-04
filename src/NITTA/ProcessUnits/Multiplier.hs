@@ -190,17 +190,17 @@ above.
 
 A mUnit model purpose is "teaching" CAD how to work with the mUnit:
 
-- which functions could be evaluated (see 'NITTA.Types', class @ProcessUnit@,
+- which functions could be evaluated (see 'NITTA.Types', class @ProcessorUnit@,
   function @tryBind@);
 - how to controlling of the mUnit for evaluating specific function (see
-  'NITTA.Type', class @ProcessUnit@ and @Controllable@);
+  'NITTA.Type', class @ProcessorUnit@ and @Controllable@);
 - how to translating instructions to microcode (see 'NITTA.Type', class
   @UnambiguouslyDecode@);
 - which options of mUnit computation process are available (see
-  'NITTA.Types.Poly', class @ProcessUnit@, function @options@ and @EndpointDT@):
+  'NITTA.Types.Poly', class @ProcessorUnit@, function @options@ and @EndpointDT@):
   - push variable to the mUnit (@Target@);
   - pull at least one variable from the mUnit (@Source@);
-- computation process planning ('NITTA.Types.Poly', class @ProcessUnit@,
+- computation process planning ('NITTA.Types.Poly', class @ProcessorUnit@,
   function @decision@ and @EndpointDT@).
 -}
 
@@ -308,7 +308,7 @@ multiplier mock = Multiplier
 -- the best variant is choosed. Binding can be done either gradully while computation process planning or
 -- at the same time on the start for all functions.
 instance ( Var v, Typeable x
-         ) => ProcessUnit (Multiplier v x t) v x t where
+         ) => ProcessorUnit (Multiplier v x t) v x t where
     -- Binding to mUnit is carried out by this function.
     tryBind f pu@Multiplier{ remain }
         -- To do this, it is checked whether the function type is reduced to one of the supported

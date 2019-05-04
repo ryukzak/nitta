@@ -196,7 +196,7 @@ instance ( Title title, Var v, Time t
 
 
 instance ( Title title, Time t, Var v, Typeable x
-         ) => ProcessUnit (BusNetwork title v x t) v x t where
+         ) => ProcessorUnit (BusNetwork title v x t) v x t where
 
     tryBind f net@BusNetwork{ bnRemains, bnPus }
         | any (allowToProcess f) $ M.elems bnPus

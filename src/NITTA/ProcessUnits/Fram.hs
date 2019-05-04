@@ -233,7 +233,7 @@ bindToCell _ f cell = Left $ "Can't bind " ++ show f ++ " to " ++ show cell
 
 
 instance ( Var v, Val x, Time t
-         ) => ProcessUnit (Fram v x t) v x t where
+         ) => ProcessorUnit (Fram v x t) v x t where
     tryBind f Fram{ frBindedFB }
         | not $ null (variables f `S.intersection` S.unions (map variables frBindedFB))
         = Left "Can't bind, because needed self transaction."

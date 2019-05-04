@@ -46,7 +46,7 @@ data PU v x t where
         , Connected pu
         , DecisionProblem (EndpointDT v t)
                EndpointDT  pu
-        , ProcessUnit pu v x t
+        , ProcessorUnit pu v x t
         , Show (Instruction pu)
         , Simulatable pu v x
         , Typeable pu
@@ -79,7 +79,7 @@ instance ( Ord v ) =>
             , systemEnv
             }
 
-instance ( Ord v ) => ProcessUnit (PU v x t) v x t where
+instance ( Ord v ) => ProcessorUnit (PU v x t) v x t where
     tryBind fb PU{ diff, unit, ports, systemEnv }
         = case tryBind fb unit of
             Right unit' -> Right PU { diff, unit=unit', ports, systemEnv }

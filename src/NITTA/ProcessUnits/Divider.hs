@@ -174,7 +174,7 @@ pushOutput pu@Divider{ jobs }
 
 
 instance ( Var v, Typeable x
-         ) => ProcessUnit (Divider v x t) v x t where
+         ) => ProcessorUnit (Divider v x t) v x t where
     tryBind f pu@Divider{ remains }
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f
         = Right pu

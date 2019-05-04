@@ -78,7 +78,7 @@ import           Text.StringTemplate
 
 instance ( Show (Instruction pu)
          , Default (Microcode pu)
-         , ProcessUnit pu v x t
+         , ProcessorUnit pu v x t
          , UnambiguouslyDecode pu
          , Time t
          , Typeable pu

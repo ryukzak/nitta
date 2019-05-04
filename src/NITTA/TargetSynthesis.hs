@@ -93,9 +93,6 @@ import           NITTA.Types.Project
 import           NITTA.Types.Synthesis (Node (..), SynthesisDT, mkNodeIO)
 import           System.FilePath       (joinPath)
 
-import Data.Typeable
-import Data.String
-
 
 -- |Description of synthesis task. Applicable for target system synthesis and
 -- testing purpose.
@@ -132,25 +129,6 @@ instance ( Var v, Semigroup v, Val x, Show x, Time t ) => Default (TargetSynthes
         , tWriteProject=writeWholeProject
         }
 
-runTargetSynthesis :: 
-    ( Monoid v
-    , IsString v
-    , ProcessUnit (u v x t) v x t2
-    , Read x
-    , Default x
-    , Integral x
-    , Typeable x
-    , WithFunctions (u v x t) a3
-    , Show x
-    , Show a3
-    , Testable (u v x t) v x
-    , TargetSystemComponent (u v x t)
-    , Ord t2
-    , Typeable v
-    , Show v
-    , Label v
-    , Ord v
-    ) => TargetSynthesis u v x t -> IO (Either [Char] TestbenchReport)
 runTargetSynthesis TargetSynthesis
             { tName, tMicroArch, tSourceCode, tAlg, tReceivedValues, tSynthesisMethod, tVerbose, tWriteProject
             } = do
