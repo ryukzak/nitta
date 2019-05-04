@@ -38,7 +38,6 @@ module NITTA.Functions
     , FramOutput(..), framOutput
     , Loop(..), loop
     , Reg(..), reg
-    , addr2value
     -- *Input/Output
     , Receive(..), receive
     , Send(..), send
@@ -95,9 +94,6 @@ ellipse name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="elli
 
 
 -----------------------------------------------------------
-
-
-addr2value addr = 0x1000 + fromIntegral addr -- must be coordinated with test bench initialization
 
 
 get' cntx k = fromMaybe (error $ "Can't get from cntx: " ++ show k ++ " cntx: " ++ show cntx) $ get cntx k
@@ -187,11 +183,12 @@ instance ( Ord v ) => Function (FramInput v x) v where
 instance ( Ord v ) => Patch (FramInput v x) (v, v) where
     patch diff (FramInput x a) = FramInput x $ patch diff a
 instance Locks (FramInput v x) v where locks _ = []
-instance ( Ord v, Num x ) => FunctionSimulation (FramInput v x) v x where
+instance ( Ord v, Default x ) => FunctionSimulation (FramInput v x) v x where
     -- |Невозможно симулировать данные операции без привязки их к конкретному PU, так как нет
     -- возможности понять что мы что-то записали по тому или иному адресу.
-    simulate cntx (FramInput addr (O k)) = do
-        let v = fromMaybe (addr2value addr) $ cntx `get` oneOf k
+    simulate cntx (FramInput _addr (O k)) = do
+        -- FIXME: change def value to cntx value
+        let v = fromMaybe def $ cntx `get` oneOf k
         set cntx k v
 
 

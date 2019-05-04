@@ -297,7 +297,7 @@ multiplier mock = Multiplier
     }
 
 
--- | This type class carry out binding of functions to computational blocks. It lets to check,
+-- This type class carry out binding of functions to computational blocks. It lets to check,
 -- can function be computated by this mUnit and if can - carry out functuons assignment.
 -- Within it binding renouncement can be related  either to that type of functions doesn't supporting
 -- or with that inner resources of mUnit are empty.
@@ -309,7 +309,7 @@ multiplier mock = Multiplier
 -- at the same time on the start for all functions.
 instance ( Var v, Typeable x
          ) => ProcessUnit (Multiplier v x t) v x t where
-    -- |Binding to mUnit is carried out by this function.
+    -- Binding to mUnit is carried out by this function.
     tryBind f pu@Multiplier{ remain }
         -- To do this, it is checked whether the function type is reduced to one of the supported
         -- by ('NITTA.FunctionalBlocks.castF')  and in case of success model conditions is returned
@@ -321,9 +321,9 @@ instance ( Var v, Typeable x
         -- In case of impossibility of binding string with short description of renouncement
         --cause and 'Left' is returned.
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
-  --Unificated interface for get computation process description.
+    -- Unificate interface for get computation process description.
     process = process_
-    -- | This method is used for set up mUnit time outside.
+    -- This method is used for set up mUnit time outside.
     -- At the time this is needed only for realisation
     -- of branching, which is on the prototyping stage.
     setTime t pu@Multiplier{} = pu{ tick=t }

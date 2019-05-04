@@ -104,8 +104,6 @@ data Fram v x t = Fram
 
 instance ( Default t
          , Default x
-         , Enum x
-         , Num x
          ) => Default (Fram v x t) where
   def = Fram { frMemory=listArray (0, defaultSize - 1) cells
              , frBindedFB=[]
@@ -115,7 +113,7 @@ instance ( Default t
              }
     where
       defaultSize = 16
-      cells = map (\(i, c) -> c{ initialValue=0x1000 + i }) $ zip [0..] $ repeat def
+      cells = repeat def{ initialValue=def }
 
 
 instance WithFunctions (Fram v x t) (F v x) where
@@ -234,14 +232,7 @@ bindToCell _ f cell = Left $ "Can't bind " ++ show f ++ " to " ++ show cell
 
 
 
-instance ( Var v
-         , Time t
-         , Typeable x
-         , Default x
-         , Num x
-         , Eq x
-         , Show x
-         , WithFunctions (Fram v x t) (F v x)
+instance ( Var v, Val x, Time t
          ) => ProcessUnit (Fram v x t) v x t where
     tryBind f Fram{ frBindedFB }
         | not $ null (variables f `S.intersection` S.unions (map variables frBindedFB))
@@ -282,7 +273,7 @@ instance Locks (Fram v x t) v where
     -- FIXME:
     locks _ = []
 
-instance ( Var v, Time t, Typeable x, Show x, Eq x, Num x
+instance ( Var v, Time t, Typeable x, Show x, Eq x
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (Fram v x t)
          where
@@ -518,8 +509,7 @@ instance UnambiguouslyDecode (Fram v x t) where
 
 
 instance ( Var v
-         , Num x
-         , Typeable x
+         , Val x
          ) => Simulatable (Fram v x t) v x where
   simulateOn cntx@Cntx{..} Fram{..} fb
     | Just (Constant (X x) (O k)) <- castF fb = set cntx k x
@@ -528,8 +518,8 @@ instance ( Var v
       let v = fromMaybe x $ cntx `get` k
       set cntx k1 v
     | Just fb'@Reg{} <- castF fb = simulate cntx fb'
-    | Just (FramInput addr (O k)) <- castF fb = do
-      let v = fromMaybe (addr2value addr) $ cntx `get` oneOf k
+    | Just (FramInput _addr (O k)) <- castF fb = do
+      let v = fromMaybe def $ cntx `get` oneOf k
       set cntx k v
     | Just (FramOutput addr (I k)) <- castF fb = do
       v <- get cntx k
@@ -541,15 +531,8 @@ instance ( Var v
 
 ---------------------------------------------------
 
-instance ( Var v
+instance ( Var v, Val x
          , Time t
-         , Typeable x
-         , Show x
-         , Num x
-         , Default x
-         , Eq x
-         , Enum x
-         , Val x
          ) => Testable (Fram v x t) v x where
   testBenchImplementation Project{ pName, pUnit=pu@Fram{ frProcess=Process{ steps }, .. }, pTestCntx }
     = Immediate (moduleName pName pu ++ "_tb.v") testBenchImp
@@ -578,7 +561,7 @@ instance ( Var v
                , addr=map SignalTag [ 2, 3, 4, 5 ]
                }
       testBenchImp = fixIndent [qc|
-|       module { moduleName pName pu }_tb();
+|       {"module"} { moduleName pName pu }_tb();
 |       parameter DATA_WIDTH = { finiteBitSize (def :: x) };
 |       parameter ATTR_WIDTH = 4;
 |
@@ -620,7 +603,7 @@ instance ( Var v
 |       endmodule
 |       |]
 
-controlSignals pu@Fram{ frProcess=Process{..}, ..}
+controlSignals pu@Fram{ frProcess=Process{ nextTick } }
   = concatMap ( ("      " ++) . (++ " @(posedge clk)\n") . showMicrocode . microcodeAt pu) [ 0 .. nextTick + 1 ]
   where
     showMicrocode Microcode{..} = concat
@@ -695,7 +678,7 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
 
 softwareFile title pu = moduleName title pu ++ "." ++ title ++ ".dump"
 
-instance ( Time t, Var v, Enum x, Val x ) => TargetSystemComponent (Fram v x t) where
+instance ( Time t, Var v, Val x ) => TargetSystemComponent (Fram v x t) where
     moduleName _ _ = "pu_fram"
     hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
     software title pu@Fram{ frMemory }

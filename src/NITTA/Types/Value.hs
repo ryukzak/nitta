@@ -32,7 +32,7 @@ import           GHC.TypeLits
 
 
 -- |Type class for Value types.
-class ( Typeable x, Read x, FixedPointCompatible x, Default x ) => Val x where
+class ( Typeable x, Show x, Read x, FixedPointCompatible x, Default x ) => Val x where
     showTypeOf :: Proxy x -> String
     verilogInteger :: x -> Integer
 
