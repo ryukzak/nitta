@@ -51,6 +51,7 @@ import           Data.List                     (find, groupBy, nub, sortOn)
 import qualified Data.Map                      as M
 import           Data.Maybe                    (catMaybes, fromMaybe, isJust)
 import           Data.Set                      (elems, fromList, member)
+import qualified Data.Set                      as S
 import qualified Data.String.Utils             as S
 import           Data.Typeable
 import           NITTA.Functions               (get', reg, simulateAlgByCycle)
@@ -126,8 +127,7 @@ busNetwork w bnAllowDrop pus = BusNetwork
 instance WithFunctions (BusNetwork title v x t) (F v x) where
     functions BusNetwork{ bnRemains, bnBinded } = bnRemains ++ concat (M.elems bnBinded)
 
-instance ( Title title, Var v, Time t
-         , Typeable x
+instance ( Title title, VarValTime v x t
          ) => DecisionProblem (DataFlowDT title v t)
                    DataFlowDT (BusNetwork title v x t)
     where
@@ -195,7 +195,7 @@ instance ( Title title, Var v, Time t
 
 
 
-instance ( Title title, Time t, Var v, Typeable x
+instance ( Title title, VarValTime v x t
          ) => ProcessorUnit (BusNetwork title v x t) v x t where
 
     tryBind f net@BusNetwork{ bnRemains, bnPus }
@@ -305,7 +305,7 @@ instance ( Title title ) => Simulatable (BusNetwork title v x t) v x where
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( Ord v, Title title ) =>
+instance ( Title title, VarValTime v x t ) =>
         DecisionProblem (BindingDT title v x)
               BindingDT (BusNetwork title v x t)
         where
@@ -331,7 +331,7 @@ instance ( Ord v, Title title ) =>
 
 
 
-instance ( Title title, Var v, Typeable x
+instance ( Title title, VarValTime v x t
         ) => DecisionProblem (RefactorDT v)
                   RefactorDT (BusNetwork title v x t)
         where
@@ -348,6 +348,7 @@ instance ( Title title, Var v, Typeable x
 
 
 
+bindedVars :: ( Var v ) => BusNetwork title v x t -> S.Set v
 bindedVars BusNetwork{ bnBinded } = unionsMap variables $ concat $ M.elems bnBinded
 
 bindedFunctions puTitle BusNetwork{ bnBinded }
@@ -364,10 +365,7 @@ allExternalOutputs pus = map (\(OutputPortTag n) -> n) $ concatMap (\PU{ ports }
 
 
 
-instance
-        ( Time t
-        , Val x
-        , Var v
+instance ( VarValTime v x t
         ) => TargetSystemComponent (BusNetwork String v x t) where
     moduleName title BusNetwork{..} = title ++ "_net"
 
@@ -492,10 +490,8 @@ instance Connected (BusNetwork title v x t) where
 
 
 
-instance ( Title title, Var v, Time t
-         , Show x
+instance ( Title title, VarValTime v x t
          , TargetSystemComponent (BusNetwork title v x t)
-         , Typeable x, Val x
          ) => Testable (BusNetwork title v x t) v x where
     testBenchImplementation Project{ pName, pUnit=n@BusNetwork{..}, pTestCntx }
         = Immediate (moduleName pName n ++ "_tb.v") testBenchImp

@@ -92,7 +92,7 @@ data CurrentJob v x t
 
 -- | Основная логика работы последовательного вычислительного блока строится вокруг его состояния,
 -- реализующего следующий интерфейс:
-class SerialPUState st v x t | st -> v x t where
+class ( VarValTime v x t ) => SerialPUState st v x t | st -> v x t where
   -- | Привязать функцию к текущему состоянию вычислительного блока. В один момент времени только
   -- один функциональный блок.
   bindToState :: F v x -> st -> Either String st
@@ -108,10 +108,8 @@ class SerialPUState st v x t | st -> v x t where
 
 
 
-instance ( Var v, Time t
-         , Default st
+instance ( Default st
          , SerialPUState st v x t
-         , Typeable x
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (SerialPU st v x t)
          where
@@ -181,7 +179,7 @@ instance ( Default st
   setTime t pu@SerialPU{ spuProcess } = pu{ spuProcess=spuProcess{ nextTick=t } }
 
 
-instance ( Ord v ) => Locks (SerialPU st v x t) v where
+instance ( Var v ) => Locks (SerialPU st v x t) v where
   locks SerialPU{ spuCurrent=Nothing } = []
   locks SerialPU{ spuCurrent=Just CurrentJob{ cFB }, spuRemain } =
     [ Lock{ locked, lockBy }

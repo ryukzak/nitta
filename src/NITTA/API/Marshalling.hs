@@ -1,15 +1,17 @@
+{-# LANGUAGE ConstraintKinds     #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
+{-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.API.Marshalling
 Description : Marshalling data for REST API
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -21,7 +23,6 @@ import qualified Data.Map              as M
 import qualified Data.Set              as S
 import qualified Data.String.Utils     as S
 import qualified Data.Text             as T
-import           Data.Typeable
 import           NITTA.BusNetwork
 import           NITTA.Model
 import           NITTA.Types
@@ -32,30 +33,25 @@ import           Numeric.Interval
 import           Servant
 
 
+type VarValTimeJSON v x t = ( Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t )
+
 
 -- *Option/Decision
-instance ( ToJSON title
-         , ToJSONKey v, ToJSON v, Var v
-         , ToJSON (TimeConstrain t)
-         ) => ToJSON (Option (SynthesisDT (BusNetwork title v x t)))
-instance ( ToJSON title
-         , ToJSONKey v, ToJSON v, Var v
-         , ToJSON (TimeConstrain t), Time t
-         ) => ToJSON (Decision (SynthesisDT (BusNetwork title v x t)))
+instance ( VarValTimeJSON v x t
+        ) => ToJSON (Option (SynthesisDT (BusNetwork String v x t)))
+instance ( VarValTimeJSON v x t
+         ) => ToJSON (Decision (SynthesisDT (BusNetwork String v x t)))
 instance ( ToJSON v ) => ToJSON (Option (RefactorDT v))
 instance ( ToJSON v ) => ToJSON (Decision (RefactorDT v))
-instance ( ToJSON t, Time t ) => ToJSON (Option (EndpointDT String t)) where
+instance ( Time t ) => ToJSON (Option (EndpointDT String t)) where
     toJSON EndpointO{ epoRole=Source vs, epoAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epoAt)
     toJSON EndpointO{ epoRole=Target v, epoAt } = toJSON ("Target: " ++ v ++ " at " ++ show epoAt)
 
 
 
 -- *Process units
-instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
-         , Var v
-         , Time t, ToJSON t
-         , Typeable x, ToJSON x, ToJSONKey x
-         ) => ToJSON (BusNetwork title v x t) where
+instance ( VarValTimeJSON v x t
+        ) => ToJSON (BusNetwork String v x t) where
     toJSON n@BusNetwork{..} = object
         [ "width"              .= bnSignalBusWidth
         , "remain"             .= bnRemains
@@ -69,19 +65,15 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
 
 
 -- *Model
-instance ( ToJSON v, Var v, ToJSON x ) => ToJSON (DataFlowGraph v x)
+instance ( Var v, ToJSON v, ToJSON x ) => ToJSON (DataFlowGraph v x)
 
 instance ToJSON Relation where
     toJSON (Vertical a b) = toJSON [ a, b ]
 
-instance ( ToJSONKey title, ToJSON title, Show title, Ord title, Typeable title
-         , ToJSON v, Var v
-         , ToJSON t, Time t
-         , ToJSONKey v
-         , Show x, Ord x, Typeable x, ToJSON x, ToJSONKey x
-         ) => ToJSON (ModelState (BusNetwork title v x t) v x)
+instance ( VarValTimeJSON v x t
+        ) => ToJSON (ModelState (BusNetwork String v x t) v x)
 
-instance ( ToJSON t, Time t, Show v
+instance ( VarValTimeJSON v x t
          ) => ToJSON (Process v x t) where
     toJSON Process{ steps, nextTick, relations } = object
         [ "steps"     .= steps
@@ -89,7 +81,7 @@ instance ( ToJSON t, Time t, Show v
         , "relations" .= relations
         ]
 
-instance ( ToJSON t, Time t, Show v
+instance ( VarValTimeJSON v x t
          ) => ToJSON (Step v x t) where
     toJSON Step{ sKey, sTime, sDesc } = object
         [ "sKey"   .= sKey
@@ -112,10 +104,8 @@ instance FromHttpApiData NId where
     parseUrlPiece = Right . read . T.unpack
 
 
-instance
-        ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
-        , ToJSON t, Time t
-        ) => ToJSON (Node (ModelState (BusNetwork String String x t) String x) (SynthesisDT (BusNetwork String String x t))) where
+instance ( VarValTimeJSON v x t
+        ) => ToJSON (SG Node String v x t) where
     toJSON Node{ nId, nModel, nIsComplete } = object
         [ "nModel"      .= nModel
         , "nIsComplete" .= nIsComplete
@@ -129,10 +119,8 @@ instance ToJSON TestbenchReport
 instance ToJSON ChConf
 instance ToJSON Characteristics
 
-instance
-        ( ToJSON x, ToJSONKey x, Typeable x, Ord x, Show x
-        , ToJSON t, Time t
-        ) => ToJSON (Edge m (SynthesisDT (BusNetwork String String x t))) where
+instance ( VarValTimeJSON v x t
+        ) => ToJSON (Edge m (SynthesisDT (BusNetwork String v x t))) where
     toJSON Edge{ eCharacteristic, eCharacteristics, eOption, eDecision } = object
         [ "eCharacteristic"  .= eCharacteristic
         , "eCharacteristics" .= eCharacteristics
@@ -169,8 +157,7 @@ instance ToJSON (IntX w) where
     toJSON ( IntX x ) = toJSON x
 
 instance ToJSONKey (FX m b) where
-    toJSONKey
-        = let
+    toJSONKey = let
             ToJSONKeyText f g = toJSONKey
         in ToJSONKeyText (\( FX x ) -> f $ show x) (\( FX x ) -> g $ show x)
 

@@ -54,7 +54,7 @@ synthesisServer root
 
 
 type WithSynthesis title v x t
-    =    Get '[JSON] (Node (ModelState (BusNetwork title v x t) v x) (SynthesisDT (BusNetwork title v x t)))
+    =    Get '[JSON] (SG Node title v x t)
     :<|> "edge" :> Get '[JSON] (Maybe (Edge (ModelState (BusNetwork title v x t) v x) (SynthesisDT (BusNetwork title v x t))))
     :<|> "model" :> Get '[JSON] (ModelState (BusNetwork title v x t) v x)
     :<|> "endpointOptions" :> Get '[JSON] [(title, Option (EndpointDT v t))]

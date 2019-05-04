@@ -111,7 +111,7 @@ instance ( TargetSystemComponent (m v x t), Testable (m v x t) v x
         createDirectoryIfMissing True pPath
         makefile prj
 
-instance ( Var v, Time t, Val x
+instance ( VarValTime v x t
         ) => ProjectPart QuartusProject (Project (BusNetwork String v x t) v x) where
     writePart QuartusProject prj@Project{ pPath } = do
         createDirectoryIfMissing True pPath

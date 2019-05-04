@@ -57,7 +57,7 @@ slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def{ nextT
 
 
 
-instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t where
+instance ( VarValTime v x t ) => SerialPUState (State v x t) v x t where
 
     bindToState fb st@State{ .. }
         | Just (Send (I v)) <- castF fb
@@ -189,7 +189,7 @@ instance Connected (SPI v x t) where
     externalOutputPorts _ = undefined
 
 
-instance ( Var v, Time t, Val x ) => TargetSystemComponent (SPI v x t) where
+instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
     moduleName _ _ = "pu_slave_spi"
     hardware title pu
         = Aggregate Nothing
@@ -238,7 +238,7 @@ receiveSequenece SerialPU{ spuState=State{ spiReceive } } = reverse $ map head $
 sendSequenece SerialPU{ spuState=State{ spiSend } } = reverse $ fst spiSend
 receiveData pu cntx = map (get' cntx) $ receiveSequenece pu
 
-instance ( Var v, Show t, Show x, Val x ) => IOTest (SPI v x t) v x where
+instance ( VarValTime v x t ) => IOTest (SPI v x t) v x where
     componentTestEnvironment
             title
             pu@SerialPU{ spuState=State{ spiBounceFilter } }

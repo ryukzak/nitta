@@ -14,6 +14,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
+TargetSynthesis is an entry point for synthesis process. TargetSynthesis flow shown on fig.
 
 @
 ================================================================================================================
@@ -55,15 +56,15 @@ NITTA.TargetSynthesis:TargetSynthesis                                           
 ================================================================================================================
                                        |        |                                      Target project generation
 NITTA.Types.Project:Project            |        |                                            NITTA.Types.Project
- |      # pName <--------- @tName      |        |
- |      # pLibPath                     |        +<----- @tReceivedValues
+ |      # pName <--------- $tName      |        |
+ |      # pLibPath                     |        +<----- $tReceivedValues
  |      # pPath                        |        |
  |      # pModel<----------------------/        *<----- functional simulation (FIXME)
  |                                              |
  |      # pTestCntx <---------------------------/
  |
  |
- *<---------- @tWriteProject by ProjectPart pt m
+ *<---------- $tWriteProject by ProjectPart pt m
  |                # TargetSystem
  |                    # hardware
  |                    # software
@@ -100,7 +101,7 @@ data TargetSynthesis u v x t = TargetSynthesis
     { -- |target name, used for top level module name and project path
       tName            :: String
       -- |composition of processor units, IO ports and its interconnect
-    , tMicroArch       :: u v x t
+    , tMicroArch       :: u
       -- |optional application source code (lua)
     , tSourceCode      :: Maybe Text
       -- |algorithm in intermediate representation (if tSourceCode present will be overwritten)
@@ -112,12 +113,12 @@ data TargetSynthesis u v x t = TargetSynthesis
       -- |synthesis method
     , tSynthesisMethod :: Node' u v x t -> IO (Node' u v x t)
       -- |project writer, witch defines necessary project part
-    , tWriteProject    :: Project (u v x t) v x -> IO ()
+    , tWriteProject    :: Project u v x -> IO ()
     }
 
-type Node' u v x t = Node (ModelState (u v x t) v x) (SynthesisDT (u v x t))
+type Node' u v x t = Node (ModelState u v x) (SynthesisDT u)
 
-instance ( Var v, Semigroup v, Val x, Show x, Time t ) => Default (TargetSynthesis (BusNetwork String) v x t) where
+instance ( VarValTime v x t, Semigroup v ) => Default (TargetSynthesis (BusNetwork String v x t) v x t) where
     def = TargetSynthesis
         { tName=undefined
         , tMicroArch=undefined

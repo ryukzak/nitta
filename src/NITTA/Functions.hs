@@ -182,7 +182,7 @@ instance ( Ord v ) => Function (FramInput v x) v where
     isInternalLockPossible _ = True
 instance ( Ord v ) => Patch (FramInput v x) (v, v) where
     patch diff (FramInput x a) = FramInput x $ patch diff a
-instance Locks (FramInput v x) v where locks _ = []
+instance ( Var v ) => Locks (FramInput v x) v where locks _ = []
 instance ( Ord v, Default x ) => FunctionSimulation (FramInput v x) v x where
     -- |Невозможно симулировать данные операции без привязки их к конкретному PU, так как нет
     -- возможности понять что мы что-то записали по тому или иному адресу.
@@ -201,7 +201,7 @@ instance ( Ord v ) => Function (FramOutput v x) v where
     isInternalLockPossible _ = True
 instance ( Ord v ) => Patch (FramOutput v x) (v, v) where
     patch diff (FramOutput x a) = FramOutput x $ patch diff a
-instance Locks (FramOutput v x) v where locks _ = []
+instance ( Var v ) => Locks (FramOutput v x) v where locks _ = []
 instance ( Ord v ) => FunctionSimulation (FramOutput v x) v x where
     simulate cntx@Cntx{ cntxFram } (FramOutput addr (I k)) = do
         v <- get cntx k
@@ -221,7 +221,7 @@ instance ( Ord v ) => Function (Reg v x) v where
     outputs (Reg _a b) = variables b
 instance ( Ord v ) => Patch (Reg v x) (v, v) where
     patch diff (Reg a b) = Reg (patch diff a) (patch diff b)
-instance ( Ord v ) => Locks (Reg v x) v where
+instance ( Var v ) => Locks (Reg v x) v where
     locks = inputsLockOutputs
 instance ( Ord v ) => FunctionSimulation (Reg v x) v x where
     simulate cntx (Reg (I k1) (O k2)) = do
@@ -244,7 +244,7 @@ instance ( Ord v ) => Function (Loop v x) v where
     isBreakLoop _ = True
 instance ( Ord v ) => Patch (Loop v x) (v, v) where
     patch diff (Loop x a b) = Loop x (patch diff a) (patch diff b)
-instance Locks (Loop v x) v where
+instance ( Var v ) => Locks (Loop v x) v where
     -- locks (Loop _ (O as) (I b)) = map (\a -> Lock{ locked=a, lockBy=b }) $ elems as
     locks _ = []
 instance ( Ord v ) => FunctionSimulation (Loop v x) v x where
@@ -265,7 +265,7 @@ instance ( Ord v ) => Function (Add v x) v where
     outputs (Add _a _b  c) = variables c
 instance ( Ord v ) => Patch (Add v x) (v, v) where
     patch diff (Add a b c) = Add (patch diff a) (patch diff b) (patch diff c)
-instance ( Ord v ) => Locks (Add v x) v where
+instance ( Var v ) => Locks (Add v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Add v x) v x where
     simulate cntx (Add (I k1) (I k2) (O k3)) = do
@@ -287,7 +287,7 @@ instance ( Ord v ) => Function (Sub v x) v where
     outputs (Sub _a _b  c) = variables c
 instance ( Ord v ) => Patch (Sub v x) (v, v) where
     patch diff (Sub a b c) = Sub (patch diff a) (patch diff b) (patch diff c)
-instance ( Ord v ) => Locks (Sub v x) v where
+instance ( Var v ) => Locks (Sub v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Sub v x) v x where
     simulate cntx (Sub (I k1) (I k2) (O k3)) = do
@@ -309,7 +309,7 @@ instance ( Ord v ) => Function (Multiply v x) v where
     outputs (Multiply _a _b  c) = variables c
 instance ( Ord v ) => Patch (Multiply v x) (v, v) where
     patch diff (Multiply a b c) = Multiply (patch diff a) (patch diff b) (patch diff c)
-instance ( Ord v ) => Locks (Multiply v x) v where
+instance ( Var v ) => Locks (Multiply v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, Num x ) => FunctionSimulation (Multiply v x) v x where
     simulate cntx (Multiply (I k1) (I k2) (O k3)) = do
@@ -341,7 +341,7 @@ instance ( Ord v ) => Function (Division v x) v where
     outputs Division{ quotient, remain } = variables quotient `union` variables remain
 instance ( Ord v ) => Patch (Division v x) (v, v) where
     patch diff (Division a b c d) = Division (patch diff a) (patch diff b) (patch diff c) (patch diff d)
-instance ( Ord v ) => Locks (Division v x) v where
+instance ( Var v ) => Locks (Division v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, Integral x ) => FunctionSimulation (Division v x) v x where
     simulate cntx Division{ denom=I d, numer=I n, quotient=O q, remain=O r } = do
@@ -362,7 +362,7 @@ instance ( Show x, Eq x, Typeable x ) => Function (Constant v x) v where
     outputs (Constant _ o) = variables o
 instance ( Ord v ) => Patch (Constant v x) (v, v) where
     patch diff (Constant x a) = Constant x (patch diff a)
-instance Locks (Constant v x) v where locks _ = []
+instance ( Var v ) => Locks (Constant v x) v where locks _ = []
 instance ( Ord v ) => FunctionSimulation (Constant v x) v x where
     simulate cntx (Constant (X x) (O k))
         = set cntx k x
@@ -385,7 +385,7 @@ instance ( Ord v ) => Function (ShiftLR v x) v where
 instance ( Ord v ) => Patch (ShiftLR v x) (v, v) where
     patch diff (ShiftL a b) = ShiftL (patch diff a) (patch diff b)
     patch diff (ShiftR a b) = ShiftR (patch diff a) (patch diff b)
-instance ( Ord v ) => Locks (ShiftLR v x) v where
+instance ( Var v ) => Locks (ShiftLR v x) v where
     locks = inputsLockOutputs
 instance ( Ord v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
     simulate cntx (ShiftL (I k1) (O k2)) = do
@@ -406,7 +406,7 @@ instance ( Ord v ) => Function (Send v x) v where
     inputs (Send i) = variables i
 instance ( Ord v ) => Patch (Send v x) (v, v) where
     patch diff (Send a) = Send (patch diff a)
-instance Locks (Send v x) v where locks _ = []
+instance ( Var v ) => Locks (Send v x) v where locks _ = []
 instance ( Ord v ) => FunctionSimulation (Send v x) v x where
     simulate cntx (Send (I k)) = do
         v <- cntx `get` k
@@ -421,7 +421,7 @@ instance ( Ord v ) => Function (Receive v x) v where
     outputs (Receive o) = variables o
 instance ( Ord v ) => Patch (Receive v x) (v, v) where
     patch diff (Receive a) = Receive (patch diff a)
-instance Locks (Receive v x) v where locks _ = []
+instance ( Var v ) => Locks (Receive v x) v where locks _ = []
 instance ( Ord v, Default x ) => FunctionSimulation (Receive v x) v x where
     simulate cntx (Receive (O ks)) = do
         let k = oneOf ks

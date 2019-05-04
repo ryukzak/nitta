@@ -77,7 +77,6 @@ import qualified Data.Map                      as M
 import           Data.Maybe
 import qualified Data.Set                      as S
 import qualified Data.String.Utils             as S
-import           Data.Typeable
 import           NITTA.Functions
 import           NITTA.Model                   (isPUSynthesisFinite)
 import           NITTA.Types                   hiding (Undef)
@@ -232,7 +231,7 @@ bindToCell _ f cell = Left $ "Can't bind " ++ show f ++ " to " ++ show cell
 
 
 
-instance ( Var v, Val x, Time t
+instance ( VarValTime v x t
          ) => ProcessorUnit (Fram v x t) v x t where
     tryBind f Fram{ frBindedFB }
         | not $ null (variables f `S.intersection` S.unions (map variables frBindedFB))
@@ -269,11 +268,11 @@ instance ( Var v, Val x, Time t
     setTime t fr@Fram{..} = fr{ frProcess=frProcess{ nextTick=t } }
 
 
-instance Locks (Fram v x t) v where
+instance ( Var v ) => Locks (Fram v x t) v where
     -- FIXME:
     locks _ = []
 
-instance ( Var v, Time t, Typeable x, Show x, Eq x
+instance ( VarValTime v x t
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (Fram v x t)
          where
@@ -508,8 +507,7 @@ instance UnambiguouslyDecode (Fram v x t) where
 
 
 
-instance ( Var v
-         , Val x
+instance ( VarValTime v x t
          ) => Simulatable (Fram v x t) v x where
   simulateOn cntx@Cntx{..} Fram{..} fb
     | Just (Constant (X x) (O k)) <- castF fb = set cntx k x
@@ -531,8 +529,7 @@ instance ( Var v
 
 ---------------------------------------------------
 
-instance ( Var v, Val x
-         , Time t
+instance ( VarValTime v x t
          ) => Testable (Fram v x t) v x where
   testBenchImplementation Project{ pName, pUnit=pu@Fram{ frProcess=Process{ steps }, .. }, pTestCntx }
     = Immediate (moduleName pName pu ++ "_tb.v") testBenchImp
@@ -678,7 +675,7 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
 
 softwareFile title pu = moduleName title pu ++ "." ++ title ++ ".dump"
 
-instance ( Time t, Var v, Val x ) => TargetSystemComponent (Fram v x t) where
+instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
     moduleName _ _ = "pu_fram"
     hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
     software title pu@Fram{ frMemory }

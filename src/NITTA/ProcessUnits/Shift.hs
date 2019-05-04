@@ -26,7 +26,6 @@ import           Data.Bits                           (finiteBitSize)
 import           Data.Default
 import           Data.List                           (intersect, (\\))
 import           Data.Set                            (elems, fromList)
-import           Data.Typeable
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
@@ -51,7 +50,7 @@ instance Default (State v x t) where
 
 
 
-instance ( Var v, Time t, Typeable x ) => SerialPUState (State v x t) v x t where
+instance ( VarValTime v x t ) => SerialPUState (State v x t) v x t where
 
   bindToState fb s@State{ sIn=Nothing, sOut=[] }
     | Just fb' <- castF fb
@@ -111,7 +110,7 @@ instance Controllable (Shift v x t) where
       , (init, Bool initSignal)
       , (oe, Bool oeSignal)
       ]
-      
+
 
 instance Default (Microcode (Shift v x t)) where
   def = Microcode{ workSignal=False
@@ -136,9 +135,9 @@ instance UnambiguouslyDecode (Shift v x t) where
 instance Connected (Shift v x t) where
   data Ports (Shift v x t)
     = Ports{ work, direction, mode, step, init, oe :: SignalTag } deriving ( Show )
-  
 
-instance ( Var v, Val x, Typeable x ) => Simulatable (Shift v x t) v x where
+
+instance ( VarValTime v x t ) => Simulatable (Shift v x t) v x where
   simulateOn cntx _ f
     | Just (f' :: ShiftLR v x) <- castF f = simulate cntx f'
     | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
@@ -148,7 +147,7 @@ instance ( Val x ) => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"
     hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
     software _ _ = Empty
-    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } Ports{..} 
+    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } Ports{..}
         = fixIndent [qc|
 |           pu_shift #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )

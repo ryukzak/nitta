@@ -37,8 +37,12 @@ import           GHC.Generics
 import           NITTA.Types.Function
 import           NITTA.Types.Poly
 import           NITTA.Types.Time
+import           NITTA.Types.Value
 import           Numeric.Interval
 
+
+-- |Shortcut for variable, value and time type constrains.
+type VarValTime v x t = ( Var v, Val x, Time t )
 
 ---------------------------------------------------------------------
 -- * Функциональные блоки
@@ -285,7 +289,7 @@ instance DecisionType (RefactorDT v) where
 --    блока. Его модельное время продвигается вперёд, в описании вычислительного процесса
 --    дополняется записями относительно сделанных шагов вычислительного процесса.
 -- 4. Повторение, пока список возможных вариантов не станет пустым.
-class ProcessorUnit u v x t | u -> v x t where
+class ( VarValTime v x t ) => ProcessorUnit u v x t | u -> v x t where
     -- |Назначить исполнение функционального блока вычислительному узлу.
     tryBind :: F v x -> u -> Either String u
     -- |Запрос описания вычилсительного процесса с возможностью включения описания вычислительного

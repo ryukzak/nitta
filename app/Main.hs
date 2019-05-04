@@ -3,9 +3,10 @@
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE PartialTypeSignatures     #-}
 {-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
@@ -78,7 +79,7 @@ main = do
 
 runWebUI no_api_gen alg ma = backendServer no_api_gen $ mkModelWithOneNetwork ma alg
 runTestbench tAlg tMicroArch
-    = void $ runTargetSynthesis D.def
+    = void $ runTargetSynthesis (D.def :: TargetSynthesis _ _ _ Int)
         { tName="main"
         , tMicroArch
         , tAlg
@@ -124,7 +125,7 @@ runHardcoded = do
                 fib(1)|]
 
     backendServer True $ mkModelWithOneNetwork microarchHC algHC
-    void $ runTargetSynthesis D.def
+    void $ runTargetSynthesis (D.def :: TargetSynthesis _ _ _ Int)
         { tName="hardcode"
         , tMicroArch=microarchHC
         , tAlg=algHC

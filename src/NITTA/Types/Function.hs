@@ -98,7 +98,7 @@ newtype X x = X x
 
 
 -- |The type class for a thing, which can defines order of variable transfers.
-class Locks x v | x -> v where
+class ( Var v ) => Locks x v | x -> v where
     locks :: x -> [Lock v]
 
 -- |Variable casuality.
@@ -158,7 +158,7 @@ instance FunctionSimulation (F v x) v x where
 instance Label (F v x) where
     label (F f) = label f
 
-instance Locks (F v x) v where
+instance ( Var v ) => Locks (F v x) v where
     locks (F f) = locks f
 
 instance Ord (F v x) where
@@ -186,7 +186,7 @@ instance ( Patch b v ) => Patch [b] v where
 instance Show (F v x) where
     show (F f) = S.replace "\"" "" $ show f
 
-instance ( Ord v ) => Variables (F v x) v where
+instance ( Var v ) => Variables (F v x) v where
     variables (F f) = inputs f `S.union` outputs f
 
 

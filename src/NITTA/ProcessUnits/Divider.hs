@@ -29,7 +29,6 @@ import           Data.List                     (partition, sortBy)
 import           Data.Maybe                    (fromMaybe)
 import           Data.Set                      (Set, member)
 import qualified Data.Set                      as S
-import           Data.Typeable
 import           NITTA.Functions               (castF)
 import qualified NITTA.Functions               as F
 import           NITTA.Types
@@ -173,7 +172,7 @@ pushOutput pu@Divider{ jobs }
 
 
 
-instance ( Var v, Typeable x
+instance ( VarValTime v x t
          ) => ProcessorUnit (Divider v x t) v x t where
     tryBind f pu@Divider{ remains }
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f
@@ -185,13 +184,12 @@ instance ( Var v, Typeable x
     setTime t pu@Divider{ process_ } = pu{ process_=process_{ nextTick=t } }
 
 
-instance Locks (Divider v x t) v where
+instance ( Var v ) => Locks (Divider v x t) v where
     -- FIXME:
     locks _ = []
 
 
-instance ( Var v, Time t
-         , Typeable x
+instance ( VarValTime v x t
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (Divider v x t) where
     options _proxy pu@Divider{ targetIntervals, sourceIntervals, remains, jobs }
@@ -279,10 +277,8 @@ instance ( Var v, Time t
 
 
 
-instance ( Var v
-         , Integral x
-         , Typeable x
-         ) => Simulatable (Divider v x t) v x where
+instance ( VarValTime v x t, Integral x
+        ) => Simulatable (Divider v x t) v x where
     simulateOn cntx _ f
         | Just f'@F.Division{} <- castF f = simulate cntx f'
         | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
@@ -380,8 +376,7 @@ instance ( Val x, Show t
 instance IOTest (Divider v x t) v x
 
 
-instance ( Var v, Time t
-         , Typeable x, Show x, Integral x, Val x
+instance ( VarValTime v x t, Integral x
          ) => Testable (Divider v x t) v x where
     testBenchImplementation prj@Project{ pName, pUnit }
         = Immediate (moduleName pName pUnit ++ "_tb.v")

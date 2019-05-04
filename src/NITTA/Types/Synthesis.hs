@@ -17,15 +17,17 @@
 
 {-|
 Module      : NITTA.Types.Synthesis
-Description : Types for a synthesis graph representation and basic functions to work with that.
+Description : Synthesis graph representation
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
+
+Synthesis graph representation.
 -}
 module NITTA.Types.Synthesis
     ( -- *Synthesis graph
-      Node(..), Edge(..)
+      SG, Node(..), Edge(..)
     , NId(..)
     , mkNodeIO, getNodeIO, getEdgesIO
       -- *Characteristics & synthesis decision type
@@ -34,6 +36,7 @@ module NITTA.Types.Synthesis
     , Characteristics(..)
       -- *Utils
     , option2decision
+    , mkEdges
     ) where
 
 import           Control.Arrow          (second)
@@ -49,7 +52,6 @@ import           Data.Semigroup         (Semigroup, (<>))
 import           Data.Set               (Set, fromList, intersection, member,
                                          (\\))
 import qualified Data.Set               as S
-import           Data.Typeable          (Typeable)
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.Model            (ModelState (..), isSynthesisFinish)
@@ -57,6 +59,10 @@ import           NITTA.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           Numeric.Interval       (Interval, (...))
+
+
+-- |Type alias for Synthesis Graph parts.
+type SG m title v x t = m (ModelState (BusNetwork title v x t) v x) (SynthesisDT (BusNetwork title v x t))
 
 
 data Node m dt
@@ -81,7 +87,6 @@ data Edge m dt
     deriving ( Generic )
 
 
-
 -- |Create initial synthesis.
 mkNodeIO model = atomically $ do
     nEdges <- newTVar Nothing
@@ -95,7 +100,8 @@ mkNode' nId nModel nOrigin nEdges = Node
     }
 
 
-
+getEdgesIO :: ( Title title, VarValTime v x t, Semigroup v 
+    ) => SG Node title v x t -> IO [ SG Edge title v x t ]
 getEdgesIO node@Node{ nEdges } = atomically $
     readTVar nEdges >>= \case
         Just edges -> return edges
@@ -107,6 +113,9 @@ getEdgesIO node@Node{ nEdges } = atomically $
 
 
 -- |Get specific by @nId@ node from a synthesis tree.
+
+getNodeIO :: ( Title title, VarValTime v x t, Semigroup v
+    ) => SG Node title v x t -> NId -> IO ( SG Node title v x t )
 getNodeIO node (NId []) = return node
 getNodeIO node nId@(NId (i:is)) = do
     edges <- getEdgesIO node
@@ -147,7 +156,6 @@ instance Monoid NId where
 ---------------------------------------------------------------------
 -- *Compiler Decision Type
 
-
 data SynthesisDT u
 synthesisOptions m = options (Proxy :: Proxy SynthesisDT) m
 synthesisDecision m d = decision (Proxy :: Proxy SynthesisDT) m d
@@ -178,7 +186,7 @@ generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
 
-instance ( Title title, Var v, Typeable x, Time t
+instance ( Title title, VarValTime v x t
          ) => DecisionProblem (SynthesisDT (BusNetwork title v x t))
                   SynthesisDT (ModelState (BusNetwork title v x t) v x)
         where
@@ -270,7 +278,9 @@ instance Default ChConf where
 
 
 
-mkEdges Node{ nId, nModel } = do
+mkEdges :: ( Title title, VarValTime v x t, Semigroup v )
+     => SG Node title v x t -> STM [ SG Edge title v x t ]
+mkEdges Node{ nId, nModel, nOrigin } = do
     let conf = def
         opts = synthesisOptions nModel
         alreadyBindedVariables = bindedVars $ mUnit nModel
@@ -318,7 +328,7 @@ mkEdges Node{ nId, nModel } = do
             eCharacteristics = measure conf cntx eOption
             eCharacteristic = integral conf cntx eCharacteristics
 
-            eNode = mkNode' (nId <> NId [i]) (synthesisDecision nModel eDecision) (Just origin) nEdges
+            eNode = mkNode' (nId <> NId [i]) (synthesisDecision nModel eDecision) (Just origin `asTypeOf` nOrigin) nEdges
             origin = Edge{ eOption, eDecision, eCharacteristics, eCharacteristic, eNode }
         in return origin
 

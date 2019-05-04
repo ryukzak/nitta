@@ -26,7 +26,6 @@ import           Data.Default
 import           Data.List                           (intersect, partition,
                                                       (\\))
 import           Data.Set                            (elems, fromList)
-import           Data.Typeable
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
@@ -47,9 +46,7 @@ instance Default (State v x t) where
 
 
 
-instance ( Var v
-         , Time t
-         , Typeable x
+instance ( VarValTime v x t
          ) => SerialPUState (State v x t) v x t where
 
   bindToState fb ac@Accum{ acIn=[], acOut=[] }
@@ -102,7 +99,7 @@ instance Controllable (Accum v x t) where
       , (neg, maybe Undef Bool negSignal)
       , (oe, Bool oeSignal)
       ]
-      
+
 
 instance Default (Microcode (Accum v x t)) where
   def = Microcode{ oeSignal=False
@@ -117,9 +114,8 @@ instance UnambiguouslyDecode (Accum v x t) where
   decodeInstruction Out        = def{ oeSignal=True }
 
 
-instance ( Var v
+instance ( VarValTime v x t
          , Num x
-         , Typeable x
          ) => Simulatable (Accum v x t) v x where
   simulateOn cntx _ f
     | Just f'@Add{} <- castF f = simulate cntx f'
@@ -136,7 +132,7 @@ instance ( Val x ) => TargetSystemComponent (Accum v x t) where
     moduleName _ _ = "pu_accum"
     hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
     software _ _ = Empty
-    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } Ports{..} 
+    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } Ports{..}
         = fixIndent [qc|
 |       pu_accum #
 |               ( .DATA_WIDTH( { finiteBitSize (def :: x) } )

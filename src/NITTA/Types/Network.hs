@@ -76,7 +76,7 @@ instance ( Ord v ) =>
             , systemEnv
             }
 
-instance ( Ord v ) => ProcessorUnit (PU v x t) v x t where
+instance ( VarValTime v x t ) => ProcessorUnit (PU v x t) v x t where
     tryBind fb PU{ diff, unit, ports, systemEnv }
         = case tryBind fb unit of
             Right unit' -> Right PU { diff, unit=unit', ports, systemEnv }
@@ -94,7 +94,7 @@ instance ( Ord v ) => Patch (PU v x t) (O v, O v) where
     patch (O vs, O vs') pu@PU{ diff=diff@Diff{ diffO } }
         = pu{ diff=diff{ diffO=foldl (\s (v, v') -> M.insert v v' s) diffO $ zip (S.elems vs) (S.elems vs')  }}
 
-instance Locks (PU v x t) v where
+instance ( Var v ) => Locks (PU v x t) v where
     locks PU{ unit } = locks unit
 
 instance Simulatable (PU v x t) v x where

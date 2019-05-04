@@ -51,14 +51,14 @@ instance WithFunctions (ModelState (BusNetwork title v x t) v x) (F v x) where
         = assert (fromList (functions mUnit) == fromList (functions mDataFlowGraph)) -- inconsistent ModelState
             $ functions mUnit
 
-instance ( Title title, Ord v ) =>
+instance ( Title title, VarValTime v x t ) =>
         DecisionProblem (BindingDT title v x)
               BindingDT (ModelState (BusNetwork title v x t) v x)
         where
     options _ ModelState{ mUnit }      = options binding mUnit
     decision _ f@ModelState{ mUnit } d = f{ mUnit=decision binding mUnit d }
 
-instance ( Title title, Var v, Time t, Typeable x
+instance ( Title title, VarValTime v x t
          ) => DecisionProblem (DataFlowDT title v t)
                    DataFlowDT (ModelState (BusNetwork title v x t) v x)
          where
@@ -97,6 +97,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 -- |Synthesis process is finish when all variable from data flow are
 -- transferred.
+isSynthesisFinish :: ( ProcessorUnit u v x t ) => ModelState u v x -> Bool
 isSynthesisFinish ModelState{ mUnit, mDataFlowGraph } = let
         inWork = transferred mUnit
         inAlg = variables mDataFlowGraph
