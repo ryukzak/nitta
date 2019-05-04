@@ -181,7 +181,7 @@ instance ( Default st
   setTime t pu@SerialPU{ spuProcess } = pu{ spuProcess=spuProcess{ nextTick=t } }
 
 
-instance Locks (SerialPU st v x t) v where
+instance ( Ord v ) => Locks (SerialPU st v x t) v where
   locks SerialPU{ spuCurrent=Nothing } = []
   locks SerialPU{ spuCurrent=Just CurrentJob{ cFB }, spuRemain } =
     [ Lock{ locked, lockBy }

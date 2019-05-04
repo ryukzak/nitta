@@ -54,9 +54,6 @@ data PU v x t where
         , TargetSystemComponent pu
         , Controllable pu
         , IOTest pu v x
-        , Typeable x
-        , Show x
-        , Num x
         , Locks pu v
         ) => 
             { diff :: Diff v

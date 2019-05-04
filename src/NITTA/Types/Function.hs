@@ -133,15 +133,14 @@ class Function f v | f -> v where
 -- |Box forall functions.
 data F v x where
     F ::
-        ( Ord v
-        , Function f v
+        ( Function f v
         , Patch f (v, v)
         , Locks f v
         , Show f
         , Label f
         , ToVizJS f
         , FunctionSimulation f v x
-        , Typeable f, Typeable v, Typeable x
+        , Typeable f
         ) => f -> F v x
 
 instance Eq (F v x) where
@@ -187,7 +186,7 @@ instance ( Patch b v ) => Patch [b] v where
 instance Show (F v x) where
     show (F f) = S.replace "\"" "" $ show f
 
-instance Variables (F v x) v where
+instance ( Ord v ) => Variables (F v x) v where
     variables (F f) = inputs f `S.union` outputs f
 
 
