@@ -62,7 +62,7 @@ module NITTA.Utils
 import           Control.Monad.State (State, get, modify', put, runState)
 import           Data.Bits           (finiteBitSize, setBit, testBit)
 import           Data.Default
-import           Data.List           (maximumBy, minimumBy, nub, sortOn)
+import           Data.List           (maximumBy, minimumBy, sortOn)
 import           Data.Maybe          (isJust, mapMaybe)
 import           Data.Set            (difference, elems, unions)
 import qualified Data.String.Utils   as S
@@ -225,7 +225,7 @@ getEndpoint step | Step{ sDesc=EndpointRoleStep role } <- descent step = Just ro
 getEndpoint _                                                          = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
-transferred pu = nub $ concatMap (elems . variables) $ getEndpoints $ process pu
+transferred pu = unionsMap variables $ getEndpoints $ process pu
 
 
 extractInstruction :: ( Typeable (Instruction pu) ) => pu -> Step v x t -> Maybe (Instruction pu)

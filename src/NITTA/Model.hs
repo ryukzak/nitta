@@ -98,7 +98,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 -- |Synthesis process is finish when all variable from data flow are
 -- transferred.
 isSynthesisFinish ModelState{ mUnit, mDataFlowGraph } = let
-        inWork = fromList $ transferred mUnit
+        inWork = transferred mUnit
         inAlg = variables mDataFlowGraph
     in inWork == inAlg
 

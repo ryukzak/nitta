@@ -59,7 +59,7 @@ instance ( ToJSONKey title, ToJSON title, Typeable title, Ord title, Show title
     toJSON n@BusNetwork{..} = object
         [ "width"              .= bnSignalBusWidth
         , "remain"             .= bnRemains
-        , "forwardedVariables" .= map (String . T.pack . show) (transferred n)
+        , "forwardedVariables" .= map (String . T.pack . show) (S.elems $ transferred n)
         , "binds"              .= bnBinded
         , "processLength"      .= nextTick (process n)
         , "processUnits"       .= M.keys bnPus
