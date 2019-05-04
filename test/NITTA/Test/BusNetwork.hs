@@ -3,10 +3,11 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
-
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
+{-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-|
 Module      : NITTA.Test.BusNetwork
 Description :
@@ -67,7 +68,7 @@ test_fibonacci =
 
 
 test_io =
-    [ testCase "receive two variables" $ void $ runTargetSynthesis' def
+    [ testCase "receive two variables" $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
         { tName="double_receive"
         , tMicroArch=marchSPI proxyInt
         , tReceivedValues=[ ("a", [10..15]), ("b", [20..25]) ]

@@ -3,8 +3,10 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
+{-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
 {-|
 Module      : NITTA.Test.Microarchitectures
@@ -95,7 +97,7 @@ runTargetSynthesis' t@TargetSynthesis{ tName } = do
     runTargetSynthesis t{ tName=tName ++ "_" ++ show i }
 
 algTestCase n tMicroArch tAlg
-    = testCase n $ void $ runTargetSynthesis' def
+    = testCase n $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
         { tName=n
         , tMicroArch
         , tAlg

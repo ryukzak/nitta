@@ -7,7 +7,8 @@
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
+{-# OPTIONS -fno-warn-missing-signatures  -fno-warn-partial-type-signatures #-}
 
 {-|
 Module      : NITTA.Test.LuaFrontend
@@ -196,7 +197,7 @@ test_io =
 
 test_refactor =
     [ testCase "insert register before binding (y = x + x + x)" $ do
-        report <- runTargetSynthesis' ((def :: TargetSynthesis (BusNetwork String) String Int Int)
+        report <- runTargetSynthesis' ((def :: TargetSynthesis (BusNetwork String String Int Int) String Int Int)
             { tName="regBeforeBind"
             , tMicroArch=march
             , tSynthesisMethod=smartBindSynthesisIO
@@ -221,7 +222,7 @@ luaTests = $(testGroupGenerator)
 
 luaSimpleTestCase testCaseName tName src
     = testCase testCaseName $ do
-        report <- runTargetSynthesis' def
+        report <- runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
             { tName
             , tMicroArch=marchSPIDropData (Proxy :: Proxy Int)
             , tSourceCode=Just src
@@ -231,7 +232,7 @@ luaSimpleTestCase testCaseName tName src
 
 genericLuaTestCase tName tReceivedValues src ma xProxy
     = testCase (showTypeOf xProxy) $ do
-        report <- runTargetSynthesis' def
+        report <- runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
             { tName="generic_lua_" ++ tName
             , tMicroArch=ma xProxy
             , tSourceCode=Just src
