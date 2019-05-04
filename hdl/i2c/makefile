@@ -2,7 +2,7 @@ CC          := iverilog
 CFLAGS      := -Wall
 FILE        := $(filter-out $(wildcard *_tb*.v), $(wildcard *.v))
 
-all: buffer_tb
+all: pu_i2c_master_driver_tb
 
 unix:
 	iverilog $(CFLAGS) $(FILE) && ./a.out
@@ -26,3 +26,9 @@ nitta_to_i2c_splitter_tb: nitta_to_i2c_splitter_tb.out
 
 nitta_to_i2c_splitter_tb.out: $(FILE) nitta_to_i2c_splitter_tb.v
 	$(CC) -o nitta_to_i2c_splitter_tb.out $^
+
+pu_i2c_master_driver_tb: pu_i2c_master_driver_tb.out
+	vvp pu_i2c_master_driver_tb.out
+
+pu_i2c_master_driver_tb.out: $(FILE) pu_i2c_master_driver_tb.v
+	$(CC) -o pu_i2c_master_driver_tb.out $^

@@ -1,6 +1,5 @@
 `timescale 1 ms/ 1 ms
-
-module pu_slave_i2c #
+module pu_master_i2c #
         ( parameter DATA_WIDTH     = 32
         , parameter ATTR_WIDTH     = 4
         , parameter I2C_DATA_WIDTH = 8
@@ -146,11 +145,11 @@ assign receive_buffer_oe[1] =  send_buffer_sel ? signal_oe : 1'h0;
 wire f_scl;
 //wire i2c_prepare, i2c_ready_write;
 
-pu_i2c_slave_driver #
+pu_i2c_master_driver #
   ( .I2C_DATA_WIDTH( I2C_DATA_WIDTH )
   , .DATA_WIDTH( DATA_WIDTH * 2 )
   , .ADDRES_DEVICE( 7'h47 )
-  ) driver_slave
+  ) driver_master
   ( .clk( clk )
   , .rst( rst )
   , .scl( f_scl )
@@ -161,6 +160,9 @@ pu_i2c_slave_driver #
 
   , .ready_write( i2c_ready_write )
   , .i2c_prepare( i2c_prepare )
+
+  , .start_transaction( signal_cycle )
+  , .rw( 1'b0 )
   );
 
 // bounce filter
@@ -203,8 +205,8 @@ always @(posedge clk) begin
 end
 
 always @( posedge clk ) begin
-    if ( rst ) send_buffer_sel <= 0;
-    else if ( signal_cycle && scl && sda ) send_buffer_sel <= !send_buffer_sel;
+  if ( rst ) send_buffer_sel <= 0;
+  else if ( flag_stop && scl && sda ) send_buffer_sel <= !send_buffer_sel;
 end
 
 reg [1:0] count_word;
