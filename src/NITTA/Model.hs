@@ -18,7 +18,6 @@ Stability   : experimental
 -}
 module NITTA.Model
     ( ModelState(..)
-    , Option(..), Decision(..)
     , DataFlowGraph(..)
     , isSynthesisFinish
     , targetProcessDuration
