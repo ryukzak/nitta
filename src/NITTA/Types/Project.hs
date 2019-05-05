@@ -50,7 +50,7 @@ import           System.FilePath.Posix (joinPath)
 data Project m v x
     = Project
         { pName     :: String -- ^target project name
-        , pLibPath  :: String -- ^'mUnit' unit library directory
+        , pLibPath  :: String -- ^IP-core library directory
         , pPath     :: String -- ^output directory
         , pUnit     :: m      -- ^'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
         , pTestCntx :: Maybe (Cntx v x) -- ^testbench context with input values

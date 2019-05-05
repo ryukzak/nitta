@@ -40,7 +40,6 @@ import           System.Console.CmdArgs
 import           Text.InterpolatedString.Perl6 (qc)
 
 
-
 -- |Command line interface.
 data Nitta
     = Nitta

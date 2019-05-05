@@ -115,6 +115,10 @@ data TargetSynthesis u v x t = TargetSynthesis
     , tSynthesisMethod :: Node' u v x t -> IO (Node' u v x t)
       -- |project writer, which defines necessary project part
     , tWriteProject    :: Project u v x -> IO ()
+      -- |IP-core library directory
+    , tLibPath         :: String
+      -- |output directory, where CAD create project directory with 'tName' name
+    , tPath            :: String
     }
 
 type Node' u v x t = Node (ModelState u v x) (SynthesisDT u)
@@ -129,10 +133,13 @@ instance ( VarValTime v x t, Semigroup v ) => Default (TargetSynthesis (BusNetwo
         , tVerbose=False
         , tSynthesisMethod=simpleSynthesisIO
         , tWriteProject=writeWholeProject
+        , tLibPath="../.."
+        , tPath=joinPath [ "hdl", "gen" ]
         }
 
 runTargetSynthesis TargetSynthesis
             { tName, tMicroArch, tSourceCode, tDFG, tReceivedValues, tSynthesisMethod, tVerbose, tWriteProject
+            , tLibPath, tPath
             } = do
     tDFG' <- maybe (return tDFG) translateToIntermediate tSourceCode
     rootNode <- mkRootNodeIO (mkModelWithOneNetwork tMicroArch tDFG')
@@ -159,11 +166,11 @@ runTargetSynthesis TargetSynthesis
                 then Right leafNode
                 else Left "synthesis process - fail"
 
-        project synthesisResult = Project
+        project Node{ nModel=ModelState{ mUnit } } = Project
             { pName=tName
-            , pLibPath="../.."
-            , pPath=joinPath ["hdl", "gen", tName]
-            , pUnit=mUnit $ nModel synthesisResult
+            , pLibPath=tLibPath
+            , pPath=joinPath [ tPath, tName ]
+            , pUnit=mUnit
             , pTestCntx=Just D.def{ cntxInputs=M.fromList tReceivedValues }
             }
 
