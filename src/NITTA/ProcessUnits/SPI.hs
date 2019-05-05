@@ -191,7 +191,7 @@ instance Connected (SPI v x t) where
 
 instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
     moduleName _ _ = "pu_slave_spi"
-    hardware title pu
+    hardware tag pu
         = Aggregate Nothing
             [ FromLibrary "spi/pu_slave_spi_driver.v"
             , FromLibrary "spi/spi_slave_driver.v"
@@ -201,11 +201,11 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
             , FromLibrary "spi/spi_master_driver.v"
             , FromLibrary "spi/nitta_to_spi_splitter.v"
             , FromLibrary "spi/spi_to_nitta_splitter.v"
-            , FromLibrary $ "spi/" ++ moduleName title pu ++ ".v"
+            , FromLibrary $ "spi/" ++ moduleName tag pu ++ ".v"
             ]
     software _ pu = Immediate "transport.txt" $ show pu
     hardwareInstance
-            title
+            tag
             SerialPU{ spuState=State{ spiBounceFilter } }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
             Ports{ externalPorts=Slave{..}, .. }
@@ -214,7 +214,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
 |               #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                , .ATTR_WIDTH( { show parameterAttrWidth } )
 |                , .BOUNCE_FILTER( { show spiBounceFilter } )
-|                ) { title }
+|                ) { tag }
 |               ( .clk( { signalClk } )
 |               , .rst( { signalRst } )
 |               , .signal_cycle( { signalCycle } )
@@ -240,7 +240,7 @@ receiveData pu cntx = map (get' cntx) $ receiveSequenece pu
 
 instance ( VarValTime v x t ) => IOTest (SPI v x t) v x where
     componentTestEnvironment
-            title
+            tag
             pu@SerialPU{ spuState=State{ spiBounceFilter } }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
             Ports{ externalPorts=Slave{..}, .. }
@@ -251,9 +251,9 @@ instance ( VarValTime v x t ) => IOTest (SPI v x t) v x where
             frameWidth = frameWordCount * wordWidth
             ioCycle cntx = fixIndent [qc|
 |
-|                   { title }_master_in = \{ { dt' } }; // { dt }
-|                   { title }_start_transaction = 1;                           @(posedge { signalClk });
-|                   { title }_start_transaction = 0;                           @(posedge { signalClk });
+|                   { tag }_master_in = \{ { dt' } }; // { dt }
+|                   { tag }_start_transaction = 1;                           @(posedge { signalClk });
+|                   { tag }_start_transaction = 0;                           @(posedge { signalClk });
 |                   repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
 |               |]
                 where
@@ -262,29 +262,29 @@ instance ( VarValTime v x t ) => IOTest (SPI v x t) v x where
         , frameWordCount > 0
         = fixIndent [qc|
 |           // { show pu }
-|           reg { title }_start_transaction;
-|           reg  [{ frameWidth }-1:0] { title }_master_in;
-|           wire { title }_ready;
-|           wire [{ frameWidth }-1:0] { title }_master_out;
+|           reg { tag }_start_transaction;
+|           reg  [{ frameWidth }-1:0] { tag }_master_in;
+|           wire { tag }_ready;
+|           wire [{ frameWidth }-1:0] { tag }_master_out;
 |           spi_master_driver
 |               #( .DATA_WIDTH( { frameWidth } )
 |                , .SCLK_HALFPERIOD( 1 )
-|                ) { title }_master
+|                ) { tag }_master
 |               ( .clk( { signalClk } )
 |               , .rst( { signalRst } )
-|               , .start_transaction( { title }_start_transaction )
-|               , .data_in( { title }_master_in )
-|               , .data_out( { title }_master_out )
-|               , .ready( { title }_ready )
+|               , .start_transaction( { tag }_start_transaction )
+|               , .data_in( { tag }_master_in )
+|               , .data_out( { tag }_master_out )
+|               , .ready( { tag }_ready )
 |               , .mosi( { inputPort slave_mosi } )
 |               , .miso( { outputPort slave_miso } )
 |               , .sclk( { inputPort slave_sclk } )
 |               , .cs( { inputPort slave_cs } )
 |               );
-|           initial { title }_master.inner.shiftreg <= 0;
+|           initial { tag }_master.inner.shiftreg <= 0;
 |
 |           initial begin
-|               { title }_start_transaction <= 0; { title }_master_in <= 0;
+|               { tag }_start_transaction <= 0; { tag }_master_in <= 0;
 |               @(negedge { signalRst });
 |               repeat(8) @(posedge { signalClk });
 |               { S.join "" $ map ioCycle cntxs }

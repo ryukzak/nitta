@@ -331,13 +331,13 @@ instance ( Val x, Show t
          ) => TargetSystemComponent (Divider v x t) where
     moduleName _ _ = "pu_div"
     software _ _ = Empty
-    hardware title pu@Divider{ mock } = Aggregate Nothing
+    hardware tag pu@Divider{ mock } = Aggregate Nothing
         [ if mock
             then FromLibrary "div/div_mock.v"
             else FromLibrary "div/div.v"
-        , FromLibrary $ "div/" ++ moduleName title pu ++ ".v"
+        , FromLibrary $ "div/" ++ moduleName tag pu ++ ".v"
         ]
-    hardwareInstance title _pu@Divider{ mock, pipeline }
+    hardwareInstance tag _pu@Divider{ mock, pipeline }
             TargetEnvironment
                 { unitEnv=ProcessUnitEnv
                     { signal
@@ -356,7 +356,7 @@ instance ( Val x, Show t
 |                   , .PIPELINE( { pipeline } )
 |                   , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
 |                   , .MOCK_DIV( { bool2verilog mock } )
-|                   ) { title }
+|                   ) { tag }
 |               ( .clk( { signalClk } )
 |               , .rst( { signalRst } )
 |               , .signal_wr( { signal wr } )

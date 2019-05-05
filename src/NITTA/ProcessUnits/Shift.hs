@@ -145,14 +145,14 @@ instance ( VarValTime v x t ) => Simulatable (Shift v x t) v x where
 
 instance ( Val x ) => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"
-    hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
+    hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
     software _ _ = Empty
-    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } Ports{..}
+    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } Ports{..}
         = fixIndent [qc|
 |           pu_shift #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                   , .ATTR_WIDTH( { show parameterAttrWidth } )
-|                   ) { title }
+|                   ) { tag }
 |               ( .clk( { signalClk } )
 |               , .signal_work( { signal work } ), .signal_direction( { signal direction } )
 |               , .signal_mode( { signal mode } ), .signal_step( { signal step } )

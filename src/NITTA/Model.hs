@@ -46,21 +46,21 @@ data ModelState u v x
         }
     deriving ( Generic )
 
-instance WithFunctions (ModelState (BusNetwork title v x t) v x) (F v x) where
+instance WithFunctions (ModelState (BusNetwork tag v x t) v x) (F v x) where
     functions ModelState{ mUnit, mDataFlowGraph }
         = assert (fromList (functions mUnit) == fromList (functions mDataFlowGraph)) -- inconsistent ModelState
             $ functions mUnit
 
-instance ( Title title, VarValTime v x t ) =>
-        DecisionProblem (BindingDT title v x)
-              BindingDT (ModelState (BusNetwork title v x t) v x)
+instance ( UnitTag tag, VarValTime v x t ) =>
+        DecisionProblem (BindingDT tag v x)
+              BindingDT (ModelState (BusNetwork tag v x t) v x)
         where
     options _ ModelState{ mUnit }      = options binding mUnit
     decision _ f@ModelState{ mUnit } d = f{ mUnit=decision binding mUnit d }
 
-instance ( Title title, VarValTime v x t
-         ) => DecisionProblem (DataFlowDT title v t)
-                   DataFlowDT (ModelState (BusNetwork title v x t) v x)
+instance ( UnitTag tag, VarValTime v x t
+         ) => DecisionProblem (DataFlowDT tag v t)
+                   DataFlowDT (ModelState (BusNetwork tag v x t) v x)
          where
     options _ ModelState{ mUnit }      = options dataFlowDT mUnit
     decision _ f@ModelState{ mUnit } d = f{ mUnit=decision dataFlowDT mUnit d }

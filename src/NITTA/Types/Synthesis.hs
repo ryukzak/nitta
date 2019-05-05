@@ -73,7 +73,7 @@ import           Numeric.Interval       (Interval, (...))
 
 
 -- |Type alias for Synthesis Graph parts, where @m@ should be 'Node' or 'Edge'.
-type SG m title v x t = m (ModelState (BusNetwork title v x t) v x) (SynthesisDT (BusNetwork title v x t))
+type SG m tag v x t = m (ModelState (BusNetwork tag v x t) v x) (SynthesisDT (BusNetwork tag v x t))
 
 
 -- |Synthesis graph ID. ID is a relative path, encoded as a sequence of an
@@ -154,8 +154,8 @@ mkNode nId nModel nOrigin nEdges = Node
 
 -- |Get all available edges for the node. Edges calculated only for the first
 -- call.
-getEdgesIO :: ( Title title, VarValTime v x t, Semigroup v
-    ) => SG Node title v x t -> IO [ SG Edge title v x t ]
+getEdgesIO :: ( UnitTag tag, VarValTime v x t, Semigroup v
+    ) => SG Node tag v x t -> IO [ SG Edge tag v x t ]
 getEdgesIO node@Node{ nEdges } = atomically $
     readTVar nEdges >>= \case
         Just edges -> return edges
@@ -167,8 +167,8 @@ getEdgesIO node@Node{ nEdges } = atomically $
 
 
 -- |Get specific by @nId@ node from a synthesis tree.
-getNodeIO :: ( Title title, VarValTime v x t, Semigroup v
-    ) => SG Node title v x t -> NId -> IO ( SG Node title v x t )
+getNodeIO :: ( UnitTag tag, VarValTime v x t, Semigroup v
+    ) => SG Node tag v x t -> NId -> IO ( SG Node tag v x t )
 getNodeIO node (NId []) = return node
 getNodeIO node nId@(NId (i:is)) = do
     edges <- getEdgesIO node
@@ -177,8 +177,8 @@ getNodeIO node nId@(NId (i:is)) = do
 
 
 
-mkEdges :: ( Title title, VarValTime v x t, Semigroup v )
-     => SG Node title v x t -> STM [ SG Edge title v x t ]
+mkEdges :: ( UnitTag tag, VarValTime v x t, Semigroup v )
+     => SG Node tag v x t -> STM [ SG Edge tag v x t ]
 mkEdges n@Node{ nId, nModel, nOrigin } = do
     let conf = def
         cntx = prepareParametersCntx n
@@ -211,9 +211,9 @@ prepareParametersCntx Node{ nModel } = let
         { nModel
         , possibleDeadlockBinds = fromList
             [ f
-            | (BindingOption f title) <- opts
+            | (BindingOption f tag) <- opts
             , Lock{ lockBy } <- locks f
-            , lockBy `member` unionsMap variables (bindedFunctions title $ mUnit nModel)
+            , lockBy `member` unionsMap variables (bindedFunctions tag $ mUnit nModel)
             ]
         , transferableVars = fromList
             [ v
@@ -225,7 +225,7 @@ prepareParametersCntx Node{ nModel } = let
             (unionsMap variables bindableFunctions)
             (fromList (map locked $ concatMap locks bindableFunctions))
         , bindingAlternative=foldl
-            ( \st (BindingOption f title) -> M.alter (collect title) f st )
+            ( \st (BindingOption f tag) -> M.alter (collect tag) f st )
             M.empty
             $ filter isBinding opts
         , numberOfBindOptions=length $ filter isBinding opts
@@ -252,23 +252,23 @@ generalizeDataFlowOption (DataFlowO s t) = DataFlowOption s t
 generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
-instance DecisionType (SynthesisDT (BusNetwork title v x t)) where
-    data Option (SynthesisDT (BusNetwork title v x t))
-        = BindingOption (F v x) title
-        | DataFlowOption (Source title (TimeConstrain t)) (Target title v (TimeConstrain t))
+instance DecisionType (SynthesisDT (BusNetwork tag v x t)) where
+    data Option (SynthesisDT (BusNetwork tag v x t))
+        = BindingOption (F v x) tag
+        | DataFlowOption (Source tag (TimeConstrain t)) (Target tag v (TimeConstrain t))
         | RefactorOption (Option (RefactorDT v))
         deriving ( Generic, Show )
 
-    data Decision (SynthesisDT (BusNetwork title v x t))
-        = BindingDecision (F v x) title
-        | DataFlowDecision (Source title (Interval t)) (Target title v (Interval t))
+    data Decision (SynthesisDT (BusNetwork tag v x t))
+        = BindingDecision (F v x) tag
+        | DataFlowDecision (Source tag (Interval t)) (Target tag v (Interval t))
         | RefactorDecision (Decision (RefactorDT v))
         deriving ( Generic, Show )
 
 
-instance ( Title title, VarValTime v x t
-         ) => DecisionProblem (SynthesisDT (BusNetwork title v x t))
-                  SynthesisDT (ModelState (BusNetwork title v x t) v x)
+instance ( UnitTag tag, VarValTime v x t
+         ) => DecisionProblem (SynthesisDT (BusNetwork tag v x t))
+                  SynthesisDT (ModelState (BusNetwork tag v x t) v x)
         where
     options _ f@ModelState{ mUnit }
         = let
@@ -277,7 +277,7 @@ instance ( Title title, VarValTime v x t
             refactors = map RefactorOption $ refactorOptions mUnit
         in concat [ binds, transfers, refactors ]
 
-    decision _ fr (BindingDecision f title) = decision binding fr $ BindingD f title
+    decision _ fr (BindingDecision f tag) = decision binding fr $ BindingD f tag
     decision _ fr@ModelState{ mUnit } (DataFlowDecision src trg) = fr{ mUnit=decision dataFlowDT mUnit $ DataFlowD src trg }
     decision _ ModelState{ mUnit, mDataFlowGraph } (RefactorDecision d@(InsertOutRegisterD v v'))
         = ModelState
@@ -287,7 +287,7 @@ instance ( Title title, VarValTime v x t
 
 
 -- |The simplest way to convert 'Option SynthesisDT' to 'Decision SynthesisDT'.
-option2decision (BindingOption f title) = BindingDecision f title
+option2decision (BindingOption f tag) = BindingDecision f tag
 option2decision (DataFlowOption src trg)
     = let
         pushTimeConstrains = map snd $ catMaybes $ M.elems trg
@@ -340,12 +340,12 @@ data Parameters
     deriving ( Show, Generic )
 
 
-data ParametersCntx m title v x
+data ParametersCntx m tag v x
     = ParametersCntx
         { nModel                    :: m
         , possibleDeadlockBinds     :: Set (F v x)
         , transferableVars          :: Set v
-        , bindingAlternative        :: M.Map (F v x) [title]
+        , bindingAlternative        :: M.Map (F v x) [tag]
         , numberOfBindOptions       :: Int
         , numberOfDFOptions         :: Int
         , alreadyBindedVariables    :: Set v
@@ -373,16 +373,16 @@ instance Default ObjectiveFunctionConf where
 estimateParameters
         ObjectiveFunctionConf{}
         ParametersCntx{ possibleDeadlockBinds, bindingAlternative, nModel, alreadyBindedVariables, waves }
-        (BindingOption f title)
+        (BindingOption f tag)
     = BindEdgeParameter
         { pCritical=isInternalLockPossible f
         , pAlternative=fromIntegral $ length (bindingAlternative M.! f)
-        , pAllowDataFlow=fromIntegral $ length $ unionsMap variables $ filter isTarget $ optionsAfterBind f title nModel
+        , pAllowDataFlow=fromIntegral $ length $ unionsMap variables $ filter isTarget $ optionsAfterBind f tag nModel
         , pRestless=fromMaybe 0 $ do
             (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables nModel
             return $ fromIntegral tcFrom
         , pPossibleDeadlock=f `member` possibleDeadlockBinds
-        , pNumberOfBindedFunctions=fromIntegral $ length $ bindedFunctions title $ mUnit nModel
+        , pNumberOfBindedFunctions=fromIntegral $ length $ bindedFunctions tag $ mUnit nModel
         , pPercentOfBindedInputs = let
                 is = inputs f
                 n = fromIntegral $ length $ intersection is alreadyBindedVariables
@@ -447,8 +447,8 @@ waitingTimeOfVariables net =
     ]
 
 
-optionsAfterBind f title ModelState{ mUnit=BusNetwork{ bnPus } }
-    = case tryBind f (bnPus M.! title) of
+optionsAfterBind f tag ModelState{ mUnit=BusNetwork{ bnPus } }
+    = case tryBind f (bnPus M.! tag) of
         Right pu' -> filter (\(EndpointO act _) -> act `optionOf` f) $ options endpointDT pu'
         _         -> []
     where

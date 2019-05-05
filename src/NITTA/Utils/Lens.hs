@@ -43,10 +43,10 @@ instance HasEndType (Decision (EndpointDT v t)) (EndpointRole v) where
 class HasAt a b | a -> b where
   at :: Lens' a b
 
-instance HasAt (Option (DataFlowDT title v t)) (TimeConstrain t) where
-  at = lens (snd . dfoSource) $ \a@DataFlowO{ dfoSource=(title, _time) } b -> a{ dfoSource=(title, b) }
-instance HasAt (Decision (DataFlowDT title v t)) (Interval t) where
-  at = lens (snd . dfdSource) $ \a@DataFlowD{ dfdSource=(title, _time) } b -> a{ dfdSource=(title, b) }
+instance HasAt (Option (DataFlowDT tag v t)) (TimeConstrain t) where
+  at = lens (snd . dfoSource) $ \a@DataFlowO{ dfoSource=(tag, _time) } b -> a{ dfoSource=(tag, b) }
+instance HasAt (Decision (DataFlowDT tag v t)) (Interval t) where
+  at = lens (snd . dfdSource) $ \a@DataFlowD{ dfdSource=(tag, _time) } b -> a{ dfdSource=(tag, b) }
 instance HasAt (Option (EndpointDT v t)) (TimeConstrain t) where
   at = lens epoAt $ \a@EndpointO{..} b -> a{ epoAt=b }
 instance HasAt (Decision (EndpointDT v t)) (Interval t) where

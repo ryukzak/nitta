@@ -43,9 +43,9 @@ import           System.FilePath        (joinPath)
 
 -- *REST API
 
-type SynthesisAPI title v x t
+type SynthesisAPI tag v x t
     =    "synthesis" :> Get '[JSON] (T.Tree SynthesisNodeView)
-    :<|> "synthesis" :> Capture "nId" NId :> WithSynthesis title v x t
+    :<|> "synthesis" :> Capture "nId" NId :> WithSynthesis tag v x t
 
 synthesisServer root
     =    liftIO ( synthesisNodeView root )
@@ -53,14 +53,14 @@ synthesisServer root
 
 
 
-type WithSynthesis title v x t
-    =    Get '[JSON] (SG Node title v x t)
-    :<|> "edge" :> Get '[JSON] (Maybe (Edge (ModelState (BusNetwork title v x t) v x) (SynthesisDT (BusNetwork title v x t))))
-    :<|> "model" :> Get '[JSON] (ModelState (BusNetwork title v x t) v x)
-    :<|> "endpointOptions" :> Get '[JSON] [(title, Option (EndpointDT v t))]
+type WithSynthesis tag v x t
+    =    Get '[JSON] (SG Node tag v x t)
+    :<|> "edge" :> Get '[JSON] (Maybe (Edge (ModelState (BusNetwork tag v x t) v x) (SynthesisDT (BusNetwork tag v x t))))
+    :<|> "model" :> Get '[JSON] (ModelState (BusNetwork tag v x t) v x)
+    :<|> "endpointOptions" :> Get '[JSON] [(tag, Option (EndpointDT v t))]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestbenchReport
-    :<|> SimpleCompilerAPI title v x t
+    :<|> SimpleCompilerAPI tag v x t
 
 withSynthesis root nId
     =    liftIO ( getNodeIO root nId )
@@ -84,13 +84,13 @@ withSynthesis root nId
         alg ModelState{ mDataFlowGraph=DFCluster nodes } = map (\(DFLeaf f) -> f) nodes
         alg _                      = error "unsupported algorithm structure"
         endpointOptions BusNetwork{ bnPus }
-            = let f (title, pu) = zip (repeat title) $ options endpointDT pu
+            = let f (tag, pu) = zip (repeat tag) $ options endpointDT pu
             in concatMap f $ M.assocs bnPus
 
 
 
-type SimpleCompilerAPI title v x t
-    =    "edges" :> Get '[JSON] [ Edge (ModelState (BusNetwork title v x t) v x) (SynthesisDT (BusNetwork title v x t)) ]
+type SimpleCompilerAPI tag v x t
+    =    "edges" :> Get '[JSON] [ Edge (ModelState (BusNetwork tag v x t) v x) (SynthesisDT (BusNetwork tag v x t)) ]
     :<|> "simpleSynthesis" :> Post '[JSON] NId
     :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
     :<|> "obviousBindThread" :> Post '[JSON] NId

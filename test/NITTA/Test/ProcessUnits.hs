@@ -235,12 +235,12 @@ isFinished (pu, fPassed)
                 ) False
 
 
-unitTestBench title proxy cntx alg = do
+unitTestBench tag proxy cntx alg = do
     let
         lib = joinPath ["..", ".."]
-        wd = joinPath ["hdl", "gen", title]
+        wd = joinPath ["hdl", "gen", tag]
         pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
-    (tbStatus <$> writeAndRunTestbench (Project title lib wd pu cntx)) @? title
+    (tbStatus <$> writeAndRunTestbench (Project tag lib wd pu cntx)) @? tag
 
 
 

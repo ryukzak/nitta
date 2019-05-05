@@ -40,7 +40,7 @@ module NITTA.BusNetwork
     ( busNetwork
     , BusNetwork(..)
     , bindedFunctions, bindedVars
-    , Title
+    , UnitTag
     ) where
 
 import           Control.Monad.State
@@ -65,26 +65,22 @@ import           Numeric.Interval              (inf, width, (...))
 import           Text.InterpolatedString.Perl6 (qc)
 
 
--- | Класс идентификатора вложенного вычислительного блока.
-type Title v = ( Typeable v, Ord v, Show v )
-
-
-data BusNetwork title v x t = BusNetwork
+data BusNetwork tag v x t = BusNetwork
     { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
       -- вычислительным блокам.
       bnRemains        :: [F v x]
     -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
-    , bnBinded         :: M.Map title [F v x]
+    , bnBinded         :: M.Map tag [F v x]
     -- | Описание вычислительного процесса сети, как элемента процессора.
     , bnProcess        :: Process v x t
     -- | Словарь вложенных вычислительных блоков по именам.
-    , bnPus            :: M.Map title (PU v x t)
+    , bnPus            :: M.Map tag (PU v x t)
     -- | Ширина шины управления.
     , bnSignalBusWidth :: Int
     -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
     , bnAllowDrop      :: Maybe Bool
     , bnEnv            :: TargetEnvironment
-    , bnPorts          :: Ports (BusNetwork title v x t)
+    , bnPorts          :: Ports (BusNetwork tag v x t)
     }
 
 
@@ -110,26 +106,26 @@ busNetwork w bnAllowDrop pus = BusNetwork
             , outputPort= \(OutputPortTag n) -> n
             , unitEnv=NetworkEnv
             }
-        puEnv title = bnEnv
+        puEnv tag = bnEnv
             { unitEnv=ProcessUnitEnv
                 { parameterAttrWidth=InlineParam "ATTR_WIDTH"
                 , dataIn="data_bus"
-                , dataOut=title ++ "_data_out"
+                , dataOut=tag ++ "_data_out"
                 , attrIn="attr_bus"
-                , attrOut=title ++ "_attr_out"
+                , attrOut=tag ++ "_attr_out"
                 , signal= \(SignalTag i) -> "control_bus[" ++ show i ++ "]"
                 }
             }
-        pus' = map (\(title, f) -> ( title, f $ puEnv title ) ) pus
+        pus' = map (\(tag, f) -> ( tag, f $ puEnv tag ) ) pus
         extInputs=nub $ concatMap (\(_, PU{ ports }) -> externalInputPorts ports ) pus'
         extOutputs=nub $ concatMap (\(_, PU{ ports }) -> externalOutputPorts ports ) pus'
 
-instance WithFunctions (BusNetwork title v x t) (F v x) where
+instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{ bnRemains, bnBinded } = bnRemains ++ concat (M.elems bnBinded)
 
-instance ( Title title, VarValTime v x t
-         ) => DecisionProblem (DataFlowDT title v t)
-                   DataFlowDT (BusNetwork title v x t)
+instance ( UnitTag tag, VarValTime v x t
+         ) => DecisionProblem (DataFlowDT tag v t)
+                   DataFlowDT (BusNetwork tag v x t)
     where
     options _proxy BusNetwork{ bnPus, bnProcess }
         = notEmptyDestination $ concat
@@ -184,7 +180,7 @@ instance ( Title title, VarValTime v x t
                 mapM_
                     (\(pushedValue, (targetTitle, _tc)) -> addStep
                         (Activity $ transportStartAt ... transportEndAt)
-                        $ InstructionStep (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork title v x t))
+                        $ InstructionStep (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork tag v x t))
                     )
                     $ M.assocs pushs
                 addStep_ (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show d
@@ -195,8 +191,8 @@ instance ( Title title, VarValTime v x t
 
 
 
-instance ( Title title, VarValTime v x t
-         ) => ProcessorUnit (BusNetwork title v x t) v x t where
+instance ( UnitTag tag, VarValTime v x t
+         ) => ProcessorUnit (BusNetwork tag v x t) v x t where
 
     tryBind f net@BusNetwork{ bnRemains, bnPus }
         | any (allowToProcess f) $ M.elems bnPus
@@ -205,8 +201,8 @@ instance ( Title title, VarValTime v x t
         = Left $ "All sub process units reject the functional block: " ++ show f ++ "\n" ++ rejects
         where
             rejects = S.join "\n" $ map showReject $ M.assocs bnPus
-            showReject (title, pu) | Left err <- tryBind f pu = "    [" ++ show title ++ "]: " ++ err
-            showReject (title, _) = "    [" ++ show title ++ "]: undefined"
+            showReject (tag, pu) | Left err <- tryBind f pu = "    [" ++ show tag ++ "]: " ++ err
+            showReject (tag, _) = "    [" ++ show tag ++ "]: undefined"
 
 
     process net@BusNetwork{ bnProcess, bnPus }
@@ -245,11 +241,11 @@ instance ( Title title, VarValTime v x t
                         $ variables f )
                 $ filter isFB steps
         where
-            addNestedProcess (title, pu) = do
+            addNestedProcess (tag, pu) = do
                 let Process{ steps, relations } = process pu
                 uidDict <- M.fromList <$> mapM
                     ( \step@Step{ sKey } -> do
-                        sKey' <- scheduleNestedStep title step
+                        sKey' <- scheduleNestedStep tag step
                         return (sKey, sKey') )
                     steps
                 mapM_ (\(Vertical h l) -> establishVerticalRelation (uidDict M.! h) (uidDict M.! l)) relations
@@ -261,12 +257,12 @@ instance ( Title title, VarValTime v x t
 
 
 
-instance Controllable (BusNetwork title v x t) where
-    data Instruction (BusNetwork title v x t)
-        = Transport v title title
+instance Controllable (BusNetwork tag v x t) where
+    data Instruction (BusNetwork tag v x t)
+        = Transport v tag tag
         deriving (Typeable, Show)
 
-    data Microcode (BusNetwork title v x t)
+    data Microcode (BusNetwork tag v x t)
         = BusNetworkMC (A.Array SignalTag SignalValue)
 
     -- Right now, BusNetwork don't have external control (exclude rst signal and some hacks). All
@@ -275,7 +271,7 @@ instance Controllable (BusNetwork title v x t) where
 
 
 instance {-# OVERLAPS #-}
-        ByTime (BusNetwork title v x t) t where
+        ByTime (BusNetwork tag v x t) t where
     microcodeAt BusNetwork{..} t
         = BusNetworkMC $ foldl merge initSt $ M.elems bnPus
         where
@@ -286,11 +282,11 @@ instance {-# OVERLAPS #-}
 
 
 
-instance ( Title title ) => Simulatable (BusNetwork title v x t) v x where
+instance ( UnitTag tag ) => Simulatable (BusNetwork tag v x t) v x where
     simulateOn cntx BusNetwork{..} fb
         = let
-            Just (title, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
-            pu = bnPus M.! title
+            Just (tag, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
+            pu = bnPus M.! tag
         in simulateOn cntx pu fb
 
 
@@ -305,9 +301,9 @@ instance ( Title title ) => Simulatable (BusNetwork title v x t) v x where
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( Title title, VarValTime v x t ) =>
-        DecisionProblem (BindingDT title v x)
-              BindingDT (BusNetwork title v x t)
+instance ( UnitTag tag, VarValTime v x t ) =>
+        DecisionProblem (BindingDT tag v x)
+              BindingDT (BusNetwork tag v x t)
         where
     options _ BusNetwork{ bnRemains, bnPus } = concatMap optionsFor bnRemains
         where
@@ -331,16 +327,16 @@ instance ( Title title, VarValTime v x t ) =>
 
 
 
-instance ( Title title, VarValTime v x t
+instance ( UnitTag tag, VarValTime v x t
         ) => DecisionProblem (RefactorDT v)
-                  RefactorDT (BusNetwork title v x t)
+                  RefactorDT (BusNetwork tag v x t)
         where
     options _ bn
         = nub
             [ InsertOutRegisterO lockBy
-            | (BindingO f title) <- options binding bn
+            | (BindingO f tag) <- options binding bn
             , Lock{ lockBy } <- locks f
-            , lockBy `member` unionsMap variables (bindedFunctions title bn)
+            , lockBy `member` unionsMap variables (bindedFunctions tag bn)
             ]
 
     decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v')
@@ -348,7 +344,7 @@ instance ( Title title, VarValTime v x t
 
 
 
-bindedVars :: ( Var v ) => BusNetwork title v x t -> S.Set v
+bindedVars :: ( Var v ) => BusNetwork tag v x t -> S.Set v
 bindedVars BusNetwork{ bnBinded } = unionsMap variables $ concat $ M.elems bnBinded
 
 bindedFunctions puTitle BusNetwork{ bnBinded }
@@ -367,12 +363,12 @@ allExternalOutputs pus = map (\(OutputPortTag n) -> n) $ concatMap (\PU{ ports }
 
 instance ( VarValTime v x t
         ) => TargetSystemComponent (BusNetwork String v x t) where
-    moduleName title BusNetwork{..} = title ++ "_net"
+    moduleName tag BusNetwork{..} = tag ++ "_net"
 
-    hardware title pu@BusNetwork{..}
+    hardware tag pu@BusNetwork{..}
         = let
             (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
-            mn = moduleName title pu
+            mn = moduleName tag pu
             iml = fixIndent [qc|
 |                   {"module"} { mn }
 |                       #( parameter DATA_WIDTH = { finiteBitSize (def :: x) }
@@ -440,25 +436,25 @@ instance ( VarValTime v x t
                     regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
                 in renderInstance insts' regs' xs
 
-    software title pu@BusNetwork{ bnProcess=Process{..}, ..}
+    software tag pu@BusNetwork{ bnProcess=Process{..}, ..}
         = let
             subSW = map (uncurry software) (M.assocs bnPus)
             sw = [ Immediate (mn ++ ".dump") memoryDump ]
         in Aggregate (Just mn) $ subSW ++ sw
         where
-            mn = moduleName title pu
+            mn = moduleName tag pu
             -- По нулевоу адресу устанавливается команда Nop (он же def) для всех вычислиетльных блоков.
             -- Именно этот адрес выставляется на сигнальные линии когда поднят сигнал rst.
             memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) $ programTicks pu
             values (BusNetworkMC arr) = reverse $ A.elems arr
 
-    hardwareInstance title BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } bnPorts
+    hardwareInstance tag BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } bnPorts
         | let
             io2v n = "    , " ++ n ++ "( " ++ n ++ " )"
             is = map io2v $ map (\(InputPortTag n) -> n) $ externalInputPorts bnPorts
             os = map io2v $ map (\(OutputPortTag n) -> n) $ externalOutputPorts bnPorts
         = fixIndent [qc|
-|           { title } #
+|           { tag } #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                   , .ATTR_WIDTH( 4 )
 |                   ) net
@@ -478,8 +474,8 @@ instance ( VarValTime v x t
         = error "BusNetwork should be NetworkEnv"
 
 
-instance Connected (BusNetwork title v x t) where
-    data Ports (BusNetwork title v x t)
+instance Connected (BusNetwork tag v x t) where
+    data Ports (BusNetwork tag v x t)
         = NetPorts
             { extInputs :: [InputPortTag]
             , extOutputs :: [OutputPortTag]
@@ -490,9 +486,9 @@ instance Connected (BusNetwork title v x t) where
 
 
 
-instance ( Title title, VarValTime v x t
-         , TargetSystemComponent (BusNetwork title v x t)
-         ) => Testable (BusNetwork title v x t) v x where
+instance ( UnitTag tag, VarValTime v x t
+         , TargetSystemComponent (BusNetwork tag v x t)
+         ) => Testable (BusNetwork tag v x t) v x where
     testBenchImplementation Project{ pName, pUnit=n@BusNetwork{..}, pTestCntx }
         = Immediate (moduleName pName n ++ "_tb.v") testBenchImp
         where

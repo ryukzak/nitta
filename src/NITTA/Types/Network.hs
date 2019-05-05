@@ -118,30 +118,30 @@ castPU PU{ unit } = cast unit
 
 -- |Решения относительно пересылки данных между вычислитльными узлами (реализация прикладного
 -- Model).
-data DataFlowDT title v t
+data DataFlowDT tag v t
 dataFlowDT = Proxy :: Proxy DataFlowDT
 
-type Source title t = (title, t)
-type Target title v t = M.Map v (Maybe (title, t))
+type Source tag t = (tag, t)
+type Target tag v t = M.Map v (Maybe (tag, t))
 
-instance DecisionType (DataFlowDT title v t) where
-    data Option (DataFlowDT title v t)
+instance DecisionType (DataFlowDT tag v t) where
+    data Option (DataFlowDT tag v t)
         = DataFlowO
-        { dfoSource     :: Source title (TimeConstrain t) -- ^Источник пересылки.
+        { dfoSource     :: Source tag (TimeConstrain t) -- ^Источник пересылки.
         -- |Словарь, описывающий все необходимые пункты назначения для пересылаемого значения.
         -- Допустима ситация, когда пункт назначения не может принять значение, в таком случае для
         -- негоне указываются временные ограничения.
         --
-        -- Примечание: почему title оказался под Maybe? Потому что мы можем, банально, не знать в
+        -- Примечание: почему tag оказался под Maybe? Потому что мы можем, банально, не знать в
         -- каком PU находится требуемый функциональный блок, так как он может быть ещё непривязан к
         -- PU.
-        , dfoTargets    :: Target title v (TimeConstrain t)
+        , dfoTargets    :: Target tag v (TimeConstrain t)
         } deriving ( Show, Generic )
-    data Decision (DataFlowDT title v t)
+    data Decision (DataFlowDT tag v t)
         = DataFlowD
-        { dfdSource     :: Source title (Interval t) -- ^Источник пересылки.
+        { dfdSource     :: Source tag (Interval t) -- ^Источник пересылки.
         -- |Словарь, описывающий пункты назначения для пересылаемого значения.
-        , dfdTargets    :: Target title v (Interval t)
+        , dfdTargets    :: Target tag v (Interval t)
         } deriving ( Show, Generic )
 
 

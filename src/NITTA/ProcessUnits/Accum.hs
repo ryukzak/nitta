@@ -130,14 +130,14 @@ instance Connected (Accum v x t) where
 
 instance ( Val x ) => TargetSystemComponent (Accum v x t) where
     moduleName _ _ = "pu_accum"
-    hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
+    hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
     software _ _ = Empty
-    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } Ports{..}
+    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } Ports{..}
         = fixIndent [qc|
 |       pu_accum #
 |               ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |               , .ATTR_WIDTH( { show parameterAttrWidth } )
-|               ) { title }
+|               ) { tag }
 |           ( .clk( { signalClk } )
 |           , .rst( { signalRst } )
 |           , .signal_init( { signal init } )

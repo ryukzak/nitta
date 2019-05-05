@@ -44,13 +44,16 @@ import           Numeric.Interval
 -- |Shortcut for variable, value and time type constrains.
 type VarValTime v x t = ( Var v, Val x, Time t )
 
+-- | Класс идентификатора вложенного вычислительного блока.
+type UnitTag v = ( Typeable v, Ord v, Show v )
+
+
 ---------------------------------------------------------------------
 -- * Функциональные блоки
 
 class WithFunctions a f | a -> f where
     -- |Получить список связанных функциональных блоков.
     functions :: a -> [f]
-
 
 
 ---------------------------------------------------------------------
@@ -114,9 +117,9 @@ data StepInfo v x t where
     -- правило не хранится в структурах данных, а генерируется автоматически по требованию при
     -- помощи опроса вложенных структурных элементов.
     NestedStep :: 
-        ( Show title, Ord title
+        ( UnitTag tag
         ) => 
-            { nTitle :: title
+            { nTitle :: tag
             , nStep :: Step v x t
             } -> StepInfo v x t
 
@@ -131,10 +134,10 @@ instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show NestedStep{ nTitle, nStep } = show nTitle ++ "." ++ show nStep
 
 instance ( Ord v ) => Patch (StepInfo v x t) (Diff v) where
-    patch diff (FStep f)                = FStep $ patch diff f
-    patch diff (EndpointRoleStep ep)    = EndpointRoleStep $ patch diff ep
-    patch diff (NestedStep title nStep) = NestedStep title $ patch diff nStep
-    patch _    i                        = i
+    patch diff (FStep f)              = FStep $ patch diff f
+    patch diff (EndpointRoleStep ep)  = EndpointRoleStep $ patch diff ep
+    patch diff (NestedStep tag nStep) = NestedStep tag $ patch diff nStep
+    patch _    i                      = i
 
 
 -- |Получить строку с название уровня указанного шага вычислительного процесса.
@@ -146,8 +149,8 @@ level (NestedStep _ step) = level $ sDesc $ descent step
 
 showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
     where
-        showPU' (NestedStep title Step{ sDesc }) = show title : showPU' sDesc
-        showPU' _                                = []
+        showPU' (NestedStep tag Step{ sDesc }) = show tag : showPU' sDesc
+        showPU' _                              = []
 
 -- |Описание отношений между шагами вычисительного процесса.
 data Relation
@@ -166,13 +169,13 @@ data Relation
 -- варианты и решения заканчивается суфиксом DT, вариант - O, решение - D.
 
 -- |Решение в области привязки функционального блока к вычислительному. Определяется только для
--- вычислительных блоков, организующих работу со множеством вложенных блоков, адресуемым по title.
-data BindingDT title v x
+-- вычислительных блоков, организующих работу со множеством вложенных блоков, адресуемым по tag.
+data BindingDT tag v x
 binding = Proxy :: Proxy BindingDT
 
-instance DecisionType (BindingDT title v x) where
-    data Option (BindingDT title v x) = BindingO (F v x) title deriving ( Generic )
-    data Decision (BindingDT title v x) = BindingD (F v x) title deriving ( Generic )
+instance DecisionType (BindingDT tag v x) where
+    data Option (BindingDT tag v x) = BindingO (F v x) tag deriving ( Generic )
+    data Decision (BindingDT tag v x) = BindingD (F v x) tag deriving ( Generic )
 
 
 -- |Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только

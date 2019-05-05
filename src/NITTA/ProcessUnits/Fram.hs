@@ -617,7 +617,7 @@ testDataInput pu@Fram{ frProcess=p@Process{..}, ..} cntx
        = "data_in <= " ++ show (fromMaybe (error ("input" ++ show v ++ show (functions pu)) ) $ get cntx v) ++ ";"
       | otherwise = "/* NO INPUT */"
 
-testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
+testDataOutput tag pu@Fram{ frProcess=p@Process{..}, ..} cntx
   = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
   where
     busState t
@@ -647,7 +647,7 @@ testDataOutput title pu@Fram{ frProcess=p@Process{..}, ..} cntx
       | otherwise = Nothing
 
     checkBank addr v value = concatMap ("    " ++)
-      [ "if ( !( " ++ title ++ ".bank[" ++ show addr ++ "] === " ++ show value ++ " ) ) "
+      [ "if ( !( " ++ tag ++ ".bank[" ++ show addr ++ "] === " ++ show value ++ " ) ) "
       ,   "$display("
       ,     "\""
       ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
@@ -673,24 +673,24 @@ findAddress var pu@Fram{ frProcess=p@Process{..} }
         f _                       = S.empty
 
 
-softwareFile title pu = moduleName title pu ++ "." ++ title ++ ".dump"
+softwareFile tag pu = moduleName tag pu ++ "." ++ tag ++ ".dump"
 
 instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
     moduleName _ _ = "pu_fram"
-    hardware title pu = FromLibrary $ moduleName title pu ++ ".v"
-    software title pu@Fram{ frMemory }
+    hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
+    software tag pu@Fram{ frMemory }
         = Immediate
-            (softwareFile title pu)
+            (softwareFile tag pu)
             $ unlines $ map
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
                 $ elems frMemory
-    hardwareInstance title pu@Fram{..} TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } Ports{..} =
+    hardwareInstance tag pu@Fram{..} TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } Ports{..} =
         [qc|pu_fram
         #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
         , .ATTR_WIDTH( { show parameterAttrWidth } )
         , .RAM_SIZE( { show frSize } )
-        , .FRAM_DUMP( "$path${ softwareFile title pu }" )
-        ) { title }
+        , .FRAM_DUMP( "$path${ softwareFile tag pu }" )
+        ) { tag }
         ( .clk( { signalClk } )
         , .signal_addr( \{ { S.join ", " (map signal addr) } } )
 

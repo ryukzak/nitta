@@ -122,8 +122,8 @@ scheduleInstruction start finish instr = do
     scheduleStep (Activity $ start ... finish) $ InstructionStep (instr `asProxyTypeOf` iProxy)
 
 -- |Add to the process description information about nested step.
-scheduleNestedStep title step@Step{ sTime } = do
-    sKey <- scheduleStep' (\uid -> Step uid sTime $ NestedStep title step)
+scheduleNestedStep tag step@Step{ sTime } = do
+    sKey <- scheduleStep' (\uid -> Step uid sTime $ NestedStep tag step)
     when (length sKey /= 1) $ error "scheduleNestedStep internal error."
     return $ head sKey
 

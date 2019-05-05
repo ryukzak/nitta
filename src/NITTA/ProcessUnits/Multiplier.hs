@@ -576,12 +576,12 @@ instance ( VarValTime v x t
     --	Multiplier is described by two files: (1) directly multiplier, that is realized
     --	by IP kernel or functional stub. (2) module. that realize interface between
     --	multuplier and processors infostructure.
-    hardware title pu@Multiplier{ isMocked }
+    hardware tag pu@Multiplier{ isMocked }
         = Aggregate Nothing
             [ if isMocked
                 then FromLibrary "multiplier/mult_mock.v"
                 else FromLibrary "multiplier/mult_inner.v"
-            , FromLibrary $ "multiplier/" ++ moduleName title pu ++ ".v"
+            , FromLibrary $ "multiplier/" ++ moduleName tag pu ++ ".v"
             ]
 
     --	|Source code fragment generation for create mUnit instance within the processorю
@@ -590,14 +590,14 @@ instance ( VarValTime v x t
     --
     -- Take attention to function @fixIndent@. This function allows a programmer to use
     -- normal code block indentation.
-    hardwareInstance title _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } Ports{..}
+    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } Ports{..}
         = fixIndent [qc|
 |           pu_multiplier #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                   , .ATTR_WIDTH( { parameterAttrWidth } )
 |                   , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
 |                   , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
-|                   ) { title }
+|                   ) { tag }
 |               ( .clk( {signalClk} )
 |               , .rst( {signalRst} )
 |               , .signal_wr( { signal wr } )
