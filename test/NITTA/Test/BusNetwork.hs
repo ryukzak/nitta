@@ -25,7 +25,7 @@ import           Data.Default
 import           Data.Map                      (fromList)
 import qualified Data.Set                      as S
 import qualified NITTA.Functions               as F
-import           NITTA.Model                   (endpointOptionToDecision)
+import           NITTA.Model
 import qualified NITTA.ProcessUnits.Accum      as A
 import           NITTA.TargetSynthesis
 import           NITTA.Test.Microarchitectures
@@ -72,7 +72,7 @@ test_io =
         { tName="double_receive"
         , tMicroArch=marchSPI proxyInt
         , tReceivedValues=[ ("a", [10..15]), ("b", [20..25]) ]
-        , tAlg=
+        , tDFG=fsToDataFlowGraph
             [ F.receive ["a"]
             , F.receive ["b"]
             , F.add "a" "b" ["c"]

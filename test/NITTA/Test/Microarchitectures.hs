@@ -32,6 +32,7 @@ import           Data.Atomics.Counter          (incrCounter, newCounter)
 import           Data.Default
 import           Data.Proxy
 import           NITTA.BusNetwork
+import           NITTA.Model
 import qualified NITTA.ProcessUnits.Accum      as A
 import qualified NITTA.ProcessUnits.Divider    as D
 import qualified NITTA.ProcessUnits.Fram       as FR
@@ -96,9 +97,9 @@ runTargetSynthesis' t@TargetSynthesis{ tName } = do
     i <- incrCounter 1 externalTestCntr
     runTargetSynthesis t{ tName=tName ++ "_" ++ show i }
 
-algTestCase n tMicroArch tAlg
+algTestCase n tMicroArch alg
     = testCase n $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
         { tName=n
         , tMicroArch
-        , tAlg
+        , tDFG=fsToDataFlowGraph alg
         }

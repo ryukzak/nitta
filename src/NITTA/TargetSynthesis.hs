@@ -26,7 +26,7 @@ NITTA.TargetSynthesis:TargetSynthesis                                           
                       |                    |     |  |
                       *<--lua2functions    |     |  |
                       |                    |     |  v          NITTA.Model:ModelState
-    # tAlg <----------+                    +--------*------------> # mUnit        |
+    # tDFG <----------+                    +--------*------------> # mUnit        |
         |                                        |                                |
         |                                        v                                |
         +----------------------------------------*-----------> # mDataFlowGraph   |
@@ -104,8 +104,9 @@ data TargetSynthesis u v x t = TargetSynthesis
     , tMicroArch       :: u
       -- |optional application source code (lua)
     , tSourceCode      :: Maybe Text
-      -- |algorithm in intermediate representation (if tSourceCode present will be overwritten)
-    , tAlg             :: [ F v x ] -- FIXME: change to DataFlowGraph
+      -- |algorithm in intermediate data flow graph representation (if
+      -- tSourceCode present will be overwritten)
+    , tDFG             :: DataFlowGraph v x
       -- |values from input interface for testing purpose
     , tReceivedValues  :: [ (v, [x]) ]
       -- |verbose standard output (dumps, progress info, etc).
@@ -123,7 +124,7 @@ instance ( VarValTime v x t, Semigroup v ) => Default (TargetSynthesis (BusNetwo
         { tName=undefined
         , tMicroArch=undefined
         , tSourceCode=Nothing
-        , tAlg=undefined
+        , tDFG=undefined
         , tReceivedValues=def
         , tVerbose=False
         , tSynthesisMethod=simpleSynthesisIO
@@ -131,10 +132,10 @@ instance ( VarValTime v x t, Semigroup v ) => Default (TargetSynthesis (BusNetwo
         }
 
 runTargetSynthesis TargetSynthesis
-            { tName, tMicroArch, tSourceCode, tAlg, tReceivedValues, tSynthesisMethod, tVerbose, tWriteProject
+            { tName, tMicroArch, tSourceCode, tDFG, tReceivedValues, tSynthesisMethod, tVerbose, tWriteProject
             } = do
-    tAlg' <- maybe (return tAlg) translateToIntermediate tSourceCode
-    rootNode <- mkRootNodeIO (mkModelWithOneNetwork tMicroArch tAlg')
+    tDFG' <- maybe (return tDFG) translateToIntermediate tSourceCode
+    rootNode <- mkRootNodeIO (mkModelWithOneNetwork tMicroArch tDFG')
     synthesis rootNode >>= \case
         Left err -> return $ Left err
         Right leafNode -> fmap Right $ do
@@ -189,7 +190,7 @@ runTargetSynthesis TargetSynthesis
 
 -- |Make a model of NITTA process with one network and a specific algorithm. All
 -- functions are already bound to the network.
-mkModelWithOneNetwork arch alg = ModelState
-    { mUnit=foldl (flip bind) arch alg
-    , mDataFlowGraph=DFCluster $ map DFLeaf alg
+mkModelWithOneNetwork arch dfg = ModelState
+    { mUnit=foldl (flip bind) arch $ functions dfg
+    , mDataFlowGraph=dfg
     }

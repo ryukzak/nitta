@@ -32,10 +32,10 @@ import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Functions               as F
+import           NITTA.Model
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
--- import Debug.Trace
 
 lua2functions src
     = let
@@ -45,7 +45,8 @@ lua2functions src
         varDict = M.fromList
             $ map varRow
             $ group $ sort $ concatMap fIn fs
-    in snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
+        alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
+    in fsToDataFlowGraph alg
     where
         varRow lst@(x:_)
             = let vs = zipWith (\v i -> [qq|{unpack v}:{i}|]) lst [0..]

@@ -79,11 +79,11 @@ main = do
         Nothing -> runHardcoded
 
 runWebUI no_api_gen alg ma = backendServer no_api_gen $ mkModelWithOneNetwork ma alg
-runTestbench tAlg tMicroArch
+runTestbench tDFG tMicroArch
     = void $ runTargetSynthesis (D.def :: TargetSynthesis _ _ _ Int)
         { tName="main"
         , tMicroArch
-        , tAlg
+        , tDFG
         , tVerbose=True
         }
 
@@ -129,7 +129,7 @@ runHardcoded = do
     void $ runTargetSynthesis (D.def :: TargetSynthesis _ _ _ Int)
         { tName="hardcode"
         , tMicroArch=microarchHC
-        , tAlg=algHC
+        , tDFG=algHC
         , tVerbose=True
         }
     putStrLn "-- hardcoded end --"

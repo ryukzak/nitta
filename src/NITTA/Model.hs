@@ -18,7 +18,7 @@ Stability   : experimental
 -}
 module NITTA.Model
     ( ModelState(..)
-    , DataFlowGraph(..)
+    , DataFlowGraph(..), fsToDataFlowGraph
     , isSynthesisFinish
     , targetProcessDuration
     , endpointOptionToDecision
@@ -93,6 +93,9 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
     functions (DFLeaf f)    = [ f ]
     functions (DFCluster g) = concatMap functions g
 
+
+-- |Convert @[ F v x ]@ to 'DataFlowGraph'.
+fsToDataFlowGraph alg = DFCluster $ map DFLeaf alg
 
 
 -- |Synthesis process is finish when all variable from data flow are
