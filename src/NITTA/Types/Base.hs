@@ -262,7 +262,7 @@ instance DecisionType (RefactorDT v) where
         -- >>> f1 :: (...) -> (a)
         -- f2 :: (a, ...) -> (...)
         -- f1 and f2 process on same mUnit
-        -- In this case, we have deadlock, witch can be fixed by insetion of register between functions:
+        -- In this case, we have deadlock, which can be fixed by insetion of register between functions:
         -- f1 :: (...) -> (a)
         -- reg :: a -> buf_a
         -- f2 :: (buf_a, ...) -> (...)

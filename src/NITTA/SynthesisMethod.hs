@@ -42,10 +42,10 @@ smartBindSynthesisIO root = do
 
 
 bestThreadIO node = do
-    edges <- filter ((> 0) . eCharacteristic) <$> getEdgesIO node
+    edges <- filter ((> 0) . eObjectiveFunctionValue) <$> getEdgesIO node
     case edges of
         [] -> return node
-        _  -> bestThreadIO $ eNode $ maximumOn eCharacteristic edges
+        _  -> bestThreadIO $ eNode $ maximumOn eObjectiveFunctionValue edges
 
 
 
@@ -53,10 +53,10 @@ obviousBindThreadIO node = do
     edges <- getEdgesIO node
     let obliousBind = find
             ((\case
-                BindCh{ possibleDeadlock=True } -> False
-                BindCh{ alternative=1 } -> True
+                BindEdgeParameter{ pPossibleDeadlock=True } -> False
+                BindEdgeParameter{ pAlternative=1 } -> True
                 _ -> False
-            ) . eCharacteristics)
+            ) . eParameters)
             edges
     case obliousBind of
         Just Edge{ eNode } -> obviousBindThreadIO eNode
@@ -68,9 +68,9 @@ refactorThreadIO node = do
     edges <- getEdgesIO node
     let refEdge = find
             ((\case
-                RefactorCh{} -> True
+                RefactorEdgeParameter{} -> True
                 _ -> False
-            ) . eCharacteristics)
+            ) . eParameters)
             edges
     case refEdge of
         Just Edge{ eNode } -> refactorThreadIO eNode
@@ -81,11 +81,11 @@ refactorThreadIO node = do
 smartBindThreadIO node = do
     node' <- refactorThreadIO node
     edges <- getEdgesIO node'
-    let binds = sortOn (Down . eCharacteristic) $ filter
+    let binds = sortOn (Down . eObjectiveFunctionValue) $ filter
             ((\case
-                BindCh{} -> True
+                BindEdgeParameter{} -> True
                 _ -> False
-            ) . eCharacteristics)
+            ) . eParameters)
             edges
     case binds of
         Edge{ eNode }:_ -> smartBindThreadIO eNode

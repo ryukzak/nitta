@@ -15,8 +15,10 @@ Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
+
+Marshaling data for JSON REST API.
 -}
-module NITTA.API.Marshalling where
+module NITTA.API.Marshalling () where
 
 import           Data.Aeson
 import qualified Data.Map              as M
@@ -116,16 +118,16 @@ instance ToJSON TestbenchReport
 
 
 -- *Simple synthesis
-instance ToJSON ChConf
-instance ToJSON Characteristics
+instance ToJSON ObjectiveFunctionConf
+instance ToJSON Parameters
 
 instance ( VarValTimeJSON v x t
         ) => ToJSON (Edge m (SynthesisDT (BusNetwork String v x t))) where
-    toJSON Edge{ eCharacteristic, eCharacteristics, eOption, eDecision } = object
-        [ "eCharacteristic"  .= eCharacteristic
-        , "eCharacteristics" .= eCharacteristics
-        , "eOption"          .= eOption
-        , "eDecision"        .= eDecision
+    toJSON Edge{ eObjectiveFunctionValue, eParameters, eOption, eDecision } = object
+        [ "eObjectiveFunctionValue" .= eObjectiveFunctionValue
+        , "eParameters"             .= eParameters
+        , "eOption"                 .= eOption
+        , "eDecision"               .= eDecision
         ]
 
 
@@ -147,8 +149,7 @@ instance ( ToJSON t, Time t ) => ToJSON (TimeConstrain t) where
         ]
 
 instance ToJSONKey (IntX w) where
-    toJSONKey
-        = let
+    toJSONKey = let
             ToJSONKeyText f g = toJSONKey
         in ToJSONKeyText (\(IntX x) -> f x) (\(IntX x) -> g x)
 

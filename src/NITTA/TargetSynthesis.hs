@@ -91,7 +91,7 @@ import           NITTA.Project
 import           NITTA.SynthesisMethod
 import           NITTA.Types
 import           NITTA.Types.Project
-import           NITTA.Types.Synthesis (Node (..), SynthesisDT, mkNodeIO)
+import           NITTA.Types.Synthesis (Node (..), SynthesisDT, mkRootNodeIO)
 import           System.FilePath       (joinPath)
 
 
@@ -112,7 +112,7 @@ data TargetSynthesis u v x t = TargetSynthesis
     , tVerbose         :: Bool
       -- |synthesis method
     , tSynthesisMethod :: Node' u v x t -> IO (Node' u v x t)
-      -- |project writer, witch defines necessary project part
+      -- |project writer, which defines necessary project part
     , tWriteProject    :: Project u v x -> IO ()
     }
 
@@ -134,7 +134,7 @@ runTargetSynthesis TargetSynthesis
             { tName, tMicroArch, tSourceCode, tAlg, tReceivedValues, tSynthesisMethod, tVerbose, tWriteProject
             } = do
     tAlg' <- maybe (return tAlg) translateToIntermediate tSourceCode
-    rootNode <- mkNodeIO (mkModelWithOneNetwork tMicroArch tAlg')
+    rootNode <- mkRootNodeIO (mkModelWithOneNetwork tMicroArch tAlg')
     synthesis rootNode >>= \case
         Left err -> return $ Left err
         Right leafNode -> fmap Right $ do

@@ -114,7 +114,7 @@ data SynthesisNodeView
         , svIsComplete       :: Bool
         , svIsEdgesProcessed :: Bool
         , svDuration         :: Int
-        , svCharacteristic   :: Float
+        , svCharacteristic   :: Float -- FIXME:
         , svOptionType       :: String
         }
     deriving ( Generic )
@@ -133,7 +133,7 @@ synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
             , svIsComplete=nIsComplete
             , svIsEdgesProcessed=isJust nodesM
             , svDuration=fromEnum $ targetProcessDuration nModel
-            , svCharacteristic=maybe (read "NaN") eCharacteristic nOrigin
+            , svCharacteristic=maybe (read "NaN") eObjectiveFunctionValue nOrigin
             , svOptionType=case nOrigin of
                 Just Edge{ eOption=BindingOption{} }  -> "Bind"
                 Just Edge{ eOption=DataFlowOption{} } -> "Transport"
