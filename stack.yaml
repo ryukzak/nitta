@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-13.0
+resolver: lts-13.19
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -43,8 +43,7 @@ extra-deps:
 - git: https://github.com/blamario/language-lua.git
   commit: 671a8a24b25926e6a9cffbb85062a7db1b50a332
 -   alex-tools-0.4
--   grammatical-parsers-0.3.1
-- QuickCheck-GenT-0.2.0
+-   grammatical-parsers-0.3.2
 
 allow-newer: true
 

@@ -120,7 +120,6 @@ test-suite nitta-test
                      , mtl
                      , nitta
                      , QuickCheck
-                     , QuickCheck-GenT
                      , tasty
                      , tasty-hunit
                      , tasty-quickcheck
