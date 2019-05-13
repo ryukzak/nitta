@@ -73,7 +73,6 @@ import           Data.Either
 import           Data.Foldable
 import           Data.Generics.Aliases         (orElse)
 import           Data.List                     (find)
-import qualified Data.Map                      as M
 import           Data.Maybe
 import qualified Data.Set                      as S
 import qualified Data.String.Utils             as S
@@ -509,20 +508,17 @@ instance UnambiguouslyDecode (Fram v x t) where
 
 instance ( VarValTime v x t
          ) => Simulatable (Fram v x t) v x where
-  simulateOn cntx@Cntx{..} Fram{..} fb
-    | Just (Constant (X x) (O k)) <- castF fb = set cntx k x
-    | Just (Loop (X x) (O k1) (I _k2)) <- castF fb = do
-      let k = oneOf k1
-      let v = fromMaybe x $ cntx `get` k
-      set cntx k1 v
-    | Just fb'@Reg{} <- castF fb = simulate cntx fb'
-    | Just (FramInput _addr (O k)) <- castF fb = do
-      let v = fromMaybe def $ cntx `get` oneOf k
-      set cntx k v
-    | Just (FramOutput addr (I k)) <- castF fb = do
-      v <- get cntx k
-      let cntxFram' = M.alter (Just . maybe [v] (v:)) (addr, k) cntxFram
-      return cntx{ cntxFram=cntxFram' }
+  simulateOn cntx Fram{..} fb
+    | Just f'@Constant{} <- castF fb = simulate cntx f'
+    | Just f'@Loop{} <- castF fb = simulate cntx f'
+    | Just f'@Reg{} <- castF fb = simulate cntx f'
+    --  | Just (FramInput _addr (O k)) <- castF fb = do
+    --   let v = fromMaybe def $ cntx `get` oneOf k
+    --   set cntx k v
+    --  | Just (FramOutput addr (I k)) <- castF fb = do
+    --   v <- get cntx k
+    --   let cntxFram' = M.alter (Just . maybe [v] (v:)) (addr, k) cntxFram
+    --   return cntx{ cntxFram=cntxFram' }
     | otherwise = error $ "Can't simulate " ++ show fb ++ " on Fram."
 
 
@@ -531,10 +527,11 @@ instance ( VarValTime v x t
 
 instance ( VarValTime v x t
          ) => Testable (Fram v x t) v x where
-  testBenchImplementation Project{ pName, pUnit=pu@Fram{ frProcess=Process{ steps }, .. }, pTestCntx }
+  testBenchImplementation Project{ pName, pUnit=pu@Fram{ frProcess=Process{ steps }, .. }, pTestCntx=Cntx{ cntxProcess } }
     = Immediate (moduleName pName pu ++ "_tb.v") testBenchImp
     where
-      Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) pTestCntx $ functions pu
+      cntx = head cntxProcess
+
       hardwareInstance' = hardwareInstance pName pu
         TargetEnvironment{ signalClk="clk"
                 , signalRst="rst"
@@ -609,12 +606,12 @@ controlSignals pu@Fram{ frProcess=Process{ nextTick } }
       , "addr <= ", maybe "0" show addrSignal, "; "
       ]
 
-testDataInput pu@Fram{ frProcess=p@Process{..}, ..} cntx
+testDataInput Fram{ frProcess=p@Process{..}, ..} cntx
   = concatMap ( ("      " ++) . (++ " @(posedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
   where
     busState t
       | Just (Target v) <- endpointAt t p
-       = "data_in <= " ++ show (fromMaybe (error ("input" ++ show v ++ show (functions pu)) ) $ get cntx v) ++ ";"
+       = "data_in <= " ++ (either (error . ("testDataInput: " ++)) show $ getX cntx v) ++ ";"
       | otherwise = "/* NO INPUT */"
 
 testDataOutput tag pu@Fram{ frProcess=p@Process{..}, ..} cntx
@@ -622,7 +619,7 @@ testDataOutput tag pu@Fram{ frProcess=p@Process{..}, ..} cntx
   where
     busState t
       | Just (Source vs) <- endpointAt t p, let v = oneOf vs
-      = checkBus v $ maybe (error $ show ("checkBus" ++ show v ++ show cntx) ) show (get cntx v)
+      = checkBus v $ either (error . ("testDataOutput: " ++) ) show (getX cntx v)
       | otherwise
       = "$display( \"data_out: %d\", data_out ); "
 
@@ -635,7 +632,7 @@ testDataOutput tag pu@Fram{ frProcess=p@Process{..}, ..} cntx
 
     bankCheck
       = "\n      @(posedge clk);\n"
-      ++ unlines [ "  " ++ checkBank addr v (maybe (error $ show ("bank" ++ show v ++ show cntx) ) show (get cntx v))
+      ++ unlines [ "  " ++ checkBank addr v (either (error . ("bankCheck: " ++)) show $ getX cntx v)
                  | Step{ sDesc=FStep f, .. } <- filter isFB $ map descent steps
                  , let addr_v = outputStep pu f
                  , isJust addr_v

@@ -23,6 +23,7 @@ module NITTA.API.REST
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Data.Aeson
+import           Data.Default
 import qualified Data.Map               as M
 import           Data.Maybe
 import qualified Data.Tree              as T
@@ -76,7 +77,7 @@ withSynthesis root nId
             , pLibPath="../.."
             , pPath=joinPath ["hdl", "gen", name]
             , pUnit=mUnit $ nModel node
-            , pTestCntx=Nothing
+            , pTestCntx=def
             }
     ))
     :<|> simpleCompilerServer root nId

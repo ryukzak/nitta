@@ -17,8 +17,6 @@ Stability   : experimental
 module NITTA.Utils
     ( unionsMap
     , oneOf
-    , algInputs
-    , algOutputs
     , isTimeWrap
     , timeWrapError
     , minimumOn
@@ -64,7 +62,7 @@ import           Data.Bits           (finiteBitSize, setBit, testBit)
 import           Data.Default
 import           Data.List           (maximumBy, minimumBy, sortOn)
 import           Data.Maybe          (isJust, mapMaybe)
-import           Data.Set            (difference, elems, unions)
+import           Data.Set            (elems, unions)
 import qualified Data.String.Utils   as S
 import           Data.Typeable       (Typeable, cast)
 import           NITTA.Types
@@ -103,8 +101,8 @@ modify'_ = modify'
 
 -- |Собрать список переменных подаваемых на вход указанных функций. При формировании результата
 -- отсеиваются входы, получаемые из функциональных блоков рассматриваемого списка.
-algInputs fbs = unionsMap inputs fbs `difference` unionsMap outputs fbs
-algOutputs fbs = unionsMap outputs fbs `difference` unionsMap inputs fbs
+-- algInputs fbs = unionsMap inputs fbs `difference` unionsMap outputs fbs
+-- algOutputs fbs = unionsMap outputs fbs `difference` unionsMap inputs fbs
 
 
 isTimeWrap p act = nextTick p > act^.at.infimum

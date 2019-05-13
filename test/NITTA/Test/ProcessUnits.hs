@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -24,17 +25,16 @@ module NITTA.Test.ProcessUnits
 import           Data.Atomics.Counter          (incrCounter)
 import           Data.Default
 import qualified Data.Map                      as M
-import           Data.Proxy
 import           Data.Set                      (difference, elems, empty,
                                                 fromList, intersection, union)
 import           Debug.Trace
 import           NITTA.Functions
 import qualified NITTA.Functions               as F
-import           NITTA.Model                   (endpointOptionToDecision)
+import           NITTA.Model
 import           NITTA.ProcessUnits.Fram
 import           NITTA.ProcessUnits.Multiplier
 import           NITTA.Project
-import           NITTA.Test.Functions          ()
+import           NITTA.Test.FunctionSimulation ()
 import           NITTA.Test.LuaFrontend
 import           NITTA.Test.Microarchitectures
 import           NITTA.Types
@@ -50,31 +50,31 @@ import           Test.Tasty.TH
 import           Text.InterpolatedString.Perl6 (qc)
 
 
-
 test_fram =
-    [ testCase "reg_out" $ unitTestBench "reg_out" proxy
-        (Just def{ cntxVars=M.fromList [("aa", [42]), ("ac", [0x1003])] })
-        [ F.reg "aa" ["ab"]
-        , F.framOutput 9 "ac"
+    [ unitCoSimulationTestCase "register" u [("a", 42)]
+        [ F.reg "a" ["b"]
         ]
-    , testCase "reg_constant" $ unitTestBench "reg_constant" proxy
-        (Just def{ cntxVars=M.fromList [("dzw", [975])] })
-        [ F.reg "dzw" ["act","mqt"]
-        , F.constant 11 ["ovj"]
+    , unitCoSimulationTestCase "constant" u []
+        [ F.constant 11 ["ovj"]
         ]
-    , testProperty "isFinished" $ fmap isFinished gen
-    , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_fram") $ inputsGen =<< gen
+    , unitCoSimulationTestCase "loop" u [("b", 42)]
+        [ F.loop 10 "b" ["a"]
+        ]
+    -- not available, because needed self transaction
+    -- , unitCoSimulationTestCase "loop_reg" u []
+    --     [ F.reg "a" ["b"]
+    --     , F.loop 10 "b" ["a"]
+    --     ]
+    , isUnitSynthesisFinishTestProperty "isFinish" u fsGen
+    , coSimulationTestProperty "fram_coSimulation" u fsGen
     ]
     where
-        proxy = Proxy :: Proxy (Fram String Int Int)
-        gen = processAlgOnEndpointGen (def :: (Fram String Int Int)) $ algorithmGen
+        u = def :: Fram String Int Int
+        fsGen = algGen
             [ fmap F (arbitrary :: Gen (Constant _ _))
-            , fmap F (arbitrary :: Gen (FramInput _ _))
-            , fmap F (arbitrary :: Gen (FramOutput _ _))
             , fmap F (arbitrary :: Gen (Loop _ _))
             , fmap F (arbitrary :: Gen (Reg _ _))
             ]
-
 
 
 test_shift =
@@ -87,7 +87,6 @@ test_shift =
     ]
 
 
-
 test_multiplier =
     [ algTestCase "simple_mul" march
         [ F.constant 2 ["a"]
@@ -98,14 +97,14 @@ test_multiplier =
         , F.loop 1 "z" ["y"]
         , F.multiply "y" "x" ["z"]
         ]
-    , testProperty "isFinished" $ isFinished <$> gen
-    , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_multiplier") $ inputsGen =<< gen
+    , isUnitSynthesisFinishTestProperty "isFinish" u fsGen
+    , coSimulationTestProperty "multiplier_coSimulation" u fsGen
     ]
     where
-        gen = processAlgOnEndpointGen (multiplier True :: Multiplier String Int Int) $ algorithmGen
+        u = multiplier True :: Multiplier String Int Int
+        fsGen = algGen
             [ fmap F (arbitrary :: Gen (Multiply _ _))
             ]
-
 
 
 test_divider =
@@ -137,8 +136,8 @@ test_divider =
         |]
     -- FIXME: Auto text can't work correctly, because processGen don't take into account the
     -- facts that some variables may go out.
-    -- , testProperty "isFinished" $ isFinished <$> dividerGen
-    -- , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_divider") $ inputsGen =<< dividerGen
+    -- , testProperty "isUnitSynthesisFinish" $ isUnitSynthesisFinish <$> dividerGen
+    -- , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_divider") $ initialCycleCntxGen =<< dividerGen
     ]
     -- where
         -- _gen = processAlgOnEndpointGen (divider 4 True :: Divider String Int Int)
@@ -146,23 +145,91 @@ test_divider =
         --     ]
 
 
-
 processUnitTests :: TestTree
 processUnitTests = $(testGroupGenerator)
 
 
------------------------------------------------------------
+-- *Utils & Property
+
+unitCoSimulationTestCase name u cntxCycle alg
+    = testCase name $ do
+        let prj = Project
+                { pName=name
+                , pLibPath=joinPath ["..", ".."]
+                , pPath=joinPath ["hdl", "gen", name]
+                , pUnit=bindAllAndNaiveSynthesis alg u
+                , pTestCntx=simulateAlg (CycleCntx $ M.fromList cntxCycle) [] alg
+                }
+        (tbStatus <$> writeAndRunTestbench prj) @? name
 
 
-algorithmGen fGenList = fmap onlyUniqueVar $ listOf1 $ oneof fGenList
+-- |Bind all functions to processor unit and synthesis process with endpoint
+-- decisions.
+bindAllAndNaiveSynthesis alg u0 = naiveSynthesis $ foldl (flip bind) u0 alg
     where
-        onlyUniqueVar = snd . foldl (\(used, fbs) fb -> let vs = variables fb
-                                                in if null (vs `intersection` used)
-                                                    then ( vs `union` used, fb:fbs )
-                                                    else ( used, fbs ) )
-                            (empty, [])
+        naiveSynthesis u
+            | opt : _ <- options endpointDT u
+            = naiveSynthesis $ decision endpointDT u $ endpointOptionToDecision opt
+            | otherwise = u
 
 
+-- |Is unit synthesis process complete (by function and variables).
+isUnitSynthesisFinishTestProperty name u0 fsGen
+    = testProperty name $ do
+        (u, fs) <- processAlgOnEndpointGen u0 fsGen
+        let
+            p = process u
+            processedVs = unionsMap variables $ getEndpoints p
+            algVs = unionsMap variables fs
+            fs' = fromList fs
+            processedFs = fromList $ getFBs p
+        return $ fs' == processedFs -- all algorithm functions present in process
+            && algVs == processedVs -- all algorithm variables present in process
+            && null (options endpointDT u)
+            || trace (  "delta vars: " ++ show (algVs `difference` processedVs) ++ "\n"
+                    ++ "fs: " ++ concatMap (\fb -> (if fb `elem` processedFs then "+" else "-") ++ "\t" ++ show fb ++ "\n" ) fs' ++ "\n"
+                    ++ "fs: " ++ show processedFs ++ "\n"
+                    ++ "algVs: " ++ show algVs ++ "\n"
+                    ++ "processedVs: " ++ show processedVs ++ "\n"
+                    ) False
+
+
+-- |CoSimulation - generation unit testbench by data from the functional
+-- simulation and run it.
+coSimulationTestProperty name u fsGen
+    = testProperty name $ do
+        (pUnit, fs) <- processAlgOnEndpointGen u fsGen
+        pTestCntx <- initialCycleCntxGen fs
+        return $ monadicIO $ do
+            i <- run $ incrCounter 1 externalTestCntr
+            res <- run $ writeAndRunTestbench Project
+                { pName=name
+                , pLibPath=joinPath ["..", ".."]
+                , pPath=joinPath ["hdl", "gen", name ++ "_" ++ show i]
+                , pUnit
+                , pTestCntx
+                }
+            assert $ tbStatus res
+
+initialCycleCntxGen fs = do
+    let vs = elems $ unionsMap inputs fs
+    xs <- infiniteListOf $ choose (0, 1000)
+    let vxs = M.fromList $ zip vs xs
+        cntx0 = simulateAlg (CycleCntx vxs) [] fs
+    return cntx0
+
+
+-- *Generators
+
+algGen fListGen = fmap avoidDupVariables $ listOf1 $ oneof fListGen
+    where
+        avoidDupVariables alg
+            = snd $ foldl ( \(takenVs, fs) f ->
+                    let vs = variables f
+                    in if null (vs `intersection` takenVs)
+                        then ( vs `union` takenVs, f:fs )
+                        else ( takenVs, fs )
+                ) (empty, []) alg
 
 data Opt a b = EndpointOpt a | BindOpt b
 
@@ -171,8 +238,8 @@ data Opt a b = EndpointOpt a | BindOpt b
 -- случайным образом. В случае если какой-либо функциональный блок не может быть привязан к
 -- вычислительному блоку (например по причине закончившихся внутренних ресурсов), то он просто
 -- отбрасывается.
-processAlgOnEndpointGen pu0 algGen = do
-        alg <- algGen
+processAlgOnEndpointGen pu0 algGen' = do
+        alg <- algGen'
         processAlgOnEndpointGen' pu0 alg []
     where
         processAlgOnEndpointGen' pu fRemain fPassed = do
@@ -196,58 +263,3 @@ processAlgOnEndpointGen pu0 algGen = do
                     vs' <- suchThat (sublistOf $ elems vs) (not . null)
                     return option{ epoRole=Source $ fromList vs' }
                 endpointGen o = return o
-
-
-
--- |Генерация случайных входных данных для заданного алгорима.
-inputsGen (pu, fPassed) = do
-    values <- infiniteListOf $ choose (0, 1000 :: Int)
-    let vars = elems $ unionsMap inputs fPassed
-    let varValues = M.fromList $ zip vars (map (:[]) values)
-    return (pu, fPassed, Just def{ cntxVars=varValues })
-
-
--- |Проверка вычислительного блока на соответсвие работы аппаратной реализации и его модельного
--- поведения.
-coSimulation n (pu, _fbs, values) = monadicIO $ do
-    i <- run $ incrCounter 1 externalTestCntr
-    let path = joinPath ["hdl", "gen", n ++ "_" ++ show i]
-    res <- run $ writeAndRunTestbench $ Project n "../.." path pu values
-    assert $ tbStatus res
-
-
--- |Формальнаяа проверка полноты выполнения работы вычислительного блока.
-isFinished (pu, fPassed)
-    = let
-        p = process pu
-        processVars = unionsMap variables $ getEndpoints p
-        algVars = unionsMap variables $ elems fbs
-        fbs = fromList fPassed
-        processFBs = fromList $ getFBs p
-    in processFBs == fbs -- функции в алгоритме соответствуют выполненным функциям в процессе
-        && processVars == algVars -- пересылаемые данные в алгоритме соответствуют пересылаемым данным в процессе
-        && null (options endpointDT pu)
-        || trace (  "delta vars: " ++ show (algVars `difference` processVars) ++ "\n"
-                ++ "fbs: " ++ concatMap (\fb -> (if fb `elem` processFBs then "+" else "-") ++ "\t" ++ show fb ++ "\n" ) fbs ++ "\n"
-                ++ "fbs: " ++ show processFBs ++ "\n"
-                ++ "algVars: " ++ show algVars ++ "\n"
-                ++ "processVars: " ++ show processVars ++ "\n"
-                ) False
-
-
-unitTestBench tag proxy cntx alg = do
-    let
-        lib = joinPath ["..", ".."]
-        wd = joinPath ["hdl", "gen", tag]
-        pu = bindAllAndNaiveSchedule alg (def `asProxyTypeOf` proxy)
-    (tbStatus <$> writeAndRunTestbench (Project tag lib wd pu cntx)) @? tag
-
-
-
--- |Выполнить привязку списка функциональных блоков к указанному вычислительному блоку и наивным
--- образом спланировать вычислительный процесс.
-bindAllAndNaiveSchedule alg pu0 = naiveSchedule $ foldl (flip bind) pu0 alg
-    where
-        naiveSchedule pu
-            | opt : _ <- options endpointDT pu = naiveSchedule $ decision endpointDT pu $ endpointOptionToDecision opt
-            | otherwise = pu

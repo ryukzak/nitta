@@ -21,7 +21,7 @@ TargetSynthesis is an entry point for synthesis process. TargetSynthesis flow sh
                                                                                                          Prepare
 NITTA.TargetSynthesis:TargetSynthesis                                                      NITTA.TargetSynthesis
     # tName                                                                                          NITTA.Model
-    # tMicroArch --------------------------\
+    # tMicroArch --------------------------\                                                      NITTA.Frontend
     # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
                       |                    |     |  |
                       *<--lua2functions    |     |  |
@@ -171,7 +171,7 @@ runTargetSynthesis TargetSynthesis
             , pLibPath=tLibPath
             , pPath=joinPath [ tPath, tName ]
             , pUnit=mUnit
-            , pTestCntx=Just D.def{ cntxInputs=M.fromList tReceivedValues }
+            , pTestCntx=D.def{ cntxReceived=M.fromList tReceivedValues }
             }
 
         write prj@Project{ pPath } = do

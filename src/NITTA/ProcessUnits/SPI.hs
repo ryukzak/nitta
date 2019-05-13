@@ -27,11 +27,11 @@ module NITTA.ProcessUnits.SPI
 
 import           Data.Bits                           (finiteBitSize)
 import           Data.Default
-import           Data.Maybe                          (catMaybes)
+import qualified Data.Map                            as M
+import           Data.Maybe                          (catMaybes, fromMaybe)
 import           Data.Set                            (elems, fromList,
                                                       singleton)
 import qualified Data.String.Utils                   as S
-import           Data.Typeable
 import           NITTA.Functions
 import           NITTA.ProcessUnits.Generic.SerialPU
 import           NITTA.Types
@@ -146,8 +146,7 @@ instance UnambiguouslyDecode (SPI v x t) where
 
 
 instance
-        ( Ord v
-        , Typeable v, Typeable x, Default x
+        ( VarValTime v x t
         ) => Simulatable (SPI v x t) v x where
     simulateOn cntx _ f
         | Just f'@Send{} <- castF f = simulate cntx f'
@@ -234,9 +233,9 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
     hardwareInstance _ _ _ _ = undefined
 
 
-receiveSequenece SerialPU{ spuState=State{ spiReceive } } = reverse $ map head $ fst spiReceive
-sendSequenece SerialPU{ spuState=State{ spiSend } } = reverse $ fst spiSend
-receiveData pu cntx = map (get' cntx) $ receiveSequenece pu
+receiveSequence SerialPU{ spuState=State{ spiReceive } } = reverse $ map head $ fst spiReceive
+sendSequence SerialPU{ spuState=State{ spiSend } } = reverse $ fst spiSend
+-- receiveData pu cntx = map (get' cntx) $ receiveSequence pu
 
 instance ( VarValTime v x t ) => IOTest (SPI v x t) v x where
     componentTestEnvironment
@@ -244,12 +243,13 @@ instance ( VarValTime v x t ) => IOTest (SPI v x t) v x where
             pu@SerialPU{ spuState=State{ spiBounceFilter } }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
             Ports{ externalPorts=Slave{..}, .. }
-            cntxs
+            cntx@Cntx{ cntxCycleNumber }
         | let
             wordWidth = finiteBitSize (def :: x)
-            frameWordCount = max (length $ receiveSequenece pu) (length $ sendSequenece pu)
+            frameWordCount = max (length $ receiveSequence pu) (length $ sendSequence pu)
             frameWidth = frameWordCount * wordWidth
-            ioCycle cntx = fixIndent [qc|
+            slices = take cntxCycleNumber $ cntxReceivedBySlice cntx
+            ioCycle transmit = fixIndent [qc|
 |
 |                   { tag }_master_in = \{ { dt' } }; // { dt }
 |                   { tag }_start_transaction = 1;                           @(posedge { signalClk });
@@ -257,7 +257,7 @@ instance ( VarValTime v x t ) => IOTest (SPI v x t) v x where
 |                   repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
 |               |]
                 where
-                    dt = receiveData pu cntx
+                    dt = map (\v -> fromMaybe def $ transmit M.!? v) $ receiveSequence pu
                     dt' = S.join ", " $ map (\d -> [qc|{ wordWidth }'sd{ verilogInteger d }|]) dt ++ replicate (frameWordCount - length dt) [qc|{ wordWidth }'d00|]
         , frameWordCount > 0
         = fixIndent [qc|
@@ -287,7 +287,7 @@ instance ( VarValTime v x t ) => IOTest (SPI v x t) v x where
 |               { tag }_start_transaction <= 0; { tag }_master_in <= 0;
 |               @(negedge { signalRst });
 |               repeat(8) @(posedge { signalClk });
-|               { S.join "" $ map ioCycle cntxs }
+|               { S.join "" $ map ioCycle slices }
 |               repeat(70) @(posedge { signalClk });
 |               // $finish; // DON'T DO THAT (with this line test can pass without data checking)
 |           end

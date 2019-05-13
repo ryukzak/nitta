@@ -185,8 +185,8 @@ class TargetSystemComponent pu where
 class IOTest pu v x | pu -> v x where
     -- |Для автоматизированного тестирования компонент со внешними портами ввода/вывода необходимо
     -- специализированное тестовое окружение, имитирующее ввод/вывод.
-    componentTestEnvironment :: String -> pu -> TargetEnvironment -> Ports pu -> [Cntx v x] -> String
-    componentTestEnvironment _title _pu _env _ports _cntxs = ""
+    componentTestEnvironment :: String -> pu -> TargetEnvironment -> Ports pu -> Cntx v x -> String
+    componentTestEnvironment _title _pu _env _ports _cntx = ""
 
 
 data Parameter

@@ -53,7 +53,7 @@ data Project m v x
         , pLibPath  :: String -- ^IP-core library directory
         , pPath     :: String -- ^output directory
         , pUnit     :: m      -- ^'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
-        , pTestCntx :: Maybe (Cntx v x) -- ^testbench context with input values
+        , pTestCntx :: Cntx v x -- ^testbench context with input values
         -- FIXME: Should be a real Either Cntx, with functional simulation data.
         } deriving ( Show )
 

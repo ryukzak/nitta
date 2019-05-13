@@ -49,12 +49,12 @@ import           Data.Bits                     (FiniteBits (..))
 import           Data.Default
 import           Data.List                     (find, groupBy, nub, sortOn)
 import qualified Data.Map                      as M
-import           Data.Maybe                    (catMaybes, fromMaybe, isJust)
-import           Data.Set                      (elems, fromList, member)
+import           Data.Maybe                    (catMaybes, isJust)
 import qualified Data.Set                      as S
 import qualified Data.String.Utils             as S
 import           Data.Typeable
-import           NITTA.Functions               (get', reg, simulateAlgByCycle)
+import           NITTA.API.VisJS               ()
+import           NITTA.Functions               (reg)
 import           NITTA.Types
 import           NITTA.Types.Project
 import           NITTA.Utils
@@ -129,7 +129,7 @@ instance ( UnitTag tag, VarValTime v x t
     where
     options _proxy BusNetwork{ bnPus, bnProcess }
         = notEmptyDestination $ concat
-            [ map (DataFlowO (source, fixConstrain pullAt)) $ targetOptionsFor $ elems vars
+            [ map (DataFlowO (source, fixConstrain pullAt)) $ targetOptionsFor $ S.elems vars
             | (source, opts) <- puOptions
             , EndpointO (Source vars) pullAt <- opts
             ]
@@ -170,7 +170,7 @@ instance ( UnitTag tag, VarValTime v x t
             transportDuration = maximum $ map (\(_trg, time) -> (inf time - transportStartAt) + width time) $ M.elems pushs
             transportEndAt = transportStartAt + transportDuration
 
-            subDecisions = ( srcTitle, EndpointD (Source $ fromList $ M.keys pushs) pullAt )
+            subDecisions = ( srcTitle, EndpointD (Source $ S.fromList $ M.keys pushs) pullAt )
                         :   [ ( trgTitle, EndpointD (Target v) pushAt )
                             | (v, (trgTitle, pushAt)) <- M.assocs pushs
                             ]
@@ -225,7 +225,7 @@ instance ( UnitTag tag, VarValTime v x t
             -- Transport - Endpoint
             let low = concatMap (\Step{ sKey, sDesc } ->
                     case sDesc of
-                        NestedStep{ nStep=Step{ sDesc=EndpointRoleStep role } } -> [ (sKey, v) | v <- elems $ variables role ]
+                        NestedStep{ nStep=Step{ sDesc=EndpointRoleStep role } } -> [ (sKey, v) | v <- S.elems $ variables role ]
                         _ -> []
                     ) steps
             mapM_
@@ -336,7 +336,7 @@ instance ( UnitTag tag, VarValTime v x t
             [ InsertOutRegisterO lockBy
             | (BindingO f tag) <- options binding bn
             , Lock{ lockBy } <- locks f
-            , lockBy `member` unionsMap variables (bindedFunctions tag bn)
+            , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
             ]
 
     decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v')
@@ -489,30 +489,51 @@ instance Connected (BusNetwork tag v x t) where
 instance ( UnitTag tag, VarValTime v x t
          , TargetSystemComponent (BusNetwork tag v x t)
          ) => Testable (BusNetwork tag v x t) v x where
-    testBenchImplementation Project{ pName, pUnit=n@BusNetwork{..}, pTestCntx }
-        = Immediate (moduleName pName n ++ "_tb.v") testBenchImp
-        where
-            ioPorts = concat
-                [ allExternalInputs bnPus
-                , allExternalOutputs bnPus
-                ]
+    testBenchImplementation
+                Project
+                    { pName
+                    , pUnit=n@BusNetwork{ bnProcess, bnPus, bnAllowDrop }
+                    , pTestCntx=pTestCntx@Cntx{ cntxProcess, cntxCycleNumber }
+                    } = let
+            ioPorts = allExternalInputs bnPus ++  allExternalOutputs bnPus
+
             testEnv = S.join "\\n\\n"
                 [ tbEnv
                 | (t, PU{ unit, systemEnv, ports }) <- M.assocs bnPus
                 , let t' = filter (/= '"') $ show t
-                , let tbEnv = componentTestEnvironment t' unit systemEnv ports cntxs
+                , let tbEnv = componentTestEnvironment t' unit systemEnv ports pTestCntx
                 , not $ null tbEnv
                 ]
             externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ioPorts)
-            testBenchImp = fixIndent [qc|
+
+            tickWithTransfers = map
+                ( \cycleCntx -> map
+                     ( \t -> ( t, cntxToTransfer cycleCntx t ) )
+                     [ 0 .. nextTick bnProcess ] )
+                $ take cntxCycleNumber cntxProcess
+
+            assertions = concatMap ( \cycleTransfers -> posedgeCycle ++ concatMap assertion cycleTransfers ) tickWithTransfers
+
+            assertion ( t, Nothing ) = fixIndentNoLn [qc|
+|                       @(posedge clk); $write("tick: { t };\tnet.data_bus == %h ", net.data_bus);
+|                       $display();
+|               |]
+            assertion ( t, Just (v, x) ) = fixIndentNoLn [qc|
+|                       @(posedge clk); $write("tick: { t };\tnet.data_bus == %h ", net.data_bus);
+|                           $write("=== %h (var: %s := { x })", { verilogInteger $ x }, { v } );
+|                           if ( !( net.data_bus === { verilogInteger $ x } ) ) $display( "\tFAIL");
+|                           else $display();
+|               |]
+
+        in Immediate (moduleName pName n ++ "_tb.v") $ fixIndent [qc|
 |               `timescale 1 ps / 1 ps
 |               {"module"} { moduleName pName n }_tb();
 |
-|               /* Functions:
+|               /*
+|               Functions:
 |               { S.join "\\n" $ map show $ functions n }
-|               */
 |
-|               /* Steps:
+|               Steps:
 |               { S.join "\\n" $ map show $ reverse $ steps $ process n }
 |               */
 |
@@ -547,34 +568,21 @@ instance ( UnitTag tag, VarValTime v x t
 |                       // Start computational cycle from program[1] to program[n] and repeat.
 |                       // Signals effect to mUnit state after first clk posedge.
 |                       @(posedge clk);
-|               { concatMap assertion simulationInfo }
+|               { assertions }
 |                       repeat ( 2000 ) @(posedge clk);
 |                       $finish;
 |                   end
 |
 |               endmodule
 |               |]
+        where
+            cntxToTransfer cycleCntx t
+                = case extractInstructionAt n t of
+                    Transport v _ _ : _ -> Just (v, either error id $ getX cycleCntx v)
+                    _                   -> Nothing
 
-            -- TODO: Количество циклов для тестирования должно задаваться пользователем.
-            cntxs = take 3 $ simulateAlgByCycle (fromMaybe def pTestCntx) $ functions n
-            cycleTicks = tail $ programTicks n  -- because program[0] is skiped
-            simulationInfo = -- (trace ("cntxs: \n" ++ concatMap ((++ "\n") . show) cntxs) 0, head cntxs) :
-                concatMap (\cntx -> Nothing {- compute loop end -} :  map (Just . (, cntx)) cycleTicks) cntxs
-            assertion Nothing = fixIndent [qc|
+            posedgeCycle = fixIndent [qc|
 |
 |                       //-----------------------------------------------------------------
 |                       @(posedge cycle);
 |               |]
-            assertion (Just (t, cntx))
-                = fixIndentNoLn [qc|
-|                       @(posedge clk); $write("tick: { t };\tnet.data_bus == %h ", net.data_bus);
-|               |]
-                ++ case extractInstructionAt n t of
-                    Transport v _ _ : _ -> fixIndent [qc|
-|                                   $write("=== %h (var: %s := { get' cntx v })", { verilogInteger $ get' cntx v }, { v } );
-|                                   if ( !( net.data_bus === { verilogInteger $ get' cntx v } ) ) $display( "\tFAIL");
-|                                   else $display();
-|                       |]
-                    [] -> fixIndent [qc|
-|                                   $display();
-|                       |]

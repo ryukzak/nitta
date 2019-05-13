@@ -104,7 +104,7 @@ test-suite nitta-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       NITTA.Test.BusNetwork
-                     , NITTA.Test.Functions
+                     , NITTA.Test.FunctionSimulation
                      , NITTA.Test.LuaFrontend
                      , NITTA.Test.Microarchitectures
                      , NITTA.Test.ProcessUnits

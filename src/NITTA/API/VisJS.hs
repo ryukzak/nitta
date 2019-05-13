@@ -29,7 +29,6 @@ import           NITTA.Types
 import           NITTA.Types.VisJS
 import           NITTA.Utils       (oneOf)
 
-arrow name = EdgeParam name "2" "bottom"
 
 algToVizJS fbs = let
         graphs                        = map toVizJS fbs
@@ -56,6 +55,32 @@ algToVizJS fbs = let
                                 $ filter ((name ==) . vertexName)
                                         outVertexes) inVertexes
 
+
+instance ( Function (f v x) v, Label (f v x), Var v ) => ToVizJS (f v x) where
+    toVizJS f = GraphStructure
+        { nodes=[ NodeElement 1 $ box "#cbbeb5" $ label f ]
+        , edges=mkEdges InVertex (inputs f) ++ mkEdges OutVertex (outputs f)
+        }
+        where
+            mkEdges t = map ( \v -> GraphVertex t (label v) 1 ) . S.elems
+
+instance {-# OVERLAPS #-} ToVizJS (F v x) where
+    toVizJS (F f) = toVizJS f
+
+instance {-# OVERLAPS #-} ( Var v ) => ToVizJS (Loop v x) where
+    toVizJS (Loop _ (O a) (I b))
+        = GraphStructure
+            { nodes=
+                [ NodeElement 1 $ box "#6dc066" $ "prev: " ++ label b
+                , NodeElement 2 $ ellipse  "#fa8072" $ "throw: " ++ label b
+                ]
+            , edges=GraphVertex InVertex (label b) 2
+                :   map (\c -> GraphVertex OutVertex (label c) 1) (S.elems a)
+            }
+
+box     name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="box",     fontSize="20", nodeSize="30" }
+ellipse name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="ellipse", fontSize="20", nodeSize="30" }
+arrow   name       = EdgeParam name "2" "bottom"
 
 
 -----------------------------------------------------------

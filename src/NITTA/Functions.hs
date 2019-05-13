@@ -42,83 +42,29 @@ module NITTA.Functions
     , Receive(..), receive
     , Send(..), send
     -- *Simulation
-    , funSim
+    -- , funSim
+    , simulateDataFlowGraph, simulateAlg
     , reorderAlgorithm
-    , simulateAlg
-    , simulateAlgByCycle
-    , get, get', set
+    -- , simulateAlg
+    -- , simulateAlgByCycle
+    -- , get, get', set
+    , getX
     -- *Utils
     , castF
     ) where
 
 import qualified Data.Bits         as B
 import           Data.Default
-import           Data.List         (cycle, intersect, (\\))
+import           Data.List         (intersect, (\\))
 import qualified Data.Map          as M
-import           Data.Maybe
 import           Data.Set          (elems, fromList, union)
 import qualified Data.String.Utils as S
 import           Data.Typeable
 import           NITTA.Types
-import           NITTA.Types.VisJS
 import           NITTA.Utils
 
-
------------------------------------------------------------
--- *VizJS
-
-instance ( Function (f v x) v, Label (f v x), Var v ) => ToVizJS (f v x) where
-    toVizJS f = GraphStructure
-        { nodes=[ NodeElement 1 $ box "#cbbeb5" $ label f ]
-        , edges=mkEdges InVertex (inputs f) ++ mkEdges OutVertex (outputs f)
-        }
-        where
-            mkEdges t = map ( \v -> GraphVertex t (label v) 1 ) . elems
-
-instance {-# OVERLAPS #-} ToVizJS (F v x) where
-    toVizJS (F f) = toVizJS f
-
-instance {-# OVERLAPS #-} ( Var v ) => ToVizJS (Loop v x) where
-    toVizJS (Loop _ (O a) (I b))
-        = GraphStructure
-            { nodes=
-                [ NodeElement 1 $ box "#6dc066" $ "prev: " ++ label b
-                , NodeElement 2 $ ellipse  "#fa8072" $ "throw: " ++ label b
-                ]
-            , edges=GraphVertex InVertex (label b) 2
-                :   map (\c -> GraphVertex OutVertex (label c) 1) (elems a)
-            }
-
-box     name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="box",     fontSize="20", nodeSize="30" }
-ellipse name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="ellipse", fontSize="20", nodeSize="30" }
-
-
 -----------------------------------------------------------
 
-
-get' cntx k = fromMaybe (error $ "Can't get from cntx: " ++ show k ++ " cntx: " ++ show cntx) $ get cntx k
-get Cntx{ cntxVars } k = do
-    values <- cntxVars M.!? k
-    case values of
-        []      -> Nothing
-        value:_ -> Just value
-
--- |@set@ позволяет обновить в контексте состояние группы выходных переменных (пример: @O vs@).
---
--- @cntx@ - контекст вычислительного процесса со значениями переменных. @ks@ - список переменных в
--- словаре, для которых нужно обновить знаение. @val@ - новое значение переменной.
-set cntx@Cntx{ cntxVars } ks val = do
-    let cntxVars' = foldl (flip $ M.alter (Just . maybe [val] (val:))) cntxVars ks
-    return cntx{ cntxVars=cntxVars' }
-
-receiveSim cntx@Cntx{ cntxInputs } k = do
-    value : values <- cntxInputs M.!? k
-    let cntxInputs' = M.insert k values cntxInputs
-    return (cntx{ cntxInputs=cntxInputs' }, value)
-
-sendSim cntx@Cntx{ cntxOutputs } k v = do
-    let cntxOutputs' = M.alter (Just . maybe [v] (v:)) k cntxOutputs
-    return cntx{ cntxOutputs=cntxOutputs' }
 
 inputsLockOutputs f =
     [ Lock{ locked=y, lockBy=x }
@@ -127,28 +73,48 @@ inputsLockOutputs f =
     ]
 
 
--- |Симмулировать алгоритм.
+-- |Functional algorithm simulation
+simulateDataFlowGraph cycle0 transmission dfg = simulateAlg cycle0 transmission $ reorderAlgorithm $ functions dfg
 
-funSim n cntx alg
-    = let cntxs = simulateAlgByCycle cntx alg
-    in mapM_ (putStrLn . ("---------------------\n"++) . filter (/= '"') . show) $ take n cntxs
+simulateAlg cycle0 transmission alg
+    | let
+        cntxThrown = map ( \f ->
+            ( let [v] = elems $ inputs f in v
+            , elems $ outputs f
+            ) ) $ filter isBreakLoop alg
+    = Cntx
+        { cntxReceived=M.fromList transmission
+        , cntxProcess=simulateAlg' cntxThrown cycle0 transmission alg
+        , cntxThrown=cntxThrown
+        , cntxCycleNumber=5
+        }
 
--- FIXME: Заменить симуляцию [Function] на DataFlowGraph в simulateAlg и simulateAlgByCycle. В случае
--- "расщеплённого времени" останавливаться с ошибкой.
-simulateAlg cntx0 fbs = step cntx0 $ cycle $ reorderAlgorithm fbs
+simulateAlg' cntxThrown cycleCntx0 transmission alg = let
+        (cycleCntx0', transmission') = receive' cycleCntx0 transmission
+        cycleCntx = simulateCycle cycleCntx0' alg
+    in cycleCntx : simulateAlg' cntxThrown (throwLoop cycleCntx) transmission' alg
     where
-        step cntx (f:fs)
-            | Just cntx' <- simulate cntx f
-            = cntx' : step cntx' fs
-            | otherwise = error $ "Simulation error: " ++ show f
-        step _ _ = error "Simulation error."
-
-simulateAlgByCycle cntx fbs = simulateAlgByCycle' $ simulateAlg cntx fbs
-    where
-        l = length fbs - 1
-        simulateAlgByCycle' xs
-            = let x : xs' = drop l xs
-            in x : simulateAlgByCycle' xs'
+        -- TODO: receive data for several IO processor unit.
+        receive' CycleCntx{ cycleCntx } trans =
+            ( CycleCntx $ foldl (\c (v, xs) ->
+                case xs of
+                    x:_ -> M.insert v x c
+                    _   -> c
+                ) cycleCntx trans
+            , map (\(v, xs) ->
+                case xs of
+                    (_:_) -> (v, tail xs)
+                    []    -> (v, xs)
+                ) trans
+            )
+        throwLoop (CycleCntx cntx) = CycleCntx $ M.fromList $ foldl
+            (\st (thrown, vs) -> map ( \v -> (v, cntx M.! thrown) ) vs ++ st
+            ) [] cntxThrown
+        simulateCycle cntx00 fs = foldl (\cntx f ->
+            case simulate cntx f of
+                Left err    -> error $ "functional simulation error: " ++ err
+                Right cntx' -> cntx'
+            ) cntx00 fs
 
 
 reorderAlgorithm alg = orderAlgorithm' [] alg
@@ -183,13 +149,8 @@ instance ( Ord v ) => Function (FramInput v x) v where
 instance ( Ord v ) => Patch (FramInput v x) (v, v) where
     patch diff (FramInput x a) = FramInput x $ patch diff a
 instance ( Var v ) => Locks (FramInput v x) v where locks _ = []
-instance ( Ord v, Default x ) => FunctionSimulation (FramInput v x) v x where
-    -- |Невозможно симулировать данные операции без привязки их к конкретному PU, так как нет
-    -- возможности понять что мы что-то записали по тому или иному адресу.
-    simulate cntx (FramInput _addr (O k)) = do
-        -- FIXME: change def value to cntx value
-        let v = fromMaybe def $ cntx `get` oneOf k
-        set cntx k v
+instance FunctionSimulation (FramInput v x) v x where
+    simulate = undefined
 
 
 
@@ -202,11 +163,8 @@ instance ( Ord v ) => Function (FramOutput v x) v where
 instance ( Ord v ) => Patch (FramOutput v x) (v, v) where
     patch diff (FramOutput x a) = FramOutput x $ patch diff a
 instance ( Var v ) => Locks (FramOutput v x) v where locks _ = []
-instance ( Ord v ) => FunctionSimulation (FramOutput v x) v x where
-    simulate cntx@Cntx{ cntxFram } (FramOutput addr (I k)) = do
-        v <- get cntx k
-        let cntxFram' = M.alter (Just . maybe [v] (v:)) (addr, k) cntxFram
-        return cntx{ cntxFram=cntxFram' }
+instance FunctionSimulation (FramOutput v x) v x where
+    simulate = undefined
 
 
 
@@ -223,11 +181,10 @@ instance ( Ord v ) => Patch (Reg v x) (v, v) where
     patch diff (Reg a b) = Reg (patch diff a) (patch diff b)
 instance ( Var v ) => Locks (Reg v x) v where
     locks = inputsLockOutputs
-instance ( Ord v ) => FunctionSimulation (Reg v x) v x where
-    simulate cntx (Reg (I k1) (O k2)) = do
-        v <- cntx `get` k1
-        set cntx k2 v
-
+instance ( Var v ) => FunctionSimulation (Reg v x) v x where
+    simulate cntx (Reg (I v) (O vs)) = do
+        x <- cntx `getX` v
+        setZipX cntx vs x
 
 
 
@@ -245,12 +202,14 @@ instance ( Ord v ) => Function (Loop v x) v where
 instance ( Ord v ) => Patch (Loop v x) (v, v) where
     patch diff (Loop x a b) = Loop x (patch diff a) (patch diff b)
 instance ( Var v ) => Locks (Loop v x) v where
-    -- locks (Loop _ (O as) (I b)) = map (\a -> Lock{ locked=a, lockBy=b }) $ elems as
     locks _ = []
-instance ( Ord v ) => FunctionSimulation (Loop v x) v x where
-    simulate cntx (Loop (X x) (O v2) (I v1)) = do
-        let x' = fromMaybe x $ cntx `get` v1
-        set cntx v2 x'
+instance ( Var v ) => FunctionSimulation (Loop v x) v x where
+    simulate cntx@CycleCntx{ cycleCntx } (Loop (X x) (O vs) (I _))
+        = case cycleCntx M.!? oneOf vs of
+            -- if output variables are defined - nothing to do (values thrown on upper level)
+            Just _  -> return cntx
+            -- if output variables are not defined - set initial value
+            Nothing -> setZipX cntx vs x
 
 
 
@@ -267,12 +226,12 @@ instance ( Ord v ) => Patch (Add v x) (v, v) where
     patch diff (Add a b c) = Add (patch diff a) (patch diff b) (patch diff c)
 instance ( Var v ) => Locks (Add v x) v where
     locks = inputsLockOutputs
-instance ( Ord v, Num x ) => FunctionSimulation (Add v x) v x where
-    simulate cntx (Add (I k1) (I k2) (O k3)) = do
-        v1 <- cntx `get` k1
-        v2 <- cntx `get` k2
-        let v3 = v1 + v2
-        set cntx k3 v3
+instance ( Var v, Num x ) => FunctionSimulation (Add v x) v x where
+    simulate cntx (Add (I v1) (I v2) (O vs)) = do
+        x1 <- cntx `getX` v1
+        x2 <- cntx `getX` v2
+        let x3 = x1 + x2
+        setZipX cntx vs x3
 
 
 
@@ -289,12 +248,12 @@ instance ( Ord v ) => Patch (Sub v x) (v, v) where
     patch diff (Sub a b c) = Sub (patch diff a) (patch diff b) (patch diff c)
 instance ( Var v ) => Locks (Sub v x) v where
     locks = inputsLockOutputs
-instance ( Ord v, Num x ) => FunctionSimulation (Sub v x) v x where
-    simulate cntx (Sub (I k1) (I k2) (O k3)) = do
-        v1 <- cntx `get` k1
-        v2 <- cntx `get` k2
-        let v3 = v1 - v2
-        set cntx k3 v3
+instance ( Var v, Num x ) => FunctionSimulation (Sub v x) v x where
+    simulate cntx (Sub (I v1) (I v2) (O vs)) = do
+        x1 <- cntx `getX` v1
+        x2 <- cntx `getX` v2
+        let x3 = x1 - x2
+        setZipX cntx vs x3
 
 
 
@@ -311,12 +270,12 @@ instance ( Ord v ) => Patch (Multiply v x) (v, v) where
     patch diff (Multiply a b c) = Multiply (patch diff a) (patch diff b) (patch diff c)
 instance ( Var v ) => Locks (Multiply v x) v where
     locks = inputsLockOutputs
-instance ( Ord v, Num x ) => FunctionSimulation (Multiply v x) v x where
-    simulate cntx (Multiply (I k1) (I k2) (O k3)) = do
-        v1 <- cntx `get` k1
-        v2 <- cntx `get` k2
-        let v3 = v1 * v2
-        set cntx k3 v3
+instance ( Var v, Num x ) => FunctionSimulation (Multiply v x) v x where
+    simulate cntx (Multiply (I v1) (I v2) (O vs)) = do
+        x1 <- cntx `getX` v1
+        x2 <- cntx `getX` v2
+        let x3 = x1 * x2
+        setZipX cntx vs x3
 
 
 
@@ -343,13 +302,14 @@ instance ( Ord v ) => Patch (Division v x) (v, v) where
     patch diff (Division a b c d) = Division (patch diff a) (patch diff b) (patch diff c) (patch diff d)
 instance ( Var v ) => Locks (Division v x) v where
     locks = inputsLockOutputs
-instance ( Ord v, Integral x ) => FunctionSimulation (Division v x) v x where
-    simulate cntx Division{ denom=I d, numer=I n, quotient=O q, remain=O r } = do
-        v1 <- cntx `get` d
-        v2 <- cntx `get` n
-        let (q', r') = v1 `quotRem` v2
-        cntx' <- set cntx q q'
-        set cntx' r r'
+instance ( Var v, Integral x ) => FunctionSimulation (Division v x) v x where
+    simulate cntx Division{ denom=I d, numer=I n, quotient=O qs, remain=O rs } = do
+        dx <- cntx `getX` d
+        nx <- cntx `getX` n
+        let (qx, rx) = dx `quotRem` nx
+        cntx' <- setZipX cntx qs qx
+        setZipX cntx' rs rx
+
 
 
 data Constant v x = Constant (X x) (O v) deriving ( Typeable, Eq )
@@ -363,9 +323,9 @@ instance ( Show x, Eq x, Typeable x ) => Function (Constant v x) v where
 instance ( Ord v ) => Patch (Constant v x) (v, v) where
     patch diff (Constant x a) = Constant x (patch diff a)
 instance ( Var v ) => Locks (Constant v x) v where locks _ = []
-instance ( Ord v ) => FunctionSimulation (Constant v x) v x where
-    simulate cntx (Constant (X x) (O k))
-        = set cntx k x
+instance ( Var v ) => FunctionSimulation (Constant v x) v x where
+    simulate cntx (Constant (X x) (O vs))
+        = setZipX cntx vs x
 
 
 
@@ -387,15 +347,15 @@ instance ( Ord v ) => Patch (ShiftLR v x) (v, v) where
     patch diff (ShiftR a b) = ShiftR (patch diff a) (patch diff b)
 instance ( Var v ) => Locks (ShiftLR v x) v where
     locks = inputsLockOutputs
-instance ( Ord v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
-    simulate cntx (ShiftL (I k1) (O k2)) = do
-        v1 <- cntx `get` k1
-        let v2 = v1 `B.shiftL` 1
-        set cntx k2 v2
-    simulate cntx (ShiftR (I k1) (O k2)) = do
-        v1 <- cntx `get` k1
-        let v2 = v1 `B.shiftR` 1
-        set cntx k2 v2
+instance ( Var v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
+    simulate cntx (ShiftL (I v1) (O vs)) = do
+        x <- cntx `getX` v1
+        let x' = x `B.shiftL` 1
+        setZipX cntx vs x'
+    simulate cntx (ShiftR (I v1) (O vs)) = do
+        x <- cntx `getX` v1
+        let x' = x `B.shiftR` 1
+        setZipX cntx vs x'
 
 
 
@@ -407,10 +367,8 @@ instance ( Ord v ) => Function (Send v x) v where
 instance ( Ord v ) => Patch (Send v x) (v, v) where
     patch diff (Send a) = Send (patch diff a)
 instance ( Var v ) => Locks (Send v x) v where locks _ = []
-instance ( Ord v ) => FunctionSimulation (Send v x) v x where
-    simulate cntx (Send (I k)) = do
-        v <- cntx `get` k
-        sendSim cntx k v
+instance FunctionSimulation (Send v x) v x where
+    simulate cntx Send{} = return cntx
 
 
 
@@ -422,8 +380,10 @@ instance ( Ord v ) => Function (Receive v x) v where
 instance ( Ord v ) => Patch (Receive v x) (v, v) where
     patch diff (Receive a) = Receive (patch diff a)
 instance ( Var v ) => Locks (Receive v x) v where locks _ = []
-instance ( Ord v, Default x ) => FunctionSimulation (Receive v x) v x where
-    simulate cntx (Receive (O ks)) = do
-        let k = oneOf ks
-        let (cntx', v) = fromMaybe (cntx, def)  $ cntx `receiveSim` k
-        set cntx' ks v
+instance ( Var v, Val x ) => FunctionSimulation (Receive v x) v x where
+    simulate cntx@CycleCntx{ cycleCntx } (Receive (O vs))
+        = case cycleCntx M.!? oneOf vs of
+            -- if output variables are defined - nothing to do (values thrown on upper level)
+            Just _  -> return cntx
+            -- if output variables are not defined - set initial value
+            Nothing -> setZipX cntx vs def

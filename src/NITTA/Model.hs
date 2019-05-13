@@ -27,7 +27,6 @@ module NITTA.Model
 
 import           Control.Exception (assert)
 import           Data.Set          (fromList, member)
-import           Data.Typeable
 import           GHC.Generics
 import           NITTA.BusNetwork
 import           NITTA.Functions   (reg)
@@ -75,7 +74,7 @@ data DataFlowGraph v x
     | DFCluster [ DataFlowGraph v x ]
     deriving ( Show, Generic )
 
-instance ( Var v, Typeable x ) => Patch (DataFlowGraph v x) (v, v) where
+instance ( Var v, Val x ) => Patch (DataFlowGraph v x) (v, v) where
     patch diff@(v, v') (DFCluster cluster) = let
             newReg = DFLeaf $ reg v [v']
             cluster' = map (patch diff) cluster

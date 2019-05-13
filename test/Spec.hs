@@ -16,13 +16,13 @@ module Main where
 
 import           Data.Maybe
 import           NITTA.Test.BusNetwork
-import           NITTA.Test.Functions
+import           NITTA.Test.FunctionSimulation
 import           NITTA.Test.LuaFrontend
 import           NITTA.Test.ProcessUnits
 import           NITTA.Test.Types
 import           NITTA.Test.Utils
-import           System.Environment      (lookupEnv, setEnv)
-import           Test.Tasty              (defaultMain, testGroup)
+import           System.Environment            (lookupEnv, setEnv)
+import           Test.Tasty                    (defaultMain, testGroup)
 
 
 -- FIXME: Тестирование очень активно работает с диском. В связи с этим рационально положить папку
@@ -34,7 +34,7 @@ main = do
     defaultMain $ testGroup "NITTA"
         [ utilTests
         , typesTests
-        , functionTests
+        , functionSimulationTests
         , processUnitTests
         , busNetworkTests
         , luaTests

@@ -64,15 +64,15 @@ data SnippetTestBenchConf m
         }
 
 snippetTestBench
-        Project{ pName, pUnit=pu, pTestCntx }
+        Project{ pName, pUnit, pTestCntx=Cntx{ cntxProcess } }
         SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcCtrl, tbDataBusWidth }
     = let
-        mn = moduleName pName pu
-        p@Process{ steps, nextTick } = process pu
-        fs = functions pu
-        Just cntx = foldl ( \(Just cntx') fb -> simulateOn cntx' pu fb ) pTestCntx fs
+        cycleCntx:_ = cntxProcess
+        name = moduleName pName pUnit
+        p@Process{ steps, nextTick } = process pUnit
+        fs = functions pUnit
 
-        inst = hardwareInstance pName pu
+        inst = hardwareInstance pName pUnit
             TargetEnvironment
                 { signalClk="clk"
                 , signalRst="rst"
@@ -90,11 +90,10 @@ snippetTestBench
                 }
             tbcPorts
 
-        controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pu t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
+        controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
-            , Just val <- F.get cntx v
-            = val
+            = either error id $ F.getX cycleCntx v
             | otherwise = 0
 
         busCheck = concatMap busCheck' [ 0 .. nextTick + 1 ]
@@ -102,11 +101,11 @@ snippetTestBench
                 busCheck' t
                     | Just (Source vs) <- endpointAt t p
                     , let v = oneOf vs
-                    , let (Just val) = F.get cntx v
+                    , let x = either error id $ F.getX cycleCntx v
                     = fixIndent [qc|
 |                       @(posedge clk);
-|                           $write( "data_out: %d == %d    (%s)", data_out, { val }, { v } );
-|                           if ( !( data_out === { val } ) ) $display(" FAIL");
+|                           $write( "data_out: %d == %d    (%s)", data_out, { x }, { v } );
+|                           if ( !( data_out === { x } ) ) $display(" FAIL");
 |                           else $display();
 |                   |]
                     | otherwise
@@ -115,7 +114,7 @@ snippetTestBench
 |                   |]
 
     in fixIndent [qc|
-|       {"module"} {mn}_tb();
+|       {"module"} {name}_tb();
 |
 |       parameter DATA_WIDTH = { tbDataBusWidth };
 |       parameter ATTR_WIDTH = 4;
@@ -126,7 +125,7 @@ snippetTestBench
 |       Process:
 |       { unlines $ map show $ reverse steps }
 |       Context:
-|       { show cntx }
+|       { show cycleCntx }
 |       */
 |
 |       reg clk, rst;
@@ -139,7 +138,7 @@ snippetTestBench
 |       { inst }
 |
 |       { snippetClkGen }
-|       { snippetDumpFile mn }
+|       { snippetDumpFile name }
 |       { snippetInitialFinish $ "    @(negedge rst);\\n    " ++ controlSignals }
 |       { snippetInitialFinish $ "    @(negedge rst);\\n" ++ busCheck }
 |       endmodule

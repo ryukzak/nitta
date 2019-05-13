@@ -36,19 +36,6 @@ import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 
 
-test_someAlgorithm =
-    [ algTestCase "accum_fram" march
-        [ F.framInput 3 [ "d", "p" ]
-        , F.framInput 4 [ "e", "k" ]
-        , F.framOutput 5 "p"
-        , F.framOutput 6 "k"
-        , F.loop 22 "sum" ["s"]
-        , F.framOutput 7 "s"
-        , F.add "d" "e" ["sum"]
-        ]
-    ]
-
-
 test_fibonacci =
     [ algTestCase "simple" march
         [ F.loop 0  "b2" ["a1"      ]

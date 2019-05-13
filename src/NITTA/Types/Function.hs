@@ -28,7 +28,9 @@ module NITTA.Types.Function
       -- *Function description
     , F(..), Function(..)
       -- *Application level simulation
-    , FunctionSimulation(..), Cntx(..)
+    , FunctionSimulation(..)
+    , CycleCntx(..), Cntx(..)
+    , getX, setZipX, cntxReceivedBySlice
       -- *Other
     , Patch(..), Diff(..), reverseDiff
     , Label(..)
@@ -121,7 +123,7 @@ class Function f v | f -> v where
     -- |Get all output variables.
     outputs :: f -> S.Set v
     outputs _ = S.empty
-    -- |Is function break eval loop.
+    -- |Is function break evaluation loop (throw data to a next loop).
     isBreakLoop :: f -> Bool
     isBreakLoop _ = False
     -- |Sometimes, one function can cause internal process unit lock for another function.
@@ -192,35 +194,63 @@ instance ( Var v ) => Variables (F v x) v where
 
 
 -----------------------------------------------------------
--- FIXME: Think about: implement algSimulation here..
 
 -- |The type class for function simulation.
 class FunctionSimulation f v x | f -> v x where
-    simulate :: Cntx v x -> f -> Maybe (Cntx v x)
+    -- FIXME: CycleCntx - problem, because its prevent Receive simulation with
+    -- data drop (how implement that?).
+    simulate :: CycleCntx v x -> f -> Either String (CycleCntx v x)
 
+
+data CycleCntx v x = CycleCntx{ cycleCntx :: M.Map v x }
+    deriving ( Show )
+
+instance Default (CycleCntx v x) where
+    def = CycleCntx def
 
 data Cntx v x
     = Cntx
-        { cntxVars    :: M.Map v [x]
-        , cntxInputs  :: M.Map v [x]
-        , cntxOutputs :: M.Map v [x]
-        , cntxFram    :: M.Map (Int, v) [x]
+        { cntxProcess     :: [ CycleCntx v x ]
+        , cntxReceived    :: M.Map v [x]
+        , cntxThrown      :: [ (v, [v]) ]
+        , cntxCycleNumber :: Int
         }
+instance {-# OVERLAPS #-} ( Show v, Show x ) => Show (Cntx v x) where
+    show Cntx{ cntxProcess, cntxCycleNumber } = let
+            header = S.join "\t" $ sort $ map show $ M.keys $ cycleCntx $ head cntxProcess
+            body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
+        in S.join "\n" (header : body)
+        where
+            row cntx = S.join "\t" $  map (show . snd) $ sortOn (show . fst) $ M.assocs cntx
 
 instance Default (Cntx v x) where
-    def = Cntx M.empty M.empty M.empty M.empty
+    def = Cntx
+        { cntxProcess=def
+        , cntxReceived=def
+        , cntxThrown=def
+        , cntxCycleNumber=5
+        }
 
--- FIXME: Incorrect output if cntxInput has different amount of data.
-instance ( Show v, Show x ) => Show (Cntx v x) where
-    show Cntx{ cntxVars, cntxInputs, cntxOutputs }
-        = let
-            dt = concat
-                [ map (\(v, xs) -> reverse $ map ( filter (/= '"') . (("q." ++ show v ++ ":") ++) . show ) xs) $ M.assocs cntxInputs
-                , map (\(v, xs) -> reverse $ map ( filter (/= '"') . ((show v ++ ":") ++) . show ) xs) $ M.assocs cntxOutputs
-                , map (\(v, xs) -> reverse $ map ( filter (/= '"') . ((show v ++ ":") ++) . show ) xs) $ M.assocs cntxVars
-                ]
-        in S.join "\n" $ map (S.join "\t") $ transpose dt
+cntxReceivedBySlice Cntx{ cntxReceived } = cntxReceivedBySlice' $ M.assocs cntxReceived
+cntxReceivedBySlice' received
+    | all (not . null . snd) received
+    = let
+        slice = M.fromList [ (v, x) | ( v, x:_ ) <- received ]
+        received' = [ (v, xs) | ( v, _:xs ) <- received ]
+    in slice : cntxReceivedBySlice' received'
+    | otherwise = []
 
+getX (CycleCntx cntx) v = case cntx M.!? v of
+        Just x  -> Right x
+        Nothing -> Left $ "variable value not defined: " ++ show v
+
+setX cycleCntx vxs = setX' cycleCntx vxs
+setZipX cycleCntx vs x = setX cycleCntx $ zip (S.elems vs) $ repeat x
+
+setX' cycleCntx [] = Right cycleCntx
+setX' (CycleCntx cntx) ((v, x):vxs)
+    | M.member v cntx = Left $ "variable value already defined: " ++ show v
+    | otherwise = setX' (CycleCntx $ M.insert v x cntx) vxs
 
 
 -----------------------------------------------------------
