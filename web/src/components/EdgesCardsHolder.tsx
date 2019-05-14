@@ -89,8 +89,8 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
             haskellAPI.getEdge(id)
             .then((response: JSON) => {
                 curEdges.push(response.data);
-                if (maxEChar < response.data.eCharacteristic) {
-                    maxEChar = response.data.eCharacteristic;
+                if (maxEChar < response.data.eObjectiveFunctionValue) {
+                    maxEChar = response.data.eObjectiveFunctionValue;
                 }
                 if (index === length - 1) {
                         act.setState({

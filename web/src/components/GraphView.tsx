@@ -70,8 +70,8 @@ export class GraphView extends React.Component<GraphViewProps, GraphViewState> {
         haskellAPI.getEdge(nid)
         .then( (response: JSON) => {
           let data = response.data;
-          if ( data.eCharacteristics !== null ) {
-            let tag = data.eCharacteristics.tag;
+          if ( data.eParameters !== null ) {
+            let tag = data.eParameters.tag;
             if (tag === "BindCh") {
               let label = data.eDecision.contents[0];
               this.state.graph.nodes.map(function(anObjectMapped: JSON, index: number) {

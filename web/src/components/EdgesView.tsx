@@ -50,7 +50,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
             .then((response: any) => {
                 this.setState({
                     options: response.data,
-                    options_raw: response.data.map(e => { return [e.eCharacteristic, e.eCharacteristics, e.eOption, e.eDecision]; })
+                    options_raw: response.data.map(e => { return [e.eObjectiveFunctionValue, e.eParameters, e.eOption, e.eDecision]; })
                 });
             })
             .catch(err => console.log(err));
@@ -100,17 +100,17 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
             <br/>
             <BindTable 
                 name="Bind" 
-                data={ this.state.options.filter( e => e.eCharacteristics.tag === 'BindCh') } 
+                data={ this.state.options.filter( e => e.eParameters.tag === 'BindCh') } 
                 updateNid={ i => { this.updateNid(i) } }
                 />
             <DataflowTable 
                 name="Transfers (DataFlow)" 
-                data={ this.state.options.filter( e => e.eCharacteristics.tag === 'DFCh') } 
+                data={ this.state.options.filter( e => e.eParameters.tag === 'DFCh') } 
                 updateNid={ i => { this.updateNid(i) } }
                 />
             <GenericTable
                 name="Other" 
-                data={ this.state.options.filter( e => e.eCharacteristics.tag != 'BindCh' && e.eCharacteristics.tag != 'DFCh') } 
+                data={ this.state.options.filter( e => e.eParameters.tag != 'BindCh' && e.eParameters.tag != 'DFCh') } 
                 updateNid={ i => { this.updateNid(i) } }
                 />
         </div>
@@ -131,7 +131,7 @@ function BindTable(props: {name: string, data: any[], updateNid: (nId: number) =
                     [
                         {
                             Header: "Integral",
-                            accessor: "eCharacteristic",
+                            accessor: "eObjectiveFunctionValue",
                             maxWidth: 60,
                             Cell: row => 
                                 <a onClick={() => {
@@ -147,7 +147,7 @@ function BindTable(props: {name: string, data: any[], updateNid: (nId: number) =
                             return (<pre> { o[0] } </pre> )
                         }},
                         { Header: "Metrics", Cell: (r: any) => {
-                            return (<pre> { JSON.stringify(r.original.eCharacteristics) } </pre> )
+                            return (<pre> { JSON.stringify(r.original.eParameters) } </pre> )
                         }}
                     ]
                 }
@@ -170,7 +170,7 @@ function DataflowTable(props: {name: string, data: any[], updateNid: (nId: numbe
                     [
                         {
                             Header: "Integral",
-                            accessor: "eCharacteristic",
+                            accessor: "eObjectiveFunctionValue",
                             maxWidth: 70,
                             Cell: row => 
                                 <a onClick={() => {
@@ -187,7 +187,7 @@ function DataflowTable(props: {name: string, data: any[], updateNid: (nId: numbe
                             return ( <pre> { targets } </pre> )
                         }},
                         { Header: "Metrics", Cell: (r: any) => {
-                            return ( <pre> { JSON.stringify(r.original.eCharacteristics) } </pre>)
+                            return ( <pre> { JSON.stringify(r.original.eParameters) } </pre>)
                         }}
                     ]
                 }
@@ -210,7 +210,7 @@ function GenericTable(props: {name: string, data: any[], updateNid: (nId: number
                     [
                         {
                             Header: "Integral",
-                            accessor: "eCharacteristic",
+                            accessor: "eObjectiveFunctionValue",
                             maxWidth: 70,
                             Cell: row => 
                                 <a onClick={() => {
@@ -221,7 +221,7 @@ function GenericTable(props: {name: string, data: any[], updateNid: (nId: number
                             return (<pre> { JSON.stringify(r.original.eOption) } </pre> )
                         }},
                         { Header: "Metrics", Cell: (r: any) => {
-                            return ( <pre> { JSON.stringify(r.original.eCharacteristics) } </pre>)
+                            return ( <pre> { JSON.stringify(r.original.eParameters) } </pre>)
                         }}
                     ]
                 }

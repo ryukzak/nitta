@@ -181,10 +181,10 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         />  
                     </div> 
                     <div className="jsonViewContainer" style={{'vertical-align': 'top', 'width': '270px'}}>
-                        <JsonView jsonData={ this.state.synthesisNode.nModel.processor} label={"nModel.processor"} show={false}  />
+                        <JsonView jsonData={ this.state.synthesisNode.nModel.mUnit} label={"nModel.mUnit"} show={false}  />
                     </div> 
                     <div className="jsonViewContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
-                        <JsonView jsonData={ this.state.synthesisNode.nModel.dfg} label={"nModel.dfg"} show={false} />
+                        <JsonView jsonData={ this.state.synthesisNode.nModel.mDataFlowGraph} label={"nModel.mDataFlowGraph"} show={false} />
                     </div> 
                     <div className="jsonViewContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
                         <div  >
@@ -197,15 +197,15 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                     </div>
                 </div>
                 }
-                 {/* this.state.synthesisNode.nModel.processor
-                 this.state.synthesisNode.nModel.dfg 
+                 {/* this.state.synthesisNode.nModel.mUnit
+                 this.state.synthesisNode.nModel.mDataFlowGraph 
                  this.state.synthesisNode.nId
                  this.state.synthesisNode.nIsComplete */}
             
                 { this.state.view === "process"  &&
                     <ProcessView
-                        steps={this.state.synthesisNode.nModel.processor.process.steps}
-                        relations={this.state.synthesisNode.nModel.processor.process.relations}
+                        steps={this.state.synthesisNode.nModel.mUnit.process.steps}
+                        relations={this.state.synthesisNode.nModel.mUnit.process.relations}
                     />
                 }
                 { this.state.view === "edges"  &&

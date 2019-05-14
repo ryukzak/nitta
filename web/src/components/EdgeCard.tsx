@@ -15,7 +15,7 @@ interface EdgesCardState {
     tag: string;
     contentsEDecision: JSON;
     contentsEOption: JSON;
-    eCharacteristics: JSON;
+    eParameters: JSON;
     isShown: boolean;
 }
 
@@ -28,11 +28,11 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
             selectedNId: props.nid,
             selectedEdge: props.edge,
             maxValue: props.maxValue,
-            eChar: props.edge.eCharacteristic,
+            eChar: props.edge.eObjectiveFunctionValue,
             tag: props.edge.eDecision.tag.replace("Decision", ""),
             contentsEDecision: props.edge.eDecision.contents,
             contentsEOption: props.edge.eOption.contents,
-            eCharacteristics: props.edge.eCharacteristics,
+            eParameters: props.edge.eParameters,
             isShown: false,
         };
         this.reloadChart(props.edge);
@@ -52,11 +52,11 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
     reloadChart(edge: any) {
         this.setState({
             selectedEdge: edge,
-            eChar: edge.eCharacteristic,
+            eChar: edge.eObjectiveFunctionValue,
             tag: edge.eDecision.tag,
             contentsEDecision: edge.eDecision.contents,
             contentsEOption: edge.eOption.contents,
-            eCharacteristics: edge.eCharacteristics
+            eParameters: edge.eParameters
         });
     }
 
@@ -76,12 +76,12 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                     backgroundColor: "rgba(100,255,100,0.2)",
                     pointBackgroundColor: "rgba(0,0,0,1)",
                     data: [
-                        this.state.eCharacteristics.allowDataFlow,
-                        this.state.eCharacteristics.alternative,
-                        this.state.eCharacteristics.numberOfBindedFunctions,
-                        this.state.eCharacteristics.percentOfBindedInputs,
-                        this.state.eCharacteristics.restless,
-                        this.state.eCharacteristics.wave
+                        this.state.eParameters.allowDataFlow,
+                        this.state.eParameters.alternative,
+                        this.state.eParameters.numberOfBindedFunctions,
+                        this.state.eParameters.percentOfBindedInputs,
+                        this.state.eParameters.restless,
+                        this.state.eParameters.wave
                     ]
                   }
             ]
@@ -123,13 +123,13 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
                 </div>
                 <br/>
                 <div>
-                    <h6><b>eCharacteristics:</b></h6>
+                    <h6><b>eParameters:</b></h6>
                     <p>
-                        <b>&emsp;tag: </b>{this.state.eCharacteristics.tag}
+                        <b>&emsp;tag: </b>{this.state.eParameters.tag}
                         <br/>
-                        <b>&emsp;isInternalLockPossible: </b>{String(this.state.eCharacteristics.critical)}
+                        <b>&emsp;isInternalLockPossible: </b>{String(this.state.eParameters.critical)}
                         <br/>
-                        <b>&emsp;isPossibleDeadlock </b>{String(this.state.eCharacteristics.possibleDeadlock)}
+                        <b>&emsp;isPossibleDeadlock </b>{String(this.state.eParameters.possibleDeadlock)}
                     </p>
                     <Radar data={data} />
                 </div>
@@ -171,16 +171,16 @@ export class EdgesCard extends React.Component<EdgesCardProps, EdgesCardState> {
 
             <br/>
             <div>
-                <h6><b>eCharacteristics:</b></h6>
+                <h6><b>eParameters:</b></h6>
                 <p>
                     {/* &emsp; - is tabulation */}
-                    <b>&emsp;tag: </b>{this.state.eCharacteristics.tag}
+                    <b>&emsp;tag: </b>{this.state.eParameters.tag}
                     <br/>
-                    <b>&emsp;isRestrictedTime: </b>{String(this.state.eCharacteristics.restrictedTime)}
+                    <b>&emsp;isRestrictedTime: </b>{String(this.state.eParameters.restrictedTime)}
                     <br/>
-                    <b>&emsp;WaitTime: </b>{this.state.eCharacteristics.waitTime}
+                    <b>&emsp;WaitTime: </b>{this.state.eParameters.waitTime}
                     <br/>
-                    <b>&emsp;NotTransferableInputs: </b>{JSON.stringify(this.state.eCharacteristics.notTransferableInputs, null, 2)}
+                    <b>&emsp;NotTransferableInputs: </b>{JSON.stringify(this.state.eParameters.notTransferableInputs, null, 2)}
                 </p>
             </div>
         </div>

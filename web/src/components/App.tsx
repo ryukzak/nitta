@@ -14,7 +14,7 @@ export default class App extends React.Component<any, AppState> {
     constructor (props: any) {
         super(props);
         this.state = {
-            selectedNId: null
+            selectedNId: ":"
         };
     }
 
