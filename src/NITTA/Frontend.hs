@@ -12,7 +12,7 @@
 {-|
 Module      : NITTA.Frontend
 Description : Lua frontend prototype
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -31,8 +31,8 @@ import qualified Data.String.Utils             as S
 import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
-import qualified NITTA.Functions               as F
-import           NITTA.Model
+import qualified NITTA.Intermediate.Functions  as F
+import           NITTA.Model.TargetSystem
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
@@ -384,7 +384,6 @@ genVar prefix = do
     return $ T.concat [ prefix, "_", head algVarGen ]
 
 
-
 findAlias var0 = do
     AlgBuilder{ algItems } <- get
     return $ inner var0 algItems
@@ -393,7 +392,6 @@ findAlias var0 = do
         inner var (Alias{ aFrom, aTo }:xs)
             | aFrom == var = inner aTo xs
         inner var (_:xs) = inner var xs
-
 
 
 applyPatch diff v

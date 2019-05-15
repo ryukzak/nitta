@@ -15,40 +15,51 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     NITTA.API
-                     , NITTA.API.Marshalling
-                     , NITTA.API.REST
-                     , NITTA.API.VisJS
-                     , NITTA.BusNetwork
-                     , NITTA.Frontend
-                     , NITTA.Functions
-                     , NITTA.Model
-                     , NITTA.PlatformSpecific.DE0Nano
-                     , NITTA.PlatformSpecific.Makefile
-                     , NITTA.ProcessUnits.Accum
-                     , NITTA.ProcessUnits.Divider
-                     , NITTA.ProcessUnits.Fram
-                     , NITTA.ProcessUnits.Generic.SerialPU
-                     , NITTA.ProcessUnits.Multiplier
-                     , NITTA.ProcessUnits.Shift
-                     , NITTA.ProcessUnits.SPI
+  exposed-modules:     NITTA.Frontend
+                     , NITTA.Intermediate.Functions
+                     , NITTA.Intermediate.Simulation
+                     , NITTA.Intermediate.Types
+                     , NITTA.Intermediate.Values
+                     , NITTA.Model.Networks.Bus
+                     , NITTA.Model.Networks.Types
+                     , NITTA.Model.Problems.Binding
+                     , NITTA.Model.Problems.Endpoint
+                     , NITTA.Model.Problems.Refactor
+                     , NITTA.Model.Problems.Transport
+                     , NITTA.Model.Problems.Types
+                     , NITTA.Model.Problems.Whole
+                     , NITTA.Model.ProcessorUnits
+                     , NITTA.Model.ProcessorUnits.Divider
+                     , NITTA.Model.ProcessorUnits.Fram
+                     , NITTA.Model.ProcessorUnits.IO.SPI
+                     , NITTA.Model.ProcessorUnits.Multiplier
+                     , NITTA.Model.ProcessorUnits.Serial.Accum
+                     , NITTA.Model.ProcessorUnits.Serial.Generic
+                     , NITTA.Model.ProcessorUnits.Serial.Shift
+                     , NITTA.Model.ProcessorUnits.Types
+                     , NITTA.Model.TargetSystem
+                     , NITTA.Model.Types
                      , NITTA.Project
-                     , NITTA.SynthesisMethod
-                     , NITTA.TargetSynthesis
-                     , NITTA.Types
-                     , NITTA.Types.Base
-                     , NITTA.Types.Function
-                     , NITTA.Types.Network
-                     , NITTA.Types.Poly
-                     , NITTA.Types.Project
-                     , NITTA.Types.Synthesis
-                     , NITTA.Types.Time
-                     , NITTA.Types.Value
-                     , NITTA.Types.VisJS
+                     , NITTA.Project.Implementation
+                     , NITTA.Project.Parts.Icarus
+                     , NITTA.Project.Parts.Quartus
+                     , NITTA.Project.Parts.TargetSystem
+                     , NITTA.Project.Parts.TestBench
+                     , NITTA.Project.Parts.Utils
+                     , NITTA.Project.Snippets
+                     , NITTA.Project.Types
+                     , NITTA.Project.Utils
+                     , NITTA.Synthesis.Method
+                     , NITTA.Synthesis.Types
+                     , NITTA.Synthesis.Utils
+                     , NITTA.UIBackend
+                     , NITTA.UIBackend.Marshalling
+                     , NITTA.UIBackend.REST
+                     , NITTA.UIBackend.VisJS
+                     , NITTA.UIBackend.VisJS.Types
                      , NITTA.Utils
                      , NITTA.Utils.Lens
                      , NITTA.Utils.Process
-                     , NITTA.Utils.Snippets
   build-depends:       aeson
                      , array
                      , base
@@ -107,7 +118,7 @@ test-suite nitta-test
                      , NITTA.Test.FunctionSimulation
                      , NITTA.Test.LuaFrontend
                      , NITTA.Test.Microarchitectures
-                     , NITTA.Test.ProcessUnits
+                     , NITTA.Test.ProcessorUnits
                      , NITTA.Test.Types
                      , NITTA.Test.Utils
   build-depends:       atomic-primops
