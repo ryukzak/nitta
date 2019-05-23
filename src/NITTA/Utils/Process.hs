@@ -5,7 +5,7 @@
 {-|
 Module      : NITTA.Utils.Process
 Description : Utilities for process description.
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -18,10 +18,9 @@ based builder from that module.
 It also agreed to the process inspection.
 -}
 module NITTA.Utils.Process
-    ( Schedule(..) -- TODO: must be hidded
-    , runSchedule
+    ( runSchedule
     , execSchedule, execScheduleWithProcess
-    , scheduleEndpoint, runScheduleWithProcess
+    , scheduleEndpoint
     , scheduleFunction
     , scheduleInstruction
     , scheduleNestedStep
@@ -31,10 +30,11 @@ module NITTA.Utils.Process
     ) where
 
 import           Control.Monad.State
-import           Data.Proxy          (asProxyTypeOf)
+import           Data.Proxy                       (asProxyTypeOf)
 import           Data.Typeable
-import           NITTA.Types
-import           Numeric.Interval    (inf, sup, (...))
+import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.ProcessorUnits.Types
+import           Numeric.Interval                 (inf, sup, (...))
 
 -- |Process builder state.
 data Schedule pu v x t
@@ -133,7 +133,7 @@ getProcessSlice = do
     Schedule{ schProcess } <- get
     return schProcess
 
--- depricated
+-- FIXME: deprecated, but why&
 updateTick tick = do
     sch@Schedule{ schProcess } <- get
     put sch

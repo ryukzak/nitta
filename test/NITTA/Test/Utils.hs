@@ -17,11 +17,12 @@ module NITTA.Test.Utils
     ( utilTests
     ) where
 
-import           Data.Set         (fromList)
-import           NITTA.Functions  ()
-import           NITTA.Types
+import           Data.Set                      (fromList)
+import           NITTA.Intermediate.Functions  ()
+import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Utils
-import           Test.Tasty       (TestTree)
+import           Test.Tasty                    (TestTree)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 

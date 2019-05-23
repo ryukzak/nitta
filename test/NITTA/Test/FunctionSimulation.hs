@@ -3,7 +3,8 @@
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
+{-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.Test.FunctionSimulation
@@ -18,16 +19,17 @@ module NITTA.Test.FunctionSimulation
     ) where
 
 import           Data.Default
-import           Data.List        (permutations)
-import qualified Data.Map         as M
+import           Data.List                     (permutations)
+import qualified Data.Map                      as M
 import           Data.Maybe
-import           Data.Set         (fromList, intersection)
-import qualified Data.Set         as S
-import           NITTA.Functions
-import           NITTA.Model
-import           NITTA.Types
+import           Data.Set                      (fromList, intersection)
+import qualified Data.Set                      as S
+import           NITTA.Intermediate.Functions
+import           NITTA.Intermediate.Simulation
+import           NITTA.Intermediate.Types
+import           NITTA.Model.TargetSystem
 import           Test.QuickCheck
-import           Test.Tasty       (TestTree)
+import           Test.Tasty                    (TestTree)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 

@@ -27,11 +27,11 @@ import           Data.Default
 import           Data.Either                   (isRight)
 import           Data.FileEmbed                (embedStringFile)
 import           Data.Proxy
-import           NITTA.BusNetwork
-import           NITTA.SynthesisMethod
-import           NITTA.TargetSynthesis
+import           NITTA.Intermediate.Types
+import           NITTA.Model.Networks.Bus
+import           NITTA.Project
+import           NITTA.Synthesis.Method
 import           NITTA.Test.Microarchitectures
-import           NITTA.Types
 import           Test.Tasty                    (TestTree, testGroup)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH

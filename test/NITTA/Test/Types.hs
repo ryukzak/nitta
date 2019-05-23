@@ -11,7 +11,7 @@ module NITTA.Test.Types
     ) where
 
 import           Data.Ratio       ((%))
-import           NITTA.Types
+import           NITTA.Intermediate.Types
 import           Test.Tasty       (TestTree)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH

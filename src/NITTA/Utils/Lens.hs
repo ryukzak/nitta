@@ -7,7 +7,7 @@
 {-|
 Module      : NITTA.Utils.Lens
 Description :
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -17,8 +17,11 @@ module NITTA.Utils.Lens
   , module Control.Lens
   ) where
 
-import           Control.Lens     (Lens', lens, to, (&), (.~), (^.))
-import           NITTA.Types
+import           Control.Lens                   (Lens', lens, to, (&), (.~),
+                                                 (^.))
+import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Transport
+import           NITTA.Model.Types
 import           Numeric.Interval
 
 

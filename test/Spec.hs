@@ -7,7 +7,7 @@
 {-|
 Module      : Main
 Description : Test specification
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -18,7 +18,7 @@ import           Data.Maybe
 import           NITTA.Test.BusNetwork
 import           NITTA.Test.FunctionSimulation
 import           NITTA.Test.LuaFrontend
-import           NITTA.Test.ProcessUnits
+import           NITTA.Test.ProcessorUnits
 import           NITTA.Test.Types
 import           NITTA.Test.Utils
 import           System.Environment            (lookupEnv, setEnv)

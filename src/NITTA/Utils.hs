@@ -4,12 +4,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.Utils
 Description :
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -30,9 +30,9 @@ module NITTA.Utils
     , bool2verilog
     , values2dump
     , hdlValDump
-    -- *HDL generation (depricated)
+    -- *HDL generation (deprecated)
     , renderST
-    -- *Process construction (depricated)
+    -- *Process construction (deprecated)
     , modifyProcess
     , addActivity
     , addInstr
@@ -43,52 +43,33 @@ module NITTA.Utils
     , setProcessTime
     -- *Process inspection
     , endpointAt
-    , extractInstruction
-    , extractInstructionAt
     , getEndpoints
     , transferred
-    , getFBs
     , isFB
     , isInstruction
     , isTarget
     , placeInTimeTag
-    , whatsHappen
-    , instructionOf
     , maybeInstructionOf
     ) where
 
-import           Control.Monad.State (State, get, modify', put, runState)
-import           Data.Bits           (finiteBitSize, setBit, testBit)
-import           Data.Default
-import           Data.List           (maximumBy, minimumBy, sortOn)
-import           Data.Maybe          (isJust, mapMaybe)
-import           Data.Set            (elems, unions)
-import qualified Data.String.Utils   as S
-import           Data.Typeable       (Typeable, cast)
-import           NITTA.Types
+import           Control.Monad.State              (State, get, modify', put,
+                                                   runState)
+import           Data.Bits                        (finiteBitSize, setBit,
+                                                   testBit)
+import           Data.List                        (maximumBy, minimumBy, sortOn)
+import           Data.Maybe                       (isJust, mapMaybe)
+import           Data.Set                         (elems, unions)
+import qualified Data.String.Utils                as S
+import           Data.Typeable                    (Typeable)
+import           NITTA.Intermediate.Types
+import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.Types
 import           NITTA.Utils.Lens
-import           Numeric             (readInt, showHex)
-import           Numeric.Interval    ((...))
-import qualified Numeric.Interval    as I
+import           Numeric                          (readInt, showHex)
+import           Numeric.Interval                 ((...))
+import qualified Numeric.Interval                 as I
 import           Text.StringTemplate
-
-
-
-instance ( Show (Instruction pu)
-         , Default (Microcode pu)
-         , ProcessorUnit pu v x t
-         , UnambiguouslyDecode pu
-         , Time t
-         , Typeable pu
-         ) => ByTime pu t where
-    microcodeAt pu t = case mapMaybe (extractInstruction pu) $ whatsHappen t (process pu) of
-        []  -> def
-        [i] -> decodeInstruction i
-        is  -> error $ "Ambiguously instruction at " ++ show t ++ ": " ++ show is
-
-instance ( Ord t ) => WithFunctions (Process v x t) (F v x) where
-    functions = getFBs
-
 
 
 unionsMap f lst = unions $ map f lst
@@ -97,12 +78,6 @@ oneOf = head . elems
 
 modify'_ :: (s -> s) -> State s ()
 modify'_ = modify'
-
-
--- |Собрать список переменных подаваемых на вход указанных функций. При формировании результата
--- отсеиваются входы, получаемые из функциональных блоков рассматриваемого списка.
--- algInputs fbs = unionsMap inputs fbs `difference` unionsMap outputs fbs
--- algOutputs fbs = unionsMap outputs fbs `difference` unionsMap inputs fbs
 
 
 isTimeWrap p act = nextTick p > act^.at.infimum
@@ -204,20 +179,16 @@ addInstr _pu t i = addStep (Activity t) $ InstructionStep i
 
 
 
-whatsHappen t Process{ steps } = filter (\Step{ sTime } -> t `atSameTime` sTime) steps
-
 endpointAt t p
     = case mapMaybe getEndpoint $ whatsHappen t p of
         [ep] -> Just ep
         []   -> Nothing
         eps  -> error $ "Too many endpoint at a time: " ++ show eps
 
+isFB s = isJust $ getFB s
 
 getFB step | Step{ sDesc=FStep fb } <- descent step = Just fb
 getFB _    = Nothing
-
-getFBs p = mapMaybe getFB $ sortOn stepStart $ steps p
-
 
 getEndpoint step | Step{ sDesc=EndpointRoleStep role } <- descent step = Just role
 getEndpoint _                                                          = Nothing
@@ -226,25 +197,13 @@ getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 transferred pu = unionsMap variables $ getEndpoints $ process pu
 
 
-extractInstruction :: ( Typeable (Instruction pu) ) => pu -> Step v x t -> Maybe (Instruction pu)
-extractInstruction _ Step{ sDesc=InstructionStep instr } = cast instr
-extractInstruction _ _                                   = Nothing
-
-extractInstructionAt pu t = mapMaybe (extractInstruction pu) $ whatsHappen t $ process pu
 
 
 isTarget (EndpointO (Target _) _) = True
 isTarget _                        = False
 
-isFB s = isJust $ getFB s
-
 isInstruction (InstructionStep _) = True
 isInstruction _                   = False
-
-
-atSameTime a (Activity t) = a `I.member` t
-atSameTime a (Event t)    = a == t
-
 
 placeInTimeTag (Activity t) = tag $ I.inf t
 placeInTimeTag (Event t)    = tag t
@@ -255,9 +214,6 @@ stepStart Step{ sTime=Activity t } = I.inf t
 
 
 -- modern
-
-instructionOf :: Instruction pu -> pu -> Instruction pu
-i `instructionOf` _pu = i
 
 maybeInstructionOf :: Maybe (Instruction pu) -> pu -> Maybe (Instruction pu)
 i `maybeInstructionOf` _pu = i

@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE IncoherentInstances   #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -11,7 +12,7 @@
 {-|
 Module      : NITTA.Test.BusNetwork
 Description :
-Copyright   : (c) Aleksandr Penskoi, 2018
+Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -20,18 +21,22 @@ module NITTA.Test.BusNetwork
     ( busNetworkTests
     ) where
 
-import           Control.Monad                 (void)
+import           Control.Monad                    (void)
 import           Data.Default
-import           Data.Map                      (fromList)
-import qualified Data.Set                      as S
-import qualified NITTA.Functions               as F
-import           NITTA.Model
-import qualified NITTA.ProcessUnits.Accum      as A
-import           NITTA.TargetSynthesis
+import           Data.Map                         (fromList)
+import qualified Data.Set                         as S
+import qualified NITTA.Intermediate.Functions     as F
+import           NITTA.Intermediate.Types         (Diff (..), F, Patch (..))
+import           NITTA.Intermediate.Types
+import           NITTA.Model.Networks.Types
+import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Types
+import           NITTA.Model.ProcessorUnits
+import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.TargetSystem
+import           NITTA.Project
 import           NITTA.Test.Microarchitectures
-import           NITTA.Types
-import           NITTA.Types.Function          (Diff (..), F, Patch (..))
-import           Test.Tasty                    (TestTree, testGroup)
+import           Test.Tasty                       (TestTree, testGroup)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 
@@ -100,7 +105,7 @@ test_patchFunction =
 
 
 pu = let
-    Right pu' = tryBind f1 $ PU def (def :: A.Accum String Int Int) undefined undefined
+    Right pu' = tryBind f1 $ PU def (def :: Accum String Int Int) undefined undefined
     in pu'
 
 test_patchEndpointOptions =
