@@ -249,11 +249,12 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
 |           |]
 
 instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
+    componentTestEnvironment _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
     componentTestEnvironment
             tag
             pu@SerialPU{ spuState=State{ spiBounceFilter, spiReceive, spiSend } }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
-            SPIPorts{ externalPorts=Slave{..}, .. }
+            SPIPorts{ externalPorts, .. }
             cntx@Cntx{ cntxCycleNumber, cntxProcess }
         | let
             receivedVariablesSeq = reverse $ map head $ fst spiReceive
@@ -271,71 +272,126 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
                     placeholder = replicate (frameWordCount - length xs) [qc|{ wordWidth }'d00|]
                 in S.join ", " (xs' ++ placeholder)
 
-            receiveCycle transmit = let
-                    xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
-                in fixIndent [qc|
+        = case externalPorts of
+            _ | frameWordCount == 0 -> ""
+            Slave{..} -> let
+                    receiveCycle transmit = let
+                            xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
+                        in fixIndent [qc|
 |
-|                   { tag }_master_in = \{ { toVerilogLiteral xs } }; // { xs }
-|                   { tag }_start_transaction = 1;                           @(posedge { signalClk });
-|                   { tag }_start_transaction = 0;                           @(posedge { signalClk });
-|                   repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
-|               |]
+|                           { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
+|                           { tag }_io_test_start_transaction = 1;                           @(posedge { signalClk });
+|                           { tag }_io_test_start_transaction = 0;                           @(posedge { signalClk });
+|                           repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
+|                       |]
 
-            sendingAssert transmit = let
-                    xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
+                    sendingAssert transmit = let
+                            xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
+                        in fixIndent [qc|
+|
+|                           @(posedge { tag }_io_test_start_transaction);
+|                               $display( "{ tag }_io_test_output except: %H (\{ { toVerilogLiteral xs } })", \{ { toVerilogLiteral xs } } );
+|                               $display( "{ tag }_io_test_output actual: %H", { tag }_io_test_output );
+|                               if ( { tag }_io_test_output !=  \{ { toVerilogLiteral xs } } )
+|                                   $display("                       FAIL");
+|                               $display();
+|                       |]
                 in fixIndent [qc|
+|                   // SPI Input/Output environment
+|                   // { show pu }
+|                   reg { tag }_io_test_start_transaction;
+|                   reg  [{ frameWidth }-1:0] { tag }_io_test_input;
+|                   wire { tag }_io_test_ready;
+|                   wire [{ frameWidth }-1:0] { tag }_io_test_output;
+|                   spi_master_driver #
+|                           ( .DATA_WIDTH( { frameWidth } )
+|                           , .SCLK_HALFPERIOD( 1 )
+|                           ) { tag }_io_test
+|                       ( .clk( { signalClk } )
+|                       , .rst( { signalRst } )
+|                       , .start_transaction( { tag }_io_test_start_transaction )
+|                       , .data_in( { tag }_io_test_input )
+|                       , .data_out( { tag }_io_test_output )
+|                       , .ready( { tag }_io_test_ready )
+|                       , .mosi( { inputPort slave_mosi } )
+|                       , .miso( { outputPort slave_miso } )
+|                       , .sclk( { inputPort slave_sclk } )
+|                       , .cs( { inputPort slave_cs } )
+|                       );
+|                   initial { tag }_io_test.inner.shiftreg <= 0;
 |
-|                   @(posedge { tag }_start_transaction);
-|                           $display( "{ tag }_master_out except: %H (\{ { toVerilogLiteral xs } })", \{ { toVerilogLiteral xs } } );
-|                           $display( "{ tag }_master_out actual: %H", { tag }_master_out );
-|                           if ( { tag }_master_out !=  \{ { toVerilogLiteral xs } } )
-|                               $display("                       FAIL");
-|                           $display();
+|                   // SPI Input signal generation
+|                   initial begin
+|                       { tag }_io_test_start_transaction <= 0; { tag }_io_test_input <= 0;
+|                       @(negedge { signalRst });
+|                       repeat({ timeLag }) @(posedge { signalClk });
+|                       { S.join "" $ map receiveCycle receivedVarsValues }
+|                       repeat(70) @(posedge { signalClk });
+|                       // $finish; // DON'T DO THAT (with this line test can pass without data checking)
+|                   end
+|
+|                   // SPI Output signal checking
+|                   initial begin
+|                       @(negedge { signalRst });
+|                       repeat (3) @(posedge { tag }_io_test_start_transaction); // latency
+|                       { S.join "" $ map sendingAssert sendedVarsValues }
+|                   end
 |               |]
+            Master{..} -> let
+                    receiveCycle transmit = let
+                            xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
+                        in fixIndent [qc|
+|
+|                           { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
+|                           @(posedge { tag }_io_test_ready);
+|                       |]
 
-        , frameWordCount > 0
-        = fixIndent [qc|
-|           // SPI Input/Output environment
-|           // { show pu }
-|           // { show receivedVarsValues }
-|           // { cntxCycleNumber }
-|           reg { tag }_start_transaction;
-|           reg  [{ frameWidth }-1:0] { tag }_master_in;
-|           wire { tag }_ready;
-|           wire [{ frameWidth }-1:0] { tag }_master_out;
-|           spi_master_driver #
-|                   ( .DATA_WIDTH( { frameWidth } )
-|                   , .SCLK_HALFPERIOD( 1 )
-|                   ) { tag }_master
-|               ( .clk( { signalClk } )
-|               , .rst( { signalRst } )
-|               , .start_transaction( { tag }_start_transaction )
-|               , .data_in( { tag }_master_in )
-|               , .data_out( { tag }_master_out )
-|               , .ready( { tag }_ready )
-|               , .mosi( { inputPort slave_mosi } )
-|               , .miso( { outputPort slave_miso } )
-|               , .sclk( { inputPort slave_sclk } )
-|               , .cs( { inputPort slave_cs } )
-|               );
-|           initial { tag }_master.inner.shiftreg <= 0;
+
+                    sendingAssert transmit = let
+                            xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
+                        in fixIndent [qc|
 |
-|           // SPI Input signal generation
-|           initial begin
-|               { tag }_start_transaction <= 0; { tag }_master_in <= 0;
-|               @(negedge { signalRst });
-|               repeat({ timeLag }) @(posedge { signalClk });
-|               { S.join "" $ map receiveCycle receivedVarsValues }
-|               repeat(70) @(posedge { signalClk });
-|               // $finish; // DON'T DO THAT (with this line test can pass without data checking)
-|           end
+|                          @(posedge { tag }_io_test_ready);
+|                                   $display( "{ tag }_io_test_output except: %H (\{ { toVerilogLiteral xs } })", \{ { toVerilogLiteral xs } } );
+|                                   $display( "{ tag }_io_test_output actual: %H", { tag }_io_test_output );
+|                                   if ( { tag }_io_test_output !=  \{ { toVerilogLiteral xs } } )
+|                                       $display("                       FAIL");
+|                                   $display();
+|                       |]
+                in fixIndent [qc|
+|                   // SPI Input/Output environment
+|                   // { show pu }
+|                   reg { tag }_io_test_start_transaction;
+|                   reg  [{ frameWidth }-1:0] { tag }_io_test_input;
+|                   wire { tag }_io_test_ready;
+|                   wire [{ frameWidth }-1:0] { tag }_io_test_output;
+|                   spi_slave_driver #
+|                           ( .DATA_WIDTH( { frameWidth } )
+|                           ) { tag }_io_test_slave
+|                       ( .clk( { signalClk } )
+|                       , .rst( { signalRst } )
+|                       , .data_in( { tag }_io_test_input )
+|                       , .data_out( { tag }_io_test_output )
+|                       , .ready( { tag }_io_test_ready )
+|                       , .mosi( { outputPort master_mosi } )
+|                       , .miso( { inputPort master_miso } )
+|                       , .sclk( { outputPort master_sclk } )
+|                       , .cs( { outputPort master_cs } )
+|                       );
 |
-|           // SPI Output signal checking
-|           initial begin
-|               @(negedge { signalRst });
-|               repeat (3) @(posedge { tag }_start_transaction); // latency
-|               { S.join "" $ map sendingAssert sendedVarsValues }
-|           end
+|                   // SPI Input signal generation
+|                   initial begin
+|                       $display("----------------------------------------------------     FAIL");
+|                       @(negedge { signalRst });
+|                       { S.join "" $ map receiveCycle receivedVarsValues }
+|                       repeat(70) @(posedge { signalClk });
+|                       // $finish; // DON'T DO THAT (with this line test can pass without data checking)
+|                   end
 |
-|           |]
-        | otherwise = ""
+|                   // SPI Output signal checking
+|                   initial begin
+|                       @(negedge { signalRst });
+|                       repeat(2) @(posedge { tag }_io_test_ready);
+|                       { S.join "" $ map sendingAssert sendedVarsValues }
+|                   end
+|               |]
