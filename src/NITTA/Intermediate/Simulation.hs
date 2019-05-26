@@ -15,8 +15,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Intermediate.Simulation
-    ( -- *Arithmetics
-      simulateDataFlowGraph, simulateAlg
+    ( simulateDataFlowGraph, simulateAlg
     , reorderAlgorithm
     ) where
 
