@@ -23,7 +23,7 @@ module NITTA.Model.ProcessorUnits.IO.SPI
     ( Ports(..)
     , ExternalPorts(..)
     , SPI
-    , slaveSPI
+    , anySPI
     ) where
 
 import           Data.Bits                                 (finiteBitSize)
@@ -59,8 +59,8 @@ data State v x t
 instance Default (State v x t) where
     def = State def def 2
 
-slaveSPI :: ( Time t ) => Int -> SPI v x t
-slaveSPI bounceFilter = SerialPU (State def def bounceFilter) def def def{ nextTick = 1 } def
+anySPI :: ( Time t ) => Int -> SPI v x t
+anySPI bounceFilter = SerialPU (State def def bounceFilter) def def def{ nextTick = 1 } def
 
 
 

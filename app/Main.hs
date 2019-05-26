@@ -105,7 +105,7 @@ runHardcoded = do
             , ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } )
             , ("accum", PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } )
             , ("spi", PU def
-                (slaveSPI 0)
+                (anySPI 0)
                 SPIPorts
                     { wr=SignalTag 22, oe=SignalTag 23
                     , stop="stop"
@@ -147,7 +147,7 @@ microarch = busNetwork 31 (Just False)
     -- , ("shift", PU def S.Ports{ S.work=SignalTag 12, S.direction=SignalTag 13, S.mode=SignalTag 14, S.step=SignalTag 15, S.init=SignalTag 16, S.oe=SignalTag 17 })
     , ("accum", PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } )
     , ("spi", PU def
-        (slaveSPI 0)
+        (anySPI 0)
         SPIPorts
             { wr=SignalTag 22, oe=SignalTag 23
             , stop="stop"

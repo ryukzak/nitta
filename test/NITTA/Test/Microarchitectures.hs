@@ -66,7 +66,7 @@ marchSPI _proxy = busNetwork 31 (Just False)
     , ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } )
     , ("shift", PU def def ShiftPorts{ work=SignalTag 12, direction=SignalTag 13, mode=SignalTag 14, step=SignalTag 15, init=SignalTag 16, oe=SignalTag 17 })
     , ("accum", PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } )
-    , ("spi", PU def (slaveSPI 0) SPIPorts
+    , ("spi", PU def (anySPI 0) SPIPorts
         { wr=SignalTag 22, oe=SignalTag 23
         , stop="stop"
         , externalPorts=Slave
