@@ -83,6 +83,10 @@ runTestbench tDFG tMicroArch
         , tMicroArch
         , tDFG
         , tVerbose=True
+        , tReceivedValues=
+            [ ( "a:0", [1, 2, 3, 4, 5, 6] )
+            , ( "b:0", [1, 1, 1, 1, 1, 1] )
+            ]
         }
 
 

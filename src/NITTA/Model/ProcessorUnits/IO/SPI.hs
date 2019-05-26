@@ -186,18 +186,16 @@ instance Connected (SPI v x t) where
             }
         deriving ( Show )
 
-    externalInputPorts SPIPorts{ externalPorts=Slave{ slave_mosi, slave_sclk, slave_cs } }
-        = [ slave_mosi, slave_sclk, slave_cs ]
-    externalInputPorts _ = undefined
+    externalInputPorts SPIPorts{ externalPorts=Slave{..} } = [ slave_mosi, slave_sclk, slave_cs ]
+    externalInputPorts SPIPorts{ externalPorts=Master{..} } = [ master_miso ]
 
-    externalOutputPorts SPIPorts{ externalPorts=Slave{ slave_miso } }
-        = [ slave_miso ]
-    externalOutputPorts _ = undefined
+    externalOutputPorts SPIPorts{ externalPorts=Slave{..} } = [ slave_miso ]
+    externalOutputPorts SPIPorts{ externalPorts=Master{..} } = [ master_mosi, master_sclk, master_cs ]
 
 
 instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
-    moduleName _ _ = "pu_slave_spi"
-    hardware tag pu
+    moduleName _ _ = "pu_spi"
+    hardware _tag _pu
         = Aggregate Nothing
             [ FromLibrary "spi/pu_slave_spi_driver.v"
             , FromLibrary "spi/spi_slave_driver.v"
@@ -207,75 +205,108 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
             , FromLibrary "spi/spi_master_driver.v"
             , FromLibrary "spi/nitta_to_spi_splitter.v"
             , FromLibrary "spi/spi_to_nitta_splitter.v"
-            , FromLibrary $ "spi/" ++ moduleName tag pu ++ ".v"
+            , FromLibrary "spi/pu_slave_spi.v"
+            , FromLibrary "spi/pu_master_spi.v"
             ]
     software _ pu = Immediate "transport.txt" $ show pu
+    hardwareInstance _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
     hardwareInstance
             tag
             SerialPU{ spuState=State{ spiBounceFilter } }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
-            SPIPorts{ externalPorts=Slave{..}, .. }
+            SPIPorts{ externalPorts, .. }
         = fixIndent [qc|
-|           pu_slave_spi
+|           { module_ externalPorts }
 |               #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                , .ATTR_WIDTH( { show parameterAttrWidth } )
 |                , .BOUNCE_FILTER( { show spiBounceFilter } )
 |                ) { tag }
 |               ( .clk( { signalClk } )
 |               , .rst( { signalRst } )
+|               , .flag_stop( { stop } )
 |               , .signal_cycle( { signalCycle } )
 |               , .signal_oe( { signal oe } )
 |               , .signal_wr( { signal wr } )
-|               , .flag_stop( { stop } )
-|               , .data_in( { dataIn } )
-|               , .attr_in( { attrIn } )
-|               , .data_out( { dataOut } )
-|               , .attr_out( { attrOut } )
-|               , .mosi( { inputPort slave_mosi } )
-|               , .miso( { outputPort slave_miso } )
-|               , .sclk( { inputPort slave_sclk } )
-|               , .cs( { inputPort slave_cs } )
+|               , .data_in( { dataIn } ), .attr_in( { attrIn } )
+|               , .data_out( { dataOut } ), .attr_out( { attrOut } )
+|               { extIO externalPorts }
 |               );
 |           |]
-    hardwareInstance _ _ _ _ = undefined
-
-
-receiveSequence SerialPU{ spuState=State{ spiReceive } } = reverse $ map head $ fst spiReceive
-sendSequence SerialPU{ spuState=State{ spiSend } } = reverse $ fst spiSend
+            where
+                module_ Slave{}  = "pu_slave_spi"
+                module_ Master{} = "pu_master_spi"
+                extIO Slave{..} = fixIndent [qc|
+|                   , .mosi( { inputPort slave_mosi } )
+|                   , .miso( { outputPort slave_miso } )
+|                   , .sclk( { inputPort slave_sclk } )
+|                   , .cs( { inputPort slave_cs } )
+|           |]
+                extIO Master{..} = fixIndent [qc|
+|                   , .mosi( { outputPort master_mosi } )
+|                   , .miso( { inputPort master_miso } )
+|                   , .sclk( { outputPort master_sclk } )
+|                   , .cs( { outputPort master_cs } )
+|           |]
 
 instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
     componentTestEnvironment
             tag
-            pu@SerialPU{ spuState=State{ spiBounceFilter } }
+            pu@SerialPU{ spuState=State{ spiBounceFilter, spiReceive, spiSend } }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
             SPIPorts{ externalPorts=Slave{..}, .. }
-            cntx@Cntx{ cntxCycleNumber }
+            cntx@Cntx{ cntxCycleNumber, cntxProcess }
         | let
+            receivedVariablesSeq = reverse $ map head $ fst spiReceive
+            receivedVarsValues = take cntxCycleNumber $ cntxReceivedBySlice cntx
+            sendedVariableSeq = reverse $ fst spiSend
+            sendedVarsValues = take cntxCycleNumber $ map cycleCntx cntxProcess
+
             wordWidth = finiteBitSize (def :: x)
-            frameWordCount = max (length $ receiveSequence pu) (length $ sendSequence pu)
+            frameWordCount = max (length receivedVariablesSeq) (length $ sendedVariableSeq)
             frameWidth = frameWordCount * wordWidth
-            slices = take cntxCycleNumber $ cntxReceivedBySlice cntx
-            ioCycle transmit = fixIndent [qc|
+            timeLag = 10 :: Int
+
+            toVerilogLiteral xs = let
+                    xs' = map (\d -> [qc|{ wordWidth }'sd{ verilogInteger d }|]) xs
+                    placeholder = replicate (frameWordCount - length xs) [qc|{ wordWidth }'d00|]
+                in S.join ", " (xs' ++ placeholder)
+
+            receiveCycle transmit = let
+                    xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
+                in fixIndent [qc|
 |
-|                   { tag }_master_in = \{ { dt' } }; // { dt }
+|                   { tag }_master_in = \{ { toVerilogLiteral xs } }; // { xs }
 |                   { tag }_start_transaction = 1;                           @(posedge { signalClk });
 |                   { tag }_start_transaction = 0;                           @(posedge { signalClk });
 |                   repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
 |               |]
-                where
-                    dt = map (\v -> fromMaybe def $ transmit M.!? v) $ receiveSequence pu
-                    dt' = S.join ", " $ map (\d -> [qc|{ wordWidth }'sd{ verilogInteger d }|]) dt ++ replicate (frameWordCount - length dt) [qc|{ wordWidth }'d00|]
+
+            sendingAssert transmit = let
+                    xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
+                in fixIndent [qc|
+|
+|                   @(posedge { tag }_start_transaction);
+|                           $display( "{ tag }_master_out except: %H (\{ { toVerilogLiteral xs } })", \{ { toVerilogLiteral xs } } );
+|                           $display( "{ tag }_master_out actual: %H", { tag }_master_out );
+|                           if ( { tag }_master_out !=  \{ { toVerilogLiteral xs } } )
+|                               $display("                       FAIL");
+|                           $display();
+|               |]
+
         , frameWordCount > 0
         = fixIndent [qc|
+|           // SPI Input/Output environment
 |           // { show pu }
+|           // { show receivedVarsValues }
+|           // { cntxCycleNumber }
 |           reg { tag }_start_transaction;
 |           reg  [{ frameWidth }-1:0] { tag }_master_in;
 |           wire { tag }_ready;
 |           wire [{ frameWidth }-1:0] { tag }_master_out;
-|           spi_master_driver
-|               #( .DATA_WIDTH( { frameWidth } )
-|                , .SCLK_HALFPERIOD( 1 )
-|                ) { tag }_master
+|           spi_master_driver #
+|                   ( .DATA_WIDTH( { frameWidth } )
+|                   , .SCLK_HALFPERIOD( 1 )
+|                   ) { tag }_master
 |               ( .clk( { signalClk } )
 |               , .rst( { signalRst } )
 |               , .start_transaction( { tag }_start_transaction )
@@ -289,14 +320,22 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
 |               );
 |           initial { tag }_master.inner.shiftreg <= 0;
 |
+|           // SPI Input signal generation
 |           initial begin
 |               { tag }_start_transaction <= 0; { tag }_master_in <= 0;
 |               @(negedge { signalRst });
-|               repeat(8) @(posedge { signalClk });
-|               { S.join "" $ map ioCycle slices }
+|               repeat({ timeLag }) @(posedge { signalClk });
+|               { S.join "" $ map receiveCycle receivedVarsValues }
 |               repeat(70) @(posedge { signalClk });
 |               // $finish; // DON'T DO THAT (with this line test can pass without data checking)
 |           end
+|
+|           // SPI Output signal checking
+|           initial begin
+|               @(negedge { signalRst });
+|               repeat (3) @(posedge { tag }_start_transaction); // latency
+|               { S.join "" $ map sendingAssert sendedVarsValues }
+|           end
+|
 |           |]
         | otherwise = ""
-    componentTestEnvironment _ _ _ _ _ = undefined
