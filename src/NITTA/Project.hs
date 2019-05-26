@@ -152,7 +152,7 @@ runTargetSynthesis TargetSynthesis
     synthesis rootNode >>= \case
         Left err -> return $ Left err
         Right leafNode -> fmap Right $ do
-            let prj = project leafNode
+            let prj = project leafNode tDFG'
             write prj
             testbench prj
     where
@@ -172,12 +172,12 @@ runTargetSynthesis TargetSynthesis
                 then Right leafNode
                 else Left "synthesis process - fail"
 
-        project Node{ nModel=ModelState{ mUnit } } = Project
+        project Node{ nModel=ModelState{ mUnit } } alg = Project
             { pName=tName
             , pLibPath=tLibPath
             , pPath=joinPath [ tPath, tName ]
             , pUnit=mUnit
-            , pTestCntx=D.def{ cntxReceived=M.fromList tReceivedValues }
+            , pTestCntx=simulateDataFlowGraph def tReceivedValues alg
             }
 
         write prj@Project{ pPath } = do
