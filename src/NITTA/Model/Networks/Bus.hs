@@ -364,9 +364,19 @@ bindedFunctions puTitle BusNetwork{ bnBinded }
 
 programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
-allExternalInputs pus = map (\(InputPortTag n) -> n) $ concatMap (\PU{ ports } -> externalInputPorts ports ) $ M.elems pus
-allExternalOutputs pus = map (\(OutputPortTag n) -> n) $ concatMap (\PU{ ports } -> externalOutputPorts ports ) $ M.elems pus
+externalPorts pus = M.assocs $ M.map (
+        \PU{ ports } -> 
+            ( map inputPortTag $ externalInputPorts ports
+            , map outputPortTag $ externalOutputPorts ports
+            )
+    ) pus
 
+externalPortsDecl ports = S.join "\n" $ concatMap (
+        \(tag, (is, os)) -> 
+            ("    // external ports for: " ++ tag) 
+            :  map ("        , input " ++) is
+            ++ map ("        , output " ++) os
+    ) ports
 
 
 instance ( VarValTime v x t
@@ -385,8 +395,7 @@ instance ( VarValTime v x t
 |                       ( input                     clk
 |                       , input                     rst
 |                       , output                    cycle
-|                   { S.join "\\n" $ map ("    , input " ++) $ allExternalInputs bnPus }
-|                   { S.join "\\n" $ map ("    , output " ++) $ allExternalOutputs bnPus }
+|                   { externalPortsDecl $ externalPorts bnPus }
 |                       , output              [7:0] debug_status
 |                       , output              [7:0] debug_bus1
 |                       , output              [7:0] debug_bus2
@@ -485,8 +494,8 @@ instance ( VarValTime v x t
 instance Connected (BusNetwork tag v x t) where
     data Ports (BusNetwork tag v x t)
         = NetPorts
-            { extInputs :: [InputPortTag]
-            , extOutputs :: [OutputPortTag]
+            { extInputs :: [ InputPortTag ]
+            , extOutputs :: [ OutputPortTag ]
             }
         deriving ( Show )
     externalInputPorts = extInputs
@@ -494,17 +503,15 @@ instance Connected (BusNetwork tag v x t) where
 
 
 
-instance ( UnitTag tag, VarValTime v x t
-         , TargetSystemComponent (BusNetwork tag v x t)
-         ) => Testable (BusNetwork tag v x t) v x where
+instance ( VarValTime v x t
+         , TargetSystemComponent (BusNetwork String v x t)
+         ) => Testable (BusNetwork String v x t) v x where
     testBenchImplementation
                 Project
                     { pName
                     , pUnit=n@BusNetwork{ bnProcess, bnPus, bnAllowDrop }
                     , pTestCntx=pTestCntx@Cntx{ cntxProcess, cntxCycleNumber }
                     } = let
-            ioPorts = allExternalInputs bnPus ++  allExternalOutputs bnPus
-
             testEnv = S.join "\\n\\n"
                 [ tbEnv
                 | (t, PU{ unit, systemEnv, ports }) <- M.assocs bnPus
@@ -512,7 +519,9 @@ instance ( UnitTag tag, VarValTime v x t
                 , let tbEnv = componentTestEnvironment t' unit systemEnv ports pTestCntx
                 , not $ null tbEnv
                 ]
-            externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") ioPorts)
+
+            externalPortNames = concatMap ( \(_tag, (is, os)) -> is ++ os ) $ externalPorts bnPus
+            externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") externalPortNames)
 
             tickWithTransfers = map
                 ( \cycleCntx -> map
@@ -546,7 +555,7 @@ instance ( UnitTag tag, VarValTime v x t
 |               */
 |
 |               reg clk, rst;
-|               { if null ioPorts then "" else "wire " ++ S.join ", " ioPorts ++ ";" }
+|               { if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
 |
 |               wire cycle;
 |

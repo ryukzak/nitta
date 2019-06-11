@@ -238,8 +238,8 @@ class Connected u where
 
 
 newtype SignalTag = SignalTag Int deriving ( Show, Eq, Ord, Ix )
-newtype InputPortTag = InputPortTag String deriving ( Show, Eq, Ord )
-newtype OutputPortTag = OutputPortTag String deriving ( Show, Eq, Ord )
+newtype InputPortTag = InputPortTag{ inputPortTag :: String } deriving ( Show, Eq, Ord )
+newtype OutputPortTag = OutputPortTag{ outputPortTag :: String } deriving ( Show, Eq, Ord )
 
 
 
