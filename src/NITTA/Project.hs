@@ -139,8 +139,8 @@ instance ( VarValTime v x t, Semigroup v ) => Default (TargetSynthesis (BusNetwo
         , tVerbose=False
         , tSynthesisMethod=simpleSynthesisIO
         , tWriteProject=writeWholeProject
-        , tLibPath="../.."
-        , tPath=joinPath [ "hdl", "gen" ]
+        , tLibPath="../../hdl"
+        , tPath=joinPath [ "gen" ]
         }
 
 
