@@ -101,5 +101,7 @@ instance TargetSystemComponent (PU v x t) where
     hardwareInstance name pu = hardwareInstance name pu
 
 instance IOTestBench (PU v x t) v x where
-    componentTestEnvironment name PU{ unit, systemEnv, ports } _systemEnv _links cntxs
-        = componentTestEnvironment name unit systemEnv ports cntxs
+    testEnvironmentInitFlag tag PU{ unit } = testEnvironmentInitFlag tag unit
+
+    testEnvironment tag PU{ unit, systemEnv, ports } _systemEnv _links cntxs
+        = testEnvironment tag unit systemEnv ports cntxs

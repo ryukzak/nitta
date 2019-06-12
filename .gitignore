@@ -11,5 +11,6 @@
 *.tix
 *.prof
 hdl/gen/*
+gen/*
 .vscode/*
 web/api.txt

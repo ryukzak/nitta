@@ -1,7 +1,8 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-# OPTIONS_GHC -fno-cse #-}
@@ -82,9 +83,9 @@ module NITTA.Project
 
 import           Control.Monad                    (when)
 import           Data.Default                     as D
-import qualified Data.Map                         as M
 import           Data.Text                        (Text)
 import           NITTA.Frontend
+import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus         (BusNetwork)
 import           NITTA.Model.Problems.Whole
@@ -138,8 +139,8 @@ instance ( VarValTime v x t, Semigroup v ) => Default (TargetSynthesis (BusNetwo
         , tVerbose=False
         , tSynthesisMethod=simpleSynthesisIO
         , tWriteProject=writeWholeProject
-        , tLibPath="../.."
-        , tPath=joinPath [ "hdl", "gen" ]
+        , tLibPath="../../hdl"
+        , tPath=joinPath [ "gen" ]
         }
 
 
@@ -172,12 +173,12 @@ runTargetSynthesis TargetSynthesis
                 then Right leafNode
                 else Left "synthesis process - fail"
 
-        project Node{ nModel=ModelState{ mUnit } } = Project
+        project Node{ nModel=ModelState{ mUnit, mDataFlowGraph } } = Project
             { pName=tName
             , pLibPath=tLibPath
             , pPath=joinPath [ tPath, tName ]
             , pUnit=mUnit
-            , pTestCntx=D.def{ cntxReceived=M.fromList tReceivedValues }
+            , pTestCntx=simulateDataFlowGraph def tReceivedValues mDataFlowGraph -- because application algorithm can be refactored
             }
 
         write prj@Project{ pPath } = do

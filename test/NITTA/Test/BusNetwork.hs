@@ -47,8 +47,8 @@ test_fibonacci =
         , F.loop 1  "c"  ["b1", "b2"]
         , F.add "a1" "b1" ["c"]
         ]
-    , algTestCase "io_drop_data" (marchSPIDropData proxyInt) algWithSend
-    , algTestCase "io_no_drop_data" (marchSPI proxyInt) algWithSend
+    , algTestCase "io_drop_data" (marchSPIDropData True proxyInt) algWithSend
+    , algTestCase "io_no_drop_data" (marchSPI True proxyInt) algWithSend
     ]
     where
         algWithSend =
@@ -62,7 +62,7 @@ test_fibonacci =
 test_io =
     [ testCase "receive two variables" $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
         { tName="double_receive"
-        , tMicroArch=marchSPI proxyInt
+        , tMicroArch=marchSPI True proxyInt
         , tReceivedValues=[ ("a", [10..15]), ("b", [20..25]) ]
         , tDFG=fsToDataFlowGraph
             [ F.receive ["a"]

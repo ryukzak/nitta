@@ -242,6 +242,8 @@ instance Default (Cntx v x) where
         , cntxCycleNumber=5
         }
 
+-- |Make sequence of received values [ Map v x ]
+cntxReceivedBySlice :: ( Ord v ) => Cntx v x -> [ M.Map v x ]
 cntxReceivedBySlice Cntx{ cntxReceived } = cntxReceivedBySlice' $ M.assocs cntxReceived
 cntxReceivedBySlice' received
     | all (not . null . snd) received
@@ -249,7 +251,7 @@ cntxReceivedBySlice' received
         slice = M.fromList [ (v, x) | ( v, x:_ ) <- received ]
         received' = [ (v, xs) | ( v, _:xs ) <- received ]
     in slice : cntxReceivedBySlice' received'
-    | otherwise = []
+    | otherwise = repeat M.empty
 
 getX (CycleCntx cntx) v = case cntx M.!? v of
         Just x  -> Right x
