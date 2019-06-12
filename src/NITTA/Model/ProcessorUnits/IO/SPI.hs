@@ -249,8 +249,10 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
 |           |]
 
 instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
-    componentTestEnvironment _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
-    componentTestEnvironment
+    testEnvironmentInitFlag tag _pu = Just $ tag ++ "_env_init_flag"
+
+    testEnvironment _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
+    testEnvironment
             tag
             pu@SerialPU{ spuState=State{ spiBounceFilter, spiReceive, spiSend } }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
@@ -272,6 +274,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
                     placeholder = replicate (frameWordCount - length xs) [qc|{ wordWidth }'d00|]
                 in S.join ", " (xs' ++ placeholder)
 
+            Just envInitFlagName = testEnvironmentInitFlag tag pu
         = case externalPorts of
             _ | frameWordCount == 0 -> ""
             Slave{..} -> let
@@ -283,12 +286,11 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
 |                           { tag }_io_test_start_transaction = 1;                           @(posedge { signalClk });
 |                           { tag }_io_test_start_transaction = 0;                           @(posedge { signalClk });
 |                           repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
-|                       |]
+|                   |]
 
                     sendingAssert transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
                         in fixIndent [qc|
-|
 |                           @(posedge { tag }_io_test_start_transaction);
 |                               $display( "{ tag }_io_test_output except: %H (\{ { toVerilogLiteral xs } })", \{ { toVerilogLiteral xs } } );
 |                               $display( "{ tag }_io_test_output actual: %H", { tag }_io_test_output );
@@ -303,6 +305,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
 |                   reg  [{ frameWidth }-1:0] { tag }_io_test_input;
 |                   wire { tag }_io_test_ready;
 |                   wire [{ frameWidth }-1:0] { tag }_io_test_output;
+|                   initial { envInitFlagName } <= 0; // should be defined on the testbench level.
 |                   spi_master_driver #
 |                           ( .DATA_WIDTH( { frameWidth } )
 |                           , .SCLK_HALFPERIOD( 1 )
@@ -325,6 +328,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
 |                       { tag }_io_test_start_transaction <= 0; { tag }_io_test_input <= 0;
 |                       @(negedge { signalRst });
 |                       repeat({ timeLag }) @(posedge { signalClk });
+|                       { envInitFlagName } <= 1;
 |                       { S.join "" $ map receiveCycle receivedVarsValues }
 |                       repeat(70) @(posedge { signalClk });
 |                       // $finish; // DON'T DO THAT (with this line test can pass without data checking)
@@ -341,11 +345,9 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
                     receiveCycle transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
                         in fixIndent [qc|
-|
 |                           { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
 |                           @(posedge { tag }_io_test_ready);
-|                       |]
-
+|                   |]
 
                     sendingAssert transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
@@ -365,6 +367,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
 |                   reg  [{ frameWidth }-1:0] { tag }_io_test_input;
 |                   wire { tag }_io_test_ready;
 |                   wire [{ frameWidth }-1:0] { tag }_io_test_output;
+|                   initial { envInitFlagName } <= 0; // should be defined on the testbench level.
 |                   spi_slave_driver #
 |                           ( .DATA_WIDTH( { frameWidth } )
 |                           ) { tag }_io_test_slave
@@ -381,9 +384,10 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
 |
 |                   // SPI Input signal generation
 |                   initial begin
-|                       $display("----------------------------------------------------     FAIL");
 |                       @(negedge { signalRst });
-|                       { S.join "" $ map receiveCycle receivedVarsValues }
+|               { receiveCycle $ head receivedVarsValues }
+|                       { envInitFlagName } <= 1;
+|               { S.join "" $ map receiveCycle $ tail receivedVarsValues }
 |                       repeat(70) @(posedge { signalClk });
 |                       // $finish; // DON'T DO THAT (with this line test can pass without data checking)
 |                   end

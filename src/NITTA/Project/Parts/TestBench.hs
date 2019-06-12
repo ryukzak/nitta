@@ -53,8 +53,11 @@ class Testable m v x | m -> v x where
 -- |Processor units with input/output ports should be tested by generation
 -- external input ports signals and checking output port signals.
 class IOTestBench pu v x | pu -> v x where
-    componentTestEnvironment :: String -> pu -> TargetEnvironment -> Ports pu -> Cntx v x -> String
-    componentTestEnvironment _title _pu _env _ports _cntx = ""
+    testEnvironmentInitFlag :: String -> pu -> Maybe String
+    testEnvironmentInitFlag _title _pu = Nothing
+
+    testEnvironment :: String -> pu -> TargetEnvironment -> Ports pu -> Cntx v x -> String
+    testEnvironment _title _pu _env _ports _cntx = ""
 
 
 data TestbenchReport

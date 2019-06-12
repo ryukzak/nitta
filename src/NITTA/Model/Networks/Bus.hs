@@ -47,7 +47,7 @@ import           Data.Bits                        (FiniteBits (..))
 import           Data.Default
 import           Data.List                        (find, groupBy, nub, sortOn)
 import qualified Data.Map                         as M
-import           Data.Maybe                       (catMaybes, isJust)
+import           Data.Maybe                       (catMaybes, isJust, mapMaybe)
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import           Data.Typeable
@@ -365,15 +365,15 @@ bindedFunctions puTitle BusNetwork{ bnBinded }
 programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
 externalPorts pus = M.assocs $ M.map (
-        \PU{ ports } -> 
+        \PU{ ports } ->
             ( map inputPortTag $ externalInputPorts ports
             , map outputPortTag $ externalOutputPorts ports
             )
     ) pus
 
 externalPortsDecl ports = S.join "\n" $ concatMap (
-        \(tag, (is, os)) -> 
-            ("    // external ports for: " ++ tag) 
+        \(tag, (is, os)) ->
+            ("    // external ports for: " ++ tag)
             :  map ("        , input " ++) is
             ++ map ("        , output " ++) os
     ) ports
@@ -407,7 +407,7 @@ instance ( VarValTime v x t
 |                   wire [MICROCODE_WIDTH-1:0] control_bus;
 |                   wire [DATA_WIDTH-1:0] data_bus;
 |                   wire [ATTR_WIDTH-1:0] attr_bus;
-|                   wire   start, stop;
+|                   wire start, stop;
 |
 |                   wire [7:0] debug_pc;
 |                   assign debug_status = \{ cycle, debug_pc[6:0] };
@@ -516,12 +516,13 @@ instance ( VarValTime v x t
                 [ tbEnv
                 | (t, PU{ unit, systemEnv, ports }) <- M.assocs bnPus
                 , let t' = filter (/= '"') $ show t
-                , let tbEnv = componentTestEnvironment t' unit systemEnv ports pTestCntx
+                , let tbEnv = testEnvironment t' unit systemEnv ports pTestCntx
                 , not $ null tbEnv
                 ]
 
             externalPortNames = concatMap ( \(_tag, (is, os)) -> is ++ os ) $ externalPorts bnPus
             externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") externalPortNames)
+            envInitFlags = mapMaybe (uncurry testEnvironmentInitFlag) $ M.assocs bnPus
 
             tickWithTransfers = map
                 ( \cycleCntx -> map
@@ -559,6 +560,10 @@ instance ( VarValTime v x t
 |
 |               wire cycle;
 |
+|               // test environment initialization flags
+|               reg { S.join ", " envInitFlags };
+|               assign envInitFlag = { S.join " && " $ "1'b1" : envInitFlags };
+|
 |               { moduleName pName n }
 |                   #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                    , .ATTR_WIDTH( 4 )
@@ -585,7 +590,8 @@ instance ( VarValTime v x t
 |                       // Start computational cycle from program[1] to program[n] and repeat.
 |                       // Signals effect to mUnit state after first clk posedge.
 |                       @(posedge clk);
-|               { assertions }
+|                       while (!envInitFlag) @(posedge clk);
+|{ assertions }
 |                       repeat ( 2000 ) @(posedge clk);
 |                       $finish;
 |                   end
