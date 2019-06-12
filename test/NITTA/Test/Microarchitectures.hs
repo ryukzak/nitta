@@ -60,8 +60,8 @@ march = busNetwork 31 (Just True)
 
 marchSPI ::
     ( Integral x, Val x
-    ) => Proxy x -> BusNetwork String String x Int
-marchSPI _proxy = busNetwork 31 (Just False)
+    ) => Bool -> Proxy x -> BusNetwork String String x Int
+marchSPI isSlave _proxy = busNetwork 31 (Just False)
     [ ("fram1", PU def def FramPorts{ oe=SignalTag 11, wr=SignalTag 10, addr=map SignalTag [9, 8, 7, 6] } )
     , ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } )
     , ("shift", PU def def ShiftPorts{ work=SignalTag 12, direction=SignalTag 13, mode=SignalTag 14, step=SignalTag 15, init=SignalTag 16, oe=SignalTag 17 })
@@ -69,19 +69,26 @@ marchSPI _proxy = busNetwork 31 (Just False)
     , ("spi", PU def (anySPI 0) SPIPorts
         { wr=SignalTag 22, oe=SignalTag 23
         , stop="stop"
-        , externalPorts=Slave
-            { slave_mosi=InputPortTag "mosi"
-            , slave_miso=OutputPortTag "miso"
-            , slave_sclk=InputPortTag "sclk"
-            , slave_cs=InputPortTag "cs"
-            }
+        , externalPorts=if isSlave
+            then Slave
+                { slave_mosi=InputPortTag "mosi"
+                , slave_miso=OutputPortTag "miso"
+                , slave_sclk=InputPortTag "sclk"
+                , slave_cs=InputPortTag "cs"
+                }
+            else Master
+                { master_mosi=OutputPortTag "mosi"
+                , master_miso=InputPortTag "miso"
+                , master_sclk=OutputPortTag "sclk"
+                , master_cs=OutputPortTag "cs"
+                }
         })
     , ("mul", PU def (multiplier True) MultiplierPorts{ wr=SignalTag 28, wrSel=SignalTag 29, oe=SignalTag 30 } )
     , ("div", PU def (divider 8 True) DividerPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26, oeSel=SignalTag 27 } )
     ]
 
 
-marchSPIDropData proxy = (marchSPI proxy){ bnAllowDrop=Just True }
+marchSPIDropData isSlave proxy = (marchSPI isSlave proxy){ bnAllowDrop=Just True }
 
 
 -----------------------------------------------------------

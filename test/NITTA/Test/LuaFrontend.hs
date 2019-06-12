@@ -224,7 +224,7 @@ luaSimpleTestCase testCaseName tName src
     = testCase testCaseName $ do
         report <- runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
             { tName
-            , tMicroArch=marchSPIDropData (Proxy :: Proxy Int)
+            , tMicroArch=marchSPIDropData True (Proxy :: Proxy Int)
             , tSourceCode=Just src
             }
         isRight report @? show report
@@ -242,26 +242,34 @@ genericLuaTestCase tName tReceivedValues src ma xProxy
 
 
 intLuaTestCases testName pName src = testGroup testName
-    [ genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy Int)
-    , genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy (IntX 32))
-    , genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy (IntX 48))
-    , genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy (IntX 128))
+    [ genericLuaTestCase pName [] src (marchSPIDropData True) (Proxy :: Proxy Int)
+    , genericLuaTestCase pName [] src (marchSPIDropData True) (Proxy :: Proxy (IntX 32))
+    , genericLuaTestCase pName [] src (marchSPIDropData True) (Proxy :: Proxy (IntX 48))
+    , genericLuaTestCase pName [] src (marchSPIDropData True) (Proxy :: Proxy (IntX 128))
     ]
 
 
 fixpLuaTestCases testName pName src = testGroup testName
-    [ genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy (FX 22 32))
-    , genericLuaTestCase pName [] src marchSPIDropData (Proxy :: Proxy (FX 42 64))
+    [ genericLuaTestCase pName [] src (marchSPIDropData True) (Proxy :: Proxy (FX 22 32))
+    , genericLuaTestCase pName [] src (marchSPIDropData True) (Proxy :: Proxy (FX 42 64))
     ]
 
 
 intIOLuaTestCases testName pName tReceivedValues src = testGroup testName
-    [ genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy Int)
-    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 24))
-    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 32))
-    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 40))
-    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 48))
-    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 64))
-    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 96))
-    , genericLuaTestCase pName tReceivedValues src marchSPI (Proxy :: Proxy (IntX 128))
+    [ genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy Int)
+    , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 24))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 32))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 40))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 48))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 64))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 96))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 128))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy Int)
+    , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 24))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 32))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 40))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 48))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 64))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 96))
+    , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 128))
     ]
