@@ -26,7 +26,7 @@ module NITTA.Model.ProcessorUnits.Types
     , descent, whatsHappen, extractInstructionAt
     , bind, allowToProcess
     , level, showPU
-    , Connected(..), SignalTag(..), InputPortTag(..), OutputPortTag(..), SignalValue(..), (+++)
+    , Connected(..), SignalTag(..), InputPortTag(..), OutputPortTag(..), InoutPortTag(..), SignalValue(..), (+++)
     , ByTime(..)
     ) where
 
@@ -240,6 +240,7 @@ class Connected u where
 newtype SignalTag = SignalTag Int deriving ( Show, Eq, Ord, Ix )
 newtype InputPortTag = InputPortTag{ inputPortTag :: String } deriving ( Show, Eq, Ord )
 newtype OutputPortTag = OutputPortTag{ outputPortTag :: String } deriving ( Show, Eq, Ord )
+newtype InoutPortTag = InoutPortTag{ inoutPortTag :: String } deriving ( Show, Eq, Ord )
 
 
 
