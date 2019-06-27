@@ -17,7 +17,6 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
-slave / master / slave-master?
 -}
 module NITTA.Model.ProcessorUnits.IO.SPI
     ( Ports(..)
