@@ -161,8 +161,8 @@ unitCoSimulationTestCase name u cntxCycle alg
     = testCase name $ do
         let prj = Project
                 { pName=name
-                , pLibPath=joinPath ["..", ".."]
-                , pPath=joinPath ["hdl", "gen", name]
+                , pLibPath=joinPath ["..", "..", "hdl"]
+                , pPath=joinPath ["gen", name]
                 , pUnit=bindAllAndNaiveSynthesis alg u
                 , pTestCntx=simulateAlg (CycleCntx $ M.fromList cntxCycle) [] alg
                 }
@@ -210,8 +210,8 @@ coSimulationTestProperty name u fsGen
             i <- run $ incrCounter 1 externalTestCntr
             res <- run $ writeAndRunTestbench Project
                 { pName=name
-                , pLibPath=joinPath ["..", ".."]
-                , pPath=joinPath ["hdl", "gen", name ++ "_" ++ show i]
+                , pLibPath=joinPath ["..", "..", "hdl"]
+                , pPath=joinPath ["gen", name ++ "_" ++ show i]
                 , pUnit
                 , pTestCntx
                 }
