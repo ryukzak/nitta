@@ -12,6 +12,12 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
+
+-- TODO: instance Bounded (IntX w)
+-- TODO: instance Bounded (FX m b w)
+-- TODO: instance Arbitrary (IntX w)
+-- TODO: instance Arbitrary (FX m b w)
+
 module NITTA.Intermediate.Values
   ( -- *Type classes
     FixedPointCompatible(..)

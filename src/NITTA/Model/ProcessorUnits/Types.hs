@@ -259,7 +259,7 @@ instance ( Show (Instruction pu)
     microcodeAt pu t = case extractInstructionAt pu t of
         []  -> def
         [i] -> decodeInstruction i
-        is  -> error $ "Ambiguously instruction at " ++ show t ++ ": " ++ show is
+        is  -> error $ "instruction collision at " ++ show t ++ " tick: " ++ show is ++ show (process pu)
 
 
 whatsHappen t Process{ steps } = filter (atSameTime t . sTime) steps
