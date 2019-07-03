@@ -26,7 +26,6 @@ module NITTA.Model.ProcessorUnits.Fram
 
 import           Control.Applicative              ((<|>))
 import           Control.Monad
-import           Data.Array
 import qualified Data.Array                       as A
 import           Data.Bits                        (finiteBitSize, testBit)
 import           Data.Default
@@ -45,7 +44,6 @@ import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           NITTA.Utils.Lens
 import           NITTA.Utils.Process
 import           Numeric.Interval                 (inf, sup, (...))
 import           Text.InterpolatedString.Perl6    (qc)
@@ -53,7 +51,7 @@ import           Text.InterpolatedString.Perl6    (qc)
 
 
 data Fram v x t = Fram
-    { memory     :: Array Int (Cell v x t) -- ^memory cell array
+    { memory     :: A.Array Int (Cell v x t) -- ^memory cell array
     , remainRegs :: [ (Reg v x, Job v x t) ] -- ^register queue
     , process_   :: Process v x t
     , size       :: Int -- ^memory size
@@ -62,7 +60,7 @@ data Fram v x t = Fram
 instance ( Default t, Default x
         ) => Default (Fram v x t) where
     def = Fram
-        { memory=listArray (0, defaultSize - 1) $ repeat def
+        { memory=A.listArray (0, defaultSize - 1) $ repeat def
         , remainRegs=[]
         , process_=def
         , size=defaultSize
@@ -578,7 +576,7 @@ testDataOutput tag fram@Fram{ process_=p@Process{ nextTick, steps } } cntx
 
 findAddress var fram@Fram{ process_=Process{ steps } }
     | [ time ] <- variableSendAt var
-    , [ instr ] <- map getAddr $ extractInstructionAt fram (time^.infimum)
+    , [ instr ] <- map getAddr $ extractInstructionAt fram (inf time)
     = instr
     | otherwise = error $ "Can't find instruction for effect of variable: " ++ show var ++ " " ++ show steps
     where
@@ -600,25 +598,26 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
             $ unlines $ map
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
                 $ A.elems memory
-    hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} =
-        [qc|pu_fram
-        #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-        , .ATTR_WIDTH( { show parameterAttrWidth } )
-        , .RAM_SIZE( { show size } )
-        , .FRAM_DUMP( "$path${ softwareFile tag fram }" )
-        ) { tag }
-        ( .clk( { signalClk } )
-        , .signal_addr( \{ { S.join ", " (map signal addr) } } )
-
-        , .signal_wr( { signal wr } )
-        , .data_in( { dataIn } )
-        , .attr_in( { attrIn } )
-
-        , .signal_oe( { signal oe } )
-        , .data_out( { dataOut } )
-        , .attr_out( { attrOut } )
-        );
-        |]
+    hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} 
+        = fixIndent [qc|
+|           pu_fram #
+|                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+|                   , .ATTR_WIDTH( { show parameterAttrWidth } )
+|                   , .RAM_SIZE( { show size } )
+|                   , .FRAM_DUMP( "$path${ softwareFile tag fram }" )
+|                   ) { tag }
+|               ( .clk( { signalClk } )
+|               , .signal_addr( \{ { S.join ", " (map signal addr) } } )
+|   
+|               , .signal_wr( { signal wr } )
+|               , .data_in( { dataIn } )
+|               , .attr_in( { attrIn } )
+|   
+|               , .signal_oe( { signal oe } )
+|               , .data_out( { dataOut } )
+|               , .attr_out( { attrOut } )
+|               );
+|           |]
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
         = error "Should be defined in network."
 
