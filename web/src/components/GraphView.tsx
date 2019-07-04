@@ -68,13 +68,13 @@ export class GraphView extends React.Component<GraphViewProps, GraphViewState> {
 
       graphUpdate(nid: number) {
         haskellAPI.getEdge(nid)
-        .then( (response: JSON) => {
+        .then( (response: any) => {
           let data = response.data;
           if ( data.eParameters !== null ) {
             let tag = data.eParameters.tag;
             if (tag === "BindCh") {
               let label = data.eDecision.contents[0];
-              this.state.graph.nodes.map(function(anObjectMapped: JSON, index: number) {
+              this.state.graph.nodes.map(function(anObjectMapped: any, index: number) {
                 if ( anObjectMapped.label === label ) {
                     anObjectMapped.shadow = { enabled: true, color: '#efe300', x: 3, y: 3, size: 10};
                 }
@@ -102,10 +102,10 @@ export class GraphView extends React.Component<GraphViewProps, GraphViewState> {
         .then((response: any) => {
             let newNid = response.data;
             let act = this;
-            newNid.nodes.map(function(anObjectMapped: JSON, index: number) {
+            newNid.nodes.map(function(anObjectMapped: any, index: number) {
               act.state.graph.nodes[index] = { id: index + 1, label: String(anObjectMapped.color), color: anObjectMapped.label };
             });
-            newNid.edges.map(function(anObjectMapped: JSON, index: number) {
+            newNid.edges.map(function(anObjectMapped: any, index: number) {
               act.state.graph.edges[index] = ({ from: anObjectMapped.from, to: anObjectMapped.to, label: anObjectMapped.label });
           });
 
