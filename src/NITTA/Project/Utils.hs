@@ -27,6 +27,7 @@ import qualified Data.List                        as L
 import qualified Data.String.Utils                as S
 import           Data.Text                        (pack)
 import           NITTA.Intermediate.Types
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Project.Parts.Icarus
 import           NITTA.Project.Parts.Quartus
 import           NITTA.Project.Parts.TargetSystem
@@ -71,6 +72,8 @@ runTestbench prj@Project{ pPath, pUnit } = do
 |               { files' }
 |           Functional blocks:
 |               { functions' }
+|           Steps:
+|               { steps' }
 |           -------------------------
 |           stdout:
 |           { pack out }
@@ -80,6 +83,7 @@ runTestbench prj@Project{ pPath, pUnit } = do
 |           |]
             where
                 files' = S.join "\n    " files
+                steps' = S.join "\n    " $ map show $ steps $ process $ pUnit
                 functions' = S.join "\n    " $ map show $ functions pUnit
 
     ( compileExitCode, compileOut, compileErr )

@@ -84,7 +84,7 @@ runTestbench tDFG tMicroArch
         , tMicroArch
         , tDFG
         , tVerbose=True
-        , tReceivedValues=
+        , tReceivedValues=filter (\(v, _x) -> notElem v $ variables tDFG)
             [ ( "a:0", [1, 2, 3, 4, 5, 6] )
             , ( "b:0", [1, 1, 1, 1, 1, 1] )
             ]

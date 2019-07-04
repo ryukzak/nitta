@@ -54,8 +54,8 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
         let reLastNidStep = /:[^:]*$/;
         let childNid = new RegExp( "^" + nid + ":[0-9]*$");
         haskellAPI.getSynthesis()
-            .then((response: JSON) => {
-                let buildHolder = (gNode: JSON, dNode: JSON) => {
+            .then((response: any) => {
+                let buildHolder = (gNode: any, dNode: JSON) => {
                     gNode.name = reLastNidStep.exec(dNode[0].svNnid)[0];
                     gNode.nid = dNode[0].svNnid;
                     if (gNode.nid === nid || childNid.test(gNode.nid)) {
@@ -87,7 +87,7 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
         let act = this;
         this.state.idsForCard.map(function(id, index){
             haskellAPI.getEdge(id)
-            .then((response: JSON) => {
+            .then((response: any) => {
                 curEdges.push(response.data);
                 if (maxEChar < response.data.eObjectiveFunctionValue) {
                     maxEChar = response.data.eObjectiveFunctionValue;

@@ -172,7 +172,7 @@ setProcessTime t = do
     p <- get
     put p{ nextTick=t }
 
-bindFB fb t = addStep (Event t) $ CADStep $ "Bind " ++ show fb
+bindFB fb t = addStep (Event t) $ CADStep $ "bind: " ++ show fb
 
 addInstr :: ( Typeable pu, Show (Instruction pu) ) => pu -> I.Interval t -> Instruction pu -> State (Process v x t) ProcessUid
 addInstr _pu t i = addStep (Activity t) $ InstructionStep i
@@ -183,7 +183,7 @@ endpointAt t p
     = case mapMaybe getEndpoint $ whatsHappen t p of
         [ep] -> Just ep
         []   -> Nothing
-        eps  -> error $ "Too many endpoint at a time: " ++ show eps
+        eps  -> error $ "endpoints collision at: " ++ show t ++ " " ++ show eps
 
 isFB s = isJust $ getFB s
 
