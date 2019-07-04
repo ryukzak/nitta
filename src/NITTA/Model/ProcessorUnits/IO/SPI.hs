@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE QuasiQuotes           #-}
@@ -25,82 +26,126 @@ module NITTA.Model.ProcessorUnits.IO.SPI
     , anySPI
     ) where
 
-import           Data.Bits                                 (finiteBitSize)
+import           Data.Bits                        (finiteBitSize)
 import           Data.Default
-import qualified Data.Map                                  as M
-import           Data.Maybe                                (catMaybes,
-                                                            fromMaybe)
-import           Data.Set                                  (elems, fromList,
-                                                            singleton)
-import qualified Data.String.Utils                         as S
-import           NITTA.Intermediate.Functions
+import           Data.List                        (partition)
+import qualified Data.Map                         as M
+import           Data.Maybe                       (catMaybes, fromMaybe)
+import qualified Data.Set                         as S
+import qualified Data.String.Utils                as S
+import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.ProcessorUnits.Serial.Generic
+import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Utils
-import           Numeric.Interval                          ((...))
-import           Text.InterpolatedString.Perl6             (qc)
+import           NITTA.Utils.Process
+import           Numeric.Interval                 (inf, sup, (...))
+import           Text.InterpolatedString.Perl6    (qc)
 
 
-type SPI v x t = SerialPU (State v x t) v x t
-data State v x t
-    = State
-        { spiSend         :: ([v], [v])
-        , spiReceive      :: ([[v]], [[v]])
-        , spiBounceFilter :: Int
+
+data SPI v x t = SPI
+        { bounceFilter  :: Int
+        , bufferSize    :: Maybe Int -- ^if 'Nothing' then size should defined by algorithm
+        , receiveQueue  :: [ Q v x ]
+        , receiveN      :: Int
+        , isReceiveOver :: Bool -- ^set if send buffer overlap receive buffer
+        , sendQueue     :: [ Q v x ]
+        , sendN         :: Int
+        , process_      :: Process v x t
         }
     deriving ( Show )
 
-instance Default (State v x t) where
-    def = State def def 2
+data Q v x = Q{ vars :: [ v ], function :: F v x, cads :: [ ProcessUid ] }
+    deriving ( Show )
 
 anySPI :: ( Time t ) => Int -> SPI v x t
-anySPI bounceFilter = SerialPU (State def def bounceFilter) def def def{ nextTick = 1 } def
+anySPI bounceFilter = SPI
+    { bounceFilter
+    , bufferSize=Just 6 -- FIXME:
+    , receiveQueue=[]
+    , receiveN=0
+    , isReceiveOver=False
+    , sendQueue=[]
+    , sendN=0
+    , process_=def
+    }
 
 
+instance ( VarValTime v x t
+         ) => ProcessorUnit (SPI v x t) v x t where
+    tryBind f spi@SPI{ sendQueue, receiveQueue, receiveN, sendN, bufferSize }
 
-instance ( VarValTime v x t ) => SerialPUState (State v x t) v x t where
+        | Just F.Receive{} <- castF f, fromMaybe maxBound bufferSize == receiveN
+        = Left $ "SPI to small buffer size"
 
-    bindToState fb st@State{ .. }
-        | Just (Send (I v)) <- castF fb
-        , let (ds, rs) = spiSend
-        = Right st{ spiSend=(ds, v:rs) }
+        | Just F.Send{} <- castF f, fromMaybe maxBound bufferSize == sendN
+        = Left $ "SPI to small buffer size"
 
-        | Just (Receive (O vs)) <- castF fb
-        , let (ds, rs) = spiReceive
-        = Right st{ spiReceive=(ds, elems vs : rs) }
+        | Just (F.Receive (O vs)) <- castF f
+        , let ( cads, process_ ) = runSchedule spi $ scheduleFunctoinBind f
+        = Right spi
+            { receiveQueue=Q{ vars=S.elems vs, function=f, cads } : receiveQueue
+            , receiveN=receiveN + 1
+            , process_
+            }
 
-        | otherwise = Left $ "The functional block is unsupported by SPI: " ++ show fb
+        | Just (F.Send (I v)) <- castF f
+        , let ( cads, process_ ) = runSchedule spi $ scheduleFunctoinBind f
+        = Right spi
+            { sendQueue=Q{ vars=[v], function=f, cads } : sendQueue
+            , sendN=sendN + 1
+            , process_
+            }
 
-    stateOptions State{ spiSend, spiReceive } now = catMaybes [ send' spiSend, receive' spiReceive ]
+        | otherwise = Left $ "SPI processor unit do not support: " ++ show f
+
+    process = process_
+
+    setTime t spi@SPI{ process_ } = spi{ process_=process_{ nextTick=t } }
+
+
+instance ( VarValTime v x t
+         ) => DecisionProblem (EndpointDT v t)
+                   EndpointDT (SPI v x t)
         where
-            send' (_, v:_) = Just $ EndpointO (Target v) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound)
-            send' _ = Nothing
-            receive' (_, vs:_) = Just $ EndpointO (Source $ fromList vs) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
-            receive' _ = Nothing
+    options _proxy SPI{ receiveQueue, sendQueue, process_=Process{ nextTick } } = let
+            source vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
+            receiveOpts = map (source . vars) receiveQueue
 
-    simpleSynthesis st@State{ spiSend=(ds, v:rs) } act
-        | singleton v == variables act
-        = let
-            st' = st{ spiSend=(v:ds, rs) }
-            work = serialSchedule @(SPI v x t) Sending act
-        in (st', work)
+            target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... 1)
+            sendOpts = map (target . head . vars) sendQueue
+        in receiveOpts ++ sendOpts
 
-    simpleSynthesis st@State{ spiReceive=(ds, vs:rs) } act
-        -- FIXME: Выгрузка данных должна осуществляться в несколько шагов. Эту ошибку необходимо исправить здесь и в
-        -- аппаратуре.
-        | fromList vs == variables act
-        = let
-            st' = st{ spiReceive=(vs:ds, rs) }
-            work = serialSchedule @(SPI v x t) Receiving act
-        in (st', work)
+    decision _proxy spi@SPI{ receiveQueue } d@EndpointD{ epdRole=Source vs, epdAt }
+        | ([ Q{ function } ], receiveQueue') <- partition ((vs ==) . S.fromList . vars) receiveQueue
+        , let ( _, process_ ) = runSchedule spi $ do
+                _ <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Receiving
+                updateTick (sup epdAt + 1)
+                scheduleFunction (inf epdAt) (sup epdAt) function
+        = spi{ receiveQueue=receiveQueue', process_ }
 
-    simpleSynthesis _ _ = error "Schedule error! (SPI)"
+    decision _proxy spi@SPI{ sendQueue, sendN, receiveQueue, receiveN } d@EndpointD{ epdRole=Target v, epdAt }
+        | ([ Q{ function } ], sendQueue') <- partition ((v ==) . head . vars) sendQueue
+        , let ( _, process_ ) = runSchedule spi $ do
+                _ <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Sending -- TODO: scheduleInstruction epdAt Send
+                updateTick (sup epdAt + 1)
+                scheduleFunction (inf epdAt) (sup epdAt) function -- TODO: scheduleFunction epdAt function
+        = spi
+            { sendQueue=sendQueue'
+            , isReceiveOver=(sendN - length sendQueue) >= (receiveN - length receiveQueue)
+            , process_
+            }
 
+    decision _ spi d = error $ "SPI model internal error; decision: " ++ show d ++ "\nSPI model: \n" ++ show spi
+
+
+instance ( Var v ) => Locks (SPI v x t) v where
+    locks SPI{} = []
 
 
 instance Controllable (SPI v x t) where
@@ -155,8 +200,8 @@ instance
         ( VarValTime v x t
         ) => Simulatable (SPI v x t) v x where
     simulateOn cntx _ f
-        | Just f'@Send{} <- castF f = simulate cntx f'
-        | Just f'@Receive{} <- castF f = simulate cntx f'
+        | Just f'@F.Send{} <- castF f = simulate cntx f'
+        | Just f'@F.Receive{} <- castF f = simulate cntx f'
         | otherwise = error $ "Can't simulate " ++ show f ++ " on SPI."
 
 data ExternalPorts
@@ -211,14 +256,14 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
     hardwareInstance _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
     hardwareInstance
             tag
-            SerialPU{ spuState=State{ spiBounceFilter } }
+            SPI{ bounceFilter }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
             SPIPorts{ externalPorts, .. }
         = fixIndent [qc|
 |           { module_ externalPorts }
 |               #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                , .ATTR_WIDTH( { show parameterAttrWidth } )
-|                , .BOUNCE_FILTER( { show spiBounceFilter } )
+|                , .BOUNCE_FILTER( { show bounceFilter } )
 |                ) { tag }
 |               ( .clk( { signalClk } )
 |               , .rst( { signalRst } )
@@ -253,16 +298,21 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
     testEnvironment _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
     testEnvironment
             tag
-            pu@SerialPU{ spuState=State{ spiBounceFilter, spiReceive, spiSend } }
+            pu@SPI{ process_, bounceFilter }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
             SPIPorts{ externalPorts, .. }
             cntx@Cntx{ cntxCycleNumber, cntxProcess }
         | let
-            receivedVariablesSeq = reverse $ map head $ fst spiReceive
+            receivedVariablesSeq = catMaybes $ map (\case
+                    Source vs -> Just $ head $ S.elems vs
+                    _ -> Nothing
+                ) $ getEndpoints process_
             receivedVarsValues = take cntxCycleNumber $ cntxReceivedBySlice cntx
-            sendedVariableSeq = reverse $ fst spiSend
+            sendedVariableSeq = catMaybes $ map (\case
+                    (Target v) -> Just v
+                    _ -> Nothing
+                ) $ getEndpoints process_
             sendedVarsValues = take cntxCycleNumber $ map cycleCntx cntxProcess
-
             wordWidth = finiteBitSize (def :: x)
             frameWordCount = max (length receivedVariablesSeq) (length $ sendedVariableSeq)
             frameWidth = frameWordCount * wordWidth
@@ -284,7 +334,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
 |                           { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
 |                           { tag }_io_test_start_transaction = 1;                           @(posedge { signalClk });
 |                           { tag }_io_test_start_transaction = 0;                           @(posedge { signalClk });
-|                           repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
+|                           repeat( { frameWidth * 2 + bounceFilter + 2 } ) @(posedge { signalClk });
 |                   |]
 
                     sendingAssert transmit = let

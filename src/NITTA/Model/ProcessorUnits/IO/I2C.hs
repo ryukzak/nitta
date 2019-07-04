@@ -16,206 +16,156 @@ Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
-
-slave / master / slave-master?
 -}
 module NITTA.Model.ProcessorUnits.IO.I2C
-    ( Ports(..)
-    , ExternalPorts(..)
-    , I2C
-    , i2c
+    ( Ports(..), I2CMode(..)
+    , I2C, i2cUnit
     ) where
 
+import           Control.Monad                             (when)
 import           Data.Bits                                 (finiteBitSize)
 import           Data.Default
+import           Data.List                                 (find, partition,
+                                                            (\\))
 import qualified Data.Map                                  as M
 import           Data.Maybe                                (catMaybes,
                                                             fromMaybe)
-import           Data.Set                                  (elems, fromList,
-                                                            singleton)
+import qualified Data.Set                                  as S
 import qualified Data.String.Utils                         as S
 import           NITTA.Intermediate.Functions
+import qualified NITTA.Intermediate.Functions              as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Serial.Generic
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
+import           NITTA.Project.Snippets
+import           NITTA.Project.Types
 import           NITTA.Utils
-import           Numeric.Interval                          ((...))
+import           NITTA.Utils.Process
+import           Numeric.Interval                          (inf, sup, (...))
 import           Text.InterpolatedString.Perl6             (qc)
 
-data Q v x = Q{ remain, done :: [ v ], function :: F v x }
 
 data I2C v x t = I2C
-    { bounceFilter :: Int
-    , sendQueue    :: [ Q v x ]
-    , receiveQueue :: [ Q v x ]
-    , process_     :: Process v x t
-    }
+        { bounceFilter  :: Int
+        , bufferSize    :: Maybe Int -- ^if 'Nothing' then size should defined by algorithm
+        , receiveQueue  :: [ Q v x ]
+        , receiveN      :: Int
+        , isReceiveOver :: Bool -- ^set if send buffer overlap receive buffer
+        , sendQueue     :: [ Q v x ]
+        , sendN         :: Int
+        , process_      :: Process v x t
+        }
 
-i2c :: ( Time t ) => Int -> SPI v x t
-i2c bounceFilter = I2C
+data Q v x = Q{ vars :: [ v ], function :: F v x, cads :: [ ProcessUid ] }
+
+i2cUnit :: ( Time t ) => Int -> I2C v x t
+i2cUnit bounceFilter = I2C
     { bounceFilter
-    , current=Nothing
-    , remain=[]
-    , process_=def{ nextTick = 1 }
+    , bufferSize=Just 6 -- FIXME:
+    , receiveQueue=[]
+    , receiveN=0
+    , isReceiveOver=False
+    , sendQueue=[]
+    , sendN=0
+    , process_=def
     }
 
 
 instance ( VarValTime v x t
          ) => ProcessorUnit (I2C v x t) v x t where
-    -- Binding to mUnit is carried out by this function.
-    tryBind f pu@Multiplier{ remain }
-        -- To do this, it is checked whether the function type is reduced to one of the supported
-        -- by ('NITTA.FunctionalBlocks.castF')  and in case of success model conditions is returned
-        -- after binding with 'Right' mark.
-        --
-        -- Important to notice, that "binding" doesn't mean actually beginning of work, that
-        -- allows firstly make bindings of all tasks and after plan computation process.
-        | Just F.Multiply{} <- castF f = Right pu{ remain=f : remain }
-        -- In case of impossibility of binding string with short description of renouncement
-        --cause and 'Left' is returned.
-        | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
-    -- Unificate interface for get computation process description.
+    tryBind f i2c@I2C{ sendQueue, receiveQueue, receiveN, sendN, bufferSize }
+
+        | Just F.Receive{} <- castF f, fromMaybe maxBound bufferSize == receiveN
+        = Left $ "I2C to small buffer size"
+
+        | Just F.Send{} <- castF f, fromMaybe maxBound bufferSize == sendN
+        = Left $ "I2C to small buffer size"
+
+        | Just (F.Receive (O vs)) <- castF f
+        , let ( cads, process_ ) = runSchedule i2c $ scheduleFunctoinBind f
+        = Right i2c
+            { receiveQueue=Q{ vars=S.elems vs, function=f, cads } : receiveQueue
+            , receiveN=receiveN + 1
+            , process_
+            }
+
+        | Just (F.Send (I v)) <- castF f
+        , let ( cads, process_ ) = runSchedule i2c $ scheduleFunctoinBind f
+        = Right i2c
+            { sendQueue=Q{ vars=[v], function=f, cads } : sendQueue
+            , sendN=sendN + 1
+            , process_
+            }
+
+        | otherwise = Left $ "I2C processor unit do not support: " ++ show f
+
     process = process_
-    -- This method is used for set up mUnit time outside.
-    -- At the time this is needed only for realisation
-    -- of branching, which is on the prototyping stage.
-    setTime t pu@Multiplier{} = pu{ tick=t }
+
+    setTime t i2c@I2C{ process_ } = i2c{ process_=process_{ nextTick=t } }
 
 
--- |This function carry out actual take functional block to work.
-assignment pu@Multiplier{ targets=[], sources=[], remain, tick } f
-    | Just (F.Multiply (I a) (I b) (O c)) <- castF f
-    = pu
-        { targets=[a, b]
-        , currentWork=Just (tick + 1, f)
-        , sources=elems c, remain=remain \\ [ f ]
-        }
-assignment _ _ = error "Multiplier: internal assignment error."
-
-
-
-{-
-Result of planning is description of one computation cycle, which later can be translated to microcode,
-directly control mUnit. From NITTA architecture point of view, process can be described as
-consistent execution two roles by processoe:
-
-- data source ('Source');
-- data target ('Target');
-
-The planning process itself consists of two operations performed in a cycle:
--}
 instance ( VarValTime v x t
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (I2C v x t)
         where
 
+    options _proxy I2C{ receiveQueue, sendQueue, process_=Process{ nextTick } } = let
+            source vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
+            receiveOpts = map (source . vars) receiveQueue
 
-    --1. Processors is asked about roles it can realise (in the other words, how computation
-    --process can develop). It is realised by @options@ functions, result of which is
-    --one of the further list:
-
-    --list of variants of uploading to mUnit variables, which are needed to function
-    --that is in work;
-    options _proxy I2C{ targets=vs@(_:_), tick }
-        = map (\v -> EndpointO (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
-
-     --   list of variants of downloading from mUnit variables;
-    options _proxy I2C{ sources, doneAt=Just at, tick }
-        | not $ null sources
-        = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
-
-    -- list of variables of uploading to mUnit variables, upload any one of that
-    -- will cause to actual start of working with mathched function.
-    options proxy pu@I2C{ remain } = concatMap (options proxy . assignment pu) remain
-
-    -- Note, that options provided by this function require clarification, because:
-
-    --	1.	They point to not specific moment for work, but to available interval
-    --		('NITTA.Types.Base.TimeConstrain'), that describe from and to which time
-    -- 		uploading and downloading can be done, and how much time the process can continue.
-    -- 	2.	One value can be download from mUnit as several different variables. This can
-    --		be done either all at once (on the hardware level the value writed to the bus and
-    -- 		read by several processors), as a consistent (firstly value on the bus can be writed for
-    --		one mUnit, and after for next one), what should be specified too.
+            target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... 1)
+            -- target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ...
+            sendOpts = map (target . head . vars) sendQueue
+        in receiveOpts ++ sendOpts
 
 
-    -- 2. 	Process planning or making decision about compuatation process development to
-    --	  	mUnit model state is carried out by @decision@. Variant transformation
-    --		from got from @options@ is carried out by CAD outside the mUnit model.
-    --		We can distinguish the following solutions:
-    --
-    --		1. If model wait variable uploading:
-    decision _proxy pu@I2C{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
-           -- From the list of uploading value we get a needed value, and remainder is saved
-           -- for the next steps.
-        | ([_], xs) <- partition (== v) vs
-             -- @sel@ veriable is used for uploading queuing of variable to hardware block, that is
-             -- requred because of realisation.
-        , let sel = if null xs then B else A
-             --  Computation process planning is carried out.
-        , let (newEndpoints, process_') = runSchedule pu $ do
-                -- this is required for correct work of automatically generated tests,
-                -- that takes information about time from Process
-                updateTick (sup epdAt)
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
-        = pu
-            { process_=process_'
-            -- The remainder of the work is saved for the next loop
-            , targets=xs
-            -- We save information about events that describe sending or recieving data for
-            -- current functionatl unit.
-            , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-            -- If all required arguments are upload (@null xs@), then the moment of time
-            -- when we get a result is saved.
-             , doneAt=if null xs
-                then Just $ sup epdAt + 3
-                else Nothing
-            -- Model time is running
-             , tick=sup epdAt
+    decision _proxy i2c@I2C{ receiveQueue } d@EndpointD{ epdRole=Target v, epdAt }
+        | ([ Q{ function } ], receiveQueue') <- partition (elem v . vars) receiveQueue
+        , let ( _, process_ ) = runSchedule i2c $ do
+                _ <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Receiving
+                updateTick (sup epdAt + 1)
+                scheduleFunction (inf epdAt) (sup epdAt) function
+        = i2c{ receiveQueue=receiveQueue', process_ }
+
+    decision _proxy i2c@I2C{ sendQueue, sendN, receiveQueue, receiveN } d@EndpointD{ epdRole=Source vs, epdAt }
+        | ([ Q{ function } ], sendQueue')
+            <- partition ((\vs' -> vs' \\ S.elems vs /= vs') . vars) sendQueue
+        , let ( _, process_ ) = runSchedule i2c $ do
+                _ <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Sending -- TODO: scheduleInstruction epdAt Send
+                updateTick (sup epdAt + 1)
+                scheduleFunction (inf epdAt) (sup epdAt) function -- TODO: scheduleFunction epdAt function
+        = i2c
+            { sendQueue=sendQueue'
+            , isReceiveOver=(sendN - length sendQueue) >= (receiveN - length receiveQueue)
+            , process_
             }
---	2. If model is waiting, that we will download variables from it.
-    decision _proxy pu@I2C{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointD{ epdRole=Source v, epdAt }
-        | not $ null sources
-        , let sources' = sources \\ elems v
-        , sources' /= sources
-        -- Compututation process planning is carring on.
-        , let (newEndpoints, process_') = runSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Out
-                when (null sources') $ do
-                    high <- scheduleFunction a (sup epdAt) f
-                    let low = endpoints ++ currentWorkEndpoints
-                    -- Set up the vertical relantions between functional unit
-                    -- and related to that data sending.
-                    establishVerticalRelations high low
-                -- this is needed to correct work of automatically generated tests
-                -- that takes time about time from Process
-                updateTick (sup epdAt)
-                return endpoints
-        = pu
-            { process_=process_'
-              -- In case if not all variables what asked - remaining are saved.
-             , sources=sources'
-              -- if all of works is done, then time when result is ready,
-              -- current work and data transfering, what is done is the current function is reset.
-            , doneAt=if null sources' then Nothing else doneAt
-            , currentWork=if null sources' then Nothing else Just (a, f)
-            , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
-              -- Model time is running up
-            , tick=sup epdAt
-            }
-    --    3. If no function is executed at the moment, then we need to find function in the list
-    --    of assigned function, executed it to work and only then make decision
-    --    and plan a fragment of computation process with call recursion in situation 1.
-    decision proxy pu@I2C{ targets=[], sources=[], remain } d
-        | let v = oneOf $ variables d
-        , Just f <- find (\f -> v `member` variables f) remain
-        = decision proxy (assignment pu f) d
-    -- If smth went wrong.
-    decision _ pu d = error $ "I2C decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
+
+    decision _ _ _ = error "I2C model internal error"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -254,13 +204,14 @@ instance
         ( VarValTime v x t
         ) => Simulatable (I2C v x t) v x where
     simulateOn cntx _ f
-        | Just f'@Send{} <- castF f = simulate cntx f'
         | Just f'@Receive{} <- castF f = simulate cntx f'
+        | Just f'@Send{} <- castF f = simulate cntx f'
         | otherwise = error $ "Can't simulate " ++ show f ++ " on I2C."
 
 data I2CMode
     = I2CMaster
     | I2CSlave
+    deriving ( Show )
 
 instance Connected (I2C v x t) where
     data Ports (I2C v x t)
@@ -275,11 +226,11 @@ instance Connected (I2C v x t) where
             }
         deriving ( Show )
 
-    externalInputPorts I2CPorts{ mode=I2CSlave, .. } = [ slave_mosi, slave_sclk, slave_cs ]
-    externalInputPorts I2CPorts{ mode=I2CMaster, .. } = [ master_miso ]
+    -- externalInputPorts I2CPorts{ mode=I2CSlave, .. } = [ slave_mosi, slave_sclk, slave_cs ]
+    -- externalInputPorts I2CPorts{ mode=I2CMaster, .. } = [ master_miso ]
 
-    externalOutputPorts I2CPorts{ mode=I2CSlave, .. } = [ slave_miso ]
-    externalOutputPorts I2CPorts{ mode=I2CMaster, .. } = [ master_mosi, master_sclk, master_cs ]
+    -- externalOutputPorts I2CPorts{ mode=I2CSlave, .. } = [ slave_miso ]
+    -- externalOutputPorts I2CPorts{ mode=I2CMaster, .. } = [ master_mosi, master_sclk, master_cs ]
 
 
 -- instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
