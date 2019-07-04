@@ -3,7 +3,7 @@ import {Radar} from "react-chartjs-2";
 
 interface EdgesCardProps {
     nid: string;
-    edge: JSON;
+    edge: any;
     maxValue: number;
 }
 
@@ -15,7 +15,7 @@ interface EdgesCardState {
     tag: string;
     contentsEDecision: JSON;
     contentsEOption: JSON;
-    eParameters: JSON;
+    eParameters: any;
     isShown: boolean;
 }
 
