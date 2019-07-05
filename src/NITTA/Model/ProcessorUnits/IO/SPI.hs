@@ -62,13 +62,13 @@ anySPI bounceFilter = SimpleIO
 
 instance IOConnected (SPI v x t) where
     data IOPorts (SPI v x t)
-        = Master
+        = SPIMaster
             { master_mosi :: OutputPortTag
             , master_miso :: InputPortTag
             , master_sclk :: OutputPortTag
             , master_cs   :: OutputPortTag
             }
-        | Slave
+        | SPISlave
             { slave_mosi :: InputPortTag
             , slave_miso :: OutputPortTag
             , slave_sclk :: InputPortTag
@@ -76,11 +76,11 @@ instance IOConnected (SPI v x t) where
             }
         deriving ( Show )
 
-    inputPorts Slave{..}  = [ slave_mosi, slave_sclk, slave_cs ]
-    inputPorts Master{..} = [ master_miso ]
+    inputPorts SPISlave{..}  = [ slave_mosi, slave_sclk, slave_cs ]
+    inputPorts SPIMaster{..} = [ master_miso ]
 
-    outputPorts Slave{..}  = [ slave_miso ]
-    outputPorts Master{..} = [ master_mosi, master_sclk, master_cs ]
+    outputPorts SPISlave{..}  = [ slave_miso ]
+    outputPorts SPIMaster{..} = [ master_mosi, master_sclk, master_cs ]
 
 
 instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
@@ -104,7 +104,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
             tag
             SimpleIO{ bounceFilter }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
-            SPIPorts{..}
+            SimpleIOPorts{..}
             ioPorts
         = fixIndent [qc|
 |           { module_ ioPorts }
@@ -124,15 +124,15 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
 |               );
 |           |]
             where
-                module_ Slave{}  = "pu_slave_spi"
-                module_ Master{} = "pu_master_spi"
-                extIO Slave{..} = fixIndent [qc|
+                module_ SPISlave{}  = "pu_slave_spi"
+                module_ SPIMaster{} = "pu_master_spi"
+                extIO SPISlave{..} = fixIndent [qc|
 |                   , .mosi( { inputPort slave_mosi } )
 |                   , .miso( { outputPort slave_miso } )
 |                   , .sclk( { inputPort slave_sclk } )
 |                   , .cs( { inputPort slave_cs } )
 |           |]
-                extIO Master{..} = fixIndent [qc|
+                extIO SPIMaster{..} = fixIndent [qc|
 |                   , .mosi( { outputPort master_mosi } )
 |                   , .miso( { inputPort master_miso } )
 |                   , .sclk( { outputPort master_sclk } )
@@ -147,7 +147,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
             tag
             sio@SimpleIO{ process_, bounceFilter }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
-            SPIPorts{..}
+            SimpleIOPorts{..}
             ioPorts
             cntx@Cntx{ cntxCycleNumber, cntxProcess }
         | let
@@ -174,7 +174,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
             Just envInitFlagName = testEnvironmentInitFlag tag sio
         = case ioPorts of
             _ | frameWordCount == 0 -> ""
-            Slave{..} -> let
+            SPISlave{..} -> let
                     receiveCycle transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
                         in fixIndent [qc|
@@ -238,7 +238,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
 |                       { S.join "" $ map sendingAssert sendedVarsValues }
 |                   end
 |               |]
-            Master{..} -> let
+            SPIMaster{..} -> let
                     receiveCycle transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
                         in fixIndent [qc|

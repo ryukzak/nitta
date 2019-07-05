@@ -151,7 +151,7 @@ instance Controllable (SimpleIO i v x t) where
             }
         deriving ( Show, Eq, Ord )
 
-    mapMicrocodeToPorts Microcode{..} SPIPorts{..} =
+    mapMicrocodeToPorts Microcode{..} SimpleIOPorts{..} =
         [ ( wr, Bool wrSignal )
         , ( oe, Bool oeSignal )
         ]
@@ -171,7 +171,7 @@ instance UnambiguouslyDecode (SimpleIO i v x t) where
 
 instance Connected (SimpleIO i v x t) where
     data Ports (SimpleIO i v x t)
-        = SPIPorts
+        = SimpleIOPorts
             { wr, oe :: SignalTag
              -- |Данный сигнал используется для оповещения процессора о завершении передачи данных. Необходимо для
              -- приостановки работы пока передача не будет завершена, так как в противном случае данные будут потеряны.

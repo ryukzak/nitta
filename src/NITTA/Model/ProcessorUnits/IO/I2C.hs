@@ -5,7 +5,6 @@
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
@@ -100,7 +99,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (I2C v x t) where
             tag
             SimpleIO{ bounceFilter }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort, inoutPort }
-            SPIPorts{..}
+            SimpleIOPorts{..}
             ioPorts
         = fixIndent [qc|
 |           { module_ ioPorts }

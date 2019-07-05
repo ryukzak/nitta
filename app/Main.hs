@@ -107,11 +107,11 @@ runHardcoded = do
             , ("accum", PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO)
             , ("spi", PU def
                 (anySPI 0)
-                SPIPorts
+                SimpleIOPorts
                     { wr=SignalTag 22, oe=SignalTag 23
                     , stop="stop"
                     }
-                Slave
+                SPISlave
                     { slave_mosi=InputPortTag "mosi"
                     , slave_miso=OutputPortTag "miso"
                     , slave_sclk=InputPortTag "sclk"
@@ -149,18 +149,18 @@ microarch = busNetwork 31 (Just False)
     , ("accum", PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
     , ("spi", PU def
         (anySPI 0)
-        SPIPorts
+        SimpleIOPorts
             { wr=SignalTag 22, oe=SignalTag 23
             , stop="stop"
             }
         $ case "slave" of
-            "slave" -> Slave
+            "slave" -> SPISlave
                 { slave_mosi=InputPortTag "mosi"
                 , slave_miso=OutputPortTag "miso"
                 , slave_sclk=InputPortTag "sclk"
                 , slave_cs=InputPortTag "cs"
                 }
-            "master" -> Master
+            "master" -> SPIMaster
                 { master_mosi=OutputPortTag "mosi"
                 , master_miso=InputPortTag "miso"
                 , master_sclk=OutputPortTag "sclk"
