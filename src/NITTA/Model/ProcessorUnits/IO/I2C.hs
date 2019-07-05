@@ -127,7 +127,7 @@ instance ( VarValTime v x t
     decision _proxy i2c@I2C{ receiveQueue } d@EndpointD{ epdRole=Target v, epdAt }
         | ([ Q{ function } ], receiveQueue') <- partition (elem v . vars) receiveQueue
         , let ( _, process_ ) = runSchedule i2c $ do
-                _ <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Receiving
+                _ <- scheduleEndpoint d $ scheduleInstruction epdAt Receiving
                 updateTick (sup epdAt + 1)
                 scheduleFunction (inf epdAt) (sup epdAt) function
         = i2c{ receiveQueue=receiveQueue', process_ }
@@ -136,7 +136,7 @@ instance ( VarValTime v x t
         | ([ Q{ function } ], sendQueue')
             <- partition ((\vs' -> vs' \\ S.elems vs /= vs') . vars) sendQueue
         , let ( _, process_ ) = runSchedule i2c $ do
-                _ <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Sending -- TODO: scheduleInstruction epdAt Send
+                _ <- scheduleEndpoint d $ scheduleInstruction epdAt Sending -- TODO: scheduleInstruction epdAt Send
                 updateTick (sup epdAt + 1)
                 scheduleFunction (inf epdAt) (sup epdAt) function -- TODO: scheduleFunction epdAt function
         = i2c

@@ -121,9 +121,9 @@ scheduleEndpoint EndpointD{ epdAt, epdRole } codeGen = do
     return high
 
 -- |Add to the process description information about instruction evaluation.
-scheduleInstruction start finish instr = do
+scheduleInstruction timeI instr = do
     Schedule{ iProxy } <- get
-    scheduleStep (Activity $ start ... finish) $ InstructionStep (instr `asProxyTypeOf` iProxy)
+    scheduleStep (Activity $ timeI) $ InstructionStep (instr `asProxyTypeOf` iProxy)
 
 -- |Add to the process description information about nested step.
 scheduleNestedStep tag step@Step{ sTime } = do

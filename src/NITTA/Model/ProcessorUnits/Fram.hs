@@ -270,7 +270,7 @@ instance ( VarValTime v x t
             ( _endpoints', process_' ) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
                 when (null vsRemain) $ void $ scheduleFunction 0 (sup epdAt) function
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
+                scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epdAt) $ ReadCell addr
             cell' = case vsRemain of
                     [] -> cell
                         { job=Nothing
@@ -295,7 +295,7 @@ instance ( VarValTime v x t
             vsRemain = vs' \\ S.elems vs
             (endpoints', process_) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
+                scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epdAt) $ ReadCell addr
             job' = job{ startAt=startAt <|> (Just $ inf epdAt - 1), endpoints=endpoints' ++ endpoints }
             cell' = cell
                 { job=Just job'
@@ -313,7 +313,7 @@ instance ( VarValTime v x t
             <- find (\case (_, Cell{ state=DoLoopTarget v' }) -> v == v'; _ -> False) $ A.assocs memory
         , let
             (_endpoints', process_) = runSchedule fram $ do
-                _ <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ WriteCell addr
+                _ <- scheduleEndpoint d $ scheduleInstruction epdAt $ WriteCell addr
                 updateTick (sup epdAt + 1)
                 scheduleFunction fBegin (sup epdAt) function
             cell' = cell
@@ -332,7 +332,7 @@ instance ( VarValTime v x t
         , let
             (endpoints, process_) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ WriteCell addr
+                scheduleEndpoint d $ scheduleInstruction epdAt $ WriteCell addr
             cell' = cell
                 { job=Just j{ startAt=Just $ inf epdAt, endpoints }
                 , state=DoReg $ S.elems vs
@@ -356,7 +356,7 @@ instance ( VarValTime v x t
             ( _endpoints', process_ ) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
                 when (null vsRemain) $ void $ scheduleFunction fBegin (sup epdAt) function
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
+                scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epdAt) $ ReadCell addr
             cell' = case vsRemain of
                     [] -> cell
                         { job=Nothing

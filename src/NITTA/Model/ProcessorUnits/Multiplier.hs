@@ -148,7 +148,7 @@ import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                 (inf, sup, (...))
+import           Numeric.Interval                 (sup, (...))
 import           Text.InterpolatedString.Perl6    (qc)
 
 {-
@@ -410,7 +410,7 @@ instance ( VarValTime v x t
                 -- this is required for correct work of automatically generated tests,
                 -- that takes information about time from Process
                 updateTick (sup epdAt)
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
+                scheduleEndpoint d $ scheduleInstruction epdAt $ Load sel
         = pu
             { process_=process_'
             -- The remainder of the work is saved for the next loop
@@ -433,7 +433,7 @@ instance ( VarValTime v x t
         , sources' /= sources
         -- Compututation process planning is carring on.
         , let (newEndpoints, process_') = runSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Out
+                endpoints <- scheduleEndpoint d $ scheduleInstruction epdAt Out
                 when (null sources') $ do
                     high <- scheduleFunction a (sup epdAt) f
                     let low = endpoints ++ currentWorkEndpoints

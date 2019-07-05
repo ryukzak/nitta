@@ -124,7 +124,7 @@ instance ( VarValTime v x t
     decision _proxy spi@SPI{ receiveQueue } d@EndpointD{ epdRole=Source vs, epdAt }
         | ([ Q{ function } ], receiveQueue') <- partition ((vs ==) . S.fromList . vars) receiveQueue
         , let ( _, process_ ) = runSchedule spi $ do
-                _ <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Receiving
+                _ <- scheduleEndpoint d $ scheduleInstruction epdAt Receiving
                 updateTick (sup epdAt + 1)
                 scheduleFunction (inf epdAt) (sup epdAt) function
         = spi{ receiveQueue=receiveQueue', process_ }
@@ -132,9 +132,9 @@ instance ( VarValTime v x t
     decision _proxy spi@SPI{ sendQueue, sendN, receiveQueue, receiveN } d@EndpointD{ epdRole=Target v, epdAt }
         | ([ Q{ function } ], sendQueue') <- partition ((v ==) . head . vars) sendQueue
         , let ( _, process_ ) = runSchedule spi $ do
-                _ <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Sending -- TODO: scheduleInstruction epdAt Send
+                _ <- scheduleEndpoint d $ scheduleInstruction epdAt Sending
                 updateTick (sup epdAt + 1)
-                scheduleFunction (inf epdAt) (sup epdAt) function -- TODO: scheduleFunction epdAt function
+                scheduleFunction (inf epdAt) (sup epdAt) function
         = spi
             { sendQueue=sendQueue'
             , isReceiveOver=(sendN - length sendQueue) >= (receiveN - length receiveQueue)
