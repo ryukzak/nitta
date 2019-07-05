@@ -6,7 +6,6 @@
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
@@ -25,45 +24,31 @@ module NITTA.Model.ProcessorUnits.IO.SPI
     , Ports(..), IOPorts(..)
     ) where
 
-import           Data.Bits                        (finiteBitSize)
+import           Data.Bits                              (finiteBitSize)
 import           Data.Default
-import           Data.List                        (partition)
-import qualified Data.Map                         as M
-import           Data.Maybe                       (fromMaybe, mapMaybe)
-import qualified Data.Set                         as S
-import qualified Data.String.Utils                as S
-import qualified NITTA.Intermediate.Functions     as F
+import qualified Data.Map                               as M
+import           Data.Maybe                             (fromMaybe, mapMaybe)
+import qualified Data.Set                               as S
+import qualified Data.String.Utils                      as S
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Types
+import           NITTA.Model.ProcessorUnits.IO.SimpleIO
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Utils
-import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                 (inf, sup, (...))
-import           Text.InterpolatedString.Perl6    (qc)
+import           Text.InterpolatedString.Perl6          (qc)
 
 
+data SPIinterface
 
-data SPI v x t = SPI
-        { bounceFilter  :: Int
-        , bufferSize    :: Maybe Int -- ^if 'Nothing' then size should defined by algorithm
-        , receiveQueue  :: [ Q v x ]
-        , receiveN      :: Int
-        , isReceiveOver :: Bool -- ^set if send buffer overlap receive buffer
-        , sendQueue     :: [ Q v x ]
-        , sendN         :: Int
-        , process_      :: Process v x t
-        }
-    deriving ( Show )
+instance SimpleIOInterface SPIinterface
 
-data Q v x = Q{ vars :: [ v ], function :: F v x, cads :: [ ProcessUid ] }
-    deriving ( Show )
+type SPI v x t = SimpleIO SPIinterface v x t
 
 anySPI :: ( Time t ) => Int -> SPI v x t
-anySPI bounceFilter = SPI
+anySPI bounceFilter = SimpleIO
     { bounceFilter
     , bufferSize=Just 6 -- FIXME:
     , receiveQueue=[]
@@ -74,144 +59,6 @@ anySPI bounceFilter = SPI
     , process_=def
     }
 
-
-instance ( VarValTime v x t
-         ) => ProcessorUnit (SPI v x t) v x t where
-    tryBind f spi@SPI{ sendQueue, receiveQueue, receiveN, sendN, bufferSize }
-
-        | Just F.Receive{} <- castF f, fromMaybe maxBound bufferSize == receiveN
-        = Left $ "SPI to small buffer size"
-
-        | Just F.Send{} <- castF f, fromMaybe maxBound bufferSize == sendN
-        = Left $ "SPI to small buffer size"
-
-        | Just (F.Receive (O vs)) <- castF f
-        , let ( cads, process_ ) = runSchedule spi $ scheduleFunctionBind f
-        = Right spi
-            { receiveQueue=Q{ vars=S.elems vs, function=f, cads } : receiveQueue
-            , receiveN=receiveN + 1
-            , process_
-            }
-
-        | Just (F.Send (I v)) <- castF f
-        , let ( cads, process_ ) = runSchedule spi $ scheduleFunctionBind f
-        = Right spi
-            { sendQueue=Q{ vars=[v], function=f, cads } : sendQueue
-            , sendN=sendN + 1
-            , process_
-            }
-
-        | otherwise = Left $ "SPI processor unit do not support: " ++ show f
-
-    process = process_
-
-    setTime t spi@SPI{ process_ } = spi{ process_=process_{ nextTick=t } }
-
-
-instance ( VarValTime v x t
-         ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (SPI v x t)
-        where
-    options _proxy SPI{ receiveQueue, sendQueue, process_=Process{ nextTick } } = let
-            source vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
-            receiveOpts = map (source . vars) receiveQueue
-
-            target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... 1)
-            sendOpts = map (target . head . vars) sendQueue
-        in receiveOpts ++ sendOpts
-
-    decision _proxy spi@SPI{ receiveQueue } d@EndpointD{ epdRole=Source vs, epdAt }
-        | ([ Q{ function } ], receiveQueue') <- partition ((vs ==) . S.fromList . vars) receiveQueue
-        , let ( _, process_ ) = runSchedule spi $ do
-                _ <- scheduleEndpoint d $ scheduleInstruction epdAt Receiving
-                updateTick (sup epdAt + 1)
-                scheduleFunction (inf epdAt) (sup epdAt) function
-        = spi{ receiveQueue=receiveQueue', process_ }
-
-    decision _proxy spi@SPI{ sendQueue, sendN, receiveQueue, receiveN } d@EndpointD{ epdRole=Target v, epdAt }
-        | ([ Q{ function } ], sendQueue') <- partition ((v ==) . head . vars) sendQueue
-        , let ( _, process_ ) = runSchedule spi $ do
-                _ <- scheduleEndpoint d $ scheduleInstruction epdAt Sending
-                updateTick (sup epdAt + 1)
-                scheduleFunction (inf epdAt) (sup epdAt) function
-        = spi
-            { sendQueue=sendQueue'
-            , isReceiveOver=(sendN - length sendQueue) >= (receiveN - length receiveQueue)
-            , process_
-            }
-
-    decision _ spi d = error $ "SPI model internal error; decision: " ++ show d ++ "\nSPI model: \n" ++ show spi
-
-
-instance ( Var v ) => Locks (SPI v x t) v where
-    locks SPI{} = []
-
-
-instance Controllable (SPI v x t) where
-    -- | Доступ к входному буферу осуществляется как к очереди. это сделано для
-    -- того, что бы сократить колличество сигнальных линий (убрать адрес).
-    -- Увеличение адреса производится по негативному фронту сигналов OE и WR для
-    -- Receive и Send соответственно.
-    --
-    -- Управление передачей данных осуществляется полностью вычислительным блоком.
-    --
-    -- Пример:
-    --
-    -- 1. Nop - отдых
-    -- 2. Send - В блок загружается с шины слово по адресу 0.
-    -- 3. Send - В блок загружается с шины слово по адресу 0.
-    -- 4. Nop - отдых
-    -- 5. Receive - Из блока выгружается на шину слово по адресу 0.
-    -- 6. Send - В блок загружается с шины слово по адресу 1.
-    -- 7. Receive - Из блока выгружается на шину слово по адресу 1.
-    data Instruction (SPI v x t)
-        = Receiving
-        | Sending
-        deriving ( Show )
-
-    data Microcode (SPI v x t)
-        = Microcode
-            { wrSignal :: Bool
-            , oeSignal :: Bool
-            }
-        deriving ( Show, Eq, Ord )
-
-    mapMicrocodeToPorts Microcode{..} SPIPorts{..} =
-        [ (wr, Bool wrSignal)
-        , (oe, Bool oeSignal)
-        ]
-
-
-instance Default (Microcode (SPI v x t)) where
-    def = Microcode
-        { wrSignal=False
-        , oeSignal=False
-        }
-
-
-instance UnambiguouslyDecode (SPI v x t) where
-    decodeInstruction Sending   = def{ wrSignal=True }
-    decodeInstruction Receiving = def{ oeSignal=True }
-
-
-
-instance
-        ( VarValTime v x t
-        ) => Simulatable (SPI v x t) v x where
-    simulateOn cntx _ f
-        | Just f'@F.Send{} <- castF f = simulate cntx f'
-        | Just f'@F.Receive{} <- castF f = simulate cntx f'
-        | otherwise = error $ "Can't simulate " ++ show f ++ " on SPI."
-
-instance Connected (SPI v x t) where
-    data Ports (SPI v x t)
-        = SPIPorts
-            { wr, oe :: SignalTag
-             -- |Данный сигнал используется для оповещения процессора о завершении передачи данных. Необходимо для
-             -- приостановки работы пока передача не будет завершена, так как в противном случае данные будут потеряны.
-            , stop :: String
-            }
-        deriving ( Show )
 
 instance IOConnected (SPI v x t) where
     data IOPorts (SPI v x t)
@@ -229,10 +76,10 @@ instance IOConnected (SPI v x t) where
             }
         deriving ( Show )
 
-    externalInputPorts Slave{..} = [ slave_mosi, slave_sclk, slave_cs ]
+    externalInputPorts Slave{..}  = [ slave_mosi, slave_sclk, slave_cs ]
     externalInputPorts Master{..} = [ master_miso ]
 
-    externalOutputPorts Slave{..} = [ slave_miso ]
+    externalOutputPorts Slave{..}  = [ slave_miso ]
     externalOutputPorts Master{..} = [ master_mosi, master_sclk, master_cs ]
 
 
@@ -255,7 +102,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
     hardwareInstance _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
     hardwareInstance
             tag
-            SPI{ bounceFilter }
+            SimpleIO{ bounceFilter }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
             SPIPorts{..}
             ioPorts
@@ -298,7 +145,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
     testEnvironment _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ _ _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
     testEnvironment
             tag
-            pu@SPI{ process_, bounceFilter }
+            sio@SimpleIO{ process_, bounceFilter }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
             SPIPorts{..}
             ioPorts
@@ -324,7 +171,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
                     placeholder = replicate (frameWordCount - length xs) [qc|{ wordWidth }'d00|]
                 in S.join ", " (xs' ++ placeholder)
 
-            Just envInitFlagName = testEnvironmentInitFlag tag pu
+            Just envInitFlagName = testEnvironmentInitFlag tag sio
         = case ioPorts of
             _ | frameWordCount == 0 -> ""
             Slave{..} -> let
@@ -350,7 +197,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
 |                       |]
                 in fixIndent [qc|
 |                   // SPI Input/Output environment
-|                   // { show pu }
+|                   // { show sio }
 |                   reg { tag }_io_test_start_transaction;
 |                   reg  [{ frameWidth }-1:0] { tag }_io_test_input;
 |                   wire { tag }_io_test_ready;
@@ -412,7 +259,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
 |                       |]
                 in fixIndent [qc|
 |                   // SPI Input/Output environment
-|                   // { show pu }
+|                   // { show sio }
 |                   reg { tag }_io_test_start_transaction;
 |                   reg  [{ frameWidth }-1:0] { tag }_io_test_input;
 |                   wire { tag }_io_test_ready;
