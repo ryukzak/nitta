@@ -26,7 +26,8 @@ module NITTA.Model.ProcessorUnits.Types
     , descent, whatsHappen, extractInstructionAt
     , bind, allowToProcess
     , level, showPU
-    , Connected(..), SignalTag(..), InputPortTag(..), OutputPortTag(..), InoutPortTag(..), SignalValue(..), (+++)
+    , Connected(..), SignalTag(..), SignalValue(..), (+++)
+    , IOConnected(..), InputPortTag(..), OutputPortTag(..), InoutPortTag(..)
     , ByTime(..)
     ) where
 
@@ -225,15 +226,19 @@ class Controllable pu where
 
 
 
--- |Type class of units with ports.
-class Connected u where
-    -- |Unit ports (external IO, signal, flag, etc).
-    data Ports u :: *
+-- |Type class of processor units with control ports.
+class Connected pu where
+    -- |A processor unit control ports (signals, flags).
+    data Ports pu :: *
+
+-- |Type class of processor units with IO ports.
+class IOConnected pu where
+    data IOPorts pu :: *
     -- |External input ports, which go outside of NITTA mUnit.
-    externalInputPorts :: Ports u -> [InputPortTag]
+    externalInputPorts :: IOPorts pu -> [ InputPortTag ]
     externalInputPorts _ = []
     -- |External output ports, which go outside of NITTA mUnit.
-    externalOutputPorts :: Ports u -> [OutputPortTag]
+    externalOutputPorts :: IOPorts pu -> [ OutputPortTag ]
     externalOutputPorts _ = []
 
 

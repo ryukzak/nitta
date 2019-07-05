@@ -26,7 +26,6 @@ import           Data.Default
 import           Data.Map                         (fromList)
 import qualified Data.Set                         as S
 import qualified NITTA.Intermediate.Functions     as F
-import           NITTA.Intermediate.Types         (Diff (..), F, Patch (..))
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems.Endpoint
@@ -105,7 +104,13 @@ test_patchFunction =
 
 
 pu = let
-    Right pu' = tryBind f1 $ PU def (def :: Accum String Int Int) undefined undefined
+    Right pu' = tryBind f1 PU
+        { diff=def
+        , unit=def :: Accum String Int Int
+        , ports=undefined
+        , ioPorts=undefined
+        , systemEnv=undefined
+        }
     in pu'
 
 test_patchEndpointOptions =

@@ -21,7 +21,7 @@ Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Fram
   ( Fram(..)
-  , Ports(..)
+  , Ports(..), IOPorts(..)
   ) where
 
 import           Control.Applicative              ((<|>))
@@ -416,6 +416,9 @@ instance Connected (Fram v x t) where
             }
         deriving ( Show )
 
+instance IOConnected (Fram v x t) where
+    data IOPorts (Fram v x t) = FramIO
+        deriving ( Show )
 
 getAddr (ReadCell addr)  = addr
 getAddr (WriteCell addr) = addr
@@ -472,6 +475,7 @@ instance ( VarValTime v x t
                     , wr=SignalTag 1
                     , addr=map SignalTag [ 2, 3, 4, 5 ]
                     }
+                FramIO
             testBenchImp = fixIndent [qc|
 |               {"module"} { moduleName pName fram }_tb();
 |               parameter DATA_WIDTH = { finiteBitSize (def :: x) };
@@ -598,7 +602,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
             $ unlines $ map
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
                 $ A.elems memory
-    hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..}
+    hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} FramIO
         = fixIndent [qc|
 |           pu_fram #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -618,7 +622,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
 |               , .attr_out( { attrOut } )
 |               );
 |           |]
-    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
 instance IOTestBench (Fram v x t) v x

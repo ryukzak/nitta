@@ -128,7 +128,7 @@ described computational process on the multiplier.
 module NITTA.Model.ProcessorUnits.Multiplier
     ( multiplier
     , Multiplier
-    , Ports(..)
+    , Ports(..), IOPorts(..)
     ) where
 
 import           Control.Monad                    (when)
@@ -545,6 +545,9 @@ instance Connected (Multiplier v x t) where
         , oe    :: SignalTag -- ^send result to the bus
         } deriving ( Show )
 
+instance IOConnected (Multiplier v x t) where
+  data IOPorts (Multiplier v x t) = MultiplierIO
+        deriving ( Show )
 
 -- |The availability of standard values, with which actual result of mUnit in simlator
 -- is compared, has the main role in testing. This class carry on standard values generation.
@@ -597,7 +600,7 @@ instance ( VarValTime v x t
     --
     -- Take attention to function @fixIndent@. This function allows a programmer to use
     -- normal code block indentation.
-    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } MultiplierPorts{..}
+    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } MultiplierPorts{..} MultiplierIO
         = fixIndent [qc|
 |           pu_multiplier #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -616,7 +619,7 @@ instance ( VarValTime v x t
 |               , .attr_out( { attrOut } )
 |               );
 |           |]
-    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
 
@@ -645,8 +648,6 @@ instance WithFunctions (Multiplier v x t) (F v x) where
 -- of outer influence o mUnit (signals and input data), and also check sequence of output signals
 -- and data. Output data is compared with results of functional simulations and if they doesn't match
 -- then error message is displaing.
-
-
 instance ( VarValTime v x t, Integral x
          ) => Testable (Multiplier v x t) v x where
     testBenchImplementation prj@Project{ pName, pUnit }
@@ -665,6 +666,7 @@ instance ( VarValTime v x t, Integral x
                     , wr=SignalTag 1
                     , wrSel=SignalTag 2
                     }
+                , tbcIOPorts=MultiplierIO
                 , tbcSignalConnect= \case
                     (SignalTag 0) -> "oe"
                     (SignalTag 1) -> "wr"

@@ -18,7 +18,7 @@ Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Serial.Accum
   ( Accum
-  , Ports(..)
+  , Ports(..), IOPorts(..)
   ) where
 
 import           Data.Bits                                 (finiteBitSize)
@@ -132,12 +132,14 @@ instance Connected (Accum v x t) where
   data Ports (Accum v x t)
     = AccumPorts{ init, load, neg, oe :: SignalTag } deriving ( Show )
 
+instance IOConnected (Accum v x t) where
+  data IOPorts (Accum v x t) = AccumIO
 
 instance ( Val x ) => TargetSystemComponent (Accum v x t) where
     moduleName _ _ = "pu_accum"
     hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
     software _ _ = Empty
-    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } AccumPorts{..}
+    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } AccumPorts{..} AccumIO
         = fixIndent [qc|
 |       pu_accum #
 |               ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -155,7 +157,7 @@ instance ( Val x ) => TargetSystemComponent (Accum v x t) where
 |           , .attr_out( { attrOut } )
 |           );
 |       |]
-    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
 instance IOTestBench (Accum v x t) v x

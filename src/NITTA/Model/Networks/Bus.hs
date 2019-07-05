@@ -38,6 +38,7 @@ Stability   : experimental
 module NITTA.Model.Networks.Bus
     ( busNetwork
     , BusNetwork(..)
+    , Ports(..), IOPorts(..)
     , bindedFunctions, bindedVars
     ) where
 
@@ -47,7 +48,7 @@ import           Data.Bits                        (FiniteBits (..))
 import           Data.Default
 import           Data.List                        (find, groupBy, nub, sortOn)
 import qualified Data.Map                         as M
-import           Data.Maybe                       (catMaybes, isJust, mapMaybe)
+import           Data.Maybe                       (isJust, mapMaybe)
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import           Data.Typeable
@@ -88,7 +89,7 @@ data BusNetwork tag v x t = BusNetwork
     -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
     , bnAllowDrop      :: Maybe Bool
     , bnEnv            :: TargetEnvironment
-    , bnPorts          :: Ports (BusNetwork tag v x t)
+    , bnIOPorts        :: IOPorts (BusNetwork tag v x t)
     }
 
 
@@ -102,7 +103,7 @@ busNetwork w bnAllowDrop pus = BusNetwork
         , bnPus=M.fromList pus'
         , bnSignalBusWidth=w
         , bnAllowDrop
-        , bnPorts=NetPorts{ extInputs, extOutputs }
+        , bnIOPorts=BusNetworkIO{ extInputs, extOutputs }
         , bnEnv
         }
     where
@@ -125,8 +126,8 @@ busNetwork w bnAllowDrop pus = BusNetwork
                 }
             }
         pus' = map (\(tag, f) -> ( tag, f $ puEnv tag ) ) pus
-        extInputs=nub $ concatMap (\(_, PU{ ports }) -> externalInputPorts ports ) pus'
-        extOutputs=nub $ concatMap (\(_, PU{ ports }) -> externalOutputPorts ports ) pus'
+        extInputs=nub $ concatMap (\(_, PU{ ioPorts }) -> externalInputPorts ioPorts ) pus'
+        extOutputs=nub $ concatMap (\(_, PU{ ioPorts }) -> externalOutputPorts ioPorts ) pus'
 
 instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{ bnRemains, bnBinded } = bnRemains ++ concat (M.elems bnBinded)
@@ -169,8 +170,8 @@ instance ( UnitTag tag, VarValTime v x t
         = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (d^.at)
         | otherwise
         = let
-            pushs = M.fromList $ catMaybes
-                $ map (\case
+            pushs = M.fromList $ mapMaybe
+                (\case
                     (k, Just v) -> Just (k,  v)
                     (_, Nothing) -> Nothing
                 ) $ M.assocs dfdTargets
@@ -275,7 +276,7 @@ instance Controllable (BusNetwork tag v x t) where
 
     -- Right now, BusNetwork don't have external control (exclude rst signal and some hacks). All
     -- signals starts and ends inside network unit.
-    mapMicrocodeToPorts BusNetworkMC{} NetPorts{} = []
+    mapMicrocodeToPorts BusNetworkMC{} BusNetworkPorts = []
 
 
 instance {-# OVERLAPS #-}
@@ -364,10 +365,10 @@ bindedFunctions puTitle BusNetwork{ bnBinded }
 
 programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
-externalPorts pus = M.assocs $ M.map (
-        \PU{ ports } ->
-            ( map inputPortTag $ externalInputPorts ports
-            , map outputPortTag $ externalOutputPorts ports
+bnExternalPorts pus = M.assocs $ M.map (
+        \PU{ ioPorts } ->
+            ( map inputPortTag $ externalInputPorts ioPorts
+            , map outputPortTag $ externalOutputPorts ioPorts
             )
     ) pus
 
@@ -395,7 +396,7 @@ instance ( VarValTime v x t
 |                       ( input                     clk
 |                       , input                     rst
 |                       , output                    cycle
-|                   { externalPortsDecl $ externalPorts bnPus }
+|                   { externalPortsDecl $ bnExternalPorts bnPus }
 |                       , output              [7:0] debug_status
 |                       , output              [7:0] debug_bus1
 |                       , output              [7:0] debug_bus2
@@ -446,9 +447,9 @@ instance ( VarValTime v x t
 |                   |]
 
             renderInstance insts regs [] = ( reverse insts, reverse regs )
-            renderInstance insts regs ((t, PU{ unit, systemEnv, ports }) : xs)
+            renderInstance insts regs ((t, PU{ unit, systemEnv, ports, ioPorts }) : xs)
                 = let
-                    inst = hardwareInstance t unit systemEnv ports
+                    inst = hardwareInstance t unit systemEnv ports ioPorts
                     insts' = inst : regInstance t : insts
                     regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
                 in renderInstance insts' regs' xs
@@ -465,11 +466,11 @@ instance ( VarValTime v x t
             memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) $ programTicks pu
             values (BusNetworkMC arr) = reverse $ A.elems arr
 
-    hardwareInstance tag BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } bnPorts
+    hardwareInstance tag BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } _ports ioPorts
         | let
             io2v n = "    , " ++ n ++ "( " ++ n ++ " )"
-            is = map io2v $ map (\(InputPortTag n) -> n) $ externalInputPorts bnPorts
-            os = map io2v $ map (\(OutputPortTag n) -> n) $ externalOutputPorts bnPorts
+            is = map (\(InputPortTag n) -> io2v n) $ externalInputPorts ioPorts
+            os = map (\(OutputPortTag n) -> io2v n) $ externalOutputPorts ioPorts
         = fixIndent [qc|
 |           { tag } #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -487,13 +488,17 @@ instance ( VarValTime v x t
 |               , .is_drop_allow( rendezvous )  // FIXME:
 |               );
 |           |]
-    hardwareInstance _title _bn TargetEnvironment{ unitEnv=ProcessUnitEnv{} } _bnPorts
+    hardwareInstance _title _bn TargetEnvironment{ unitEnv=ProcessUnitEnv{} } _ports _io
         = error "BusNetwork should be NetworkEnv"
 
 
 instance Connected (BusNetwork tag v x t) where
-    data Ports (BusNetwork tag v x t)
-        = NetPorts
+    data Ports (BusNetwork tag v x t) = BusNetworkPorts
+        deriving ( Show )
+
+instance IOConnected (BusNetwork tag v x t) where
+    data IOPorts (BusNetwork tag v x t)
+        = BusNetworkIO
             { extInputs :: [ InputPortTag ]
             , extOutputs :: [ OutputPortTag ]
             }
@@ -514,13 +519,13 @@ instance ( VarValTime v x t
                     } = let
             testEnv = S.join "\\n\\n"
                 [ tbEnv
-                | (t, PU{ unit, systemEnv, ports }) <- M.assocs bnPus
+                | (t, PU{ unit, systemEnv, ports, ioPorts }) <- M.assocs bnPus
                 , let t' = filter (/= '"') $ show t
-                , let tbEnv = testEnvironment t' unit systemEnv ports pTestCntx
+                , let tbEnv = testEnvironment t' unit systemEnv ports ioPorts pTestCntx
                 , not $ null tbEnv
                 ]
 
-            externalPortNames = concatMap ( \(_tag, (is, os)) -> is ++ os ) $ externalPorts bnPus
+            externalPortNames = concatMap ( \(_tag, (is, os)) -> is ++ os ) $ bnExternalPorts bnPus
             externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") externalPortNames)
             envInitFlags = mapMaybe (uncurry testEnvironmentInitFlag) $ M.assocs bnPus
 

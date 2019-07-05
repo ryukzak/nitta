@@ -20,17 +20,16 @@ Stability   : experimental
 
 -}
 module NITTA.Model.ProcessorUnits.IO.SPI
-    ( Ports(..)
-    , ExternalPorts(..)
-    , SPI
+    ( SPI
     , anySPI
+    , Ports(..), IOPorts(..)
     ) where
 
 import           Data.Bits                        (finiteBitSize)
 import           Data.Default
 import           Data.List                        (partition)
 import qualified Data.Map                         as M
-import           Data.Maybe                       (catMaybes, fromMaybe)
+import           Data.Maybe                       (fromMaybe, mapMaybe)
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import qualified NITTA.Intermediate.Functions     as F
@@ -204,21 +203,6 @@ instance
         | Just f'@F.Receive{} <- castF f = simulate cntx f'
         | otherwise = error $ "Can't simulate " ++ show f ++ " on SPI."
 
-data ExternalPorts
-    = Master
-        { master_mosi :: OutputPortTag
-        , master_miso :: InputPortTag
-        , master_sclk :: OutputPortTag
-        , master_cs   :: OutputPortTag
-        }
-    | Slave
-        { slave_mosi :: InputPortTag
-        , slave_miso :: OutputPortTag
-        , slave_sclk :: InputPortTag
-        , slave_cs   :: InputPortTag
-        }
-    deriving ( Show )
-
 instance Connected (SPI v x t) where
     data Ports (SPI v x t)
         = SPIPorts
@@ -226,15 +210,30 @@ instance Connected (SPI v x t) where
              -- |Данный сигнал используется для оповещения процессора о завершении передачи данных. Необходимо для
              -- приостановки работы пока передача не будет завершена, так как в противном случае данные будут потеряны.
             , stop :: String
-            , externalPorts :: ExternalPorts
             }
         deriving ( Show )
 
-    externalInputPorts SPIPorts{ externalPorts=Slave{..} } = [ slave_mosi, slave_sclk, slave_cs ]
-    externalInputPorts SPIPorts{ externalPorts=Master{..} } = [ master_miso ]
+instance IOConnected (SPI v x t) where
+    data IOPorts (SPI v x t)
+        = Master
+            { master_mosi :: OutputPortTag
+            , master_miso :: InputPortTag
+            , master_sclk :: OutputPortTag
+            , master_cs   :: OutputPortTag
+            }
+        | Slave
+            { slave_mosi :: InputPortTag
+            , slave_miso :: OutputPortTag
+            , slave_sclk :: InputPortTag
+            , slave_cs   :: InputPortTag
+            }
+        deriving ( Show )
 
-    externalOutputPorts SPIPorts{ externalPorts=Slave{..} } = [ slave_miso ]
-    externalOutputPorts SPIPorts{ externalPorts=Master{..} } = [ master_mosi, master_sclk, master_cs ]
+    externalInputPorts Slave{..} = [ slave_mosi, slave_sclk, slave_cs ]
+    externalInputPorts Master{..} = [ master_miso ]
+
+    externalOutputPorts Slave{..} = [ slave_miso ]
+    externalOutputPorts Master{..} = [ master_mosi, master_sclk, master_cs ]
 
 
 instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
@@ -253,14 +252,15 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
             , FromLibrary "spi/pu_master_spi.v"
             ]
     software _ pu = Immediate "transport.txt" $ show pu
-    hardwareInstance _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
+    hardwareInstance _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
     hardwareInstance
             tag
             SPI{ bounceFilter }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
-            SPIPorts{ externalPorts, .. }
+            SPIPorts{..}
+            ioPorts
         = fixIndent [qc|
-|           { module_ externalPorts }
+|           { module_ ioPorts }
 |               #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                , .ATTR_WIDTH( { show parameterAttrWidth } )
 |                , .BOUNCE_FILTER( { show bounceFilter } )
@@ -273,7 +273,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
 |               , .signal_wr( { signal wr } )
 |               , .data_in( { dataIn } ), .attr_in( { attrIn } )
 |               , .data_out( { dataOut } ), .attr_out( { attrOut } )
-|               { extIO externalPorts }
+|               { extIO ioPorts }
 |               );
 |           |]
             where
@@ -295,20 +295,21 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
 instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
     testEnvironmentInitFlag tag _pu = Just $ tag ++ "_env_init_flag"
 
-    testEnvironment _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
+    testEnvironment _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ _ _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
     testEnvironment
             tag
             pu@SPI{ process_, bounceFilter }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
-            SPIPorts{ externalPorts, .. }
+            SPIPorts{..}
+            ioPorts
             cntx@Cntx{ cntxCycleNumber, cntxProcess }
         | let
-            receivedVariablesSeq = catMaybes $ map (\case
+            receivedVariablesSeq = mapMaybe (\case
                     Source vs -> Just $ head $ S.elems vs
                     _ -> Nothing
                 ) $ getEndpoints process_
             receivedVarsValues = take cntxCycleNumber $ cntxReceivedBySlice cntx
-            sendedVariableSeq = catMaybes $ map (\case
+            sendedVariableSeq = mapMaybe (\case
                     (Target v) -> Just v
                     _ -> Nothing
                 ) $ getEndpoints process_
@@ -324,7 +325,7 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
                 in S.join ", " (xs' ++ placeholder)
 
             Just envInitFlagName = testEnvironmentInitFlag tag pu
-        = case externalPorts of
+        = case ioPorts of
             _ | frameWordCount == 0 -> ""
             Slave{..} -> let
                     receiveCycle transmit = let

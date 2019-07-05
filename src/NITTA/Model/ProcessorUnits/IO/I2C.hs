@@ -254,9 +254,9 @@ instance Connected (I2C v x t) where
 --             tag
 --             SerialPU{ spuState=State{ spiBounceFilter } }
 --             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
---             I2CPorts{ externalPorts, .. }
+--             I2CPorts{ ioPorts, .. }
 --         = fixIndent [qc|
--- |           { module_ externalPorts }
+-- |           { module_ ioPorts }
 -- |               #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 -- |                , .ATTR_WIDTH( { show parameterAttrWidth } )
 -- |                , .BOUNCE_FILTER( { show spiBounceFilter } )
@@ -269,7 +269,7 @@ instance Connected (I2C v x t) where
 -- |               , .signal_wr( { signal wr } )
 -- |               , .data_in( { dataIn } ), .attr_in( { attrIn } )
 -- |               , .data_out( { dataOut } ), .attr_out( { attrOut } )
--- |               { extIO externalPorts }
+-- |               { extIO ioPorts }
 -- |               );
 -- |           |]
 --             where
@@ -297,7 +297,7 @@ instance Connected (I2C v x t) where
 --             tag
 --             pu@SerialPU{ spuState=State{ spiBounceFilter, spiReceive, spiSend } }
 --             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
---             I2CPorts{ externalPorts, .. }
+--             I2CPorts{ ioPorts, .. }
 --             cntx@Cntx{ cntxCycleNumber, cntxProcess }
 --         | let
 --             receivedVariablesSeq = reverse $ map head $ fst spiReceive
@@ -316,7 +316,7 @@ instance Connected (I2C v x t) where
 --                 in S.join ", " (xs' ++ placeholder)
 
 --             Just envInitFlagName = testEnvironmentInitFlag tag pu
---         = case externalPorts of
+--         = case ioPorts of
 --             _ | frameWordCount == 0 -> ""
 --             Slave{..} -> let
 --                     receiveCycle transmit = let
