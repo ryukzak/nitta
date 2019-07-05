@@ -147,7 +147,7 @@ import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           NITTA.Utils.Process
+import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (inf, sup, (...))
 import           Text.InterpolatedString.Perl6    (qc)
 
@@ -229,7 +229,7 @@ developed. The data structure is parametrized by the following variables types:
 -- available options.
 
 data Multiplier v x t = Multiplier
-    { 
+    {
     -- |List of the assigned, but not processed functions. Functions execution
     -- starts with:
     --

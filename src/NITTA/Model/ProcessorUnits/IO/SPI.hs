@@ -42,7 +42,7 @@ import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Utils
-import           NITTA.Utils.Process
+import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (inf, sup, (...))
 import           Text.InterpolatedString.Perl6    (qc)
 
@@ -87,7 +87,7 @@ instance ( VarValTime v x t
         = Left $ "SPI to small buffer size"
 
         | Just (F.Receive (O vs)) <- castF f
-        , let ( cads, process_ ) = runSchedule spi $ scheduleFunctoinBind f
+        , let ( cads, process_ ) = runSchedule spi $ scheduleFunctionBind f
         = Right spi
             { receiveQueue=Q{ vars=S.elems vs, function=f, cads } : receiveQueue
             , receiveN=receiveN + 1
@@ -95,7 +95,7 @@ instance ( VarValTime v x t
             }
 
         | Just (F.Send (I v)) <- castF f
-        , let ( cads, process_ ) = runSchedule spi $ scheduleFunctoinBind f
+        , let ( cads, process_ ) = runSchedule spi $ scheduleFunctionBind f
         = Right spi
             { sendQueue=Q{ vars=[v], function=f, cads } : sendQueue
             , sendN=sendN + 1

@@ -41,7 +41,7 @@ import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           NITTA.Utils.Process
+import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (Interval, inf, intersection,
                                                    singleton, sup, width, (...))
 import           Text.InterpolatedString.Perl6    (qc)

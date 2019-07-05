@@ -68,7 +68,7 @@ import           NITTA.Project.Types
 import           NITTA.UIBackend.VisJS            ()
 import           NITTA.Utils
 import           NITTA.Utils.Lens
-import           NITTA.Utils.Process
+import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (inf, width, (...))
 import           Text.InterpolatedString.Perl6    (qc)
 

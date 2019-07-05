@@ -60,7 +60,7 @@ library
                      , NITTA.UIBackend.VisJS.Types
                      , NITTA.Utils
                      , NITTA.Utils.Lens
-                     , NITTA.Utils.Process
+                     , NITTA.Utils.ProcessDescription
   build-depends:       aeson
                      , array
                      , base

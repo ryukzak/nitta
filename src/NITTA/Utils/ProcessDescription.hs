@@ -3,7 +3,7 @@
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 {-|
-Module      : NITTA.Utils.Process
+Module      : NITTA.Utils.ProcessDescription
 Description : Utilities for process description.
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
@@ -17,11 +17,12 @@ based builder from that module.
 
 It also agreed to the process inspection.
 -}
-module NITTA.Utils.Process
+-- FIXME: rename
+module NITTA.Utils.ProcessDescription
     ( runSchedule
     , execSchedule, execScheduleWithProcess
     , scheduleEndpoint
-    , scheduleFunctoinBind, scheduleFunction
+    , scheduleFunctionBind, scheduleFunction
     , scheduleInstruction
     , scheduleNestedStep
     , establishVerticalRelations, establishVerticalRelation
@@ -103,7 +104,7 @@ establishVerticalRelation h l = do
             }
         }
 
-scheduleFunctoinBind f = do
+scheduleFunctionBind f = do
     Schedule{ schProcess=Process{ nextTick } } <- get
     scheduleStep (Event nextTick) $ CADStep $ "bind " ++ show f
 

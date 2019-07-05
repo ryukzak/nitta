@@ -44,7 +44,7 @@ import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           NITTA.Utils.Process
+import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (inf, sup, (...))
 import           Text.InterpolatedString.Perl6    (qc)
 
@@ -180,7 +180,7 @@ instance ( VarValTime v x t
         | Just (Constant (X x) (O vs)) <- castF f
         , Just (addr, _) <- lockableNotUsedCell fram
         , let
-            (cads, process_) = runSchedule fram $ scheduleFunctoinBind f
+            (cads, process_) = runSchedule fram $ scheduleFunctionBind f
             cell = Cell
                 { state=DoConstant $ S.elems vs
                 , job=Just (defJob f){ cads }
@@ -196,7 +196,7 @@ instance ( VarValTime v x t
         | Just (Loop (X x) (O vs) (I _)) <- castF f
         , Just (addr, _) <- lockableNotUsedCell fram
         , let
-            (cads, process_) = runSchedule fram $ scheduleFunctoinBind f
+            (cads, process_) = runSchedule fram $ scheduleFunctionBind f
             cell = Cell
                 { state=DoLoopSource $ S.elems vs
                 , job=Just (defJob f){ cads }
@@ -212,7 +212,7 @@ instance ( VarValTime v x t
         | Just r@Reg{} <- castF f
         , any (\case ForReg{} -> True; DoReg{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory
         , let
-            (cads, process_) = runSchedule fram $ scheduleFunctoinBind f
+            (cads, process_) = runSchedule fram $ scheduleFunctionBind f
             job = (defJob f){ cads }
         = Right fram
             { remainRegs=(r, job) : remainRegs
@@ -598,7 +598,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
             $ unlines $ map
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
                 $ A.elems memory
-    hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} 
+    hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..}
         = fixIndent [qc|
 |           pu_fram #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -608,11 +608,11 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
 |                   ) { tag }
 |               ( .clk( { signalClk } )
 |               , .signal_addr( \{ { S.join ", " (map signal addr) } } )
-|   
+|
 |               , .signal_wr( { signal wr } )
 |               , .data_in( { dataIn } )
 |               , .attr_in( { attrIn } )
-|   
+|
 |               , .signal_oe( { signal oe } )
 |               , .data_out( { dataOut } )
 |               , .attr_out( { attrOut } )
