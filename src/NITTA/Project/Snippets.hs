@@ -83,6 +83,7 @@ snippetTestBench
                 , signalCycle="cycle"
                 , inputPort=undefined
                 , outputPort=undefined
+                , inoutPort=undefined
                 , unitEnv=ProcessUnitEnv
                     { parameterAttrWidth=IntParam 4
                     , dataIn="data_in"

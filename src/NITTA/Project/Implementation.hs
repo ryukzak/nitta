@@ -80,6 +80,7 @@ data TargetEnvironment
         , signalCycle :: String -- ^posedge on computation cycle start
         , inputPort   :: InputPortTag -> String
         , outputPort  :: OutputPortTag -> String
+        , inoutPort   :: InoutPortTag -> String
         , unitEnv     :: UnitEnv -- unit specific environment
         }
 

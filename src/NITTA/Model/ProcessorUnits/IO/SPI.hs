@@ -76,11 +76,11 @@ instance IOConnected (SPI v x t) where
             }
         deriving ( Show )
 
-    externalInputPorts Slave{..}  = [ slave_mosi, slave_sclk, slave_cs ]
-    externalInputPorts Master{..} = [ master_miso ]
+    inputPorts Slave{..}  = [ slave_mosi, slave_sclk, slave_cs ]
+    inputPorts Master{..} = [ master_miso ]
 
-    externalOutputPorts Slave{..}  = [ slave_miso ]
-    externalOutputPorts Master{..} = [ master_mosi, master_sclk, master_cs ]
+    outputPorts Slave{..}  = [ slave_miso ]
+    outputPorts Master{..} = [ master_mosi, master_sclk, master_cs ]
 
 
 instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where

@@ -235,11 +235,14 @@ class Connected pu where
 class IOConnected pu where
     data IOPorts pu :: *
     -- |External input ports, which go outside of NITTA mUnit.
-    externalInputPorts :: IOPorts pu -> [ InputPortTag ]
-    externalInputPorts _ = []
+    inputPorts :: IOPorts pu -> [ InputPortTag ]
+    inputPorts _ = []
     -- |External output ports, which go outside of NITTA mUnit.
-    externalOutputPorts :: IOPorts pu -> [ OutputPortTag ]
-    externalOutputPorts _ = []
+    outputPorts :: IOPorts pu -> [ OutputPortTag ]
+    outputPorts _ = []
+    -- |External output ports, which go outside of NITTA mUnit.
+    inoutPorts :: IOPorts pu -> [ InoutPortTag ]
+    inoutPorts _ = []
 
 
 newtype SignalTag = SignalTag Int deriving ( Show, Eq, Ord, Ix )

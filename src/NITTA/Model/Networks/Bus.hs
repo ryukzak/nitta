@@ -113,6 +113,7 @@ busNetwork w bnAllowDrop pus = BusNetwork
             , signalCycle="cycle"
             , inputPort= \(InputPortTag n) -> n
             , outputPort= \(OutputPortTag n) -> n
+            , inoutPort= \(InoutPortTag n) -> n
             , unitEnv=NetworkEnv
             }
         puEnv tag = bnEnv
@@ -126,8 +127,8 @@ busNetwork w bnAllowDrop pus = BusNetwork
                 }
             }
         pus' = map (\(tag, f) -> ( tag, f $ puEnv tag ) ) pus
-        extInputs=nub $ concatMap (\(_, PU{ ioPorts }) -> externalInputPorts ioPorts ) pus'
-        extOutputs=nub $ concatMap (\(_, PU{ ioPorts }) -> externalOutputPorts ioPorts ) pus'
+        extInputs=nub $ concatMap (\(_, PU{ ioPorts }) -> inputPorts ioPorts ) pus'
+        extOutputs=nub $ concatMap (\(_, PU{ ioPorts }) -> outputPorts ioPorts ) pus'
 
 instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{ bnRemains, bnBinded } = bnRemains ++ concat (M.elems bnBinded)
@@ -367,8 +368,8 @@ programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
 bnExternalPorts pus = M.assocs $ M.map (
         \PU{ ioPorts } ->
-            ( map inputPortTag $ externalInputPorts ioPorts
-            , map outputPortTag $ externalOutputPorts ioPorts
+            ( map inputPortTag $ inputPorts ioPorts
+            , map outputPortTag $ outputPorts ioPorts
             )
     ) pus
 
@@ -469,8 +470,8 @@ instance ( VarValTime v x t
     hardwareInstance tag BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } _ports ioPorts
         | let
             io2v n = "    , " ++ n ++ "( " ++ n ++ " )"
-            is = map (\(InputPortTag n) -> io2v n) $ externalInputPorts ioPorts
-            os = map (\(OutputPortTag n) -> io2v n) $ externalOutputPorts ioPorts
+            is = map (\(InputPortTag n) -> io2v n) $ inputPorts ioPorts
+            os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts
         = fixIndent [qc|
 |           { tag } #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -503,8 +504,8 @@ instance IOConnected (BusNetwork tag v x t) where
             , extOutputs :: [ OutputPortTag ]
             }
         deriving ( Show )
-    externalInputPorts = extInputs
-    externalOutputPorts = extOutputs
+    inputPorts = extInputs
+    outputPorts = extOutputs
 
 
 
