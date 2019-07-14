@@ -1,0 +1,17 @@
+kind: pipeline
+name: default
+
+steps:
+  - name: stack build
+    image: nitta-build:latest
+    pull: if-not-exists
+    commands:
+      - stack build --test --haddock --copy-bins
+      - stack exec nitta -- --generate-api
+  - name: npm build
+    image: nitta-build:latest
+    pull: if-not-exists
+    commands:
+      - cd web
+      - npm install --dev
+      - npm run build
