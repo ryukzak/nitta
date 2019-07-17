@@ -25,7 +25,7 @@ module NITTA.Model.ProcessorUnits.Types
     , Process(..), ProcessUid, Step(..), PlaceInTime(..), StepInfo(..), Relation(..)
     , descent, whatsHappen, extractInstructionAt
     , bind, allowToProcess
-    , level, showPU
+    , showPU
     , Connected(..), SignalTag(..), InputPortTag(..), OutputPortTag(..), SignalValue(..), (+++)
     , ByTime(..)
     ) where
@@ -186,13 +186,6 @@ instance ( Ord v ) => Patch (StepInfo v x t) (Diff v) where
     patch diff (NestedStep tag nStep) = NestedStep tag $ patch diff nStep
     patch _    i                      = i
 
-
--- |Получить строку с название уровня указанного шага вычислительного процесса.
-level CADStep{}           = "CAD"
-level FStep{}             = "Function"
-level EndpointRoleStep{}  = "Endpoint"
-level InstructionStep{}   = "Instruction"
-level (NestedStep _ step) = level $ sDesc $ descent step
 
 showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
     where

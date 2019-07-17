@@ -94,10 +94,15 @@ instance ( VarValTimeJSON v x t
         [ "sKey"   .= sKey
         , "sDesc"  .= show sDesc
         , "sTime"  .= sTime
-        , "sLevel" .= level sDesc
+        , "sLevel" .= levelName sDesc
         , "sPU"    .= showPU sDesc
         ]
 
+levelName CADStep{}           = "CAD" :: String
+levelName FStep{}             = "Function"
+levelName EndpointRoleStep{}  = "Endpoint"
+levelName InstructionStep{}   = "Instruction"
+levelName (NestedStep _ step) = levelName $ sDesc step
 
 
 -- *Synthesis
