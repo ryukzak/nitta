@@ -18,9 +18,10 @@ Stability   : experimental
 module NITTA.UIBackend
     ( backendServer
     , prepareStaticFiles
+    , prepareJSAPI
     ) where
 
-import           Control.Monad                 (unless, when)
+import           Control.Monad                 (when)
 import           Data.Monoid                   ((<>))
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
 import           Network.Wai.Handler.Warp      (run)
@@ -84,9 +85,7 @@ application model = do
 --
 -- - if true - prepare static files for the web UI by @npm@;
 -- - initial model state.
-backendServer no_api_gen modelState = do
-    let port = 8080
-    unless no_api_gen $ prepareJSAPI port
+backendServer port modelState = do
     putStrLn $ "Running NITTA server at http://localhost:" ++ show port ++ "/index.html"
     app <- application modelState
     setLocaleEncoding utf8

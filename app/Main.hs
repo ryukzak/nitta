@@ -34,42 +34,45 @@ import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Project                    (TargetSynthesis (..),
                                                    mkModelWithOneNetwork,
                                                    runTargetSynthesis)
-import           NITTA.UIBackend                  (backendServer,
-                                                   prepareStaticFiles)
+import           NITTA.UIBackend
 import           System.Console.CmdArgs           hiding (def)
+import           System.Exit
 import           Text.InterpolatedString.Perl6    (qc)
 
 
 -- |Command line interface.
 data Nitta
     = Nitta
-        { web        :: Bool
-        , npm_build  :: Bool
-        , no_api_gen :: Bool
-        , type_      :: String
-        , file       :: Maybe FilePath
+        { web          :: Bool
+        , port         :: Int
+        , npm_build    :: Bool
+        , generate_api :: Bool
+        , type_        :: String
+        , file         :: Maybe FilePath
         }
     deriving ( Show, Data, Typeable )
 
-
 nittaArgs = Nitta
     { web=False &= help "Run web server"
+    , port=8080 &= help "WebUI port"
     , npm_build=False &= help "No regenerate WebUI static files"
-    , no_api_gen=False &= help "No regenerate rest_api.js library"
+    , generate_api=False &= help "generate rest_api.js library and exit"
     , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
     , file=def &= args &= typ "LUA_FILE"
     }
 
-
 main = do
-    Nitta{ web, npm_build, no_api_gen, file, type_ } <- cmdArgs nittaArgs
+    Nitta{ web, port, npm_build, generate_api, file, type_ } <- cmdArgs nittaArgs
+    when generate_api $ do
+        prepareJSAPI port
+        exitSuccess
     when npm_build prepareStaticFiles
     case file of
         Just fn -> do
             putStrLn [qc|> readFile: { fn }|]
             src <- T.readFile fn
             let runner = if web
-                then runWebUI no_api_gen $ lua2functions src
+                then runWebUI port $ lua2functions src
                 else runTestbench $ lua2functions src
             case type_ of
                 "fx24.32" -> runner (microarch :: BusNetwork String String (FX 24 32) Int)
@@ -77,7 +80,7 @@ main = do
                 _ -> error "Wrong bus type"
         Nothing -> runHardcoded
 
-runWebUI no_api_gen alg ma = backendServer no_api_gen $ mkModelWithOneNetwork ma alg
+runWebUI port alg ma = backendServer port $ mkModelWithOneNetwork ma alg
 runTestbench tDFG tMicroArch
     = void $ runTargetSynthesis (def :: TargetSynthesis _ _ _ Int)
         { tName="main"
@@ -128,7 +131,7 @@ runHardcoded = do
                 end
                 fib(1)|]
 
-    backendServer True $ mkModelWithOneNetwork microarchHC algHC
+    backendServer 8080 $ mkModelWithOneNetwork microarchHC algHC
     void $ runTargetSynthesis (def :: TargetSynthesis _ _ _ Int)
         { tName="hardcode"
         , tMicroArch=microarchHC
