@@ -55,6 +55,7 @@ library
                      , NITTA.UIBackend
                      , NITTA.UIBackend.Marshalling
                      , NITTA.UIBackend.REST
+                     , NITTA.UIBackend.Timeline
                      , NITTA.UIBackend.VisJS
                      , NITTA.UIBackend.VisJS.Types
                      , NITTA.Utils

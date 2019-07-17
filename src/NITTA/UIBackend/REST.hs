@@ -24,25 +24,27 @@ import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Default
-import qualified Data.Map                      as M
+import qualified Data.Map                         as M
 import           Data.Maybe
-import qualified Data.Tree                     as T
+import qualified Data.Tree                        as T
 import           GHC.Generics
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.Problems.Whole
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
-import           NITTA.Project.Utils           (writeAndRunTestbench)
+import           NITTA.Project.Utils              (writeAndRunTestbench)
 import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Types
 import           NITTA.Synthesis.Utils
-import           NITTA.UIBackend.Marshalling   ()
-import           NITTA.UIBackend.VisJS         (VisJS, algToVizJS)
+import           NITTA.UIBackend.Marshalling      ()
+import           NITTA.UIBackend.Timeline
+import           NITTA.UIBackend.VisJS            (VisJS, algToVizJS)
 import           Servant
-import           System.FilePath               (joinPath)
+import           System.FilePath                  (joinPath)
 
 
 -- *REST API
@@ -61,6 +63,7 @@ type WithSynthesis tag v x t
     =    Get '[JSON] (SG Node tag v x t)
     :<|> "edge" :> Get '[JSON] (Maybe (Edge (ModelState (BusNetwork tag v x t) v x) (SynthesisDT (BusNetwork tag v x t))))
     :<|> "model" :> Get '[JSON] (ModelState (BusNetwork tag v x t) v x)
+    :<|> "timelines" :> Get '[JSON] (ProcessTimelines v x t)
     :<|> "endpointOptions" :> Get '[JSON] [(tag, Option (EndpointDT v t))]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestbenchReport
@@ -70,6 +73,7 @@ withSynthesis root nId
     =    liftIO ( getNodeIO root nId )
     :<|> liftIO ( nOrigin <$> getNodeIO root nId )
     :<|> liftIO ( nModel <$> getNodeIO root nId )
+    :<|> liftIO ( processTimelines . process . mUnit . nModel <$> getNodeIO root nId )
     :<|> liftIO ( endpointOptions . mUnit . nModel <$> getNodeIO root nId )
     :<|> liftIO ( algToVizJS . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do

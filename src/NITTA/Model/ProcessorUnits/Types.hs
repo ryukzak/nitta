@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE StandaloneDeriving     #-}
@@ -120,7 +121,7 @@ instance WithFunctions (Process v x t) (F v x) where
     functions Process{ steps } = mapMaybe get steps
         where
             get Step{ sDesc } | FStep f <- descent sDesc = Just f
-            get _                                        = Nothing
+            get _             = Nothing
 
 
 
@@ -172,7 +173,7 @@ instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show (FStep (F f))               = show f
     show (EndpointRoleStep eff)      = show eff
     show (InstructionStep instr)     = show instr
-    show NestedStep{ nTitle, nStep } = show nTitle ++ "." ++ show nStep
+    show NestedStep{ nTitle, nStep } = S.replace "\"" "" (show nTitle) ++ "." ++ show nStep
 
 instance ( Ord v ) => Patch (StepInfo v x t) (Diff v) where
     patch diff (FStep f)              = FStep $ patch diff f

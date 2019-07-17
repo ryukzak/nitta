@@ -35,6 +35,7 @@ import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Synthesis.Types
+import           NITTA.UIBackend.Timeline
 import           NITTA.Utils                      (transferred)
 import           Numeric.Interval
 import           Servant
@@ -104,6 +105,9 @@ levelName EndpointRoleStep{}  = "Endpoint"
 levelName InstructionStep{}   = "Instruction"
 levelName (NestedStep _ step) = levelName $ sDesc step
 
+instance ToJSON ViewPointID
+instance ( VarValTimeJSON v x t ) => ToJSON (TimelinePoint v x t)
+instance ( VarValTimeJSON v x t ) => ToJSON (ProcessTimelines v x t)
 
 -- *Synthesis
 instance ToJSON NId where
