@@ -119,8 +119,8 @@ instance ( Default t ) => Default (Process v x t) where
 instance WithFunctions (Process v x t) (F v x) where
     functions Process{ steps } = mapMaybe get steps
         where
-            get step | Step{ sDesc=FStep f } <- descent step = Just f
-            get _    = Nothing
+            get Step{ sDesc } | FStep f <- descent sDesc = Just f
+            get _                                        = Nothing
 
 
 
@@ -164,8 +164,8 @@ data StepInfo v x t where
             , nStep :: Step v x t
             } -> StepInfo v x t
 
-descent Step{ sDesc=NestedStep _ step } = descent step
-descent step                            = step
+descent (NestedStep _ step) = descent $ sDesc step
+descent desc                = desc
 
 instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show (CADStep s)                 = s

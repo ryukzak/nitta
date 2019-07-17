@@ -184,11 +184,11 @@ endpointAt t p
 
 isFB s = isJust $ getFB s
 
-getFB step | Step{ sDesc=FStep fb } <- descent step = Just fb
-getFB _    = Nothing
+getFB Step{ sDesc } | FStep fb <- descent sDesc = Just fb
+getFB _                                         = Nothing
 
-getEndpoint step | Step{ sDesc=EndpointRoleStep role } <- descent step = Just role
-getEndpoint _                                                          = Nothing
+getEndpoint Step{ sDesc } | EndpointRoleStep role <- descent sDesc = Just role
+getEndpoint _                                                      = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 transferred pu = unionsMap variables $ getEndpoints $ process pu

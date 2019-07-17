@@ -551,7 +551,7 @@ testDataOutput tag fram@Fram{ process_=p@Process{ nextTick, steps } } cntx
         bankCheck
             = "\n      @(posedge clk);\n"
             ++ unlines [ "  " ++ checkBank addr v (either (error . ("bankCheck: " ++)) show $ getX cntx v)
-                        | Step{ sDesc=FStep f, .. } <- filter isFB $ map descent steps
+                        | FStep f <- filter (\case FStep{} -> True; _ -> False) $ map (descent . sDesc) steps
                         , let addr_v = outputStep fram f
                         , isJust addr_v
                         , let Just (addr, v) = addr_v
