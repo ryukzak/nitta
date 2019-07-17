@@ -20,9 +20,9 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Fram
-  ( Fram(..)
-  , Ports(..)
-  ) where
+    ( Fram(..)
+    , Ports(..)
+    ) where
 
 import           Control.Applicative              ((<|>))
 import           Control.Monad
