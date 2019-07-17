@@ -22,7 +22,7 @@ Stability   : experimental
 module NITTA.Model.ProcessorUnits.Types
     ( UnitTag
     , ProcessorUnit(..), Simulatable(..), Controllable(..), UnambiguouslyDecode(..)
-    , Process(..), ProcessUid, Step(..), PlaceInTime(..), StepInfo(..), Relation(..)
+    , Process(..), ProcessUid, Step(..), StepInfo(..), Relation(..)
     , descent, whatsHappen, extractInstructionAt
     , bind, allowToProcess
     , showPU
@@ -130,7 +130,7 @@ type ProcessUid = Int -- ^Уникальный идентификатор шаг
 data Step v x t
     = Step
         { sKey  :: ProcessUid    -- ^Уникальный идентификатор шага.
-        , sTime :: PlaceInTime t -- ^Описание типа и положения шага во времени.
+        , sTime :: Interval t -- ^Описание типа и положения шага во времени.
         , sDesc :: StepInfo v x t -- ^Описание действия описываемого шага.
         }
     deriving ( Show )
@@ -138,12 +138,6 @@ data Step v x t
 instance ( Ord v ) => Patch (Step v x t) (Diff v) where
     patch diff step@Step{ sDesc } = step{ sDesc=patch diff sDesc }
 
-
--- |Описание положения события во времени и типа события:
-data PlaceInTime t
-    = Event t -- ^Мгновенные события, используются главным образом для описания событий САПР.
-    | Activity ( Interval t ) -- ^Протяжённые во времени события. Используются замкнутые интервалы.
-    deriving ( Show )
 
 -- |Описание события, соответсвующего шага вычислительного процесса. Каждый вариант соответствует
 -- соответствующему отдельному уровню организации вычислительного процесса.
@@ -264,8 +258,7 @@ extractInstructionAt pu t = mapMaybe (inst pu) $ whatsHappen t $ process pu
         inst _ _                                   = Nothing
 
 
-atSameTime a (Activity t) = a `member` t
-atSameTime a (Event t)    = a == t
+atSameTime a ti = a `member` ti
 
 
 -- |Декодирование инструкции в микрокод.

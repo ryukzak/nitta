@@ -34,7 +34,6 @@ module NITTA.Utils
     , renderST
     -- *Process construction (deprecated)
     , modifyProcess
-    , addActivity
     , addInstr
     , addStep
     , addStep_
@@ -162,8 +161,6 @@ addStep_ placeInTime info = do
     _ <- addStep placeInTime info
     return ()
 
-addActivity interval = addStep $ Activity interval
-
 relation r = do
     p@Process{ relations } <- get
     put p{ relations=r : relations }
@@ -172,10 +169,10 @@ setProcessTime t = do
     p <- get
     put p{ nextTick=t }
 
-bindFB fb t = addStep (Event t) $ CADStep $ "bind: " ++ show fb
+bindFB fb t = addStep (I.singleton t) $ CADStep $ "bind: " ++ show fb
 
 addInstr :: ( Typeable pu, Show (Instruction pu) ) => pu -> I.Interval t -> Instruction pu -> State (Process v x t) ProcessUid
-addInstr _pu t i = addStep (Activity t) $ InstructionStep i
+addInstr _pu ti i = addStep ti $ InstructionStep i
 
 
 
@@ -205,12 +202,9 @@ isTarget _                        = False
 isInstruction (InstructionStep _) = True
 isInstruction _                   = False
 
-placeInTimeTag (Activity t) = tag $ I.inf t
-placeInTimeTag (Event t)    = tag t
+placeInTimeTag ti = tag $ I.inf ti
 
-
-stepStart Step{ sTime=Event t }    = t
-stepStart Step{ sTime=Activity t } = I.inf t
+stepStart Step{ sTime } = I.inf sTime
 
 
 -- modern

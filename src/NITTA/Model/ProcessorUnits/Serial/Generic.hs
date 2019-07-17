@@ -155,7 +155,7 @@ instance ( Default st
            _  -> pu'
     where
       finish p CurrentJob{ cFB, cStart } = snd $ modifyProcess p $ do
-        _h <- addActivity (cStart ... (act^.at.infimum + act^.at.dur)) $ FStep cFB
+        _h <- addStep (cStart ... (act^.at.infimum + act^.at.dur)) $ FStep cFB
         return ()
         -- mapM_ (relation . Vertical h) cSteps
 
@@ -204,8 +204,8 @@ serialSchedule
   :: ( Show (Instruction pu), Time t, Typeable pu )
   => Instruction pu -> Decision (EndpointDT v t) -> State (Process v x t) [ProcessUid]
 serialSchedule instr act = do
-  e <- addActivity (act^.at) $ EndpointRoleStep $ epdRole act
-  i <- addActivity (act^.at) $ InstructionStep instr
+  e <- addStep (act^.at) $ EndpointRoleStep $ epdRole act
+  i <- addStep (act^.at) $ InstructionStep instr
   -- mapM_ (relation . Vertical e) [i]
   setProcessTime $ (act^.at.supremum) + 1
   return [e, i]

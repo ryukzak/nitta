@@ -580,7 +580,7 @@ findAddress var fram@Fram{ process_=Process{ steps } }
     = instr
     | otherwise = error $ "Can't find instruction for effect of variable: " ++ show var ++ " " ++ show steps
     where
-        variableSendAt v = [ t | Step{ sTime=Activity t, sDesc=info } <- steps
+        variableSendAt v = [ sTime | Step{ sTime, sDesc=info } <- steps
                            , v `elem` f info
                            ]
         f (EndpointRoleStep rule) = variables rule
@@ -598,7 +598,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
             $ unlines $ map
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
                 $ A.elems memory
-    hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} 
+    hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..}
         = fixIndent [qc|
 |           pu_fram #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -608,11 +608,11 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
 |                   ) { tag }
 |               ( .clk( { signalClk } )
 |               , .signal_addr( \{ { S.join ", " (map signal addr) } } )
-|   
+|
 |               , .signal_wr( { signal wr } )
 |               , .data_in( { dataIn } )
 |               , .attr_in( { attrIn } )
-|   
+|
 |               , .signal_oe( { signal oe } )
 |               , .data_out( { dataOut } )
 |               , .attr_out( { attrOut } )

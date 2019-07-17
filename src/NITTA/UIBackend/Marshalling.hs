@@ -145,10 +145,6 @@ instance ( VarValTimeJSON v x t
 -- *Basic data
 instance ( ToJSON tag, ToJSON t ) => ToJSON (TaggedTime tag t)
 
-instance ( ToJSON t, Time t ) => ToJSON (PlaceInTime t) where
-    toJSON (Event t)    = toJSON [ fromEnum t, fromEnum t ]
-    toJSON (Activity i) = toJSON [ fromEnum $ inf i, fromEnum $ sup i ]
-
 instance ( Show v ) => ToJSON (F v x) where
     toJSON = String . T.pack . show
 

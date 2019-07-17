@@ -47,7 +47,7 @@ import           Data.Bits                        (FiniteBits (..))
 import           Data.Default
 import           Data.List                        (find, groupBy, nub, sortOn)
 import qualified Data.Map                         as M
-import           Data.Maybe                       (catMaybes, isJust, mapMaybe)
+import           Data.Maybe                       (isJust, mapMaybe)
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import           Data.Typeable
@@ -69,7 +69,7 @@ import           NITTA.UIBackend.VisJS            ()
 import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           NITTA.Utils.Process
-import           Numeric.Interval                 (inf, width, (...))
+import           Numeric.Interval                 (inf, singleton, width, (...))
 import           Text.InterpolatedString.Perl6    (qc)
 
 
@@ -169,8 +169,7 @@ instance ( UnitTag tag, VarValTime v x t
         = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (d^.at)
         | otherwise
         = let
-            pushs = M.fromList $ catMaybes
-                $ map (\case
+            pushs = M.fromList $ mapMaybe (\case
                     (k, Just v) -> Just (k,  v)
                     (_, Nothing) -> Nothing
                 ) $ M.assocs dfdTargets
@@ -187,11 +186,11 @@ instance ( UnitTag tag, VarValTime v x t
             , bnProcess=snd $ modifyProcess bnProcess $ do
                 mapM_
                     (\(pushedValue, (targetTitle, _tc)) -> addStep
-                        (Activity $ transportStartAt ... transportEndAt)
+                        (transportStartAt ... transportEndAt)
                         $ InstructionStep (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork tag v x t))
                     )
                     $ M.assocs pushs
-                addStep_ (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show d
+                addStep_ (transportStartAt ... transportEndAt) $ CADStep $ show d
                 setProcessTime $ d^.at.supremum + 1
             }
         where
@@ -329,7 +328,7 @@ instance ( UnitTag tag, VarValTime v x t ) =>
                         Nothing  -> Just [fb]
                 ) puTitle bnBinded
             , bnProcess=snd $ modifyProcess p $
-                addStep (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ show puTitle
+                addStep (singleton nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ show puTitle
             , bnRemains=filter (/= fb) bnRemains
         }
 
