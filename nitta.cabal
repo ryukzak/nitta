@@ -108,16 +108,12 @@ executable nitta-api-gen
 executable nitta
   hs-source-dirs:      app
   main-is:             Main.hs
-  build-depends:       array
-                     , base
+  build-depends:       base
                      , cmdargs
-                     , containers
                      , data-default
                      , directory
                      , filepath
-                     , HStringTemplate
                      , interpolatedstring-perl6
-                     , MissingH
                      , nitta
                      , text
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
