@@ -63,7 +63,7 @@ type WithSynthesis tag v x t
     =    Get '[JSON] (SG Node tag v x t)
     :<|> "edge" :> Get '[JSON] (Maybe (Edge (ModelState (BusNetwork tag v x t) v x) (SynthesisDT (BusNetwork tag v x t))))
     :<|> "model" :> Get '[JSON] (ModelState (BusNetwork tag v x t) v x)
-    :<|> "timelines" :> Get '[JSON] (ProcessTimelines v x t)
+    :<|> "timelines" :> Get '[JSON] (ProcessTimelines t)
     :<|> "endpointOptions" :> Get '[JSON] [(tag, Option (EndpointDT v t))]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestbenchReport
