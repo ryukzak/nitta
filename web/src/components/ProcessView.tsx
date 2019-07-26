@@ -10,14 +10,16 @@ interface ProcessViewState {
     nId: string;
     data: ProcessTimelines<number>;
     detail: TimelinePoint<number>[];
+    highlight: number[];
 }
 
 export class ProcessView extends React.Component<ProcessViewProps, ProcessViewState> {
-    state: ProcessViewState = { nId: null, data: null, detail: null };
+    state: ProcessViewState = { nId: null, data: null, detail: null, highlight: [] };
 
     constructor(props) {
         super(props);
         this.renderPoint = this.renderPoint.bind(this);
+        this.selectPoint = this.selectPoint.bind(this);
     }
 
     static getDerivedStateFromProps(props: ProcessViewProps, state: ProcessViewState) {
@@ -44,7 +46,7 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
     requestTimelines(nId: string) {
         console.log("> ProcessView.requestTimelines");
         haskellAPI.getTimelines(nId)
-            .then((response) => {
+            .then((response: any) => {
                 console.log("> ProcessView.requestTimelines - done");
                 this.setState({
                     data: response.data
@@ -64,14 +66,35 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
     }
 
     renderPoint(point: TimelinePoint<number>[], i: number) {
-        let s: string = "#";
-        if (point.length === 0) {
-            s = ".";
-        }
+        let s: string = ".";
         if (point.length === 1) {
             s = "*";
         }
-        return <span key={i} onClick={() => this.setState({ detail: point })}>{s}</span>;
+        if (point.length > 1) {
+            s = "#";
+        }
+        for (let j = 0; j < point.length; j++) {
+            const p = point[j];
+            if (this.state.highlight.indexOf(p.pID) >= 0) {
+                return <span key={i} onClick={() => this.selectPoint(point)}><mark>{s}</mark></span>;
+            }
+        }
+        return <span key={i} onClick={() => this.selectPoint(point)}>{s}</span>;
+    }
+
+    selectPoint(point: TimelinePoint<number>[]) {
+        let highlight: number[] = [];
+        point.forEach(p => {
+            let id: number = p.pID;
+            highlight.push(id);
+            this.state.data.verticalRelations.forEach(e => {
+                if (highlight.indexOf(id) === -1) {
+                    if (e[0] === id) { highlight.push(e[1]); }
+                    if (e[1] === id) { highlight.push(e[0]); }
+                }
+            });
+        });
+        this.setState({ detail: point, highlight: highlight });
     }
 
     render() {

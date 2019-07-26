@@ -32,7 +32,8 @@ import           Numeric.Interval
 
 data ProcessTimelines t
     = ProcessTimelines
-        { timelines :: [ ( ViewPointID, [ [TimelinePoint t] ] ) ]
+        { timelines         :: [ ( ViewPointID, [ [TimelinePoint t] ] ) ]
+        , verticalRelations :: [(ProcessUid, ProcessUid)]
         }
     deriving ( Generic )
 
@@ -56,14 +57,14 @@ instance Show ViewPointID where
 
 data TimelinePoint t
     = TimelinePoint
-        { pID :: ProcessUid
+        { pID   :: ProcessUid
         , pTime :: Interval t
         , pInfo :: String
         }
     deriving ( Generic )
 
 instance {-# OVERLAPS #-} ( Time t ) => Show [ TimelinePoint t ] where
-    show [] = "."
+    show []    = "."
 
     -- show [TimelinePoint{ pInfo }] | EndpointRoleStep Source{} <- descent sDesc = "^"
     -- show ( Single Step{ sDesc } ) | EndpointRoleStep Target{} <- descent sDesc = "v"
@@ -74,10 +75,10 @@ instance {-# OVERLAPS #-} ( Time t ) => Show [ TimelinePoint t ] where
     --     = "-"
 
     show [ _ ] = "*"
-    show _ = "#"
+    show _     = "#"
 
 
-processTimelines Process{ steps } = let
+processTimelines Process{ steps, relations } = let
         views = foldl appendToViews M.empty steps
         a = minimum $ map (inf . sTime) $ concat $ concat $ M.elems views
         b = maximum $ map (sup . sTime) $ concat $ concat $ M.elems views
@@ -85,6 +86,7 @@ processTimelines Process{ steps } = let
         { timelines=concatMap (
                 \(vp, vs) -> map (\v -> ( vp, timeline a b v )) vs
             ) $ M.assocs views
+        , verticalRelations=[ (u, d) | (Vertical u d) <- relations ]
         }
 
 viewpoint FStep{} = ViewPointID{ level="Fun", component=[] }
