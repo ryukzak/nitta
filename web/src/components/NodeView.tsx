@@ -40,6 +40,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
             endpointOptions: null,
             scOptions: null
         };
+        // FIXME:
         this.handleViewChange(props.selectedNId, props.synthesisStatus, "synthesisNode" );
     }
 
@@ -180,13 +181,13 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         selectedNId = { this.state.selectedNId }
                         />  
                     </div> 
-                    <div className="jsonViewContainer" style={{'vertical-align': 'top', 'width': '270px'}}>
+                    <div className="jsonViewContainer" style={{'verticalAlign': 'top', 'width': '270px'}}>
                         <JsonView jsonData={ this.state.synthesisNode.nModel.mUnit} label={"nModel.mUnit"} show={false}  />
                     </div> 
-                    <div className="jsonViewContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
+                    <div className="jsonViewContainer" style={{'display': "inline-block", 'verticalAlign': 'top'}}>
                         <JsonView jsonData={ this.state.synthesisNode.nModel.mDataFlowGraph} label={"nModel.mDataFlowGraph"} show={false} />
                     </div> 
-                    <div className="jsonViewContainer" style={{'display': "inline-block", 'vertical-align': 'top'}}>
+                    <div className="jsonViewContainer" style={{'display': "inline-block", 'verticalAlign': 'top'}}>
                         <div  >
                             <JsonView jsonData={ this.state.synthesisNode.nId} label={"nId"} show={false} />
                         </div> 
