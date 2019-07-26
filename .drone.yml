@@ -7,7 +7,7 @@ steps:
     pull: if-not-exists
     commands:
       - stack build --test --haddock --copy-bins
-      - stack exec nitta -- --generate-api
+      - stack exec nitta-api-gen
   - name: npm build
     image: nitta-build:latest
     pull: if-not-exists

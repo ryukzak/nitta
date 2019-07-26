@@ -42,11 +42,11 @@ import           Text.InterpolatedString.Perl6    (qc)
 -- |Command line interface.
 data Nitta
     = Nitta
-        { web          :: Bool
-        , port         :: Int
-        , npm_build    :: Bool
-        , type_        :: String
-        , file         :: Maybe FilePath
+        { web       :: Bool
+        , port      :: Int
+        , npm_build :: Bool
+        , type_     :: String
+        , file      :: Maybe FilePath
         }
     deriving ( Show, Data, Typeable )
 
