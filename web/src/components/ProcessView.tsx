@@ -93,9 +93,9 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
                             return this.renderLine(i, viewPointLength, e[0], e[1]);
                         })}
                 </div>
-                <div className="columns large-4">
-                    {JSON.stringify(this.state.detail)}
-                </div>
+                <pre className="tiny columns large-4">
+                    {JSON.stringify(this.state.detail, null, 2)}
+                </pre>
             </div>;
     }
 }
