@@ -205,7 +205,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
             
                 { this.state.view === "process"  &&
                     <ProcessView
-                        nId={this.state.selectedNid}
+                        nId={this.state.selectedNId}
                     />
                 }
                 { this.state.view === "edges"  &&

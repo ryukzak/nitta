@@ -23,6 +23,7 @@ module Main ( main ) where
 import           Data.Aeson
 import           Data.Aeson.TypeScript.TH
 import           Data.Proxy
+import qualified Data.String.Utils           as S
 import           NITTA.UIBackend
 import           System.Directory              (createDirectoryIfMissing)
 import           NITTA.UIBackend.Timeline
@@ -44,9 +45,10 @@ apiGenArgs = APIGen
     }
 
 $(deriveTypeScript defaultOptions ''ViewPointID)
-$(deriveTypeScript defaultOptions ''ProcessTimelines)
 $(deriveTypeScript defaultOptions ''TimelinePoint)
 $(deriveTypeScript defaultOptions ''Interval)
+$(deriveTypeScript defaultOptions ''ProcessTimelines)
+
 
 main = do
     APIGen{ port, opath } <- cmdArgs apiGenArgs
@@ -60,10 +62,10 @@ main = do
     putStrLn "Generate rest_api.js library...OK"
 
     putStrLn "Generate typescript interface..."
-    writeFile (joinPath [ opath, "types.ts" ]) $ formatTSDeclarations $ foldl1 (<>)
+    writeFile (joinPath [ opath, "types.ts" ]) $ S.replace "type " "export type " $ formatTSDeclarations $ foldl1 (<>)
         [ getTypeScriptDeclarations (Proxy :: Proxy ViewPointID)
-        , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
         , getTypeScriptDeclarations (Proxy :: Proxy TimelinePoint)
         , getTypeScriptDeclarations (Proxy :: Proxy Interval)
+        , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
         ]
     putStrLn "Generate typescript interface...OK"

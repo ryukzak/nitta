@@ -1,52 +1,101 @@
 import * as React from "react";
-import { haskellAPI, Timelines } from "../middleware/haskell-api";
+import { haskellAPI } from "../middleware/haskell-api";
+import { ProcessTimelines, ViewPointID, TimelinePoint } from "../gen/types";
 
 interface ProcessViewProps {
     nId: string;
 }
 
 interface ProcessViewState {
-    timelines: any;
     nId: string;
+    data: ProcessTimelines<number>;
+    detail: TimelinePoint<number>[];
 }
 
 export class ProcessView extends React.Component<ProcessViewProps, ProcessViewState> {
-    state: ProcessViewState = { nId: null, timelines: null }
+    state: ProcessViewState = { nId: null, data: null, detail: null };
+
+    constructor(props) {
+        super(props);
+        this.renderPoint = this.renderPoint.bind(this);
+    }
 
     static getDerivedStateFromProps(props: ProcessViewProps, state: ProcessViewState) {
-        console.log('> ProcessView.getDerivedStateFromProps', props.nId && props.nId != state.nId)
-        if (props.nId && props.nId != state.nId) {
-            console.log('> ProcessView.getDerivedStateFromProps - new state')
-            return { nId: props.nId, timelines: null } as ProcessViewState
+        console.log("> ProcessView.getDerivedStateFromProps", props.nId);
+        if (props.nId && props.nId !== state.nId) {
+            console.log("> ProcessView.getDerivedStateFromProps - new state");
+            return { nId: props.nId, data: null } as ProcessViewState;
         }
-        return null
+        return null;
     }
 
     componentDidMount() {
-        console.log('> ProcessView.componentDidMount', this.state.nId)
-        this.requestTimelines(this.state.nId)
+        console.log("> ProcessView.componentDidMount", this.state.nId);
+        this.requestTimelines(this.state.nId);
     }
 
     componentDidUpdate(prevProps: ProcessViewProps, prevState: ProcessViewState, snapshot: any) {
-        console.log('> ProcessView.componentDidUpdate')
-        if (prevState.nId != this.state.nId) {
-            this.requestTimelines(this.state.nId)
+        console.log("> ProcessView.componentDidUpdate");
+        if (prevState.nId !== this.state.nId) {
+            this.requestTimelines(this.state.nId);
         }
     }
 
     requestTimelines(nId: string) {
-        console.log('> ProcessView.requestTimelines')
+        console.log("> ProcessView.requestTimelines");
         haskellAPI.getTimelines(nId)
-            .then((response: Timelines) => {
-                console.log('> ProcessView.requestTimelines - done')
+            .then((response) => {
+                console.log("> ProcessView.requestTimelines - done");
                 this.setState({
-                    timelines: response.data
+                    data: response.data
                 });
             })
             .catch((err: any) => console.log(err));
     }
 
+    viewpoint2string(view: ViewPointID): string {
+        return view.component + "@" + view.level;
+    }
+
+    renderLine(i: number, viewLength: number, view: ViewPointID, points: TimelinePoint<number>[][]) {
+        let v = this.viewpoint2string(view);
+        let n = viewLength - v.length;
+        return <pre key={i}>{" ".repeat(n)}{v} => {points.map(this.renderPoint)}</pre>;
+    }
+
+    renderPoint(point: TimelinePoint<number>[], i: number) {
+        let s: string = "#";
+        if (point.length === 0) {
+            s = ".";
+        }
+        if (point.length === 1) {
+            s = "*";
+        }
+        const click = () => {this.setState({detail: point})};
+        return <span key={i} onClick={click}>{s}</span>;
+    }
+
     render() {
-        return <pre>{JSON.stringify(this.state.timelines, null, 2)}</pre>;
+        if (!this.state.data) {
+            return <pre>LOADING</pre>;
+        }
+        let viewPointLength: number = 0;
+        this.state.data.timelines.forEach(e => {
+            let l: number = this.viewpoint2string(e[0]).length;
+            if (l > viewPointLength) {
+                viewPointLength = l;
+            }
+        });
+        return <div className="row">
+                <div className="columns large-8">
+                    {this.state.data.timelines.map(
+                        (e, i) => {
+                            return this.renderLine(i, viewPointLength, e[0], e[1]);
+                        })}
+                </div>
+                <div className="columns large-4">
+                    {JSON.stringify(this.state.detail)}
+                </div>
+            </div>;
     }
 }

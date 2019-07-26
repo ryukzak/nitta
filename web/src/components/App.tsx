@@ -2,9 +2,9 @@ import * as React from "react";
 import { NodeView } from "../components/NodeView";
 import { SynthesisGraph } from "../components/SynthesisGraph";
 import "./../assets/scss/App.scss";
-import "jquery/dist/jquery.js";
+import "jquery/dist/jquery.slim";
 import "foundation-sites/dist/css/foundation.css";
-import "foundation-sites/dist/js/foundation.js";
+import "foundation-sites/dist/js/foundation";
 
 const nInSeparator = "-";
 

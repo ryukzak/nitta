@@ -1,9 +1,5 @@
 import api from "../gen/rest_api.js";
 
-export interface Timelines {
-  timelines: any
-}
-
 export const haskellAPI = {
   getSynthesis: (nid?: any) => {
     console.debug("hapi.getSynthesis(", nid, ")");
