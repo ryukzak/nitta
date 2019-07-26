@@ -45,7 +45,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
     }
 
     handleViewChange (nid: any, synthesisStatus: any, view: string) {
-        console.debug("NodeView:handleViewChange(" , nid, view, " ) // this.state.view:" , this.state.view);
+        console.debug("NodeView:handleViewChange(" , nid, ", ", view, " ) // this.state.view:" , this.state.view);
         if (nid === undefined || nid === null) return;
 
         this.setState({selectedNId: nid, synthesisStatus: synthesisStatus, view: "update" });

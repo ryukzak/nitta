@@ -6,6 +6,8 @@ import { JsonView } from "./JsonView";
 import { GraphView } from "./GraphView";
 import { EdgesCardsHolder } from "./EdgesCardsHolder";
 
+const nInSeparator = "-";
+
 interface EdgesViewProps {
     onNIdChange: any;
     selectedNId: any;
@@ -65,7 +67,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
     }
 
     updateNid (i: number) {
-        haskellAPI.getNode(this.state.selectedNId === ":" ? ":" + i : this.state.selectedNId + ":" + i)
+        haskellAPI.getNode(this.state.selectedNId === nInSeparator ? nInSeparator + i : this.state.selectedNId + nInSeparator + i)
             .then((response: any) => {
                 this.onNIdChange(response.data.nId);
             })

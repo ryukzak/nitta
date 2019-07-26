@@ -6,6 +6,8 @@ import "jquery/dist/jquery.js";
 import "foundation-sites/dist/css/foundation.css";
 import "foundation-sites/dist/js/foundation.js";
 
+const nInSeparator = "-";
+
 interface AppState {
     selectedNId: any;
 }
@@ -14,7 +16,7 @@ export default class App extends React.Component<any, AppState> {
     constructor (props: any) {
         super(props);
         this.state = {
-            selectedNId: ":"
+            selectedNId: nInSeparator
         };
     }
 

@@ -81,7 +81,7 @@ type SG m tag v x t = m (ModelState (BusNetwork tag v x t) v x) (SynthesisDT (Bu
 newtype NId = NId [Int]
 
 -- |NId separator for @Show NId@ and @Read NId@.
-nIdSep = ':'
+nIdSep = '-'
 
 instance Show NId where
     show (NId []) = [nIdSep]

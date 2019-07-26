@@ -3,6 +3,8 @@ import "react-table/react-table.css";
 import { haskellAPI } from "../middleware/haskell-api";
 import Tree from "react-d3-tree";
 
+const nInSeparator = "-";
+
 interface SynthesisGraphProps {
   onNIdChange: any;
   selectedNId: any;
@@ -79,7 +81,7 @@ export class SynthesisGraph extends React.Component<SynthesisGraphProps, Synthes
 
   reloadSynthesisGraph () {
     console.debug("SynthesisGraph:reloadSynthesisGraph()");
-    let reLastNidStep = /:[^:]*$/;
+    let reLastNidStep = /-[^-]*$/; // nInSeparator
     haskellAPI.getSynthesis()
       .then((response: any) => {
         let nIds = {};
@@ -121,8 +123,8 @@ export class SynthesisGraph extends React.Component<SynthesisGraphProps, Synthes
 
   stepsNumber () {
     if (this.state.selectedNId === null) return "NaN";
-    if (this.state.selectedNId === ":") return 0;
-    return this.state.selectedNId.split(":").length - 1;
+    if (this.state.selectedNId === nInSeparator) return 0;
+    return this.state.selectedNId.split(nInSeparator).length - 1;
   }
 
   render () {
