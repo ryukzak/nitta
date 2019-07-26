@@ -48,7 +48,7 @@ export class SynthesisGraph extends React.Component<SynthesisGraphProps, Synthes
       this.markNode(props.selectedNId);
       this.setState({
         selectedNId: props.selectedNId,
-        graph: [this.state.graph[0]] // force rerender Tree
+        graph: [this.state.graph[0]] // force re-render Tree
       });
     }
   }
@@ -135,7 +135,7 @@ export class SynthesisGraph extends React.Component<SynthesisGraphProps, Synthes
           [<a onClick={() => this.setState({height: this.state.height + 100})}> expand </a>] /
           [<a onClick={() => this.setState({height: this.state.height - 100})}> reduce </a>]
           [<a onClick={() => this.reloadSynthesisGraph()}> refresh </a>]
-          steps: {this.stepsNumber()}; selected synthesis nid - {this.state.selectedNId}
+          steps: {this.stepsNumber()}; selected synthesis nid {this.state.selectedNId}
         </pre>
         <div style={{width: "100%", height: this.state.height + "px", "borderStyle": "dashed", "borderWidth": "1px"}}>
           <Tree

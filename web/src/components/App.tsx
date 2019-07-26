@@ -20,7 +20,7 @@ export default class App extends React.Component<any, AppState> {
         };
     }
 
-    onNIdChange (nId) {
+    onNIdChange (nId: string) {
         console.debug("App:onNIdChange(", nId, ")");
         if (nId === "reload") {
             this.setState({selectedNId: this.state.selectedNId});
