@@ -23,12 +23,12 @@ module Main ( main ) where
 import           Data.Aeson
 import           Data.Aeson.TypeScript.TH
 import           Data.Proxy
-import qualified Data.String.Utils           as S
+import qualified Data.String.Utils        as S
 import           NITTA.UIBackend
-import           System.Directory              (createDirectoryIfMissing)
 import           NITTA.UIBackend.Timeline
 import           Numeric.Interval
 import           System.Console.CmdArgs
+import           System.Directory         (createDirectoryIfMissing)
 import           System.FilePath.Posix    (joinPath)
 
 
@@ -62,10 +62,11 @@ main = do
     putStrLn "Generate rest_api.js library...OK"
 
     putStrLn "Generate typescript interface..."
-    writeFile (joinPath [ opath, "types.ts" ]) $ S.replace "type " "export type " $ formatTSDeclarations $ foldl1 (<>)
-        [ getTypeScriptDeclarations (Proxy :: Proxy ViewPointID)
-        , getTypeScriptDeclarations (Proxy :: Proxy TimelinePoint)
-        , getTypeScriptDeclarations (Proxy :: Proxy Interval)
-        , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
-        ]
+    let ts = formatTSDeclarations $ foldl1 (<>)
+            [ getTypeScriptDeclarations (Proxy :: Proxy ViewPointID)
+            , getTypeScriptDeclarations (Proxy :: Proxy TimelinePoint)
+            , getTypeScriptDeclarations (Proxy :: Proxy Interval)
+            , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
+            ]
+    writeFile (joinPath [ opath, "types.ts" ]) $ S.replace "type " "export type " (ts ++ "\n")
     putStrLn "Generate typescript interface...OK"
