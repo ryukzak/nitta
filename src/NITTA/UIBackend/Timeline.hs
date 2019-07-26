@@ -25,21 +25,18 @@ module NITTA.UIBackend.Timeline
 import qualified Data.Map                         as M
 import           Data.Maybe
 import qualified Data.String.Utils                as S
-import           Data.Typeable
 import           GHC.Generics
-import           NITTA.Model.Networks.Bus
-import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           Numeric.Interval
 
-data ProcessTimelines v x t
+data ProcessTimelines t
     = ProcessTimelines
-        { timelines :: [ ( ViewPointID, [ TimelinePoint v x t ] ) ]
+        { timelines :: [ ( ViewPointID, [ [TimelinePoint t] ] ) ]
         }
     deriving ( Generic )
 
-instance ( VarValTime v x t ) => Show (ProcessTimelines v x t) where
+instance ( Time t ) => Show (ProcessTimelines t) where
     show ProcessTimelines{ timelines } = let
             vpLength = maximum $ map (length . show . fst) timelines
             normalizeVP s = s ++ replicate (vpLength - length s) ' '
@@ -57,26 +54,27 @@ instance Show ViewPointID where
     show ViewPointID{ level, component } = S.join "." component ++ "@" ++ level
 
 
-data TimelinePoint v x t
-    = None
-    | Single ( Step v x t )
-    | Bucket [ Step v x t ]
+data TimelinePoint t
+    = TimelinePoint
+        { pID :: ProcessUid
+        , pTime :: Interval t
+        , pInfo :: String
+        }
     deriving ( Generic )
 
-instance ( VarValTime v x t ) => Show ( TimelinePoint v x t ) where
-    show None = "."
+instance {-# OVERLAPS #-} ( Time t ) => Show [ TimelinePoint t ] where
+    show [] = "."
 
-    show ( Single Step{ sDesc } ) | EndpointRoleStep Source{} <- descent sDesc = "^"
-    show ( Single Step{ sDesc } ) | EndpointRoleStep Target{} <- descent sDesc = "v"
+    -- show [TimelinePoint{ pInfo }] | EndpointRoleStep Source{} <- descent sDesc = "^"
+    -- show ( Single Step{ sDesc } ) | EndpointRoleStep Target{} <- descent sDesc = "v"
 
-    show ( Single Step{ sDesc } )
-        | InstructionStep i <- descent sDesc
-        , Just (_ :: Instruction (BusNetwork String v x t)) <- cast i
-        = "-"
+    -- show [ TimelinePoint{ pInfo } ]
+    --     | InstructionStep i <- descent sDesc
+    --     , Just (_ :: Instruction (BusNetwork String v x t)) <- cast i
+    --     = "-"
 
-    show Single{} = "*"
-    show Bucket{} = "#"
-
+    show [ _ ] = "*"
+    show _ = "#"
 
 
 processTimelines Process{ steps } = let
@@ -117,8 +115,9 @@ isConflicted Step{ sTime=a, sDesc=aD } Step{ sTime=b, sDesc=bD }
 
 timeline a b steps = map findSteps [a..b]
     where
-        findSteps t = case filter (member t . sTime) steps of
-            []     -> None
-            [step] -> Single step
-            steps' -> Bucket steps'
-
+        findSteps t = map foo $ filter (member t . sTime) steps
+        foo Step{ sKey, sTime, sDesc } = TimelinePoint
+            { pID=sKey
+            , pTime=sTime
+            , pInfo=show sDesc
+            }

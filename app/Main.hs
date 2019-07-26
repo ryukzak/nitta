@@ -36,19 +36,17 @@ import           NITTA.Project                    (TargetSynthesis (..),
                                                    runTargetSynthesis)
 import           NITTA.UIBackend
 import           System.Console.CmdArgs           hiding (def)
-import           System.Exit
 import           Text.InterpolatedString.Perl6    (qc)
 
 
 -- |Command line interface.
 data Nitta
     = Nitta
-        { web          :: Bool
-        , port         :: Int
-        , npm_build    :: Bool
-        , generate_api :: Bool
-        , type_        :: String
-        , file         :: Maybe FilePath
+        { web       :: Bool
+        , port      :: Int
+        , npm_build :: Bool
+        , type_     :: String
+        , file      :: Maybe FilePath
         }
     deriving ( Show, Data, Typeable )
 
@@ -56,16 +54,12 @@ nittaArgs = Nitta
     { web=False &= help "Run web server"
     , port=8080 &= help "WebUI port"
     , npm_build=False &= help "No regenerate WebUI static files"
-    , generate_api=False &= help "generate rest_api.js library and exit"
     , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
     , file=def &= args &= typ "LUA_FILE"
     }
 
 main = do
-    Nitta{ web, port, npm_build, generate_api, file, type_ } <- cmdArgs nittaArgs
-    when generate_api $ do
-        prepareJSAPI port
-        exitSuccess
+    Nitta{ web, port, npm_build, file, type_ } <- cmdArgs nittaArgs
     when npm_build prepareStaticFiles
     case file of
         Just fn -> do
