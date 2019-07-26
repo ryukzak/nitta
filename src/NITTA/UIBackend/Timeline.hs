@@ -119,5 +119,5 @@ timeline a b steps = map findSteps [a..b]
         foo Step{ sKey, sTime, sDesc } = TimelinePoint
             { pID=sKey
             , pTime=sTime
-            , pInfo=show sDesc
+            , pInfo=show $ descent sDesc
             }

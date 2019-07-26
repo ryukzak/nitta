@@ -60,7 +60,7 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
     renderLine(i: number, viewLength: number, view: ViewPointID, points: TimelinePoint<number>[][]) {
         let v = this.viewpoint2string(view);
         let n = viewLength - v.length;
-        return <pre key={i}>{" ".repeat(n)}{v} => {points.map(this.renderPoint)}</pre>;
+        return <pre key={i} className="squeeze">{" ".repeat(n)}{v} | {points.map(this.renderPoint)}</pre>;
     }
 
     renderPoint(point: TimelinePoint<number>[], i: number) {
@@ -71,31 +71,35 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
         if (point.length === 1) {
             s = "*";
         }
-        const click = () => {this.setState({detail: point})};
-        return <span key={i} onClick={click}>{s}</span>;
+        return <span key={i} onClick={() => this.setState({ detail: point })}>{s}</span>;
     }
 
     render() {
         if (!this.state.data) {
             return <pre>LOADING</pre>;
         }
-        let viewPointLength: number = 0;
+        if (this.state.data.timelines.length === 0) {
+            return <pre>EMPTY PROCESS TIMELINE</pre>;
+        }
+        let viewColumnHead = "view point";
+        let viewColumnLength: number = viewColumnHead.length;
         this.state.data.timelines.forEach(e => {
             let l: number = this.viewpoint2string(e[0]).length;
-            if (l > viewPointLength) {
-                viewPointLength = l;
+            if (l > viewColumnLength) {
+                viewColumnLength = l;
             }
         });
         return <div className="row">
-                <div className="columns large-8">
-                    {this.state.data.timelines.map(
-                        (e, i) => {
-                            return this.renderLine(i, viewPointLength, e[0], e[1]);
-                        })}
-                </div>
-                <pre className="tiny columns large-4">
-                    {JSON.stringify(this.state.detail, null, 2)}
-                </pre>
-            </div>;
+            <div className="columns large-8">
+                <pre className="squeeze"><u>{viewColumnHead}{" ".repeat(viewColumnLength - viewColumnHead.length)} | timeline</u></pre>
+                {this.state.data.timelines.map(
+                    (e, i) => {
+                        return this.renderLine(i, viewColumnLength, e[0], e[1]);
+                    })}
+            </div>
+            <pre className="squeeze columns large-4">
+                {JSON.stringify(this.state.detail, null, 2)}
+            </pre>
+        </div>;
     }
 }
