@@ -19,9 +19,10 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.UIBackend.Timeline
-    ( ViewPointID, TimelinePoint, processTimelines, ProcessTimelines(..)
+    ( ViewPointID, TimelinePoint, processTimelines, ProcessTimelines(..), TimelineWithViewPoint(..)
     ) where
 
+import           Data.List
 import qualified Data.Map                         as M
 import           Data.Maybe
 import qualified Data.String.Utils                as S
@@ -32,17 +33,23 @@ import           Numeric.Interval
 
 data ProcessTimelines t
     = ProcessTimelines
-        { timelines         :: [ ( ViewPointID, [ [TimelinePoint t] ] ) ]
-        , verticalRelations :: [(ProcessUid, ProcessUid)]
+        { timelines         :: [ TimelineWithViewPoint t ]
+        , verticalRelations :: [ (ProcessUid, ProcessUid) ]
+        }
+    deriving ( Generic )
+
+data TimelineWithViewPoint t = TimelineWithViewPoint
+        { timelineViewpoint :: ViewPointID
+        , timelinePoints    :: [ [TimelinePoint t] ]
         }
     deriving ( Generic )
 
 instance ( Time t ) => Show (ProcessTimelines t) where
     show ProcessTimelines{ timelines } = let
-            vpLength = maximum $ map (length . show . fst) timelines
+            vpLength = maximum $ map (length . show . timelineViewpoint) timelines
             normalizeVP s = s ++ replicate (vpLength - length s) ' '
             line vp tl = normalizeVP (show vp) ++ "\t" ++ concatMap show tl
-        in S.join "\n" $ map (\(vp, tl) -> line vp tl) timelines
+        in S.join "\n" $ map (\(TimelineWithViewPoint vp tl) -> line vp tl) timelines
 
 
 data ViewPointID = ViewPointID
@@ -84,7 +91,7 @@ processTimelines Process{ steps, relations } = let
         b = maximum $ map (sup . sTime) $ concat $ concat $ M.elems views
     in ProcessTimelines
         { timelines=concatMap (
-                \(vp, vs) -> map (\v -> ( vp, timeline a b v )) vs
+                \(vp, vs) -> map (\v -> TimelineWithViewPoint vp $ timeline a b v ) vs
             ) $ M.assocs views
         , verticalRelations=[ (u, d) | (Vertical u d) <- relations ]
         }

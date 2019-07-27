@@ -9,7 +9,7 @@ interface ProcessViewProps {
 interface ProcessViewState {
     nId: string;
     data: ProcessTimelines<number>;
-    pIdIndex: any;
+    pIdIndex: Record<number, TimelinePoint<number>>;
     detail: TimelinePoint<number>[];
     up: number[];
     current: number[];
@@ -17,7 +17,7 @@ interface ProcessViewState {
 }
 
 export class ProcessView extends React.Component<ProcessViewProps, ProcessViewState> {
-    state: ProcessViewState = { nId: null, data: null, pIdIndex: null, detail: null, up: [], current: [], down: [] };
+    state: ProcessViewState = { nId: null, data: null, pIdIndex: null, detail: [], up: [], current: [], down: [] };
 
     constructor(props) {
         super(props);
@@ -51,12 +51,12 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
         haskellAPI.getTimelines(nId)
             .then((response: {data: ProcessTimelines<number>}) => {
                 console.log("> ProcessView.requestTimelines - done");
-                let pIdIndex = {};
+                let pIdIndex: Record<number, TimelinePoint<number>> = {};
                 response.data.timelines.forEach(vt => {
-                    const points = vt[1];
-                    points.forEach(p => {
-                        p.forEach(e => {
-                            pIdIndex[e.pID] = e;
+                    vt.timelinePoints.forEach(point => {
+                        point.forEach(e => {
+                            const x: number = e.pID;
+                            pIdIndex[x] = e;
                         });
                     });
                 });
@@ -124,7 +124,7 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
         let viewColumnHead = "view point";
         let viewColumnLength: number = viewColumnHead.length;
         this.state.data.timelines.forEach(e => {
-            let l: number = this.viewpoint2string(e[0]).length;
+            let l: number = this.viewpoint2string(e.timelineViewpoint).length;
             if (l > viewColumnLength) {
                 viewColumnLength = l;
             }
@@ -134,7 +134,7 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
                 <pre className="squeeze"><u>{viewColumnHead}{" ".repeat(viewColumnLength - viewColumnHead.length)} | timeline</u></pre>
                 {this.state.data.timelines.map(
                     (e, i) => {
-                        return this.renderLine(i, viewColumnLength, e[0], e[1]);
+                        return this.renderLine(i, viewColumnLength, e.timelineViewpoint, e.timelinePoints);
                     })}
             </div>
             <div className="columns large-4">

@@ -47,6 +47,7 @@ apiGenArgs = APIGen
 $(deriveTypeScript defaultOptions ''ViewPointID)
 $(deriveTypeScript defaultOptions ''TimelinePoint)
 $(deriveTypeScript defaultOptions ''Interval)
+$(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
 $(deriveTypeScript defaultOptions ''ProcessTimelines)
 
 
@@ -66,6 +67,7 @@ main = do
             [ getTypeScriptDeclarations (Proxy :: Proxy ViewPointID)
             , getTypeScriptDeclarations (Proxy :: Proxy TimelinePoint)
             , getTypeScriptDeclarations (Proxy :: Proxy Interval)
+            , getTypeScriptDeclarations (Proxy :: Proxy TimelineWithViewPoint)
             , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
             ]
     writeFile (joinPath [ opath, "types.ts" ]) $ S.replace "type " "export type " (ts ++ "\n")

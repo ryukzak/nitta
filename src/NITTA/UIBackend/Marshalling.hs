@@ -107,6 +107,7 @@ levelName (NestedStep _ step) = levelName $ sDesc step
 
 instance ToJSON ViewPointID
 instance ( Time t, ToJSON t ) => ToJSON ( TimelinePoint t )
+instance ( Time t, ToJSON t ) => ToJSON ( TimelineWithViewPoint t )
 instance ( Time t, ToJSON t ) => ToJSON ( ProcessTimelines t )
 
 -- *Synthesis
