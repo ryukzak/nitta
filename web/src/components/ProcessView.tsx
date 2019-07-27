@@ -88,8 +88,14 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
         }
         for (let j = 0; j < point.length; j++) {
             const id = point[j].pID;
-            if (this.state.up.indexOf(id) >= 0 || this.state.down.indexOf(id) >= 0 || this.state.current.indexOf(id) >= 0) {
-                return <span key={i} onClick={() => this.selectPoint(point)}><mark>{s}</mark></span>;
+            if (this.state.up.indexOf(id) >= 0) {
+                return <span key={i} className="upRelation" onClick={() => this.selectPoint(point)}>{s}</span>;
+            }
+            if (this.state.current.indexOf(id) >= 0) {
+                return <span key={i} className="current" onClick={() => this.selectPoint(point)}>{s}</span>;
+            }
+            if (this.state.down.indexOf(id) >= 0) {
+                return <span key={i} className="downRelation" onClick={() => this.selectPoint(point)}>{s}</span>;
             }
         }
         return <span key={i} onClick={() => this.selectPoint(point)}>{s}</span>;
@@ -138,16 +144,15 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
                     })}
             </div>
             <div className="columns large-4">
-                <pre>upper related:</pre>
-                {this.state.up.map(e => <pre className="squeeze">{JSON.stringify(this.state.pIdIndex[e], null, 2)}</pre>) }
-                <br/>
-                <pre>current:</pre>
-                <pre className="squeeze">
-                    {JSON.stringify(this.state.detail, null, 2)}
-                </pre>
-                <br/>
-                <pre>bottom related:</pre>
-                {this.state.down.map(e => <pre className="squeeze">{JSON.stringify(this.state.pIdIndex[e], null, 2)}</pre>) }
+                <pre className="squeeze">------------------------------</pre>
+                <pre className="squeeze">upper related:</pre>
+                {this.state.up.map(e => <pre className="squeeze">{JSON.stringify(this.state.pIdIndex[e].pInfo, null, 2)}</pre>) }
+                <pre className="squeeze">------------------------------</pre>
+                <pre className="squeeze">current:</pre>
+                {this.state.detail.map(e => <pre className="squeeze">{JSON.stringify(e.pInfo)}</pre>)}
+                <pre className="squeeze">------------------------------</pre>
+                <pre className="squeeze">bottom related:</pre>
+                {this.state.down.map(e => <pre className="squeeze">{JSON.stringify(this.state.pIdIndex[e].pInfo, null, 2)}</pre>) }
             </div>
         </div>;
     }
