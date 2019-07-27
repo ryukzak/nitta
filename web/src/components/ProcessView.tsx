@@ -21,6 +21,8 @@ interface Highlight {
 }
 
 export class ProcessView extends React.Component<ProcessViewProps, ProcessViewState> {
+    // TODO: diff from previous synthesis process step
+    // TODO: highlight point by click on info part
     state: ProcessViewState = {
         nId: null,
         data: null,
@@ -197,13 +199,13 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
             </div>
             <div className="columns large-5">
                 <pre className="squeeze">------------------------------</pre>
-                <pre className="squeeze">upper related:</pre>
+                <pre className="squeeze upRelation">upper related:</pre>
                 {this.state.highlight.up.map(e => <pre className="squeeze">- {this.state.pIdIndex[e].pInfo}</pre>)}
                 <pre className="squeeze">------------------------------</pre>
-                <pre className="squeeze">current:</pre>
+                <pre className="squeeze current">current:</pre>
                 {this.state.detail.map(e => <pre className="squeeze">- {e.pInfo}</pre>)}
                 <pre className="squeeze">------------------------------</pre>
-                <pre className="squeeze">bottom related:</pre>
+                <pre className="squeeze downRelation">bottom related:</pre>
                 {this.state.highlight.down.map(e => <pre className="squeeze">- {this.state.pIdIndex[e].pInfo}</pre>)}
             </div>
         </div>;
