@@ -9,12 +9,15 @@ interface ProcessViewProps {
 interface ProcessViewState {
     nId: string;
     data: ProcessTimelines<number>;
+    pIdIndex: any;
     detail: TimelinePoint<number>[];
-    highlight: number[];
+    up: number[];
+    current: number[];
+    down: number[];
 }
 
 export class ProcessView extends React.Component<ProcessViewProps, ProcessViewState> {
-    state: ProcessViewState = { nId: null, data: null, detail: null, highlight: [] };
+    state: ProcessViewState = { nId: null, data: null, pIdIndex: null, detail: null, up: [], current: [], down: [] };
 
     constructor(props) {
         super(props);
@@ -46,10 +49,20 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
     requestTimelines(nId: string) {
         console.log("> ProcessView.requestTimelines");
         haskellAPI.getTimelines(nId)
-            .then((response: any) => {
+            .then((response: {data: ProcessTimelines<number>}) => {
                 console.log("> ProcessView.requestTimelines - done");
+                let pIdIndex = {};
+                response.data.timelines.forEach(vt => {
+                    const points = vt[1];
+                    points.forEach(p => {
+                        p.forEach(e => {
+                            pIdIndex[e.pID] = e;
+                        });
+                    });
+                });
                 this.setState({
-                    data: response.data
+                    data: response.data,
+                    pIdIndex: pIdIndex,
                 });
             })
             .catch((err: any) => console.log(err));
@@ -74,8 +87,8 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
             s = "#";
         }
         for (let j = 0; j < point.length; j++) {
-            const p = point[j];
-            if (this.state.highlight.indexOf(p.pID) >= 0) {
+            const id = point[j].pID;
+            if (this.state.up.indexOf(id) >= 0 || this.state.down.indexOf(id) >= 0 || this.state.current.indexOf(id) >= 0) {
                 return <span key={i} onClick={() => this.selectPoint(point)}><mark>{s}</mark></span>;
             }
         }
@@ -83,18 +96,22 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
     }
 
     selectPoint(point: TimelinePoint<number>[]) {
-        let highlight: number[] = [];
+        let up: number[] = [];
+        let current: number[] = [];
+        let down: number[] = [];
         point.forEach(p => {
             let id: number = p.pID;
-            highlight.push(id);
+            current.push(id);
             this.state.data.verticalRelations.forEach(e => {
-                if (highlight.indexOf(id) === -1) {
-                    if (e[0] === id) { highlight.push(e[1]); }
-                    if (e[1] === id) { highlight.push(e[0]); }
+                if (up.indexOf(id) === -1) {
+                    if (e[1] === id) { up.push(e[0]); }
+                }
+                if (down.indexOf(id) === -1) {
+                    if (e[0] === id) { down.push(e[1]); }
                 }
             });
         });
-        this.setState({ detail: point, highlight: highlight });
+        this.setState({ detail: point, up: up, current: current, down: down });
     }
 
     render() {
@@ -120,9 +137,18 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
                         return this.renderLine(i, viewColumnLength, e[0], e[1]);
                     })}
             </div>
-            <pre className="squeeze columns large-4">
-                {JSON.stringify(this.state.detail, null, 2)}
-            </pre>
+            <div className="columns large-4">
+                <pre>upper related:</pre>
+                {this.state.up.map(e => <pre className="squeeze">{JSON.stringify(this.state.pIdIndex[e], null, 2)}</pre>) }
+                <br/>
+                <pre>current:</pre>
+                <pre className="squeeze">
+                    {JSON.stringify(this.state.detail, null, 2)}
+                </pre>
+                <br/>
+                <pre>bottom related:</pre>
+                {this.state.down.map(e => <pre className="squeeze">{JSON.stringify(this.state.pIdIndex[e], null, 2)}</pre>) }
+            </div>
         </div>;
     }
 }
