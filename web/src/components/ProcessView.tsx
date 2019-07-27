@@ -1,6 +1,6 @@
 import * as React from "react";
 import { haskellAPI } from "../middleware/haskell-api";
-import { ProcessTimelines, ViewPointID, TimelinePoint } from "../gen/types";
+import { ProcessTimelines, ViewPointID, TimelinePoint, TimelineWithViewPoint } from "../gen/types";
 
 interface ProcessViewProps {
     nId: string;
@@ -21,6 +21,7 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
 
     constructor(props) {
         super(props);
+        this.requestTimelines = this.requestTimelines.bind(this);
         this.renderPoint = this.renderPoint.bind(this);
         this.selectPoint = this.selectPoint.bind(this);
     }
@@ -49,7 +50,7 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
     requestTimelines(nId: string) {
         console.log("> ProcessView.requestTimelines");
         haskellAPI.getTimelines(nId)
-            .then((response: {data: ProcessTimelines<number>}) => {
+            .then((response: { data: ProcessTimelines<number> }) => {
                 console.log("> ProcessView.requestTimelines - done");
                 let pIdIndex: Record<number, TimelinePoint<number>> = {};
                 response.data.timelines.forEach(vt => {
@@ -61,11 +62,41 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
                     });
                 });
                 this.setState({
-                    data: response.data,
+                    data: this.resortTimeline(response.data),
                     pIdIndex: pIdIndex,
                 });
             })
             .catch((err: any) => console.log(err));
+    }
+
+    resortTimeline(data: ProcessTimelines<number>) {
+        let result: ProcessTimelines<number> = {
+            timelines: [],
+            verticalRelations: data.verticalRelations,
+        };
+        function cmp(a: TimelineWithViewPoint<number>, b: TimelineWithViewPoint<number>) {
+            if (a.timelineViewpoint.component < b.timelineViewpoint.component) return -1;
+            if (a.timelineViewpoint.component > b.timelineViewpoint.component) return 1;
+            return 0;
+        }
+        let tmp: TimelineWithViewPoint<number>[] = data.timelines.sort(cmp);
+        function extract(p: (id: ViewPointID) => boolean) {
+            let newTmp: TimelineWithViewPoint<number>[] = [];
+            tmp.forEach(e => {
+                if (p(e.timelineViewpoint)) {
+                    result.timelines.push(e);
+                } else {
+                    newTmp.push(e);
+                }
+            });
+            tmp = newTmp;
+        }
+        extract(e => e.component.length === 0);
+        extract(e => e.level === "CAD");
+        extract(e => e.level === "Fun");
+        extract(e => e.level === "EndPoint");
+        extract(e => true);
+        return result;
     }
 
     viewpoint2string(view: ViewPointID): string {
@@ -146,13 +177,13 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
             <div className="columns large-4">
                 <pre className="squeeze">------------------------------</pre>
                 <pre className="squeeze">upper related:</pre>
-                {this.state.up.map(e => <pre className="squeeze">{JSON.stringify(this.state.pIdIndex[e].pInfo, null, 2)}</pre>) }
+                {this.state.up.map(e => <pre className="squeeze">- {this.state.pIdIndex[e].pInfo}</pre>)}
                 <pre className="squeeze">------------------------------</pre>
                 <pre className="squeeze">current:</pre>
-                {this.state.detail.map(e => <pre className="squeeze">{JSON.stringify(e.pInfo)}</pre>)}
+                {this.state.detail.map(e => <pre className="squeeze">- {e.pInfo}</pre>)}
                 <pre className="squeeze">------------------------------</pre>
                 <pre className="squeeze">bottom related:</pre>
-                {this.state.down.map(e => <pre className="squeeze">{JSON.stringify(this.state.pIdIndex[e].pInfo, null, 2)}</pre>) }
+                {this.state.down.map(e => <pre className="squeeze">- {this.state.pIdIndex[e].pInfo}</pre>)}
             </div>
         </div>;
     }
