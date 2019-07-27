@@ -11,13 +11,27 @@ interface ProcessViewState {
     data: ProcessTimelines<number>;
     pIdIndex: Record<number, TimelinePoint<number>>;
     detail: TimelinePoint<number>[];
+    highlight: Highlight;
+}
+
+interface Highlight {
     up: number[];
     current: number[];
     down: number[];
 }
 
 export class ProcessView extends React.Component<ProcessViewProps, ProcessViewState> {
-    state: ProcessViewState = { nId: null, data: null, pIdIndex: null, detail: [], up: [], current: [], down: [] };
+    state: ProcessViewState = {
+        nId: null,
+        data: null,
+        pIdIndex: null,
+        detail: [],
+        highlight: {
+            up: [],
+            current: [],
+            down: [],
+        },
+    };
 
     constructor(props) {
         super(props);
@@ -119,13 +133,13 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
         }
         for (let j = 0; j < point.length; j++) {
             const id = point[j].pID;
-            if (this.state.up.indexOf(id) >= 0) {
+            if (this.state.highlight.up.indexOf(id) >= 0) {
                 return <span key={i} className="upRelation" onClick={() => this.selectPoint(point)}>{s}</span>;
             }
-            if (this.state.current.indexOf(id) >= 0) {
+            if (this.state.highlight.current.indexOf(id) >= 0) {
                 return <span key={i} className="current" onClick={() => this.selectPoint(point)}>{s}</span>;
             }
-            if (this.state.down.indexOf(id) >= 0) {
+            if (this.state.highlight.down.indexOf(id) >= 0) {
                 return <span key={i} className="downRelation" onClick={() => this.selectPoint(point)}>{s}</span>;
             }
         }
@@ -148,7 +162,14 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
                 }
             });
         });
-        this.setState({ detail: point, up: up, current: current, down: down });
+        this.setState({
+            detail: point,
+            highlight: {
+                up: up,
+                current: current,
+                down: down,
+            },
+        });
     }
 
     render() {
@@ -167,23 +188,23 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
             }
         });
         return <div className="row">
-            <div className="columns large-8">
+            <div className="columns large-7">
                 <pre className="squeeze"><u>{viewColumnHead}{" ".repeat(viewColumnLength - viewColumnHead.length)} | timeline</u></pre>
                 {this.state.data.timelines.map(
                     (e, i) => {
                         return this.renderLine(i, viewColumnLength, e.timelineViewpoint, e.timelinePoints);
                     })}
             </div>
-            <div className="columns large-4">
+            <div className="columns large-5">
                 <pre className="squeeze">------------------------------</pre>
                 <pre className="squeeze">upper related:</pre>
-                {this.state.up.map(e => <pre className="squeeze">- {this.state.pIdIndex[e].pInfo}</pre>)}
+                {this.state.highlight.up.map(e => <pre className="squeeze">- {this.state.pIdIndex[e].pInfo}</pre>)}
                 <pre className="squeeze">------------------------------</pre>
                 <pre className="squeeze">current:</pre>
                 {this.state.detail.map(e => <pre className="squeeze">- {e.pInfo}</pre>)}
                 <pre className="squeeze">------------------------------</pre>
                 <pre className="squeeze">bottom related:</pre>
-                {this.state.down.map(e => <pre className="squeeze">- {this.state.pIdIndex[e].pInfo}</pre>)}
+                {this.state.highlight.down.map(e => <pre className="squeeze">- {this.state.pIdIndex[e].pInfo}</pre>)}
             </div>
         </div>;
     }
