@@ -22,7 +22,6 @@ module NITTA.UIBackend.Timeline
     ( ViewPointID, TimelinePoint, processTimelines, ProcessTimelines(..), TimelineWithViewPoint(..)
     ) where
 
-import           Data.List
 import qualified Data.Map                         as M
 import           Data.Maybe
 import qualified Data.String.Utils                as S

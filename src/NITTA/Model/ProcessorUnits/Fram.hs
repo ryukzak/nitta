@@ -90,18 +90,17 @@ data Cell v x t = Cell
 
 
 data Job v x t = Job
-        { function                      :: F v x
-        , startAt                       :: Maybe t
-        , cads, endpoints, instructions :: [ ProcessUid ]
+        { function         :: F v x
+        , startAt          :: Maybe t
+        , binds, endpoints :: [ ProcessUid ]
         }
     deriving ( Show )
 
 defJob f = Job
     { function=f
     , startAt=Nothing
-    , cads=[]
+    , binds=[]
     , endpoints=[]
-    , instructions=[]
     }
 
 
@@ -180,10 +179,10 @@ instance ( VarValTime v x t
         | Just (Constant (X x) (O vs)) <- castF f
         , Just (addr, _) <- lockableNotUsedCell fram
         , let
-            (cads, process_) = runSchedule fram $ scheduleFunctoinBind f
+            (binds, process_) = runSchedule fram $ scheduleFunctoinBind f
             cell = Cell
                 { state=DoConstant $ S.elems vs
-                , job=Just (defJob f){ cads }
+                , job=Just (defJob f){ binds }
                 , history=[ f ]
                 , lastWrite=Nothing
                 , initialValue=x
@@ -196,10 +195,10 @@ instance ( VarValTime v x t
         | Just (Loop (X x) (O vs) (I _)) <- castF f
         , Just (addr, _) <- lockableNotUsedCell fram
         , let
-            (cads, process_) = runSchedule fram $ scheduleFunctoinBind f
+            (binds, process_) = runSchedule fram $ scheduleFunctoinBind f
             cell = Cell
                 { state=DoLoopSource $ S.elems vs
-                , job=Just (defJob f){ cads }
+                , job=Just (defJob f){ binds }
                 , history=[ f ]
                 , lastWrite=Nothing
                 , initialValue=x
@@ -212,8 +211,8 @@ instance ( VarValTime v x t
         | Just r@Reg{} <- castF f
         , any (\case ForReg{} -> True; DoReg{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory
         , let
-            (cads, process_) = runSchedule fram $ scheduleFunctoinBind f
-            job = (defJob f){ cads }
+            (binds, process_) = runSchedule fram $ scheduleFunctoinBind f
+            job = (defJob f){ binds }
         = Right fram
             { remainRegs=(r, job) : remainRegs
             , process_
@@ -260,17 +259,20 @@ instance ( VarValTime v x t
 
     -- Constant
     decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
-        | Just ( addr, cell@Cell{ state=DoConstant vs', job=Just Job{ function } } )
+        | Just ( addr, cell@Cell{ state=DoConstant vs', job=Just Job{ function, binds, endpoints } } )
             <- find (\case
                 (_, Cell{ state=DoConstant vs' }) -> (vs' \\ S.elems vs) /= vs'
                 _ -> False
                 ) $ A.assocs memory
         , let
             vsRemain = vs' \\ S.elems vs
-            ( _endpoints', process_' ) = runSchedule fram $ do
+            ( (), process_' ) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
-                when (null vsRemain) $ void $ scheduleFunction 0 (sup epdAt) function
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
+                endpoints' <- scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
+                when (null vsRemain) $ do
+                    fPID <- scheduleFunction 0 (sup epdAt) function
+                    establishVerticalRelations binds fPID
+                    establishVerticalRelations fPID (endpoints ++ endpoints')
             cell' = case vsRemain of
                     [] -> cell
                         { job=Nothing
@@ -309,13 +311,15 @@ instance ( VarValTime v x t
             }
 
     decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Target v, epdAt }
-        | Just ( addr, cell@Cell{ job=Just Job{ startAt=Just fBegin, function } } )
+        | Just ( addr, cell@Cell{ job=Just Job{ startAt=Just fBegin, function, binds, endpoints } } )
             <- find (\case (_, Cell{ state=DoLoopTarget v' }) -> v == v'; _ -> False) $ A.assocs memory
         , let
-            (_endpoints', process_) = runSchedule fram $ do
-                _ <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ WriteCell addr
+            ((), process_) = runSchedule fram $ do
+                endpoints' <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ WriteCell addr
                 updateTick (sup epdAt + 1)
-                scheduleFunction fBegin (sup epdAt) function
+                fPID <- scheduleFunction fBegin (sup epdAt) function
+                establishVerticalRelations binds fPID
+                establishVerticalRelations fPID (endpoints ++ endpoints')
             cell' = cell
                 { job=Nothing
                 , state=Done
@@ -346,17 +350,20 @@ instance ( VarValTime v x t
             }
 
     decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
-        | Just ( addr, cell@Cell{ state=DoReg vs', job=Just Job{ function, startAt=Just fBegin } } )
+        | Just ( addr, cell@Cell{ state=DoReg vs', job=Just Job{ function, startAt=Just fBegin, binds, endpoints } } )
             <- find (\case
                 (_, Cell{ state=DoReg vs' }) -> (vs' \\ S.elems vs) /= vs'
                 _ -> False
                 ) $ A.assocs memory
         , let
             vsRemain = vs' \\ S.elems vs
-            ( _endpoints', process_ ) = runSchedule fram $ do
+            ( (), process_ ) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
-                when (null vsRemain) $ void $ scheduleFunction fBegin (sup epdAt) function
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
+                endpoints' <- scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
+                when (null vsRemain) $ do
+                    fPID <- scheduleFunction fBegin (sup epdAt) function
+                    establishVerticalRelations binds fPID
+                    establishVerticalRelations fPID (endpoints ++ endpoints')
             cell' = case vsRemain of
                     [] -> cell
                         { job=Nothing
