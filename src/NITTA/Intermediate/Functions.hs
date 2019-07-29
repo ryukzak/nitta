@@ -35,9 +35,7 @@ module NITTA.Intermediate.Functions
     , Sub(..), sub
     -- *Memory
     , Constant(..), constant
-    , FramInput(..), framInput
-    , FramOutput(..), framOutput
-    , Loop(..), loop
+    , Loop(..), loop, LoopIn(..), LoopOut(..)
     , Reg(..), reg
     -- *Input/Output
     , Receive(..), receive
@@ -53,54 +51,6 @@ import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.UIBackend.VisJS.Types
 import           NITTA.Utils
-
-
-
-data FramInput v x = FramInput Int (O v) deriving ( Typeable, Eq, Show )
-framInput addr vs = F $ FramInput addr $ O $ fromList vs
-
-instance ( Ord v ) => Function (FramInput v x) v where
-    outputs (FramInput _ o) = variables o
-    isInternalLockPossible _ = True
-instance ( Ord v ) => Patch (FramInput v x) (v, v) where
-    patch diff (FramInput x a) = FramInput x $ patch diff a
-instance ( Var v ) => Locks (FramInput v x) v where locks _ = []
-instance FunctionSimulation (FramInput v x) v x where
-    simulate = undefined
-
-
-
-data FramOutput v x = FramOutput Int (I v) deriving ( Typeable, Eq, Show )
-framOutput addr v = F $ FramOutput addr $ I v
-
-instance ( Ord v ) => Function (FramOutput v x) v where
-    inputs (FramOutput _ o) = variables o
-    isInternalLockPossible _ = True
-instance ( Ord v ) => Patch (FramOutput v x) (v, v) where
-    patch diff (FramOutput x a) = FramOutput x $ patch diff a
-instance ( Var v ) => Locks (FramOutput v x) v where locks _ = []
-instance FunctionSimulation (FramOutput v x) v x where
-    simulate = undefined
-
-
-
-data Reg v x = Reg (I v) (O v) deriving ( Typeable, Eq )
-instance {-# OVERLAPS #-} Label (Reg v x) where label Reg{} = "r"
-instance ( Show v ) => Show (Reg v x) where
-    show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = reg(" ++ show k1 ++ ")"
-reg a b = F $ Reg (I a) (O $ fromList b)
-
-instance ( Ord v ) => Function (Reg v x) v where
-    inputs  (Reg a _b) = variables a
-    outputs (Reg _a b) = variables b
-instance ( Ord v ) => Patch (Reg v x) (v, v) where
-    patch diff (Reg a b) = Reg (patch diff a) (patch diff b)
-instance ( Var v ) => Locks (Reg v x) v where
-    locks = inputsLockOutputs
-instance ( Var v ) => FunctionSimulation (Reg v x) v x where
-    simulate cntx (Reg (I v) (O vs)) = do
-        x <- cntx `getX` v
-        setZipX cntx vs x
 
 
 
@@ -126,6 +76,50 @@ instance ( Var v ) => FunctionSimulation (Loop v x) v x where
             Just _  -> return cntx
             -- if output variables are not defined - set initial value
             Nothing -> setZipX cntx vs x
+
+
+data LoopOut v x = LoopOut (Loop v x) (O v) deriving ( Typeable, Eq, Show )
+instance ( Ord v ) => Function (LoopOut v x) v where
+    outputs (LoopOut _ o) = variables o
+    isInternalLockPossible _ = True
+instance ( Ord v ) => Patch (LoopOut v x) (v, v) where
+    patch diff (LoopOut x a) = LoopOut x $ patch diff a
+instance ( Var v ) => Locks (LoopOut v x) v where locks _ = []
+instance ( Var v ) => FunctionSimulation (LoopOut v x) v x where
+    simulate cntx (LoopOut l _) = simulate cntx l
+
+
+data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq, Show )
+instance ( Ord v ) => Function (LoopIn v x) v where
+    inputs (LoopIn _ o) = variables o
+    isInternalLockPossible _ = True
+instance ( Ord v ) => Patch (LoopIn v x) (v, v) where
+    patch diff (LoopIn x a) = LoopIn x $ patch diff a
+instance ( Var v ) => Locks (LoopIn v x) v where locks _ = []
+instance ( Var v ) => FunctionSimulation (LoopIn v x) v x where
+    simulate cntx (LoopIn l _) = simulate cntx l
+
+
+
+data Reg v x = Reg (I v) (O v) deriving ( Typeable, Eq )
+instance {-# OVERLAPS #-} Label (Reg v x) where label Reg{} = "r"
+instance ( Show v ) => Show (Reg v x) where
+    show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = reg(" ++ show k1 ++ ")"
+reg a b = F $ Reg (I a) (O $ fromList b)
+
+instance ( Ord v ) => Function (Reg v x) v where
+    inputs  (Reg a _b) = variables a
+    outputs (Reg _a b) = variables b
+instance ( Ord v ) => Patch (Reg v x) (v, v) where
+    patch diff (Reg a b) = Reg (patch diff a) (patch diff b)
+instance ( Var v ) => Locks (Reg v x) v where
+    locks = inputsLockOutputs
+instance ( Var v ) => FunctionSimulation (Reg v x) v x where
+    simulate cntx (Reg (I v) (O vs)) = do
+        x <- cntx `getX` v
+        setZipX cntx vs x
+
+
 
 instance {-# OVERLAPS #-} ( Var v ) => ToVizJS (Loop v x) where
     toVizJS (Loop _ (O a) (I b))

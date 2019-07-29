@@ -66,8 +66,8 @@ data TestbenchReport
         , tbPath           :: String
         , tbFiles          :: [String]
         , tbFunctions      :: [String]
-        , tbCompilerDump   :: String
-        , tbSimulationDump :: String
+        , tbCompilerDump   :: [String]
+        , tbSimulationDump :: [String]
         }
     deriving ( Generic, Show )
 

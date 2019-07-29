@@ -38,14 +38,14 @@ Stability   : experimental
 module NITTA.Model.Networks.Bus
     ( busNetwork
     , BusNetwork(..)
-    , bindedFunctions, bindedVars
+    , bindedFunctions
     ) where
 
 import           Control.Monad.State
 import qualified Data.Array                       as A
 import           Data.Bits                        (FiniteBits (..))
 import           Data.Default
-import           Data.List                        (find, groupBy, nub, sortOn)
+import qualified Data.List                        as L
 import qualified Data.Map                         as M
 import           Data.Maybe                       (isJust, mapMaybe)
 import qualified Data.Set                         as S
@@ -92,6 +92,15 @@ data BusNetwork tag v x t = BusNetwork
     }
 
 
+instance ( Var v ) => Variables (BusNetwork tag v x t) v where
+    variables BusNetwork{ bnBinded } = unionsMap variables $ concat $ M.elems bnBinded
+
+
+bindedFunctions puTitle BusNetwork{ bnBinded }
+    | puTitle `M.member` bnBinded = bnBinded M.! puTitle
+    | otherwise = []
+
+
 -- TODO: Проверка подключения сигнальных линий.
 
 -- TODO: Вариант функции, где провода будут подключаться автоматически.
@@ -125,8 +134,8 @@ busNetwork w bnAllowDrop pus = BusNetwork
                 }
             }
         pus' = map (\(tag, f) -> ( tag, f $ puEnv tag ) ) pus
-        extInputs=nub $ concatMap (\(_, PU{ ports }) -> externalInputPorts ports ) pus'
-        extOutputs=nub $ concatMap (\(_, PU{ ports }) -> externalOutputPorts ports ) pus'
+        extInputs=L.nub $ concatMap (\(_, PU{ ports }) -> externalInputPorts ports ) pus'
+        extOutputs=L.nub $ concatMap (\(_, PU{ ports }) -> externalOutputPorts ports ) pus'
 
 instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{ bnRemains, bnBinded } = bnRemains ++ concat (M.elems bnBinded)
@@ -150,7 +159,7 @@ instance ( UnitTag tag, VarValTime v x t
                         , EndpointO (Target pushVar) pushAt <- opts
                         , pushVar `elem` vs
                         ]
-                    targets = sequence $ groupBy (\a b -> tgr a == tgr b) $ sortOn tgr conflictableTargets
+                    targets = sequence $ L.groupBy (\a b -> tgr a == tgr b) $ L.sortOn tgr conflictableTargets
                     zero = zip vs $ repeat Nothing
                 in map (M.fromList . (++) zero) targets
 
@@ -226,7 +235,7 @@ instance ( UnitTag tag, VarValTime v x t
                 ]
         in execScheduleWithProcess net bnProcess $ do
             -- Копируем нижележащие процессы наверх.
-            mapM_ addNestedProcess $ sortOn fst $ M.assocs bnPus
+            mapM_ addNestedProcess $ L.sortOn fst $ M.assocs bnPus
 
             Process{ steps } <- getProcessSlice
             -- Transport - Endpoint
@@ -292,7 +301,7 @@ instance {-# OVERLAPS #-}
 instance ( UnitTag tag ) => Simulatable (BusNetwork tag v x t) v x where
     simulateOn cntx BusNetwork{..} fb
         = let
-            Just (tag, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
+            Just (tag, _) = L.find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
             pu = bnPus M.! tag
         in simulateOn cntx pu fb
 
@@ -335,28 +344,29 @@ instance ( UnitTag tag, VarValTime v x t ) =>
 
 
 instance ( UnitTag tag, VarValTime v x t
-        ) => DecisionProblem (RefactorDT v)
+        ) => DecisionProblem (RefactorDT v x)
                   RefactorDT (BusNetwork tag v x t)
         where
-    options _ bn
-        = nub
-            [ InsertOutRegisterO lockBy
-            | (BindingO f tag) <- options binding bn
-            , Lock{ lockBy } <- locks f
-            , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
-            ]
+    options proxy bn@BusNetwork{ bnPus } = let
+            insertRegs = L.nub
+                [ InsertOutRegisterO lockBy
+                | (BindingO f tag) <- options binding bn
+                , Lock{ lockBy } <- locks f
+                , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
+                ]
+            breakLoops = concatMap (options proxy) $ M.elems bnPus
+        in insertRegs ++ breakLoops
+
 
     decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v')
         = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
 
-
-
-bindedVars :: ( Var v ) => BusNetwork tag v x t -> S.Set v
-bindedVars BusNetwork{ bnBinded } = unionsMap variables $ concat $ M.elems bnBinded
-
-bindedFunctions puTitle BusNetwork{ bnBinded }
-    | puTitle `M.member` bnBinded = bnBinded M.! puTitle
-    | otherwise = []
+    decision _ bn@BusNetwork{ bnBinded, bnPus } d@(BreakLoopD l i o) = let
+            Just (puTag, puBinded) = L.find (elem (F l) . snd) $ M.assocs bnBinded
+        in bn
+            { bnPus=M.adjust (flip refactorDecision d) puTag bnPus
+            , bnBinded=M.insert puTag (( puBinded L.\\ [F l] ) ++ [ F i, F o ] ) bnBinded
+            }
 
 
 --------------------------------------------------------------------------

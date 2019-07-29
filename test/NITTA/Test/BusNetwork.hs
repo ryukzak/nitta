@@ -26,7 +26,6 @@ import           Data.Default
 import           Data.Map                         (fromList)
 import qualified Data.Set                         as S
 import qualified NITTA.Intermediate.Functions     as F
-import           NITTA.Intermediate.Types         (Diff (..), F, Patch (..))
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems.Endpoint

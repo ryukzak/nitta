@@ -139,6 +139,7 @@ import           Data.Set                         (elems, fromList, member)
 import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
@@ -287,6 +288,13 @@ instance ( Var v ) => Locks (Multiplier v x t) v where
         , lockBy <- sources ++ targets
         ]
 
+instance DecisionProblem (RefactorDT v x)
+            RefactorDT (Multiplier v x t)
+        where
+    options _ _ = []
+    decision _ _ _ = undefined
+
+
 -- |Multiplier mUnit construction. Argument define inner organisation of the computation
 -- unit:  using of multiplier IP kernel (False) or mock (True). For more information look hardware function
 -- in 'TargetSystemComponent' class.
@@ -361,8 +369,6 @@ instance ( VarValTime v x t
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (Multiplier v x t)
         where
-
-
     --1. Processors is asked about roles it can realise (in the other words, how computation
     --process can develop). It is realised by @options@ functions, result of which is
     --one of the further list:

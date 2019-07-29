@@ -195,10 +195,10 @@ runTargetSynthesis TargetSynthesis
                     putStrLn "run testbench - fail"
                     putStrLn "-----------------------------------------------------------"
                     putStrLn "testbench compiler dump:"
-                    putStrLn tbCompilerDump
+                    putStrLn $ unlines tbCompilerDump
                     putStrLn "-----------------------------------------------------------"
                     putStrLn "testbench simulation dump:"
-                    putStrLn tbSimulationDump
+                    putStrLn $ unlines tbSimulationDump
             return report
 
 

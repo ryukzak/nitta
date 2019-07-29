@@ -34,6 +34,7 @@ import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Fram
 import           NITTA.Model.ProcessorUnits.Multiplier
@@ -187,17 +188,14 @@ isUnitSynthesisFinishTestProperty name u0 fsGen
             p = process u
             processedVs = unionsMap variables $ getEndpoints p
             algVs = unionsMap variables fs
-            fs' = fromList fs
-            processedFs = fromList $ functions p
-        return $ fs' == processedFs -- all algorithm functions present in process
-            && algVs == processedVs -- all algorithm variables present in process
+        return $ algVs == processedVs -- all algorithm variables present in process
             && null (options endpointDT u)
-            || trace (  "delta vars: " ++ show (algVs `difference` processedVs) ++ "\n"
-                    ++ "fs: " ++ concatMap (\fb -> (if fb `elem` processedFs then "+" else "-") ++ "\t" ++ show fb ++ "\n" ) fs' ++ "\n"
-                    ++ "fs: " ++ show processedFs ++ "\n"
-                    ++ "algVs: " ++ show algVs ++ "\n"
-                    ++ "processedVs: " ++ show processedVs ++ "\n"
-                    ) False
+            || trace (unlines
+                [ ""
+                , "difference between exaceptation and fact: " ++ show (algVs `difference` processedVs)
+                , "algorithm variables: " ++ show algVs
+                , "processed variables: " ++ show processedVs
+                ]) False
 
 
 -- |CoSimulation - generation unit testbench by data from the functional
@@ -237,8 +235,6 @@ algGen fListGen = fmap avoidDupVariables $ listOf1 $ oneof fListGen
                         else ( takenVs, fs )
                 ) (empty, []) alg
 
-data Opt a b = EndpointOpt a | BindOpt b
-
 
 -- |Автоматическое планирование вычислительного процесса, в рамках которого решения принимаются
 -- случайным образом. В случае если какой-либо функциональный блок не может быть привязан к
@@ -246,24 +242,28 @@ data Opt a b = EndpointOpt a | BindOpt b
 -- отбрасывается.
 processAlgOnEndpointGen pu0 algGen' = do
         alg <- algGen'
-        processAlgOnEndpointGen' pu0 alg []
+        inner alg [] pu0
     where
-        processAlgOnEndpointGen' pu fRemain fPassed = do
-            let opts = map BindOpt fRemain
-                    ++ map EndpointOpt (options endpointDT pu)
-            i <- choose (0, length opts - 1)
-            if null opts
-                then return (pu, fPassed)
-                else case opts !! i of
-                    BindOpt f ->  let
-                            fRemain' = filter (/= f) fRemain
-                        in case tryBind f pu of
-                                Right pu' -> processAlgOnEndpointGen' pu' fRemain' (f : fPassed)
-                                Left _err -> processAlgOnEndpointGen' pu fRemain' fPassed
-                    EndpointOpt o -> do
-                        d <- fmap endpointOptionToDecision $ endpointGen o
-                        let pu' = decision endpointDT pu d
-                        processAlgOnEndpointGen' pu' fRemain fPassed
+        inner fRemain fPassed pu = do
+            let
+                refs = refactorOptions pu
+                other = map Left fRemain ++ map Right (options endpointDT pu)
+            case ( refs, other ) of
+                ( [], [] ) -> return ( pu, fPassed )
+                ( _:_, _ ) -> do
+                    i <- choose (0, length refs - 1)
+                    inner fRemain fPassed $ refactorDecision pu $ refactorOption2decision (refs !! i)
+                ( _, _:_ ) -> do
+                    i <- choose (0, length other - 1)
+                    case other !! i of
+                        Left f -> let fRemain' = filter (/= f) fRemain
+                            in case tryBind f pu of
+                                Right pu' -> inner fRemain' (f : fPassed) pu'
+                                Left _err -> inner fRemain' fPassed pu
+                        Right o -> do
+                            d <- fmap endpointOptionToDecision $ endpointGen o
+                            let pu' = decision endpointDT pu d
+                            inner fRemain fPassed pu'
             where
                 endpointGen option@EndpointO{ epoRole=Source vs } = do
                     vs' <- suchThat (sublistOf $ elems vs) (not . null)

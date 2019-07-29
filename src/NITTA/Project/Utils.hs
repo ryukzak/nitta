@@ -59,13 +59,13 @@ writeWholeProject prj = do
 writeAndRunTestbench prj = do
     writeProjectForTest prj
     report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestbench prj
-    unless tbStatus $ hPutStrLn stderr (tbCompilerDump ++ tbSimulationDump)
+    unless tbStatus $ hPutStrLn stderr (unlines $ tbCompilerDump ++ tbSimulationDump)
     return report
 
 
 runTestbench prj@Project{ pPath, pUnit } = do
     let files = projectFiles prj
-        dump type_ out err = fixIndent [qc|
+        dump type_ out err = lines $ fixIndent [qc|
 |           Project: { pPath }
 |           Type: { type_ }
 |           Files:

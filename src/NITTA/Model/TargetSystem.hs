@@ -22,12 +22,14 @@ module NITTA.Model.TargetSystem
     ) where
 
 import           Control.Exception                (assert)
-import           Data.Set                         (fromList, member)
+import qualified Data.List                        as L
+import qualified Data.Set                         as S
 import           GHC.Generics
 import           NITTA.Intermediate.Functions     (reg)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Binding
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Transport
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
@@ -46,7 +48,7 @@ data ModelState u v x
 
 instance WithFunctions (ModelState (BusNetwork tag v x t) v x) (F v x) where
     functions ModelState{ mUnit, mDataFlowGraph }
-        = assert (fromList (functions mUnit) == fromList (functions mDataFlowGraph)) -- inconsistent ModelState
+        = assert (S.fromList (functions mUnit) == S.fromList (functions mDataFlowGraph)) -- inconsistent ModelState
             $ functions mUnit
 
 instance ( UnitTag tag, VarValTime v x t ) =>
@@ -63,6 +65,25 @@ instance ( UnitTag tag, VarValTime v x t
     options _ ModelState{ mUnit }      = options dataFlowDT mUnit
     decision _ f@ModelState{ mUnit } d = f{ mUnit=decision dataFlowDT mUnit d }
 
+instance ( UnitTag tag, VarValTime v x t
+         ) => DecisionProblem (RefactorDT v x)
+                RefactorDT (ModelState (BusNetwork tag v x t) v x)
+        where
+    options _ ModelState{ mUnit } = refactorOptions mUnit
+
+    decision _ ModelState{ mUnit, mDataFlowGraph } d@(InsertOutRegisterD v v')
+        = ModelState
+            { mDataFlowGraph=patch (v, v') mDataFlowGraph
+            , mUnit=refactorDecision mUnit d
+            }
+    decision _ ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } d@(BreakLoopD l i o) = let
+                revokeLoop = leafs L.\\ [ DFLeaf $ F l ]
+                addLoopParts = [ DFLeaf $ F i, DFLeaf $ F o ] ++ revokeLoop
+        in ModelState
+            { mDataFlowGraph=DFCluster $ addLoopParts
+            , mUnit=refactorDecision mUnit d
+            }
+    decision _ _ _ = undefined
 
 
 -- |Data flow graph - intermediate representation of application algorithm.
@@ -71,7 +92,7 @@ instance ( UnitTag tag, VarValTime v x t
 data DataFlowGraph v x
     = DFLeaf (F v x)
     | DFCluster [ DataFlowGraph v x ]
-    deriving ( Show, Generic )
+    deriving ( Show, Generic, Eq )
 
 instance ( Var v, Val x ) => Patch (DataFlowGraph v x) (v, v) where
     patch diff@(v, v') (DFCluster cluster) = let
@@ -80,7 +101,7 @@ instance ( Var v, Val x ) => Patch (DataFlowGraph v x) (v, v) where
         in assert (all (\case DFLeaf _ -> True; _ -> False) cluster) -- patch DataFlowGraph with subclusters is not support
             $ DFCluster $ newReg : cluster'
     patch diff@(v, _) n@(DFLeaf f)
-        | v `member` inputs f = DFLeaf $ patch diff f
+        | v `S.member` inputs f = DFLeaf $ patch diff f
         | otherwise = n
 
 instance ( Var v ) => Variables (DataFlowGraph v x) v where

@@ -29,13 +29,14 @@ import           Control.Monad
 import qualified Data.Array                       as A
 import           Data.Bits                        (finiteBitSize, testBit)
 import           Data.Default
-import           Data.List                        (find, partition, (\\))
+import qualified Data.List                        as L
 import           Data.Maybe
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
@@ -80,7 +81,7 @@ instance ( VarValTime v x t
 
 -- |Memory cell
 data Cell v x t = Cell
-        { state        :: CellState v
+        { state        :: CellState v x t
         , lastWrite    :: Maybe t
         , job          :: Maybe (Job v x t) -- ^current job description
         , history      :: [ F v x ]
@@ -94,7 +95,7 @@ data Job v x t = Job
         , startAt          :: Maybe t
         , binds, endpoints :: [ ProcessUid ]
         }
-    deriving ( Show )
+    deriving ( Show, Eq )
 
 defJob f = Job
     { function=f
@@ -136,17 +137,17 @@ instance ( Default x ) => Default (Cell v x t) where
 --      |    target               v     v  source  |
 --      +-------------------> DoReg ---------------/
 --      |
---      |                                    source                      target
---      \-------------------> DoLoopSource ----------+---> DoLoopTarget --------> Done
+--      |              refactor              source                      target
+--      \-- NotBrokenLoop --> DoLoopSource ----------+---> DoLoopTarget --------> Done
 --                                ^                  |
 --                                |                  |
 --                                \------------------/
 -- @
-data CellState v
+data CellState v x t
     = NotUsed | Done
     | DoConstant [v]
     | DoReg [v] | ForReg
-    | DoLoopSource [v] | DoLoopTarget v
+    | NotBrokenLoop | DoLoopSource [v] (Job v x t) | DoLoopTarget v
     deriving ( Show, Eq )
 
 
@@ -164,9 +165,14 @@ lockableNotUsedCell Fram{ memory, remainRegs } = let
         else Nothing
 
 findForRegCell Fram{ memory }
-    = case find (isForReg . snd) $ A.assocs memory of
+    = case L.find (isForReg . snd) $ A.assocs memory of
         x@(Just _) -> x
-        Nothing    -> find (isFree . snd) $ A.assocs memory
+        Nothing    -> L.find (isFree . snd) $ A.assocs memory
+
+
+oJobV Job{ function }
+    | Just (LoopIn _ (I v)) <- castF function = v
+    | otherwise = undefined
 
 
 instance ( VarValTime v x t
@@ -192,12 +198,12 @@ instance ( VarValTime v x t
             , process_
             }
 
-        | Just (Loop (X x) (O vs) (I _)) <- castF f
+        | Just (Loop (X x) (O _) (I _)) <- castF f
         , Just (addr, _) <- lockableNotUsedCell fram
         , let
             (binds, process_) = runSchedule fram $ scheduleFunctoinBind f
             cell = Cell
-                { state=DoLoopSource $ S.elems vs
+                { state=NotBrokenLoop
                 , job=Just (defJob f){ binds }
                 , history=[ f ]
                 , lastWrite=Nothing
@@ -229,6 +235,41 @@ instance ( Var v ) => Locks (Fram v x t) v where
     locks _ = []
 
 instance ( VarValTime v x t
+        ) => DecisionProblem (RefactorDT v x)
+            RefactorDT (Fram v x t)
+        where
+    options _ Fram{ memory } =
+        [ BreakLoopO l (LoopOut l o) (LoopIn l i)
+        | (_, Cell{ state=NotBrokenLoop, job=Just Job{ function } }) <- A.assocs memory
+        , let Just l@(Loop _ o i) = castF function
+        ]
+
+    decision _ fram@Fram{ memory } (BreakLoopD l i@(LoopOut _ (O vs)) o) = let
+            Just ( addr, cell@Cell{ history, job=Just Job{ binds } } )
+                = L.find (\case
+                    (_, Cell{job=Just Job{ function } }) -> function == F l
+                    _ -> False
+                    ) $ A.assocs memory
+            ((iPid, oPid), process_) = runSchedule fram $ do
+                revoke <- scheduleFunctoinRevoke $ F l
+                f1 <- scheduleFunctoinBind $ F i
+                f2 <- scheduleFunctoinBind $ F o
+                establishVerticalRelations binds (f1 ++ f2 ++ revoke)
+                return (f1, f2)
+            iJob = (defJob $ F i){ binds=iPid, startAt=Just 0 }
+            oJob = (defJob $ F o){ binds=oPid }
+            cell' = cell
+                { job=Just iJob
+                , history=[ F i, F o ] ++ history
+                , state=DoLoopSource (S.elems vs) oJob
+                }
+        in fram
+            { memory=memory A.// [ (addr, cell') ]
+            , process_
+            }
+    decision _ _ d = error $ "fram not suport refactor: " ++ show d
+
+instance ( VarValTime v x t
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (Fram v x t)
         where
@@ -250,7 +291,8 @@ instance ( VarValTime v x t
             foo Cell{ state=DoReg vs, lastWrite } = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
             foo Cell{ state=ForReg } = Nothing
 
-            foo Cell{ state=DoLoopSource vs, lastWrite } = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
+            foo Cell{ state=NotBrokenLoop } = Nothing
+            foo Cell{ state=DoLoopSource vs _, lastWrite } = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
             foo Cell{ state=DoLoopTarget v } = Just $ target v
 
             fromCells = mapMaybe foo $ A.elems memory
@@ -260,12 +302,12 @@ instance ( VarValTime v x t
     -- Constant
     decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
         | Just ( addr, cell@Cell{ state=DoConstant vs', job=Just Job{ function, binds, endpoints } } )
-            <- find (\case
-                (_, Cell{ state=DoConstant vs' }) -> (vs' \\ S.elems vs) /= vs'
+            <- L.find (\case
+                (_, Cell{ state=DoConstant vs' }) -> (vs' L.\\ S.elems vs) /= vs'
                 _ -> False
                 ) $ A.assocs memory
         , let
-            vsRemain = vs' \\ S.elems vs
+            vsRemain = vs' L.\\ S.elems vs
             ( (), process_' ) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
                 endpoints' <- scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
@@ -288,36 +330,40 @@ instance ( VarValTime v x t
 
     -- Loop
     decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
-        | Just ( addr, cell@Cell{ state=DoLoopSource vs', job=Just job@Job{ function, startAt, endpoints } } )
-            <- find (\case
-                (_, Cell{ state=DoLoopSource vs' }) -> (vs' \\ S.elems vs) /= vs'
+        | Just ( addr, cell@Cell{ state=DoLoopSource vs' oJob, job=Just job@Job{ binds, function, startAt, endpoints } } )
+            <- L.find (\case
+                (_, Cell{ state=DoLoopSource vs' _ }) -> (vs' L.\\ S.elems vs) /= vs'
                 _ -> False
                 ) $ A.assocs memory
         , let
-            vsRemain = vs' \\ S.elems vs
+            vsRemain = vs' L.\\ S.elems vs
             (endpoints', process_) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
-            job' = job{ startAt=startAt <|> (Just $ inf epdAt - 1), endpoints=endpoints' ++ endpoints }
-            cell' = cell
-                { job=Just job'
-                , state=case vsRemain of
-                    [] -> DoLoopTarget $ loopInput function
-                    _  -> DoLoopSource vsRemain
-                }
-        = fram
-            { memory=memory A.// [ (addr, cell') ]
-            , process_
-            }
+                eps <- scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
+                when (null vsRemain) $ do
+                    fPID <- scheduleFunction 0 (sup epdAt) function
+                    establishVerticalRelations binds fPID
+                    establishVerticalRelations fPID $ eps ++ endpoints
+                return eps
+            cell' = if not $ null vsRemain
+                then cell
+                    { job=Just job{ startAt=startAt <|> (Just $ inf epdAt - 1), endpoints=endpoints' ++ endpoints }
+                    , state=DoLoopSource vsRemain oJob
+                    }
+                else cell
+                    { job=Just oJob{ startAt=startAt <|> (Just $ inf epdAt - 1) }
+                    , state=DoLoopTarget $ oJobV oJob
+                    }
+        = fram{ process_, memory=memory A.// [ (addr, cell') ] }
 
     decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Target v, epdAt }
-        | Just ( addr, cell@Cell{ job=Just Job{ startAt=Just fBegin, function, binds, endpoints } } )
-            <- find (\case (_, Cell{ state=DoLoopTarget v' }) -> v == v'; _ -> False) $ A.assocs memory
+        | Just ( addr, cell@Cell{ job=Just Job{ function, binds, endpoints } } )
+            <- L.find (\case (_, Cell{ state=DoLoopTarget v' }) -> v == v'; _ -> False) $ A.assocs memory
         , let
             ((), process_) = runSchedule fram $ do
                 endpoints' <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ WriteCell addr
                 updateTick (sup epdAt + 1)
-                fPID <- scheduleFunction fBegin (sup epdAt) function
+                fPID <- scheduleFunction (inf epdAt) (sup epdAt) function
                 establishVerticalRelations binds fPID
                 establishVerticalRelations fPID (endpoints ++ endpoints')
             cell' = cell
@@ -332,7 +378,7 @@ instance ( VarValTime v x t
     -- Reg Target
     decision _proxy fram@Fram{ memory, remainRegs } d@EndpointD{ epdRole=Target v, epdAt }
         | Just ( addr, cell@Cell{ history } ) <- findForRegCell fram
-        , ([ ( Reg (I _) (O vs), j@Job{ function } ) ], remainRegs' ) <- partition (\(Reg (I v') (O _), _) -> v' == v) remainRegs
+        , ([ ( Reg (I _) (O vs), j@Job{ function } ) ], remainRegs' ) <- L.partition (\(Reg (I v') (O _), _) -> v' == v) remainRegs
         , let
             (endpoints, process_) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
@@ -351,12 +397,12 @@ instance ( VarValTime v x t
 
     decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
         | Just ( addr, cell@Cell{ state=DoReg vs', job=Just Job{ function, startAt=Just fBegin, binds, endpoints } } )
-            <- find (\case
-                (_, Cell{ state=DoReg vs' }) -> (vs' \\ S.elems vs) /= vs'
+            <- L.find (\case
+                (_, Cell{ state=DoReg vs' }) -> (vs' L.\\ S.elems vs) /= vs'
                 _ -> False
                 ) $ A.assocs memory
         , let
-            vsRemain = vs' \\ S.elems vs
+            vsRemain = vs' L.\\ S.elems vs
             ( (), process_ ) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
                 endpoints' <- scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
@@ -382,10 +428,6 @@ instance ( VarValTime v x t
             ++ show d ++ "\n cells state: \n"
             ++ S.join "\n" (map (\(i, c) -> show i ++ ": " ++ show (state c)) $ A.assocs memory)
 
-
-loopInput f = case castF f of
-        Just (Loop (X _) (O _) (I v)) -> v
-        _                             -> undefined
 
 
 ---------------------------------------------------------------------
@@ -539,7 +581,7 @@ testDataInput Fram{ process_=p@Process{ nextTick } } cntx
             = "data_in <= " ++ (either (error . ("testDataInput: " ++)) show $ getX cntx v) ++ ";"
             | otherwise = "/* NO INPUT */"
 
-testDataOutput tag fram@Fram{ process_=p@Process{ nextTick, steps } } cntx
+testDataOutput tag fram@Fram{ memory, process_=p@Process{ nextTick, steps } } cntx
     = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
     where
         busState t
@@ -563,9 +605,11 @@ testDataOutput tag fram@Fram{ process_=p@Process{ nextTick, steps } } cntx
                         , isJust addr_v
                         , let Just (addr, v) = addr_v
                         ]
-        outputStep pu' fb
-            | Just (Loop _ _bs (I v)) <- castF fb = Just (findAddress v pu', v)
-            | Just (FramOutput addr (I v)) <- castF fb = Just (addr, v)
+        outputStep pu' f
+            | Just (Loop _ _bs (I v)) <- castF f = Just (findAddress v pu', v)
+            | Just (LoopIn l (I v)) <- castF f
+            , Just (addr, _) <- L.find (L.elem (F l) . history . snd) $ A.assocs memory
+            = Just (addr, v)
             | otherwise = Nothing
 
         checkBank addr v value = concatMap ("    " ++)

@@ -40,6 +40,7 @@ import qualified Data.Set                         as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
@@ -190,6 +191,12 @@ instance ( Var v ) => Locks (SerialPU st v x t) v where
     | locked <- concatMap (elems . variables . fst) spuRemain
     , lockBy <- elems $ variables cFB
     ]
+
+instance DecisionProblem (RefactorDT v x)
+            RefactorDT (SerialPU st v x t)
+        where
+    options _ _ = []
+    decision _ _ _ = undefined
 
 
 -- * Утилиты --------------------------------------------------------

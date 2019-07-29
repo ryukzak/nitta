@@ -21,7 +21,7 @@ module NITTA.Utils.Process
     ( runSchedule
     , execSchedule, execScheduleWithProcess
     , scheduleEndpoint
-    , scheduleFunctoinBind, scheduleFunction
+    , scheduleFunctoinBind, scheduleFunctoinRevoke, scheduleFunction
     , scheduleInstruction
     , scheduleNestedStep
     , establishVerticalRelations, establishVerticalRelation
@@ -106,6 +106,10 @@ establishVerticalRelation h l = do
 scheduleFunctoinBind f = do
     Schedule{ schProcess=Process{ nextTick } } <- get
     scheduleStep (singleton nextTick) $ CADStep $ "bind " ++ show f
+
+scheduleFunctoinRevoke f = do
+    Schedule{ schProcess=Process{ nextTick } } <- get
+    scheduleStep (singleton nextTick) $ CADStep $ "revoke " ++ show f
 
 -- |Add to the process description information about function evaluation.
 scheduleFunction a b f = scheduleStep (a ... b) $ FStep f

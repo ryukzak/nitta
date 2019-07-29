@@ -49,8 +49,10 @@ instance ( VarValTimeJSON v x t
         ) => ToJSON (Option (SynthesisDT (BusNetwork String v x t)))
 instance ( VarValTimeJSON v x t
          ) => ToJSON (Decision (SynthesisDT (BusNetwork String v x t)))
-instance ( ToJSON v ) => ToJSON (Option (RefactorDT v))
-instance ( ToJSON v ) => ToJSON (Decision (RefactorDT v))
+instance ( ToJSON v, Show v, Show x ) => ToJSON (Option (RefactorDT v x)) where
+    toJSON = toJSON . show
+instance ( ToJSON v, Show v, Show x ) => ToJSON (Decision (RefactorDT v x)) where
+    toJSON = toJSON . show
 instance ( Time t ) => ToJSON (Option (EndpointDT String t)) where
     toJSON EndpointO{ epoRole=Source vs, epoAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epoAt)
     toJSON EndpointO{ epoRole=Target v, epoAt } = toJSON ("Target: " ++ v ++ " at " ++ show epoAt)

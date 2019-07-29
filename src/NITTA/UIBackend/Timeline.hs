@@ -127,5 +127,7 @@ timeline a b steps = map findSteps [a..b]
         foo Step{ sKey, sTime, sDesc } = TimelinePoint
             { pID=sKey
             , pTime=sTime
-            , pInfo=show $ descent sDesc
+            , pInfo=S.replace "\"" "" $ case sDesc of
+                NestedStep{ nTitle, nStep=Step{ sDesc=subDesc } } -> show nTitle ++ " do " ++ show subDesc
+                _ -> show sDesc
             }
