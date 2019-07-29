@@ -149,28 +149,23 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
     }
 
     selectPoint(point: TimelinePoint<number>[]) {
-        let up: number[] = [];
-        let current: number[] = [];
-        let down: number[] = [];
+        let highlight: Highlight = { up: [], current: [], down: [] };
         point.forEach(p => {
             let id: number = p.pID;
-            current.push(id);
+            highlight.current.push(p.pID);
             this.state.data.verticalRelations.forEach(e => {
-                if (up.indexOf(id) === -1) {
-                    if (e[1] === id) { up.push(e[0]); }
+                let up = e[0], down = e[1];
+                if (highlight.up.indexOf(up) === -1) {
+                    if (id === down) { highlight.up.push(up); }
                 }
-                if (down.indexOf(id) === -1) {
-                    if (e[0] === id) { down.push(e[1]); }
+                if (highlight.down.indexOf(down) === -1) {
+                    if (id === up) { highlight.down.push(down); }
                 }
             });
         });
         this.setState({
             detail: point,
-            highlight: {
-                up: up,
-                current: current,
-                down: down,
-            },
+            highlight: highlight,
         });
     }
 
