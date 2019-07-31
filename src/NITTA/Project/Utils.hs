@@ -91,7 +91,7 @@ runTestbench prj@Project{ pPath, pUnit } = do
     let isCompileOk = compileExitCode == ExitSuccess && null compileErr
 
 
-    (simExitCode, simOut, simErr)
+    ( simExitCode, simOut, simErr )
         <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just pPath } []
     let isSimOk = simExitCode == ExitSuccess && not ("FAIL" `L.isSubsequenceOf` simOut)
 
