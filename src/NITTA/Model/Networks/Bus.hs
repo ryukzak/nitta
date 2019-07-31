@@ -69,7 +69,8 @@ import           NITTA.UIBackend.VisJS            ()
 import           NITTA.Utils
 import           NITTA.Utils.Lens
 import           NITTA.Utils.Process
-import           Numeric.Interval                 (inf, singleton, width, (...))
+import           Numeric.Interval                 (inf, singleton, sup, width,
+                                                   (...))
 import           Text.InterpolatedString.Perl6    (qc)
 
 
@@ -192,15 +193,14 @@ instance ( UnitTag tag, VarValTime v x t
                             ]
         in n
             { bnPus=foldl applyDecision bnPus subDecisions
-            , bnProcess=snd $ modifyProcess bnProcess $ do
+            , bnProcess=snd $ runSchedule n $ do
                 mapM_
-                    (\(pushedValue, (targetTitle, _tc)) -> addStep
-                        (transportStartAt ... transportEndAt)
-                        $ InstructionStep (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork tag v x t))
+                    (\(pushedValue, (targetTitle, _tc)) ->
+                        scheduleInstruction (transportStartAt ... transportEndAt)
+                            (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork tag v x t))
                     )
                     $ M.assocs pushs
-                addStep_ (transportStartAt ... transportEndAt) $ CADStep $ show d
-                setProcessTime $ d^.at.supremum + 1
+                updateTick (sup pullAt + 1)
             }
         where
             applyDecision pus (trgTitle, d') = M.adjust (\pu -> decision endpointDT pu d') trgTitle pus

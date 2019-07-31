@@ -34,7 +34,7 @@ import           Data.Proxy                       (asProxyTypeOf)
 import           Data.Typeable
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Types
-import           Numeric.Interval                 (singleton, (...))
+import           Numeric.Interval                 (singleton)
 
 -- |Process builder state.
 data Schedule pu v x t
@@ -112,7 +112,7 @@ scheduleFunctoinRevoke f = do
     scheduleStep (singleton nextTick) $ CADStep $ "revoke " ++ show f
 
 -- |Add to the process description information about function evaluation.
-scheduleFunction a b f = scheduleStep (a ... b) $ FStep f
+scheduleFunction ti f = scheduleStep ti $ FStep f
 
 -- |Add to the process description information about endpoint behaviour, and it's low-level
 -- implementation (on instruction level). Vertical relations connect endpoint level and instruction
@@ -124,9 +124,9 @@ scheduleEndpoint EndpointD{ epdAt, epdRole } codeGen = do
     return high
 
 -- |Add to the process description information about instruction evaluation.
-scheduleInstruction start finish instr = do
+scheduleInstruction ti instr = do
     Schedule{ iProxy } <- get
-    scheduleStep (start ... finish) $ InstructionStep (instr `asProxyTypeOf` iProxy)
+    scheduleStep ti $ InstructionStep (instr `asProxyTypeOf` iProxy)
 
 -- |Add to the process description information about nested step.
 scheduleNestedStep tag step@Step{ sTime } = do

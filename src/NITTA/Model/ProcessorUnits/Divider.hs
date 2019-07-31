@@ -257,7 +257,7 @@ instance ( VarValTime v x t
                 then InProgress{ function, startAt, finishAt } : other
                 else i{ inputSeq=vs } : other
             , process_=execSchedule pu $ do
-                _endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load tag
+                _endpoints <- scheduleEndpoint d $ scheduleInstruction epdAt $ Load tag
                 -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
                 -- которые берут информацию о времени из Process
                 updateTick (sup epdAt)
@@ -279,8 +279,8 @@ instance ( VarValTime v x t
                 then other
                 else out{ outputRnd=vss' } : other
             , process_=execSchedule pu $ do
-                _endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Out tag
-                when (null vss') $ void $ scheduleFunction startAt (sup epdAt) function
+                _endpoints <- scheduleEndpoint d $ scheduleInstruction epdAt $ Out tag
+                when (null vss') $ void $ scheduleFunction (startAt ... sup epdAt) function
                 -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
                 -- которые берут информацию о времени из Process
                 updateTick (sup epdAt)

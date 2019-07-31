@@ -310,9 +310,9 @@ instance ( VarValTime v x t
             vsRemain = vs' L.\\ S.elems vs
             ( (), process_' ) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
-                endpoints' <- scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
+                endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epdAt) $ ReadCell addr
                 when (null vsRemain) $ do
-                    fPID <- scheduleFunction 0 (sup epdAt) function
+                    fPID <- scheduleFunction (0 ... sup epdAt) function
                     establishVerticalRelations binds fPID
                     establishVerticalRelations fPID (endpoints ++ endpoints')
             cell' = case vsRemain of
@@ -339,9 +339,9 @@ instance ( VarValTime v x t
             vsRemain = vs' L.\\ S.elems vs
             (endpoints', process_) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
-                eps <- scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
+                eps <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epdAt) $ ReadCell addr
                 when (null vsRemain) $ do
-                    fPID <- scheduleFunction 0 (sup epdAt) function
+                    fPID <- scheduleFunction (0 ... sup epdAt) function
                     establishVerticalRelations binds fPID
                     establishVerticalRelations fPID $ eps ++ endpoints
                 return eps
@@ -361,9 +361,9 @@ instance ( VarValTime v x t
             <- L.find (\case (_, Cell{ state=DoLoopTarget v' }) -> v == v'; _ -> False) $ A.assocs memory
         , let
             ((), process_) = runSchedule fram $ do
-                endpoints' <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ WriteCell addr
+                endpoints' <- scheduleEndpoint d $ scheduleInstruction epdAt $ WriteCell addr
                 updateTick (sup epdAt + 1)
-                fPID <- scheduleFunction (inf epdAt) (sup epdAt) function
+                fPID <- scheduleFunction epdAt function
                 establishVerticalRelations binds fPID
                 establishVerticalRelations fPID (endpoints ++ endpoints')
             cell' = cell
@@ -382,7 +382,7 @@ instance ( VarValTime v x t
         , let
             (endpoints, process_) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ WriteCell addr
+                scheduleEndpoint d $ scheduleInstruction epdAt $ WriteCell addr
             cell' = cell
                 { job=Just j{ startAt=Just $ inf epdAt, endpoints }
                 , state=DoReg $ S.elems vs
@@ -405,9 +405,9 @@ instance ( VarValTime v x t
             vsRemain = vs' L.\\ S.elems vs
             ( (), process_ ) = runSchedule fram $ do
                 updateTick (sup epdAt + 1)
-                endpoints' <- scheduleEndpoint d $ scheduleInstruction (inf epdAt - 1) (sup epdAt - 1) $ ReadCell addr
+                endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epdAt) $ ReadCell addr
                 when (null vsRemain) $ do
-                    fPID <- scheduleFunction fBegin (sup epdAt) function
+                    fPID <- scheduleFunction (fBegin ... sup epdAt) function
                     establishVerticalRelations binds fPID
                     establishVerticalRelations fPID (endpoints ++ endpoints')
             cell' = case vsRemain of
