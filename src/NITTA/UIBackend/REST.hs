@@ -28,6 +28,7 @@ import qualified Data.Map                         as M
 import           Data.Maybe
 import qualified Data.Tree                        as T
 import           GHC.Generics
+import           NITTA.Intermediate.Simulation
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Types
@@ -78,13 +79,14 @@ withSynthesis root nId
     :<|> liftIO ( algToVizJS . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
+        let ModelState{ mDataFlowGraph } = nModel node
         unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
         writeAndRunTestbench Project
             { pName=name
-            , pLibPath="../.."
-            , pPath=joinPath ["hdl", "gen", name]
+            , pLibPath=joinPath ["..", "..", "hdl"]
+            , pPath=joinPath ["gen", name]
             , pUnit=mUnit $ nModel node
-            , pTestCntx=def
+            , pTestCntx=simulateDataFlowGraph def def mDataFlowGraph
             }
     ))
     :<|> simpleCompilerServer root nId
