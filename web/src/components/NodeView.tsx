@@ -218,22 +218,26 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                             <pre> {JSON.stringify(this.state.endpointOptions, null, 2)} </pre>
                         }
 
-                        {this.state.view === "testbench" &&
-                            <div>
-                                Status: <pre> {JSON.stringify(this.state.testBenchDump.tbStatus)} </pre>
-                                <hr />
-                                Compiler output:
-                        <pre> {this.state.testBenchDump.tbCompilerDump} </pre>
-                                <hr />
-                                Simulation output:
-                        <pre> {this.state.testBenchDump.tbSimulationDump} </pre>
-                                <hr />
-                                <pre> {JSON.stringify(this.state.testBenchDump, null, 2)} </pre>
-                            </div>
-                        }
+                        {this.state.view === "testbench" && this.renderTestbench(this.state.testBenchDump)}
                     </div>
                 }
             </div>
         );
+    }
+
+    renderTestbench(dump: any) {
+        return (<div>
+            Status: <pre> {JSON.stringify(dump.tbStatus)} </pre>
+            <hr />
+            <h3>Compiler output:</h3>
+            <pre className="squeeze">
+                {dump.tbCompilerDump.map((e: string) => <div>{e}<br /></div>)}
+            </pre>
+            <hr />
+            <h3>Simulation output:</h3>
+            <pre className="squeeze">
+                {dump.tbSimulationDump.map((e: string) => <div>{e}<br /></div>)}
+            </pre>
+        </div>);
     }
 }
