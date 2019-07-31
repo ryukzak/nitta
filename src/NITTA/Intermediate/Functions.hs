@@ -150,7 +150,7 @@ instance ( Var v, Num x ) => FunctionSimulation (Add v x) v x where
     simulate cntx (Add (I v1) (I v2) (O vs)) = do
         x1 <- cntx `getX` v1
         x2 <- cntx `getX` v2
-        let x3 = x1 + x2
+        let x3 = x1 + x2 -- + 1 -- can be used for checking test working
         setZipX cntx vs x3
 
 

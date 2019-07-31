@@ -30,6 +30,7 @@ import           Data.Proxy
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Project
+import           NITTA.Project.Parts.TestBench
 import           NITTA.Synthesis.Method
 import           NITTA.Test.Microarchitectures
 import           Test.Tasty                    (TestTree, testGroup)
@@ -219,6 +220,9 @@ luaTests = $(testGroupGenerator)
 
 -----------------------------------------------------------
 
+checkSynthesisResult (Right TestbenchReport{ tbStatus=True }) = return ()
+checkSynthesisResult (Right _) = assertFailure "test bench FAIL"
+checkSynthesisResult (Left err) = assertFailure $ "synthesis process FAIL: " ++ err
 
 luaSimpleTestCase testCaseName tName src
     = testCase testCaseName $ do
@@ -227,7 +231,7 @@ luaSimpleTestCase testCaseName tName src
             , tMicroArch=marchSPIDropData True (Proxy :: Proxy Int)
             , tSourceCode=Just src
             }
-        isRight report @? show report
+        checkSynthesisResult report
 
 
 genericLuaTestCase tName tReceivedValues src ma xProxy
@@ -238,7 +242,7 @@ genericLuaTestCase tName tReceivedValues src ma xProxy
             , tSourceCode=Just src
             , tReceivedValues=map (\(v, x) -> (v, map fromInteger x)) tReceivedValues
             }
-        isRight report @? show report
+        checkSynthesisResult report
 
 
 intLuaTestCases testName pName src = testGroup testName
