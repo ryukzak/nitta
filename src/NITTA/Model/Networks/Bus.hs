@@ -534,19 +534,20 @@ instance ( VarValTime v x t
             envInitFlags = mapMaybe (uncurry testEnvironmentInitFlag) $ M.assocs bnPus
 
             tickWithTransfers = map
-                ( \cycleCntx -> map
-                     ( \t -> ( t, cntxToTransfer cycleCntx t ) )
+                ( \(cycleI, cycleCntx) -> map
+                     ( \t -> ( cycleI, t, cntxToTransfer cycleCntx t ) )
                      [ 0 .. nextTick bnProcess ] )
-                $ take cntxCycleNumber cntxProcess
+                $ zip [0 :: Int ..] $ take cntxCycleNumber cntxProcess
 
-            assertions = concatMap ( \cycleTransfers -> posedgeCycle ++ concatMap assertion cycleTransfers ) tickWithTransfers
+            assertions = concatMap ( \cycleTickTransfer -> posedgeCycle ++ concatMap assertion cycleTickTransfer ) tickWithTransfers
 
-            assertion ( t, Nothing ) = fixIndentNoLn [qc|
+            assertion ( _cycleI, t, Nothing ) = fixIndentNoLn [qc|
 |                       @(posedge clk); $write("tick: { t };\tnet.data_bus == %h ", net.data_bus);
 |                       $display();
 |               |]
-            assertion ( t, Just (v, x) ) = fixIndentNoLn [qc|
-|                       @(posedge clk); $write("tick: { t };\tnet.data_bus == %h ", net.data_bus);
+            assertion ( cycleI, t, Just (v, x) ) = fixIndentNoLn [qc|
+|                       @(posedge clk);
+|                       $write("tick: { t };\tactual: ({ cycleI }, \"%s\", %d) ", {v}, net.data_bus);
 |                           $write("=== %h (var: %s := { x })", { verilogInteger $ x }, { v } );
 |                           if ( !( net.data_bus === { verilogInteger $ x } ) ) $display( "\tFAIL");
 |                           else $display();

@@ -23,7 +23,10 @@ module NITTA.Project.Utils
     ) where
 
 import           Control.Monad                    (unless)
+import qualified Data.HashMap.Strict              as HM
 import qualified Data.List                        as L
+import qualified Data.Map                         as M
+import           Data.Maybe
 import qualified Data.String.Utils                as S
 import           Data.Text                        (pack)
 import           NITTA.Intermediate.Types
@@ -38,6 +41,7 @@ import           System.Exit
 import           System.IO                        (hPutStrLn, stderr)
 import           System.Process
 import           Text.InterpolatedString.Perl6    (qc)
+import           Text.Regex
 
 
 -- |Write project with @TargetSystem@, @TestBench@ and @IcarusMakefile@ parts.
@@ -63,7 +67,7 @@ writeAndRunTestbench prj = do
     return report
 
 
-runTestbench prj@Project{ pPath, pUnit } = do
+runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNumber } } = do
     let files = projectFiles prj
         dump type_ out err = lines $ fixIndent [qc|
 |           Project: { pPath }
@@ -90,10 +94,10 @@ runTestbench prj@Project{ pPath, pUnit } = do
         <- readCreateProcessWithExitCode (createIVerilogProcess pPath files) []
     let isCompileOk = compileExitCode == ExitSuccess && null compileErr
 
-
     ( simExitCode, simOut, simErr )
         <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just pPath } []
     let isSimOk = simExitCode == ExitSuccess && not ("FAIL" `L.isSubsequenceOf` simOut)
+
 
     return TestbenchReport
         { tbStatus=isCompileOk && isSimOk
@@ -102,6 +106,23 @@ runTestbench prj@Project{ pPath, pUnit } = do
         , tbFunctions=map show $ functions pUnit
         , tbCompilerDump=dump "Compiler" compileOut compileErr
         , tbSimulationDump=dump "Simulation" simOut simErr
+        , tbFunctionalSimulationCntx=map (HM.fromList . M.assocs . cycleCntx) $ take cntxCycleNumber cntxProcess
+        , tbLogicalSimulationCntx=toCntxs $ extractLogValues simOut
         }
     where
         createIVerilogProcess workdir files = (proc "iverilog" files){ cwd=Just workdir }
+
+
+extractLogValues text = mapMaybe f $ lines text
+    where
+        re = mkRegex "actual: \\(([[:digit:]]+),[[:space:]]*\"([^\"]+)\",[[:space:]]*([[:digit:]]+)\\)"
+        f s = case matchRegex re s of
+            Just [c, v, x] -> Just (read c, v, read x)
+            _              -> Nothing
+
+toCntxs lst0 = inner (0 :: Int) lst0
+    where
+        inner n lst
+            | (xs, ys) <- L.partition (\(c, _v, _x) -> c == n) lst
+            , not $ null xs = (HM.fromList $ map (\(_c, v, x) -> (v, x)) xs) : inner (n + 1) ys
+            | otherwise = []

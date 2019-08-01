@@ -67,7 +67,7 @@ type WithSynthesis tag v x t
     :<|> "timelines" :> Get '[JSON] (ProcessTimelines t)
     :<|> "endpointOptions" :> Get '[JSON] [(tag, Option (EndpointDT v t))]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
-    :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] TestbenchReport
+    :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] (TestbenchReport v x)
     :<|> SimpleCompilerAPI tag v x t
 
 withSynthesis root nId

@@ -190,7 +190,7 @@ runTargetSynthesis TargetSynthesis
 
         testbench prj = do
             when tVerbose $ putStrLn "run testbench"
-            report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestbench prj
+            report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump, tbLogicalSimulationCntx } <- runTestbench prj
             when tVerbose $ case tbStatus of
                 True  -> putStrLn "run testbench - ok"
                 False -> do
@@ -201,6 +201,7 @@ runTargetSynthesis TargetSynthesis
                     putStrLn "-----------------------------------------------------------"
                     putStrLn "testbench simulation dump:"
                     putStrLn $ unlines tbSimulationDump
+                    putStrLn $ show tbLogicalSimulationCntx
             return report
 
 

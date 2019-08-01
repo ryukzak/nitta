@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -44,6 +45,7 @@ import qualified Data.Set                    as S
 import qualified Data.String.Utils           as S
 import           Data.Tuple
 import           Data.Typeable
+import           GHC.Generics
 import           NITTA.Intermediate.Values
 import           NITTA.UIBackend.VisJS.Types
 
@@ -214,7 +216,7 @@ class FunctionSimulation f v x | f -> v x where
 
 
 data CycleCntx v x = CycleCntx{ cycleCntx :: M.Map v x }
-    deriving ( Show )
+    deriving ( Show, Generic )
 
 instance Default (CycleCntx v x) where
     def = CycleCntx def

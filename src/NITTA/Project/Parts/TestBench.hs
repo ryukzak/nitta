@@ -23,6 +23,7 @@ module NITTA.Project.Parts.TestBench
     , projectFiles
     ) where
 
+import qualified Data.HashMap.Strict              as HM
 import qualified Data.List                        as L
 import qualified Data.String.Utils                as S
 import qualified Data.Text                        as T
@@ -60,14 +61,16 @@ class IOTestBench pu v x | pu -> v x where
     testEnvironment _title _pu _env _ports _cntx = ""
 
 
-data TestbenchReport
+data TestbenchReport v x
     = TestbenchReport
-        { tbStatus         :: Bool
-        , tbPath           :: String
-        , tbFiles          :: [String]
-        , tbFunctions      :: [String]
-        , tbCompilerDump   :: [String]
-        , tbSimulationDump :: [String]
+        { tbStatus                   :: Bool
+        , tbPath                     :: String
+        , tbFiles                    :: [ String ]
+        , tbFunctions                :: [ String ]
+        , tbCompilerDump             :: [ String ]
+        , tbSimulationDump           :: [ String ]
+        , tbFunctionalSimulationCntx :: [ HM.HashMap v x ]
+        , tbLogicalSimulationCntx    :: [ HM.HashMap v x ]
         }
     deriving ( Generic, Show )
 

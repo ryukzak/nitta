@@ -131,7 +131,8 @@ instance ( VarValTimeJSON v x t
         , "nId"         .= nId
         ]
 
-instance ToJSON TestbenchReport
+instance ( ToJSONKey v, ToJSON v, ToJSON x ) => ToJSON (CycleCntx v x)
+instance ( ToJSONKey v, ToJSON v, ToJSON x ) => ToJSON (TestbenchReport v x)
 
 
 -- *Simple synthesis

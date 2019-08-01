@@ -4,7 +4,9 @@ import { ProcessView } from "./ProcessView";
 import { haskellAPI } from "../middleware/haskell-api";
 import { EdgesView } from "./EdgesView";
 import { GraphView } from "./GraphView";
+import ReactTable from "react-table";
 import { JsonView } from "./JsonView";
+import { TestbenchReport } from "../gen/types";
 
 interface NodeViewProps {
     onNIdChange: (string) => void;
@@ -13,7 +15,7 @@ interface NodeViewProps {
 }
 
 interface NodeViewState {
-    testBenchDump: any;
+    testBenchDump: TestbenchReport<string, number>;
     synthesisNode: any;
     selectedNId: any;
     synthesisStatus: any;
@@ -198,10 +200,6 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                                 </div>
                             </div>
                         }
-                        {/* this.state.synthesisNode.nModel.mUnit
-                 this.state.synthesisNode.nModel.mDataFlowGraph 
-                 this.state.synthesisNode.nId
-                 this.state.synthesisNode.nIsComplete */}
 
                         {this.state.view === "process" &&
                             <ProcessView
@@ -225,19 +223,47 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
         );
     }
 
-    renderTestbench(dump: any) {
+    renderTestbench(dump: TestbenchReport<string, number>) {
         return (<div>
             Status: <pre> {JSON.stringify(dump.tbStatus)} </pre>
             <hr />
             <h3>Compiler output:</h3>
             <pre className="squeeze">
-                {dump.tbCompilerDump.map((e: string) => <div>{e}<br /></div>)}
+                {dump.tbCompilerDump.map((e: string, i: number) => <div key={i}>{e}<br /></div>)}
             </pre>
             <hr />
             <h3>Simulation output:</h3>
             <pre className="squeeze">
-                {dump.tbSimulationDump.map((e: string) => <div>{e}<br /></div>)}
+                {dump.tbSimulationDump.map((e: string, i: number) => <div key={i}>{e}<br /></div>)}
             </pre>
+            <h3>Data:</h3>
+            {this.renderSimulationData(dump.tbFunctionalSimulationCntx, dump.tbLogicalSimulationCntx)}
         </div>);
+    }
+
+    renderSimulationData(functional: { [k: string]: number }[], logical: { [k: string]: number }[]) {
+        let cntxs: Record<string, string>[] = [];
+        for (let i = 0; i < functional.length; i++) {
+            const funSim = functional[i];
+            const logSim = logical[i];
+            let cntx: Record<string, string> = { i: i.toString() };
+            for (let key in logSim) {
+                cntx[key] = funSim[key] === logSim[key] ? logSim[key].toString() : funSim[key] + " != " + logSim[key];
+            }
+            cntxs.push(cntx);
+        }
+        let columns: { Header: string, accessor: string }[] = [
+            { Header: "Cycle", accessor: "i" }
+        ];
+        for (let key in logical[0]) {
+            columns.push({ Header: key, accessor: key });
+        }
+        return (<ReactTable
+            defaultPageSize={functional.length}
+            minRows={functional.length}
+            showPagination={false}
+            columns={columns}
+            data={cntxs} />
+        );
     }
 }

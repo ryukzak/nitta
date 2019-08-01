@@ -82,6 +82,7 @@ library
                      , MissingH
                      , mtl
                      , process
+                     , regex-compat
                      , servant
                      , servant-js 
                      , servant-server
@@ -90,6 +91,7 @@ library
                      , syb
                      , text
                      , transformers
+                     , unordered-containers
                      , wai-cors
                      , warp
   default-language:    Haskell2010

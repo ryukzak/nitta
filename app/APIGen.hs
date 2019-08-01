@@ -23,13 +23,14 @@ module Main ( main ) where
 import           Data.Aeson
 import           Data.Aeson.TypeScript.TH
 import           Data.Proxy
-import qualified Data.String.Utils        as S
+import qualified Data.String.Utils             as S
+import           NITTA.Project.Parts.TestBench
 import           NITTA.UIBackend
 import           NITTA.UIBackend.Timeline
 import           Numeric.Interval
 import           System.Console.CmdArgs
-import           System.Directory         (createDirectoryIfMissing)
-import           System.FilePath.Posix    (joinPath)
+import           System.Directory              (createDirectoryIfMissing)
+import           System.FilePath.Posix         (joinPath)
 
 
 data APIGen
@@ -49,6 +50,7 @@ $(deriveTypeScript defaultOptions ''TimelinePoint)
 $(deriveTypeScript defaultOptions ''Interval)
 $(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
 $(deriveTypeScript defaultOptions ''ProcessTimelines)
+$(deriveTypeScript defaultOptions ''TestbenchReport)
 
 
 main = do
@@ -69,6 +71,7 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy Interval)
             , getTypeScriptDeclarations (Proxy :: Proxy TimelineWithViewPoint)
             , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
+            , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReport)
             ]
     writeFile (joinPath [ opath, "types.ts" ]) $ S.replace "type " "export type " (ts ++ "\n")
     putStrLn "Generate typescript interface...OK"
