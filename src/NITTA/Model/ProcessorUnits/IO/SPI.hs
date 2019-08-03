@@ -248,7 +248,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
 |                   , .cs( { outputPort master_cs } )
 |           |]
 
-instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
+instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
     testEnvironmentInitFlag tag _pu = Just $ tag ++ "_env_init_flag"
 
     testEnvironment _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
@@ -270,9 +270,12 @@ instance ( VarValTime v x t ) => IOTestBench (SPI v x t) v x where
             timeLag = 10 :: Int
 
             toVerilogLiteral xs = let
-                    xs' = map (\d -> [qc|{ wordWidth }'sd{ verilogInteger d }|]) xs
+                    xs' = map toVerilogLiteral' xs
                     placeholder = replicate (frameWordCount - length xs) [qc|{ wordWidth }'d00|]
                 in S.join ", " (xs' ++ placeholder)
+            toVerilogLiteral' x
+                | abs x /= x = [qc|-{ wordWidth }'sd{ verilogInteger (-x) }|]
+                | otherwise = [qc|{ wordWidth }'sd{ verilogInteger x }|]
 
             Just envInitFlagName = testEnvironmentInitFlag tag pu
         = case externalPorts of
