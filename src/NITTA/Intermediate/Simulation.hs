@@ -38,7 +38,6 @@ simulateAlg cycle0 transmission alg
     = Cntx
         { cntxReceived=M.fromList transmission
         , cntxProcess=simulateAlg' cntxThrown cycle0 transmission alg
-        , cntxThrown=cntxThrown
         , cntxCycleNumber=5
         }
 

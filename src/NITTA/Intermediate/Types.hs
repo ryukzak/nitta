@@ -223,9 +223,8 @@ instance Default (CycleCntx v x) where
 
 data Cntx v x
     = Cntx
-        { cntxProcess     :: [ CycleCntx v x ]
-        , cntxReceived    :: M.Map v [x]
-        , cntxThrown      :: [ (v, [v]) ]
+        { cntxProcess     :: [ CycleCntx v x ] -- ^ all variables on each process cycle
+        , cntxReceived    :: M.Map v [x] -- ^ sequences of all recieved values, one value per process cycle
         , cntxCycleNumber :: Int
         }
 instance {-# OVERLAPS #-} ( Show v, Show x ) => Show (Cntx v x) where
@@ -240,7 +239,6 @@ instance Default (Cntx v x) where
     def = Cntx
         { cntxProcess=def
         , cntxReceived=def
-        , cntxThrown=def
         , cntxCycleNumber=5
         }
 
