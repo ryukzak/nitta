@@ -47,7 +47,7 @@ import           Data.Bits                        (FiniteBits (..))
 import           Data.Default
 import qualified Data.List                        as L
 import qualified Data.Map                         as M
-import           Data.Maybe                       (isJust, mapMaybe)
+import           Data.Maybe                       (isJust, mapMaybe, fromMaybe)
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import           Data.Typeable
@@ -566,7 +566,7 @@ instance ( VarValTime v x t
 |
 |               // test environment initialization flags
 |               reg { S.join ", " envInitFlags };
-|               assign envInitFlag = { S.join " && " $ "1'b1" : envInitFlags };
+|               assign envInitFlag = { S.join (if fromMaybe undefined bnAllowDrop then " || " else " && ") $ "1'b1" : envInitFlags };
 |
 |               { moduleName pName n }
 |                   #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
