@@ -67,8 +67,9 @@ newtype IntX (w :: Nat) = IntX Integer
     deriving ( Show, Eq, Ord )
 
 instance Read ( IntX w ) where
-    readsPrec d r = let [(x, "")] = readsPrec d r
-        in [(IntX x, "")]
+    readsPrec d r = case readsPrec d r of 
+        [(x, r')] -> [(IntX x, r')]
+        _ -> error $ "can not read IntX from: " ++ r
 
 instance Default ( IntX w ) where
     def = IntX 0
