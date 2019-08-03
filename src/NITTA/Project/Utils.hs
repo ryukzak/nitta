@@ -35,6 +35,7 @@ import           NITTA.Project.Parts.Icarus
 import           NITTA.Project.Parts.Quartus
 import           NITTA.Project.Parts.TargetSystem
 import           NITTA.Project.Parts.TestBench
+import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           System.Exit
@@ -115,10 +116,9 @@ runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNu
 
 extractLogValues text = mapMaybe f $ lines text
     where
-        re = mkRegex "actual: \\(([[:digit:]]+),[[:space:]]*\"([^\"]+)\",[[:space:]]*([[:digit:]]+)\\)"
-        f s = case matchRegex re s of
-            Just [c, v, x] -> Just (read c, v, read x)
-            _              -> Nothing
+        f s = case matchRegex assertRe s of
+            Just [c, _t, x, _e, v] -> Just (read c, v, read x)
+            _                      -> Nothing
 
 toCntxs lst0 = inner (0 :: Int) lst0
     where

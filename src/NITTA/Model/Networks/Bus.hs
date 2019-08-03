@@ -541,17 +541,10 @@ instance ( VarValTime v x t
 
             assertions = concatMap ( \cycleTickTransfer -> posedgeCycle ++ concatMap assertion cycleTickTransfer ) tickWithTransfers
 
-            assertion ( _cycleI, t, Nothing ) = fixIndentNoLn [qc|
-|                       @(posedge clk); $write("tick: { t };\tnet.data_bus == %h ", net.data_bus);
-|                       $display();
-|               |]
-            assertion ( cycleI, t, Just (v, x) ) = fixIndentNoLn [qc|
-|                       @(posedge clk);
-|                       $write("tick: { t };\tactual: ({ cycleI }, \"%s\", %d) ", {v}, net.data_bus);
-|                           $write("=== %h (var: %s := { x })", { verilogInteger $ x }, { v } );
-|                           if ( !( net.data_bus === { verilogInteger $ x } ) ) $display( "\tFAIL");
-|                           else $display();
-|               |]
+            assertion ( cycleI, t, Nothing ) 
+                = codeLine 2 [qc|@(posedge clk); trace({ cycleI }, { t }, net.data_bus);|]
+            assertion ( cycleI, t, Just (v, x) )
+                = codeLine 2 [qc|@(posedge clk); check({ cycleI }, { t }, net.data_bus, { verilogInteger x }, { v });|]
 
         in Immediate (moduleName pName n ++ "_tb.v") $ fixIndent [qc|
 |               `timescale 1 ps / 1 ps
@@ -568,6 +561,7 @@ instance ( VarValTime v x t
 |               reg clk, rst;
 |               { if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
 |
+|               { snippetTraceAndCheck $ finiteBitSize (def :: x) }
 |               wire cycle;
 |
 |               // test environment initialization flags

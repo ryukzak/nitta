@@ -18,6 +18,8 @@ module NITTA.Project.Snippets
     , snippetDumpFile
     , snippetInitialFinish
     , snippetTestBench, SnippetTestBenchConf(..)
+    , snippetTraceAndCheck, assertRe
+    , codeBlock, codeLine
     ) where
 
 import qualified Data.String.Utils                as S
@@ -28,8 +30,17 @@ import           NITTA.Project.Implementation
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           Text.InterpolatedString.Perl6    (qc)
+import           Text.Regex
 
 
+codeBlock indent str0 = let
+        str = drop 1 $ lines str0
+        inputIndent = minimum $ filter (> 0) $ map (length . takeWhile (== ' ')) str
+        res = unlines $ map ((replicate (indent * 4) ' ' ++) . drop inputIndent) str
+    in take (length res - 1) res
+
+codeLine indent str = replicate (indent * 4) ' ' ++ dropWhile (== ' ') str ++ "\n"
+    
 snippetClkGen :: String
 snippetClkGen = [qc|initial begin
     clk = 1'b0;
@@ -56,6 +67,39 @@ snippetInitialFinish block = [qc|initial begin
 end
 |]
 
+snippetTraceAndCheck :: Int -> String
+snippetTraceAndCheck width = codeBlock 0 [qc|
+    task trace;
+        input integer cycle;
+        input integer tick;
+        input [{ width }-1:0] dt;
+        begin
+            $display("cycle: %d\ttick: %d\tactual: %d", cycle, tick, dt);
+        end
+    endtask
+
+    task check;
+        input integer cycle;
+        input integer tick;
+        input [{ width }-1:0] dt;
+        input [{ width }-1:0] expect;
+        input [256*8-1:0] var;
+        begin
+            $write("cycle: %d\ttick: %d\tactual: %d\texpect: %d\t%0s", cycle, tick, dt, expect, var);
+            if ( !( dt === expect ) ) $display("\t\tFAIL");
+            else $display();
+        end
+    endtask
+|]
+
+assertRe = mkRegex $ concat
+    -- cycle:           4	tick:           2	actual:          1	expect:          1	nst_inline_1_0:0
+    [ "cycle:[[:space:]]*([[:digit:]]+)[[:space:]]*"
+    , "tick:[[:space:]]*([[:digit:]]+)[[:space:]]*"
+    , "actual:[[:space:]]*([[:digit:]]+)[[:space:]]*"
+    , "expect:[[:space:]]*([[:digit:]]+)[[:space:]]*"
+    , "([^\t ]+)"
+    ]
 
 data SnippetTestBenchConf m
     = SnippetTestBenchConf
