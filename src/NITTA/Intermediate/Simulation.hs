@@ -19,32 +19,38 @@ module NITTA.Intermediate.Simulation
     , reorderAlgorithm
     ) where
 
-import           Data.List                (intersect, (\\))
-import qualified Data.Map                 as M
-import           Data.Set                 (elems)
+import           Data.List                    (intersect, (\\))
+import qualified Data.Map                     as M
+import           Data.Set                     (elems)
+import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Utils
 
-
 -- |Functional algorithm simulation
-simulateDataFlowGraph cycle0 transmission dfg = simulateAlg cycle0 transmission $ reorderAlgorithm $ functions dfg
+simulateDataFlowGraph cycle0 transmission dfg
+    = simulateAlg cycle0 transmission $ reorderAlgorithm $ functions dfg
 
 simulateAlg cycle0 transmission alg
     | let
-        cntxThrown = map ( \f ->
-            ( let [v] = elems $ inputs f in v
-            , elems $ outputs f
-            ) ) $ filter isBreakLoop alg
+        cycleConnections [] = []
+        cycleConnections (f:fs)
+            -- without refactoring
+            | Just (Loop _ (O o) (I i)) <- castF f = ( i, elems o ) : cycleConnections fs
+            -- after refactoring (BreakLoopD)
+            | Just (LoopOut (Loop _ (O o) (I i)) _) <- castF f = ( i, elems o ) : cycleConnections fs
+            | otherwise = cycleConnections fs
+
+        fromPrevCycle = cycleConnections alg
     = Cntx
         { cntxReceived=M.fromList transmission
-        , cntxProcess=simulateAlg' cntxThrown cycle0 transmission alg
+        , cntxProcess=simulateAlg' fromPrevCycle cycle0 transmission alg
         , cntxCycleNumber=5
         }
 
-simulateAlg' cntxThrown cycleCntx0 transmission alg = let
+simulateAlg' fromPrevCycle cycleCntx0 transmission alg = let
         (cycleCntx0', transmission') = receive' cycleCntx0 transmission
         cycleCntx = simulateCycle cycleCntx0' alg
-    in cycleCntx : simulateAlg' cntxThrown (throwLoop cycleCntx) transmission' alg
+    in cycleCntx : simulateAlg' fromPrevCycle (throwLoop cycleCntx) transmission' alg
     where
         -- TODO: receive data for several IO processor unit.
         receive' CycleCntx{ cycleCntx } trans =
@@ -61,7 +67,7 @@ simulateAlg' cntxThrown cycleCntx0 transmission alg = let
             )
         throwLoop (CycleCntx cntx) = CycleCntx $ M.fromList $ foldl
             (\st (thrown, vs) -> map ( \v -> (v, cntx M.! thrown) ) vs ++ st
-            ) [] cntxThrown
+            ) [] fromPrevCycle
         simulateCycle cntx00 fs = foldl (\cntx f ->
             case simulate cntx f of
                 Left err    -> error $ "functional simulation error: " ++ err

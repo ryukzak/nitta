@@ -43,7 +43,7 @@ case_reorderAlgorithm = do
 
 
 case_fibonacci = simulateTest def
-        "a1" [ 0, 1, 1, 2, 3, 5, 8 ]
+        ("a1", [ 0, 1, 1, 2, 3, 5, 8 ])
         [ loop 0 "b2" ["a1"     ]
         , loop 1 "c"  ["b1", "b2"]
         , add "a1" "b1" ["c"]
@@ -51,7 +51,7 @@ case_fibonacci = simulateTest def
 
 
 case_receiveAndSend = simulateTest [("a", [1,2,3,4,5])]
-        "c" [ 11, 12, 13, 14, 15 ]
+        ("c", [ 11, 12, 13, 14, 15 ])
         [ receive ["a"]
         , constant 10 ["b"]
         , add "a" "b" ["c"]
@@ -65,12 +65,12 @@ functionSimulationTests = $(testGroupGenerator)
 
 -- *Utils
 
-simulateTest received v xs alg = let
+simulateTest received (v, expect) alg = let
         dfg = fsToDataFlowGraph (alg :: [F String Int])
         Cntx{ cntxProcess } = simulateDataFlowGraph def received dfg
-        cycles = take (length xs) cntxProcess
-        xs' = map (\(CycleCntx c) -> fromMaybe (error $ show c) (c M.!? v)) cycles
-    in xs @=? xs'
+        cycles = take (length expect) cntxProcess
+        actual = map (\(CycleCntx c) -> fromMaybe (error $ show c) (c M.!? v)) cycles
+    in expect @=? actual
 
 
 -- *Orphans instances for Arbitrary
