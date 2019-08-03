@@ -34,6 +34,7 @@ bounce_filter #( .DIV(BOUNCE_FILTER) ) f_mosi_filter ( rst, clk, miso, f_miso );
 
 pu_slave_spi #
   ( .SPI_DATA_WIDTH( SPI_DATA_WIDTH )
+  , .DATA_WIDTH( DATA_WIDTH )
   , .BUF_SIZE( BUF_SIZE )
   , .BOUNCE_FILTER( 0 )
   ) pu
