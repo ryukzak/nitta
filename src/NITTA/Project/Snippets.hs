@@ -19,7 +19,7 @@ module NITTA.Project.Snippets
     , snippetInitialFinish
     , snippetTestBench, SnippetTestBenchConf(..)
     , snippetTraceAndCheck, assertRe
-    , codeBlock, codeLine
+    , codeBlock, inline, codeLine
     ) where
 
 import qualified Data.String.Utils                as S
@@ -33,14 +33,26 @@ import           Text.InterpolatedString.Perl6    (qc)
 import           Text.Regex
 
 
+inlineMarker = "###"
+
+inline str = S.join "\n" $ map (inlineMarker ++) $ lines str
+
 codeBlock indent str0 = let
-        str = drop 1 $ lines str0
-        inputIndent = minimum $ filter (> 0) $ map (length . takeWhile (== ' ')) str
-        res = unlines $ map ((replicate (indent * 4) ' ' ++) . drop inputIndent) str
-    in take (length res - 1) res
+        str1 = drop 1 $ lines str0
+        str2 = map lstripInline str1
+        withBadIndent = filter (> 0) $ map (length . takeWhile (== ' ')) $ filter isInline str2
+        badIndent = if null withBadIndent then 0 else minimum withBadIndent
+        str3 = S.join "\n" $ map (fixIndent_ badIndent) str2
+    in S.replace inlineMarker "" str3
+    where  
+        lstripInline s = subRegex (mkRegex $ "^[[:space:]]*" ++ inlineMarker) s inlineMarker
+        isInline = S.startswith inlineMarker
+        fixIndent_ badIndent s 
+            | isInline s = s
+            | otherwise = replicate (indent * 4) ' ' ++ (drop badIndent s)
 
 codeLine indent str = replicate (indent * 4) ' ' ++ dropWhile (== ' ') str ++ "\n"
-    
+
 snippetClkGen :: String
 snippetClkGen = [qc|initial begin
     clk = 1'b0;

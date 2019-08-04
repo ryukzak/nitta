@@ -1,12 +1,13 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NamedFieldPuns            #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE PartialTypeSignatures     #-}
+{-# LANGUAGE QuasiQuotes               #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE TemplateHaskell           #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures  -fno-warn-partial-type-signatures #-}
 
@@ -19,8 +20,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Test.LuaFrontend
-    ( intLuaTestCases
-    , luaTests
+    ( luaTests
     ) where
 
 import           Data.Default
@@ -49,14 +49,14 @@ test_support =
                 end
                 f(0)
             |]
-    -- FIXME: , testCase "a = b + 1" $ either assertFailure return
-    --     =<< lua "rexp_not_in_paren" (pIntX32, microarch False SlaveSPI)
-    --         [qc|function f(b)
-    --                 a = b + 1
-    --                 f(a)
-    --             end
-    --             f(0)
-    --         |]
+    , testCase "a = b + 1" $ either assertFailure return
+        =<< lua "rexp_not_in_paren" (pIntX32, microarch False SlaveSPI)
+            [qc|function f(b)
+                    a = b + 1
+                    f(a)
+                end
+                f(0)
+            |]
     , testCase "a = (b + 1)" $ either assertFailure return
         =<< lua "lua_rexp_in_paren" (pIntX32, microarch True SlaveSPI)
             [qc|function f(b)
@@ -185,19 +185,6 @@ test_examples =
     ]
 
 
-lua :: ( Val x, Integral x ) => String -> (Proxy x, BusNetwork String String x Int) -> T.Text -> IO ( Either String () )
-lua tName (_proxy, ma) src = do
-    report <- runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
-        { tName="lua_" ++ tName
-        , tMicroArch=ma
-        , tSourceCode=Just src
-        }
-    return $ case report of
-        Right TestbenchReport{ tbStatus=True } -> Right ()
-        Right _ -> Left "test bench fail"
-        Left err -> Left $ "synthesis process fail: " ++ err
-
-
 test_fixpoint_add =
     [ testCase "send(0.5 - 0.25); send(-1.25 + 2.5)" $ either assertFailure return
         =<< lua "add" (pFX22_32, microarch True SlaveSPI) add
@@ -227,7 +214,24 @@ test_fixpoint_mul =
 
 
 test_fixpoint_div =
-    [ testCase "a, b = -1.25 / 0.5; c, d = 75 / -2" $ either assertFailure return
+    [ testCase "one time" $ either assertFailure return
+        =<< lua "one_time" (pIntX32, microarch True SlaveSPI) 
+            [qc|function f(a)
+                    a, _b = a / 2
+                    f(a)
+                end
+                f(1024)
+            |]
+    , testCase "two time" $ either assertFailure return
+        =<< lua "two_time" (pIntX32, microarch True SlaveSPI)
+            [qc|function f(a, b)
+                    a, _ = a / 2
+                    b, _ = b / 3
+                    f(a, b)
+                end
+                f(1024, 1024)
+            |]
+    , testCase "a, b = -1.25 / 0.5; c, d = 75 / -2" $ either assertFailure return
         =<< lua "div" (pFX22_32, microarch True SlaveSPI) alg
     , testCase "a, b = -1.25 / 0.5; c, d = 75 / -2" $ either assertFailure return
         =<< lua "div" (pFX42_64, microarch True SlaveSPI) alg
@@ -244,31 +248,26 @@ test_fixpoint_div =
                 |]
 
 
-test_io =
-    [ intIOLuaTestCases "sum of received variables" "sum_of_receive" [ ("a:0", [10..15]),("b:0", [20..25] )]
-        $(embedStringFile "examples/sum.lua")
-    ]
-    where
-
-        intIOLuaTestCases testName pName tReceivedValues src = testGroup testName
-            [ genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy Int)
-            , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 24))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 32))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 40))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 48))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 64))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 96))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI True) (Proxy :: Proxy (IntX 128))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy Int)
-            , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 24))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 32))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 40))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 48))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 64))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 96))
-            , genericLuaTestCase pName tReceivedValues src (marchSPI False) (Proxy :: Proxy (IntX 128))
-            ]
-
+test_sum_of_received_values =
+    [ testCase "sum of received pIntX32" $ either assertFailure return
+        =<< luaEx "sum_of_received_pIntX32" (pIntX32, microarch False SlaveSPI) received alg
+    , testCase "sum of received pIntX48" $ either assertFailure return
+        =<< luaEx "sum_of_received_pIntX48" (pIntX48, microarch False SlaveSPI) received alg
+    , testCase "sum of received pIntX64" $ either assertFailure return
+        =<< luaEx "sum_of_received_pIntX64" (pIntX64, microarch False SlaveSPI) received alg
+    , testCase "sum of received pIntX128" $ either assertFailure return
+        =<< luaEx "sum_of_received_pIntX128" (pIntX128, microarch False SlaveSPI) received alg
+    , testCase "sum of received pIntX32" $ either assertFailure return
+        =<< luaEx "sum_of_received_pIntX32" (pIntX32, microarch False MasterSPI) received alg
+    , testCase "sum of received pIntX48" $ either assertFailure return
+        =<< luaEx "sum_of_received_pIntX48" (pIntX48, microarch False MasterSPI) received alg
+    , testCase "sum of received pIntX64" $ either assertFailure return
+        =<< luaEx "sum_of_received_pIntX64" (pIntX64, microarch False MasterSPI) received alg
+    , testCase "sum of received pIntX128" $ either assertFailure return
+        =<< luaEx "sum_of_received_pIntX128" (pIntX128, microarch False MasterSPI) received alg
+    ] where
+        received = [ ("a:0", [10..15]), ("b:0", [20..25]) ]
+        alg = $(embedStringFile "examples/sum.lua")
 
 
 test_refactor =
@@ -296,26 +295,18 @@ luaTests = $(testGroupGenerator)
 -----------------------------------------------------------
 
 
-checkSynthesisResult (Right TestbenchReport{ tbStatus=True }) = return ()
-checkSynthesisResult (Right _) = assertFailure "test bench FAIL"
-checkSynthesisResult (Left err) = assertFailure $ "synthesis process FAIL: " ++ err
+lua tName (_proxy, ma) src = luaEx tName (_proxy, ma) [] src
 
 
-genericLuaTestCase tName tReceivedValues src ma xProxy
-    = testCase (showTypeOf xProxy) $ do
-        report <- runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
-            { tName="generic_lua_" ++ tName
-            , tMicroArch=ma xProxy
-            , tSourceCode=Just src
-            , tReceivedValues=map (\(v, x) -> (v, map fromInteger x)) tReceivedValues
-            }
-        checkSynthesisResult report
-
-
-intLuaTestCases testName pName src = testGroup testName
-    [ genericLuaTestCase pName [] src (marchSPIDropData True) (Proxy :: Proxy Int)
-    , genericLuaTestCase pName [] src (marchSPIDropData True) (Proxy :: Proxy (IntX 32))
-    , genericLuaTestCase pName [] src (marchSPIDropData True) (Proxy :: Proxy (IntX 48))
-    , genericLuaTestCase pName [] src (marchSPIDropData True) (Proxy :: Proxy (IntX 128))
-    ]
-
+luaEx :: ( Val x, Integral x ) => String -> (Proxy x, BusNetwork String String x Int) -> [(String, [x])] -> T.Text -> IO ( Either String () )
+luaEx tName (_proxy, ma) received src = do
+    report <- runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
+        { tName="lua_" ++ tName
+        , tMicroArch=ma
+        , tSourceCode=Just src
+        , tReceivedValues=received
+        }
+    return $ case report of
+        Right TestbenchReport{ tbStatus=True } -> Right ()
+        Right _ -> Left "test bench fail"
+        Left err -> Left $ "synthesis process fail: " ++ err

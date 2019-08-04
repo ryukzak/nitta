@@ -43,7 +43,6 @@ import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
 import           NITTA.Project.Utils
 import           NITTA.Test.FunctionSimulation         ()
-import           NITTA.Test.LuaFrontend
 import           NITTA.Test.Microarchitectures
 import           NITTA.Utils
 import           System.FilePath.Posix                 (joinPath)
@@ -54,7 +53,6 @@ import           Test.Tasty.HUnit                      (testCase, (@?))
 import           Test.Tasty.QuickCheck                 (Gen, arbitrary,
                                                         testProperty)
 import           Test.Tasty.TH
-import           Text.InterpolatedString.Perl6         (qc)
 
 
 test_fram =
@@ -126,21 +124,6 @@ test_divider =
         , division "a1" "b1" ["c1"] ["d1"]
         , add "c1" "d1" ["e1"]
         ]
-    , intLuaTestCases "single" "single"
-        [qc|function f(a)
-                a, _b = a / 2
-                f(a)
-            end
-            f(1024)
-        |]
-    , intLuaTestCases "pair" "pair"
-        [qc|function f(a, b)
-                a, _ = a / 2
-                b, _ = b / 3
-                f(a, b)
-            end
-            f(1024, 1024)
-        |]
     -- FIXME: Auto text can't work correctly, because processGen don't take into account the
     -- facts that some variables may go out.
     -- , testProperty "isUnitSynthesisFinish" $ isUnitSynthesisFinish <$> dividerGen

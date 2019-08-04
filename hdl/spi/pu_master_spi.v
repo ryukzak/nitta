@@ -29,6 +29,8 @@ module pu_master_spi #
     , output                    mosi
     );
 
+reg disabled = 0;
+
 wire f_miso;
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_mosi_filter ( rst, clk, miso, f_miso );
 
@@ -72,7 +74,8 @@ always @( posedge clk ) prev_f_cs <= cs;
 
 always @( posedge clk ) begin
     if ( rst | !prev_f_cs && cs) flag_stop <= 1;
-    else if ( prev_f_cs && cs )  flag_stop <= 0;
+    else if ( disabled ) flag_stop <= 1;
+    else if ( prev_f_cs && cs ) flag_stop <= 0;
     else flag_stop <= 0;
 end
 

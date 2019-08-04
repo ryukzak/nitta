@@ -37,6 +37,7 @@ module pu_slave_spi #
     , output                    miso
     );
 
+reg disabled = 0;
 
 ///////////////////////////////////////////////////////////
 // [NITTA >>> SPI]
@@ -189,6 +190,7 @@ end
 
 always @( posedge clk ) begin
     if ( rst ) flag_stop <= 0;
+    else if ( disabled ) flag_stop <= 1;
     else if ( !prev_f_cs && f_cs ) flag_stop <= 1;
     else flag_stop <= 0;
 end
