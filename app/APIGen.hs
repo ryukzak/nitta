@@ -73,5 +73,8 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
             , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReport)
             ]
-    writeFile (joinPath [ opath, "types.ts" ]) $ S.replace "type " "export type " (ts ++ "\n")
+    writeFile (joinPath [ opath, "types.ts" ])
+        $ S.replace "type " "export type "    -- export all types
+        $ S.replace "[k: T1]" "[k: string]"   -- dirty hack for fixing map types for TestbenchReport
+        $ ts ++ "\n"
     putStrLn "Generate typescript interface...OK"
