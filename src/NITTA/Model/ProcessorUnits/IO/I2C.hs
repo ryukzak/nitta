@@ -23,17 +23,10 @@ module NITTA.Model.ProcessorUnits.IO.I2C
 
 import           Data.Bits                              (finiteBitSize)
 import           Data.Default
-import qualified Data.Map                               as M
-import           Data.Maybe                             (fromMaybe, mapMaybe)
-import qualified Data.Set                               as S
-import qualified Data.String.Utils                      as S
-import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.IO.SimpleIO
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
-import           NITTA.Project.Parts.TestBench
 import           NITTA.Utils
 import           Text.InterpolatedString.Perl6          (qc)
 

@@ -18,9 +18,10 @@ Stability   : experimental
 module NITTA.UIBackend
     ( backendServer
     , prepareStaticFiles
+    , prepareJSAPI
     ) where
 
-import           Control.Monad                 (unless, when)
+import           Control.Monad                 (when)
 import           Data.Monoid                   ((<>))
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
 import           Network.Wai.Handler.Warp      (run)
@@ -31,15 +32,13 @@ import           NITTA.UIBackend.REST
 import           Servant
 import qualified Servant.JS                    as SJS
 import           Servant.Server.StaticFiles    (serveDirectoryWebApp)
-import           System.Directory              (createDirectoryIfMissing)
 import           System.Exit                   (ExitCode (..), die)
 import           System.FilePath.Posix         (joinPath)
 import           System.Process
 import           Text.InterpolatedString.Perl6 (qq)
 
 
-prepareJSAPI port = do
-    putStrLn "Generate rest_api.js library..."
+prepareJSAPI port path = do
     let prefix = [qq|import axios from 'axios';
 var api = \{\};
 export default api;|]
@@ -47,9 +46,7 @@ export default api;|]
             { SJS.urlPrefix=[qq|http://localhost:$port|]
             , SJS.moduleName="api"
             }
-    createDirectoryIfMissing True $ joinPath ["web", "src", "gen"]
-    SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI String String Int Int)) ((prefix <>) . axios') $ joinPath ["web", "src", "gen", "rest_api.js"]
-    putStrLn "Generate rest_api.js library...OK"
+    SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI String String Int Int)) ((prefix <>) . axios') $ joinPath [ path, "rest_api.js"]
 
 
 prepareStaticFiles = do
@@ -84,9 +81,7 @@ application model = do
 --
 -- - if true - prepare static files for the web UI by @npm@;
 -- - initial model state.
-backendServer no_api_gen modelState = do
-    let port = 8080
-    unless no_api_gen $ prepareJSAPI port
+backendServer port modelState = do
     putStrLn $ "Running NITTA server at http://localhost:" ++ show port ++ "/index.html"
     app <- application modelState
     setLocaleEncoding utf8

@@ -29,11 +29,12 @@ import           Data.Typeable
 import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                 (inf, sup, (...))
+import           Numeric.Interval                 (sup, (...))
 
 
 class ( Typeable i ) => SimpleIOInterface i
@@ -87,6 +88,13 @@ instance ( VarValTime v x t, SimpleIOInterface i
     setTime t sio@SimpleIO{ process_ } = sio{ process_=process_{ nextTick=t } }
 
 
+instance DecisionProblem (RefactorDT v x)
+            RefactorDT (SimpleIO i v x t)
+        where
+    options _ _ = []
+    decision _ _ _ = undefined
+
+
 instance ( VarValTime v x t, SimpleIOInterface i
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (SimpleIO i v x t)
@@ -104,7 +112,7 @@ instance ( VarValTime v x t, SimpleIOInterface i
         , let ( _, process_ ) = runSchedule sio $ do
                 _ <- scheduleEndpoint d $ scheduleInstruction epdAt Receiving
                 updateTick (sup epdAt + 1)
-                scheduleFunction (inf epdAt) (sup epdAt) function
+                scheduleFunction epdAt function
         = sio{ receiveQueue=receiveQueue', process_ }
 
     decision _proxy sio@SimpleIO{ sendQueue, sendN, receiveQueue, receiveN } d@EndpointD{ epdRole=Target v, epdAt }
@@ -112,7 +120,7 @@ instance ( VarValTime v x t, SimpleIOInterface i
         , let ( _, process_ ) = runSchedule sio $ do
                 _ <- scheduleEndpoint d $ scheduleInstruction epdAt Sending
                 updateTick (sup epdAt + 1)
-                scheduleFunction (inf epdAt) (sup epdAt) function
+                scheduleFunction epdAt function
         = sio
             { sendQueue=sendQueue'
             , isReceiveOver=(sendN - length sendQueue) >= (receiveN - length receiveQueue)

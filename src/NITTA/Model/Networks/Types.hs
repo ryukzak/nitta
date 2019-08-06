@@ -26,6 +26,7 @@ import qualified Data.Set                         as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
@@ -40,7 +41,9 @@ data PU v x t where
         , Connected pu
         , IOConnected pu
         , DecisionProblem (EndpointDT v t)
-               EndpointDT  pu
+            EndpointDT  pu
+        , DecisionProblem (RefactorDT v x)
+            RefactorDT pu
         , ProcessorUnit pu v x t
         , Show (Instruction pu)
         , Simulatable pu v x
@@ -58,10 +61,11 @@ data PU v x t where
             , systemEnv :: TargetEnvironment
             } -> PU v x t
 
+
 instance ( Ord v ) =>
         DecisionProblem (EndpointDT v t)
-             EndpointDT (PU v x t)
-         where
+            EndpointDT (PU v x t)
+        where
     options proxy PU{ diff, unit }
         = map (patch diff) $ options proxy unit
     decision proxy PU{ diff, unit, ports, ioPorts, systemEnv } d
@@ -71,6 +75,14 @@ instance ( Ord v ) =>
             , ports, ioPorts
             , systemEnv
             }
+
+instance DecisionProblem (RefactorDT v x)
+            RefactorDT (PU v x t)
+        where
+    options proxy PU{ unit } 
+        = options proxy unit
+    decision proxy PU{ diff, unit, ports, ioPorts, systemEnv } d 
+        = PU{ diff, unit=decision proxy unit d, ports, ioPorts, systemEnv }
 
 instance ( VarValTime v x t ) => ProcessorUnit (PU v x t) v x t where
     tryBind fb PU{ diff, unit, ports, ioPorts, systemEnv }

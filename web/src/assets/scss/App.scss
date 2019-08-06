@@ -1,8 +1,28 @@
-// @import 'foundation';
+@import '~foundation-sites/scss/foundation';
+@include foundation-flex-grid;
+@include foundation-float-classes;
+@include foundation-typography;
+@include foundation-global-styles;
 
 $bg-color: yellow;
 $border-color: red;
 $button-color: #1779ba;
+
+.squeeze {
+  line-height: 1em;
+}
+
+.upRelation {
+  background: aqua;
+}
+
+.current {
+  background: yellow;
+}
+
+.downRelation {
+  background-color: greenyellow;
+}
 
 .app {
   font-family: helvetica, arial, sans-serif;
@@ -13,8 +33,6 @@ $button-color: #1779ba;
     background-color: $bg-color;
   }
 }
-
-
 
 //Edge's Styles
 .jsonViewContainer {

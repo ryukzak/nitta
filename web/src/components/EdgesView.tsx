@@ -6,6 +6,8 @@ import { JsonView } from "./JsonView";
 import { GraphView } from "./GraphView";
 import { EdgesCardsHolder } from "./EdgesCardsHolder";
 
+const nInSeparator = "-";
+
 interface EdgesViewProps {
     onNIdChange: any;
     selectedNId: any;
@@ -65,7 +67,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
     }
 
     updateNid (i: number) {
-        haskellAPI.getNode(this.state.selectedNId === ":" ? ":" + i : this.state.selectedNId + ":" + i)
+        haskellAPI.getNode(this.state.selectedNId === nInSeparator ? nInSeparator + i : this.state.selectedNId + nInSeparator + i)
             .then((response: any) => {
                 this.onNIdChange(response.data.nId);
             })
@@ -92,7 +94,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
                         width={500} height={250}
                     axes />
                 </div>
-                <div className="jsonViewContainer" style={{"display": "inline-block", "vertical-align": "top", "width": "270px"}}>
+                <div className="jsonViewContainer" style={{"display": "inline-block", "verticalAlign": "top", "width": "270px"}}>
                     <JsonView jsonData={this.state.edge} label={"previous edge"} show={false} />
                 </div>
             </div>

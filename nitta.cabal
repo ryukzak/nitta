@@ -57,6 +57,7 @@ library
                      , NITTA.UIBackend
                      , NITTA.UIBackend.Marshalling
                      , NITTA.UIBackend.REST
+                     , NITTA.UIBackend.Timeline
                      , NITTA.UIBackend.VisJS
                      , NITTA.UIBackend.VisJS.Types
                      , NITTA.Utils
@@ -83,6 +84,7 @@ library
                      , MissingH
                      , mtl
                      , process
+                     , regex-compat
                      , servant
                      , servant-js 
                      , servant-server
@@ -91,25 +93,38 @@ library
                      , syb
                      , text
                      , transformers
+                     , unordered-containers
                      , wai-cors
                      , warp
+  default-language:    Haskell2010
+
+executable nitta-api-gen
+  hs-source-dirs:      app
+  main-is:             APIGen.hs
+  build-depends:       aeson
+                     , aeson-typescript
+                     , base
+                     , cmdargs
+                     , directory
+                     , filepath
+                     , intervals
+                     , MissingH
+                     , nitta
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
 executable nitta
   hs-source-dirs:      app
   main-is:             Main.hs
-  build-depends:       array
-                     , base
+  build-depends:       base
                      , cmdargs
-                     , containers
                      , data-default
                      , directory
                      , filepath
-                     , HStringTemplate
                      , interpolatedstring-perl6
-                     , MissingH
                      , nitta
                      , text
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
 test-suite nitta-test
@@ -130,6 +145,7 @@ test-suite nitta-test
                      , file-embed
                      , filepath
                      , interpolatedstring-perl6
+                     , MissingH
                      , mtl
                      , nitta
                      , QuickCheck

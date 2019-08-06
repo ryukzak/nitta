@@ -33,6 +33,7 @@ import qualified Data.Set                         as S
 import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
@@ -194,10 +195,16 @@ instance ( Var v ) => Locks (Divider v x t) v where
     -- FIXME:
     locks _ = []
 
+instance DecisionProblem (RefactorDT v x)
+            RefactorDT (Divider v x t)
+        where
+    options _ _ = []
+    decision _ _ _ = undefined
+
 
 instance ( VarValTime v x t
-         ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (Divider v x t) where
+        ) => DecisionProblem (EndpointDT v t)
+            EndpointDT (Divider v x t) where
     options _proxy pu@Divider{ targetIntervals, sourceIntervals, remains, jobs }
         = concatMap (resolveColisions sourceIntervals) targets
         ++ concatMap (resolveColisions targetIntervals) sources
@@ -273,7 +280,7 @@ instance ( VarValTime v x t
                 else out{ outputRnd=vss' } : other
             , process_=execSchedule pu $ do
                 _endpoints <- scheduleEndpoint d $ scheduleInstruction epdAt $ Out tag
-                when (null vss') $ void $ scheduleFunction startAt (sup epdAt) function
+                when (null vss') $ void $ scheduleFunction (startAt ... sup epdAt) function
                 -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
                 -- которые берут информацию о времени из Process
                 updateTick (sup epdAt)

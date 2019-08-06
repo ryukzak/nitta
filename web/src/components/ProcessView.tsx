@@ -1,201 +1,208 @@
 import * as React from "react";
-import "react-table/react-table.css";
-// import { Chart } from "react-google-charts";
+import { haskellAPI } from "../middleware/haskell-api";
+import { ProcessTimelines, ViewPointID, TimelinePoint, TimelineWithViewPoint } from "../gen/types";
 
 interface ProcessViewProps {
-    relations: any;
-    steps: any;
+    nId: string;
 }
 
 interface ProcessViewState {
-    steps: any;
-    steps_raw: any;
-    levels: any;
-    processUnits: any;
-    processUnitsAndLevels: any;
+    nId: string;
+    data: ProcessTimelines<number>;
+    pIdIndex: Record<number, TimelinePoint<number>>;
+    detail: TimelinePoint<number>[];
+    highlight: Highlight;
+}
+
+interface Highlight {
+    up: number[];
+    current: number[];
+    down: number[];
 }
 
 export class ProcessView extends React.Component<ProcessViewProps, ProcessViewState> {
-  constructor (props: ProcessViewProps) {
-    super(props);
-
-    let relations = {};
-    for (let r in props.relations) {
-      let a = props.relations[r][1].toString();
-      let b = props.relations[r][0].toString();
-      if (!(a in relations)) relations[a] = [];
-      relations[a].push(b);
-    }
-
-    let steps = [];
-    let levels = {};
-    let processUnits = {};
-    let processUnitsAndLevels = {};
-    for (let k in props.steps) {
-      let step = props.steps[k];
-      let e = [null, null, null, null, null, null, null, null];
-      e[0] = step.sKey.toString(); // Task ID
-      e[1] = step.sDesc; // Task Name
-      e[2] = step.sPU; // Resource ID (optional)
-      e[3] = new Date(step.sTime[0] * 1000); // Start
-      e[4] = new Date(step.sTime[1] != null ? (step.sTime[1] + 1) * 1000 : 1000000); // End
-      e[5] = null; // Duration
-      e[6] = 100; // Percent Complete
-      e[7] = e[0] in relations ? relations[e[0]] : null; // Dependencies
-      if (!(step.sLevel in levels)) levels[step.sLevel] = true;
-      if (!(step.sPU in processUnits)) processUnits[step.sPU] = true;
-      let pul = step.sPU + "." + step.sLevel;
-      if (!(pul in processUnitsAndLevels)) processUnitsAndLevels[pul] = true;
-      steps.push(e);
-    }
-
-    this.state = {
-      steps: steps,
-      steps_raw: props.steps,
-      levels: levels,
-      processUnits: processUnits,
-      processUnitsAndLevels: processUnitsAndLevels
+    // TODO: diff from previous synthesis process step
+    // TODO: highlight point by click on info part
+    state: ProcessViewState = {
+        nId: null,
+        data: null,
+        pIdIndex: null,
+        detail: [],
+        highlight: {
+            up: [],
+            current: [],
+            down: [],
+        },
     };
-  }
 
-  changeFilter (filterName: any, k: any) {
-    let filter = Object.assign({}, this.state[filterName]);
-    filter[k] = !filter[k];
-    let updState = {};
-    updState[filterName] = filter;
-    this.setState(updState);
-  }
-
-  filterOnly (filterName: any, showOnly: any) {
-    let filter = {};
-    let keys = Object.keys(this.state[filterName]);
-    for (let k in keys) {
-      filter[keys[k]] = false;
-    }
-    // filter[showOnly] = true
-    // FIXME: not needed, because changeFilter will be fired automatically.
-    let updState = {};
-    updState[filterName] = filter;
-    this.setState(updState);
-  }
-
-  processUnitAndLevel (stepRaw) {
-    return stepRaw.sPU + "." + stepRaw.sLevel;
-  }
-
-  render () {
-    let steps = [];
-    let stepKeys = {};
-    let i: any;
-    for (i = 0; i < this.state.steps.length; i++) {
-      let stepRaw = this.state.steps_raw[i];
-      if (this.state.levels[stepRaw.sLevel] &&
-        this.state.processUnits[stepRaw.sPU] &&
-        this.state.processUnitsAndLevels[this.processUnitAndLevel(stepRaw)]
-      ) {
-        let step = this.state.steps[i].map((e: any) => e);
-        steps.push(step);
-        stepKeys[this.state.steps[i][0]] = true;
-      }
+    constructor(props) {
+        super(props);
+        this.requestTimelines = this.requestTimelines.bind(this);
+        this.renderPoint = this.renderPoint.bind(this);
+        this.selectPoint = this.selectPoint.bind(this);
     }
 
-    for (i in steps) {
-      let deps = steps[i][7];
-      if (deps == null) continue;
-      let newDeps = [];
-      for (let j in deps) {
-        if (deps[j] in stepKeys) newDeps.push(deps[j]);
-      }
-      steps[i][7] = newDeps.join();
-    }
-
-    return (
-      <div>
-        <h2>Filters:</h2>
-        <div className="grid-x">
-          <div className="cell small-4">
-            <h4>Levels</h4>
-            {
-              Object.keys(this.state.levels).map(
-                (k: any) => <div key={"level: " + k}>
-                  <input type="checkbox" id={k} name={k}
-                    checked={this.state.levels[k]}
-                    onChange={() => { this.changeFilter("levels", k); }}
-                  />
-                  <label htmlFor={k}>
-                    {k}
-                    <a onClick={() => { this.filterOnly("levels", k); }}> only </a>
-                  </label>
-                </div>
-              )}
-          </div>
-          <div className="cell small-4">
-            <h4>Process units</h4>
-            {Object.keys(this.state.processUnits).map(
-              (k, i) => <div key={"processUnit: " + k}>
-                <input type="checkbox" id={k} name={k}
-                  checked={this.state.processUnits[k]}
-                  onChange={() => { this.changeFilter("processUnits", k); }}
-                />
-                <label htmlFor={k}>
-                  {k}
-                  <a onClick={() => { this.filterOnly("processUnits", k); }}> only </a>
-                </label>
-              </div>
-            )}
-          </div>
-          <div className="cell small-4">
-            <h4>ProcessUnits and Levels</h4>
-            {
-              Object.keys(this.state.processUnitsAndLevels).map(
-                (k, i) => <div key={"processUnitAndLevel: " + k}>
-                  <input type="checkbox" id={k} name={k}
-                    checked={this.state.processUnitsAndLevels[k]}
-                    onChange={() => { this.changeFilter("processUnitsAndLevels", k); }}
-                  />
-                  <label htmlFor={k}>
-                    {k}
-                    <a onClick={() => { this.filterOnly("processUnitsAndLevels", k); }}> only </a>
-                  </label>
-                </div>
-              )}
-          </div>
-        </div>
-        <hr />
-        { steps.length === 0
-          ? (<pre> Process is empty </pre>)
-          : (<pre> Chart is unavailable </pre>)
-          // FIXME: Chart - JSX element class does not support attributes because it does not have a 'props' property.
-            // <Chart
-            //     chartType="Gantt"
-            //     columns={[
-            //         { "id": "Task ID", "type": "string" },
-            //         { "id": "Task Name", "type": "string" },
-            //         { "id": "Resource", "type": "string" },
-            //         { "id": "Start Date", "type": "date" },
-            //         { "id": "End Date", "type": "date" },
-            //         { "id": "Duration", "type": "number" },
-            //         { "id": "Percent Complete", "type": "number" },
-            //         { "id": "Dependencies", "type": "string" }
-            //     ]}
-            //     rows={steps}
-            //     width="100%"
-            //     height={(steps.length + 1) * 31 + 30}
-            //     options={{
-            //         gantt: {
-            //             trackHeight: 30,
-            //             barHeight: 10,
-            //             criticalPathEnabled: false,
-            //             barCornerRadius: 1,
-            //             arrow: {
-            //             length: 4,
-            //             radius: 5
-            //             }
-            //         }
-            //     }}
-            // />
+    static getDerivedStateFromProps(props: ProcessViewProps, state: ProcessViewState) {
+        console.log("> ProcessView.getDerivedStateFromProps", props.nId);
+        if (props.nId && props.nId !== state.nId) {
+            console.log("> ProcessView.getDerivedStateFromProps - new state");
+            return { nId: props.nId, data: null } as ProcessViewState;
         }
-      </div>
-    );
-  }
+        return null;
+    }
+
+    componentDidMount() {
+        console.log("> ProcessView.componentDidMount", this.state.nId);
+        this.requestTimelines(this.state.nId);
+    }
+
+    componentDidUpdate(prevProps: ProcessViewProps, prevState: ProcessViewState, snapshot: any) {
+        console.log("> ProcessView.componentDidUpdate");
+        if (prevState.nId !== this.state.nId) {
+            this.requestTimelines(this.state.nId);
+        }
+    }
+
+    requestTimelines(nId: string) {
+        console.log("> ProcessView.requestTimelines");
+        haskellAPI.getTimelines(nId)
+            .then((response: { data: ProcessTimelines<number> }) => {
+                console.log("> ProcessView.requestTimelines - done");
+                let pIdIndex: Record<number, TimelinePoint<number>> = {};
+                response.data.timelines.forEach(vt => {
+                    vt.timelinePoints.forEach(point => {
+                        point.forEach(e => {
+                            const x: number = e.pID;
+                            pIdIndex[x] = e;
+                        });
+                    });
+                });
+                this.setState({
+                    data: this.resortTimeline(response.data),
+                    pIdIndex: pIdIndex,
+                });
+            })
+            .catch((err: any) => console.log(err));
+    }
+
+    resortTimeline(data: ProcessTimelines<number>) {
+        let result: ProcessTimelines<number> = {
+            timelines: [],
+            verticalRelations: data.verticalRelations,
+        };
+        function cmp(a: TimelineWithViewPoint<number>, b: TimelineWithViewPoint<number>) {
+            if (a.timelineViewpoint.component < b.timelineViewpoint.component) return -1;
+            if (a.timelineViewpoint.component > b.timelineViewpoint.component) return 1;
+            return 0;
+        }
+        let tmp: TimelineWithViewPoint<number>[] = data.timelines.sort(cmp);
+        function extract(p: (id: ViewPointID) => boolean) {
+            let newTmp: TimelineWithViewPoint<number>[] = [];
+            tmp.forEach(e => {
+                if (p(e.timelineViewpoint)) {
+                    result.timelines.push(e);
+                } else {
+                    newTmp.push(e);
+                }
+            });
+            tmp = newTmp;
+        }
+        extract(e => e.component.length === 0);
+        extract(e => e.level === "CAD");
+        extract(e => e.level === "Fun");
+        extract(e => e.level === "EndPoint");
+        extract(e => true);
+        return result;
+    }
+
+    viewpoint2string(view: ViewPointID): string {
+        return view.component + "@" + view.level;
+    }
+
+    renderLine(i: number, viewLength: number, view: ViewPointID, points: TimelinePoint<number>[][]) {
+        let v = this.viewpoint2string(view);
+        let n = viewLength - v.length;
+        return <pre key={i} className="squeeze">{" ".repeat(n)}{v} | {points.map(this.renderPoint)}</pre>;
+    }
+
+    renderPoint(point: TimelinePoint<number>[], i: number) {
+        let s: string = ".";
+        if (point.length === 1) {
+            s = "*";
+        }
+        if (point.length > 1) {
+            s = "#";
+        }
+        for (let j = 0; j < point.length; j++) {
+            const id = point[j].pID;
+            if (this.state.highlight.up.indexOf(id) >= 0) {
+                return <span key={i} className="upRelation" onClick={() => this.selectPoint(point)}>{s}</span>;
+            }
+            if (this.state.highlight.current.indexOf(id) >= 0) {
+                return <span key={i} className="current" onClick={() => this.selectPoint(point)}>{s}</span>;
+            }
+            if (this.state.highlight.down.indexOf(id) >= 0) {
+                return <span key={i} className="downRelation" onClick={() => this.selectPoint(point)}>{s}</span>;
+            }
+        }
+        return <span key={i} onClick={() => this.selectPoint(point)}>{s}</span>;
+    }
+
+    selectPoint(point: TimelinePoint<number>[]) {
+        let highlight: Highlight = { up: [], current: [], down: [] };
+        point.forEach(p => {
+            let id: number = p.pID;
+            highlight.current.push(p.pID);
+            this.state.data.verticalRelations.forEach(e => {
+                let up = e[0], down = e[1];
+                if (highlight.up.indexOf(up) === -1) {
+                    if (id === down) { highlight.up.push(up); }
+                }
+                if (highlight.down.indexOf(down) === -1) {
+                    if (id === up) { highlight.down.push(down); }
+                }
+            });
+        });
+        this.setState({
+            detail: point,
+            highlight: highlight,
+        });
+    }
+
+    render() {
+        if (!this.state.data) {
+            return <pre>LOADING</pre>;
+        }
+        if (this.state.data.timelines.length === 0) {
+            return <pre>EMPTY PROCESS TIMELINE</pre>;
+        }
+        let viewColumnHead = "view point";
+        let viewColumnLength: number = viewColumnHead.length;
+        this.state.data.timelines.forEach(e => {
+            let l: number = this.viewpoint2string(e.timelineViewpoint).length;
+            if (l > viewColumnLength) {
+                viewColumnLength = l;
+            }
+        });
+        return <div className="row">
+            <div className="columns large-7">
+                <pre className="squeeze"><u>{viewColumnHead}{" ".repeat(viewColumnLength - viewColumnHead.length)} | timeline</u></pre>
+                {this.state.data.timelines.map(
+                    (e, i) => {
+                        return this.renderLine(i, viewColumnLength, e.timelineViewpoint, e.timelinePoints);
+                    })}
+            </div>
+            <div className="columns large-5">
+                <pre className="squeeze">------------------------------</pre>
+                <pre className="squeeze upRelation">upper related:</pre>
+                {this.state.highlight.up.map(e => <pre className="squeeze">- {this.state.pIdIndex[e].pInfo}</pre>)}
+                <pre className="squeeze">------------------------------</pre>
+                <pre className="squeeze current">current:</pre>
+                {this.state.detail.map(e => <pre className="squeeze">- {e.pInfo}</pre>)}
+                <pre className="squeeze">------------------------------</pre>
+                <pre className="squeeze downRelation">bottom related:</pre>
+                {this.state.highlight.down.map(e => <pre className="squeeze">- {this.state.pIdIndex[e].pInfo}</pre>)}
+            </div>
+        </div>;
+    }
 }

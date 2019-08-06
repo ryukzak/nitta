@@ -169,6 +169,7 @@ instance ( Val x ) => TargetSystemComponent (Shift v x t) where
 |               , .attr_in( { attrIn } )
 |               , .data_out( { dataOut } )
 |               , .attr_out( { attrOut } )
+|               );
 |           |]
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _op
         = error "Should be defined in network."
