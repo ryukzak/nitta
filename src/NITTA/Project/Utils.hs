@@ -27,8 +27,6 @@ import qualified Data.HashMap.Strict              as HM
 import qualified Data.List                        as L
 import qualified Data.Map                         as M
 import           Data.Maybe
-import qualified Data.String.Utils                as S
-import           Data.Text                        (pack)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Project.Parts.Icarus
@@ -37,11 +35,9 @@ import           NITTA.Project.Parts.TargetSystem
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
-import           NITTA.Utils
 import           System.Exit
 import           System.IO                        (hPutStrLn, stderr)
 import           System.Process
-import           Text.InterpolatedString.Perl6    (qc)
 import           Text.Regex
 
 
