@@ -60,10 +60,10 @@ instance ( VarValTime v x t, SimpleIOInterface i
     tryBind f sio@SimpleIO{ sendQueue, receiveQueue, receiveN, sendN, bufferSize }
 
         | Just F.Receive{} <- castF f, fromMaybe maxBound bufferSize == receiveN
-        = Left $ "SPI to small buffer size"
+        = Left "SPI to small buffer size"
 
         | Just F.Send{} <- castF f, fromMaybe maxBound bufferSize == sendN
-        = Left $ "SPI to small buffer size"
+        = Left "SPI to small buffer size"
 
         | Just (F.Receive (O vs)) <- castF f
         , let ( cads, process_ ) = runSchedule sio $ scheduleFunctionBind f
@@ -100,7 +100,7 @@ instance ( VarValTime v x t, SimpleIOInterface i
                    EndpointDT (SimpleIO i v x t)
         where
     options _proxy SimpleIO{ receiveQueue, sendQueue, process_=Process{ nextTick } } = let
-            source vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
+            source vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
             receiveOpts = map (source . vars) receiveQueue
 
             target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... 1)

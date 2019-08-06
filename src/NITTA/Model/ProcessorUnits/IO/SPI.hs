@@ -254,7 +254,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                     -- FIXME: do not check output signals when we drop data
                 in codeBlock 0 [qc|
                     { inline envInstance }
-                    
+
                     { inline $ if frameWordCount == 0 then disable else interactions }
                     |]
 
