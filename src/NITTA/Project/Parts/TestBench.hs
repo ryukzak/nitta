@@ -4,6 +4,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE QuasiQuotes            #-}
 {-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures #-}
@@ -32,9 +33,11 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.Utils
+import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           System.Directory                 (createDirectoryIfMissing)
 import           System.FilePath.Posix            (joinPath)
+import           Text.InterpolatedString.Perl6    (qc)
 
 
 data TestBench = TestBench
@@ -67,13 +70,36 @@ data TestbenchReport v x
         , tbPath                     :: String
         , tbFiles                    :: [ String ]
         , tbFunctions                :: [ String ]
+        , tbSynthesisSteps           :: [ String ]
         , tbCompilerDump             :: [ String ]
         , tbSimulationDump           :: [ String ]
         , tbFunctionalSimulationCntx :: [ HM.HashMap v x ]
         , tbLogicalSimulationCntx    :: [ HM.HashMap v x ]
         }
-    deriving ( Generic, Show )
+    deriving ( Generic )
 
+
+instance ( Show v, Show x ) => Show ( TestbenchReport v x ) where
+    show TestbenchReport
+            { tbPath, tbFiles
+            , tbFunctions, tbSynthesisSteps
+            , tbCompilerDump, tbSimulationDump
+            }
+        = codeBlock 0 [qc|
+            Project: { tbPath }
+            Files:
+                { inline $ showLst tbFiles }
+            Functional blocks:
+                { inline $ showLst tbFunctions }
+            Steps:
+                { inline $ showLst tbSynthesisSteps }
+            compiler dump:
+                { inline $ showLst tbCompilerDump }
+            simulation dump:
+                { inline $ showLst tbSimulationDump }
+            |]
+        where
+            showLst = S.join "\n" . map ("    " ++)
 
 -- |Generate list of project verilog files (including testbench).
 projectFiles prj@Project{ pName, pUnit }

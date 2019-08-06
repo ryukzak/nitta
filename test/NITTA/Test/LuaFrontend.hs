@@ -27,6 +27,7 @@ import           Data.Default
 import           Data.Either                   (isRight)
 import           Data.FileEmbed                (embedStringFile)
 import           Data.Proxy
+import qualified Data.String.Utils             as S
 import qualified Data.Text                     as T
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
@@ -216,7 +217,7 @@ test_fixpoint_mul =
 
 test_fixpoint_div =
     [ testCase "one time" $ either assertFailure return
-        =<< lua "one_time" (pIntX32, microarch True SlaveSPI) 
+        =<< lua "one_time" (pIntX32, microarch True SlaveSPI)
             [qc|function f(a)
                     a, _b = a / 2
                     f(a)
@@ -309,5 +310,8 @@ luaEx tName (_proxy, ma) received src = do
         }
     return $ case report of
         Right TestbenchReport{ tbStatus=True } -> Right ()
-        Right _ -> Left "test bench fail"
         Left err -> Left $ "synthesis process fail: " ++ err
+        Right TestbenchReport{ tbCompilerDump } | not $ null tbCompilerDump
+            -> Left $ "icarus synthesis error:\n" ++ S.join "\n" tbCompilerDump
+        Right TestbenchReport{ tbSimulationDump } | not $ null tbSimulationDump
+            -> Left $ "icarus simulation error:\n" ++ S.join "\n" tbSimulationDump

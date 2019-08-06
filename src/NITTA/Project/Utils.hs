@@ -70,26 +70,6 @@ writeAndRunTestbench prj = do
 
 runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNumber } } = do
     let files = projectFiles prj
-        dump type_ out err = lines $ fixIndent [qc|
-|           Project: { pPath }
-|           Type: { type_ }
-|           Files:
-|               { files' }
-|           Functional blocks:
-|               { functions' }
-|           Steps:
-|               { steps' }
-|           -------------------------
-|           stdout:
-|           { pack out }
-|           -------------------------
-|           stderr:
-|           { pack err }
-|           |]
-            where
-                files' = S.join "\n    " files
-                steps' = S.join "\n    " $ map show $ steps $ process $ pUnit
-                functions' = S.join "\n    " $ map show $ functions pUnit
 
     ( compileExitCode, compileOut, compileErr )
         <- readCreateProcessWithExitCode (createIVerilogProcess pPath files) []
@@ -105,13 +85,15 @@ runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNu
         , tbPath=pPath
         , tbFiles=files
         , tbFunctions=map show $ functions pUnit
-        , tbCompilerDump=dump "Compiler" compileOut compileErr
-        , tbSimulationDump=dump "Simulation" simOut simErr
+        , tbSynthesisSteps=map show $ steps $ process $ pUnit
+        , tbCompilerDump=dump compileOut compileErr
+        , tbSimulationDump=dump simOut simErr
         , tbFunctionalSimulationCntx=map (HM.fromList . M.assocs . cycleCntx) $ take cntxCycleNumber cntxProcess
         , tbLogicalSimulationCntx=toCntxs $ extractLogValues simOut
         }
     where
         createIVerilogProcess workdir files = (proc "iverilog" files){ cwd=Just workdir }
+        dump out err = [ "stdout:" ] ++ lines out ++ [ "stderr:" ] ++ lines err
 
 
 extractLogValues text = mapMaybe f $ lines text
