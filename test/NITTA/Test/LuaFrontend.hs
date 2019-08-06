@@ -311,7 +311,7 @@ luaEx tName (_proxy, ma) received src = do
     return $ case report of
         Right TestbenchReport{ tbStatus=True } -> Right ()
         Left err -> Left $ "synthesis process fail: " ++ err
-        Right TestbenchReport{ tbCompilerDump } | not $ null tbCompilerDump
+        Right TestbenchReport{ tbCompilerDump } | length tbCompilerDump > 2 -- [ "stdout:", "stderr:" ]
             -> Left $ "icarus synthesis error:\n" ++ S.join "\n" tbCompilerDump
         Right TestbenchReport{ tbSimulationDump } | not $ null tbSimulationDump
             -> Left $ "icarus simulation error:\n" ++ S.join "\n" tbSimulationDump
