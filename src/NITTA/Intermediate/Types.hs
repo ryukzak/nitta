@@ -130,9 +130,6 @@ class Function f v | f -> v where
     -- |Get all output variables.
     outputs :: f -> S.Set v
     outputs _ = S.empty
-    -- |Is function break evaluation loop (throw data to a next loop).
-    isBreakLoop :: f -> Bool
-    isBreakLoop _ = False
     -- |Sometimes, one function can cause internal process unit lock for another function.
     isInternalLockPossible :: f -> Bool
     isInternalLockPossible _ = False
@@ -156,7 +153,6 @@ instance Eq (F v x) where
     F a == F b = show a == show b
 
 instance Function (F v x) v where
-    isBreakLoop (F f) = isBreakLoop f
     isInternalLockPossible (F f) = isInternalLockPossible f
     inputs (F f) = inputs f
     outputs (F f) = outputs f

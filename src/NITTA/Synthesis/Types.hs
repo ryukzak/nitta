@@ -321,8 +321,7 @@ estimateParameters
                 n = fromIntegral $ length $ intersection is alreadyBindedVariables
                 nAll = fromIntegral $ length is
             in if nAll == 0 then 1 else n / nAll
-        , pWave=if isBreakLoop f then 0
-                else let
+        , pWave=let
                     allInputs = S.elems $ inputs f
                     ns = map (\v -> fromMaybe 0 (waves M.!? v)) allInputs
                 in fromIntegral $ maximum (0 : ns)

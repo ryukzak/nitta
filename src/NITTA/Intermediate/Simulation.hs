@@ -79,14 +79,13 @@ reorderAlgorithm alg = orderAlgorithm' [] alg
      where
         orderAlgorithm' _ [] = []
         orderAlgorithm' vs fs
-            | let insideOuts = filter isBreakLoop fs
-            , not $ null insideOuts
-            , let insideOutsOutputs = elems $ unionsMap outputs insideOuts
-            = case filter (not . null . intersect insideOutsOutputs . elems . inputs) insideOuts of
-                [] -> insideOuts ++ orderAlgorithm' (elems (unionsMap variables insideOuts) ++ vs) (fs \\ insideOuts)
+            | loops@(_:_) <- filter isLoop fs
+            , let loopOutputs = elems $ unionsMap outputs loops
+            = case filter (not . null . intersect loopOutputs . elems . inputs) loops of
+                [] -> loops ++ orderAlgorithm' (elems (unionsMap variables loops) ++ vs) (fs \\ loops)
                 ready -> ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
         orderAlgorithm' vs fs
             | let ready = filter (null . (\\ vs) . elems . inputs) fs
             , not $ null ready
             = ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
-        orderAlgorithm' _ _ = error "Can't sort algorithm."
+        orderAlgorithm' _ remain = error $ "Can't sort algorithm: " ++ show remain
