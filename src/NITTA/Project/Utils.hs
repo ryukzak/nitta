@@ -95,7 +95,7 @@ runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNu
 extractLogValues text = mapMaybe f $ lines text
     where
         f s = case matchRegex assertRe s of
-            Just [c, _t, x, _e, v] -> Just (read c, v, read x)
+            Just [c, _t, x, _e, v] -> Just (read c, v, fromVerilog x)
             _                      -> Nothing
 
 toCntxs lst0 = inner (0 :: Int) lst0

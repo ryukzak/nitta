@@ -258,12 +258,14 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
         for (let key in logical[0]) {
             columns.push({ Header: key, accessor: key });
         }
-        return (<ReactTable
-            defaultPageSize={functional.length}
-            minRows={functional.length}
-            showPagination={false}
-            columns={columns}
-            data={cntxs} />
-        );
+        return (<div>
+            <ReactTable
+                defaultPageSize={functional.length}
+                minRows={functional.length}
+                showPagination={false}
+                columns={columns}
+                data={cntxs} />
+            <pre>function simulation [ != logical simulation ]</pre>
+        </div>);
     }
 }
