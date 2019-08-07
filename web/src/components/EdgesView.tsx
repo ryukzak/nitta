@@ -25,7 +25,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
 
     onNIdChange: any;
 
-    constructor (props: EdgesViewProps) {
+    constructor(props: EdgesViewProps) {
         super(props);
         this.onNIdChange = props.onNIdChange;
         this.state = {
@@ -38,13 +38,13 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         this.reloadEdges(props.selectedNId);
     }
 
-    componentWillReceiveProps (props: any) {
+    componentWillReceiveProps(props: any) {
         console.debug("EdgesView:componentWillReceiveProps(", props, ")");
         if (this.state.selectedNId !== props.selectedNId) this.reloadEdges(props.selectedNId);
-        this.setState({selectedNId: props.selectedNId});
+        this.setState({ selectedNId: props.selectedNId });
     }
 
-    reloadEdges (nid: any) {
+    reloadEdges(nid: any) {
         // FIXME: А зачем два раза спрашивать у сервера одно и тоже?
         if (nid === undefined || nid === null) return;
         console.debug("EdgesView:reloadEdges(", nid, ")");
@@ -66,7 +66,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
             .catch(err => console.log(err));
     }
 
-    updateNid (i: number) {
+    updateNid(i: number) {
         haskellAPI.getNode(this.state.selectedNId === nInSeparator ? nInSeparator + i : this.state.selectedNId + nInSeparator + i)
             .then((response: any) => {
                 this.onNIdChange(response.data.nId);
@@ -74,161 +74,177 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
             .catch((err: any) => alert(err));
     }
 
-    render () {
+    render() {
         if (this.state.options === undefined || this.state.options === null) return <div />;
 
         var info = ""
         if (this.state.edge) info = JSON.stringify(this.state.edge.eDecision)
         return (
-        <div>
-            <div className="grid-x" >
-                <div className="edgeGraphContainer" style={{"display": "inline-block", "width": "450px"}}>
-                    <GraphView
-                        selectedNId = { this.state.selectedNId }
-                        view = "edges"
-                    />
-                </div>
+            <div>
+                <div className="grid-x" >
+                    <div className="edgeGraphContainer" style={{ "display": "inline-block", "width": "450px" }}>
+                        <GraphView
+                            selectedNId={this.state.selectedNId}
+                            view="edges"
+                        />
+                    </div>
 
-                <div className="lineChartContainer">
-                    <LineChart data={[ this.state.options_raw.map((e: any, index: any) => { return { x: index, y: e[0] }; }) ]}
-                        width={500} height={250}
-                    axes />
+                    <div className="lineChartContainer">
+                        <LineChart data={[this.state.options_raw.map((e: any, index: any) => { return { x: index, y: e[0] }; })]}
+                            width={500} height={250}
+                            axes />
+                    </div>
+                    <div className="jsonViewContainer" style={{ "display": "inline-block", "verticalAlign": "top", "width": "270px" }}>
+                        <JsonView jsonData={this.state.edge} label={"previous edge"} show={false} />
+                    </div>
                 </div>
-                <div className="jsonViewContainer" style={{"display": "inline-block", "verticalAlign": "top", "width": "270px"}}>
-                    <JsonView jsonData={this.state.edge} label={"previous edge"} show={false} />
-                </div>
+                <pre>{info}</pre>
+                <br />
+                <BindTable
+                    name="Bind"
+                    data={this.state.options.filter(e => e.eParameters.tag === 'BindCh')}
+                    updateNid={i => { this.updateNid(i) }}
+                />
+                <DataflowTable
+                    name="Transfers (DataFlow)"
+                    data={this.state.options.filter(e => e.eParameters.tag === 'DFCh')}
+                    updateNid={i => { this.updateNid(i) }}
+                />
+                <GenericTable
+                    name="Other"
+                    data={this.state.options.filter(e => e.eParameters.tag != 'BindCh' && e.eParameters.tag != 'DFCh')}
+                    updateNid={i => { this.updateNid(i) }}
+                />
             </div>
-            <pre>{ info }</pre>
-            <br/>
-            <BindTable 
-                name="Bind" 
-                data={ this.state.options.filter( e => e.eParameters.tag === 'BindCh') } 
-                updateNid={ i => { this.updateNid(i) } }
-                />
-            <DataflowTable 
-                name="Transfers (DataFlow)" 
-                data={ this.state.options.filter( e => e.eParameters.tag === 'DFCh') } 
-                updateNid={ i => { this.updateNid(i) } }
-                />
-            <GenericTable
-                name="Other" 
-                data={ this.state.options.filter( e => e.eParameters.tag != 'BindCh' && e.eParameters.tag != 'DFCh') } 
-                updateNid={ i => { this.updateNid(i) } }
-                />
-        </div>
         );
     }
 }
 
-function BindTable(props: {name: string, data: any[], updateNid: (nId: number) => void}) {
+function BindTable(props: { name: string, data: any[], updateNid: (nId: number) => void }) {
     var data = props.data
     return (
         <small>
-            <pre>{ props.name }</pre>
+            <pre>{props.name}</pre>
             <ReactTable
-                defaultPageSize={ data.length }
-                minRows={ data.length }  
-                showPagination={ false }
+                defaultPageSize={data.length}
+                minRows={data.length}
+                showPagination={false}
                 columns={
                     [
                         {
                             Header: "Integral",
                             accessor: "eObjectiveFunctionValue",
                             maxWidth: 60,
-                            Cell: row => 
+                            Cell: row =>
                                 <a onClick={() => {
                                     props.updateNid(row.index)
-                                }}> { row.value } </a>
+                                }}> {row.value} </a>
                         },
-                        { Header: "PU", maxWidth: 80, Cell: (r: any) => {
-                            var o = r.original.eOption.contents
-                            return (<pre> { o[1] } </pre> )
-                        }},
-                        { Header: "Function", maxWidth: 300, Cell: (r: any) => {
-                            var o = r.original.eOption.contents
-                            return (<pre> { o[0] } </pre> )
-                        }},
-                        { Header: "Metrics", Cell: (r: any) => {
-                            return (<pre> { JSON.stringify(r.original.eParameters) } </pre> )
-                        }}
+                        {
+                            Header: "PU", maxWidth: 80, Cell: (r: any) => {
+                                var o = r.original.eOption.contents
+                                return (<pre> {o[1]} </pre>)
+                            }
+                        },
+                        {
+                            Header: "Function", maxWidth: 300, Cell: (r: any) => {
+                                var o = r.original.eOption.contents
+                                return (<pre> {o[0]} </pre>)
+                            }
+                        },
+                        {
+                            Header: "Metrics", Cell: (r: any) => {
+                                return (<pre> {JSON.stringify(r.original.eParameters)} </pre>)
+                            }
+                        }
                     ]
                 }
-                data={ data } />
-            <br/>
+                data={data} />
+            <br />
         </small>
     )
 }
 
-function DataflowTable(props: {name: string, data: any[], updateNid: (nId: number) => void}) {
-    var data = props.data.map( e => { return e })
+function DataflowTable(props: { name: string, data: any[], updateNid: (nId: number) => void }) {
+    var data = props.data.map(e => { return e })
     return (
         <small>
-            <pre>{ props.name }</pre>
+            <pre>{props.name}</pre>
             <ReactTable
-                defaultPageSize={ data.length }
-                minRows={ data.length }  
-                showPagination={ false }
+                defaultPageSize={data.length}
+                minRows={data.length}
+                showPagination={false}
                 columns={
                     [
                         {
                             Header: "Integral",
                             accessor: "eObjectiveFunctionValue",
                             maxWidth: 70,
-                            Cell: row => 
+                            Cell: row =>
                                 <a onClick={() => {
                                     props.updateNid(row.index)
-                                }}> { row.value } </a>
+                                }}> {row.value} </a>
                         },
-                        { Header: "Source", maxWidth: 80, Cell: (r: any) => {
-                            var source = r.original.eOption.contents[0][0]
-                            return (<pre> { source } </pre> )
-                        }},
-                        { Header: "Targets", maxWidth: 500, Cell: (r: any) => {
-                            var o = r.original.eOption.contents
-                            var targets = Object.keys(o[1]).map( k => { return k + ' <' + o[1][k][0] + '>' } ).join('; ')
-                            return ( <pre> { targets } </pre> )
-                        }},
-                        { Header: "Metrics", Cell: (r: any) => {
-                            return ( <pre> { JSON.stringify(r.original.eParameters) } </pre>)
-                        }}
+                        {
+                            Header: "Source", maxWidth: 80, Cell: (r: any) => {
+                                var source = r.original.eOption.contents[0][0]
+                                return (<pre> {source} </pre>)
+                            }
+                        },
+                        {
+                            Header: "Targets", maxWidth: 500, Cell: (r: any) => {
+                                var o = r.original.eOption.contents
+                                var targets = Object.keys(o[1]).map(k => { return k + ' <' + o[1][k][0] + '>' }).join('; ')
+                                return (<pre> {targets} </pre>)
+                            }
+                        },
+                        {
+                            Header: "Metrics", Cell: (r: any) => {
+                                return (<pre> {JSON.stringify(r.original.eParameters)} </pre>)
+                            }
+                        }
                     ]
                 }
-                data={ data } />
-            <br/>
+                data={data} />
+            <br />
         </small>
     )
 }
 
-function GenericTable(props: {name: string, data: any[], updateNid: (nId: number) => void}) {
-    var data = props.data.map( e => { return e })
+function GenericTable(props: { name: string, data: any[], updateNid: (nId: number) => void }) {
+    var data = props.data.map(e => { return e })
     return (
         <small>
-            <pre>{ props.name }</pre>
+            <pre>{props.name}</pre>
             <ReactTable
-                defaultPageSize={ data.length }
-                minRows={ data.length }  
-                showPagination={ false }
+                defaultPageSize={data.length}
+                minRows={data.length}
+                showPagination={false}
                 columns={
                     [
                         {
                             Header: "Integral",
                             accessor: "eObjectiveFunctionValue",
                             maxWidth: 70,
-                            Cell: row => 
+                            Cell: row =>
                                 <a onClick={() => {
                                     props.updateNid(row.index)
-                                }}> { row.value } </a>
+                                }}> {row.value} </a>
                         },
-                        { Header: "Options", Cell: (r: any) => {
-                            return (<pre> { JSON.stringify(r.original.eOption) } </pre> )
-                        }},
-                        { Header: "Metrics", Cell: (r: any) => {
-                            return ( <pre> { JSON.stringify(r.original.eParameters) } </pre>)
-                        }}
+                        {
+                            Header: "Options", Cell: (r: any) => {
+                                return (<pre> {JSON.stringify(r.original.eOption)} </pre>)
+                            }
+                        },
+                        {
+                            Header: "Metrics", Cell: (r: any) => {
+                                return (<pre> {JSON.stringify(r.original.eParameters)} </pre>)
+                            }
+                        }
                     ]
                 }
-                data={ data } />
-            <br/>
+                data={data} />
+            <br />
         </small>
     )
 }
