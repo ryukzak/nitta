@@ -45,10 +45,8 @@ type VarValTimeJSON v x t = ( Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSO
 
 
 -- *Option/Decision
-instance ( VarValTimeJSON v x t
-        ) => ToJSON (Option (SynthesisDT (BusNetwork String v x t)))
-instance ( VarValTimeJSON v x t
-         ) => ToJSON (Decision (SynthesisDT (BusNetwork String v x t)))
+instance ( VarValTimeJSON v x t ) => ToJSON (SynthesisOption String v x t)
+instance ( VarValTimeJSON v x t ) => ToJSON (SynthesisDecision String v x t)
 instance ( ToJSON v, Show v, Show x ) => ToJSON (Refactor v x) where
     toJSON = toJSON . show
 instance ( Time t ) => ToJSON (Option (EndpointDT String t)) where
@@ -122,7 +120,7 @@ instance FromHttpApiData NId where
 
 
 instance ( VarValTimeJSON v x t
-        ) => ToJSON (SG Node String v x t) where
+        ) => ToJSON (G Node String v x t) where
     toJSON Node{ nId, nModel, nIsComplete } = object
         [ "nModel"      .= nModel
         , "nIsComplete" .= nIsComplete
@@ -138,7 +136,7 @@ instance ToJSON ObjectiveFunctionConf
 instance ToJSON Parameters
 
 instance ( VarValTimeJSON v x t
-        ) => ToJSON (Edge m (SynthesisDT (BusNetwork String v x t))) where
+        ) => ToJSON (G Edge String v x t) where
     toJSON Edge{ eObjectiveFunctionValue, eParameters, eOption, eDecision } = object
         [ "eObjectiveFunctionValue" .= eObjectiveFunctionValue
         , "eParameters"             .= eParameters

@@ -61,8 +61,8 @@ synthesisServer root
 
 
 type WithSynthesis tag v x t
-    =    Get '[JSON] (SG Node tag v x t)
-    :<|> "edge" :> Get '[JSON] (Maybe (Edge (ModelState (BusNetwork tag v x t) v x) (SynthesisDT (BusNetwork tag v x t))))
+    =    Get '[JSON] (G Node tag v x t)
+    :<|> "edge" :> Get '[JSON] (Maybe (G Edge tag v x t))
     :<|> "model" :> Get '[JSON] (ModelState (BusNetwork tag v x t) v x)
     :<|> "timelines" :> Get '[JSON] (ProcessTimelines t)
     :<|> "endpointOptions" :> Get '[JSON] [(tag, Option (EndpointDT v t))]
@@ -92,7 +92,7 @@ withSynthesis root nId
     :<|> simpleCompilerServer root nId
     where
         alg ModelState{ mDataFlowGraph=DFCluster nodes } = map (\(DFLeaf f) -> f) nodes
-        alg _                      = error "unsupported algorithm structure"
+        alg _                                            = error "unsupported algorithm structure"
         endpointOptions BusNetwork{ bnPus }
             = let f (tag, pu) = zip (repeat tag) $ options endpointDT pu
             in concatMap f $ M.assocs bnPus
@@ -100,7 +100,7 @@ withSynthesis root nId
 
 
 type SimpleCompilerAPI tag v x t
-    =    "edges" :> Get '[JSON] [ Edge (ModelState (BusNetwork tag v x t) v x) (SynthesisDT (BusNetwork tag v x t)) ]
+    =    "edges" :> Get '[JSON] [ G Edge tag v x t ]
     :<|> "simpleSynthesis" :> Post '[JSON] NId
     :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
     :<|> "obviousBindThread" :> Post '[JSON] NId

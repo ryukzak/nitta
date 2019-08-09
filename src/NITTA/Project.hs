@@ -1,7 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
@@ -88,7 +87,6 @@ import           NITTA.Frontend
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus         (BusNetwork)
-import           NITTA.Model.Problems.Whole
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
@@ -102,34 +100,33 @@ import           System.FilePath                  (joinPath)
 
 -- |Description of synthesis task. Applicable for target system synthesis and
 -- testing purpose.
-data TargetSynthesis u v x t = TargetSynthesis
-    { -- |target name, used for top level module name and project path
-      tName            :: String
-      -- |composition of processor units, IO ports and its interconnect
-    , tMicroArch       :: u
-      -- |optional application source code (lua)
-    , tSourceCode      :: Maybe Text
-      -- |algorithm in intermediate data flow graph representation (if
-      -- tSourceCode present will be overwritten)
-    , tDFG             :: DataFlowGraph v x
-      -- |values from input interface for testing purpose
-    , tReceivedValues  :: [ (v, [x]) ]
-      -- |verbose standard output (dumps, progress info, etc).
-    , tVerbose         :: Bool
-      -- |synthesis method
-    , tSynthesisMethod :: Node' u v x t -> IO (Node' u v x t)
-      -- |project writer, which defines necessary project part
-    , tWriteProject    :: Project u v x -> IO ()
-      -- |IP-core library directory
-    , tLibPath         :: String
-      -- |output directory, where CAD create project directory with 'tName' name
-    , tPath            :: String
-    }
+data TargetSynthesis tag v x t
+    = TargetSynthesis
+        { -- |target name, used for top level module name and project path
+          tName            :: String
+          -- |composition of processor units, IO ports and its interconnect
+        , tMicroArch       :: BusNetwork tag v x t
+          -- |optional application source code (lua)
+        , tSourceCode      :: Maybe Text
+          -- |algorithm in intermediate data flow graph representation (if
+          -- tSourceCode present will be overwritten)
+        , tDFG             :: DataFlowGraph v x
+          -- |values from input interface for testing purpose
+        , tReceivedValues  :: [ (v, [x]) ]
+          -- |verbose standard output (dumps, progress info, etc).
+        , tVerbose         :: Bool
+          -- |synthesis method
+        , tSynthesisMethod :: G Node tag v x t -> IO (G Node tag v x t)
+          -- |project writer, which defines necessary project part
+        , tWriteProject    :: Project (BusNetwork tag v x t) v x -> IO ()
+          -- |IP-core library directory
+        , tLibPath         :: String
+          -- |output directory, where CAD create project directory with 'tName' name
+        , tPath            :: String
+        }
 
-type Node' u v x t = Node (ModelState u v x) (SynthesisDT u)
 
-
-instance ( VarValTime v x t, Semigroup v ) => Default (TargetSynthesis (BusNetwork String v x t) v x t) where
+instance ( VarValTime v x t, Semigroup v ) => Default (TargetSynthesis String v x t) where
     def = TargetSynthesis
         { tName=undefined
         , tMicroArch=undefined

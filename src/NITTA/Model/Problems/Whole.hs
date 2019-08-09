@@ -20,7 +20,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.Problems.Whole
-    ( SynthesisDT, Option(..), Decision(..), synthesisOptions, synthesisDecision
+    ( SynthesisOption(..), SynthesisDecision(..), SynthesisProblem(..)
     , specializeDataFlowOption, isDataFlow, isBinding
     , option2decision
     ) where
@@ -43,11 +43,6 @@ import           NITTA.Utils.Lens
 import           Numeric.Interval                 (Interval, (...))
 
 
--- |Decision type of whole system synthesis process.
-data SynthesisDT u
-synthesisOptions m = options (Proxy :: Proxy SynthesisDT) m
-synthesisDecision m d = decision (Proxy :: Proxy SynthesisDT) m d
-
 isBinding = \case BindingOption{} -> True; _ -> False
 isDataFlow = \case DataFlowOption{} -> True; _ -> False
 
@@ -58,34 +53,36 @@ generalizeDataFlowOption (DataFlowO s t) = DataFlowOption s t
 generalizeBindingOption (BindingO s t) = BindingOption s t
 
 
-instance DecisionType (SynthesisDT (BusNetwork tag v x t)) where
-    data Option (SynthesisDT (BusNetwork tag v x t))
-        = BindingOption (F v x) tag
-        | DataFlowOption (Source tag (TimeConstrain t)) (Target tag v (TimeConstrain t))
-        | RefactorOption (Refactor v x)
-        deriving ( Generic, Show )
 
-    data Decision (SynthesisDT (BusNetwork tag v x t))
-        = BindingDecision (F v x) tag
-        | DataFlowDecision (Source tag (Interval t)) (Target tag v (Interval t))
-        | RefactorDecision (Refactor v x)
-        deriving ( Generic, Show )
+data SynthesisOption tag v x t
+    = BindingOption (F v x) tag
+    | DataFlowOption (Source tag (TimeConstrain t)) (Target tag v (TimeConstrain t))
+    | RefactorOption (Refactor v x)
+    deriving ( Generic, Show )
+
+data SynthesisDecision tag v x t
+    = BindingDecision (F v x) tag
+    | DataFlowDecision (Source tag (Interval t)) (Target tag v (Interval t))
+    | RefactorDecision (Refactor v x)
+    deriving ( Generic, Show )
+
+
+class SynthesisProblem u tag v x t | u -> tag v x t where
+    synthesisOptions :: u -> [ SynthesisOption tag v x t ]
+    synthesisDecision :: u -> SynthesisDecision tag v x t -> u
 
 
 instance ( UnitTag tag, VarValTime v x t, Semigroup v
-         ) => DecisionProblem (SynthesisDT (BusNetwork tag v x t))
-                  SynthesisDT (ModelState (BusNetwork tag v x t) v x)
-        where
-    options _ m@ModelState{ mUnit }
-        = let
+         ) => SynthesisProblem (ModelState (BusNetwork tag v x t) v x) tag v x t where
+    synthesisOptions m@ModelState{ mUnit } = let
             binds = map generalizeBindingOption $ options binding m
             transfers = map generalizeDataFlowOption $ options dataFlowDT mUnit
             refactors = map RefactorOption $ refactorOptions m
         in concat [ binds, transfers, refactors ]
 
-    decision _ fr (BindingDecision f tag) = decision binding fr $ BindingD f tag
-    decision _ fr@ModelState{ mUnit } (DataFlowDecision src trg) = fr{ mUnit=decision dataFlowDT mUnit $ DataFlowD src trg }
-    decision _ m (RefactorDecision d) = refactorDecision m d
+    synthesisDecision fr (BindingDecision f tag) = decision binding fr $ BindingD f tag
+    synthesisDecision fr@ModelState{ mUnit } (DataFlowDecision src trg) = fr{ mUnit=decision dataFlowDT mUnit $ DataFlowD src trg }
+    synthesisDecision m (RefactorDecision d) = refactorDecision m d
 
 
 -- |The simplest way to convert 'Option SynthesisDT' to 'Decision SynthesisDT'.

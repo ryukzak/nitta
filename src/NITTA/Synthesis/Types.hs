@@ -38,7 +38,7 @@ wrong steps.
 -}
 module NITTA.Synthesis.Types
     ( -- *Synthesis graph
-      SG, NId(..), Node(..), Edge(..)
+      G, NId(..), Node(..), Edge(..)
     , mkRootNodeIO, getNodeIO, getEdgesIO
       -- *Synthesis decision type & Parameters
     , ObjectiveFunctionConf(..)
@@ -73,8 +73,12 @@ import           NITTA.Utils
 import           NITTA.Utils.Lens
 
 
--- |Type alias for Synthesis Graph parts, where @m@ should be 'Node' or 'Edge'.
-type SG m tag v x t = m (ModelState (BusNetwork tag v x t) v x) (SynthesisDT (BusNetwork tag v x t))
+-- |Type alias for Graph parts, where `e` - graph element (Node or Edge) should be 'Node' or 'Edge';
+type G e tag v x t
+    = e
+        (ModelState (BusNetwork tag v x t) v x)
+        (SynthesisOption tag v x t)
+        (SynthesisDecision tag v x t)
 
 
 -- |Synthesis graph ID. ID is a relative path, encoded as a sequence of an
@@ -108,7 +112,7 @@ instance Monoid NId where
     mappend = (<>)
 
 
-data Node m dt
+data Node m o d
     = Node
         { nId         :: NId
           -- |model of target processor
@@ -118,18 +122,18 @@ data Node m dt
         , nIsComplete :: Bool
           -- |if 'Node' is root - 'Nothing'; if 'Node' is not root - 'Just'
           -- input 'Edge'.
-        , nOrigin     :: Maybe (Edge m dt)
+        , nOrigin     :: Maybe (Edge m o d)
           -- |lazy mutable field with different synthesis options and sub nodes
-        , nEdges      :: TVar (Maybe [Edge m dt])
+        , nEdges      :: TVar (Maybe [Edge m o d])
         }
     deriving ( Generic )
 
 
-data Edge m dt
+data Edge m o d
     = Edge
-        { eNode                   :: Node m dt
-        , eOption                 :: Option dt
-        , eDecision               :: Decision dt
+        { eNode                   :: Node m o d
+        , eOption                 :: o
+        , eDecision               :: d
           -- |parameters of the 'Edge'
         , eParameters             :: Parameters
           -- |objective function value for the 'Edge', which representing
@@ -155,7 +159,7 @@ mkNode nId nModel nOrigin nEdges = Node
 -- |Get all available edges for the node. Edges calculated only for the first
 -- call.
 getEdgesIO :: ( UnitTag tag, VarValTime v x t, Semigroup v
-    ) => SG Node tag v x t -> IO [ SG Edge tag v x t ]
+    ) => G Node tag v x t -> IO [ G Edge tag v x t ]
 getEdgesIO node@Node{ nEdges } = atomically $
     readTVar nEdges >>= \case
         Just edges -> return edges
@@ -167,7 +171,7 @@ getEdgesIO node@Node{ nEdges } = atomically $
 
 -- |Get specific by @nId@ node from a synthesis tree.
 getNodeIO :: ( UnitTag tag, VarValTime v x t, Semigroup v
-    ) => SG Node tag v x t -> NId -> IO ( SG Node tag v x t )
+    ) => G Node tag v x t -> NId -> IO ( G Node tag v x t )
 getNodeIO node (NId []) = return node
 getNodeIO node nId@(NId (i:is)) = do
     edges <- getEdgesIO node
@@ -176,7 +180,7 @@ getNodeIO node nId@(NId (i:is)) = do
 
 
 mkEdges :: ( UnitTag tag, VarValTime v x t, Semigroup v )
-     => SG Node tag v x t -> STM [ SG Edge tag v x t ]
+     => G Node tag v x t -> STM [ G Edge tag v x t ]
 mkEdges n@Node{ nId, nModel, nOrigin } = do
     let conf = def
         cntx = prepareParametersCntx n
@@ -339,9 +343,9 @@ estimateParameters ObjectiveFunctionConf{} ParametersCntx{ transferableVars, nMo
                 notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
             in map (fromIntegral . length) notTransferableVars
         }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption InsertOutRegister{}) 
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption InsertOutRegister{})
     = RefactorEdgeParameter $ InsertOutRegister undefined undefined
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption BreakLoop{}) 
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption BreakLoop{})
     = RefactorEdgeParameter $ BreakLoop undefined undefined undefined
 
 
