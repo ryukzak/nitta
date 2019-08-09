@@ -85,8 +85,8 @@ timeWrapError p act = error $ "You can't start work yesterday :) fram time: " ++
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
 maximumOn f = maximumBy (\a b -> f a `compare` f b)
 
-shift n d@EndpointD{ epdAt } = d{ epdAt=shiftI n epdAt }
-shiftI offset i = (I.inf i + offset) ... (I.sup i + offset)
+shift offset d@EndpointD{ epdAt } = d{ epdAt=shiftI offset epdAt }
+shiftI offset i = (I.inf i + offset) ... (I.sup i + offset )
 
 
 

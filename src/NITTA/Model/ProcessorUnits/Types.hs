@@ -27,7 +27,8 @@ module NITTA.Model.ProcessorUnits.Types
     , descent, whatsHappen, extractInstructionAt
     , bind, allowToProcess
     , showPU
-    , Connected(..), SignalTag(..), InputPortTag(..), OutputPortTag(..), SignalValue(..), (+++)
+    , Connected(..), SignalTag(..), SignalValue(..), (+++)
+    , IOConnected(..), InputPortTag(..), OutputPortTag(..), InoutPortTag(..)
     , ByTime(..)
     ) where
 
@@ -213,21 +214,29 @@ class Controllable pu where
 
 
 
--- |Type class of units with ports.
-class Connected u where
-    -- |Unit ports (external IO, signal, flag, etc).
-    data Ports u :: *
+-- |Type class of processor units with control ports.
+class Connected pu where
+    -- |A processor unit control ports (signals, flags).
+    data Ports pu :: *
+
+-- |Type class of processor units with IO ports.
+class IOConnected pu where
+    data IOPorts pu :: *
     -- |External input ports, which go outside of NITTA mUnit.
-    externalInputPorts :: Ports u -> [InputPortTag]
-    externalInputPorts _ = []
+    inputPorts :: IOPorts pu -> [ InputPortTag ]
+    inputPorts _ = []
     -- |External output ports, which go outside of NITTA mUnit.
-    externalOutputPorts :: Ports u -> [OutputPortTag]
-    externalOutputPorts _ = []
+    outputPorts :: IOPorts pu -> [ OutputPortTag ]
+    outputPorts _ = []
+    -- |External output ports, which go outside of NITTA mUnit.
+    inoutPorts :: IOPorts pu -> [ InoutPortTag ]
+    inoutPorts _ = []
 
 
 newtype SignalTag = SignalTag Int deriving ( Show, Eq, Ord, Ix )
 newtype InputPortTag = InputPortTag{ inputPortTag :: String } deriving ( Show, Eq, Ord )
 newtype OutputPortTag = OutputPortTag{ outputPortTag :: String } deriving ( Show, Eq, Ord )
+newtype InoutPortTag = InoutPortTag{ inoutPortTag :: String } deriving ( Show, Eq, Ord )
 
 
 

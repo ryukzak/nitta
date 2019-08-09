@@ -27,7 +27,6 @@ module pu_slave_i2c #
     // I2C interface
     , input scl
     , inout sda
-
     );
 
 ///////////////////////////////////////////////////////////

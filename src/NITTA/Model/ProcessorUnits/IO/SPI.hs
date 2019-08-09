@@ -1,11 +1,11 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
@@ -17,181 +17,71 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
-slave / master / slave-master?
 -}
 module NITTA.Model.ProcessorUnits.IO.SPI
-    ( Ports(..)
-    , ExternalPorts(..)
-    , SPI
+    ( SPI
     , anySPI
+    , Ports(..), IOPorts(..)
     ) where
 
-import           Data.Bits                                 (finiteBitSize)
+import           Data.Bits                              (finiteBitSize)
 import           Data.Default
-import qualified Data.Map                                  as M
-import           Data.Maybe                                (catMaybes,
-                                                            fromMaybe)
-import           Data.Set                                  (elems, fromList,
-                                                            singleton)
-import qualified Data.String.Utils                         as S
-import           NITTA.Intermediate.Functions
+import qualified Data.Map                               as M
+import           Data.Maybe                             (fromMaybe, mapMaybe)
+import qualified Data.Set                               as S
+import qualified Data.String.Utils                      as S
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.ProcessorUnits.Serial.Generic
+import           NITTA.Model.ProcessorUnits.IO.SimpleIO
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Utils
-import           Numeric.Interval                          ((...))
-import           Text.InterpolatedString.Perl6             (qc)
+import           Text.InterpolatedString.Perl6          (qc)
 
 
-type SPI v x t = SerialPU (State v x t) v x t
-data State v x t
-    = State
-        { spiSend         :: ([v], [v])
-        , spiReceive      :: ([[v]], [[v]])
-        , spiBounceFilter :: Int
-        }
-    deriving ( Show )
+data SPIinterface
 
-instance Default (State v x t) where
-    def = State def def 2
+instance SimpleIOInterface SPIinterface
+
+type SPI v x t = SimpleIO SPIinterface v x t
 
 anySPI :: ( Time t ) => Int -> SPI v x t
-anySPI bounceFilter = SerialPU (State def def bounceFilter) def def def{ nextTick = 1 } def
+anySPI bounceFilter = SimpleIO
+    { bounceFilter
+    , bufferSize=Just 6 -- FIXME:
+    , receiveQueue=[]
+    , receiveN=0
+    , isReceiveOver=False
+    , sendQueue=[]
+    , sendN=0
+    , process_=def
+    }
 
 
-
-instance ( VarValTime v x t ) => SerialPUState (State v x t) v x t where
-
-    bindToState fb st@State{ .. }
-        | Just (Send (I v)) <- castF fb
-        , let (ds, rs) = spiSend
-        = Right st{ spiSend=(ds, v:rs) }
-
-        | Just (Receive (O vs)) <- castF fb
-        , let (ds, rs) = spiReceive
-        = Right st{ spiReceive=(ds, elems vs : rs) }
-
-        | otherwise = Left $ "The functional block is unsupported by SPI: " ++ show fb
-
-    stateOptions State{ spiSend, spiReceive } now = catMaybes [ send' spiSend, receive' spiReceive ]
-        where
-            send' (_, v:_) = Just $ EndpointO (Target v) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound)
-            send' _ = Nothing
-            receive' (_, vs:_) = Just $ EndpointO (Source $ fromList vs) $ TimeConstrain (now ... maxBound) (1 ... maxBound)
-            receive' _ = Nothing
-
-    simpleSynthesis st@State{ spiSend=(ds, v:rs) } act
-        | singleton v == variables act
-        = let
-            st' = st{ spiSend=(v:ds, rs) }
-            work = serialSchedule @(SPI v x t) Sending act
-        in (st', work)
-
-    simpleSynthesis st@State{ spiReceive=(ds, vs:rs) } act
-        -- FIXME: Выгрузка данных должна осуществляться в несколько шагов. Эту ошибку необходимо исправить здесь и в
-        -- аппаратуре.
-        | fromList vs == variables act
-        = let
-            st' = st{ spiReceive=(vs:ds, rs) }
-            work = serialSchedule @(SPI v x t) Receiving act
-        in (st', work)
-
-    simpleSynthesis _ _ = error "Schedule error! (SPI)"
-
-
-
-instance Controllable (SPI v x t) where
-    -- | Доступ к входному буферу осуществляется как к очереди. это сделано для
-    -- того, что бы сократить колличество сигнальных линий (убрать адрес).
-    -- Увеличение адреса производится по негативному фронту сигналов OE и WR для
-    -- Receive и Send соответственно.
-    --
-    -- Управление передачей данных осуществляется полностью вычислительным блоком.
-    --
-    -- Пример:
-    --
-    -- 1. Nop - отдых
-    -- 2. Send - В блок загружается с шины слово по адресу 0.
-    -- 3. Send - В блок загружается с шины слово по адресу 0.
-    -- 4. Nop - отдых
-    -- 5. Receive - Из блока выгружается на шину слово по адресу 0.
-    -- 6. Send - В блок загружается с шины слово по адресу 1.
-    -- 7. Receive - Из блока выгружается на шину слово по адресу 1.
-    data Instruction (SPI v x t)
-        = Receiving
-        | Sending
-        deriving ( Show )
-
-    data Microcode (SPI v x t)
-        = Microcode
-            { wrSignal :: Bool
-            , oeSignal :: Bool
+instance IOConnected (SPI v x t) where
+    data IOPorts (SPI v x t)
+        = SPIMaster
+            { master_mosi :: OutputPortTag
+            , master_miso :: InputPortTag
+            , master_sclk :: OutputPortTag
+            , master_cs   :: OutputPortTag
             }
-        deriving ( Show, Eq, Ord )
-
-    mapMicrocodeToPorts Microcode{..} SPIPorts{..} =
-        [ (wr, Bool wrSignal)
-        , (oe, Bool oeSignal)
-        ]
-
-
-instance Default (Microcode (SPI v x t)) where
-    def = Microcode
-        { wrSignal=False
-        , oeSignal=False
-        }
-
-
-instance UnambiguouslyDecode (SPI v x t) where
-    decodeInstruction Sending   = def{ wrSignal=True }
-    decodeInstruction Receiving = def{ oeSignal=True }
-
-
-
-instance
-        ( VarValTime v x t
-        ) => Simulatable (SPI v x t) v x where
-    simulateOn cntx _ f
-        | Just f'@Send{} <- castF f = simulate cntx f'
-        | Just f'@Receive{} <- castF f = simulate cntx f'
-        | otherwise = error $ "Can't simulate " ++ show f ++ " on SPI."
-
-data ExternalPorts
-    = Master
-        { master_mosi :: OutputPortTag
-        , master_miso :: InputPortTag
-        , master_sclk :: OutputPortTag
-        , master_cs   :: OutputPortTag
-        }
-    | Slave
-        { slave_mosi :: InputPortTag
-        , slave_miso :: OutputPortTag
-        , slave_sclk :: InputPortTag
-        , slave_cs   :: InputPortTag
-        }
-    deriving ( Show )
-
-instance Connected (SPI v x t) where
-    data Ports (SPI v x t)
-        = SPIPorts
-            { wr, oe :: SignalTag
-             -- |Данный сигнал используется для оповещения процессора о завершении передачи данных. Необходимо для
-             -- приостановки работы пока передача не будет завершена, так как в противном случае данные будут потеряны.
-            , stop :: String
-            , externalPorts :: ExternalPorts
+        | SPISlave
+            { slave_mosi :: InputPortTag
+            , slave_miso :: OutputPortTag
+            , slave_sclk :: InputPortTag
+            , slave_cs   :: InputPortTag
             }
         deriving ( Show )
 
-    externalInputPorts SPIPorts{ externalPorts=Slave{..} } = [ slave_mosi, slave_sclk, slave_cs ]
-    externalInputPorts SPIPorts{ externalPorts=Master{..} } = [ master_miso ]
+    inputPorts SPISlave{..}  = [ slave_mosi, slave_sclk, slave_cs ]
+    inputPorts SPIMaster{..} = [ master_miso ]
 
-    externalOutputPorts SPIPorts{ externalPorts=Slave{..} } = [ slave_miso ]
-    externalOutputPorts SPIPorts{ externalPorts=Master{..} } = [ master_mosi, master_sclk, master_cs ]
+    outputPorts SPISlave{..}  = [ slave_miso ]
+    outputPorts SPIMaster{..} = [ master_mosi, master_sclk, master_cs ]
 
 
 instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
@@ -210,17 +100,18 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
             , FromLibrary "spi/pu_master_spi.v"
             ]
     software _ pu = Immediate "transport.txt" $ show pu
-    hardwareInstance _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
+    hardwareInstance _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
     hardwareInstance
             tag
-            SerialPU{ spuState=State{ spiBounceFilter, spiSend, spiReceive } }
+            SimpleIO{ bounceFilter, sendN, receiveN }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
-            SPIPorts{ externalPorts, .. }
+            SimpleIOPorts{..}
+            ioPorts
         = fixIndent [qc|
-|           { module_ externalPorts }
+|           { module_ ioPorts }
 |               #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
 |                , .ATTR_WIDTH( { show parameterAttrWidth } )
-|                , .BOUNCE_FILTER( { show spiBounceFilter } )
+|                , .BOUNCE_FILTER( { show bounceFilter } )
 |                ) { tag }
 |               ( .clk( { signalClk } )
 |               , .rst( { signalRst } )
@@ -230,20 +121,20 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
 |               , .signal_wr( { signal wr } )
 |               , .data_in( { dataIn } ), .attr_in( { attrIn } )
 |               , .data_out( { dataOut } ), .attr_out( { attrOut } )
-|               { extIO externalPorts }
+|               { extIO ioPorts }
 |               );
-|           initial { tag }.disabled <= { if spiSend == ([], []) && spiReceive == ([], []) then (1 :: Int) else 0 };
+|           initial { tag }.disabled <= { if sendN == 0 && receiveN == 0 then (1 :: Int) else 0 };
 |           |]
             where
-                module_ Slave{}  = "pu_slave_spi"
-                module_ Master{} = "pu_master_spi"
-                extIO Slave{..} = fixIndent [qc|
+                module_ SPISlave{}  = "pu_slave_spi"
+                module_ SPIMaster{} = "pu_master_spi"
+                extIO SPISlave{..} = fixIndent [qc|
 |                   , .mosi( { inputPort slave_mosi } )
 |                   , .miso( { outputPort slave_miso } )
 |                   , .sclk( { inputPort slave_sclk } )
 |                   , .cs( { inputPort slave_cs } )
 |           |]
-                extIO Master{..} = fixIndent [qc|
+                extIO SPIMaster{..} = fixIndent [qc|
 |                   , .mosi( { outputPort master_mosi } )
 |                   , .miso( { inputPort master_miso } )
 |                   , .sclk( { outputPort master_sclk } )
@@ -253,19 +144,25 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
 instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
     testEnvironmentInitFlag tag _pu = Just $ tag ++ "_env_init_flag"
 
-    testEnvironment _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
+    testEnvironment _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ _ _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
     testEnvironment
             tag
-            pu@SerialPU{ spuState=State{ spiBounceFilter, spiReceive, spiSend } }
+            sio@SimpleIO{ process_, bounceFilter }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
-            SPIPorts{ externalPorts, .. }
+            SimpleIOPorts{..}
+            ioPorts
             cntx@Cntx{ cntxCycleNumber, cntxProcess }
         | let
-            receivedVariablesSeq = reverse $ map head $ fst spiReceive
+            receivedVariablesSeq = mapMaybe (\case
+                    Source vs -> Just $ head $ S.elems vs
+                    _ -> Nothing
+                ) $ getEndpoints process_
             receivedVarsValues = take cntxCycleNumber $ cntxReceivedBySlice cntx
-            sendedVariableSeq = reverse $ fst spiSend
+            sendedVariableSeq = mapMaybe (\case
+                    (Target v) -> Just v
+                    _ -> Nothing
+                ) $ getEndpoints process_
             sendedVarsValues = take cntxCycleNumber $ map cycleCntx cntxProcess
-
             wordWidth = finiteBitSize (def :: x)
             frameWordCount = max (length receivedVariablesSeq) (length $ sendedVariableSeq)
             frameWidth = frameWordCount * wordWidth
@@ -279,8 +176,6 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                 | abs x /= x = [qc|-{ wordWidth }'sd{ verilogInteger (-x) }|]
                 | otherwise = [qc|{ wordWidth }'sd{ verilogInteger x }|]
 
-            Just envInitFlagName = testEnvironmentInitFlag tag pu
-
             disable = codeBlock 0 [qc|
                 initial begin
                     @(negedge { signalRst });
@@ -288,8 +183,9 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                 end
                 |]
 
-        = case externalPorts of
-            Slave{..} -> let
+            Just envInitFlagName = testEnvironmentInitFlag tag sio
+        = case ioPorts of
+            SPISlave{..} -> let
                     receiveCycle transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
                         in fixIndent [qc|
@@ -297,7 +193,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
 |                           { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
 |                           { tag }_io_test_start_transaction = 1;                           @(posedge { signalClk });
 |                           { tag }_io_test_start_transaction = 0;                           @(posedge { signalClk });
-|                           repeat( { frameWidth * 2 + spiBounceFilter + 2 } ) @(posedge { signalClk });
+|                           repeat( { frameWidth * 2 + bounceFilter + 2 } ) @(posedge { signalClk });
 |                   |]
 
                     sendingAssert transmit = let
@@ -313,7 +209,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
 
                     envInstance = codeBlock 0 [qc|
                         // SPI Input/Output environment
-                        // { show pu }
+                        // { show sio }
                         reg { tag }_io_test_start_transaction;
                         reg  [{ frameWidth }-1:0] { tag }_io_test_input;
                         wire { tag }_io_test_ready;
@@ -343,24 +239,26 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                             @(negedge { signalRst });
                             repeat({ timeLag }) @(posedge { signalClk });
                             { envInitFlagName } <= 1;
-                            { S.join "" $ map receiveCycle receivedVarsValues }
+                            { inline $ concat $ map receiveCycle receivedVarsValues }
                             repeat(70) @(posedge { signalClk });
                             // $finish; // DON'T DO THAT (with this line test can pass without data checking)
                         end
+
                         // SPI Output signal checking
                         initial begin
                             @(negedge { signalRst });
                             repeat (3) @(posedge { tag }_io_test_start_transaction); // latency
-                            { S.join "" $ map sendingAssert sendedVarsValues }
+                            { inline $ concat $ map sendingAssert sendedVarsValues }
                         end
                         |]
                     -- FIXME: do not check output signals when we drop data
                 in codeBlock 0 [qc|
                     { inline envInstance }
+
                     { inline $ if frameWordCount == 0 then disable else interactions }
                     |]
 
-            Master{..} -> let
+            SPIMaster{..} -> let
                     receiveCycle transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
                         in fixIndent [qc|
@@ -385,7 +283,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                             @(negedge { signalRst });
                             { receiveCycle $ head receivedVarsValues }
                             { envInitFlagName } <= 1;
-                            { S.join "" $ map receiveCycle $ tail receivedVarsValues }
+                            { concat $ map receiveCycle $ tail receivedVarsValues }
                             repeat(70) @(posedge { signalClk });
                             // $finish; // DON'T DO THAT (with this line test can pass without data checking)
                         end
@@ -394,12 +292,12 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                         initial begin
                             @(negedge { signalRst });
                             repeat(2) @(posedge { tag }_io_test_ready);
-                            { S.join "" $ map sendingAssert sendedVarsValues }
+                            { concat $ map sendingAssert sendedVarsValues }
                         end
                         |]
                 in codeBlock 0 [qc|
                     // SPI Input/Output environment
-                    // { show pu }
+                    // { show sio }
                     reg { tag }_io_test_start_transaction;
                     reg  [{ frameWidth }-1:0] { tag }_io_test_input;
                     wire { tag }_io_test_ready;

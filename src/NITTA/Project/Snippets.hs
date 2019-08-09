@@ -117,6 +117,7 @@ data SnippetTestBenchConf m
     = SnippetTestBenchConf
         { tbcSignals       :: [String]
         , tbcPorts         :: Ports m
+        , tbcIOPorts       :: IOPorts m
         , tbcSignalConnect :: SignalTag -> String
         , tbcCtrl          :: Microcode m -> String
         , tbDataBusWidth   :: Int
@@ -124,7 +125,7 @@ data SnippetTestBenchConf m
 
 snippetTestBench
         Project{ pName, pUnit, pTestCntx=Cntx{ cntxProcess } }
-        SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcCtrl, tbDataBusWidth }
+        SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcIOPorts, tbcCtrl, tbDataBusWidth }
     = let
         cycleCntx:_ = cntxProcess
         name = moduleName pName pUnit
@@ -138,6 +139,7 @@ snippetTestBench
                 , signalCycle="cycle"
                 , inputPort=undefined
                 , outputPort=undefined
+                , inoutPort=undefined
                 , unitEnv=ProcessUnitEnv
                     { parameterAttrWidth=IntParam 4
                     , dataIn="data_in"
@@ -147,8 +149,9 @@ snippetTestBench
                     , signal=tbcSignalConnect
                     }
                 }
-            tbcPorts
-
+            tbcPorts 
+            tbcIOPorts
+            
         controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p

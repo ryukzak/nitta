@@ -60,8 +60,8 @@ class IOTestBench pu v x | pu -> v x where
     testEnvironmentInitFlag :: String -> pu -> Maybe String
     testEnvironmentInitFlag _title _pu = Nothing
 
-    testEnvironment :: String -> pu -> TargetEnvironment -> Ports pu -> Cntx v x -> String
-    testEnvironment _title _pu _env _ports _cntx = ""
+    testEnvironment :: String -> pu -> TargetEnvironment -> Ports pu -> IOPorts pu -> Cntx v x -> String
+    testEnvironment _title _pu _env _ports _io _cntx = ""
 
 
 data TestbenchReport v x

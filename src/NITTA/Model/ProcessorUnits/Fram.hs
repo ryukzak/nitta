@@ -20,9 +20,9 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Fram
-    ( Fram(..)
-    , Ports(..)
-    ) where
+  ( Fram(..)
+  , Ports(..), IOPorts(..)
+  ) where
 
 import           Control.Applicative              ((<|>))
 import           Control.Monad
@@ -45,7 +45,7 @@ import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           NITTA.Utils.Process
+import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (inf, sup, (...))
 import           Text.InterpolatedString.Perl6    (qc)
 
@@ -185,7 +185,7 @@ instance ( VarValTime v x t
         | Just (Constant (X x) (O vs)) <- castF f
         , Just (addr, _) <- lockableNotUsedCell fram
         , let
-            (binds, process_) = runSchedule fram $ scheduleFunctoinBind f
+            (binds, process_) = runSchedule fram $ scheduleFunctionBind f
             cell = Cell
                 { state=DoConstant $ S.elems vs
                 , job=Just (defJob f){ binds }
@@ -201,7 +201,7 @@ instance ( VarValTime v x t
         | Just (Loop (X x) (O _) (I _)) <- castF f
         , Just (addr, _) <- lockableNotUsedCell fram
         , let
-            (binds, process_) = runSchedule fram $ scheduleFunctoinBind f
+            (binds, process_) = runSchedule fram $ scheduleFunctionBind f
             cell = Cell
                 { state=NotBrokenLoop
                 , job=Just (defJob f){ binds }
@@ -217,7 +217,7 @@ instance ( VarValTime v x t
         | Just r@Reg{} <- castF f
         , any (\case ForReg{} -> True; DoReg{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory
         , let
-            (binds, process_) = runSchedule fram $ scheduleFunctoinBind f
+            (binds, process_) = runSchedule fram $ scheduleFunctionBind f
             job = (defJob f){ binds }
         = Right fram
             { remainRegs=(r, job) : remainRegs
@@ -252,8 +252,8 @@ instance ( VarValTime v x t
                     ) $ A.assocs memory
             ((iPid, oPid), process_) = runSchedule fram $ do
                 revoke <- scheduleFunctoinRevoke $ F l
-                f1 <- scheduleFunctoinBind $ F i
-                f2 <- scheduleFunctoinBind $ F o
+                f1 <- scheduleFunctionBind $ F i
+                f2 <- scheduleFunctionBind $ F o
                 establishVerticalRelations binds (f1 ++ f2 ++ revoke)
                 return (f1, f2)
             iJob = (defJob $ F i){ binds=iPid, startAt=Just 0 }
@@ -465,6 +465,9 @@ instance Connected (Fram v x t) where
             }
         deriving ( Show )
 
+instance IOConnected (Fram v x t) where
+    data IOPorts (Fram v x t) = FramIO
+        deriving ( Show )
 
 getAddr (ReadCell addr)  = addr
 getAddr (WriteCell addr) = addr
@@ -504,6 +507,7 @@ instance ( VarValTime v x t
                     , signalCycle="cycle"
                     , inputPort=undefined
                     , outputPort=undefined
+                    , inoutPort=undefined
                     , unitEnv=ProcessUnitEnv
                         { parameterAttrWidth=IntParam 4
                         , dataIn="data_in"
@@ -521,6 +525,7 @@ instance ( VarValTime v x t
                     , wr=SignalTag 1
                     , addr=map SignalTag [ 2, 3, 4, 5 ]
                     }
+                FramIO
             testBenchImp = fixIndent [qc|
 |               {"module"} { moduleName pName fram }_tb();
 |               parameter DATA_WIDTH = { finiteBitSize (def :: x) };
@@ -649,7 +654,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
             $ unlines $ map
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
                 $ A.elems memory
-    hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..}
+    hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} FramIO
         = fixIndent [qc|
 |           pu_fram #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -669,7 +674,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
 |               , .attr_out( { attrOut } )
 |               );
 |           |]
-    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
 instance IOTestBench (Fram v x t) v x

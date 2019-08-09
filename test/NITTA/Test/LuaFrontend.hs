@@ -31,6 +31,7 @@ import qualified Data.String.Utils             as S
 import qualified Data.Text                     as T
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
+import           NITTA.Model.Networks.Types
 import           NITTA.Project
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Synthesis.Method
@@ -43,7 +44,7 @@ import           Text.InterpolatedString.Perl6 (qc)
 
 test_support =
     [ testCase "a = b + 1" $ either assertFailure return
-        =<< lua "rexp_not_in_paren" (pIntX32, microarch True SlaveSPI)
+        =<< lua "rexp_not_in_paren" (pIntX32, microarch ASync SlaveSPI)
             [qc|function f(b)
                     a = b + 1
                     f(a)
@@ -51,7 +52,7 @@ test_support =
                 f(0)
             |]
     , testCase "a = b + 1" $ either assertFailure return
-        =<< lua "rexp_not_in_paren" (pIntX32, microarch False SlaveSPI)
+        =<< lua "rexp_not_in_paren" (pIntX32, microarch Sync SlaveSPI)
             [qc|function f(b)
                     a = b + 1
                     f(a)
@@ -59,7 +60,7 @@ test_support =
                 f(0)
             |]
     , testCase "a = (b + 1)" $ either assertFailure return
-        =<< lua "lua_rexp_in_paren" (pIntX32, microarch True SlaveSPI)
+        =<< lua "lua_rexp_in_paren" (pIntX32, microarch ASync SlaveSPI)
             [qc|function f(b)
                     a = (b + 1)
                     f(a)
@@ -67,14 +68,14 @@ test_support =
                 f(0)
             |]
     , testCase "counter(i + 1)" $ either assertFailure return
-        =<< lua "counter" (pIntX32, microarch True SlaveSPI)
+        =<< lua "counter" (pIntX32, microarch ASync SlaveSPI)
             [qc|function counter(i)
                     counter(i + 1)
                 end
                 counter(0)
             |]
     , testCase "i = i + 1; counter(i)" $ either assertFailure return
-        =<< lua "counter_redefinition" (pIntX32, microarch True SlaveSPI)
+        =<< lua "counter_redefinition" (pIntX32, microarch ASync SlaveSPI)
             [qc|function counter(i)
                     i = i + 1
                     counter(i)
@@ -82,7 +83,7 @@ test_support =
                 counter(0)
             |]
     , testCase "local i2 = i + 1; counter(i2)" $ either assertFailure return
-        =<< lua "counter_local_var" (pIntX32, microarch True SlaveSPI)
+        =<< lua "counter_local_var" (pIntX32, microarch ASync SlaveSPI)
             [qc|function counter(i)
                     local i2 = i + 1
                     counter(i2)
@@ -90,7 +91,7 @@ test_support =
                 counter(0)
             |]
     , testCase "i = reg(i + 1); counter(i)" $ either assertFailure return
-        =<< lua "counter_reg" (pIntX32, microarch True SlaveSPI)
+        =<< lua "counter_reg" (pIntX32, microarch ASync SlaveSPI)
             [qc|function counter(i)
                     i = reg(i + 1)
                     counter(i)
@@ -98,7 +99,7 @@ test_support =
                 counter(0)
             |]
     , testCase "i = i + 1; counter(reg(i))" $ either assertFailure return
-        =<< lua "counter_reg" (pIntX32, microarch True SlaveSPI)
+        =<< lua "counter_reg" (pIntX32, microarch ASync SlaveSPI)
             [qc|function counter(i)
                     i = i + 1
                     counter(reg(i))
@@ -106,7 +107,7 @@ test_support =
                 counter(0)
             |]
     , testCase "send(10 - 20); send(-30 + 40)" $ either assertFailure return
-        =<< lua "subtraction" (pIntX32, microarch True SlaveSPI)
+        =<< lua "subtraction" (pIntX32, microarch ASync SlaveSPI)
             [qc|function f()
                     send(10 - 20)
                     send(-30 + 40)
@@ -114,7 +115,7 @@ test_support =
                 f()
             |]
     , testCase "send(10 * -1); send(-20 * -30)" $ either assertFailure return
-        =<< lua "multiplication" (pIntX32, microarch True SlaveSPI)
+        =<< lua "multiplication" (pIntX32, microarch ASync SlaveSPI)
             [qc|function f()
                     send(10 * -1)
                     send(-20 * -30)
@@ -122,7 +123,7 @@ test_support =
                 f()
             |]
     , testCase "x = 10; send(x * x)" $ either assertFailure return
-        =<< lua "quad" (pIntX32, microarch True SlaveSPI)
+        =<< lua "quad" (pIntX32, microarch ASync SlaveSPI)
             [qc|function f()
                     local x = 10
                     send(x * x)
@@ -130,7 +131,7 @@ test_support =
                 f()
         |]
     , testCase "a, b = -10 / 2; c, d = 10 / -2" $ either assertFailure return
-        =<< lua "division" (pIntX32, microarch True SlaveSPI)
+        =<< lua "division" (pIntX32, microarch ASync SlaveSPI)
             [qc|function f()
                     a, b = -10 / 2
                     send(a)
@@ -146,7 +147,7 @@ test_support =
 
 test_fibonacci =
     [ testCase "b, a = a + b, b" $ either assertFailure return
-        =<< lua "def_b_a" (pIntX32, microarch True SlaveSPI)
+        =<< lua "def_b_a" (pIntX32, microarch ASync SlaveSPI)
             [qc|function fib(a, b)
                     b, a = a + b, b
                     fib(a, b)
@@ -154,14 +155,14 @@ test_fibonacci =
                 fib(0, 1)
             |]
     , testCase "a, b = b, reg(reg(a) + reg(b))" $ either assertFailure return
-        =<< lua "nested_reg" (pIntX32, microarch True SlaveSPI)
+        =<< lua "nested_reg" (pIntX32, microarch ASync SlaveSPI)
             [qc|function fib(a, b)
                     a, b = b, reg(reg(a) + reg(b))
                     fib(a, b)
                 end
                 fib(0, 1)|]
     , testCase "a, b = b, reg(a + reg(b + 0)) + 0" $ either assertFailure return
-        =<< lua "nested_reg_and_0" (pIntX32, microarch True SlaveSPI)
+        =<< lua "nested_reg_and_0" (pIntX32, microarch ASync SlaveSPI)
             [qc|function fib(a, b)
                     a, b = b, reg(a + reg(b + 0)) + 0
                     fib(a, b)
@@ -172,26 +173,26 @@ test_fibonacci =
 
 test_examples =
     [ testCase "examples/teacup.lua wait" $ either assertFailure return
-        =<< lua "teacup_wait" (pFX22_32, microarch False SlaveSPI) $(embedStringFile "examples/teacup.lua")
+        =<< lua "teacup_wait" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/teacup.lua")
     , testCase "examples/teacup.lua drop" $ either assertFailure return
-        =<< lua "teacup_drop" (pFX22_32, microarch True SlaveSPI) $(embedStringFile "examples/teacup.lua")
+        =<< lua "teacup_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/teacup.lua")
     , testCase "examples/fibonacci.lua wait" $ either assertFailure return
-        =<< lua "fibonacci_wait" (pFX22_32, microarch False SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
+        =<< lua "fibonacci_wait" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
     -- FIXME: uncomment when IO synchronization propogation and SPI will be fixed.
     -- , testCase "examples/fibonacci.lua drop" $ either assertFailure return
-    --     =<< lua "fibonacci_drop" (pFX22_32, microarch True SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
+    --     =<< lua "fibonacci_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
     -- , testCase "examples/pid.lua wait" $ either assertFailure return
-    --     =<< lua "pid_wait" (pFX22_32, microarch False SlaveSPI) $(embedStringFile "examples/pid.lua")
+    --     =<< lua "pid_wait" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/pid.lua")
     -- , testCase "examples/pid.lua drop" $ either assertFailure return
-    --     =<< lua "pid_drop" (pFX22_32, microarch True SlaveSPI) $(embedStringFile "examples/pid.lua")
+    --     =<< lua "pid_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/pid.lua")
     ]
 
 
 test_fixpoint_add =
     [ testCase "send(0.5 - 0.25); send(-1.25 + 2.5)" $ either assertFailure return
-        =<< lua "add" (pFX22_32, microarch True SlaveSPI) add
+        =<< lua "add" (pFX22_32, microarch ASync SlaveSPI) add
     , testCase "send(0.5 - 0.25); send(-1.25 + 2.5)" $ either assertFailure return
-        =<< lua "add" (pFX42_64, microarch True SlaveSPI) add
+        =<< lua "add" (pFX42_64, microarch ASync SlaveSPI) add
     ] where add =
                 [qc|function f()
                         send(0.5 - 0.25)
@@ -203,9 +204,9 @@ test_fixpoint_add =
 
 test_fixpoint_mul =
     [ testCase "send(0.5 * -0.5); send(-20.5 * -2)" $ either assertFailure return
-        =<< lua "mul" (pFX22_32, microarch True SlaveSPI) mul
+        =<< lua "mul" (pFX22_32, microarch ASync SlaveSPI) mul
     , testCase "send(0.5 * -0.5); send(-20.5 * -2)" $ either assertFailure return
-        =<< lua "mul" (pFX42_64, microarch True SlaveSPI) mul
+        =<< lua "mul" (pFX42_64, microarch ASync SlaveSPI) mul
     ] where mul =
                 [qc|function f()
                         send(0.5 * -0.5)
@@ -217,7 +218,7 @@ test_fixpoint_mul =
 
 test_fixpoint_div =
     [ testCase "one time" $ either assertFailure return
-        =<< lua "one_time" (pIntX32, microarch True SlaveSPI)
+        =<< lua "one_time" (pIntX32, microarch ASync SlaveSPI)
             [qc|function f(a)
                     a, _b = a / 2
                     f(a)
@@ -225,7 +226,7 @@ test_fixpoint_div =
                 f(1024)
             |]
     , testCase "two time" $ either assertFailure return
-        =<< lua "two_time" (pIntX32, microarch True SlaveSPI)
+        =<< lua "two_time" (pIntX32, microarch ASync SlaveSPI)
             [qc|function f(a, b)
                     a, _ = a / 2
                     b, _ = b / 3
@@ -234,9 +235,9 @@ test_fixpoint_div =
                 f(1024, 1024)
             |]
     , testCase "a, b = -1.25 / 0.5; c, d = 75 / -2" $ either assertFailure return
-        =<< lua "div" (pFX22_32, microarch True SlaveSPI) alg
+        =<< lua "div" (pFX22_32, microarch ASync SlaveSPI) alg
     , testCase "a, b = -1.25 / 0.5; c, d = 75 / -2" $ either assertFailure return
-        =<< lua "div" (pFX42_64, microarch True SlaveSPI) alg
+        =<< lua "div" (pFX42_64, microarch ASync SlaveSPI) alg
     ] where alg =
                 [qc|function f()
                         a, b = -1.25 / 0.5
@@ -252,21 +253,21 @@ test_fixpoint_div =
 
 test_sum_of_received_values =
     [ testCase "sum of received pIntX32" $ either assertFailure return
-        =<< luaEx "sum_of_received_pIntX32" (pIntX32, microarch False SlaveSPI) received alg
+        =<< luaEx "sum_of_received_pIntX32" (pIntX32, microarch Sync SlaveSPI) received alg
     , testCase "sum of received pIntX48" $ either assertFailure return
-        =<< luaEx "sum_of_received_pIntX48" (pIntX48, microarch False SlaveSPI) received alg
+        =<< luaEx "sum_of_received_pIntX48" (pIntX48, microarch Sync SlaveSPI) received alg
     , testCase "sum of received pIntX64" $ either assertFailure return
-        =<< luaEx "sum_of_received_pIntX64" (pIntX64, microarch False SlaveSPI) received alg
+        =<< luaEx "sum_of_received_pIntX64" (pIntX64, microarch Sync SlaveSPI) received alg
     , testCase "sum of received pIntX128" $ either assertFailure return
-        =<< luaEx "sum_of_received_pIntX128" (pIntX128, microarch False SlaveSPI) received alg
+        =<< luaEx "sum_of_received_pIntX128" (pIntX128, microarch Sync SlaveSPI) received alg
     , testCase "sum of received pIntX32" $ either assertFailure return
-        =<< luaEx "sum_of_received_pIntX32" (pIntX32, microarch False MasterSPI) received alg
+        =<< luaEx "sum_of_received_pIntX32" (pIntX32, microarch Sync MasterSPI) received alg
     , testCase "sum of received pIntX48" $ either assertFailure return
-        =<< luaEx "sum_of_received_pIntX48" (pIntX48, microarch False MasterSPI) received alg
+        =<< luaEx "sum_of_received_pIntX48" (pIntX48, microarch Sync MasterSPI) received alg
     , testCase "sum of received pIntX64" $ either assertFailure return
-        =<< luaEx "sum_of_received_pIntX64" (pIntX64, microarch False MasterSPI) received alg
+        =<< luaEx "sum_of_received_pIntX64" (pIntX64, microarch Sync MasterSPI) received alg
     , testCase "sum of received pIntX128" $ either assertFailure return
-        =<< luaEx "sum_of_received_pIntX128" (pIntX128, microarch False MasterSPI) received alg
+        =<< luaEx "sum_of_received_pIntX128" (pIntX128, microarch Sync MasterSPI) received alg
     ] where
         received = [ ("a:0", [10..15]), ("b:0", [20..25]) ]
         alg = $(embedStringFile "examples/sum.lua")
