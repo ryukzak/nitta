@@ -53,7 +53,7 @@ pFX42_64 = Proxy :: Proxy (FX 42 64)
 
 
 march :: BusNetwork String String Int Int
-march = busNetwork 31 (Just True)
+march = busNetwork 31 Sync
     [ ("fram1", PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO)
     , ("fram2", PU def def FramPorts{ oe=SignalTag 6, wr=SignalTag 7, addr=map SignalTag [8, 9, 10, 11] } FramIO)
     , ("shift", PU def def ShiftPorts{ work=SignalTag 12, direction=SignalTag 13, mode=SignalTag 14, step=SignalTag 15, init=SignalTag 16, oe=SignalTag 17 } ShiftIO)
@@ -66,7 +66,7 @@ march = busNetwork 31 (Just True)
 marchSPI ::
     ( Integral x, Val x
     ) => Bool -> Proxy x -> BusNetwork String String x Int
-marchSPI isSlave _proxy = busNetwork 31 (Just False)
+marchSPI isSlave _proxy = busNetwork 31 Sync
     [ ("fram1", PU def def FramPorts{ oe=SignalTag 11, wr=SignalTag 10, addr=map SignalTag [9, 8, 7, 6] } FramIO)
     , ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } FramIO)
     , ("shift", PU def def ShiftPorts{ work=SignalTag 12, direction=SignalTag 13, mode=SignalTag 14, step=SignalTag 15, init=SignalTag 16, oe=SignalTag 17 } ShiftIO)
@@ -93,7 +93,7 @@ marchSPI isSlave _proxy = busNetwork 31 (Just False)
     ]
 
 
-marchSPIDropData isSlave proxy = (marchSPI isSlave proxy){ bnAllowDrop=Just True }
+marchSPIDropData isSlave proxy = (marchSPI isSlave proxy){ ioSync=ASync }
 
 
 -----------------------------------------------------------
@@ -120,7 +120,7 @@ data IOUnit
     | SlaveSPI
 
 
-microarch ioMode ioUnit = busNetwork 31 (Just ioMode)
+microarch ioSync ioUnit = busNetwork 31 ioSync
     [ ("fram1", PU def def FramPorts{ oe=SignalTag 11, wr=SignalTag 10, addr=map SignalTag [9, 8, 7, 6] } FramIO )
     , ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } FramIO )
     -- , ("shift", PU def S.Ports{ S.work=SignalTag 12, S.direction=SignalTag 13, S.mode=SignalTag 14, S.step=SignalTag 15, S.init=SignalTag 16, S.oe=SignalTag 17 })
@@ -140,7 +140,7 @@ microarch ioMode ioUnit = busNetwork 31 (Just ioMode)
                     , slave_sclk=InputPortTag "sclk"
                     , slave_cs=InputPortTag "cs"
                     }
-            MasterSPI -> PU def (anySPI 0) 
+            MasterSPI -> PU def (anySPI 0)
                 SimpleIOPorts
                     { wr=SignalTag 22, oe=SignalTag 23
                     , stop="stop"

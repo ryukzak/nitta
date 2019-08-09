@@ -7,9 +7,10 @@
 {-# LANGUAGE PartialTypeSignatures     #-}
 {-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE StandaloneDeriving        #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
-{-# OPTIONS -fno-warn-overlapping-patterns #-} -- for master/slave selection
+{-# OPTIONS -fno-warn-overlapping-patterns -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
@@ -51,17 +52,14 @@ data Nitta
         }
     deriving ( Show, Data, Typeable )
 
-data IOSynchronization 
-    = Wait 
-    | Drop 
-    deriving ( Show, Read, Data, Typeable )
+deriving instance Data IOSynchronization
 
 nittaArgs = Nitta
     { web=False &= help "Run web server"
     , port=8080 &= help "WebUI port"
     , npm_build=False &= help "No regenerate WebUI static files"
     , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
-    , io_sync=Wait &= help "IO synchronization mode: wait IO or drop data"
+    , io_sync=Sync &= help "IO synchronization mode: sync, async, onboatd"
     , file=def &= args &= typFile
     }
 
@@ -74,12 +72,9 @@ main = do
     let runner = if web
         then runWebUI port $ lua2functions src
         else runTestbench $ lua2functions src
-    let ioMode = case io_sync of
-            Wait -> False
-            Drop -> True
     case type_ of
-        "fx24.32" -> runner (microarch ioMode :: BusNetwork String String (FX 24 32) Int)
-        "fx32.32" -> runner (microarch ioMode :: BusNetwork String String (FX 32 32) Int)
+        "fx24.32" -> runner (microarch io_sync :: BusNetwork String String (FX 24 32) Int)
+        "fx32.32" -> runner (microarch io_sync :: BusNetwork String String (FX 32 32) Int)
         _ -> error "Wrong bus type"
 
 runWebUI port alg ma = backendServer port $ mkModelWithOneNetwork ma alg
@@ -100,7 +95,7 @@ runTestbench tDFG tMicroArch
 
 -- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
 -- с задачей о целевой платформе.
-microarch ioMode = busNetwork 31 (Just ioMode)
+microarch ioSync = busNetwork 31 ioSync
     [ ("fram1", PU def def FramPorts{ oe=SignalTag 11, wr=SignalTag 10, addr=map SignalTag [9, 8, 7, 6] } FramIO )
     , ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } FramIO )
     -- , ("shift", PU def S.Ports{ S.work=SignalTag 12, S.direction=SignalTag 13, S.mode=SignalTag 14, S.step=SignalTag 15, S.init=SignalTag 16, S.oe=SignalTag 17 })

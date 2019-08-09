@@ -19,6 +19,7 @@ Stability   : experimental
 -}
 module NITTA.Model.Networks.Types
     ( PU(..)
+    , IOSynchronization(..)
     ) where
 
 import qualified Data.Map                         as M
@@ -119,3 +120,10 @@ instance IOTestBench (PU v x t) v x where
 
     testEnvironment tag PU{ unit, systemEnv, ports, ioPorts } _systemEnv _ _ cntxs
         = testEnvironment tag unit systemEnv ports ioPorts cntxs
+
+
+data IOSynchronization 
+    = Sync  -- ^IO cycle synchronously to process cycle
+    | ASync -- ^if IO cycle lag behiend - ignore them
+    | OnBoard -- ^defined by onboard signal (sync - false, async - true)
+    deriving ( Show, Read, Typeable )

@@ -48,7 +48,7 @@ import           Data.Bits                        (FiniteBits (..))
 import           Data.Default
 import qualified Data.List                        as L
 import qualified Data.Map                         as M
-import           Data.Maybe                       (isJust, mapMaybe, fromMaybe)
+import           Data.Maybe                       (isJust, mapMaybe)
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import           Data.Typeable
@@ -88,7 +88,7 @@ data BusNetwork tag v x t = BusNetwork
     -- | Ширина шины управления.
     , bnSignalBusWidth :: Int
     -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
-    , bnAllowDrop      :: Maybe Bool
+    , ioSync           :: IOSynchronization
     , bnEnv            :: TargetEnvironment
     , bnIOPorts        :: IOPorts (BusNetwork tag v x t)
     }
@@ -106,13 +106,13 @@ bindedFunctions puTitle BusNetwork{ bnBinded }
 -- TODO: Проверка подключения сигнальных линий.
 
 -- TODO: Вариант функции, где провода будут подключаться автоматически.
-busNetwork w bnAllowDrop pus = BusNetwork
+busNetwork w ioSync pus = BusNetwork
         { bnRemains=[]
         , bnBinded=M.empty
         , bnProcess=def
         , bnPus=M.fromList pus'
         , bnSignalBusWidth=w
-        , bnAllowDrop
+        , ioSync
         , bnIOPorts=BusNetworkIO{ extInputs, extOutputs }
         , bnEnv
         }
@@ -432,7 +432,7 @@ instance ( VarValTime v x t
 |                        ) control_unit
 |                       ( .clk( clk )
 |                       , .rst( rst )
-|                       , .start_cycle( { maybe "is_drop_allow" bool2verilog bnAllowDrop } || stop )
+|                       , .start_cycle( { isDrowAllowSignal ioSync } || stop )
 |                       , .cycle( cycle )
 |                       , .signals_out( control_bus )
 |                       , .trace_pc( debug_pc )
@@ -524,7 +524,7 @@ instance ( VarValTime v x t
     testBenchImplementation
                 Project
                     { pName
-                    , pUnit=n@BusNetwork{ bnProcess, bnPus, bnAllowDrop }
+                    , pUnit=n@BusNetwork{ bnProcess, bnPus, ioSync }
                     , pTestCntx=pTestCntx@Cntx{ cntxProcess, cntxCycleNumber }
                     } = let
             testEnv = S.join "\\n\\n"
@@ -547,7 +547,7 @@ instance ( VarValTime v x t
 
             assertions = concatMap ( \cycleTickTransfer -> posedgeCycle ++ concatMap assertion cycleTickTransfer ) tickWithTransfers
 
-            assertion ( cycleI, t, Nothing ) 
+            assertion ( cycleI, t, Nothing )
                 = codeLine 2 [qc|@(posedge clk); trace({ cycleI }, { t }, net.data_bus);|]
             assertion ( cycleI, t, Just (v, x) )
                 = codeLine 2 [qc|@(posedge clk); check({ cycleI }, { t }, net.data_bus, { verilogInteger x }, { v });|]
@@ -572,7 +572,7 @@ instance ( VarValTime v x t
 |
 |               // test environment initialization flags
 |               reg { S.join ", " envInitFlags };
-|               assign envInitFlag = { S.join (if fromMaybe undefined bnAllowDrop then " || " else " && ") $ "1'b1" : envInitFlags };
+|               assign env_init_flag = { defEnvInitFlag envInitFlags ioSync };
 |
 |               { moduleName pName n }
 |                   #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -584,7 +584,7 @@ instance ( VarValTime v x t
 |                   { externalIO }
 |                   // if 1 - The process cycle are indipendent from a SPI.
 |                   // else - The process cycle are wait for the SPI.
-|                   , .is_drop_allow( { maybe "is_drop_allow" bool2verilog bnAllowDrop } )
+|                   , .is_drop_allow( { isDrowAllowSignal ioSync } )
 |                   );
 |
 |               { testEnv }
@@ -600,7 +600,7 @@ instance ( VarValTime v x t
 |                       // Start computational cycle from program[1] to program[n] and repeat.
 |                       // Signals effect to mUnit state after first clk posedge.
 |                       @(posedge clk);
-|                       while (!envInitFlag) @(posedge clk);
+|                       while (!env_init_flag) @(posedge clk);
 |{ assertions }
 |                       repeat ( 2000 ) @(posedge clk);
 |                       $finish;
@@ -609,6 +609,10 @@ instance ( VarValTime v x t
 |               endmodule
 |               |]
         where
+            defEnvInitFlag flags Sync = S.join " && "$ "1'b1" : flags
+            defEnvInitFlag flags ASync = S.join " || " $ "1'b1" : flags
+            defEnvInitFlag _flags OnBoard = error "can't generate testbench without specific IOSynchronization"
+
             cntxToTransfer cycleCntx t
                 = case extractInstructionAt n t of
                     Transport v _ _ : _ -> Just (v, either error id $ getX cycleCntx v)
@@ -619,3 +623,8 @@ instance ( VarValTime v x t
 |                       //-----------------------------------------------------------------
 |                       @(posedge cycle);
 |               |]
+
+
+isDrowAllowSignal Sync    = bool2verilog False
+isDrowAllowSignal ASync   = bool2verilog True
+isDrowAllowSignal OnBoard = "is_drop_allow"
