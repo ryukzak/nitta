@@ -344,24 +344,21 @@ instance ( UnitTag tag, VarValTime v x t ) =>
 
 
 instance ( UnitTag tag, VarValTime v x t
-        ) => DecisionProblem (RefactorDT v x)
-                  RefactorDT (BusNetwork tag v x t)
-        where
-    options proxy bn@BusNetwork{ bnPus } = let
+        ) => RefactorProblem (BusNetwork tag v x t) v x where
+    refactorOptions bn@BusNetwork{ bnPus } = let
             insertRegs = L.nub
                 [ InsertOutRegisterO lockBy
                 | (BindingO f tag) <- options binding bn
                 , Lock{ lockBy } <- locks f
                 , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
                 ]
-            breakLoops = concatMap (options proxy) $ M.elems bnPus
+            breakLoops = concatMap refactorOptions $ M.elems bnPus
         in insertRegs ++ breakLoops
 
-
-    decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v')
+    refactorDecision bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v')
         = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
 
-    decision _ bn@BusNetwork{ bnBinded, bnPus } d@(BreakLoopD l i o) = let
+    refactorDecision bn@BusNetwork{ bnBinded, bnPus } d@(BreakLoopD l i o) = let
             Just (puTag, puBinded) = L.find (elem (F l) . snd) $ M.assocs bnBinded
         in bn
             { bnPus=M.adjust (flip refactorDecision d) puTag bnPus

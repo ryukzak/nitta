@@ -192,11 +192,7 @@ instance ( Var v ) => Locks (SerialPU st v x t) v where
     , lockBy <- elems $ variables cFB
     ]
 
-instance DecisionProblem (RefactorDT v x)
-            RefactorDT (SerialPU st v x t)
-        where
-    options _ _ = []
-    decision _ _ _ = undefined
+instance RefactorProblem (SerialPU st v x t) v x
 
 
 -- * Утилиты --------------------------------------------------------

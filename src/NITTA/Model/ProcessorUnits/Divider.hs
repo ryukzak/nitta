@@ -195,11 +195,7 @@ instance ( Var v ) => Locks (Divider v x t) v where
     -- FIXME:
     locks _ = []
 
-instance DecisionProblem (RefactorDT v x)
-            RefactorDT (Divider v x t)
-        where
-    options _ _ = []
-    decision _ _ _ = undefined
+instance RefactorProblem (Divider v x t) v x
 
 
 instance ( VarValTime v x t

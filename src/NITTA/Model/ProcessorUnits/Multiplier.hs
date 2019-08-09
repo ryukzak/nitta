@@ -288,11 +288,7 @@ instance ( Var v ) => Locks (Multiplier v x t) v where
         , lockBy <- sources ++ targets
         ]
 
-instance DecisionProblem (RefactorDT v x)
-            RefactorDT (Multiplier v x t)
-        where
-    options _ _ = []
-    decision _ _ _ = undefined
+instance RefactorProblem (Multiplier v x t) v x
 
 
 -- |Multiplier mUnit construction. Argument define inner organisation of the computation

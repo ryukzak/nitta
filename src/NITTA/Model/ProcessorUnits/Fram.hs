@@ -234,17 +234,13 @@ instance ( Var v ) => Locks (Fram v x t) v where
     -- FIXME:
     locks _ = []
 
-instance ( VarValTime v x t
-        ) => DecisionProblem (RefactorDT v x)
-            RefactorDT (Fram v x t)
-        where
-    options _ Fram{ memory } =
+instance ( VarValTime v x t ) => RefactorProblem (Fram v x t) v x where
+    refactorOptions Fram{ memory } =
         [ BreakLoopO l (LoopOut l o) (LoopIn l i)
         | (_, Cell{ state=NotBrokenLoop, job=Just Job{ function } }) <- A.assocs memory
         , let Just l@(Loop _ o i) = castF function
         ]
-
-    decision _ fram@Fram{ memory } (BreakLoopD l i@(LoopOut _ (O vs)) o) = let
+    refactorDecision fram@Fram{ memory } (BreakLoopD l i@(LoopOut _ (O vs)) o) = let
             Just ( addr, cell@Cell{ history, job=Just Job{ binds } } )
                 = L.find (\case
                     (_, Cell{job=Just Job{ function } }) -> function == F l
@@ -267,7 +263,7 @@ instance ( VarValTime v x t
             { memory=memory A.// [ (addr, cell') ]
             , process_
             }
-    decision _ _ d = error $ "fram not suport refactor: " ++ show d
+    refactorDecision _ d = error $ "fram not suport refactor: " ++ show d
 
 instance ( VarValTime v x t
          ) => DecisionProblem (EndpointDT v t)

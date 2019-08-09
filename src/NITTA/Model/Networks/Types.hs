@@ -41,8 +41,7 @@ data PU v x t where
         , Connected pu
         , DecisionProblem (EndpointDT v t)
             EndpointDT  pu
-        , DecisionProblem (RefactorDT v x)
-            RefactorDT pu
+        , RefactorProblem pu v x
         , ProcessorUnit pu v x t
         , Show (Instruction pu)
         , Simulatable pu v x
@@ -74,13 +73,10 @@ instance ( Ord v ) =>
             , systemEnv
             }
 
-instance DecisionProblem (RefactorDT v x)
-            RefactorDT (PU v x t)
-        where
-    options proxy PU{ unit } 
-        = options proxy unit
-    decision proxy PU{ diff, unit, ports, systemEnv } d 
-        = PU{ diff, unit=decision proxy unit d, ports, systemEnv }
+instance RefactorProblem (PU v x t) v x where
+    refactorOptions PU{ unit } = refactorOptions unit
+    refactorDecision PU{ diff, unit, ports, systemEnv } d 
+        = PU{ diff, unit=refactorDecision unit d, ports, systemEnv }
 
 instance ( VarValTime v x t ) => ProcessorUnit (PU v x t) v x t where
     tryBind fb PU{ diff, unit, ports, systemEnv }

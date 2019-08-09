@@ -269,7 +269,7 @@ data Parameters
         , pNotTransferableInputs :: [Float]
         }
     | RefactorEdgeParameter
-        { pRefactor :: Option (RefactorDT () ())
+        { pRefactor :: RefactorOption () ()
         }
     deriving ( Show, Generic )
 

@@ -62,13 +62,13 @@ instance DecisionType (SynthesisDT (BusNetwork tag v x t)) where
     data Option (SynthesisDT (BusNetwork tag v x t))
         = BindingOption (F v x) tag
         | DataFlowOption (Source tag (TimeConstrain t)) (Target tag v (TimeConstrain t))
-        | RefactorOption (Option (RefactorDT v x))
+        | RefactorOption (RefactorOption v x)
         deriving ( Generic, Show )
 
     data Decision (SynthesisDT (BusNetwork tag v x t))
         = BindingDecision (F v x) tag
         | DataFlowDecision (Source tag (Interval t)) (Target tag v (Interval t))
-        | RefactorDecision (Decision (RefactorDT v x))
+        | RefactorDecision (RefactorDecision v x)
         deriving ( Generic, Show )
 
 

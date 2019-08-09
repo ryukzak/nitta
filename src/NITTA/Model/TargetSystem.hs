@@ -66,24 +66,22 @@ instance ( UnitTag tag, VarValTime v x t
     decision _ f@ModelState{ mUnit } d = f{ mUnit=decision dataFlowDT mUnit d }
 
 instance ( UnitTag tag, VarValTime v x t
-         ) => DecisionProblem (RefactorDT v x)
-                RefactorDT (ModelState (BusNetwork tag v x t) v x)
-        where
-    options _ ModelState{ mUnit } = refactorOptions mUnit
+        ) => RefactorProblem (ModelState (BusNetwork tag v x t) v x) v x where
+    refactorOptions ModelState{ mUnit } = refactorOptions mUnit
 
-    decision _ ModelState{ mUnit, mDataFlowGraph } d@(InsertOutRegisterD v v')
+    refactorDecision ModelState{ mUnit, mDataFlowGraph } d@(InsertOutRegisterD v v')
         = ModelState
             { mDataFlowGraph=patch (v, v') mDataFlowGraph
             , mUnit=refactorDecision mUnit d
             }
-    decision _ ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } d@(BreakLoopD l i o) = let
+    refactorDecision ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } d@(BreakLoopD l i o) = let
                 revokeLoop = leafs L.\\ [ DFLeaf $ F l ]
                 addLoopParts = [ DFLeaf $ F i, DFLeaf $ F o ] ++ revokeLoop
         in ModelState
             { mDataFlowGraph=DFCluster $ addLoopParts
             , mUnit=refactorDecision mUnit d
             }
-    decision _ _ _ = undefined
+    refactorDecision _ _ = undefined
 
 
 -- |Data flow graph - intermediate representation of application algorithm.
