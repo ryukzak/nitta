@@ -20,7 +20,7 @@ Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Divider
     ( divider
-    , Ports(..)
+    , Ports(..), IOPorts(..)
     ) where
 
 import           Control.Monad                    (void, when)
@@ -42,7 +42,7 @@ import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           NITTA.Utils.Process
+import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (Interval, inf, intersection,
                                                    singleton, sup, width, (...))
 import           Text.InterpolatedString.Perl6    (qc)
@@ -335,6 +335,9 @@ instance Connected (Divider v x t) where
         = DividerPorts{ wr, wrSel, oe, oeSel :: SignalTag }
         deriving ( Show )
 
+instance IOConnected (Divider v x t) where
+    data IOPorts (Divider v x t) = DividerIO
+        deriving ( Show )
 
 instance ( Val x, Show t
          ) => TargetSystemComponent (Divider v x t) where
@@ -357,6 +360,7 @@ instance ( Val x, Show t
                 , signalRst
                 }
             DividerPorts{ oe, oeSel, wr, wrSel }
+            DividerIO
         = fixIndent [qc|
 |           pu_div #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -378,7 +382,7 @@ instance ( Val x, Show t
 |               , .attr_out( { attrOut } )
 |               );
 |           |]
-    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
 
@@ -397,6 +401,7 @@ instance ( VarValTime v x t, Integral x
                     , wr=SignalTag 2
                     , wrSel=SignalTag 3
                     }
+                , tbcIOPorts=DividerIO
                 , tbcSignalConnect= \case
                     (SignalTag 0) -> "oe"
                     (SignalTag 1) -> "oeSel"

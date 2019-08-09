@@ -7,9 +7,10 @@
 {-# LANGUAGE PartialTypeSignatures     #-}
 {-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE StandaloneDeriving        #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
-{-# OPTIONS -fno-warn-overlapping-patterns #-} -- for master/slave selection
+{-# OPTIONS -fno-warn-overlapping-patterns -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
@@ -51,17 +52,14 @@ data Nitta
         }
     deriving ( Show, Data, Typeable )
 
-data IOSynchronization 
-    = Wait 
-    | Drop 
-    deriving ( Show, Read, Data, Typeable )
+deriving instance Data IOSynchronization
 
 nittaArgs = Nitta
     { web=False &= help "Run web server"
     , port=8080 &= help "WebUI port"
     , npm_build=False &= help "No regenerate WebUI static files"
     , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
-    , io_sync=Wait &= help "IO synchronization mode: wait IO or drop data"
+    , io_sync=Sync &= help "IO synchronization mode: sync, async, onboatd"
     , file=def &= args &= typFile
     }
 
@@ -74,12 +72,9 @@ main = do
     let runner = if web
         then runWebUI port $ lua2functions src
         else runTestbench $ lua2functions src
-    let ioMode = case io_sync of
-            Wait -> False
-            Drop -> True
     case type_ of
-        "fx24.32" -> runner (microarch ioMode :: BusNetwork String String (FX 24 32) Int)
-        "fx32.32" -> runner (microarch ioMode :: BusNetwork String String (FX 32 32) Int)
+        "fx24.32" -> runner (microarch io_sync :: BusNetwork String String (FX 24 32) Int)
+        "fx32.32" -> runner (microarch io_sync :: BusNetwork String String (FX 32 32) Int)
         _ -> error "Wrong bus type"
 
 runWebUI port alg ma = backendServer port $ mkModelWithOneNetwork ma alg
@@ -100,30 +95,31 @@ runTestbench tDFG tMicroArch
 
 -- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
 -- с задачей о целевой платформе.
-microarch ioMode = busNetwork 31 (Just ioMode)
-    [ ("fram1", PU def def FramPorts{ oe=SignalTag 11, wr=SignalTag 10, addr=map SignalTag [9, 8, 7, 6] } )
-    , ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } )
+microarch ioSync = busNetwork 31 ioSync
+    [ ("fram1", PU def def FramPorts{ oe=SignalTag 11, wr=SignalTag 10, addr=map SignalTag [9, 8, 7, 6] } FramIO )
+    , ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } FramIO )
     -- , ("shift", PU def S.Ports{ S.work=SignalTag 12, S.direction=SignalTag 13, S.mode=SignalTag 14, S.step=SignalTag 15, S.init=SignalTag 16, S.oe=SignalTag 17 })
-    , ("accum", PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } )
+    , ("accum", PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
     , ("spi", PU def
         (anySPI 0)
-        SPIPorts
+        SimpleIOPorts
             { wr=SignalTag 22, oe=SignalTag 23
             , stop="stop"
-            , externalPorts=case "slave" of
-                "slave" -> Slave
-                    { slave_mosi=InputPortTag "mosi"
-                    , slave_miso=OutputPortTag "miso"
-                    , slave_sclk=InputPortTag "sclk"
-                    , slave_cs=InputPortTag "cs"
-                    }
-                "master" -> Master
-                    { master_mosi=OutputPortTag "mosi"
-                    , master_miso=InputPortTag "miso"
-                    , master_sclk=OutputPortTag "sclk"
-                    , master_cs=OutputPortTag "cs"
-                    }
-            })
-    , ("mul", PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } )
-    , ("div", PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } )
+            }
+        $ case "slave" of
+            "slave" -> SPISlave
+                { slave_mosi=InputPortTag "mosi"
+                , slave_miso=OutputPortTag "miso"
+                , slave_sclk=InputPortTag "sclk"
+                , slave_cs=InputPortTag "cs"
+                }
+            "master" -> SPIMaster
+                { master_mosi=OutputPortTag "mosi"
+                , master_miso=InputPortTag "miso"
+                , master_sclk=OutputPortTag "sclk"
+                , master_cs=OutputPortTag "cs"
+                }
+        )
+    , ("mul", PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
+    , ("div", PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO )
     ]

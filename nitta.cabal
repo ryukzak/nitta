@@ -31,6 +31,8 @@ library
                      , NITTA.Model.ProcessorUnits
                      , NITTA.Model.ProcessorUnits.Divider
                      , NITTA.Model.ProcessorUnits.Fram
+                     , NITTA.Model.ProcessorUnits.IO.I2C
+                     , NITTA.Model.ProcessorUnits.IO.SimpleIO
                      , NITTA.Model.ProcessorUnits.IO.SPI
                      , NITTA.Model.ProcessorUnits.Multiplier
                      , NITTA.Model.ProcessorUnits.Serial.Accum
@@ -60,7 +62,7 @@ library
                      , NITTA.UIBackend.VisJS.Types
                      , NITTA.Utils
                      , NITTA.Utils.Lens
-                     , NITTA.Utils.Process
+                     , NITTA.Utils.ProcessDescription
   build-depends:       aeson
                      , array
                      , base

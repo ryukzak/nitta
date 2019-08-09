@@ -19,7 +19,7 @@ Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Serial.Shift
   ( Shift
-  , Ports(..)
+  , Ports(..), IOPorts(..)
   )
   where
 
@@ -142,6 +142,8 @@ instance Connected (Shift v x t) where
   data Ports (Shift v x t)
     = ShiftPorts{ work, direction, mode, step, init, oe :: SignalTag } deriving ( Show )
 
+instance IOConnected (Shift v x t) where
+  data IOPorts (Shift v x t) = ShiftIO
 
 instance ( VarValTime v x t ) => Simulatable (Shift v x t) v x where
   simulateOn cntx _ f
@@ -153,7 +155,7 @@ instance ( Val x ) => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"
     hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
     software _ _ = Empty
-    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } ShiftPorts{..}
+    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } ShiftPorts{..} ShiftIO
         = fixIndent [qc|
 |           pu_shift #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -169,7 +171,7 @@ instance ( Val x ) => TargetSystemComponent (Shift v x t) where
 |               , .attr_out( { attrOut } )
 |               );
 |           |]
-    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _op
         = error "Should be defined in network."
 
 instance IOTestBench (Shift v x t) v x

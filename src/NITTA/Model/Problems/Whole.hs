@@ -28,7 +28,6 @@ module NITTA.Model.Problems.Whole
 import           Control.Arrow                    (second)
 import qualified Data.Map                         as M
 import           Data.Maybe
-import           Data.Proxy
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
