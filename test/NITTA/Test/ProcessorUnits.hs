@@ -235,7 +235,7 @@ processAlgOnEndpointGen pu0 algGen' = do
                 ( [], [] ) -> return ( pu, fPassed )
                 ( _:_, _ ) -> do
                     i <- choose (0, length refs - 1)
-                    inner fRemain fPassed $ refactorDecision pu $ refactorOption2decision (refs !! i)
+                    inner fRemain fPassed $ refactorDecision pu (refs !! i)
                 ( _, _:_ ) -> do
                     i <- choose (0, length other - 1)
                     case other !! i of

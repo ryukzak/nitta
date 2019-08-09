@@ -62,17 +62,17 @@ instance DecisionType (SynthesisDT (BusNetwork tag v x t)) where
     data Option (SynthesisDT (BusNetwork tag v x t))
         = BindingOption (F v x) tag
         | DataFlowOption (Source tag (TimeConstrain t)) (Target tag v (TimeConstrain t))
-        | RefactorOption (RefactorOption v x)
+        | RefactorOption (Refactor v x)
         deriving ( Generic, Show )
 
     data Decision (SynthesisDT (BusNetwork tag v x t))
         = BindingDecision (F v x) tag
         | DataFlowDecision (Source tag (Interval t)) (Target tag v (Interval t))
-        | RefactorDecision (RefactorDecision v x)
+        | RefactorDecision (Refactor v x)
         deriving ( Generic, Show )
 
 
-instance ( UnitTag tag, VarValTime v x t
+instance ( UnitTag tag, VarValTime v x t, Semigroup v
          ) => DecisionProblem (SynthesisDT (BusNetwork tag v x t))
                   SynthesisDT (ModelState (BusNetwork tag v x t) v x)
         where
@@ -100,4 +100,4 @@ option2decision (DataFlowOption src trg)
         mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
     in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
-option2decision (RefactorOption o) = RefactorDecision $ refactorOption2decision o
+option2decision (RefactorOption o) = RefactorDecision o

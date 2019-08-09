@@ -19,16 +19,13 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.Problems.Refactor
-    ( RefactorOption(..), RefactorDecision(..), RefactorProblem(..)
-    , refactorOption2decision
+    ( Refactor(..), RefactorProblem(..)
     ) where
 
-import           Data.Proxy
 import           GHC.Generics
 import           NITTA.Intermediate.Functions
-import           NITTA.Model.Problems.Types
 
-data RefactorOption v x
+data Refactor v x
     -- |Example:
     --
     -- >>> f1 :: (...) -> (a)
@@ -38,21 +35,14 @@ data RefactorOption v x
     -- f1 :: (...) -> (a)
     -- reg :: a -> buf_a
     -- f2 :: (buf_a, ...) -> (...)
-    = InsertOutRegisterO v
+    = InsertOutRegister v v
     -- |Example: l = Loop (X x) (O o) (I i) -> LoopIn l (I i), LoopOut (I o)
-    | BreakLoopO (Loop v x) (LoopOut v x) (LoopIn v x)
+    | BreakLoop (Loop v x) (LoopOut v x) (LoopIn v x)
     deriving ( Generic, Show, Eq )
 
-data RefactorDecision v x
-        = InsertOutRegisterD v v
-        | BreakLoopD (Loop v x) (LoopOut v x) (LoopIn v x)
-        deriving ( Generic, Show )
-
 class RefactorProblem u v x | u -> v x where
-  refactorOptions :: u -> [ RefactorOption v x ]
+  refactorOptions :: u -> [ Refactor v x ]
   refactorOptions _ = []
-  refactorDecision :: u -> RefactorDecision v x -> u
+  refactorDecision :: u -> Refactor v x -> u
   refactorDecision _ _ = error "not implemented"
 
-refactorOption2decision (InsertOutRegisterO v) = InsertOutRegisterD v (v <> v)
-refactorOption2decision (BreakLoopO origin src trg) = BreakLoopD origin src trg

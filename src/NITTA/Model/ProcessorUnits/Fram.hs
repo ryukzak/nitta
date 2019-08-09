@@ -236,11 +236,11 @@ instance ( Var v ) => Locks (Fram v x t) v where
 
 instance ( VarValTime v x t ) => RefactorProblem (Fram v x t) v x where
     refactorOptions Fram{ memory } =
-        [ BreakLoopO l (LoopOut l o) (LoopIn l i)
+        [ BreakLoop l (LoopOut l o) (LoopIn l i)
         | (_, Cell{ state=NotBrokenLoop, job=Just Job{ function } }) <- A.assocs memory
         , let Just l@(Loop _ o i) = castF function
         ]
-    refactorDecision fram@Fram{ memory } (BreakLoopD l i@(LoopOut _ (O vs)) o) = let
+    refactorDecision fram@Fram{ memory } (BreakLoop l i@(LoopOut _ (O vs)) o) = let
             Just ( addr, cell@Cell{ history, job=Just Job{ binds } } )
                 = L.find (\case
                     (_, Cell{job=Just Job{ function } }) -> function == F l

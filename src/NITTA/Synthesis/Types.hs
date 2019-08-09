@@ -269,7 +269,7 @@ data Parameters
         , pNotTransferableInputs :: [Float]
         }
     | RefactorEdgeParameter
-        { pRefactor :: RefactorOption () ()
+        { pRefactor :: Refactor () ()
         }
     deriving ( Show, Generic )
 
@@ -339,8 +339,10 @@ estimateParameters ObjectiveFunctionConf{} ParametersCntx{ transferableVars, nMo
                 notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
             in map (fromIntegral . length) notTransferableVars
         }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption InsertOutRegisterO{}) = RefactorEdgeParameter (InsertOutRegisterO ())
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption BreakLoopO{}) = RefactorEdgeParameter (BreakLoopO undefined undefined undefined)
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption InsertOutRegister{}) 
+    = RefactorEdgeParameter $ InsertOutRegister undefined undefined
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption BreakLoop{}) 
+    = RefactorEdgeParameter $ BreakLoop undefined undefined undefined
 
 
 -- |Function, which map 'Parameters' to 'Float'.
@@ -365,9 +367,9 @@ objectiveFunction
                 + pRestrictedTime <?> 200
                 - sum pNotTransferableInputs * 5
                 - pWaitTime
-        (RefactorEdgeParameter InsertOutRegisterO{})
+        (RefactorEdgeParameter InsertOutRegister{})
             -> 2000
-        (RefactorEdgeParameter BreakLoopO{})
+        (RefactorEdgeParameter BreakLoop{})
             -> 2000
 
 True <?> v = v

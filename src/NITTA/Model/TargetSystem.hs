@@ -65,16 +65,16 @@ instance ( UnitTag tag, VarValTime v x t
     options _ ModelState{ mUnit }      = options dataFlowDT mUnit
     decision _ f@ModelState{ mUnit } d = f{ mUnit=decision dataFlowDT mUnit d }
 
-instance ( UnitTag tag, VarValTime v x t
+instance ( UnitTag tag, VarValTime v x t, Semigroup v
         ) => RefactorProblem (ModelState (BusNetwork tag v x t) v x) v x where
     refactorOptions ModelState{ mUnit } = refactorOptions mUnit
 
-    refactorDecision ModelState{ mUnit, mDataFlowGraph } d@(InsertOutRegisterD v v')
+    refactorDecision ModelState{ mUnit, mDataFlowGraph } d@(InsertOutRegister v v')
         = ModelState
             { mDataFlowGraph=patch (v, v') mDataFlowGraph
             , mUnit=refactorDecision mUnit d
             }
-    refactorDecision ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } d@(BreakLoopD l i o) = let
+    refactorDecision ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } d@(BreakLoop l i o) = let
                 revokeLoop = leafs L.\\ [ DFLeaf $ F l ]
                 addLoopParts = [ DFLeaf $ F i, DFLeaf $ F o ] ++ revokeLoop
         in ModelState
