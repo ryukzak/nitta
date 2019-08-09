@@ -35,9 +35,7 @@ module NITTA.Intermediate.Functions
     , Sub(..), sub
     -- *Memory
     , Constant(..), constant
-    , FramInput(..), framInput
-    , FramOutput(..), framOutput
-    , Loop(..), loop
+    , Loop(..), loop, isLoop, LoopIn(..), LoopOut(..)
     , Reg(..), reg
     -- *Input/Output
     , Receive(..), receive
@@ -56,31 +54,52 @@ import           NITTA.Utils
 
 
 
-data FramInput v x = FramInput Int (O v) deriving ( Typeable, Eq, Show )
-framInput addr vs = F $ FramInput addr $ O $ fromList vs
+data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq )
+instance {-# OVERLAPS #-} ( Show x, Label v ) => Label (Loop v x) where
+    label (Loop (X x) _ (I b)) = show x ++ "->" ++ label b
+instance ( Show v, Show x ) => Show (Loop v x) where
+    show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join ", " (map show $ elems k2)
+loop x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
+isLoop f 
+    | Just Loop{} <- castF f = True
+    | otherwise = False
 
-instance ( Ord v ) => Function (FramInput v x) v where
-    outputs (FramInput _ o) = variables o
+instance ( Ord v ) => Function (Loop v x) v where
+    inputs  (Loop _ _a b) = variables b
+    outputs (Loop _ a _b) = variables a
+instance ( Ord v ) => Patch (Loop v x) (v, v) where
+    patch diff (Loop x a b) = Loop x (patch diff a) (patch diff b)
+instance ( Var v ) => Locks (Loop v x) v where
+    locks _ = []
+instance ( Var v ) => FunctionSimulation (Loop v x) v x where
+    simulate cntx@CycleCntx{ cycleCntx } (Loop (X x) (O vs) (I _))
+        = case cycleCntx M.!? oneOf vs of
+            -- if output variables are defined - nothing to do (values thrown on upper level)
+            Just _  -> return cntx
+            -- if output variables are not defined - set initial value
+            Nothing -> setZipX cntx vs x
+
+
+data LoopOut v x = LoopOut (Loop v x) (O v) deriving ( Typeable, Eq, Show )
+instance ( Ord v ) => Function (LoopOut v x) v where
+    outputs (LoopOut _ o) = variables o
     isInternalLockPossible _ = True
-instance ( Ord v ) => Patch (FramInput v x) (v, v) where
-    patch diff (FramInput x a) = FramInput x $ patch diff a
-instance ( Var v ) => Locks (FramInput v x) v where locks _ = []
-instance FunctionSimulation (FramInput v x) v x where
-    simulate = undefined
+instance ( Ord v ) => Patch (LoopOut v x) (v, v) where
+    patch diff (LoopOut x a) = LoopOut x $ patch diff a
+instance ( Var v ) => Locks (LoopOut v x) v where locks _ = []
+instance ( Var v ) => FunctionSimulation (LoopOut v x) v x where
+    simulate cntx (LoopOut l _) = simulate cntx l
 
 
-
-data FramOutput v x = FramOutput Int (I v) deriving ( Typeable, Eq, Show )
-framOutput addr v = F $ FramOutput addr $ I v
-
-instance ( Ord v ) => Function (FramOutput v x) v where
-    inputs (FramOutput _ o) = variables o
+data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq, Show )
+instance ( Ord v ) => Function (LoopIn v x) v where
+    inputs (LoopIn _ o) = variables o
     isInternalLockPossible _ = True
-instance ( Ord v ) => Patch (FramOutput v x) (v, v) where
-    patch diff (FramOutput x a) = FramOutput x $ patch diff a
-instance ( Var v ) => Locks (FramOutput v x) v where locks _ = []
-instance FunctionSimulation (FramOutput v x) v x where
-    simulate = undefined
+instance ( Ord v ) => Patch (LoopIn v x) (v, v) where
+    patch diff (LoopIn x a) = LoopIn x $ patch diff a
+instance ( Var v ) => Locks (LoopIn v x) v where locks _ = []
+instance ( Var v ) => FunctionSimulation (LoopIn v x) v x where
+    simulate cntx (LoopIn l _) = simulate cntx l
 
 
 
@@ -103,29 +122,6 @@ instance ( Var v ) => FunctionSimulation (Reg v x) v x where
         setZipX cntx vs x
 
 
-
-data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq )
-instance {-# OVERLAPS #-} ( Show x, Label v ) => Label (Loop v x) where
-    label (Loop (X x) _ (I b)) = show x ++ "->" ++ label b
-instance ( Show v, Show x ) => Show (Loop v x) where
-    show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join ", " (map show $ elems k2)
-loop x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
-
-instance ( Ord v ) => Function (Loop v x) v where
-    inputs  (Loop _ _a b) = variables b
-    outputs (Loop _ a _b) = variables a
-    isBreakLoop _ = True
-instance ( Ord v ) => Patch (Loop v x) (v, v) where
-    patch diff (Loop x a b) = Loop x (patch diff a) (patch diff b)
-instance ( Var v ) => Locks (Loop v x) v where
-    locks _ = []
-instance ( Var v ) => FunctionSimulation (Loop v x) v x where
-    simulate cntx@CycleCntx{ cycleCntx } (Loop (X x) (O vs) (I _))
-        = case cycleCntx M.!? oneOf vs of
-            -- if output variables are defined - nothing to do (values thrown on upper level)
-            Just _  -> return cntx
-            -- if output variables are not defined - set initial value
-            Nothing -> setZipX cntx vs x
 
 instance {-# OVERLAPS #-} ( Var v ) => ToVizJS (Loop v x) where
     toVizJS (Loop _ (O a) (I b))
@@ -156,7 +152,7 @@ instance ( Var v, Num x ) => FunctionSimulation (Add v x) v x where
     simulate cntx (Add (I v1) (I v2) (O vs)) = do
         x1 <- cntx `getX` v1
         x2 <- cntx `getX` v2
-        let x3 = x1 + x2
+        let x3 = x1 + x2 -- + 1 -- can be used for checking test working
         setZipX cntx vs x3
 
 

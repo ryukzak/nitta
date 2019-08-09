@@ -150,12 +150,14 @@ runTargetSynthesis TargetSynthesis
             } = do
     tDFG' <- maybe (return tDFG) translateToIntermediate tSourceCode
     rootNode <- mkRootNodeIO (mkModelWithOneNetwork tMicroArch tDFG')
-    synthesis rootNode >>= \case
+    synthesisResult <- synthesis rootNode
+    case synthesisResult of
         Left err -> return $ Left err
-        Right leafNode -> fmap Right $ do
+        Right leafNode -> do
             let prj = project leafNode
             write prj
-            testbench prj
+            report <- testbench prj
+            return $ Right report
     where
         translateToIntermediate src = do
             when tVerbose $ putStrLn "lua transpiler"
@@ -188,17 +190,18 @@ runTargetSynthesis TargetSynthesis
 
         testbench prj = do
             when tVerbose $ putStrLn "run testbench"
-            report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestbench prj
+            report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump, tbLogicalSimulationCntx } <- runTestbench prj
             when tVerbose $ case tbStatus of
                 True  -> putStrLn "run testbench - ok"
                 False -> do
                     putStrLn "run testbench - fail"
                     putStrLn "-----------------------------------------------------------"
                     putStrLn "testbench compiler dump:"
-                    putStrLn tbCompilerDump
+                    putStrLn $ unlines tbCompilerDump
                     putStrLn "-----------------------------------------------------------"
                     putStrLn "testbench simulation dump:"
-                    putStrLn tbSimulationDump
+                    putStrLn $ unlines tbSimulationDump
+                    putStrLn $ show tbLogicalSimulationCntx
             return report
 
 

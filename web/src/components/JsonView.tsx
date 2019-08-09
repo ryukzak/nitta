@@ -30,6 +30,7 @@ export class JsonView extends React.Component<JsonViewProps, JsonViewState> {
             isHiddenJsonView: props.show
         };
         this.toggleDiv = this.toggleDiv.bind(this);
+        // FIXME:
         this.reloadChart(props.jsonData);
     }
 

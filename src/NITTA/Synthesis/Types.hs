@@ -62,6 +62,7 @@ import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Transport
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.Problems.Whole
@@ -81,7 +82,7 @@ type SG m tag v x t = m (ModelState (BusNetwork tag v x t) v x) (SynthesisDT (Bu
 newtype NId = NId [Int]
 
 -- |NId separator for @Show NId@ and @Read NId@.
-nIdSep = ':'
+nIdSep = '-'
 
 instance Show NId where
     show (NId []) = [nIdSep]
@@ -217,7 +218,7 @@ prepareParametersCntx Node{ nModel } = let
             | (DataFlowOption _ targets) <- opts
             , (v, Just _) <- M.assocs targets
             ]
-        , alreadyBindedVariables = bindedVars $ mUnit nModel
+        , alreadyBindedVariables = variables $ mUnit nModel
         , waves = M.fromList $ mkWaves 0
             (unionsMap variables bindableFunctions)
             (fromList (map locked $ concatMap locks bindableFunctions))
@@ -240,7 +241,7 @@ prepareParametersCntx Node{ nModel } = let
 data Parameters
     = BindEdgeParameter
         { -- |Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
-          -- другими. Пример - занятие Loop-ом адреса, используемого FramInput.
+          -- другими. Пример - занятие Loop-ом адреса, используемого LoopOut.
           pCritical                :: Bool
           -- |Колличество альтернативных привязок для функционального блока.
         , pAlternative             :: Float
@@ -268,6 +269,8 @@ data Parameters
         , pNotTransferableInputs :: [Float]
         }
     | RefactorEdgeParameter
+        { pRefactor :: Option (RefactorDT () ())
+        }
     deriving ( Show, Generic )
 
 
@@ -318,8 +321,7 @@ estimateParameters
                 n = fromIntegral $ length $ intersection is alreadyBindedVariables
                 nAll = fromIntegral $ length is
             in if nAll == 0 then 1 else n / nAll
-        , pWave=if isBreakLoop f then 0
-                else let
+        , pWave=let
                     allInputs = S.elems $ inputs f
                     ns = map (\v -> fromMaybe 0 (waves M.!? v)) allInputs
                 in fromIntegral $ maximum (0 : ns)
@@ -337,7 +339,8 @@ estimateParameters ObjectiveFunctionConf{} ParametersCntx{ transferableVars, nMo
                 notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
             in map (fromIntegral . length) notTransferableVars
         }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} RefactorOption{} = RefactorEdgeParameter
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption InsertOutRegisterO{}) = RefactorEdgeParameter (InsertOutRegisterO ())
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption BreakLoopO{}) = RefactorEdgeParameter (BreakLoopO undefined undefined undefined)
 
 
 -- |Function, which map 'Parameters' to 'Float'.
@@ -362,7 +365,9 @@ objectiveFunction
                 + pRestrictedTime <?> 200
                 - sum pNotTransferableInputs * 5
                 - pWaitTime
-        RefactorEdgeParameter{}
+        (RefactorEdgeParameter InsertOutRegisterO{})
+            -> 2000
+        (RefactorEdgeParameter BreakLoopO{})
             -> 2000
 
 True <?> v = v

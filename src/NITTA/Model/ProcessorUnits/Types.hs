@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE StandaloneDeriving     #-}
@@ -22,10 +23,10 @@ Stability   : experimental
 module NITTA.Model.ProcessorUnits.Types
     ( UnitTag
     , ProcessorUnit(..), Simulatable(..), Controllable(..), UnambiguouslyDecode(..)
-    , Process(..), ProcessUid, Step(..), PlaceInTime(..), StepInfo(..), Relation(..)
+    , Process(..), ProcessUid, Step(..), StepInfo(..), Relation(..)
     , descent, whatsHappen, extractInstructionAt
     , bind, allowToProcess
-    , level, showPU
+    , showPU
     , Connected(..), SignalTag(..), InputPortTag(..), OutputPortTag(..), SignalValue(..), (+++)
     , ByTime(..)
     ) where
@@ -119,8 +120,8 @@ instance ( Default t ) => Default (Process v x t) where
 instance WithFunctions (Process v x t) (F v x) where
     functions Process{ steps } = mapMaybe get steps
         where
-            get step | Step{ sDesc=FStep f } <- descent step = Just f
-            get _    = Nothing
+            get Step{ sDesc } | FStep f <- descent sDesc = Just f
+            get _             = Nothing
 
 
 
@@ -130,7 +131,7 @@ type ProcessUid = Int -- ^Уникальный идентификатор шаг
 data Step v x t
     = Step
         { sKey  :: ProcessUid    -- ^Уникальный идентификатор шага.
-        , sTime :: PlaceInTime t -- ^Описание типа и положения шага во времени.
+        , sTime :: Interval t -- ^Описание типа и положения шага во времени.
         , sDesc :: StepInfo v x t -- ^Описание действия описываемого шага.
         }
     deriving ( Show )
@@ -138,12 +139,6 @@ data Step v x t
 instance ( Ord v ) => Patch (Step v x t) (Diff v) where
     patch diff step@Step{ sDesc } = step{ sDesc=patch diff sDesc }
 
-
--- |Описание положения события во времени и типа события:
-data PlaceInTime t
-    = Event t -- ^Мгновенные события, используются главным образом для описания событий САПР.
-    | Activity ( Interval t ) -- ^Протяжённые во времени события. Используются замкнутые интервалы.
-    deriving ( Show )
 
 -- |Описание события, соответсвующего шага вычислительного процесса. Каждый вариант соответствует
 -- соответствующему отдельному уровню организации вычислительного процесса.
@@ -170,15 +165,15 @@ data StepInfo v x t where
             , nStep :: Step v x t
             } -> StepInfo v x t
 
-descent Step{ sDesc=NestedStep _ step } = descent step
-descent step                            = step
+descent (NestedStep _ step) = descent $ sDesc step
+descent desc                = desc
 
 instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show (CADStep s)                 = s
     show (FStep (F f))               = show f
     show (EndpointRoleStep eff)      = show eff
     show (InstructionStep instr)     = show instr
-    show NestedStep{ nTitle, nStep } = show nTitle ++ "." ++ show nStep
+    show NestedStep{ nTitle, nStep } = S.replace "\"" "" (show nTitle) ++ "." ++ show nStep
 
 instance ( Ord v ) => Patch (StepInfo v x t) (Diff v) where
     patch diff (FStep f)              = FStep $ patch diff f
@@ -186,13 +181,6 @@ instance ( Ord v ) => Patch (StepInfo v x t) (Diff v) where
     patch diff (NestedStep tag nStep) = NestedStep tag $ patch diff nStep
     patch _    i                      = i
 
-
--- |Получить строку с название уровня указанного шага вычислительного процесса.
-level CADStep{}           = "CAD"
-level FStep{}             = "Function"
-level EndpointRoleStep{}  = "Endpoint"
-level InstructionStep{}   = "Instruction"
-level (NestedStep _ step) = level $ sDesc $ descent step
 
 showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
     where
@@ -259,7 +247,7 @@ instance ( Show (Instruction pu)
     microcodeAt pu t = case extractInstructionAt pu t of
         []  -> def
         [i] -> decodeInstruction i
-        is  -> error $ "Ambiguously instruction at " ++ show t ++ ": " ++ show is
+        is  -> error $ "instruction collision at " ++ show t ++ " tick: " ++ show is ++ show (process pu)
 
 
 whatsHappen t Process{ steps } = filter (atSameTime t . sTime) steps
@@ -271,8 +259,7 @@ extractInstructionAt pu t = mapMaybe (inst pu) $ whatsHappen t $ process pu
         inst _ _                                   = Nothing
 
 
-atSameTime a (Activity t) = a `member` t
-atSameTime a (Event t)    = a == t
+atSameTime a ti = a `member` ti
 
 
 -- |Декодирование инструкции в микрокод.

@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -44,6 +45,7 @@ import qualified Data.Set                    as S
 import qualified Data.String.Utils           as S
 import           Data.Tuple
 import           Data.Typeable
+import           GHC.Generics
 import           NITTA.Intermediate.Values
 import           NITTA.UIBackend.VisJS.Types
 
@@ -128,9 +130,6 @@ class Function f v | f -> v where
     -- |Get all output variables.
     outputs :: f -> S.Set v
     outputs _ = S.empty
-    -- |Is function break evaluation loop (throw data to a next loop).
-    isBreakLoop :: f -> Bool
-    isBreakLoop _ = False
     -- |Sometimes, one function can cause internal process unit lock for another function.
     isInternalLockPossible :: f -> Bool
     isInternalLockPossible _ = False
@@ -154,7 +153,6 @@ instance Eq (F v x) where
     F a == F b = show a == show b
 
 instance Function (F v x) v where
-    isBreakLoop (F f) = isBreakLoop f
     isInternalLockPossible (F f) = isInternalLockPossible f
     inputs (F f) = inputs f
     outputs (F f) = outputs f
@@ -214,16 +212,15 @@ class FunctionSimulation f v x | f -> v x where
 
 
 data CycleCntx v x = CycleCntx{ cycleCntx :: M.Map v x }
-    deriving ( Show )
+    deriving ( Show, Generic )
 
 instance Default (CycleCntx v x) where
     def = CycleCntx def
 
 data Cntx v x
     = Cntx
-        { cntxProcess     :: [ CycleCntx v x ]
-        , cntxReceived    :: M.Map v [x]
-        , cntxThrown      :: [ (v, [v]) ]
+        { cntxProcess     :: [ CycleCntx v x ] -- ^ all variables on each process cycle
+        , cntxReceived    :: M.Map v [x] -- ^ sequences of all recieved values, one value per process cycle
         , cntxCycleNumber :: Int
         }
 instance {-# OVERLAPS #-} ( Show v, Show x ) => Show (Cntx v x) where
@@ -238,7 +235,6 @@ instance Default (Cntx v x) where
     def = Cntx
         { cntxProcess=def
         , cntxReceived=def
-        , cntxThrown=def
         , cntxCycleNumber=5
         }
 

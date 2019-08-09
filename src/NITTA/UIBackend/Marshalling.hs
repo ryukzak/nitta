@@ -35,6 +35,7 @@ import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Synthesis.Types
+import           NITTA.UIBackend.Timeline
 import           NITTA.Utils                      (transferred)
 import           Numeric.Interval
 import           Servant
@@ -48,8 +49,10 @@ instance ( VarValTimeJSON v x t
         ) => ToJSON (Option (SynthesisDT (BusNetwork String v x t)))
 instance ( VarValTimeJSON v x t
          ) => ToJSON (Decision (SynthesisDT (BusNetwork String v x t)))
-instance ( ToJSON v ) => ToJSON (Option (RefactorDT v))
-instance ( ToJSON v ) => ToJSON (Decision (RefactorDT v))
+instance ( ToJSON v, Show v, Show x ) => ToJSON (Option (RefactorDT v x)) where
+    toJSON = toJSON . show
+instance ( ToJSON v, Show v, Show x ) => ToJSON (Decision (RefactorDT v x)) where
+    toJSON = toJSON . show
 instance ( Time t ) => ToJSON (Option (EndpointDT String t)) where
     toJSON EndpointO{ epoRole=Source vs, epoAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epoAt)
     toJSON EndpointO{ epoRole=Target v, epoAt } = toJSON ("Target: " ++ v ++ " at " ++ show epoAt)
@@ -94,11 +97,20 @@ instance ( VarValTimeJSON v x t
         [ "sKey"   .= sKey
         , "sDesc"  .= show sDesc
         , "sTime"  .= sTime
-        , "sLevel" .= level sDesc
+        , "sLevel" .= levelName sDesc
         , "sPU"    .= showPU sDesc
         ]
 
+levelName CADStep{}           = "CAD" :: String
+levelName FStep{}             = "Function"
+levelName EndpointRoleStep{}  = "Endpoint"
+levelName InstructionStep{}   = "Instruction"
+levelName (NestedStep _ step) = levelName $ sDesc step
 
+instance ToJSON ViewPointID
+instance ( Time t, ToJSON t ) => ToJSON ( TimelinePoint t )
+instance ( Time t, ToJSON t ) => ToJSON ( TimelineWithViewPoint t )
+instance ( Time t, ToJSON t ) => ToJSON ( ProcessTimelines t )
 
 -- *Synthesis
 instance ToJSON NId where
@@ -119,7 +131,8 @@ instance ( VarValTimeJSON v x t
         , "nId"         .= nId
         ]
 
-instance ToJSON TestbenchReport
+instance ( ToJSONKey v, ToJSON v, ToJSON x ) => ToJSON (CycleCntx v x)
+instance ( ToJSONKey v, ToJSON v, ToJSON x ) => ToJSON (TestbenchReport v x)
 
 
 -- *Simple synthesis
@@ -139,10 +152,6 @@ instance ( VarValTimeJSON v x t
 
 -- *Basic data
 instance ( ToJSON tag, ToJSON t ) => ToJSON (TaggedTime tag t)
-
-instance ( ToJSON t, Time t ) => ToJSON (PlaceInTime t) where
-    toJSON (Event t)    = toJSON [ fromEnum t, fromEnum t ]
-    toJSON (Activity i) = toJSON [ fromEnum $ inf i, fromEnum $ sup i ]
 
 instance ( Show v ) => ToJSON (F v x) where
     toJSON = String . T.pack . show
