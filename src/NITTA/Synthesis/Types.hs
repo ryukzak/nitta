@@ -61,9 +61,9 @@ import qualified Data.Set                         as S
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
+import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Transport
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.Problems.Whole
 import           NITTA.Model.ProcessorUnits.Types
@@ -71,6 +71,7 @@ import           NITTA.Model.TargetSystem         (ModelState (..))
 import           NITTA.Model.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
+import           Numeric.Interval                 (inf, sup)
 
 
 -- |Type alias for Graph parts, where `e` - graph element (Node or Edge) should be 'Node' or 'Edge';
@@ -179,8 +180,8 @@ getNodeIO node nId@(NId (i:is)) = do
     getNodeIO (eNode $ edges !! i) (NId is)
 
 
-mkEdges :: ( UnitTag tag, VarValTime v x t, Semigroup v )
-     => G Node tag v x t -> STM [ G Edge tag v x t ]
+mkEdges :: ( UnitTag tag, VarValTime v x t, Semigroup v
+    ) => G Node tag v x t -> STM [ G Edge tag v x t ]
 mkEdges n@Node{ nId, nModel, nOrigin } = do
     let conf = def
         cntx = prepareParametersCntx n
@@ -219,7 +220,7 @@ prepareParametersCntx Node{ nModel } = let
             ]
         , transferableVars = fromList
             [ v
-            | (DataFlowOption _ targets) <- opts
+            | (DataflowOption _ targets) <- opts
             , (v, Just _) <- M.assocs targets
             ]
         , alreadyBindedVariables = variables $ mUnit nModel
@@ -329,16 +330,19 @@ estimateParameters
                     allInputs = S.elems $ inputs f
                     ns = map (\v -> fromMaybe 0 (waves M.!? v)) allInputs
                 in fromIntegral $ maximum (0 : ns)
-
         }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{ transferableVars, nModel } opt@(DataFlowOption _ targets)
+
+estimateParameters
+        ObjectiveFunctionConf{}
+        ParametersCntx{ transferableVars, nModel }
+        (DataflowOption (_, TimeConstrain{ tcAvailable, tcDuration }) target )
     = DataFlowEdgeParameter
-        { pWaitTime=fromIntegral (specializeDataFlowOption opt^.at.avail.infimum)
-        , pRestrictedTime=fromEnum (specializeDataFlowOption opt^.at.dur.supremum) /= maxBound
+        { pWaitTime=fromIntegral (inf tcAvailable)
+        , pRestrictedTime=fromEnum (sup tcDuration) /= maxBound
         , pNotTransferableInputs
             = let
                 fs = functions nModel
-                vs = fromList [ v | (v, Just _) <- M.assocs targets ]
+                vs = fromList [ v | (v, Just _) <- M.assocs target ]
                 affectedFunctions = filter (\f -> not $ null (inputs f `intersection` vs)) fs
                 notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
             in map (fromIntegral . length) notTransferableVars
@@ -382,7 +386,7 @@ False <?> _ = 0
 
 waitingTimeOfVariables net =
     [ (variable, tc^.avail.infimum)
-    | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- options dataFlowDT net
+    | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- dataflowOptions net
     , (variable, Nothing) <- M.assocs dfoTargets
     ]
 

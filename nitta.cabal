@@ -23,9 +23,9 @@ library
                      , NITTA.Model.Networks.Bus
                      , NITTA.Model.Networks.Types
                      , NITTA.Model.Problems.Binding
+                     , NITTA.Model.Problems.Dataflow
                      , NITTA.Model.Problems.Endpoint
                      , NITTA.Model.Problems.Refactor
-                     , NITTA.Model.Problems.Transport
                      , NITTA.Model.Problems.Types
                      , NITTA.Model.Problems.Whole
                      , NITTA.Model.ProcessorUnits

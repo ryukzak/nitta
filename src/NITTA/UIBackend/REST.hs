@@ -146,7 +146,7 @@ synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
             , svCharacteristic=maybe (read "NaN") eObjectiveFunctionValue nOrigin
             , svOptionType=case nOrigin of
                 Just Edge{ eOption=BindingOption{} }  -> "Bind"
-                Just Edge{ eOption=DataFlowOption{} } -> "Transport"
+                Just Edge{ eOption=DataflowOption{} } -> "Transport"
                 Just Edge{ eOption=RefactorOption{} } -> "Refactor"
                 Nothing                               -> "-"
             }

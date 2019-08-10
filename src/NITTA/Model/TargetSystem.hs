@@ -29,9 +29,8 @@ import           NITTA.Intermediate.Functions     (reg)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Binding
+import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Transport
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Utils
@@ -57,11 +56,10 @@ instance ( UnitTag tag, VarValTime v x t
     bindDecision f@ModelState{ mUnit } d = f{ mUnit=bindDecision mUnit d }
 
 instance ( UnitTag tag, VarValTime v x t
-         ) => DecisionProblem (DataFlowDT tag v t)
-                   DataFlowDT (ModelState (BusNetwork tag v x t) v x)
-         where
-    options _ ModelState{ mUnit }      = options dataFlowDT mUnit
-    decision _ f@ModelState{ mUnit } d = f{ mUnit=decision dataFlowDT mUnit d }
+        ) => DataflowProblem (ModelState (BusNetwork tag v x t) v x) tag v t
+        where
+    dataflowOptions ModelState{ mUnit }      = dataflowOptions mUnit
+    dataflowDecision f@ModelState{ mUnit } d = f{ mUnit=dataflowDecision mUnit d }
 
 instance ( UnitTag tag, VarValTime v x t, Semigroup v
         ) => RefactorProblem (ModelState (BusNetwork tag v x t) v x) v x where
@@ -73,8 +71,8 @@ instance ( UnitTag tag, VarValTime v x t, Semigroup v
             , mUnit=refactorDecision mUnit d
             }
     refactorDecision ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } d@(BreakLoop l i o) = let
-                revokeLoop = leafs L.\\ [ DFLeaf $ F l ]
-                addLoopParts = [ DFLeaf $ F i, DFLeaf $ F o ] ++ revokeLoop
+            revokeLoop = leafs L.\\ [ DFLeaf $ F l ]
+            addLoopParts = [ DFLeaf $ F i, DFLeaf $ F o ] ++ revokeLoop
         in ModelState
             { mDataFlowGraph=DFCluster $ addLoopParts
             , mUnit=refactorDecision mUnit d

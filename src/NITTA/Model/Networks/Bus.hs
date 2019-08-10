@@ -56,9 +56,9 @@ import           NITTA.Intermediate.Functions     (reg)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems.Binding
+import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Transport
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
@@ -144,10 +144,8 @@ instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{ bnRemains, bnBinded } = bnRemains ++ concat (M.elems bnBinded)
 
 instance ( UnitTag tag, VarValTime v x t
-         ) => DecisionProblem (DataFlowDT tag v t)
-                   DataFlowDT (BusNetwork tag v x t)
-    where
-    options _proxy BusNetwork{ bnPus, bnProcess }
+        ) => DataflowProblem (BusNetwork tag v x t) tag v t where
+    dataflowOptions BusNetwork{ bnPus, bnProcess }
         = notEmptyDestination $ concat
             [ map (DataFlowO (source, fixConstrain pullAt)) $ targetOptionsFor $ S.elems vars
             | (source, opts) <- puOptions
@@ -176,16 +174,16 @@ instance ( UnitTag tag, VarValTime v x t
             tgr (_, Just (target, _)) = Just target
             tgr _                     = Nothing
 
-    decision _proxy n@BusNetwork{ bnProcess, bnPus } d@DataFlowD{ dfdSource=( srcTitle, pullAt ), dfdTargets }
-        | nextTick bnProcess > d^.at.infimum
-        = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (d^.at)
+    dataflowDecision n@BusNetwork{ bnProcess, bnPus } DataFlowD{ dfdSource=( srcTitle, pullAt ), dfdTargets }
+        | nextTick bnProcess > inf pullAt
+        = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show pullAt
         | otherwise
         = let
             pushs = M.fromList $ mapMaybe (\case
                     (k, Just v) -> Just (k,  v)
                     (_, Nothing) -> Nothing
                 ) $ M.assocs dfdTargets
-            transportStartAt = d^.at.infimum
+            transportStartAt = inf pullAt
             transportDuration = maximum $ map (\(_trg, time) -> (inf time - transportStartAt) + width time) $ M.elems pushs
             transportEndAt = transportStartAt + transportDuration
 
