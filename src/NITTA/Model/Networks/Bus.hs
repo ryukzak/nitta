@@ -319,19 +319,17 @@ instance ( UnitTag tag ) => Simulatable (BusNetwork tag v x t) v x where
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( UnitTag tag, VarValTime v x t ) =>
-        DecisionProblem (BindingDT tag v x)
-              BindingDT (BusNetwork tag v x t)
-        where
-    options _ BusNetwork{ bnRemains, bnPus } = concatMap optionsFor bnRemains
+instance ( UnitTag tag, VarValTime v x t
+        ) => BindProblem (BusNetwork tag v x t) tag v x where
+    bindOptions BusNetwork{ bnRemains, bnPus } = concatMap optionsFor bnRemains
         where
             optionsFor f =
-                [ BindingO f puTitle
+                [ Bind f puTitle
                 | ( puTitle, pu ) <- M.assocs bnPus
                 , allowToProcess f pu
                 ]
 
-    decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
+    bindDecision bn@BusNetwork{ bnProcess=p@Process{..}, ..} (Bind fb puTitle)
         = bn
             { bnPus=M.adjust (bind fb) puTitle bnPus
             , bnBinded=M.alter
@@ -350,7 +348,7 @@ instance ( UnitTag tag, VarValTime v x t, Semigroup v
     refactorOptions bn@BusNetwork{ bnPus } = let
             insertRegs = L.nub
                 [ InsertOutRegister lockBy (lockBy <> lockBy)
-                | (BindingO f tag) <- options binding bn
+                | (Bind f tag) <- bindOptions bn
                 , Lock{ lockBy } <- locks f
                 , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
                 ]

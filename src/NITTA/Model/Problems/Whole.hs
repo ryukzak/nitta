@@ -49,7 +49,7 @@ specializeDataFlowOption (DataFlowOption s t) = DataFlowO s t
 specializeDataFlowOption _ = error "Can't specialize non Model option!"
 
 generalizeDataFlowOption (DataFlowO s t) = DataFlowOption s t
-generalizeBindingOption (BindingO s t) = BindingOption s t
+generalizeBindingOption (Bind s t) = BindingOption s t
 
 
 
@@ -74,13 +74,13 @@ class SynthesisProblem u tag v x t | u -> tag v x t where
 instance ( UnitTag tag, VarValTime v x t, Semigroup v
          ) => SynthesisProblem (ModelState (BusNetwork tag v x t) v x) tag v x t where
     synthesisOptions m@ModelState{ mUnit } = let
-            binds = map generalizeBindingOption $ options binding m
+            binds = map generalizeBindingOption $ bindOptions m
             transfers = map generalizeDataFlowOption $ options dataFlowDT mUnit
             refactors = map RefactorOption $ refactorOptions m
         in concat [ binds, transfers, refactors ]
 
-    synthesisDecision fr (BindingDecision f tag) = decision binding fr $ BindingD f tag
-    synthesisDecision fr@ModelState{ mUnit } (DataFlowDecision src trg) = fr{ mUnit=decision dataFlowDT mUnit $ DataFlowD src trg }
+    synthesisDecision m (BindingDecision f tag) = bindDecision m $ Bind f tag
+    synthesisDecision m@ModelState{ mUnit } (DataFlowDecision src trg) = m{ mUnit=decision dataFlowDT mUnit $ DataFlowD src trg }
     synthesisDecision m (RefactorDecision d) = refactorDecision m d
 
 

@@ -2,10 +2,8 @@
 {-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
@@ -18,19 +16,14 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.Problems.Binding
-    ( BindingDT, Option(..), Decision(..), binding
+    ( Bind(..), BindProblem(..)
     ) where
 
-import           Data.Proxy
 import           GHC.Generics
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Types
 
--- |Решение в области привязки функционального блока к вычислительному. Определяется только для
--- вычислительных блоков, организующих работу со множеством вложенных блоков, адресуемым по tag.
-data BindingDT tag v x
-binding = Proxy :: Proxy BindingDT
+data Bind tag v x = Bind (F v x) tag deriving ( Generic )
 
-instance DecisionType (BindingDT tag v x) where
-    data Option (BindingDT tag v x) = BindingO (F v x) tag deriving ( Generic )
-    data Decision (BindingDT tag v x) = BindingD (F v x) tag deriving ( Generic )
+class BindProblem u tag v x | u -> tag v x where
+    bindOptions :: u -> [ Bind tag v x ]
+    bindDecision :: u -> Bind tag v x -> u

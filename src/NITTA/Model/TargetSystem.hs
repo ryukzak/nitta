@@ -51,12 +51,10 @@ instance WithFunctions (ModelState (BusNetwork tag v x t) v x) (F v x) where
         = assert (S.fromList (functions mUnit) == S.fromList (functions mDataFlowGraph)) -- inconsistent ModelState
             $ functions mUnit
 
-instance ( UnitTag tag, VarValTime v x t ) =>
-        DecisionProblem (BindingDT tag v x)
-              BindingDT (ModelState (BusNetwork tag v x t) v x)
-        where
-    options _ ModelState{ mUnit }      = options binding mUnit
-    decision _ f@ModelState{ mUnit } d = f{ mUnit=decision binding mUnit d }
+instance ( UnitTag tag, VarValTime v x t
+        ) => BindProblem (ModelState (BusNetwork tag v x t) v x) tag v x where
+    bindOptions ModelState{ mUnit }      = bindOptions mUnit
+    bindDecision f@ModelState{ mUnit } d = f{ mUnit=bindDecision mUnit d }
 
 instance ( UnitTag tag, VarValTime v x t
          ) => DecisionProblem (DataFlowDT tag v t)
