@@ -31,7 +31,6 @@ import           GHC.Generics
 import           NITTA.Intermediate.Simulation
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.Problems.Whole
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
@@ -65,7 +64,7 @@ type WithSynthesis tag v x t
     :<|> "edge" :> Get '[JSON] (Maybe (G Edge tag v x t))
     :<|> "model" :> Get '[JSON] (ModelState (BusNetwork tag v x t) v x)
     :<|> "timelines" :> Get '[JSON] (ProcessTimelines t)
-    :<|> "endpointOptions" :> Get '[JSON] [(tag, Option (EndpointDT v t))]
+    :<|> "endpointOptions" :> Get '[JSON] [(tag, EndpointOption v t)]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] (TestbenchReport v x)
     :<|> SimpleCompilerAPI tag v x t
@@ -75,7 +74,7 @@ withSynthesis root nId
     :<|> liftIO ( nOrigin <$> getNodeIO root nId )
     :<|> liftIO ( nModel <$> getNodeIO root nId )
     :<|> liftIO ( processTimelines . process . mUnit . nModel <$> getNodeIO root nId )
-    :<|> liftIO ( endpointOptions . mUnit . nModel <$> getNodeIO root nId )
+    :<|> liftIO ( endpointOptions' . mUnit . nModel <$> getNodeIO root nId )
     :<|> liftIO ( algToVizJS . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
@@ -93,8 +92,8 @@ withSynthesis root nId
     where
         alg ModelState{ mDataFlowGraph=DFCluster nodes } = map (\(DFLeaf f) -> f) nodes
         alg _                                            = error "unsupported algorithm structure"
-        endpointOptions BusNetwork{ bnPus }
-            = let f (tag, pu) = zip (repeat tag) $ options endpointDT pu
+        endpointOptions' BusNetwork{ bnPus }
+            = let f (tag, pu) = zip (repeat tag) $ endpointOptions pu
             in concatMap f $ M.assocs bnPus
 
 

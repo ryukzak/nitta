@@ -30,7 +30,6 @@ module NITTA.Model.ProcessorUnits.Serial.Generic
   , serialSchedule
   ) where
 
-import           Control.Lens                     hiding (at, (...))
 import           Control.Monad.State
 import           Data.Default
 import           Data.Either
@@ -41,12 +40,10 @@ import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Utils
-import           NITTA.Utils.Lens
-import           Numeric.Interval                 ((...))
+import           Numeric.Interval                 (inf, sup, width, (...))
 
 
 
@@ -103,43 +100,41 @@ class ( VarValTime v x t ) => SerialPUState st v x t | st -> v x t where
   bindToState :: F v x -> st -> Either String st
   -- | Получить список вариантов развития вычислительного процесса, на основе предоставленного
   -- состояния последовательного вычислительного блока.
-  stateOptions :: st -> t -> [Option (EndpointDT v t)]
+  stateOptions :: st -> t -> [ EndpointOption v t ]
   -- | Получить данные для планирования вычислительного процесса состояния. Результат функции:
   --
   -- - состояние после выполнения вычислительного процесса;
   -- - монада State, которая сформирует необходимое описание многоуровневого вычислительного
   --   процессса.
-  simpleSynthesis :: st -> Decision (EndpointDT v t) -> (st, State (Process v x t) [ProcessUid])
+  simpleSynthesis :: st -> EndpointDecision v t -> (st, State (Process v x t) [ProcessUid])
 
 
 
-instance ( Default st
-         , SerialPUState st v x t
-         ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (SerialPU st v x t)
-         where
-  options _proxy SerialPU{ spuCurrent=Nothing, spuRemain, spuState, spuProcess }
+instance ( Default st, SerialPUState st v x t
+        ) => EndpointProblem (SerialPU st v x t) v t
+        where
+  endpointOptions SerialPU{ spuCurrent=Nothing, spuRemain, spuState, spuProcess }
     = concatMap ((\f -> f $ nextTick spuProcess) . stateOptions)
       $ rights $ map (\(fb, _) -> bindToState fb spuState) spuRemain
-  options _proxy SerialPU{ spuCurrent=Just _, spuState, spuProcess }
+  endpointOptions SerialPU{ spuCurrent=Just _, spuState, spuProcess }
     = stateOptions spuState $ nextTick spuProcess
 
-  decision proxy pu@SerialPU{ spuCurrent=Nothing, spuRemain, spuState } act
+  endpointDecision pu@SerialPU{ spuCurrent=Nothing, spuRemain, spuState } act@EndpointD{ epdAt }
     | Just (fb, compilerKey) <- find (not . S.null . (variables act `S.intersection`) . variables . fst) spuRemain
     , Right spuState' <- bindToState fb spuState
-    = decision proxy pu
+    = endpointDecision pu
         { spuState=spuState'
         , spuCurrent=Just CurrentJob
                       { cFB=fb
-                      , cStart=act^.at.infimum
+                      , cStart=inf epdAt
                       , cSteps=[ compilerKey ]
                       }
         , spuRemain=filter ((/= fb) . fst) spuRemain
         } act
     | otherwise = error "Variable not found in binded functional blocks."
-  decision _proxy pu@SerialPU{ spuCurrent=Just cur, spuState, spuProcess } act
-   | nextTick spuProcess > act^.at.infimum
-   = error $ "Time wrap! Time: " ++ show (nextTick spuProcess) ++ " Act start at: " ++ show (act^.at.infimum)
+  endpointDecision pu@SerialPU{ spuCurrent=Just cur, spuState, spuProcess } act@EndpointD{ epdAt }
+   | nextTick spuProcess > inf epdAt
+   = error $ "Time wrap! Time: " ++ show (nextTick spuProcess) ++ " Act start at: " ++ show (inf epdAt)
    | otherwise
     = let (spuState', work) = simpleSynthesis spuState act
           (steps, spuProcess') = modifyProcess spuProcess work
@@ -156,7 +151,7 @@ instance ( Default st
            _  -> pu'
     where
       finish p CurrentJob{ cFB, cStart } = snd $ modifyProcess p $ do
-        _h <- addStep (cStart ... (act^.at.infimum + act^.at.dur)) $ FStep cFB
+        _h <- addStep (cStart ... (inf epdAt + width epdAt)) $ FStep cFB
         return ()
         -- mapM_ (relation . Vertical h) cSteps
 
@@ -205,10 +200,10 @@ instance RefactorProblem (SerialPU st v x t) v x
 
 serialSchedule
   :: ( Show (Instruction pu), Time t, Typeable pu )
-  => Instruction pu -> Decision (EndpointDT v t) -> State (Process v x t) [ProcessUid]
-serialSchedule instr act = do
-  e <- addStep (act^.at) $ EndpointRoleStep $ epdRole act
-  i <- addStep (act^.at) $ InstructionStep instr
+  => Instruction pu -> EndpointDecision v t -> State (Process v x t) [ProcessUid]
+serialSchedule instr act@EndpointD{ epdAt } = do
+  e <- addStep epdAt $ EndpointRoleStep $ epdRole act
+  i <- addStep epdAt $ InstructionStep instr
   -- mapM_ (relation . Vertical e) [i]
-  setProcessTime $ (act^.at.supremum) + 1
+  setProcessTime $ sup epdAt + 1
   return [e, i]

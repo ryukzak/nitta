@@ -37,7 +37,6 @@ import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
@@ -266,11 +265,9 @@ instance ( VarValTime v x t ) => RefactorProblem (Fram v x t) v x where
     refactorDecision _ d = error $ "fram not suport refactor: " ++ show d
 
 instance ( VarValTime v x t
-         ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (Fram v x t)
+        ) => EndpointProblem (Fram v x t) v t
         where
-
-    options _proxy Fram{ process_=Process{ nextTick }, remainRegs, memory } = let
+    endpointOptions Fram{ process_=Process{ nextTick }, remainRegs, memory } = let
             target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
             source True vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (1 + 1 + nextTick ... maxBound) (1 ... maxBound)
             source False vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (1 + nextTick ... maxBound) (1 ... maxBound)
@@ -296,7 +293,7 @@ instance ( VarValTime v x t
 
 
     -- Constant
-    decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
         | Just ( addr, cell@Cell{ state=DoConstant vs', job=Just Job{ function, binds, endpoints } } )
             <- L.find (\case
                 (_, Cell{ state=DoConstant vs' }) -> (vs' L.\\ S.elems vs) /= vs'
@@ -325,7 +322,7 @@ instance ( VarValTime v x t
             }
 
     -- Loop
-    decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
         | Just ( addr, cell@Cell{ state=DoLoopSource vs' oJob, job=Just job@Job{ binds, function, startAt, endpoints } } )
             <- L.find (\case
                 (_, Cell{ state=DoLoopSource vs' _ }) -> (vs' L.\\ S.elems vs) /= vs'
@@ -352,7 +349,7 @@ instance ( VarValTime v x t
                     }
         = fram{ process_, memory=memory A.// [ (addr, cell') ] }
 
-    decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Target v, epdAt }
         | Just ( addr, cell@Cell{ job=Just Job{ function, binds, endpoints } } )
             <- L.find (\case (_, Cell{ state=DoLoopTarget v' }) -> v == v'; _ -> False) $ A.assocs memory
         , let
@@ -372,7 +369,7 @@ instance ( VarValTime v x t
             }
 
     -- Reg Target
-    decision _proxy fram@Fram{ memory, remainRegs } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision fram@Fram{ memory, remainRegs } d@EndpointD{ epdRole=Target v, epdAt }
         | Just ( addr, cell@Cell{ history } ) <- findForRegCell fram
         , ([ ( Reg (I _) (O vs), j@Job{ function } ) ], remainRegs' ) <- L.partition (\(Reg (I v') (O _), _) -> v' == v) remainRegs
         , let
@@ -391,7 +388,7 @@ instance ( VarValTime v x t
             , process_
             }
 
-    decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
         | Just ( addr, cell@Cell{ state=DoReg vs', job=Just Job{ function, startAt=Just fBegin, binds, endpoints } } )
             <- L.find (\case
                 (_, Cell{ state=DoReg vs' }) -> (vs' L.\\ S.elems vs) /= vs'
@@ -419,7 +416,7 @@ instance ( VarValTime v x t
             , process_
             }
 
-    decision _proxy Fram{ memory } d
+    endpointDecision Fram{ memory } d
         = error $ "fram model internal error: "
             ++ show d ++ "\n cells state: \n"
             ++ S.join "\n" (map (\(i, c) -> show i ++ ": " ++ show (state c)) $ A.assocs memory)

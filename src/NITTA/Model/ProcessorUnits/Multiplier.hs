@@ -140,7 +140,6 @@ import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
@@ -362,8 +361,7 @@ consistent execution two roles by processoe:
 The planning process itself consists of two operations performed in a cycle:
 -}
 instance ( VarValTime v x t
-         ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (Multiplier v x t)
+        ) => EndpointProblem (Multiplier v x t) v t
         where
     --1. Processors is asked about roles it can realise (in the other words, how computation
     --process can develop). It is realised by @options@ functions, result of which is
@@ -371,17 +369,17 @@ instance ( VarValTime v x t
 
     --list of variants of uploading to mUnit variables, which are needed to function
     --that is in work;
-    options _proxy Multiplier{ targets=vs@(_:_), tick }
+    endpointOptions Multiplier{ targets=vs@(_:_), tick }
         = map (\v -> EndpointO (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
 
      --   list of variants of downloading from mUnit variables;
-    options _proxy Multiplier{ sources, doneAt=Just at, tick }
+    endpointOptions Multiplier{ sources, doneAt=Just at, tick }
         | not $ null sources
         = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
 
     -- list of variables of uploading to mUnit variables, upload any one of that
     -- will cause to actual start of working with mathched function.
-    options proxy pu@Multiplier{ remain } = concatMap (options proxy . assignment pu) remain
+    endpointOptions pu@Multiplier{ remain } = concatMap (endpointOptions . assignment pu) remain
 
     -- Note, that options provided by this function require clarification, because:
 
@@ -400,7 +398,7 @@ instance ( VarValTime v x t
     --		We can distinguish the following solutions:
     --
     --		1. If model wait variable uploading:
-    decision _proxy pu@Multiplier{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision pu@Multiplier{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
            -- From the list of uploading value we get a needed value, and remainder is saved
            -- for the next steps.
         | ([_], xs) <- partition (== v) vs
@@ -429,7 +427,7 @@ instance ( VarValTime v x t
              , tick=sup epdAt
             }
 --	2. If model is waiting, that we will download variables from it.
-    decision _proxy pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointD{ epdRole=Source v, epdAt }
+    endpointDecision pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointD{ epdRole=Source v, epdAt }
         | not $ null sources
         , let sources' = sources \\ elems v
         , sources' /= sources
@@ -461,12 +459,12 @@ instance ( VarValTime v x t
     --    3. If no function is executed at the moment, then we need to find function in the list
     --    of assigned function, executed it to work and only then make decision
     --    and plan a fragment of computation process with call recursion in situation 1.
-    decision proxy pu@Multiplier{ targets=[], sources=[], remain } d
+    endpointDecision pu@Multiplier{ targets=[], sources=[], remain } d
         | let v = oneOf $ variables d
         , Just f <- find (\f -> v `member` variables f) remain
-        = decision proxy (assignment pu f) d
+        = endpointDecision (assignment pu f) d
     -- If smth went wrong.
-    decision _ pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
+    endpointDecision pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
 
 

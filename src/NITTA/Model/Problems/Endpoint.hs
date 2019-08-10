@@ -1,12 +1,12 @@
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE IncoherentInstances   #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE IncoherentInstances    #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -18,67 +18,56 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.Problems.Endpoint
-    ( EndpointDT, Option(..), Decision(..), endpointDT
+    ( EndpointOption(..), EndpointDecision(..), EndpointProblem(..)
     , EndpointRole(..), (<<), (\\\)
     , endpointOptionToDecision
     ) where
 
-import qualified Data.Map                   as M
-import           Data.Maybe                 (fromMaybe)
-import           Data.Proxy
-import qualified Data.Set                   as S
-import qualified Data.String.Utils          as S
+import qualified Data.Map                 as M
+import           Data.Maybe               (fromMaybe)
+import qualified Data.Set                 as S
+import qualified Data.String.Utils        as S
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.Types
 import           Numeric.Interval
 
 
--- |Решение об использовании вычислительных блоков в роли источника или пункта назначения для
--- данных. В один момент времени может быть произведена только одна операция (вероятно, это
--- искусственное ограничение, навязанное архитектурой NL3). PU не может самостоятельно принимать
--- решение относительно своих взаимодействий с окружающим миром, он искючительно выполняет сказанные
--- ему операции.
-data EndpointDT v t
-endpointDT = Proxy :: Proxy EndpointDT
-
-instance DecisionType (EndpointDT v t) where
-    data Option (EndpointDT v t)
-        = EndpointO
-        { epoRole :: EndpointRole v -- ^ Чтение данных из входного регистра PU или запись данных в него.
-        , epoAt :: TimeConstrain t -- ^ Временные ограничения на операцию.
-        }
-    data Decision (EndpointDT v t)
-        = EndpointD
-        { epdRole :: EndpointRole v -- ^ Выбранная операция для взаимодействия с окружающим миром.
-        , epdAt :: Interval t -- ^ Положение операции во времени.
+data EndpointOption v t
+    = EndpointO
+        { epoRole :: EndpointRole v -- ^use processor unit as source or target of data
+        , epoAt   :: TimeConstrain t
         }
 
-instance Variables (Option (EndpointDT v t)) v where
+data EndpointDecision v t
+    = EndpointD
+        { epdRole :: EndpointRole v -- ^use processor unit as source or target of data
+        , epdAt   :: Interval t -- ^time of operation
+        }
+
+instance Variables (EndpointOption v t) v where
     variables EndpointO{ epoRole } = variables epoRole
-instance Variables (Decision (EndpointDT v t)) v where
+instance Variables (EndpointDecision v t) v where
     variables EndpointD{ epdRole } = variables epdRole
 
-instance ( Show v, Show t, Eq t, Bounded t ) => Show (Option (EndpointDT v t)) where
+instance ( Show v, Show t, Eq t, Bounded t ) => Show (EndpointOption v t) where
     show EndpointO{ epoRole, epoAt } = "?" ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
-instance ( Show v, Show t, Eq t, Bounded t ) => Show (Decision (EndpointDT v t)) where
+instance ( Show v, Show t, Eq t, Bounded t ) => Show (EndpointDecision v t) where
     show EndpointD{ epdRole, epdAt } = "!" ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
 
-instance ( Ord v ) => Patch (Option (EndpointDT v t)) (Diff v) where
+instance ( Ord v ) => Patch (EndpointOption v t) (Diff v) where
     patch diff ep@EndpointO{ epoRole } = ep{ epoRole=patch diff epoRole }
-instance ( Ord v ) => Patch (Decision (EndpointDT v t)) (Diff v) where
+instance ( Ord v ) => Patch (EndpointDecision v t) (Diff v) where
     patch diff ep@EndpointD{ epdRole } = ep{ epdRole=patch diff epdRole }
 
 
--- |Взаимодействие PU с окружением. Подразумевается, что в один момент времени может быть только
--- одно взаимодействие, при этом у PU только один канал для взаимодействия, что в общем то
--- ограничение. В перспективе должно быть расширено для работы с конвейра.
+class EndpointProblem u v t | u -> v t where
+    endpointOptions :: u -> [ EndpointOption v t ]
+    endpointDecision :: u -> EndpointDecision v t -> u
 
--- TODO: В настоящий момен Source определяет множество вариантов выгрузки переменной. Это
--- неправильно и требует комплексной переработки.
+
 data EndpointRole v
-    = Source (S.Set v) -- ^ Выгрузка данных из PU.
-    | Target v   -- ^ Загрузка данных в PU.
+    = Source (S.Set v) -- ^get data from PU
+    | Target v   -- ^put data to PU
     deriving ( Eq, Ord )
 
 instance {-# OVERLAPPABLE #-} ( Show v ) => Show (EndpointRole v) where

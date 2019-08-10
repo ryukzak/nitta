@@ -64,7 +64,6 @@ import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.Problems.Whole
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem         (ModelState (..))
@@ -393,7 +392,7 @@ waitingTimeOfVariables net =
 
 optionsAfterBind f tag ModelState{ mUnit=BusNetwork{ bnPus } }
     = case tryBind f (bnPus M.! tag) of
-        Right pu' -> filter (\(EndpointO act _) -> act `optionOf` f) $ options endpointDT pu'
+        Right pu' -> filter (\(EndpointO act _) -> act `optionOf` f) $ endpointOptions pu'
         _         -> []
     where
         act `optionOf` f' = not $ S.null (variables act `intersection` variables f')

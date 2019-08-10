@@ -36,8 +36,8 @@ import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Utils
-import           NITTA.Utils.Lens
-import           Numeric.Interval                          (singleton, (...))
+import           Numeric.Interval                          (inf, singleton, sup,
+                                                            (...))
 import           Prelude                                   hiding (init)
 import           Text.InterpolatedString.Perl6             (qc)
 
@@ -73,12 +73,12 @@ instance ( VarValTime v x t ) => SerialPUState (State v x t) v x t where
     = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
-  simpleSynthesis st@State{ sIn=Just v, sRight } act
+  simpleSynthesis st@State{ sIn=Just v, sRight } act@EndpointD{ epdAt }
     | v `elem` variables act
     = let st' = st{ sIn=Nothing }
           work = do
-            a <- serialSchedule @(Shift v x t) Init act{ epdAt=(act^.at.infimum) ... (act^.at.infimum) }
-            b <- serialSchedule @(Shift v x t) (Work sRight Bit Logic) act{ epdAt=act^.at.infimum + 1 ... act^.at.supremum }
+            a <- serialSchedule @(Shift v x t) Init act{ epdAt=singleton $ inf epdAt }
+            b <- serialSchedule @(Shift v x t) (Work sRight Bit Logic) act{ epdAt=inf epdAt + 1 ... sup epdAt }
             return $ a ++ b
       in (st', work)
   simpleSynthesis st@State{ sOut=vs } act

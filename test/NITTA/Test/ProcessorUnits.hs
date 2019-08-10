@@ -35,7 +35,6 @@ import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Fram
 import           NITTA.Model.ProcessorUnits.Multiplier
 import           NITTA.Model.ProcessorUnits.Types
@@ -158,8 +157,8 @@ unitCoSimulationTestCase name u cntxCycle alg
 bindAllAndNaiveSynthesis alg u0 = naiveSynthesis $ foldl (flip bind) u0 alg
     where
         naiveSynthesis u
-            | opt : _ <- options endpointDT u
-            = naiveSynthesis $ decision endpointDT u $ endpointOptionToDecision opt
+            | opt : _ <- endpointOptions u
+            = naiveSynthesis $ endpointDecision u $ endpointOptionToDecision opt
             | otherwise = u
 
 
@@ -172,7 +171,7 @@ isUnitSynthesisFinishTestProperty name u0 fsGen
             processedVs = unionsMap variables $ getEndpoints p
             algVs = unionsMap variables fs
         return $ algVs == processedVs -- all algorithm variables present in process
-            && null (options endpointDT u)
+            && null (endpointOptions u)
             || trace (unlines
                 [ ""
                 , "difference between exaceptation and fact: " ++ show (algVs `difference` processedVs)
@@ -230,7 +229,7 @@ processAlgOnEndpointGen pu0 algGen' = do
         inner fRemain fPassed pu = do
             let
                 refs = refactorOptions pu
-                other = map Left fRemain ++ map Right (options endpointDT pu)
+                other = map Left fRemain ++ map Right (endpointOptions pu)
             case ( refs, other ) of
                 ( [], [] ) -> return ( pu, fPassed )
                 ( _:_, _ ) -> do
@@ -245,7 +244,7 @@ processAlgOnEndpointGen pu0 algGen' = do
                                 Left _err -> inner fRemain' fPassed pu
                         Right o -> do
                             d <- fmap endpointOptionToDecision $ endpointGen o
-                            let pu' = decision endpointDT pu d
+                            let pu' = endpointDecision pu d
                             inner fRemain fPassed pu'
             where
                 endpointGen option@EndpointO{ epoRole=Source vs } = do

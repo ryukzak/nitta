@@ -59,7 +59,6 @@ import           NITTA.Model.Problems.Binding
 import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
@@ -152,7 +151,7 @@ instance ( UnitTag tag, VarValTime v x t
             , EndpointO (Source vars) pullAt <- opts
             ]
         where
-            puOptions = M.assocs $ M.map (options endpointDT) bnPus
+            puOptions = M.assocs $ M.map endpointOptions bnPus
             targetOptionsFor vs = let
                     conflictableTargets =
                         [ (pushVar, Just (target, fixConstrain pushAt))
@@ -203,7 +202,7 @@ instance ( UnitTag tag, VarValTime v x t
                 updateTick (sup pullAt + 1)
             }
         where
-            applyDecision pus (trgTitle, d') = M.adjust (\pu -> decision endpointDT pu d') trgTitle pus
+            applyDecision pus (trgTitle, d') = M.adjust (\pu -> endpointDecision pu d') trgTitle pus
 
 
 

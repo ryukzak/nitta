@@ -49,7 +49,7 @@ instance ( VarValTimeJSON v x t ) => ToJSON (SynthesisOption String v x t)
 instance ( VarValTimeJSON v x t ) => ToJSON (SynthesisDecision String v x t)
 instance ( ToJSON v, Show v, Show x ) => ToJSON (Refactor v x) where
     toJSON = toJSON . show
-instance ( Time t ) => ToJSON (Option (EndpointDT String t)) where
+instance ( Time t ) => ToJSON (EndpointOption String t) where
     toJSON EndpointO{ epoRole=Source vs, epoAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epoAt)
     toJSON EndpointO{ epoRole=Target v, epoAt } = toJSON ("Target: " ++ v ++ " at " ++ show epoAt)
 

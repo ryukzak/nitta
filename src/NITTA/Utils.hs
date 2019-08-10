@@ -17,8 +17,6 @@ Stability   : experimental
 module NITTA.Utils
     ( unionsMap
     , oneOf
-    , isTimeWrap
-    , timeWrapError
     , minimumOn
     , maximumOn
     , shift, shiftI
@@ -64,7 +62,6 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
-import           NITTA.Utils.Lens
 import           Numeric                          (readInt, showHex)
 import           Numeric.Interval                 ((...))
 import qualified Numeric.Interval                 as I
@@ -78,9 +75,6 @@ oneOf = head . elems
 modify'_ :: (s -> s) -> State s ()
 modify'_ = modify'
 
-
-isTimeWrap p act = nextTick p > act^.at.infimum
-timeWrapError p act = error $ "You can't start work yesterday :) fram time: " ++ show (nextTick p) ++ " action start at: " ++ show (act^.at.infimum)
 
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
 maximumOn f = maximumBy (\a b -> f a `compare` f b)
