@@ -52,7 +52,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
             .then((response: any) => {
                 this.setState({
                     options: response.data,
-                    options_raw: response.data.map(e => { return [e.eObjectiveFunctionValue, e.eParameters, e.eOption, e.eDecision]; })
+                    options_raw: response.data.map(e => { return [ e.eObjectiveFunctionValue, e.eParameters, e.eOption, e.eDecision ]; })
                 });
             })
             .catch(err => console.log(err));
@@ -81,7 +81,7 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
         if (this.state.edge) info = JSON.stringify(this.state.edge.eDecision)
         return (
             <div>
-                <div className="grid-x" >
+                {/* <div className="grid-x" >
                     <div className="edgeGraphContainer" style={{ "display": "inline-block", "width": "450px" }}>
                         <GraphView
                             selectedNId={this.state.selectedNId}
@@ -98,21 +98,21 @@ export class EdgesView extends React.Component<EdgesViewProps, EdgesViewState> {
                         <JsonView jsonData={this.state.edge} label={"previous edge"} show={false} />
                     </div>
                 </div>
-                <pre>{info}</pre>
-                <br />
+                <pre>{info}</pre> */}
+                {/* <br /> */}
                 <BindTable
                     name="Bind"
-                    data={this.state.options.filter(e => e.eParameters.tag === 'BindCh')}
+                    data={this.state.options.filter(e => e.eParameters.tag === 'BindEdgeParameter')}
                     updateNid={i => { this.updateNid(i) }}
                 />
                 <DataflowTable
                     name="Transfers (DataFlow)"
-                    data={this.state.options.filter(e => e.eParameters.tag === 'DFCh')}
+                    data={this.state.options.filter(e => e.eParameters.tag === 'DataflowOption')}
                     updateNid={i => { this.updateNid(i) }}
                 />
                 <GenericTable
                     name="Other"
-                    data={this.state.options.filter(e => e.eParameters.tag != 'BindCh' && e.eParameters.tag != 'DFCh')}
+                    data={this.state.options.filter(e => e.eParameters.tag != 'BindEdgeParameter' && e.eParameters.tag != 'DataflowOption')}
                     updateNid={i => { this.updateNid(i) }}
                 />
             </div>

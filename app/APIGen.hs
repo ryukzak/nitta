@@ -24,7 +24,11 @@ import           Data.Aeson
 import           Data.Aeson.TypeScript.TH
 import           Data.Proxy
 import qualified Data.String.Utils             as S
+import           NITTA.Intermediate.Functions
+import           NITTA.Intermediate.Types
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Project.Parts.TestBench
+import           NITTA.Synthesis.Types
 import           NITTA.UIBackend
 import           NITTA.UIBackend.Timeline
 import           Numeric.Interval
@@ -53,12 +57,22 @@ $(deriveTypeScript defaultOptions ''ProcessTimelines)
 $(deriveTypeScript defaultOptions ''TestbenchReport)
 
 
+$(deriveTypeScript defaultOptions ''I)
+$(deriveTypeScript defaultOptions ''O)
+$(deriveTypeScript defaultOptions ''X)
+$(deriveTypeScript defaultOptions ''Loop)
+$(deriveTypeScript defaultOptions ''LoopIn)
+$(deriveTypeScript defaultOptions ''LoopOut)
+$(deriveTypeScript defaultOptions ''Refactor)
+$(deriveTypeScript defaultOptions ''Parameters)
+
+
 main = do
     APIGen{ port, opath } <- cmdArgs apiGenArgs
 
-    putStrLn "Create output derictory..."
+    putStrLn "Create output directory..."
     createDirectoryIfMissing True opath
-    putStrLn "Create output derictory...OK"
+    putStrLn "Create output directory...OK"
 
     putStrLn "Generate rest_api.js library..."
     prepareJSAPI port opath
