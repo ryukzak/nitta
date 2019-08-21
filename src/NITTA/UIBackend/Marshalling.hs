@@ -61,7 +61,7 @@ class Viewable t v | t -> v where
 data SynthesisNodeView
     = SynthesisNodeView
         { svNnid             :: NId
-        , svCntx             :: [String]
+        , svCntx             :: [ String ]
         , svIsComplete       :: Bool
         , svIsEdgesProcessed :: Bool
         , svDuration         :: Int

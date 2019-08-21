@@ -44,7 +44,7 @@ import           Numeric.Interval
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
-type UnitTag v = ( Typeable v, Ord v, Show v )
+type UnitTag tag = ( Typeable tag, Ord tag, Show tag )
 
 
 ---------------------------------------------------------------------
