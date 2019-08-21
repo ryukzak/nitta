@@ -1,10 +1,11 @@
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE NamedFieldPuns       #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE TypeSynonymInstances   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -20,18 +21,13 @@ module NITTA.UIBackend.REST
     , synthesisServer
     ) where
 
-import           Control.Concurrent.STM
 import           Control.Monad.Except
-import           Data.Aeson
 import           Data.Default
 import qualified Data.Map                         as M
-import           Data.Maybe
 import qualified Data.Tree                        as T
-import           GHC.Generics
 import           NITTA.Intermediate.Simulation
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Whole
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Project.Parts.TestBench
@@ -39,22 +35,20 @@ import           NITTA.Project.Types
 import           NITTA.Project.Utils              (writeAndRunTestbench)
 import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Types
-import           NITTA.Synthesis.Utils
-import           NITTA.UIBackend.Marshalling      ()
+import           NITTA.UIBackend.Marshalling
 import           NITTA.UIBackend.Timeline
 import           NITTA.UIBackend.VisJS            (VisJS, algToVizJS)
 import           Servant
 import           System.FilePath                  (joinPath)
 
 
--- *REST API
 
 type SynthesisAPI tag v x t
     =    "synthesis" :> Get '[JSON] (T.Tree SynthesisNodeView)
     :<|> "synthesis" :> Capture "nId" NId :> WithSynthesis tag v x t
 
 synthesisServer root
-    =    liftIO ( synthesisNodeView root )
+    =    liftIO ( view root )
     :<|> \nId -> withSynthesis root nId
 
 
@@ -111,43 +105,3 @@ simpleCompilerServer root n
     :<|> liftIO ( nId <$> (smartBindSynthesisIO =<< getNodeIO root n))
     :<|> liftIO ( nId <$> (obviousBindThreadIO =<< getNodeIO root n))
     :<|> ( \deep -> liftIO ( nId <$> (allBestThreadIO deep =<< getNodeIO root n)) )
-
-
-
--- *Internal
-
-data SynthesisNodeView
-    = SynthesisNodeView
-        { svNnid             :: NId
-        , svCntx             :: [String]
-        , svIsComplete       :: Bool
-        , svIsEdgesProcessed :: Bool
-        , svDuration         :: Int
-        , svCharacteristic   :: Float -- FIXME:
-        , svOptionType       :: String
-        }
-    deriving ( Generic )
-
-instance ToJSON SynthesisNodeView
-
-synthesisNodeView Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
-    nodesM <- readTVarIO nEdges
-    nodes <- case nodesM of
-        Just ns -> mapM (synthesisNodeView . eNode) ns
-        Nothing -> return []
-    return T.Node
-        { T.rootLabel=SynthesisNodeView
-            { svNnid=nId
-            , svCntx=[]
-            , svIsComplete=nIsComplete
-            , svIsEdgesProcessed=isJust nodesM
-            , svDuration=fromEnum $ targetProcessDuration nModel
-            , svCharacteristic=maybe (read "NaN") eObjectiveFunctionValue nOrigin
-            , svOptionType=case nOrigin of
-                Just Edge{ eOption=BindingOption{} }  -> "Bind"
-                Just Edge{ eOption=DataflowOption{} } -> "Transport"
-                Just Edge{ eOption=RefactorOption{} } -> "Refactor"
-                Nothing                               -> "-"
-            }
-        , T.subForest=nodes
-        }

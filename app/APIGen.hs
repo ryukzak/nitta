@@ -1,10 +1,15 @@
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE DeriveDataTypeable  #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE KindSignatures      #-}
-{-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE DeriveDataTypeable     #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE KindSignatures         #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE TypeFamilies           #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-# OPTIONS -fno-warn-orphans #-}
@@ -30,6 +35,7 @@ import           NITTA.Model.Problems.Refactor
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Synthesis.Types
 import           NITTA.UIBackend
+import           NITTA.UIBackend.Marshalling
 import           NITTA.UIBackend.Timeline
 import           Numeric.Interval
 import           System.Console.CmdArgs
@@ -49,13 +55,13 @@ apiGenArgs = APIGen
     , opath="./web/src/gen" &= typ "output path"
     }
 
+
 $(deriveTypeScript defaultOptions ''ViewPointID)
 $(deriveTypeScript defaultOptions ''TimelinePoint)
 $(deriveTypeScript defaultOptions ''Interval)
 $(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
 $(deriveTypeScript defaultOptions ''ProcessTimelines)
 $(deriveTypeScript defaultOptions ''TestbenchReport)
-
 
 $(deriveTypeScript defaultOptions ''I)
 $(deriveTypeScript defaultOptions ''O)
@@ -66,6 +72,8 @@ $(deriveTypeScript defaultOptions ''LoopOut)
 $(deriveTypeScript defaultOptions ''Refactor)
 $(deriveTypeScript defaultOptions ''Parameters)
 
+$(deriveTypeScript defaultOptions ''NId)
+$(deriveTypeScript defaultOptions ''SynthesisNodeView)
 
 main = do
     APIGen{ port, opath } <- cmdArgs apiGenArgs
@@ -86,6 +94,18 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy TimelineWithViewPoint)
             , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
             , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReport)
+
+            , getTypeScriptDeclarations (Proxy :: Proxy I)
+            , getTypeScriptDeclarations (Proxy :: Proxy O)
+            , getTypeScriptDeclarations (Proxy :: Proxy X)
+            , getTypeScriptDeclarations (Proxy :: Proxy Loop)
+            , getTypeScriptDeclarations (Proxy :: Proxy LoopIn)
+            , getTypeScriptDeclarations (Proxy :: Proxy LoopOut)
+            , getTypeScriptDeclarations (Proxy :: Proxy Refactor)
+            , getTypeScriptDeclarations (Proxy :: Proxy Parameters)
+
+            , getTypeScriptDeclarations (Proxy :: Proxy NId)
+            , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
             ]
     writeFile (joinPath [ opath, "types.ts" ])
         $ S.replace "type " "export type "    -- export all types

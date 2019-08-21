@@ -1,10 +1,13 @@
-{-# LANGUAGE ConstraintKinds     #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
@@ -18,13 +21,20 @@ Stability   : experimental
 
 Marshaling data for JSON REST API.
 -}
-module NITTA.UIBackend.Marshalling () where
+module NITTA.UIBackend.Marshalling
+    ( Viewable(..)
+    , SynthesisNodeView
+    ) where
 
+import           Control.Concurrent.STM
 import           Data.Aeson
 import qualified Data.Map                         as M
+import           Data.Maybe
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import qualified Data.Text                        as T
+import qualified Data.Tree                        as T
+import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
@@ -35,11 +45,65 @@ import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Synthesis.Types
+import           NITTA.Synthesis.Utils
 import           NITTA.UIBackend.Timeline
 import           NITTA.Utils                      (transferred)
 import           Numeric.Interval
 import           Servant
 
+-- *Intermediate representation between raw haskell representation and JSON
+
+class Viewable t v | t -> v where
+    view :: t -> v
+
+
+
+data SynthesisNodeView
+    = SynthesisNodeView
+        { svNnid             :: NId
+        , svCntx             :: [String]
+        , svIsComplete       :: Bool
+        , svIsEdgesProcessed :: Bool
+        , svDuration         :: Int
+        , svCharacteristic   :: Float -- FIXME:
+        , svOptionType       :: String
+        }
+    deriving ( Generic )
+
+instance ToJSON SynthesisNodeView
+
+instance ( UnitTag tag, VarValTime v x t 
+        ) => Viewable (G Node tag v x t) (IO (T.Tree SynthesisNodeView)) where
+    view Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
+        nodesM <- readTVarIO nEdges
+        nodes <- case nodesM of
+            Just ns -> mapM (view . eNode) ns
+            Nothing -> return []
+        return T.Node
+            { T.rootLabel=SynthesisNodeView
+                { svNnid=nId
+                , svCntx=[]
+                , svIsComplete=nIsComplete
+                , svIsEdgesProcessed=isJust nodesM
+                , svDuration=fromEnum $ targetProcessDuration nModel
+                , svCharacteristic=maybe (read "NaN") eObjectiveFunctionValue nOrigin
+                , svOptionType=case nOrigin of
+                    Just Edge{ eOption=BindingOption{} }  -> "Bind"
+                    Just Edge{ eOption=DataflowOption{} } -> "Transport"
+                    Just Edge{ eOption=RefactorOption{} } -> "Refactor"
+                    Nothing                               -> "-"
+                }
+            , T.subForest=nodes
+            }
+
+
+
+instance Viewable (F v x) String where
+    view = show
+
+
+
+-- JSON
 
 type VarValTimeJSON v x t = ( Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t )
 
