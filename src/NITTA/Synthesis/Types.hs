@@ -70,6 +70,7 @@ import           NITTA.Model.TargetSystem         (ModelState (..))
 import           NITTA.Model.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
+import           Numeric.Interval                 (Interval)
 import           Numeric.Interval                 (inf, sup)
 
 
@@ -77,8 +78,8 @@ import           Numeric.Interval                 (inf, sup)
 type G e tag v x t
     = e
         (ModelState (BusNetwork tag v x t) v x)
-        (SynthesisOption tag v x t)
-        (SynthesisDecision tag v x t)
+        (SynthesisStatement tag v x (TimeConstrain t))
+        (SynthesisStatement tag v x (Interval t))
 
 
 -- |Synthesis graph ID. ID is a relative path, encoded as a sequence of an
@@ -200,7 +201,7 @@ mkEdges n@Node{ nId, nModel, nOrigin } = do
 
 prepareParametersCntx Node{ nModel } = let
         opts = synthesisOptions nModel
-        bindableFunctions = [ f | (BindingOption f _) <- opts ]
+        bindableFunctions = [ f | (Binding f _) <- opts ]
 
         mkWaves n pool lockedVars
             | pool == S.empty = []
@@ -213,13 +214,13 @@ prepareParametersCntx Node{ nModel } = let
         { nModel
         , possibleDeadlockBinds = fromList
             [ f
-            | (BindingOption f tag) <- opts
+            | (Binding f tag) <- opts
             , Lock{ lockBy } <- locks f
             , lockBy `member` unionsMap variables (bindedFunctions tag $ mUnit nModel)
             ]
         , transferableVars = fromList
             [ v
-            | (DataflowOption _ targets) <- opts
+            | (Dataflow _ targets) <- opts
             , (v, Just _) <- M.assocs targets
             ]
         , alreadyBindedVariables = variables $ mUnit nModel
@@ -227,7 +228,7 @@ prepareParametersCntx Node{ nModel } = let
             (unionsMap variables bindableFunctions)
             (fromList (map locked $ concatMap locks bindableFunctions))
         , bindingAlternative=foldl
-            ( \st (BindingOption f tag) -> M.alter (collect tag) f st )
+            ( \st (Binding f tag) -> M.alter (collect tag) f st )
             M.empty
             $ filter isBinding opts
         , numberOfBindOptions=length $ filter isBinding opts
@@ -310,7 +311,7 @@ instance Default ObjectiveFunctionConf where
 estimateParameters
         ObjectiveFunctionConf{}
         ParametersCntx{ possibleDeadlockBinds, bindingAlternative, nModel, alreadyBindedVariables, waves }
-        (BindingOption f tag)
+        (Binding f tag)
     = BindEdgeParameter
         { pCritical=isInternalLockPossible f
         , pAlternative=fromIntegral $ length (bindingAlternative M.! f)
@@ -334,7 +335,7 @@ estimateParameters
 estimateParameters
         ObjectiveFunctionConf{}
         ParametersCntx{ transferableVars, nModel }
-        (DataflowOption (_, TimeConstrain{ tcAvailable, tcDuration }) target )
+        (Dataflow (_, TimeConstrain{ tcAvailable, tcDuration }) target )
     = DataFlowEdgeParameter
         { pWaitTime=fromIntegral (inf tcAvailable)
         , pRestrictedTime=fromEnum (sup tcDuration) /= maxBound
@@ -346,10 +347,10 @@ estimateParameters
                 notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
             in map (fromIntegral . length) notTransferableVars
         }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption InsertOutRegister{})
-    = RefactorEdgeParameter $ InsertOutRegister undefined undefined
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption BreakLoop{})
-    = RefactorEdgeParameter $ BreakLoop undefined undefined undefined
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor InsertOutRegister{})
+    = RefactorEdgeParameter $ InsertOutRegister def def
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor BreakLoop{})
+    = RefactorEdgeParameter $ BreakLoop def def def
 
 
 -- |Function, which map 'Parameters' to 'Float'.

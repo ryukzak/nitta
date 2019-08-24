@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -20,7 +21,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.Problems.Whole
-    ( SynthesisOption(..), SynthesisDecision(..), SynthesisProblem(..)
+    ( SynthesisStatement(..), SynthesisProblem(..)
     , specializeDataFlowOption, isDataFlow, isBinding
     , option2decision
     ) where
@@ -41,33 +42,30 @@ import           NITTA.Utils.Lens
 import           Numeric.Interval                 (Interval, (...))
 
 
-isBinding = \case BindingOption{} -> True; _ -> False
-isDataFlow = \case DataflowOption{} -> True; _ -> False
+isBinding = \case Binding{} -> True; _ -> False
+isDataFlow = \case Dataflow{} -> True; _ -> False
 
-specializeDataFlowOption (DataflowOption s t) = DataFlowO s t
+specializeDataFlowOption (Dataflow s t) = DataFlowO s t
 specializeDataFlowOption _ = error "Can't specialize non Model option!"
 
-generalizeDataFlowOption (DataFlowO s t) = DataflowOption s t
-generalizeBindingOption (Bind s t) = BindingOption s t
+generalizeDataFlowOption (DataFlowO s t) = Dataflow s t
+generalizeBindingOption (Bind s t) = Binding s t
 
 
 
-data SynthesisOption tag v x t
-    = BindingOption (F v x) tag
-    | DataflowOption (Source tag (TimeConstrain t)) (Target tag v (TimeConstrain t))
-    | RefactorOption (Refactor v x)
-    deriving ( Generic, Show )
-
-data SynthesisDecision tag v x t
-    = BindingDecision (F v x) tag
-    | DataflowDecision (Source tag (Interval t)) (Target tag v (Interval t))
-    | RefactorDecision (Refactor v x)
+data SynthesisStatement tag v x tp
+    = Binding (F v x) tag
+    | Dataflow
+        { dfSource  :: (tag, tp)
+        , dfTargets :: M.Map v (Maybe (tag, tp))
+        }
+    | Refactor (Refactor v x)
     deriving ( Generic, Show )
 
 
 class SynthesisProblem u tag v x t | u -> tag v x t where
-    synthesisOptions :: u -> [ SynthesisOption tag v x t ]
-    synthesisDecision :: u -> SynthesisDecision tag v x t -> u
+    synthesisOptions :: u -> [ SynthesisStatement tag v x (TimeConstrain t) ]
+    synthesisDecision :: u -> SynthesisStatement tag v x (Interval t) -> u
 
 
 instance ( UnitTag tag, VarValTime v x t, Semigroup v
@@ -75,17 +73,17 @@ instance ( UnitTag tag, VarValTime v x t, Semigroup v
     synthesisOptions m@ModelState{ mUnit } = concat
         [ map generalizeBindingOption $ bindOptions m
         , map generalizeDataFlowOption $ dataflowOptions mUnit
-        , map RefactorOption $ refactorOptions m
+        , map Refactor $ refactorOptions m
         ]
 
-    synthesisDecision m (BindingDecision f tag) = bindDecision m $ Bind f tag
-    synthesisDecision m@ModelState{ mUnit } (DataflowDecision src trg) = m{ mUnit=dataflowDecision mUnit $ DataFlowD src trg }
-    synthesisDecision m (RefactorDecision d) = refactorDecision m d
+    synthesisDecision m (Binding f tag) = bindDecision m $ Bind f tag
+    synthesisDecision m@ModelState{ mUnit } (Dataflow src trg) = m{ mUnit=dataflowDecision mUnit $ DataFlowD src trg }
+    synthesisDecision m (Refactor d) = refactorDecision m d
 
 
 -- |The simplest way to convert 'Option SynthesisDT' to 'Decision SynthesisDT'.
-option2decision (BindingOption f tag) = BindingDecision f tag
-option2decision (DataflowOption src trg)
+option2decision (Binding f tag) = Binding f tag
+option2decision (Dataflow src trg)
     = let
         pushTimeConstrains = map snd $ catMaybes $ M.elems trg
         pullStart    = maximum $ (snd src^.avail.infimum) : map (\o -> o^.avail.infimum) pushTimeConstrains
@@ -94,5 +92,5 @@ option2decision (DataflowOption src trg)
         pushStart = pullStart
         mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
-    in DataflowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
-option2decision (RefactorOption o) = RefactorDecision o
+    in Dataflow ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
+option2decision (Refactor o) = Refactor o

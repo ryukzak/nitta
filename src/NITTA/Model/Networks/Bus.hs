@@ -355,11 +355,11 @@ instance ( UnitTag tag, VarValTime v x t, Semigroup v
     refactorDecision bn@BusNetwork{ bnRemains } (InsertOutRegister v v')
         = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
 
-    refactorDecision bn@BusNetwork{ bnBinded, bnPus } d@(BreakLoop l i o) = let
-            Just (puTag, puBinded) = L.find (elem (F l) . snd) $ M.assocs bnBinded
+    refactorDecision bn@BusNetwork{ bnBinded, bnPus } bl@BreakLoop{} = let
+            Just (puTag, puBinded) = L.find (elem (F $ recLoop bl) . snd) $ M.assocs bnBinded
         in bn
-            { bnPus=M.adjust (flip refactorDecision d) puTag bnPus
-            , bnBinded=M.insert puTag (( puBinded L.\\ [F l] ) ++ [ F i, F o ] ) bnBinded
+            { bnPus=M.adjust (flip refactorDecision bl) puTag bnPus
+            , bnBinded=M.insert puTag (( puBinded L.\\ [ F $ recLoop bl] ) ++ [ F $ recLoopOut bl, F $ recLoopIn bl ] ) bnBinded
             }
 
 

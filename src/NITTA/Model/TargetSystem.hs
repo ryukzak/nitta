@@ -70,12 +70,12 @@ instance ( UnitTag tag, VarValTime v x t, Semigroup v
             { mDataFlowGraph=patch (v, v') mDataFlowGraph
             , mUnit=refactorDecision mUnit d
             }
-    refactorDecision ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } d@(BreakLoop l i o) = let
-            revokeLoop = leafs L.\\ [ DFLeaf $ F l ]
-            addLoopParts = [ DFLeaf $ F i, DFLeaf $ F o ] ++ revokeLoop
+    refactorDecision ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } bl@BreakLoop{} = let
+            revokeLoop = leafs L.\\ [ DFLeaf $ F $ recLoop bl ]
+            addLoopParts = [ DFLeaf $ F $ recLoopOut bl, DFLeaf $ F $ recLoopIn bl ] ++ revokeLoop
         in ModelState
             { mDataFlowGraph=DFCluster $ addLoopParts
-            , mUnit=refactorDecision mUnit d
+            , mUnit=refactorDecision mUnit bl
             }
     refactorDecision _ _ = undefined
 

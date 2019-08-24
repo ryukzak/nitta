@@ -235,28 +235,28 @@ instance ( Var v ) => Locks (Fram v x t) v where
 
 instance ( VarValTime v x t ) => RefactorProblem (Fram v x t) v x where
     refactorOptions Fram{ memory } =
-        [ BreakLoop l (LoopOut l o) (LoopIn l i)
+        [ BreakLoop x o i
         | (_, Cell{ state=NotBrokenLoop, job=Just Job{ function } }) <- A.assocs memory
-        , let Just l@(Loop _ o i) = castF function
+        , let Just (Loop (X x) (O o) (I i)) = castF function
         ]
-    refactorDecision fram@Fram{ memory } (BreakLoop l i@(LoopOut _ (O vs)) o) = let
+    refactorDecision fram@Fram{ memory } bl@BreakLoop{ loopO } = let
             Just ( addr, cell@Cell{ history, job=Just Job{ binds } } )
                 = L.find (\case
-                    (_, Cell{job=Just Job{ function } }) -> function == F l
+                    (_, Cell{job=Just Job{ function } }) -> function == F (recLoop bl)
                     _ -> False
                     ) $ A.assocs memory
             ((iPid, oPid), process_) = runSchedule fram $ do
-                revoke <- scheduleFunctoinRevoke $ F l
-                f1 <- scheduleFunctionBind $ F i
-                f2 <- scheduleFunctionBind $ F o
+                revoke <- scheduleFunctionRevoke $ recLoop bl
+                f1 <- scheduleFunctionBind $ F $ recLoopOut bl
+                f2 <- scheduleFunctionBind $ F $ recLoopIn bl
                 establishVerticalRelations binds (f1 ++ f2 ++ revoke)
                 return (f1, f2)
-            iJob = (defJob $ F i){ binds=iPid, startAt=Just 0 }
-            oJob = (defJob $ F o){ binds=oPid }
+            iJob = (defJob $ F $ recLoopOut bl){ binds=iPid, startAt=Just 0 }
+            oJob = (defJob $ F $ recLoopIn bl){ binds=oPid }
             cell' = cell
                 { job=Just iJob
-                , history=[ F i, F o ] ++ history
-                , state=DoLoopSource (S.elems vs) oJob
+                , history=[ F $ recLoopOut bl, F $ recLoopIn bl ] ++ history
+                , state=DoLoopSource (S.elems loopO) oJob
                 }
         in fram
             { memory=memory A.// [ (addr, cell') ]

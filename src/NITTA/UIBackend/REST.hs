@@ -1,11 +1,11 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE TypeOperators          #-}
-{-# LANGUAGE TypeSynonymInstances   #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -93,14 +93,14 @@ withSynthesis root nId
 
 
 type SimpleCompilerAPI tag v x t
-    =    "edges" :> Get '[JSON] [ G Edge tag v x t ]
+    =    "edges" :> Get '[JSON] [ EdgeView tag v x t ]
     :<|> "simpleSynthesis" :> Post '[JSON] NId
     :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
     :<|> "obviousBindThread" :> Post '[JSON] NId
     :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
 
 simpleCompilerServer root n
-    =    liftIO ( getEdgesIO =<< getNodeIO root n )
+    =    liftIO ( return . map view =<< getEdgesIO =<< getNodeIO root n )
     :<|> liftIO ( nId <$> (simpleSynthesisIO =<< getNodeIO root n))
     :<|> liftIO ( nId <$> (smartBindSynthesisIO =<< getNodeIO root n))
     :<|> liftIO ( nId <$> (obviousBindThreadIO =<< getNodeIO root n))

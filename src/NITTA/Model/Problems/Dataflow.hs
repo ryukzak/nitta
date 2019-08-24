@@ -19,7 +19,6 @@ Stability   : experimental
 -}
 module NITTA.Model.Problems.Dataflow
     ( DataflowOption(..), DataflowDecision(..), DataflowProblem(..)
-    , Source, Target
     ) where
 
 import qualified Data.Map          as M
@@ -28,28 +27,21 @@ import           NITTA.Model.Types
 import           Numeric.Interval
 
 
-type Source tag t = (tag, t)
-type Target tag v t = M.Map v (Maybe (tag, t))
-
 data DataflowOption tag v t
     = DataFlowO
-        { dfoSource  :: Source tag (TimeConstrain t) -- ^Источник пересылки.
-        -- |Словарь, описывающий все необходимые пункты назначения для пересылаемого значения.
-        -- Допустима ситация, когда пункт назначения не может принять значение, в таком случае для
-        -- негоне указываются временные ограничения.
-        --
-        -- Примечание: почему tag оказался под Maybe? Потому что мы можем, банально, не знать в
-        -- каком PU находится требуемый функциональный блок, так как он может быть ещё непривязан к
-        -- PU.
-        , dfoTargets :: Target tag v (TimeConstrain t)
+        { -- |A source processor unit of data flow transaction, and it's time constrains.
+          dfoSource  :: (tag, TimeConstrain t)
+        -- |All possible targets of dataflow transaction. If some of targets can
+        -- be not available (Nothing).
+        , dfoTargets :: M.Map v (Maybe (tag, TimeConstrain t)) -- Target tag v (TimeConstrain t)
         }
         deriving ( Show, Generic )
 
 data DataflowDecision tag v t
     = DataFlowD
-        { dfdSource  :: Source tag (Interval t) -- ^Источник пересылки.
+        { dfdSource  :: (tag, Interval t) -- ^Источник пересылки.
         -- |Словарь, описывающий пункты назначения для пересылаемого значения.
-        , dfdTargets :: Target tag v (Interval t)
+        , dfdTargets :: M.Map v (Maybe (tag, Interval t))
         }
         deriving ( Show, Generic )
 
