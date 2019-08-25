@@ -248,11 +248,12 @@ data Parameters
         { -- |Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
           -- другими. Пример - занятие Loop-ом адреса, используемого LoopOut.
           pCritical                :: Bool
-          -- |Колличество альтернативных привязок для функционального блока.
+          -- |Number of binding alternatives
         , pAlternative             :: Float
           -- |Привязка данного функционального блока может быть активировано только спустя указанное
           -- колличество тактов.
         , pRestless                :: Float
+        , pOutputNumber            :: Float
           -- |Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
           -- количества пересылок.
         , pAllowDataFlow           :: Float
@@ -319,6 +320,7 @@ estimateParameters
         , pRestless=fromMaybe 0 $ do
             (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables nModel
             return $ fromIntegral tcFrom
+        , pOutputNumber=fromIntegral $ length $ S.elems $ outputs f
         , pPossibleDeadlock=f `member` possibleDeadlockBinds
         , pNumberOfBindedFunctions=fromIntegral $ length $ bindedFunctions tag $ mUnit nModel
         , pPercentOfBindedInputs = let
@@ -360,7 +362,7 @@ objectiveFunction
         params
     = case params of
         BindEdgeParameter{ pPossibleDeadlock=True } -> -1
-        BindEdgeParameter{ pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs }
+        BindEdgeParameter{ pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber }
             -> 1000
                 + pCritical <?> 1000
                 + (pAlternative == 1) <?> 500
@@ -369,6 +371,7 @@ objectiveFunction
                 - pWave * 50
                 - pNumberOfBindedFunctions * 10
                 - pRestless * 4
+                + pOutputNumber * 2
         DataFlowEdgeParameter{ pWaitTime, pNotTransferableInputs, pRestrictedTime }
             ->  100
                 + (numberOfDFOptions >= threshold) <?> 1000

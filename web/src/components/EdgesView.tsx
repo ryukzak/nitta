@@ -90,6 +90,7 @@ export class EdgesView extends React.Component<Props, State> {
                         textColumn("crit", (e: Edge) => String((e.parameters as BindingParam).pCritical)),
                         textColumn("lock", (e: Edge) => String((e.parameters as BindingParam).pPossibleDeadlock)),
                         textColumn("wave", (e: Edge) => (e.parameters as BindingParam).pWave),
+                        textColumn("outputs", (e: Edge) => (e.parameters as BindingParam).pOutputNumber),
                         textColumn("alt", (e: Edge) => (e.parameters as BindingParam).pAlternative),
                         textColumn("rest", (e: Edge) => (e.parameters as BindingParam).pRestless),
 
@@ -117,9 +118,9 @@ export class EdgesView extends React.Component<Props, State> {
                         textColumn("source", (e: Edge) => (e.decision as any as Dataflow).source.pu),
                         textColumn("targets", (e: Edge) => {
                             let targets = (e.decision as any as Dataflow).targets;
-                            let lst = Object.keys(targets).map(k => k + " -> " + (targets[k] ? targets[k].pu : ""));
+                            let lst = Object.keys(targets).map((k: string) => k + " -> " + (targets[k] ? targets[k].pu : ""));
                             return (<div>
-                                {lst.map(e => <pre>{e}</pre>)}
+                                {lst.map((k: string, i: number) => <pre key={i}>{k}</pre>)}
                             </div>);
                         }, true),
                         textColumn("wait", (e: Edge) => (e.parameters as DataflowParam).pWaitTime),
