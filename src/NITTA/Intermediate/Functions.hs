@@ -64,7 +64,8 @@ isLoop f
     | Just Loop{} <- castF f = True
     | otherwise = False
 
-instance ( Ord v ) => Function (Loop v x) v where
+instance Function (Loop v x) v where
+    isInternalLockPossible _ = True
     inputs  (Loop _ _a b) = variables b
     outputs (Loop _ a _b) = variables a
 instance ( Ord v ) => Patch (Loop v x) (v, v) where
