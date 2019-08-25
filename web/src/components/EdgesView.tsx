@@ -113,10 +113,15 @@ export class EdgesView extends React.Component<Props, State> {
                     columns={[
                         nidColumn(this.props.onNidChange),
                         objectiveColumn(),
-
-                        textColumn("source", (e: Edge) => JSON.stringify((e.decision as any as Dataflow).source)),
-                        textColumn("targets", (e: Edge) => JSON.stringify((e.decision as any as Dataflow).targets)),
-
+                        textColumn("at", (e: Edge) => (e.decision as any as Dataflow).source.time),
+                        textColumn("source", (e: Edge) => (e.decision as any as Dataflow).source.pu),
+                        textColumn("targets", (e: Edge) => {
+                            let targets = (e.decision as any as Dataflow).targets;
+                            let lst = Object.keys(targets).map(k => k + " -> " + (targets[k] ? targets[k].pu : ""));
+                            return (<div>
+                                {lst.map(e => <pre>{e}</pre>)}
+                            </div>);
+                        }, true),
                         textColumn("wait", (e: Edge) => (e.parameters as DataflowParam).pWaitTime),
                         textColumn("not transferable input", (e: Edge) => JSON.stringify((e.parameters as DataflowParam).pNotTransferableInputs)),
                         textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime)),
@@ -174,9 +179,13 @@ function decisionColumn() {
     };
 }
 
-function textColumn(columnName: string, f: (e: Edge) => string | number) {
+// FIXME: any should be changed.
+function textColumn(columnName: string, f: (e: Edge) => string | number | any, wrap?: boolean) {
+    let style = {};
+    if (wrap) style["whiteSpace"] = "unset";
     return {
         Header: columnName,
+        style: style,
         Cell: (row: { original: Edge }) => f(row.original)
     };
 }
