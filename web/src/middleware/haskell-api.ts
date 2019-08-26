@@ -7,7 +7,7 @@ export const haskellAPI = {
   },
   getNode: (nid: any) => api.getSynthesisByNId(nid),
   getEdge: (nid: any) => api.getSynthesisByNIdEdge(nid),
-  getEdges: (nid: any) => api.getSynthesisByNIdEdges(nid),
+  getEdges: (nid: string) => api.getSynthesisByNIdEdges(nid),
   getTimelines: (nid: string) => api.getSynthesisByNIdTimelines(nid),
   simpleSynthesis: (nid: any) => api.postSynthesisByNIdSimpleSynthesis(nid),
   simpleSynthesisGraph: (nid: any) => api.getSynthesisByNIdModelAlg(nid),

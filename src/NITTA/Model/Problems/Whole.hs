@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -20,7 +21,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.Problems.Whole
-    ( SynthesisDT, Option(..), Decision(..), synthesisOptions, synthesisDecision
+    ( SynthesisStatement(..), SynthesisProblem(..)
     , specializeDataFlowOption, isDataFlow, isBinding
     , option2decision
     ) where
@@ -28,14 +29,12 @@ module NITTA.Model.Problems.Whole
 import           Control.Arrow                    (second)
 import qualified Data.Map                         as M
 import           Data.Maybe
-import           Data.Proxy
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Binding
+import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Transport
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem         (ModelState (..))
 import           NITTA.Model.Types
@@ -43,54 +42,48 @@ import           NITTA.Utils.Lens
 import           Numeric.Interval                 (Interval, (...))
 
 
--- |Decision type of whole system synthesis process.
-data SynthesisDT u
-synthesisOptions m = options (Proxy :: Proxy SynthesisDT) m
-synthesisDecision m d = decision (Proxy :: Proxy SynthesisDT) m d
+isBinding = \case Binding{} -> True; _ -> False
+isDataFlow = \case Dataflow{} -> True; _ -> False
 
-isBinding = \case BindingOption{} -> True; _ -> False
-isDataFlow = \case DataFlowOption{} -> True; _ -> False
-
-specializeDataFlowOption (DataFlowOption s t) = DataFlowO s t
+specializeDataFlowOption (Dataflow s t) = DataFlowO s t
 specializeDataFlowOption _ = error "Can't specialize non Model option!"
 
-generalizeDataFlowOption (DataFlowO s t) = DataFlowOption s t
-generalizeBindingOption (BindingO s t) = BindingOption s t
+generalizeDataFlowOption (DataFlowO s t) = Dataflow s t
+generalizeBindingOption (Bind s t) = Binding s t
 
 
-instance DecisionType (SynthesisDT (BusNetwork tag v x t)) where
-    data Option (SynthesisDT (BusNetwork tag v x t))
-        = BindingOption (F v x) tag
-        | DataFlowOption (Source tag (TimeConstrain t)) (Target tag v (TimeConstrain t))
-        | RefactorOption (Option (RefactorDT v x))
-        deriving ( Generic, Show )
 
-    data Decision (SynthesisDT (BusNetwork tag v x t))
-        = BindingDecision (F v x) tag
-        | DataFlowDecision (Source tag (Interval t)) (Target tag v (Interval t))
-        | RefactorDecision (Decision (RefactorDT v x))
-        deriving ( Generic, Show )
+data SynthesisStatement tag v x tp
+    = Binding (F v x) tag
+    | Dataflow
+        { dfSource  :: (tag, tp)
+        , dfTargets :: M.Map v (Maybe (tag, tp))
+        }
+    | Refactor (Refactor v x)
+    deriving ( Generic, Show )
 
 
-instance ( UnitTag tag, VarValTime v x t
-         ) => DecisionProblem (SynthesisDT (BusNetwork tag v x t))
-                  SynthesisDT (ModelState (BusNetwork tag v x t) v x)
-        where
-    options _ m@ModelState{ mUnit }
-        = let
-            binds = map generalizeBindingOption $ options binding m
-            transfers = map generalizeDataFlowOption $ options dataFlowDT mUnit
-            refactors = map RefactorOption $ refactorOptions m
-        in concat [ binds, transfers, refactors ]
+class SynthesisProblem u tag v x t | u -> tag v x t where
+    synthesisOptions :: u -> [ SynthesisStatement tag v x (TimeConstrain t) ]
+    synthesisDecision :: u -> SynthesisStatement tag v x (Interval t) -> u
 
-    decision _ fr (BindingDecision f tag) = decision binding fr $ BindingD f tag
-    decision _ fr@ModelState{ mUnit } (DataFlowDecision src trg) = fr{ mUnit=decision dataFlowDT mUnit $ DataFlowD src trg }
-    decision _ m (RefactorDecision d) = refactorDecision m d
+
+instance ( UnitTag tag, VarValTime v x t, Semigroup v
+         ) => SynthesisProblem (ModelState (BusNetwork tag v x t) v x) tag v x t where
+    synthesisOptions m@ModelState{ mUnit } = concat
+        [ map generalizeBindingOption $ bindOptions m
+        , map generalizeDataFlowOption $ dataflowOptions mUnit
+        , map Refactor $ refactorOptions m
+        ]
+
+    synthesisDecision m (Binding f tag) = bindDecision m $ Bind f tag
+    synthesisDecision m@ModelState{ mUnit } (Dataflow src trg) = m{ mUnit=dataflowDecision mUnit $ DataFlowD src trg }
+    synthesisDecision m (Refactor d) = refactorDecision m d
 
 
 -- |The simplest way to convert 'Option SynthesisDT' to 'Decision SynthesisDT'.
-option2decision (BindingOption f tag) = BindingDecision f tag
-option2decision (DataFlowOption src trg)
+option2decision (Binding f tag) = Binding f tag
+option2decision (Dataflow src trg)
     = let
         pushTimeConstrains = map snd $ catMaybes $ M.elems trg
         pullStart    = maximum $ (snd src^.avail.infimum) : map (\o -> o^.avail.infimum) pushTimeConstrains
@@ -99,5 +92,5 @@ option2decision (DataFlowOption src trg)
         pushStart = pullStart
         mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
-    in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
-option2decision (RefactorOption o) = RefactorDecision $ refactorOption2decision o
+    in Dataflow ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
+option2decision (Refactor o) = Refactor o

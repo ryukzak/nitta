@@ -29,9 +29,8 @@ import           NITTA.Intermediate.Functions     (reg)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Binding
+import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Transport
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Utils
@@ -51,39 +50,34 @@ instance WithFunctions (ModelState (BusNetwork tag v x t) v x) (F v x) where
         = assert (S.fromList (functions mUnit) == S.fromList (functions mDataFlowGraph)) -- inconsistent ModelState
             $ functions mUnit
 
-instance ( UnitTag tag, VarValTime v x t ) =>
-        DecisionProblem (BindingDT tag v x)
-              BindingDT (ModelState (BusNetwork tag v x t) v x)
-        where
-    options _ ModelState{ mUnit }      = options binding mUnit
-    decision _ f@ModelState{ mUnit } d = f{ mUnit=decision binding mUnit d }
+instance ( UnitTag tag, VarValTime v x t
+        ) => BindProblem (ModelState (BusNetwork tag v x t) v x) tag v x where
+    bindOptions ModelState{ mUnit }      = bindOptions mUnit
+    bindDecision f@ModelState{ mUnit } d = f{ mUnit=bindDecision mUnit d }
 
 instance ( UnitTag tag, VarValTime v x t
-         ) => DecisionProblem (DataFlowDT tag v t)
-                   DataFlowDT (ModelState (BusNetwork tag v x t) v x)
-         where
-    options _ ModelState{ mUnit }      = options dataFlowDT mUnit
-    decision _ f@ModelState{ mUnit } d = f{ mUnit=decision dataFlowDT mUnit d }
-
-instance ( UnitTag tag, VarValTime v x t
-         ) => DecisionProblem (RefactorDT v x)
-                RefactorDT (ModelState (BusNetwork tag v x t) v x)
+        ) => DataflowProblem (ModelState (BusNetwork tag v x t) v x) tag v t
         where
-    options _ ModelState{ mUnit } = refactorOptions mUnit
+    dataflowOptions ModelState{ mUnit }      = dataflowOptions mUnit
+    dataflowDecision f@ModelState{ mUnit } d = f{ mUnit=dataflowDecision mUnit d }
 
-    decision _ ModelState{ mUnit, mDataFlowGraph } d@(InsertOutRegisterD v v')
+instance ( UnitTag tag, VarValTime v x t, Semigroup v
+        ) => RefactorProblem (ModelState (BusNetwork tag v x t) v x) v x where
+    refactorOptions ModelState{ mUnit } = refactorOptions mUnit
+
+    refactorDecision ModelState{ mUnit, mDataFlowGraph } d@(InsertOutRegister v v')
         = ModelState
             { mDataFlowGraph=patch (v, v') mDataFlowGraph
             , mUnit=refactorDecision mUnit d
             }
-    decision _ ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } d@(BreakLoopD l i o) = let
-                revokeLoop = leafs L.\\ [ DFLeaf $ F l ]
-                addLoopParts = [ DFLeaf $ F i, DFLeaf $ F o ] ++ revokeLoop
+    refactorDecision ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } bl@BreakLoop{} = let
+            revokeLoop = leafs L.\\ [ DFLeaf $ F $ recLoop bl ]
+            addLoopParts = [ DFLeaf $ F $ recLoopOut bl, DFLeaf $ F $ recLoopIn bl ] ++ revokeLoop
         in ModelState
             { mDataFlowGraph=DFCluster $ addLoopParts
-            , mUnit=refactorDecision mUnit d
+            , mUnit=refactorDecision mUnit bl
             }
-    decision _ _ _ = undefined
+    refactorDecision _ _ = undefined
 
 
 -- |Data flow graph - intermediate representation of application algorithm.

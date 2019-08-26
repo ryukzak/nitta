@@ -22,7 +22,7 @@ module NITTA.Utils.ProcessDescription
     ( runSchedule
     , execSchedule, execScheduleWithProcess
     , scheduleEndpoint
-    , scheduleFunctionBind, scheduleFunctoinRevoke, scheduleFunction
+    , scheduleFunctionBind, scheduleFunctionRevoke, scheduleFunction
     , scheduleInstruction
     , scheduleNestedStep
     , establishVerticalRelations, establishVerticalRelation
@@ -108,7 +108,7 @@ scheduleFunctionBind f = do
     Schedule{ schProcess=Process{ nextTick } } <- get
     scheduleStep (singleton nextTick) $ CADStep $ "bind " ++ show f
 
-scheduleFunctoinRevoke f = do
+scheduleFunctionRevoke f = do
     Schedule{ schProcess=Process{ nextTick } } <- get
     scheduleStep (singleton nextTick) $ CADStep $ "revoke " ++ show f
 
