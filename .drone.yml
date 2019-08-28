@@ -2,12 +2,14 @@ kind: pipeline
 name: default
 
 steps:
+
   - name: stack build
     image: nitta-build:latest
     pull: if-not-exists
     commands:
       - stack build --test --haddock --copy-bins
       - stack exec nitta-api-gen
+
   - name: npm build
     image: nitta-build:latest
     pull: if-not-exists
@@ -15,3 +17,43 @@ steps:
       - cd web
       - npm install --dev
       - npm run build
+
+  - name: success-telegram-notify
+    image: byrnedo/alpine-curl
+    commands:
+      - export TIME="10"
+      - export URL="https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
+      - export CHAT_ID="70151255"
+      - export TEXT="build success branch $DRONE_BRANCH of $DRONE_REPO_NAME"
+      - echo curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
+      - curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
+    when:
+      status:
+      - success
+    environment:
+      TELEGRAM_BOT_TOKEN:
+        from_secret: TELEGRAM_BOT_TOKEN
+      SOCK5_HOST:
+        from_secret: SOCK5_HOST
+      SOCK5_AUTH:
+        from_secret: SOCK5_AUTH
+
+  - name: failure-telegram-notify
+    image: byrnedo/alpine-curl
+    commands:
+      - export TIME="10"
+      - export URL="https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
+      - export CHAT_ID="70151255"
+      - export TEXT="build failure branch $DRONE_BRANCH of $DRONE_REPO_NAME"
+      - echo curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
+      - curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
+    when:
+      status:
+      - failure
+    environment:
+      TELEGRAM_BOT_TOKEN:
+        from_secret: TELEGRAM_BOT_TOKEN
+      SOCK5_HOST:
+        from_secret: SOCK5_HOST
+      SOCK5_AUTH:
+        from_secret: SOCK5_AUTH
