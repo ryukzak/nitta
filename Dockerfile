@@ -1,12 +1,8 @@
 # docker container for nitta project building and testing
+# sudo docker build --build-arg http_proxy=http://proxy.ifmo.ru:3128 --build-arg HTTP_PROXY=http://proxy.ifmo.ru:3128 -t nitta-build .
 
 FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND noninteractive
-
-# f%$#ing itmo network
-ENV \
-	HTTP_PROXY=http://proxy.ifmo.ru:3128 \
-	http_proxy=http://proxy.ifmo.ru:3128
 
 # haskell stack
 
@@ -28,7 +24,7 @@ ADD stack.yaml nitta.cabal /data/
 WORKDIR /data
 
 RUN stack setup --resolver ${RESOLVER}
-RUN stack --resolver ${RESOLVER} build --only-dependencies --haddock
+RUN stack --resolver ${RESOLVER} build --only-dependencies --haddock --test
 
 # npm
 
