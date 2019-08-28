@@ -126,7 +126,6 @@ microarch2 ioSync = busNetwork 31 ioSync
     , ("div", PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO )
     ]
 
-
 network ioSync = do
     addManual ("fram1", PU def def FramPorts{ oe=SignalTag 11, wr=SignalTag 10, addr=map SignalTag [9, 8, 7, 6] } FramIO )
     addManual ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } FramIO )
@@ -153,7 +152,6 @@ network ioSync = do
         )
     addManual ("mul7", PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
     addManual ("div8", PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO )
-    pu <- get
-    return $ busNetwork 31 ioSync pu 
+    endManual 31 ioSync 
 
 microarch = createMicroarch . network 
