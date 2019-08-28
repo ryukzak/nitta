@@ -32,3 +32,8 @@ RUN apt-get install -y npm && npm install -g npm
 
 ADD web/package.json web/package-lock.json /data/
 RUN npm install --only=dev --global
+
+# f%$#ing itmo network
+ENV \
+	HTTP_PROXY=http://proxy.ifmo.ru:3128 \
+	http_proxy=http://proxy.ifmo.ru:3128
