@@ -2,6 +2,8 @@ import * as React from "react";
 import { haskellAPI } from "../middleware/haskell-api";
 import { EdgesCard } from "./EdgeCard";
 
+const nInSeparator = "-";
+
 /**
  * Component to display EdjeCards of selected nId and it's chidren. 
  * Takes one argument: 
@@ -51,8 +53,8 @@ export class EdgesCardsHolder extends React.Component<EdgesCardsHolderProps, Edg
         let curIds: string[] = [];
         let nIds = {};
         var index = 0;
-        let reLastNidStep = /:[^:]*$/;
-        let childNid = new RegExp( "^" + nid + ":[0-9]*$");
+        let reLastNidStep = /-[^-]*$/; // nInSeparator
+        let childNid = new RegExp( "^" + nid + "-[0-9]*$"); // nInSeparator
         haskellAPI.getSynthesis()
             .then((response: any) => {
                 let buildHolder = (gNode: any, dNode: JSON) => {

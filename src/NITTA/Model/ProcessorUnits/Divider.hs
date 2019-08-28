@@ -20,7 +20,7 @@ Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Divider
     ( divider
-    , Ports(..)
+    , Ports(..), IOPorts(..)
     ) where
 
 import           Control.Monad                    (void, when)
@@ -33,6 +33,7 @@ import qualified Data.Set                         as S
 import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
@@ -41,7 +42,7 @@ import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           NITTA.Utils.Process
+import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (Interval, inf, intersection,
                                                    singleton, sup, width, (...))
 import           Text.InterpolatedString.Perl6    (qc)
@@ -194,10 +195,16 @@ instance ( Var v ) => Locks (Divider v x t) v where
     -- FIXME:
     locks _ = []
 
+instance DecisionProblem (RefactorDT v x)
+            RefactorDT (Divider v x t)
+        where
+    options _ _ = []
+    decision _ _ _ = undefined
+
 
 instance ( VarValTime v x t
-         ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (Divider v x t) where
+        ) => DecisionProblem (EndpointDT v t)
+            EndpointDT (Divider v x t) where
     options _proxy pu@Divider{ targetIntervals, sourceIntervals, remains, jobs }
         = concatMap (resolveColisions sourceIntervals) targets
         ++ concatMap (resolveColisions targetIntervals) sources
@@ -250,7 +257,7 @@ instance ( VarValTime v x t
                 then InProgress{ function, startAt, finishAt } : other
                 else i{ inputSeq=vs } : other
             , process_=execSchedule pu $ do
-                _endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load tag
+                _endpoints <- scheduleEndpoint d $ scheduleInstruction epdAt $ Load tag
                 -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
                 -- которые берут информацию о времени из Process
                 updateTick (sup epdAt)
@@ -272,8 +279,8 @@ instance ( VarValTime v x t
                 then other
                 else out{ outputRnd=vss' } : other
             , process_=execSchedule pu $ do
-                _endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Out tag
-                when (null vss') $ void $ scheduleFunction startAt (sup epdAt) function
+                _endpoints <- scheduleEndpoint d $ scheduleInstruction epdAt $ Out tag
+                when (null vss') $ void $ scheduleFunction (startAt ... sup epdAt) function
                 -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
                 -- которые берут информацию о времени из Process
                 updateTick (sup epdAt)
@@ -332,6 +339,9 @@ instance Connected (Divider v x t) where
         = DividerPorts{ wr, wrSel, oe, oeSel :: SignalTag }
         deriving ( Show )
 
+instance IOConnected (Divider v x t) where
+    data IOPorts (Divider v x t) = DividerIO
+        deriving ( Show )
 
 instance ( Val x, Show t
          ) => TargetSystemComponent (Divider v x t) where
@@ -354,6 +364,7 @@ instance ( Val x, Show t
                 , signalRst
                 }
             DividerPorts{ oe, oeSel, wr, wrSel }
+            DividerIO
         = fixIndent [qc|
 |           pu_div #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -375,7 +386,7 @@ instance ( Val x, Show t
 |               , .attr_out( { attrOut } )
 |               );
 |           |]
-    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
 
@@ -394,6 +405,7 @@ instance ( VarValTime v x t, Integral x
                     , wr=SignalTag 2
                     , wrSel=SignalTag 3
                     }
+                , tbcIOPorts=DividerIO
                 , tbcSignalConnect= \case
                     (SignalTag 0) -> "oe"
                     (SignalTag 1) -> "oeSel"

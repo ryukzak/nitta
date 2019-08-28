@@ -20,19 +20,21 @@ Stability   : experimental
 module NITTA.Model.Problems.Refactor
     ( RefactorDT, Option(..), Decision(..)
     , refactorOptions, refactorDecision
+    , refactorOption2decision
     ) where
 
 import           Data.Proxy
 import           GHC.Generics
+import           NITTA.Intermediate.Functions
 import           NITTA.Model.Problems.Types
 
 
-data RefactorDT v
+data RefactorDT v x
 refactorOptions m = options (Proxy :: Proxy RefactorDT) m
 refactorDecision m d = decision (Proxy :: Proxy RefactorDT) m d
 
-instance DecisionType (RefactorDT v) where
-    data Option (RefactorDT v)
+instance DecisionType (RefactorDT v x) where
+    data Option (RefactorDT v x)
         -- |Example:
         --
         -- >>> f1 :: (...) -> (a)
@@ -43,7 +45,14 @@ instance DecisionType (RefactorDT v) where
         -- reg :: a -> buf_a
         -- f2 :: (buf_a, ...) -> (...)
         = InsertOutRegisterO v
-        deriving ( Generic, Show, Eq, Ord )
-    data Decision (RefactorDT v)
+        -- |Example: l = Loop (X x) (O o) (I i) -> LoopIn l (I i), LoopOut (I o)
+        | BreakLoopO (Loop v x) (LoopOut v x) (LoopIn v x)
+        deriving ( Generic, Show, Eq )
+    data Decision (RefactorDT v x)
         = InsertOutRegisterD v v
+        | BreakLoopD (Loop v x) (LoopOut v x) (LoopIn v x)
         deriving ( Generic, Show )
+
+
+refactorOption2decision (InsertOutRegisterO v) = InsertOutRegisterD v (v <> v)
+refactorOption2decision (BreakLoopO origin src trg) = BreakLoopD origin src trg

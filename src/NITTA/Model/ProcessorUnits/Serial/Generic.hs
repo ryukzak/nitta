@@ -40,6 +40,7 @@ import qualified Data.Set                         as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
@@ -155,7 +156,7 @@ instance ( Default st
            _  -> pu'
     where
       finish p CurrentJob{ cFB, cStart } = snd $ modifyProcess p $ do
-        _h <- addActivity (cStart ... (act^.at.infimum + act^.at.dur)) $ FStep cFB
+        _h <- addStep (cStart ... (act^.at.infimum + act^.at.dur)) $ FStep cFB
         return ()
         -- mapM_ (relation . Vertical h) cSteps
 
@@ -191,6 +192,12 @@ instance ( Var v ) => Locks (SerialPU st v x t) v where
     , lockBy <- elems $ variables cFB
     ]
 
+instance DecisionProblem (RefactorDT v x)
+            RefactorDT (SerialPU st v x t)
+        where
+    options _ _ = []
+    decision _ _ _ = undefined
+
 
 -- * Утилиты --------------------------------------------------------
 
@@ -204,8 +211,8 @@ serialSchedule
   :: ( Show (Instruction pu), Time t, Typeable pu )
   => Instruction pu -> Decision (EndpointDT v t) -> State (Process v x t) [ProcessUid]
 serialSchedule instr act = do
-  e <- addActivity (act^.at) $ EndpointRoleStep $ epdRole act
-  i <- addActivity (act^.at) $ InstructionStep instr
+  e <- addStep (act^.at) $ EndpointRoleStep $ epdRole act
+  i <- addStep (act^.at) $ InstructionStep instr
   -- mapM_ (relation . Vertical e) [i]
   setProcessTime $ (act^.at.supremum) + 1
   return [e, i]

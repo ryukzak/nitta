@@ -26,7 +26,6 @@ module pu_master_i2c #
     // I2C interface
     , input scl
     , inout sda
-
     );
 
 ///////////////////////////////////////////////////////////

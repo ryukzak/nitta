@@ -59,7 +59,7 @@ class TargetSystemComponent pu where
 
     -- |Генерация фрагмента исходного кода для создания экземпляра вычислительного блока в рамках
     -- вычислительной платформы NITTA.
-    hardwareInstance :: String -> pu -> TargetEnvironment -> Ports pu -> String
+    hardwareInstance :: String -> pu -> TargetEnvironment -> Ports pu -> IOPorts pu -> String
 
 
 data Parameter
@@ -80,6 +80,7 @@ data TargetEnvironment
         , signalCycle :: String -- ^posedge on computation cycle start
         , inputPort   :: InputPortTag -> String
         , outputPort  :: OutputPortTag -> String
+        , inoutPort   :: InoutPortTag -> String
         , unitEnv     :: UnitEnv -- unit specific environment
         }
 

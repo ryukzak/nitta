@@ -128,7 +128,7 @@ described computational process on the multiplier.
 module NITTA.Model.ProcessorUnits.Multiplier
     ( multiplier
     , Multiplier
-    , Ports(..)
+    , Ports(..), IOPorts(..)
     ) where
 
 import           Control.Monad                    (when)
@@ -139,6 +139,7 @@ import           Data.Set                         (elems, fromList, member)
 import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
@@ -147,8 +148,8 @@ import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           NITTA.Utils.Process
-import           Numeric.Interval                 (inf, sup, (...))
+import           NITTA.Utils.ProcessDescription
+import           Numeric.Interval                 (sup, (...))
 import           Text.InterpolatedString.Perl6    (qc)
 
 {-
@@ -228,45 +229,45 @@ developed. The data structure is parametrized by the following variables types:
 -- FIXME: Add assertion, which checks that all synthesis decision compliant
 -- available options.
 
-data Multiplier v x t
-    = Multiplier
-    { -- | List of the assigned, but still not processed or cannot be processed functions.
-      -- Functions execution starts with:
-      --
-      -- - deleting functions from this list;
-      -- - transfering information from function to 'targets' and 'sources' ('assignment') fields,
-      --   furtherly this function will be current.
-      --
-      -- Assigned function can be executed in random order. Information about executed functions storaging
-      -- explicitly does not carried out, because it is in description os computation
-      -- process 'process_
-          remain               :: [F v x]
-      -- |List of variables, which are needed to upwnload to mUnit for
-      -- current function computation.
-        , targets              :: [v]
-      -- |List of variables, which are needed to download from mUnit for
-      -- current function computation. Download order is arbitrary. Necessary to notice that
-      -- all downloading variables match to one value - multipliing result.
-        , sources              :: [v]
-      -- Actual process of multipliing will be finished in the specified moment and its
-      -- result will be availible for download. Value is established after uploading of
-      -- all arguments.
-        , doneAt               :: Maybe t
-        , currentWork          :: Maybe (t, F v x)
-      -- | While planning of execution of function necessery to define undefined value of uploading /
-      -- downloading of data to / from mUnit, to then set up vertical behavior between
-      -- information about executing function and this send.
-        , currentWorkEndpoints :: [ ProcessUid ]
-      -- | Description of computation process, planned to the mUnit
-      -- 'NITTA.Types.Base.Process'.
-        , process_             :: Process v x t
-        , tick                 :: t
-      -- | In realisation of the mUnit IP kernel that supplied with Altera Quartus used.
-      -- This is don't allow to simulate with Icarus Verilog.
-      -- To get around with the restriction the mock was created, that connect instrad of IP kernel
-      -- ig the flag is set up.
-        , isMocked             :: Bool
-        }
+data Multiplier v x t = Multiplier
+    {
+    -- |List of the assigned, but not processed functions. Functions execution
+    -- starts with:
+    --
+    -- - removing functions from this list;
+    -- - transfering information from function to 'targets' and 'sources'
+    --   fields.
+    --
+    -- Assigned function can be executed in a random order.
+      remain               :: [ F v x ]
+    -- |List of variables, which are needed to upload to mUnit for current
+    -- function computation.
+    , targets              :: [ v ]
+    -- |List of variables, which are needed to download from mUnit for
+    -- current function computation. Download order is arbitrary. Necessary
+    -- to notice that all downloading variables match to one value -
+    -- multiplying result.
+    , sources              :: [ v ]
+    -- Actual process of multiplying will be finished in the specified
+    -- moment and its result will be available for download. Value is
+    -- established after uploading of all arguments.
+    , doneAt               :: Maybe t
+    , currentWork          :: Maybe ( t, F v x )
+    -- |While planning of execution of function necessary to define
+    -- undefined value of uploading / downloading of data to / from mUnit,
+    -- to then set up vertical behavior between information about executing
+    -- function and this send.
+    , currentWorkEndpoints :: [ ProcessUid ]
+    -- |Description of target computation process
+    -- ('NITTA.Model.ProcessorUnits.Types')
+    , process_             :: Process v x t
+    , tick                 :: t
+    -- |HDL implementation of PU contains multiplier IP core from Altera
+    -- Quartus. This can not be simulated by Icarus Verilog. If `isMocked`
+    -- is marked, a target system will be contained non-synthesizable
+    -- implementation of that IP-core.
+    , isMocked             :: Bool
+    }
     deriving ( Show )
 
 
@@ -286,6 +287,13 @@ instance ( Var v ) => Locks (Multiplier v x t) v where
         | locked <- concatMap (elems . variables) remain
         , lockBy <- sources ++ targets
         ]
+
+instance DecisionProblem (RefactorDT v x)
+            RefactorDT (Multiplier v x t)
+        where
+    options _ _ = []
+    decision _ _ _ = undefined
+
 
 -- |Multiplier mUnit construction. Argument define inner organisation of the computation
 -- unit:  using of multiplier IP kernel (False) or mock (True). For more information look hardware function
@@ -361,8 +369,6 @@ instance ( VarValTime v x t
          ) => DecisionProblem (EndpointDT v t)
                    EndpointDT (Multiplier v x t)
         where
-
-
     --1. Processors is asked about roles it can realise (in the other words, how computation
     --process can develop). It is realised by @options@ functions, result of which is
     --one of the further list:
@@ -410,7 +416,7 @@ instance ( VarValTime v x t
                 -- this is required for correct work of automatically generated tests,
                 -- that takes information about time from Process
                 updateTick (sup epdAt)
-                scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) $ Load sel
+                scheduleEndpoint d $ scheduleInstruction epdAt $ Load sel
         = pu
             { process_=process_'
             -- The remainder of the work is saved for the next loop
@@ -433,9 +439,9 @@ instance ( VarValTime v x t
         , sources' /= sources
         -- Compututation process planning is carring on.
         , let (newEndpoints, process_') = runSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstruction (inf epdAt) (sup epdAt) Out
+                endpoints <- scheduleEndpoint d $ scheduleInstruction epdAt Out
                 when (null sources') $ do
-                    high <- scheduleFunction a (sup epdAt) f
+                    high <- scheduleFunction (a ... sup epdAt) f
                     let low = endpoints ++ currentWorkEndpoints
                     -- Set up the vertical relantions between functional unit
                     -- and related to that data sending.
@@ -545,6 +551,9 @@ instance Connected (Multiplier v x t) where
         , oe    :: SignalTag -- ^send result to the bus
         } deriving ( Show )
 
+instance IOConnected (Multiplier v x t) where
+  data IOPorts (Multiplier v x t) = MultiplierIO
+        deriving ( Show )
 
 -- |The availability of standard values, with which actual result of mUnit in simlator
 -- is compared, has the main role in testing. This class carry on standard values generation.
@@ -597,7 +606,7 @@ instance ( VarValTime v x t
     --
     -- Take attention to function @fixIndent@. This function allows a programmer to use
     -- normal code block indentation.
-    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } MultiplierPorts{..}
+    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } MultiplierPorts{..} MultiplierIO
         = fixIndent [qc|
 |           pu_multiplier #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -616,7 +625,7 @@ instance ( VarValTime v x t
 |               , .attr_out( { attrOut } )
 |               );
 |           |]
-    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _bnPorts
+    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
 
@@ -645,8 +654,6 @@ instance WithFunctions (Multiplier v x t) (F v x) where
 -- of outer influence o mUnit (signals and input data), and also check sequence of output signals
 -- and data. Output data is compared with results of functional simulations and if they doesn't match
 -- then error message is displaing.
-
-
 instance ( VarValTime v x t, Integral x
          ) => Testable (Multiplier v x t) v x where
     testBenchImplementation prj@Project{ pName, pUnit }
@@ -665,6 +672,7 @@ instance ( VarValTime v x t, Integral x
                     , wr=SignalTag 1
                     , wrSel=SignalTag 2
                     }
+                , tbcIOPorts=MultiplierIO
                 , tbcSignalConnect= \case
                     (SignalTag 0) -> "oe"
                     (SignalTag 1) -> "wr"

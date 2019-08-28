@@ -18,6 +18,8 @@ module NITTA.Project.Snippets
     , snippetDumpFile
     , snippetInitialFinish
     , snippetTestBench, SnippetTestBenchConf(..)
+    , snippetTraceAndCheck, assertRe
+    , codeBlock, inline, codeLine
     ) where
 
 import qualified Data.String.Utils                as S
@@ -28,7 +30,28 @@ import           NITTA.Project.Implementation
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           Text.InterpolatedString.Perl6    (qc)
+import           Text.Regex
 
+
+inlineMarker = "###"
+
+inline str = S.join "\n" $ map (inlineMarker ++) $ lines str
+
+codeBlock indent str0 = let
+        str1 = drop 1 $ lines str0
+        str2 = map lstripInline str1
+        withBadIndent = filter (> 0) $ map (length . takeWhile (== ' ')) $ filter (not . isInline) str2
+        badIndent = if null withBadIndent then 0 else minimum withBadIndent
+        str3 = S.join "\n" $ map (fixIndent_ badIndent) str2
+    in S.replace inlineMarker "" str3
+    where  
+        lstripInline s = subRegex (mkRegex $ "^[[:space:]]*" ++ inlineMarker) s inlineMarker
+        isInline = S.startswith inlineMarker
+        fixIndent_ badIndent s 
+            | isInline s = s
+            | otherwise = replicate (indent * 4) ' ' ++ (drop badIndent s)
+
+codeLine indent str = replicate (indent * 4) ' ' ++ dropWhile (== ' ') str ++ "\n"
 
 snippetClkGen :: String
 snippetClkGen = [qc|initial begin
@@ -56,11 +79,45 @@ snippetInitialFinish block = [qc|initial begin
 end
 |]
 
+snippetTraceAndCheck :: Int -> String
+snippetTraceAndCheck width = codeBlock 0 [qc|
+    task trace;
+        input integer cycle;
+        input integer tick;
+        input [{ width }-1:0] dt;
+        begin
+            $display("cycle: %d\ttick: %d\tactual: %d", cycle, tick, dt);
+        end
+    endtask
+
+    task check;
+        input integer cycle;
+        input integer tick;
+        input [{ width }-1:0] dt;
+        input [{ width }-1:0] expect;
+        input [256*8-1:0] var;
+        begin
+            $write("cycle: %d\ttick: %d\tactual: %d\texpect: %d\t%0s", cycle, tick, dt, expect, var);
+            if ( !( dt === expect ) ) $display("\t\tFAIL");
+            else $display();
+        end
+    endtask
+|]
+
+assertRe = mkRegex $ concat
+    -- cycle:           4	tick:           2	actual:          1	expect:          1	nst_inline_1_0:0
+    [ "cycle:[[:space:]]*([[:digit:]]+)[[:space:]]*"
+    , "tick:[[:space:]]*([[:digit:]]+)[[:space:]]*"
+    , "actual:[[:space:]]*([[:digit:]]+)[[:space:]]*"
+    , "expect:[[:space:]]*([[:digit:]]+)[[:space:]]*"
+    , "([^\t ]+)"
+    ]
 
 data SnippetTestBenchConf m
     = SnippetTestBenchConf
         { tbcSignals       :: [String]
         , tbcPorts         :: Ports m
+        , tbcIOPorts       :: IOPorts m
         , tbcSignalConnect :: SignalTag -> String
         , tbcCtrl          :: Microcode m -> String
         , tbDataBusWidth   :: Int
@@ -68,7 +125,7 @@ data SnippetTestBenchConf m
 
 snippetTestBench
         Project{ pName, pUnit, pTestCntx=Cntx{ cntxProcess } }
-        SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcCtrl, tbDataBusWidth }
+        SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcIOPorts, tbcCtrl, tbDataBusWidth }
     = let
         cycleCntx:_ = cntxProcess
         name = moduleName pName pUnit
@@ -82,6 +139,7 @@ snippetTestBench
                 , signalCycle="cycle"
                 , inputPort=undefined
                 , outputPort=undefined
+                , inoutPort=undefined
                 , unitEnv=ProcessUnitEnv
                     { parameterAttrWidth=IntParam 4
                     , dataIn="data_in"
@@ -91,8 +149,9 @@ snippetTestBench
                     , signal=tbcSignalConnect
                     }
                 }
-            tbcPorts
-
+            tbcPorts 
+            tbcIOPorts
+            
         controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p

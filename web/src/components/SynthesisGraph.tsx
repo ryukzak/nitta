@@ -3,6 +3,8 @@ import "react-table/react-table.css";
 import { haskellAPI } from "../middleware/haskell-api";
 import Tree from "react-d3-tree";
 
+const nInSeparator = "-";
+
 interface SynthesisGraphProps {
   onNIdChange: any;
   selectedNId: any;
@@ -46,7 +48,7 @@ export class SynthesisGraph extends React.Component<SynthesisGraphProps, Synthes
       this.markNode(props.selectedNId);
       this.setState({
         selectedNId: props.selectedNId,
-        graph: [this.state.graph[0]] // force rerender Tree
+        graph: [this.state.graph[0]] // force re-render Tree
       });
     }
   }
@@ -79,7 +81,7 @@ export class SynthesisGraph extends React.Component<SynthesisGraphProps, Synthes
 
   reloadSynthesisGraph () {
     console.debug("SynthesisGraph:reloadSynthesisGraph()");
-    let reLastNidStep = /:[^:]*$/;
+    let reLastNidStep = /-[^-]*$/; // nInSeparator
     haskellAPI.getSynthesis()
       .then((response: any) => {
         let nIds = {};
@@ -121,8 +123,8 @@ export class SynthesisGraph extends React.Component<SynthesisGraphProps, Synthes
 
   stepsNumber () {
     if (this.state.selectedNId === null) return "NaN";
-    if (this.state.selectedNId === ":") return 0;
-    return this.state.selectedNId.split(":").length - 1;
+    if (this.state.selectedNId === nInSeparator) return 0;
+    return this.state.selectedNId.split(nInSeparator).length - 1;
   }
 
   render () {
@@ -133,7 +135,7 @@ export class SynthesisGraph extends React.Component<SynthesisGraphProps, Synthes
           [<a onClick={() => this.setState({height: this.state.height + 100})}> expand </a>] /
           [<a onClick={() => this.setState({height: this.state.height - 100})}> reduce </a>]
           [<a onClick={() => this.reloadSynthesisGraph()}> refresh </a>]
-          steps: {this.stepsNumber()}; selected synthesis nid - {this.state.selectedNId}
+          steps: {this.stepsNumber()}; selected synthesis nid {this.state.selectedNId}
         </pre>
         <div style={{width: "100%", height: this.state.height + "px", "borderStyle": "dashed", "borderWidth": "1px"}}>
           <Tree

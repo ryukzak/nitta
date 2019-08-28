@@ -3,7 +3,7 @@
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 {-|
-Module      : NITTA.Utils.Process
+Module      : NITTA.Utils.ProcessDescription
 Description : Utilities for process description.
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
@@ -17,11 +17,12 @@ based builder from that module.
 
 It also agreed to the process inspection.
 -}
-module NITTA.Utils.Process
+-- FIXME: rename
+module NITTA.Utils.ProcessDescription
     ( runSchedule
     , execSchedule, execScheduleWithProcess
     , scheduleEndpoint
-    , scheduleFunction
+    , scheduleFunctionBind, scheduleFunctoinRevoke, scheduleFunction
     , scheduleInstruction
     , scheduleNestedStep
     , establishVerticalRelations, establishVerticalRelation
@@ -34,7 +35,7 @@ import           Data.Proxy                       (asProxyTypeOf)
 import           Data.Typeable
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Types
-import           Numeric.Interval                 (inf, sup, (...))
+import           Numeric.Interval                 (singleton)
 
 -- |Process builder state.
 data Schedule pu v x t
@@ -103,23 +104,30 @@ establishVerticalRelation h l = do
             }
         }
 
+scheduleFunctionBind f = do
+    Schedule{ schProcess=Process{ nextTick } } <- get
+    scheduleStep (singleton nextTick) $ CADStep $ "bind " ++ show f
+
+scheduleFunctoinRevoke f = do
+    Schedule{ schProcess=Process{ nextTick } } <- get
+    scheduleStep (singleton nextTick) $ CADStep $ "revoke " ++ show f
 
 -- |Add to the process description information about function evaluation.
-scheduleFunction a b f = scheduleStep (Activity $ a ... b) $ FStep f
+scheduleFunction ti f = scheduleStep ti $ FStep f
 
 -- |Add to the process description information about endpoint behaviour, and it's low-level
 -- implementation (on instruction level). Vertical relations connect endpoint level and instruction
 -- level steps.
 scheduleEndpoint EndpointD{ epdAt, epdRole } codeGen = do
-    high <- scheduleStep (Activity $ inf epdAt ... sup epdAt) $ EndpointRoleStep epdRole
+    high <- scheduleStep epdAt $ EndpointRoleStep epdRole
     low <- codeGen
     establishVerticalRelations high low
     return high
 
 -- |Add to the process description information about instruction evaluation.
-scheduleInstruction start finish instr = do
+scheduleInstruction ti instr = do
     Schedule{ iProxy } <- get
-    scheduleStep (Activity $ start ... finish) $ InstructionStep (instr `asProxyTypeOf` iProxy)
+    scheduleStep ti $ InstructionStep (instr `asProxyTypeOf` iProxy)
 
 -- |Add to the process description information about nested step.
 scheduleNestedStep tag step@Step{ sTime } = do

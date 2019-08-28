@@ -21,7 +21,7 @@ module NITTA.Utils
     , timeWrapError
     , minimumOn
     , maximumOn
-    , shift
+    , shift, shiftI
     , fixIndent
     , fixIndentNoLn
     , space2tab
@@ -34,7 +34,6 @@ module NITTA.Utils
     , renderST
     -- *Process construction (deprecated)
     , modifyProcess
-    , addActivity
     , addInstr
     , addStep
     , addStep_
@@ -86,7 +85,8 @@ timeWrapError p act = error $ "You can't start work yesterday :) fram time: " ++
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
 maximumOn f = maximumBy (\a b -> f a `compare` f b)
 
-shift n d@EndpointD{ epdAt } = d{ epdAt=(I.inf epdAt + n) ... (I.sup epdAt + n) }
+shift offset d@EndpointD{ epdAt } = d{ epdAt=shiftI offset epdAt }
+shiftI offset i = (I.inf i + offset) ... (I.sup i + offset )
 
 
 
@@ -162,8 +162,6 @@ addStep_ placeInTime info = do
     _ <- addStep placeInTime info
     return ()
 
-addActivity interval = addStep $ Activity interval
-
 relation r = do
     p@Process{ relations } <- get
     put p{ relations=r : relations }
@@ -172,10 +170,10 @@ setProcessTime t = do
     p <- get
     put p{ nextTick=t }
 
-bindFB fb t = addStep (Event t) $ CADStep $ "Bind " ++ show fb
+bindFB fb t = addStep (I.singleton t) $ CADStep $ "bind: " ++ show fb
 
 addInstr :: ( Typeable pu, Show (Instruction pu) ) => pu -> I.Interval t -> Instruction pu -> State (Process v x t) ProcessUid
-addInstr _pu t i = addStep (Activity t) $ InstructionStep i
+addInstr _pu ti i = addStep ti $ InstructionStep i
 
 
 
@@ -183,15 +181,15 @@ endpointAt t p
     = case mapMaybe getEndpoint $ whatsHappen t p of
         [ep] -> Just ep
         []   -> Nothing
-        eps  -> error $ "Too many endpoint at a time: " ++ show eps
+        eps  -> error $ "endpoints collision at: " ++ show t ++ " " ++ show eps
 
 isFB s = isJust $ getFB s
 
-getFB step | Step{ sDesc=FStep fb } <- descent step = Just fb
-getFB _    = Nothing
+getFB Step{ sDesc } | FStep fb <- descent sDesc = Just fb
+getFB _                                         = Nothing
 
-getEndpoint step | Step{ sDesc=EndpointRoleStep role } <- descent step = Just role
-getEndpoint _                                                          = Nothing
+getEndpoint Step{ sDesc } | EndpointRoleStep role <- descent sDesc = Just role
+getEndpoint _                                                      = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 transferred pu = unionsMap variables $ getEndpoints $ process pu
@@ -205,12 +203,9 @@ isTarget _                        = False
 isInstruction (InstructionStep _) = True
 isInstruction _                   = False
 
-placeInTimeTag (Activity t) = tag $ I.inf t
-placeInTimeTag (Event t)    = tag t
+placeInTimeTag ti = tag $ I.inf ti
 
-
-stepStart Step{ sTime=Event t }    = t
-stepStart Step{ sTime=Activity t } = I.inf t
+stepStart Step{ sTime } = I.inf sTime
 
 
 -- modern

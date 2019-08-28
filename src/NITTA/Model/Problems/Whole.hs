@@ -62,13 +62,13 @@ instance DecisionType (SynthesisDT (BusNetwork tag v x t)) where
     data Option (SynthesisDT (BusNetwork tag v x t))
         = BindingOption (F v x) tag
         | DataFlowOption (Source tag (TimeConstrain t)) (Target tag v (TimeConstrain t))
-        | RefactorOption (Option (RefactorDT v))
+        | RefactorOption (Option (RefactorDT v x))
         deriving ( Generic, Show )
 
     data Decision (SynthesisDT (BusNetwork tag v x t))
         = BindingDecision (F v x) tag
         | DataFlowDecision (Source tag (Interval t)) (Target tag v (Interval t))
-        | RefactorDecision (Decision (RefactorDT v))
+        | RefactorDecision (Decision (RefactorDT v x))
         deriving ( Generic, Show )
 
 
@@ -76,20 +76,16 @@ instance ( UnitTag tag, VarValTime v x t
          ) => DecisionProblem (SynthesisDT (BusNetwork tag v x t))
                   SynthesisDT (ModelState (BusNetwork tag v x t) v x)
         where
-    options _ f@ModelState{ mUnit }
+    options _ m@ModelState{ mUnit }
         = let
-            binds = map generalizeBindingOption $ options binding f
+            binds = map generalizeBindingOption $ options binding m
             transfers = map generalizeDataFlowOption $ options dataFlowDT mUnit
-            refactors = map RefactorOption $ refactorOptions mUnit
+            refactors = map RefactorOption $ refactorOptions m
         in concat [ binds, transfers, refactors ]
 
     decision _ fr (BindingDecision f tag) = decision binding fr $ BindingD f tag
     decision _ fr@ModelState{ mUnit } (DataFlowDecision src trg) = fr{ mUnit=decision dataFlowDT mUnit $ DataFlowD src trg }
-    decision _ ModelState{ mUnit, mDataFlowGraph } (RefactorDecision d@(InsertOutRegisterD v v'))
-        = ModelState
-            { mDataFlowGraph=patch (v, v') mDataFlowGraph
-            , mUnit=refactorDecision mUnit d
-            }
+    decision _ m (RefactorDecision d) = refactorDecision m d
 
 
 -- |The simplest way to convert 'Option SynthesisDT' to 'Decision SynthesisDT'.
@@ -104,6 +100,4 @@ option2decision (DataFlowOption src trg)
         mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
     in DataFlowDecision ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
-option2decision (RefactorOption (InsertOutRegisterO v))
-    -- FIXME: v <> v
-    = RefactorDecision (InsertOutRegisterD v (v <> v))
+option2decision (RefactorOption o) = RefactorDecision $ refactorOption2decision o

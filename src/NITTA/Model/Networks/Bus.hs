@@ -38,16 +38,17 @@ Stability   : experimental
 module NITTA.Model.Networks.Bus
     ( busNetwork
     , BusNetwork(..)
-    , bindedFunctions, bindedVars
+    , Ports(..), IOPorts(..)
+    , bindedFunctions
     ) where
 
 import           Control.Monad.State
 import qualified Data.Array                       as A
 import           Data.Bits                        (FiniteBits (..))
 import           Data.Default
-import           Data.List                        (find, groupBy, nub, sortOn)
+import qualified Data.List                        as L
 import qualified Data.Map                         as M
-import           Data.Maybe                       (catMaybes, isJust, mapMaybe)
+import           Data.Maybe                       (isJust, mapMaybe)
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import           Data.Typeable
@@ -68,8 +69,9 @@ import           NITTA.Project.Types
 import           NITTA.UIBackend.VisJS            ()
 import           NITTA.Utils
 import           NITTA.Utils.Lens
-import           NITTA.Utils.Process
-import           Numeric.Interval                 (inf, width, (...))
+import           NITTA.Utils.ProcessDescription
+import           Numeric.Interval                 (inf, singleton, sup, width,
+                                                   (...))
 import           Text.InterpolatedString.Perl6    (qc)
 
 
@@ -86,23 +88,32 @@ data BusNetwork tag v x t = BusNetwork
     -- | Ширина шины управления.
     , bnSignalBusWidth :: Int
     -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
-    , bnAllowDrop      :: Maybe Bool
+    , ioSync           :: IOSynchronization
     , bnEnv            :: TargetEnvironment
-    , bnPorts          :: Ports (BusNetwork tag v x t)
+    , bnIOPorts        :: IOPorts (BusNetwork tag v x t)
     }
+
+
+instance ( Var v ) => Variables (BusNetwork tag v x t) v where
+    variables BusNetwork{ bnBinded } = unionsMap variables $ concat $ M.elems bnBinded
+
+
+bindedFunctions puTitle BusNetwork{ bnBinded }
+    | puTitle `M.member` bnBinded = bnBinded M.! puTitle
+    | otherwise = []
 
 
 -- TODO: Проверка подключения сигнальных линий.
 
 -- TODO: Вариант функции, где провода будут подключаться автоматически.
-busNetwork w bnAllowDrop pus = BusNetwork
+busNetwork w ioSync pus = BusNetwork
         { bnRemains=[]
         , bnBinded=M.empty
         , bnProcess=def
         , bnPus=M.fromList pus'
         , bnSignalBusWidth=w
-        , bnAllowDrop
-        , bnPorts=NetPorts{ extInputs, extOutputs }
+        , ioSync
+        , bnIOPorts=BusNetworkIO{ extInputs, extOutputs }
         , bnEnv
         }
     where
@@ -112,6 +123,7 @@ busNetwork w bnAllowDrop pus = BusNetwork
             , signalCycle="cycle"
             , inputPort= \(InputPortTag n) -> n
             , outputPort= \(OutputPortTag n) -> n
+            , inoutPort= \(InoutPortTag n) -> n
             , unitEnv=NetworkEnv
             }
         puEnv tag = bnEnv
@@ -125,8 +137,8 @@ busNetwork w bnAllowDrop pus = BusNetwork
                 }
             }
         pus' = map (\(tag, f) -> ( tag, f $ puEnv tag ) ) pus
-        extInputs=nub $ concatMap (\(_, PU{ ports }) -> externalInputPorts ports ) pus'
-        extOutputs=nub $ concatMap (\(_, PU{ ports }) -> externalOutputPorts ports ) pus'
+        extInputs=L.nub $ concatMap (\(_, PU{ ioPorts }) -> inputPorts ioPorts ) pus'
+        extOutputs=L.nub $ concatMap (\(_, PU{ ioPorts }) -> outputPorts ioPorts ) pus'
 
 instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{ bnRemains, bnBinded } = bnRemains ++ concat (M.elems bnBinded)
@@ -150,7 +162,7 @@ instance ( UnitTag tag, VarValTime v x t
                         , EndpointO (Target pushVar) pushAt <- opts
                         , pushVar `elem` vs
                         ]
-                    targets = sequence $ groupBy (\a b -> tgr a == tgr b) $ sortOn tgr conflictableTargets
+                    targets = sequence $ L.groupBy (\a b -> tgr a == tgr b) $ L.sortOn tgr conflictableTargets
                     zero = zip vs $ repeat Nothing
                 in map (M.fromList . (++) zero) targets
 
@@ -169,8 +181,7 @@ instance ( UnitTag tag, VarValTime v x t
         = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (d^.at)
         | otherwise
         = let
-            pushs = M.fromList $ catMaybes
-                $ map (\case
+            pushs = M.fromList $ mapMaybe (\case
                     (k, Just v) -> Just (k,  v)
                     (_, Nothing) -> Nothing
                 ) $ M.assocs dfdTargets
@@ -184,15 +195,14 @@ instance ( UnitTag tag, VarValTime v x t
                             ]
         in n
             { bnPus=foldl applyDecision bnPus subDecisions
-            , bnProcess=snd $ modifyProcess bnProcess $ do
+            , bnProcess=snd $ runSchedule n $ do
                 mapM_
-                    (\(pushedValue, (targetTitle, _tc)) -> addStep
-                        (Activity $ transportStartAt ... transportEndAt)
-                        $ InstructionStep (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork tag v x t))
+                    (\(pushedValue, (targetTitle, _tc)) ->
+                        scheduleInstruction (transportStartAt ... transportEndAt)
+                            (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork tag v x t))
                     )
                     $ M.assocs pushs
-                addStep_ (Activity $ transportStartAt ... transportEndAt) $ CADStep $ show d
-                setProcessTime $ d^.at.supremum + 1
+                updateTick (sup pullAt + 1)
             }
         where
             applyDecision pus (trgTitle, d') = M.adjust (\pu -> decision endpointDT pu d') trgTitle pus
@@ -227,7 +237,7 @@ instance ( UnitTag tag, VarValTime v x t
                 ]
         in execScheduleWithProcess net bnProcess $ do
             -- Копируем нижележащие процессы наверх.
-            mapM_ addNestedProcess $ sortOn fst $ M.assocs bnPus
+            mapM_ addNestedProcess $ L.sortOn fst $ M.assocs bnPus
 
             Process{ steps } <- getProcessSlice
             -- Transport - Endpoint
@@ -275,7 +285,7 @@ instance Controllable (BusNetwork tag v x t) where
 
     -- Right now, BusNetwork don't have external control (exclude rst signal and some hacks). All
     -- signals starts and ends inside network unit.
-    mapMicrocodeToPorts BusNetworkMC{} NetPorts{} = []
+    mapMicrocodeToPorts BusNetworkMC{} BusNetworkPorts = []
 
 
 instance {-# OVERLAPS #-}
@@ -293,7 +303,7 @@ instance {-# OVERLAPS #-}
 instance ( UnitTag tag ) => Simulatable (BusNetwork tag v x t) v x where
     simulateOn cntx BusNetwork{..} fb
         = let
-            Just (tag, _) = find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
+            Just (tag, _) = L.find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
             pu = bnPus M.! tag
         in simulateOn cntx pu fb
 
@@ -329,45 +339,46 @@ instance ( UnitTag tag, VarValTime v x t ) =>
                         Nothing  -> Just [fb]
                 ) puTitle bnBinded
             , bnProcess=snd $ modifyProcess p $
-                addStep (Event nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ show puTitle
+                addStep (singleton nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ show puTitle
             , bnRemains=filter (/= fb) bnRemains
         }
 
 
 
 instance ( UnitTag tag, VarValTime v x t
-        ) => DecisionProblem (RefactorDT v)
+        ) => DecisionProblem (RefactorDT v x)
                   RefactorDT (BusNetwork tag v x t)
         where
-    options _ bn
-        = nub
-            [ InsertOutRegisterO lockBy
-            | (BindingO f tag) <- options binding bn
-            , Lock{ lockBy } <- locks f
-            , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
-            ]
+    options proxy bn@BusNetwork{ bnPus } = let
+            insertRegs = L.nub
+                [ InsertOutRegisterO lockBy
+                | (BindingO f tag) <- options binding bn
+                , Lock{ lockBy } <- locks f
+                , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
+                ]
+            breakLoops = concatMap (options proxy) $ M.elems bnPus
+        in insertRegs ++ breakLoops
+
 
     decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v')
         = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
 
-
-
-bindedVars :: ( Var v ) => BusNetwork tag v x t -> S.Set v
-bindedVars BusNetwork{ bnBinded } = unionsMap variables $ concat $ M.elems bnBinded
-
-bindedFunctions puTitle BusNetwork{ bnBinded }
-    | puTitle `M.member` bnBinded = bnBinded M.! puTitle
-    | otherwise = []
+    decision _ bn@BusNetwork{ bnBinded, bnPus } d@(BreakLoopD l i o) = let
+            Just (puTag, puBinded) = L.find (elem (F l) . snd) $ M.assocs bnBinded
+        in bn
+            { bnPus=M.adjust (flip refactorDecision d) puTag bnPus
+            , bnBinded=M.insert puTag (( puBinded L.\\ [F l] ) ++ [ F i, F o ] ) bnBinded
+            }
 
 
 --------------------------------------------------------------------------
 
 programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
-externalPorts pus = M.assocs $ M.map (
-        \PU{ ports } ->
-            ( map inputPortTag $ externalInputPorts ports
-            , map outputPortTag $ externalOutputPorts ports
+bnExternalPorts pus = M.assocs $ M.map (
+        \PU{ ioPorts } ->
+            ( map inputPortTag $ inputPorts ioPorts
+            , map outputPortTag $ outputPorts ioPorts
             )
     ) pus
 
@@ -395,7 +406,7 @@ instance ( VarValTime v x t
 |                       ( input                     clk
 |                       , input                     rst
 |                       , output                    cycle
-|                   { externalPortsDecl $ externalPorts bnPus }
+|                   { externalPortsDecl $ bnExternalPorts bnPus }
 |                       , output              [7:0] debug_status
 |                       , output              [7:0] debug_bus1
 |                       , output              [7:0] debug_bus2
@@ -421,7 +432,7 @@ instance ( VarValTime v x t
 |                        ) control_unit
 |                       ( .clk( clk )
 |                       , .rst( rst )
-|                       , .start_cycle( { maybe "is_drop_allow" bool2verilog bnAllowDrop } || stop )
+|                       , .start_cycle( { isDrowAllowSignal ioSync } || stop )
 |                       , .cycle( cycle )
 |                       , .signals_out( control_bus )
 |                       , .trace_pc( debug_pc )
@@ -446,9 +457,9 @@ instance ( VarValTime v x t
 |                   |]
 
             renderInstance insts regs [] = ( reverse insts, reverse regs )
-            renderInstance insts regs ((t, PU{ unit, systemEnv, ports }) : xs)
+            renderInstance insts regs ((t, PU{ unit, systemEnv, ports, ioPorts }) : xs)
                 = let
-                    inst = hardwareInstance t unit systemEnv ports
+                    inst = hardwareInstance t unit systemEnv ports ioPorts
                     insts' = inst : regInstance t : insts
                     regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
                 in renderInstance insts' regs' xs
@@ -465,11 +476,11 @@ instance ( VarValTime v x t
             memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) $ programTicks pu
             values (BusNetworkMC arr) = reverse $ A.elems arr
 
-    hardwareInstance tag BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } bnPorts
+    hardwareInstance tag BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } _ports ioPorts
         | let
             io2v n = "    , " ++ n ++ "( " ++ n ++ " )"
-            is = map io2v $ map (\(InputPortTag n) -> n) $ externalInputPorts bnPorts
-            os = map io2v $ map (\(OutputPortTag n) -> n) $ externalOutputPorts bnPorts
+            is = map (\(InputPortTag n) -> io2v n) $ inputPorts ioPorts
+            os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts
         = fixIndent [qc|
 |           { tag } #
 |                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -487,19 +498,23 @@ instance ( VarValTime v x t
 |               , .is_drop_allow( rendezvous )  // FIXME:
 |               );
 |           |]
-    hardwareInstance _title _bn TargetEnvironment{ unitEnv=ProcessUnitEnv{} } _bnPorts
+    hardwareInstance _title _bn TargetEnvironment{ unitEnv=ProcessUnitEnv{} } _ports _io
         = error "BusNetwork should be NetworkEnv"
 
 
 instance Connected (BusNetwork tag v x t) where
-    data Ports (BusNetwork tag v x t)
-        = NetPorts
+    data Ports (BusNetwork tag v x t) = BusNetworkPorts
+        deriving ( Show )
+
+instance IOConnected (BusNetwork tag v x t) where
+    data IOPorts (BusNetwork tag v x t)
+        = BusNetworkIO
             { extInputs :: [ InputPortTag ]
             , extOutputs :: [ OutputPortTag ]
             }
         deriving ( Show )
-    externalInputPorts = extInputs
-    externalOutputPorts = extOutputs
+    inputPorts = extInputs
+    outputPorts = extOutputs
 
 
 
@@ -509,39 +524,33 @@ instance ( VarValTime v x t
     testBenchImplementation
                 Project
                     { pName
-                    , pUnit=n@BusNetwork{ bnProcess, bnPus, bnAllowDrop }
+                    , pUnit=n@BusNetwork{ bnProcess, bnPus, ioSync }
                     , pTestCntx=pTestCntx@Cntx{ cntxProcess, cntxCycleNumber }
                     } = let
             testEnv = S.join "\\n\\n"
                 [ tbEnv
-                | (t, PU{ unit, systemEnv, ports }) <- M.assocs bnPus
+                | (t, PU{ unit, systemEnv, ports, ioPorts }) <- M.assocs bnPus
                 , let t' = filter (/= '"') $ show t
-                , let tbEnv = testEnvironment t' unit systemEnv ports pTestCntx
+                , let tbEnv = testEnvironment t' unit systemEnv ports ioPorts pTestCntx
                 , not $ null tbEnv
                 ]
 
-            externalPortNames = concatMap ( \(_tag, (is, os)) -> is ++ os ) $ externalPorts bnPus
+            externalPortNames = concatMap ( \(_tag, (is, os)) -> is ++ os ) $ bnExternalPorts bnPus
             externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") externalPortNames)
             envInitFlags = mapMaybe (uncurry testEnvironmentInitFlag) $ M.assocs bnPus
 
             tickWithTransfers = map
-                ( \cycleCntx -> map
-                     ( \t -> ( t, cntxToTransfer cycleCntx t ) )
+                ( \(cycleI, cycleCntx) -> map
+                     ( \t -> ( cycleI, t, cntxToTransfer cycleCntx t ) )
                      [ 0 .. nextTick bnProcess ] )
-                $ take cntxCycleNumber cntxProcess
+                $ zip [0 :: Int ..] $ take cntxCycleNumber cntxProcess
 
-            assertions = concatMap ( \cycleTransfers -> posedgeCycle ++ concatMap assertion cycleTransfers ) tickWithTransfers
+            assertions = concatMap ( \cycleTickTransfer -> posedgeCycle ++ concatMap assertion cycleTickTransfer ) tickWithTransfers
 
-            assertion ( t, Nothing ) = fixIndentNoLn [qc|
-|                       @(posedge clk); $write("tick: { t };\tnet.data_bus == %h ", net.data_bus);
-|                       $display();
-|               |]
-            assertion ( t, Just (v, x) ) = fixIndentNoLn [qc|
-|                       @(posedge clk); $write("tick: { t };\tnet.data_bus == %h ", net.data_bus);
-|                           $write("=== %h (var: %s := { x })", { verilogInteger $ x }, { v } );
-|                           if ( !( net.data_bus === { verilogInteger $ x } ) ) $display( "\tFAIL");
-|                           else $display();
-|               |]
+            assertion ( cycleI, t, Nothing )
+                = codeLine 2 [qc|@(posedge clk); trace({ cycleI }, { t }, net.data_bus);|]
+            assertion ( cycleI, t, Just (v, x) )
+                = codeLine 2 [qc|@(posedge clk); check({ cycleI }, { t }, net.data_bus, { verilogInteger x }, { v });|]
 
         in Immediate (moduleName pName n ++ "_tb.v") $ fixIndent [qc|
 |               `timescale 1 ps / 1 ps
@@ -558,11 +567,12 @@ instance ( VarValTime v x t
 |               reg clk, rst;
 |               { if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
 |
+|               { snippetTraceAndCheck $ finiteBitSize (def :: x) }
 |               wire cycle;
 |
 |               // test environment initialization flags
 |               reg { S.join ", " envInitFlags };
-|               assign envInitFlag = { S.join " && " $ "1'b1" : envInitFlags };
+|               assign env_init_flag = { defEnvInitFlag envInitFlags ioSync };
 |
 |               { moduleName pName n }
 |                   #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -574,7 +584,7 @@ instance ( VarValTime v x t
 |                   { externalIO }
 |                   // if 1 - The process cycle are indipendent from a SPI.
 |                   // else - The process cycle are wait for the SPI.
-|                   , .is_drop_allow( { maybe "is_drop_allow" bool2verilog bnAllowDrop } )
+|                   , .is_drop_allow( { isDrowAllowSignal ioSync } )
 |                   );
 |
 |               { testEnv }
@@ -590,7 +600,7 @@ instance ( VarValTime v x t
 |                       // Start computational cycle from program[1] to program[n] and repeat.
 |                       // Signals effect to mUnit state after first clk posedge.
 |                       @(posedge clk);
-|                       while (!envInitFlag) @(posedge clk);
+|                       while (!env_init_flag) @(posedge clk);
 |{ assertions }
 |                       repeat ( 2000 ) @(posedge clk);
 |                       $finish;
@@ -599,6 +609,10 @@ instance ( VarValTime v x t
 |               endmodule
 |               |]
         where
+            defEnvInitFlag flags Sync = S.join " && "$ "1'b1" : flags
+            defEnvInitFlag flags ASync = S.join " || " $ "1'b1" : flags
+            defEnvInitFlag _flags OnBoard = error "can't generate testbench without specific IOSynchronization"
+
             cntxToTransfer cycleCntx t
                 = case extractInstructionAt n t of
                     Transport v _ _ : _ -> Just (v, either error id $ getX cycleCntx v)
@@ -609,3 +623,8 @@ instance ( VarValTime v x t
 |                       //-----------------------------------------------------------------
 |                       @(posedge cycle);
 |               |]
+
+
+isDrowAllowSignal Sync    = bool2verilog False
+isDrowAllowSignal ASync   = bool2verilog True
+isDrowAllowSignal OnBoard = "is_drop_allow"
