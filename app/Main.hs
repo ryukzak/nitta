@@ -38,6 +38,8 @@ import           NITTA.Project                    (TargetSynthesis (..),
 import           NITTA.UIBackend
 import           System.Console.CmdArgs           hiding (def)
 import           Text.InterpolatedString.Perl6    (qc)
+import           NITTA.Conf
+import           Control.Monad.State
 
 
 -- |Command line interface.
@@ -95,7 +97,7 @@ runTestbench tDFG tMicroArch
 
 -- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
 -- с задачей о целевой платформе.
-microarch ioSync = busNetwork 31 ioSync
+microarch2 ioSync = busNetwork 31 ioSync
     [ ("fram1", PU def def FramPorts{ oe=SignalTag 11, wr=SignalTag 10, addr=map SignalTag [9, 8, 7, 6] } FramIO )
     , ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } FramIO )
     -- , ("shift", PU def S.Ports{ S.work=SignalTag 12, S.direction=SignalTag 13, S.mode=SignalTag 14, S.step=SignalTag 15, S.init=SignalTag 16, S.oe=SignalTag 17 })
@@ -123,3 +125,35 @@ microarch ioSync = busNetwork 31 ioSync
     , ("mul", PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
     , ("div", PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO )
     ]
+
+
+network ioSync = do
+    addManual ("fram1", PU def def FramPorts{ oe=SignalTag 11, wr=SignalTag 10, addr=map SignalTag [9, 8, 7, 6] } FramIO )
+    addManual ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } FramIO )
+    addManual ("accum5", PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
+    addManual ("spi6", PU def
+        (anySPI 0)
+        SimpleIOPorts
+            { wr=SignalTag 22, oe=SignalTag 23
+            , stop="stop"
+            }
+        $ case "slave" of
+            "slave" -> SPISlave
+                { slave_mosi=InputPortTag "mosi"
+                , slave_miso=OutputPortTag "miso"
+                , slave_sclk=InputPortTag "sclk"
+                , slave_cs=InputPortTag "cs"
+                }
+            "master" -> SPIMaster
+                { master_mosi=OutputPortTag "mosi"
+                , master_miso=InputPortTag "miso"
+                , master_sclk=OutputPortTag "sclk"
+                , master_cs=OutputPortTag "cs"
+                }
+        )
+    addManual ("mul7", PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
+    addManual ("div8", PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO )
+    pu <- get
+    return $ busNetwork 31 ioSync pu 
+
+microarch = createMicroarch . network 
