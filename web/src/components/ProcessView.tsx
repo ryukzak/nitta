@@ -2,11 +2,11 @@ import * as React from "react";
 import { haskellAPI } from "../middleware/haskell-api";
 import { ProcessTimelines, ViewPointID, TimelinePoint, TimelineWithViewPoint } from "../gen/types";
 
-interface ProcessViewProps {
+interface Props {
     nId: string;
 }
 
-interface ProcessViewState {
+interface State {
     nId: string;
     data: ProcessTimelines<number>;
     pIdIndex: Record<number, TimelinePoint<number>>;
@@ -20,33 +20,32 @@ interface Highlight {
     down: number[];
 }
 
-export class ProcessView extends React.Component<ProcessViewProps, ProcessViewState> {
+export class ProcessView extends React.Component<Props, State> {
     // TODO: diff from previous synthesis process step
     // TODO: highlight point by click on info part
-    state: ProcessViewState = {
-        nId: null,
-        data: null,
-        pIdIndex: null,
-        detail: [],
-        highlight: {
-            up: [],
-            current: [],
-            down: [],
-        },
-    };
-
     constructor(props) {
         super(props);
+        this.state = {
+            nId: null,
+            data: null,
+            pIdIndex: null,
+            detail: [],
+            highlight: {
+                up: [],
+                current: [],
+                down: [],
+            },
+        };
         this.requestTimelines = this.requestTimelines.bind(this);
         this.renderPoint = this.renderPoint.bind(this);
         this.selectPoint = this.selectPoint.bind(this);
     }
 
-    static getDerivedStateFromProps(props: ProcessViewProps, state: ProcessViewState) {
+    static getDerivedStateFromProps(props: Props, state: State) {
         console.log("> ProcessView.getDerivedStateFromProps", props.nId);
         if (props.nId && props.nId !== state.nId) {
             console.log("> ProcessView.getDerivedStateFromProps - new state");
-            return { nId: props.nId, data: null } as ProcessViewState;
+            return { nId: props.nId, data: null } as State;
         }
         return null;
     }
@@ -56,7 +55,7 @@ export class ProcessView extends React.Component<ProcessViewProps, ProcessViewSt
         this.requestTimelines(this.state.nId);
     }
 
-    componentDidUpdate(prevProps: ProcessViewProps, prevState: ProcessViewState, snapshot: any) {
+    componentDidUpdate(prevProps: Props, prevState: State, snapshot: any) {
         console.log("> ProcessView.componentDidUpdate");
         if (prevState.nId !== this.state.nId) {
             this.requestTimelines(this.state.nId);

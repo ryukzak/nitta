@@ -275,7 +275,7 @@ test_sum_of_received_values =
 
 test_refactor =
     [ testCase "insert register before binding (y = x + x + x)" $ do
-        report <- runTargetSynthesis' ((def :: TargetSynthesis (BusNetwork String String Int Int) String Int Int)
+        report <- runTargetSynthesis' ((def :: TargetSynthesis String String Int Int)
             { tName="regBeforeBind"
             , tMicroArch=march
             , tSynthesisMethod=smartBindSynthesisIO

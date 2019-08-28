@@ -208,8 +208,8 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         }
                         {this.state.view === "edges" &&
                             <EdgesView
-                                selectedNId={this.state.selectedNId}
-                                onNIdChange={(nid: any) => this.onNIdChange(nid)}
+                                nid={this.state.selectedNId}
+                                onNidChange={(nid: any) => this.onNIdChange(nid)}
                             />
                         }
                         {this.state.view === "endpointOptions" &&

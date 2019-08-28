@@ -17,8 +17,6 @@ Stability   : experimental
 module NITTA.Utils
     ( unionsMap
     , oneOf
-    , isTimeWrap
-    , timeWrapError
     , minimumOn
     , maximumOn
     , shift, shiftI
@@ -34,11 +32,8 @@ module NITTA.Utils
     , renderST
     -- *Process construction (deprecated)
     , modifyProcess
-    , addInstr
     , addStep
-    , addStep_
     , bindFB
-    , relation
     , setProcessTime
     -- *Process inspection
     , endpointAt
@@ -47,7 +42,6 @@ module NITTA.Utils
     , isFB
     , isInstruction
     , isTarget
-    , placeInTimeTag
     , maybeInstructionOf
     ) where
 
@@ -59,12 +53,9 @@ import           Data.List                        (maximumBy, minimumBy, sortOn)
 import           Data.Maybe                       (isJust, mapMaybe)
 import           Data.Set                         (elems, unions)
 import qualified Data.String.Utils                as S
-import           Data.Typeable                    (Typeable)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Types
-import           NITTA.Model.Types
-import           NITTA.Utils.Lens
 import           Numeric                          (readInt, showHex)
 import           Numeric.Interval                 ((...))
 import qualified Numeric.Interval                 as I
@@ -78,9 +69,6 @@ oneOf = head . elems
 modify'_ :: (s -> s) -> State s ()
 modify'_ = modify'
 
-
-isTimeWrap p act = nextTick p > act^.at.infimum
-timeWrapError p act = error $ "You can't start work yesterday :) fram time: " ++ show (nextTick p) ++ " action start at: " ++ show (act^.at.infimum)
 
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
 maximumOn f = maximumBy (\a b -> f a `compare` f b)
@@ -158,23 +146,11 @@ addStep placeInTime info = do
             }
     return nextUid
 
-addStep_ placeInTime info = do
-    _ <- addStep placeInTime info
-    return ()
-
-relation r = do
-    p@Process{ relations } <- get
-    put p{ relations=r : relations }
-
 setProcessTime t = do
     p <- get
     put p{ nextTick=t }
 
 bindFB fb t = addStep (I.singleton t) $ CADStep $ "bind: " ++ show fb
-
-addInstr :: ( Typeable pu, Show (Instruction pu) ) => pu -> I.Interval t -> Instruction pu -> State (Process v x t) ProcessUid
-addInstr _pu ti i = addStep ti $ InstructionStep i
-
 
 
 endpointAt t p
@@ -202,8 +178,6 @@ isTarget _                        = False
 
 isInstruction (InstructionStep _) = True
 isInstruction _                   = False
-
-placeInTimeTag ti = tag $ I.inf ti
 
 stepStart Step{ sTime } = I.inf sTime
 

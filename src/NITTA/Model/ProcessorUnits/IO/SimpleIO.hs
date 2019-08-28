@@ -30,7 +30,6 @@ import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Utils.ProcessDescription
@@ -88,18 +87,13 @@ instance ( VarValTime v x t, SimpleIOInterface i
     setTime t sio@SimpleIO{ process_ } = sio{ process_=process_{ nextTick=t } }
 
 
-instance DecisionProblem (RefactorDT v x)
-            RefactorDT (SimpleIO i v x t)
-        where
-    options _ _ = []
-    decision _ _ _ = undefined
+instance RefactorProblem (SimpleIO i v x t) v x
 
 
 instance ( VarValTime v x t, SimpleIOInterface i
-         ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (SimpleIO i v x t)
+        ) => EndpointProblem (SimpleIO i v x t) v t
         where
-    options _proxy SimpleIO{ receiveQueue, sendQueue, process_=Process{ nextTick } } = let
+    endpointOptions SimpleIO{ receiveQueue, sendQueue, process_=Process{ nextTick } } = let
             source vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
             receiveOpts = map (source . vars) receiveQueue
 
@@ -107,7 +101,7 @@ instance ( VarValTime v x t, SimpleIOInterface i
             sendOpts = map (target . head . vars) sendQueue
         in receiveOpts ++ sendOpts
 
-    decision _proxy sio@SimpleIO{ receiveQueue } d@EndpointD{ epdRole=Source vs, epdAt }
+    endpointDecision sio@SimpleIO{ receiveQueue } d@EndpointD{ epdRole=Source vs, epdAt }
         | ([ Q{ function } ], receiveQueue') <- partition ((vs ==) . S.fromList . vars) receiveQueue
         , let ( _, process_ ) = runSchedule sio $ do
                 _ <- scheduleEndpoint d $ scheduleInstruction epdAt Receiving
@@ -115,7 +109,7 @@ instance ( VarValTime v x t, SimpleIOInterface i
                 scheduleFunction epdAt function
         = sio{ receiveQueue=receiveQueue', process_ }
 
-    decision _proxy sio@SimpleIO{ sendQueue, sendN, receiveQueue, receiveN } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision sio@SimpleIO{ sendQueue, sendN, receiveQueue, receiveN } d@EndpointD{ epdRole=Target v, epdAt }
         | ([ Q{ function } ], sendQueue') <- partition ((v ==) . head . vars) sendQueue
         , let ( _, process_ ) = runSchedule sio $ do
                 _ <- scheduleEndpoint d $ scheduleInstruction epdAt Sending
@@ -127,7 +121,7 @@ instance ( VarValTime v x t, SimpleIOInterface i
             , process_
             }
 
-    decision _ sio d = error $ "SPI model internal error; decision: " ++ show d ++ "\nSPI model: \n" ++ show sio
+    endpointDecision sio d = error $ "SPI model internal error; decision: " ++ show d ++ "\nSPI model: \n" ++ show sio
 
 
 instance Controllable (SimpleIO i v x t) where

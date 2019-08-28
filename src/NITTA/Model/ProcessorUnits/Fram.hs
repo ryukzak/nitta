@@ -37,7 +37,6 @@ import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
@@ -234,47 +233,41 @@ instance ( Var v ) => Locks (Fram v x t) v where
     -- FIXME:
     locks _ = []
 
-instance ( VarValTime v x t
-        ) => DecisionProblem (RefactorDT v x)
-            RefactorDT (Fram v x t)
-        where
-    options _ Fram{ memory } =
-        [ BreakLoopO l (LoopOut l o) (LoopIn l i)
+instance ( VarValTime v x t ) => RefactorProblem (Fram v x t) v x where
+    refactorOptions Fram{ memory } =
+        [ BreakLoop x o i
         | (_, Cell{ state=NotBrokenLoop, job=Just Job{ function } }) <- A.assocs memory
-        , let Just l@(Loop _ o i) = castF function
+        , let Just (Loop (X x) (O o) (I i)) = castF function
         ]
-
-    decision _ fram@Fram{ memory } (BreakLoopD l i@(LoopOut _ (O vs)) o) = let
+    refactorDecision fram@Fram{ memory } bl@BreakLoop{ loopO } = let
             Just ( addr, cell@Cell{ history, job=Just Job{ binds } } )
                 = L.find (\case
-                    (_, Cell{job=Just Job{ function } }) -> function == F l
+                    (_, Cell{job=Just Job{ function } }) -> function == F (recLoop bl)
                     _ -> False
                     ) $ A.assocs memory
             ((iPid, oPid), process_) = runSchedule fram $ do
-                revoke <- scheduleFunctoinRevoke $ F l
-                f1 <- scheduleFunctionBind $ F i
-                f2 <- scheduleFunctionBind $ F o
+                revoke <- scheduleFunctionRevoke $ recLoop bl
+                f1 <- scheduleFunctionBind $ F $ recLoopOut bl
+                f2 <- scheduleFunctionBind $ F $ recLoopIn bl
                 establishVerticalRelations binds (f1 ++ f2 ++ revoke)
                 return (f1, f2)
-            iJob = (defJob $ F i){ binds=iPid, startAt=Just 0 }
-            oJob = (defJob $ F o){ binds=oPid }
+            iJob = (defJob $ F $ recLoopOut bl){ binds=iPid, startAt=Just 0 }
+            oJob = (defJob $ F $ recLoopIn bl){ binds=oPid }
             cell' = cell
                 { job=Just iJob
-                , history=[ F i, F o ] ++ history
-                , state=DoLoopSource (S.elems vs) oJob
+                , history=[ F $ recLoopOut bl, F $ recLoopIn bl ] ++ history
+                , state=DoLoopSource (S.elems loopO) oJob
                 }
         in fram
             { memory=memory A.// [ (addr, cell') ]
             , process_
             }
-    decision _ _ d = error $ "fram not suport refactor: " ++ show d
+    refactorDecision _ d = error $ "fram not suport refactor: " ++ show d
 
 instance ( VarValTime v x t
-         ) => DecisionProblem (EndpointDT v t)
-                   EndpointDT (Fram v x t)
+        ) => EndpointProblem (Fram v x t) v t
         where
-
-    options _proxy Fram{ process_=Process{ nextTick }, remainRegs, memory } = let
+    endpointOptions Fram{ process_=Process{ nextTick }, remainRegs, memory } = let
             target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
             source True vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (1 + 1 + nextTick ... maxBound) (1 ... maxBound)
             source False vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (1 + nextTick ... maxBound) (1 ... maxBound)
@@ -300,7 +293,7 @@ instance ( VarValTime v x t
 
 
     -- Constant
-    decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
         | Just ( addr, cell@Cell{ state=DoConstant vs', job=Just Job{ function, binds, endpoints } } )
             <- L.find (\case
                 (_, Cell{ state=DoConstant vs' }) -> (vs' L.\\ S.elems vs) /= vs'
@@ -329,7 +322,7 @@ instance ( VarValTime v x t
             }
 
     -- Loop
-    decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
         | Just ( addr, cell@Cell{ state=DoLoopSource vs' oJob, job=Just job@Job{ binds, function, startAt, endpoints } } )
             <- L.find (\case
                 (_, Cell{ state=DoLoopSource vs' _ }) -> (vs' L.\\ S.elems vs) /= vs'
@@ -356,7 +349,7 @@ instance ( VarValTime v x t
                     }
         = fram{ process_, memory=memory A.// [ (addr, cell') ] }
 
-    decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Target v, epdAt }
         | Just ( addr, cell@Cell{ job=Just Job{ function, binds, endpoints } } )
             <- L.find (\case (_, Cell{ state=DoLoopTarget v' }) -> v == v'; _ -> False) $ A.assocs memory
         , let
@@ -376,7 +369,7 @@ instance ( VarValTime v x t
             }
 
     -- Reg Target
-    decision _proxy fram@Fram{ memory, remainRegs } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision fram@Fram{ memory, remainRegs } d@EndpointD{ epdRole=Target v, epdAt }
         | Just ( addr, cell@Cell{ history } ) <- findForRegCell fram
         , ([ ( Reg (I _) (O vs), j@Job{ function } ) ], remainRegs' ) <- L.partition (\(Reg (I v') (O _), _) -> v' == v) remainRegs
         , let
@@ -395,7 +388,7 @@ instance ( VarValTime v x t
             , process_
             }
 
-    decision _proxy fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
         | Just ( addr, cell@Cell{ state=DoReg vs', job=Just Job{ function, startAt=Just fBegin, binds, endpoints } } )
             <- L.find (\case
                 (_, Cell{ state=DoReg vs' }) -> (vs' L.\\ S.elems vs) /= vs'
@@ -423,7 +416,7 @@ instance ( VarValTime v x t
             , process_
             }
 
-    decision _proxy Fram{ memory } d
+    endpointDecision Fram{ memory } d
         = error $ "fram model internal error: "
             ++ show d ++ "\n cells state: \n"
             ++ S.join "\n" (map (\(i, c) -> show i ++ ": " ++ show (state c)) $ A.assocs memory)

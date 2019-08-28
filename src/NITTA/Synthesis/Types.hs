@@ -38,7 +38,7 @@ wrong steps.
 -}
 module NITTA.Synthesis.Types
     ( -- *Synthesis graph
-      SG, NId(..), Node(..), Edge(..)
+      G, NId(..), Node(..), Edge(..)
     , mkRootNodeIO, getNodeIO, getEdgesIO
       -- *Synthesis decision type & Parameters
     , ObjectiveFunctionConf(..)
@@ -61,20 +61,25 @@ import qualified Data.Set                         as S
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
+import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Transport
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.Problems.Whole
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem         (ModelState (..))
 import           NITTA.Model.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
+import           Numeric.Interval                 (Interval)
+import           Numeric.Interval                 (inf, sup)
 
 
--- |Type alias for Synthesis Graph parts, where @m@ should be 'Node' or 'Edge'.
-type SG m tag v x t = m (ModelState (BusNetwork tag v x t) v x) (SynthesisDT (BusNetwork tag v x t))
+-- |Type alias for Graph parts, where `e` - graph element (Node or Edge) should be 'Node' or 'Edge';
+type G e tag v x t
+    = e
+        (ModelState (BusNetwork tag v x t) v x)
+        (SynthesisStatement tag v x (TimeConstrain t))
+        (SynthesisStatement tag v x (Interval t))
 
 
 -- |Synthesis graph ID. ID is a relative path, encoded as a sequence of an
@@ -108,7 +113,7 @@ instance Monoid NId where
     mappend = (<>)
 
 
-data Node m dt
+data Node m o d
     = Node
         { nId         :: NId
           -- |model of target processor
@@ -118,18 +123,18 @@ data Node m dt
         , nIsComplete :: Bool
           -- |if 'Node' is root - 'Nothing'; if 'Node' is not root - 'Just'
           -- input 'Edge'.
-        , nOrigin     :: Maybe (Edge m dt)
+        , nOrigin     :: Maybe (Edge m o d)
           -- |lazy mutable field with different synthesis options and sub nodes
-        , nEdges      :: TVar (Maybe [Edge m dt])
+        , nEdges      :: TVar (Maybe [Edge m o d])
         }
     deriving ( Generic )
 
 
-data Edge m dt
+data Edge m o d
     = Edge
-        { eNode                   :: Node m dt
-        , eOption                 :: Option dt
-        , eDecision               :: Decision dt
+        { eNode                   :: Node m o d
+        , eOption                 :: o
+        , eDecision               :: d
           -- |parameters of the 'Edge'
         , eParameters             :: Parameters
           -- |objective function value for the 'Edge', which representing
@@ -155,7 +160,7 @@ mkNode nId nModel nOrigin nEdges = Node
 -- |Get all available edges for the node. Edges calculated only for the first
 -- call.
 getEdgesIO :: ( UnitTag tag, VarValTime v x t, Semigroup v
-    ) => SG Node tag v x t -> IO [ SG Edge tag v x t ]
+    ) => G Node tag v x t -> IO [ G Edge tag v x t ]
 getEdgesIO node@Node{ nEdges } = atomically $
     readTVar nEdges >>= \case
         Just edges -> return edges
@@ -167,7 +172,7 @@ getEdgesIO node@Node{ nEdges } = atomically $
 
 -- |Get specific by @nId@ node from a synthesis tree.
 getNodeIO :: ( UnitTag tag, VarValTime v x t, Semigroup v
-    ) => SG Node tag v x t -> NId -> IO ( SG Node tag v x t )
+    ) => G Node tag v x t -> NId -> IO ( G Node tag v x t )
 getNodeIO node (NId []) = return node
 getNodeIO node nId@(NId (i:is)) = do
     edges <- getEdgesIO node
@@ -175,8 +180,8 @@ getNodeIO node nId@(NId (i:is)) = do
     getNodeIO (eNode $ edges !! i) (NId is)
 
 
-mkEdges :: ( UnitTag tag, VarValTime v x t, Semigroup v )
-     => SG Node tag v x t -> STM [ SG Edge tag v x t ]
+mkEdges :: ( UnitTag tag, VarValTime v x t, Semigroup v
+    ) => G Node tag v x t -> STM [ G Edge tag v x t ]
 mkEdges n@Node{ nId, nModel, nOrigin } = do
     let conf = def
         cntx = prepareParametersCntx n
@@ -196,7 +201,7 @@ mkEdges n@Node{ nId, nModel, nOrigin } = do
 
 prepareParametersCntx Node{ nModel } = let
         opts = synthesisOptions nModel
-        bindableFunctions = [ f | (BindingOption f _) <- opts ]
+        bindableFunctions = [ f | (Binding f _) <- opts ]
 
         mkWaves n pool lockedVars
             | pool == S.empty = []
@@ -209,13 +214,13 @@ prepareParametersCntx Node{ nModel } = let
         { nModel
         , possibleDeadlockBinds = fromList
             [ f
-            | (BindingOption f tag) <- opts
+            | (Binding f tag) <- opts
             , Lock{ lockBy } <- locks f
             , lockBy `member` unionsMap variables (bindedFunctions tag $ mUnit nModel)
             ]
         , transferableVars = fromList
             [ v
-            | (DataFlowOption _ targets) <- opts
+            | (Dataflow _ targets) <- opts
             , (v, Just _) <- M.assocs targets
             ]
         , alreadyBindedVariables = variables $ mUnit nModel
@@ -223,7 +228,7 @@ prepareParametersCntx Node{ nModel } = let
             (unionsMap variables bindableFunctions)
             (fromList (map locked $ concatMap locks bindableFunctions))
         , bindingAlternative=foldl
-            ( \st (BindingOption f tag) -> M.alter (collect tag) f st )
+            ( \st (Binding f tag) -> M.alter (collect tag) f st )
             M.empty
             $ filter isBinding opts
         , numberOfBindOptions=length $ filter isBinding opts
@@ -243,11 +248,12 @@ data Parameters
         { -- |Устанавливается для таких функциональных блоков, привязка которых может быть заблокирована
           -- другими. Пример - занятие Loop-ом адреса, используемого LoopOut.
           pCritical                :: Bool
-          -- |Колличество альтернативных привязок для функционального блока.
+          -- |Number of binding alternatives
         , pAlternative             :: Float
           -- |Привязка данного функционального блока может быть активировано только спустя указанное
           -- колличество тактов.
         , pRestless                :: Float
+        , pOutputNumber            :: Float
           -- |Данная операция может быть привязана прямо сейчас и это приведёт к разрешению указанного
           -- количества пересылок.
         , pAllowDataFlow           :: Float
@@ -269,7 +275,7 @@ data Parameters
         , pNotTransferableInputs :: [Float]
         }
     | RefactorEdgeParameter
-        { pRefactor :: Option (RefactorDT () ())
+        { pRefactor :: Refactor () ()
         }
     deriving ( Show, Generic )
 
@@ -306,7 +312,7 @@ instance Default ObjectiveFunctionConf where
 estimateParameters
         ObjectiveFunctionConf{}
         ParametersCntx{ possibleDeadlockBinds, bindingAlternative, nModel, alreadyBindedVariables, waves }
-        (BindingOption f tag)
+        (Binding f tag)
     = BindEdgeParameter
         { pCritical=isInternalLockPossible f
         , pAlternative=fromIntegral $ length (bindingAlternative M.! f)
@@ -314,6 +320,7 @@ estimateParameters
         , pRestless=fromMaybe 0 $ do
             (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables nModel
             return $ fromIntegral tcFrom
+        , pOutputNumber=fromIntegral $ length $ S.elems $ outputs f
         , pPossibleDeadlock=f `member` possibleDeadlockBinds
         , pNumberOfBindedFunctions=fromIntegral $ length $ bindedFunctions tag $ mUnit nModel
         , pPercentOfBindedInputs = let
@@ -325,22 +332,27 @@ estimateParameters
                     allInputs = S.elems $ inputs f
                     ns = map (\v -> fromMaybe 0 (waves M.!? v)) allInputs
                 in fromIntegral $ maximum (0 : ns)
-
         }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{ transferableVars, nModel } opt@(DataFlowOption _ targets)
+
+estimateParameters
+        ObjectiveFunctionConf{}
+        ParametersCntx{ transferableVars, nModel }
+        (Dataflow (_, TimeConstrain{ tcAvailable, tcDuration }) target )
     = DataFlowEdgeParameter
-        { pWaitTime=fromIntegral (specializeDataFlowOption opt^.at.avail.infimum)
-        , pRestrictedTime=fromEnum (specializeDataFlowOption opt^.at.dur.supremum) /= maxBound
+        { pWaitTime=fromIntegral (inf tcAvailable)
+        , pRestrictedTime=fromEnum (sup tcDuration) /= maxBound
         , pNotTransferableInputs
             = let
                 fs = functions nModel
-                vs = fromList [ v | (v, Just _) <- M.assocs targets ]
+                vs = fromList [ v | (v, Just _) <- M.assocs target ]
                 affectedFunctions = filter (\f -> not $ null (inputs f `intersection` vs)) fs
                 notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
             in map (fromIntegral . length) notTransferableVars
         }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption InsertOutRegisterO{}) = RefactorEdgeParameter (InsertOutRegisterO ())
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (RefactorOption BreakLoopO{}) = RefactorEdgeParameter (BreakLoopO undefined undefined undefined)
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor InsertOutRegister{})
+    = RefactorEdgeParameter $ InsertOutRegister def def
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor BreakLoop{})
+    = RefactorEdgeParameter $ BreakLoop def def def
 
 
 -- |Function, which map 'Parameters' to 'Float'.
@@ -350,7 +362,7 @@ objectiveFunction
         params
     = case params of
         BindEdgeParameter{ pPossibleDeadlock=True } -> -1
-        BindEdgeParameter{ pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs }
+        BindEdgeParameter{ pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber }
             -> 1000
                 + pCritical <?> 1000
                 + (pAlternative == 1) <?> 500
@@ -359,15 +371,16 @@ objectiveFunction
                 - pWave * 50
                 - pNumberOfBindedFunctions * 10
                 - pRestless * 4
+                + pOutputNumber * 2
         DataFlowEdgeParameter{ pWaitTime, pNotTransferableInputs, pRestrictedTime }
             ->  100
                 + (numberOfDFOptions >= threshold) <?> 1000
                 + pRestrictedTime <?> 200
                 - sum pNotTransferableInputs * 5
                 - pWaitTime
-        (RefactorEdgeParameter InsertOutRegisterO{})
+        (RefactorEdgeParameter InsertOutRegister{})
             -> 2000
-        (RefactorEdgeParameter BreakLoopO{})
+        (RefactorEdgeParameter BreakLoop{})
             -> 2000
 
 True <?> v = v
@@ -376,14 +389,14 @@ False <?> _ = 0
 
 waitingTimeOfVariables net =
     [ (variable, tc^.avail.infimum)
-    | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- options dataFlowDT net
+    | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- dataflowOptions net
     , (variable, Nothing) <- M.assocs dfoTargets
     ]
 
 
 optionsAfterBind f tag ModelState{ mUnit=BusNetwork{ bnPus } }
     = case tryBind f (bnPus M.! tag) of
-        Right pu' -> filter (\(EndpointO act _) -> act `optionOf` f) $ options endpointDT pu'
+        Right pu' -> filter (\(EndpointO act _) -> act `optionOf` f) $ endpointOptions pu'
         _         -> []
     where
         act `optionOf` f' = not $ S.null (variables act `intersection` variables f')

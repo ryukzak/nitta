@@ -64,7 +64,8 @@ isLoop f
     | Just Loop{} <- castF f = True
     | otherwise = False
 
-instance ( Ord v ) => Function (Loop v x) v where
+instance Function (Loop v x) v where
+    isInternalLockPossible _ = True
     inputs  (Loop _ _a b) = variables b
     outputs (Loop _ a _b) = variables a
 instance ( Ord v ) => Patch (Loop v x) (v, v) where
@@ -80,7 +81,9 @@ instance ( Var v ) => FunctionSimulation (Loop v x) v x where
             Nothing -> setZipX cntx vs x
 
 
-data LoopOut v x = LoopOut (Loop v x) (O v) deriving ( Typeable, Eq, Show )
+data LoopOut v x = LoopOut (Loop v x) (O v) deriving ( Typeable, Eq )
+instance ( Show v, Show x ) => Show (LoopOut v x) where
+    show (LoopOut (Loop (X x) _ _) (O vs)) = S.join ", " (map show $ elems vs) ++ " := [" ++ show x ++ ", ..]"
 instance ( Ord v ) => Function (LoopOut v x) v where
     outputs (LoopOut _ o) = variables o
     isInternalLockPossible _ = True
@@ -91,7 +94,9 @@ instance ( Var v ) => FunctionSimulation (LoopOut v x) v x where
     simulate cntx (LoopOut l _) = simulate cntx l
 
 
-data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq, Show )
+data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq )
+instance ( Show v ) => Show (LoopIn v x) where
+    show (LoopIn _ (I v)) = "-> " ++ show v
 instance ( Ord v ) => Function (LoopIn v x) v where
     inputs (LoopIn _ o) = variables o
     isInternalLockPossible _ = True

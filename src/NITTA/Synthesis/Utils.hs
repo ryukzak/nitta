@@ -21,7 +21,6 @@ module NITTA.Synthesis.Utils
 
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Utils
@@ -33,14 +32,14 @@ import           NITTA.Utils
 
 -- FIXME: Should be moved.
 isPUSynthesisFinite pu
-    = case options endpointDT pu of
+    = case endpointOptions pu of
         [] -> let
                 algVars = unionsMap variables $ functions pu
                 processVars = unionsMap variables $ getEndpoints $ process pu
             in algVars == processVars
         o:_ -> let
                 d = endpointOptionToDecision o
-                pu' = decision endpointDT pu d
+                pu' = endpointDecision pu d
             in isPUSynthesisFinite pu'
 
 
