@@ -70,6 +70,6 @@ data GraphVertex = GraphVertex
     , vertexNodeId :: Int
     }
 
-box     name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="box",     fontSize="20", nodeSize="30" }
-ellipse name color = NodeParam{ nodeName=name, nodeColor=color, nodeShape="ellipse", fontSize="20", nodeSize="30" }
+box     color name = NodeParam{ nodeName=name, nodeColor=color, nodeShape="box",     fontSize="20", nodeSize="30" }
+ellipse color name = NodeParam{ nodeName=name, nodeColor=color, nodeShape="ellipse", fontSize="20", nodeSize="30" }
 arrow   name       = EdgeParam name "2" "bottom"
