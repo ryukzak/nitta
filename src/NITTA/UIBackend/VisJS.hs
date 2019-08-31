@@ -31,8 +31,8 @@ import           NITTA.Utils                 (oneOf)
 algToVizJS fbs = let
         graphs                        = map toVizJS fbs
         GraphStructure nodes vertexes = connectGraph $ calculateIndexes graphs 0
-        eges                          = bindVertexes vertexes
-    in GraphStructure nodes eges
+        edges                         = bindVertexes vertexes
+    in GraphStructure nodes edges
     where
         calculateIndexes []                           _ = []
         calculateIndexes (GraphStructure ns vs : gss) t =
