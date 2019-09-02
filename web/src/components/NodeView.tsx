@@ -177,7 +177,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         {this.state.view === "update" && <pre> updating... </pre>}
                         {this.state.view === "synthesisNode" &&
                             <div>
-                                <div className="edgeGraphContainer" style={{ 'display': "inline-block" }}>
+                                <div className="edgeGraphContainer" style={{ display: "block" }}>
                                     <GraphView
                                         view={this.state.view}
                                         selectedNId={this.state.selectedNId}
