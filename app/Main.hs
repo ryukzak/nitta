@@ -105,5 +105,5 @@ microarch = evalNetwork . network
         addAccum "accum"
         addDiv "div"
         addMul "mul"
-        addSpi "spi" "slave"
+        addSPI "spi" "slave" "mosi" "miso" "sclk" "cs"
         end ioSync

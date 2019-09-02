@@ -6,7 +6,7 @@
 {-# LANGUAGE PartialTypeSignatures     #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 
-module NITTA.Conf (addFram, addAccum, addMul, addDiv, addSpi, addManual, evalNetwork, evalNetworkM, endManual, end ) where
+module NITTA.Conf (addFram, addAccum, addMul, addDiv, addSPI, addManual, evalNetwork, evalNetworkM, endManual, end ) where
 
 import           Control.Monad.State.Lazy
 import           NITTA.Model.Networks.Bus
@@ -62,8 +62,8 @@ addDiv name = do
                  counterOut = i + 4 
              put (counterOut, puListOut)
 
--- add spi auto
-addSpi name pos = do
+-- add SPI auto
+addSPI name pos mosi miso sclk cs = do
              networkState <- get
              let (i, pu) = networkState
                  puListOut = pu ++ [(name, PU def
@@ -74,16 +74,16 @@ addSpi name pos = do
                         }
                     $ case pos of
                         "slave" -> SPISlave
-                            { slave_mosi=InputPortTag "mosi"
-                            , slave_miso=OutputPortTag "miso"
-                            , slave_sclk=InputPortTag "sclk"
-                            , slave_cs=InputPortTag "cs"
+                            { slave_mosi=InputPortTag mosi 
+                            , slave_miso=OutputPortTag miso  
+                            , slave_sclk=InputPortTag sclk 
+                            , slave_cs=InputPortTag cs 
                             }
                         "master" -> SPIMaster
-                            { master_mosi=OutputPortTag "mosi"
-                            , master_miso=InputPortTag "miso"
-                            , master_sclk=OutputPortTag "sclk"
-                            , master_cs=OutputPortTag "cs"
+                            { master_mosi=OutputPortTag mosi 
+                            , master_miso=InputPortTag miso 
+                            , master_sclk=OutputPortTag sclk 
+                            , master_cs=OutputPortTag cs 
                             }
                         _        -> error "error while configure SPI! Set 'master' or 'slave'"
                     )]
