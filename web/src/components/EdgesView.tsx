@@ -1,13 +1,13 @@
 import * as React from "react";
 import { haskellAPI } from "../middleware/haskell-api";
 import ReactTable from "react-table";
-import { EdgeView, IBindingView, IBindEdgeParameter, IRefactorView, IDataflowView, IDataFlowEdgeParameter } from "../gen/types";
+import { EdgeView, IBindingView, IBindEdgeParameter, IRefactorView, IDataflowView, IDataFlowEdgeParameter, Interval } from "../gen/types";
 
 type Edge = EdgeView<string, string, number, number>;
 type Binding = IBindingView<string, string, number, number>;
 type BindingParam = IBindEdgeParameter;
 type Refactor = IRefactorView<string, string, number, number>;
-type Dataflow = IDataflowView<string, string, number, number>;
+type Dataflow = IDataflowView<string, string, number, Interval<number>>;
 type DataflowParam = IDataFlowEdgeParameter;
 
 const nInSeparator = "-";
@@ -114,8 +114,8 @@ export class EdgesView extends React.Component<Props, State> {
                     columns={[
                         nidColumn(this.props.onNidChange),
                         objectiveColumn(),
-                        textColumn("at", (e: Edge) => (e.decision as any as Dataflow).source.time),
-                        textColumn("source", (e: Edge) => (e.decision as any as Dataflow).source.pu),
+                        textColumn("at", (e: Edge) => (e.decision as Dataflow).source.time),
+                        textColumn("source", (e: Edge) => (e.decision as Dataflow).source.pu),
                         textColumn("targets", (e: Edge) => {
                             let targets = (e.decision as any as Dataflow).targets;
                             let lst = Object.keys(targets).map((k: string) => k + " -> " + (targets[k] ? targets[k].pu : ""));
