@@ -75,7 +75,7 @@ main = do
         else runTestbench $ lua2functions src
     case type_ of
         "fx24.32" -> runner (microarch io_sync :: BusNetwork String String (FX 24 32) Int)
-        "fx32.32" -> runner (microarch io_sync :: BusNetwork String String (FX 6 6) Int)
+        "fx32.32" -> runner (microarch io_sync :: BusNetwork String String (FX 32 32) Int)
         _ -> error "Wrong bus type"
 
 runWebUI port alg ma = backendServer port $ mkModelWithOneNetwork ma alg
