@@ -319,6 +319,7 @@ instance Controllable (Divider v x t) where
         , (oeSel, Bool oeSelSignal)
         ]
 
+    getSignalList DividerPorts{ wr, wrSel, oe, oeSel } = map (\(SignalTag x) -> x) [wr, wrSel, oe, oeSel]
 
 instance Default (Microcode (Divider v x t)) where
     def = Microcode

@@ -211,8 +211,9 @@ class Controllable pu where
 
     -- |Map microcode to unit signal ports.
     mapMicrocodeToPorts :: Microcode pu -> Ports pu -> [(SignalTag, SignalValue)]
-
-
+    
+    -- get list of signals from Ports pu
+    getSignalList :: Ports pu -> [Int]
 
 -- |Type class of processor units with control ports.
 class Connected pu where

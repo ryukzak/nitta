@@ -117,6 +117,7 @@ instance Controllable (Shift v x t) where
       , (oe, Bool oeSignal)
       ]
 
+  getSignalList ShiftPorts{ work, direction, mode, step, init, oe} = map (\(SignalTag x) -> x) [work, direction, mode, step, init, oe]
 
 instance Default (Microcode (Shift v x t)) where
   def = Microcode{ workSignal=False
