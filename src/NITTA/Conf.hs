@@ -34,7 +34,7 @@ evalNetwork net ioSync =
 
 -- check intersections in ports nums
 intersPortsError ports usedPorts tag
-  | any x `elem` usedPorts ports
+  | any (`elem` usedPorts) ports
   = error $ "intersection in " ++ tag ++ " ports with used ports"
   | otherwise
   = ports
@@ -70,7 +70,7 @@ puEnv tag = bnEnv
                             }
 
 -- get free pins from infinity list of nums
-freePins used count = take count $ filter (not . x `elem` used) [0 ..]
+freePins used count = take count $ filter (not . (`elem` used)) [0 ..]
 
 -- add fram auto
 addFram tag = do
