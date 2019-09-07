@@ -28,18 +28,78 @@ import           NITTA.Project.Implementation
 divPortConst = 4
 anySpiConst = 0
 
--- eval state and create microarch
+-- | Eval state and create microarch 
+--
+-- __Configure microarch with one network using auto pins selector:__
+--
+-- @
+-- microarch = evalNetwork $ do
+--         addFram \"fram\"
+--         addAccum \"accum\"
+--         addDiv \"div\"
+--         addMul \"mul\"
+--         addSPI \"spi\" \"slave\" \"mosi\" \"miso\" \"sclk\" \"cs\"
+-- @
+--
+-- __Configure microarch with manual pins:__
+--
+-- @
+-- microarch = evalNetwork $ do
+--         addFram \"fram1\"
+--         addFram \"fram2\"
+--         addManual \"acum\" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
+--         addManual \"mul\"  (PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
+--         addManual \"div\"  (PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO)
+--         addManual \"spi\"  (PU def
+--             (anySPI 0)
+--             SimpleIOPorts
+--                 { wr=SignalTag 22, oe=SignalTag 23
+--                 , stop="stop"
+--                 }
+--                 SPISlave
+--                     { slave_mosi=InputPortTag "mosi"
+--                     , slave_miso=OutputPortTag "miso"
+--                     , slave_sclk=InputPortTag "sclk"
+--                     , slave_cs=InputPortTag "cs"
+--                     }
+--             )
+--       
+-- @
+--
+-- __Configure microarch with manual and auto pins:__
+--
+-- @
+--
+-- microarch = evalNetwork $ do
+--         addManual \"fram1\" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
+--         addManual \"fram2\" (PU def def FramPorts{ oe=SignalTag 6, wr=SignalTag 7, addr=map SignalTag [8, 9, 10, 11] } FramIO )
+--         addManual \"acum\" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
+--         addManual \"mul\"  (PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
+--         addManual \"div\"  (PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO)
+--         addSPI \"spi\" \"slave\" \"mosi\" \"miso\" \"sclk\" \"cs\"
+--       
+-- @
+--
 evalNetwork net ioSync =
   let net' = net >> busNetworkS ioSync <$> get in evalState net' ([], [])
 
--- check intersections in ports nums
+-- | Check intersections in ports nums
 intersPortsError ports usedPorts tag
   | any (`elem` usedPorts) ports
   = error $ "intersection in " ++ tag ++ " ports with used ports"
   | otherwise
   = ports
 
--- add manual PU
+-- | __Add manual PU__
+--
+-- @
+-- addManual \"fram\" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
+-- @
+--
+-- @
+-- addManual \"accum\" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
+-- @
+
 addManual tag mkPU = do
   (usedPorts, pus) <- get
   let pu         = mkPU $ puEnv tag
@@ -48,7 +108,7 @@ addManual tag mkPU = do
   put (usedPorts', (tag, mkPU) : pus)
 
 
--- create environment for PU
+-- | Create environment for PU
 puEnv tag = bnEnv
   { unitEnv = ProcessUnitEnv
                 { parameterAttrWidth = InlineParam "ATTR_WIDTH"
@@ -69,10 +129,15 @@ puEnv tag = bnEnv
                             , unitEnv     = NetworkEnv
                             }
 
--- get free pins from infinity list of nums
+-- | Get free pins from infinity list of nums
 freePins used count = take count $ filter (not . (`elem` used)) [0 ..]
 
--- add fram auto
+-- | __Add fram processor unit with automatic pin selector__
+--
+-- @
+-- addFram \"fram\"
+-- @
+--
 addFram tag = do
   (usedPorts, pus) <- get
   let
@@ -94,7 +159,11 @@ addFram tag = do
     usedPortsOut = usedPorts ++ pins
   put (usedPortsOut, pusOut)
 
--- add accum auto
+-- | __Add accumulator processor unit with automatic pin selector__
+--
+-- @
+-- addAccum \"accum\"
+-- @
 addAccum tag = do
   (usedPorts, pus) <- get
   let pins = freePins usedPorts 4
@@ -115,7 +184,11 @@ addAccum tag = do
       usedPortsOut = usedPorts ++ pins
   put (usedPortsOut, pusOut)
 
--- add mul auto
+-- | __Add multiplier processor unit with automatic pin selector__
+--
+-- @
+-- addMul \"mul\"
+-- @
 addMul tag = do
   (usedPorts, pus) <- get
   let pins = freePins usedPorts 3
@@ -135,7 +208,11 @@ addMul tag = do
       usedPortsOut = usedPorts ++ pins
   put (usedPortsOut, pusOut)
 
--- add div auto
+-- | __Add divider processor unit with automatic pin selector__
+--
+-- @
+-- addDiv \"div\"
+-- @
 addDiv tag = do
   (usedPorts, pus) <- get
   let pins = freePins usedPorts 4
@@ -156,7 +233,16 @@ addDiv tag = do
       usedPortsOut = usedPorts ++ pins
   put (usedPortsOut, pusOut)
 --
--- add SPI auto
+-- | __Add SPI processor unit with automatic pin selector__
+--
+-- @
+-- addSPI \"spi\" \"slave\" \"mosi\" \"miso\" \"sclk\" \"cs\"
+-- @
+--
+-- @
+-- addSPI \"spi\" \"master\" \"mosi\" \"miso\" \"sclk\" \"cs\"
+-- @
+--
 addSPI tag pos mosi miso sclk cs = do
   (usedPorts, pus) <- get
   let
@@ -189,5 +275,5 @@ addSPI tag pos mosi miso sclk cs = do
     usedPortsOut = usedPorts ++ pins
   put (usedPortsOut, pusOut)
 
--- special version of busNetwork function ( for easier get from State )
+-- | Special version of busNetwork function ( for easier get from State )
 busNetworkS ioSync (lstPorts, pu) = busNetwork (length lstPorts) ioSync pu

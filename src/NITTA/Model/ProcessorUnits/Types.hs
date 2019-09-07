@@ -209,10 +209,10 @@ class Controllable pu where
     -- |Microcode desctibe controll signals on each mUnit cycle (without exclusion).
     data Microcode pu :: *
 
-    -- |Map microcode to unit signal ports.
+    -- | Map microcode to unit signal ports.
     mapMicrocodeToPorts :: Microcode pu -> Ports pu -> [(SignalTag, SignalValue)]
     
-    -- get list of signals from Ports pu
+    -- | Get list of signals from Ports pu
     getSignalList :: Ports pu -> [Int]
 
 -- |Type class of processor units with control ports.
