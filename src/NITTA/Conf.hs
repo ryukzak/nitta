@@ -30,11 +30,11 @@ anySpiConst = 0
 
 -- eval state and create microarch
 evalNetwork net ioSync =
-  let net' = net >> busNetworkS ioSync <$> get in evalState (net') ([], [])
+  let net' = net >> busNetworkS ioSync <$> get in evalState net' ([], [])
 
 -- check intersections in ports nums
 intersPortsError ports usedPorts tag
-  | any (\x -> elem x usedPorts) ports
+  | any x `elem` usedPorts ports
   = error $ "intersection in " ++ tag ++ " ports with used ports"
   | otherwise
   = ports
@@ -70,7 +70,7 @@ puEnv tag = bnEnv
                             }
 
 -- get free pins from infinity list of nums
-freePins used count = take count $ filter (not . \x -> elem x used) [0 ..]
+freePins used count = take count $ filter (not . x `elem` used) [0 ..]
 
 -- add fram auto
 addFram tag = do
@@ -86,8 +86,7 @@ addFram tag = do
                FramPorts
                  { oe   = SignalTag (pins !! 5)
                  , wr   = SignalTag (pins !! 4)
-                 , addr = map SignalTag
-                              [pins !! 3, pins !! 2, pins !! 1, pins !! 0]
+                 , addr = map SignalTag $ take 4 pins 
                  }
                FramIO
              )
