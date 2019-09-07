@@ -234,7 +234,7 @@ class IOConnected pu where
     inoutPorts _ = []
 
 
-newtype SignalTag = SignalTag Int deriving ( Show, Eq, Ord, Ix )
+newtype SignalTag = SignalTag { signalTag :: Int} deriving ( Show, Eq, Ord, Ix )
 newtype InputPortTag = InputPortTag{ inputPortTag :: String } deriving ( Show, Eq, Ord )
 newtype OutputPortTag = OutputPortTag{ outputPortTag :: String } deriving ( Show, Eq, Ord )
 newtype InoutPortTag = InoutPortTag{ inoutPortTag :: String } deriving ( Show, Eq, Ord )
