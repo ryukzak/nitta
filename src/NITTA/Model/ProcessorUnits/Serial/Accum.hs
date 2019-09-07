@@ -105,7 +105,7 @@ instance Controllable (Accum v x t) where
       , (oe, Bool oeSignal)
       ]
 
-  getSignalList AccumPorts{ init, load, neg, oe } = map (\(SignalTag x) -> x) [init, load, neg, oe]
+  getSignalList AccumPorts{ init, load, neg, oe } = map signalTag [init, load, neg, oe]
 
 instance Default (Microcode (Accum v x t)) where
   def = Microcode{ oeSignal=False

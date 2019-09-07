@@ -164,7 +164,7 @@ instance Controllable (SimpleIO i v x t) where
         , ( oe, Bool oeSignal )
         ]
 
-    getSignalList SimpleIOPorts{ wr, oe } = map (\(SignalTag x) -> x) [wr, oe]
+    getSignalList SimpleIOPorts{ wr, oe } = map signalTag [wr, oe]
 
 instance Default (Microcode (SimpleIO i v x t)) where
     def = Microcode

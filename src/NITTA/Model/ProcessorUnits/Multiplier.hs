@@ -523,7 +523,7 @@ instance Controllable (Multiplier v x t) where
             , (oe, Bool oeSignal)
             ]
 
-    getSignalList MultiplierPorts{ wr, wrSel, oe } = map (\(SignalTag x) -> x) [wr, wrSel, oe]
+    getSignalList MultiplierPorts{ wr, wrSel, oe } = map signalTag [wr, wrSel, oe]
 
 -- |Also we need to define default state for microcode (that is match to implicit @nop@ function)
 -- This state mean that mUnit is in inaction state, but doesn't busy the bus and storage
