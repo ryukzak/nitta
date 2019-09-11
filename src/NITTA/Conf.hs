@@ -7,15 +7,11 @@
 {-# LANGUAGE ScopedTypeVariables       #-}
 
 module NITTA.Conf
-  ( addManual
-  , addFram
-  , addAccum
-  , addMul
-  , addDiv
-  , addSPI
+  ( add 
+  , addIO
+  , addManual
   , evalNetwork
-  )
-where
+  ) where
 
 import           Control.Monad.State.Lazy
 import           Data.Default                     (def)
@@ -24,6 +20,9 @@ import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Project.Implementation
+import           Data.Proxy
+
+
 
 divPortConst = 4
 anySpiConst = 0
@@ -277,3 +276,74 @@ addSPI tag pos mosi miso sclk cs = do
 
 -- | Special version of busNetwork function ( for easier get from State )
 busNetworkS ioSync (lstPorts, pu) = busNetwork (length lstPorts) ioSync pu
+
+add' tag proxy io f2 = do
+  (usedPorts, pus) <- get
+  let
+    pins = freePins usedPorts 6
+    pusOut =
+      pus
+        ++ [ ( tag
+             , PU
+               def
+               f2 
+               (create proxy pins)
+               io
+             )
+           ]
+    usedPortsOut = usedPorts ++ pins
+  put (usedPortsOut, pusOut)
+
+
+
+add "fram" tag 
+  = add' tag proxy io def
+    where 
+        proxy = Proxy :: Proxy (Fram v x t)
+        io    = FramIO
+
+add "accum" tag 
+  = add' tag proxy io def
+    where
+        proxy = Proxy :: Proxy (Accum v x t)
+        io    = AccumIO
+
+add "div" tag 
+  = add' tag proxy io (divider divPortConst True) 
+    where
+        proxy = Proxy :: Proxy (Divider v x t)
+        io    = DividerIO
+
+add "mul" tag 
+  = add' tag proxy io (multiplier True)
+    where
+        proxy = Proxy :: Proxy (Multiplier v x t)
+        io    = MultiplierIO
+
+add _ _ = error "Can't match type PU with existing PU types"
+
+
+addIO "spi" tag args     
+  = add' tag proxy io (anySPI anySpiConst) 
+    where
+        pos   = head args
+        mosi  = args !! 1
+        miso  = args !! 2
+        sclk  = args !! 3
+        cs    = args !! 4
+        proxy = Proxy :: Proxy (simpleIO v x t)
+        io    = case pos of
+                   "slave" -> SPISlave { slave_mosi = InputPortTag mosi
+                                       , slave_miso = OutputPortTag miso
+                                       , slave_sclk = InputPortTag sclk
+                                       , slave_cs   = InputPortTag cs
+                                       }
+                   "master" -> SPIMaster { master_mosi = OutputPortTag mosi
+                                         , master_miso = InputPortTag miso
+                                         , master_sclk = OutputPortTag sclk
+                                         , master_cs   = OutputPortTag cs
+                                         }
+                   _        -> error "Error while configure SPI! Set 'master' or 'slave'"
+
+addIO _ _ _ = error "Can't match type PU with existing PU types"
+
