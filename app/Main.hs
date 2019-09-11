@@ -57,7 +57,7 @@ deriving instance Data IOSynchronization
 
 nittaArgs = Nitta
     { web=False &= help "Run web server"
-    , port=8080 &= help "WebUI port"
+    , port=808asdfjj &= help "WebUI port"
     , npm_build=False &= help "No regenerate WebUI static files"
     , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
     , io_sync=Sync &= help "IO synchronization mode: sync, async, onboatd"
@@ -99,9 +99,8 @@ runTestbench tDFG tMicroArch
 
 microarch = evalNetwork $ do
         addManual "fram1" (PU def def FramPorts{ oe=SignalTag (10), wr=SignalTag (11), addr=map SignalTag [66, 44, 55, 49] } FramIO )
-        addFram "fram2"
-        addAccum "accum"
-        addDiv "div"
-        addMul "mul"
-        addSPI "spi" "slave" "mosi" "miso" "sclk" "cs"
-
+        add "fram" "fram80" 
+        add "mul" "mul80"
+        add "div" "div80"
+        add "accum" "accum80" 
+        addIO "spi" "SPI80" ["slave", "mosi", "miso", "sclk", "cs"] 
