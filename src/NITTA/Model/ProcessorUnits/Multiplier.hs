@@ -525,6 +525,8 @@ instance Controllable (Multiplier v x t) where
 
     getSignalList MultiplierPorts{ wr, wrSel, oe } = map signalTag [wr, wrSel, oe]
 
+    create _ xs = MultiplierPorts{ wr = SignalTag (xs !! 0), wrSel = SignalTag (xs !! 1), oe = SignalTag (xs !! 2)}
+
 -- |Also we need to define default state for microcode (that is match to implicit @nop@ function)
 -- This state mean that mUnit is in inaction state, but doesn't busy the bus and storage
 -- inner state in predictable view. In multiplier case - it doesn't reset multiplication result and

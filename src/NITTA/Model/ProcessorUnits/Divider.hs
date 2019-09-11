@@ -19,7 +19,8 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Divider
-    ( divider
+    ( Divider(..) 
+    , divider
     , Ports(..), IOPorts(..)
     ) where
 
@@ -320,6 +321,8 @@ instance Controllable (Divider v x t) where
         ]
 
     getSignalList DividerPorts{ wr, wrSel, oe, oeSel } = map signalTag [wr, wrSel, oe, oeSel]
+
+    create _ xs = DividerPorts{ wr = SignalTag (xs !! 0), wrSel = SignalTag (xs !! 1), oe = SignalTag (xs !! 2), oeSel = SignalTag (xs !! 3)}
 
 instance Default (Microcode (Divider v x t)) where
     def = Microcode
