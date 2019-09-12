@@ -17,7 +17,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.UIBackend.VisJS.Types
-    ( VisJS, ToVizJS(..)
+    ( VisJS
     , GraphStructure(..)
     , NodeElement(..), NodeParam(..), GraphEdge(..), EdgeParam(..)
     , GraphVertex(..), VertexType(..)
@@ -37,9 +37,6 @@ data EdgeParam = EdgeParam
     , edgeWidth  :: String
     , fontAllign :: String
     }
-
-class ToVizJS f where
-    toVizJS :: f -> GraphStructure GraphVertex
 
 data GraphStructure v = GraphStructure
     { nodes :: [NodeElement]

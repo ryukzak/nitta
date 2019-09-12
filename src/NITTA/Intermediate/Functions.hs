@@ -42,14 +42,13 @@ module NITTA.Intermediate.Functions
     , Send(..), send
     ) where
 
-import qualified Data.Bits                   as B
+import qualified Data.Bits                as B
 import           Data.Default
-import qualified Data.Map                    as M
-import           Data.Set                    (elems, fromList, union)
-import qualified Data.String.Utils           as S
+import qualified Data.Map                 as M
+import           Data.Set                 (elems, fromList, union)
+import qualified Data.String.Utils        as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
-import           NITTA.UIBackend.VisJS.Types
 import           NITTA.Utils
 
 
@@ -60,7 +59,7 @@ instance {-# OVERLAPS #-} ( Show x, Label v ) => Label (Loop v x) where
 instance ( Show v, Show x ) => Show (Loop v x) where
     show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join ", " (map show $ elems k2)
 loop x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
-isLoop f 
+isLoop f
     | Just Loop{} <- castF f = True
     | otherwise = False
 
@@ -129,19 +128,6 @@ instance ( Var v ) => FunctionSimulation (Reg v x) v x where
     simulate cntx (Reg (I v) (O vs)) = do
         x <- cntx `getX` v
         setZipX cntx vs x
-
-
-
-instance {-# OVERLAPS #-} ( Var v ) => ToVizJS (Loop v x) where
-    toVizJS (Loop _ (O a) (I b))
-        = GraphStructure
-            { nodes=
-                [ NodeElement 1 $ box "#6dc066" $ "prev: " ++ label b
-                , NodeElement 2 $ ellipse  "#fa8072" $ "throw: " ++ label b
-                ]
-            , edges=GraphVertex InVertex (label b) 2
-                :   map (\c -> GraphVertex OutVertex (label c) 1) (elems a)
-            }
 
 
 data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq )
@@ -327,12 +313,3 @@ inputsLockOutputs f =
     | x <- elems $ inputs f
     , y <- elems $ outputs f
     ]
-
-
-instance ( Function (f v x) v, Label (f v x), Var v ) => ToVizJS (f v x) where
-    toVizJS f = GraphStructure
-        { nodes=[ NodeElement 1 $ box "#cbbeb5" $ S.replace "\"" "" $ label f ]
-        , edges=mkEdges InVertex (inputs f) ++ mkEdges OutVertex (outputs f)
-        }
-        where
-            mkEdges t = map ( \v -> GraphVertex t (label v) 1 ) . elems

@@ -19,13 +19,15 @@ module NITTA.UIBackend.VisJS
     ) where
 
 import           Data.Aeson
-import qualified Data.Map                    as M
-import qualified Data.Set                    as S
-import qualified Data.String.Utils           as S
-import qualified Data.Text                   as T
+import qualified Data.Map                     as M
+import qualified Data.Set                     as S
+import qualified Data.String.Utils            as S
+import qualified Data.Text                    as T
 import           Data.Typeable
+import           NITTA.Intermediate.Functions
+import           NITTA.Intermediate.Types
 import           NITTA.UIBackend.VisJS.Types
-import           NITTA.Utils                 (oneOf)
+import           NITTA.Utils                  (oneOf)
 
 
 algToVizJS fbs = let
@@ -53,6 +55,13 @@ algToVizJS fbs = let
                                 $ filter ((name ==) . vertexName)
                                         outVertexes) inVertexes
 
+
+toVizJS (F f) = GraphStructure
+        { nodes=[ NodeElement 1 $ box "#cbbeb5" $ S.replace "\"" "" $ label f ]
+        , edges=mkEdges InVertex (inputs f) ++ mkEdges OutVertex (outputs f)
+        }
+    where
+        mkEdges t = map ( \v -> GraphVertex t (label v) 1 ) . S.elems
 
 
 -- *JSON Marshaling

@@ -39,15 +39,14 @@ module NITTA.Intermediate.Types
 
 import           Data.Default
 import           Data.List
-import qualified Data.Map                    as M
+import qualified Data.Map                  as M
 import           Data.Maybe
-import qualified Data.Set                    as S
-import qualified Data.String.Utils           as S
+import qualified Data.Set                  as S
+import qualified Data.String.Utils         as S
 import           Data.Tuple
 import           Data.Typeable
 import           GHC.Generics
 import           NITTA.Intermediate.Values
-import           NITTA.UIBackend.VisJS.Types
 
 
 class WithFunctions a f | a -> f where
@@ -144,7 +143,6 @@ data F v x where
         , Locks f v
         , Show f
         , Label f
-        , ToVizJS f
         , FunctionSimulation f v x
         , Typeable f
         ) => f -> F v x
@@ -194,8 +192,6 @@ instance Show (F v x) where
 instance ( Var v ) => Variables (F v x) v where
     variables (F f) = inputs f `S.union` outputs f
 
-instance {-# OVERLAPS #-} ToVizJS (F v x) where
-    toVizJS (F f) = toVizJS f
 
 castF :: ( Typeable f, Typeable v, Typeable x ) => F v x -> Maybe (f v x)
 castF (F f) = cast f
