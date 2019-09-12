@@ -98,9 +98,9 @@ runTestbench tDFG tMicroArch
 -- с задачей о целевой платформе.
 
 microarch = evalNetwork $ do
-        addManual "fram1" (PU def def FramPorts{ oe=SignalTag (10), wr=SignalTag (11), addr=map SignalTag [66, 44, 55, 49] } FramIO )
-        add "fram" "fram80" 
-        add "mul" "mul80"
-        add "div" "div80"
-        add "accum" "accum80" 
-        addIO "spi" "SPI80" ["slave", "mosi", "miso", "sclk", "cs"] 
+        addManual "fram1" (PU def def FramPorts{ oe=SignalTag 10, wr=SignalTag 11, addr=map SignalTag [66, 44, 55, 49] } FramIO )
+        add "fram" "fram" 
+        add "mul" "mul"
+        add "div" "div"
+        add "accum" "accum" 
+        addIO "spi" "spi" ["slave", "mosi", "miso", "sclk", "cs"] 
