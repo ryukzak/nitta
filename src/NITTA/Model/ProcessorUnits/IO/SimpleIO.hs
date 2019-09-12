@@ -166,7 +166,7 @@ instance Controllable (SimpleIO i v x t) where
 
     getSignalList SimpleIOPorts{ wr, oe } = map signalTag [wr, oe]
 
-    create _ xs = SimpleIOPorts{ wr = SignalTag (xs !! 0), oe = SignalTag (xs !! 1)}
+    getPorts _ xs = SimpleIOPorts{ wr = SignalTag (xs !! 0), oe = SignalTag (xs !! 1)}
 
 instance Default (Microcode (SimpleIO i v x t)) where
     def = Microcode

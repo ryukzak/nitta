@@ -287,7 +287,7 @@ add' tag proxy io f2 = do
              , PU
                def
                f2 
-               (create proxy pins)
+               (getPorts proxy pins)
                io
              )
            ]

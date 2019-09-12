@@ -215,7 +215,7 @@ class Controllable pu where
     -- | Get list of signals from Ports pu
     getSignalList :: Ports pu -> [Int]
 
-    create :: Proxy pu -> [Int] -> Ports pu 
+    getPorts :: Proxy pu -> [Int] -> Ports pu 
 
 -- |Type class of processor units with control ports.
 class Connected pu where

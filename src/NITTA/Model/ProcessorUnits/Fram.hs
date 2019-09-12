@@ -458,7 +458,7 @@ instance Controllable (Fram v x t) where
 
     getSignalList FramPorts{ oe, wr, addr } = map signalTag (oe : wr : addr)
 
-    create _ xs = FramPorts{ oe = SignalTag (xs !! 0), wr = SignalTag (xs !! 1), addr = map SignalTag (drop 2 xs) }
+    getPorts _ xs = FramPorts{ oe = SignalTag (xs !! 0), wr = SignalTag (xs !! 1), addr = map SignalTag (drop 2 xs) }
 
 
 instance Connected (Fram v x t) where
