@@ -57,7 +57,7 @@ deriving instance Data IOSynchronization
 
 nittaArgs = Nitta
     { web=False &= help "Run web server"
-    , port=808asdfjj &= help "WebUI port"
+    , port=8080 &= help "WebUI port"
     , npm_build=False &= help "No regenerate WebUI static files"
     , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
     , io_sync=Sync &= help "IO synchronization mode: sync, async, onboatd"
