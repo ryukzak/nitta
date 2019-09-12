@@ -82,6 +82,8 @@ instance ( Var v ) => FunctionSimulation (Loop v x) v x where
 
 
 data LoopOut v x = LoopOut (Loop v x) (O v) deriving ( Typeable, Eq )
+instance {-# OVERLAPS #-} ( Show v ) => Label (LoopOut v x) where
+    label (LoopOut _ (O vs)) = show (oneOf vs) ++ " ->"
 instance ( Show v, Show x ) => Show (LoopOut v x) where
     show (LoopOut (Loop (X x) _ _) (O vs)) = S.join ", " (map show $ elems vs) ++ " := [" ++ show x ++ ", ..]"
 instance ( Ord v ) => Function (LoopOut v x) v where
@@ -95,6 +97,8 @@ instance ( Var v ) => FunctionSimulation (LoopOut v x) v x where
 
 
 data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq )
+instance {-# OVERLAPS #-} ( Show v ) => Label (LoopIn v x) where
+    label (LoopIn _ (I v)) = "-> " ++ show v
 instance ( Show v ) => Show (LoopIn v x) where
     show (LoopIn _ (I v)) = "-> " ++ show v
 instance ( Ord v ) => Function (LoopIn v x) v where
@@ -327,7 +331,7 @@ inputsLockOutputs f =
 
 instance ( Function (f v x) v, Label (f v x), Var v ) => ToVizJS (f v x) where
     toVizJS f = GraphStructure
-        { nodes=[ NodeElement 1 $ box "#cbbeb5" $ label f ]
+        { nodes=[ NodeElement 1 $ box "#cbbeb5" $ S.replace "\"" "" $ label f ]
         , edges=mkEdges InVertex (inputs f) ++ mkEdges OutVertex (outputs f)
         }
         where
