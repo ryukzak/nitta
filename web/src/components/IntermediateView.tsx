@@ -45,7 +45,7 @@ export interface IGraphJson {
 }
 
 
-export class GraphView extends React.Component<Props, State> {
+export class IntermediateView extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
