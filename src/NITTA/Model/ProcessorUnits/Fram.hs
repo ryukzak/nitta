@@ -456,9 +456,12 @@ instance Controllable (Fram v x t) where
                                         )
                         ) $ zip (reverse addr) [0..]
 
-    getSignalList FramPorts{ oe, wr, addr } = (oe : wr : addr)
+    portsToSignals FramPorts{ oe, wr, addr } = oe : wr : addr
 
-    getPorts _ xs = FramPorts{ oe = (xs !! 0), wr = (xs !! 1), addr = drop 2 xs }
+    signalsToPorts _ xs = FramPorts{ oe   = xs !! 0
+                                   , wr   = xs !! 1
+                                   , addr = drop 2 xs 
+                                   }
 
 
 instance Connected (Fram v x t) where

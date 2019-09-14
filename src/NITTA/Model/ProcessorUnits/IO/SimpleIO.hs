@@ -164,9 +164,11 @@ instance Controllable (SimpleIO i v x t) where
         , ( oe, Bool oeSignal )
         ]
 
-    getSignalList SimpleIOPorts{ wr, oe } = [wr, oe]
+    portsToSignals SimpleIOPorts{ wr, oe } = [wr, oe]
 
-    getPorts _ xs = SimpleIOPorts{ wr = (xs !! 0), oe = (xs !! 1)}
+    signalsToPorts _ xs = SimpleIOPorts{ wr = xs !! 0
+                                       , oe = xs !! 1
+                                       }
 
 instance Default (Microcode (SimpleIO i v x t)) where
     def = Microcode

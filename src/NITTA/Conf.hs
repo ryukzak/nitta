@@ -102,7 +102,7 @@ intersPortsError ports usedPorts tag
 addManual tag mkPU = do
   (usedPorts, pus) <- get
   let pu         = mkPU $ puEnv tag
-      ports      = (\PU { ports } -> getSignalList ports) pu
+      ports      = (\PU { ports } -> portsToSignals ports) pu
       usedPorts' = usedPorts ++ intersPortsError ports usedPorts tag
   put (usedPorts', (tag, mkPU) : pus)
 
@@ -144,7 +144,7 @@ add' tag proxy io f2 = do
              , PU
                def
                f2 
-               (getPorts proxy pins)
+               (signalsToPorts proxy pins)
                io
              )
            ]
