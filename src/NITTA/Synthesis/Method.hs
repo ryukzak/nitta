@@ -93,7 +93,11 @@ allBestThreadIO (0 :: Int) node = bestThreadIO node
 allBestThreadIO n node = do
     edges <- getEdgesIO node
     lastNodes <- mapM (\Edge{ eNode } -> allBestThreadIO (n-1) eNode) edges
-    let completedNodes = filter nIsComplete lastNodes
-    return $ if null completedNodes
-        then head lastNodes
-        else minimumOn (targetProcessDuration . nModel) completedNodes
+    let 
+        outNode [] = node
+        outNode ln = case filter nIsComplete ln of
+            []             -> head ln
+            completedNodes -> minimumOn (targetProcessDuration . nModel) completedNodes
+                           
+    return $ outNode lastNodes 
+         
