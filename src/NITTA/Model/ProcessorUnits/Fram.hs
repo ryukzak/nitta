@@ -456,9 +456,9 @@ instance Controllable (Fram v x t) where
                                         )
                         ) $ zip (reverse addr) [0..]
 
-    getSignalList FramPorts{ oe, wr, addr } = map signalTag (oe : wr : addr)
+    getSignalList FramPorts{ oe, wr, addr } = (oe : wr : addr)
 
-    getPorts _ xs = FramPorts{ oe = SignalTag (xs !! 0), wr = SignalTag (xs !! 1), addr = map SignalTag (drop 2 xs) }
+    getPorts _ xs = FramPorts{ oe = (xs !! 0), wr = (xs !! 1), addr = drop 2 xs }
 
 
 instance Connected (Fram v x t) where
