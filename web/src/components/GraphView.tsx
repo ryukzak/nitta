@@ -11,17 +11,18 @@ import { Graphviz } from "graphviz-react";
  * (Takes two kinds of view: "edges" or "synthesisNode")
  */
 
-interface GraphViewProps {
+interface Props {
   selectedNId: number;
   view: string;
 }
 
-interface GraphViewState {
+interface State {
   selectedNId: number;
   view: string;
   status: boolean;
   graph: any;
 }
+
 
 export type EdgeId = number;
 
@@ -43,8 +44,9 @@ export interface IGraphJson {
   nodes: INodeJson[];
 }
 
-export class GraphView extends React.Component<GraphViewProps, GraphViewState> {
-  constructor(props: GraphViewProps) {
+
+export class GraphView extends React.Component<Props, State> {
+  constructor(props: Props) {
     super(props);
     this.state = {
       selectedNId: props.selectedNId,
@@ -61,7 +63,7 @@ export class GraphView extends React.Component<GraphViewProps, GraphViewState> {
   }
 
 
-  componentWillReceiveProps(props: GraphViewProps) {
+  componentWillReceiveProps(props: Props) {
     if (this.state.selectedNId !== props.selectedNId) {
       this.setState({
         status: false,
