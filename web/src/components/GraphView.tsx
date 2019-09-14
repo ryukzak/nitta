@@ -36,6 +36,8 @@ export interface INodeJson {
   label: string;
 }
 
+// "Json" because it's a temporary type that just represents the JSON format that API should return. 
+// Those should be replaced with generated types eventually.
 export interface IGraphJson {
   edges: IEdgeJson[];
   nodes: INodeJson[];
