@@ -21,8 +21,6 @@ interface GraphViewState {
   selectedNId: number;
   view: string;
   status: boolean;
-  events: any;
-  options: any;
   graph: any;
 }
 
@@ -33,19 +31,6 @@ export class GraphView extends React.Component<GraphViewProps, GraphViewState> {
       selectedNId: props.selectedNId,
       view: props.view,
       status: false,
-
-      events: {
-        select: function (event: any) {
-          let { nodes, edges } = event;
-        }
-      },
-
-      options: {
-        layout: { hierarchical: false },
-        edges: { color: "#000000" },
-        nodes: {},
-        physics: { enabled: false }
-      },
 
       graph: {
         nodes: [],
