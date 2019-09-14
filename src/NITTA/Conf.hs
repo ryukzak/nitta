@@ -33,19 +33,17 @@ anySpiConst = 0
 --
 -- @
 -- microarch = evalNetwork $ do
---         addFram "fram"
---         addAccum "accum"
---         addDiv "div"
---         addMul "mul"
---         addSPI "spi" "slave" "mosi" "miso" "sclk" "cs"
+--         add "fram" "fram"
+--         add "accum" "accum"
+--         add "div" "div"
+--         add "mul" "mul"
+--         add "spi" "spi" "slave" "mosi" "miso" "sclk" "cs"
 -- @
 --
 -- __Configure microarch with manual pins:__
 --
 -- @
 -- microarch = evalNetwork $ do
---         addFram "fram1"
---         addFram "fram2"
 --         addManual "acum" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
 --         addManual "mul"  (PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
 --         addManual "div"  (PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO)
@@ -72,10 +70,10 @@ anySpiConst = 0
 -- microarch = evalNetwork $ do
 --         addManual "fram1" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
 --         addManual "fram2" (PU def def FramPorts{ oe=SignalTag 6, wr=SignalTag 7, addr=map SignalTag [8, 9, 10, 11] } FramIO )
---         addManual "acum" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
---         addManual "mul"  (PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
---         addManual "div"  (PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO)
---         addSPI "spi" "slave" "mosi" "miso" "sclk" "cs"
+--         addManual "accum" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
+--         add "div" "div"
+--         add "mul" "mul"
+--         add "spi" "spi" "slave" "mosi" "miso" "sclk" "cs"
 --       
 -- @
 --
