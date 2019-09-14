@@ -91,14 +91,17 @@ anySpiConst = 0
 -- @
 --
 evalNetwork net ioSync =
-  let net' = net >> busNetworkS ioSync <$> get in evalState net' ([], [])
+    let 
+        net' = net >> busNetworkS ioSync <$> get 
+    in 
+        evalState net' ([], [])
 
 -- |Check intersections in ports nums
 intersPortsError ports usedPorts tag
-  | any (`elem` usedPorts) ports
-  = error $ "intersection in " ++ tag ++ " ports with used ports"
-  | otherwise
-  = ports
+    | any (`elem` usedPorts) ports
+    = error $ "intersection in " ++ tag ++ " ports with used ports"
+    | otherwise
+    = ports
 
 -- |__Add manual PU__
 --
@@ -111,56 +114,60 @@ intersPortsError ports usedPorts tag
 -- @
 
 addManual tag mkPU = do
-  (usedPorts, pus) <- get
-  let pu         = mkPU $ puEnv tag
-      ports      = (\PU { puPorts } -> portsToSignals puPorts) pu
-      usedPorts' = usedPorts ++ intersPortsError ports usedPorts tag
-  put (usedPorts', (tag, mkPU) : pus)
+    (usedPorts, pus) <- get
+    let pu         = mkPU $ puEnv tag
+        puPorts    = (\PU { ports } -> portsToSignals ports) pu
+        usedPorts' = usedPorts ++ intersPortsError puPorts usedPorts tag
+    put (usedPorts', (tag, mkPU) : pus)
 
 
 -- |Create environment for PU
-puEnv tag = bnEnv
-  { unitEnv = ProcessUnitEnv
-                { parameterAttrWidth = InlineParam "ATTR_WIDTH"
-                , dataIn             = "data_bus"
-                , dataOut            = tag ++ "_data_out"
-                , attrIn             = "attr_bus"
-                , attrOut            = tag ++ "_attr_out"
-                , signal = \(SignalTag i) -> "control_bus[" ++ show i ++ "]"
+puEnv tag =  
+    let
+        bnEnv =
+            TargetEnvironment 
+                { signalClk   = "clk"
+                , signalRst   = "rst"
+                , signalCycle = "cycle"
+                , inputPort   = inputPortTag
+                , outputPort  = outputPortTag
+                , inoutPort   = inoutPortTag
+                , unitEnv     = NetworkEnv
                 }
-  }
- where
-  bnEnv = TargetEnvironment { signalClk   = "clk"
-                            , signalRst   = "rst"
-                            , signalCycle = "cycle"
-                            , inputPort   = \(InputPortTag n) -> n
-                            , outputPort  = \(OutputPortTag n) -> n
-                            , inoutPort   = \(InoutPortTag n) -> n
-                            , unitEnv     = NetworkEnv
-                            }
+    in
+        bnEnv 
+            { unitEnv = 
+                ProcessUnitEnv
+                    { parameterAttrWidth = InlineParam "ATTR_WIDTH"
+                    , dataIn             = "data_bus"
+                    , dataOut            = tag ++ "_data_out"
+                    , attrIn             = "attr_bus"
+                    , attrOut            = tag ++ "_attr_out"
+                    , signal = \(SignalTag i) -> "control_bus[" ++ show i ++ "]"
+                    }
+            }
 
 -- |Get free pins from infinity list of nums
-freePins used count = take count $ filter (not . (`elem` used)) $ map SignalTag [0 ..]
+freePins used count = 
+    let 
+        freeSignals = filter (not . (`elem` used)) infSignals
+        infSignals = map SignalTag [0 ..]
+    in
+        take count freeSignals 
 
 -- |Special version of busNetwork function ( for easier get from State )
 busNetworkS ioSync (lstPorts, pu) = busNetwork (length lstPorts) ioSync pu
 
 add' tag proxy io f2 = do
-  (usedPorts, pus) <- get
-  let
-    pins = freePins usedPorts 6
-    pusOut =
-      pus
-        ++ [ ( tag
-             , PU
-               def
-               f2 
-               (signalsToPorts proxy pins)
-               io
-             )
-           ]
-    usedPortsOut = usedPorts ++ pins
-  put (usedPortsOut, pusOut)
+    (usedPorts, pus) <- get
+    let
+        pins = freePins usedPorts 6
+        ports = signalsToPorts proxy pins
+        pusOut =
+            pus ++ [( tag, PU def f2 ports io)]
+
+        usedPortsOut = usedPorts ++ pins
+    put (usedPortsOut, pusOut)
 
 
 
