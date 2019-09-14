@@ -26,9 +26,9 @@ module Main ( main ) where
 import           Control.Monad                    (void, when)
 import           Data.Default                     (def)
 import qualified Data.Text.IO                     as T
-import           NITTA.Conf
 import           NITTA.Frontend
 import           NITTA.Intermediate.Types
+import           NITTA.Model.MicroArchitecture
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits

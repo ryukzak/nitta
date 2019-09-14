@@ -5,8 +5,21 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE PartialTypeSignatures     #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
+{-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
+{-# OPTIONS -fno-warn-overlapping-patterns -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-cse #-}
 
-module NITTA.Conf
+{-|
+Module      : NITTA.Model.MicroArchitecture
+Description : NITTA CAD executable
+Copyright   : (c) Daniil Prohorov, 2019
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
+
+module NITTA.Model.MicroArchitecture
   ( add 
   , addIO
   , addManual
@@ -100,7 +113,7 @@ intersPortsError ports usedPorts tag
 addManual tag mkPU = do
   (usedPorts, pus) <- get
   let pu         = mkPU $ puEnv tag
-      ports      = (\PU { ports } -> portsToSignals ports) pu
+      ports      = (\PU { puPorts } -> portsToSignals puPorts) pu
       usedPorts' = usedPorts ++ intersPortsError ports usedPorts tag
   put (usedPorts', (tag, mkPU) : pus)
 

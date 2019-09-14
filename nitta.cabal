@@ -15,12 +15,12 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     NITTA.Conf
-                     , NITTA.Frontend
+  exposed-modules:     NITTA.Frontend
                      , NITTA.Intermediate.Functions
                      , NITTA.Intermediate.Simulation
                      , NITTA.Intermediate.Types
                      , NITTA.Intermediate.Values
+                     , NITTA.Model.MicroArchitecture
                      , NITTA.Model.Networks.Bus
                      , NITTA.Model.Networks.Types
                      , NITTA.Model.Problems.Binding
