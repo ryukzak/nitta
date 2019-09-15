@@ -1,4 +1,6 @@
 {-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
@@ -19,42 +21,38 @@ Stability   : experimental
 module NITTA.UIBackend.VisJS.Types
     ( VisJS
     , GraphStructure(..)
-    , NodeElement(..), NodeParam(..), GraphEdge(..), EdgeParam(..)
+    , NodeElement(..), GraphEdge(..)
     , GraphVertex(..), VertexType(..)
-    , arrow, box, ellipse
     ) where
+
+import           GHC.Generics
 
 type VisJS = GraphStructure GraphEdge
 
 data GraphEdge = GraphEdge
-    { edgeParam :: EdgeParam
-    , inNodeId  :: Int
-    , outNodeId :: Int
-    }
-
-data EdgeParam = EdgeParam
-    { edgeName   :: String
-    , edgeWidth  :: String
-    , fontAllign :: String
-    }
+        { to         :: Int
+        , from       :: Int
+        , label      :: String
+        , edgeWidth  :: String
+        , fontAllign :: String
+        }
+    deriving ( Generic )
 
 data GraphStructure v = GraphStructure
-    { nodes :: [NodeElement]
-    , edges :: [v]
-    }
+        { nodes :: [NodeElement]
+        , edges :: [v]
+        }
+    deriving ( Generic )
 
 data NodeElement = NodeElement
-    { nodeId    :: Int
-    , nodeParam :: NodeParam
-    }
-
-data NodeParam = NodeParam
-    { nodeName  :: String
-    , nodeColor :: String
-    , nodeShape :: String
-    , fontSize  :: String
-    , nodeSize  :: String
-    }
+        { id        :: Int
+        , label     :: String
+        , nodeColor :: String
+        , nodeShape :: String
+        , fontSize  :: String
+        , nodeSize  :: String
+        }
+    deriving ( Generic )
 
 data VertexType
     = InVertex
@@ -66,7 +64,3 @@ data GraphVertex = GraphVertex
     , vertexName   :: String
     , vertexNodeId :: Int
     }
-
-box     color name = NodeParam{ nodeName=name, nodeColor=color, nodeShape="box",     fontSize="20", nodeSize="30" }
-ellipse color name = NodeParam{ nodeName=name, nodeColor=color, nodeShape="ellipse", fontSize="20", nodeSize="30" }
-arrow   name       = EdgeParam name "2" "bottom"

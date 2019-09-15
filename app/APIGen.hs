@@ -74,9 +74,7 @@ $(deriveTypeScript defaultOptions ''DataflowEndpointView)
 $(deriveTypeScript defaultOptions ''SynthesisDecisionView)
 $(deriveTypeScript defaultOptions ''EdgeView)
 
-$(deriveTypeScript defaultOptions ''EdgeParam)
 $(deriveTypeScript defaultOptions ''GraphEdge)
-$(deriveTypeScript defaultOptions ''NodeParam)
 $(deriveTypeScript defaultOptions ''NodeElement)
 $(deriveTypeScript defaultOptions ''GraphStructure)
 
@@ -111,9 +109,7 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy SynthesisDecisionView)
             , getTypeScriptDeclarations (Proxy :: Proxy EdgeView)
 
-            , getTypeScriptDeclarations (Proxy :: Proxy EdgeParam)
             , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
-            , getTypeScriptDeclarations (Proxy :: Proxy NodeParam)
             , getTypeScriptDeclarations (Proxy :: Proxy NodeElement)
             , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)
             ]

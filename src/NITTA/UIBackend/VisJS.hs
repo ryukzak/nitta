@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -24,10 +25,11 @@ import qualified Data.Set                     as S
 import qualified Data.String.Utils            as S
 import qualified Data.Text                    as T
 import           Data.Typeable
-import           NITTA.Intermediate.Functions
-import           NITTA.Intermediate.Types
+import qualified NITTA.Intermediate.Functions as F
+import qualified NITTA.Intermediate.Types     as F
 import           NITTA.UIBackend.VisJS.Types
 import           NITTA.Utils                  (oneOf)
+import           Prelude                      hiding (id)
 
 
 algToVizJS fbs = let
@@ -38,7 +40,7 @@ algToVizJS fbs = let
     where
         calculateIndexes []                           _ = []
         calculateIndexes (GraphStructure ns vs : gss) t =
-            GraphStructure (map (\ n -> n{nodeId = t + nodeId n}) ns)
+            GraphStructure (map (\ n -> n{id = t + id n}) ns)
                                 (map (\ v -> v{vertexNodeId = t + vertexNodeId v}) vs)
             : calculateIndexes gss (t + length ns)
 
@@ -49,48 +51,35 @@ algToVizJS fbs = let
         bindVertexes vs = let
                 inVertexes  = filter ((InVertex  ==) . vertexType) vs
                 outVertexes = filter ((OutVertex ==) . vertexType) vs
-            in concatMap (\(GraphVertex _ name inId) ->
-                            map (\(GraphVertex _ _ outId) ->
-                                    GraphEdge (arrow name) inId outId)
-                                $ filter ((name ==) . vertexName)
-                                        outVertexes) inVertexes
+            in concatMap
+                    ( \(GraphVertex _ name inId) ->
+                        map ( \(GraphVertex _ _ outId) -> GraphEdge
+                                { to=inId
+                                , from=outId
+                                , label=name
+                                , edgeWidth="2"
+                                , fontAllign="bottom"
+                                })
+                            $ filter ((name ==) . vertexName) outVertexes )
+                    inVertexes
 
 
-toVizJS (F f) = GraphStructure
-        { nodes=[ NodeElement 1 $ box "#cbbeb5" $ S.replace "\"" "" $ label f ]
-        , edges=mkEdges InVertex (inputs f) ++ mkEdges OutVertex (outputs f)
+toVizJS (F.F f) = GraphStructure
+        { nodes=NodeElement
+            { id=1
+            , label=S.replace "\"" "" $ F.label f
+            , nodeColor="#cbbeb5"
+            , nodeShape="box"
+            , fontSize="20"
+            , nodeSize="30"
+            } : []
+        , edges=mkEdges InVertex (F.inputs f) ++ mkEdges OutVertex (F.outputs f)
         }
     where
-        mkEdges t = map ( \v -> GraphVertex t (label v) 1 ) . S.elems
+        mkEdges t = map ( \v -> GraphVertex t (F.label v) 1 ) . S.elems
 
 
 -- *JSON Marshaling
-
-instance ToJSON (GraphStructure GraphEdge) where
-    toJSON GraphStructure{ nodes, edges } = object
-        [ "nodes" .= nodes
-        , "edges" .= edges
-        ]
-
-instance ToJSON NodeElement where
-    toJSON NodeElement{ nodeId, nodeParam = NodeParam{ nodeName, nodeColor, nodeShape, fontSize, nodeSize } } = object
-        [ "id"    .= nodeId
-        , "label" .= nodeName
-        , "color" .= nodeColor
-        , "shape" .= nodeShape
-        , "size"  .= nodeSize
-        , "font"  .= object
-            [ "size" .= fontSize
-            ]
-        ]
-
-instance ToJSON GraphEdge where
-    toJSON GraphEdge{ edgeParam = EdgeParam { edgeName, edgeWidth, fontAllign }, inNodeId, outNodeId } = object
-        [ "from"  .= outNodeId
-        , "to"    .= inNodeId
-        , "label" .= edgeName
-        , "width" .= edgeWidth
-        , "font"  .= object
-            [ "allign" .= fontAllign
-            ]
-        ]
+instance ToJSON ( GraphStructure GraphEdge )
+instance ToJSON NodeElement
+instance ToJSON GraphEdge
