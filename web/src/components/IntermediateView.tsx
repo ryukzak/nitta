@@ -2,6 +2,7 @@ import * as React from "react";
 import "react-table/react-table.css";
 import { haskellAPI } from "../middleware/haskell-api";
 import { Graphviz } from "graphviz-react";
+import { IGraphStructure, IGraphEdge } from "../gen/types";
 
 /**
  * Component to display algorithm graph.
@@ -24,26 +25,7 @@ interface State {
 }
 
 
-export type EdgeId = number;
-
-export interface IEdgeJson {
-  from: EdgeId;
-  to: EdgeId;
-  label: string;
-}
-
-export interface INodeJson {
-  id: EdgeId;
-  label: string;
-}
-
-// "Json" because it's a temporary type that just represents the JSON format that API should return. 
-// Those should be replaced with generated types eventually.
-export interface IGraphJson {
-  edges: IEdgeJson[];
-  nodes: INodeJson[];
-}
-
+export type IGraphJson = IGraphStructure<IGraphEdge>;
 
 export class IntermediateView extends React.Component<Props, State> {
   constructor(props: Props) {
@@ -142,4 +124,3 @@ function renderGraphJsonToDot(json: IGraphJson): string {
   console.log(result);
   return result;
 }
-
