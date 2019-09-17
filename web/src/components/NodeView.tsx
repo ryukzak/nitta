@@ -3,7 +3,7 @@ import "react-table/react-table.css";
 import { ProcessView } from "./ProcessView";
 import { haskellAPI } from "../middleware/haskell-api";
 import { EdgesView } from "./EdgesView";
-import { GraphView } from "./GraphView";
+import { IntermediateView } from "./IntermediateView";
 import ReactTable from "react-table";
 import { JsonView } from "./JsonView";
 import { TestbenchReport } from "../gen/types";
@@ -177,8 +177,8 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         {this.state.view === "update" && <pre> updating... </pre>}
                         {this.state.view === "synthesisNode" &&
                             <div>
-                                <div className="edgeGraphContainer" style={{ 'display': "inline-block" }}>
-                                    <GraphView
+                                <div className="edgeGraphContainer" style={{ display: "block" }}>
+                                    <IntermediateView
                                         view={this.state.view}
                                         selectedNId={this.state.selectedNId}
                                     />

@@ -36,6 +36,7 @@ import           NITTA.Synthesis.Types
 import           NITTA.UIBackend
 import           NITTA.UIBackend.Marshalling
 import           NITTA.UIBackend.Timeline
+import           NITTA.UIBackend.VisJS
 import           Numeric.Interval
 import           System.Console.CmdArgs
 import           System.Directory              (createDirectoryIfMissing)
@@ -73,6 +74,9 @@ $(deriveTypeScript defaultOptions ''DataflowEndpointView)
 $(deriveTypeScript defaultOptions ''SynthesisDecisionView)
 $(deriveTypeScript defaultOptions ''EdgeView)
 
+$(deriveTypeScript defaultOptions ''GraphEdge)
+$(deriveTypeScript defaultOptions ''NodeElement)
+$(deriveTypeScript defaultOptions ''GraphStructure)
 
 main = do
     APIGen{ port, opath } <- cmdArgs apiGenArgs
@@ -104,6 +108,10 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy DataflowEndpointView)
             , getTypeScriptDeclarations (Proxy :: Proxy SynthesisDecisionView)
             , getTypeScriptDeclarations (Proxy :: Proxy EdgeView)
+
+            , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
+            , getTypeScriptDeclarations (Proxy :: Proxy NodeElement)
+            , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)
             ]
     writeFile (joinPath [ opath, "types.ts" ])
         $ S.replace "type " "export type "           -- export all types

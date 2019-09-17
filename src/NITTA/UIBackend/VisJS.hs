@@ -1,13 +1,19 @@
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.UIBackend.VisJS
-Description : Graph for https://github.com/crubier/react-graph-vis/blob/master/README.md
+Description : Graph of intermediate view.
 Copyright   : (c) Dmitriy Anoshchenkov, Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -16,27 +22,67 @@ Stability   : experimental
 module NITTA.UIBackend.VisJS
     ( VisJS
     , algToVizJS
+    , GraphStructure(..)
+    , NodeElement(..), GraphEdge(..)
     ) where
 
 import           Data.Aeson
-import qualified Data.Map                    as M
-import qualified Data.Set                    as S
-import qualified Data.String.Utils           as S
-import qualified Data.Text                   as T
-import           Data.Typeable
-import           NITTA.UIBackend.VisJS.Types
-import           NITTA.Utils                 (oneOf)
+import qualified Data.Set                     as S
+import qualified Data.String.Utils            as S
+import           GHC.Generics
+import qualified NITTA.Intermediate.Types     as F
+import           Prelude                      hiding (id)
+
+
+type VisJS = GraphStructure GraphEdge
+
+data GraphEdge = GraphEdge
+        { to         :: Int
+        , from       :: Int
+        , label      :: String
+        , edgeWidth  :: String
+        , fontAllign :: String
+        }
+    deriving ( Generic )
+
+data GraphStructure v = GraphStructure
+        { nodes :: [NodeElement]
+        , edges :: [v]
+        }
+    deriving ( Generic )
+
+data NodeElement = NodeElement
+        { id        :: Int
+        , label     :: String
+        , nodeColor :: String
+        , nodeShape :: String
+        , fontSize  :: String
+        , nodeSize  :: String
+        }
+    deriving ( Generic )
+
+data VertexType
+    = InVertex
+    | OutVertex
+    deriving ( Eq )
+
+data GraphVertex = GraphVertex
+    { vertexType   :: VertexType
+    , vertexName   :: String
+    , vertexNodeId :: Int
+    }
+
 
 
 algToVizJS fbs = let
         graphs                        = map toVizJS fbs
         GraphStructure nodes vertexes = connectGraph $ calculateIndexes graphs 0
-        eges                          = bindVertexes vertexes
-    in GraphStructure nodes eges
+        edges                         = bindVertexes vertexes
+    in GraphStructure nodes edges
     where
         calculateIndexes []                           _ = []
         calculateIndexes (GraphStructure ns vs : gss) t =
-            GraphStructure (map (\ n -> n{nodeId = t + nodeId n}) ns)
+            GraphStructure (map (\ n -> n{id = t + id n}) ns)
                                 (map (\ v -> v{vertexNodeId = t + vertexNodeId v}) vs)
             : calculateIndexes gss (t + length ns)
 
@@ -47,41 +93,35 @@ algToVizJS fbs = let
         bindVertexes vs = let
                 inVertexes  = filter ((InVertex  ==) . vertexType) vs
                 outVertexes = filter ((OutVertex ==) . vertexType) vs
-            in concatMap (\(GraphVertex _ name inId) ->
-                            map (\(GraphVertex _ _ outId) ->
-                                    GraphEdge (arrow name) inId outId)
-                                $ filter ((name ==) . vertexName)
-                                        outVertexes) inVertexes
+            in concatMap
+                    ( \(GraphVertex _ name inId) ->
+                        map ( \(GraphVertex _ _ outId) -> GraphEdge
+                                { to=inId
+                                , from=outId
+                                , label=name
+                                , edgeWidth="2"
+                                , fontAllign="bottom"
+                                })
+                            $ filter ((name ==) . vertexName) outVertexes )
+                    inVertexes
 
+
+toVizJS (F.F f) = GraphStructure
+        { nodes=NodeElement
+            { id=1
+            , label=S.replace "\"" "" $ F.label f
+            , nodeColor="#cbbeb5"
+            , nodeShape="box"
+            , fontSize="20"
+            , nodeSize="30"
+            } : []
+        , edges=mkEdges InVertex (F.inputs f) ++ mkEdges OutVertex (F.outputs f)
+        }
+    where
+        mkEdges t = map ( \v -> GraphVertex t (F.label v) 1 ) . S.elems
 
 
 -- *JSON Marshaling
-
-instance ToJSON (GraphStructure GraphEdge) where
-    toJSON GraphStructure{ nodes, edges } = object
-        [ "nodes" .= nodes
-        , "edges" .= edges
-        ]
-
-instance ToJSON NodeElement where
-    toJSON NodeElement{ nodeId, nodeParam = NodeParam{ nodeName, nodeColor, nodeShape, fontSize, nodeSize } } = object
-        [ "id"    .= nodeId
-        , "label" .= nodeName
-        , "color" .= nodeColor
-        , "shape" .= nodeShape
-        , "size"  .= nodeSize
-        , "font"  .= object
-            [ "size" .= fontSize
-            ]
-        ]
-
-instance ToJSON GraphEdge where
-    toJSON GraphEdge{ edgeParam = EdgeParam { edgeName, edgeWidth, fontAllign }, inNodeId, outNodeId } = object
-        [ "from"  .= outNodeId
-        , "to"    .= inNodeId
-        , "label" .= edgeName
-        , "width" .= edgeWidth
-        , "font"  .= object
-            [ "allign" .= fontAllign
-            ]
-        ]
+instance ToJSON ( GraphStructure GraphEdge )
+instance ToJSON NodeElement
+instance ToJSON GraphEdge
