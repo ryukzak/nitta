@@ -12,12 +12,12 @@ import { IGraphStructure, IGraphEdge } from "../gen/types";
  * (Takes two kinds of view: "edges" or "synthesisNode")
  */
 
-interface Props {
+interface IntermediateViewProps {
   selectedNId: number;
   view: string;
 }
 
-interface State {
+interface IntermediateViewState {
   selectedNId: number;
   view: string;
   status: boolean;
@@ -27,8 +27,8 @@ interface State {
 
 export type IGraphJson = IGraphStructure<IGraphEdge>;
 
-export class IntermediateView extends React.Component<Props, State> {
-  constructor(props: Props) {
+export class IntermediateView extends React.Component<IntermediateViewProps, IntermediateViewState> {
+  constructor(props: IntermediateViewProps) {
     super(props);
     this.state = {
       selectedNId: props.selectedNId,
@@ -45,7 +45,7 @@ export class IntermediateView extends React.Component<Props, State> {
   }
 
 
-  componentWillReceiveProps(props: Props) {
+  componentWillReceiveProps(props: IntermediateViewProps) {
     if (this.state.selectedNId !== props.selectedNId) {
       this.setState({
         status: false,
