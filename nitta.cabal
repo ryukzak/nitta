@@ -58,7 +58,6 @@ library
                      , NITTA.UIBackend.REST
                      , NITTA.UIBackend.Timeline
                      , NITTA.UIBackend.VisJS
-                     , NITTA.UIBackend.VisJS.Types
                      , NITTA.Utils
                      , NITTA.Utils.Lens
                      , NITTA.Utils.ProcessDescription

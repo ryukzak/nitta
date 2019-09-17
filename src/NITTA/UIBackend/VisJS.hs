@@ -1,14 +1,19 @@
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.UIBackend.VisJS
-Description : Graph for https://github.com/crubier/react-graph-vis/blob/master/README.md
+Description : Graph of intermediate view.
 Copyright   : (c) Dmitriy Anoshchenkov, Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -17,19 +22,56 @@ Stability   : experimental
 module NITTA.UIBackend.VisJS
     ( VisJS
     , algToVizJS
+    , GraphStructure(..)
+    , NodeElement(..), GraphEdge(..)
     ) where
 
 import           Data.Aeson
-import qualified Data.Map                     as M
 import qualified Data.Set                     as S
 import qualified Data.String.Utils            as S
-import qualified Data.Text                    as T
-import           Data.Typeable
-import qualified NITTA.Intermediate.Functions as F
+import           GHC.Generics
 import qualified NITTA.Intermediate.Types     as F
-import           NITTA.UIBackend.VisJS.Types
-import           NITTA.Utils                  (oneOf)
 import           Prelude                      hiding (id)
+
+
+type VisJS = GraphStructure GraphEdge
+
+data GraphEdge = GraphEdge
+        { to         :: Int
+        , from       :: Int
+        , label      :: String
+        , edgeWidth  :: String
+        , fontAllign :: String
+        }
+    deriving ( Generic )
+
+data GraphStructure v = GraphStructure
+        { nodes :: [NodeElement]
+        , edges :: [v]
+        }
+    deriving ( Generic )
+
+data NodeElement = NodeElement
+        { id        :: Int
+        , label     :: String
+        , nodeColor :: String
+        , nodeShape :: String
+        , fontSize  :: String
+        , nodeSize  :: String
+        }
+    deriving ( Generic )
+
+data VertexType
+    = InVertex
+    | OutVertex
+    deriving ( Eq )
+
+data GraphVertex = GraphVertex
+    { vertexType   :: VertexType
+    , vertexName   :: String
+    , vertexNodeId :: Int
+    }
+
 
 
 algToVizJS fbs = let

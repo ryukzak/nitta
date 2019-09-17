@@ -36,7 +36,7 @@ import           NITTA.Synthesis.Types
 import           NITTA.UIBackend
 import           NITTA.UIBackend.Marshalling
 import           NITTA.UIBackend.Timeline
-import           NITTA.UIBackend.VisJS.Types
+import           NITTA.UIBackend.VisJS
 import           Numeric.Interval
 import           System.Console.CmdArgs
 import           System.Directory              (createDirectoryIfMissing)
