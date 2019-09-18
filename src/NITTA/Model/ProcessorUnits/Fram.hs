@@ -458,10 +458,12 @@ instance Controllable (Fram v x t) where
 
     portsToSignals FramPorts{ oe, wr, addr } = oe : wr : addr
 
-    signalsToPorts _ xs = FramPorts{ oe   = xs !! 0
-                                   , wr   = xs !! 1
-                                   , addr = drop 2 xs 
-                                   }
+    signalsToPorts xs =
+        FramPorts
+            { oe   = xs !! 0
+            , wr   = xs !! 1
+            , addr = take 4 (drop 2 xs)
+            }
 
 
 instance Connected (Fram v x t) where

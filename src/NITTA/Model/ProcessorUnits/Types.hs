@@ -8,8 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE StandaloneDeriving     #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE TypeFamilies           #-} {-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -216,7 +215,9 @@ class Controllable pu where
     portsToSignals :: Ports pu -> [SignalTag]
 
     -- |Get Ports from list of signals
-    signalsToPorts :: Proxy pu -> [SignalTag] -> Ports pu 
+    signalsToPorts :: [SignalTag] -> Ports pu
+
+    
 
 -- |Type class of processor units with control ports.
 class Connected pu where
@@ -235,7 +236,6 @@ class IOConnected pu where
     -- |External output ports, which go outside of NITTA mUnit.
     inoutPorts :: IOPorts pu -> [ InoutPortTag ]
     inoutPorts _ = []
-
 
 newtype SignalTag = SignalTag { signalTag :: Int} deriving ( Show, Eq, Ord, Ix )
 newtype InputPortTag = InputPortTag{ inputPortTag :: String } deriving ( Show, Eq, Ord )

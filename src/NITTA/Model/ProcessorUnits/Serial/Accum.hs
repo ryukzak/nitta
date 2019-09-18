@@ -107,11 +107,13 @@ instance Controllable (Accum v x t) where
 
   portsToSignals AccumPorts{ init, load, neg, oe } = [init, load, neg, oe]
 
-  signalsToPorts _ xs = AccumPorts{ init = xs !! 0
-                                  , load = xs !! 1
-                                  , neg  = xs !! 2
-                                  , oe   = xs !! 3 
-                                  }
+  signalsToPorts xs =
+      AccumPorts
+          { init = xs !! 0
+          , load = xs !! 1
+          , neg  = xs !! 2
+          , oe   = xs !! 3
+          }
 
 
 instance Default (Microcode (Accum v x t)) where

@@ -322,11 +322,13 @@ instance Controllable (Divider v x t) where
 
     portsToSignals DividerPorts{ wr, wrSel, oe, oeSel } = [wr, wrSel, oe, oeSel]
 
-    signalsToPorts _ xs = DividerPorts{ wr    = xs !! 0
-                                      , wrSel = xs !! 1
-                                      , oe    = xs !! 2
-                                      , oeSel = xs !! 3
-                                      }
+    signalsToPorts xs =
+        DividerPorts
+            { wr    = xs !! 0
+            , wrSel = xs !! 1
+            , oe    = xs !! 2
+            , oeSel = xs !! 3
+            }
 
 instance Default (Microcode (Divider v x t)) where
     def = Microcode

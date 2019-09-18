@@ -166,9 +166,12 @@ instance Controllable (SimpleIO i v x t) where
 
     portsToSignals SimpleIOPorts{ wr, oe } = [wr, oe]
 
-    signalsToPorts _ xs = SimpleIOPorts{ wr = xs !! 0
-                                       , oe = xs !! 1
-                                       }
+    signalsToPorts xs =
+        SimpleIOPorts
+            { wr = xs !! 0
+            , oe = xs !! 1
+            , stop = "stop"
+            }
 
 instance Default (Microcode (SimpleIO i v x t)) where
     def = Microcode

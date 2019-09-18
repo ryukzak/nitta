@@ -525,10 +525,12 @@ instance Controllable (Multiplier v x t) where
 
     portsToSignals MultiplierPorts{ wr, wrSel, oe } = [wr, wrSel, oe]
 
-    signalsToPorts _ xs = MultiplierPorts{ wr    = xs !! 0
-                                         , wrSel = xs !! 1
-                                         , oe    = xs !! 2
-                                         }
+    signalsToPorts xs =
+        MultiplierPorts
+            { wr    = xs !! 0
+            , wrSel = xs !! 1
+            , oe    = xs !! 2
+            }
 
 -- |Also we need to define default state for microcode (that is match to implicit @nop@ function)
 -- This state mean that mUnit is in inaction state, but doesn't busy the bus and storage
@@ -541,6 +543,9 @@ instance Default (Microcode (Multiplier v x t)) where
         , selSignal=False
         , oeSignal=False
         }
+
+instance ( Time t ) => Default (Multiplier v x t) where
+    def = multiplier True
 
 -- |Instruction and microcode binding is carried up by this class, which requires their
 -- unambiguous matching, as well as regardless of the status and settings of the model.

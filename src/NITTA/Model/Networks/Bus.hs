@@ -287,6 +287,10 @@ instance Controllable (BusNetwork tag v x t) where
     -- signals starts and ends inside network unit.
     mapMicrocodeToPorts BusNetworkMC{} BusNetworkPorts = []
 
+    portsToSignals _ = undefined
+
+    signalsToPorts _ = undefined
+
 
 instance {-# OVERLAPS #-}
         ByTime (BusNetwork tag v x t) t where

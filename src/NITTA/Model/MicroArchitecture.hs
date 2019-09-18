@@ -2,7 +2,6 @@
 {-# LANGUAGE DuplicateRecordFields     #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE PartialTypeSignatures     #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
@@ -12,7 +11,7 @@
 
 {-|
 Module      : NITTA.Model.MicroArchitecture
-Description : NITTA CAD executable
+Description : Create micro architecture functions
 Copyright   : (c) Daniil Prohorov, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -20,11 +19,12 @@ Stability   : experimental
 -}
 
 module NITTA.Model.MicroArchitecture
-  ( add 
-  , addIO
-  , addManual
-  , evalNetwork
-  ) where
+    ( add
+    , addS 
+    , addSIO
+    , addManual
+    , evalNetwork
+    ) where
 
 import           Control.Monad.State.Lazy
 import           Data.Default                     (def)
@@ -33,35 +33,45 @@ import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Project.Implementation
-import           Data.Proxy
-
-
-
-divPortConst = 4
-anySpiConst = 0
 
 -- |Eval state and create microarch 
 --
--- __Configure microarch with one network using auto pins selector:__
+-- __Configure microarch with one network using auto IOPorts type pins selector:__
 --
 -- @
 -- microarch = evalNetwork $ do
---         add "fram" "fram"
---         add "accum" "accum"
---         add "div" "div"
---         add "mul" "mul"
---         add "spi" "spi" "slave" "mosi" "miso" "sclk" "cs"
+--     add "fram_tag" FramIO 
+--     add "accum_tag" AccumIO 
+--     add "div_tag" DividerIO 
+--     add "mul_tag" MultiplierIO 
+--     add "spi_tag" $ SPISlave
+--         { slave_mosi = InputPortTag "mosi" 
+--         , slave_miso = OutputPortTag "miso"
+--         , slave_sclk = InputPortTag "sclk"
+--         , slave_cs   = InputPortTag "cs"
+--         }        
 -- @
+-- __Configure microarch with one network using auto String pins selector:__
+--
+-- @
+-- microarch = evalNetwork $ do
+--     addS "fram_tag" "fram"
+--     addS "accum_tag" "accum"
+--     addS "div_tag" "div"
+--     addS "mul_tag" "mul"
+--     addSIO "spi_tag" "spi" ["slave", "mosi", "miso", "sclk", "cs"]
+-- @
+--
 --
 -- __Configure microarch with manual pins:__
 --
 -- @
 -- microarch = evalNetwork $ do
---         addManual "acum" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
---         addManual "mul"  (PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
---         addManual "div"  (PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO)
---         addManual "spi"  (PU def
---             (anySPI 0)
+--     addManual "acum_tag" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
+--     addManual "mul_tag"  (PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
+--     addManual "div_tag"  (PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO)
+--     addManual "spi_tag"  (PU def
+--         (anySPI 0)
 --             SimpleIOPorts
 --                 { wr=SignalTag 22, oe=SignalTag 23
 --                 , stop="stop"
@@ -81,45 +91,26 @@ anySpiConst = 0
 -- @
 --
 -- microarch = evalNetwork $ do
---         addManual "fram1" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
---         addManual "fram2" (PU def def FramPorts{ oe=SignalTag 6, wr=SignalTag 7, addr=map SignalTag [8, 9, 10, 11] } FramIO )
---         addManual "accum" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
---         add "div" "div"
---         add "mul" "mul"
---         add "spi" "spi" "slave" "mosi" "miso" "sclk" "cs"
---       
+--     addManual "fram1_tag" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
+--     addManual "fram2_tag" (PU def def FramPorts{ oe=SignalTag 6, wr=SignalTag 7, addr=map SignalTag [8, 9, 10, 11] } FramIO )
+--     addManual "accum_tag" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
+--     add "div_tag2" DividerIO 
+--     add "mul_tag2" MultiplierIO 
+--     addS "div_tag" "div"
+--     addS "mul_tag" "mul"
+--     addSIO "spi_tag" "spi" ["slave", "mosi", "miso", "sclk", "cs"]
+--     
 -- @
---
 evalNetwork net ioSync =
     let 
         net' = net >> busNetworkS ioSync <$> get 
     in 
         evalState net' ([], [])
 
--- |Check intersections in ports nums
+-- |Check intersections in ports numbers
 intersPortsError ports usedPorts tag
-    | any (`elem` usedPorts) ports
-    = error $ "intersection in " ++ tag ++ " ports with used ports"
-    | otherwise
-    = ports
-
--- |__Add manual PU__
---
--- @
--- addManual "fram" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
--- @
---
--- @
--- addManual "accum" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
--- @
-
-addManual tag mkPU = do
-    (usedPorts, pus) <- get
-    let pu         = mkPU $ puEnv tag
-        puPorts    = (\PU { ports } -> portsToSignals ports) pu
-        usedPorts' = usedPorts ++ intersPortsError puPorts usedPorts tag
-    put (usedPorts', (tag, mkPU) : pus)
-
+    | any (`elem` usedPorts) ports = error $ "intersection in " ++ tag ++ " ports with used ports"
+    | otherwise                    = ports
 
 -- |Create environment for PU
 puEnv tag =  
@@ -148,77 +139,101 @@ puEnv tag =
             }
 
 -- |Get free pins from infinity list of nums
-freePins used count = 
+freePins used  = 
     let 
         freeSignals = filter (not . (`elem` used)) infSignals
         infSignals = map SignalTag [0 ..]
     in
-        take count freeSignals 
+        freeSignals 
 
 -- |Special version of busNetwork function ( for easier get from State )
 busNetworkS ioSync (lstPorts, pu) = busNetwork (length lstPorts) ioSync pu
 
-add' tag proxy io f2 = do
+-- |__Add PU automatic__
+--
+-- @
+-- add "fram_tag" FramIO 
+-- @
+--
+-- @
+-- add "accum_tag" AccumIO
+-- @
+--
+-- @
+-- add "spi_tag" $ SPISlave
+--              { slave_mosi = InputPortTag "mosi" 
+--              , slave_miso = OutputPortTag "miso"
+--              , slave_sclk = InputPortTag "sclk"
+--              , slave_cs   = InputPortTag "cs"
+--              }        
+-- @
+add tag io = do
     (usedPorts, pus) <- get
     let
-        pins = freePins usedPorts 6
-        ports = signalsToPorts proxy pins
-        pusOut =
-            pus ++ [( tag, PU def f2 ports io)]
+        signals = freePins usedPorts
+        ports = signalsToPorts signals 
+        pu = (tag, PU def def ports io) 
+        used = portsToSignals ports 
+        pus'= pu : pus
+        usedPorts' = usedPorts ++ used 
+    put (usedPorts', pus')
 
-        usedPortsOut = usedPorts ++ pins
-    put (usedPortsOut, pusOut)
+-- |__Add PU automatic with String data type__
+--
+-- @
+-- addS "fram_tag" "fram" 
+-- @
+--
+-- @
+-- addS "accum_tag" "accum" 
+-- @
+addS tag "fram"  = add tag FramIO
+addS tag "accum" = add tag AccumIO
+addS tag "div"   = add tag DividerIO 
+addS tag "mul"   = add tag MultiplierIO
+addS _ _         = error "Can't match type PU with existing PU types"
 
+-- |__Add SimpleIO PU automatic with String data type__
+--
+-- @
+-- addSIO "spi_tag" "spi" ["slave", "mosi", "miso", "sclk", "cs"]
+-- @
+addSIO tag "spi" args     
+    = add tag io  
+        where
+            pos   = head args
+            mosi  = args !! 1
+            miso  = args !! 2
+            sclk  = args !! 3
+            cs    = args !! 4
+            io    = case pos of
+                "slave" -> SPISlave
+                    { slave_mosi = InputPortTag mosi
+                    , slave_miso = OutputPortTag miso
+                    , slave_sclk = InputPortTag sclk
+                    , slave_cs   = InputPortTag cs
+                    }
+                "master" -> SPIMaster { master_mosi = OutputPortTag mosi
+                     , master_miso = InputPortTag miso
+                     , master_sclk = OutputPortTag sclk
+                     , master_cs   = OutputPortTag cs
+                     }
+                _        -> error "Error while configure SPI! Set 'master' or 'slave'"
 
+addSIO _ _ _ = error "Error while configure SimpleIO uncorrect parameters"   
 
-add "fram" tag 
-  = add' tag proxy io def
-    where 
-        proxy = Proxy :: Proxy (Fram v x t)
-        io    = FramIO
-
-add "accum" tag 
-  = add' tag proxy io def
-    where
-        proxy = Proxy :: Proxy (Accum v x t)
-        io    = AccumIO
-
-add "div" tag 
-  = add' tag proxy io (divider divPortConst True) 
-    where
-        proxy = Proxy :: Proxy (Divider v x t)
-        io    = DividerIO
-
-add "mul" tag 
-  = add' tag proxy io (multiplier True)
-    where
-        proxy = Proxy :: Proxy (Multiplier v x t)
-        io    = MultiplierIO
-
-add _ _ = error "Can't match type PU with existing PU types"
-
-
-addIO "spi" tag args     
-  = add' tag proxy io (anySPI anySpiConst) 
-    where
-        pos   = head args
-        mosi  = args !! 1
-        miso  = args !! 2
-        sclk  = args !! 3
-        cs    = args !! 4
-        proxy = Proxy :: Proxy (simpleIO v x t)
-        io    = case pos of
-                   "slave" -> SPISlave { slave_mosi = InputPortTag mosi
-                                       , slave_miso = OutputPortTag miso
-                                       , slave_sclk = InputPortTag sclk
-                                       , slave_cs   = InputPortTag cs
-                                       }
-                   "master" -> SPIMaster { master_mosi = OutputPortTag mosi
-                                         , master_miso = InputPortTag miso
-                                         , master_sclk = OutputPortTag sclk
-                                         , master_cs   = OutputPortTag cs
-                                         }
-                   _        -> error "Error while configure SPI! Set 'master' or 'slave'"
-
-addIO _ _ _ = error "Can't match type PU with existing PU types"
-
+-- |__Add manual PU__
+--
+-- @
+-- addManual "fram_tag" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
+-- @
+--
+-- @
+-- addManual "accum_tag" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
+-- @
+addManual tag mkPU = do
+    (usedPorts, pus) <- get
+    let pu         = mkPU $ puEnv tag
+        puPorts    = (\PU { ports } -> portsToSignals ports) pu
+        usedPorts' = usedPorts ++ intersPortsError puPorts usedPorts tag
+    put (usedPorts', (tag, mkPU) : pus)
