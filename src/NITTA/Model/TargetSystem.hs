@@ -77,7 +77,7 @@ instance ( UnitTag tag, VarValTime v x t, Semigroup v
             { mDataFlowGraph=DFCluster $ addLoopParts
             , mUnit=refactorDecision mUnit bl
             }
-    refactorDecision _ _ = undefined
+    refactorDecision m _ = m
 
 
 -- |Data flow graph - intermediate representation of application algorithm.

@@ -39,7 +39,7 @@ wrong steps.
 module NITTA.Synthesis.Types
     ( -- *Synthesis graph
       G, NId(..), Node(..), Edge(..)
-    , mkRootNodeIO, getNodeIO, getEdgesIO
+    , mkRootNodeIO, getNodeIO, getEdgesIO, getPositiveEdgesIO
       -- *Synthesis decision type & Parameters
     , ObjectiveFunctionConf(..)
     , Parameters(..)
@@ -168,6 +168,11 @@ getEdgesIO node@Node{ nEdges } = atomically $
             edges <- mkEdges node
             writeTVar nEdges $ Just edges
             return edges
+
+
+-- |For synthesis method is more usefull, because throw away all useless edges
+-- (objective function value less than zero).
+getPositiveEdgesIO n = filter ((> 0) . eObjectiveFunctionValue) <$> getEdgesIO n
 
 
 -- |Get specific by @nId@ node from a synthesis tree.
@@ -382,6 +387,7 @@ objectiveFunction
             -> 2000
         (RefactorEdgeParameter BreakLoop{})
             -> 2000
+        _ -> -1
 
 True <?> v = v
 False <?> _ = 0
