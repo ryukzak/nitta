@@ -87,6 +87,16 @@ instance ( VarValTime v x t ) => ProcessorUnit (PU v x t) v x t where
     setTime t PU{ diff, unit, ports, ioPorts, systemEnv }
         = PU{ diff, unit=setTime t unit, ports, ioPorts, systemEnv }
 
+instance ( Ord v ) => Patch (PU v x t) (Diff v) where
+    patch diff' PU{ diff, unit, ports, ioPorts, systemEnv }
+        = PU
+            { diff=Diff
+                { diffI=diffI diff' `M.union` diffI diff
+                , diffO=diffO diff' `M.union` diffO diff
+                }
+            , unit, ports, ioPorts, systemEnv
+            }
+
 instance ( Ord v ) => Patch (PU v x t) (I v, I v) where
     patch (I v, I v') pu@PU{ diff=diff@Diff{ diffI } } = pu{ diff=diff{ diffI=M.insert v v' diffI }}
 

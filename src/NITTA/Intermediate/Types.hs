@@ -87,9 +87,7 @@ newtype O v = O (S.Set v)
     deriving ( Eq, Ord )
 
 instance ( Ord v ) => Patch (O v) (v, v) where
-    patch (v, v') o@(O vs)
-        | v `S.member` vs = O $ S.fromList (v':(S.elems vs \\ [v]))
-        | otherwise = o
+    patch (v, v') (O vs) = O $ S.fromList $ map (\e -> if e == v then v' else e) $ S.elems vs
 
 instance ( Show v ) => Show (O v) where
     show (O vs) = "O " ++ show (S.elems vs)
