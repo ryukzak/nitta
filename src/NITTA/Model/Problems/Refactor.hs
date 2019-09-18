@@ -39,6 +39,7 @@ data Refactor v x
     -- reg :: a -> buf_a
     -- f2 :: (buf_a, ...) -> (...)
     = InsertOutRegister v v
+    | AddDataflowBuffer (S.Set v)
     -- |Example: l = Loop (X x) (O o) (I i) -> LoopIn l (I i), LoopOut (I o)
     | BreakLoop{ loopX :: x, loopO :: S.Set v, loopI :: v } -- (Loop v x) (LoopOut v x) (LoopIn v x)
     deriving ( Generic, Show, Eq )
