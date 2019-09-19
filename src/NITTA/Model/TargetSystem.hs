@@ -70,6 +70,16 @@ instance ( UnitTag tag, VarValTime v x t, Semigroup v
             { mDataFlowGraph=patch (v, v') mDataFlowGraph
             , mUnit=refactorDecision mUnit d
             }
+
+    refactorDecision ModelState{ mUnit, mDataFlowGraph } r@SelfSending{} = let
+            fs = functions mDataFlowGraph
+            ( buffer, diff ) = prepareBuffer r
+            fs' = map (patch diff) fs ++ [buffer]
+        in ModelState
+            { mDataFlowGraph=fsToDataFlowGraph fs'
+            , mUnit=refactorDecision mUnit r
+            }
+
     refactorDecision ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } bl@BreakLoop{} = let
             revokeLoop = leafs L.\\ [ DFLeaf $ F $ recLoop bl ]
             addLoopParts = [ DFLeaf $ F $ recLoopOut bl, DFLeaf $ F $ recLoopIn bl ] ++ revokeLoop

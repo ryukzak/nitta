@@ -361,10 +361,22 @@ instance ( UnitTag tag, VarValTime v x t, Semigroup v
                     colision = unionsMap inputs fs `S.intersection` sources
                 , not $ null colision
                 ]
-        in insertRegs ++ breakLoops ++ map AddDataflowBuffer selfSending
+        in insertRegs ++ breakLoops ++ map SelfSending selfSending
 
     refactorDecision bn@BusNetwork{ bnRemains } (InsertOutRegister v v')
         = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
+
+    refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(SelfSending vs) = let
+            (buffer, diff) = prepareBuffer r
+            Just (tag, _) = L.find
+                (\(_, f) -> not $ null $ S.intersection vs $ unionsMap variables f)
+                $ M.assocs bnBinded
+            bnRemains' = buffer : patch diff bnRemains
+        in bn
+            { bnRemains=bnRemains'
+            , bnPus=M.adjust (patch diff) tag bnPus
+            , bnBinded=M.map (\fs -> map (patch diff) fs) bnBinded
+            }
 
     refactorDecision bn@BusNetwork{ bnBinded, bnPus } bl@BreakLoop{} = let
             Just (puTag, puBinded) = L.find (elem (F $ recLoop bl) . snd) $ M.assocs bnBinded

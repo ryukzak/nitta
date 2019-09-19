@@ -358,8 +358,8 @@ estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor InsertOutR
     = RefactorEdgeParameter $ InsertOutRegister def def
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor BreakLoop{})
     = RefactorEdgeParameter $ BreakLoop def def def
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor AddDataflowBuffer{})
-    = RefactorEdgeParameter $ AddDataflowBuffer def
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor SelfSending{})
+    = RefactorEdgeParameter $ SelfSending def
 
 
 -- |Function, which map 'Parameters' to 'Float'.
@@ -389,7 +389,9 @@ objectiveFunction
             -> 2000
         (RefactorEdgeParameter BreakLoop{})
             -> 2000
-        _ -> -1
+        (RefactorEdgeParameter SelfSending{})
+            -> 2000
+        -- _ -> -1
 
 True <?> v = v
 False <?> _ = 0
