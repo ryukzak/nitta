@@ -380,7 +380,7 @@ objectiveFunction
                 - pRestless * 4
                 + pOutputNumber * 2
         DataFlowEdgeParameter{ pWaitTime, pNotTransferableInputs, pRestrictedTime }
-            ->  100
+            -> 100
                 + (numberOfDFOptions >= threshold) <?> 1000
                 + pRestrictedTime <?> 200
                 - sum pNotTransferableInputs * 5

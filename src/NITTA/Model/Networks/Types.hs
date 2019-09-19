@@ -73,13 +73,13 @@ instance ( Ord v ) => EndpointProblem (PU v x t) v t where
 
 instance RefactorProblem (PU v x t) v x where
     refactorOptions PU{ unit } = refactorOptions unit
-    refactorDecision PU{ diff, unit, ports, ioPorts, systemEnv } d 
+    refactorDecision PU{ diff, unit, ports, ioPorts, systemEnv } d
         = PU{ diff, unit=refactorDecision unit d, ports, ioPorts, systemEnv }
 
 instance ( VarValTime v x t ) => ProcessorUnit (PU v x t) v x t where
     tryBind fb PU{ diff, unit, ports, ioPorts, systemEnv }
         = case tryBind fb unit of
-            Right unit' -> Right PU { diff, unit=unit', ports, ioPorts, systemEnv }
+            Right unit' -> Right PU{ diff, unit=unit', ports, ioPorts, systemEnv }
             Left err    -> Left err
     process PU{ diff, unit } = let
             p = process unit
