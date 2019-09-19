@@ -6,14 +6,13 @@ function pid(I, prev_err)
     local temperature_desired = 50
     local getValueSPI = receive()
 
-    prev_err = reg(prev_err)
     err = reg(temperature_desired - getValueSPI)
-    
+
     P = Kp * err
-    I = reg(I + Ki * err)
+    I = I + Ki * err
     D = Kd * reg(err - prev_err)
 
-    local PID = reg(P + I) + D
+    local PID = P + I + D
     send(PID)
 
     pid(I, err)
