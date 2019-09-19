@@ -20,7 +20,7 @@ Stability   : experimental
 -}
 module NITTA.Intermediate.Types
     ( -- *Variables
-      Var, Variables(..)
+      Var, Variables(..), Suffix(..)
       -- *Function interface description
     , I(..), O(..), X(..)
     , Lock(..), Locks(..)
@@ -56,8 +56,15 @@ class WithFunctions a f | a -> f where
 
 -----------------------------------------------------------
 
+class Suffix v where
+    -- FIXME: may be unsafe
+    bufferSuffix :: v -> v
+
+instance Suffix String where
+    bufferSuffix s = s ++ "@buf"
+
 -- |Variable identifier. Used for simplify type description.
-type Var v = ( Typeable v, Ord v, Show v, Label v )
+type Var v = ( Typeable v, Ord v, Show v, Label v, Suffix v )
 
 -- |Type class of something, which is related to varibles.
 class Variables a v | a -> v where

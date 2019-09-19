@@ -61,7 +61,7 @@ instance ( UnitTag tag, VarValTime v x t
     dataflowOptions ModelState{ mUnit }      = dataflowOptions mUnit
     dataflowDecision f@ModelState{ mUnit } d = f{ mUnit=dataflowDecision mUnit d }
 
-instance ( UnitTag tag, VarValTime v x t, Semigroup v
+instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (ModelState (BusNetwork tag v x t) v x) v x where
     refactorOptions ModelState{ mUnit } = refactorOptions mUnit
 

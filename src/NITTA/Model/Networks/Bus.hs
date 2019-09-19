@@ -340,11 +340,11 @@ instance ( UnitTag tag, VarValTime v x t
 
 
 
-instance ( UnitTag tag, VarValTime v x t, Semigroup v
+instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (BusNetwork tag v x t) v x where
     refactorOptions bn@BusNetwork{ bnPus, bnBinded } = let
             insertRegs = L.nub
-                [ InsertOutRegister lockBy (lockBy <> lockBy)
+                [ InsertOutRegister lockBy $ bufferSuffix lockBy
                 | (Bind f tag) <- bindOptions bn
                 , Lock{ lockBy } <- locks f
                 , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)

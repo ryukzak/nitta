@@ -159,7 +159,7 @@ mkNode nId nModel nOrigin nEdges = Node
 
 -- |Get all available edges for the node. Edges calculated only for the first
 -- call.
-getEdgesIO :: ( UnitTag tag, VarValTime v x t, Semigroup v
+getEdgesIO :: ( UnitTag tag, VarValTime v x t
     ) => G Node tag v x t -> IO [ G Edge tag v x t ]
 getEdgesIO node@Node{ nEdges } = atomically $
     readTVar nEdges >>= \case
@@ -185,7 +185,7 @@ getNodeIO node nId@(NId (i:is)) = do
     getNodeIO (eNode $ edges !! i) (NId is)
 
 
-mkEdges :: ( UnitTag tag, VarValTime v x t, Semigroup v
+mkEdges :: ( UnitTag tag, VarValTime v x t
     ) => G Node tag v x t -> STM [ G Edge tag v x t ]
 mkEdges n@Node{ nId, nModel, nOrigin } = do
     let conf = def
