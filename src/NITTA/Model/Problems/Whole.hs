@@ -38,8 +38,7 @@ import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem         (ModelState (..))
 import           NITTA.Model.Types
-import           NITTA.Utils.Lens
-import           Numeric.Interval                 (Interval, (...))
+import           Numeric.Interval                 (Interval, inf, (...))
 
 
 isBinding = \case Binding{} -> True; _ -> False
@@ -86,11 +85,11 @@ option2decision (Binding f tag) = Binding f tag
 option2decision (Dataflow src trg)
     = let
         pushTimeConstrains = map snd $ catMaybes $ M.elems trg
-        pullStart    = maximum $ (snd src^.avail.infimum) : map (\o -> o^.avail.infimum) pushTimeConstrains
-        pullDuration = maximum $ map (\o -> o^.dur.infimum) $ snd src : pushTimeConstrains
+        pullStart    = maximum $ map (inf . tcAvailable) $ snd src : pushTimeConstrains
+        pullDuration = maximum $ map (inf . tcDuration) $ snd src : pushTimeConstrains
         pullEnd = pullStart + pullDuration - 1
         pushStart = pullStart
-        mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + tc^.dur.infimum - 1))
+        mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + inf (tcDuration tc) - 1))
         pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
     in Dataflow ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
 option2decision (Refactor o) = Refactor o
