@@ -99,7 +99,7 @@ instance ( Show v, Show x ) => Show ( TestbenchReport v x ) where
                 { inline $ showLst tbSimulationDump }
             |]
         where
-            showLst = S.join "\n" . map ("    " ++)
+            showLst = unlines . map ("    " ++)
 
 -- |Generate list of project verilog files (including testbench).
 projectFiles prj@Project{ pName, pUnit }

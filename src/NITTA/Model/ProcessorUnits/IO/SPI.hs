@@ -269,7 +269,6 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                     sendingAssert transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
                         in fixIndent [qc|
-|
 |                          @(posedge { tag }_io_test_ready);
 |                                   $display( "{ tag }_io_test_output except: %H (\{ { toVerilogLiteral xs } })", \{ { toVerilogLiteral xs } } );
 |                                   $display( "{ tag }_io_test_output actual: %H", { tag }_io_test_output );
@@ -288,7 +287,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                             // $finish; // DON'T DO THAT (with this line test can pass without data checking)
                         end
 
-                        // SPI Output signal checking
+                        // SPI Output signal checking Lolkek
                         initial begin
                             @(negedge { signalRst });
                             repeat(2) @(posedge { tag }_io_test_ready);
