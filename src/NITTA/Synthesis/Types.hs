@@ -69,9 +69,7 @@ import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem         (ModelState (..))
 import           NITTA.Model.Types
 import           NITTA.Utils
-import           NITTA.Utils.Lens
-import           Numeric.Interval                 (Interval)
-import           Numeric.Interval                 (inf, sup)
+import           Numeric.Interval                 (Interval, inf, sup)
 
 
 -- |Type alias for Graph parts, where `e` - graph element (Node or Edge) should be 'Node' or 'Edge';
@@ -388,7 +386,7 @@ False <?> _ = 0
 
 
 waitingTimeOfVariables net =
-    [ (variable, tc^.avail.infimum)
+    [ (variable, inf $ tcAvailable tc)
     | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- dataflowOptions net
     , (variable, Nothing) <- M.assocs dfoTargets
     ]
