@@ -35,21 +35,22 @@ import           Text.Regex
 
 inlineMarker = "###"
 
-inline str = S.join "\n" $ map (inlineMarker ++) $ lines str
+inline str = unlines $ map (inlineMarker ++ ) $ lines str
 
-codeBlock indent str0 = let
+codeBlock indent str0 = 
+    let
         str1 = drop 1 $ lines str0
         str2 = map lstripInline str1
         withBadIndent = filter (> 0) $ map (length . takeWhile (== ' ')) $ filter (not . isInline) str2
         badIndent = if null withBadIndent then 0 else minimum withBadIndent
-        str3 = S.join "\n" $ map (fixIndent_ badIndent) str2
+        str3 = unlines $ map (fixIndent_ badIndent) str2
     in S.replace inlineMarker "" str3
     where  
         lstripInline s = subRegex (mkRegex $ "^[[:space:]]*" ++ inlineMarker) s inlineMarker
         isInline = S.startswith inlineMarker
         fixIndent_ badIndent s 
             | isInline s = s
-            | otherwise = replicate (indent * 4) ' ' ++ (drop badIndent s)
+            | otherwise = replicate (indent * 4) ' ' ++ drop badIndent s
 
 codeLine indent str = replicate (indent * 4) ' ' ++ dropWhile (== ' ') str ++ "\n"
 
