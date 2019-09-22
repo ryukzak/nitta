@@ -218,7 +218,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         {this.state.view === "endpointOptions" &&
                             <pre> {JSON.stringify(this.state.endpointOptions, null, 2)} </pre>
                         }
-                        {this.state.view === "history" && <SynthesisHistoryView nId={this.state.selectedNId}/> }
+                        {this.state.view === "history" && <SynthesisHistoryView nId={this.state.selectedNId} reverse={ false } /> }
 
                         {this.state.view === "testbench" && this.renderTestbench(this.state.testBenchDump)}
                     </div>

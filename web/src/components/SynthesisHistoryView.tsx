@@ -4,6 +4,7 @@ import { ProcessTimelines, ViewPointID, TimelinePoint, TimelineWithViewPoint } f
 
 interface Props {
     nId: string;
+    reverse: boolean;
 }
 
 interface State {
@@ -49,10 +50,11 @@ export class SynthesisHistoryView extends React.Component<Props, State> {
 
     render() {
         if (this.state.history == null) return (<pre>LOADING...</pre>);
+        let history = this.props.reverse ? this.state.history.reverse() : this.state.history;
         // FIXME: history decisions should be view as in edges view
         return (
-            <pre> {this.state.history.map((e, i) =>
-                <div key={i}> { i + " - " }
+            <pre className="squeeze"> {history.map((e, i) =>
+                <div key={i}> { (this.props.reverse ? history.length - i - 1 : i) + " - " }
                     { e.tag == "BindingView" && e.tag + " - " + e.pu + " - " + e.function }
                     { e.tag == "RefactorView" && e.tag + " - " + e.contents }
                     { e.tag == "DataflowView" && e.tag + " - " + JSON.stringify(e) }

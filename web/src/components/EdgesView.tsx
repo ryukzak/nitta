@@ -1,6 +1,7 @@
 import * as React from "react";
 import { haskellAPI } from "../middleware/haskell-api";
 import ReactTable from "react-table";
+import { SynthesisHistoryView } from "./SynthesisHistoryView";
 import { EdgeView, IBindingView, IBindEdgeParameter, IRefactorView, IDataflowView, IDataFlowEdgeParameter, Interval } from "../gen/types";
 
 type Edge = EdgeView<string, string, number, number>;
@@ -138,6 +139,8 @@ export class EdgesView extends React.Component<Props, State> {
                         parametersColumn(),
                     ]}
                     onNidChange={this.props.onNidChange} />
+                history:
+                <SynthesisHistoryView nId={ this.state.nid } reverse={ true } />
             </div>
         );
     }
