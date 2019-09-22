@@ -40,6 +40,7 @@ module NITTA.Synthesis.Types
     ( -- *Synthesis graph
       G, NId(..), Node(..), Edge(..)
     , mkRootNodeIO, getNodeIO, getEdgesIO, getPositiveEdgesIO
+    , getSynthesisHistoryIO
       -- *Synthesis decision type & Parameters
     , ObjectiveFunctionConf(..)
     , Parameters(..)
@@ -183,6 +184,17 @@ getNodeIO node nId@(NId (i:is)) = do
     edges <- getEdgesIO node
     unless (i < length edges) $ error $ "getNode - wrong nId: " ++ show nId
     getNodeIO (eNode $ edges !! i) (NId is)
+
+
+getSynthesisHistoryIO node (NId []) = return $ getSynthesisHistoryIO' node
+getSynthesisHistoryIO node nId@(NId (i:is)) = do
+    edges <- getEdgesIO node
+    unless (i < length edges) $ error $ "getNode - wrong nId: " ++ show nId
+    xs <- getSynthesisHistoryIO (eNode $ edges !! i) (NId is)
+    return (getSynthesisHistoryIO' node ++ xs)
+
+getSynthesisHistoryIO' Node{ nOrigin=Nothing }                = []
+getSynthesisHistoryIO' Node{ nOrigin=Just Edge{ eDecision } } = [ eDecision ]
 
 
 mkEdges :: ( UnitTag tag, VarValTime v x t
