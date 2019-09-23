@@ -19,6 +19,7 @@ interface IntermediateViewProps {
 
 interface IntermediateViewState {
   selectedNId: string;
+  // FIXME: throw away useless property
   view: string;
   status: boolean;
   graph: any;

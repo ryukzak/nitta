@@ -77,6 +77,7 @@ export class EdgesView extends React.Component<Props, State> {
     render() {
         if (this.state.edges === undefined || this.state.edges === null) return <div />;
 
+        /* FIXME: history and table view of decision should be similar */
         return (
             <div className="row">
                 <div className="columns">
