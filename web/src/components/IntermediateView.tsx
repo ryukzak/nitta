@@ -13,12 +13,13 @@ import { IGraphStructure, IGraphEdge } from "../gen/types";
  */
 
 interface IntermediateViewProps {
-  selectedNId: number;
+  selectedNId: string;
   view: string;
 }
 
 interface IntermediateViewState {
-  selectedNId: number;
+  selectedNId: string;
+  // FIXME: throw away useless property
   view: string;
   status: boolean;
   graph: any;
@@ -55,7 +56,7 @@ export class IntermediateView extends React.Component<IntermediateViewProps, Int
     }
   }
 
-  graphMaker(nid: number) {
+  graphMaker(nid: string) {
     haskellAPI.simpleSynthesisGraph(nid)
       .then((response: any) => {
         // TODO: Replace with backend types

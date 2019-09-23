@@ -21,12 +21,17 @@ Stability   : experimental
 module NITTA.Model.Problems.Refactor
     ( Refactor(..), RefactorProblem(..)
     , recLoop, recLoopOut, recLoopIn
+    , prepareBuffer
     ) where
 
+import           Data.Default
+import qualified Data.Map                     as M
 import qualified Data.Set                     as S
 import           GHC.Generics
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
+import           NITTA.Utils
+
 
 data Refactor v x
     -- |Example:
@@ -39,6 +44,7 @@ data Refactor v x
     -- reg :: a -> buf_a
     -- f2 :: (buf_a, ...) -> (...)
     = InsertOutRegister v v
+    | SelfSending (S.Set v)
     -- |Example: l = Loop (X x) (O o) (I i) -> LoopIn l (I i), LoopOut (I o)
     | BreakLoop{ loopX :: x, loopO :: S.Set v, loopI :: v } -- (Loop v x) (LoopOut v x) (LoopIn v x)
     deriving ( Generic, Show, Eq )
@@ -58,3 +64,11 @@ class RefactorProblem u v x | u -> v x where
   refactorDecision :: u -> Refactor v x -> u
   refactorDecision _ _ = error "not implemented"
 
+
+prepareBuffer (SelfSending vs) = let
+        bufferI = bufferSuffix $ oneOf vs
+        bufferO = S.elems vs
+        diff = def{ diffO=M.fromList $ map (\o -> (o, bufferI)) bufferO }
+    in ( reg bufferI bufferO, diff )
+
+prepareBuffer _ = undefined

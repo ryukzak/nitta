@@ -340,20 +340,43 @@ instance ( UnitTag tag, VarValTime v x t
 
 
 
-instance ( UnitTag tag, VarValTime v x t, Semigroup v
+instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (BusNetwork tag v x t) v x where
-    refactorOptions bn@BusNetwork{ bnPus } = let
+    refactorOptions bn@BusNetwork{ bnPus, bnBinded } = let
             insertRegs = L.nub
-                [ InsertOutRegister lockBy (lockBy <> lockBy)
+                [ InsertOutRegister lockBy $ bufferSuffix lockBy
                 | (Bind f tag) <- bindOptions bn
                 , Lock{ lockBy } <- locks f
                 , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
                 ]
             breakLoops = concatMap refactorOptions $ M.elems bnPus
-        in insertRegs ++ breakLoops
+            selfSending = [ colision
+                | (tag, fs) <- M.assocs bnBinded
+                , let
+                    sources = S.unions [ ss
+                        | EndpointO{ epoRole } <- endpointOptions ( bnPus M.! tag )
+                        , case epoRole of Source{} -> True; _ -> False
+                        , let Source ss = epoRole
+                        ]
+                    colision = unionsMap inputs fs `S.intersection` sources
+                , not $ null colision
+                ]
+        in insertRegs ++ breakLoops ++ map SelfSending selfSending
 
     refactorDecision bn@BusNetwork{ bnRemains } (InsertOutRegister v v')
         = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
+
+    refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(SelfSending vs) = let
+            (buffer, diff) = prepareBuffer r
+            Just (tag, _) = L.find
+                (\(_, f) -> not $ null $ S.intersection vs $ unionsMap variables f)
+                $ M.assocs bnBinded
+            bnRemains' = buffer : patch diff bnRemains
+        in bn
+            { bnRemains=bnRemains'
+            , bnPus=M.adjust (patch diff) tag bnPus
+            , bnBinded=M.map (\fs -> map (patch diff) fs) bnBinded
+            }
 
     refactorDecision bn@BusNetwork{ bnBinded, bnPus } bl@BreakLoop{} = let
             Just (puTag, puBinded) = L.find (elem (F $ recLoop bl) . snd) $ M.assocs bnBinded

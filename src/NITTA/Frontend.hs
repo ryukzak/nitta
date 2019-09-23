@@ -49,9 +49,12 @@ lua2functions src
     in fsToDataFlowGraph alg
     where
         varRow lst@(x:_)
-            = let vs = zipWith (\v i -> [qq|{unpack v}:{i}|]) lst [0..]
+            = let vs = zipWith f lst [0..]
             in (x, (vs, vs))
         varRow _ = undefined
+        f v i = let
+                v' = unpack v
+            in [qq|{v'}#{i}|]
 
 
 buildAlg ast
@@ -247,7 +250,7 @@ rightExp diff out (PrefixExp (Paren e)) -- a = (...)
     = rightExp diff out e
 
 rightExp diff [a] n@(Number _ _) = do -- a = 42
-    b <- expConstant (T.concat ["const_", a]) n
+    b <- expConstant (T.concat ["@", a, "@const"]) n
     addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }
 
 rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] $ Number numType $ T.cons '-' n
@@ -261,7 +264,7 @@ rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
 
 
-expArg _diff n@(Number _ _) = expConstant "const_inline" n
+expArg _diff n@(Number _ _) = expConstant "@const" n
 
 expArg _diff (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
 
@@ -277,7 +280,7 @@ expArg diff binop@Binop{} = do
     rightExp diff [c] binop
     return c
 
-expArg _diff (Unop Neg (Number numType n)) = expConstant "const_inline" $ Number numType $ T.cons '-' n
+expArg _diff (Unop Neg (Number numType n)) = expConstant "@const" $ Number numType $ T.cons '-' n
 
 expArg diff (Unop Neg expr@(PrefixExp _)) = do
     c <- genVar "tmp"
@@ -291,12 +294,12 @@ expArg _diff a = error $ "expArg: " ++ show a
 
 -- *Internal
 
-expConstant prefix (Number _ textX) = do
+expConstant suffix (Number _ textX) = do
     AlgBuilder{ algItems } <- get
     case find (\case Constant{ cTextX } | cTextX == textX -> True; _ -> False) algItems of
         Just Constant{ cVar } -> return cVar
         Nothing -> do
-            cVar <- genVar $ T.concat [ prefix, "_", textX ]
+            let cVar = T.concat [ textX, suffix ]
             addItem Constant
                 { cX=read $ unpack textX
                 , cVar

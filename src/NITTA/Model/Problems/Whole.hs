@@ -67,7 +67,7 @@ class SynthesisProblem u tag v x t | u -> tag v x t where
     synthesisDecision :: u -> SynthesisStatement tag v x (Interval t) -> u
 
 
-instance ( UnitTag tag, VarValTime v x t, Semigroup v
+instance ( UnitTag tag, VarValTime v x t
          ) => SynthesisProblem (ModelState (BusNetwork tag v x t) v x) tag v x t where
     synthesisOptions m@ModelState{ mUnit } = concat
         [ map generalizeBindingOption $ bindOptions m
