@@ -322,13 +322,8 @@ instance Controllable (Divider v x t) where
 
     portsToSignals DividerPorts{ wr, wrSel, oe, oeSel } = [wr, wrSel, oe, oeSel]
 
-    signalsToPorts xs =
-        DividerPorts
-            { wr    = xs !! 0
-            , wrSel = xs !! 1
-            , oe    = xs !! 2
-            , oeSel = xs !! 3
-            }
+    signalsToPorts [wr, wrSel, oe, oeSel] = DividerPorts wr wrSel oe oeSel
+    signalsToPorts _                      = error "pattern match error in signalToPorts DividerPorts"
 
 instance Default (Microcode (Divider v x t)) where
     def = Microcode

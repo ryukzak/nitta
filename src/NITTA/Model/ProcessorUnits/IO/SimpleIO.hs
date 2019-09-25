@@ -162,16 +162,12 @@ instance Controllable (SimpleIO i v x t) where
     mapMicrocodeToPorts Microcode{..} SimpleIOPorts{..} =
         [ ( wr, Bool wrSignal )
         , ( oe, Bool oeSignal )
-        ]
+        ] 
 
     portsToSignals SimpleIOPorts{ wr, oe } = [wr, oe]
 
-    signalsToPorts xs =
-        SimpleIOPorts
-            { wr = xs !! 0
-            , oe = xs !! 1
-            , stop = "stop"
-            }
+    signalsToPorts [wr, oe] = SimpleIOPorts wr oe "stop" 
+    signalsToPorts _        = error "pattern match error in signalToPorts SimpleIOPorts"
 
 instance Default (Microcode (SimpleIO i v x t)) where
     def = Microcode

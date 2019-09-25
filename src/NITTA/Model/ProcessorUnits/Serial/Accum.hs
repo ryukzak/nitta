@@ -107,13 +107,8 @@ instance Controllable (Accum v x t) where
 
   portsToSignals AccumPorts{ init, load, neg, oe } = [init, load, neg, oe]
 
-  signalsToPorts xs =
-      AccumPorts
-          { init = xs !! 0
-          , load = xs !! 1
-          , neg  = xs !! 2
-          , oe   = xs !! 3
-          }
+  signalsToPorts [init, load, neg, oe] = AccumPorts init load neg oe
+  signalsToPorts _                     = error "pattern match error in signalToPorts AccumPorts"
 
 
 instance Default (Microcode (Accum v x t)) where

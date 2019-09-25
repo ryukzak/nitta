@@ -121,15 +121,8 @@ instance Controllable (Shift v x t) where
     portsToSignals ShiftPorts{ work, direction, mode, step, init, oe} 
         = [work, direction, mode, step, init, oe]
 
-    signalsToPorts xs =
-        ShiftPorts
-            { work      = xs !! 0
-            , direction = xs !! 1
-            , mode      = xs !! 2
-            , step      = xs !! 3
-            , init      = xs !! 4
-            , oe        = xs !! 5
-            }
+    signalsToPorts [work, direction, mode, step, init, oe] = ShiftPorts work direction mode step init oe
+    signalsToPorts _                                       = error "pattern match error in signalToPorts ShiftPorts"
 
 instance Default (Microcode (Shift v x t)) where
   def = Microcode{ workSignal=False
