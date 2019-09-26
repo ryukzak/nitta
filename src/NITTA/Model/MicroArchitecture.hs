@@ -23,6 +23,7 @@ module NITTA.Model.MicroArchitecture
     , addSIO
     , addManual
     , evalNetwork
+    , example
     ) where
 
 import           Control.Monad.State.Lazy
@@ -33,8 +34,7 @@ import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Project.Implementation
 
--- |Eval state and create microarch
-
+-- |__Eval state and create microarch__
 evalNetwork ioSync net = flip evalState ([], []) $ do 
     _ <- net
     busNetworkS ioSync <$> get
@@ -119,3 +119,26 @@ addManual tag mkPU = do
         puPorts    = (\PU { ports } -> portsToSignals ports) pu
         usedPorts' = usedPorts ++ intersPortsError puPorts usedPorts tag
     put (usedPorts', (tag, mkPU) : pus)
+
+-- |__Example for architecture configuration__
+example ioSync = evalNetwork ioSync $ do
+    addManual "fram1_tag" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
+    addManual "accum_tag" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
+    add "div_tag2" DividerIO
+    add "mul_tag2" MultiplierIO
+    addS "div_tag" "div"
+    addS "mul_tag" "mul"
+    addSIO "spi_slave" "spi" ["slave", "mosi", "miso", "sclk", "cs"]
+    addManual "spi_master"  (PU def
+        (anySPI 0)
+            SimpleIOPorts
+                { wr=SignalTag 22, oe=SignalTag 23
+                , stop="stop"
+                }
+                SPIMaster
+                    { master_mosi=OutputPortTag "mosi"
+                    , master_miso=InputPortTag "miso"
+                    , master_sclk=OutputPortTag "sclk"
+                    , master_cs=OutputPortTag "cs"
+                    }
+            )
