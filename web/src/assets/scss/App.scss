@@ -36,9 +36,10 @@ $button-color: #1779ba;
 
 //Edge's Styles
 .jsonViewContainer {
-  margin: 1% ;
+  margin: 1%;
   width: 240px;
   display: inline-block;
+
   button {
     color: $button-color;
   }
@@ -57,7 +58,7 @@ $button-color: #1779ba;
 .edgesCardsHolderContainer {
   overflow-x: scroll;
   overflow-y: hidden;
-  white-space:nowrap
+  white-space: nowrap
 }
 
 .window {
@@ -68,12 +69,18 @@ $button-color: #1779ba;
 
 .edgeGraphContainer {
   @extend .window;
-  width: 490px;
+  width: calc(100% - 2rem);
   height: 400px;
+
+  &>div,
+  svg {
+    height: 100%;
+    width: 100%;
+  }
 }
 
 .edgeCardProgressBar {
-  
+
   meter {
     width: 100%;
     height: 15px;
@@ -87,23 +94,26 @@ $button-color: #1779ba;
 
   meter::-webkit-meter-bar {
     background: #EEE;
-    box-shadow: 0 2px 3px rgba(0,0,0,0.2) inset;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2) inset;
     border-radius: 3px;
   }
 
   meter::-webkit-meter-optimum-value {
-      background: #86CC00; /* Green */
-      border-radius: 3px;
+    background: #86CC00;
+    /* Green */
+    border-radius: 3px;
   }
 
   meter::-webkit-meter-suboptimum-value {
-      background: #FFDB1A; /* Yellow */
-      border-radius: 3px;
+    background: #FFDB1A;
+    /* Yellow */
+    border-radius: 3px;
   }
 
   meter::-webkit-meter-even-less-good-value {
-      background: #CC4600; /* Red */
-      border-radius: 3px;
+    background: #CC4600;
+    /* Red */
+    border-radius: 3px;
   }
 
 }
@@ -131,5 +141,5 @@ $button-color: #1779ba;
 .hoverWrapper:hover #hoverShow1 {
   display: block;
   border-radius: 5px;
-  box-shadow: 0px 2px 3px rgba(0,0,0,.13) ,1px 2px 2px rgba(0,0,0,.1) , -1px -2px 2px rgba(0,0,0,.05) ;
+  box-shadow: 0px 2px 3px rgba(0, 0, 0, .13), 1px 2px 2px rgba(0, 0, 0, .1), -1px -2px 2px rgba(0, 0, 0, .05);
 }

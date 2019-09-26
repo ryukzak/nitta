@@ -178,6 +178,8 @@ test_examples =
         =<< lua "teacup_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/teacup.lua")
     , testCase "examples/fibonacci.lua wait" $ either assertFailure return
         =<< lua "fibonacci_wait" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
+    , testCase "examples/self-send.lua" $ either assertFailure return
+        =<< lua "self_send" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/self-send.lua")
     -- FIXME: uncomment when IO synchronization propogation and SPI will be fixed.
     -- , testCase "examples/fibonacci.lua drop" $ either assertFailure return
     --     =<< lua "fibonacci_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
@@ -275,7 +277,7 @@ test_sum_of_received_values =
 
 test_refactor =
     [ testCase "insert register before binding (y = x + x + x)" $ do
-        report <- runTargetSynthesis' ((def :: TargetSynthesis (BusNetwork String String Int Int) String Int Int)
+        report <- runTargetSynthesis' ((def :: TargetSynthesis String String Int Int)
             { tName="regBeforeBind"
             , tMicroArch=march
             , tSynthesisMethod=smartBindSynthesisIO

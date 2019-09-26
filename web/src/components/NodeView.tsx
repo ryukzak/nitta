@@ -3,7 +3,8 @@ import "react-table/react-table.css";
 import { ProcessView } from "./ProcessView";
 import { haskellAPI } from "../middleware/haskell-api";
 import { EdgesView } from "./EdgesView";
-import { GraphView } from "./GraphView";
+import { SynthesisHistoryView } from "./SynthesisHistoryView";
+import { IntermediateView } from "./IntermediateView";
 import ReactTable from "react-table";
 import { JsonView } from "./JsonView";
 import { TestbenchReport } from "../gen/types";
@@ -55,6 +56,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
         if (view === "synthesisNode") this.updateModel(nid, "synthesisNode");
         if (view === "testbench") this.updateTestBench(nid, "testbench");
         if (view === "edges") this.setState({ view: "edges" });
+        if (view === "history") this.setState({ view: "history" });
         if (view === "endpointOptions") this.updateEndpointOptions(nid, "endpointOptions")
     }
 
@@ -161,6 +163,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                             <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "process")}>process</a>
                             <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "edges")}>edges</a>
                             <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "endpointOptions")}>endpointOptions</a>
+                            <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "history")}>history</a>
 
                             <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "testbench")}>testbench</a>
                         </div>
@@ -177,8 +180,8 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         {this.state.view === "update" && <pre> updating... </pre>}
                         {this.state.view === "synthesisNode" &&
                             <div>
-                                <div className="edgeGraphContainer" style={{ 'display': "inline-block" }}>
-                                    <GraphView
+                                <div className="edgeGraphContainer" style={{ display: "block" }}>
+                                    <IntermediateView
                                         view={this.state.view}
                                         selectedNId={this.state.selectedNId}
                                     />
@@ -208,13 +211,14 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                         }
                         {this.state.view === "edges" &&
                             <EdgesView
-                                selectedNId={this.state.selectedNId}
-                                onNIdChange={(nid: any) => this.onNIdChange(nid)}
+                                nid={this.state.selectedNId}
+                                onNidChange={(nid: any) => this.onNIdChange(nid)}
                             />
                         }
                         {this.state.view === "endpointOptions" &&
                             <pre> {JSON.stringify(this.state.endpointOptions, null, 2)} </pre>
                         }
+                        {this.state.view === "history" && <SynthesisHistoryView nId={this.state.selectedNId} reverse={ false } /> }
 
                         {this.state.view === "testbench" && this.renderTestbench(this.state.testBenchDump)}
                     </div>

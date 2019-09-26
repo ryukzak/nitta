@@ -35,7 +35,6 @@ import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
@@ -196,17 +195,12 @@ instance ( Var v ) => Locks (Divider v x t) v where
     -- FIXME:
     locks _ = []
 
-instance DecisionProblem (RefactorDT v x)
-            RefactorDT (Divider v x t)
-        where
-    options _ _ = []
-    decision _ _ _ = undefined
+instance RefactorProblem (Divider v x t) v x
 
 
 instance ( VarValTime v x t
-        ) => DecisionProblem (EndpointDT v t)
-            EndpointDT (Divider v x t) where
-    options _proxy pu@Divider{ targetIntervals, sourceIntervals, remains, jobs }
+        ) => EndpointProblem (Divider v x t) v t where
+    endpointOptions pu@Divider{ targetIntervals, sourceIntervals, remains, jobs }
         = concatMap (resolveColisions sourceIntervals) targets
         ++ concatMap (resolveColisions targetIntervals) sources
         where
@@ -236,13 +230,11 @@ instance ( VarValTime v x t
 
 
     -- FIXME: vertical relations
-    decision
-            proxy
+    endpointDecision
             pu@Divider{ jobs, targetIntervals, remains, pipeline, latency }
             d@EndpointD{ epdRole=Target v, epdAt }
         | ([f], fs) <- partition (\f -> v `member` variables f) remains
-        = decision
-            proxy
+        = endpointDecision
             pu
                 { remains=fs
                 , jobs=remain2input (sup epdAt) f : jobs
@@ -264,8 +256,7 @@ instance ( VarValTime v x t
                 updateTick (sup epdAt)
             }
 
-    decision
-            _proxy
+    endpointDecision
             pu@Divider{ jobs, sourceIntervals }
             d@EndpointD{ epdRole=Source vs, epdAt }
         | Just (out@Output{ outputRnd, startAt, function }, other) <- findOutput jobs
@@ -287,7 +278,7 @@ instance ( VarValTime v x t
                 updateTick (sup epdAt)
             }
 
-    decision _ _ _ = error "divider decision internal error"
+    endpointDecision _ _ = error "divider decision internal error"
 
 
 

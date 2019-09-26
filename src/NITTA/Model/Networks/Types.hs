@@ -28,7 +28,6 @@ import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
@@ -41,10 +40,8 @@ data PU v x t where
         ( ByTime pu t
         , Connected pu
         , IOConnected pu
-        , DecisionProblem (EndpointDT v t)
-            EndpointDT  pu
-        , DecisionProblem (RefactorDT v x)
-            RefactorDT pu
+        , EndpointProblem pu v t
+        , RefactorProblem pu v x
         , ProcessorUnit pu v x t
         , Show (Instruction pu)
         , Simulatable pu v x
@@ -63,38 +60,42 @@ data PU v x t where
             } -> PU v x t
 
 
-instance ( Ord v ) =>
-        DecisionProblem (EndpointDT v t)
-            EndpointDT (PU v x t)
-        where
-    options proxy PU{ diff, unit }
-        = map (patch diff) $ options proxy unit
-    decision proxy PU{ diff, unit, ports, ioPorts, systemEnv } d
+instance ( Ord v ) => EndpointProblem (PU v x t) v t where
+    endpointOptions PU{ diff, unit }
+        = map (patch diff) $ endpointOptions unit
+    endpointDecision PU{ diff, unit, ports, ioPorts, systemEnv } d
         = PU
             { diff
-            , unit=decision proxy unit $ patch (reverseDiff diff) d
+            , unit=endpointDecision unit $ patch (reverseDiff diff) d
             , ports, ioPorts
             , systemEnv
             }
 
-instance DecisionProblem (RefactorDT v x)
-            RefactorDT (PU v x t)
-        where
-    options proxy PU{ unit } 
-        = options proxy unit
-    decision proxy PU{ diff, unit, ports, ioPorts, systemEnv } d 
-        = PU{ diff, unit=decision proxy unit d, ports, ioPorts, systemEnv }
+instance RefactorProblem (PU v x t) v x where
+    refactorOptions PU{ unit } = refactorOptions unit
+    refactorDecision PU{ diff, unit, ports, ioPorts, systemEnv } d
+        = PU{ diff, unit=refactorDecision unit d, ports, ioPorts, systemEnv }
 
 instance ( VarValTime v x t ) => ProcessorUnit (PU v x t) v x t where
     tryBind fb PU{ diff, unit, ports, ioPorts, systemEnv }
         = case tryBind fb unit of
-            Right unit' -> Right PU { diff, unit=unit', ports, ioPorts, systemEnv }
+            Right unit' -> Right PU{ diff, unit=unit', ports, ioPorts, systemEnv }
             Left err    -> Left err
     process PU{ diff, unit } = let
             p = process unit
         in p{ steps=map (patch diff) $ steps p }
     setTime t PU{ diff, unit, ports, ioPorts, systemEnv }
         = PU{ diff, unit=setTime t unit, ports, ioPorts, systemEnv }
+
+instance ( Ord v ) => Patch (PU v x t) (Diff v) where
+    patch diff' PU{ diff, unit, ports, ioPorts, systemEnv }
+        = PU
+            { diff=Diff
+                { diffI=diffI diff' `M.union` diffI diff
+                , diffO=diffO diff' `M.union` diffO diff
+                }
+            , unit, ports, ioPorts, systemEnv
+            }
 
 instance ( Ord v ) => Patch (PU v x t) (I v, I v) where
     patch (I v, I v') pu@PU{ diff=diff@Diff{ diffI } } = pu{ diff=diff{ diffI=M.insert v v' diffI }}

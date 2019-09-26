@@ -1,10 +1,14 @@
-{-# LANGUAGE ConstraintKinds     #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
@@ -18,13 +22,25 @@ Stability   : experimental
 
 Marshaling data for JSON REST API.
 -}
-module NITTA.UIBackend.Marshalling () where
+module NITTA.UIBackend.Marshalling
+    ( Viewable(..)
+    , SynthesisNodeView
+    , SynthesisDecisionView
+    , DataflowEndpointView
+    , EdgeView
+    ) where
 
+import           Control.Concurrent.STM
 import           Data.Aeson
+import           Data.Hashable
+import qualified Data.HashMap.Strict              as HM
 import qualified Data.Map                         as M
+import           Data.Maybe
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import qualified Data.Text                        as T
+import qualified Data.Tree                        as T
+import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
@@ -35,25 +51,133 @@ import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Synthesis.Types
+import           NITTA.Synthesis.Utils
 import           NITTA.UIBackend.Timeline
 import           NITTA.Utils                      (transferred)
 import           Numeric.Interval
 import           Servant
 
+-- *Intermediate representation between raw haskell representation and JSON
+
+class Viewable t v | t -> v where
+    view :: t -> v
+
+
+
+data SynthesisNodeView
+    = SynthesisNodeView
+        { svNnid             :: NId
+        , svCntx             :: [ String ]
+        , svIsComplete       :: Bool
+        , svIsEdgesProcessed :: Bool
+        , svDuration         :: Int
+        , svCharacteristic   :: Float -- FIXME:
+        , svOptionType       :: String
+        }
+    deriving ( Generic )
+
+instance ToJSON SynthesisNodeView
+
+instance ( UnitTag tag, VarValTime v x t
+        ) => Viewable (G Node tag v x t) (IO (T.Tree SynthesisNodeView)) where
+    view Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
+        nodesM <- readTVarIO nEdges
+        nodes <- case nodesM of
+            Just ns -> mapM (view . eNode) ns
+            Nothing -> return []
+        return T.Node
+            { T.rootLabel=SynthesisNodeView
+                { svNnid=nId
+                , svCntx=[]
+                , svIsComplete=nIsComplete
+                , svIsEdgesProcessed=isJust nodesM
+                , svDuration=fromEnum $ targetProcessDuration nModel
+                , svCharacteristic=maybe (read "NaN") eObjectiveFunctionValue nOrigin
+                , svOptionType=case nOrigin of
+                    Just Edge{ eOption=Binding{} }  -> "Bind"
+                    Just Edge{ eOption=Dataflow{} } -> "Transport"
+                    Just Edge{ eOption=Refactor{} } -> "Refactor"
+                    Nothing                         -> "-"
+                }
+            , T.subForest=nodes
+            }
+
+
+
+instance Viewable (F v x) String where
+    view = show
+
+
+
+data DataflowEndpointView tag tp
+    = DataflowEndpointView
+        { pu   :: tag
+        , time :: tp
+        }
+    deriving ( Generic )
+
+instance ( ToJSON tp, ToJSON tag ) => ToJSON (DataflowEndpointView tag tp)
+
+
+
+data SynthesisDecisionView tag v x tp
+    = BindingView{ function :: String, pu :: tag }
+    | DataflowView
+        { source  :: DataflowEndpointView tag tp
+        , targets :: HM.HashMap v (Maybe (DataflowEndpointView tag tp))
+        }
+    | RefactorView (Refactor v x)
+    deriving ( Generic )
+
+instance ( Show x, Show v, ToJSON v, ToJSONKey v, ToJSON tp, ToJSON tag
+        ) => ToJSON (SynthesisDecisionView tag v x tp)
+
+instance ( Eq v, Hashable v ) => Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp) where
+    view (Binding f pu) = BindingView{ function=show f, pu }
+    view Dataflow{ dfSource=(stag, st), dfTargets } = DataflowView
+        { source=DataflowEndpointView stag st
+        , targets=HM.map
+            (fmap $ \(tag, t) -> DataflowEndpointView tag t)
+            $ HM.fromList $ M.assocs dfTargets
+        }
+    view (Refactor r) = RefactorView r
+
+
+
+data EdgeView tag v x t
+    = EdgeView
+        { nid :: String
+        , option :: SynthesisDecisionView tag v x (TimeConstrain t)
+        , decision :: SynthesisDecisionView tag v x (Interval t)
+        , parameters :: Parameters
+        , objectiveFunctionValue :: Float
+        }
+    deriving ( Generic )
+
+instance ( VarValTimeJSON v x t, Hashable v, ToJSON tag ) => ToJSON (EdgeView tag v x t)
+
+instance ( VarValTimeJSON v x t, Hashable v ) => Viewable (G Edge tag v x t) (EdgeView tag v x t) where
+    view Edge{ eNode, eOption, eDecision, eParameters, eObjectiveFunctionValue }
+        = EdgeView
+            { nid=show $ nId eNode
+            , option=view eOption
+            , decision=view eDecision
+            , parameters=eParameters
+            , objectiveFunctionValue=eObjectiveFunctionValue
+            }
+
+
+-- JSON
 
 type VarValTimeJSON v x t = ( Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t )
 
 
 -- *Option/Decision
-instance ( VarValTimeJSON v x t
-        ) => ToJSON (Option (SynthesisDT (BusNetwork String v x t)))
-instance ( VarValTimeJSON v x t
-         ) => ToJSON (Decision (SynthesisDT (BusNetwork String v x t)))
-instance ( ToJSON v, Show v, Show x ) => ToJSON (Option (RefactorDT v x)) where
+instance ( VarValTimeJSON v x t ) => ToJSON (SynthesisStatement String v x (TimeConstrain t))
+instance ( VarValTimeJSON v x t ) => ToJSON (SynthesisStatement String v x (Interval t))
+instance ( ToJSON v, Show v, Show x ) => ToJSON (Refactor v x) where
     toJSON = toJSON . show
-instance ( ToJSON v, Show v, Show x ) => ToJSON (Decision (RefactorDT v x)) where
-    toJSON = toJSON . show
-instance ( Time t ) => ToJSON (Option (EndpointDT String t)) where
+instance ( Time t ) => ToJSON (EndpointOption String t) where
     toJSON EndpointO{ epoRole=Source vs, epoAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epoAt)
     toJSON EndpointO{ epoRole=Target v, epoAt } = toJSON ("Target: " ++ v ++ " at " ++ show epoAt)
 
@@ -124,7 +248,7 @@ instance FromHttpApiData NId where
 
 
 instance ( VarValTimeJSON v x t
-        ) => ToJSON (SG Node String v x t) where
+        ) => ToJSON (G Node String v x t) where
     toJSON Node{ nId, nModel, nIsComplete } = object
         [ "nModel"      .= nModel
         , "nIsComplete" .= nIsComplete
@@ -140,7 +264,7 @@ instance ToJSON ObjectiveFunctionConf
 instance ToJSON Parameters
 
 instance ( VarValTimeJSON v x t
-        ) => ToJSON (Edge m (SynthesisDT (BusNetwork String v x t))) where
+        ) => ToJSON (G Edge String v x t) where
     toJSON Edge{ eObjectiveFunctionValue, eParameters, eOption, eDecision } = object
         [ "eObjectiveFunctionValue" .= eObjectiveFunctionValue
         , "eParameters"             .= eParameters

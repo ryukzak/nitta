@@ -20,7 +20,7 @@ Stability   : experimental
 -}
 module NITTA.Intermediate.Types
     ( -- *Variables
-      Var, Variables(..)
+      Var, Variables(..), Suffix(..)
       -- *Function interface description
     , I(..), O(..), X(..)
     , Lock(..), Locks(..)
@@ -39,15 +39,14 @@ module NITTA.Intermediate.Types
 
 import           Data.Default
 import           Data.List
-import qualified Data.Map                    as M
+import qualified Data.Map                  as M
 import           Data.Maybe
-import qualified Data.Set                    as S
-import qualified Data.String.Utils           as S
+import qualified Data.Set                  as S
+import qualified Data.String.Utils         as S
 import           Data.Tuple
 import           Data.Typeable
 import           GHC.Generics
 import           NITTA.Intermediate.Values
-import           NITTA.UIBackend.VisJS.Types
 
 
 class WithFunctions a f | a -> f where
@@ -57,8 +56,15 @@ class WithFunctions a f | a -> f where
 
 -----------------------------------------------------------
 
+class Suffix v where
+    -- FIXME: may be unsafe
+    bufferSuffix :: v -> v
+
+instance Suffix String where
+    bufferSuffix s = s ++ "@buf"
+
 -- |Variable identifier. Used for simplify type description.
-type Var v = ( Typeable v, Ord v, Show v, Label v )
+type Var v = ( Typeable v, Ord v, Show v, Label v, Suffix v )
 
 -- |Type class of something, which is related to varibles.
 class Variables a v | a -> v where
@@ -88,9 +94,7 @@ newtype O v = O (S.Set v)
     deriving ( Eq, Ord )
 
 instance ( Ord v ) => Patch (O v) (v, v) where
-    patch (v, v') o@(O vs)
-        | v `S.member` vs = O $ S.fromList (v':(S.elems vs \\ [v]))
-        | otherwise = o
+    patch (v, v') (O vs) = O $ S.fromList $ map (\e -> if e == v then v' else e) $ S.elems vs
 
 instance ( Show v ) => Show (O v) where
     show (O vs) = "O " ++ show (S.elems vs)
@@ -144,7 +148,6 @@ data F v x where
         , Locks f v
         , Show f
         , Label f
-        , ToVizJS f
         , FunctionSimulation f v x
         , Typeable f
         ) => f -> F v x
@@ -194,8 +197,6 @@ instance Show (F v x) where
 instance ( Var v ) => Variables (F v x) v where
     variables (F f) = inputs f `S.union` outputs f
 
-instance {-# OVERLAPS #-} ToVizJS (F v x) where
-    toVizJS (F f) = toVizJS f
 
 castF :: ( Typeable f, Typeable v, Typeable x ) => F v x -> Maybe (f v x)
 castF (F f) = cast f

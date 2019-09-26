@@ -42,14 +42,14 @@ smartBindSynthesisIO root = do
 
 
 bestThreadIO node = do
-    edges <- filter ((> 0) . eObjectiveFunctionValue) <$> getEdgesIO node
+    edges <- getPositiveEdgesIO node
     case edges of
         [] -> return node
         _  -> bestThreadIO $ eNode $ maximumOn eObjectiveFunctionValue edges
 
 
 obviousBindThreadIO node = do
-    edges <- getEdgesIO node
+    edges <- getPositiveEdgesIO node
     let obliousBind = find
             ((\case
                 BindEdgeParameter{ pPossibleDeadlock=True } -> False
@@ -63,7 +63,7 @@ obviousBindThreadIO node = do
 
 
 refactorThreadIO node = do
-    edges <- getEdgesIO node
+    edges <- getPositiveEdgesIO node
     let refEdge = find
             ((\case
                 RefactorEdgeParameter{} -> True
@@ -77,7 +77,7 @@ refactorThreadIO node = do
 
 smartBindThreadIO node = do
     node' <- refactorThreadIO node
-    edges <- getEdgesIO node'
+    edges <- getPositiveEdgesIO node'
     let binds = sortOn (Down . eObjectiveFunctionValue) $ filter
             ((\case
                 BindEdgeParameter{} -> True
@@ -91,9 +91,13 @@ smartBindThreadIO node = do
 
 allBestThreadIO (0 :: Int) node = bestThreadIO node
 allBestThreadIO n node = do
-    edges <- getEdgesIO node
+    edges <- getPositiveEdgesIO node
     lastNodes <- mapM (\Edge{ eNode } -> allBestThreadIO (n-1) eNode) edges
-    let completedNodes = filter nIsComplete lastNodes
-    return $ if null completedNodes
-        then head lastNodes
-        else minimumOn (targetProcessDuration . nModel) completedNodes
+    let 
+        outNode [] = node
+        outNode ln = case filter nIsComplete ln of
+            []             -> head ln
+            completedNodes -> minimumOn (targetProcessDuration . nModel) completedNodes
+                           
+    return $ outNode lastNodes 
+         

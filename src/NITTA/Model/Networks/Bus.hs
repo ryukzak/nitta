@@ -56,10 +56,9 @@ import           NITTA.Intermediate.Functions     (reg)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems.Binding
+import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Transport
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
@@ -68,7 +67,6 @@ import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.UIBackend.VisJS            ()
 import           NITTA.Utils
-import           NITTA.Utils.Lens
 import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (inf, singleton, sup, width,
                                                    (...))
@@ -144,17 +142,15 @@ instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{ bnRemains, bnBinded } = bnRemains ++ concat (M.elems bnBinded)
 
 instance ( UnitTag tag, VarValTime v x t
-         ) => DecisionProblem (DataFlowDT tag v t)
-                   DataFlowDT (BusNetwork tag v x t)
-    where
-    options _proxy BusNetwork{ bnPus, bnProcess }
+        ) => DataflowProblem (BusNetwork tag v x t) tag v t where
+    dataflowOptions BusNetwork{ bnPus, bnProcess }
         = notEmptyDestination $ concat
             [ map (DataFlowO (source, fixConstrain pullAt)) $ targetOptionsFor $ S.elems vars
             | (source, opts) <- puOptions
             , EndpointO (Source vars) pullAt <- opts
             ]
         where
-            puOptions = M.assocs $ M.map (options endpointDT) bnPus
+            puOptions = M.assocs $ M.map endpointOptions bnPus
             targetOptionsFor vs = let
                     conflictableTargets =
                         [ (pushVar, Just (target, fixConstrain pushAt))
@@ -166,26 +162,27 @@ instance ( UnitTag tag, VarValTime v x t
                     zero = zip vs $ repeat Nothing
                 in map (M.fromList . (++) zero) targets
 
-            fixConstrain constrain
-                = let
-                    a = max (nextTick bnProcess) $ constrain^.avail.infimum
-                    b = constrain^.avail.supremum
-                in constrain & avail .~ (a ... b)
+            fixConstrain constrain@TimeConstrain { tcAvailable } =
+                let
+                    a = max (nextTick bnProcess) $ inf tcAvailable 
+                    b = sup tcAvailable 
+                in 
+                    constrain { tcAvailable = a ... b}
 
             notEmptyDestination = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
             tgr (_, Just (target, _)) = Just target
             tgr _                     = Nothing
 
-    decision _proxy n@BusNetwork{ bnProcess, bnPus } d@DataFlowD{ dfdSource=( srcTitle, pullAt ), dfdTargets }
-        | nextTick bnProcess > d^.at.infimum
-        = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show (d^.at)
+    dataflowDecision n@BusNetwork{ bnProcess, bnPus } DataFlowD{ dfdSource=( srcTitle, pullAt ), dfdTargets }
+        | nextTick bnProcess > inf pullAt
+        = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show pullAt
         | otherwise
         = let
             pushs = M.fromList $ mapMaybe (\case
                     (k, Just v) -> Just (k,  v)
                     (_, Nothing) -> Nothing
                 ) $ M.assocs dfdTargets
-            transportStartAt = d^.at.infimum
+            transportStartAt = inf pullAt
             transportDuration = maximum $ map (\(_trg, time) -> (inf time - transportStartAt) + width time) $ M.elems pushs
             transportEndAt = transportStartAt + transportDuration
 
@@ -205,7 +202,7 @@ instance ( UnitTag tag, VarValTime v x t
                 updateTick (sup pullAt + 1)
             }
         where
-            applyDecision pus (trgTitle, d') = M.adjust (\pu -> decision endpointDT pu d') trgTitle pus
+            applyDecision pus (trgTitle, d') = M.adjust (\pu -> endpointDecision pu d') trgTitle pus
 
 
 
@@ -323,19 +320,17 @@ instance ( UnitTag tag ) => Simulatable (BusNetwork tag v x t) v x where
 -- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
 --    в себя эти настройки (но не hardcode-ить).
 -- 2. Эти функции должны быть представленны классом типов.
-instance ( UnitTag tag, VarValTime v x t ) =>
-        DecisionProblem (BindingDT tag v x)
-              BindingDT (BusNetwork tag v x t)
-        where
-    options _ BusNetwork{ bnRemains, bnPus } = concatMap optionsFor bnRemains
+instance ( UnitTag tag, VarValTime v x t
+        ) => BindProblem (BusNetwork tag v x t) tag v x where
+    bindOptions BusNetwork{ bnRemains, bnPus } = concatMap optionsFor bnRemains
         where
             optionsFor f =
-                [ BindingO f puTitle
+                [ Bind f puTitle
                 | ( puTitle, pu ) <- M.assocs bnPus
                 , allowToProcess f pu
                 ]
 
-    decision _ bn@BusNetwork{ bnProcess=p@Process{..}, ..} (BindingD fb puTitle)
+    bindDecision bn@BusNetwork{ bnProcess=p@Process{..}, ..} (Bind fb puTitle)
         = bn
             { bnPus=M.adjust (bind fb) puTitle bnPus
             , bnBinded=M.alter
@@ -350,28 +345,48 @@ instance ( UnitTag tag, VarValTime v x t ) =>
 
 
 instance ( UnitTag tag, VarValTime v x t
-        ) => DecisionProblem (RefactorDT v x)
-                  RefactorDT (BusNetwork tag v x t)
-        where
-    options proxy bn@BusNetwork{ bnPus } = let
+        ) => RefactorProblem (BusNetwork tag v x t) v x where
+    refactorOptions bn@BusNetwork{ bnPus, bnBinded } = let
             insertRegs = L.nub
-                [ InsertOutRegisterO lockBy
-                | (BindingO f tag) <- options binding bn
+                [ InsertOutRegister lockBy $ bufferSuffix lockBy
+                | (Bind f tag) <- bindOptions bn
                 , Lock{ lockBy } <- locks f
                 , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
                 ]
-            breakLoops = concatMap (options proxy) $ M.elems bnPus
-        in insertRegs ++ breakLoops
+            breakLoops = concatMap refactorOptions $ M.elems bnPus
+            selfSending = [ colision
+                | (tag, fs) <- M.assocs bnBinded
+                , let
+                    sources = S.unions [ ss
+                        | EndpointO{ epoRole } <- endpointOptions ( bnPus M.! tag )
+                        , case epoRole of Source{} -> True; _ -> False
+                        , let Source ss = epoRole
+                        ]
+                    colision = unionsMap inputs fs `S.intersection` sources
+                , not $ null colision
+                ]
+        in insertRegs ++ breakLoops ++ map SelfSending selfSending
 
-
-    decision _ bn@BusNetwork{ bnRemains } (InsertOutRegisterD v v')
+    refactorDecision bn@BusNetwork{ bnRemains } (InsertOutRegister v v')
         = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
 
-    decision _ bn@BusNetwork{ bnBinded, bnPus } d@(BreakLoopD l i o) = let
-            Just (puTag, puBinded) = L.find (elem (F l) . snd) $ M.assocs bnBinded
+    refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(SelfSending vs) = let
+            (buffer, diff) = prepareBuffer r
+            Just (tag, _) = L.find
+                (\(_, f) -> not $ null $ S.intersection vs $ unionsMap variables f)
+                $ M.assocs bnBinded
+            bnRemains' = buffer : patch diff bnRemains
         in bn
-            { bnPus=M.adjust (flip refactorDecision d) puTag bnPus
-            , bnBinded=M.insert puTag (( puBinded L.\\ [F l] ) ++ [ F i, F o ] ) bnBinded
+            { bnRemains=bnRemains'
+            , bnPus=M.adjust (patch diff) tag bnPus
+            , bnBinded=M.map (\fs -> map (patch diff) fs) bnBinded
+            }
+
+    refactorDecision bn@BusNetwork{ bnBinded, bnPus } bl@BreakLoop{} = let
+            Just (puTag, puBinded) = L.find (elem (F $ recLoop bl) . snd) $ M.assocs bnBinded
+        in bn
+            { bnPus=M.adjust (flip refactorDecision bl) puTag bnPus
+            , bnBinded=M.insert puTag (( puBinded L.\\ [ F $ recLoop bl] ) ++ [ F $ recLoopOut bl, F $ recLoopIn bl ] ) bnBinded
             }
 
 

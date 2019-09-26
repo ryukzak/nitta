@@ -29,7 +29,6 @@ import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
@@ -128,13 +127,13 @@ test_patchEndpointOptions =
         show' (patch def{ diffI=fromList [("d","d'")]} opts') @?= "[Source c,d]"
     ]
     where
-        opts = options endpointDT pu
+        opts = endpointOptions pu
         opts' = let
                 o1 = head opts
-                pu' = decision endpointDT pu $ endpointOptionToDecision o1
-                o2 = head $ options endpointDT pu'
-                pu'' = decision endpointDT pu' $ endpointOptionToDecision o2
-            in options endpointDT pu''
+                pu' = endpointDecision pu $ endpointOptionToDecision o1
+                o2 = head $ endpointOptions pu'
+                pu'' = endpointDecision pu' $ endpointOptionToDecision o2
+            in endpointOptions pu''
         show' = show . map epoRole
 
 
@@ -150,15 +149,15 @@ test_patchPU =
     ]
     where
         pu1 = patch (I "a", I "a'") pu
-        o1 = options endpointDT pu1
+        o1 = endpointOptions pu1
         pu2 = patch (O $ S.fromList ["d"], O $ S.fromList ["d'"]) pu1
-        o2 = options endpointDT pu2
-        pu3 = decision endpointDT pu2 $ endpointOptionToDecision $ head o2
-        o3 = options endpointDT pu3
-        pu4 = decision endpointDT pu3 $ endpointOptionToDecision $ head o3
-        o4 = options endpointDT pu4
-        pu5 = decision endpointDT pu4 $ endpointOptionToDecision $ head o4
-        o5 = options endpointDT pu5
+        o2 = endpointOptions pu2
+        pu3 = endpointDecision pu2 $ endpointOptionToDecision $ head o2
+        o3 = endpointOptions pu3
+        pu4 = endpointDecision pu3 $ endpointOptionToDecision $ head o3
+        o4 = endpointOptions pu4
+        pu5 = endpointDecision pu4 $ endpointOptionToDecision $ head o4
+        o5 = endpointOptions pu5
 
         show' = show . map epoRole
 

@@ -5,8 +5,8 @@ import { EdgesCard } from "./EdgeCard";
 const nInSeparator = "-";
 
 /**
- * Component to display EdjeCards of selected nId and it's chidren. 
- * Takes one argument: 
+ * Component to display EdgeCards of selected nId and it's children.
+ * Takes one argument:
  * nid - id of selected node;
  */
 
