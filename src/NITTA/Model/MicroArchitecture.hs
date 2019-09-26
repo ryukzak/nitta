@@ -179,6 +179,7 @@ add tag io = do
 -- addS "accum_tag" "accum"
 -- @
 addS tag "fram"  = add tag FramIO
+addS tag "shift" = add tag ShiftIO
 addS tag "accum" = add tag AccumIO
 addS tag "div"   = add tag DividerIO
 addS tag "mul"   = add tag MultiplierIO

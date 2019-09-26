@@ -100,6 +100,7 @@ runTestbench tDFG tMicroArch
 microarch ioSync = evalNetwork ioSync $ do
         addManual "fram1" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
         add "fram2" FramIO
+        add "shift" ShiftIO
         add "mul" MultiplierIO
         add "accum" AccumIO 
         add "div" DividerIO 
