@@ -166,8 +166,8 @@ instance Controllable (SimpleIO i v x t) where
 
     portsToSignals SimpleIOPorts{ wr, oe } = [wr, oe]
 
-    signalsToPorts [wr, oe] = SimpleIOPorts wr oe "stop" 
-    signalsToPorts _        = error "pattern match error in signalToPorts SimpleIOPorts"
+    signalsToPorts (wr:oe:_) = SimpleIOPorts wr oe "stop" 
+    signalsToPorts _         = error "pattern match error in signalsToPorts SimpleIOPorts"
 
 instance Default (Microcode (SimpleIO i v x t)) where
     def = Microcode

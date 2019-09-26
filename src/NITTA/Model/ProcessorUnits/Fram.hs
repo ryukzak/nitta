@@ -458,8 +458,11 @@ instance Controllable (Fram v x t) where
 
     portsToSignals FramPorts{ oe, wr, addr } = oe : wr : addr
 
-    signalsToPorts (oe:wr:addr) = FramPorts oe wr addr
-    signalsToPorts _            = error "pattern match error in signalToPorts FramPorts"
+    signalsToPorts xs = FramPorts oe wr addr
+        where
+            oe = xs !! 0
+            wr = xs !! 1
+            addr = take 4 $ drop 2 xs
 
 
 instance Connected (Fram v x t) where

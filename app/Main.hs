@@ -99,13 +99,14 @@ runTestbench tDFG tMicroArch
 
 microarch = evalNetwork $ do
     addManual "fram1" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
-    add "fram2" FramIO 
-    add "mul" MultiplierIO 
+    add "fram2" FramIO
+    add "mul" MultiplierIO
     add "accum" AccumIO 
     add "div" DividerIO 
     add "spi" $ SPISlave
-        { slave_mosi = InputPortTag "mosi" 
+        { slave_mosi = InputPortTag "mosi"
         , slave_miso = OutputPortTag "miso"
         , slave_sclk = InputPortTag "sclk"
         , slave_cs   = InputPortTag "cs"
-        }        
+        }
+

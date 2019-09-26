@@ -187,20 +187,20 @@ addS _ _         = error "Can't match type PU with existing PU types"
 -- addSIO "spi_tag" "spi" ["slave", "mosi", "miso", "sclk", "cs"]
 -- @
 addSIO tag "spi" [mode, mosi, miso, sclk, cs] = add tag $ 
-    case mode of
-        "slave" -> SPISlave
-            { slave_mosi = InputPortTag mosi
-            , slave_miso = OutputPortTag miso
-            , slave_sclk = InputPortTag sclk
-            , slave_cs   = InputPortTag cs
-            }
-        "master" -> SPIMaster
-            { master_mosi = OutputPortTag mosi
-            , master_miso = InputPortTag miso
-            , master_sclk = OutputPortTag sclk
-            , master_cs   = OutputPortTag cs
-            }
-        _        -> error "Error while configure SPI! Set 'master' or 'slave'"
+        case mode of
+            "slave" -> SPISlave
+                { slave_mosi = InputPortTag mosi
+                , slave_miso = OutputPortTag miso
+                , slave_sclk = InputPortTag sclk
+                , slave_cs   = InputPortTag cs
+                }
+            "master" -> SPIMaster
+                { master_mosi = OutputPortTag mosi
+                , master_miso = InputPortTag miso
+                , master_sclk = OutputPortTag sclk
+                , master_cs   = OutputPortTag cs
+                }
+            _        -> error "Error while configure SPI! Set 'master' or 'slave'"
 
 addSIO _ _ _ = error "Error while configure SimpleIO uncorrect parameters"
 
