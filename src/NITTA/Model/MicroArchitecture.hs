@@ -34,77 +34,10 @@ import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Project.Implementation
 
 -- |Eval state and create microarch
---
--- __Configure microarch with one network using auto IOPorts type pins selector:__
---
--- @
--- microarch = evalNetwork $ do
---     add "fram_tag" FramIO
---     add "accum_tag" AccumIO
---     add "div_tag" DividerIO
---     add "mul_tag" MultiplierIO
---     add "spi_tag" $ SPISlave
---         { slave_mosi = InputPortTag "mosi"
---         , slave_miso = OutputPortTag "miso"
---         , slave_sclk = InputPortTag "sclk"
---         , slave_cs   = InputPortTag "cs"
---         }
--- @
--- __Configure microarch with one network using auto String pins selector:__
---
--- @
--- microarch = evalNetwork $ do
---     addS "fram_tag" "fram"
---     addS "accum_tag" "accum"
---     addS "div_tag" "div"
---     addS "mul_tag" "mul"
---     addSIO "spi_tag" "spi" ["slave", "mosi", "miso", "sclk", "cs"]
--- @
---
---
--- __Configure microarch with manual pins:__
---
--- @
--- microarch = evalNetwork $ do
---     addManual "acum_tag" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
---     addManual "mul_tag"  (PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
---     addManual "div_tag"  (PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO)
---     addManual "spi_tag"  (PU def
---         (anySPI 0)
---             SimpleIOPorts
---                 { wr=SignalTag 22, oe=SignalTag 23
---                 , stop="stop"
---                 }
---                 SPISlave
---                     { slave_mosi=InputPortTag "mosi"
---                     , slave_miso=OutputPortTag "miso"
---                     , slave_sclk=InputPortTag "sclk"
---                     , slave_cs=InputPortTag "cs"
---                     }
---             )
---
--- @
---
--- __Configure microarch with manual and auto pins:__
---
--- @
---
--- microarch = evalNetwork $ do
---     addManual "fram1_tag" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
---     addManual "fram2_tag" (PU def def FramPorts{ oe=SignalTag 6, wr=SignalTag 7, addr=map SignalTag [8, 9, 10, 11] } FramIO )
---     addManual "accum_tag" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
---     add "div_tag2" DividerIO
---     add "mul_tag2" MultiplierIO
---     addS "div_tag" "div"
---     addS "mul_tag" "mul"
---     addSIO "spi_tag" "spi" ["slave", "mosi", "miso", "sclk", "cs"]
---
--- @
 
 evalNetwork ioSync net = flip evalState ([], []) $ do 
     _ <- net
     busNetworkS ioSync <$> get
-
 
 
 -- |Check intersections in ports numbers
@@ -142,23 +75,6 @@ freePins used = let
 busNetworkS ioSync (lstPorts, pu) = busNetwork (length lstPorts) ioSync pu
 
 -- |__Add PU automatic__
---
--- @
--- add "fram_tag" FramIO
--- @
---
--- @
--- add "accum_tag" AccumIO
--- @
---
--- @
--- add "spi_tag" $ SPISlave
---              { slave_mosi = InputPortTag "mosi"
---              , slave_miso = OutputPortTag "miso"
---              , slave_sclk = InputPortTag "sclk"
---              , slave_cs   = InputPortTag "cs"
---              }
--- @
 add tag io = do
     (usedPorts, pus) <- get
     let signals = freePins usedPorts
@@ -170,14 +86,6 @@ add tag io = do
     put (usedPorts', pus')
 
 -- |__Add PU automatic with String data type__
---
--- @
--- addS "fram_tag" "fram"
--- @
---
--- @
--- addS "accum_tag" "accum"
--- @
 addS tag "fram"  = add tag FramIO
 addS tag "shift" = add tag ShiftIO
 addS tag "accum" = add tag AccumIO
@@ -186,10 +94,6 @@ addS tag "mul"   = add tag MultiplierIO
 addS _ _         = error "Can't match type PU with existing PU types"
 
 -- |__Add SimpleIO PU automatic with String data type__
---
--- @
--- addSIO "spi_tag" "spi" ["slave", "mosi", "miso", "sclk", "cs"]
--- @
 addSIO tag "spi" [mode, mosi, miso, sclk, cs] = add tag $ 
         case mode of
             "slave" -> SPISlave
@@ -209,14 +113,6 @@ addSIO tag "spi" [mode, mosi, miso, sclk, cs] = add tag $
 addSIO _ _ _ = error "Error while configure SimpleIO uncorrect parameters"
 
 -- |__Add manual PU__
---
--- @
--- addManual "fram_tag" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
--- @
---
--- @
--- addManual "accum_tag" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
--- @
 addManual tag mkPU = do
     (usedPorts, pus) <- get
     let pu         = mkPU $ puEnv tag
