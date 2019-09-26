@@ -100,9 +100,12 @@ import           NITTA.Project.Implementation
 --     addSIO "spi_tag" "spi" ["slave", "mosi", "miso", "sclk", "cs"]
 --
 -- @
-evalNetwork net ioSync = let
-        net' = net >> busNetworkS ioSync <$> get
-    in evalState net' ([], [])
+
+evalNetwork ioSync net = flip evalState ([], []) $ do 
+    _ <- net
+    busNetworkS ioSync <$> get
+
+
 
 -- |Check intersections in ports numbers
 intersPortsError ports usedPorts tag
