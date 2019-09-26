@@ -82,7 +82,10 @@ instance IOConnected (SPI v x t) where
 
     outputPorts SPISlave{..}  = [ slave_miso ]
     outputPorts SPIMaster{..} = [ master_mosi, master_sclk, master_cs ]
+    
 
+instance ( Time t ) => Default (SPI v x t) where
+    def = anySPI 0
 
 instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
     moduleName _ _ = "pu_spi"

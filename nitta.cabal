@@ -20,6 +20,7 @@ library
                      , NITTA.Intermediate.Simulation
                      , NITTA.Intermediate.Types
                      , NITTA.Intermediate.Values
+                     , NITTA.Model.MicroArchitecture
                      , NITTA.Model.Networks.Bus
                      , NITTA.Model.Networks.Types
                      , NITTA.Model.Problems.Binding
@@ -118,6 +119,7 @@ executable nitta
                      , directory
                      , filepath
                      , interpolatedstring-perl6
+                     , mtl
                      , nitta
                      , text
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -142,7 +144,6 @@ test-suite nitta-test
                      , filepath
                      , interpolatedstring-perl6
                      , MissingH
-                     , mtl
                      , nitta
                      , QuickCheck
                      , tasty
