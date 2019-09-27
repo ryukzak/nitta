@@ -350,18 +350,24 @@ instance ( UnitTag tag, VarValTime v x t
                 , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
                 ]
             breakLoops = concatMap refactorOptions $ M.elems bnPus
-            selfSending = [ colision
+            selfSending = map SelfSending
+                [ option
                 | (tag, fs) <- M.assocs bnBinded
                 , let
-                    sources = S.unions [ ss
+                    sources = M.fromList
+                        [ (s, ss `S.difference` S.singleton s)
                         | EndpointO{ epoRole } <- endpointOptions ( bnPus M.! tag )
                         , case epoRole of Source{} -> True; _ -> False
                         , let Source ss = epoRole
+                        , s <- S.elems ss
                         ]
-                    colision = unionsMap inputs fs `S.intersection` sources
-                , not $ null colision
+                    allSources = S.fromList $ M.keys sources
+                    selfSendedVs = unionsMap inputs fs `S.intersection` allSources
+                , not $ null selfSendedVs
+                , v <- S.elems selfSendedVs
+                , option <- map (S.union (S.singleton v)) $ S.elems $ S.powerSet (sources M.! v)
                 ]
-        in insertRegs ++ breakLoops ++ map SelfSending selfSending
+        in insertRegs ++ breakLoops ++ selfSending
 
     refactorDecision bn@BusNetwork{ bnRemains } (InsertOutRegister v v')
         = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }

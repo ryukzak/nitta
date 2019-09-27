@@ -371,7 +371,7 @@ estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor InsertOutR
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor BreakLoop{})
     = RefactorEdgeParameter $ BreakLoop def def def
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor SelfSending{})
-    = RefactorEdgeParameter $ SelfSending def
+    = RefactorEdgeParameter $ SelfSending def  -- FIXME: number of variables is matter
 
 
 -- |Function, which map 'Parameters' to 'Float'.
