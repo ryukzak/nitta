@@ -97,7 +97,7 @@ instance ( Var v ) => FunctionSimulation (LoopOut v x) v x where
 
 data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq )
 instance {-# OVERLAPS #-} ( Show v ) => Label (LoopIn v x) where
-    label (LoopIn _ (I v)) = "-> " ++ show v
+    label (LoopIn (Loop _ (O vs) _) (I v)) = "-> " ++ show v ++ " (" ++ show (oneOf vs) ++ ")"
 instance ( Show v ) => Show (LoopIn v x) where
     show (LoopIn _ (I v)) = "-> " ++ show v
 instance ( Ord v ) => Function (LoopIn v x) v where
