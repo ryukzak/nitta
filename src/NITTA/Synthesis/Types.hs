@@ -293,6 +293,7 @@ data Parameters
         }
     | RefactorEdgeParameter
         { pRefactor :: Refactor () ()
+        , pVarsCount :: Float
         }
     deriving ( Show, Generic )
 
@@ -367,11 +368,11 @@ estimateParameters
             in map (fromIntegral . length) notTransferableVars
         }
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor InsertOutRegister{})
-    = RefactorEdgeParameter $ InsertOutRegister def def
+    = RefactorEdgeParameter{ pRefactor=InsertOutRegister def def, pVarsCount=0 }
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor BreakLoop{})
-    = RefactorEdgeParameter $ BreakLoop def def def
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor SelfSending{})
-    = RefactorEdgeParameter $ SelfSending def  -- FIXME: number of variables is matter
+    = RefactorEdgeParameter{ pRefactor=BreakLoop def def def, pVarsCount=0 }
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor (SelfSending vs))
+    = RefactorEdgeParameter{ pRefactor=SelfSending def, pVarsCount=fromIntegral $ S.size vs }
 
 
 -- |Function, which map 'Parameters' to 'Float'.
@@ -397,12 +398,12 @@ objectiveFunction
                 + pRestrictedTime <?> 200
                 - sum pNotTransferableInputs * 5
                 - pWaitTime
-        (RefactorEdgeParameter InsertOutRegister{})
+        RefactorEdgeParameter{ pRefactor=InsertOutRegister{} }
             -> 2000
-        (RefactorEdgeParameter BreakLoop{})
+        RefactorEdgeParameter{ pRefactor=BreakLoop{} }
             -> 2000
-        (RefactorEdgeParameter SelfSending{})
-            -> 2000
+        RefactorEdgeParameter{ pRefactor=SelfSending{}, pVarsCount }
+            -> 2000 + pVarsCount
         -- _ -> -1
 
 True <?> v = v
