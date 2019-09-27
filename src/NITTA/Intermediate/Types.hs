@@ -177,15 +177,15 @@ instance Patch (F v x) (v, v) where
 
 instance ( Ord v ) => Patch (F v x) (Diff v) where
     patch Diff{ diffI, diffO } f0 = let
-            diffI' = map (\v -> case diffI M.!? v of
+            diffI' = mapMaybe (\v -> case diffI M.!? v of
                     Just v' -> Just (v, v')
                     Nothing -> Nothing
                 ) $ S.elems $ inputs f0
-            diffO' = map (\v -> case diffO M.!? v of
-                    Just v' -> Just (v, v')
+            diffO' = concat $ mapMaybe (\v -> case diffO M.!? v of
+                    Just vs -> Just [ (v, v') | v' <- S.elems vs ]
                     Nothing -> Nothing
                 ) $ S.elems $ outputs f0
-        in foldl (\f diff -> patch diff f) f0 $ catMaybes $ diffI' ++ diffO'
+        in foldl (\f diff -> patch diff f) f0 $ diffI' ++ diffO'
 
 
 instance ( Patch b v ) => Patch [b] v where
@@ -271,12 +271,22 @@ class Patch f diff where
 
 data Diff v = Diff
     { diffI :: M.Map v v
-    , diffO :: M.Map v v
+    , diffO :: M.Map v (S.Set v)
     }
+    deriving ( Show, Eq )
 
 reverseDiff Diff{ diffI, diffO } = Diff
     { diffI=M.fromList $ map swap $ M.assocs diffI
-    , diffO=M.fromList $ map swap $ M.assocs diffO
+    , diffO=foldl (\st (k, v) -> let
+                          box' = case st M.!? k of
+                              Just box -> box `S.union` S.singleton v
+                              Nothing  -> S.singleton v
+                      in M.insert k box' st
+                  ) def
+            [ ( b, a )
+            | ( a, bs ) <- M.assocs diffO
+            , b <- S.elems bs
+            ]
     }
 
 instance Default (Diff v) where

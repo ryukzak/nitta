@@ -81,7 +81,7 @@ instance {-# OVERLAPS #-} Show (EndpointRole String) where
 instance ( Ord v ) => Patch (EndpointRole v) (Diff v) where
     patch Diff{ diffI } (Target v) = Target $ fromMaybe v $ diffI M.!? v
     patch Diff{ diffO } (Source vs)
-        = Source $ S.fromList $ map (\v -> fromMaybe v $ diffO M.!? v) $ S.elems vs
+        = Source $ S.unions $ map (\v -> fromMaybe (S.singleton v) $ diffO M.!? v) $ S.elems vs
 
 instance Variables (EndpointRole v) v where
     variables (Source vs) = vs

@@ -68,7 +68,7 @@ class RefactorProblem u v x | u -> v x where
 prepareBuffer (SelfSending vs) = let
         bufferI = bufferSuffix $ oneOf vs
         bufferO = S.elems vs
-        diff = def{ diffO=M.fromList $ map (\o -> (o, bufferI)) bufferO }
+        diff = def{ diffO=M.fromList $ map (\o -> (o, S.singleton bufferI)) bufferO }
     in ( reg bufferI bufferO, diff )
 
 prepareBuffer _ = undefined

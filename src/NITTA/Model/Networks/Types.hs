@@ -51,7 +51,7 @@ data PU v x t where
         , Controllable pu
         , IOTestBench pu v x
         , Locks pu v
-        ) => 
+        ) =>
             { diff :: Diff v
             , unit :: pu
             , ports :: Ports pu
@@ -102,7 +102,12 @@ instance ( Ord v ) => Patch (PU v x t) (I v, I v) where
 
 instance ( Ord v ) => Patch (PU v x t) (O v, O v) where
     patch (O vs, O vs') pu@PU{ diff=diff@Diff{ diffO } }
-        = pu{ diff=diff{ diffO=foldl (\s (v, v') -> M.insert v v' s) diffO $ zip (S.elems vs) (S.elems vs')  }}
+        = pu{ diff=diff
+                { diffO=foldl (\s (v, v') -> M.insert v (S.singleton v') s)
+                    diffO
+                    $ [ (a, b) | b <- S.elems vs', a <- S.elems vs ]
+                }
+            }
 
 instance ( Var v ) => Locks (PU v x t) v where
     locks PU{ unit } = locks unit

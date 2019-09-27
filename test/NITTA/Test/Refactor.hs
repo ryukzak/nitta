@@ -21,12 +21,14 @@ module NITTA.Test.Refactor
     ( refactorTests
     ) where
 
-import qualified Data.Set                         as S
+import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
+import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.TargetSystem
-import           Test.Tasty                       (TestTree)
+import           Test.Tasty                    (TestTree)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 
@@ -61,6 +63,20 @@ case_selfSending3 = let
            , DFLeaf $ reg "b1" ["c1"]
            , DFLeaf $ reg "b2" ["c2"]
            ]
+
+
+case_patchSource = do
+    patch Diff{ diffO=M.fromList [("a1@buf", S.fromList ["a1", "a2"])], diffI=M.fromList [] } (Source $ S.fromList ["a1@buf"])
+        @?= (Source $ S.fromList ["a1", "a2"])
+    patch Diff{ diffO=M.fromList [("a1", S.fromList ["a1@buf"]), ("a2", S.fromList ["a1@buf"])], diffI=M.fromList [] } (Source $ S.fromList ["a1", "a2"])
+        @?= (Source $ S.fromList ["a1@buf"])
+
+
+case_reverseDiff = do
+    reverseDiff Diff{ diffI=M.fromList [("a", "b")], diffO=M.fromList [("c", S.fromList ["e", "f"])] }
+        @?= Diff{ diffI=M.fromList [("b", "a")], diffO=M.fromList [("e", S.fromList ["c"]), ("f", S.fromList ["c"])] }
+    reverseDiff Diff{ diffI=M.fromList [("a", "b")], diffO=M.fromList [("c", S.fromList ["e"]),("d", S.fromList ["e"])] }
+        @?= Diff{ diffI=M.fromList [("b", "a")], diffO=M.fromList [("e", S.fromList ["c", "d"])] }
 
 
 refactorTests :: TestTree
