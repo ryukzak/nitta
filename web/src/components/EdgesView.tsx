@@ -78,7 +78,7 @@ export class EdgesView extends React.Component<Props, State> {
         if (this.state.edges === undefined || this.state.edges === null) return <div />;
 
         /* FIXME: history and table view of decision should be similar */
-        return (
+        return (<>
             <div className="row">
                 <div className="columns">
                     <Table
@@ -143,22 +143,21 @@ export class EdgesView extends React.Component<Props, State> {
                         ]}
                         onNidChange={this.props.onNidChange} />
                 </div>
-
-                <div className="rows">
-                    <div className="columns">
-                        <pre className="squeze">history:</pre>
-                    </div>
-                </div>
-                <div className="row">
-                    <div className="large-7 columns">
-                        <SynthesisHistoryView nId={ this.state.nid } reverse={ true } />
-                    </div>
-                    <div className="large-5 columns">
-                        <IntermediateView selectedNId={ this.state.nid } view="synthesisNode" />
-                    </div>
+            </div>
+            <div className="row">
+                <div className="columns">
+                    <pre className="squeze">history:</pre>
                 </div>
             </div>
-        );
+            <div className="row">
+                <div className="large-7 columns">
+                    <SynthesisHistoryView nId={this.state.nid} reverse={true} />
+                </div>
+                <div className="large-5 columns">
+                    <IntermediateView selectedNId={this.state.nid} view="synthesisNode" />
+                </div>
+            </div>
+        </>);
     }
 }
 
