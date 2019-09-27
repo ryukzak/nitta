@@ -131,10 +131,11 @@ test-suite nitta-test
   main-is:             Spec.hs
   other-modules:       NITTA.Test.BusNetwork
                      , NITTA.Test.FunctionSimulation
-                     , NITTA.Test.LuaFrontend
                      , NITTA.Test.Microarchitectures
                      , NITTA.Test.ProcessorUnits
+                     , NITTA.Test.Refactor
                      , NITTA.Test.Types
+                     , NITTA.Test.LuaFrontend
                      , NITTA.Test.Utils
   build-depends:       atomic-primops
                      , base

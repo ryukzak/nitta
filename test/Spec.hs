@@ -19,6 +19,7 @@ import           NITTA.Test.BusNetwork
 import           NITTA.Test.FunctionSimulation
 import           NITTA.Test.LuaFrontend
 import           NITTA.Test.ProcessorUnits
+import           NITTA.Test.Refactor
 import           NITTA.Test.Types
 import           NITTA.Test.Utils
 import           System.Environment            (lookupEnv, setEnv)
@@ -37,5 +38,6 @@ main = do
         , functionSimulationTests
         , processUnitTests
         , busNetworkTests
+        , refactorTests
         , luaTests
         ]

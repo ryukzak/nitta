@@ -71,12 +71,9 @@ instance ( UnitTag tag, VarValTime v x t
             , mUnit=refactorDecision mUnit d
             }
 
-    refactorDecision ModelState{ mUnit, mDataFlowGraph } r@SelfSending{} = let
-            fs = functions mDataFlowGraph
-            ( buffer, diff ) = prepareBuffer r
-            fs' = map (patch diff) fs ++ [buffer]
-        in ModelState
-            { mDataFlowGraph=fsToDataFlowGraph fs'
+    refactorDecision ModelState{ mUnit, mDataFlowGraph } r@SelfSending{}
+        = ModelState
+            { mDataFlowGraph=refactorDecision mDataFlowGraph r
             , mUnit=refactorDecision mUnit r
             }
 
@@ -84,7 +81,7 @@ instance ( UnitTag tag, VarValTime v x t
             revokeLoop = leafs L.\\ [ DFLeaf $ F $ recLoop bl ]
             addLoopParts = [ DFLeaf $ F $ recLoopOut bl, DFLeaf $ F $ recLoopIn bl ] ++ revokeLoop
         in ModelState
-            { mDataFlowGraph=DFCluster $ addLoopParts
+            { mDataFlowGraph=DFCluster addLoopParts
             , mUnit=refactorDecision mUnit bl
             }
     refactorDecision m _ = m
@@ -96,7 +93,12 @@ instance ( UnitTag tag, VarValTime v x t
 data DataFlowGraph v x
     = DFLeaf (F v x)
     | DFCluster [ DataFlowGraph v x ]
-    deriving ( Show, Generic, Eq )
+    deriving ( Show, Generic )
+
+instance Eq ( DataFlowGraph v x) where
+    (DFCluster c1) == (DFCluster c2) = S.fromList (map show c1) == S.fromList (map show c2)
+    (DFLeaf f1) == (DFLeaf f2) = f1 == f2
+    _ == _ = False
 
 instance ( Var v, Val x ) => Patch (DataFlowGraph v x) (v, v) where
     patch diff@(v, v') (DFCluster cluster) = let
@@ -115,6 +117,15 @@ instance ( Var v ) => Variables (DataFlowGraph v x) v where
 instance WithFunctions (DataFlowGraph v x) (F v x) where
     functions (DFLeaf f)    = [ f ]
     functions (DFCluster g) = concatMap functions g
+
+instance ( Var v, Val x
+        ) => RefactorProblem (DataFlowGraph v x) v x where
+    refactorOptions _ = []
+    refactorDecision dfg r@SelfSending{} = let
+            ( buffer, diff ) = prepareBuffer r
+            fs' = buffer : map (patch diff) (functions dfg)
+        in fsToDataFlowGraph fs'
+    refactorDecision _ _ = undefined
 
 
 -- |Convert @[ F v x ]@ to 'DataFlowGraph'.
