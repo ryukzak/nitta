@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Navbar, Nav } from "react-bootstrap";
-import { NavLink, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import "./AppNavbar.scss";
 
@@ -30,9 +30,9 @@ export default class AppNavbar extends React.Component<IAppNavbarProps, IAppNavb
         <Navbar.Collapse id="navbar-nav">
           <Nav className="mr-auto">
             {/* "as" property can help us to integrate React Router's NavLink */}
-            <Nav.Link as={NavLink} exact to="/">
+            {/* <Nav.Link as={NavLink} exact to="/">
               Home
-            </Nav.Link>
+            </Nav.Link> */}
           </Nav>
         </Navbar.Collapse>
         <Navbar.Text className="mr-5">Selected Node ID: {this.context.selectedNodeId || "None"}</Navbar.Text>
