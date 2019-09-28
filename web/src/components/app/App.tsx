@@ -5,9 +5,9 @@ import IndexPage from "../pages/index/IndexPage";
 import AppNavbar from "./AppNavbar";
 import AppFooter from "./AppFooter";
 
-export interface IAppProps {}
+// TODO: AppContext with selectedNId
 
-export default class App extends React.Component<IAppProps> {
+export default class App extends React.Component {
   public render() {
     return (
       <>
