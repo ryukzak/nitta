@@ -4,13 +4,37 @@ import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
 import IndexPage from "../pages/index/IndexPage";
 import AppNavbar from "./AppNavbar";
 import AppFooter from "./AppFooter";
+import AppContext, { SelectedNodeId, IAppContext } from "./AppContext";
 
-// TODO: AppContext with selectedNId
+export interface IAppProps {}
 
-export default class App extends React.Component {
+// IMPORTANT: the value of AppContext.Provider MUST be {this.state} so React can handle re-rendering appropriately.
+// It's sad, but it's the best option we have.
+// And yes, you got it right, EVERYTHING you need in context (including functions) must be in this.state.
+export type IAppState = IAppContext;
+
+export default class App extends React.Component<IAppProps, IAppState> {
+  constructor(props: IAppProps) {
+    super(props);
+
+    this.state = {
+      selectedNodeId: null,
+
+      selectNode: (id: SelectedNodeId) => {
+        this.setState({ selectedNodeId: id });
+      },
+
+      reloadSelectedNode: () => {
+        // TODO: implement any actions like this if needed, giving this function for use in AppContext.
+        console.log("Reloading selected node.");
+        this.setState({ selectedNodeId: null });
+      },
+    };
+  }
+
   public render() {
     return (
-      <>
+      <AppContext.Provider value={this.state}>
         <AppNavbar />
 
         <Switch>
@@ -19,7 +43,7 @@ export default class App extends React.Component {
         </Switch>
 
         <AppFooter />
-      </>
+      </AppContext.Provider>
     );
   }
 }
