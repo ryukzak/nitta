@@ -1,6 +1,6 @@
 {
-  "short_name": "CPS Lab Frontend Template",
-  "name": "Template Frontend App for use in projects of laboratory of cyber-physical systems in ITMO university.",
+  "short_name": "NITTA Web UI",
+  "name": "NITTA Web Interface",
   "icons": [
     {
       "src": "favicon.ico",
