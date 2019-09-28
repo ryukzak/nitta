@@ -1,7 +1,7 @@
 import React from "react";
 import { Route, Switch } from "react-router-dom";
 import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
-import IndexPage from "../pages/index/IndexPage";
+import IndexPage from "../pages/main/MainPage";
 import AppNavbar from "./AppNavbar";
 import AppFooter from "./AppFooter";
 import AppContext, { SelectedNodeId, IAppContext } from "./AppContext";
@@ -37,10 +37,12 @@ export default class App extends React.Component<IAppProps, IAppState> {
       <AppContext.Provider value={this.state}>
         <AppNavbar />
 
-        <Switch>
-          <Route exact path="/" component={IndexPage} />
-          <Route component={NotFoundErrorPage} />
-        </Switch>
+        <div className="flex-grow-1">
+          <Switch>
+            <Route exact path="/" component={IndexPage} />
+            <Route component={NotFoundErrorPage} />
+          </Switch>
+        </div>
 
         <AppFooter />
       </AppContext.Provider>

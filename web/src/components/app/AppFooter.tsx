@@ -14,7 +14,7 @@ export default class AppFooter extends React.Component<IAppFooterProps, IAppFoot
 
   public render() {
     return (
-      <footer className="mt-auto bg-dark">
+      <footer className="bg-dark">
         <Container>
           <Row className="text-center">
             {/* <Col xs={12} md>
