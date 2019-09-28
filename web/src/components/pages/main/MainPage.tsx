@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Container, Row, Col } from "react-bootstrap";
 import SynthesisGraph from "./SynthesisGraph";
 import NodeView from "./NodeView";
 
