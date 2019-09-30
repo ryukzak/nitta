@@ -28,6 +28,7 @@ import           Data.Default                     (def)
 import qualified Data.Text.IO                     as T
 import           NITTA.Frontend
 import           NITTA.Intermediate.Types
+import           NITTA.Model.MicroArchitecture
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
@@ -59,7 +60,7 @@ nittaArgs = Nitta
     , port=8080 &= help "WebUI port"
     , npm_build=False &= help "No regenerate WebUI static files"
     , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
-    , io_sync=Sync &= help "IO synchronization mode: sync, async, onboatd"
+    , io_sync=Sync &= help "IO synchronization mode: sync, async, onboard"
     , file=def &= args &= typFile
     }
 
@@ -95,31 +96,18 @@ runTestbench tDFG tMicroArch
 
 -- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
 -- с задачей о целевой платформе.
-microarch ioSync = busNetwork 31 ioSync
-    [ ("fram1", PU def def FramPorts{ oe=SignalTag 11, wr=SignalTag 10, addr=map SignalTag [9, 8, 7, 6] } FramIO )
-    , ("fram2", PU def def FramPorts{ oe=SignalTag 5, wr=SignalTag 4, addr=map SignalTag [3, 2, 1, 0] } FramIO )
-    -- , ("shift", PU def S.Ports{ S.work=SignalTag 12, S.direction=SignalTag 13, S.mode=SignalTag 14, S.step=SignalTag 15, S.init=SignalTag 16, S.oe=SignalTag 17 })
-    , ("accum", PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
-    , ("spi", PU def
-        (anySPI 0)
-        SimpleIOPorts
-            { wr=SignalTag 22, oe=SignalTag 23
-            , stop="stop"
+
+microarch ioSync = evalNetwork ioSync $ do
+        addManual "fram1" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
+        add "fram2" FramIO
+        add "shift" ShiftIO
+        add "mul" MultiplierIO
+        add "accum" AccumIO 
+        add "div" DividerIO 
+        add "spi" $ SPISlave
+            { slave_mosi = InputPortTag "mosi"
+            , slave_miso = OutputPortTag "miso"
+            , slave_sclk = InputPortTag "sclk"
+            , slave_cs   = InputPortTag "cs"
             }
-        $ case "slave" of
-            "slave" -> SPISlave
-                { slave_mosi=InputPortTag "mosi"
-                , slave_miso=OutputPortTag "miso"
-                , slave_sclk=InputPortTag "sclk"
-                , slave_cs=InputPortTag "cs"
-                }
-            "master" -> SPIMaster
-                { master_mosi=OutputPortTag "mosi"
-                , master_miso=InputPortTag "miso"
-                , master_sclk=OutputPortTag "sclk"
-                , master_cs=OutputPortTag "cs"
-                }
-        )
-    , ("mul", PU def (multiplier True) MultiplierPorts{ wr=SignalTag 24, wrSel=SignalTag 25, oe=SignalTag 26 } MultiplierIO )
-    , ("div", PU def (divider 4 True) DividerPorts{ wr=SignalTag 27, wrSel=SignalTag 28, oe=SignalTag 29, oeSel=SignalTag 30 } DividerIO )
-    ]
+

@@ -39,7 +39,8 @@ wrong steps.
 module NITTA.Synthesis.Types
     ( -- *Synthesis graph
       G, NId(..), Node(..), Edge(..)
-    , mkRootNodeIO, getNodeIO, getEdgesIO
+    , mkRootNodeIO, getNodeIO, getEdgesIO, getPositiveEdgesIO
+    , getSynthesisHistoryIO
       -- *Synthesis decision type & Parameters
     , ObjectiveFunctionConf(..)
     , Parameters(..)
@@ -69,9 +70,7 @@ import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem         (ModelState (..))
 import           NITTA.Model.Types
 import           NITTA.Utils
-import           NITTA.Utils.Lens
-import           Numeric.Interval                 (Interval)
-import           Numeric.Interval                 (inf, sup)
+import           Numeric.Interval                 (Interval, inf, sup)
 
 
 -- |Type alias for Graph parts, where `e` - graph element (Node or Edge) should be 'Node' or 'Edge';
@@ -159,7 +158,7 @@ mkNode nId nModel nOrigin nEdges = Node
 
 -- |Get all available edges for the node. Edges calculated only for the first
 -- call.
-getEdgesIO :: ( UnitTag tag, VarValTime v x t, Semigroup v
+getEdgesIO :: ( UnitTag tag, VarValTime v x t
     ) => G Node tag v x t -> IO [ G Edge tag v x t ]
 getEdgesIO node@Node{ nEdges } = atomically $
     readTVar nEdges >>= \case
@@ -168,6 +167,11 @@ getEdgesIO node@Node{ nEdges } = atomically $
             edges <- mkEdges node
             writeTVar nEdges $ Just edges
             return edges
+
+
+-- |For synthesis method is more usefull, because throw away all useless edges
+-- (objective function value less than zero).
+getPositiveEdgesIO n = filter ((> 0) . eObjectiveFunctionValue) <$> getEdgesIO n
 
 
 -- |Get specific by @nId@ node from a synthesis tree.
@@ -180,7 +184,18 @@ getNodeIO node nId@(NId (i:is)) = do
     getNodeIO (eNode $ edges !! i) (NId is)
 
 
-mkEdges :: ( UnitTag tag, VarValTime v x t, Semigroup v
+getSynthesisHistoryIO node (NId []) = return $ getSynthesisHistoryIO' node
+getSynthesisHistoryIO node nId@(NId (i:is)) = do
+    edges <- getEdgesIO node
+    unless (i < length edges) $ error $ "getNode - wrong nId: " ++ show nId
+    xs <- getSynthesisHistoryIO (eNode $ edges !! i) (NId is)
+    return (getSynthesisHistoryIO' node ++ xs)
+
+getSynthesisHistoryIO' Node{ nOrigin=Nothing }                = []
+getSynthesisHistoryIO' Node{ nOrigin=Just Edge{ eDecision } } = [ eDecision ]
+
+
+mkEdges :: ( UnitTag tag, VarValTime v x t
     ) => G Node tag v x t -> STM [ G Edge tag v x t ]
 mkEdges n@Node{ nId, nModel, nOrigin } = do
     let conf = def
@@ -353,6 +368,8 @@ estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor InsertOutR
     = RefactorEdgeParameter $ InsertOutRegister def def
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor BreakLoop{})
     = RefactorEdgeParameter $ BreakLoop def def def
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor SelfSending{})
+    = RefactorEdgeParameter $ SelfSending def
 
 
 -- |Function, which map 'Parameters' to 'Float'.
@@ -373,7 +390,7 @@ objectiveFunction
                 - pRestless * 4
                 + pOutputNumber * 2
         DataFlowEdgeParameter{ pWaitTime, pNotTransferableInputs, pRestrictedTime }
-            ->  100
+            -> 100
                 + (numberOfDFOptions >= threshold) <?> 1000
                 + pRestrictedTime <?> 200
                 - sum pNotTransferableInputs * 5
@@ -382,13 +399,16 @@ objectiveFunction
             -> 2000
         (RefactorEdgeParameter BreakLoop{})
             -> 2000
+        (RefactorEdgeParameter SelfSending{})
+            -> 2000
+        -- _ -> -1
 
 True <?> v = v
 False <?> _ = 0
 
 
 waitingTimeOfVariables net =
-    [ (variable, tc^.avail.infimum)
+    [ (variable, inf $ tcAvailable tc)
     | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- dataflowOptions net
     , (variable, Nothing) <- M.assocs dfoTargets
     ]

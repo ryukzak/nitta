@@ -61,7 +61,7 @@ instance ( UnitTag tag, VarValTime v x t
     dataflowOptions ModelState{ mUnit }      = dataflowOptions mUnit
     dataflowDecision f@ModelState{ mUnit } d = f{ mUnit=dataflowDecision mUnit d }
 
-instance ( UnitTag tag, VarValTime v x t, Semigroup v
+instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (ModelState (BusNetwork tag v x t) v x) v x where
     refactorOptions ModelState{ mUnit } = refactorOptions mUnit
 
@@ -70,6 +70,16 @@ instance ( UnitTag tag, VarValTime v x t, Semigroup v
             { mDataFlowGraph=patch (v, v') mDataFlowGraph
             , mUnit=refactorDecision mUnit d
             }
+
+    refactorDecision ModelState{ mUnit, mDataFlowGraph } r@SelfSending{} = let
+            fs = functions mDataFlowGraph
+            ( buffer, diff ) = prepareBuffer r
+            fs' = map (patch diff) fs ++ [buffer]
+        in ModelState
+            { mDataFlowGraph=fsToDataFlowGraph fs'
+            , mUnit=refactorDecision mUnit r
+            }
+
     refactorDecision ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } bl@BreakLoop{} = let
             revokeLoop = leafs L.\\ [ DFLeaf $ F $ recLoop bl ]
             addLoopParts = [ DFLeaf $ F $ recLoopOut bl, DFLeaf $ F $ recLoopIn bl ] ++ revokeLoop
@@ -77,7 +87,7 @@ instance ( UnitTag tag, VarValTime v x t, Semigroup v
             { mDataFlowGraph=DFCluster $ addLoopParts
             , mUnit=refactorDecision mUnit bl
             }
-    refactorDecision _ _ = undefined
+    refactorDecision m _ = m
 
 
 -- |Data flow graph - intermediate representation of application algorithm.

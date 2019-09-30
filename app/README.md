@@ -1,12 +1,14 @@
 # NITTA CAD
 
 ## Before you start
-- [clone](../doc/sourcetree-install.md) or download project from the site;
+- get the project from repository by `git` or by [site](https://nitta.io/nitta-corp/nitta);
 - install [The Haskell Tool Stack](../doc/stack-install.md);
 - install [Icarus Verilog](../doc/hdl-install.md);
-- install [npm](../web/README.md).
+- install [npm](https://www.npmjs.com/get-npm).
 
 ## Building
+
+### Building CAD
 
 To build the project you should execute:
 > stack build
@@ -15,17 +17,26 @@ You can add the following command line options:
 - `--fast` for disabling optimization, which significantly reduces compile time;
 - `--haddock` for generation project documentation.
 
-To build UI static files you should execute:
+### Building UI
 
+For preparing REST API typescript interfaces and request functions you should execute in the project path:
+> stack exec nitta-api-gen
+
+Change workdir to `web`:
 > cd web
+
+Install dependency:
+> npm install
+
+To build UI static files you should execute:
 
 > npm run-script build
 
-or (from the project path):
+## Execution
 
-> stack exec nitta -- --npm-build
+> stack exec nitta -- --help
 
-## Testing
+### Testing
 
 To test project ([test spefication](../test/Spec.hs)):
 > stack test
@@ -33,18 +44,17 @@ To test project ([test spefication](../test/Spec.hs)):
 To test and build documentation (you should run this before all commits):
 > stack build --test --haddock
 
-## Running
+### Running
 
 To execute without UI:
 
 > stack exec nitta -- FILE_NAME
 
-where FILE_NAME is a `.lua` file with a specific algorithm. After that, you can find a target project in `hdl/gen/main` path.
+where FILE_NAME is a `.lua` file with a specific algorithm. After that, you can find a target project in `gen/main` path.
 
 Options:
 - `--web` - execute UI;
-- `--npm-build` - generate web UI static files;
-- `--type` - specify bus data type. `fxm.b`, where `m` - the number of magnitude or integer bits, `b` the total number of bits. Default value - `fx32.32`.
+- `--type` - specify bus data type. `fxM.B`, where `M` - the number of magnitude or integer bits, `B` the total number of bits. Default value - `fx32.32`.
 
 To execute with UI:
 
@@ -56,8 +66,7 @@ To open UI in a web browser you should go to <http://localhost:8080/index.html>.
 
 ## Running for UI development
 > cd web
-
-> npm start
+> npm run start
 
 # Demos
 

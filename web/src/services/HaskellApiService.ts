@@ -15,4 +15,5 @@ export const haskellApiService = {
   obviousBindThread: (nid: any) => api.postSynthesisByNIdObviousBindThread(nid),
   runTestBench: (nid: any, name: any) => api.getSynthesisByNIdTestBenchOutput(nid, name),
   getEndpointOptions: (nid: any) => api.getSynthesisByNIdEndpointOptions(nid),
+  getHistory: (nid: string) => api.getSynthesisByNIdHistory(nid),
 };

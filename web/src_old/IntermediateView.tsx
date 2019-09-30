@@ -2,6 +2,7 @@ import * as React from "react";
 import "react-table/react-table.css";
 import { haskellAPI } from "../middleware/haskell-api";
 import { Graphviz } from "graphviz-react";
+import { IGraphStructure, IGraphEdge } from "../gen/types";
 
 /**
  * Component to display algorithm graph.
@@ -11,42 +12,24 @@ import { Graphviz } from "graphviz-react";
  * (Takes two kinds of view: "edges" or "synthesisNode")
  */
 
-interface Props {
-  selectedNId: number;
+interface IntermediateViewProps {
+  selectedNId: string;
   view: string;
 }
 
-interface State {
-  selectedNId: number;
+interface IntermediateViewState {
+  selectedNId: string;
+  // FIXME: throw away useless property
   view: string;
   status: boolean;
   graph: any;
 }
 
 
-export type EdgeId = number;
+export type IGraphJson = IGraphStructure<IGraphEdge>;
 
-export interface IEdgeJson {
-  from: EdgeId;
-  to: EdgeId;
-  label: string;
-}
-
-export interface INodeJson {
-  id: EdgeId;
-  label: string;
-}
-
-// "Json" because it's a temporary type that just represents the JSON format that API should return. 
-// Those should be replaced with generated types eventually.
-export interface IGraphJson {
-  edges: IEdgeJson[];
-  nodes: INodeJson[];
-}
-
-
-export class IntermediateView extends React.Component<Props, State> {
-  constructor(props: Props) {
+export class IntermediateView extends React.Component<IntermediateViewProps, IntermediateViewState> {
+  constructor(props: IntermediateViewProps) {
     super(props);
     this.state = {
       selectedNId: props.selectedNId,
@@ -63,7 +46,7 @@ export class IntermediateView extends React.Component<Props, State> {
   }
 
 
-  componentWillReceiveProps(props: Props) {
+  componentWillReceiveProps(props: IntermediateViewProps) {
     if (this.state.selectedNId !== props.selectedNId) {
       this.setState({
         status: false,
@@ -73,7 +56,7 @@ export class IntermediateView extends React.Component<Props, State> {
     }
   }
 
-  graphMaker(nid: number) {
+  graphMaker(nid: string) {
     haskellAPI.simpleSynthesisGraph(nid)
       .then((response: any) => {
         // TODO: Replace with backend types
@@ -142,4 +125,3 @@ function renderGraphJsonToDot(json: IGraphJson): string {
   console.log(result);
   return result;
 }
-

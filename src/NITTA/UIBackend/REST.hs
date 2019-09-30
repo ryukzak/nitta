@@ -38,6 +38,7 @@ import           NITTA.Synthesis.Types
 import           NITTA.UIBackend.Marshalling
 import           NITTA.UIBackend.Timeline
 import           NITTA.UIBackend.VisJS            (VisJS, algToVizJS)
+import           Numeric.Interval
 import           Servant
 import           System.FilePath                  (joinPath)
 
@@ -59,6 +60,7 @@ type WithSynthesis tag v x t
     :<|> "model" :> Get '[JSON] (ModelState (BusNetwork tag v x t) v x)
     :<|> "timelines" :> Get '[JSON] (ProcessTimelines t)
     :<|> "endpointOptions" :> Get '[JSON] [(tag, EndpointOption v t)]
+    :<|> "history" :> Get '[JSON] [SynthesisDecisionView tag v x (Interval t)]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] (TestbenchReport v x)
     :<|> SimpleCompilerAPI tag v x t
@@ -69,6 +71,7 @@ withSynthesis root nId
     :<|> liftIO ( nModel <$> getNodeIO root nId )
     :<|> liftIO ( processTimelines . process . mUnit . nModel <$> getNodeIO root nId )
     :<|> liftIO ( endpointOptions' . mUnit . nModel <$> getNodeIO root nId )
+    :<|> liftIO ( map view <$> getSynthesisHistoryIO root nId )
     :<|> liftIO ( algToVizJS . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
