@@ -598,7 +598,7 @@ instance ( VarValTime v x t
     -- 	The main task of the function is to include mUnit to mUnit infostructure correctly.
     --	and set uo all parameters, names and wires.
     --
-    -- Take attention to function @fixIndent@. This function allows a programmer to use
+    -- Take attention to function @codeBlock@. This function allows a programmer to use
     -- normal code block indentation.
     hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } MultiplierPorts{..} MultiplierIO
         = codeBlock 0 [qc|
