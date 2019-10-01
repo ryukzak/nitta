@@ -601,24 +601,24 @@ instance ( VarValTime v x t
     -- Take attention to function @fixIndent@. This function allows a programmer to use
     -- normal code block indentation.
     hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } MultiplierPorts{..} MultiplierIO
-        = fixIndent [qc|
-|           pu_multiplier #
-|                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-|                   , .ATTR_WIDTH( { parameterAttrWidth } )
-|                   , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
-|                   , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
-|                   ) { tag }
-|               ( .clk( {signalClk} )
-|               , .rst( {signalRst} )
-|               , .signal_wr( { signal wr } )
-|               , .signal_sel( { signal wrSel } )
-|               , .data_in( { dataIn } )
-|               , .attr_in( { attrIn } )
-|               , .signal_oe( { signal oe } )
-|               , .data_out( { dataOut } )
-|               , .attr_out( { attrOut } )
-|               );
-|           |]
+        = codeBlock 0 [qc|
+            pu_multiplier #
+                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+                    , .ATTR_WIDTH( { parameterAttrWidth } )
+                    , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
+                    , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
+                    ) { tag }
+                ( .clk( {signalClk} )
+                , .rst( {signalRst} )
+                , .signal_wr( { signal wr } )
+                , .signal_sel( { signal wrSel } )
+                , .data_in( { dataIn } )
+                , .attr_in( { attrIn } )
+                , .signal_oe( { signal oe } )
+                , .data_out( { dataOut } )
+                , .attr_out( { attrOut } )
+                );
+            |]
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
