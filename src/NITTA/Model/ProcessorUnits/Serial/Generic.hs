@@ -34,7 +34,7 @@ import           Control.Monad.State
 import           Data.Default
 import           Data.Either
 import           Data.List                        (find)
-import           Data.Set                         (elems)
+import           Data.Set                         (elems, (\\))
 import qualified Data.Set                         as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
@@ -179,13 +179,20 @@ instance ( Default st
   setTime t pu@SerialPU{ spuProcess } = pu{ spuProcess=spuProcess{ nextTick=t } }
 
 
-instance ( Var v ) => Locks (SerialPU st v x t) v where
-  locks SerialPU{ spuCurrent=Nothing } = []
-  locks SerialPU{ spuCurrent=Just CurrentJob{ cFB }, spuRemain } =
-    [ Lock{ locked, lockBy }
-    | locked <- concatMap (elems . variables . fst) spuRemain
-    , lockBy <- elems $ variables cFB
-    ]
+instance ( Var v, SerialPUState st v x t, Default st ) => Locks (SerialPU st v x t) v where
+    locks SerialPU{ spuCurrent=Nothing } = []
+    locks pu@SerialPU{ spuCurrent=Just CurrentJob{ cFB }, spuRemain } = let
+            workInProgress = variables cFB
+            already = transferred pu
+            available = unionsMap variables $ endpointOptions pu
+        in
+            [ Lock{ locked, lockBy }
+            | locked <- elems $ S.unions
+                [ unionsMap (variables . fst) spuRemain
+                , workInProgress \\ already \\ available
+                ]
+            , lockBy <- elems available
+            ]
 
 instance RefactorProblem (SerialPU st v x t) v x
 
