@@ -97,7 +97,7 @@ instance ( Ord v ) => Patch (O v) (v, v) where
     patch (v, v') (O vs) = O $ S.fromList $ map (\e -> if e == v then v' else e) $ S.elems vs
 
 instance ( Show v ) => Show (O v) where
-    show (O vs) = "O " ++ show (S.elems vs)
+    show (O vs) = "(O " ++ show (S.elems vs) ++ ")"
 
 instance Variables (O v) v where
     variables (O v) = v
