@@ -34,6 +34,7 @@ import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
+import           NITTA.Project.Snippets
 import           NITTA.Utils
 import           Numeric.Interval                          (singleton, (...))
 import           Prelude                                   hiding (init)
@@ -140,24 +141,25 @@ instance ( Val x ) => TargetSystemComponent (Accum v x t) where
     hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
     software _ _ = Empty
     hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } AccumPorts{..} AccumIO
-        = fixIndent [qc|
-|       pu_accum #
-|               ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-|               , .ATTR_WIDTH( { show parameterAttrWidth } )
-|               ) { tag }
-|           ( .clk( { signalClk } )
-|           , .rst( { signalRst } )
-|           , .signal_init( { signal init } )
-|           , .signal_load( { signal load } )
-|           , .signal_neg( { signal neg } )
-|           , .signal_oe( { signal oe } )
-|           , .data_in( { dataIn } )
-|           , .attr_in( { attrIn } )
-|           , .data_out( { dataOut } )
-|           , .attr_out( { attrOut } )
-|           );
-|       |]
+        = codeBlock 0 [qc|
+        pu_accum #
+                ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+                , .ATTR_WIDTH( { show parameterAttrWidth } )
+                ) { tag }
+            ( .clk( { signalClk } )
+            , .rst( { signalRst } )
+            , .signal_init( { signal init } )
+            , .signal_load( { signal load } )
+            , .signal_neg( { signal neg } )
+            , .signal_oe( { signal oe } )
+            , .data_in( { dataIn } )
+            , .attr_in( { attrIn } )
+            , .data_out( { dataOut } )
+            , .attr_out( { attrOut } )
+            );
+        |]
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
 instance IOTestBench (Accum v x t) v x
+
