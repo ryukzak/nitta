@@ -180,9 +180,8 @@ test_examples =
         =<< lua "fibonacci_wait" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
     , testCase "examples/self-send1.lua" $ either assertFailure return
         =<< lua "self_send" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/self-send1.lua")
-    -- FIXME: correct work on simple synthesis, but SmartSynthesis fail
-    -- , testCase "examples/self-send2.lua" $ either assertFailure return
-    --     =<< lua "self_send" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/self-send.lua")
+    , testCase "examples/self-send2.lua" $ either assertFailure return
+        =<< lua "self_send" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/self-send2.lua")
     -- FIXME: uncomment when IO synchronization propogation and SPI will be fixed.
     -- , testCase "examples/fibonacci.lua drop" $ either assertFailure return
     --     =<< lua "fibonacci_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")

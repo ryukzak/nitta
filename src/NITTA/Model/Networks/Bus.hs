@@ -48,7 +48,7 @@ import           Data.Bits                        (FiniteBits (..))
 import           Data.Default
 import qualified Data.List                        as L
 import qualified Data.Map                         as M
-import           Data.Maybe                       (isJust, mapMaybe)
+import           Data.Maybe                       (fromMaybe, isJust, mapMaybe)
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import           Data.Typeable
@@ -350,24 +350,43 @@ instance ( UnitTag tag, VarValTime v x t
                 , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
                 ]
             breakLoops = concatMap refactorOptions $ M.elems bnPus
-            selfSending = map SelfSending
-                [ option
+            selfSending = map SelfSending $ concat
+                [ allPossibleOutputs tag v
                 | (tag, fs) <- M.assocs bnBinded
                 , let
-                    sources = M.fromList
-                        [ (s, ss `S.difference` S.singleton s)
-                        | EndpointO{ epoRole } <- endpointOptions ( bnPus M.! tag )
-                        , case epoRole of Source{} -> True; _ -> False
-                        , let Source ss = epoRole
-                        , s <- S.elems ss
-                        ]
-                    allSources = S.fromList $ M.keys sources
+                    sources' = sources tag
+                    allSources = S.fromList $ M.keys sources'
                     selfSendedVs = unionsMap inputs fs `S.intersection` allSources
                 , not $ null selfSendedVs
                 , v <- S.elems selfSendedVs
-                , option <- map (S.union (S.singleton v)) $ S.elems $ S.powerSet (sources M.! v)
                 ]
-        in insertRegs ++ breakLoops ++ selfSending
+
+            sources tag = M.fromList
+                [ (s, ss `S.difference` S.singleton s)
+                | EndpointO{ epoRole } <- endpointOptions ( bnPus M.! tag )
+                , case epoRole of Source{} -> True; _ -> False
+                , let Source ss = epoRole
+                , s <- S.elems ss
+                ]
+            allPossibleOutputs tag v = map (S.union (S.singleton v)) $ S.elems $ S.powerSet $ fromMaybe S.empty (sources tag M.!? v)
+
+            alreadyVs = transferred bn
+            fLocks = filter (\Lock{ lockBy } -> S.notMember lockBy alreadyVs) $ concatMap locks $ functions bn
+            puLocks = map (\(tag, pu) -> (tag, locks pu)) $ M.assocs bnPus
+            maybeSended = unionsMap variables $ concatMap endpointOptions $ M.elems bnPus
+
+            -- FIXME:
+            -- deadLockedVs = concat
+            --     [ allPossibleOutputs tag lockBy
+            deadLockedVs =
+                [ S.singleton lockBy
+                | (_tag, ls)<- puLocks
+                , Lock{ lockBy, locked } <- ls
+                , Lock{ lockBy=locked, locked=lockBy } `elem` fLocks
+                , lockBy `S.member` maybeSended
+                ]
+            deadlocks = map SelfSending deadLockedVs
+        in insertRegs ++ breakLoops ++ selfSending ++ deadlocks
 
     refactorDecision bn@BusNetwork{ bnRemains } (InsertOutRegister v v')
         = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
