@@ -29,6 +29,7 @@ import qualified Data.Map                         as M
 import qualified Data.Tree                        as T
 import           GHC.Generics
 import           NITTA.Intermediate.Simulation
+import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Types
@@ -96,16 +97,20 @@ withSynthesis root nId
 
 
 data Debug tag v t = Debug
-        { dbgEndpointOptions :: [(tag, EndpointOption v t)]
+        { dbgEndpointOptions :: [ ( tag, EndpointOption v t ) ]
+        , dbgFunctionLocks   :: [ ( String, [Lock v] ) ]
+        , dbgPULocks         :: [ ( String, [Lock v] ) ]
         }
     deriving ( Generic )
 
 instance ( ToJSON tag, ToJSON t, Time t ) => ToJSON (Debug tag String t)
 
 debug root nId = do
-    endpoints <- endpointOptions' . mUnit . nModel <$> getNodeIO root nId
+    node <- getNodeIO root nId
     return Debug
-        { dbgEndpointOptions=endpoints
+        { dbgEndpointOptions=endpointOptions' $ mUnit $ nModel node
+        , dbgFunctionLocks=map (\f -> (show f, locks f)) $ functions $ mDataFlowGraph $ nModel node
+        , dbgPULocks=map (\(tag, pu) -> (tag, locks pu)) $ M.assocs $ bnPus $ mUnit $ nModel node
         }
     where
         endpointOptions' BusNetwork{ bnPus }

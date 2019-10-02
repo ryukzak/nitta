@@ -120,7 +120,7 @@ data Lock v
         { locked :: v
         , lockBy :: v
         }
-    deriving ( Show )
+    deriving ( Show, Generic )
 
 
 
