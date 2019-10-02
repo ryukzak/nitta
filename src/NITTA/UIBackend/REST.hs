@@ -26,6 +26,7 @@ import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Default
 import qualified Data.Map                         as M
+import qualified Data.Set                         as S
 import qualified Data.Tree                        as T
 import           GHC.Generics
 import           NITTA.Intermediate.Simulation
@@ -43,6 +44,7 @@ import           NITTA.Synthesis.Types
 import           NITTA.UIBackend.Marshalling
 import           NITTA.UIBackend.Timeline
 import           NITTA.UIBackend.VisJS            (VisJS, algToVizJS)
+import           NITTA.Utils
 import           Numeric.Interval
 import           Servant
 import           System.FilePath                  (joinPath)
@@ -97,9 +99,10 @@ withSynthesis root nId
 
 
 data Debug tag v t = Debug
-        { dbgEndpointOptions :: [ ( tag, EndpointOption v t ) ]
-        , dbgFunctionLocks   :: [ ( String, [Lock v] ) ]
-        , dbgPULocks         :: [ ( String, [Lock v] ) ]
+        { dbgEndpointOptions           :: [ ( tag, EndpointOption v t ) ]
+        , dbgFunctionLocks             :: [ ( String, [Lock v] ) ]
+        , dbgCurrentStateFunctionLocks :: [ ( String, [Lock v] ) ]
+        , dbgPULocks                   :: [ ( String, [Lock v] ) ]
         }
     deriving ( Generic )
 
@@ -107,9 +110,15 @@ instance ( ToJSON tag, ToJSON t, Time t ) => ToJSON (Debug tag String t)
 
 debug root nId = do
     node <- getNodeIO root nId
+    let dbgFunctionLocks = map (\f -> (show f, locks f)) $ functions $ mDataFlowGraph $ nModel node
+        already = transferred $ mUnit $ nModel node
     return Debug
         { dbgEndpointOptions=endpointOptions' $ mUnit $ nModel node
-        , dbgFunctionLocks=map (\f -> (show f, locks f)) $ functions $ mDataFlowGraph $ nModel node
+        , dbgFunctionLocks
+        , dbgCurrentStateFunctionLocks=
+            [ (tag, filter (\Lock{ lockBy, locked } -> S.notMember lockBy already && S.notMember locked already) ls)
+            | (tag, ls) <- dbgFunctionLocks
+            ]
         , dbgPULocks=map (\(tag, pu) -> (tag, locks pu)) $ M.assocs $ bnPus $ mUnit $ nModel node
         }
     where
