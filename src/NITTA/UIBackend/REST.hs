@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -22,14 +23,17 @@ module NITTA.UIBackend.REST
     ) where
 
 import           Control.Monad.Except
+import           Data.Aeson
 import           Data.Default
 import qualified Data.Map                         as M
 import qualified Data.Tree                        as T
+import           GHC.Generics
 import           NITTA.Intermediate.Simulation
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
+import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
 import           NITTA.Project.Utils              (writeAndRunTestbench)
@@ -59,7 +63,7 @@ type WithSynthesis tag v x t
     :<|> "edge" :> Get '[JSON] (Maybe (G Edge tag v x t))
     :<|> "model" :> Get '[JSON] (ModelState (BusNetwork tag v x t) v x)
     :<|> "timelines" :> Get '[JSON] (ProcessTimelines t)
-    :<|> "endpointOptions" :> Get '[JSON] [(tag, EndpointOption v t)]
+    :<|> "debug" :> Get '[JSON] (Debug tag v t)
     :<|> "history" :> Get '[JSON] [SynthesisDecisionView tag v x (Interval t)]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] (TestbenchReport v x)
@@ -70,7 +74,7 @@ withSynthesis root nId
     :<|> liftIO ( nOrigin <$> getNodeIO root nId )
     :<|> liftIO ( nModel <$> getNodeIO root nId )
     :<|> liftIO ( processTimelines . process . mUnit . nModel <$> getNodeIO root nId )
-    :<|> liftIO ( endpointOptions' . mUnit . nModel <$> getNodeIO root nId )
+    :<|> liftIO ( debug root nId )
     :<|> liftIO ( map view <$> getSynthesisHistoryIO root nId )
     :<|> liftIO ( algToVizJS . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
@@ -89,10 +93,24 @@ withSynthesis root nId
     where
         alg ModelState{ mDataFlowGraph=DFCluster nodes } = map (\(DFLeaf f) -> f) nodes
         alg _                                            = error "unsupported algorithm structure"
+
+
+data Debug tag v t = Debug
+        { dbgEndpointOptions :: [(tag, EndpointOption v t)]
+        }
+    deriving ( Generic )
+
+instance ( ToJSON tag, ToJSON t, Time t ) => ToJSON (Debug tag String t)
+
+debug root nId = do
+    endpoints <- endpointOptions' . mUnit . nModel <$> getNodeIO root nId
+    return Debug
+        { dbgEndpointOptions=endpoints
+        }
+    where
         endpointOptions' BusNetwork{ bnPus }
             = let f (tag, pu) = zip (repeat tag) $ endpointOptions pu
             in concatMap f $ M.assocs bnPus
-
 
 
 type SimpleCompilerAPI tag v x t

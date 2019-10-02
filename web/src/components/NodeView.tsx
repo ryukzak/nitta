@@ -22,7 +22,7 @@ interface NodeViewState {
     synthesisStatus: any;
     view: string;
     model: any;
-    endpointOptions: any[];
+    debug: any;
     scOptions: any;
 }
 
@@ -40,7 +40,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
             synthesisStatus: props.synthesisStatus,
             view: "update",
             model: null,
-            endpointOptions: null,
+            debug: null,
             scOptions: null
         };
         // FIXME:
@@ -57,7 +57,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
         if (view === "testbench") this.updateTestBench(nid, "testbench");
         if (view === "edges") this.setState({ view: "edges" });
         if (view === "history") this.setState({ view: "history" });
-        if (view === "endpointOptions") this.updateEndpointOptions(nid, "endpointOptions")
+        if (view === "debug") this.updateDebugOptions(nid, "debug")
     }
 
     componentWillReceiveProps(props: NodeViewProps) {
@@ -126,11 +126,11 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
             .catch((err: any) => console.log(err));
     }
 
-    updateEndpointOptions(nid, view: string) {
-        haskellAPI.getEndpointOptions(nid)
+    updateDebugOptions(nid, view: string) {
+        haskellAPI.getDebugOptions(nid)
             .then(response => {
                 this.setState({
-                    endpointOptions: response.data,
+                    debug: response.data,
                     view: view
                 })
             })
@@ -162,7 +162,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                             <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "synthesisNode")}>synthesis node</a>
                             <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "process")}>process</a>
                             <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "edges")}>edges</a>
-                            <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "endpointOptions")}>endpointOptions</a>
+                            <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "debug")}>debug</a>
                             <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "history")}>history</a>
 
                             <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "testbench")}>testbench</a>
@@ -215,8 +215,8 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                                 onNidChange={(nid: any) => this.onNIdChange(nid)}
                             />
                         }
-                        {this.state.view === "endpointOptions" &&
-                            <pre> {JSON.stringify(this.state.endpointOptions, null, 2)} </pre>
+                        {this.state.view === "debug" &&
+                            <pre> {JSON.stringify(this.state.debug, null, 2)} </pre>
                         }
                         {this.state.view === "history" && <SynthesisHistoryView nId={this.state.selectedNId} reverse={ false } /> }
 
