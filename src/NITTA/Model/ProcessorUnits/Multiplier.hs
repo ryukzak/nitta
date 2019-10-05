@@ -601,7 +601,7 @@ instance ( VarValTime v x t
     -- Take attention to function @codeBlock@. This function allows a programmer to use
     -- normal code block indentation.
     hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } MultiplierPorts{..} MultiplierIO
-        = codeBlock 0 [qc|
+        = codeBlock [qc|
             pu_multiplier #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( { parameterAttrWidth } )

@@ -519,7 +519,7 @@ instance ( VarValTime v x t
                     , addr=map SignalTag [ 2, 3, 4, 5 ]
                     }
                 FramIO
-            testBenchImp = codeBlock 0 [qc|
+            testBenchImp = codeBlock [qc|
                 {"module"} { moduleName pName fram }_tb();
                 parameter DATA_WIDTH = { finiteBitSize (def :: x) };
                 parameter ATTR_WIDTH = 4;
@@ -649,7 +649,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
                 $ A.elems memory
     hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} FramIO
-        = codeBlock 0 [qc|
+        = codeBlock [qc|
             pu_fram #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( { show parameterAttrWidth } )

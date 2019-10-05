@@ -141,7 +141,7 @@ instance ( Val x ) => TargetSystemComponent (Accum v x t) where
     hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
     software _ _ = Empty
     hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } AccumPorts{..} AccumIO
-        = codeBlock 0 [qc|
+        = codeBlock [qc|
         pu_accum #
                 ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                 , .ATTR_WIDTH( { show parameterAttrWidth } )

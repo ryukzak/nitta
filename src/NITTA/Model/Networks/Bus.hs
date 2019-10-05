@@ -389,7 +389,7 @@ instance ( VarValTime v x t
         = let
             (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
             mn = moduleName tag pu
-            iml = codeBlock 0 [qc|
+            iml = codeBlock [qc|
                     {"module"} { mn } #
                             ( parameter DATA_WIDTH = { finiteBitSize (def :: x) }
                             , parameter ATTR_WIDTH = 4
@@ -397,7 +397,7 @@ instance ( VarValTime v x t
                         ( input                     clk
                         , input                     rst
                         , output                    cycle
-                        { inline $ codeBlock 1 $ externalPortsDecl $ bnExternalPorts bnPus }
+                        { inline $ externalPortsDecl $ bnExternalPorts bnPus }
                         , output              [7:0] debug_status
                         , output              [7:0] debug_bus1
                         , output              [7:0] debug_bus2
@@ -442,7 +442,7 @@ instance ( VarValTime v x t
             ] ++ map (uncurry hardware) (M.assocs bnPus)
         where
             regInstance (t :: String)
-                = codeBlock 0 [qc|
+                = codeBlock [qc|
                     wire [DATA_WIDTH-1:0] {t}_data_out;
                     wire [ATTR_WIDTH-1:0] {t}_attr_out;
                     |]
@@ -472,7 +472,7 @@ instance ( VarValTime v x t
             io2v n = "    , " ++ n ++ "( " ++ n ++ " )"
             is = map (\(InputPortTag n) -> io2v n) $ inputPorts ioPorts
             os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts
-        = codeBlock 0 [qc|
+        = codeBlock [qc|
             { tag } #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( 4 )
@@ -540,11 +540,11 @@ instance ( VarValTime v x t
             assertions = concatMap (\cycleTickTransfer -> posedgeCycle ++ concatMap assertion cycleTickTransfer ) tickWithTransfers
 
             assertion ( cycleI, t, Nothing )
-                = codeLine 2 [qc|@(posedge clk); trace({ cycleI }, { t }, net.data_bus);|]
+                = codeLine 0 [qc|@(posedge clk); trace({ cycleI }, { t }, net.data_bus);|]
             assertion ( cycleI, t, Just (v, x) )
-                = codeLine 2 [qc|@(posedge clk); check({ cycleI }, { t }, net.data_bus, { verilogInteger x }, { v });|]
+                = codeLine 0 [qc|@(posedge clk); check({ cycleI }, { t }, net.data_bus, { verilogInteger x }, { v });|]
 
-        in Immediate (moduleName pName n ++ "_tb.v") $ codeBlock 0 [qc|
+        in Immediate (moduleName pName n ++ "_tb.v") $ codeBlock [qc|
             `timescale 1 ps / 1 ps
             {"module"} { moduleName pName n }_tb();
             /*
@@ -558,7 +558,7 @@ instance ( VarValTime v x t
             reg clk, rst;
             { inline $ if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
 
-            { inline $ snippetTraceAndCheck $ finiteBitSize (def :: x) }
+            {inline $ snippetTraceAndCheck $ finiteBitSize (def :: x) }
             wire cycle;
 
             // test environment initialization flags
@@ -578,11 +578,11 @@ instance ( VarValTime v x t
                 , .is_drop_allow( { isDrowAllowSignal ioSync } )
                 );
 
-            { inline $ testEnv }
+            { inline testEnv }
 
             { inline $ snippetDumpFile $ moduleName pName n }
 
-            { inline $ snippetClkGen }
+            { inline snippetClkGen }
 
             initial
                 begin
@@ -611,8 +611,8 @@ instance ( VarValTime v x t
                     Transport v _ _ : _ -> Just (v, either error id $ getX cycleCntx v)
                     _                   -> Nothing
 
-            posedgeCycle = codeBlock 2 [qc|
-
+            posedgeCycle = codeBlock [qc|
+                    
                 //-----------------------------------------------------------------
                 @(posedge cycle);
                 |]

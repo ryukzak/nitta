@@ -356,7 +356,7 @@ instance ( Val x, Show t
                 }
             DividerPorts{ oe, oeSel, wr, wrSel }
             DividerIO
-        = codeBlock 0 [qc|
+        = codeBlock [qc|
             pu_div #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( { parameterAttrWidth } )

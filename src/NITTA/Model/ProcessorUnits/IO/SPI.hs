@@ -107,12 +107,12 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
             SimpleIOPorts{..}
             ioPorts
-        = codeBlock 0 [qc|
-        { module_ ioPorts }
-            #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-             , .ATTR_WIDTH( { show parameterAttrWidth } )
-             , .BOUNCE_FILTER( { show bounceFilter } )
-             ) { tag }
+        = codeBlock [qc|
+        { module_ ioPorts } #
+                ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+                , .ATTR_WIDTH( { show parameterAttrWidth } )
+                , .BOUNCE_FILTER( { show bounceFilter } )
+                ) { tag }
             ( .clk( { signalClk } )
             , .rst( { signalRst } )
             , .flag_stop( { stop } )
@@ -121,25 +121,25 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
             , .signal_wr( { signal wr } )
             , .data_in( { dataIn } ), .attr_in( { attrIn } )
             , .data_out( { dataOut } ), .attr_out( { attrOut } )
-            { extIO ioPorts }
+            { inline $ extIO ioPorts }
             );
         initial { tag }.disabled <= { if sendN == 0 && receiveN == 0 then (1 :: Int) else 0 };
         |]
             where
                 module_ SPISlave{}  = "pu_slave_spi"
                 module_ SPIMaster{} = "pu_master_spi"
-                extIO SPISlave{..} = codeBlock 2 [qc|
+                extIO SPISlave{..} = codeBlock [qc|
                     , .mosi( { inputPort slave_mosi } )
                     , .miso( { outputPort slave_miso } )
                     , .sclk( { inputPort slave_sclk } )
                     , .cs( { inputPort slave_cs } )
-                |]
-                extIO SPIMaster{..} = codeBlock 2 [qc|
+                    |]
+                extIO SPIMaster{..} = codeBlock [qc|
                     , .mosi( { outputPort master_mosi } )
                     , .miso( { inputPort master_miso } )
                     , .sclk( { outputPort master_sclk } )
                     , .cs( { outputPort master_cs } )
-                |]
+                    |]
 
 instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
     testEnvironmentInitFlag tag _pu = Just $ tag ++ "_env_init_flag"
@@ -176,7 +176,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                 | abs x /= x = [qc|-{ wordWidth }'sd{ verilogInteger (-x) }|]
                 | otherwise = [qc|{ wordWidth }'sd{ verilogInteger x }|]
 
-            disable = codeBlock 0 [qc|
+            disable = codeBlock [qc|
                 initial begin
                     @(negedge { signalRst });
                     { envInitFlagName } <= 1;
@@ -189,7 +189,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                     receiveCycle transmit = 
                         let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
-                        in codeBlock 1 [qc|
+                        in codeBlock [qc|
                             { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
                             { tag }_io_test_start_transaction = 1;                           @(posedge { signalClk });
                             { tag }_io_test_start_transaction = 0;                           @(posedge { signalClk });
@@ -199,7 +199,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                     sendingAssert transmit = 
                         let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
-                        in codeBlock 1 [qc|
+                        in codeBlock [qc|
                             @(posedge { tag }_io_test_start_transaction);
                                 $display( "{ tag }_io_test_output except: %H (\{ { toVerilogLiteral xs } })", \{ { toVerilogLiteral xs } } );
                                 $display( "{ tag }_io_test_output actual: %H", { tag }_io_test_output );
@@ -208,7 +208,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                                 $display();
                             |]
 
-                    envInstance = codeBlock 0 [qc|
+                    envInstance = codeBlock [qc|
                         // SPI Input/Output environment
                         // { show sio }
                         reg { tag }_io_test_start_transaction;
@@ -234,7 +234,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                         initial { tag }_io_test.inner.shiftreg <= 0;
                         |]
 
-                    interactions = codeBlock 0 [qc|
+                    interactions = codeBlock [qc|
                         // SPI Input signal generation
                         initial begin
                             { tag }_io_test_start_transaction <= 0; 
@@ -256,7 +256,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                         end
                         |]
                     -- FIXME: do not check output signals when we drop data
-                in codeBlock 0 [qc|
+                in codeBlock [qc|
                     { inline envInstance }
 
                     { inline $ if frameWordCount == 0 then disable else interactions }
@@ -267,7 +267,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                     receiveCycle transmit = 
                         let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
-                        in codeBlock 1 [qc|
+                        in codeBlock [qc|
                             { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
                             @(posedge { tag }_io_test_ready);
                             |]
@@ -275,7 +275,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                     sendingAssert transmit = 
                         let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
-                        in codeBlock 1 [qc|
+                        in codeBlock [qc|
                             @(posedge { tag }_io_test_ready);
                                 $display( "{ tag }_io_test_output except: %H (\{ { toVerilogLiteral xs } })", \{ { toVerilogLiteral xs } } );
                                 $display( "{ tag }_io_test_output actual: %H", { tag }_io_test_output );
@@ -284,7 +284,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                                 $display();
                             |]
 
-                    envInstance = codeBlock 0 [qc|
+                    envInstance = codeBlock [qc|
                         // SPI Input/Output environment
                         // { show sio }
                         reg { tag }_io_test_start_transaction;
@@ -307,7 +307,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                             );
                         |]
 
-                    interactions = codeBlock 0 [qc|
+                    interactions = codeBlock [qc|
                         // SPI Input signal generation 
                         initial begin
                             @(negedge { signalRst });
@@ -327,7 +327,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                         end
                         |]
 
-                in codeBlock 0 [qc|
+                in codeBlock [qc|
                     { inline envInstance }
 
                     { inline $ if frameWordCount == 0 then disable else interactions }
