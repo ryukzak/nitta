@@ -1,3 +1,4 @@
+TAGS
 .DS_Store
 /.stack-work
 *.refactored.hs
@@ -14,3 +15,4 @@ hdl/gen/*
 gen/*
 .vscode/*
 web/api.txt
+stack.yaml.lock

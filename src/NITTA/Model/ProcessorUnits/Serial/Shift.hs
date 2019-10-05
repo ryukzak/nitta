@@ -94,30 +94,36 @@ data StepSize  = Bit   | Byte       deriving ( Show, Eq )
 data Mode      = Logic | Arithmetic deriving ( Show, Eq )
 
 instance Controllable (Shift v x t) where
-  data Instruction (Shift v x t)
-    = Init
-    | Work Bool StepSize Mode
-    | Out
-    deriving (Show)
+    data Instruction (Shift v x t)
+        = Init
+        | Work Bool StepSize Mode
+        | Out
+        deriving (Show)
+ 
+    data Microcode (Shift v x t)
+        = Microcode
+            { workSignal :: Bool
+            , directionSignal :: Bool
+            , modeSignal :: Bool
+            , stepSignal :: Bool
+            , initSignal :: Bool
+            , oeSignal :: Bool
+            } deriving ( Show, Eq, Ord )
+ 
+    mapMicrocodeToPorts Microcode{..} ShiftPorts{..} = 
+        [ (work, Bool workSignal)
+        , (direction, Bool directionSignal)
+        , (mode, Bool modeSignal)
+        , (step, Bool stepSignal)
+        , (init, Bool initSignal)
+        , (oe, Bool oeSignal)
+        ]
+ 
+    portsToSignals ShiftPorts{ work, direction, mode, step, init, oe} 
+        = [work, direction, mode, step, init, oe]
 
-  data Microcode (Shift v x t)
-    = Microcode{ workSignal :: Bool
-               , directionSignal :: Bool
-               , modeSignal :: Bool
-               , stepSignal :: Bool
-               , initSignal :: Bool
-               , oeSignal :: Bool
-               } deriving ( Show, Eq, Ord )
-
-  mapMicrocodeToPorts Microcode{..} ShiftPorts{..}
-    = [ (work, Bool workSignal)
-      , (direction, Bool directionSignal)
-      , (mode, Bool modeSignal)
-      , (step, Bool stepSignal)
-      , (init, Bool initSignal)
-      , (oe, Bool oeSignal)
-      ]
-
+    signalsToPorts (work:direction:mode:step:init:oe:_) = ShiftPorts work direction mode step init oe
+    signalsToPorts _                                    = error "pattern match error in signalsToPorts ShiftPorts"
 
 instance Default (Microcode (Shift v x t)) where
   def = Microcode{ workSignal=False

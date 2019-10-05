@@ -126,7 +126,7 @@ data TargetSynthesis tag v x t
         }
 
 
-instance ( VarValTime v x t, Semigroup v ) => Default (TargetSynthesis String v x t) where
+instance ( VarValTime v x t ) => Default (TargetSynthesis String v x t) where
     def = TargetSynthesis
         { tName=undefined
         , tMicroArch=undefined

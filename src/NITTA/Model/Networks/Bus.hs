@@ -67,7 +67,6 @@ import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.UIBackend.VisJS            ()
 import           NITTA.Utils
-import           NITTA.Utils.Lens
 import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (inf, singleton, sup, width,
                                                    (...))
@@ -163,11 +162,12 @@ instance ( UnitTag tag, VarValTime v x t
                     zero = zip vs $ repeat Nothing
                 in map (M.fromList . (++) zero) targets
 
-            fixConstrain constrain
-                = let
-                    a = max (nextTick bnProcess) $ constrain^.avail.infimum
-                    b = constrain^.avail.supremum
-                in constrain & avail .~ (a ... b)
+            fixConstrain constrain@TimeConstrain { tcAvailable } =
+                let
+                    a = max (nextTick bnProcess) $ inf tcAvailable 
+                    b = sup tcAvailable 
+                in 
+                    constrain { tcAvailable = a ... b}
 
             notEmptyDestination = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
             tgr (_, Just (target, _)) = Just target
@@ -284,6 +284,10 @@ instance Controllable (BusNetwork tag v x t) where
     -- signals starts and ends inside network unit.
     mapMicrocodeToPorts BusNetworkMC{} BusNetworkPorts = []
 
+    portsToSignals _ = undefined
+
+    signalsToPorts _ = undefined
+
 
 instance {-# OVERLAPS #-}
         ByTime (BusNetwork tag v x t) t where
@@ -340,20 +344,43 @@ instance ( UnitTag tag, VarValTime v x t
 
 
 
-instance ( UnitTag tag, VarValTime v x t, Semigroup v
+instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (BusNetwork tag v x t) v x where
-    refactorOptions bn@BusNetwork{ bnPus } = let
+    refactorOptions bn@BusNetwork{ bnPus, bnBinded } = let
             insertRegs = L.nub
-                [ InsertOutRegister lockBy (lockBy <> lockBy)
+                [ InsertOutRegister lockBy $ bufferSuffix lockBy
                 | (Bind f tag) <- bindOptions bn
                 , Lock{ lockBy } <- locks f
                 , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
                 ]
             breakLoops = concatMap refactorOptions $ M.elems bnPus
-        in insertRegs ++ breakLoops
+            selfSending = [ colision
+                | (tag, fs) <- M.assocs bnBinded
+                , let
+                    sources = S.unions [ ss
+                        | EndpointO{ epoRole } <- endpointOptions ( bnPus M.! tag )
+                        , case epoRole of Source{} -> True; _ -> False
+                        , let Source ss = epoRole
+                        ]
+                    colision = unionsMap inputs fs `S.intersection` sources
+                , not $ null colision
+                ]
+        in insertRegs ++ breakLoops ++ map SelfSending selfSending
 
     refactorDecision bn@BusNetwork{ bnRemains } (InsertOutRegister v v')
         = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
+
+    refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(SelfSending vs) = let
+            (buffer, diff) = prepareBuffer r
+            Just (tag, _) = L.find
+                (\(_, f) -> not $ null $ S.intersection vs $ unionsMap variables f)
+                $ M.assocs bnBinded
+            bnRemains' = buffer : patch diff bnRemains
+        in bn
+            { bnRemains=bnRemains'
+            , bnPus=M.adjust (patch diff) tag bnPus
+            , bnBinded=M.map (\fs -> map (patch diff) fs) bnBinded
+            }
 
     refactorDecision bn@BusNetwork{ bnBinded, bnPus } bl@BreakLoop{} = let
             Just (puTag, puBinded) = L.find (elem (F $ recLoop bl) . snd) $ M.assocs bnBinded

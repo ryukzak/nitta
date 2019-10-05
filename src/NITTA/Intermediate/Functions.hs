@@ -89,7 +89,7 @@ instance ( Ord v ) => Function (LoopOut v x) v where
     outputs (LoopOut _ o) = variables o
     isInternalLockPossible _ = True
 instance ( Ord v ) => Patch (LoopOut v x) (v, v) where
-    patch diff (LoopOut x a) = LoopOut x $ patch diff a
+    patch diff (LoopOut l a) = LoopOut (patch diff l) $ patch diff a
 instance ( Var v ) => Locks (LoopOut v x) v where locks _ = []
 instance ( Var v ) => FunctionSimulation (LoopOut v x) v x where
     simulate cntx (LoopOut l _) = simulate cntx l
@@ -104,7 +104,7 @@ instance ( Ord v ) => Function (LoopIn v x) v where
     inputs (LoopIn _ o) = variables o
     isInternalLockPossible _ = True
 instance ( Ord v ) => Patch (LoopIn v x) (v, v) where
-    patch diff (LoopIn x a) = LoopIn x $ patch diff a
+    patch diff (LoopIn l a) = LoopIn (patch diff l) $ patch diff a
 instance ( Var v ) => Locks (LoopIn v x) v where locks _ = []
 instance ( Var v ) => FunctionSimulation (LoopIn v x) v x where
     simulate cntx (LoopIn l _) = simulate cntx l

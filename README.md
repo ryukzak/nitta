@@ -61,3 +61,4 @@ Papers about the project you can find here (English and Russian): <https://nitta
 Maintainer: Aleksandr Penskoi <aleksandr.penskoi@gmail.com>
 
 Project chat (telegram):  <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
+Project CI chat (telegram): <https://t.me/nitta_ci>
