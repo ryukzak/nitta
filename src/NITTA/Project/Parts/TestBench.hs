@@ -85,7 +85,7 @@ instance ( Show v, Show x ) => Show ( TestbenchReport v x ) where
             , tbFunctions, tbSynthesisSteps
             , tbCompilerDump, tbSimulationDump
             }
-        = codeBlock 0 [qc|
+        = codeBlock [qc|
             Project: { tbPath }
             Files:
                 { inline $ showLst tbFiles }
