@@ -374,13 +374,12 @@ bnExternalPorts pus = M.assocs $ M.map (
             )
     ) pus
 
-externalPortsDecl ports = S.join "\n" $ concatMap (
+externalPortsDecl ports = unlines $ concatMap (
         \(tag, (is, os)) ->
-            ("    // external ports for: " ++ tag)
-            :  map ("        , input " ++) is
-            ++ map ("        , output " ++) os
+            ("// external ports for: " ++ tag)
+            :  map (", input " ++) is
+            ++ map (", output " ++) os
     ) ports
-
 
 instance ( VarValTime v x t
         ) => TargetSystemComponent (BusNetwork String v x t) where
@@ -390,63 +389,63 @@ instance ( VarValTime v x t
         = let
             (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
             mn = moduleName tag pu
-            iml = fixIndent [qc|
-|                   {"module"} { mn }
-|                       #( parameter DATA_WIDTH = { finiteBitSize (def :: x) }
-|                        , parameter ATTR_WIDTH = 4
-|                        )
-|                       ( input                     clk
-|                       , input                     rst
-|                       , output                    cycle
-|                   { externalPortsDecl $ bnExternalPorts bnPus }
-|                       , output              [7:0] debug_status
-|                       , output              [7:0] debug_bus1
-|                       , output              [7:0] debug_bus2
-|                       , input                     is_drop_allow
-|                       );
-|
-|                   parameter MICROCODE_WIDTH = { bnSignalBusWidth };
-|                   // Sub module_ instances
-|                   wire [MICROCODE_WIDTH-1:0] control_bus;
-|                   wire [DATA_WIDTH-1:0] data_bus;
-|                   wire [ATTR_WIDTH-1:0] attr_bus;
-|                   wire start, stop;
-|
-|                   wire [7:0] debug_pc;
-|                   assign debug_status = \{ cycle, debug_pc[6:0] };
-|                   assign debug_bus1 = data_bus[7:0];
-|                   assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
-|
-|                   pu_simple_control
-|                       #( .MICROCODE_WIDTH( MICROCODE_WIDTH )
-|                        , .PROGRAM_DUMP( "$path${ mn }.dump" )
-|                        , .MEMORY_SIZE( { length $ programTicks pu } ) // 0 - address for nop microcode
-|                        ) control_unit
-|                       ( .clk( clk )
-|                       , .rst( rst )
-|                       , .start_cycle( { isDrowAllowSignal ioSync } || stop )
-|                       , .cycle( cycle )
-|                       , .signals_out( control_bus )
-|                       , .trace_pc( debug_pc )
-|                       );
-|
-|                   { S.join "\\n\\n" instances }
-|
-|                   assign data_bus = { S.join " | " $ map snd valuesRegs };
-|                   assign attr_bus = { S.join " | " $ map fst valuesRegs };
-|
-|                   endmodule
-|                   |]
+            iml = codeBlock 0 [qc|
+                    {"module"} { mn } #
+                            ( parameter DATA_WIDTH = { finiteBitSize (def :: x) }
+                            , parameter ATTR_WIDTH = 4
+                            )
+                        ( input                     clk
+                        , input                     rst
+                        , output                    cycle
+                        { inline $ codeBlock 1 $ externalPortsDecl $ bnExternalPorts bnPus }
+                        , output              [7:0] debug_status
+                        , output              [7:0] debug_bus1
+                        , output              [7:0] debug_bus2
+                        , input                     is_drop_allow
+                        );
+                         
+                    parameter MICROCODE_WIDTH = { bnSignalBusWidth };
+                    // Sub module_ instances
+                    wire [MICROCODE_WIDTH-1:0] control_bus;
+                    wire [DATA_WIDTH-1:0] data_bus;
+                    wire [ATTR_WIDTH-1:0] attr_bus;
+                    wire start, stop;
+                         
+                    wire [7:0] debug_pc;
+                    assign debug_status = \{ cycle, debug_pc[6:0] };
+                    assign debug_bus1 = data_bus[7:0];
+                    assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
+                         
+                    pu_simple_control #
+                            ( .MICROCODE_WIDTH( MICROCODE_WIDTH )
+                            , .PROGRAM_DUMP( "$path${ mn }.dump" )
+                            , .MEMORY_SIZE( { length $ programTicks pu } ) // 0 - address for nop microcode
+                            ) control_unit
+                        ( .clk( clk )
+                        , .rst( rst )
+                        , .start_cycle( { isDrowAllowSignal ioSync } || stop )
+                        , .cycle( cycle )
+                        , .signals_out( control_bus )
+                        , .trace_pc( debug_pc )
+                        );
+                         
+                    { inline $ S.join "\\n\\n" instances }
+                         
+                    assign data_bus = { S.join " | " $ map snd valuesRegs };
+                    assign attr_bus = { S.join " | " $ map fst valuesRegs };
+                                                 
+                    endmodule
+                    |]
         in Aggregate (Just mn) $
             [ Immediate (mn ++ ".v") iml
             , FromLibrary "pu_simple_control.v"
             ] ++ map (uncurry hardware) (M.assocs bnPus)
         where
             regInstance (t :: String)
-                = fixIndent [qc|
-|                   wire [DATA_WIDTH-1:0] {t}_data_out;
-|                   wire [ATTR_WIDTH-1:0] {t}_attr_out;
-|                   |]
+                = codeBlock 0 [qc|
+                    wire [DATA_WIDTH-1:0] {t}_data_out;
+                    wire [ATTR_WIDTH-1:0] {t}_attr_out;
+                    |]
 
             renderInstance insts regs [] = ( reverse insts, reverse regs )
             renderInstance insts regs ((t, PU{ unit, systemEnv, ports, ioPorts }) : xs)
@@ -473,23 +472,24 @@ instance ( VarValTime v x t
             io2v n = "    , " ++ n ++ "( " ++ n ++ " )"
             is = map (\(InputPortTag n) -> io2v n) $ inputPorts ioPorts
             os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts
-        = fixIndent [qc|
-|           { tag } #
-|                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-|                   , .ATTR_WIDTH( 4 )
-|                   ) net
-|               ( .rst( { signalRst } )
-|               , .clk( { signalClk } )
-|               // inputs:
-|           { S.join "\\n" is }
-|               // outputs:
-|           { S.join "\\n" os }
-|               , .debug_status( debug_status ) // FIXME:
-|               , .debug_bus1( debug_bus1 )     // FIXME:
-|               , .debug_bus2( debug_bus2 )     // FIXME:
-|               , .is_drop_allow( rendezvous )  // FIXME:
-|               );
-|           |]
+        = codeBlock 0 [qc|
+            { tag } #
+                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+                    , .ATTR_WIDTH( 4 )
+                    ) net
+                ( .rst( { signalRst } )
+                , .clk( { signalClk } )
+                // inputs:
+                { inline $ S.join "\\n" is }
+                // outputs:
+                { inline $ S.join "\\n" os }
+                , .debug_status( debug_status ) // FIXME:
+                , .debug_bus1( debug_bus1 )     // FIXME:
+                , .debug_bus2( debug_bus2 )     // FIXME:
+                , .is_drop_allow( rendezvous )  // FIXME:
+                );
+            |]
+
     hardwareInstance _title _bn TargetEnvironment{ unitEnv=ProcessUnitEnv{} } _ports _io
         = error "BusNetwork should be NetworkEnv"
 
@@ -537,84 +537,85 @@ instance ( VarValTime v x t
                      [ 0 .. nextTick bnProcess ] )
                 $ zip [0 :: Int ..] $ take cntxCycleNumber cntxProcess
 
-            assertions = concatMap ( \cycleTickTransfer -> posedgeCycle ++ concatMap assertion cycleTickTransfer ) tickWithTransfers
+            assertions = concatMap (\cycleTickTransfer -> posedgeCycle ++ concatMap assertion cycleTickTransfer ) tickWithTransfers
 
             assertion ( cycleI, t, Nothing )
                 = codeLine 2 [qc|@(posedge clk); trace({ cycleI }, { t }, net.data_bus);|]
             assertion ( cycleI, t, Just (v, x) )
                 = codeLine 2 [qc|@(posedge clk); check({ cycleI }, { t }, net.data_bus, { verilogInteger x }, { v });|]
 
-        in Immediate (moduleName pName n ++ "_tb.v") $ fixIndent [qc|
-|               `timescale 1 ps / 1 ps
-|               {"module"} { moduleName pName n }_tb();
-|
-|               /*
-|               Functions:
-|               { S.join "\\n" $ map show $ functions n }
-|
-|               Steps:
-|               { S.join "\\n" $ map show $ reverse $ steps $ process n }
-|               */
-|
-|               reg clk, rst;
-|               { if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
-|
-|               { snippetTraceAndCheck $ finiteBitSize (def :: x) }
-|               wire cycle;
-|
-|               // test environment initialization flags
-|               reg { S.join ", " envInitFlags };
-|               assign env_init_flag = { defEnvInitFlag envInitFlags ioSync };
-|
-|               { moduleName pName n }
-|                   #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-|                    , .ATTR_WIDTH( 4 )
-|                    ) net
-|                   ( .clk( clk )
-|                   , .rst( rst )
-|                   , .cycle( cycle )
-|                   { externalIO }
-|                   // if 1 - The process cycle are indipendent from a SPI.
-|                   // else - The process cycle are wait for the SPI.
-|                   , .is_drop_allow( { isDrowAllowSignal ioSync } )
-|                   );
-|
-|               { testEnv }
-|
-|               { snippetDumpFile $ moduleName pName n }
-|
-|               { snippetClkGen }
-|
-|               initial
-|                   begin
-|                       // microcode when rst == 1 -> program[0], and must be nop for all PUs
-|                       @(negedge rst); // Turn mUnit on.
-|                       // Start computational cycle from program[1] to program[n] and repeat.
-|                       // Signals effect to mUnit state after first clk posedge.
-|                       @(posedge clk);
-|                       while (!env_init_flag) @(posedge clk);
-|{ assertions }
-|                       repeat ( 2000 ) @(posedge clk);
-|                       $finish;
-|                   end
-|
-|               endmodule
-|               |]
+        in Immediate (moduleName pName n ++ "_tb.v") $ codeBlock 0 [qc|
+            `timescale 1 ps / 1 ps
+            {"module"} { moduleName pName n }_tb();
+            /*
+            Functions:
+            { inline $ S.join "\\n" $ map show $ functions n }
+
+            Steps:
+            { inline $ S.join "\\n" $ map show $ reverse $ steps $ process n }
+            */
+
+            reg clk, rst;
+            { inline $ if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
+
+            { inline $ snippetTraceAndCheck $ finiteBitSize (def :: x) }
+            wire cycle;
+
+            // test environment initialization flags
+            reg { S.join ", " envInitFlags };
+            assign env_init_flag = { defEnvInitFlag envInitFlags ioSync };
+
+            { moduleName pName n } #
+                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+                    , .ATTR_WIDTH( 4 )
+                    ) net
+                ( .clk( clk )
+                , .rst( rst )
+                , .cycle( cycle )
+                { externalIO }
+                // if 1 - The process cycle are indipendent from a SPI.
+                // else - The process cycle are wait for the SPI.
+                , .is_drop_allow( { isDrowAllowSignal ioSync } )
+                );
+
+            { inline $ testEnv }
+
+            { inline $ snippetDumpFile $ moduleName pName n }
+
+            { inline $ snippetClkGen }
+
+            initial
+                begin
+                    // microcode when rst == 1 -> program[0], and must be nop for all PUs
+                    @(negedge rst); // Turn mUnit on.
+                    // Start computational cycle from program[1] to program[n] and repeat.
+                    // Signals effect to mUnit state after first clk posedge.
+                    @(posedge clk);
+                    while (!env_init_flag) @(posedge clk);
+                    { inline assertions }
+                    repeat ( 2000 ) @(posedge clk);
+                    $finish;
+                end
+
+            endmodule
+            |]
+
         where
             defEnvInitFlag flags Sync = S.join " && "$ "1'b1" : flags
             defEnvInitFlag flags ASync = S.join " || " $ "1'b1" : flags
             defEnvInitFlag _flags OnBoard = error "can't generate testbench without specific IOSynchronization"
+
 
             cntxToTransfer cycleCntx t
                 = case extractInstructionAt n t of
                     Transport v _ _ : _ -> Just (v, either error id $ getX cycleCntx v)
                     _                   -> Nothing
 
-            posedgeCycle = fixIndent [qc|
-|
-|                       //-----------------------------------------------------------------
-|                       @(posedge cycle);
-|               |]
+            posedgeCycle = codeBlock 2 [qc|
+
+                //-----------------------------------------------------------------
+                @(posedge cycle);
+                |]
 
 
 isDrowAllowSignal Sync    = bool2verilog False
