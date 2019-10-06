@@ -35,7 +35,7 @@ import           Test.Tasty.TH
 
 case_selfSending1 = let
         df = fsToDataFlowGraph ([ reg "a" ["b"], reg "b" ["c"] ] :: [F String Int])
-        df' = refactorDecision df (SelfSending $ S.fromList ["b"])
+        df' = refactorDecision df (ResolveDeadlock $ S.fromList ["b"])
     in df' @?= DFCluster
             [ DFLeaf $ reg "a" ["b@buf"]
             , DFLeaf $ reg "b@buf" ["b"]
@@ -45,7 +45,7 @@ case_selfSending1 = let
 
 case_selfSending2 = let
         df = fsToDataFlowGraph ([ reg "a" ["b1", "b2"], reg "b1" ["c1"], reg "b2" ["c2"] ] :: [F String Int])
-        df' = refactorDecision df (SelfSending $ S.fromList ["b1"])
+        df' = refactorDecision df (ResolveDeadlock $ S.fromList ["b1"])
     in df' @?= DFCluster
              [ DFLeaf $ reg "a" ["b1@buf", "b2"]
              , DFLeaf $ reg "b1@buf" ["b1"]
@@ -56,7 +56,7 @@ case_selfSending2 = let
 
 case_selfSending3 = let
         df = fsToDataFlowGraph ([ reg "a" ["b1", "b2"], reg "b1" ["c1"], reg "b2" ["c2"] ] :: [F String Int])
-        df' = refactorDecision df (SelfSending $ S.fromList ["b1", "b2"])
+        df' = refactorDecision df (ResolveDeadlock $ S.fromList ["b1", "b2"])
     in df' @?= DFCluster
            [ DFLeaf $ reg "a" ["b1@buf"]
            , DFLeaf $ reg "b1@buf" ["b1", "b2"]

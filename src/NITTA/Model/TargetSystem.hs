@@ -71,7 +71,7 @@ instance ( UnitTag tag, VarValTime v x t
             , mUnit=refactorDecision mUnit d
             }
 
-    refactorDecision ModelState{ mUnit, mDataFlowGraph } r@SelfSending{}
+    refactorDecision ModelState{ mUnit, mDataFlowGraph } r@ResolveDeadlock{}
         = ModelState
             { mDataFlowGraph=refactorDecision mDataFlowGraph r
             , mUnit=refactorDecision mUnit r
@@ -121,7 +121,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 instance ( Var v, Val x
         ) => RefactorProblem (DataFlowGraph v x) v x where
     refactorOptions _ = []
-    refactorDecision dfg r@SelfSending{} = let
+    refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
             fs' = buffer : map (patch diff) (functions dfg)
         in fsToDataFlowGraph fs'

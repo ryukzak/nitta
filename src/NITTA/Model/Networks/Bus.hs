@@ -350,7 +350,7 @@ instance ( UnitTag tag, VarValTime v x t
                 , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
                 ]
             breakLoops = concatMap refactorOptions $ M.elems bnPus
-            selfSending = map SelfSending $ concat
+            selfSending = map ResolveDeadlock $ concat
                 [ allPossibleOutputs tag v
                 | (tag, fs) <- M.assocs bnBinded
                 , let
@@ -385,13 +385,13 @@ instance ( UnitTag tag, VarValTime v x t
                 , Lock{ lockBy=locked, locked=lockBy } `elem` fLocks
                 , lockBy `S.member` maybeSended
                 ]
-            deadlocks = map SelfSending deadLockedVs
+            deadlocks = map ResolveDeadlock deadLockedVs
         in insertRegs ++ breakLoops ++ selfSending ++ deadlocks
 
     refactorDecision bn@BusNetwork{ bnRemains } (InsertOutRegister v v')
         = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
 
-    refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(SelfSending vs) = let
+    refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(ResolveDeadlock vs) = let
             (buffer, diff) = prepareBuffer r
             Just (tag, _) = L.find
                 (\(_, f) -> not $ null $ S.intersection vs $ unionsMap variables f)

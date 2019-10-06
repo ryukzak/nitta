@@ -371,8 +371,8 @@ estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor InsertOutR
     = RefactorEdgeParameter{ pRefactor=InsertOutRegister def def, pVarsCount=0 }
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor BreakLoop{})
     = RefactorEdgeParameter{ pRefactor=BreakLoop def def def, pVarsCount=0 }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor (SelfSending vs))
-    = RefactorEdgeParameter{ pRefactor=SelfSending def, pVarsCount=fromIntegral $ S.size vs }
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor (ResolveDeadlock vs))
+    = RefactorEdgeParameter{ pRefactor=ResolveDeadlock def, pVarsCount=fromIntegral $ S.size vs }
 
 
 -- |Function, which map 'Parameters' to 'Float'.
@@ -402,7 +402,7 @@ objectiveFunction
             -> 2000
         RefactorEdgeParameter{ pRefactor=BreakLoop{} }
             -> 2000
-        RefactorEdgeParameter{ pRefactor=SelfSending{}, pVarsCount }
+        RefactorEdgeParameter{ pRefactor=ResolveDeadlock{}, pVarsCount }
             -> 2000 + pVarsCount
         -- _ -> -1
 
