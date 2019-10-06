@@ -348,6 +348,7 @@ instance ( UnitTag tag, VarValTime v x t
                 | (Bind f tag) <- bindOptions bn
                 , Lock{ lockBy } <- locks f
                 , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
+                , False
                 ]
             breakLoops = concatMap refactorOptions $ M.elems bnPus
             selfSending = map ResolveDeadlock $ concat
