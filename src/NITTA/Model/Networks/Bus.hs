@@ -375,12 +375,9 @@ instance ( UnitTag tag, VarValTime v x t
             puLocks = map (\(tag, pu) -> (tag, locks pu)) $ M.assocs bnPus
             maybeSended = unionsMap variables $ concatMap endpointOptions $ M.elems bnPus
 
-            -- FIXME:
-            -- deadLockedVs = concat
-            --     [ allPossibleOutputs tag lockBy
-            deadLockedVs =
-                [ S.singleton lockBy
-                | (_tag, ls)<- puLocks
+            deadLockedVs = concat
+                [ allPossibleOutputs tag lockBy
+                | ( tag, ls ) <- puLocks
                 , Lock{ lockBy, locked } <- ls
                 , Lock{ lockBy=locked, locked=lockBy } `elem` fLocks
                 , lockBy `S.member` maybeSended
