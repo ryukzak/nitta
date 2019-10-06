@@ -71,8 +71,7 @@ import           NITTA.Model.TargetSystem         (ModelState (..))
 import           NITTA.Model.Types
 import           NITTA.Utils
 import           NITTA.Utils.Lens
-import           Numeric.Interval                 (Interval)
-import           Numeric.Interval                 (inf, sup)
+import           Numeric.Interval                 (Interval, inf, sup)
 
 
 -- |Type alias for Graph parts, where `e` - graph element (Node or Edge) should be 'Node' or 'Edge';
@@ -292,7 +291,7 @@ data Parameters
         , pNotTransferableInputs :: [Float]
         }
     | RefactorEdgeParameter
-        { pRefactor :: Refactor () ()
+        { pRefactor  :: Refactor () ()
         , pVarsCount :: Float
         }
     deriving ( Show, Generic )
@@ -381,7 +380,7 @@ objectiveFunction
         ParametersCntx{ numberOfDFOptions }
         params
     = case params of
-        BindEdgeParameter{ pPossibleDeadlock=True } -> -1
+        BindEdgeParameter{ pPossibleDeadlock=True } -> 500
         BindEdgeParameter{ pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber }
             -> 1000
                 + pCritical <?> 1000
