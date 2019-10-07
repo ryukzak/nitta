@@ -141,5 +141,25 @@ case_inline6 = do
 
     b6 @?= a6
 
+case_inline7 = do
+    let
+        a7 = S.join "\n"  
+            [ "bar"
+            , "    123"
+            , "    456"
+            , ""
+            , ""
+            , ""
+            ] 
+        lol1 = codeLine 0 [qc|123|]
+        lol2 = codeLine 0 [qc|456|]
+        lol = lol1 ++ lol2
+        b7 = codeBlock [qc|
+            bar
+                {inline lol}
+            |]
+
+    b7 @?= a7
+
 codeTests :: TestTree
 codeTests = $(testGroupGenerator)
