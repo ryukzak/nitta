@@ -21,6 +21,7 @@ module NITTA.Synthesis.Method
     , smartBindSynthesisIO
     , obviousBindThreadIO
     , allBestThreadIO
+    , stateOfTheArtSynthesisIO
     ) where
 
 import           Data.List             (find, sortOn)
@@ -28,6 +29,14 @@ import           Data.Ord              (Down (..))
 import           NITTA.Synthesis.Types
 import           NITTA.Synthesis.Utils (targetProcessDuration)
 import           NITTA.Utils           (maximumOn, minimumOn)
+import           Safe
+
+
+stateOfTheArtSynthesisIO node = do
+    n1 <- simpleSynthesisIO node
+    n2 <- smartBindSynthesisIO node
+    n3 <- bestThreadIO node
+    return $ getBestNode node [ n1, n2, n3 ]
 
 
 -- |Schedule process by simple synthesis.
@@ -92,12 +101,12 @@ smartBindThreadIO node = do
 allBestThreadIO (0 :: Int) node = bestThreadIO node
 allBestThreadIO n node = do
     edges <- getPositiveEdgesIO node
-    lastNodes <- mapM (\Edge{ eNode } -> allBestThreadIO (n-1) eNode) edges
-    let 
-        outNode [] = node
-        outNode ln = case filter nIsComplete ln of
-            []             -> head ln
-            completedNodes -> minimumOn (targetProcessDuration . nModel) completedNodes
-                           
-    return $ outNode lastNodes 
-         
+    sythesizedNodes <- mapM (\Edge{ eNode } -> allBestThreadIO (n-1) eNode) edges
+    return $ getBestNode node sythesizedNodes
+
+
+getBestNode node nodes = let
+        successNodes = filter nIsComplete nodes
+    in case successNodes of
+        _:_ -> minimumOn (targetProcessDuration . nModel) successNodes
+        []  -> headDef node nodes
