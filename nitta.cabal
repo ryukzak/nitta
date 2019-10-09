@@ -64,11 +64,9 @@ library
   build-depends:       aeson
                      , array
                      , base
-                     , bytestring
                      , containers
                      , data-default
                      , directory
-                     , extra
                      , file-embed
                      , filepath
                      , hashable
@@ -77,7 +75,6 @@ library
                      , interpolatedstring-perl6
                      , intervals
                      , language-lua
-                     , list-t
                      , MissingH
                      , mtl
                      , process
@@ -88,7 +85,6 @@ library
                      , servant-server
                      , split
                      , stm
-                     , syb
                      , text
                      , transformers
                      , unordered-containers
@@ -117,10 +113,7 @@ executable nitta
   build-depends:       base
                      , cmdargs
                      , data-default
-                     , directory
-                     , filepath
                      , interpolatedstring-perl6
-                     , mtl
                      , nitta
                      , text
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N

@@ -64,7 +64,6 @@ import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
-import           NITTA.UIBackend.VisJS            ()
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (inf, singleton, sup, width,
