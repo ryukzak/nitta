@@ -2,58 +2,58 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE QuasiQuotes           #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 module NITTA.Test.CodeBlock
     ( codeTests
     ) where
 
-import           Test.Tasty       (TestTree)
+import qualified Data.String.Utils             as S
+import           NITTA.Project.Snippets
+import           Test.Tasty                    (TestTree)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
-import           NITTA.Project.Snippets
-import           Text.InterpolatedString.Perl6    (qc)
-import qualified Data.String.Utils as S
+import           Text.InterpolatedString.Perl6 (qc)
 
 
-case_inline1 = do
+case_justTextInCodeBlock = do
     let
-        a1 = S.join "\n"  
+        a = S.join "\n"
             [ "foo"
             , "    bar"
             , "    bar2"
             , ""
             , ""
-            ] 
-        b1 = codeBlock [qc|
+            ]
+        b = codeBlock [qc|
             foo
                 bar
                 bar2
             |]
-    b1 @?= a1
+    b @?= a
 
-case_inline2 = do
+case_codeBlockWithSubConst = do
     let
-        a2 = S.join "\n"  
+        a = S.join "\n"
             [ "foo"
             , "    bar"
             , "    bar2"
             , ""
             , ""
-            ] 
-        b2 = codeBlock [qc|
+            ]
+        b = codeBlock [qc|
             foo
                 bar
                 {"bar2"}
             |]
-    b2 @?= a2
+    b @?= a
 
-case_inline3 = do
+case_codeBlockWithSubCodeBlock= do
     let
-        a3 = S.join "\n"  
+        a = S.join "\n"
             [ "foo"
             , "    bar"
             , "    bar2"
@@ -61,62 +61,62 @@ case_inline3 = do
             , ""
             , ""
             , ""
-            ] 
+            ]
         bar2 = codeBlock [qc|
             bar2
             |]
-        b3 = codeBlock [qc|
+        b = codeBlock [qc|
             foo
                 bar
                 {bar2}
             |]
 
-    b3 @?= a3
+    b @?= a
 
-case_inline4 = do
+case_codeBlockInOneLineW = do
     let
-        a4 = S.join "\n"  
+        a = S.join "\n"
             [ "foo"
             , "    bar"
-            , "    lol bar2"
+            , "    foo bar2"
             , ""
             , ""
             , ""
             , ""
-            ] 
+            ]
         bar2 = codeBlock [qc|
             bar2
             |]
-        b4 = codeBlock [qc|
+        b = codeBlock [qc|
             foo
                 bar
-                lol {bar2}
+                foo {bar2}
             |]
 
-    b4 @?= a4
+    b @?= a
 
-case_inline5 = do
+case_codeLineInOneLine = do
     let
-        a5 = S.join "\n"  
+        a = S.join "\n"
             [ "foo"
             , "    bar"
-            , "    lol bar2"
+            , "    foo bar2"
             , ""
             , ""
             , ""
-            ] 
+            ]
         bar2 = codeLine 0 [qc|bar2|]
-        b5 = codeBlock [qc|
+        b = codeBlock [qc|
             foo
                 bar
-                lol {bar2}
+                foo {bar2}
             |]
 
-    b5 @?= a5
+    b @?= a
 
-case_inline6 = do
+case_concatLinesWithSpaceLikeLineBefore = do
     let
-        a6 = S.join "\n"  
+        a = S.join "\n"
             [ "bar"
             , "    bar2"
             , ""
@@ -126,40 +126,40 @@ case_inline6 = do
             , ""
             , ""
             , ""
-            ] 
+            ]
         bar2 = codeBlock [qc|
             bar2
             |]
-        lol1 = codeLine 0 [qc|123|]
-        lol2 = codeLine 0 [qc|456|]
-        lol = lol1 ++ lol2
-        b6 = codeBlock [qc|
+        nums1 = codeLine 0 [qc|123|]
+        nums2 = codeLine 0 [qc|456|]
+        nums = nums1 ++ nums2
+        b = codeBlock [qc|
             bar
                 {bar2}
-                {inline lol}
+                {inline nums}
             |]
 
-    b6 @?= a6
+    b @?= a
 
-case_inline7 = do
+case_concatLinesWithSpaceWithoutBeforeLine = do
     let
-        a7 = S.join "\n"  
+        a = S.join "\n"
             [ "bar"
             , "    123"
             , "    456"
             , ""
             , ""
             , ""
-            ] 
-        lol1 = codeLine 0 [qc|123|]
-        lol2 = codeLine 0 [qc|456|]
-        lol = lol1 ++ lol2
-        b7 = codeBlock [qc|
+            ]
+        nums1 = codeLine 0 [qc|123|]
+        nums2 = codeLine 0 [qc|456|]
+        nums = nums1 ++ nums2
+        b = codeBlock [qc|
             bar
-                {inline lol}
+                {inline nums}
             |]
 
-    b7 @?= a7
+    b @?= a
 
 codeTests :: TestTree
 codeTests = $(testGroupGenerator)
