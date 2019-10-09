@@ -57,11 +57,17 @@ class WithFunctions a f | a -> f where
 -----------------------------------------------------------
 
 class Suffix v where
-    -- FIXME: may be unsafe
+    -- FIXME: may be unsafe (create duplicate variable)
     bufferSuffix :: v -> v
+    countSuffix :: v -> Int
 
 instance Suffix String where
     bufferSuffix s = s ++ "@buf"
+    countSuffix [] = 0
+    countSuffix s
+        | Just s' <- stripPrefix "@buf" s = 1 + countSuffix s'
+        | otherwise = countSuffix $ drop 1 s
+
 
 -- |Variable identifier. Used for simplify type description.
 type Var v = ( Typeable v, Ord v, Show v, Label v, Suffix v )

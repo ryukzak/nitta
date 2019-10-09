@@ -291,8 +291,9 @@ data Parameters
         , pNotTransferableInputs :: [Float]
         }
     | RefactorEdgeParameter
-        { pRefactor  :: Refactor () ()
-        , pVarsCount :: Float
+        { pRefactor    :: Refactor () ()
+        , pVarsCount   :: Float
+        , pBufferCount :: Float
         }
     deriving ( Show, Generic )
 
@@ -367,11 +368,15 @@ estimateParameters
             in map (fromIntegral . length) notTransferableVars
         }
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor InsertOutRegister{})
-    = RefactorEdgeParameter{ pRefactor=InsertOutRegister def def, pVarsCount=0 }
+    = RefactorEdgeParameter{ pRefactor=InsertOutRegister def def, pVarsCount=0, pBufferCount=0 }
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor BreakLoop{})
-    = RefactorEdgeParameter{ pRefactor=BreakLoop def def def, pVarsCount=0 }
+    = RefactorEdgeParameter{ pRefactor=BreakLoop def def def, pVarsCount=0, pBufferCount=0 }
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor (ResolveDeadlock vs))
-    = RefactorEdgeParameter{ pRefactor=ResolveDeadlock def, pVarsCount=fromIntegral $ S.size vs }
+    = RefactorEdgeParameter
+        { pRefactor=ResolveDeadlock def
+        , pVarsCount=fromIntegral $ S.size vs
+        , pBufferCount=fromIntegral $ sum $ map countSuffix $ S.elems vs
+        }
 
 
 -- |Function, which map 'Parameters' to 'Float'.
@@ -401,8 +406,8 @@ objectiveFunction
             -> 2000
         RefactorEdgeParameter{ pRefactor=BreakLoop{} }
             -> 2000
-        RefactorEdgeParameter{ pRefactor=ResolveDeadlock{}, pVarsCount }
-            -> 2000 + pVarsCount
+        RefactorEdgeParameter{ pRefactor=ResolveDeadlock{}, pVarsCount, pBufferCount }
+            -> 2000 + pVarsCount - pBufferCount * 1000
         -- _ -> -1
 
 True <?> v = v
