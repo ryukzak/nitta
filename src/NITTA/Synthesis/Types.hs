@@ -366,8 +366,6 @@ estimateParameters
                 notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
             in map (fromIntegral . length) notTransferableVars
         }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor InsertOutRegister{})
-    = RefactorEdgeParameter{ pRefactor=InsertOutRegister def def, pVarsCount=0, pBufferCount=0 }
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor BreakLoop{})
     = RefactorEdgeParameter{ pRefactor=BreakLoop def def def, pVarsCount=0, pBufferCount=0 }
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor (ResolveDeadlock vs))
@@ -401,8 +399,6 @@ objectiveFunction
                 + pRestrictedTime <?> 200
                 - sum pNotTransferableInputs * 5
                 - pWaitTime
-        RefactorEdgeParameter{ pRefactor=InsertOutRegister{} }
-            -> 2000
         RefactorEdgeParameter{ pRefactor=BreakLoop{} }
             -> 5000
         RefactorEdgeParameter{ pRefactor=ResolveDeadlock{}, pVarsCount, pBufferCount }

@@ -52,7 +52,6 @@ import           Data.Maybe                       (fromMaybe, isJust, mapMaybe)
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import           Data.Typeable
-import           NITTA.Intermediate.Functions     (reg)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems.Binding
@@ -347,13 +346,6 @@ instance ( UnitTag tag, VarValTime v x t
 instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (BusNetwork tag v x t) v x where
     refactorOptions bn@BusNetwork{ bnPus, bnBinded } = let
-            insertRegs = L.nub
-                [ InsertOutRegister lockBy $ bufferSuffix lockBy
-                | (Bind f tag) <- bindOptions bn
-                , Lock{ lockBy } <- locks f
-                , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
-                , False
-                ]
             breakLoops = concatMap refactorOptions $ M.elems bnPus
 
             sources tag = M.fromList
@@ -401,10 +393,7 @@ instance ( UnitTag tag, VarValTime v x t
                 , isBufferRepetionOK maxBufferStack lockBy
                 ]
             deadlocks = map ResolveDeadlock deadLockedVs
-        in insertRegs ++ breakLoops ++ selfSending ++ deadlocks
-
-    refactorDecision bn@BusNetwork{ bnRemains } (InsertOutRegister v v')
-        = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
+        in breakLoops ++ selfSending ++ deadlocks
 
     refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(ResolveDeadlock vs) = let
             (buffer, diff) = prepareBuffer r

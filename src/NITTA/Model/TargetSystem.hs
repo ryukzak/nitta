@@ -65,12 +65,6 @@ instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (ModelState (BusNetwork tag v x t) v x) v x where
     refactorOptions ModelState{ mUnit } = refactorOptions mUnit
 
-    refactorDecision ModelState{ mUnit, mDataFlowGraph } d@(InsertOutRegister v v')
-        = ModelState
-            { mDataFlowGraph=patch (v, v') mDataFlowGraph
-            , mUnit=refactorDecision mUnit d
-            }
-
     refactorDecision ModelState{ mUnit, mDataFlowGraph } r@ResolveDeadlock{}
         = ModelState
             { mDataFlowGraph=refactorDecision mDataFlowGraph r
