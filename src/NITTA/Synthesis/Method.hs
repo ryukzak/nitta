@@ -22,6 +22,7 @@ module NITTA.Synthesis.Method
     , obviousBindThreadIO
     , allBestThreadIO
     , stateOfTheArtSynthesisIO
+    , allBindsAndRefsIO
     ) where
 
 import           Data.List             (find, sortOn)
@@ -69,6 +70,15 @@ obviousBindThreadIO node = do
     case obliousBind of
         Just Edge{ eNode } -> obviousBindThreadIO eNode
         Nothing            -> return node
+
+
+allBindsAndRefsIO node = do
+    edges <- filter
+        ( \Edge{ eParameters } -> case eParameters of BindEdgeParameter{} -> True; RefactorEdgeParameter{} -> True; _ -> False )
+        <$> getPositiveEdgesIO node
+    if null edges
+        then return node
+        else allBindsAndRefsIO $ eNode $ minimumOn eObjectiveFunctionValue edges
 
 
 refactorThreadIO node = do

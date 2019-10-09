@@ -133,6 +133,7 @@ type SimpleCompilerAPI tag v x t
     :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
     :<|> "obviousBindThread" :> Post '[JSON] NId
     :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
+    :<|> "allBindsAndRefsIO" :> Post '[JSON] NId
 
 simpleCompilerServer root n
     =    liftIO ( return . map view =<< getEdgesIO =<< getNodeIO root n )
@@ -140,3 +141,4 @@ simpleCompilerServer root n
     :<|> liftIO ( nId <$> (smartBindSynthesisIO =<< getNodeIO root n))
     :<|> liftIO ( nId <$> (obviousBindThreadIO =<< getNodeIO root n))
     :<|> ( \deep -> liftIO ( nId <$> (allBestThreadIO deep =<< getNodeIO root n)) )
+    :<|> liftIO ( nId <$> (allBindsAndRefsIO =<< getNodeIO root n))

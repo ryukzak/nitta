@@ -16,5 +16,6 @@ export const haskellAPI = {
   obviousBindThread: (nid: any) => api.postSynthesisByNIdObviousBindThread(nid),
   runTestBench: (nid: any, name: any) => api.getSynthesisByNIdTestBenchOutput(nid, name),
   getDebugOptions: (nid) => api.getSynthesisByNIdDebug(nid),
+  allBindsAndRefsIO: (nid: string) => api.postSynthesisByNIdAllBindsAndRefsIO(nid),
   getHistory: (nid: string) => api.getSynthesisByNIdHistory(nid)
 };
