@@ -147,22 +147,22 @@ instance ( Val x ) => TargetSystemComponent (Accum v x t) where
     software _ _ = Empty
     hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } AccumPorts{..} AccumIO
         = codeBlock [qc|
-        pu_accum #
-                ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                , .ATTR_WIDTH( { show parameterAttrWidth } )
-                ) { tag }
-            ( .clk( { signalClk } )
-            , .rst( { signalRst } )
-            , .signal_init( { signal init } )
-            , .signal_load( { signal load } )
-            , .signal_neg( { signal neg } )
-            , .signal_oe( { signal oe } )
-            , .data_in( { dataIn } )
-            , .attr_in( { attrIn } )
-            , .data_out( { dataOut } )
-            , .attr_out( { attrOut } )
-            );
-        |]
+            pu_accum #
+                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+                    , .ATTR_WIDTH( { show parameterAttrWidth } )
+                    ) { tag }
+                ( .clk( { signalClk } )
+                , .rst( { signalRst } )
+                , .signal_init( { signal init } )
+                , .signal_load( { signal load } )
+                , .signal_neg( { signal neg } )
+                , .signal_oe( { signal oe } )
+                , .data_in( { dataIn } )
+                , .attr_in( { attrIn } )
+                , .data_out( { dataOut } )
+                , .attr_out( { attrOut } )
+                );
+            |]
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
