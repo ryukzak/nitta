@@ -10,7 +10,7 @@ function pid(I, prev_err)
 
     P = Kp * err
     I = I + Ki * err
-    D = Kd * reg(err - prev_err)
+    D = Kd * (err - prev_err)
 
     local PID = P + I + D
     send(PID)
