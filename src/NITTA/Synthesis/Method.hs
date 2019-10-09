@@ -27,17 +27,22 @@ module NITTA.Synthesis.Method
 
 import           Data.List             (find, sortOn)
 import           Data.Ord              (Down (..))
+import           Debug.Trace
 import           NITTA.Synthesis.Types
 import           NITTA.Synthesis.Utils (targetProcessDuration)
 import           NITTA.Utils           (maximumOn, minimumOn)
 import           Safe
 
 
+stepLimit = 100 :: Int
+
+
 stateOfTheArtSynthesisIO node = do
     n1 <- simpleSynthesisIO node
     n2 <- smartBindSynthesisIO node
-    n3 <- bestThreadIO node
-    return $ getBestNode node [ n1, n2, n3 ]
+    n3 <- bestThreadIO stepLimit node
+    n4 <- bestThreadIO stepLimit =<< allBindsAndRefsIO node
+    return $ getBestNode node [ n1, n2, n3, n4 ]
 
 
 -- |Schedule process by simple synthesis.
@@ -51,11 +56,12 @@ smartBindSynthesisIO root = do
     allBestThreadIO 1 node
 
 
-bestThreadIO node = do
+bestThreadIO 0 node = return $ trace "bestThreadIO reach step limit!" node
+bestThreadIO limit node = do
     edges <- getPositiveEdgesIO node
     case edges of
         [] -> return node
-        _  -> bestThreadIO $ eNode $ maximumOn eObjectiveFunctionValue edges
+        _  -> bestThreadIO (limit - 1) $ eNode $ maximumOn eObjectiveFunctionValue edges
 
 
 obviousBindThreadIO node = do
@@ -108,7 +114,7 @@ smartBindThreadIO node = do
         []              -> return node'
 
 
-allBestThreadIO (0 :: Int) node = bestThreadIO node
+allBestThreadIO (0 :: Int) node = bestThreadIO stepLimit node
 allBestThreadIO n node = do
     edges <- getPositiveEdgesIO node
     sythesizedNodes <- mapM (\Edge{ eNode } -> allBestThreadIO (n-1) eNode) edges
