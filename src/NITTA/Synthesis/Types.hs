@@ -387,7 +387,7 @@ objectiveFunction
     = case params of
         BindEdgeParameter{ pPossibleDeadlock=True } -> 500
         BindEdgeParameter{ pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber }
-            -> 1000
+            -> 3000
                 + pCritical <?> 1000
                 + (pAlternative == 1) <?> 500
                 + pAllowDataFlow * 10
@@ -397,7 +397,7 @@ objectiveFunction
                 - pRestless * 4
                 + pOutputNumber * 2
         DataFlowEdgeParameter{ pWaitTime, pNotTransferableInputs, pRestrictedTime }
-            -> 100
+            -> 2000
                 + (numberOfDFOptions >= threshold) <?> 1000
                 + pRestrictedTime <?> 200
                 - sum pNotTransferableInputs * 5
@@ -405,9 +405,9 @@ objectiveFunction
         RefactorEdgeParameter{ pRefactor=InsertOutRegister{} }
             -> 2000
         RefactorEdgeParameter{ pRefactor=BreakLoop{} }
-            -> 2000
+            -> 5000
         RefactorEdgeParameter{ pRefactor=ResolveDeadlock{}, pVarsCount, pBufferCount }
-            -> 2000 + pVarsCount - pBufferCount * 1000
+            -> 1000 + pVarsCount - pBufferCount * 1000
         -- _ -> -1
 
 True <?> v = v
