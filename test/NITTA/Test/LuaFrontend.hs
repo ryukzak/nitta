@@ -179,9 +179,11 @@ test_examples =
     , testCase "examples/fibonacci.lua wait" $ either assertFailure return
         =<< lua "fibonacci_wait" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
     , testCase "examples/self-send1.lua" $ either assertFailure return
-        =<< lua "self_send" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/self-send1.lua")
+        =<< lua "self_send1" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/self-send1.lua")
     , testCase "examples/self-send2.lua" $ either assertFailure return
-        =<< lua "self_send" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/self-send2.lua")
+        =<< lua "self_send2" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/self-send2.lua")
+    , testCase "examples/pu_deadlock.lua" $ either assertFailure return
+        =<< lua "pu_deadlock" (pFX32_32, microarch Sync SlaveSPI) $(embedStringFile "examples/pu_deadlock.lua")
     -- FIXME: uncomment when IO synchronization propogation and SPI will be fixed.
     -- , testCase "examples/fibonacci.lua drop" $ either assertFailure return
     --     =<< lua "fibonacci_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
