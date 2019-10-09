@@ -40,7 +40,7 @@ inline str = unlines $ map (inlineMarker ++ ) $ lines str
 
 codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
     where
-        codeBlock' []     buff _         = delInline $ unlines $ reverse buff
+        codeBlock' []     buff _         = delInline $ S.join "\n" $ reverse buff
         codeBlock' (x:xs) buff minIndent = codeBlock' xs buff' minIndent
             where
                 buffHead = headDef "" buff
@@ -167,7 +167,7 @@ snippetTestBench
             tbcPorts
             tbcIOPorts
 
-        controlSignals = unlines $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
+        controlSignals = S.join "\n" $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
             = either error id $ getX cycleCntx v

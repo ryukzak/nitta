@@ -26,7 +26,6 @@ case_justTextInCodeBlock = do
             , "    bar"
             , "    bar2"
             , ""
-            , ""
             ]
         b = codeBlock [qc|
             foo
@@ -42,7 +41,6 @@ case_codeBlockWithSubConst = do
             , "    bar"
             , "    bar2"
             , ""
-            , ""
             ]
         b = codeBlock [qc|
             foo
@@ -57,8 +55,6 @@ case_codeBlockWithSubCodeBlock= do
             [ "foo"
             , "    bar"
             , "    bar2"
-            , ""
-            , ""
             , ""
             , ""
             ]
@@ -81,8 +77,6 @@ case_codeBlockInOneLineW = do
             , "    foo bar2"
             , ""
             , ""
-            , ""
-            , ""
             ]
         bar2 = codeBlock [qc|
             bar2
@@ -103,7 +97,6 @@ case_codeLineInOneLine = do
             , "    foo bar2"
             , ""
             , ""
-            , ""
             ]
         bar2 = codeLine [qc|bar2|]
         b = codeBlock [qc|
@@ -120,10 +113,8 @@ case_concatLinesWithSpaceLikeLineBefore = do
             [ "bar"
             , "    bar2"
             , ""
-            , ""
             , "    123"
             , "    456"
-            , ""
             , ""
             , ""
             ]
@@ -147,7 +138,6 @@ case_concatLinesWithSpaceWithoutBeforeLine = do
             [ "bar"
             , "    123"
             , "    456"
-            , ""
             , ""
             , ""
             ]
