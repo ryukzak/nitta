@@ -164,9 +164,9 @@ instance ( UnitTag tag, VarValTime v x t
 
             fixConstrain constrain@TimeConstrain { tcAvailable } =
                 let
-                    a = max (nextTick bnProcess) $ inf tcAvailable 
-                    b = sup tcAvailable 
-                in 
+                    a = max (nextTick bnProcess) $ inf tcAvailable
+                    b = sup tcAvailable
+                in
                     constrain { tcAvailable = a ... b}
 
             notEmptyDestination = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
@@ -430,19 +430,19 @@ instance ( VarValTime v x t
                         , output              [7:0] debug_bus2
                         , input                     is_drop_allow
                         );
-                         
+
                     parameter MICROCODE_WIDTH = { bnSignalBusWidth };
                     // Sub module_ instances
                     wire [MICROCODE_WIDTH-1:0] control_bus;
                     wire [DATA_WIDTH-1:0] data_bus;
                     wire [ATTR_WIDTH-1:0] attr_bus;
                     wire start, stop;
-                         
+
                     wire [7:0] debug_pc;
                     assign debug_status = \{ cycle, debug_pc[6:0] };
                     assign debug_bus1 = data_bus[7:0];
                     assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
-                         
+
                     pu_simple_control #
                             ( .MICROCODE_WIDTH( MICROCODE_WIDTH )
                             , .PROGRAM_DUMP( "$path${ mn }.dump" )
@@ -455,12 +455,12 @@ instance ( VarValTime v x t
                         , .signals_out( control_bus )
                         , .trace_pc( debug_pc )
                         );
-                         
+
                     { inline $ S.join "\\n\\n" instances }
-                         
+
                     assign data_bus = { S.join " | " $ map snd valuesRegs };
                     assign attr_bus = { S.join " | " $ map fst valuesRegs };
-                                                 
+
                     endmodule
                     |]
         in Aggregate (Just mn) $
@@ -639,7 +639,7 @@ instance ( VarValTime v x t
                     _                   -> Nothing
 
             posedgeCycle = codeBlock [qc|
-                    
+
                 //-----------------------------------------------------------------
                 @(posedge cycle);
                 |]
