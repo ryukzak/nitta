@@ -38,10 +38,10 @@ inlineMarker = "###"
 
 inline str = unlines $ map (inlineMarker ++ ) $ lines str
 
-codeBlock str = _codeBlock linesList [] (minIndentCalc linesList)
+codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
     where
-        _codeBlock []     buff _         = delInline $ unlines $ reverse buff
-        _codeBlock (x:xs) buff minIndent = _codeBlock xs buff' minIndent
+        codeBlock' []     buff _         = delInline $ unlines $ reverse buff
+        codeBlock' (x:xs) buff minIndent = codeBlock' xs buff' minIndent
             where
                 buffHead = headDef "" buff
                 inlineSpacesCount = length $ takeWhile (== ' ') buffHead
