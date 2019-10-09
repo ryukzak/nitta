@@ -22,6 +22,7 @@ module NITTA.Model.Problems.Refactor
     ( Refactor(..), RefactorProblem(..)
     , recLoop, recLoopOut, recLoopIn
     , prepareBuffer
+    , maxBufferStack
     ) where
 
 import           Data.Default
@@ -72,3 +73,5 @@ prepareBuffer (ResolveDeadlock vs) = let
     in ( reg bufferI bufferO, diff )
 
 prepareBuffer _ = undefined
+
+maxBufferStack = 2 :: Int
