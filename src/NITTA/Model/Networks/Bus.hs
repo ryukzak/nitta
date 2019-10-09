@@ -67,7 +67,6 @@ import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.UIBackend.VisJS            ()
 import           NITTA.Utils
-import           NITTA.Utils.Lens
 import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (inf, singleton, sup, width,
                                                    (...))
@@ -163,11 +162,12 @@ instance ( UnitTag tag, VarValTime v x t
                     zero = zip vs $ repeat Nothing
                 in map (M.fromList . (++) zero) targets
 
-            fixConstrain constrain
-                = let
-                    a = max (nextTick bnProcess) $ constrain^.avail.infimum
-                    b = constrain^.avail.supremum
-                in constrain & avail .~ (a ... b)
+            fixConstrain constrain@TimeConstrain { tcAvailable } =
+                let
+                    a = max (nextTick bnProcess) $ inf tcAvailable 
+                    b = sup tcAvailable 
+                in 
+                    constrain { tcAvailable = a ... b}
 
             notEmptyDestination = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
             tgr (_, Just (target, _)) = Just target
@@ -283,6 +283,10 @@ instance Controllable (BusNetwork tag v x t) where
     -- Right now, BusNetwork don't have external control (exclude rst signal and some hacks). All
     -- signals starts and ends inside network unit.
     mapMicrocodeToPorts BusNetworkMC{} BusNetworkPorts = []
+
+    portsToSignals _ = undefined
+
+    signalsToPorts _ = undefined
 
 
 instance {-# OVERLAPS #-}

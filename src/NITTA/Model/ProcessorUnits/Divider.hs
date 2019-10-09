@@ -19,7 +19,8 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Divider
-    ( divider
+    ( Divider(..) 
+    , divider
     , Ports(..), IOPorts(..)
     ) where
 
@@ -310,6 +311,10 @@ instance Controllable (Divider v x t) where
         , (oeSel, Bool oeSelSignal)
         ]
 
+    portsToSignals DividerPorts{ wr, wrSel, oe, oeSel } = [wr, wrSel, oe, oeSel]
+
+    signalsToPorts (wr:wrSel:oe:oeSel:_) = DividerPorts wr wrSel oe oeSel
+    signalsToPorts _                     = error "pattern match error in signalsToPorts DividerPorts"
 
 instance Default (Microcode (Divider v x t)) where
     def = Microcode

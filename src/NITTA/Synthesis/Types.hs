@@ -70,7 +70,6 @@ import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem         (ModelState (..))
 import           NITTA.Model.Types
 import           NITTA.Utils
-import           NITTA.Utils.Lens
 import           Numeric.Interval                 (Interval, inf, sup)
 
 
@@ -415,7 +414,7 @@ False <?> _ = 0
 
 
 waitingTimeOfVariables net =
-    [ (variable, tc^.avail.infimum)
+    [ (variable, inf $ tcAvailable tc)
     | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- dataflowOptions net
     , (variable, Nothing) <- M.assocs dfoTargets
     ]

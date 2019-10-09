@@ -8,8 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE StandaloneDeriving     #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE TypeFamilies           #-} {-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -211,8 +210,14 @@ class Controllable pu where
 
     -- |Map microcode to unit signal ports.
     mapMicrocodeToPorts :: Microcode pu -> Ports pu -> [(SignalTag, SignalValue)]
+    
+    -- |Get list of signals from Ports pu
+    portsToSignals :: Ports pu -> [SignalTag]
 
+    -- |Get Ports from list of signals
+    signalsToPorts :: [SignalTag] -> Ports pu
 
+    
 
 -- |Type class of processor units with control ports.
 class Connected pu where
@@ -232,8 +237,7 @@ class IOConnected pu where
     inoutPorts :: IOPorts pu -> [ InoutPortTag ]
     inoutPorts _ = []
 
-
-newtype SignalTag = SignalTag Int deriving ( Show, Eq, Ord, Ix )
+newtype SignalTag = SignalTag { signalTag :: Int} deriving ( Show, Eq, Ord, Ix )
 newtype InputPortTag = InputPortTag{ inputPortTag :: String } deriving ( Show, Eq, Ord )
 newtype OutputPortTag = OutputPortTag{ outputPortTag :: String } deriving ( Show, Eq, Ord )
 newtype InoutPortTag = InoutPortTag{ inoutPortTag :: String } deriving ( Show, Eq, Ord )
