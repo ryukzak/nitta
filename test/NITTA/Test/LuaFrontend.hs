@@ -187,8 +187,8 @@ test_examples =
     -- FIXME: uncomment when IO synchronization propogation and SPI will be fixed.
     -- , testCase "examples/fibonacci.lua drop" $ either assertFailure return
     --     =<< lua "fibonacci_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
-    -- , testCase "examples/pid.lua wait" $ either assertFailure return
-    --     =<< lua "pid_wait" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/pid.lua")
+    , testCase "examples/pid.lua wait" $ either assertFailure return
+        =<< lua "pid_wait" (pFX32_32, microarch Sync SlaveSPI) $(embedStringFile "examples/pid.lua")
     -- , testCase "examples/pid.lua drop" $ either assertFailure return
     --     =<< lua "pid_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/pid.lua")
     ]
