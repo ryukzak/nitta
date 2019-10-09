@@ -351,6 +351,29 @@ instance ( UnitTag tag, VarValTime v x t
                 , False
                 ]
             breakLoops = concatMap refactorOptions $ M.elems bnPus
+
+            sources tag = M.fromList
+                [ (s, ss `S.difference` S.singleton s)
+                | EndpointO{ epoRole } <- endpointOptions ( bnPus M.! tag )
+                , case epoRole of Source{} -> True; _ -> False
+                , let Source ss = epoRole
+                , s <- S.elems ss
+                ]
+            allPossibleOutputs tag v
+                = map (S.union (S.singleton v)) $ S.elems $ S.powerSet
+                $ S.filter (isBufferRepetionOK 1) -- avoid to many buffering
+                $ fromMaybe S.empty (sources tag M.!? v)
+
+            alreadyVs = transferred bn
+            fLocks = filter (\Lock{ lockBy } -> S.notMember lockBy alreadyVs) $ concatMap locks $ functions bn
+            puLocks = map (\(tag, pu) -> (tag, locks pu)) $ M.assocs bnPus
+            maybeSended = unionsMap variables $ concatMap endpointOptions $ M.elems bnPus
+
+            isBufferRepetionOK (0 :: Int) _ = False
+            isBufferRepetionOK n v
+                | bufferSuffix v `S.notMember` variables bn = True
+                | otherwise = isBufferRepetionOK (n-1) (bufferSuffix v)
+
             selfSending = map ResolveDeadlock $ concat
                 [ allPossibleOutputs tag v
                 | (tag, fs) <- M.assocs bnBinded
@@ -360,21 +383,8 @@ instance ( UnitTag tag, VarValTime v x t
                     selfSendedVs = unionsMap inputs fs `S.intersection` allSources
                 , not $ null selfSendedVs
                 , v <- S.elems selfSendedVs
+                , isBufferRepetionOK 1 v
                 ]
-
-            sources tag = M.fromList
-                [ (s, ss `S.difference` S.singleton s)
-                | EndpointO{ epoRole } <- endpointOptions ( bnPus M.! tag )
-                , case epoRole of Source{} -> True; _ -> False
-                , let Source ss = epoRole
-                , s <- S.elems ss
-                ]
-            allPossibleOutputs tag v = map (S.union (S.singleton v)) $ S.elems $ S.powerSet $ fromMaybe S.empty (sources tag M.!? v)
-
-            alreadyVs = transferred bn
-            fLocks = filter (\Lock{ lockBy } -> S.notMember lockBy alreadyVs) $ concatMap locks $ functions bn
-            puLocks = map (\(tag, pu) -> (tag, locks pu)) $ M.assocs bnPus
-            maybeSended = unionsMap variables $ concatMap endpointOptions $ M.elems bnPus
 
             deadLockedVs = concat
                 [ allPossibleOutputs tag lockBy
@@ -382,6 +392,7 @@ instance ( UnitTag tag, VarValTime v x t
                 , Lock{ lockBy, locked } <- ls
                 , Lock{ lockBy=locked, locked=lockBy } `elem` fLocks
                 , lockBy `S.member` maybeSended
+                , isBufferRepetionOK 1 lockBy
                 ]
             deadlocks = map ResolveDeadlock deadLockedVs
         in insertRegs ++ breakLoops ++ selfSending ++ deadlocks
