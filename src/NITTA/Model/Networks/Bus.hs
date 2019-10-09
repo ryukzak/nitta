@@ -366,7 +366,7 @@ instance ( UnitTag tag, VarValTime v x t
 
             alreadyVs = transferred bn
             fLocks = filter (\Lock{ lockBy } -> S.notMember lockBy alreadyVs) $ concatMap locks $ functions bn
-            puLocks = map (\(tag, pu) -> (tag, locks pu)) $ M.assocs bnPus
+            allPULocks = map (\(tag, pu) -> (tag, locks pu)) $ M.assocs bnPus
             maybeSended = unionsMap variables $ concatMap endpointOptions $ M.elems bnPus
 
             isBufferRepetionOK (0 :: Int) _ = False
@@ -388,9 +388,11 @@ instance ( UnitTag tag, VarValTime v x t
 
             deadLockedVs = concat
                 [ allPossibleOutputs tag lockBy
-                | ( tag, ls ) <- puLocks
+                | ( tag, ls ) <- allPULocks
                 , Lock{ lockBy, locked } <- ls
-                , Lock{ lockBy=locked, locked=lockBy } `elem` fLocks
+                , let reversedLock = Lock{ lockBy=locked, locked=lockBy }
+                , reversedLock `elem` fLocks
+                  || any ( \( t, puLocks ) -> tag /= t && reversedLock `elem` puLocks ) allPULocks
                 , lockBy `S.member` maybeSended
                 , isBufferRepetionOK 1 lockBy
                 ]

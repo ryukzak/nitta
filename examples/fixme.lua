@@ -1,14 +1,10 @@
 function pid(I, prev_err)
-  local getValueSPI = receive()
+  err = 50 - 2
 
-  err = 50 - getValueSPI
+  I = I + 1 * err
+  D = 0 * (err - prev_err)
 
-  P = 2 * err
-  D = 0 * reg(err - prev_err)
-
-  local PID = P + I + D
-
-  pid(PID, err)
+  pid(I, I + D)
 end
 
 pid(0, 0)
