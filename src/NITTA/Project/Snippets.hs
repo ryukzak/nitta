@@ -41,28 +41,26 @@ inline str = unlines $ map (inlineMarker ++ ) $ lines str
 codeBlock str = _codeBlock linesList [] (minIndentCalc linesList)
     where
         _codeBlock []     buff _         = delInline $ unlines $ reverse buff
-        _codeBlock (x:xs) buff minIndent = _codeBlock xs buff' minIndent 
-            where 
+        _codeBlock (x:xs) buff minIndent = _codeBlock xs buff' minIndent
+            where
                 buffHead = headDef "" buff
-                inlineSpacesCount = length $ takeWhile (== ' ') buffHead 
+                inlineSpacesCount = length $ takeWhile (== ' ') buffHead
                 inlineSpaces = replicate inlineSpacesCount ' '
-                line 
+                line
                     | isInline x = inlineSpaces ++ x
-                    | otherwise  = drop minIndent x 
+                    | otherwise  = drop minIndent x
 
                 buff' = line : buff
 
         isInline = S.startswith inlineMarker
-        delInline = S.replace inlineMarker "" 
+        delInline = S.replace inlineMarker ""
 
-        minIndentCalc inp =
-            let
-                spaces = filter (> 0 ) $ map (length . takeWhile (== ' ')) inlines 
-                inlines = filter (not . isInline) inp 
-            in 
-                minimumDef 0 spaces 
+        minIndentCalc inp = minimumDef 0 spaces
+            where
+                spaces = filter (> 0 ) $ map (length . takeWhile (== ' ')) inlines
+                inlines = filter (not . isInline) inp
 
-        linesList = drop 1 $ lines str 
+        linesList = drop 1 $ lines str
 
 
 codeLine indent str = replicate (indent * 4) ' ' ++ dropWhile (== ' ') str ++ "\n"
@@ -106,7 +104,7 @@ snippetTraceAndCheck width = codeBlock [qc|
             $display("cycle: %d\ttick: %d\tactual: %d", cycle, tick, dt);
         end
     endtask
-    
+
     task check;
         input integer cycle;
         input integer tick;
@@ -166,9 +164,9 @@ snippetTestBench
                     , signal=tbcSignalConnect
                     }
                 }
-            tbcPorts 
+            tbcPorts
             tbcIOPorts
-            
+
         controlSignals = unlines $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
@@ -191,10 +189,10 @@ snippetTestBench
 
     in codeBlock [qc|
         {"module"} {name}_tb();
-             
+
         parameter DATA_WIDTH = { tbDataBusWidth };
         parameter ATTR_WIDTH = 4;
-             
+
         /*
         Algorithm:
         { inline $ unlines $ map show $ fs }
@@ -203,25 +201,25 @@ snippetTestBench
         Context:
         { inline $ show cycleCntx }
         */
-             
+
         reg clk, rst;
         reg { S.join ", " tbcSignals };
         reg [DATA_WIDTH-1:0]  data_in;
         reg [ATTR_WIDTH-1:0]  attr_in;
         wire [DATA_WIDTH-1:0] data_out;
         wire [ATTR_WIDTH-1:0] attr_out;
-             
+
         { inline inst }
-             
+
         { inline snippetClkGen }
         { inline $ snippetDumpFile name }
-            
+
         initial begin
             @(negedge rst);
             {inline controlSignals}
             $finish;
         end
-            
+
         initial begin
             @(negedge rst);
             {inline busCheck}
