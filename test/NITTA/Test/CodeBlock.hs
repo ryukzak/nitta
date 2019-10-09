@@ -105,7 +105,7 @@ case_codeLineInOneLine = do
             , ""
             , ""
             ]
-        bar2 = codeLine 0 [qc|bar2|]
+        bar2 = codeLine [qc|bar2|]
         b = codeBlock [qc|
             foo
                 bar
@@ -130,8 +130,8 @@ case_concatLinesWithSpaceLikeLineBefore = do
         bar2 = codeBlock [qc|
             bar2
             |]
-        nums1 = codeLine 0 [qc|123|]
-        nums2 = codeLine 0 [qc|456|]
+        nums1 = codeLine [qc|123|]
+        nums2 = codeLine [qc|456|]
         nums = nums1 ++ nums2
         b = codeBlock [qc|
             bar
@@ -151,8 +151,8 @@ case_concatLinesWithSpaceWithoutBeforeLine = do
             , ""
             , ""
             ]
-        nums1 = codeLine 0 [qc|123|]
-        nums2 = codeLine 0 [qc|456|]
+        nums1 = codeLine [qc|123|]
+        nums2 = codeLine [qc|456|]
         nums = nums1 ++ nums2
         b = codeBlock [qc|
             bar

@@ -63,7 +63,7 @@ codeBlock str = _codeBlock linesList [] (minIndentCalc linesList)
         linesList = drop 1 $ lines str
 
 
-codeLine indent str = replicate (indent * 4) ' ' ++ dropWhile (== ' ') str ++ "\n"
+codeLine str = dropWhile (== ' ') str ++ "\n"
 
 snippetClkGen :: String
 snippetClkGen = codeBlock [qc|
@@ -185,7 +185,7 @@ snippetTestBench
                             else $display();
                         |]
                     | otherwise
-                    = codeLine 0 [qc|@(posedge clk); $display( "data_out: %d", data_out );|]
+                    = codeLine [qc|@(posedge clk); $display( "data_out: %d", data_out );|]
 
     in codeBlock [qc|
         {"module"} {name}_tb();
