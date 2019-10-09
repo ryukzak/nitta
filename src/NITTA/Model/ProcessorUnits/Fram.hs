@@ -527,48 +527,47 @@ instance ( VarValTime v x t
                     , addr=map SignalTag [ 2, 3, 4, 5 ]
                     }
                 FramIO
-            testBenchImp = fixIndent [qc|
-|               {"module"} { moduleName pName fram }_tb();
-|               parameter DATA_WIDTH = { finiteBitSize (def :: x) };
-|               parameter ATTR_WIDTH = 4;
-|
-|               /*
-|               Context:
-|               { show cntx }
-|
-|               Algorithm:
-|               { unlines $ map show $ functions fram }
-|
-|               Process:
-|               { unlines $ map show steps }
-|               */
-|
-|               reg clk, rst, wr, oe;
-|               reg [3:0] addr;
-|               reg [DATA_WIDTH-1:0]  data_in;
-|               reg [ATTR_WIDTH-1:0]  attr_in;
-|               wire [DATA_WIDTH-1:0] data_out;
-|               wire [ATTR_WIDTH-1:0] attr_out;
-|
-|               { hardwareInstance' }
-|
-|               { snippetDumpFile $ moduleName pName fram }
-|               { snippetClkGen }
-|
-|               initial
-|                 begin
-|                   $dumpfile("{ moduleName pName fram }_tb.vcd");
-|                   $dumpvars(0, { moduleName pName fram }_tb);
-|                   @(negedge rst);
-|                   forever @(posedge clk);
-|                 end
-|
-|               { snippetInitialFinish $ controlSignals fram }
-|               { snippetInitialFinish $ testDataInput fram cntx }
-|               { snippetInitialFinish $ testDataOutput pName fram cntx }
-|
-|               endmodule
-|               |]
+            testBenchImp = codeBlock [qc|
+                {"module"} { moduleName pName fram }_tb();
+                parameter DATA_WIDTH = { finiteBitSize (def :: x) };
+                parameter ATTR_WIDTH = 4;
+
+                /*
+                Context:
+                { show cntx }
+
+                Algorithm:
+                { unlines $ map show $ functions fram }
+
+                Process:
+                { unlines $ map show steps }
+                */
+                reg clk, rst, wr, oe;
+                reg [3:0] addr;
+                reg [DATA_WIDTH-1:0]  data_in;
+                reg [ATTR_WIDTH-1:0]  attr_in;
+                wire [DATA_WIDTH-1:0] data_out;
+                wire [ATTR_WIDTH-1:0] attr_out;
+
+                { inline $ hardwareInstance' }
+
+                { inline $ snippetDumpFile $ moduleName pName fram }
+                { inline $ snippetClkGen }
+
+                initial
+                  begin
+                    $dumpfile("{ moduleName pName fram }_tb.vcd");
+                    $dumpvars(0, { moduleName pName fram }_tb);
+                    @(negedge rst);
+                    forever @(posedge clk);
+                  end
+
+                { inline $ snippetInitialFinish $ controlSignals fram }
+                { inline $ snippetInitialFinish $ testDataInput fram cntx }
+                { inline $ snippetInitialFinish $ testDataOutput pName fram cntx }
+
+                endmodule
+                |]
 
 controlSignals fram@Fram{ process_=Process{ nextTick } }
     = concatMap ( ("      " ++) . (++ " @(posedge clk)\n") . showMicrocode . microcodeAt fram) [ 0 .. nextTick + 1 ]
@@ -578,6 +577,8 @@ controlSignals fram@Fram{ process_=Process{ nextTick } }
             , "wr <= ", bool2verilog wrSignal, "; "
             , "addr <= ", maybe "0" show addrSignal, "; "
             ]
+
+
 
 testDataInput Fram{ process_=p@Process{ nextTick } } cntx
     = concatMap ( ("      " ++) . (++ " @(posedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
@@ -600,7 +601,7 @@ testDataOutput tag fram@Fram{ memory, process_=p@Process{ nextTick, steps } } cn
             [ "$write( \"data_out: %d == %s\t(%s)\", data_out, " ++ show value ++ ", " ++ S.join ", " (map show $ S.elems vs) ++ " ); "
             ,  "if ( !( data_out === " ++ value ++ " ) ) "
             ,   "$display(\" FAIL\");"
-            ,  "else $display();"
+            ,  " else $display();"
             ]
 
         bankCheck
@@ -656,25 +657,23 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
                 $ A.elems memory
     hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} FramIO
-        = fixIndent [qc|
-|           pu_fram #
-|                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-|                   , .ATTR_WIDTH( { show parameterAttrWidth } )
-|                   , .RAM_SIZE( { show size } )
-|                   , .FRAM_DUMP( "$path${ softwareFile tag fram }" )
-|                   ) { tag }
-|               ( .clk( { signalClk } )
-|               , .signal_addr( \{ { S.join ", " (map signal addr) } } )
-|
-|               , .signal_wr( { signal wr } )
-|               , .data_in( { dataIn } )
-|               , .attr_in( { attrIn } )
-|
-|               , .signal_oe( { signal oe } )
-|               , .data_out( { dataOut } )
-|               , .attr_out( { attrOut } )
-|               );
-|           |]
+        = codeBlock [qc|
+            pu_fram #
+                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+                    , .ATTR_WIDTH( { show parameterAttrWidth } )
+                    , .RAM_SIZE( { show size } )
+                    , .FRAM_DUMP( "$path${ softwareFile tag fram }" )
+                    ) { tag }
+                ( .clk( { signalClk } )
+                , .signal_addr( \{ { S.join ", " (map signal addr) } } )
+                , .signal_wr( { signal wr } )
+                , .data_in( { dataIn } )
+                , .attr_in( { attrIn } )
+                , .signal_oe( { signal oe } )
+                , .data_out( { dataOut } )
+                , .attr_out( { attrOut } )
+                );
+            |]
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 

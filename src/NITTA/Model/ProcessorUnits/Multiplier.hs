@@ -605,27 +605,27 @@ instance ( VarValTime v x t
     -- 	The main task of the function is to include mUnit to mUnit infostructure correctly.
     --	and set uo all parameters, names and wires.
     --
-    -- Take attention to function @fixIndent@. This function allows a programmer to use
+    -- Take attention to function @codeBlock@. This function allows a programmer to use
     -- normal code block indentation.
     hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } MultiplierPorts{..} MultiplierIO
-        = fixIndent [qc|
-|           pu_multiplier #
-|                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-|                   , .ATTR_WIDTH( { parameterAttrWidth } )
-|                   , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
-|                   , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
-|                   ) { tag }
-|               ( .clk( {signalClk} )
-|               , .rst( {signalRst} )
-|               , .signal_wr( { signal wr } )
-|               , .signal_sel( { signal wrSel } )
-|               , .data_in( { dataIn } )
-|               , .attr_in( { attrIn } )
-|               , .signal_oe( { signal oe } )
-|               , .data_out( { dataOut } )
-|               , .attr_out( { attrOut } )
-|               );
-|           |]
+        = codeBlock [qc|
+            pu_multiplier #
+                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+                    , .ATTR_WIDTH( { parameterAttrWidth } )
+                    , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
+                    , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
+                    ) { tag }
+                ( .clk( {signalClk} )
+                , .rst( {signalRst} )
+                , .signal_wr( { signal wr } )
+                , .signal_sel( { signal wrSel } )
+                , .data_in( { dataIn } )
+                , .attr_in( { attrIn } )
+                , .signal_oe( { signal oe } )
+                , .data_out( { dataOut } )
+                , .attr_out( { attrOut } )
+                );
+            |]
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 

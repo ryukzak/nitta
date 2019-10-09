@@ -27,7 +27,7 @@ import           NITTA.Model.ProcessorUnits.IO.SimpleIO
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
-import           NITTA.Utils
+import           NITTA.Project.Snippets
 import           Text.InterpolatedString.Perl6          (qc)
 
 
@@ -94,31 +94,31 @@ instance ( VarValTime v x t ) => TargetSystemComponent (I2C v x t) where
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort, inoutPort }
             SimpleIOPorts{..}
             ioPorts
-        = fixIndent [qc|
-|           { module_ ioPorts }
-|               #( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-|                , .ATTR_WIDTH( { show parameterAttrWidth } )
-|                , .BOUNCE_FILTER( { show bounceFilter } )
-|                ) { tag }
-|               ( .clk( { signalClk } )
-|               , .rst( { signalRst } )
-|               , .flag_stop( { stop } )
-|               , .signal_cycle( { signalCycle } )
-|               , .signal_oe( { signal oe } )
-|               , .signal_wr( { signal wr } )
-|               , .data_in( { dataIn } ), .attr_in( { attrIn } )
-|               , .data_out( { dataOut } ), .attr_out( { attrOut } )
-|               { extIO ioPorts }
-|               );
-|           |]
+        = codeBlock [qc|
+            { module_ ioPorts } #
+                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+                    , .ATTR_WIDTH( { show parameterAttrWidth } )
+                    , .BOUNCE_FILTER( { show bounceFilter } )
+                    ) { tag }
+                ( .clk( { signalClk } )
+                , .rst( { signalRst } )
+                , .flag_stop( { stop } )
+                , .signal_cycle( { signalCycle } )
+                , .signal_oe( { signal oe } )
+                , .signal_wr( { signal wr } )
+                , .data_in( { dataIn } ), .attr_in( { attrIn } )
+                , .data_out( { dataOut } ), .attr_out( { attrOut } )
+                { extIO ioPorts }
+                );
+            |]
             where
                 module_ I2CMaster{} = "pu_master_i2c"
                 module_ I2CSlave{}  = "pu_slave_i2c"
-                extIO I2CMaster{..} = fixIndent [qc|
-|                   , .scl( { outputPort masterSCL } )
-|                   , .sda( { inoutPort masterSDA } )
-|           |]
-                extIO I2CSlave{..} = fixIndent [qc|
-|                   , .scl( { inputPort slaveSCL } )
-|                   , .sda( { inoutPort slaveSDA } )
-|           |]
+                extIO I2CMaster{..} = codeBlock [qc|
+                    , .scl( { outputPort masterSCL } )
+                    , .sda( { inoutPort masterSDA } )
+                    |]
+                extIO I2CSlave{..} = codeBlock [qc|
+                    , .scl( { inputPort slaveSCL } )
+                    , .sda( { inoutPort slaveSDA } )
+                    |]

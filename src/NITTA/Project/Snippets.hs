@@ -29,58 +29,73 @@ import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Types
 import           NITTA.Utils
+import           Safe                             (headDef, minimumDef)
 import           Text.InterpolatedString.Perl6    (qc)
 import           Text.Regex
 
 
 inlineMarker = "###"
 
-inline str = S.join "\n" $ map (inlineMarker ++) $ lines str
+inline str = unlines $ map (inlineMarker ++ ) $ lines str
 
-codeBlock indent str0 = let
-        str1 = drop 1 $ lines str0
-        str2 = map lstripInline str1
-        withBadIndent = filter (> 0) $ map (length . takeWhile (== ' ')) $ filter (not . isInline) str2
-        badIndent = if null withBadIndent then 0 else minimum withBadIndent
-        str3 = S.join "\n" $ map (fixIndent_ badIndent) str2
-    in S.replace inlineMarker "" str3
-    where  
-        lstripInline s = subRegex (mkRegex $ "^[[:space:]]*" ++ inlineMarker) s inlineMarker
+codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
+    where
+        codeBlock' []     buff _         = delInline $ S.join "\n" $ reverse buff
+        codeBlock' (x:xs) buff minIndent = codeBlock' xs buff' minIndent
+            where
+                buffHead = headDef "" buff
+                inlineSpacesCount = length $ takeWhile (== ' ') buffHead
+                inlineSpaces = replicate inlineSpacesCount ' '
+                line
+                    | isInline x = inlineSpaces ++ x
+                    | otherwise  = drop minIndent x
+
+                buff' = line : buff
+
         isInline = S.startswith inlineMarker
-        fixIndent_ badIndent s 
-            | isInline s = s
-            | otherwise = replicate (indent * 4) ' ' ++ (drop badIndent s)
+        delInline = S.replace inlineMarker ""
 
-codeLine indent str = replicate (indent * 4) ' ' ++ dropWhile (== ' ') str ++ "\n"
+        minIndentCalc inp = minimumDef 0 spaces
+            where
+                spaces = filter (> 0 ) $ map (length . takeWhile (== ' ')) inlines
+                inlines = filter (not . isInline) inp
+
+        linesList = drop 1 $ lines str
+
+
+codeLine str = dropWhile (== ' ') str ++ "\n"
 
 snippetClkGen :: String
-snippetClkGen = [qc|initial begin
-    clk = 1'b0;
-    rst = 1'b1;
-    repeat(4) #1 clk = ~clk;
-    rst = 1'b0;
-    forever #1 clk = ~clk;
-end
-|]
+snippetClkGen = codeBlock [qc|
+    initial begin
+        clk = 1'b0;
+        rst = 1'b1;
+        repeat(4) #1 clk = ~clk;
+        rst = 1'b0;
+        forever #1 clk = ~clk;
+    end
+    |]
 
 
 snippetDumpFile :: String -> String
-snippetDumpFile mn = [qc|initial begin
-    $dumpfile("{ mn }_tb.vcd");
-    $dumpvars(0, { mn }_tb);
-end
-|]
+snippetDumpFile mn = codeBlock [qc|
+    initial begin
+        $dumpfile("{ mn }_tb.vcd");
+        $dumpvars(0, { mn }_tb);
+    end
+    |]
 
 
 snippetInitialFinish :: String -> String
-snippetInitialFinish block = [qc|initial begin
-{block}
-    $finish;
-end
-|]
+snippetInitialFinish block = codeBlock [qc|
+    initial begin
+        {block}
+        $finish;
+    end
+    |]
 
 snippetTraceAndCheck :: Int -> String
-snippetTraceAndCheck width = codeBlock 0 [qc|
+snippetTraceAndCheck width = codeBlock [qc|
     task trace;
         input integer cycle;
         input integer tick;
@@ -102,7 +117,7 @@ snippetTraceAndCheck width = codeBlock 0 [qc|
             else $display();
         end
     endtask
-|]
+    |]
 
 assertRe = mkRegex $ concat
     -- cycle:           4	tick:           2	actual:          1	expect:          1	nst_inline_1_0:0
@@ -149,59 +164,66 @@ snippetTestBench
                     , signal=tbcSignalConnect
                     }
                 }
-            tbcPorts 
+            tbcPorts
             tbcIOPorts
-            
-        controlSignals = S.join "\n    " $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
+
+        controlSignals = S.join "\n" $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
             = either error id $ getX cycleCntx v
             | otherwise = 0
-
         busCheck = concatMap busCheck' [ 0 .. nextTick + 1 ]
             where
                 busCheck' t
                     | Just (Source vs) <- endpointAt t p
                     , let v = oneOf vs
                     , let x = either error id $ getX cycleCntx v
-                    = fixIndent [qc|
-|                       @(posedge clk);
-|                           $write( "data_out: %d == %d    (%s)", data_out, { x }, { v } );
-|                           if ( !( data_out === { x } ) ) $display(" FAIL");
-|                           else $display();
-|                   |]
+                    = codeBlock [qc|
+                        @(posedge clk);
+                            $write( "data_out: %d == %d    (%s)", data_out, { x }, { v } );
+                            if ( !( data_out === { x } ) ) $display(" FAIL");
+                            else $display();
+                        |]
                     | otherwise
-                    = fixIndent [qc|
-|                        @(posedge clk); $display( "data_out: %d", data_out );
-|                   |]
+                    = codeLine [qc|@(posedge clk); $display( "data_out: %d", data_out );|]
 
-    in fixIndent [qc|
-|       {"module"} {name}_tb();
-|
-|       parameter DATA_WIDTH = { tbDataBusWidth };
-|       parameter ATTR_WIDTH = 4;
-|
-|       /*
-|       Algorithm:
-|       { unlines $ map show $ fs }
-|       Process:
-|       { unlines $ map show $ reverse steps }
-|       Context:
-|       { show cycleCntx }
-|       */
-|
-|       reg clk, rst;
-|       reg { S.join ", " tbcSignals };
-|       reg [DATA_WIDTH-1:0]  data_in;
-|       reg [ATTR_WIDTH-1:0]  attr_in;
-|       wire [DATA_WIDTH-1:0] data_out;
-|       wire [ATTR_WIDTH-1:0] attr_out;
-|
-|       { inst }
-|
-|       { snippetClkGen }
-|       { snippetDumpFile name }
-|       { snippetInitialFinish $ "    @(negedge rst);\\n    " ++ controlSignals }
-|       { snippetInitialFinish $ "    @(negedge rst);\\n" ++ busCheck }
-|       endmodule
-|       |] :: String
+    in codeBlock [qc|
+        {"module"} {name}_tb();
+
+        parameter DATA_WIDTH = { tbDataBusWidth };
+        parameter ATTR_WIDTH = 4;
+
+        /*
+        Algorithm:
+        { inline $ unlines $ map show $ fs }
+        Process:
+        { inline $ unlines $ map show $ reverse steps }
+        Context:
+        { inline $ show cycleCntx }
+        */
+
+        reg clk, rst;
+        reg { S.join ", " tbcSignals };
+        reg [DATA_WIDTH-1:0]  data_in;
+        reg [ATTR_WIDTH-1:0]  attr_in;
+        wire [DATA_WIDTH-1:0] data_out;
+        wire [ATTR_WIDTH-1:0] attr_out;
+
+        { inline inst }
+
+        { inline snippetClkGen }
+        { inline $ snippetDumpFile name }
+
+        initial begin
+            @(negedge rst);
+            {inline controlSignals}
+            $finish;
+        end
+
+        initial begin
+            @(negedge rst);
+            {inline busCheck}
+            $finish;
+        end
+        endmodule
+        |] :: String
