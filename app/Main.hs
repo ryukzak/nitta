@@ -98,12 +98,12 @@ runTestbench tDFG tMicroArch
 -- с задачей о целевой платформе.
 
 microarch ioSync = evalNetwork ioSync $ do
-        addManual "fram1" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
+        addManual "fram1" (PU def (memoryWidth 32) FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5, 6] } FramIO )
         add "fram2" FramIO
         add "shift" ShiftIO
         add "mul" MultiplierIO
-        add "accum" AccumIO 
-        add "div" DividerIO 
+        add "accum" AccumIO
+        add "div" DividerIO
         add "spi" $ SPISlave
             { slave_mosi = InputPortTag "mosi"
             , slave_miso = OutputPortTag "miso"

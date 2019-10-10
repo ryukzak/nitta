@@ -22,6 +22,7 @@ Stability   : experimental
 module NITTA.Model.ProcessorUnits.Fram
   ( Fram(..)
   , Ports(..), IOPorts(..)
+  , memoryWidth
   ) where
 
 import           Control.Applicative              ((<|>))
@@ -54,8 +55,13 @@ data Fram v x t = Fram
     { memory     :: A.Array Int (Cell v x t) -- ^memory cell array
     , remainRegs :: [ (Reg v x, Job v x t) ] -- ^register queue
     , process_   :: Process v x t
-    , size       :: Int -- ^memory size
     } deriving ( Show )
+
+memoryWidth size = Fram
+    { memory     = A.listArray (0, size - 1) $ repeat def
+    , remainRegs = []
+    , process_   = def
+    }
 
 instance ( Default t, Default x
         ) => Default (Fram v x t) where
@@ -63,10 +69,10 @@ instance ( Default t, Default x
         { memory=A.listArray (0, defaultSize - 1) $ repeat def
         , remainRegs=[]
         , process_=def
-        , size=defaultSize
         }
         where
             defaultSize = 16
+
 
 instance ( VarValTime v x t
         ) => WithFunctions (Fram v x t) (F v x) where
@@ -457,7 +463,6 @@ instance Controllable (Fram v x t) where
             wr = xs !! 1
             addr = take 4 $ drop 2 xs
 
-
 instance Connected (Fram v x t) where
     data Ports (Fram v x t)
         = FramPorts
@@ -470,17 +475,14 @@ instance IOConnected (Fram v x t) where
     data IOPorts (Fram v x t) = FramIO
         deriving ( Show )
 
-getAddr (ReadCell addr)  = addr
-getAddr (WriteCell addr) = addr
-
 
 instance Default (Microcode (Fram v x t)) where
     def = Microcode False False Nothing
 
+
 instance UnambiguouslyDecode (Fram v x t) where
     decodeInstruction (ReadCell addr)  = Microcode True False $ Just addr
     decodeInstruction (WriteCell addr) = Microcode False True $ Just addr
-
 
 
 instance ( VarValTime v x t
@@ -492,158 +494,38 @@ instance ( VarValTime v x t
         | otherwise = error $ "Can't simulate " ++ show f ++ " on Fram."
 
 
----------------------------------------------------
-
-instance ( VarValTime v x t
+instance ( VarValTime v x t, Integral x
          ) => Testable (Fram v x t) v x where
-    testBenchImplementation Project{ pName, pUnit=fram@Fram{ process_=Process{ steps } }, pTestCntx=Cntx{ cntxProcess } }
-        = Immediate (moduleName pName fram ++ "_tb.v") testBenchImp
-        where
-            cntx = head cntxProcess
+    testBenchImplementation prj@Project{ pName, pUnit=fram@Fram{ memory }}
+        = let
+            log2 = ceiling . logBase 2 . fromIntegral
+            addrWidth = log2 $ length $ A.elems memory
+            tbcSignalsConst = ["oe", "wr", "[3:0] addr"]
 
-            hardwareInstance' = hardwareInstance pName fram
-                TargetEnvironment
-                    { signalClk="clk"
-                    , signalRst="rst"
-                    , signalCycle="cycle"
-                    , inputPort=undefined
-                    , outputPort=undefined
-                    , inoutPort=undefined
-                    , unitEnv=ProcessUnitEnv
-                        { parameterAttrWidth=IntParam 4
-                        , dataIn="data_in"
-                        , attrIn="attr_in"
-                        , dataOut="data_out"
-                        , attrOut="attr_out"
-                        , signal= \(SignalTag i) -> case i of
-                            0 -> "oe"
-                            1 -> "wr"
-                            j -> "addr[" ++ show (3 - (j - 2)) ++ "]"
-                        }
-                    }
-                FramPorts
-                    { oe=SignalTag 0
-                    , wr=SignalTag 1
-                    , addr=map SignalTag [ 2, 3, 4, 5 ]
-                    }
-                FramIO
-            testBenchImp = codeBlock [qc|
-                {"module"} { moduleName pName fram }_tb();
-                parameter DATA_WIDTH = { finiteBitSize (def :: x) };
-                parameter ATTR_WIDTH = 4;
-
-                /*
-                Context:
-                { show cntx }
-
-                Algorithm:
-                { unlines $ map show $ functions fram }
-
-                Process:
-                { unlines $ map show steps }
-                */
-                reg clk, rst, wr, oe;
-                reg [3:0] addr;
-                reg [DATA_WIDTH-1:0]  data_in;
-                reg [ATTR_WIDTH-1:0]  attr_in;
-                wire [DATA_WIDTH-1:0] data_out;
-                wire [ATTR_WIDTH-1:0] attr_out;
-
-                { inline $ hardwareInstance' }
-
-                { inline $ snippetDumpFile $ moduleName pName fram }
-                { inline $ snippetClkGen }
-
-                initial
-                  begin
-                    $dumpfile("{ moduleName pName fram }_tb.vcd");
-                    $dumpvars(0, { moduleName pName fram }_tb);
-                    @(negedge rst);
-                    forever @(posedge clk);
-                  end
-
-                { inline $ snippetInitialFinish $ controlSignals fram }
-                { inline $ snippetInitialFinish $ testDataInput fram cntx }
-                { inline $ snippetInitialFinish $ testDataOutput pName fram cntx }
-
-                endmodule
+            showMicrocode Microcode{ oeSignal, wrSignal, addrSignal } = codeBlock [qc|
+                oe   <= { bool2verilog oeSignal };
+                wr   <= { bool2verilog wrSignal };
+                addr <= { maybe "0" show addrSignal };
                 |]
 
-controlSignals fram@Fram{ process_=Process{ nextTick } }
-    = concatMap ( ("      " ++) . (++ " @(posedge clk)\n") . showMicrocode . microcodeAt fram) [ 0 .. nextTick + 1 ]
-    where
-        showMicrocode Microcode{ oeSignal, wrSignal, addrSignal } = concat
-            [ "oe <= ", bool2verilog oeSignal, "; "
-            , "wr <= ", bool2verilog wrSignal, "; "
-            , "addr <= ", maybe "0" show addrSignal, "; "
-            ]
-
-
-
-testDataInput Fram{ process_=p@Process{ nextTick } } cntx
-    = concatMap ( ("      " ++) . (++ " @(posedge clk);\n") . busState ) [ 0 .. nextTick + 1 ]
-    where
-        busState t
-            | Just (Target v) <- endpointAt t p
-            = "data_in <= " ++ (either (error . ("testDataInput: " ++)) show $ getX cntx v) ++ ";"
-            | otherwise = "/* NO INPUT */"
-
-testDataOutput tag fram@Fram{ memory, process_=p@Process{ nextTick, steps } } cntx
-    = concatMap ( ("      @(posedge clk); " ++) . (++ "\n") . busState ) [ 0 .. nextTick + 1 ] ++ bankCheck
-    where
-        busState t
-            | Just (Source vs) <- endpointAt t p, let v = oneOf vs
-            = checkBus vs $ either (error . ("testDataOutput: " ++) ) show (getX cntx v)
-            | otherwise
-            = "$display( \"data_out: %d\", data_out ); "
-
-        checkBus vs value = concat
-            [ "$write( \"data_out: %d == %s\t(%s)\", data_out, " ++ show value ++ ", " ++ S.join ", " (map show $ S.elems vs) ++ " ); "
-            ,  "if ( !( data_out === " ++ value ++ " ) ) "
-            ,   "$display(\" FAIL\");"
-            ,  " else $display();"
-            ]
-
-        bankCheck
-            = "\n      @(posedge clk);\n"
-            ++ unlines [ "  " ++ checkBank addr v (either (error . ("bankCheck: " ++)) show $ getX cntx v)
-                        | FStep f <- filter (\case FStep{} -> True; _ -> False) $ map (descent . sDesc) steps
-                        , let addr_v = outputStep fram f
-                        , isJust addr_v
-                        , let Just (addr, v) = addr_v
-                        ]
-        outputStep pu' f
-            | Just (Loop _ _bs (I v)) <- castF f = Just (findAddress v pu', v)
-            | Just (LoopIn l (I v)) <- castF f
-            , Just (addr, _) <- L.find (L.elem (F l) . history . snd) $ A.assocs memory
-            = Just (addr, v)
-            | otherwise = Nothing
-
-        checkBank addr v value = concatMap ("    " ++)
-            [ "if ( !( " ++ tag ++ ".bank[" ++ show addr ++ "] === " ++ show value ++ " ) ) "
-            ,   "$display("
-            ,     "\""
-            ,       "FAIL wrong value of " ++ show' v ++ " in fram bank[" ++ show' addr ++ "]! "
-            ,       "(got: %h expect: %h)"
-            ,     "\","
-            ,     "data_out, " ++ show value
-            ,   ");"
-            ]
-        show' s = filter (/= '\"') $ show s
-
-
-findAddress var fram@Fram{ process_=Process{ steps } }
-    | [ time ] <- variableSendAt var
-    , [ instr ] <- map getAddr $ extractInstructionAt fram (inf time)
-    = instr
-    | otherwise = error $ "Can't find instruction for effect of variable: " ++ show var ++ " " ++ show steps
-    where
-        variableSendAt v = [ sTime | Step{ sTime, sDesc=info } <- steps
-                           , v `elem` f info
-                           ]
-        f (EndpointRoleStep rule) = variables rule
-        f _                       = S.empty
-
+            signal (SignalTag i) = case i of
+                0 -> "oe"
+                1 -> "wr"
+                j -> "addr[" ++ show (addrWidth - (j - 1)) ++ "]"
+        in
+            Immediate (moduleName pName fram ++ "_tb.v")
+                $ snippetTestBench prj SnippetTestBenchConf
+                    { tbcSignals=tbcSignalsConst
+                    , tbcPorts = FramPorts
+                        { oe   = SignalTag 0
+                        , wr   = SignalTag 1
+                        , addr = map SignalTag [ 2, 3, 4, 5 ]
+                        }
+                    , tbcIOPorts=FramIO
+                    , tbcSignalConnect= signal
+                    , tbcCtrl=showMicrocode
+                    , tbDataBusWidth=finiteBitSize (def :: x)
+                    }
 
 softwareFile tag pu = moduleName tag pu ++ "." ++ tag ++ ".dump"
 
@@ -656,16 +538,16 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
             $ unlines $ map
                 (\Cell{ initialValue=initialValue } -> hdlValDump initialValue)
                 $ A.elems memory
-    hardwareInstance tag fram@Fram{ size } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} FramIO
+    hardwareInstance tag fram@Fram{ memory } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} FramIO
         = codeBlock [qc|
             pu_fram #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( { show parameterAttrWidth } )
-                    , .RAM_SIZE( { show size } )
+                    , .RAM_SIZE( { show $ length $ A.elems memory } )
                     , .FRAM_DUMP( "$path${ softwareFile tag fram }" )
                     ) { tag }
                 ( .clk( { signalClk } )
-                , .signal_addr( \{ { S.join ", " (map signal addr) } } )
+                , .signal_addr( \{ { S.join ", " (map signal addr )} } )
                 , .signal_wr( { signal wr } )
                 , .data_in( { dataIn } )
                 , .attr_in( { attrIn } )
