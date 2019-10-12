@@ -70,14 +70,12 @@ nittaArgs = Nitta
 
 fxTuple input = let
         typePattern = mkRegex "fx([0-9]+).([0-9]+)"
-        fxListStr =  case matchRegex typePattern input of
-            (Just lst) -> lst
-            _          -> error "incorrect Bus type input"
+        fxListStr =  fromMaybe (error "incorrect Bus type input") $ matchRegex typePattern input
         [fxInt1, fxInt2] = map (fromJust . someNatVal . (read :: String -> Integer)) fxListStr
     in (fxInt1, fxInt2)
 
 main = do
-    Nitta{ web, port, npm_build, file, type_, io_sync} <- cmdArgs nittaArgs
+    Nitta{ web, port, npm_build, file, type_, io_sync } <- cmdArgs nittaArgs
     when npm_build prepareStaticFiles
     putStrLn [qc|> readFile: { file }|]
     when (null file) $ error "input file not specified"
