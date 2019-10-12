@@ -15,8 +15,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Utils
-    ( addrWidth
-    , unionsMap
+    ( unionsMap
     , oneOf
     , minimumOn
     , maximumOn
@@ -48,7 +47,6 @@ module NITTA.Utils
 
 import           Control.Monad.State              (State, get, modify', put,
                                                    runState)
-import qualified Data.Array                       as A
 import           Data.Bits                        (finiteBitSize, setBit,
                                                    testBit)
 import           Data.List                        (maximumBy, minimumBy, sortOn)
@@ -183,10 +181,6 @@ isInstruction _                   = False
 
 stepStart Step{ sTime } = I.inf sTime
 
--- |Function for calculating width of array in Fram module
-addrWidth memory = log2 $ length $ A.elems memory
-    where
-        log2 = ceiling . logBase 2 . fromIntegral
 
 -- modern
 

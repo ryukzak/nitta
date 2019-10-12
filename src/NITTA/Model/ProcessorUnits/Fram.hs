@@ -180,6 +180,12 @@ oJobV Job{ function }
     | otherwise = undefined
 
 
+-- |Function for calculating width of array in Fram
+addrWidth fram = log2 $ length $ A.elems memory
+    where
+        Fram {memory} = fram
+        log2 = ceiling . logBase 2 . fromIntegral
+
 instance ( VarValTime v x t
          ) => ProcessorUnit (Fram v x t) v x t where
     tryBind f fram
@@ -457,9 +463,9 @@ instance Controllable (Fram v x t) where
 
     portsToSignals FramPorts{ oe, wr, addr } = oe : wr : addr
 
-    signalsToPorts xs Fram{ memory } = FramPorts oe wr addr
+    signalsToPorts xs pu = FramPorts oe wr addr
         where
-            width = addrWidth memory
+            width = addrWidth pu
             oe = xs !! 0
             wr = xs !! 1
             addr = take width $ drop 2 xs
@@ -497,9 +503,9 @@ instance ( VarValTime v x t
 
 instance ( VarValTime v x t, Integral x
          ) => Testable (Fram v x t) v x where
-    testBenchImplementation prj@Project{ pName, pUnit=fram@Fram{ memory }}
+    testBenchImplementation prj@Project{ pName, pUnit}
         = let
-            width = addrWidth memory
+            width = addrWidth pUnit
             tbcSignalsConst = ["oe", "wr", "[3:0] addr"]
 
             showMicrocode Microcode{ oeSignal, wrSignal, addrSignal } = codeBlock [qc|
@@ -513,7 +519,7 @@ instance ( VarValTime v x t, Integral x
                 1 -> "wr"
                 j -> "addr[" ++ show (width - (j - 1)) ++ "]"
         in
-            Immediate (moduleName pName fram ++ "_tb.v")
+            Immediate (moduleName pName pUnit ++ "_tb.v")
                 $ snippetTestBench prj SnippetTestBenchConf
                     { tbcSignals=tbcSignalsConst
                     , tbcPorts = FramPorts
