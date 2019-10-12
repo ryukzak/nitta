@@ -19,7 +19,7 @@ export default class SynthesisGraph extends React.Component<ISynthesisGraphProps
   }
 
   componentDidMount() {
-    if (this.myRef.current != null && this.context.synthesisGraphHeight == 0) {
+    if (this.myRef.current != null && this.context.synthesisGraphHeight === 0) {
       this.context.changedSynthesisGraphHeight((this.context.synthesisGraphHeight = this.myRef.current.clientHeight));
       this.context.minSynthesisGraphHeight = this.context.synthesisGraphHeight;
     }
