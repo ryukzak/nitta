@@ -98,8 +98,8 @@ runTestbench tDFG tMicroArch
 -- с задачей о целевой платформе.
 
 microarch ioSync = evalNetwork ioSync $ do
-        addManual "fram1" (PU def (memoryWidth 16) FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
-        addCustom "fram2" (memoryWidth 32) FramIO
+        addManual "fram1" (PU def (framWithSize 16) FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
+        addCustom "fram2" (framWithSize 32) FramIO
         add "shift" ShiftIO
         add "mul" MultiplierIO
         add "accum" AccumIO

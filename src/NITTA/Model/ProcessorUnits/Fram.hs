@@ -22,7 +22,7 @@ Stability   : experimental
 module NITTA.Model.ProcessorUnits.Fram
   ( Fram(..)
   , Ports(..), IOPorts(..)
-  , memoryWidth
+  , framWithSize
   ) where
 
 import           Control.Applicative              ((<|>))
@@ -57,7 +57,7 @@ data Fram v x t = Fram
     , process_   :: Process v x t
     } deriving ( Show )
 
-memoryWidth size = Fram
+framWithSize size = Fram
     { memory     = A.listArray (0, size - 1) $ repeat def
     , remainRegs = []
     , process_   = def
