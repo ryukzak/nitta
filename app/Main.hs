@@ -68,11 +68,13 @@ nittaArgs = Nitta
     , file=def &= args &= typFile
     }
 
-fxTuple input = let
+
+parseFX input = let
         typePattern = mkRegex "fx([0-9]+).([0-9]+)"
-        fxListStr =  fromMaybe (error "incorrect Bus type input") $ matchRegex typePattern input
-        [fxInt1, fxInt2] = map (fromJust . someNatVal . (read :: String -> Integer)) fxListStr
-    in (fxInt1, fxInt2)
+        [ m, b ] = fromMaybe (error "incorrect Bus type input") $ matchRegex typePattern input
+        convert = fromJust . someNatVal . read
+    in ( convert m, convert b )
+
 
 main = do
     Nitta{ web, port, npm_build, file, type_, io_sync } <- cmdArgs nittaArgs
@@ -80,23 +82,21 @@ main = do
     putStrLn [qc|> readFile: { file }|]
     when (null file) $ error "input file not specified"
     src <- T.readFile file
-    let runner = if web
-        then runWebUI port $ lua2functions src
-        else runTestbench $ lua2functions src
-        addTypes (SomeNat (_ :: Proxy n1)) (SomeNat (_ :: Proxy n2)) = runner ( microarch io_sync :: BusNetwork String String (FX n1 n2) Int)
-    uncurry addTypes $ fxTuple type_
+    let cadDesc = if web then Just port else Nothing
 
-runWebUI port alg ma = backendServer port $ mkModelWithOneNetwork ma alg
-runTestbench tDFG tMicroArch
-    = void $ runTargetSynthesis (def :: TargetSynthesis _ _ _ Int)
+    ( \( SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b) ) ->
+          selectCAD cadDesc src ( microarch io_sync :: BusNetwork String String (FX m b) Int)
+        ) $ parseFX type_
+
+
+selectCAD (Just port) src ma = backendServer port $ mkModelWithOneNetwork ma $ lua2functions src
+
+selectCAD Nothing src ma = void $ runTargetSynthesis def
         { tName="main"
-        , tMicroArch
-        , tDFG
+        , tMicroArch=ma
+        , tDFG=lua2functions src
         , tVerbose=True
-        , tReceivedValues=filter (\(v, _x) -> notElem v $ variables tDFG)
-            [ ( "a:0", [1, 2, 3, 4, 5, 6] )
-            , ( "b:0", [1, 1, 1, 1, 1, 1] )
-            ]
+        , tReceivedValues=def
         }
 
 
