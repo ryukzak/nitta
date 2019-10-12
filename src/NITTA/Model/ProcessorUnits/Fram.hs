@@ -457,11 +457,12 @@ instance Controllable (Fram v x t) where
 
     portsToSignals FramPorts{ oe, wr, addr } = oe : wr : addr
 
-    signalsToPorts xs = FramPorts oe wr addr
+    signalsToPorts xs Fram{ memory } = FramPorts oe wr addr
         where
+            width = addrWidth memory
             oe = xs !! 0
             wr = xs !! 1
-            addr = take 4 $ drop 2 xs
+            addr = take width $ drop 2 xs
 
 instance Connected (Fram v x t) where
     data Ports (Fram v x t)
@@ -498,8 +499,7 @@ instance ( VarValTime v x t, Integral x
          ) => Testable (Fram v x t) v x where
     testBenchImplementation prj@Project{ pName, pUnit=fram@Fram{ memory }}
         = let
-            log2 = ceiling . logBase 2 . fromIntegral
-            addrWidth = log2 $ length $ A.elems memory
+            width = addrWidth memory
             tbcSignalsConst = ["oe", "wr", "[3:0] addr"]
 
             showMicrocode Microcode{ oeSignal, wrSignal, addrSignal } = codeBlock [qc|
@@ -511,7 +511,7 @@ instance ( VarValTime v x t, Integral x
             signal (SignalTag i) = case i of
                 0 -> "oe"
                 1 -> "wr"
-                j -> "addr[" ++ show (addrWidth - (j - 1)) ++ "]"
+                j -> "addr[" ++ show (width - (j - 1)) ++ "]"
         in
             Immediate (moduleName pName fram ++ "_tb.v")
                 $ snippetTestBench prj SnippetTestBenchConf

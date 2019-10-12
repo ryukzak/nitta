@@ -19,6 +19,7 @@ Stability   : experimental
 
 module NITTA.Model.MicroArchitecture
     ( add
+    , addCustom
     , addS
     , addSIO
     , addManual
@@ -35,7 +36,7 @@ import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Project.Implementation
 
 -- |__Eval state and create microarch__
-evalNetwork ioSync net = flip evalState ([], []) $ do 
+evalNetwork ioSync net = flip evalState ([], []) $ do
     _ <- net
     busNetworkS ioSync <$> get
 
@@ -46,7 +47,7 @@ intersPortsError ports usedPorts tag
     | otherwise                    = ports
 
 -- |Create environment for PU
-puEnv tag = 
+puEnv tag =
     TargetEnvironment
         { signalClk   = "clk"
         , signalRst   = "rst"
@@ -54,7 +55,7 @@ puEnv tag =
         , inputPort   = inputPortTag
         , outputPort  = outputPortTag
         , inoutPort   = inoutPortTag
-        , unitEnv     = 
+        , unitEnv     =
             ProcessUnitEnv
                 { parameterAttrWidth = InlineParam "ATTR_WIDTH"
                 , dataIn             = "data_bus"
@@ -75,15 +76,18 @@ freePins used = let
 busNetworkS ioSync (lstPorts, pu) = busNetwork (length lstPorts) ioSync pu
 
 -- |__Add PU automatic__
-add tag io = do
-    (usedPorts, pus) <- get
+add tag = addCustom tag def
+
+-- |__Add PU automatic, using custom pu__
+addCustom tag pu io = do
+    (usedPorts, puBlocks) <- get
     let signals = freePins usedPorts
-        ports = signalsToPorts signals
-        pu = (tag, PU def def ports io)
+        ports = signalsToPorts signals pu
+        puBlock = (tag, PU def pu ports io)
         used = portsToSignals ports
-        pus'= pu : pus
+        puBlocks'= puBlock : puBlocks
         usedPorts' = usedPorts ++ used
-    put (usedPorts', pus')
+    put (usedPorts', puBlocks')
 
 -- |__Add PU automatic with String data type__
 addS tag "fram"  = add tag FramIO
@@ -94,7 +98,7 @@ addS tag "mul"   = add tag MultiplierIO
 addS _ _         = error "Can't match type PU with existing PU types"
 
 -- |__Add SimpleIO PU automatic with String data type__
-addSIO tag "spi" [mode, mosi, miso, sclk, cs] = add tag $ 
+addSIO tag "spi" [mode, mosi, miso, sclk, cs] = add tag $
         case mode of
             "slave" -> SPISlave
                 { slave_mosi = InputPortTag mosi
@@ -124,6 +128,7 @@ addManual tag mkPU = do
 example ioSync = evalNetwork ioSync $ do
     addManual "fram1_tag" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
     addManual "accum_tag" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
+    addCustom "fram2_tag" (memoryWidth 32) FramIO
     add "div_tag2" DividerIO
     add "mul_tag2" MultiplierIO
     addS "div_tag" "div"

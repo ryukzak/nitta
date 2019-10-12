@@ -519,8 +519,8 @@ instance Controllable (Multiplier v x t) where
 
     portsToSignals MultiplierPorts{ wr, wrSel, oe } = [wr, wrSel, oe]
 
-    signalsToPorts (wr:wrSel:oe:_) = MultiplierPorts wr wrSel oe
-    signalsToPorts _               = error "pattern match error in signalsToPorts MultiplierPorts"
+    signalsToPorts (wr:wrSel:oe:_) _ = MultiplierPorts wr wrSel oe
+    signalsToPorts _               _ = error "pattern match error in signalsToPorts MultiplierPorts"
 
 -- |Also we need to define default state for microcode (that is match to implicit @nop@ function)
 -- This state mean that mUnit is in inaction state, but doesn't busy the bus and storage

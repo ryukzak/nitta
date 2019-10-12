@@ -158,9 +158,9 @@ data StepInfo v x t where
     -- |Используется для описания вычислительного процесса вложенных структурных элементов. Как
     -- правило не хранится в структурах данных, а генерируется автоматически по требованию при
     -- помощи опроса вложенных структурных элементов.
-    NestedStep :: 
+    NestedStep ::
         ( UnitTag tag
-        ) => 
+        ) =>
             { nTitle :: tag
             , nStep :: Step v x t
             } -> StepInfo v x t
@@ -210,14 +210,14 @@ class Controllable pu where
 
     -- |Map microcode to unit signal ports.
     mapMicrocodeToPorts :: Microcode pu -> Ports pu -> [(SignalTag, SignalValue)]
-    
+
     -- |Get list of signals from Ports pu
     portsToSignals :: Ports pu -> [SignalTag]
 
     -- |Get Ports from list of signals
-    signalsToPorts :: [SignalTag] -> Ports pu
+    signalsToPorts :: [SignalTag] -> pu -> Ports pu
 
-    
+
 
 -- |Type class of processor units with control ports.
 class Connected pu where

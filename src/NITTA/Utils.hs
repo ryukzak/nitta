@@ -15,7 +15,8 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Utils
-    ( unionsMap
+    ( addrWidth
+    , unionsMap
     , oneOf
     , minimumOn
     , maximumOn
@@ -47,6 +48,7 @@ module NITTA.Utils
 
 import           Control.Monad.State              (State, get, modify', put,
                                                    runState)
+import qualified Data.Array                       as A
 import           Data.Bits                        (finiteBitSize, setBit,
                                                    testBit)
 import           Data.List                        (maximumBy, minimumBy, sortOn)
@@ -162,10 +164,10 @@ endpointAt t p
 isFB s = isJust $ getFB s
 
 getFB Step{ sDesc } | FStep fb <- descent sDesc = Just fb
-getFB _                                         = Nothing
+getFB _             = Nothing
 
 getEndpoint Step{ sDesc } | EndpointRoleStep role <- descent sDesc = Just role
-getEndpoint _                                                      = Nothing
+getEndpoint _             = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 transferred pu = unionsMap variables $ getEndpoints $ process pu
@@ -181,6 +183,10 @@ isInstruction _                   = False
 
 stepStart Step{ sTime } = I.inf sTime
 
+-- |Function for calculating width of array in Fram module
+addrWidth memory = log2 $ length $ A.elems memory
+    where
+        log2 = ceiling . logBase 2 . fromIntegral
 
 -- modern
 
