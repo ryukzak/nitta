@@ -22,7 +22,7 @@ interface NodeViewState {
     synthesisStatus: any;
     view: string;
     model: any;
-    endpointOptions: any[];
+    debug: any;
     scOptions: any;
 }
 
@@ -40,7 +40,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
             synthesisStatus: props.synthesisStatus,
             view: "update",
             model: null,
-            endpointOptions: null,
+            debug: null,
             scOptions: null
         };
         // FIXME:
@@ -57,7 +57,7 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
         if (view === "testbench") this.updateTestBench(nid, "testbench");
         if (view === "edges") this.setState({ view: "edges" });
         if (view === "history") this.setState({ view: "history" });
-        if (view === "endpointOptions") this.updateEndpointOptions(nid, "endpointOptions")
+        if (view === "debug") this.updateDebugOptions(nid, "debug")
     }
 
     componentWillReceiveProps(props: NodeViewProps) {
@@ -115,6 +115,16 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
             .catch((err: any) => alert(err));
     }
 
+    allBindsAndRefsIO(nid: any) {
+        if (nid === undefined || nid === null) return;
+        haskellAPI.allBindsAndRefsIO(nid)
+                  .then((response: any) => {
+                      let newNid = response.data;
+                      this.onNIdChange(newNid);
+                  })
+                  .catch((err: any) => alert(err));
+    }
+
     updateModel(nid: any, view: any) {
         haskellAPI.getNode(nid)
             .then((response: any) => {
@@ -126,11 +136,11 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
             .catch((err: any) => console.log(err));
     }
 
-    updateEndpointOptions(nid, view: string) {
-        haskellAPI.getEndpointOptions(nid)
+    updateDebugOptions(nid, view: string) {
+        haskellAPI.getDebugOptions(nid)
             .then(response => {
                 this.setState({
-                    endpointOptions: response.data,
+                    debug: response.data,
                     view: view
                 })
             })
@@ -157,71 +167,72 @@ export class NodeView extends React.Component<NodeViewProps, NodeViewState> {
                 {this.state.selectedNId === null && <pre> synthesis is not selected </pre>}
 
                 {this.state.selectedNId !== null &&
-                    <div>
-                        <div className="tiny button-group" >
-                            <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "synthesisNode")}>synthesis node</a>
-                            <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "process")}>process</a>
-                            <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "edges")}>edges</a>
-                            <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "endpointOptions")}>endpointOptions</a>
-                            <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "history")}>history</a>
+                 <div>
+                     <div className="tiny button-group" >
+                         <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "synthesisNode")}>synthesis node</a>
+                         <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "process")}>process</a>
+                         <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "edges")}>edges</a>
+                         <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "debug")}>debug</a>
+                         <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "history")}>history</a>
 
-                            <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "testbench")}>testbench</a>
-                        </div>
-                        <div className="tiny button-group" >
-                            <a className="button primary" onClick={() => this.simpleSynthesis(this.state.selectedNId)}>simple synthesis</a>
-                            <a className="button primary" onClick={() => this.smartBindSynthesisIO(this.state.selectedNId)}>smart bind synthesis</a>
-                        </div>
-                        <div className="tiny button-group" >
-                            <a className="button primary" onClick={() => this.obviousBindThread(this.state.selectedNId)}>oblious bind thread</a>
-                            <a className="button primary" onClick={() => this.allBestThread(this.state.selectedNId, 0)}>best thread</a>
-                            <a className="button primary" onClick={() => this.allBestThread(this.state.selectedNId, 1)}>all best thread 1</a>
-                            <a className="button primary" onClick={() => this.allBestThread(this.state.selectedNId, 2)}>all best thread 2</a>
-                        </div>
-                        {this.state.view === "update" && <pre> updating... </pre>}
-                        {this.state.view === "synthesisNode" &&
-                            <div>
-                                <div className="edgeGraphContainer" style={{ display: "block" }}>
-                                    <IntermediateView
-                                        view={this.state.view}
-                                        selectedNId={this.state.selectedNId}
-                                    />
-                                </div>
-                                <div className="jsonViewContainer" style={{ 'verticalAlign': 'top', 'width': '270px' }}>
-                                    <JsonView jsonData={this.state.synthesisNode.nModel.mUnit} label={"nModel.mUnit"} show={false} />
-                                </div>
-                                <div className="jsonViewContainer" style={{ 'display': "inline-block", 'verticalAlign': 'top' }}>
-                                    <JsonView jsonData={this.state.synthesisNode.nModel.mDataFlowGraph} label={"nModel.mDataFlowGraph"} show={false} />
-                                </div>
-                                <div className="jsonViewContainer" style={{ 'display': "inline-block", 'verticalAlign': 'top' }}>
-                                    <div  >
-                                        <JsonView jsonData={this.state.synthesisNode.nId} label={"nId"} show={false} />
-                                    </div>
-                                    <br></br>
-                                    <div  >
-                                        <JsonView jsonData={this.state.synthesisNode.nIsComplete} label={"nIsComplete"} show={false} />
-                                    </div>
-                                </div>
-                            </div>
-                        }
+                         <a className="button primary" onClick={() => this.handleViewChange(this.state.selectedNId, this.state.synthesisStatus, "testbench")}>testbench</a>
+                     </div>
+                     <div className="tiny button-group" >
+                         <a className="button primary" onClick={() => this.simpleSynthesis(this.state.selectedNId)}>simple synthesis</a>
+                         <a className="button primary" onClick={() => this.smartBindSynthesisIO(this.state.selectedNId)}>smart bind synthesis</a>
+                         <a className="button primary" onClick={() => this.allBindsAndRefsIO(this.state.selectedNId)}>all binds and refactors</a>
+                     </div>
+                     <div className="tiny button-group" >
+                         <a className="button primary" onClick={() => this.obviousBindThread(this.state.selectedNId)}>oblious bind thread</a>
+                         <a className="button primary" onClick={() => this.allBestThread(this.state.selectedNId, 0)}>best thread</a>
+                         <a className="button primary" onClick={() => this.allBestThread(this.state.selectedNId, 1)}>all best thread 1</a>
+                         <a className="button primary" onClick={() => this.allBestThread(this.state.selectedNId, 2)}>all best thread 2</a>
+                     </div>
+                     {this.state.view === "update" && <pre> updating... </pre>}
+                     {this.state.view === "synthesisNode" &&
+                      <div>
+                          <div className="edgeGraphContainer" style={{ display: "block" }}>
+                              <IntermediateView
+                                  view={this.state.view}
+                                  selectedNId={this.state.selectedNId}
+                              />
+                          </div>
+                          <div className="jsonViewContainer" style={{ 'verticalAlign': 'top', 'width': '270px' }}>
+                              <JsonView jsonData={this.state.synthesisNode.nModel.mUnit} label={"nModel.mUnit"} show={false} />
+                          </div>
+                          <div className="jsonViewContainer" style={{ 'display': "inline-block", 'verticalAlign': 'top' }}>
+                              <JsonView jsonData={this.state.synthesisNode.nModel.mDataFlowGraph} label={"nModel.mDataFlowGraph"} show={false} />
+                          </div>
+                          <div className="jsonViewContainer" style={{ 'display': "inline-block", 'verticalAlign': 'top' }}>
+                              <div  >
+                                  <JsonView jsonData={this.state.synthesisNode.nId} label={"nId"} show={false} />
+                              </div>
+                              <br></br>
+                              <div  >
+                                  <JsonView jsonData={this.state.synthesisNode.nIsComplete} label={"nIsComplete"} show={false} />
+                              </div>
+                          </div>
+                      </div>
+                     }
 
-                        {this.state.view === "process" &&
-                            <ProcessView
-                                nId={this.state.selectedNId}
-                            />
-                        }
-                        {this.state.view === "edges" &&
-                            <EdgesView
-                                nid={this.state.selectedNId}
-                                onNidChange={(nid: any) => this.onNIdChange(nid)}
-                            />
-                        }
-                        {this.state.view === "endpointOptions" &&
-                            <pre> {JSON.stringify(this.state.endpointOptions, null, 2)} </pre>
-                        }
-                        {this.state.view === "history" && <SynthesisHistoryView nId={this.state.selectedNId} reverse={ false } /> }
+                     {this.state.view === "process" &&
+                      <ProcessView
+                          nId={this.state.selectedNId}
+                      />
+                     }
+                     {this.state.view === "edges" &&
+                      <EdgesView
+                          nid={this.state.selectedNId}
+                          onNidChange={(nid: any) => this.onNIdChange(nid)}
+                      />
+                     }
+                     {this.state.view === "debug" &&
+                      <pre> {JSON.stringify(this.state.debug, null, 2)} </pre>
+                     }
+                     {this.state.view === "history" && <SynthesisHistoryView nId={this.state.selectedNId} reverse={ false } /> }
 
-                        {this.state.view === "testbench" && this.renderTestbench(this.state.testBenchDump)}
-                    </div>
+                     {this.state.view === "testbench" && this.renderTestbench(this.state.testBenchDump)}
+                 </div>
                 }
             </div>
         );

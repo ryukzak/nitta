@@ -3,7 +3,6 @@ function pid(prev_err)
     local getValueSPI = receive()
 
     err = temperature_desired - getValueSPI
-    -- err = reg(temperature_desired - getValueSPI)
 
     local PID = err - prev_err
     send(PID)

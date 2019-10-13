@@ -1,5 +1,5 @@
-function f(a, b) 
-    c = (a + b)
+function f(a, b)
+    c = a + b
     d = c + b
     f(c, d)
 end
