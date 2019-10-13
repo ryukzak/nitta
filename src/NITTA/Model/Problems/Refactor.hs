@@ -109,6 +109,5 @@ prepareBuffer (ResolveDeadlock vs) = let
 prepareBuffer _ = undefined
 
 
--- |The constant, which restrict maximum number of synthesis steps. Avoids the
--- endless synthesis process.
+-- |The constant, which restrict maximum length of a buffer sequence.
 maxBufferStack = 2 :: Int

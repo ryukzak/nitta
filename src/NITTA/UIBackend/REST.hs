@@ -98,6 +98,7 @@ withSynthesis root nId
         alg _                                            = error "unsupported algorithm structure"
 
 
+-- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
         { dbgEndpointOptions           :: [ ( tag, EndpointOption v t ) ]
         , dbgFunctionLocks             :: [ ( String, [Lock v] ) ]

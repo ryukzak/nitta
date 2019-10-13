@@ -56,9 +56,18 @@ class WithFunctions a f | a -> f where
 
 -----------------------------------------------------------
 
+-- |The type class for variable identifier modifications.
 class Suffix v where
     -- FIXME: may be unsafe (create duplicate variable)
+    -- |Make a buffered version of the variable. For example:
+    --
+    -- > "v"" -> "v@buf"
     bufferSuffix :: v -> v
+    -- |Count length of a variable buffer secuence. For example:
+    --
+    -- > "v" -> 0
+    -- > "v@buf" -> 1
+    -- > "b@buf@buf" -> 2
     countSuffix :: v -> Int
 
 instance Suffix String where
