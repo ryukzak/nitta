@@ -178,17 +178,21 @@ test_examples =
         =<< lua "teacup_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/teacup.lua")
     , testCase "examples/fibonacci.lua wait" $ either assertFailure return
         =<< lua "fibonacci_wait" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
-    , testCase "examples/self-send1.lua" $ either assertFailure return
-        =<< lua "self_send1" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/self-send1.lua")
-    , testCase "examples/self-send2.lua" $ either assertFailure return
-        =<< lua "self_send2" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/self-send2.lua")
-    , testCase "examples/pu_deadlock.lua" $ either assertFailure return
-        =<< lua "pu_deadlock" (pFX32_32, microarch Sync SlaveSPI) $(embedStringFile "examples/pu_deadlock.lua")
+    , testCase "test/lua/self-send1.lua" $ either assertFailure return
+        =<< lua "self_send1" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "test/lua/self-send1.lua")
+    , testCase "test/lua/self-send2.lua" $ either assertFailure return
+        =<< lua "self_send2" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "test/lua/self-send2.lua")
+    , testCase "test/lua/pu-deadlock.lua" $ either assertFailure return
+        =<< lua "pu_deadlock" (pFX32_32, microarch Sync SlaveSPI) $(embedStringFile "test/lua/pu-deadlock.lua")
     -- FIXME: uncomment when IO synchronization propogation and SPI will be fixed.
     -- , testCase "examples/fibonacci.lua drop" $ either assertFailure return
     --     =<< lua "fibonacci_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
     , testCase "examples/pid.lua wait" $ either assertFailure return
         =<< lua "pid_wait" (pFX32_32, microarch Sync SlaveSPI) $(embedStringFile "examples/pid.lua")
+    , testCase "test/luaEx/fail.lua" $ either assertFailure return
+        =<< lua "fail_lua" (pFX32_32, microarch Sync SlaveSPI) $(embedStringFile "test/lua/fail.lua")
+    , testCase "test/luaEx/spi-many-outputs.lua" $ either assertFailure return
+        =<< lua "spi_many_outputs" (pFX32_32, microarch Sync SlaveSPI) $(embedStringFile "test/lua/spi-many-outputs.lua")
     -- , testCase "examples/pid.lua drop" $ either assertFailure return
     --     =<< lua "pid_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/pid.lua")
     ]
