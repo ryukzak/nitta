@@ -43,10 +43,6 @@ export default class TopButtonView extends React.Component<ITopButtonViewProps, 
         }
     }
 
-    reload = () => {
-        this.context.selectNode((this.context.selectedNodeId = null))
-    }
-
     public render() {
         return (
             <div className="h-100" ref={this.containerRef}>
@@ -54,16 +50,16 @@ export default class TopButtonView extends React.Component<ITopButtonViewProps, 
                     <div className="d-flex flex-row my-auto">
                         <Button className="mr-3" onClick={() => this.resizeSynthesisGraphView(true)}>Expand</Button>
                         <Button className="mr-3" onClick={() => this.resizeSynthesisGraphView(false)}>Reduse</Button>
-                        <Button className="mr-3" onClick={() => this.reload()}>Refresh</Button>
+                        <Button className="mr-3" onClick={() => this.context.reloadSelectedNode()}>Refresh</Button>
                     </div>
                     <div className="d-flex flex-row-reverse my-auto">
                         <h6>black - processed node; white - in progress node; green - succees synthesis</h6>
                     </div>
                 </div>
                 <div className="justify-content-center bg-light border p-2" style={{ height: this.state.synthesisGraphHeight }}>
-                    <<div className="h-100 d-flex align-items-center justify-content-center text-black-50">
+                    <div className="h-100 d-flex align-items-center justify-content-center text-black-50">
                         <h1>Empty graph</h1>
-                    </div>>
+                    </div>
                 </div>
             </div>
         );
