@@ -81,7 +81,7 @@ library
                      , regex-compat
                      , safe
                      , servant
-                     , servant-js 
+                     , servant-js
                      , servant-server
                      , split
                      , stm
@@ -111,6 +111,7 @@ executable nitta
   hs-source-dirs:      app
   main-is:             Main.hs
   build-depends:       base
+                     , regex-compat
                      , cmdargs
                      , data-default
                      , interpolatedstring-perl6

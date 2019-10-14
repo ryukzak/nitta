@@ -25,7 +25,10 @@ module Main ( main ) where
 
 import           Control.Monad                    (void, when)
 import           Data.Default                     (def)
+import           Data.Maybe
+import           Data.Proxy
 import qualified Data.Text.IO                     as T
+import           GHC.TypeLits
 import           NITTA.Frontend
 import           NITTA.Intermediate.Types
 import           NITTA.Model.MicroArchitecture
@@ -39,6 +42,7 @@ import           NITTA.Project                    (TargetSynthesis (..),
 import           NITTA.UIBackend
 import           System.Console.CmdArgs           hiding (def)
 import           Text.InterpolatedString.Perl6    (qc)
+import           Text.Regex
 
 
 -- |Command line interface.
@@ -64,31 +68,35 @@ nittaArgs = Nitta
     , file=def &= args &= typFile
     }
 
+
+parseFX input = let
+        typePattern = mkRegex "fx([0-9]+).([0-9]+)"
+        [ m, b ] = fromMaybe (error "incorrect Bus type input") $ matchRegex typePattern input
+        convert = fromJust . someNatVal . read
+    in ( convert m, convert b )
+
+
 main = do
     Nitta{ web, port, npm_build, file, type_, io_sync } <- cmdArgs nittaArgs
     when npm_build prepareStaticFiles
     putStrLn [qc|> readFile: { file }|]
     when (null file) $ error "input file not specified"
     src <- T.readFile file
-    let runner = if web
-        then runWebUI port $ lua2functions src
-        else runTestbench $ lua2functions src
-    case type_ of
-        "fx24.32" -> runner (microarch io_sync :: BusNetwork String String (FX 24 32) Int)
-        "fx32.32" -> runner (microarch io_sync :: BusNetwork String String (FX 32 32) Int)
-        _ -> error "Wrong bus type"
+    let cadDesc = if web then Just port else Nothing
 
-runWebUI port alg ma = backendServer port $ mkModelWithOneNetwork ma alg
-runTestbench tDFG tMicroArch
-    = void $ runTargetSynthesis (def :: TargetSynthesis _ _ _ Int)
+    ( \( SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b) ) ->
+          selectCAD cadDesc src ( microarch io_sync :: BusNetwork String String (FX m b) Int)
+        ) $ parseFX type_
+
+
+selectCAD (Just port) src ma = backendServer port $ mkModelWithOneNetwork ma $ lua2functions src
+
+selectCAD Nothing src ma = void $ runTargetSynthesis def
         { tName="main"
-        , tMicroArch
-        , tDFG
+        , tMicroArch=ma
+        , tDFG=lua2functions src
         , tVerbose=True
-        , tReceivedValues=filter (\(v, _x) -> notElem v $ variables tDFG)
-            [ ( "a:0", [1, 2, 3, 4, 5, 6] )
-            , ( "b:0", [1, 1, 1, 1, 1, 1] )
-            ]
+        , tReceivedValues=def
         }
 
 
@@ -102,8 +110,8 @@ microarch ioSync = evalNetwork ioSync $ do
         add "fram2" FramIO
         add "shift" ShiftIO
         add "mul" MultiplierIO
-        add "accum" AccumIO 
-        add "div" DividerIO 
+        add "accum" AccumIO
+        add "div" DividerIO
         add "spi" $ SPISlave
             { slave_mosi = InputPortTag "mosi"
             , slave_miso = OutputPortTag "miso"
