@@ -18,16 +18,10 @@ export default class App extends React.Component<IAppProps, IAppState> {
     super(props);
 
     this.state = {
-      synthesisGraphHeight: 0,
-      minSynthesisGraphHeight: 0,
       selectedNodeId: null,
 
       selectNode: (id: SelectedNodeId) => {
         this.setState({ selectedNodeId: id });
-      },
-
-      changedSynthesisGraphHeight: (newSynthesisGraphHeight: number) => {
-        this.setState({ synthesisGraphHeight: newSynthesisGraphHeight })
       },
 
       reloadSelectedNode: () => {

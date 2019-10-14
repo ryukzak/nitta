@@ -6,9 +6,6 @@ export interface IAppContext {
   selectedNodeId: SelectedNodeId;
   selectNode: (id: SelectedNodeId) => void;
   reloadSelectedNode: () => void;
-  changedSynthesisGraphHeight: (newSynthesisGraphHeight: number) => void;
-  synthesisGraphHeight: number;
-  minSynthesisGraphHeight: number;
 }
 
 function notImplementedFunction() {
@@ -18,8 +15,5 @@ function notImplementedFunction() {
 export default React.createContext<IAppContext>({
   selectedNodeId: null,
   selectNode: notImplementedFunction,
-  reloadSelectedNode: notImplementedFunction,
-  changedSynthesisGraphHeight: notImplementedFunction,
-  synthesisGraphHeight: 0,
-  minSynthesisGraphHeight: 0
+  reloadSelectedNode: notImplementedFunction
 });
