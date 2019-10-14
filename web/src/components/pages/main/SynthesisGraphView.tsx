@@ -1,6 +1,5 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
-import SynthesisGraph from "./SynthesisGraph";
 import AppContext from "../../app/AppContext";
 
 export interface ITopButtonViewProps { }
@@ -62,9 +61,9 @@ export default class TopButtonView extends React.Component<ITopButtonViewProps, 
                     </div>
                 </div>
                 <div className="justify-content-center bg-light border p-2" style={{ height: this.state.synthesisGraphHeight }}>
-                    <div className="h-100 d-flex align-items-center justify-content-center text-black-50">
+                    <<div className="h-100 d-flex align-items-center justify-content-center text-black-50">
                         <h1>Empty graph</h1>
-                    </div>
+                    </div>>
                 </div>
             </div>
         );
