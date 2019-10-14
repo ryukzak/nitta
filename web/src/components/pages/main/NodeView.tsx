@@ -1,21 +1,37 @@
 import * as React from "react";
+import { Button } from "react-bootstrap";
+import AppContext from "../../app/AppContext";
 
-export interface INodeViewProps {}
+export interface IButtonViewProps { }
+export interface IButtonViewState { }
 
-export interface INodeViewState {}
+export default class ButtonView extends React.Component<IButtonViewProps, IButtonViewState> {
+    static contextType = AppContext;
+    context!: React.ContextType<typeof AppContext>;
 
-export default class NodeView extends React.Component<INodeViewProps, INodeViewState> {
-  constructor(props: INodeViewProps) {
-    super(props);
+    constructor(props: IButtonViewProps) {
+        super(props);
+        this.state = {};
+    }
 
-    this.state = {};
-  }
+    handleClick = (str: string) => {
+        console.log("Label = " + str);
+    }
 
-  public render() {
-    return (
-      <div className="text-center p-5 bg-light border m-2 flex-grow-1">
-        <h1 className="text-black-50">Node View</h1>
-      </div>
-    );
-  }
+    public render() {
+        return (
+            <div className="d-flex justify-content-between my-3  mx-2 pb-2">
+                <div className="d-flex flex-row my-auto">
+                    <Button className="mr-3" onClick={() => this.handleClick("some")}>SIMPLE SYNTHESIS</Button>
+                    <Button className="mr-3" onClick={() => this.handleClick("some")}>SMART BIND SYNTHESIS</Button>
+                </div>
+                <div className="d-flex flex-row-reverse my-auto">
+                    <Button className="mr-3" onClick={() => this.handleClick("some")}>OBVIOUS BIND THREAD</Button>
+                    <Button className="mr-3" onClick={() => this.handleClick("some")}>BEST THREAD</Button>
+                    <Button className="mr-3" onClick={() => this.handleClick("some")}>ALL BEST THREAD 1</Button>
+                    <Button className="mr-3" onClick={() => this.handleClick("some")}>ALL BEST THREAD 2</Button>
+                </div>
+            </div>
+        );
+    }
 }
