@@ -1,14 +1,12 @@
 import * as React from "react";
-import SynthesisGraph from "./SynthesisGraphView";
-import ButtonView from "./BottomButtonView";
-import TopButtonView from "./TopButtonView";
+import NodeView from "./NodeView";
+import SynthesisGraphView from "./SynthesisGraphView";
 
 export default function MainPage() {
   return (
     <div className="h-100 d-flex flex-column">
-      <TopButtonView/>
-      <SynthesisGraph/>
-      <ButtonView/>
+      <SynthesisGraphView/>
+      <NodeView/>
     </div>
   );
 }
