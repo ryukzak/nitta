@@ -48,11 +48,10 @@ import           Data.Bits                        (FiniteBits (..))
 import           Data.Default
 import qualified Data.List                        as L
 import qualified Data.Map                         as M
-import           Data.Maybe                       (isJust, mapMaybe)
+import           Data.Maybe                       (fromMaybe, isJust, mapMaybe)
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import           Data.Typeable
-import           NITTA.Intermediate.Functions     (reg)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems.Binding
@@ -65,7 +64,6 @@ import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
-import           NITTA.UIBackend.VisJS            ()
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (inf, singleton, sup, width,
@@ -347,30 +345,56 @@ instance ( UnitTag tag, VarValTime v x t
 instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (BusNetwork tag v x t) v x where
     refactorOptions bn@BusNetwork{ bnPus, bnBinded } = let
-            insertRegs = L.nub
-                [ InsertOutRegister lockBy $ bufferSuffix lockBy
-                | (Bind f tag) <- bindOptions bn
-                , Lock{ lockBy } <- locks f
-                , lockBy `S.member` unionsMap variables (bindedFunctions tag bn)
-                ]
             breakLoops = concatMap refactorOptions $ M.elems bnPus
-            selfSending = [ colision
+
+            sources tag = M.fromList
+                [ (s, ss `S.difference` S.singleton s)
+                | EndpointO{ epoRole } <- endpointOptions ( bnPus M.! tag )
+                , case epoRole of Source{} -> True; _ -> False
+                , let Source ss = epoRole
+                , s <- S.elems ss
+                ]
+            allPossibleOutputs tag v
+                = map (S.union (S.singleton v)) $ S.elems $ S.powerSet
+                $ S.filter (isBufferRepetionOK maxBufferStack) -- avoid to many buffering
+                $ fromMaybe S.empty (sources tag M.!? v)
+
+            alreadyVs = transferred bn
+            fLocks = filter (\Lock{ lockBy } -> S.notMember lockBy alreadyVs) $ concatMap locks $ functions bn
+            allPULocks = map (\(tag, pu) -> (tag, locks pu)) $ M.assocs bnPus
+            maybeSended = unionsMap variables $ concatMap endpointOptions $ M.elems bnPus
+
+            isBufferRepetionOK 0 _ = False
+            isBufferRepetionOK n v
+                | bufferSuffix v `S.notMember` variables bn = True
+                | otherwise = isBufferRepetionOK (n-1) (bufferSuffix v)
+
+            selfSending = map ResolveDeadlock $ concat
+                [ allPossibleOutputs tag v
                 | (tag, fs) <- M.assocs bnBinded
                 , let
-                    sources = S.unions [ ss
-                        | EndpointO{ epoRole } <- endpointOptions ( bnPus M.! tag )
-                        , case epoRole of Source{} -> True; _ -> False
-                        , let Source ss = epoRole
-                        ]
-                    colision = unionsMap inputs fs `S.intersection` sources
-                , not $ null colision
+                    sources' = sources tag
+                    allSources = S.fromList $ M.keys sources'
+                    selfSendedVs = unionsMap inputs fs `S.intersection` allSources
+                , not $ null selfSendedVs
+                , v <- S.elems selfSendedVs
+                , isBufferRepetionOK maxBufferStack v
                 ]
-        in insertRegs ++ breakLoops ++ map SelfSending selfSending
 
-    refactorDecision bn@BusNetwork{ bnRemains } (InsertOutRegister v v')
-        = bn{ bnRemains=reg v [v'] : patch (v, v') bnRemains }
+            deadLockedVs = concat
+                [ allPossibleOutputs tag lockBy
+                | ( tag, ls ) <- allPULocks
+                , Lock{ lockBy, locked } <- ls
+                , let reversedLock = Lock{ lockBy=locked, locked=lockBy }
+                , reversedLock `elem` fLocks
+                  || any ( \( t, puLocks ) -> tag /= t && reversedLock `elem` puLocks ) allPULocks
+                , lockBy `S.member` maybeSended
+                , isBufferRepetionOK maxBufferStack lockBy
+                ]
+            deadlocks = map ResolveDeadlock deadLockedVs
+        in breakLoops ++ selfSending ++ deadlocks
 
-    refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(SelfSending vs) = let
+    refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(ResolveDeadlock vs) = let
             (buffer, diff) = prepareBuffer r
             Just (tag, _) = L.find
                 (\(_, f) -> not $ null $ S.intersection vs $ unionsMap variables f)

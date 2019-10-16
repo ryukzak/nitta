@@ -64,11 +64,9 @@ library
   build-depends:       aeson
                      , array
                      , base
-                     , bytestring
                      , containers
                      , data-default
                      , directory
-                     , extra
                      , file-embed
                      , filepath
                      , hashable
@@ -77,18 +75,16 @@ library
                      , interpolatedstring-perl6
                      , intervals
                      , language-lua
-                     , list-t
                      , MissingH
                      , mtl
                      , process
                      , regex-compat
                      , safe
                      , servant
-                     , servant-js 
+                     , servant-js
                      , servant-server
                      , split
                      , stm
-                     , syb
                      , text
                      , transformers
                      , unordered-containers
@@ -115,12 +111,10 @@ executable nitta
   hs-source-dirs:      app
   main-is:             Main.hs
   build-depends:       base
+                     , regex-compat
                      , cmdargs
                      , data-default
-                     , directory
-                     , filepath
                      , interpolatedstring-perl6
-                     , mtl
                      , nitta
                      , text
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -132,10 +126,11 @@ test-suite nitta-test
   main-is:             Spec.hs
   other-modules:       NITTA.Test.BusNetwork
                      , NITTA.Test.FunctionSimulation
-                     , NITTA.Test.LuaFrontend
                      , NITTA.Test.Microarchitectures
                      , NITTA.Test.ProcessorUnits
+                     , NITTA.Test.Refactor
                      , NITTA.Test.Types
+                     , NITTA.Test.LuaFrontend
                      , NITTA.Test.Utils
                      , NITTA.Test.CodeBlock
   build-depends:       atomic-primops

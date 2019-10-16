@@ -56,12 +56,27 @@ class WithFunctions a f | a -> f where
 
 -----------------------------------------------------------
 
+-- |The type class for variable identifier modifications.
 class Suffix v where
-    -- FIXME: may be unsafe
+    -- FIXME: may be unsafe (create duplicate variable)
+    -- |Make a buffered version of the variable. For example:
+    --
+    -- > "v"" -> "v@buf"
     bufferSuffix :: v -> v
+    -- |Count length of a variable buffer secuence. For example:
+    --
+    -- > "v" -> 0
+    -- > "v@buf" -> 1
+    -- > "b@buf@buf" -> 2
+    countSuffix :: v -> Int
 
 instance Suffix String where
     bufferSuffix s = s ++ "@buf"
+    countSuffix [] = 0
+    countSuffix s
+        | Just s' <- stripPrefix "@buf" s = 1 + countSuffix s'
+        | otherwise = countSuffix $ drop 1 s
+
 
 -- |Variable identifier. Used for simplify type description.
 type Var v = ( Typeable v, Ord v, Show v, Label v, Suffix v )
@@ -97,7 +112,7 @@ instance ( Ord v ) => Patch (O v) (v, v) where
     patch (v, v') (O vs) = O $ S.fromList $ map (\e -> if e == v then v' else e) $ S.elems vs
 
 instance ( Show v ) => Show (O v) where
-    show (O vs) = "O " ++ show (S.elems vs)
+    show (O vs) = "(O " ++ show (S.elems vs) ++ ")"
 
 instance Variables (O v) v where
     variables (O v) = v
@@ -120,7 +135,7 @@ data Lock v
         { locked :: v
         , lockBy :: v
         }
-    deriving ( Show )
+    deriving ( Show, Eq, Generic )
 
 
 
@@ -177,15 +192,15 @@ instance Patch (F v x) (v, v) where
 
 instance ( Ord v ) => Patch (F v x) (Diff v) where
     patch Diff{ diffI, diffO } f0 = let
-            diffI' = map (\v -> case diffI M.!? v of
+            diffI' = mapMaybe (\v -> case diffI M.!? v of
                     Just v' -> Just (v, v')
                     Nothing -> Nothing
                 ) $ S.elems $ inputs f0
-            diffO' = map (\v -> case diffO M.!? v of
-                    Just v' -> Just (v, v')
+            diffO' = concat $ mapMaybe (\v -> case diffO M.!? v of
+                    Just vs -> Just [ (v, v') | v' <- S.elems vs ]
                     Nothing -> Nothing
                 ) $ S.elems $ outputs f0
-        in foldl (\f diff -> patch diff f) f0 $ catMaybes $ diffI' ++ diffO'
+        in foldl (\f diff -> patch diff f) f0 $ diffI' ++ diffO'
 
 
 instance ( Patch b v ) => Patch [b] v where
@@ -271,12 +286,22 @@ class Patch f diff where
 
 data Diff v = Diff
     { diffI :: M.Map v v
-    , diffO :: M.Map v v
+    , diffO :: M.Map v (S.Set v)
     }
+    deriving ( Show, Eq )
 
 reverseDiff Diff{ diffI, diffO } = Diff
     { diffI=M.fromList $ map swap $ M.assocs diffI
-    , diffO=M.fromList $ map swap $ M.assocs diffO
+    , diffO=foldl (\st (k, v) -> let
+                          box' = case st M.!? k of
+                              Just box -> box `S.union` S.singleton v
+                              Nothing  -> S.singleton v
+                      in M.insert k box' st
+                  ) def
+            [ ( b, a )
+            | ( a, bs ) <- M.assocs diffO
+            , b <- S.elems bs
+            ]
     }
 
 instance Default (Diff v) where

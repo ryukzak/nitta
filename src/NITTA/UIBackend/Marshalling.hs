@@ -200,6 +200,7 @@ instance ( VarValTimeJSON v x t
 
 -- *Model
 instance ( Var v, ToJSON v, ToJSON x ) => ToJSON (DataFlowGraph v x)
+instance ( ToJSON v ) => ToJSON (Lock v)
 
 instance ToJSON Relation where
     toJSON (Vertical a b) = toJSON [ a, b ]

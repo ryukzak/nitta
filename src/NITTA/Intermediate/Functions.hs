@@ -53,11 +53,9 @@ import           NITTA.Utils
 
 
 
-data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq )
+data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq, Show )
 instance {-# OVERLAPS #-} ( Show x, Label v ) => Label (Loop v x) where
     label (Loop (X x) _ (I b)) = show x ++ "->" ++ label b
-instance ( Show v, Show x ) => Show (Loop v x) where
-    show (Loop (X x) (O k2) (I k1)) = show x ++ ", " ++ show k1 ++ " >>> " ++ S.join ", " (map show $ elems k2)
 loop x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
 isLoop f
     | Just Loop{} <- castF f = True
@@ -70,7 +68,7 @@ instance Function (Loop v x) v where
 instance ( Ord v ) => Patch (Loop v x) (v, v) where
     patch diff (Loop x a b) = Loop x (patch diff a) (patch diff b)
 instance ( Var v ) => Locks (Loop v x) v where
-    locks _ = []
+    locks (Loop _ (O as) (I b)) = [ Lock{ locked=b, lockBy=a } | a <- elems as ]
 instance ( Var v ) => FunctionSimulation (Loop v x) v x where
     simulate cntx@CycleCntx{ cycleCntx } (Loop (X x) (O vs) (I _))
         = case cycleCntx M.!? oneOf vs of
@@ -80,32 +78,29 @@ instance ( Var v ) => FunctionSimulation (Loop v x) v x where
             Nothing -> setZipX cntx vs x
 
 
-data LoopOut v x = LoopOut (Loop v x) (O v) deriving ( Typeable, Eq )
+data LoopOut v x = LoopOut (Loop v x) (O v) deriving ( Typeable, Eq, Show )
 instance {-# OVERLAPS #-} ( Show v ) => Label (LoopOut v x) where
     label (LoopOut _ (O vs)) = show (oneOf vs) ++ " ->"
-instance ( Show v, Show x ) => Show (LoopOut v x) where
-    show (LoopOut (Loop (X x) _ _) (O vs)) = S.join ", " (map show $ elems vs) ++ " := [" ++ show x ++ ", ..]"
 instance ( Ord v ) => Function (LoopOut v x) v where
     outputs (LoopOut _ o) = variables o
     isInternalLockPossible _ = True
 instance ( Ord v ) => Patch (LoopOut v x) (v, v) where
     patch diff (LoopOut l a) = LoopOut (patch diff l) $ patch diff a
-instance ( Var v ) => Locks (LoopOut v x) v where locks _ = []
+instance ( Var v ) => Locks (LoopOut v x) v where
+    locks _ = []
 instance ( Var v ) => FunctionSimulation (LoopOut v x) v x where
     simulate cntx (LoopOut l _) = simulate cntx l
 
 
-data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq )
+data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq, Show )
 instance {-# OVERLAPS #-} ( Show v ) => Label (LoopIn v x) where
-    label (LoopIn _ (I v)) = "-> " ++ show v
-instance ( Show v ) => Show (LoopIn v x) where
-    show (LoopIn _ (I v)) = "-> " ++ show v
+    label (LoopIn (Loop _ (O vs) _) (I v)) = "-> " ++ show v ++ " (" ++ show (oneOf vs) ++ ")"
 instance ( Ord v ) => Function (LoopIn v x) v where
     inputs (LoopIn _ o) = variables o
     isInternalLockPossible _ = True
 instance ( Ord v ) => Patch (LoopIn v x) (v, v) where
     patch diff (LoopIn l a) = LoopIn (patch diff l) $ patch diff a
-instance ( Var v ) => Locks (LoopIn v x) v where locks _ = []
+instance ( Var v ) => Locks (LoopIn v x) v where locks (LoopIn l _) = locks l
 instance ( Var v ) => FunctionSimulation (LoopIn v x) v x where
     simulate cntx (LoopIn l _) = simulate cntx l
 

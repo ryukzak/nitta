@@ -55,7 +55,7 @@ export class SynthesisHistoryView extends React.Component<Props, State> {
         return (
             <pre className="squeeze"> {history.map((e, i) =>
                 <div key={i}> { (this.props.reverse ? history.length - i - 1 : i) + " - " }
-                    { e.tag == "BindingView" && e.tag + " - " + e.pu + " - " + e.function }
+                    { e.tag == "BindingView" && e.tag + " | " + e.pu + " <- " + e.function }
                     { e.tag == "RefactorView" && e.tag + " - " + e.contents }
                     { e.tag == "DataflowView" && e.tag + " - " + JSON.stringify(e) }
                 </div>

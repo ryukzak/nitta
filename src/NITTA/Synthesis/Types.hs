@@ -290,7 +290,9 @@ data Parameters
         , pNotTransferableInputs :: [Float]
         }
     | RefactorEdgeParameter
-        { pRefactor :: Refactor () ()
+        { pRefactor    :: Refactor () ()
+        , pVarsCount   :: Float
+        , pBufferCount :: Float
         }
     deriving ( Show, Generic )
 
@@ -364,12 +366,14 @@ estimateParameters
                 notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
             in map (fromIntegral . length) notTransferableVars
         }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor InsertOutRegister{})
-    = RefactorEdgeParameter $ InsertOutRegister def def
 estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor BreakLoop{})
-    = RefactorEdgeParameter $ BreakLoop def def def
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor SelfSending{})
-    = RefactorEdgeParameter $ SelfSending def
+    = RefactorEdgeParameter{ pRefactor=BreakLoop def def def, pVarsCount=0, pBufferCount=0 }
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor (ResolveDeadlock vs))
+    = RefactorEdgeParameter
+        { pRefactor=ResolveDeadlock def
+        , pVarsCount=fromIntegral $ S.size vs
+        , pBufferCount=fromIntegral $ sum $ map countSuffix $ S.elems vs
+        }
 
 
 -- |Function, which map 'Parameters' to 'Float'.
@@ -378,9 +382,9 @@ objectiveFunction
         ParametersCntx{ numberOfDFOptions }
         params
     = case params of
-        BindEdgeParameter{ pPossibleDeadlock=True } -> -1
+        BindEdgeParameter{ pPossibleDeadlock=True } -> 500
         BindEdgeParameter{ pCritical, pAlternative, pAllowDataFlow, pRestless, pNumberOfBindedFunctions, pWave, pPercentOfBindedInputs, pOutputNumber }
-            -> 1000
+            -> 3000
                 + pCritical <?> 1000
                 + (pAlternative == 1) <?> 500
                 + pAllowDataFlow * 10
@@ -390,17 +394,15 @@ objectiveFunction
                 - pRestless * 4
                 + pOutputNumber * 2
         DataFlowEdgeParameter{ pWaitTime, pNotTransferableInputs, pRestrictedTime }
-            -> 100
+            -> 2000
                 + (numberOfDFOptions >= threshold) <?> 1000
                 + pRestrictedTime <?> 200
                 - sum pNotTransferableInputs * 5
                 - pWaitTime
-        (RefactorEdgeParameter InsertOutRegister{})
-            -> 2000
-        (RefactorEdgeParameter BreakLoop{})
-            -> 2000
-        (RefactorEdgeParameter SelfSending{})
-            -> 2000
+        RefactorEdgeParameter{ pRefactor=BreakLoop{} }
+            -> 5000
+        RefactorEdgeParameter{ pRefactor=ResolveDeadlock{}, pVarsCount, pBufferCount }
+            -> 1000 + pVarsCount - pBufferCount * 1000
         -- _ -> -1
 
 True <?> v = v

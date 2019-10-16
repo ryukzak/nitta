@@ -87,17 +87,17 @@ test_patchFunction =
     , testCase "diff patched function input by input" $
         show (patch def{ diffI=fromList [("a", "a'")] } f1) @?= "c = d = a' + b"
     , testCase "diff non patched function input by output" $
-        show (patch def{ diffO=fromList [("a", "a'")] } f1) @?= "c = d = a + b"
+        show (patch def{ diffO=fromList [("a", S.singleton "a'")] } f1) @?= "c = d = a + b"
 
     , testCase "diff patched function output by output" $
-        show (patch def{ diffO=fromList [("c", "c'")] } f1) @?= "c' = d = a + b"
+        show (patch def{ diffO=fromList [("c", S.singleton "c'")] } f1) @?= "c' = d = a + b"
     , testCase "diff non patched function output by input" $
         show (patch def{ diffI=fromList [("c", "c'")] } f1) @?= "c = d = a + b"
 
     , testCase "diff non patched function output by input" $
         show (patch def
                 { diffI=fromList [("b", "b'"), ("d", "d!")]
-                , diffO=fromList [("d", "d'"), ("b", "b!")]
+                , diffO=fromList [("d", S.singleton "d'"), ("b", S.singleton "b!")]
                 } f1) @?= "c = d' = a + b'"
     ]
 
@@ -115,14 +115,13 @@ pu = let
 test_patchEndpointOptions =
     [ testCase "non-patched function options" $
         show' opts @?= "[Target a,Target b]"
-
     , testCase "patched function options input by input" $
-        show' (patch def{ diffI=fromList [("a","a'")]} opts) @?= "[Target a',Target b]"
+        show' (patch def{ diffI=fromList [("a", "a'")]} opts) @?= "[Target a',Target b]"
     , testCase "non-patched function options input by output" $
-        show' (patch def{ diffO=fromList [("a","a'")]} opts) @?= "[Target a,Target b]"
+        show' (patch def{ diffO=fromList [("a", S.singleton "a'")]} opts) @?= "[Target a,Target b]"
 
     , testCase "patched function options output by output" $
-        show' (patch def{ diffO=fromList [("d","d'")]} opts') @?= "[Source c,d']"
+        show' (patch def{ diffO=fromList [("d", S.singleton "d'")]} opts') @?= "[Source c,d']"
     , testCase "non-patched function options output by input" $
         show' (patch def{ diffI=fromList [("d","d'")]} opts') @?= "[Source c,d]"
     ]
@@ -137,25 +136,60 @@ test_patchEndpointOptions =
         show' = show . map epoRole
 
 
-test_patchPU =
-    [ testCase "patched PU input options" $
-        show' o1 @?= "[Target a',Target b]"
-    , testCase "non-patched PU input options" $
+test_patchPUone2one =
+    [ testCase "options, PU patched" $
+        show' o1 @?= "[Target A,Target b]"
+    , testCase "options, first arg loaded" $
         show' o3 @?= "[Target b]"
-    , testCase "patched PU output options" $
-        show' o4 @?= "[Source c,d']"
-    , testCase "non-patched PU all done" $
+    , testCase "options, all all args loaded" $
+        show' o4 @?= "[Source D,c]"
+    , testCase "all work done" $
         show' o5 @?= "[]"
     ]
     where
-        pu1 = patch (I "a", I "a'") pu
+        -- F.add "a" "b" ["c", "d"] -> F.add "A" "b" ["c", "d"]
+        pu1 = patch (I "a", I "A") pu
         o1 = endpointOptions pu1
-        pu2 = patch (O $ S.fromList ["d"], O $ S.fromList ["d'"]) pu1
+        -- F.add "A" "b" ["c", "d"] -> F.add "A" "b" ["c", "D"]
+        pu2 = patch (O $ S.fromList ["d"], O $ S.fromList ["D"]) pu1
         o2 = endpointOptions pu2
+        -- F.add "A" "b" ["c", "D"] -> F.add ___ "b" ["c", "D"]
         pu3 = endpointDecision pu2 $ endpointOptionToDecision $ head o2
         o3 = endpointOptions pu3
+        -- F.add ___ "b" ["c", "D"] -> F.add ___ ___ ["c", "D"]
         pu4 = endpointDecision pu3 $ endpointOptionToDecision $ head o3
         o4 = endpointOptions pu4
+        -- F.add ___ "b" ["c", "D"] -> F.add ___ ___ __________
+        pu5 = endpointDecision pu4 $ endpointOptionToDecision $ head o4
+        o5 = endpointOptions pu5
+
+        show' = show . map epoRole
+
+
+test_patchPUmany2one =
+    [ testCase "options, PU patched" $
+        show' o1 @?= "[Target A,Target b]"
+    , testCase "options, first arg loaded" $
+        show' o3 @?= "[Target b]"
+    , testCase "options, all all args loaded" $
+        show' o4 @?= "[Source CD]"
+    , testCase "all work done" $
+        show' o5 @?= "[]"
+    ]
+    where
+        -- F.add "a" "b" ["c", "d"] -> F.add "A" "b" ["c", "d"]
+        pu1 = patch (I "a", I "A") pu
+        o1 = endpointOptions pu1
+        -- F.add "A" "b" ["c", "d"] -> F.add "A" "b" ["CD"]
+        pu2 = patch (O $ S.fromList ["c", "d"], O $ S.fromList ["CD"]) pu1
+        o2 = endpointOptions pu2
+        -- F.add "A" "b" ["CD"] -> F.add ___ "b" ["CD"]
+        pu3 = endpointDecision pu2 $ endpointOptionToDecision $ head o2
+        o3 = endpointOptions pu3
+        -- F.add ___ "b" ["CD"] -> F.add ___ ___ ["CD"]
+        pu4 = endpointDecision pu3 $ endpointOptionToDecision $ head o3
+        o4 = endpointOptions pu4
+        -- F.add ___ "b" ["CD"] -> F.add ___ ___ ______
         pu5 = endpointDecision pu4 $ endpointOptionToDecision $ head o4
         o5 = endpointOptions pu5
 

@@ -78,7 +78,7 @@ export class EdgesView extends React.Component<Props, State> {
         if (this.state.edges === undefined || this.state.edges === null) return <div />;
 
         /* FIXME: history and table view of decision should be similar */
-        return (
+        return (<>
             <div className="row">
                 <div className="columns">
                     <Table
@@ -89,18 +89,18 @@ export class EdgesView extends React.Component<Props, State> {
                             objectiveColumn(),
 
                             textColumn("function", (e: Edge) => (e.decision as Binding).function),
-                            textColumn("pu", (e: Edge) => (e.decision as Binding).pu),
+                            textColumn("pu", (e: Edge) => (e.decision as Binding).pu, 50),
 
-                            textColumn("crit", (e: Edge) => String((e.parameters as BindingParam).pCritical)),
-                            textColumn("lock", (e: Edge) => String((e.parameters as BindingParam).pPossibleDeadlock)),
-                            textColumn("wave", (e: Edge) => (e.parameters as BindingParam).pWave),
-                            textColumn("outputs", (e: Edge) => (e.parameters as BindingParam).pOutputNumber),
-                            textColumn("alt", (e: Edge) => (e.parameters as BindingParam).pAlternative),
-                            textColumn("rest", (e: Edge) => (e.parameters as BindingParam).pRestless),
+                            textColumn("crit", (e: Edge) => String((e.parameters as BindingParam).pCritical), 50),
+                            textColumn("lock", (e: Edge) => String((e.parameters as BindingParam).pPossibleDeadlock), 50),
+                            textColumn("wave", (e: Edge) => (e.parameters as BindingParam).pWave, 50),
+                            textColumn("outputs", (e: Edge) => (e.parameters as BindingParam).pOutputNumber, 70),
+                            textColumn("alt", (e: Edge) => (e.parameters as BindingParam).pAlternative, 50),
+                            textColumn("rest", (e: Edge) => (e.parameters as BindingParam).pRestless, 50),
 
-                            textColumn("newDF", (e: Edge) => (e.parameters as BindingParam).pAllowDataFlow),
-                            textColumn("binded functions", (e: Edge) => (e.parameters as BindingParam).pNumberOfBindedFunctions),
-                            textColumn("binded inputs %", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs),
+                            textColumn("newDF", (e: Edge) => (e.parameters as BindingParam).pAllowDataFlow, 70),
+                            textColumn("newBind", (e: Edge) => (e.parameters as BindingParam).pNumberOfBindedFunctions, 70),
+                            textColumn("|inputs|", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs, 70),
                         ]}
                         onNidChange={this.props.onNidChange} />
                     <Table
@@ -126,7 +126,7 @@ export class EdgesView extends React.Component<Props, State> {
                                 return (<div>
                                     {lst.map((k: string, i: number) => <pre key={i}>{k}</pre>)}
                                 </div>);
-                            }, true),
+                            }, undefined, true),
                             textColumn("wait", (e: Edge) => (e.parameters as DataflowParam).pWaitTime),
                             textColumn("not transferable input", (e: Edge) => JSON.stringify((e.parameters as DataflowParam).pNotTransferableInputs)),
                             textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime)),
@@ -143,22 +143,21 @@ export class EdgesView extends React.Component<Props, State> {
                         ]}
                         onNidChange={this.props.onNidChange} />
                 </div>
-
-                <div className="rows">
-                    <div className="columns">
-                        <pre className="squeze">history:</pre>
-                    </div>
-                </div>
-                <div className="row">
-                    <div className="large-7 columns">
-                        <SynthesisHistoryView nId={ this.state.nid } reverse={ true } />
-                    </div>
-                    <div className="large-5 columns">
-                        <IntermediateView selectedNId={ this.state.nid } view="synthesisNode" />
-                    </div>
+            </div>
+            <div className="row">
+                <div className="columns">
+                    <pre className="squeze">history:</pre>
                 </div>
             </div>
-        );
+            <div className="row">
+                <div className="large-7 columns">
+                    <SynthesisHistoryView nId={this.state.nid} reverse={true} />
+                </div>
+                <div className="large-5 columns">
+                    <IntermediateView selectedNId={this.state.nid} view="synthesisNode" />
+                </div>
+            </div>
+        </>);
     }
 }
 
@@ -199,13 +198,13 @@ function decisionColumn() {
     };
 }
 
-// FIXME: any should be changed.
-function textColumn(columnName: string, f: (e: Edge) => string | number | any, wrap?: boolean) {
+function textColumn(columnName: string, f: (e: Edge) => string | number | any, maxWidth?: number, wrap?: boolean) {
     let style = {};
     if (wrap) style["whiteSpace"] = "unset";
     return {
         Header: columnName,
         style: style,
+        maxWidth: maxWidth,
         Cell: (row: { original: Edge }) => f(row.original)
     };
 }
