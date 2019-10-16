@@ -96,6 +96,12 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
 
     unmarkNode(nid: any) {
         if (nid === null) return;
+        let tmp: string = this.state.nIds[nid].nodeSvgShapeOriginal;
+        let nids = this.state.nIds;
+        nids[nid].nodeSvgShape = tmp
+        this.setState({
+            nIds: nids
+        })
         this.state.nIds[nid].nodeSvgShape = this.state.nIds[nid].nodeSvgShapeOriginal;
     }
 

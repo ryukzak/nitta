@@ -73,7 +73,7 @@ export class IntermediateView extends React.Component<IntermediateViewProps, Int
                 let graph: IGraphStructure<IGraphEdge> = { nodes: [], edges: [] };
 
                 newNid.nodes.map((anObjectMapped: any, index: number) => {
-                    graph.nodes[index] = {
+                    return graph.nodes[index] = {
                         id: index + 1,
                         label: String(anObjectMapped.label),
                         nodeColor: "",
@@ -83,7 +83,7 @@ export class IntermediateView extends React.Component<IntermediateViewProps, Int
                     };
                 });
                 newNid.edges.map((edge: any, index: number) => {
-                    graph.edges[index] = edge;
+                    return graph.edges[index] = edge;
                 });
 
                 if (this.state.view === "synthesisNode") {

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Button } from "react-bootstrap";
 
 /**
  * Component to display JSON data.
@@ -56,7 +57,7 @@ export class JsonView extends React.Component<JsonViewProps, JsonViewState> {
         return (
             <div>
                 <pre>
-                [<a onClick={ this.toggleDiv }> JSON: {this.state.selectedLabel} </a>]
+                [<Button className="btn btn-link bg-transparent p-0  border-0" onClick={ this.toggleDiv }> JSON: {this.state.selectedLabel} </Button>]
                 </pre>
                 {/* <input type="checkbox"/> */}
                 { this.state.isHiddenJsonView &&

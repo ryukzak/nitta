@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
-import { haskellApiService } from "../../../services/HaskellApiService"
 import ReactTable from "react-table";
+import { haskellApiService } from "../../../services/HaskellApiService"
 import { IntermediateView } from "../node/IntermadiateView";
 import { SynthesisHistoryView } from "../process/SynthesisHistoryView";
 import {
@@ -212,7 +212,7 @@ function nidColumn(onUpdateNid: (nid: string) => void) {
         maxWidth: 30,
         Cell: (row: { original: Edge }) => {
             let nid: string[] = row.original.nid.split(nInSeparator);
-            return <a onClick={() => onUpdateNid(row.original.nid)}>{nid[nid.length - 1]}</a>;
+            return <Button className="btn btn-link bg-transparent p-0  border-0" onClick={() => onUpdateNid(row.original.nid)}>{nid[nid.length - 1]}></Button>;
         },
     };
 }

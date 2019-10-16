@@ -1,6 +1,6 @@
 import * as React from "react";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { TestbenchReport, IGraphEdge } from "../../../gen/types";
+import { TestbenchReport } from "../../../gen/types";
 import ReactTable from "react-table";
 
 interface ITestBenchPageProps {
