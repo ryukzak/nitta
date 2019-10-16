@@ -1,6 +1,6 @@
 import React from "react";
 
-export type SelectedNodeId = number | null;
+export type SelectedNodeId = string | null;
 
 export interface IAppContext {
   selectedNodeId: SelectedNodeId;
@@ -12,8 +12,14 @@ function notImplementedFunction() {
   throw Error("A function is used outside of context that implements it.");
 }
 
-export default React.createContext<IAppContext>({
-  selectedNodeId: null,
-  selectNode: notImplementedFunction,
-  reloadSelectedNode: notImplementedFunction
-});
+const ctxt = React.createContext<IAppContext | null>(null);
+
+export const AppContextProvider = ctxt.Provider;
+  
+export const AppContextConsumer = ctxt.Consumer;
+
+// export default React.createContext<IAppContext>({
+//   selectedNodeId: null,
+//   selectNode: notImplementedFunction,
+//   reloadSelectedNode: notImplementedFunction
+// });

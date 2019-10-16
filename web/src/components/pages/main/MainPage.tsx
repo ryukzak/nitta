@@ -1,12 +1,18 @@
 import * as React from "react";
-import NodeView from "./NodeView";
+import SynthesisButtonView from "./SynthesisButtonView";
 import SynthesisGraphView from "./SynthesisGraphView";
+import { AppContextConsumer } from "../../app/AppContext";
 
 export default function MainPage() {
+  const windowHeight = window.innerHeight - 170;
   return (
-    <div className="h-100 d-flex flex-column">
-      <SynthesisGraphView/>
-      <NodeView/>
-    </div>
+    <AppContextConsumer>
+      {appContext => appContext && (
+        <div className="d-flex flex-column" style={{height: windowHeight + "px"}} >
+            <SynthesisGraphView selectedNid={appContext.selectedNodeId} selectNode={appContext.selectNode} refreshGraph={appContext.reloadSelectedNode} />
+            <SynthesisButtonView selectedNodeId={appContext.selectedNodeId} selectNode={appContext.selectNode} />
+        </div>
+      )}
+    </AppContextConsumer>
   );
 }
