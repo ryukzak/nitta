@@ -102,7 +102,6 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
         this.setState({
             nIds: nids
         })
-        this.state.nIds[nid].nodeSvgShape = this.state.nIds[nid].nodeSvgShapeOriginal;
     }
 
     reloadSynthesisGraph = () => {
