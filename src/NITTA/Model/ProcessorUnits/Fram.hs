@@ -181,10 +181,11 @@ oJobV Job{ function }
 
 
 -- |Function for calculating width of array in Fram
-addrWidth fram = log2 $ length $ A.elems memory
+addrWidth Fram {memory} = log2 $ arrayLength memory
     where
-        Fram {memory} = fram
+        arrayLength array = (\(a, b) -> b - a + 1) $ A.bounds array
         log2 = ceiling . logBase 2 . fromIntegral
+
 
 instance ( VarValTime v x t
          ) => ProcessorUnit (Fram v x t) v x t where

@@ -76,7 +76,7 @@ freePins used = let
 busNetworkS ioSync (lstPorts, pu) = busNetwork (length lstPorts) ioSync pu
 
 -- |__Add PU automatic__
-add tag = addCustom tag def
+add tag io = addCustom tag def io
 
 -- |__Add PU automatic, using custom pu__
 addCustom tag pu io = do
