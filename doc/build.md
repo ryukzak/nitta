@@ -1,3 +1,7 @@
+# Content
+  1. Building and testing
+  2. Makefile commands reference
+
 # Building and testing
 
 
@@ -95,3 +99,63 @@ Completed 2 action(s).
 
 To build, test and documentation generation:
 > stack build --fast --test --haddock
+
+# Makefile commands reference
+
+You will need `make` to use this functional. Make will run `stack.build stack.gen npm.build` if you run make without any option. To build Web UI make sure that you have installed all dependencies from `package.json`.
+
+## General options:
+- `dev` [`sim`]
+
+  This option will built and run stack project with `--web` argument, generate files required for Web UI and run Web UI project via webpack-dev-server. The `sim` argument using for choosing which example you will run in stack project, by default are used `fibonacci`. To see available options you could open `examples` folder in the root of the project.
+
+  Example usage:
+    `make dev sim=fibonacci`
+
+  WARNING: This option runs stack project in the background, so if you will run this option multiple times you would have N count of processes running in the background. Use `stack.kill` option to kill this processes.
+
+  Commands:
+  - `stack build`
+  - `stack exec nitta-api-gen`
+  - `stack exec nitta -- --web examples/fibonacci.lua` (By default)
+  - `cd web && npm run start-dev`
+
+- `prod`
+
+  This option will built stack project, generate documentation, run tests and also will build Web UI.
+
+  Commands:
+  - `stack build --test --haddock --copy-bins`
+  - `stack exec nitta-api-gen`
+  - `cd web && npm run build`
+
+
+- `build`
+
+  This option will built stack project and generate documentation.
+
+  Commands:
+  - `stack build  --haddock`
+
+- `clean`
+
+  This option will clean result directories and remove all running apps that are runned in the background.
+
+  Commands:
+  - `pkill -f nitta`
+  - `rm -rf .stack-work`
+  - `rm -rf web/build`
+
+## Advanced options
+
+  More information you can see in Makefile
+
+- `npm.build`
+- `npm.dev`
+- `stack.prod`
+- `stack.build`
+- `stack.buildNdocs`
+- `stack.gen`
+- `stack.web`
+- `stack.kill`
+
