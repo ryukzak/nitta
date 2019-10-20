@@ -31,6 +31,7 @@ export default class SynthesisButtonView extends React.Component<ISynthesisButto
 
     simpleSynthesis(nid: any, deep?: any) {
         if (nid === undefined || nid === null) return;
+        console.debug("NodeView:simpleSynthesis(", nid, " )");
         haskellApiService
           .simpleSynthesis(nid)
           .then((response: any) => {
@@ -43,6 +44,7 @@ export default class SynthesisButtonView extends React.Component<ISynthesisButto
 
       smartBindSynthesisIO(nid: any, deep?: any) {
         if (nid === undefined || nid === null) return;
+        console.debug("NodeView:simpleSynthesis(", nid, " )");
         haskellApiService
           .smartBindSynthesisIO(nid)
           .then((response: any) => {
@@ -55,6 +57,7 @@ export default class SynthesisButtonView extends React.Component<ISynthesisButto
 
       allBestThread(nid: any, n: any) {
         if (nid === undefined || nid === null) return;
+        console.debug("NodeView:allBestThread(", nid, n, " )");
         haskellApiService
           .allBestThread(nid, n)
           .then((response: any) => {
@@ -67,6 +70,7 @@ export default class SynthesisButtonView extends React.Component<ISynthesisButto
     
       obviousBindThread(nid: any) {
         if (nid === undefined || nid === null) return;
+        console.debug("NodeView:obviousBindThread(", nid, " )");
         haskellApiService
           .obviousBindThread(nid)
           .then((response: any) => {
@@ -81,14 +85,14 @@ export default class SynthesisButtonView extends React.Component<ISynthesisButto
         return (
             <div className="d-flex justify-content-between my-3  mx-2 pb-2">
                 <div className="d-flex flex-row my-auto">
-                    <Button className="mr-3" onClick={() => this.simpleSynthesis(this.state.selectedNodeId)}>SIMPLE SYNTHESIS</Button>
-                    <Button className="mr-3" onClick={() => this.smartBindSynthesisIO(this.state.selectedNodeId)}>SMART BIND SYNTHESIS</Button>
+                    <Button className="mr-3 p-1 btn-sm" onClick={() => this.simpleSynthesis(this.state.selectedNodeId)}>Simple synthesis</Button>
+                    <Button className="mr-3 p-1 btn-sm" onClick={() => this.smartBindSynthesisIO(this.state.selectedNodeId)}>Smart bind synthesis</Button>
                 </div>
                 <div className="d-flex flex-row-reverse my-auto">
-                    <Button className="mr-3" onClick={() => this.obviousBindThread(this.state.selectedNodeId)}>OBVIOUS BIND THREAD</Button>
-                    <Button className="mr-3" onClick={() => this.allBestThread(this.state.selectedNodeId, 0)}>BEST THREAD</Button>
-                    <Button className="mr-3" onClick={() => this.allBestThread(this.state.selectedNodeId, 1)}>ALL BEST THREAD 1</Button>
-                    <Button className="mr-3" onClick={() => this.allBestThread(this.state.selectedNodeId, 2)}>ALL BEST THREAD 2</Button>
+                    <Button className="mr-3 p-1 btn-sm" onClick={() => this.allBestThread(this.state.selectedNodeId, 2)}>All best tread 2</Button>
+                    <Button className="mr-3 p-1 btn-sm" onClick={() => this.allBestThread(this.state.selectedNodeId, 1)}>All best tread 1</Button>
+                    <Button className="mr-3 p-1 btn-sm" onClick={() => this.allBestThread(this.state.selectedNodeId, 0)}>Best tread</Button>
+                    <Button className="mr-3 p-1 btn-sm" onClick={() => this.obviousBindThread(this.state.selectedNodeId)}>Obvious bind thread</Button>
                 </div>
             </div>
         );
