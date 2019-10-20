@@ -2,6 +2,8 @@ import * as React from "react";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { ProcessTimelines, ViewPointID, TimelinePoint, TimelineWithViewPoint } from "../../../gen/types";
 
+import "./ProcessView.scss";
+
 interface Props {
     nId: string;
 }
@@ -121,7 +123,7 @@ export class ProcessView extends React.Component<Props, State> {
     renderLine(i: number, viewLength: number, view: ViewPointID, points: TimelinePoint<number>[][]) {
         let v = this.viewpoint2string(view);
         let n = viewLength - v.length;
-        return <pre key={i} className="squeeze">{" ".repeat(n)}{v} | {points.map(this.renderPoint)}</pre>;
+        return <pre key={i} className="squeeze m-0">{" ".repeat(n)}{v} | {points.map(this.renderPoint)}</pre>;
     }
 
     renderPoint(point: TimelinePoint<number>[], i: number) {
@@ -184,14 +186,14 @@ export class ProcessView extends React.Component<Props, State> {
             }
         });
         return <div className="row">
-            <div className="columns large-7">
-                <pre className="squeeze"><u>{viewColumnHead}{" ".repeat(viewColumnLength - viewColumnHead.length)} | timeline</u></pre>
+            <div className="columns col-md-5 m-0 p-0">
+                <pre className="squeeze m-0 p-0"><u>{viewColumnHead}{" ".repeat(viewColumnLength - viewColumnHead.length)} | timeline</u></pre>
                 {this.state.data.timelines.map(
                     (e, i) => {
                         return this.renderLine(i, viewColumnLength, e.timelineViewpoint, e.timelinePoints);
                     })}
             </div>
-            <div className="columns large-5">
+            <div className="columns col-md-7">
                 <pre className="squeeze">------------------------------</pre>
                 <pre className="squeeze upRelation">upper related:</pre>
                 {this.state.highlight.up.map(e => <pre className="squeeze">- {this.state.pIdIndex![e].pInfo}</pre>)}

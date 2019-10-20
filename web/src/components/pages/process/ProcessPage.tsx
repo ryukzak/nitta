@@ -30,13 +30,13 @@ export default class ProcessPage extends React.Component<IProcessPageProps, IPro
 
     render() {
         return (
-            <div className="h-100 d-flex flex-column">
+            <div>
                 {this.state.nId != null && (
                     <div className="d-flex flex-row m-2" >
-                        <div className="col-md-5">
+                        <div className="col-md-6">
                             <ProcessView nId={this.state.nId} />
                         </div>
-                        <div className="col-md-7">
+                        <div className="col-md-6">
                             Synthesis history :
                             <SynthesisHistoryView nId={this.state.nId} reverse={false} />
                             <br/>
