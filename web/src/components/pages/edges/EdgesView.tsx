@@ -94,89 +94,91 @@ export class EdgesView extends React.Component<Props, State> {
 
         /* FIXME: history and table view of decision should be similar */
         return (
-            <div className="row p-5">
-                <div className="columns">
-                    <Table
-                        name="Binding"
-                        edges={this.state.edges.filter(e => e.decision.tag === "BindingView")}
-                        columns={[
-                            nidColumn(this.props.onNidChange),
-                            objectiveColumn(),
-
-                            textColumn("function", (e: Edge) => (e.decision as Binding).function),
-                            textColumn("pu", (e: Edge) => (e.decision as Binding).pu, 50),
-
-                            textColumn("crit", (e: Edge) => String((e.parameters as BindingParam).pCritical), 50),
-                            textColumn("lock", (e: Edge) => String((e.parameters as BindingParam).pPossibleDeadlock), 50),
-                            textColumn("wave", (e: Edge) => (e.parameters as BindingParam).pWave, 50),
-                            textColumn("outputs", (e: Edge) => (e.parameters as BindingParam).pOutputNumber, 70),
-                            textColumn("alt", (e: Edge) => (e.parameters as BindingParam).pAlternative, 50),
-                            textColumn("rest", (e: Edge) => (e.parameters as BindingParam).pRestless, 50),
-
-                            textColumn("newDF", (e: Edge) => (e.parameters as BindingParam).pAllowDataFlow, 70),
-                            textColumn("newBind", (e: Edge) => (e.parameters as BindingParam).pNumberOfBindedFunctions, 70),
-                            textColumn("|inputs|", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs, 70),
-
-                        ]}
-                        onNidChange={this.props.onNidChange}
-                    />
-                    <Table
-                        name="Refactor"
-                        edges={this.state.edges.filter((e: Edge) => e.decision.tag === "RefactorView")}
-                        columns={[
-                            nidColumn(this.props.onNidChange),
-                            objectiveColumn(),
-                            textColumn("description", (e: Edge) => JSON.stringify((e.decision as Refactor).contents)),
-                        ]}
-                        onNidChange={this.props.onNidChange}
-                    />
-                    <Table
-                        name="Dataflow"
-                        edges={this.state.edges.filter((e: Edge) => e.decision.tag === "DataflowView")}
-                        columns={[
-                            nidColumn(this.props.onNidChange),
-                            objectiveColumn(),
-                            textColumn("at", (e: Edge) => (e.decision as Dataflow).source.time),
-                            textColumn("source", (e: Edge) => (e.decision as Dataflow).source.pu),
-                            textColumn(
-                                "targets",
-                                (e: Edge) => {
-                                    let targets = ((e.decision as any) as Dataflow).targets;
-                                    let lst = Object.keys(targets).map((k: string) => k + " -> " + (targets[k] ? targets[k].pu : ""));
-                                    return (
-                                        <div>
-                                            {lst.map((k: string, i: number) => (
-                                                <pre key={i}>{k}</pre>
-                                            ))}
-                                        </div>
-                                    );
-                                },undefined, 
-                                true
-                            ),
-                            textColumn("wait", (e: Edge) => (e.parameters as DataflowParam).pWaitTime),
-                            textColumn("not transferable input", (e: Edge) =>
-                                JSON.stringify((e.parameters as DataflowParam).pNotTransferableInputs)
-                            ),
-                            textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime)),
-                        ]}
-                        onNidChange={this.props.onNidChange}
-                    />
-                    <Table
-                        name="Other"
-                        edges={this.state.edges.filter(
-                            (e: Edge) => ["BindingView", "RefactorView", "DataflowView"].indexOf(e.decision.tag) === -1
-                        )}
-                        columns={[nidColumn(this.props.onNidChange), objectiveColumn(), decisionColumn(), parametersColumn()]}
-                        onNidChange={this.props.onNidChange}
-                    />
-                </div>
+            <div className="m-3">
                 <div className="row">
-                    <div className="col-md-6">
-                        <pre className="squeze">history:</pre>
-                        <SynthesisHistoryView nId={this.state.nid!} reverse={true} />
-                    </div>
-                    <div className="col-md-6">
+                    <div className="p-1 mr-5">
                         <IntermediateView selectedNId={this.state.nid} view="synthesisNode" />
+                    </div>
+                    <div className="columns">
+                        <Table
+                            name="Binding"
+                            edges={this.state.edges.filter(e => e.decision.tag === "BindingView")}
+                            columns={[
+                                nidColumn(this.props.onNidChange),
+                                objectiveColumn(),
+
+                                textColumn("function", (e: Edge) => (e.decision as Binding).function),
+                                textColumn("pu", (e: Edge) => (e.decision as Binding).pu, 50),
+
+                                textColumn("crit", (e: Edge) => String((e.parameters as BindingParam).pCritical), 50),
+                                textColumn("lock", (e: Edge) => String((e.parameters as BindingParam).pPossibleDeadlock), 50),
+                                textColumn("wave", (e: Edge) => (e.parameters as BindingParam).pWave, 50),
+                                textColumn("outputs", (e: Edge) => (e.parameters as BindingParam).pOutputNumber, 70),
+                                textColumn("alt", (e: Edge) => (e.parameters as BindingParam).pAlternative, 50),
+                                textColumn("rest", (e: Edge) => (e.parameters as BindingParam).pRestless, 50),
+
+                                textColumn("newDF", (e: Edge) => (e.parameters as BindingParam).pAllowDataFlow, 70),
+                                textColumn("newBind", (e: Edge) => (e.parameters as BindingParam).pNumberOfBindedFunctions, 70),
+                                textColumn("|inputs|", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs, 70),
+
+                            ]}
+                            onNidChange={this.props.onNidChange}
+                        />
+                        <Table
+                            name="Refactor"
+                            edges={this.state.edges.filter((e: Edge) => e.decision.tag === "RefactorView")}
+                            columns={[
+                                nidColumn(this.props.onNidChange),
+                                objectiveColumn(),
+                                textColumn("description", (e: Edge) => JSON.stringify((e.decision as Refactor).contents)),
+                            ]}
+                            onNidChange={this.props.onNidChange}
+                        />
+                        <Table
+                            name="Dataflow"
+                            edges={this.state.edges.filter((e: Edge) => e.decision.tag === "DataflowView")}
+                            columns={[
+                                nidColumn(this.props.onNidChange),
+                                objectiveColumn(),
+                                textColumn("at", (e: Edge) => (e.decision as Dataflow).source.time),
+                                textColumn("source", (e: Edge) => (e.decision as Dataflow).source.pu),
+                                textColumn(
+                                    "targets",
+                                    (e: Edge) => {
+                                        let targets = ((e.decision as any) as Dataflow).targets;
+                                        let lst = Object.keys(targets).map((k: string) => k + " -> " + (targets[k] ? targets[k].pu : ""));
+                                        return (
+                                            <div>
+                                                {lst.map((k: string, i: number) => (
+                                                    <pre key={i}>{k}</pre>
+                                                ))}
+                                            </div>
+                                        );
+                                    }, undefined,
+                                    true
+                                ),
+                                textColumn("wait", (e: Edge) => (e.parameters as DataflowParam).pWaitTime),
+                                textColumn("not transferable input", (e: Edge) =>
+                                    JSON.stringify((e.parameters as DataflowParam).pNotTransferableInputs)
+                                ),
+                                textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime)),
+                            ]}
+                            onNidChange={this.props.onNidChange}
+                        />
+                        <Table
+                            name="Other"
+                            edges={this.state.edges.filter(
+                                (e: Edge) => ["BindingView", "RefactorView", "DataflowView"].indexOf(e.decision.tag) === -1
+                            )}
+                            columns={[nidColumn(this.props.onNidChange), objectiveColumn(), decisionColumn(), parametersColumn()]}
+                            onNidChange={this.props.onNidChange}
+                        />
+                    </div>
+                </div>
+                <div className="row mt-2">
+                    <div className="columns">
+                        <pre className="squeze h5">History:</pre>
+                        <SynthesisHistoryView nId={this.state.nid!} reverse={true} />
                     </div>
                 </div>
             </div>
