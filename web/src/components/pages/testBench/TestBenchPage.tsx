@@ -46,8 +46,13 @@ export default class TestBenchPage extends React.Component<ITestBenchPageProps, 
     render() {
         return (
             <div>
+                {this.state.testBenchDump === null && (
+                    <div className="m-3 text-black-50">
+                        <h5>Empty test bench</h5>
+                    </div>
+                )} 
                 {this.state.testBenchDump != null && (
-                    <div>
+                    <div className="mr-3">
                         Status: <pre> {JSON.stringify(this.state.testBenchDump!.tbStatus)} </pre>
                         <hr />
                         <h3>Compiler output:</h3>
