@@ -1,0 +1,26 @@
+.tab {
+    color: white;
+    font-size: 12px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-top-color: darkslategrey !important;
+    border-top-left-radius: 0em !important;
+    border-top-right-radius: 0em !important;
+}
+
+.tab:hover,
+.tab:focus {
+    color: white;
+}
+
+.tab:active {
+    color: darkslategrey;
+}
+
+.divBody {
+    position: absolute;
+    overflow-y: auto;
+    top: 3em;
+    height: calc(100vh - 7em);
+    width: 100vw;
+}

@@ -14,14 +14,11 @@ export default class AppFooter extends React.Component<IAppFooterProps, IAppFoot
 
   public render() {
     return (
-      <footer className="bg-dark">
+      <footer className="bg-dark fixed-bottom" style={{height: "1.5em"}}>
         <Container>
           <Row className="text-center">
-            {/* <Col xs={12} md>
-              <img src="/footer_logo.svg" height="100" className="mw-100" alt="Footer Logo"></img>
-            </Col> */}
-            <Col xs={12} md className="d-flex align-items-center mb-4 mb-md-0 p-4">
-              <h6 className="text-light mb-0 w-100">© NITTA COLLABORATORS, 2019</h6>
+            <Col xs={12} md className="d-flex align-items-center mb-4 mb-md-0 p-1">
+              <div className="text-light mb-0 w-100" style={{fontSize: 12}}>© NITTA COLLABORATORS, 2019</div>
             </Col>
           </Row>
         </Container>

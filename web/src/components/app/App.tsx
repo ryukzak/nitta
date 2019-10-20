@@ -1,17 +1,19 @@
 import React from "react";
 import { Route, Switch } from "react-router-dom";
 import { Tabs, Tab } from "react-bootstrap"
+
 import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
 import IndexPage from "../pages/main/MainPage";
-import NodePage from "../pages/node/NodePage";
 import ProcessPage from "../pages/process/ProcessPage";
 import TestBenchPage from "../pages/testBench/TestBenchPage";
 import EdgesViewPage from "../pages/edges/EdgesViewPage"
+
 import AppNavbar from "./AppNavbar";
 import AppFooter from "./AppFooter";
+
 import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
 
-import "./AppNavbar.scss";
+import "./AppTabs.scss";
 
 export interface IAppProps { }
 
@@ -43,26 +45,23 @@ export default class App extends React.Component<IAppProps, IAppState> {
   public render() {
     return (
       <AppContextProvider value={this.state}>
-        <AppNavbar />
+        <AppNavbar/>
 
-        <div className="flex-grow-1" >
+        <div className="divBody" >
           <Switch>
-            <Route exact path="/" >
+            <Route exact path="/"  >
 
-              <Tabs defaultActiveKey="home" id="uncontrolled-tab-example" transition={false}> 
-                <Tab tabClassName="h-100" eventKey="home" title="SynthesisGraph" >
+              <Tabs className="bg-dark fixed-bottom mb-4" defaultActiveKey="home" id="uncontrolled-tab-example" transition={false} style={{border: "none"}}> 
+                <Tab tabClassName="tab" eventKey="home" title="SynthesisGraph" >
                   <IndexPage />
                 </Tab>
-                <Tab eventKey="node" title="NodeView">
-                  <NodePage />
-                </Tab>
-                <Tab eventKey="edges" title="EdgesView">
+                <Tab tabClassName="tab" eventKey="edges" title="EdgesView">
                   <EdgesViewPage />
                 </Tab>
-                <Tab eventKey="process" title="ProcessView">
+                <Tab tabClassName="tab" eventKey="process" title="ProcessView">
                   <ProcessPage nId={this.state.selectedNodeId} />
                 </Tab>
-                <Tab eventKey="testBench" title="TestBench">
+                <Tab tabClassName="tab" eventKey="testBench" title="TestBench">
                   <TestBenchPage nId={this.state.selectedNodeId} />
                 </Tab>
               </Tabs>
@@ -73,7 +72,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
           </Switch>
         </div>
 
-        <AppFooter />
+        <AppFooter/>
       </AppContextProvider>
     );
   }
