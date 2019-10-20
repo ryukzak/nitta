@@ -23,8 +23,8 @@ export default class AppNavbar extends React.Component<IAppNavbarProps, IAppNavb
       <AppContextConsumer>
         {appContext => appContext && (
           <Navbar bg="dark" variant="dark" expand="md" sticky="top" className="appNavbar">
-          <Navbar.Brand className="mr-md-5 ml-4" as={Link} to="/">
-            <img alt="Project Logo" src="/itmo_logo.png" height="30" className="mr-2 d-inline-block align-center"></img>
+          <Navbar.Brand className="mr-md-5 " as={Link} to="/">
+            <img alt="Project Logo" src="/logo_white.png" height="40" className="mr-2 d-inline-block align-center"></img>
             NITTA Web UI
           </Navbar.Brand>
           <Navbar.Collapse id="navbar-nav">
@@ -35,7 +35,7 @@ export default class AppNavbar extends React.Component<IAppNavbarProps, IAppNavb
               </Nav.Link> */}
             </Nav>
           </Navbar.Collapse>
-          <Navbar.Text className="mr-5">Selected Node ID: {appContext.selectedNodeId || "None"}</Navbar.Text>
+          <Navbar.Text className="mr-5 text-white">Selected Node ID: {appContext.selectedNodeId || "None"}</Navbar.Text>
           <Navbar.Toggle aria-controls="navbar-nav" />
         </Navbar>
         )}
