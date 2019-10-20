@@ -2,7 +2,7 @@ import * as React from "react";
 import "react-table/react-table.css";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { IntermediateView } from "./IntermadiateView";
-import {JsonView} from "./JsonView";
+import { JsonView } from "./JsonView";
 
 
 interface NodeViewProps {
@@ -38,13 +38,14 @@ export default class NodeView extends React.Component<NodeViewProps, NodeViewSta
   }
 
   handleViewChange(nid: any, synthesisStatus: any, view: string) {
+    console.debug("NodeView:handleViewChange(", nid, ", ", view, " ) // this.state.view:", this.state.view);
     if (nid === undefined || nid === null) return;
-
     this.setState({ selectedNId: nid, synthesisStatus: synthesisStatus, view: "update" });
     this.updateModel(nid, "synthesisNode");
   }
 
   componentWillReceiveProps(props: NodeViewProps) {
+    console.debug("NodeView:componentWillReceiveProps(", props, " )");
     let view = this.state.view;
     if (view === "update") view = "synthesisNode";
     if (this.state.selectedNId !== props.selectedNId) {
@@ -73,27 +74,30 @@ export default class NodeView extends React.Component<NodeViewProps, NodeViewSta
           <div>
             {this.state.view === "update" && <pre> updating... </pre>}
             {this.state.view === "synthesisNode" && (
-              <div className="d-flex flex-row">
-                <div className="edgeGraphContainer">
-                  <IntermediateView view={this.state.view} selectedNId={this.state.selectedNId} />
-                </div>
-                <div className="jsonViewContainer" style={{ verticalAlign: "top", width: "270px" }}>
-                  <JsonView jsonData={this.state.synthesisNode.nModel.mUnit} label={"nModel.mUnit"} show={false} />
-                </div>
-                <div className="jsonViewContainer" style={{ display: "inline-block", verticalAlign: "top" }}>
-                  <JsonView
-                    jsonData={this.state.synthesisNode.nModel.mDataFlowGraph}
-                    label={"nModel.mDataFlowGraph"}
-                    show={false}
-                  />
-                </div>
-                <div className="jsonViewContainer" style={{ display: "inline-block", verticalAlign: "top" }}>
-                  <div>
-                    <JsonView jsonData={this.state.synthesisNode.nId} label={"nId"} show={false} />
+              <div className="m-3">
+                <h5>NodeView: </h5>
+                <div className="d-flex flex-row">
+                  <div className="edgeGraphContainer">
+                    <IntermediateView view={this.state.view} selectedNId={this.state.selectedNId} />
                   </div>
-                  <br></br>
-                  <div>
-                    <JsonView jsonData={this.state.synthesisNode.nIsComplete} label={"nIsComplete"} show={false} />
+                  <div className="jsonViewContainer" style={{ verticalAlign: "top", width: "270px" }}>
+                    <JsonView jsonData={this.state.synthesisNode.nModel.mUnit} label={"nModel.mUnit"} show={false} />
+                  </div>
+                  <div className="jsonViewContainer" style={{ display: "inline-block", verticalAlign: "top" }}>
+                    <JsonView
+                      jsonData={this.state.synthesisNode.nModel.mDataFlowGraph}
+                      label={"nModel.mDataFlowGraph"}
+                      show={false}
+                    />
+                  </div>
+                  <div className="jsonViewContainer" style={{ display: "inline-block", verticalAlign: "top" }}>
+                    <div>
+                      <JsonView jsonData={this.state.synthesisNode.nId} label={"nId"} show={false} />
+                    </div>
+                    <br></br>
+                    <div>
+                      <JsonView jsonData={this.state.synthesisNode.nIsComplete} label={"nIsComplete"} show={false} />
+                    </div>
                   </div>
                 </div>
               </div>

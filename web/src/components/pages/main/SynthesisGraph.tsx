@@ -47,9 +47,9 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
     }
 
     componentWillReceiveProps(newProps: SynthesisGraphProps) {
-        console.log("Graph: tsart reload with id = " + newProps.selectedNId);
+        console.debug("SynthesisGraph:componentWillReceiveProps() // props.selectedNId, this.state.selectedNId:", newProps.selectedNId, this.state.selectedNId);
+
         if (newProps.selectedNId !== null && !(newProps.selectedNId in this.state.nIds)) {
-            console.log("Graph : whith fun")
             this.setState({
                 selectedNId: newProps.selectedNId
             });
@@ -57,7 +57,6 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
             return;
         }
         if (newProps.selectedNId !== null && this.state.selectedNId !== newProps.selectedNId) {
-            console.log("Graph : without fun")
             this.unmarkNode(this.state.selectedNId);
             this.markNode(newProps.selectedNId);
             this.setState({
@@ -66,7 +65,6 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
             });
         }
         if (newProps.selectedNId === null) {
-            console.log("Graph: nid is null and i'm here")
             this.setState({
                 dataGraph: [],
                 nIds: {}
@@ -83,6 +81,7 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
         if (color === "blue") {
             nIds[nid].nodeSvgShapeOriginal = nIds[nid].nodeSvgShape;
         }
+        console.debug("SynthesisGraph:markNode(", nid, nIds, color, ")");
         nIds[nid].nodeSvgShape = {
             shape: "circle",
             shapeProps: {
@@ -95,6 +94,7 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
     }
 
     unmarkNode(nid: any) {
+        console.debug("SynthesisGraph:unmarkNode(", nid, ")");
         if (nid === null) return;
         let tmp: string = this.state.nIds[nid].nodeSvgShapeOriginal;
         let nids = this.state.nIds;
@@ -105,6 +105,7 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
     }
 
     reloadSynthesisGraph = () => {
+        console.debug("SynthesisGraph:reloadSynthesisGraph()");
         let reLastNidStep = /-[^-]*$/; // nInSeparator
         let nid = this.state.selectedNId;
         haskellApiService.getSynthesis().then((response: any) => {
@@ -184,7 +185,7 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
                         }
                     }}
                     onClick={(node: any) => {
-                        console.log("Graph: click on id = " + node.nid);
+                        console.debug("SynthesisGraph: onNIdChange(", node.nid, ")");
                         this.onNIdChange(node.nid);
                         this.setState({ selectedNId: node.nid })
                     }}
