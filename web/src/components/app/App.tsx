@@ -4,9 +4,10 @@ import { Tabs, Tab } from "react-bootstrap"
 
 import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
 import IndexPage from "../pages/main/MainPage";
+import NodeView from "../pages/node/NodeView";
+import { EdgesView } from "../pages/edges/EdgesView";
 import ProcessPage from "../pages/process/ProcessPage";
 import TestBenchPage from "../pages/testBench/TestBenchPage";
-import EdgesViewPage from "../pages/edges/EdgesViewPage"
 
 import AppNavbar from "./AppNavbar";
 import AppFooter from "./AppFooter";
@@ -45,34 +46,37 @@ export default class App extends React.Component<IAppProps, IAppState> {
   public render() {
     return (
       <AppContextProvider value={this.state}>
-        <AppNavbar/>
+        <div className="position-relative" style={{minHeight: "100vh"}}>
+          <AppNavbar />
 
-        <div className="divBody" >
-          <Switch>
-            <Route exact path="/"  >
+          <div style={{minHeight: "calc(100vh - 6em)", marginTop: "5.5em"}}>
+            <Switch>
+              <Route exact path="/"  >
 
-              <Tabs className="bg-dark fixed-bottom mb-4" defaultActiveKey="home" id="uncontrolled-tab-example" transition={false} style={{border: "none"}}> 
-                <Tab tabClassName="tab" eventKey="home" title="SynthesisGraph" >
-                  <IndexPage />
-                </Tab>
-                <Tab tabClassName="tab" eventKey="edges" title="EdgesView">
-                  <EdgesViewPage />
-                </Tab>
-                <Tab tabClassName="tab" eventKey="process" title="ProcessView">
-                  <ProcessPage nId={this.state.selectedNodeId} />
-                </Tab>
-                <Tab tabClassName="tab" eventKey="testBench" title="TestBench">
-                  <TestBenchPage nId={this.state.selectedNodeId} />
-                </Tab>
-              </Tabs>
+                <IndexPage />
+                <Tabs className="bg-dark fixed-top mt-5" defaultActiveKey="node" id="uncontrolled-tab-example" transition={false}>
+                  <Tab tabClassName="tab" eventKey="node" title="NodeView" >
+                    <NodeView selectedNId={this.state.selectedNodeId} />
+                  </Tab>
+                  <Tab tabClassName="tab" eventKey="edges" title="EdgesView">
+                    <EdgesView nid={this.state.selectedNodeId} onNidChange={this.state.selectNode} />
+                  </Tab>
+                  <Tab tabClassName="tab" eventKey="process" title="ProcessView">
+                    <ProcessPage nId={this.state.selectedNodeId} />
+                  </Tab>
+                  <Tab tabClassName="tab" eventKey="testBench" title="TestBench">
+                    <TestBenchPage nId={this.state.selectedNodeId} />
+                  </Tab>
+                </Tabs>
 
-            </Route>
+              </Route>
 
-            <Route component={NotFoundErrorPage} />
-          </Switch>
+              <Route component={NotFoundErrorPage} />
+            </Switch>
+          </div>
+
+          <AppFooter />
         </div>
-
-        <AppFooter/>
       </AppContextProvider>
     );
   }

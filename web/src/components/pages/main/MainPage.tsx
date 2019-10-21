@@ -10,9 +10,8 @@ export default function MainPage() {
     <AppContextConsumer>
       {appContext => appContext && (
         <div className="d-flex flex-column" >
-            <SynthesisGraphView selectedNid={appContext.selectedNodeId} selectNode={appContext.selectNode} refreshGraph={appContext.reloadSelectedNode} />
-            <SynthesisButtonView selectedNodeId={appContext.selectedNodeId} selectNode={appContext.selectNode} />
-            <NodeView selectedNId={appContext.selectedNodeId}/>
+          <SynthesisGraphView selectedNid={appContext.selectedNodeId} selectNode={appContext.selectNode} refreshGraph={appContext.reloadSelectedNode} />
+          <SynthesisButtonView selectedNodeId={appContext.selectedNodeId} selectNode={appContext.selectNode} />
         </div>
       )}
     </AppContextConsumer>
