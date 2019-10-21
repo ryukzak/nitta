@@ -1,6 +1,6 @@
 import React from "react";
 import { Route, Switch } from "react-router-dom";
-import { Tabs, Tab } from "react-bootstrap"
+import { Tabs, Tab } from "react-bootstrap";
 
 import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
 import IndexPage from "../pages/main/MainPage";
@@ -16,7 +16,7 @@ import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
 
 import "./AppTabs.scss";
 
-export interface IAppProps { }
+export interface IAppProps {}
 
 // IMPORTANT: the value of AppContext.Provider MUST be {this.state} so React can handle re-rendering appropriately.
 // It's sad, but it's the best option we have.
@@ -24,7 +24,6 @@ export interface IAppProps { }
 export type IAppState = IAppContext;
 
 export default class App extends React.Component<IAppProps, IAppState> {
-
   constructor(props: IAppProps) {
     super(props);
 
@@ -38,24 +37,27 @@ export default class App extends React.Component<IAppProps, IAppState> {
       reloadSelectedNode: () => {
         // TODO: implement any actions like this if needed, giving this function for use in AppContext.
         this.setState({ selectedNodeId: null });
-      },
+      }
     };
-    
   }
 
   public render() {
     return (
       <AppContextProvider value={this.state}>
-        <div className="position-relative" style={{minHeight: "100vh"}}>
+        <div className="position-relative" style={{ minHeight: "100vh" }}>
           <AppNavbar />
 
-          <div style={{minHeight: "calc(100vh - 7.1em)", marginTop: "5.5em"}}>
+          <div style={{ minHeight: "calc(100vh - 7.1em)", marginTop: "5.5em" }}>
             <Switch>
-              <Route exact path="/"  >
-
+              <Route exact path="/">
                 <IndexPage />
-                <Tabs className="bg-dark fixed-top mt-5" defaultActiveKey="node" id="uncontrolled-tab-example" transition={false}>
-                  <Tab tabClassName="tab" eventKey="node" title="NodeView" >
+                <Tabs
+                  className="bg-dark fixed-top mt-5"
+                  defaultActiveKey="node"
+                  id="uncontrolled-tab-example"
+                  transition={false}
+                >
+                  <Tab tabClassName="tab" eventKey="node" title="NodeView">
                     <NodeView selectedNId={this.state.selectedNodeId} />
                   </Tab>
                   <Tab tabClassName="tab" eventKey="edges" title="EdgesView">
@@ -68,7 +70,6 @@ export default class App extends React.Component<IAppProps, IAppState> {
                     <TestBenchPage nId={this.state.selectedNodeId} />
                   </Tab>
                 </Tabs>
-
               </Route>
 
               <Route component={NotFoundErrorPage} />

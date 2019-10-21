@@ -4,7 +4,6 @@ import { haskellApiService } from "../../../services/HaskellApiService";
 import { IntermediateView } from "./IntermadiateView";
 import { JsonView } from "./JsonView";
 
-
 interface NodeViewProps {
   selectedNId: any;
   synthesisStatus?: any;
@@ -21,7 +20,6 @@ interface NodeViewState {
 }
 
 export default class NodeView extends React.Component<NodeViewProps, NodeViewState> {
-
   constructor(props: NodeViewProps) {
     super(props);
     this.state = {
@@ -31,7 +29,7 @@ export default class NodeView extends React.Component<NodeViewProps, NodeViewSta
       view: "update",
       model: null,
       endpointOptions: null,
-      scOptions: null,
+      scOptions: null
     };
     // FIXME:
     this.handleViewChange(this.state.selectedNId, props.synthesisStatus, "synthesisNode");
@@ -59,7 +57,7 @@ export default class NodeView extends React.Component<NodeViewProps, NodeViewSta
       .then((response: any) => {
         this.setState({
           synthesisNode: response.data,
-          view: view,
+          view: view
         });
       })
       .catch((err: any) => console.log(err));
@@ -107,6 +105,4 @@ export default class NodeView extends React.Component<NodeViewProps, NodeViewSta
       </div>
     );
   }
-
-
 }
