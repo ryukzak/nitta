@@ -49,7 +49,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
         <div className="position-relative" style={{minHeight: "100vh"}}>
           <AppNavbar />
 
-          <div style={{minHeight: "calc(100vh - 6em)", marginTop: "5.5em"}}>
+          <div style={{minHeight: "calc(100vh - 7.1em)", marginTop: "5.5em"}}>
             <Switch>
               <Route exact path="/"  >
 
