@@ -14,7 +14,7 @@ export default class AppFooter extends React.Component<IAppFooterProps, IAppFoot
 
   public render() {
     return (
-      <footer className="bg-dark fixed-bottom" style={{height: "1.5em"}}>
+      <footer className="bg-dark">
         <Container>
           <Row className="text-center">
             <Col xs={12} md className="d-flex align-items-center mb-4 mb-md-0 p-1">

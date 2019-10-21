@@ -22,7 +22,7 @@ export default class AppNavbar extends React.Component<IAppNavbarProps, IAppNavb
     return (
       <AppContextConsumer>
         {appContext => appContext && (
-          <Navbar bg="dark" variant="dark" expand="md" sticky="top" className="appNavbar">
+          <Navbar bg="dark" variant="dark" expand="md" fixed="top" className="appNavbar">
           <Navbar.Brand className="mr-md-5 " as={Link} to="/">
             <img alt="Project Logo" src="/logo_white.png" height="35" className="mr-2 d-inline-block align-center mb-1"></img>
             NITTA Web UI
