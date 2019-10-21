@@ -2,7 +2,6 @@ import * as React from "react";
 import SynthesisButtonView from "./SynthesisButtonView";
 import SynthesisGraphView from "./SynthesisGraphView";
 import { AppContextConsumer } from "../../app/AppContext";
-import NodeView from "../node/NodeView";
 
 export default function MainPage() {
   
