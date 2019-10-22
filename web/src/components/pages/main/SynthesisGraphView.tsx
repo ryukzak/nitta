@@ -27,21 +27,21 @@ export default class SynthesisGraphView extends React.Component<ISynthesisGraphV
       selectNode: props.selectNode,
       refreshGraph: props.refreshGraph,
       minSynthesisGraphHeight: 200,
-      synthesisGraphHeight: 0
+      synthesisGraphHeight: 0,
     };
   }
 
   componentWillReceiveProps(newProps: ISynthesisGraphViewProps) {
     this.setState({
       selectedNid: newProps.selectedNid,
-      selectNode: newProps.selectNode
+      selectNode: newProps.selectNode,
     });
   }
 
   componentDidMount = () => {
     if (this.containerRef.current != null && this.buttonRef.current != null) {
       this.setState({
-        synthesisGraphHeight: this.containerRef.current.clientHeight - this.buttonRef.current.clientHeight
+        synthesisGraphHeight: this.containerRef.current.clientHeight - this.buttonRef.current.clientHeight,
       });
     }
   };
@@ -50,11 +50,11 @@ export default class SynthesisGraphView extends React.Component<ISynthesisGraphV
     var currentHeight: number = this.state.synthesisGraphHeight;
     if (expand) {
       this.setState({
-        synthesisGraphHeight: currentHeight += 100
+        synthesisGraphHeight: currentHeight += 100,
       });
     } else if (currentHeight > this.state.minSynthesisGraphHeight) {
       this.setState({
-        synthesisGraphHeight: currentHeight -= 100
+        synthesisGraphHeight: currentHeight -= 100,
       });
     }
   };
@@ -76,7 +76,7 @@ export default class SynthesisGraphView extends React.Component<ISynthesisGraphV
               style={{ border: 0 }}
               onClick={() => this.resizeSynthesisGraphView(false)}
             >
-              Reduse
+              Reduce
             </Button>
             <Button
               className="btn btn-link btn-sm bg-transparent mr-3"
