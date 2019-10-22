@@ -11,5 +11,4 @@ export interface IAppContext {
 const ctxt = React.createContext<IAppContext | null>(null);
 
 export const AppContextProvider = ctxt.Provider;
-
 export const AppContextConsumer = ctxt.Consumer;
