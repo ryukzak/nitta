@@ -106,8 +106,8 @@ selectCAD Nothing src ma = void $ runTargetSynthesis def
 -- с задачей о целевой платформе.
 
 microarch ioSync = evalNetwork ioSync $ do
-        addManual "fram1" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
-        add "fram2" FramIO
+        addManual "fram1" (PU def (framWithSize 16) FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
+        addCustom "fram2" (framWithSize 32) FramIO
         add "shift" ShiftIO
         add "mul" MultiplierIO
         add "accum" AccumIO

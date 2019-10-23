@@ -284,7 +284,7 @@ instance Controllable (BusNetwork tag v x t) where
 
     portsToSignals _ = undefined
 
-    signalsToPorts _ = undefined
+    signalsToPorts _ _ = undefined
 
 
 instance {-# OVERLAPS #-}

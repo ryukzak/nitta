@@ -186,6 +186,7 @@ snippetTestBench
                         |]
                     | otherwise
                     = codeLine [qc|@(posedge clk); $display( "data_out: %d", data_out );|]
+        tbcSignals' = map (\x -> "reg " ++ x ++ ";") tbcSignals
 
     in codeBlock [qc|
         {"module"} {name}_tb();
@@ -203,7 +204,7 @@ snippetTestBench
         */
 
         reg clk, rst;
-        reg { S.join ", " tbcSignals };
+        { inline $ S.join "\\n" tbcSignals' };
         reg [DATA_WIDTH-1:0]  data_in;
         reg [ATTR_WIDTH-1:0]  attr_in;
         wire [DATA_WIDTH-1:0] data_out;
