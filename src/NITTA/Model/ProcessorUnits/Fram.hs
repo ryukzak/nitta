@@ -28,6 +28,7 @@ module NITTA.Model.ProcessorUnits.Fram
 import           Control.Applicative              ((<|>))
 import           Control.Monad
 import qualified Data.Array                       as A
+import           Data.Array.Base                  (numElements)
 import           Data.Bits                        (finiteBitSize, testBit)
 import           Data.Default
 import qualified Data.List                        as L
@@ -181,10 +182,9 @@ oJobV Job{ function }
 
 
 -- |Function for calculating width of array in Fram
-addrWidth Fram {memory} = log2 $ arrayLength memory
+addrWidth Fram { memory } = log2 $ numElements memory
     where
-        arrayLength array = (\(a, b) -> b - a + 1) $ A.bounds array
-        log2 = ceiling . logBase 2 . fromIntegral
+        log2 = ceiling . (logBase 2 :: Double -> Double) . fromIntegral
 
 
 instance ( VarValTime v x t
@@ -549,12 +549,12 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
         = codeBlock [qc|
             pu_fram #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( { show parameterAttrWidth } )
-                    , .RAM_SIZE( { show $ length $ A.elems memory } )
+                    , .ATTR_WIDTH( { parameterAttrWidth } )
+                    , .RAM_SIZE( { numElements memory } )
                     , .FRAM_DUMP( "$path${ softwareFile tag fram }" )
                     ) { tag }
                 ( .clk( { signalClk } )
-                , .signal_addr( \{ { S.join ", " (map signal addr )} } )
+                , .signal_addr( \{ { S.join ", " (map signal addr ) } } )
                 , .signal_wr( { signal wr } )
                 , .data_in( { dataIn } )
                 , .attr_in( { attrIn } )
