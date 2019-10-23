@@ -1,15 +1,16 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
 import { haskellApiService } from "../../../services/HaskellApiService";
+import { SelectedNodeId } from "../../app/AppContext";
 
 export interface ISynthesisButtonViewProps {
-  selectedNodeId: string | null;
-  selectNode: (nid: string | null) => void;
+  selectedNodeId: SelectedNodeId;
+  selectNode: (nid: SelectedNodeId) => void;
 }
 
 export interface ISynthesisButtonViewState {
-  selectedNodeId: string | null;
-  selectNode: (nid: string | null) => void;
+  selectedNodeId: SelectedNodeId;
+  selectNode: (nid: SelectedNodeId) => void;
 }
 
 export default class SynthesisButtonView extends React.Component<ISynthesisButtonViewProps, ISynthesisButtonViewState> {
@@ -17,14 +18,14 @@ export default class SynthesisButtonView extends React.Component<ISynthesisButto
     super(props);
     this.state = {
       selectedNodeId: props.selectedNodeId,
-      selectNode: props.selectNode
+      selectNode: props.selectNode,
     };
   }
 
   componentWillReceiveProps(newProps: ISynthesisButtonViewProps) {
     this.setState({
       selectedNodeId: newProps.selectedNodeId,
-      selectNode: newProps.selectNode
+      selectNode: newProps.selectNode,
     });
   }
 

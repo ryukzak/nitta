@@ -11,8 +11,9 @@ import {
   IRefactorView,
   IDataflowView,
   IDataFlowEdgeParameter,
-  Interval
+  Interval,
 } from "../../../gen/types";
+import { SelectedNodeId } from "../../app/AppContext";
 
 interface JsonResponse {
   [key: string]: any;
@@ -28,12 +29,12 @@ type DataflowParam = IDataFlowEdgeParameter;
 const nInSeparator = "-";
 
 interface Props {
-  nid: string | null;
+  nid: SelectedNodeId;
   onNidChange: (nid: string) => void;
 }
 
 interface State {
-  nid: string | null;
+  nid: SelectedNodeId;
   origin: EdgeView<string, string, number, number> | null;
   edges: EdgeView<string, string, number, number>[] | null;
 }
@@ -44,7 +45,7 @@ export class EdgesView extends React.Component<Props, State> {
     this.state = {
       nid: props.nid,
       origin: null,
-      edges: null
+      edges: null,
     };
   }
 
@@ -71,7 +72,7 @@ export class EdgesView extends React.Component<Props, State> {
       .getEdges(nid)
       .then((response: { data: Edge[] }) => {
         this.setState({
-          edges: response.data
+          edges: response.data,
         });
       })
       .catch(err => console.log(err));
@@ -79,7 +80,7 @@ export class EdgesView extends React.Component<Props, State> {
       .getEdge(nid)
       .then((response: { data: Edge }) => {
         this.setState({
-          origin: response.data
+          origin: response.data,
         });
       })
       .catch(err => console.log(err));
@@ -94,7 +95,7 @@ export class EdgesView extends React.Component<Props, State> {
 
     /* FIXME: history and table view of decision should be similar */
     return (
-      <div className="m-3"> 
+      <div className="m-3">
         <div className="row">
           <div className="p-1 mr-5">
             <IntermediateView selectedNId={this.state.nid} view="synthesisNode" />
@@ -119,7 +120,7 @@ export class EdgesView extends React.Component<Props, State> {
 
                 textColumn("newDF", (e: Edge) => (e.parameters as BindingParam).pAllowDataFlow, 70),
                 textColumn("newBind", (e: Edge) => (e.parameters as BindingParam).pNumberOfBindedFunctions, 70),
-                textColumn("|inputs|", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs, 70)
+                textColumn("|inputs|", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs, 70),
               ]}
               onNidChange={this.props.onNidChange}
             />
@@ -129,7 +130,7 @@ export class EdgesView extends React.Component<Props, State> {
               columns={[
                 nidColumn(this.props.onNidChange),
                 objectiveColumn(),
-                textColumn("description", (e: Edge) => JSON.stringify((e.decision as Refactor).contents))
+                textColumn("description", (e: Edge) => JSON.stringify((e.decision as Refactor).contents)),
               ]}
               onNidChange={this.props.onNidChange}
             />
@@ -161,7 +162,7 @@ export class EdgesView extends React.Component<Props, State> {
                 textColumn("not transferable input", (e: Edge) =>
                   JSON.stringify((e.parameters as DataflowParam).pNotTransferableInputs)
                 ),
-                textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime))
+                textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime)),
               ]}
               onNidChange={this.props.onNidChange}
             />
@@ -219,14 +220,14 @@ function nidColumn(onUpdateNid: (nid: string) => void) {
           {nid[nid.length - 1]}>
         </Button>
       );
-    }
+    },
   };
 }
 
 function decisionColumn() {
   return {
     Header: "decision",
-    Cell: (row: { original: Edge }) => JSON.stringify(row.original.decision)
+    Cell: (row: { original: Edge }) => JSON.stringify(row.original.decision),
   };
 }
 
@@ -238,14 +239,14 @@ function textColumn(columnName: string, f: (e: Edge) => string | number | any, m
     Header: columnName,
     style: style,
     maxWidth: maxWidth,
-    Cell: (row: { original: Edge }) => f(row.original)
+    Cell: (row: { original: Edge }) => f(row.original),
   };
 }
 
 function parametersColumn() {
   return {
     Header: "parameters",
-    Cell: (row: { original: Edge }) => JSON.stringify(row.original.parameters)
+    Cell: (row: { original: Edge }) => JSON.stringify(row.original.parameters),
   };
 }
 
@@ -253,6 +254,6 @@ function objectiveColumn() {
   return {
     Header: "Z(d)",
     maxWidth: 40,
-    Cell: (row: { original: Edge }) => row.original.objectiveFunctionValue
+    Cell: (row: { original: Edge }) => row.original.objectiveFunctionValue,
   };
 }

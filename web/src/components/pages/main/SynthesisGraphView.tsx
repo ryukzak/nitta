@@ -1,16 +1,17 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
 import SynthesisGraph from "./SynthesisGraph";
+import { SelectedNodeId } from "../../app/AppContext";
 
 export interface ISynthesisGraphViewProps {
-  selectedNid: string | null;
-  selectNode: (nid: string | null) => void;
+  selectedNid: SelectedNodeId;
+  selectNode: (nid: SelectedNodeId) => void;
   refreshGraph: () => void;
 }
 
 export interface ISynthesisGraphViewState {
-  selectedNid: string | null;
-  selectNode: (nid: string | null) => void;
+  selectedNid: SelectedNodeId;
+  selectNode: (nid: SelectedNodeId) => void;
   refreshGraph: () => void;
   minSynthesisGraphHeight: number;
   synthesisGraphHeight: number;

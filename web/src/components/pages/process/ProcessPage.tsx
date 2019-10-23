@@ -2,13 +2,14 @@ import * as React from "react";
 import { ProcessView } from "./ProcessView";
 import { SynthesisHistoryView } from "./SynthesisHistoryView";
 import { EndpointOptions } from "./EndpointOptios";
+import { SelectedNodeId } from "../../app/AppContext";
 
 interface IProcessPageProps {
-  nId: string | null;
+  nId: SelectedNodeId;
 }
 
 interface IProcessPageState {
-  nId: string | null;
+  nId: SelectedNodeId;
 }
 
 export default class ProcessPage extends React.Component<IProcessPageProps, IProcessPageState> {
@@ -17,7 +18,7 @@ export default class ProcessPage extends React.Component<IProcessPageProps, IPro
     super(props);
 
     this.state = {
-      nId: props.nId
+      nId: props.nId,
     };
   }
 

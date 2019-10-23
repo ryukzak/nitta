@@ -2,13 +2,14 @@ import * as React from "react";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { TestbenchReport } from "../../../gen/types";
 import ReactTable from "react-table";
+import { SelectedNodeId } from "../../app/AppContext";
 
 interface ITestBenchPageProps {
-  nId: string | null;
+  nId: SelectedNodeId;
 }
 
 interface ITestBenchPageState {
-  nId: string | null;
+  nId: SelectedNodeId;
   testBenchDump: TestbenchReport<string, number> | null;
 }
 
@@ -19,7 +20,7 @@ export default class TestBenchPage extends React.Component<ITestBenchPageProps, 
 
     this.state = {
       nId: props.nId,
-      testBenchDump: null
+      testBenchDump: null,
     };
     this.updateTestBench(this.state.nId);
   }
@@ -36,7 +37,7 @@ export default class TestBenchPage extends React.Component<ITestBenchPageProps, 
       .runTestBench(nid, "web_ui")
       .then((response: any) => {
         this.setState({
-          testBenchDump: response.data
+          testBenchDump: response.data,
         });
       })
       .catch((err: any) => {});

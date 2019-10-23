@@ -8,7 +8,8 @@ export interface IAppContext {
   reloadSelectedNode: () => void;
 }
 
-const ctxt = React.createContext<IAppContext | null>(null);
+// exported to use with useContext hook in functional components
+export const AppContext = React.createContext<IAppContext | null>(null);
 
-export const AppContextProvider = ctxt.Provider;
-export const AppContextConsumer = ctxt.Consumer;
+export const AppContextProvider = AppContext.Provider;
+export const AppContextConsumer = AppContext.Consumer;

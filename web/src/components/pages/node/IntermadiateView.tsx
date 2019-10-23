@@ -3,6 +3,7 @@ import "react-table/react-table.css";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { Graphviz } from "graphviz-react";
 import { IGraphStructure, IGraphEdge } from "../../../gen/types";
+import { SelectedNodeId } from "../../app/AppContext";
 
 /**
  * Component to display algorithm graph.
@@ -22,12 +23,12 @@ interface Graph {
 }
 
 interface IntermediateViewProps {
-  selectedNId: string | null;
+  selectedNId: SelectedNodeId;
   view: string;
 }
 
 interface IntermediateViewState {
-  selectedNId: string | null;
+  selectedNId: SelectedNodeId;
   // FIXME: throw away useless property
   view: string;
   status: boolean;
@@ -46,8 +47,8 @@ export class IntermediateView extends React.Component<IntermediateViewProps, Int
 
       algGraph: {
         nodes: [],
-        edges: []
-      }
+        edges: [],
+      },
     };
 
     this.graphMaker(props.selectedNId);
@@ -57,13 +58,13 @@ export class IntermediateView extends React.Component<IntermediateViewProps, Int
     if (this.state.selectedNId !== props.selectedNId) {
       this.setState({
         status: false,
-        view: props.view
+        view: props.view,
       });
       this.graphMaker(props.selectedNId);
     }
   }
 
-  graphMaker(nid: string | null) {
+  graphMaker(nid: SelectedNodeId) {
     haskellApiService
       .simpleSynthesisGraph(nid)
       .then((response: any) => {
@@ -78,7 +79,7 @@ export class IntermediateView extends React.Component<IntermediateViewProps, Int
             nodeColor: "",
             nodeShape: "",
             fontSize: "",
-            nodeSize: ""
+            nodeSize: "",
           });
         });
         newNid.edges.map((edge: any, index: number) => {
@@ -88,7 +89,7 @@ export class IntermediateView extends React.Component<IntermediateViewProps, Int
         if (this.state.view === "synthesisNode") {
           this.setState({
             status: true,
-            algGraph: graph
+            algGraph: graph,
           });
         }
       })
