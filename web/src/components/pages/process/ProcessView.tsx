@@ -4,6 +4,8 @@ import { ProcessTimelines, ViewPointID, TimelinePoint, TimelineWithViewPoint } f
 
 import "./ProcessView.scss";
 
+// TODO: REWRITE/REFACTOR COMPONENT "ProcessView"
+
 export interface IProcessViewProps {
   nId: string;
 }

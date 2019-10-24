@@ -2,6 +2,8 @@ import * as React from "react";
 import Tree from "react-d3-tree";
 import { haskellApiService } from "../../../services/HaskellApiService";
 
+// TODO: REWRITE/REFACTOR COMPONENT "SynthesisGraph"
+
 interface JsonResponse {
   [key: string]: any;
 }

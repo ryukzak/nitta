@@ -1,6 +1,8 @@
 import * as React from "react";
 import { haskellApiService } from "../../../services/HaskellApiService";
 
+// TODO: REWRITE/REFACTOR COMPONENT "SynthesisHistoryView"
+
 export interface ISynthesisHistoryViewProps {
   nId: string;
   reverse: boolean;

@@ -4,6 +4,8 @@ import { TestbenchReport } from "../../../gen/types";
 import ReactTable from "react-table";
 import { SelectedNodeId } from "../../app/AppContext";
 
+// TODO: REWRITE/REFACTOR COMPONENT "TestBenchPage"
+
 export interface ITestBenchPageProps {
   nId: SelectedNodeId;
 }

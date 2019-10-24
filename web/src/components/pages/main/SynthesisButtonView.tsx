@@ -3,6 +3,8 @@ import { Button } from "react-bootstrap";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { SelectedNodeId } from "../../app/AppContext";
 
+// TODO: REWRITE/REFACTOR COMPONENT "SynthesisButtonView"
+
 export interface ISynthesisButtonViewProps {
   selectedNodeId: SelectedNodeId;
   selectNode: (nid: SelectedNodeId) => void;

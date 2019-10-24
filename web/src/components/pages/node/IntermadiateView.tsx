@@ -5,6 +5,8 @@ import { Graphviz } from "graphviz-react";
 import { IGraphStructure, IGraphEdge } from "../../../gen/types";
 import { SelectedNodeId } from "../../app/AppContext";
 
+// TODO: REWRITE/REFACTOR COMPONENT "IntermediateView"
+
 /**
  * Component to display algorithm graph.
  * Takes two arguments:

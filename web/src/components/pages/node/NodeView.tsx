@@ -4,6 +4,8 @@ import { haskellApiService } from "../../../services/HaskellApiService";
 import { IntermediateView } from "./IntermadiateView";
 import { JsonView } from "./JsonView";
 
+// TODO: REWRITE/REFACTOR COMPONENT "NodeView"
+
 export interface INodeViewProps {
   selectedNId: any;
   synthesisStatus?: any;

@@ -1,6 +1,8 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
 
+// TODO: REWRITE/REFACTOR COMPONENT "JsonView"
+
 /**
  * Component to display JSON data.
  * Takes three arguments:

@@ -1,6 +1,8 @@
 import * as React from "react";
 import { haskellApiService } from "../../../services/HaskellApiService";
 
+// TODO: REWRITE/REFACTOR COMPONENT "EndpointOptions"
+
 interface JsonResponse {
   [key: string]: any;
 }

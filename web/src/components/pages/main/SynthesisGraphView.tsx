@@ -3,6 +3,8 @@ import { Button } from "react-bootstrap";
 import SynthesisGraph from "./SynthesisGraph";
 import { SelectedNodeId } from "../../app/AppContext";
 
+// TODO: REWRITE/REFACTOR COMPONENT "SynthesisGraphView"
+
 export interface ISynthesisGraphViewProps {
   selectedNid: SelectedNodeId;
   selectNode: (nid: SelectedNodeId) => void;

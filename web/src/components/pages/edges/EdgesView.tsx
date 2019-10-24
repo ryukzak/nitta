@@ -15,6 +15,8 @@ import {
 } from "../../../gen/types";
 import { SelectedNodeId } from "../../app/AppContext";
 
+// TODO: REWRITE/REFACTOR COMPONENT "EdgesView"
+
 interface JsonResponse {
   [key: string]: any;
 }

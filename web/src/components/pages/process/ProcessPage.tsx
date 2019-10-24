@@ -4,6 +4,8 @@ import { SynthesisHistoryView } from "./SynthesisHistoryView";
 import { EndpointOptions } from "./EndpointOptios";
 import { SelectedNodeId } from "../../app/AppContext";
 
+// TODO: REWRITE/REFACTOR COMPONENT "ProcessPage"
+
 export interface IProcessPageProps {
   nId: SelectedNodeId;
 }
