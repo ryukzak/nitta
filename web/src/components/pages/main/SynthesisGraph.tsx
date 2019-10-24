@@ -9,15 +9,15 @@ interface JsonResponse {
 }
 
 interface JsonObjId {
-  [key: string]: graph;
+  [key: string]: Graph;
 }
 
-interface graph {
+interface Graph {
   name?: string;
   nid?: number;
   attributes?: JsonResponse;
   status?: string;
-  children?: graph[];
+  children?: Graph[];
   nodeSvgShape?: any;
   nodeSvgShapeOriginal?: any;
 }
@@ -117,7 +117,7 @@ export default class SynthesisGraph extends React.Component<ISynthesisGraphProps
       .getSynthesis()
       .then((response: any) => {
         let nIds: JsonObjId = {};
-        let buildGraph = (gNode: graph, dNode: JsonResponse) => {
+        let buildGraph = (gNode: Graph, dNode: JsonResponse) => {
           gNode.name = reLastNidStep.exec(dNode[0].svNnid)![0];
           gNode.nid = dNode[0].svNnid;
           nIds[dNode[0].svNnid] = gNode;
@@ -133,7 +133,7 @@ export default class SynthesisGraph extends React.Component<ISynthesisGraphProps
           });
           gNode.children = [];
           dNode[1].forEach((e: any) => {
-            var tmp: graph = {};
+            var tmp: Graph = {};
             if (gNode.children != null) {
               gNode.children.push(tmp);
               buildGraph(tmp, e);
