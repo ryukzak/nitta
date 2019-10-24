@@ -29,7 +29,7 @@ export default class NodeView extends React.Component<NodeViewProps, NodeViewSta
       view: "update",
       model: null,
       endpointOptions: null,
-      scOptions: null
+      scOptions: null,
     };
     // FIXME:
     this.handleViewChange(this.state.selectedNId, props.synthesisStatus, "synthesisNode");
@@ -57,7 +57,7 @@ export default class NodeView extends React.Component<NodeViewProps, NodeViewSta
       .then((response: any) => {
         this.setState({
           synthesisNode: response.data,
-          view: view
+          view: view,
         });
       })
       .catch((err: any) => console.log(err));
@@ -73,7 +73,6 @@ export default class NodeView extends React.Component<NodeViewProps, NodeViewSta
             {this.state.view === "update" && <pre> updating... </pre>}
             {this.state.view === "synthesisNode" && (
               <div className="m-3">
-                <h5>NodeView: </h5>
                 <div className="d-flex flex-row">
                   <div className="edgeGraphContainer">
                     <IntermediateView view={this.state.view} selectedNId={this.state.selectedNId} />
