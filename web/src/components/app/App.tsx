@@ -1,10 +1,16 @@
 import React from "react";
-import { Route, Switch } from "react-router-dom";
+import { Route, Switch, Redirect } from "react-router-dom";
+
 import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
-import IndexPage from "../pages/main/MainPage";
-import AppNavbar from "./AppNavbar";
-import AppFooter from "./AppFooter";
-import AppContext, { SelectedNodeId, IAppContext } from "./AppContext";
+import NodeView from "../pages/node/NodeView";
+import { EdgesView } from "../pages/edges/EdgesView";
+import ProcessPage from "../pages/process/ProcessPage";
+import TestBenchPage from "../pages/testBench/TestBenchPage";
+
+import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
+import { AppNavbar } from "./AppNavbar";
+import { AppFooter } from "./AppFooter";
+import { MainPage } from "../pages/main/MainPage";
 
 export interface IAppProps {}
 
@@ -18,15 +24,13 @@ export default class App extends React.Component<IAppProps, IAppState> {
     super(props);
 
     this.state = {
-      selectedNodeId: null,
+      selectedNodeId: "-",
 
       selectNode: (id: SelectedNodeId) => {
         this.setState({ selectedNodeId: id });
       },
 
       reloadSelectedNode: () => {
-        // TODO: implement any actions like this if needed, giving this function for use in AppContext.
-        console.log("Reloading selected node.");
         this.setState({ selectedNodeId: null });
       },
     };
@@ -34,18 +38,35 @@ export default class App extends React.Component<IAppProps, IAppState> {
 
   public render() {
     return (
-      <AppContext.Provider value={this.state}>
+      <AppContextProvider value={this.state}>
         <AppNavbar />
 
         <div className="flex-grow-1">
+          <MainPage />
+
           <Switch>
-            <Route exact path="/" component={IndexPage} />
+            <Route exact path="/">
+              <Redirect to="/node" />
+            </Route>
+            <Route exact path="/node">
+              <NodeView selectedNId={this.state.selectedNodeId} />
+            </Route>
+            <Route exact path="/edges">
+              <EdgesView nid={this.state.selectedNodeId} onNidChange={this.state.selectNode} />
+            </Route>
+            <Route exact path="/process">
+              <ProcessPage nId={this.state.selectedNodeId} />
+            </Route>
+            <Route exact path="/testbench">
+              <TestBenchPage nId={this.state.selectedNodeId} />
+            </Route>
+
             <Route component={NotFoundErrorPage} />
           </Switch>
         </div>
 
         <AppFooter />
-      </AppContext.Provider>
+      </AppContextProvider>
     );
   }
 }

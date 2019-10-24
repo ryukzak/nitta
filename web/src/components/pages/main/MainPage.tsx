@@ -1,12 +1,18 @@
 import * as React from "react";
-import SynthesisGraph from "./SynthesisGraph";
-import NodeView from "./NodeView";
+import SynthesisGraphView from "./SynthesisGraphView";
+import { AppContext, IAppContext } from "../../app/AppContext";
+import { useContext } from "react";
 
-export default function MainPage() {
+export interface IMainPageProps {}
+
+export const MainPage: React.FC<IMainPageProps> = props => {
+  const appContext = useContext(AppContext) as IAppContext;
+
   return (
-    <div className="h-100 d-flex flex-column">
-      <SynthesisGraph></SynthesisGraph>
-      <NodeView></NodeView>
-    </div>
+    <SynthesisGraphView
+      selectedNid={appContext.selectedNodeId}
+      selectNode={appContext.selectNode}
+      refreshGraph={appContext.reloadSelectedNode}
+    />
   );
-}
+};
