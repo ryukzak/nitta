@@ -3,16 +3,16 @@ import SynthesisGraphView from "./SynthesisGraphView";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { useContext } from "react";
 
-export default function MainPage() {
+interface IMainPageProps {}
+
+export const MainPage: React.FC<IMainPageProps> = props => {
   const appContext = useContext(AppContext) as IAppContext;
 
   return (
-    <div className="d-flex flex-column">
-      <SynthesisGraphView
-        selectedNid={appContext.selectedNodeId}
-        selectNode={appContext.selectNode}
-        refreshGraph={appContext.reloadSelectedNode}
-      />
-    </div>
+    <SynthesisGraphView
+      selectedNid={appContext.selectedNodeId}
+      selectNode={appContext.selectNode}
+      refreshGraph={appContext.reloadSelectedNode}
+    />
   );
-}
+};
