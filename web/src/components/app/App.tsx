@@ -31,7 +31,6 @@ export default class App extends React.Component<IAppProps, IAppState> {
       },
 
       reloadSelectedNode: () => {
-        // TODO: implement any actions like this if needed, giving this function for use in AppContext.
         this.setState({ selectedNodeId: null });
       },
     };
