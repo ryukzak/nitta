@@ -18,9 +18,7 @@ export default class AppFooter extends React.Component<IAppFooterProps, IAppFoot
         <Container>
           <Row className="text-center">
             <Col xs={12} md className="d-flex align-items-center mb-4 mb-md-0 p-1">
-              <div className="text-light mb-0 w-100" style={{ fontSize: 12 }}>
-                © NITTA COLLABORATORS, 2019
-              </div>
+              <div className="text-light mb-0 w-100 small">© NITTA COLLABORATORS, 2019</div>
             </Col>
           </Row>
         </Container>
