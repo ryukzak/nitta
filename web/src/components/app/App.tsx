@@ -2,7 +2,6 @@ import React from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
 
 import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
-import IndexPage from "../pages/main/MainPage";
 import NodeView from "../pages/node/NodeView";
 import { EdgesView } from "../pages/edges/EdgesView";
 import ProcessPage from "../pages/process/ProcessPage";
@@ -11,6 +10,7 @@ import TestBenchPage from "../pages/testBench/TestBenchPage";
 import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
 import { AppFooter } from "./AppFooter";
+import { MainPage } from "../pages/main/MainPage";
 
 export interface IAppProps {}
 
@@ -42,7 +42,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
         <AppNavbar />
 
         <div className="flex-grow-1">
-          <IndexPage />
+          <MainPage />
 
           <Switch>
             <Route exact path="/">
