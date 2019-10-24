@@ -22,12 +22,12 @@ interface Graph {
   nodes: JsonResponse;
 }
 
-interface IntermediateViewProps {
+export interface IIntermediateViewProps {
   selectedNId: SelectedNodeId;
   view: string;
 }
 
-interface IntermediateViewState {
+export interface IIntermediateViewState {
   selectedNId: SelectedNodeId;
   // FIXME: throw away useless property
   view: string;
@@ -37,8 +37,8 @@ interface IntermediateViewState {
 
 export type IGraphJson = IGraphStructure<IGraphEdge>;
 
-export class IntermediateView extends React.Component<IntermediateViewProps, IntermediateViewState> {
-  constructor(props: IntermediateViewProps) {
+export class IntermediateView extends React.Component<IIntermediateViewProps, IIntermediateViewState> {
+  constructor(props: IIntermediateViewProps) {
     super(props);
     this.state = {
       selectedNId: props.selectedNId,
@@ -54,7 +54,7 @@ export class IntermediateView extends React.Component<IntermediateViewProps, Int
     this.graphMaker(props.selectedNId);
   }
 
-  componentWillReceiveProps(props: IntermediateViewProps) {
+  componentWillReceiveProps(props: IIntermediateViewProps) {
     if (this.state.selectedNId !== props.selectedNId) {
       this.setState({
         status: false,

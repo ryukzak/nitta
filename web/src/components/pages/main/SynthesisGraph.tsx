@@ -20,32 +20,32 @@ interface graph {
   nodeSvgShapeOriginal?: any;
 }
 
-interface SynthesisGraphProps {
+export interface ISynthesisGraphProps {
   onNIdChange: any;
   selectedNId: any;
 }
 
-interface SynthesisGraphState {
+export interface ISynthesisGraphState {
   selectedNId: string | null;
   dataGraph: Array<any>;
   nIds: JsonObjId;
 }
 
-export default class SynthesisGraph extends React.Component<SynthesisGraphProps, SynthesisGraphState> {
+export default class SynthesisGraph extends React.Component<ISynthesisGraphProps, ISynthesisGraphState> {
   onNIdChange: any;
 
-  constructor(props: SynthesisGraphProps) {
+  constructor(props: ISynthesisGraphProps) {
     super(props);
     this.onNIdChange = props.onNIdChange;
     this.state = {
       selectedNId: props.selectedNId,
       dataGraph: [],
-      nIds: {}
+      nIds: {},
     };
     this.reloadSynthesisGraph();
   }
 
-  componentWillReceiveProps(newProps: SynthesisGraphProps) {
+  componentWillReceiveProps(newProps: ISynthesisGraphProps) {
     console.debug(
       "SynthesisGraph:componentWillReceiveProps() // props.selectedNId, this.state.selectedNId:",
       newProps.selectedNId,
@@ -54,7 +54,7 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
 
     if (newProps.selectedNId !== null && !(newProps.selectedNId in this.state.nIds)) {
       this.setState({
-        selectedNId: newProps.selectedNId
+        selectedNId: newProps.selectedNId,
       });
       this.reloadSynthesisGraph();
       return;
@@ -64,13 +64,13 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
       this.markNode(newProps.selectedNId);
       this.setState({
         selectedNId: newProps.selectedNId,
-        dataGraph: [this.state.dataGraph[0]] // force re-render Tree
+        dataGraph: [this.state.dataGraph[0]], // force re-render Tree
       });
     }
     if (newProps.selectedNId === null) {
       this.setState({
         dataGraph: [],
-        nIds: {}
+        nIds: {},
       });
       this.onNIdChange("-");
     }
@@ -91,8 +91,8 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
         r: 10,
         cx: 0,
         cy: 0,
-        fill: color
-      }
+        fill: color,
+      },
     };
   }
 
@@ -103,7 +103,7 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
     let nids = this.state.nIds;
     nids[nid].nodeSvgShape = tmp;
     this.setState({
-      nIds: nids
+      nIds: nids,
     });
   }
 
@@ -123,7 +123,7 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
           if (dNode[0].svIsComplete) this.markNode(gNode.nid, nIds, "lime");
           gNode.attributes = {
             dec: dNode[0].svOptionType,
-            ch: dNode[0].svDuration + " / " + dNode[0].svCharacteristic
+            ch: dNode[0].svDuration + " / " + dNode[0].svCharacteristic,
           };
           gNode.status = dNode[0].svIsComplete;
           dNode[0].svCntx.forEach((e: string, i: any) => {
@@ -145,7 +145,7 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
 
         this.setState({
           dataGraph: [graph],
-          nIds: nIds
+          nIds: nIds,
         });
       })
       .catch((err: any) => console.log(err));
@@ -175,20 +175,20 @@ export default class SynthesisGraph extends React.Component<SynthesisGraphProps,
               r: 10,
               cx: 0,
               cy: 0,
-              fill: "white"
-            }
+              fill: "white",
+            },
           }}
           styles={{
             nodes: {
               node: {
                 name: { fontSize: "12px" },
-                attributes: { fontSize: "10px" }
+                attributes: { fontSize: "10px" },
               },
               leafNode: {
                 name: { fontSize: "12px" },
-                attributes: { fontSize: "10px" }
-              }
-            }
+                attributes: { fontSize: "10px" },
+              },
+            },
           }}
           onClick={(node: any) => {
             console.debug("SynthesisGraph: onNIdChange(", node.nid, ")");

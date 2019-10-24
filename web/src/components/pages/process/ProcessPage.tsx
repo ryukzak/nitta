@@ -4,11 +4,11 @@ import { SynthesisHistoryView } from "./SynthesisHistoryView";
 import { EndpointOptions } from "./EndpointOptios";
 import { SelectedNodeId } from "../../app/AppContext";
 
-interface IProcessPageProps {
+export interface IProcessPageProps {
   nId: SelectedNodeId;
 }
 
-interface IProcessPageState {
+export interface IProcessPageState {
   nId: SelectedNodeId;
 }
 

@@ -4,12 +4,12 @@ import { haskellApiService } from "../../../services/HaskellApiService";
 import { IntermediateView } from "./IntermadiateView";
 import { JsonView } from "./JsonView";
 
-interface NodeViewProps {
+export interface INodeViewProps {
   selectedNId: any;
   synthesisStatus?: any;
 }
 
-interface NodeViewState {
+export interface INodeViewState {
   synthesisNode: any;
   selectedNId: any;
   synthesisStatus: any;
@@ -19,8 +19,8 @@ interface NodeViewState {
   scOptions: any;
 }
 
-export default class NodeView extends React.Component<NodeViewProps, NodeViewState> {
-  constructor(props: NodeViewProps) {
+export default class NodeView extends React.Component<INodeViewProps, INodeViewState> {
+  constructor(props: INodeViewProps) {
     super(props);
     this.state = {
       synthesisNode: null,
@@ -42,7 +42,7 @@ export default class NodeView extends React.Component<NodeViewProps, NodeViewSta
     this.updateModel(nid, "synthesisNode");
   }
 
-  componentWillReceiveProps(props: NodeViewProps) {
+  componentWillReceiveProps(props: INodeViewProps) {
     console.debug("NodeView:componentWillReceiveProps(", props, " )");
     let view = this.state.view;
     if (view === "update") view = "synthesisNode";

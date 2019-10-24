@@ -5,26 +5,26 @@ interface JsonResponse {
   [key: string]: any;
 }
 
-interface Props {
+export interface IEndpointOptionsProps {
   nId: string;
 }
 
-interface State {
+export interface IEndpointOptionsState {
   nId: string | null;
   endpointOptions: JsonResponse | null;
 }
 
-export class EndpointOptions extends React.Component<Props, State> {
-  constructor(props: Props) {
+export class EndpointOptions extends React.Component<IEndpointOptionsProps, IEndpointOptionsState> {
+  constructor(props: IEndpointOptionsProps) {
     super(props);
     this.state = {
       nId: null,
-      endpointOptions: {}
+      endpointOptions: {},
     };
     this.updateEndpointOptions(this.state.nId);
   }
 
-  componentWillReceiveProps(props: Props) {
+  componentWillReceiveProps(props: IEndpointOptionsProps) {
     if (this.state.nId !== props.nId) {
       this.setState({ nId: props.nId });
       this.updateEndpointOptions(this.state.nId!);
@@ -37,7 +37,7 @@ export class EndpointOptions extends React.Component<Props, State> {
       .then(response => {
         console.log("Point : " + response.data);
         this.setState({
-          endpointOptions: response.data
+          endpointOptions: response.data,
         });
       })
       .catch((err: any) => console.log(err));

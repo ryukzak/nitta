@@ -4,11 +4,11 @@ import { ProcessTimelines, ViewPointID, TimelinePoint, TimelineWithViewPoint } f
 
 import "./ProcessView.scss";
 
-interface Props {
+export interface IProcessViewProps {
   nId: string;
 }
 
-interface State {
+export interface IProcessViewState {
   nId: string | null;
   data: ProcessTimelines<number> | null;
   pIdIndex: Record<number, TimelinePoint<number>> | null;
@@ -22,10 +22,10 @@ interface Highlight {
   down: number[];
 }
 
-export class ProcessView extends React.Component<Props, State> {
+export class ProcessView extends React.Component<IProcessViewProps, IProcessViewState> {
   // TODO: diff from previous synthesis process step
   // TODO: highlight point by click on info part
-  constructor(props: Props) {
+  constructor(props: IProcessViewProps) {
     super(props);
     this.state = {
       nId: null,
@@ -35,19 +35,19 @@ export class ProcessView extends React.Component<Props, State> {
       highlight: {
         up: [],
         current: [],
-        down: []
-      }
+        down: [],
+      },
     };
     this.requestTimelines = this.requestTimelines.bind(this);
     this.renderPoint = this.renderPoint.bind(this);
     this.selectPoint = this.selectPoint.bind(this);
   }
 
-  static getDerivedStateFromProps(props: Props, state: State) {
+  static getDerivedStateFromProps(props: IProcessViewProps, state: IProcessViewState) {
     console.log("> ProcessView.getDerivedStateFromProps", props.nId);
     if (props.nId && props.nId !== state.nId) {
       console.log("> ProcessView.getDerivedStateFromProps - new state");
-      return { nId: props.nId, data: null } as State;
+      return { nId: props.nId, data: null } as IProcessViewState;
     }
     return null;
   }
@@ -57,7 +57,7 @@ export class ProcessView extends React.Component<Props, State> {
     this.requestTimelines(this.state.nId!);
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State, snapshot: any) {
+  componentDidUpdate(prevProps: IProcessViewProps, prevState: IProcessViewState, snapshot: any) {
     console.log("> ProcessView.componentDidUpdate");
     if (prevState.nId !== this.state.nId) {
       this.requestTimelines(this.state.nId!);
@@ -81,7 +81,7 @@ export class ProcessView extends React.Component<Props, State> {
         });
         this.setState({
           data: this.resortTimeline(response.data),
-          pIdIndex: pIdIndex
+          pIdIndex: pIdIndex,
         });
       })
       .catch((err: any) => console.log(err));
@@ -90,7 +90,7 @@ export class ProcessView extends React.Component<Props, State> {
   resortTimeline(data: ProcessTimelines<number>) {
     let result: ProcessTimelines<number> = {
       timelines: [],
-      verticalRelations: data.verticalRelations
+      verticalRelations: data.verticalRelations,
     };
     function cmp(a: TimelineWithViewPoint<number>, b: TimelineWithViewPoint<number>) {
       if (a.timelineViewpoint.component < b.timelineViewpoint.component) return -1;
@@ -193,7 +193,7 @@ export class ProcessView extends React.Component<Props, State> {
     });
     this.setState({
       detail: point,
-      highlight: highlight
+      highlight: highlight,
     });
   }
 

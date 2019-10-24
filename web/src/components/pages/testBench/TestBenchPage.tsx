@@ -4,11 +4,11 @@ import { TestbenchReport } from "../../../gen/types";
 import ReactTable from "react-table";
 import { SelectedNodeId } from "../../app/AppContext";
 
-interface ITestBenchPageProps {
+export interface ITestBenchPageProps {
   nId: SelectedNodeId;
 }
 
-interface ITestBenchPageState {
+export interface ITestBenchPageState {
   nId: SelectedNodeId;
   testBenchDump: TestbenchReport<string, number> | null;
 }

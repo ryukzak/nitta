@@ -9,45 +9,45 @@ import { Button } from "react-bootstrap";
  * show - collapse or open body of JsonView by default
  */
 
-interface JsonViewProps {
+export interface IJsonViewProps {
   jsonData: any;
   label: string;
   show: boolean;
 }
 
-interface JsonViewState {
+export interface IJsonViewState {
   selectedData: any;
   selectedLabel: string;
   isHiddenJsonView: boolean;
 }
 
-export class JsonView extends React.Component<JsonViewProps, JsonViewState> {
-  constructor(props: JsonViewProps) {
+export class JsonView extends React.Component<IJsonViewProps, IJsonViewState> {
+  constructor(props: IJsonViewProps) {
     super(props);
     this.state = {
       selectedLabel: props.label,
       selectedData: props.jsonData,
-      isHiddenJsonView: props.show
+      isHiddenJsonView: props.show,
     };
     this.toggleDiv = this.toggleDiv.bind(this);
     // FIXME:
     this.reloadChart(props.jsonData);
   }
 
-  UNSAFE_componentWillReceiveProps(props: JsonViewProps) {
+  UNSAFE_componentWillReceiveProps(props: IJsonViewProps) {
     if (this.state.selectedData !== props.jsonData) this.reloadChart(props.jsonData);
     this.setState({ selectedData: props.jsonData });
   }
 
   toggleDiv = () => {
     this.setState({
-      isHiddenJsonView: !this.state.isHiddenJsonView
+      isHiddenJsonView: !this.state.isHiddenJsonView,
     });
   };
 
   reloadChart(jsonData: any) {
     this.setState({
-      selectedData: jsonData
+      selectedData: jsonData,
     });
   }
 

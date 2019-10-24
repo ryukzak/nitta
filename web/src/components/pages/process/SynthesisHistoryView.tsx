@@ -1,28 +1,28 @@
 import * as React from "react";
 import { haskellApiService } from "../../../services/HaskellApiService";
 
-interface Props {
+export interface ISynthesisHistoryViewProps {
   nId: string;
   reverse: boolean;
 }
 
-interface State {
+export interface ISynthesisHistoryViewState {
   nId: string | null;
   history: any[] | null;
 }
 
-export class SynthesisHistoryView extends React.Component<Props, State> {
-  constructor(props: Props) {
+export class SynthesisHistoryView extends React.Component<ISynthesisHistoryViewProps, ISynthesisHistoryViewState> {
+  constructor(props: ISynthesisHistoryViewProps) {
     super(props);
     this.state = {
       nId: null,
-      history: null
+      history: null,
     };
   }
 
-  static getDerivedStateFromProps(props: Props, state: State) {
+  static getDerivedStateFromProps(props: ISynthesisHistoryViewProps, state: ISynthesisHistoryViewState) {
     if (props.nId && props.nId !== state.nId) {
-      return { nId: props.nId, history: null } as State;
+      return { nId: props.nId, history: null } as ISynthesisHistoryViewState;
     }
     return null;
   }
@@ -31,7 +31,7 @@ export class SynthesisHistoryView extends React.Component<Props, State> {
     this.updateHistory(this.state.nId!);
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State, snapshot: any) {
+  componentDidUpdate(prevProps: ISynthesisHistoryViewProps, prevState: ISynthesisHistoryViewState, snapshot: any) {
     console.log("histiory CDU: new id = " + prevProps.nId);
     if (prevState.nId !== this.state.nId) {
       this.updateHistory(this.state.nId!);
@@ -43,7 +43,7 @@ export class SynthesisHistoryView extends React.Component<Props, State> {
       .getHistory(nid)
       .then((response: any) => {
         this.setState({
-          history: response.data
+          history: response.data,
         });
       })
       .catch((err: any) => console.log(err));

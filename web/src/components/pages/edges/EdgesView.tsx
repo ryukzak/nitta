@@ -28,19 +28,19 @@ type DataflowParam = IDataFlowEdgeParameter;
 
 const nInSeparator = "-";
 
-interface Props {
+export interface IEdgesViewProps {
   nid: SelectedNodeId;
   onNidChange: (nid: string) => void;
 }
 
-interface State {
+export interface IEdgesViewState {
   nid: SelectedNodeId;
   origin: EdgeView<string, string, number, number> | null;
   edges: EdgeView<string, string, number, number>[] | null;
 }
 
-export class EdgesView extends React.Component<Props, State> {
-  constructor(props: Props) {
+export class EdgesView extends React.Component<IEdgesViewProps, IEdgesViewState> {
+  constructor(props: IEdgesViewProps) {
     super(props);
     this.state = {
       nid: props.nid,
@@ -49,9 +49,9 @@ export class EdgesView extends React.Component<Props, State> {
     };
   }
 
-  static getDerivedStateFromProps(props: Props, state: State) {
+  static getDerivedStateFromProps(props: IEdgesViewProps, state: IEdgesViewState) {
     if (props.nid && props.nid !== state.nid) {
-      return { nid: props.nid, origin: null, edges: null } as State;
+      return { nid: props.nid, origin: null, edges: null } as IEdgesViewState;
     }
     return null;
   }
@@ -60,7 +60,7 @@ export class EdgesView extends React.Component<Props, State> {
     this.requestEdges(this.state.nid!);
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State, snapshot: any) {
+  componentDidUpdate(prevProps: IEdgesViewProps, prevState: IEdgesViewState, snapshot: any) {
     if (prevState.nid !== this.state.nid) {
       this.requestEdges(this.state.nid!);
     }
