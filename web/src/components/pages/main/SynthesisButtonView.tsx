@@ -83,26 +83,44 @@ export default class SynthesisButtonView extends React.Component<ISynthesisButto
 
   public render() {
     return (
-      <div className="d-flex justify-content-between my-3  mx-2 pb-2">
-        <div className="d-flex flex-row my-auto">
-          <Button className="mr-3 p-1 btn-sm" onClick={() => this.simpleSynthesis(this.state.selectedNodeId)}>
+      <div className="d-flex justify-content-between">
+        <div className="d-flex flex-row my-auto mr-4">
+          <Button
+            className="mr-3 p-1 btn-sm btn-secondary"
+            onClick={() => this.simpleSynthesis(this.state.selectedNodeId)}
+          >
             Simple synthesis
           </Button>
-          <Button className="mr-3 p-1 btn-sm" onClick={() => this.smartBindSynthesisIO(this.state.selectedNodeId)}>
+          <Button
+            className="mr-3 p-1 btn-sm btn-secondary"
+            onClick={() => this.smartBindSynthesisIO(this.state.selectedNodeId)}
+          >
             Smart bind synthesis
           </Button>
         </div>
         <div className="d-flex flex-row-reverse my-auto">
-          <Button className="mr-3 p-1 btn-sm" onClick={() => this.allBestThread(this.state.selectedNodeId, 2)}>
+          <Button
+            className="mr-3 p-1 btn-sm btn-secondary"
+            onClick={() => this.allBestThread(this.state.selectedNodeId, 2)}
+          >
             All best tread 2
           </Button>
-          <Button className="mr-3 p-1 btn-sm" onClick={() => this.allBestThread(this.state.selectedNodeId, 1)}>
+          <Button
+            className="mr-3 p-1 btn-sm btn-secondary"
+            onClick={() => this.allBestThread(this.state.selectedNodeId, 1)}
+          >
             All best tread 1
           </Button>
-          <Button className="mr-3 p-1 btn-sm" onClick={() => this.allBestThread(this.state.selectedNodeId, 0)}>
+          <Button
+            className="mr-3 p-1 btn-sm btn-secondary"
+            onClick={() => this.allBestThread(this.state.selectedNodeId, 0)}
+          >
             Best tread
           </Button>
-          <Button className="mr-3 p-1 btn-sm" onClick={() => this.obviousBindThread(this.state.selectedNodeId)}>
+          <Button
+            className="mr-3 p-1 btn-sm btn-secondary"
+            onClick={() => this.obviousBindThread(this.state.selectedNodeId)}
+          >
             Obvious bind thread
           </Button>
         </div>

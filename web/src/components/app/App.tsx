@@ -1,6 +1,5 @@
 import React from "react";
-import { Route, Switch } from "react-router-dom";
-import { Tabs, Tab } from "react-bootstrap";
+import { Route, Switch, Redirect } from "react-router-dom";
 
 import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
 import IndexPage from "../pages/main/MainPage";
@@ -13,8 +12,6 @@ import AppNavbar from "./AppNavbar";
 import AppFooter from "./AppFooter";
 
 import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
-
-import "./AppTabs.scss";
 
 export interface IAppProps {}
 
@@ -44,40 +41,33 @@ export default class App extends React.Component<IAppProps, IAppState> {
   public render() {
     return (
       <AppContextProvider value={this.state}>
-        <div className="position-relative" style={{ minHeight: "100vh" }}>
-          <AppNavbar />
+        <AppNavbar />
 
-          <div style={{ minHeight: "calc(100vh - 7.1em)", marginTop: "5.5em" }}>
-            <Switch>
-              <Route exact path="/">
-                <IndexPage />
-                <Tabs
-                  className="bg-dark fixed-top mt-5"
-                  defaultActiveKey="node"
-                  id="uncontrolled-tab-example"
-                  transition={false}
-                >
-                  <Tab tabClassName="tab" eventKey="node" title="NodeView">
-                    <NodeView selectedNId={this.state.selectedNodeId} />
-                  </Tab>
-                  <Tab tabClassName="tab" eventKey="edges" title="EdgesView">
-                    <EdgesView nid={this.state.selectedNodeId} onNidChange={this.state.selectNode} />
-                  </Tab>
-                  <Tab tabClassName="tab" eventKey="process" title="ProcessView">
-                    <ProcessPage nId={this.state.selectedNodeId} />
-                  </Tab>
-                  <Tab tabClassName="tab" eventKey="testBench" title="TestBench">
-                    <TestBenchPage nId={this.state.selectedNodeId} />
-                  </Tab>
-                </Tabs>
-              </Route>
+        <div className="flex-grow-1">
+          <IndexPage />
 
-              <Route component={NotFoundErrorPage} />
-            </Switch>
-          </div>
+          <Switch>
+            <Route exact path="/">
+              <Redirect to="/node" />
+            </Route>
+            <Route exact path="/node">
+              <NodeView selectedNId={this.state.selectedNodeId} />
+            </Route>
+            <Route exact path="/edges">
+              <EdgesView nid={this.state.selectedNodeId} onNidChange={this.state.selectNode} />
+            </Route>
+            <Route exact path="/process">
+              <ProcessPage nId={this.state.selectedNodeId} />
+            </Route>
+            <Route exact path="/testbench">
+              <TestBenchPage nId={this.state.selectedNodeId} />
+            </Route>
 
-          <AppFooter />
+            <Route component={NotFoundErrorPage} />
+          </Switch>
         </div>
+
+        <AppFooter />
       </AppContextProvider>
     );
   }
