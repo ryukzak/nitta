@@ -1,23 +1,20 @@
 import * as React from "react";
 import SynthesisButtonView from "./SynthesisButtonView";
 import SynthesisGraphView from "./SynthesisGraphView";
-import { AppContextConsumer } from "../../app/AppContext";
+import { AppContext, IAppContext } from "../../app/AppContext";
+import { useContext } from "react";
 
 export default function MainPage() {
+  const appContext = useContext(AppContext) as IAppContext;
+
   return (
-    <AppContextConsumer>
-      {appContext =>
-        appContext && (
-          <div className="d-flex flex-column">
-            <SynthesisGraphView
-              selectedNid={appContext.selectedNodeId}
-              selectNode={appContext.selectNode}
-              refreshGraph={appContext.reloadSelectedNode}
-            />
-            <SynthesisButtonView selectedNodeId={appContext.selectedNodeId} selectNode={appContext.selectNode} />
-          </div>
-        )
-      }
-    </AppContextConsumer>
+    <div className="d-flex flex-column">
+      <SynthesisGraphView
+        selectedNid={appContext.selectedNodeId}
+        selectNode={appContext.selectNode}
+        refreshGraph={appContext.reloadSelectedNode}
+      />
+      <SynthesisButtonView selectedNodeId={appContext.selectedNodeId} selectNode={appContext.selectNode} />
+    </div>
   );
 }
