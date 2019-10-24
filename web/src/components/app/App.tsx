@@ -8,10 +8,9 @@ import { EdgesView } from "../pages/edges/EdgesView";
 import ProcessPage from "../pages/process/ProcessPage";
 import TestBenchPage from "../pages/testBench/TestBenchPage";
 
-import AppNavbar from "./AppNavbar";
-import AppFooter from "./AppFooter";
-
 import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
+import { AppNavbar } from "./AppNavbar";
+import { AppFooter } from "./AppFooter";
 
 export interface IAppProps {}
 
