@@ -13,7 +13,6 @@ interface IProcessPageState {
 }
 
 export default class ProcessPage extends React.Component<IProcessPageProps, IProcessPageState> {
-  // export default function NodePage() {
   constructor(props: IProcessPageProps) {
     super(props);
 

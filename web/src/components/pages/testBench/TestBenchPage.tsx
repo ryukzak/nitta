@@ -14,7 +14,6 @@ interface ITestBenchPageState {
 }
 
 export default class TestBenchPage extends React.Component<ITestBenchPageProps, ITestBenchPageState> {
-  // export default function NodePage() {
   constructor(props: ITestBenchPageProps) {
     super(props);
 
