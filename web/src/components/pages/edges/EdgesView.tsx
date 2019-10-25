@@ -181,7 +181,7 @@ export class EdgesView extends React.Component<IEdgesViewProps, IEdgesViewState>
         <div className="row mt-2 w-100" style={{ overflowX: "auto" }}>
           <div className="columns">
             <pre className="squeze h5">History:</pre>
-            <SynthesisHistoryView nId={this.state.nid!} reverse={true} />
+            <SynthesisHistoryView reverse={true} />
           </div>
         </div>
       </div>
