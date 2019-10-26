@@ -63,9 +63,6 @@ instance ( VarValTime v x t
 
   -- тихая ругань по поводу решения
   stateOptions Accum{ acIn=vs@(_:_) } now
-    | length vs == 2 -- первый аргумент.
-    = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
-    | otherwise -- второй аргумент
     = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
   stateOptions Accum{ acOut=vs@(_:_) } now -- вывод
     = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 2 ... maxBound) (1 ... maxBound) ]
