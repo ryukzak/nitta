@@ -26,13 +26,10 @@ interface Graph {
 
 export interface IIntermediateViewProps {
   selectedNId: SelectedNodeId;
-  view: string;
 }
 
 export interface IIntermediateViewState {
   selectedNId: SelectedNodeId;
-  // FIXME: throw away useless property
-  view: string;
   status: boolean;
   algGraph: IGraphStructure<IGraphEdge>;
 }
@@ -44,7 +41,6 @@ export class IntermediateView extends React.Component<IIntermediateViewProps, II
     super(props);
     this.state = {
       selectedNId: props.selectedNId,
-      view: props.view,
       status: false,
 
       algGraph: {
@@ -60,7 +56,6 @@ export class IntermediateView extends React.Component<IIntermediateViewProps, II
     if (this.state.selectedNId !== props.selectedNId) {
       this.setState({
         status: false,
-        view: props.view,
       });
       this.graphMaker(props.selectedNId);
     }
@@ -88,12 +83,10 @@ export class IntermediateView extends React.Component<IIntermediateViewProps, II
           return (graph.edges[index] = edge);
         });
 
-        if (this.state.view === "synthesisNode") {
-          this.setState({
-            status: true,
-            algGraph: graph,
-          });
-        }
+        this.setState({
+          status: true,
+          algGraph: graph,
+        });
       })
       .catch((err: any) => alert(err));
   }

@@ -2,7 +2,7 @@ import React from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
 
 import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
-import NodeView from "../pages/node/NodeView";
+import { NodeView } from "../pages/node/NodeView";
 import { EdgesView } from "../pages/edges/EdgesView";
 import ProcessPage from "../pages/process/ProcessPage";
 import TestBenchPage from "../pages/testBench/TestBenchPage";
@@ -49,7 +49,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
               <Redirect to="/node" />
             </Route>
             <Route exact path="/node">
-              <NodeView selectedNId={this.state.selectedNodeId} />
+              <NodeView />
             </Route>
             <Route exact path="/edges">
               <EdgesView nid={this.state.selectedNodeId} onNidChange={this.state.selectNode} />
