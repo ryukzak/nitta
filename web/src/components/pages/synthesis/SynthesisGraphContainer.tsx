@@ -2,6 +2,7 @@ import * as React from "react";
 import { Button } from "react-bootstrap";
 import { SynthesisGraphView } from "./SynthesisGraphView";
 import { AppContext, IAppContext } from "../../app/AppContext";
+// import MuiTextField, {TextFieldProps} from "@material-ui/core/TextField";
 
 export const SynthesisGraphContainer: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
@@ -11,7 +12,8 @@ export const SynthesisGraphContainer: React.FC = () => {
   const [height, setHeight] = React.useState<number>(minHeight);
 
   const buttonAttrs = {
-    className: "btn btn-sm mr-3"
+    className: "btn btn-sm mr-3",
+    variant: "link" as any,
   };
 
   const expandSynthesisGraphView = () => setHeight(height + step);
@@ -22,13 +24,13 @@ export const SynthesisGraphContainer: React.FC = () => {
     <div className="flex-grow-1">
       <div className="d-flex justify-content-between m-2">
         <div className="mr-3">
-          <Button {...buttonAttrs} variant="link" onClick={() => expandSynthesisGraphView()}>
+          <Button {...buttonAttrs} onClick={() => expandSynthesisGraphView()}>
             Expand
           </Button>
-          <Button {...buttonAttrs} variant="link" onClick={() => reduceSynthesisGraphView()}>
+          <Button {...buttonAttrs} onClick={() => reduceSynthesisGraphView()}>
             Reduce
           </Button>
-          <Button {...buttonAttrs} variant="link" onClick={() => appContext.reloadSelectedNode()}>
+          <Button {...buttonAttrs} onClick={() => appContext.reloadSelectedNode()}>
             Refresh
           </Button>
         </div>
