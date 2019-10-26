@@ -1,8 +1,8 @@
 import * as React from "react";
 import Tree from "react-d3-tree";
 import { haskellApiService } from "../../../services/HaskellApiService";
-
-// TODO: REWRITE/REFACTOR COMPONENT "SynthesisGraph"
+import { AppContext, IAppContext } from "../../app/AppContext";
+import { NId, SynthesisNodeView } from "../../../gen/types";
 
 interface JsonResponse {
   [key: string]: any;
@@ -14,121 +14,78 @@ interface JsonObjId {
 
 interface Graph {
   name?: string;
-  nid?: number;
+  nid?: NId;
   attributes?: JsonResponse;
-  status?: string;
+  status?: boolean;
   children?: Graph[];
   nodeSvgShape?: any;
   nodeSvgShapeOriginal?: any;
 }
 
-export interface ISynthesisGraphProps {
-  onNIdChange: any;
-  selectedNId: any;
-}
+export const SynthesisGraph: React.FC = () => {
+  const appContext = React.useContext(AppContext) as IAppContext;
 
-export interface ISynthesisGraphState {
-  selectedNId: string | null;
-  dataGraph: Array<any>;
-  nIds: JsonObjId;
-}
+  const [dataGraph, setDataGraph] = React.useState<Graph[]>([] as Graph[]);
+  const [nIds, setNIds] = React.useState<JsonObjId>({});
+  const [currentSelectedNId, setCurrentSelectedNId] = React.useState<string | null>(null);
 
-export default class SynthesisGraph extends React.Component<ISynthesisGraphProps, ISynthesisGraphState> {
-  onNIdChange: any;
+  const markNode = React.useCallback(
+    (nid: any, nidArray?: any, color?: any) => {
+      if (color === undefined) color = "blue";
+      if (nidArray === undefined) nidArray = nIds;
+      if (nid === null || nidArray === null) return;
 
-  constructor(props: ISynthesisGraphProps) {
-    super(props);
-    this.onNIdChange = props.onNIdChange;
-    this.state = {
-      selectedNId: props.selectedNId,
-      dataGraph: [],
-      nIds: {},
-    };
-    this.reloadSynthesisGraph();
-  }
+      if (color === "blue") {
+        nidArray[nid].nodeSvgShapeOriginal = nidArray[nid].nodeSvgShape;
+      }
+      nidArray[nid].nodeSvgShape = {
+        shape: "circle",
+        shapeProps: {
+          r: 10,
+          cx: 0,
+          cy: 0,
+          fill: color
+        }
+      };
+    },
+    [nIds]
+  );
 
-  componentWillReceiveProps(newProps: ISynthesisGraphProps) {
-    console.debug(
-      "SynthesisGraph:componentWillReceiveProps() // props.selectedNId, this.state.selectedNId:",
-      newProps.selectedNId,
-      this.state.selectedNId
-    );
+  const unmarkNode = React.useCallback(
+    (nid: any) => {
+      if (nid === null) return;
+      let tmp: string = nIds[nid].nodeSvgShapeOriginal;
+      let nids = nIds;
+      nids[nid].nodeSvgShape = tmp;
+      setNIds(nids);
+    },
+    [nIds]
+  );
 
-    if (newProps.selectedNId !== null && !(newProps.selectedNId in this.state.nIds)) {
-      this.setState({
-        selectedNId: newProps.selectedNId,
-      });
-      this.reloadSynthesisGraph();
-      return;
-    }
-    if (newProps.selectedNId !== null && this.state.selectedNId !== newProps.selectedNId) {
-      this.unmarkNode(this.state.selectedNId);
-      this.markNode(newProps.selectedNId);
-      this.setState({
-        selectedNId: newProps.selectedNId,
-        dataGraph: [this.state.dataGraph[0]], // force re-render Tree
-      });
-    }
-    if (newProps.selectedNId === null) {
-      this.setState({
-        dataGraph: [],
-        nIds: {},
-      });
-      this.onNIdChange("-");
-    }
-  }
+  const reloadSynthesisGraph = React.useCallback(() => {
 
-  markNode(nid: any, nIds?: any, color?: any) {
-    if (color === undefined) color = "blue";
-    if (nIds === undefined) nIds = this.state.nIds;
-    if (nid === null || nIds === null) return;
-
-    if (color === "blue") {
-      nIds[nid].nodeSvgShapeOriginal = nIds[nid].nodeSvgShape;
-    }
-    console.debug("SynthesisGraph:markNode(", nid, nIds, color, ")");
-    nIds[nid].nodeSvgShape = {
-      shape: "circle",
-      shapeProps: {
-        r: 10,
-        cx: 0,
-        cy: 0,
-        fill: color,
-      },
-    };
-  }
-
-  unmarkNode(nid: any) {
-    console.debug("SynthesisGraph:unmarkNode(", nid, ")");
-    if (nid === null) return;
-    let tmp: string = this.state.nIds[nid].nodeSvgShapeOriginal;
-    let nids = this.state.nIds;
-    nids[nid].nodeSvgShape = tmp;
-    this.setState({
-      nIds: nids,
-    });
-  }
-
-  reloadSynthesisGraph = () => {
-    console.debug("SynthesisGraph:reloadSynthesisGraph()");
     let reLastNidStep = /-[^-]*$/; // nInSeparator
-    let nid = this.state.selectedNId;
+    let nid = appContext.selectedNodeId;
+
+    // FIXME: Need to replace type of the SynthesisNodeView.svNnid (dNode[0].svNnid) from number[] to string. Now svNnid declared as number[], but request are responsing string.
     haskellApiService
       .getSynthesis()
       .then((response: any) => {
-        let nIds: JsonObjId = {};
-        let buildGraph = (gNode: Graph, dNode: JsonResponse) => {
+        let nidArray: JsonObjId = {};
+        let buildGraph = (gNode: Graph, dNode: [SynthesisNodeView, Array<SynthesisNodeView>]) => {
+          // @ts-ignore
           gNode.name = reLastNidStep.exec(dNode[0].svNnid)![0];
           gNode.nid = dNode[0].svNnid;
-          nIds[dNode[0].svNnid] = gNode;
-          if (dNode[0].svIsEdgesProcessed) this.markNode(gNode.nid, nIds, "black");
-          if (dNode[0].svIsComplete) this.markNode(gNode.nid, nIds, "lime");
+          // @ts-ignore
+          nidArray[dNode[0].svNnid] = gNode;
+          if (dNode[0].svIsEdgesProcessed) markNode(gNode.nid, nidArray, "black");
+          if (dNode[0].svIsComplete) markNode(gNode.nid, nidArray, "lime");
           gNode.attributes = {
             dec: dNode[0].svOptionType,
-            ch: dNode[0].svDuration + " / " + dNode[0].svCharacteristic,
+            ch: dNode[0].svDuration + " / " + dNode[0].svCharacteristic
           };
           gNode.status = dNode[0].svIsComplete;
-          dNode[0].svCntx.forEach((e: string, i: any) => {
+          dNode[0].svCntx.forEach((e: string, i: number) => {
             gNode.attributes![i] = e;
           });
           gNode.children = [];
@@ -141,29 +98,59 @@ export default class SynthesisGraph extends React.Component<ISynthesisGraphProps
           });
           return gNode;
         };
-        let graph = buildGraph({}, response.data);
-        nIds["."] = graph;
-        if (nid !== null) this.markNode(nid, nIds);
 
-        this.setState({
-          dataGraph: [graph],
-          nIds: nIds,
-        });
+        let graph = buildGraph({}, response.data);
+        nidArray["."] = graph;
+        if (nid !== null) markNode(nid, nidArray);
+        setDataGraph([graph]);
+        setNIds(nidArray);
       })
       .catch((err: any) => console.log(err));
-  };
+  }, [appContext.selectedNodeId, markNode]);
 
-  render() {
-    if (this.state.dataGraph === null || this.state.dataGraph.length === 0)
-      return (
-        <div className="h-100 d-flex align-items-center justify-content-center text-black-50">
-          <h1>Empty graph</h1>
-        </div>
-      );
+  React.useEffect(() => {
+    if (currentSelectedNId === appContext.selectedNodeId) return;
+
+    if (appContext.selectedNodeId === "-" || currentSelectedNId === null) {
+      setCurrentSelectedNId( appContext.selectedNodeId );
+      reloadSynthesisGraph();
+      return;
+    }
+    if (!(appContext.selectedNodeId in nIds)) {
+      setCurrentSelectedNId(appContext.selectedNodeId);
+      reloadSynthesisGraph();
+      return;
+    }
+    else {
+      unmarkNode(currentSelectedNId);
+      markNode(appContext.selectedNodeId);
+
+      setCurrentSelectedNId(appContext.selectedNodeId);
+      setDataGraph([dataGraph[0]]);
+      return;
+    }
+  }, [
+    appContext.selectedNodeId,
+    appContext.selectNode,
+    currentSelectedNId,
+    reloadSynthesisGraph,
+    dataGraph,
+    markNode,
+    nIds,
+    unmarkNode
+  ]);
+
+  if (!dataGraph === null || dataGraph.length === 0) {
+    return (
+      <div className="h-100 d-flex align-items-center justify-content-center text-black-50">
+        <h1>Empty graph</h1>
+      </div>
+    );
+  } else {
     return (
       <div className="h-100">
         <Tree
-          data={this.state.dataGraph}
+          data={dataGraph}
           nodeSize={{ x: 160, y: 60 }}
           separation={{ siblings: 1, nonSiblings: 1 }}
           pathFunc="diagonal"
@@ -177,28 +164,26 @@ export default class SynthesisGraph extends React.Component<ISynthesisGraphProps
               r: 10,
               cx: 0,
               cy: 0,
-              fill: "white",
-            },
+              fill: "white"
+            }
           }}
           styles={{
             nodes: {
               node: {
                 name: { fontSize: "12px" },
-                attributes: { fontSize: "10px" },
+                attributes: { fontSize: "10px" }
               },
               leafNode: {
                 name: { fontSize: "12px" },
-                attributes: { fontSize: "10px" },
-              },
-            },
+                attributes: { fontSize: "10px" }
+              }
+            }
           }}
           onClick={(node: any) => {
-            console.debug("SynthesisGraph: onNIdChange(", node.nid, ")");
-            this.onNIdChange(node.nid);
-            this.setState({ selectedNId: node.nid });
+            appContext.selectNode(node.nid);
           }}
         />
       </div>
     );
   }
-}
+};

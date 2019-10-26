@@ -1,105 +1,45 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
-import SynthesisGraph from "./SynthesisGraph";
-import { SelectedNodeId } from "../../app/AppContext";
+import { SynthesisGraph } from "./SynthesisGraph";
+import { AppContext, IAppContext } from "../../app/AppContext";
 
-// TODO: REWRITE/REFACTOR COMPONENT "SynthesisGraphView"
+export const SynthesisGraphView: React.FC = () => {
+  const appContext = React.useContext(AppContext) as IAppContext;
 
-export interface ISynthesisGraphViewProps {
-  selectedNid: SelectedNodeId;
-  selectNode: (nid: SelectedNodeId) => void;
-  refreshGraph: () => void;
-}
+  const minSynthesisGraphHeight = 200;
+  const [synthesisGraphHeight, setSynthesisGraphHeight] = React.useState<number>(minSynthesisGraphHeight);
 
-export interface ISynthesisGraphViewState {
-  selectedNid: SelectedNodeId;
-  selectNode: (nid: SelectedNodeId) => void;
-  refreshGraph: () => void;
-  minSynthesisGraphHeight: number;
-  synthesisGraphHeight: number;
-}
-
-export default class SynthesisGraphView extends React.Component<ISynthesisGraphViewProps, ISynthesisGraphViewState> {
-  private containerRef = React.createRef<HTMLDivElement>();
-  private buttonRef = React.createRef<HTMLDivElement>();
-
-  constructor(props: ISynthesisGraphViewProps) {
-    super(props);
-    this.state = {
-      selectedNid: props.selectedNid,
-      selectNode: props.selectNode,
-      refreshGraph: props.refreshGraph,
-      minSynthesisGraphHeight: 200,
-      synthesisGraphHeight: 0,
-    };
-  }
-
-  componentWillReceiveProps(newProps: ISynthesisGraphViewProps) {
-    this.setState({
-      selectedNid: newProps.selectedNid,
-      selectNode: newProps.selectNode,
-    });
-  }
-
-  componentDidMount = () => {
-    if (this.containerRef.current != null && this.buttonRef.current != null) {
-      this.setState({
-        synthesisGraphHeight: this.containerRef.current.clientHeight - this.buttonRef.current.clientHeight,
-      });
-    }
+  const buttonAttrs = {
+    className: "btn btn-sm mr-3"
   };
 
-  resizeSynthesisGraphView = (expand: boolean) => {
-    var currentHeight: number = this.state.synthesisGraphHeight;
+  function resizeSynthesisGraphView(expand: boolean) {
     if (expand) {
-      this.setState({
-        synthesisGraphHeight: currentHeight += 100,
-      });
-    } else if (currentHeight > this.state.minSynthesisGraphHeight) {
-      this.setState({
-        synthesisGraphHeight: currentHeight -= 100,
-      });
+      setSynthesisGraphHeight(synthesisGraphHeight + 100);
+    } else if (synthesisGraphHeight > minSynthesisGraphHeight) {
+      setSynthesisGraphHeight(synthesisGraphHeight - 100);
     }
-  };
-
-  public render() {
-    return (
-      <div className="flex-grow-1" ref={this.containerRef}>
-        <div className="d-flex justify-content-between my-1 mx-2" ref={this.buttonRef}>
-          <div className="d-flex flex-row my-auto">
-            <Button
-              className="btn btn-link btn-sm bg-transparent mr-3"
-              style={{ border: 0 }}
-              onClick={() => this.resizeSynthesisGraphView(true)}
-            >
-              Expand
-            </Button>
-            <Button
-              className="btn btn-link btn-sm bg-transparent mr-3"
-              style={{ border: 0 }}
-              onClick={() => this.resizeSynthesisGraphView(false)}
-            >
-              Reduce
-            </Button>
-            <Button
-              className="btn btn-link btn-sm bg-transparent mr-3"
-              style={{ border: 0 }}
-              onClick={() => this.state.refreshGraph()}
-            >
-              Refresh
-            </Button>
-          </div>
-          <span className="text-muted">
-            black - processed node; white - in progress node; green - succees synthesis
-          </span>
-        </div>
-        <div
-          className="justify-content-center bg-light border"
-          style={{ height: this.state.synthesisGraphHeight, minHeight: this.state.minSynthesisGraphHeight }}
-        >
-          <SynthesisGraph selectedNId={this.state.selectedNid} onNIdChange={this.state.selectNode} />
-        </div>
-      </div>
-    );
   }
-}
+
+  return (
+    <div className="flex-grow-1">
+      <div className="d-flex justify-content-between m-2">
+        <div className="mr-3">
+          <Button {...buttonAttrs} variant="link" onClick={() => resizeSynthesisGraphView(true)}>
+            Expand
+          </Button>
+          <Button {...buttonAttrs} variant="link" onClick={() => resizeSynthesisGraphView(false)}>
+            Reduce
+          </Button>
+          <Button {...buttonAttrs} variant="link" onClick={() => appContext.reloadSelectedNode()}>
+            Refresh
+          </Button>
+        </div>
+        <span className="text-muted">black - processed node; white - in progress node; green - succees synthesis</span>
+      </div>
+      <div className="justify-content-center bg-light border" style={{ height: synthesisGraphHeight }}>
+        <SynthesisGraph />
+      </div>
+    </div>
+  );
+};
