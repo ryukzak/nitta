@@ -19,7 +19,7 @@ export const DebugView: React.FC<IDebugViewProps> = props => {
     haskellApiService
       .getNode(appContext.selectedNodeId)
       .then((response: any) => setSynthesisNodeData(response.data))
-      .catch((err: any) => console.log(err));
+      .catch((err: any) => console.error(err));
   }, [appContext.selectedNodeId]);
 
   return (
