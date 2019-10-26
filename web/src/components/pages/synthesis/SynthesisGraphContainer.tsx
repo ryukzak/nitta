@@ -6,6 +6,7 @@ import { AppContext, IAppContext } from "../../app/AppContext";
 export const SynthesisGraphContainer: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
 
+  const step = 100;
   const minSynthesisGraphHeight = 200;
   const [synthesisGraphHeight, setSynthesisGraphHeight] = React.useState<number>(minSynthesisGraphHeight);
 
@@ -13,10 +14,10 @@ export const SynthesisGraphContainer: React.FC = () => {
     className: "btn btn-sm mr-3"
   };
 
-  const expandSynthesisGraphView = () => setSynthesisGraphHeight(synthesisGraphHeight + 100);
+  const expandSynthesisGraphView = () => setSynthesisGraphHeight(synthesisGraphHeight + step);
 
-  const reduceSynthesisGraphView = () => setSynthesisGraphHeight(synthesisGraphHeight - 100);
-  
+  const reduceSynthesisGraphView = () => setSynthesisGraphHeight(synthesisGraphHeight - step);
+
   return (
     <div className="flex-grow-1">
       <div className="d-flex justify-content-between m-2">
