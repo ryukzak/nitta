@@ -1,6 +1,6 @@
 import React from "react";
 
-export type SelectedNodeId = string | null;
+export type SelectedNodeId = string;
 
 export interface IAppContext {
   selectedNodeId: SelectedNodeId;

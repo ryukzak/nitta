@@ -10,7 +10,7 @@ import TestBenchPage from "../pages/testBench/TestBenchPage";
 import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
 import { AppFooter } from "./AppFooter";
-import { MainPage } from "../pages/main/MainPage";
+import { SynthesisGraphView } from "../pages/main/SynthesisGraphView";
 
 export interface IAppProps {}
 
@@ -31,7 +31,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
       },
 
       reloadSelectedNode: () => {
-        this.setState({ selectedNodeId: null });
+        this.setState({ selectedNodeId: "-" });
       },
     };
   }
@@ -42,7 +42,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
         <AppNavbar />
 
         <div className="flex-grow-1">
-          <MainPage />
+          <SynthesisGraphView />
 
           <Switch>
             <Route exact path="/">
