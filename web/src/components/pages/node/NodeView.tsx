@@ -16,7 +16,7 @@ export const NodeView: React.FC<INodeViewProps> = props => {
     <>
       {appContext.selectedNodeId ? (
         <div className="my-3">
-          <IntermediateView selectedNId={appContext.selectedNodeId} />
+          <IntermediateView />
         </div>
       ) : (
         <pre> synthesis is not selected </pre>

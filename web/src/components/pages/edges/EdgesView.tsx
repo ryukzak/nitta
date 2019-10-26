@@ -100,7 +100,7 @@ export class EdgesView extends React.Component<IEdgesViewProps, IEdgesViewState>
       <div className="m-3">
         <div className="row">
           <div className="p-1 mr-5">
-            <IntermediateView selectedNId={this.state.nid} />
+            <IntermediateView />
           </div>
           <div className="columns">
             <Table

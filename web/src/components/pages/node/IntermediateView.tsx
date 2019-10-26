@@ -3,112 +3,66 @@ import "react-table/react-table.css";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { Graphviz } from "graphviz-react";
 import { IGraphStructure, IGraphEdge } from "../../../gen/types";
-import { SelectedNodeId } from "../../app/AppContext";
+import { AppContext, IAppContext } from "../../app/AppContext";
 
 import "./IntermediateView.scss";
 
-// TODO: REWRITE/REFACTOR COMPONENT "IntermediateView"
-
 /**
  * Component to display algorithm graph.
- * Takes two arguments:
- * selectedNID - the node id that was selected;
- * view - the current view of program that determines the operation of the graph.
- * (Takes two kinds of view: "edges" or "synthesisNode")
  */
 
-interface JsonResponse {
-  [key: string]: any;
-}
-
-interface Graph {
-  edges: JsonResponse;
-  nodes: JsonResponse;
-}
-
-export interface IIntermediateViewProps {
-  selectedNId: SelectedNodeId;
-}
-
-export interface IIntermediateViewState {
-  selectedNId: SelectedNodeId;
-  status: boolean;
-  algGraph: IGraphStructure<IGraphEdge>;
-}
+export interface IIntermediateViewProps {}
 
 export type IGraphJson = IGraphStructure<IGraphEdge>;
 
-export class IntermediateView extends React.Component<IIntermediateViewProps, IIntermediateViewState> {
-  constructor(props: IIntermediateViewProps) {
-    super(props);
-    this.state = {
-      selectedNId: props.selectedNId,
-      status: false,
+export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
+  const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
 
-      algGraph: {
-        nodes: [],
-        edges: [],
-      },
-    };
+  const [algorithmGraph, setAlgorithmGraph] = React.useState<IGraphJson | null>(null);
 
-    this.graphMaker(props.selectedNId);
-  }
-
-  componentWillReceiveProps(props: IIntermediateViewProps) {
-    if (this.state.selectedNId !== props.selectedNId) {
-      this.setState({
-        status: false,
-      });
-      this.graphMaker(props.selectedNId);
-    }
-  }
-
-  graphMaker(nid: SelectedNodeId) {
+  // Updating graph
+  React.useEffect(() => {
     haskellApiService
-      .simpleSynthesisGraph(nid)
+      .simpleSynthesisGraph(selectedNodeId)
       .then((response: any) => {
-        // TODO: Replace with backend types
-        let newNid = response.data;
-        let graph: IGraphStructure<IGraphEdge> = { nodes: [], edges: [] };
+        const graphData = response.data;
+        const newGraph: IGraphJson = {
+          nodes: graphData.nodes.map((nodeData: any, index: number) => {
+            return {
+              id: index + 1,
+              label: String(nodeData.label),
+              nodeColor: "",
+              nodeShape: "",
+              fontSize: "",
+              nodeSize: "",
+            };
+          }),
+          edges: graphData.edges.map((edgeData: any, index: number) => {
+            return edgeData;
+          }),
+        };
 
-        newNid.nodes.map((anObjectMapped: any, index: number) => {
-          return (graph.nodes[index] = {
-            id: index + 1,
-            label: String(anObjectMapped.label),
-            nodeColor: "",
-            nodeShape: "",
-            fontSize: "",
-            nodeSize: "",
-          });
-        });
-        newNid.edges.map((edge: any, index: number) => {
-          return (graph.edges[index] = edge);
-        });
-
-        this.setState({
-          status: true,
-          algGraph: graph,
-        });
+        setAlgorithmGraph(newGraph);
       })
-      .catch((err: any) => alert(err));
-  }
+      .catch((err: any) => console.error(err));
+  }, [selectedNodeId]);
 
-  render() {
-    return (
-      <div className="bg-light border edgeGraphContainer">
-        {this.state.status && (
-          <Graphviz dot={renderGraphJsonToDot(this.state.algGraph)} options={{ height: 399, zoom: true }} />
-        )}
-      </div>
-    );
-  }
+  return (
+    <div className="bg-light border edgeGraphContainer">
+      {algorithmGraph && <Graphviz dot={renderGraphJsonToDot(algorithmGraph)} options={{ height: 399, zoom: true }} />}
+    </div>
+  );
+};
+
+interface DotOptions {
+  [key: string]: any;
 }
 
 function isString(obj: any) {
   return typeof obj === "string" || obj instanceof String;
 }
 
-function renderDotOptions(options: JsonResponse) {
+function renderDotOptions(options: DotOptions) {
   let result = [];
   let key: string;
   for (key in options) {
