@@ -11,6 +11,7 @@ import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
 import { AppFooter } from "./AppFooter";
 import { MainPage } from "../pages/main/MainPage";
+import { DebugView } from "../pages/debug/DebugView";
 
 export interface IAppProps {}
 
@@ -59,6 +60,9 @@ export default class App extends React.Component<IAppProps, IAppState> {
             </Route>
             <Route exact path="/testbench">
               <TestBenchPage nId={this.state.selectedNodeId} />
+            </Route>
+            <Route exact path="/debug">
+              <DebugView />
             </Route>
 
             <Route component={NotFoundErrorPage} />
