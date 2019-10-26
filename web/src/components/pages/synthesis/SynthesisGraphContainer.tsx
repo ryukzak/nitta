@@ -13,22 +13,18 @@ export const SynthesisGraphContainer: React.FC = () => {
     className: "btn btn-sm mr-3"
   };
 
-  function resizeSynthesisGraphView(expand: boolean) {
-    if (expand) {
-      setSynthesisGraphHeight(synthesisGraphHeight + 100);
-    } else if (synthesisGraphHeight > minSynthesisGraphHeight) {
-      setSynthesisGraphHeight(synthesisGraphHeight - 100);
-    }
-  }
+  const expandSynthesisGraphView = () => setSynthesisGraphHeight(synthesisGraphHeight + 100);
 
+  const reduceSynthesisGraphView = () => setSynthesisGraphHeight(synthesisGraphHeight - 100);
+  
   return (
     <div className="flex-grow-1">
       <div className="d-flex justify-content-between m-2">
         <div className="mr-3">
-          <Button {...buttonAttrs} variant="link" onClick={() => resizeSynthesisGraphView(true)}>
+          <Button {...buttonAttrs} variant="link" onClick={() => expandSynthesisGraphView()}>
             Expand
           </Button>
-          <Button {...buttonAttrs} variant="link" onClick={() => resizeSynthesisGraphView(false)}>
+          <Button {...buttonAttrs} variant="link" onClick={() => reduceSynthesisGraphView()}>
             Reduce
           </Button>
           <Button {...buttonAttrs} variant="link" onClick={() => appContext.reloadSelectedNode()}>
