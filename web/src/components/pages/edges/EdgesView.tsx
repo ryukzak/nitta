@@ -2,7 +2,7 @@ import * as React from "react";
 import { Button } from "react-bootstrap";
 import ReactTable from "react-table";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { IntermediateView } from "../node/IntermadiateView";
+import { IntermediateView } from "../node/IntermediateView";
 import { SynthesisHistoryView } from "../process/SynthesisHistoryView";
 import {
   EdgeView,

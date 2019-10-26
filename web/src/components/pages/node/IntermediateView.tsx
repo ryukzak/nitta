@@ -5,6 +5,8 @@ import { Graphviz } from "graphviz-react";
 import { IGraphStructure, IGraphEdge } from "../../../gen/types";
 import { SelectedNodeId } from "../../app/AppContext";
 
+import "./IntermediateView.scss";
+
 // TODO: REWRITE/REFACTOR COMPONENT "IntermediateView"
 
 /**
@@ -93,7 +95,7 @@ export class IntermediateView extends React.Component<IIntermediateViewProps, II
 
   render() {
     return (
-      <div className="justify-content-center bg-light border p-2 mx-auto">
+      <div className="bg-light border edgeGraphContainer">
         {this.state.status && (
           <Graphviz dot={renderGraphJsonToDot(this.state.algGraph)} options={{ height: 399, zoom: true }} />
         )}
