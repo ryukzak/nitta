@@ -7,16 +7,16 @@ export const SynthesisGraphContainer: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
 
   const step = 100;
-  const minSynthesisGraphHeight = 200;
-  const [synthesisGraphHeight, setSynthesisGraphHeight] = React.useState<number>(minSynthesisGraphHeight);
+  const minHeight = 200;
+  const [height, setHeight] = React.useState<number>(minHeight);
 
   const buttonAttrs = {
     className: "btn btn-sm mr-3"
   };
 
-  const expandSynthesisGraphView = () => setSynthesisGraphHeight(synthesisGraphHeight + step);
+  const expandSynthesisGraphView = () => setHeight(height + step);
 
-  const reduceSynthesisGraphView = () => setSynthesisGraphHeight(synthesisGraphHeight - step);
+  const reduceSynthesisGraphView = () => height > minHeight ? setHeight(height - step) : null ;
 
   return (
     <div className="flex-grow-1">
@@ -34,7 +34,7 @@ export const SynthesisGraphContainer: React.FC = () => {
         </div>
         <span className="text-muted">black - processed node; white - in progress node; green - succees synthesis</span>
       </div>
-      <div className="justify-content-center bg-light border" style={{ height: synthesisGraphHeight }}>
+      <div className="justify-content-center bg-light border" style={{ height: height }}>
         <SynthesisGraphView />
       </div>
     </div>
