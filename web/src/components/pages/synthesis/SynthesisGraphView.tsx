@@ -2,25 +2,8 @@ import * as React from "react";
 import Tree from "react-d3-tree";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { AppContext, IAppContext } from "../../app/AppContext";
-import { NId, SynthesisNodeView } from "../../../gen/types";
-
-interface JsonResponse {
-  [key: string]: any;
-}
-
-interface JsonObjId {
-  [key: string]: Graph;
-}
-
-interface Graph {
-  name?: string;
-  nid?: NId;
-  attributes?: JsonResponse;
-  status?: boolean;
-  children?: Graph[];
-  nodeSvgShape?: any;
-  nodeSvgShapeOriginal?: any;
-}
+import { SynthesisNodeView } from "../../../gen/types";
+import { Graph, JsonObjId } from "../../../gen/types_mock";
 
 export const SynthesisGraphView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
@@ -63,7 +46,6 @@ export const SynthesisGraphView: React.FC = () => {
   );
 
   const reloadSynthesisGraph = React.useCallback(() => {
-
     let reLastNidStep = /-[^-]*$/; // nInSeparator
     let nid = appContext.selectedNodeId;
 
@@ -112,7 +94,7 @@ export const SynthesisGraphView: React.FC = () => {
     if (currentSelectedNId === appContext.selectedNodeId) return;
 
     if (appContext.selectedNodeId === "-" || currentSelectedNId === null) {
-      setCurrentSelectedNId( appContext.selectedNodeId );
+      setCurrentSelectedNId(appContext.selectedNodeId);
       reloadSynthesisGraph();
       return;
     }
@@ -120,8 +102,7 @@ export const SynthesisGraphView: React.FC = () => {
       setCurrentSelectedNId(appContext.selectedNodeId);
       reloadSynthesisGraph();
       return;
-    }
-    else {
+    } else {
       unmarkNode(currentSelectedNId);
       markNode(appContext.selectedNodeId);
 
