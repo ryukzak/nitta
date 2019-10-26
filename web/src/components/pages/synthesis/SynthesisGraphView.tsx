@@ -22,7 +22,7 @@ interface Graph {
   nodeSvgShapeOriginal?: any;
 }
 
-export const SynthesisGraph: React.FC = () => {
+export const SynthesisGraphView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
 
   const [dataGraph, setDataGraph] = React.useState<Graph[]>([] as Graph[]);

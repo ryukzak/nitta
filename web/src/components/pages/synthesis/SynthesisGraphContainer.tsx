@@ -1,9 +1,9 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
-import { SynthesisGraph } from "./SynthesisGraph";
+import { SynthesisGraphView } from "./SynthesisGraphView";
 import { AppContext, IAppContext } from "../../app/AppContext";
 
-export const SynthesisGraphView: React.FC = () => {
+export const SynthesisGraphContainer: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
 
   const minSynthesisGraphHeight = 200;
@@ -38,7 +38,7 @@ export const SynthesisGraphView: React.FC = () => {
         <span className="text-muted">black - processed node; white - in progress node; green - succees synthesis</span>
       </div>
       <div className="justify-content-center bg-light border" style={{ height: synthesisGraphHeight }}>
-        <SynthesisGraph />
+        <SynthesisGraphView />
       </div>
     </div>
   );

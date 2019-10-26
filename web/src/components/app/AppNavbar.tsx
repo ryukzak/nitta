@@ -5,7 +5,7 @@ import { Link, NavLink as RouterNavLink } from "react-router-dom";
 import "./AppNavbar.scss";
 
 import { AppContext, IAppContext } from "./AppContext";
-import SynthesisButtonView from "../pages/main/SynthesisButtonView";
+import SynthesisButtonView from "../pages/synthesis/SynthesisButtonView";
 import { useContext } from "react";
 
 export interface IAppNavbarProps {}
