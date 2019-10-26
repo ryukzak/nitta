@@ -2,7 +2,7 @@ import React from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
 
 import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
-import NodeView from "../pages/node/NodeView";
+import { NodeView } from "../pages/node/NodeView";
 import { EdgesView } from "../pages/edges/EdgesView";
 import ProcessPage from "../pages/process/ProcessPage";
 import TestBenchPage from "../pages/testBench/TestBenchPage";
@@ -11,6 +11,7 @@ import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
 import { AppFooter } from "./AppFooter";
 import { MainPage } from "../pages/main/MainPage";
+import { DebugView } from "../pages/debug/DebugView";
 
 export interface IAppProps {}
 
@@ -49,7 +50,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
               <Redirect to="/node" />
             </Route>
             <Route exact path="/node">
-              <NodeView selectedNId={this.state.selectedNodeId} />
+              <NodeView />
             </Route>
             <Route exact path="/edges">
               <EdgesView nid={this.state.selectedNodeId} onNidChange={this.state.selectNode} />
@@ -59,6 +60,9 @@ export default class App extends React.Component<IAppProps, IAppState> {
             </Route>
             <Route exact path="/testbench">
               <TestBenchPage nId={this.state.selectedNodeId} />
+            </Route>
+            <Route exact path="/debug">
+              <DebugView />
             </Route>
 
             <Route component={NotFoundErrorPage} />

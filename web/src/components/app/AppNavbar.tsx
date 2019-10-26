@@ -39,6 +39,9 @@ export const AppNavbar: React.FC<IAppNavbarProps> = props => {
           <Nav.Link as={RouterNavLink} exact to="/testbench">
             Testbench
           </Nav.Link>
+          <Nav.Link as={RouterNavLink} exact to="/debug">
+            Debug
+          </Nav.Link>
         </Nav>
       </Navbar.Collapse>
       {/* <Navbar.Text className="mr-5 text-white">
