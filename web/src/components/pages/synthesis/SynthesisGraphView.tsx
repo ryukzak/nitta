@@ -10,7 +10,7 @@ export const SynthesisGraphView: React.FC = () => {
 
   const [dataGraph, setDataGraph] = React.useState<Graph[]>([] as Graph[]);
   const [nIds, setNIds] = React.useState<JsonObjId>({});
-  const [currentSelectedNId, setCurrentSelectedNId] = React.useState<string | null>(null);
+  const [currentSelectedNodeId, setCurrentSelectedNodeId] = React.useState<string>("");
 
   const markNode = React.useCallback(
     (nid: any, nidArray?: any, color?: any) => {
@@ -91,29 +91,28 @@ export const SynthesisGraphView: React.FC = () => {
   }, [appContext.selectedNodeId, markNode]);
 
   React.useEffect(() => {
-    if (currentSelectedNId === appContext.selectedNodeId) return;
-
-    if (appContext.selectedNodeId === "-" || currentSelectedNId === null) {
-      setCurrentSelectedNId(appContext.selectedNodeId);
+    console.log("SynGraph hi");
+    if (currentSelectedNodeId === appContext.selectedNodeId && currentSelectedNodeId.length != 0) return;
+    if (appContext.selectedNodeId === "-" || currentSelectedNodeId.length === 0) {
+      setCurrentSelectedNodeId(appContext.selectedNodeId);
       reloadSynthesisGraph();
       return;
     }
     if (!(appContext.selectedNodeId in nIds)) {
-      setCurrentSelectedNId(appContext.selectedNodeId);
+      setCurrentSelectedNodeId(appContext.selectedNodeId);
       reloadSynthesisGraph();
       return;
-    } else {
-      unmarkNode(currentSelectedNId);
-      markNode(appContext.selectedNodeId);
-
-      setCurrentSelectedNId(appContext.selectedNodeId);
-      setDataGraph([dataGraph[0]]);
-      return;
     }
+
+    unmarkNode(currentSelectedNodeId);
+    markNode(appContext.selectedNodeId);
+    setCurrentSelectedNodeId(appContext.selectedNodeId);
+    setDataGraph([dataGraph[0]]);
+    return;
   }, [
     appContext.selectedNodeId,
     appContext.selectNode,
-    currentSelectedNId,
+    currentSelectedNodeId,
     reloadSynthesisGraph,
     dataGraph,
     markNode,
