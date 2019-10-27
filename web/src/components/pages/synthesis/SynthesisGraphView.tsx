@@ -92,7 +92,7 @@ export const SynthesisGraphView: React.FC = () => {
 
   React.useEffect(() => {
     console.log("SynGraph hi");
-    if (currentSelectedNodeId === appContext.selectedNodeId && currentSelectedNodeId.length != 0) return;
+    if (currentSelectedNodeId === appContext.selectedNodeId && currentSelectedNodeId.length !== 0) return;
     if (appContext.selectedNodeId === "-" || currentSelectedNodeId.length === 0) {
       setCurrentSelectedNodeId(appContext.selectedNodeId);
       reloadSynthesisGraph();
