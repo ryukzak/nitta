@@ -18,7 +18,7 @@
 
   This option will clean result directories and remove all running apps that are runned in the background.
 
-- `debs`
+- `deps`
 
   This option will install all dependencies from stack and Web UI projects.
 

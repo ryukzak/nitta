@@ -8,7 +8,7 @@ clean:
 	stack clean
 	rm -rf web/build
 
-debs: stack.install npm.install
+deps: stack.install npm.install
 
 
 
@@ -20,7 +20,7 @@ npm.dev:
 	cd web && npm run start
 
 npm.install: 
-	cd web && npm install
+	cd web && npm ci
 
 stack.install:
 	stack build --dry-run
