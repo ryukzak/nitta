@@ -32,7 +32,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
       },
 
       reloadSelectedNode: () => {
-        this.setState({ selectedNodeId: null });
+        this.setState({ selectedNodeId: "-" });
       },
     };
   }

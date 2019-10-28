@@ -1,6 +1,10 @@
 import { NId } from "./types";
 
 // EdgesView: table text column style
+export interface TextColumnStyle {
+  whiteSpace: string,
+}
+
 // SynthesisGraphView: array of Graph attributes data
 export interface JsonResponse {
   [key: string]: any;
