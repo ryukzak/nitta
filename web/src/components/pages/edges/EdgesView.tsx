@@ -2,7 +2,7 @@ import * as React from "react";
 import { Button } from "react-bootstrap";
 import ReactTable from "react-table";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { IntermediateView } from "../node/IntermadiateView";
+import { IntermediateView } from "../node/IntermediateView";
 import { SynthesisHistoryView } from "../process/SynthesisHistoryView";
 import {
   EdgeView,
@@ -100,7 +100,7 @@ export class EdgesView extends React.Component<IEdgesViewProps, IEdgesViewState>
       <div className="m-3">
         <div className="row">
           <div className="p-1 mr-5">
-            <IntermediateView selectedNId={this.state.nid} view="synthesisNode" />
+            <IntermediateView />
           </div>
           <div className="columns">
             <Table
