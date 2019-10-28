@@ -23,7 +23,7 @@ npm.install:
 	cd web && npm ci
 
 stack.install:
-	stack build --dry-run
+	stack build --only-dependencies --haddock --test
 
 stack.prod:
 	stack build --test --copy-bins
