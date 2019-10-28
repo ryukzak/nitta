@@ -2,9 +2,7 @@
 
 ## General options:
 
-- Default
-
-  This option will build stack project, generate files for Web UI and build it.
+Default option will build stack project, generate files for Web UI and build it.
 
 - `prod`
 
