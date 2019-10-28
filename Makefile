@@ -1,14 +1,14 @@
 all: stack.build stack.gen npm.build
 
-dev: stack.build stack.gen stack.web npm.dev
-
 prod: stack.prod stack.gen npm.build
 
-build: stack.buildNdocs
+build: stack.haddock
 
-clean: stack.kill
-	rm -rf .stack-work
+clean:
+	stack clean
 	rm -rf web/build
+
+debs: stack.install npm.install
 
 
 
@@ -17,15 +17,21 @@ npm.build:
 	cd web && npm run build
 
 npm.dev: 
-	cd web && npm run start-dev
+	cd web && npm run start
+
+npm.install: 
+	cd web && npm install
+
+stack.install:
+	stack build --dry-run
 
 stack.prod:
-	stack build --test --haddock --copy-bins
+	stack build --test --copy-bins
 
 stack.build:
 	stack build
 
-stack.buildNdocs:
+stack.haddock:
 	stack build  --haddock
 
 stack.gen: stack.build
@@ -34,10 +40,7 @@ stack.gen: stack.build
 stack.web: stack.build
 	if [ -z "${sim}" ]; \
 	then \
-		stack exec nitta -- --web examples/fibonacci.lua & \
+		stack exec nitta -- --web examples/fibonacci.lua \
 	else \
-		stack exec nitta -- --web examples/${sim}.lua & \
+		stack exec nitta -- --web examples/${sim}.lua \
 	fi;
-
-stack.kill:
-	pkill -f nitta 

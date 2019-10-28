@@ -10,6 +10,12 @@
 
 ## Building
 
+### Building via make
+
+See [Makefile options](../doc/make.md)
+
+
+
 ### Building CAD
 
 To build the project you should execute:
