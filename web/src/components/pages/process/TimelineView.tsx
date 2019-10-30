@@ -1,6 +1,5 @@
 import React from "react";
 import { TimelineWithViewPoint, TimelinePoint, ViewPointID, ProcessTimelines } from "../../../gen/types";
-import { viewpoint2string } from "../../../utils/componentUtils";
 import { Highlight } from "./ProcessView";
 
 interface TimelineProps {
@@ -26,20 +25,6 @@ export const TimelineView: React.FC<TimelineProps> = ({
       viewColumnLength = l;
     }
   });
-
-  return (
-    <div className="m-0 p-0" style={{ overflowX: "auto" }}>
-      <pre className="squeeze m-0 p-0">
-        <u>
-          {viewColumnHead}
-          {" ".repeat(viewColumnLength - viewColumnHead.length)} | timeline
-        </u>
-      </pre>
-      {timelines.map((e, i) => {
-        return renderLine(i, viewColumnLength, e.timelineViewpoint, e.timelinePoints);
-      })}
-    </div>
-  );
 
   function selectPoint(point: TimelinePoint<number>[]) {
     let highlight_tmp: Highlight = { up: [], current: [], down: [] };
@@ -108,10 +93,28 @@ export const TimelineView: React.FC<TimelineProps> = ({
     let v = viewpoint2string(view);
     let n = viewLength - v.length;
     return (
-      <pre key={i} className="squeeze m-0">
+      <div key={i} className="squeeze m-0">
         {" ".repeat(n)}
         {v} | {points.map(renderPoint)}
-      </pre>
+      </div>
     );
   }
+
+  return (
+    <div className="m-0 p-0" style={{ overflow: "auto hidden", whiteSpace: "nowrap" }}>
+      <div className="squeeze">
+        <u>
+          {viewColumnHead}
+          {" ".repeat(viewColumnLength - viewColumnHead.length)} | timeline
+        </u>
+      </div>
+      {timelines.map((e, i) => {
+        return renderLine(i, viewColumnLength, e.timelineViewpoint, e.timelinePoints);
+      })}
+    </div>
+  );
 };
+
+function viewpoint2string(view: ViewPointID): string {
+  return view.component + "@" + view.level;
+}

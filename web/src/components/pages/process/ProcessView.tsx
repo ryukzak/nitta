@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { ProcessTimelines, TimelinePoint } from "../../../gen/types";
+import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } from "../../../gen/types";
 
 import "./ProcessView.scss";
 import { TimelineView } from "./TimelineView";
-import { resortTimeline } from "../../../utils/componentUtils";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { useContext } from "react";
 import { AxiosError } from "axios";
@@ -61,25 +60,61 @@ export const ProcessView: React.FC = () => {
             onHighlightChange={h => setHighlight(h)}
             onDetailChange={d => setDetail(d)}
           />
-          <div className="ml-5 flex-grow-1">
+          <div className="ml-2 flex-grow-1" style={{ minWidth: "30%" }}>
             <hr />
-            <pre className="squeeze upRelation">upper related:</pre>
-            {highlight.up.map(e => (
-              <pre className="squeeze">- {pIdIndex![e].pInfo}</pre>
-            ))}
+            <div className="squeeze upRelation">upper related:</div>
+            <div className="x-scrollable">
+              {highlight.up.map(e => (
+                <div className="squeeze">- {pIdIndex![e].pInfo}</div>
+              ))}
+            </div>
             <hr />
-            <pre className="squeeze current">current:</pre>
-            {detail.map(e => (
-              <pre className="squeeze">- {e.pInfo}</pre>
-            ))}
+            <div className="squeeze current">current:</div>
+            <div className="x-scrollable">
+              {detail.map(e => (
+                <div className="squeeze">- {e.pInfo}</div>
+              ))}
+            </div>
             <hr />
-            <pre className="squeeze downRelation">bottom related:</pre>
-            {highlight.down.map(e => (
-              <pre className="squeeze">- {pIdIndex![e].pInfo}</pre>
-            ))}
+            <div className="squeeze downRelation">bottom related:</div>
+            <div className="x-scrollable">
+              {highlight.down.map(e => (
+                <div className="squeeze">- {pIdIndex![e].pInfo}</div>
+              ))}
+            </div>
           </div>
         </>
       )}
     </div>
   );
 };
+
+function resortTimeline(data: ProcessTimelines<number>) {
+  let result: ProcessTimelines<number> = {
+    timelines: [],
+    verticalRelations: data.verticalRelations,
+  };
+  function cmp(a: TimelineWithViewPoint<number>, b: TimelineWithViewPoint<number>) {
+    if (a.timelineViewpoint.component < b.timelineViewpoint.component) return -1;
+    if (a.timelineViewpoint.component > b.timelineViewpoint.component) return 1;
+    return 0;
+  }
+  let tmp: TimelineWithViewPoint<number>[] = data.timelines.sort(cmp);
+  function extract(p: (id: ViewPointID) => boolean) {
+    let newTmp: TimelineWithViewPoint<number>[] = [];
+    tmp.forEach(e => {
+      if (p(e.timelineViewpoint)) {
+        result.timelines.push(e);
+      } else {
+        newTmp.push(e);
+      }
+    });
+    tmp = newTmp;
+  }
+  extract(e => e.component.length === 0);
+  extract(e => e.level === "CAD");
+  extract(e => e.level === "Fun");
+  extract(e => e.level === "EndPoint");
+  extract(e => true);
+  return result;
+}
