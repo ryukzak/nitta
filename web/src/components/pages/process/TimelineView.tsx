@@ -1,7 +1,7 @@
-import React from 'react';
+import React from "react";
 import { TimelineWithViewPoint, TimelinePoint, ViewPointID, ProcessTimelines } from "../../../gen/types";
-import { viewpoint2string } from '../../../utils/componentUtils';
-import { Highlight } from './ProcessView';
+import { viewpoint2string } from "../../../utils/componentUtils";
+import { Highlight } from "./ProcessView";
 
 interface TimelineProps {
   timelines: TimelineWithViewPoint<number>[];
@@ -11,8 +11,13 @@ interface TimelineProps {
   onDetailChange: (detail: TimelinePoint<number>[]) => void;
 }
 
-
-export const TimelineView: React.FC<TimelineProps> = ({ timelines, highlight, data, onHighlightChange, onDetailChange }) => {
+export const TimelineView: React.FC<TimelineProps> = ({
+  timelines,
+  highlight,
+  data,
+  onHighlightChange,
+  onDetailChange,
+}) => {
   let viewColumnHead = "view point";
   let viewColumnLength: number = viewColumnHead.length;
   timelines.forEach(e => {
@@ -23,21 +28,18 @@ export const TimelineView: React.FC<TimelineProps> = ({ timelines, highlight, da
   });
 
   return (
-    <div className="columns col-md-5 m-0 p-0">
+    <div className="m-0 p-0" style={{ overflowX: "auto" }}>
       <pre className="squeeze m-0 p-0">
         <u>
           {viewColumnHead}
           {" ".repeat(viewColumnLength - viewColumnHead.length)} | timeline
-      </u>
+        </u>
       </pre>
-      {
-        timelines.map((e, i) => {
-          return renderLine(i, viewColumnLength, e.timelineViewpoint, e.timelinePoints);
-        })
-      }
+      {timelines.map((e, i) => {
+        return renderLine(i, viewColumnLength, e.timelineViewpoint, e.timelinePoints);
+      })}
     </div>
   );
-
 
   function selectPoint(point: TimelinePoint<number>[]) {
     let highlight_tmp: Highlight = { up: [], current: [], down: [] };
@@ -112,4 +114,4 @@ export const TimelineView: React.FC<TimelineProps> = ({ timelines, highlight, da
       </pre>
     );
   }
-}
+};

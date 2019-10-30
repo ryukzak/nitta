@@ -15,7 +15,6 @@ export interface Highlight {
   down: number[];
 }
 
-
 // TODO: diff from previous synthesis process step
 // TODO: highlight point by click on info part
 export const ProcessView: React.FC = () => {
@@ -47,39 +46,40 @@ export const ProcessView: React.FC = () => {
       .catch((err: AxiosError) => console.log(err));
   }, [appContext.selectedNodeId]);
 
-  if (!data) {
-    return <pre>LOADING</pre>;
-  }
-  if (data.timelines.length === 0) {
-    return <pre>EMPTY PROCESS TIMELINE</pre>;
-  }
-
   return (
-    <div className="row">
-      <TimelineView
-        timelines={data.timelines}
-        highlight={highlight}
-        data={data}
-        onHighlightChange={(h) => setHighlight(h)}
-        onDetailChange={(d) => setDetail(d)}
-      />
-      <div className="columns col-md-7">
-        <pre className="squeeze">------------------------------</pre>
-        <pre className="squeeze upRelation">upper related:</pre>
-        {highlight.up.map(e => (
-          <pre className="squeeze">- {pIdIndex![e].pInfo}</pre>
-        ))}
-        <pre className="squeeze">------------------------------</pre>
-        <pre className="squeeze current">current:</pre>
-        {detail.map(e => (
-          <pre className="squeeze">- {e.pInfo}</pre>
-        ))}
-        <pre className="squeeze">------------------------------</pre>
-        <pre className="squeeze downRelation">bottom related:</pre>
-        {highlight.down.map(e => (
-          <pre className="squeeze">- {pIdIndex![e].pInfo}</pre>
-        ))}
-      </div>
+    <div className="p-3 d-flex flex-nowrap">
+      {!data ? (
+        <pre>LOADING</pre>
+      ) : data.timelines.length === 0 ? (
+        <pre>EMPTY PROCESS TIMELINE</pre>
+      ) : (
+        <>
+          <TimelineView
+            timelines={data.timelines}
+            highlight={highlight}
+            data={data}
+            onHighlightChange={h => setHighlight(h)}
+            onDetailChange={d => setDetail(d)}
+          />
+          <div className="ml-5 flex-grow-1">
+            <hr />
+            <pre className="squeeze upRelation">upper related:</pre>
+            {highlight.up.map(e => (
+              <pre className="squeeze">- {pIdIndex![e].pInfo}</pre>
+            ))}
+            <hr />
+            <pre className="squeeze current">current:</pre>
+            {detail.map(e => (
+              <pre className="squeeze">- {e.pInfo}</pre>
+            ))}
+            <hr />
+            <pre className="squeeze downRelation">bottom related:</pre>
+            {highlight.down.map(e => (
+              <pre className="squeeze">- {pIdIndex![e].pInfo}</pre>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
-}
+};
