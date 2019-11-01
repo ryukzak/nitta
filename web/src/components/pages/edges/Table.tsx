@@ -1,34 +1,11 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
-import ReactTable from "react-table";
 import { EdgeView, Interval } from "../../../gen/types";
 
 type Edge = EdgeView<string, string, number, number>;
 
 const style = {
   fontWeight: 600,
-}
-
-export function Table(props: { name: string; columns: any[]; edges: Edge[] }) {
-  if (props.edges.length === 0)
-    return (
-      <small>
-        <pre style={style}>{props.name}: NOTHING</pre>
-      </small>
-    );
-  return (
-    <small style={style}>
-      <pre>{props.name}</pre>
-      <ReactTable
-        defaultPageSize={props.edges.length}
-        minRows={props.edges.length}
-        showPagination={false}
-        columns={props.columns}
-        data={props.edges}
-      />
-      <br />
-    </small>
-  );
 }
 
 export function nidColumn(separator: string, onUpdateNid: (nid: string) => void) {

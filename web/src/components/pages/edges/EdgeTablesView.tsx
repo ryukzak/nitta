@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Table, nidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn } from "./Table";
+import ReactTable from "react-table";
+import { nidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn } from "./Table";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import {
   EdgeView,
@@ -24,7 +25,10 @@ type EdgesProps = {
 
 export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
   const appContext = React.useContext(AppContext) as IAppContext;
-
+  const style = {
+    fontWeight: 600,
+  }
+  
   return (
     <div className="columns">
       <Table
@@ -98,4 +102,27 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       />
     </div>
   );
+  
+  function Table(props: { name: string; columns: any[]; edges: Edge[] }) {
+    if (props.edges.length === 0)
+      return (
+        <small>
+          <pre style={style}>{props.name}: NOTHING</pre>
+        </small>
+      );
+    return (
+      <small style={style}>
+        <pre>{props.name}</pre>
+        <ReactTable
+          defaultPageSize={props.edges.length}
+          minRows={props.edges.length}
+          showPagination={false}
+          columns={props.columns}
+          data={props.edges}
+        />
+        <br />
+      </small>
+    );
+  }
+
 };
