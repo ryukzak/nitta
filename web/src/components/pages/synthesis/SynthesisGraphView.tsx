@@ -1,22 +1,23 @@
 import * as React from "react";
 import Tree from "react-d3-tree";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { AppContext, IAppContext } from "../../app/AppContext";
+import { AppContext, IAppContext, SelectedNodeId } from "../../app/AppContext";
 import { SynthesisNodeView } from "../../../gen/types";
 import { Graph, JsonObjId } from "../../../gen/types_mock";
+import { AxiosResponse, AxiosError } from "axios";
 
 export const SynthesisGraphView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
 
   const [dataGraph, setDataGraph] = React.useState<Graph[]>([] as Graph[]);
   const [nIds, setNIds] = React.useState<JsonObjId>({});
-  const [currentSelectedNodeId, setCurrentSelectedNodeId] = React.useState<string>("");
+  const [currentSelectedNodeId, setCurrentSelectedNodeId] = React.useState<SelectedNodeId>("");
 
   const markNode = React.useCallback(
-    (nid: any, nidArray?: any, color?: any) => {
+    (nid: SelectedNodeId, nidArray?: JsonObjId, color?: string) => {
       if (color === undefined) color = "blue";
       if (nidArray === undefined) nidArray = nIds;
-      if (nid === null || nidArray === null) return;
+      if (nidArray === null) return;
 
       if (color === "blue") {
         nidArray[nid].nodeSvgShapeOriginal = nidArray[nid].nodeSvgShape;
@@ -35,7 +36,7 @@ export const SynthesisGraphView: React.FC = () => {
   );
 
   const unmarkNode = React.useCallback(
-    (nid: any) => {
+    (nid: SelectedNodeId) => {
       if (nid === null) return;
       let tmp: string = nIds[nid].nodeSvgShapeOriginal;
       let nids = nIds;
@@ -49,19 +50,17 @@ export const SynthesisGraphView: React.FC = () => {
     let reLastNidStep = /-[^-]*$/; // nInSeparator
     let nid = appContext.selectedNodeId;
 
-    // FIXME: Need to replace type of the SynthesisNodeView.svNnid (dNode[0].svNnid) from number[] to string. Now svNnid declared as number[], but request are responsing string.
     haskellApiService
       .getSynthesis()
-      .then((response: any) => {
+      .then((response: AxiosResponse<[SynthesisNodeView, Array<SynthesisNodeView>]>) => {
         let nidArray: JsonObjId = {};
         let buildGraph = (gNode: Graph, dNode: [SynthesisNodeView, Array<SynthesisNodeView>]) => {
-          // @ts-ignore
-          gNode.name = reLastNidStep.exec(dNode[0].svNnid)![0];
+          let strNid: string = Object.values(dNode[0].svNnid).map(String).join("");
+          gNode.name = reLastNidStep.exec(strNid)![0];
           gNode.nid = dNode[0].svNnid;
-          // @ts-ignore
-          nidArray[dNode[0].svNnid] = gNode;
-          if (dNode[0].svIsEdgesProcessed) markNode(gNode.nid, nidArray, "black");
-          if (dNode[0].svIsComplete) markNode(gNode.nid, nidArray, "lime");
+          nidArray[strNid] = gNode;
+          if (dNode[0].svIsEdgesProcessed) markNode(strNid, nidArray, "black");
+          if (dNode[0].svIsComplete) markNode(strNid, nidArray, "lime");
           gNode.attributes = {
             dec: dNode[0].svOptionType,
             ch: dNode[0].svDuration + " / " + dNode[0].svCharacteristic
@@ -87,11 +86,10 @@ export const SynthesisGraphView: React.FC = () => {
         setDataGraph([graph]);
         setNIds(nidArray);
       })
-      .catch((err: any) => console.log(err));
+      .catch((err: AxiosError) => console.log(err));
   }, [appContext.selectedNodeId, markNode]);
 
   React.useEffect(() => {
-    console.log("SynGraph hi");
     if (currentSelectedNodeId === appContext.selectedNodeId && currentSelectedNodeId.length !== 0) return;
     if (appContext.selectedNodeId === "-" || currentSelectedNodeId.length === 0) {
       setCurrentSelectedNodeId(appContext.selectedNodeId);
