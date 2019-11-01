@@ -5,7 +5,7 @@ import { Link, NavLink as RouterNavLink } from "react-router-dom";
 import "./AppNavbar.scss";
 
 import { AppContext, IAppContext } from "./AppContext";
-import SynthesisButtonView from "../pages/main/SynthesisButtonView";
+import { SynthesisButtonView } from "../pages/main/SynthesisButtonView";
 import { useContext } from "react";
 
 export interface IAppNavbarProps {}
@@ -47,7 +47,7 @@ export const AppNavbar: React.FC<IAppNavbarProps> = props => {
       {/* <Navbar.Text className="mr-5 text-white">
               Selected Node ID: {appContext.selectedNodeId || "None"}
             </Navbar.Text> */}
-      <SynthesisButtonView selectedNodeId={appContext.selectedNodeId} selectNode={appContext.selectNode} />
+      <SynthesisButtonView />
       <Navbar.Toggle aria-controls="navbar-nav" />
     </Navbar>
   );
