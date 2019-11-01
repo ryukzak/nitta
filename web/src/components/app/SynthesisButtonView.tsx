@@ -1,8 +1,10 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
-import { haskellApiService } from "../../../services/HaskellApiService";
-import { AppContext, IAppContext, SelectedNodeId } from "../../app/AppContext";
+import { haskellApiService } from "../../services/HaskellApiService";
+import { AppContext, IAppContext, SelectedNodeId } from "./AppContext";
 import { AxiosResponse, AxiosError } from "axios";
+
+import "./AppNavbar.scss";
 
 export const SynthesisButtonView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
@@ -44,7 +46,8 @@ export const SynthesisButtonView: React.FC = () => {
   }
 
   const buttonAttrs = {
-    className: "mr-2 btn-sm btn-secondary"
+    className: "mr-1 mb-1 btn-sm btn-secondary p-1.5",
+    bsPrefix: "syn",
   };
 
   return (
