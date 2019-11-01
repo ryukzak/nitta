@@ -3,8 +3,9 @@ import { AppContext, IAppContext } from "../../app/AppContext";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { IntermediateView } from "../node/IntermediateView";
 import { SynthesisHistoryView } from "../process/SynthesisHistoryView";
-import { TablesView } from "./TablesView";
+import { TablesView } from "./EdgeTablesView";
 import { EdgeView } from "../../../gen/types";
+import { AxiosResponse } from "axios";
 
 type Edge = EdgeView<string, string, number, number>;
 
@@ -15,7 +16,7 @@ export const EdgesView: React.FC = () => {
   React.useEffect(() => {
     haskellApiService
       .getEdges(appContext.selectedNodeId)
-      .then((response: { data: Edge[] }) => {
+      .then((response: AxiosResponse<Edge[]>) => {
         setEdges(response.data);
       })
       .catch(err => console.log(err));

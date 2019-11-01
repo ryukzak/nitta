@@ -31,7 +31,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
         name="Binding"
         edges={edges.filter(e => e.decision.tag === "BindingView")}
         columns={[
-          nidColumn(appContext.selectNode),
+          nidColumn(appContext.nInSeparator, appContext.selectNode),
           objectiveColumn(),
 
           textColumn("function", (e: Edge) => (e.decision as Binding).function),
@@ -48,23 +48,21 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
           textColumn("newBind", (e: Edge) => (e.parameters as BindingParam).pNumberOfBindedFunctions, 70),
           textColumn("|inputs|", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs, 70),
         ]}
-        onNidChange={appContext.selectNode}
       />
       <Table
         name="Refactor"
         edges={edges.filter((e: Edge) => e.decision.tag === "RefactorView")}
         columns={[
-          nidColumn(appContext.selectNode),
+          nidColumn(appContext.nInSeparator, appContext.selectNode),
           objectiveColumn(),
           textColumn("description", (e: Edge) => JSON.stringify((e.decision as Refactor).contents)),
         ]}
-        onNidChange={appContext.selectNode}
       />
       <Table
         name="Dataflow"
         edges={edges.filter((e: Edge) => e.decision.tag === "DataflowView")}
         columns={[
-          nidColumn(appContext.selectNode),
+          nidColumn(appContext.nInSeparator, appContext.selectNode),
           objectiveColumn(),
           textColumn("at", (e: Edge) => (e.decision as Dataflow).source.time),
           textColumn("source", (e: Edge) => (e.decision as Dataflow).source.pu),
@@ -90,15 +88,13 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
           ),
           textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime)),
         ]}
-        onNidChange={appContext.selectNode}
       />
       <Table
         name="Other"
         edges={edges.filter(
           (e: Edge) => ["BindingView", "RefactorView", "DataflowView"].indexOf(e.decision.tag) === -1
         )}
-        columns={[nidColumn(appContext.selectNode), objectiveColumn(), decisionColumn(), parametersColumn()]}
-        onNidChange={appContext.selectNode}
+        columns={[nidColumn(appContext.nInSeparator, appContext.selectNode), objectiveColumn(), decisionColumn(), parametersColumn()]}
       />
     </div>
   );

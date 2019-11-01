@@ -25,6 +25,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
     super(props);
 
     this.state = {
+      nInSeparator: "-",
       selectedNodeId: "-",
 
       selectNode: (id: SelectedNodeId) => {
@@ -53,7 +54,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
               <NodeView />
             </Route>
             <Route exact path="/edges">
-              <EdgesView/>
+              <EdgesView />
             </Route>
             <Route exact path="/process">
               <ProcessPage nId={this.state.selectedNodeId} />

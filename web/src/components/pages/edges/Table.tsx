@@ -1,22 +1,23 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
 import ReactTable from "react-table";
-import { TextColumnStyle } from "../../../gen/types_mock";
-import { EdgeView } from "../../../gen/types";
+import { EdgeView, Interval } from "../../../gen/types";
 
 type Edge = EdgeView<string, string, number, number>;
 
-const nInSeparator = "-";
+const style = {
+  fontWeight: 600,
+}
 
-export function Table(props: { name: string; columns: any[]; edges: Edge[]; onNidChange: (nid: string) => void }) {
+export function Table(props: { name: string; columns: any[]; edges: Edge[] }) {
   if (props.edges.length === 0)
     return (
       <small>
-        <pre>{props.name}: NOTHING</pre>
+        <pre style={style}>{props.name}: NOTHING</pre>
       </small>
     );
   return (
-    <small>
+    <small style={style}>
       <pre>{props.name}</pre>
       <ReactTable
         defaultPageSize={props.edges.length}
@@ -30,16 +31,17 @@ export function Table(props: { name: string; columns: any[]; edges: Edge[]; onNi
   );
 }
 
-export function nidColumn(onUpdateNid: (nid: string) => void) {
+export function nidColumn(separator: string, onUpdateNid: (nid: string) => void) {
   return {
     Header: "nid",
     maxWidth: 30,
     Cell: (row: { original: Edge }) => {
-      let nid: string[] = row.original.nid.split(nInSeparator);
+      let nid: string[] = row.original.nid.split(separator);
       return (
         <Button
           variant="link"
           className="btn btn-link bg-transparent p-0  border-0"
+          style={style}
           onClick={() => onUpdateNid(row.original.nid)}
         >
           {nid[nid.length - 1]}>
@@ -52,22 +54,23 @@ export function nidColumn(onUpdateNid: (nid: string) => void) {
 export function decisionColumn() {
   return {
     Header: "decision",
+    style: style,
     Cell: (row: { original: Edge }) => JSON.stringify(row.original.decision),
   };
 }
 
-// FIXME: any should be changed.
 export function textColumn(
   columnName: string,
-  f: (e: Edge) => string | number | any,
+  f: (e: Edge) => string | number | Interval<number> | React.ReactElement,
   maxWidth?: number,
   wrap?: boolean
 ) {
-  let style: TextColumnStyle = { whiteSpace: "" };
-  if (wrap) style.whiteSpace = "unset";
+  let textColStyle = style;
+  if (wrap) textColStyle = {...style, ...{whiteSpace: "unset"}};
+
   return {
     Header: columnName,
-    style: style,
+    style: textColStyle,
     maxWidth: maxWidth,
     Cell: (row: { original: Edge }) => f(row.original),
   };
@@ -76,6 +79,7 @@ export function textColumn(
 export function parametersColumn() {
   return {
     Header: "parameters",
+    style: style,
     Cell: (row: { original: Edge }) => JSON.stringify(row.original.parameters),
   };
 }
@@ -84,6 +88,7 @@ export function objectiveColumn() {
   return {
     Header: "Z(d)",
     maxWidth: 40,
+    style: style,
     Cell: (row: { original: Edge }) => row.original.objectiveFunctionValue,
   };
 }
