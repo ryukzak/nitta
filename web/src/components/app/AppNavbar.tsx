@@ -4,14 +4,11 @@ import { Link, NavLink as RouterNavLink } from "react-router-dom";
 
 import "./AppNavbar.scss";
 
-import { AppContext, IAppContext } from "./AppContext";
 import { SynthesisButtonView } from "./SynthesisButtonView";
-import { useContext } from "react";
 
 export interface IAppNavbarProps {}
 
 export const AppNavbar: React.FC<IAppNavbarProps> = props => {
-  const appContext = useContext(AppContext) as IAppContext;
 
   return (
     <Navbar bg="dark" variant="dark" expand="md" className="appNavbar">
