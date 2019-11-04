@@ -29,6 +29,7 @@ import           Data.Aeson
 import           Data.Aeson.TypeScript.TH
 import           Data.Proxy
 import qualified Data.String.Utils             as S
+import qualified Data.Tree                     as T
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
@@ -68,6 +69,7 @@ $(deriveTypeScript defaultOptions ''Refactor)
 $(deriveTypeScript defaultOptions ''Parameters)
 
 $(deriveTypeScript defaultOptions ''NId)
+$(deriveTypeScript defaultOptions ''T.Tree)
 $(deriveTypeScript defaultOptions ''SynthesisNodeView)
 
 $(deriveTypeScript defaultOptions ''DataflowEndpointView)
@@ -103,6 +105,7 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy Parameters)
 
             , getTypeScriptDeclarations (Proxy :: Proxy NId)
+            , getTypeScriptDeclarations (Proxy :: Proxy T.Tree)
             , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
 
             , getTypeScriptDeclarations (Proxy :: Proxy DataflowEndpointView)
