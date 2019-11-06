@@ -64,6 +64,7 @@ data PU v x t where
 instance ( Ord v ) => EndpointProblem (PU v x t) v t where
     endpointOptions PU{ diff, unit }
         = map (patch diff) $ endpointOptions unit
+
     endpointDecision PU{ diff, unit, ports, ioPorts, systemEnv } d
         = PU
             { diff

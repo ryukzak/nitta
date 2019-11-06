@@ -16,7 +16,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Serial.Accum
+module NITTA.Model.ProcessorUnits.Serial.OldAccum
   ( Accum
   , Ports(..), IOPorts(..)
   ) where

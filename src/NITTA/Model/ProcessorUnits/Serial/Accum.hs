@@ -28,7 +28,7 @@ import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                 (sup, (...))
+import           Numeric.Interval                 (singleton, sup, (...))
 import           Text.InterpolatedString.Perl6    (qc)
 
 {--
@@ -111,6 +111,8 @@ data Accum v x t = Accum
     -- ('NITTA.Model.ProcessorUnits.Types')
     , process_             :: Process v x t
     , tick                 :: t
+    -- |check is it sub or add
+    , isNeg                :: Bool
     }
     deriving ( Show )
 
@@ -124,6 +126,7 @@ accum = Accum
     , currentWorkEndpoints=[]
     , process_=def
     , tick=def
+    , isNeg = False
     }
 
 --
@@ -137,8 +140,8 @@ instance ( VarValTime v x t
         --
         -- Important to notice, that "binding" doesn't mean actually beginning of work, that
         -- allows firstly make bindings of all tasks and after plan computation process.
-        | Just F.Add {} <- castF f = Right pu{ remain=f : remain }
-        | Just F.Sub {} <- castF f = Right pu{ remain=f : remain }
+            | Just F.Add {} <- castF f = Right pu{ remain=f : remain, isNeg = False }
+            | Just F.Sub {} <- castF f = Right pu{ remain=f : remain, isNeg = True}
         -- In case of impossibility of binding string with short description of renouncement
         --cause and 'Left' is returned.
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
@@ -186,6 +189,19 @@ The planning process itself consists of two operations performed in a cycle:
 instance ( VarValTime v x t
         ) => EndpointProblem (Accum v x t) v t
         where
+
+
+  -- stateOptions Accum{ acIn=vs@(_:_) } now
+  --   = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (now ... maxBound) (singleton 1)) vs
+  -- stateOptions Accum{ acOut=vs@(_:_) } now -- вывод
+  --   = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 2 ... maxBound) (1 ... maxBound) ]
+  -- stateOptions _ _ = []
+
+
+
+
+
+
     --1. Processors is asked about roles it can realise (in the other words, how computation
     --process can develop). It is realised by @endpointOptions@ function, result of which is
     --one of the further list:
@@ -193,12 +209,12 @@ instance ( VarValTime v x t
     --list of variants of uploading to mUnit variables, which are needed to function
     --that is in work;
     endpointOptions Accum{ targets=vs@(_:_), tick }
-        = map (\v -> EndpointO (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
+        = map (\v -> EndpointO (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) vs
 
      --   list of variants of downloading from mUnit variables;
     endpointOptions Accum{ sources, doneAt=Just at, tick }
         | not $ null sources
-        = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
+        = [ EndpointO (Source $ fromList sources) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
 
     -- list of variables of uploading to mUnit variables, upload any one of that
     -- will cause to actual start of working with mathched function.
@@ -221,13 +237,13 @@ instance ( VarValTime v x t
     --		We can distinguish the following solutions:
     --
     --		1. If model wait variable uploading:
-    endpointDecision pu@Accum{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision pu@Accum{ targets=vs, currentWorkEndpoints, isNeg } d@EndpointD{ epdRole=Target v, epdAt }
            -- From the list of uploading value we get a needed value, and remainder is saved
            -- for the next steps.
         | ([_], xs) <- partition (== v) vs
              -- @sel@ veriable is used for uploading queuing of variable to hardware block, that is
              -- requred because of realisation.
-        , let sel = if null xs then Init True else Load False
+        , let sel = if null xs then Init isNeg else Load isNeg
              --  Computation process planning is carried out.
         , let (newEndpoints, process_') = runSchedule pu $ do
                 -- this is required for correct work of automatically generated tests,
@@ -256,7 +272,7 @@ instance ( VarValTime v x t
         , sources' /= sources
         -- Compututation process planning is carring on.
         , let (newEndpoints, process_') = runSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstruction epdAt Out
+                endpoints <- scheduleEndpoint d $ scheduleInstruction (epdAt-1) Out
                 when (null sources') $ do
                     high <- scheduleFunction (a ... sup epdAt) f
                     let low = endpoints ++ currentWorkEndpoints
@@ -328,8 +344,8 @@ instance Default (Microcode (Accum v x t)) where
                  }
 
 instance UnambiguouslyDecode (Accum v x t) where
-  decodeInstruction (Init neg) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
-  decodeInstruction (Load neg) = def{ loadSignal=True, negSignal=Just neg }
+  decodeInstruction (Init neg) = def{ initSignal=False, loadSignal=True, negSignal=Just neg }
+  decodeInstruction (Load neg) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
   decodeInstruction Out        = def{ oeSignal=True }
 
 
