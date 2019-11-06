@@ -30,8 +30,12 @@ import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (singleton, sup, (...))
 import           Text.InterpolatedString.Perl6    (qc)
+import           Debug.Trace (trace)
 
 {--
+>>> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval Data.Set
+>>> :set prompt "\ESC[34mλ> \ESC[m"
+
 >>> f = add "a" "b" ["c", "d"] :: F String Int
 >>> f
 c = d = a * b
@@ -91,7 +95,7 @@ data Accum v x t = Accum
       remain               :: [ F v x ]
     -- |List of variables, which are needed to upload to mUnit for current
     -- function computation.
-    , targets              :: [ v ]
+    , targets              :: [ (Bool, v) ]
     -- |List of variables, which are needed to download from mUnit for
     -- current function computation. Download order is arbitrary. Necessary
     -- to notice that all downloading variables match to one value -
@@ -126,7 +130,6 @@ accum = Accum
     , currentWorkEndpoints=[]
     , process_=def
     , tick=def
-    , isNeg = False
     }
 
 --
@@ -140,8 +143,8 @@ instance ( VarValTime v x t
         --
         -- Important to notice, that "binding" doesn't mean actually beginning of work, that
         -- allows firstly make bindings of all tasks and after plan computation process.
-            | Just F.Add {} <- castF f = Right pu{ remain=f : remain, isNeg = False }
-            | Just F.Sub {} <- castF f = Right pu{ remain=f : remain, isNeg = True}
+            | Just F.Add {} <- castF f = Right pu{ remain=f : remain }
+            | Just F.Sub {} <- castF f = Right pu{ remain=f : remain }
         -- In case of impossibility of binding string with short description of renouncement
         --cause and 'Left' is returned.
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
@@ -158,14 +161,14 @@ instance ( VarValTime v x t
 assignment pu@Accum{ targets=[], sources=[], remain, tick } f
     | Just (F.Add (I a) (I b) (O c)) <- castF f
     = pu
-        { targets=[a, b]
+        { targets=[(False, a), (False, b)]
         , currentWork=Just (tick + 1, f)
         , sources=elems c
         , remain=remain \\ [ f ]
         }
     | Just (F.Sub (I a) (I b) (O c)) <- castF f
     = pu
-        { targets=[a, b]
+        { targets=[(False, a), (True, b)]
         , currentWork=Just (tick + 1, f)
         , sources=elems c
         , remain=remain \\ [ f ]
@@ -209,7 +212,7 @@ instance ( VarValTime v x t
     --list of variants of uploading to mUnit variables, which are needed to function
     --that is in work;
     endpointOptions Accum{ targets=vs@(_:_), tick }
-        = map (\v -> EndpointO (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) vs
+        = map (\v -> EndpointO (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) (map snd vs)
 
      --   list of variants of downloading from mUnit variables;
     endpointOptions Accum{ sources, doneAt=Just at, tick }
@@ -237,13 +240,13 @@ instance ( VarValTime v x t
     --		We can distinguish the following solutions:
     --
     --		1. If model wait variable uploading:
-    endpointDecision pu@Accum{ targets=vs, currentWorkEndpoints, isNeg } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision pu@Accum{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
            -- From the list of uploading value we get a needed value, and remainder is saved
            -- for the next steps.
-        | ([_], xs) <- partition (== v) vs
+        | ([(neg, _)], xs) <- partition ((== v) . snd) vs
              -- @sel@ veriable is used for uploading queuing of variable to hardware block, that is
              -- requred because of realisation.
-        , let sel = if null xs then Init isNeg else Load isNeg
+        , let sel = if null xs then Init neg else Load neg
              --  Computation process planning is carried out.
         , let (newEndpoints, process_') = runSchedule pu $ do
                 -- this is required for correct work of automatically generated tests,
@@ -373,13 +376,13 @@ instance ( Var v ) => Locks (Accum v x t) v where
         -- then there will be no dependencies.
         [ Lock{ lockBy, locked }
         | locked <- sources
-        , lockBy <- targets
+        , lockBy <- map snd targets
         ]
         ++
         -- The dependencies of the functions in the queue on the current moment.
         [ Lock{ lockBy, locked }
         | locked <- concatMap (elems . variables) remain
-        , lockBy <- sources ++ targets
+        , lockBy <- sources ++ map snd targets
         ]
 
 instance ( Val x, Default x ) => TargetSystemComponent (Accum v x t) where
