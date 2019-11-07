@@ -5,9 +5,18 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-name-shadowing -fno-warn-missing-signatures #-}
+{-|
+Module      : NITTA.Model.ProcessorUnits.Serial.Accum
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2019
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Model.ProcessorUnits.Serial.Accum
-  ( Accum
-  , accum
+  ( accum
+  , Accum
   , Ports(..), IOPorts(..)
   ) where
 
@@ -25,7 +34,6 @@ import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
-import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (singleton, sup, (...))
@@ -93,7 +101,7 @@ instance ( VarValTime v x t
     endpointOptions Accum{ targets=vs@(_:_), tick }
         = map (\v -> EndpointO (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) (snds vs)
 
-    endpointOptions Accum{ sources, doneAt=Just at, tick }
+    endpointOptions Accum{ sources, doneAt=Just _, tick }
         | not $ null sources
         = [ EndpointO (Source $ fromList sources) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
 
