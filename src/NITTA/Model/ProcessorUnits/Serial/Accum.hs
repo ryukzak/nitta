@@ -1,10 +1,10 @@
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
 module NITTA.Model.ProcessorUnits.Serial.Accum
   ( Accum
   , accum
