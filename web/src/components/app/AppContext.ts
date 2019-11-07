@@ -3,7 +3,6 @@ import React from "react";
 export type SelectedNodeId = string;
 
 export interface IAppContext {
-  nInSeparator: string;
   selectedNodeId: SelectedNodeId;
   selectNode: (id: SelectedNodeId) => void;
   reloadSelectedNode: () => void;

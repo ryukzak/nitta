@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
 import { EdgeView, Interval } from "../../../gen/types";
+import { nInSeparator } from "../../app/App";
 
 type Edge = EdgeView<string, string, number, number>;
 
@@ -8,12 +9,12 @@ const style = {
   fontWeight: 600,
 }
 
-export function nidColumn(separator: string, onUpdateNid: (nid: string) => void) {
+export function nidColumn(onUpdateNid: (nid: string) => void) {
   return {
     Header: "nid",
     maxWidth: 30,
     Cell: (row: { original: Edge }) => {
-      let nid: string[] = row.original.nid.split(separator);
+      let nid: string[] = row.original.nid.split(nInSeparator);
       return (
         <Button
           variant="link"
