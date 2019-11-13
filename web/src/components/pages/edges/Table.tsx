@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
 import { EdgeView, Interval } from "../../../gen/types";
-import { nInSeparator } from "../../app/App";
+import { nInSeparator } from "../../app/AppContext";
 
 type Edge = EdgeView<string, string, number, number>;
 

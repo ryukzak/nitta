@@ -20,8 +20,6 @@ export interface IAppProps {}
 // And yes, you got it right, EVERYTHING you need in context (including functions) must be in this.state.
 export type IAppState = IAppContext;
 
-export const nInSeparator = "-";
-
 export default class App extends React.Component<IAppProps, IAppState> {
   constructor(props: IAppProps) {
     super(props);
