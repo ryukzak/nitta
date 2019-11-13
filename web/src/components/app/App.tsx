@@ -32,7 +32,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
       },
 
       reloadSelectedNode: () => {
-        this.setState({ selectedNodeId: null });
+        this.setState({ selectedNodeId: "-" });
       },
     };
   }
@@ -53,7 +53,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
               <NodeView />
             </Route>
             <Route exact path="/edges">
-              <EdgesView nid={this.state.selectedNodeId} onNidChange={this.state.selectNode} />
+              <EdgesView />
             </Route>
             <Route exact path="/process">
               <ProcessPage nId={this.state.selectedNodeId} />
