@@ -44,6 +44,7 @@ module NITTA.Intermediate.Functions
 
 import qualified Data.Bits                as B
 import           Data.Default
+import           Data.Maybe               (mapMaybe)
 import qualified Data.Map                 as M
 import           Data.Set                 (elems, fromList, union)
 import qualified Data.String.Utils        as S
@@ -123,6 +124,76 @@ instance ( Var v ) => FunctionSimulation (Reg v x) v x where
     simulate cntx (Reg (I v) (O vs)) = do
         x <- cntx `getX` v
         setZipX cntx vs x
+
+
+data Sign = Plus | Minus deriving (Show, Eq)
+
+data Status s v = Push s (I v) | Pull (O v) deriving (Show, Eq)
+
+newtype Acc s v = Acc [Status s v] deriving (Eq)
+
+
+instance {-# OVERLAPS #-} Label (Acc s v) where label Acc{} = "+"
+instance ( Show v) => Show (Acc Sign v) where
+    show (Acc lst) =  concat $ show_ lst []
+        where
+            show_ :: (Show v) => [Status Sign v] -> [[(String, Bool)]] -> [String]
+            show_ []     []     = []
+            show_ []     buff   = let
+                    lstStrings = map (map fst) buff
+                    summ = map tail lstStrings
+                    equal  = map head lstStrings
+                    concatSum = map (\x -> S.join " + " x ++ "; ") summ
+                    exprString = zipWith (++) equal concatSum
+                in
+                    exprString
+
+            show_ (x:xs) []     = let
+                    (s, p) = printStatus x
+                    buff' = [[(s, p)]]
+                in show_ xs buff'
+
+            show_ (x:xs) (b:bs) = let
+                    (s, p) = printStatus x
+                    lastPull = snd (head b)
+                    buff'
+                        | p = ((s, p) : b) : bs
+                        | lastPull = [(s, p)] : b : bs
+                        | otherwise = ((s, p) : b) : bs
+
+                in show_ xs buff'
+
+            printStatus :: (Show v) => Status Sign v -> (String, Bool)
+            printStatus (Push Plus (I v))   = (show v, False)
+            printStatus (Push Minus (I v))  = ("(-" ++ show v ++ ")", False)
+            printStatus (Pull (O v))        = (concatMap ((++" = ") . show) (elems v), True)
+
+-- add a b c = F $ Add (I a) (I b) $ O $ fromList c
+--
+instance (Ord v) => Function (Acc s v) v where
+    inputs  (Acc lst) = fromList $ mapMaybe get lst
+        where
+            get s = case s of
+                Push _ (I v) -> Just v
+                _            -> Nothing
+
+    outputs (Acc lst) = foldl1 union $ mapMaybe get lst
+        where
+            get s = case s of
+                Pull (O v) -> Just v
+                _          -> Nothing
+
+-- instance ( Ord v ) => Patch (Add v x) (v, v) where
+--     patch diff (Add a b c) = Add (patch diff a) (patch diff b) (patch diff c)
+-- instance ( Var v ) => Locks (Add v x) v where
+--     locks = inputsLockOutputs
+-- instance ( Var v, Num x ) => FunctionSimulation (Add v x) v x where
+--     simulate cntx (Add (I v1) (I v2) (O vs)) = do
+--         x1 <- cntx `getX` v1
+--         x2 <- cntx `getX` v2
+--         let x3 = x1 + x2 -- + 1 -- can be used for checking test working
+--         setZipX cntx vs x3
+
 
 
 data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq )
