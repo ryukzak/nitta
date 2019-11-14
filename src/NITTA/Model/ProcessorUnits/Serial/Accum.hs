@@ -75,7 +75,7 @@ instance ( VarValTime v x t
     setTime t pu@Accum{} = pu{ tick=t }
 
 
-assignment pu@Accum{ targets=[], sources=[], remain, tick } f
+execution pu@Accum{ targets=[], sources=[], remain, tick } f
     | Just (F.Add (I a) (I b) (O c)) <- castF f
     = pu
         { targets=[(False, a), (False, b)]
@@ -85,13 +85,13 @@ assignment pu@Accum{ targets=[], sources=[], remain, tick } f
         }
     | Just (F.Sub (I a) (I b) (O c)) <- castF f
     = pu
-        -- paste True when value is negative
+        -- mark True when value is negative
         { targets=[(False, a), (True, b)]
         , currentWork=Just (tick + 1, f)
         , sources=elems c
         , remain=remain \\ [ f ]
         }
-assignment _ _ = error "Accum: internal assignment error."
+execution _ _ = error "Accum: internal execution error."
 
 
 instance ( VarValTime v x t
@@ -99,21 +99,21 @@ instance ( VarValTime v x t
         where
 
     endpointOptions Accum{ targets=vs@(_:_), tick }
-        = map (\v -> EndpointO (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) (snds vs)
+        = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) vs
 
     endpointOptions Accum{ sources, doneAt=Just _, tick }
         | not $ null sources
         = [ EndpointO (Source $ fromList sources) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
 
-    endpointOptions pu@Accum{ remain } = concatMap (endpointOptions . assignment pu) remain
+    endpointOptions pu@Accum{ remain } = concatMap (endpointOptions . execution pu) remain
 
 
     endpointDecision pu@Accum{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
         | ([(neg, _)], xs) <- partition ((== v) . snd) vs
         , let sel = if null xs then Init neg else Load neg
-        , let (newEndpoints, process_') = runSchedule pu $ do
-                updateTick (sup epdAt)
-                scheduleEndpoint d $ scheduleInstruction epdAt sel
+              (newEndpoints, process_') = runSchedule pu $ do
+                    updateTick (sup epdAt)
+                    scheduleEndpoint d $ scheduleInstruction epdAt sel
         = pu
             { process_=process_'
             , targets=xs
@@ -149,9 +149,9 @@ instance ( VarValTime v x t
     endpointDecision pu@Accum{ targets=[], sources=[], remain } d
         | let v = oneOf $ variables d
         , Just f <- find (\f -> v `member` variables f) remain
-        = endpointDecision (assignment pu f) d
+        = endpointDecision (execution pu f) d
 
-    endpointDecision pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
+    endpointDecision pu d = error $ "Accum decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
 
 instance Controllable (Accum v x t) where
@@ -206,19 +206,16 @@ instance Connected (Accum v x t) where
 instance IOConnected (Accum v x t) where
     data IOPorts (Accum v x t) = AccumIO
 
-
 instance ( Var v ) => Locks (Accum v x t) v where
     locks Accum{ remain, sources, targets } =
         [ Lock{ lockBy, locked }
         | locked <- sources
-        , lockBy <- snds targets
+        , lockBy <- map snd targets
         ]
-
         ++
-
         [ Lock{ lockBy, locked }
         | locked <- concatMap (elems . variables) remain
-        , lockBy <- sources ++ snds targets
+        , lockBy <- sources ++ map snd targets
         ]
 
 instance ( Val x, Default x ) => TargetSystemComponent (Accum v x t) where
@@ -252,5 +249,3 @@ instance ( VarValTime v x t ) => Default (Accum v x t) where
 instance IOTestBench (Accum v x t) v x
 
 instance RefactorProblem (Accum v x t) v x
-
-snds = map snd

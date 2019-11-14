@@ -338,7 +338,7 @@ instance ( VarValTime v x t
 
 
 -- |This function carry out actual take functional block to work.
-assignment pu@Multiplier{ targets=[], sources=[], remain, tick } f
+execution pu@Multiplier{ targets=[], sources=[], remain, tick } f
     | Just (F.Multiply (I a) (I b) (O c)) <- castF f
     = pu
         { targets=[a, b]
@@ -346,7 +346,7 @@ assignment pu@Multiplier{ targets=[], sources=[], remain, tick } f
         , sources=elems c
         , remain=remain \\ [ f ]
         }
-assignment _ _ = error "Multiplier: internal assignment error."
+execution _ _ = error "Multiplier: internal execution error."
 
 
 
@@ -379,7 +379,7 @@ instance ( VarValTime v x t
 
     -- list of variables of uploading to mUnit variables, upload any one of that
     -- will cause to actual start of working with mathched function.
-    endpointOptions pu@Multiplier{ remain } = concatMap (endpointOptions . assignment pu) remain
+    endpointOptions pu@Multiplier{ remain } = concatMap (endpointOptions . execution pu) remain
 
     -- Note, that options provided by this function require clarification, because:
 
@@ -462,7 +462,7 @@ instance ( VarValTime v x t
     endpointDecision pu@Multiplier{ targets=[], sources=[], remain } d
         | let v = oneOf $ variables d
         , Just f <- find (\f -> v `member` variables f) remain
-        = endpointDecision (assignment pu f) d
+        = endpointDecision (execution pu f) d
     -- If smth went wrong.
     endpointDecision pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
