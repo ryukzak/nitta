@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
@@ -133,9 +134,8 @@ data Status s v = Push s (I v) | Pull (O v) deriving (Show, Eq)
 newtype Acc s v x = Acc [Status s v] deriving (Eq)
 
 
-instance {-# OVERLAPS #-} Label (Acc s v x) where label Acc{} = "+"
+instance {-# OVERLAPS #-} Label (Acc Sign v x) where label Acc{} = "+"
 instance ( Show v) => Show (Acc Sign v x) where
-
     show (Acc lst) =  concatMap printStatus lst
         where
             printStatus :: (Show v) => Status Sign v -> String
@@ -151,17 +151,22 @@ instance (Ord v) => Function (Acc s v x) v where
             get s = case s of
                 Push _ (I v) -> Just v
                 _            -> Nothing
-
     outputs (Acc lst) = foldl1 union $ mapMaybe get lst
         where
             get s = case s of
                 Pull (O v) -> Just v
                 _          -> Nothing
 
--- instance ( Ord v ) => Patch (Add v x) (v, v) where
---     patch diff (Add a b c) = Add (patch diff a) (patch diff b) (patch diff c)
+instance ( Ord v ) => Patch (Acc Sign v x) (v, v) where
+    patch diff (Acc lst) = Acc $ map
+        (\case
+            Push s v -> Push s (patch diff v)
+            Pull vs  -> Pull (patch diff vs)
+        ) lst
+
 -- instance ( Var v ) => Locks (Add v x) v where
 --     locks = inputsLockOutputs
+
 instance ( Var v, Num x ) => FunctionSimulation (Acc Sign v x) v x where
     simulate cntx (Acc lst) = let
             genPush v s acc context
