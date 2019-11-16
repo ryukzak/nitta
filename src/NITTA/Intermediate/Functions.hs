@@ -130,47 +130,22 @@ data Sign = Plus | Minus deriving (Show, Eq)
 
 data Status s v = Push s (I v) | Pull (O v) deriving (Show, Eq)
 
-newtype Acc s v = Acc [Status s v] deriving (Eq)
+newtype Acc s v x = Acc [Status s v] deriving (Eq)
 
 
-instance {-# OVERLAPS #-} Label (Acc s v) where label Acc{} = "+"
-instance ( Show v) => Show (Acc Sign v) where
-    show (Acc lst) =  concat $ show_ lst []
+instance {-# OVERLAPS #-} Label (Acc s v x) where label Acc{} = "+"
+instance ( Show v) => Show (Acc Sign v x) where
+
+    show (Acc lst) =  concatMap printStatus lst
         where
-            show_ :: (Show v) => [Status Sign v] -> [[(String, Bool)]] -> [String]
-            show_ []     []     = []
-            show_ []     buff   = let
-                    lstStrings = map (map fst) buff
-                    summ = map tail lstStrings
-                    equal  = map head lstStrings
-                    concatSum = map (\x -> S.join " + " x ++ "; ") summ
-                    exprString = zipWith (++) equal concatSum
-                in
-                    exprString
-
-            show_ (x:xs) []     = let
-                    (s, p) = printStatus x
-                    buff' = [[(s, p)]]
-                in show_ xs buff'
-
-            show_ (x:xs) (b:bs) = let
-                    (s, p) = printStatus x
-                    lastPull = snd (head b)
-                    buff'
-                        | p = ((s, p) : b) : bs
-                        | lastPull = [(s, p)] : b : bs
-                        | otherwise = ((s, p) : b) : bs
-
-                in show_ xs buff'
-
-            printStatus :: (Show v) => Status Sign v -> (String, Bool)
-            printStatus (Push Plus (I v))   = (show v, False)
-            printStatus (Push Minus (I v))  = ("(-" ++ show v ++ ")", False)
-            printStatus (Pull (O v))        = (concatMap ((++" = ") . show) (elems v), True)
+            printStatus :: (Show v) => Status Sign v -> String
+            printStatus (Push Plus (I v))   = " +" ++ show v
+            printStatus (Push Minus (I v))  = " -" ++ show v
+            printStatus (Pull (O v))        = concatMap ((" => "++) . show) (elems v) ++ " ; "
 
 -- add a b c = F $ Add (I a) (I b) $ O $ fromList c
 --
-instance (Ord v) => Function (Acc s v) v where
+instance (Ord v) => Function (Acc s v x) v where
     inputs  (Acc lst) = fromList $ mapMaybe get lst
         where
             get s = case s of
@@ -187,14 +162,20 @@ instance (Ord v) => Function (Acc s v) v where
 --     patch diff (Add a b c) = Add (patch diff a) (patch diff b) (patch diff c)
 -- instance ( Var v ) => Locks (Add v x) v where
 --     locks = inputsLockOutputs
--- instance ( Var v, Num x ) => FunctionSimulation (Add v x) v x where
---     simulate cntx (Add (I v1) (I v2) (O vs)) = do
---         x1 <- cntx `getX` v1
---         x2 <- cntx `getX` v2
---         let x3 = x1 + x2 -- + 1 -- can be used for checking test working
---         setZipX cntx vs x3
+instance ( Var v, Num x ) => FunctionSimulation (Acc Sign v x) v x where
+    simulate cntx (Acc lst) = let
+            genPush v s acc context
+                | Right x <- getX context v = case s of
+                    Plus  -> (acc + x, Right context)
+                    Minus -> (acc - x, Right context)
+                | otherwise = (acc, Left "Error in accum Push value to context")
 
+            select (acc, Right context) (Push s (I v)) = genPush v s acc context
+            select (acc, Right context) (Pull (O vs)) = (acc, setZipX context vs acc)
+            select (acc, Left err) _ = (acc, Left err)
 
+            (_, eitherContext) = foldl select (0, Right cntx) lst
+        in eitherContext
 
 data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance {-# OVERLAPS #-} Label (Add v x) where label Add{} = "+"
