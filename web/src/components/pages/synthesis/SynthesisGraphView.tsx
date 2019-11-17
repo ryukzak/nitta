@@ -54,23 +54,25 @@ export const SynthesisGraphView: React.FC = () => {
       .getSynthesis()
       .then((response: AxiosResponse<TreeView<SynthesisNodeView>>) => {
         let nidArray: JsonObjId = {};
-          let buildGraph = (gNode: Graph, dNode: TreeView<SynthesisNodeView>) => {
-          let strNid: string = Object.values(dNode.rootLabel.svNnid).map(String).join("");
+        let buildGraph = (gNode: Graph, dNode: TreeView<SynthesisNodeView>) => {
+          let strNid: string = Object.values(dNode.rootLabel.svNnid)
+            .map(String)
+            .join("");
           gNode.name = reLastNidStep.exec(strNid)![0];
-              gNode.nid = dNode.rootLabel.svNnid;
+          gNode.nid = dNode.rootLabel.svNnid;
           nidArray[strNid] = gNode;
-              if (dNode.rootLabel.svIsEdgesProcessed) markNode(strNid, nidArray, "black");
-              if (dNode.rootLabel.svIsComplete) markNode(strNid, nidArray, "lime");
+          if (dNode.rootLabel.svIsEdgesProcessed) markNode(strNid, nidArray, "black");
+          if (dNode.rootLabel.svIsComplete) markNode(strNid, nidArray, "lime");
           gNode.attributes = {
-              dec: dNode.rootLabel.svOptionType,
-              ch: dNode.rootLabel.svDuration + " / " + dNode.rootLabel.svCharacteristic
+            dec: dNode.rootLabel.svOptionType,
+            ch: dNode.rootLabel.svDuration + " / " + dNode.rootLabel.svCharacteristic
           };
-              gNode.status = dNode.rootLabel.svIsComplete;
-              dNode.rootLabel.svCntx.forEach((e: string, i: number) => {
+          gNode.status = dNode.rootLabel.svIsComplete;
+          dNode.rootLabel.svCntx.forEach((e: string, i: number) => {
             gNode.attributes![i] = e;
           });
           gNode.children = [];
-              dNode.subForest.forEach((e: any) => {
+          dNode.subForest.forEach((e: any) => {
             var tmp: Graph = {};
             if (gNode.children != null) {
               gNode.children.push(tmp);
@@ -124,44 +126,43 @@ export const SynthesisGraphView: React.FC = () => {
         <h1>Empty graph</h1>
       </div>
     );
-  } else {
-    return (
-      <div className="h-100">
-        <Tree
-          data={dataGraph}
-          nodeSize={{ x: 160, y: 60 }}
-          separation={{ siblings: 1, nonSiblings: 1 }}
-          pathFunc="diagonal"
-          translate={{ x: 20, y: 40 }}
-          collapsible={false}
-          zoom={0.7}
-          transitionDuration={0}
-          nodeSvgShape={{
-            shape: "circle",
-            shapeProps: {
-              r: 10,
-              cx: 0,
-              cy: 0,
-              fill: "white"
-            }
-          }}
-          styles={{
-            nodes: {
-              node: {
-                name: { fontSize: "12px" },
-                attributes: { fontSize: "10px" }
-              },
-              leafNode: {
-                name: { fontSize: "12px" },
-                attributes: { fontSize: "10px" }
-              }
-            }
-          }}
-          onClick={(node: any) => {
-            appContext.selectNode(node.nid);
-          }}
-        />
-      </div>
-    );
   }
+  return (
+    <div className="h-100">
+      <Tree
+        data={dataGraph}
+        nodeSize={{ x: 160, y: 60 }}
+        separation={{ siblings: 1, nonSiblings: 1 }}
+        pathFunc="diagonal"
+        translate={{ x: 20, y: 40 }}
+        collapsible={false}
+        zoom={0.7}
+        transitionDuration={0}
+        nodeSvgShape={{
+          shape: "circle",
+          shapeProps: {
+            r: 10,
+            cx: 0,
+            cy: 0,
+            fill: "white"
+          }
+        }}
+        styles={{
+          nodes: {
+            node: {
+              name: { fontSize: "12px" },
+              attributes: { fontSize: "10px" }
+            },
+            leafNode: {
+              name: { fontSize: "12px" },
+              attributes: { fontSize: "10px" }
+            }
+          }
+        }}
+        onClick={(node: any) => {
+          appContext.selectNode(node.nid);
+        }}
+      />
+    </div>
+  );
 };
