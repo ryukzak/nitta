@@ -28,6 +28,7 @@ module NITTA.UIBackend.Marshalling
     , SynthesisDecisionView
     , DataflowEndpointView
     , EdgeView
+    , TreeView
     ) where
 
 import           Control.Concurrent.STM
@@ -39,7 +40,6 @@ import           Data.Maybe
 import qualified Data.Set                         as S
 import qualified Data.String.Utils                as S
 import qualified Data.Text                        as T
-import qualified Data.Tree                        as T
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
@@ -78,15 +78,24 @@ data SynthesisNodeView
 
 instance ToJSON SynthesisNodeView
 
+data TreeView a = NodeView
+        { rootLabel :: a
+        , subForest :: [ TreeView a ]
+        }
+    deriving ( Generic )
+
+instance ( ToJSON a ) => ToJSON (TreeView a)
+
+
 instance ( UnitTag tag, VarValTime v x t
-        ) => Viewable (G Node tag v x t) (IO (T.Tree SynthesisNodeView)) where
+        ) => Viewable (G Node tag v x t) (IO (TreeView SynthesisNodeView)) where
     view Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
         nodesM <- readTVarIO nEdges
         nodes <- case nodesM of
             Just ns -> mapM (view . eNode) ns
             Nothing -> return []
-        return T.Node
-            { T.rootLabel=SynthesisNodeView
+        return NodeView
+            { rootLabel=SynthesisNodeView
                 { svNnid=nId
                 , svCntx=[]
                 , svIsComplete=nIsComplete
@@ -99,7 +108,7 @@ instance ( UnitTag tag, VarValTime v x t
                     Just Edge{ eOption=Refactor{} } -> "Refactor"
                     Nothing                         -> "-"
                 }
-            , T.subForest=nodes
+            , subForest=nodes
             }
 
 

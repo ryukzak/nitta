@@ -68,6 +68,7 @@ $(deriveTypeScript defaultOptions ''Refactor)
 $(deriveTypeScript defaultOptions ''Parameters)
 
 $(deriveTypeScript defaultOptions ''NId)
+$(deriveTypeScript defaultOptions ''TreeView)
 $(deriveTypeScript defaultOptions ''SynthesisNodeView)
 
 $(deriveTypeScript defaultOptions ''DataflowEndpointView)
@@ -103,6 +104,7 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy Parameters)
 
             , getTypeScriptDeclarations (Proxy :: Proxy NId)
+            , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
             , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
 
             , getTypeScriptDeclarations (Proxy :: Proxy DataflowEndpointView)

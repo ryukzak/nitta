@@ -10,7 +10,7 @@ import TestBenchPage from "../pages/testBench/TestBenchPage";
 import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
 import { AppFooter } from "./AppFooter";
-import { MainPage } from "../pages/main/MainPage";
+import { SynthesisGraphContainer } from "../pages/synthesis/SynthesisGraphContainer";
 import { DebugView } from "../pages/debug/DebugView";
 
 export interface IAppProps {}
@@ -43,7 +43,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
         <AppNavbar />
 
         <div className="flex-grow-1">
-          <MainPage />
+          <SynthesisGraphContainer />
 
           <Switch>
             <Route exact path="/">
