@@ -2,7 +2,6 @@ import * as React from "react";
 import { Button } from "react-bootstrap";
 import { SynthesisGraphView } from "./SynthesisGraphView";
 import { AppContext, IAppContext } from "../../app/AppContext";
-// import MuiTextField, {TextFieldProps} from "@material-ui/core/TextField";
 
 export const SynthesisGraphContainer: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
