@@ -2,19 +2,36 @@ import * as React from "react";
 import Tree from "react-d3-tree";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { AppContext, IAppContext, SelectedNodeId, reLastNidStep } from "../../app/AppContext";
-import { SynthesisNodeView, TreeView } from "../../../gen/types";
-import { Graph, JsonObjId } from "../../../gen/types_mock";
+import { SynthesisNodeView, TreeView, NId } from "../../../gen/types";
 import { AxiosResponse, AxiosError } from "axios";
+
+interface Ids {
+  [key: string]: Graph;
+}
+
+interface GraphAttributes {
+  [key: string]: any;
+}
+
+interface Graph {
+  name?: string;
+  nid?: NId;
+  attributes?: GraphAttributes;
+  status?: boolean;
+  children?: Graph[];
+  nodeSvgShape?: any;
+  nodeSvgShapeOriginal?: any;
+}
 
 export const SynthesisGraphView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
 
   const [dataGraph, setDataGraph] = React.useState<Graph[]>([] as Graph[]);
-  const [nIds, setNIds] = React.useState<JsonObjId>({});
+  const [nIds, setNIds] = React.useState<Ids>({});
   const [currentSelectedNodeId, setCurrentSelectedNodeId] = React.useState<SelectedNodeId>("");
 
   const markNode = React.useCallback(
-    (nid: SelectedNodeId, nidArray?: JsonObjId, color?: string) => {
+    (nid: SelectedNodeId, nidArray?: Ids, color?: string) => {
       if (color === undefined) color = "blue";
       if (nidArray === undefined) nidArray = nIds;
       if (nidArray === null) return;
@@ -52,7 +69,7 @@ export const SynthesisGraphView: React.FC = () => {
     haskellApiService
       .getSynthesis()
       .then((response: AxiosResponse<TreeView<SynthesisNodeView>>) => {
-        let nidArray: JsonObjId = {};
+        let nidArray: Ids = {};
         let buildGraph = (gNode: Graph, dNode: TreeView<SynthesisNodeView>) => {
           let strNid: string = Object.values(dNode.rootLabel.svNnid)
             .map(String)
