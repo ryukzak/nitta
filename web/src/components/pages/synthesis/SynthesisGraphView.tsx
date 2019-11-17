@@ -2,7 +2,7 @@ import * as React from "react";
 import Tree from "react-d3-tree";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { AppContext, IAppContext, SelectedNodeId } from "../../app/AppContext";
-import { SynthesisNodeView } from "../../../gen/types";
+import { SynthesisNodeView, TreeView } from "../../../gen/types";
 import { Graph, JsonObjId } from "../../../gen/types_mock";
 import { AxiosResponse, AxiosError } from "axios";
 
@@ -52,25 +52,25 @@ export const SynthesisGraphView: React.FC = () => {
 
     haskellApiService
       .getSynthesis()
-      .then((response: AxiosResponse<[SynthesisNodeView, Array<SynthesisNodeView>]>) => {
+      .then((response: AxiosResponse<TreeView<SynthesisNodeView>>) => {
         let nidArray: JsonObjId = {};
-        let buildGraph = (gNode: Graph, dNode: [SynthesisNodeView, Array<SynthesisNodeView>]) => {
-          let strNid: string = Object.values(dNode[0].svNnid).map(String).join("");
+          let buildGraph = (gNode: Graph, dNode: TreeView<SynthesisNodeView>) => {
+          let strNid: string = Object.values(dNode.rootLabel.svNnid).map(String).join("");
           gNode.name = reLastNidStep.exec(strNid)![0];
-          gNode.nid = dNode[0].svNnid;
+              gNode.nid = dNode.rootLabel.svNnid;
           nidArray[strNid] = gNode;
-          if (dNode[0].svIsEdgesProcessed) markNode(strNid, nidArray, "black");
-          if (dNode[0].svIsComplete) markNode(strNid, nidArray, "lime");
+              if (dNode.rootLabel.svIsEdgesProcessed) markNode(strNid, nidArray, "black");
+              if (dNode.rootLabel.svIsComplete) markNode(strNid, nidArray, "lime");
           gNode.attributes = {
-            dec: dNode[0].svOptionType,
-            ch: dNode[0].svDuration + " / " + dNode[0].svCharacteristic
+              dec: dNode.rootLabel.svOptionType,
+              ch: dNode.rootLabel.svDuration + " / " + dNode.rootLabel.svCharacteristic
           };
-          gNode.status = dNode[0].svIsComplete;
-          dNode[0].svCntx.forEach((e: string, i: number) => {
+              gNode.status = dNode.rootLabel.svIsComplete;
+              dNode.rootLabel.svCntx.forEach((e: string, i: number) => {
             gNode.attributes![i] = e;
           });
           gNode.children = [];
-          dNode[1].forEach((e: any) => {
+              dNode.subForest.forEach((e: any) => {
             var tmp: Graph = {};
             if (gNode.children != null) {
               gNode.children.push(tmp);
