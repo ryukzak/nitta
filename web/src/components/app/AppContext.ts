@@ -1,6 +1,7 @@
 import React from "react";
 
 export const nInSeparator = "-";
+export const reLastNidStep = /-[^-]*$/;
 
 export type SelectedNodeId = string;
 

@@ -1,7 +1,7 @@
 import * as React from "react";
 import Tree from "react-d3-tree";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { AppContext, IAppContext, SelectedNodeId } from "../../app/AppContext";
+import { AppContext, IAppContext, SelectedNodeId, reLastNidStep } from "../../app/AppContext";
 import { SynthesisNodeView, TreeView } from "../../../gen/types";
 import { Graph, JsonObjId } from "../../../gen/types_mock";
 import { AxiosResponse, AxiosError } from "axios";
@@ -47,7 +47,6 @@ export const SynthesisGraphView: React.FC = () => {
   );
 
   const reloadSynthesisGraph = React.useCallback(() => {
-    let reLastNidStep = /-[^-]*$/; // nInSeparator
     let nid = appContext.selectedNodeId;
 
     haskellApiService
