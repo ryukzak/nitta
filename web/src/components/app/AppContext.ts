@@ -1,5 +1,7 @@
 import React from "react";
 
+export const nInSeparator = "-";
+
 export type SelectedNodeId = string;
 
 export interface IAppContext {

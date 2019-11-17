@@ -2,5 +2,11 @@
 // @import "~bootstrap/scss/variables";
 
 .appNavbar {
-  height: 3em;
+  height: auto;
+  padding: 0.1em;
+}
+
+.syn {
+  font-size:0.8em;
+  border: none;
 }
