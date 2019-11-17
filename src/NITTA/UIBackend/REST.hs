@@ -27,7 +27,6 @@ import           Data.Aeson
 import           Data.Default
 import qualified Data.Map                         as M
 import qualified Data.Set                         as S
-import qualified Data.Tree                        as T
 import           GHC.Generics
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
@@ -52,7 +51,7 @@ import           System.FilePath                  (joinPath)
 
 
 type SynthesisAPI tag v x t
-    =    "synthesis" :> Get '[JSON] (T.Tree SynthesisNodeView)
+    =    "synthesis" :> Get '[JSON] (TreeView SynthesisNodeView)
     :<|> "synthesis" :> Capture "nId" NId :> WithSynthesis tag v x t
 
 synthesisServer root
