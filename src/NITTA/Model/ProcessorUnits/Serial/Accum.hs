@@ -25,6 +25,7 @@ import           Data.Bits                        (finiteBitSize)
 import           Data.Default
 import           Data.List                        (find, partition, (\\))
 import           Data.Set                         (elems, fromList, member)
+import           Data.Maybe.HT                    (toMaybe)
 import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
@@ -118,9 +119,7 @@ instance ( VarValTime v x t
             { process_=process_'
             , targets=xs
             , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-            , doneAt=if null xs
-                then Just $ sup epdAt + 3
-                else Nothing
+            , doneAt=toMaybe (null xs) (sup epdAt + 3)
             , tick=sup epdAt
             }
 
@@ -141,7 +140,7 @@ instance ( VarValTime v x t
             { process_=process_'
             , sources=sources'
             , doneAt=if null sources' then Nothing else doneAt
-            , currentWork=if null sources' then Nothing else Just (a, f)
+            , currentWork= toMaybe (not $ null sources') (a, f)
             , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
             , tick=sup epdAt
             }
