@@ -5,7 +5,7 @@ import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
 import { NodeView } from "../pages/node/NodeView";
 import { EdgesView } from "../pages/edges/EdgesView";
 import ProcessPage from "../pages/process/ProcessPage";
-import TestBenchPage from "../pages/testBench/TestBenchPage";
+import { TestBenchPage } from "../pages/testBench/TestBenchPage";
 
 import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
@@ -59,7 +59,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
               <ProcessPage nId={this.state.selectedNodeId} />
             </Route>
             <Route exact path="/testbench">
-              <TestBenchPage nId={this.state.selectedNodeId} />
+              <TestBenchPage />
             </Route>
             <Route exact path="/debug">
               <DebugView />
