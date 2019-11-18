@@ -1,4 +1,5 @@
 import api from "../gen/rest_api.js";
+import { SelectedNodeId } from "../components/app/AppContext.js";
 
 // TODO: argument typing
 
@@ -7,7 +8,7 @@ export const haskellApiService = {
   getNode: (nid: any) => api.getSynthesisByNId(nid),
   getEdge: (nid: any) => api.getSynthesisByNIdEdge(nid),
   getEdges: (nid: string) => api.getSynthesisByNIdEdges(nid),
-  getTimelines: (nid: string) => api.getSynthesisByNIdTimelines(nid),
+  getTimelines: (nid: SelectedNodeId) => api.getSynthesisByNIdTimelines(nid),
   simpleSynthesis: (nid: any) => api.postSynthesisByNIdSimpleSynthesis(nid),
   simpleSynthesisGraph: (nid: any) => api.getSynthesisByNIdModelAlg(nid),
   smartBindSynthesisIO: (nid: any) => api.postSynthesisByNIdSmartBindSynthesisIO(nid),
@@ -15,5 +16,5 @@ export const haskellApiService = {
   obviousBindThread: (nid: any) => api.postSynthesisByNIdObviousBindThread(nid),
   runTestBench: (nid: any, name: any) => api.getSynthesisByNIdTestBenchOutput(nid, name),
   getEndpointOptions: (nid: any) => api.getSynthesisByNIdEndpointOptions(nid),
-  getHistory: (nid: string) => api.getSynthesisByNIdHistory(nid),
+  getHistory: (nid: SelectedNodeId) => api.getSynthesisByNIdHistory(nid),
 };

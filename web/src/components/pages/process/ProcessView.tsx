@@ -1,75 +1,34 @@
-import * as React from "react";
+import React, { useEffect, useState } from "react";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { ProcessTimelines, ViewPointID, TimelinePoint, TimelineWithViewPoint } from "../../../gen/types";
+import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } from "../../../gen/types";
 
 import "./ProcessView.scss";
+import { TimelineView } from "./TimelineView";
+import { AppContext, IAppContext } from "../../app/AppContext";
+import { useContext } from "react";
+import { AxiosError } from "axios";
 
-// TODO: REWRITE/REFACTOR COMPONENT "ProcessView"
-
-export interface IProcessViewProps {
-  nId: string;
-}
-
-export interface IProcessViewState {
-  nId: string | null;
-  data: ProcessTimelines<number> | null;
-  pIdIndex: Record<number, TimelinePoint<number>> | null;
-  detail: TimelinePoint<number>[];
-  highlight: Highlight;
-}
-
-interface Highlight {
+export interface Highlight {
   up: number[];
   current: number[];
   down: number[];
 }
 
-export class ProcessView extends React.Component<IProcessViewProps, IProcessViewState> {
-  // TODO: diff from previous synthesis process step
-  // TODO: highlight point by click on info part
-  constructor(props: IProcessViewProps) {
-    super(props);
-    this.state = {
-      nId: null,
-      data: null,
-      pIdIndex: null,
-      detail: [],
-      highlight: {
-        up: [],
-        current: [],
-        down: [],
-      },
-    };
-    this.requestTimelines = this.requestTimelines.bind(this);
-    this.renderPoint = this.renderPoint.bind(this);
-    this.selectPoint = this.selectPoint.bind(this);
-  }
+// TODO: diff from previous synthesis process step
+// TODO: highlight point by click on info part
+export const ProcessView: React.FC = () => {
+  const appContext = useContext(AppContext) as IAppContext;
 
-  static getDerivedStateFromProps(props: IProcessViewProps, state: IProcessViewState) {
-    console.log("> ProcessView.getDerivedStateFromProps", props.nId);
-    if (props.nId && props.nId !== state.nId) {
-      console.log("> ProcessView.getDerivedStateFromProps - new state");
-      return { nId: props.nId, data: null } as IProcessViewState;
-    }
-    return null;
-  }
+  const [pIdIndex, setPIdIndex] = useState<Record<number, TimelinePoint<number>> | null>(null);
+  const [highlight, setHighlight] = useState<Highlight>({ up: [], current: [], down: [] } as Highlight);
+  const [detail, setDetail] = useState<TimelinePoint<number>[]>([] as TimelinePoint<number>[]);
+  const [data, setData] = useState<ProcessTimelines<number> | null>(null);
 
-  componentDidMount() {
-    console.log("> ProcessView.componentDidMount", this.state.nId);
-    this.requestTimelines(this.state.nId!);
-  }
-
-  componentDidUpdate(prevProps: IProcessViewProps, prevState: IProcessViewState, snapshot: any) {
-    console.log("> ProcessView.componentDidUpdate");
-    if (prevState.nId !== this.state.nId) {
-      this.requestTimelines(this.state.nId!);
-    }
-  }
-
-  requestTimelines(nId: string) {
-    console.log("> ProcessView.requestTimelines");
+  useEffect(() => {
+    setDetail([]);
+    setHighlight({ up: [], current: [], down: [] });
     haskellApiService
-      .getTimelines(nId)
+      .getTimelines(appContext.selectedNodeId)
       .then((response: { data: ProcessTimelines<number> }) => {
         console.log("> ProcessView.requestTimelines - done");
         let pIdIndex: Record<number, TimelinePoint<number>> = {};
@@ -81,170 +40,83 @@ export class ProcessView extends React.Component<IProcessViewProps, IProcessView
             });
           });
         });
-        this.setState({
-          data: this.resortTimeline(response.data),
-          pIdIndex: pIdIndex,
-        });
+        let resort = resortTimeline(response.data);
+        setData(resort);
+        setPIdIndex(pIdIndex);
       })
-      .catch((err: any) => console.log(err));
-  }
+      .catch((err: AxiosError) => console.log(err));
+  }, [appContext.selectedNodeId]);
 
-  resortTimeline(data: ProcessTimelines<number>) {
-    let result: ProcessTimelines<number> = {
-      timelines: [],
-      verticalRelations: data.verticalRelations,
-    };
-    function cmp(a: TimelineWithViewPoint<number>, b: TimelineWithViewPoint<number>) {
-      if (a.timelineViewpoint.component < b.timelineViewpoint.component) return -1;
-      if (a.timelineViewpoint.component > b.timelineViewpoint.component) return 1;
-      return 0;
-    }
-    let tmp: TimelineWithViewPoint<number>[] = data.timelines.sort(cmp);
-    function extract(p: (id: ViewPointID) => boolean) {
-      let newTmp: TimelineWithViewPoint<number>[] = [];
-      tmp.forEach(e => {
-        if (p(e.timelineViewpoint)) {
-          result.timelines.push(e);
-        } else {
-          newTmp.push(e);
-        }
-      });
-      tmp = newTmp;
-    }
-    extract(e => e.component.length === 0);
-    extract(e => e.level === "CAD");
-    extract(e => e.level === "Fun");
-    extract(e => e.level === "EndPoint");
-    extract(e => true);
-    return result;
-  }
+  return (
+    <div className="p-3 d-flex flex-nowrap">
+      {!data ? (
+        <pre>LOADING</pre>
+      ) : data.timelines.length === 0 ? (
+        <pre>EMPTY PROCESS TIMELINE</pre>
+      ) : (
+        <>
+          <TimelineView
+            timelines={data.timelines}
+            highlight={highlight}
+            data={data}
+            onHighlightChange={h => setHighlight(h)}
+            onDetailChange={d => setDetail(d)}
+          />
+          <div className="ml-2 flex-grow-1" style={{ minWidth: "30%" }}>
+            <hr />
+            <div className="squeeze upRelation">upper related:</div>
+            <div className="x-scrollable">
+              {highlight.up.map(e =>
+                pIdIndex !== null && pIdIndex[e] !== undefined ? <div className="squeeze">- {pIdIndex[e].pInfo}</div> : ""
+              )}
+            </div>
+            <hr />
+            <div className="squeeze current">current:</div>
+            <div className="x-scrollable">
+              {detail.map(e => (
+                <div className="squeeze">- {e.pInfo}</div>
+              ))}
+            </div>
+            <hr />
+            <div className="squeeze downRelation">bottom related:</div>
+            <div className="x-scrollable">
+              {highlight.down.map(e =>
+                pIdIndex != null && pIdIndex[e] != null ? <div className="squeeze">-- {pIdIndex[e].pInfo}</div> : ""
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
-  viewpoint2string(view: ViewPointID): string {
-    return view.component + "@" + view.level;
+function resortTimeline(data: ProcessTimelines<number>) {
+  let result: ProcessTimelines<number> = {
+    timelines: [],
+    verticalRelations: data.verticalRelations,
+  };
+  function cmp(a: TimelineWithViewPoint<number>, b: TimelineWithViewPoint<number>) {
+    if (a.timelineViewpoint.component < b.timelineViewpoint.component) return -1;
+    if (a.timelineViewpoint.component > b.timelineViewpoint.component) return 1;
+    return 0;
   }
-
-  renderLine(i: number, viewLength: number, view: ViewPointID, points: TimelinePoint<number>[][]) {
-    let v = this.viewpoint2string(view);
-    let n = viewLength - v.length;
-    return (
-      <pre key={i} className="squeeze m-0">
-        {" ".repeat(n)}
-        {v} | {points.map(this.renderPoint)}
-      </pre>
-    );
-  }
-
-  renderPoint(point: TimelinePoint<number>[], i: number) {
-    let s: string = ".";
-    if (point.length === 1) {
-      s = "*";
-    }
-    if (point.length > 1) {
-      s = "#";
-    }
-    for (let j = 0; j < point.length; j++) {
-      const id = point[j].pID;
-      if (this.state.highlight.up.indexOf(id) >= 0) {
-        return (
-          <span key={i} className="upRelation" onClick={() => this.selectPoint(point)}>
-            {s}
-          </span>
-        );
-      }
-      if (this.state.highlight.current.indexOf(id) >= 0) {
-        return (
-          <span key={i} className="current" onClick={() => this.selectPoint(point)}>
-            {s}
-          </span>
-        );
-      }
-      if (this.state.highlight.down.indexOf(id) >= 0) {
-        return (
-          <span key={i} className="downRelation" onClick={() => this.selectPoint(point)}>
-            {s}
-          </span>
-        );
-      }
-    }
-    return (
-      <span key={i} onClick={() => this.selectPoint(point)}>
-        {s}
-      </span>
-    );
-  }
-
-  selectPoint(point: TimelinePoint<number>[]) {
-    let highlight: Highlight = { up: [], current: [], down: [] };
-    point.forEach(p => {
-      let id: number = p.pID;
-      highlight.current.push(p.pID);
-      this.state.data!.verticalRelations.forEach(e => {
-        let up = e[0],
-          down = e[1];
-        if (highlight.up.indexOf(up) === -1) {
-          if (id === down) {
-            highlight.up.push(up);
-          }
-        }
-        if (highlight.down.indexOf(down) === -1) {
-          if (id === up) {
-            highlight.down.push(down);
-          }
-        }
-      });
-    });
-    this.setState({
-      detail: point,
-      highlight: highlight,
-    });
-  }
-
-  render() {
-    if (!this.state.data) {
-      return <pre>LOADING</pre>;
-    }
-    if (this.state.data.timelines.length === 0) {
-      return <pre>EMPTY PROCESS TIMELINE</pre>;
-    }
-    let viewColumnHead = "view point";
-    let viewColumnLength: number = viewColumnHead.length;
-    this.state.data.timelines.forEach(e => {
-      let l: number = this.viewpoint2string(e.timelineViewpoint).length;
-      if (l > viewColumnLength) {
-        viewColumnLength = l;
+  let tmp: TimelineWithViewPoint<number>[] = data.timelines.sort(cmp);
+  function extract(p: (id: ViewPointID) => boolean) {
+    let newTmp: TimelineWithViewPoint<number>[] = [];
+    tmp.forEach(e => {
+      if (p(e.timelineViewpoint)) {
+        result.timelines.push(e);
+      } else {
+        newTmp.push(e);
       }
     });
-    return (
-      <div className="row">
-        <div className="columns col-md-5 m-0 p-0">
-          <pre className="squeeze m-0 p-0">
-            <u>
-              {viewColumnHead}
-              {" ".repeat(viewColumnLength - viewColumnHead.length)} | timeline
-            </u>
-          </pre>
-          {this.state.data.timelines.map((e, i) => {
-            return this.renderLine(i, viewColumnLength, e.timelineViewpoint, e.timelinePoints);
-          })}
-        </div>
-        <div className="columns col-md-7">
-          <pre className="squeeze">------------------------------</pre>
-          <pre className="squeeze upRelation">upper related:</pre>
-          {this.state.highlight.up.map(e => (
-            <pre className="squeeze">- {this.state.pIdIndex![e].pInfo}</pre>
-          ))}
-          <pre className="squeeze">------------------------------</pre>
-          <pre className="squeeze current">current:</pre>
-          {this.state.detail.map(e => (
-            <pre className="squeeze">- {e.pInfo}</pre>
-          ))}
-          <pre className="squeeze">------------------------------</pre>
-          <pre className="squeeze downRelation">bottom related:</pre>
-          {this.state.highlight.down.map(e => (
-            <pre className="squeeze">- {this.state.pIdIndex![e].pInfo}</pre>
-          ))}
-        </div>
-      </div>
-    );
+    tmp = newTmp;
   }
+  extract(e => e.component.length === 0);
+  extract(e => e.level === "CAD");
+  extract(e => e.level === "Fun");
+  extract(e => e.level === "EndPoint");
+  extract(e => true);
+  return result;
 }

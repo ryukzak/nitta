@@ -4,12 +4,12 @@ import { Route, Switch, Redirect } from "react-router-dom";
 import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
 import { NodeView } from "../pages/node/NodeView";
 import { EdgesView } from "../pages/edges/EdgesView";
-import ProcessPage from "../pages/process/ProcessPage";
 import { TestBenchPage } from "../pages/testBench/TestBenchPage";
 
 import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
 import { AppFooter } from "./AppFooter";
+import { ProcessView } from "../pages/process/ProcessView";
 import { SynthesisGraphContainer } from "../pages/synthesis/SynthesisGraphContainer";
 import { DebugView } from "../pages/debug/DebugView";
 
@@ -56,7 +56,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
               <EdgesView />
             </Route>
             <Route exact path="/process">
-              <ProcessPage nId={this.state.selectedNodeId} />
+              <ProcessView />
             </Route>
             <Route exact path="/testbench">
               <TestBenchPage />

@@ -1,18 +1,21 @@
 .squeeze {
-    line-height: 1em;
-    overflow-y: hidden;
-  }
-  
-  .upRelation {
-    background: aqua;
-  }
-  
-  .current {
-    background: yellow;
-  }
-  
-  .downRelation {
-    background-color: greenyellow;
-  }
-  
-  
+  line-height: 1em;
+  font-family: monospace;
+  white-space: pre;
+}
+
+.x-scrollable {
+  overflow: auto hidden;
+}
+
+.upRelation {
+  background: aqua;
+}
+
+.current {
+  background: yellow;
+}
+
+.downRelation {
+  background-color: greenyellow;
+}
