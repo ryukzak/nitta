@@ -67,7 +67,7 @@ export const ProcessView: React.FC = () => {
             <div className="squeeze upRelation">upper related:</div>
             <div className="x-scrollable">
               {highlight.up.map(e =>
-                pIdIndex != null && pIdIndex[e] != undefined ? <div className="squeeze">- {pIdIndex[e].pInfo}</div> : ""
+                pIdIndex !== null && pIdIndex[e] !== undefined ? <div className="squeeze">- {pIdIndex[e].pInfo}</div> : ""
               )}
             </div>
             <hr />
