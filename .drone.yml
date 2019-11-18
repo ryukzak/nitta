@@ -7,16 +7,15 @@ steps:
     image: nitta-build:latest
     pull: if-not-exists
     commands:
-      - stack build --test --haddock --copy-bins
-      - stack exec nitta-api-gen
+      - make build-nitta-backend
 
   - name: npm build
     image: nitta-build:latest
     pull: if-not-exists
     commands:
-      - cd web
-      - npm install --dev
-      - npm run build
+      # - ln -s /tmp/node_modules web/node_modules
+      - make configure-npm
+      - make build-nitta-frontend
 
   - name: success-telegram-notify
     image: byrnedo/alpine-curl
