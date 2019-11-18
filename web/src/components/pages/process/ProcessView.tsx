@@ -25,6 +25,8 @@ export const ProcessView: React.FC = () => {
   const [data, setData] = useState<ProcessTimelines<number> | null>(null);
 
   useEffect(() => {
+    setDetail([]);
+    setHighlight({ up: [], current: [], down: [] });
     haskellApiService
       .getTimelines(appContext.selectedNodeId)
       .then((response: { data: ProcessTimelines<number> }) => {
@@ -64,9 +66,9 @@ export const ProcessView: React.FC = () => {
             <hr />
             <div className="squeeze upRelation">upper related:</div>
             <div className="x-scrollable">
-              {highlight.up.map(e => (
-                <div className="squeeze">- {pIdIndex![e].pInfo}</div>
-              ))}
+              {highlight.up.map(e =>
+                pIdIndex != null && pIdIndex[e] != undefined ? <div className="squeeze">- {pIdIndex[e].pInfo}</div> : ""
+              )}
             </div>
             <hr />
             <div className="squeeze current">current:</div>
@@ -78,9 +80,9 @@ export const ProcessView: React.FC = () => {
             <hr />
             <div className="squeeze downRelation">bottom related:</div>
             <div className="x-scrollable">
-              {highlight.down.map(e => (
-                <div className="squeeze">- {pIdIndex![e].pInfo}</div>
-              ))}
+              {highlight.down.map(e =>
+                pIdIndex != null && pIdIndex[e] != null ? <div className="squeeze">-- {pIdIndex[e].pInfo}</div> : ""
+              )}
             </div>
           </div>
         </>
