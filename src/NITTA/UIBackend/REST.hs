@@ -24,7 +24,6 @@ module NITTA.UIBackend.REST
 import           Control.Monad.Except
 import           Data.Default
 import qualified Data.Map                         as M
-import qualified Data.Tree                        as T
 import           NITTA.Intermediate.Simulation
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
@@ -45,7 +44,7 @@ import           System.FilePath                  (joinPath)
 
 
 type SynthesisAPI tag v x t
-    =    "synthesis" :> Get '[JSON] (T.Tree SynthesisNodeView)
+    =    "synthesis" :> Get '[JSON] (TreeView SynthesisNodeView)
     :<|> "synthesis" :> Capture "nId" NId :> WithSynthesis tag v x t
 
 synthesisServer root

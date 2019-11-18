@@ -1,6 +1,9 @@
 import React from "react";
 
-export type SelectedNodeId = string | null;
+export const nInSeparator = "-";
+export const reLastNidStep = /-[^-]*$/;
+
+export type SelectedNodeId = string;
 
 export interface IAppContext {
   selectedNodeId: SelectedNodeId;

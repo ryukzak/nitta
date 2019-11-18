@@ -2,15 +2,16 @@ import React from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
 
 import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
-import NodeView from "../pages/node/NodeView";
+import { NodeView } from "../pages/node/NodeView";
 import { EdgesView } from "../pages/edges/EdgesView";
-import TestBenchPage from "../pages/testBench/TestBenchPage";
+import { TestBenchPage } from "../pages/testBench/TestBenchPage";
 
 import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
 import { AppFooter } from "./AppFooter";
-import { MainPage } from "../pages/main/MainPage";
 import { ProcessView } from "../pages/process/ProcessView";
+import { SynthesisGraphContainer } from "../pages/synthesis/SynthesisGraphContainer";
+import { DebugView } from "../pages/debug/DebugView";
 
 export interface IAppProps {}
 
@@ -31,7 +32,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
       },
 
       reloadSelectedNode: () => {
-        this.setState({ selectedNodeId: null });
+        this.setState({ selectedNodeId: "-" });
       },
     };
   }
@@ -42,23 +43,26 @@ export default class App extends React.Component<IAppProps, IAppState> {
         <AppNavbar />
 
         <div className="flex-grow-1">
-          <MainPage />
+          <SynthesisGraphContainer />
 
           <Switch>
             <Route exact path="/">
               <Redirect to="/node" />
             </Route>
             <Route exact path="/node">
-              <NodeView selectedNId={this.state.selectedNodeId} />
+              <NodeView />
             </Route>
             <Route exact path="/edges">
-              <EdgesView nid={this.state.selectedNodeId} onNidChange={this.state.selectNode} />
+              <EdgesView />
             </Route>
             <Route exact path="/process">
               <ProcessView />
             </Route>
             <Route exact path="/testbench">
-              <TestBenchPage nId={this.state.selectedNodeId} />
+              <TestBenchPage />
+            </Route>
+            <Route exact path="/debug">
+              <DebugView />
             </Route>
 
             <Route component={NotFoundErrorPage} />

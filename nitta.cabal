@@ -101,6 +101,7 @@ executable nitta-api-gen
   build-depends:       aeson
                      , aeson-typescript
                      , base
+                     , containers
                      , cmdargs
                      , directory
                      , filepath
