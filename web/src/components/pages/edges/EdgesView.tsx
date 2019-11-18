@@ -41,7 +41,7 @@ export const EdgesView: React.FC = () => {
       <div className="row mt-2 w-100 columns" style={{ overflowX: "auto" }}>
         <div className="columns">
           <pre className="squeze h5">History:</pre>
-          <SynthesisHistoryView nId={appContext.selectedNodeId!} reverse={true} />
+          <SynthesisHistoryView reverse={true} />
         </div>
       </div>
     </div>
