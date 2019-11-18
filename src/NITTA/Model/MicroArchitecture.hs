@@ -127,7 +127,7 @@ addManual tag mkPU = do
 -- |__Example for architecture configuration__
 example ioSync = evalNetwork ioSync $ do
     addManual "fram1_tag" (PU def def FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
-    addManual "accum_tag" (PU def def AccumPorts{ init=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
+    addManual "accum_tag" (PU def def AccumPorts{ resetAcc=SignalTag 18, load=SignalTag 19, neg=SignalTag 20, oe=SignalTag 21 } AccumIO )
     addCustom "fram2_tag" (framWithSize 32) FramIO
     add "div_tag2" DividerIO
     add "mul_tag2" MultiplierIO

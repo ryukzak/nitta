@@ -159,34 +159,34 @@ instance Controllable (Accum v x t) where
     data Microcode (Accum v x t) =
         Microcode
             { oeSignal :: Bool
-            , initSignal :: Bool
+            , resetAccSignal :: Bool
             , loadSignal :: Bool
             , negSignal :: Maybe Bool
             } deriving ( Show, Eq, Ord )
 
     mapMicrocodeToPorts Microcode{..} AccumPorts{..} =
-        [ (init, Bool initSignal)
+        [ (resetAcc, Bool resetAccSignal)
         , (load, Bool loadSignal)
         , (neg, maybe Undef Bool negSignal)
         , (oe, Bool oeSignal)
         ]
 
-    portsToSignals AccumPorts{ init, load, neg, oe } = [init, load, neg, oe]
+    portsToSignals AccumPorts{ resetAcc, load, neg, oe } = [resetAcc, load, neg, oe]
 
-    signalsToPorts (init:load:neg:oe:_) _ = AccumPorts init load neg oe
+    signalsToPorts (resetAcc:load:neg:oe:_) _ = AccumPorts resetAcc load neg oe
     signalsToPorts _                    _ = error "pattern match error in signalsToPorts AccumPorts"
 
 instance Default (Microcode (Accum v x t)) where
     def = Microcode
         { oeSignal=False
-        , initSignal=False
+        , resetAccSignal=False
         , loadSignal=False
         , negSignal=Nothing
         }
 
 instance UnambiguouslyDecode (Accum v x t) where
-    decodeInstruction (Init neg) = def{ initSignal=False, loadSignal=True, negSignal=Just neg }
-    decodeInstruction (Load neg) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
+    decodeInstruction (Init neg) = def{ resetAccSignal=False, loadSignal=True, negSignal=Just neg }
+    decodeInstruction (Load neg) = def{ resetAccSignal=True, loadSignal=True, negSignal=Just neg }
     decodeInstruction Out        = def{ oeSignal=True }
 
 
@@ -201,7 +201,7 @@ instance ( VarValTime v x t
 
 instance Connected (Accum v x t) where
     data Ports (Accum v x t)
-        = AccumPorts{ init, load, neg, oe :: SignalTag } deriving ( Show )
+        = AccumPorts{ resetAcc, load, neg, oe :: SignalTag } deriving ( Show )
 
 instance IOConnected (Accum v x t) where
     data IOPorts (Accum v x t) = AccumIO
@@ -230,7 +230,7 @@ instance ( Val x, Default x ) => TargetSystemComponent (Accum v x t) where
                     ) { tag }
                 ( .clk( { signalClk } )
                 , .rst( { signalRst } )
-                , .signal_init( { signal init } )
+                , .signal_init( { signal resetAcc } )
                 , .signal_load( { signal load } )
                 , .signal_neg( { signal neg } )
                 , .signal_oe( { signal oe } )
