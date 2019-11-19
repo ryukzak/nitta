@@ -6,7 +6,7 @@ import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
 
 import "./AppNavbar.scss";
 
-export const SynthesisButtonView: React.FC = () => {
+export const AppNavbarButtons: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
 
   function getRequestWrapper(requestJob: () => AxiosPromise) {

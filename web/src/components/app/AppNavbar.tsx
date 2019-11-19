@@ -4,7 +4,7 @@ import { Link, NavLink as RouterNavLink } from "react-router-dom";
 
 import "./AppNavbar.scss";
 
-import { SynthesisButtonView } from "./AppNavbarButtons";
+import { AppNavbarButtons } from "./AppNavbarButtons";
 
 export interface IAppNavbarProps {}
 
@@ -43,7 +43,7 @@ export const AppNavbar: React.FC<IAppNavbarProps> = props => {
       {/* <Navbar.Text className="mr-5 text-white">
               Selected Node ID: {appContext.selectedNodeId || "None"}
             </Navbar.Text> */}
-      <SynthesisButtonView />
+      <AppNavbarButtons />
       <Navbar.Toggle aria-controls="navbar-nav" />
     </Navbar>
   );
