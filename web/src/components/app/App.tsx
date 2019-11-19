@@ -6,7 +6,7 @@ import { NodeView } from "../pages/node/NodeView";
 import { EdgesView } from "../pages/edges/EdgesView";
 import { TestBenchPage } from "../pages/testBench/TestBenchPage";
 
-import { IAppContext, AppContextProvider, SelectedNodeId } from "./AppContext";
+import { IAppContext, AppContextProvider, SelectedNodeId, nInSeparator } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
 import { AppFooter } from "./AppFooter";
 import { ProcessView } from "../pages/process/ProcessView";
@@ -25,14 +25,14 @@ export default class App extends React.Component<IAppProps, IAppState> {
     super(props);
 
     this.state = {
-      selectedNodeId: "-",
+      selectedNodeId: nInSeparator,
 
       selectNode: (id: SelectedNodeId) => {
         this.setState({ selectedNodeId: id });
       },
 
       reloadSelectedNode: () => {
-        this.setState({ selectedNodeId: "-" });
+        this.setState({ selectedNodeId: nInSeparator });
       },
     };
   }
