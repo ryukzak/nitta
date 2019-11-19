@@ -9,7 +9,7 @@ const DEFAULT_REACT_JSON_PROPS: Partial<ReactJsonViewProps> = {
   displayDataTypes: false,
   displayObjectSize: true,
   collapsed: 2,
-  collapseStringsAfterLength: 15,
+  collapseStringsAfterLength: 120,
 };
 
 export const JsonView: React.FC<IJsonViewProps> = props => {
