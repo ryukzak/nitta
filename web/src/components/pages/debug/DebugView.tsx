@@ -6,24 +6,20 @@ import { JsonView } from "../node/JsonView";
 
 export interface IDebugViewProps {}
 
-export interface IDebugViewState {
-  synthesisNode: any;
-}
-
 export const DebugView: React.FC<IDebugViewProps> = props => {
-  const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
+  const appContext = React.useContext(AppContext) as IAppContext;
 
   const [synthesisNodeData, setSynthesisNodeData] = React.useState<any | null>(null);
   React.useEffect(() => {
     haskellApiService
-      .getNode(selectedNodeId)
+      .getNode(appContext.selectedNodeId)
       .then((response: any) => setSynthesisNodeData(response.data))
       .catch((err: any) => console.error(err));
-  }, [selectedNodeId]);
+  }, [appContext.selectedNodeId]);
 
   return (
     <div className="m-3">
-      {selectedNodeId ? (
+      {appContext.selectedNodeId ? (
         synthesisNodeData ? (
           <div className="d-flex flex-row">
             <JsonView src={synthesisNodeData} collapseStringsAfterLength={120} />
