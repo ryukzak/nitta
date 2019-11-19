@@ -5,6 +5,8 @@ import { AppContext, IAppContext, SelectedNodeId, reLastNidStep } from "../../ap
 import { SynthesisNodeView, TreeView, NId } from "../../../gen/types";
 import { AxiosResponse, AxiosError } from "axios";
 
+// FIXME: review, refactor (naming!)
+
 interface Ids {
   [key: string]: Graph;
 }
@@ -45,8 +47,8 @@ export const SynthesisGraphView: React.FC = () => {
           r: 10,
           cx: 0,
           cy: 0,
-          fill: color
-        }
+          fill: color,
+        },
       };
     },
     [nIds]
@@ -81,7 +83,7 @@ export const SynthesisGraphView: React.FC = () => {
           if (dNode.rootLabel.svIsComplete) markNode(strNid, nidArray, "lime");
           gNode.attributes = {
             dec: dNode.rootLabel.svOptionType,
-            ch: dNode.rootLabel.svDuration + " / " + dNode.rootLabel.svCharacteristic
+            ch: dNode.rootLabel.svDuration + " / " + dNode.rootLabel.svCharacteristic,
           };
           gNode.status = dNode.rootLabel.svIsComplete;
           dNode.rootLabel.svCntx.forEach((e: string, i: number) => {
@@ -133,7 +135,7 @@ export const SynthesisGraphView: React.FC = () => {
     dataGraph,
     markNode,
     nIds,
-    unmarkNode
+    unmarkNode,
   ]);
 
   if (!dataGraph === null || dataGraph.length === 0) {
@@ -160,20 +162,20 @@ export const SynthesisGraphView: React.FC = () => {
             r: 10,
             cx: 0,
             cy: 0,
-            fill: "white"
-          }
+            fill: "white",
+          },
         }}
         styles={{
           nodes: {
             node: {
               name: { fontSize: "12px" },
-              attributes: { fontSize: "10px" }
+              attributes: { fontSize: "10px" },
             },
             leafNode: {
               name: { fontSize: "12px" },
-              attributes: { fontSize: "10px" }
-            }
-          }
+              attributes: { fontSize: "10px" },
+            },
+          },
         }}
         onClick={(node: any) => {
           appContext.selectNode(node.nid);

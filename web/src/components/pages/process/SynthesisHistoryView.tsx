@@ -5,6 +5,8 @@ import { AxiosResponse, AxiosError } from "axios";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { useContext } from "react";
 
+// FIXME: review, refactor
+
 export interface ISynthesisHistoryViewProps {
   reverse: boolean;
 }
@@ -21,7 +23,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
         setHistory(response.data);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedNodeId])
+  }, [appContext.selectedNodeId]);
 
   if (synthesisHistory == null) return <pre>LOADING...</pre>;
 
@@ -41,4 +43,4 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
       ))}{" "}
     </pre>
   );
-}
+};

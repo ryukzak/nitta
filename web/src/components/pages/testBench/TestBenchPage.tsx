@@ -6,6 +6,7 @@ import { AppContext, IAppContext } from "../../app/AppContext";
 import { useContext } from "react";
 import { SimulationDataView } from "./SimulationDataView";
 
+// FIXME: review, refactor
 
 export const TestBenchPage: React.FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
@@ -14,13 +15,12 @@ export const TestBenchPage: React.FC = () => {
 
   useEffect(() => {
     haskellApiService
-    .runTestBench(appContext.selectedNodeId, "web_ui")
-    .then((response: AxiosResponse<TestbenchReport<string, number> | null>) => {
-      setTestBenchDump(response.data);
-    })
-    .catch((err: AxiosError) => { });
-  }, [appContext.selectedNodeId])
-
+      .runTestBench(appContext.selectedNodeId, "web_ui")
+      .then((response: AxiosResponse<TestbenchReport<string, number> | null>) => {
+        setTestBenchDump(response.data);
+      })
+      .catch((err: AxiosError) => {});
+  }, [appContext.selectedNodeId]);
 
   if (testBenchDump === null) {
     return (
@@ -60,4 +60,4 @@ export const TestBenchPage: React.FC = () => {
       />
     </div>
   );
-}
+};

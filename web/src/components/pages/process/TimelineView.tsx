@@ -2,6 +2,8 @@ import React from "react";
 import { TimelineWithViewPoint, TimelinePoint, ViewPointID, ProcessTimelines } from "../../../gen/types";
 import { Highlight } from "./ProcessView";
 
+// FIXME: review, refactor (reorganize?)
+
 interface TimelineProps {
   timelines: TimelineWithViewPoint<number>[];
   highlight: Highlight;

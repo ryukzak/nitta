@@ -1,6 +1,8 @@
 import * as React from "react";
 import ReactTable from "react-table";
 
+// FIXME: review, refactor
+
 export interface ISimulationDataViewProps {
   functional: { [k: string]: number }[];
   logical: { [k: string]: number }[];
