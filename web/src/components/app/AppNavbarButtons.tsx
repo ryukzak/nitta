@@ -9,32 +9,14 @@ import "./AppNavbar.scss";
 export const SynthesisButtonView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
 
-  enum ButtonAct {
-    SympleSynthesis,
-    SmartBindSynthesisIO,
-    AllBestThread,
-    ObviousBindThread,
-  }
-
-  function buttonHandler(nid: SelectedNodeId, act: ButtonAct, n?: number) {
-    let fun: () => AxiosPromise = () => {
-      switch (act) {
-        case ButtonAct.SympleSynthesis:
-          return haskellApiService.simpleSynthesis(nid);
-        case ButtonAct.SmartBindSynthesisIO:
-          return haskellApiService.smartBindSynthesisIO(nid);
-        case ButtonAct.AllBestThread:
-          return haskellApiService.allBestThread(nid, n);
-        case ButtonAct.ObviousBindThread:
-          return haskellApiService.obviousBindThread(nid);
-      }
+  function getRequestWrapper(requestJob: () => AxiosPromise) {
+    return () => {
+      requestJob()
+        .then((response: AxiosResponse<SelectedNodeId>) => {
+          appContext.selectNode(response.data);
+        })
+        .catch((err: AxiosError) => alert(err));
     };
-
-    fun()
-      .then((response: AxiosResponse<SelectedNodeId>) => {
-        appContext.selectNode(response.data);
-      })
-      .catch((err: AxiosError) => alert(err));
   }
 
   const buttonAttrs = {
@@ -44,27 +26,42 @@ export const SynthesisButtonView: React.FC = () => {
   return (
     <div className="d-flex">
       <div className="mr-3">
-        <Button {...buttonAttrs} onClick={() => buttonHandler(appContext.selectedNodeId, ButtonAct.SympleSynthesis)}>
+        <Button
+          {...buttonAttrs}
+          onClick={getRequestWrapper(() => haskellApiService.simpleSynthesis(appContext.selectedNodeId))}
+        >
           Simple synthesis
         </Button>
         <Button
           {...buttonAttrs}
-          onClick={() => buttonHandler(appContext.selectedNodeId, ButtonAct.SmartBindSynthesisIO)}
+          onClick={getRequestWrapper(() => haskellApiService.smartBindSynthesisIO(appContext.selectedNodeId))}
         >
           Smart bind synthesis
         </Button>
       </div>
       <div>
-        <Button {...buttonAttrs} onClick={() => buttonHandler(appContext.selectedNodeId, ButtonAct.AllBestThread, 2)}>
+        <Button
+          {...buttonAttrs}
+          onClick={getRequestWrapper(() => haskellApiService.allBestThread(appContext.selectedNodeId, 2))}
+        >
           All best tread 2
         </Button>
-        <Button {...buttonAttrs} onClick={() => buttonHandler(appContext.selectedNodeId, ButtonAct.AllBestThread, 1)}>
+        <Button
+          {...buttonAttrs}
+          onClick={getRequestWrapper(() => haskellApiService.allBestThread(appContext.selectedNodeId, 1))}
+        >
           All best tread 1
         </Button>
-        <Button {...buttonAttrs} onClick={() => buttonHandler(appContext.selectedNodeId, ButtonAct.AllBestThread, 0)}>
+        <Button
+          {...buttonAttrs}
+          onClick={getRequestWrapper(() => haskellApiService.allBestThread(appContext.selectedNodeId, 0))}
+        >
           Best tread
         </Button>
-        <Button {...buttonAttrs} onClick={() => buttonHandler(appContext.selectedNodeId, ButtonAct.ObviousBindThread)}>
+        <Button
+          {...buttonAttrs}
+          onClick={getRequestWrapper(() => haskellApiService.obviousBindThread(appContext.selectedNodeId))}
+        >
           Obvious bind thread
         </Button>
       </div>
