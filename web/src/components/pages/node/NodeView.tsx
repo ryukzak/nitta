@@ -5,10 +5,6 @@ import { AppContext, IAppContext } from "../../app/AppContext";
 
 export interface INodeViewProps {}
 
-export interface INodeViewState {
-  synthesisNode: any;
-}
-
 export const NodeView: React.FC<INodeViewProps> = props => {
   const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
 

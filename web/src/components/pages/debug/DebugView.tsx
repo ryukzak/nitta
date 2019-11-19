@@ -6,10 +6,6 @@ import { JsonView } from "../node/JsonView";
 
 export interface IDebugViewProps {}
 
-export interface IDebugViewState {
-  synthesisNode: any;
-}
-
 export const DebugView: React.FC<IDebugViewProps> = props => {
   const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
 
