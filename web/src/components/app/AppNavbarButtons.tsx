@@ -35,6 +35,9 @@ export const AppNavbarButtons: React.FC = () => {
         >
           Smart bind synthesis
         </Button>
+        <Button {...buttonAttrs} onClick={requestNidBy(haskellApiService.allBindsAndRefsIO, appContext.selectedNodeId)}>
+          All bindings and refactorings
+        </Button>
       </div>
       <div>
         <Button {...buttonAttrs} onClick={requestNidBy(haskellApiService.allBestThread, appContext.selectedNodeId, 2)}>
