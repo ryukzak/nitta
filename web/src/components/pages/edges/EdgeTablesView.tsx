@@ -105,6 +105,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
     </div>
   );
 
+  // FIXME: shouldn't it be in Table.tsx?
   function Table(props: { name: string; columns: any[]; edges: Edge[] }) {
     if (props.edges.length === 0)
       return (
