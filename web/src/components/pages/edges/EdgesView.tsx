@@ -22,12 +22,13 @@ export const EdgesView: React.FC = () => {
       .catch(err => console.log(err));
   }, [appContext.selectedNodeId]);
 
-  if (edges === undefined || edges === null)
+  if (edges === undefined || edges === null) {
     return (
       <div className="m-3 text-black-50">
         <h5>Empty EdgesView</h5>
       </div>
     );
+  }
 
   /* FIXME: history and table view of decision should be similar */
   return (
