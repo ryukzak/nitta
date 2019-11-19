@@ -12,7 +12,7 @@ const DEFAULT_REACT_JSON_PROPS: Partial<ReactJsonViewProps> = {
   collapseStringsAfterLength: 15,
 };
 
-export function JsonView(props: IJsonViewProps) {
+export const JsonView: React.FC<IJsonViewProps> = props => {
   // default values are overriden by passed props
   return <ReactJson {...{ ...DEFAULT_REACT_JSON_PROPS, ...props }} />;
-}
+};
