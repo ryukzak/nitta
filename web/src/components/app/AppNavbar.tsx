@@ -4,12 +4,11 @@ import { Link, NavLink as RouterNavLink } from "react-router-dom";
 
 import "./AppNavbar.scss";
 
-import { SynthesisButtonView } from "./SynthesisButtonView";
+import { SynthesisButtonView } from "./AppNavbarButtons";
 
 export interface IAppNavbarProps {}
 
 export const AppNavbar: React.FC<IAppNavbarProps> = props => {
-
   return (
     <Navbar bg="dark" variant="dark" expand="md" className="appNavbar">
       <Navbar.Brand className="mr-md-5 " as={Link} to="/">

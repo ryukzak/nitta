@@ -13,7 +13,7 @@ export const SynthesisButtonView: React.FC = () => {
     SympleSynthesis,
     SmartBindSynthesisIO,
     AllBestThread,
-    ObviousBindThread
+    ObviousBindThread,
   }
 
   function buttonHandler(nid: SelectedNodeId, act: ButtonAct, n?: number) {
@@ -38,8 +38,7 @@ export const SynthesisButtonView: React.FC = () => {
   }
 
   const buttonAttrs = {
-    className: "mr-1 mb-1 btn-sm btn-secondary p-1.5",
-    bsPrefix: "syn"
+    className: "mr-1 btn-sm btn-secondary p-1.5 appNavbarButton",
   };
 
   return (
