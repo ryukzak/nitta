@@ -30,7 +30,7 @@ import qualified Data.String.Utils                as S
 import qualified Data.Text                        as T
 import           GHC.Generics                     (Generic)
 import           NITTA.Intermediate.Types
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.Utils
 import           NITTA.Project.Snippets

@@ -28,7 +28,7 @@ import qualified Data.List                        as L
 import qualified Data.Map                         as M
 import           Data.Maybe
 import           NITTA.Intermediate.Types
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Parts.Icarus
 import           NITTA.Project.Parts.Quartus
 import           NITTA.Project.Parts.TargetSystem

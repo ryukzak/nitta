@@ -1,6 +1,6 @@
 name:                nitta
 version:             0.0.0.1
-synopsis:            CAD for reconfigurable real-time computation platform NITTA.
+synopsis:            CAD for reconfigurable real-time computation platform NITTA
 -- description:
 homepage:            https://nitta.io
 license:             BSD3
@@ -15,11 +15,12 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     NITTA.Frontend
-                     , NITTA.Intermediate.Functions
+  exposed-modules:     NITTA.Intermediate.Functions
                      , NITTA.Intermediate.Simulation
                      , NITTA.Intermediate.Types
-                     , NITTA.Intermediate.Values
+                     , NITTA.Intermediate.Value
+                     , NITTA.Intermediate.Variable
+                     , NITTA.LuaFrontend
                      , NITTA.Model.MicroArchitecture
                      , NITTA.Model.Networks.Bus
                      , NITTA.Model.Networks.Types
@@ -38,7 +39,7 @@ library
                      , NITTA.Model.ProcessorUnits.Serial.Accum
                      , NITTA.Model.ProcessorUnits.Serial.Generic
                      , NITTA.Model.ProcessorUnits.Serial.Shift
-                     , NITTA.Model.ProcessorUnits.Types
+                     , NITTA.Model.ProcessorUnits.Time
                      , NITTA.Model.TargetSystem
                      , NITTA.Model.Types
                      , NITTA.Project

@@ -37,7 +37,7 @@ import           NITTA.Model.MicroArchitecture
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Project
 import           System.IO.Unsafe                 (unsafePerformIO)

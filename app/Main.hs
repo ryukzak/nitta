@@ -29,13 +29,13 @@ import           Data.Maybe
 import           Data.Proxy
 import qualified Data.Text.IO                     as T
 import           GHC.TypeLits
-import           NITTA.Frontend
+import           NITTA.LuaFrontend
 import           NITTA.Intermediate.Types
 import           NITTA.Model.MicroArchitecture
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project                    (TargetSynthesis (..),
                                                    mkModelWithOneNetwork,
                                                    runTargetSynthesis)

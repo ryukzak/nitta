@@ -32,7 +32,7 @@ import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench

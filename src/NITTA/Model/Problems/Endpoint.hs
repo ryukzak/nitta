@@ -54,9 +54,9 @@ instance ( Show v, Show t, Eq t, Bounded t ) => Show (EndpointOption v t) where
 instance ( Show v, Show t, Eq t, Bounded t ) => Show (EndpointDecision v t) where
     show EndpointD{ epdRole, epdAt } = "!" ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
 
-instance ( Ord v ) => Patch (EndpointOption v t) (Diff v) where
+instance ( Ord v ) => Patch (EndpointOption v t) (Changeset v) where
     patch diff ep@EndpointO{ epoRole } = ep{ epoRole=patch diff epoRole }
-instance ( Ord v ) => Patch (EndpointDecision v t) (Diff v) where
+instance ( Ord v ) => Patch (EndpointDecision v t) (Changeset v) where
     patch diff ep@EndpointD{ epdRole } = ep{ epdRole=patch diff epdRole }
 
 
@@ -78,10 +78,10 @@ instance {-# OVERLAPS #-} Show (EndpointRole String) where
     show (Source vs) = "Source " ++ S.join "," (S.elems vs)
     show (Target v)  = "Target " ++ v
 
-instance ( Ord v ) => Patch (EndpointRole v) (Diff v) where
-    patch Diff{ diffI } (Target v) = Target $ fromMaybe v $ diffI M.!? v
-    patch Diff{ diffO } (Source vs)
-        = Source $ S.unions $ map (\v -> fromMaybe (S.singleton v) $ diffO M.!? v) $ S.elems vs
+instance ( Ord v ) => Patch (EndpointRole v) (Changeset v) where
+    patch Changeset{ changeI } (Target v) = Target $ fromMaybe v $ changeI M.!? v
+    patch Changeset{ changeO } (Source vs)
+        = Source $ S.unions $ map (\v -> fromMaybe (S.singleton v) $ changeO M.!? v) $ S.elems vs
 
 instance Variables (EndpointRole v) v where
     variables (Source vs) = vs

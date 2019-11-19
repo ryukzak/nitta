@@ -20,25 +20,25 @@ module NITTA.Model.ProcessorUnits.Serial.Accum
   , Ports(..), IOPorts(..)
   ) where
 
-import           Control.Monad                    (when)
-import           Data.Bits                        (finiteBitSize)
+import           Control.Monad                   (when)
+import           Data.Bits                       (finiteBitSize)
 import           Data.Default
-import           Data.List                        (find, partition, (\\))
-import           Data.Set                         (elems, fromList, member)
-import           Data.Maybe.HT                    (toMaybe)
-import qualified NITTA.Intermediate.Functions     as F
+import           Data.List                       (find, partition, (\\))
+import           Data.Maybe.HT                   (toMaybe)
+import           Data.Set                        (elems, fromList, member)
+import qualified NITTA.Intermediate.Functions    as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                 (singleton, sup, (...))
-import           Text.InterpolatedString.Perl6    (qc)
+import           Numeric.Interval                (singleton, sup, (...))
+import           Text.InterpolatedString.Perl6   (qc)
 
 data Accum v x t = Accum
     { remain               :: [ F v x ]

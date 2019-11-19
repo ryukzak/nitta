@@ -34,7 +34,7 @@ import           Control.Monad.State
 import           Data.Proxy                       (asProxyTypeOf)
 import           Data.Typeable
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           Numeric.Interval                 (singleton)
 
 -- |Process builder state.

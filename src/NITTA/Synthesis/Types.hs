@@ -66,7 +66,7 @@ import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Whole
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem         (ModelState (..))
 import           NITTA.Model.Types
 import           NITTA.Utils

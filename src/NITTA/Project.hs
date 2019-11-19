@@ -20,7 +20,7 @@ TargetSynthesis is an entry point for synthesis process. TargetSynthesis flow sh
 ====================================================================================================================
                                                                                                              Prepare
 NITTA.Project:TargetSynthesis                                                                       NITTA.Project...
-    # tName                                                                                           NITTA.Frontend
+    # tName                                                                                        NITTA.LuaFrontend
     # tMicroArch --------------------------\
     # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
                       |                    |     |  |
@@ -83,11 +83,11 @@ module NITTA.Project
 import           Control.Monad                    (when)
 import           Data.Default                     as D
 import           Data.Text                        (Text)
-import           NITTA.Frontend
+import           NITTA.LuaFrontend
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus         (BusNetwork)
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench

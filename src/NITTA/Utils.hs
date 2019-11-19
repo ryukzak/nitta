@@ -55,7 +55,7 @@ import           Data.Set                         (elems, unions)
 import qualified Data.String.Utils                as S
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           Numeric                          (readInt, showHex)
 import           Numeric.Interval                 ((...))
 import qualified Numeric.Interval                 as I

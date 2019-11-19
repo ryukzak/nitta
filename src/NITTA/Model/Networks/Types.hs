@@ -29,7 +29,7 @@ import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
@@ -53,7 +53,7 @@ data PU v x t where
         , IOTestBench pu v x
         , Locks pu v
         ) =>
-            { diff :: Diff v
+            { diff :: Changeset v
             , unit :: pu
             , ports :: Ports pu
             , ioPorts :: IOPorts pu
@@ -89,41 +89,41 @@ instance ( VarValTime v x t ) => ProcessorUnit (PU v x t) v x t where
     setTime t PU{ diff, unit, ports, ioPorts, systemEnv }
         = PU{ diff, unit=setTime t unit, ports, ioPorts, systemEnv }
 
-instance ( Ord v ) => Patch (PU v x t) (Diff v) where
+instance ( Ord v ) => Patch (PU v x t) (Changeset v) where
     patch diff' PU{ diff, unit, ports, ioPorts, systemEnv }
         = PU
-            { diff=Diff
-                { diffI=diffI diff' `M.union` diffI diff
-                , diffO=diffO diff' `M.union` diffO diff
+            { diff=Changeset
+                { changeI=changeI diff' `M.union` changeI diff
+                , changeO=changeO diff' `M.union` changeO diff
                 }
             , unit, ports, ioPorts, systemEnv
             }
 
 instance ( Ord v ) => Patch (PU v x t) (I v, I v) where
-    patch (I v, I v') pu@PU{ diff=diff@Diff{ diffI } } = pu{ diff=diff{ diffI=M.insert v v' diffI }}
+    patch (I v, I v') pu@PU{ diff=diff@Changeset{ changeI } } = pu{ diff=diff{ changeI=M.insert v v' changeI }}
 
 instance ( Ord v ) => Patch (PU v x t) (O v, O v) where
-    patch (O vs, O vs') pu@PU{ diff=diff@Diff{ diffO } }
+    patch (O vs, O vs') pu@PU{ diff=diff@Changeset{ changeO } }
         = pu{ diff=diff
-                { diffO=foldl (\s (v, v') -> M.insert v (S.singleton v') s)
-                    diffO
+                { changeO=foldl (\s (v, v') -> M.insert v (S.singleton v') s)
+                    changeO
                     $ [ (a, b) | b <- S.elems vs', a <- S.elems vs ]
                 }
             }
 
 instance ( Var v ) => Locks (PU v x t) v where
-    locks PU{ unit, diff=Diff{ diffI, diffO } }
-        | not $ M.null diffI = error $ "Locks (PU v x t) with non empty diffI: " ++ show diffI
+    locks PU{ unit, diff=Changeset{ changeI, changeO } }
+        | not $ M.null changeI = error $ "Locks (PU v x t) with non empty changeI: " ++ show changeI
         | otherwise = let
-                (locked', locks') = L.partition (\Lock{ locked } -> locked `M.member` diffO) $ locks unit
-                (lockBy', locks'') = L.partition (\Lock{ lockBy } -> lockBy `M.member` diffO) locks'
+                (locked', locks') = L.partition (\Lock{ locked } -> locked `M.member` changeO) $ locks unit
+                (lockBy', locks'') = L.partition (\Lock{ lockBy } -> lockBy `M.member` changeO) locks'
             in concat
                 [ locks''
                 , L.nub $ concatMap
-                    ( \Lock{ locked, lockBy } -> [ Lock{ locked, lockBy=v } | v <- S.elems (diffO M.! lockBy) ] )
+                    ( \Lock{ locked, lockBy } -> [ Lock{ locked, lockBy=v } | v <- S.elems (changeO M.! lockBy) ] )
                     lockBy'
                 , L.nub $ concatMap
-                    ( \Lock{ locked, lockBy } -> [ Lock{ locked=v, lockBy } | v <- S.elems (diffO M.! locked) ] )
+                    ( \Lock{ locked, lockBy } -> [ Lock{ locked=v, lockBy } | v <- S.elems (changeO M.! locked) ] )
                     locked'
                 ]
 

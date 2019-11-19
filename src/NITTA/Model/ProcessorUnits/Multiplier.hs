@@ -139,7 +139,7 @@ import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
@@ -257,7 +257,7 @@ data Multiplier v x t = Multiplier
     -- function and this send.
     , currentWorkEndpoints :: [ ProcessUid ]
     -- |Description of target computation process
-    -- ('NITTA.Model.ProcessorUnits.Types')
+    -- ('NITTA.Model.ProcessorUnits.Time')
     , process_             :: Process v x t
     , tick                 :: t
     -- |HDL implementation of PU contains multiplier IP core from Altera

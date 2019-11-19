@@ -37,7 +37,7 @@ import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.ProcessorUnits.Fram
 import           NITTA.Model.ProcessorUnits.Multiplier
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
 import           NITTA.Project.Utils

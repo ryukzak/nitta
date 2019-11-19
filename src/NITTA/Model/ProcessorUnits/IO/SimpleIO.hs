@@ -30,7 +30,7 @@ import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (sup, (...))

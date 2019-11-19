@@ -99,11 +99,11 @@ class RefactorProblem u v x | u -> v x where
   refactorDecision _ _ = error "not implemented"
 
 
-prepareBuffer :: ( Var v, Val x ) => Refactor v x -> ( F v x, Diff v )
+prepareBuffer :: ( Var v, Val x ) => Refactor v x -> ( F v x, Changeset v )
 prepareBuffer (ResolveDeadlock vs) = let
         bufferI = bufferSuffix $ oneOf vs
         bufferO = S.elems vs
-        diff = def{ diffO=M.fromList $ map (\o -> (o, S.singleton bufferI)) bufferO }
+        diff = def{ changeO=M.fromList $ map (\o -> (o, S.singleton bufferI)) bufferO }
     in ( reg bufferI bufferO, diff )
 
 prepareBuffer _ = undefined
