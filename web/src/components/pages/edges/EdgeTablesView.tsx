@@ -9,8 +9,10 @@ import {
   IRefactorView,
   IDataflowView,
   IDataFlowEdgeParameter,
-  Interval
+  Interval,
 } from "../../../gen/types";
+
+// FIXME: Type hell. There should be a nicer way to organize this whole thing.
 
 type Edge = EdgeView<string, string, number, number>;
 type Binding = IBindingView<string, string, number, number>;
@@ -27,8 +29,8 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
   const appContext = React.useContext(AppContext) as IAppContext;
   const style = {
     fontWeight: 600,
-  }
-  
+  };
+
   return (
     <div className="columns">
       <Table
@@ -102,7 +104,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       />
     </div>
   );
-  
+
   function Table(props: { name: string; columns: any[]; edges: Edge[] }) {
     if (props.edges.length === 0)
       return (
@@ -124,5 +126,4 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       </small>
     );
   }
-
 };
