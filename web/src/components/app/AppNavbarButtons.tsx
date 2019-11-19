@@ -38,7 +38,7 @@ export const SynthesisButtonView: React.FC = () => {
   }
 
   const buttonAttrs = {
-    className: "mr-1 btn-sm btn-secondary p-1.5 appNavbarButton",
+    className: "mr-1 btn-sm btn-secondary appNavbarButton",
   };
 
   return (
