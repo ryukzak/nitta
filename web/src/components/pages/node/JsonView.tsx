@@ -8,7 +8,7 @@ const DEFAULT_REACT_JSON_PROPS: Partial<ReactJsonViewProps> = {
   iconStyle: "circle",
   displayDataTypes: false,
   displayObjectSize: true,
-  collapsed: 2,
+  collapsed: 3,
   collapseStringsAfterLength: 120,
 };
 
