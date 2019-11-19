@@ -11,7 +11,7 @@ type Edge = EdgeView<string, string, number, number>;
 
 export const EdgesView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
-  const [edges, setEdges] = React.useState<EdgeView<string, string, number, number>[] | null>(null);
+  const [edges, setEdges] = React.useState<Edge[] | null>(null);
 
   React.useEffect(() => {
     haskellApiService
