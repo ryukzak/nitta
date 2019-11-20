@@ -7,7 +7,7 @@ module pu_accum_tb
    )
   (); 
 
-reg clk, rst, signal_load, signal_init, signal_neg, signal_oe;
+reg clk, rst, signal_load, signal_resetAcc, signal_neg, signal_oe;
 
 reg [DATA_WIDTH-1:0] data_in;
 reg [ATTR_WIDTH-1:0] attr_in;
@@ -20,7 +20,7 @@ pu_accum
    ) unit_under_test 
   ( .clk(clk)
   , .rst(rst)
-  , .signal_init(signal_init)
+  , .signal_resetAcc(signal_resetAcc)
   , .signal_load(signal_load)
   , .signal_neg(signal_neg)
   , .signal_oe(signal_oe)
@@ -31,7 +31,7 @@ pu_accum
 
 task nop;
   begin
-    signal_init <= 0;
+    signal_resetAcc <= 0;
     signal_load <= 0;
     signal_neg  <= 0;
     signal_oe   <= 0;
@@ -44,7 +44,7 @@ task init;
   input neg;
   input [DATA_WIDTH-1:0] arg;
   begin
-    signal_init <= 1;
+    signal_resetAcc <= 1;
     signal_load <= 1;
     signal_neg  <= neg;
     signal_oe   <= 0;
@@ -57,7 +57,7 @@ task load;
   input neg;
   input [DATA_WIDTH-1:0] arg;
   begin
-    signal_init <= 0;
+    signal_resetAcc <= 0;
     signal_load <= 1;
     signal_neg  <= neg;
     signal_oe   <= 0;
@@ -68,7 +68,7 @@ endtask
 
 task out;
   begin
-    signal_init <= 0;
+    signal_resetAcc <= 0;
     signal_load <= 0;
     signal_neg  <= 0;
     signal_oe   <= 1;

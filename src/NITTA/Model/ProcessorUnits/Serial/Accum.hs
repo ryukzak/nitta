@@ -140,7 +140,7 @@ instance ( VarValTime v x t
             { process_=process_'
             , sources=sources'
             , doneAt=if null sources' then Nothing else doneAt
-            , currentWork= toMaybe (not $ null sources') (a, f)
+            , currentWork=toMaybe (not $ null sources') (a, f)
             , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
             , tick=sup epdAt
             }
@@ -229,7 +229,7 @@ instance ( Val x, Default x ) => TargetSystemComponent (Accum v x t) where
                     ) { tag }
                 ( .clk( { signalClk } )
                 , .rst( { signalRst } )
-                , .signal_init( { signal resetAcc } )
+                , .signal_resetAcc( { signal resetAcc } )
                 , .signal_load( { signal load } )
                 , .signal_neg( { signal neg } )
                 , .signal_oe( { signal oe } )
