@@ -100,41 +100,41 @@ instance ( VarValTime v x t
         where
 
     endpointOptions Accum{ targets=vs@(_:_), tick }
-        = map (\(_, v) -> EndpointO (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) vs
+        = map (\(_, v) -> EndpointSt (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) vs
 
     endpointOptions Accum{ sources, doneAt=Just _, tick }
         | not $ null sources
-        = [ EndpointO (Source $ fromList sources) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
+        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
 
     endpointOptions pu@Accum{ remain } = concatMap (endpointOptions . execution pu) remain
 
 
-    endpointDecision pu@Accum{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision pu@Accum{ targets=vs, currentWorkEndpoints } d@EndpointSt{ epRole=Target v, epAt }
         | ([(neg, _)], xs) <- partition ((== v) . snd) vs
         , let sel = if null xs then Init neg else Load neg
               (newEndpoints, process_') = runSchedule pu $ do
-                    updateTick (sup epdAt)
-                    scheduleEndpoint d $ scheduleInstruction epdAt sel
+                    updateTick (sup epAt)
+                    scheduleEndpoint d $ scheduleInstruction epAt sel
         = pu
             { process_=process_'
             , targets=xs
             , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-            , doneAt=toMaybe (null xs) (sup epdAt + 3)
-            , tick=sup epdAt
+            , doneAt=toMaybe (null xs) (sup epAt + 3)
+            , tick=sup epAt
             }
 
-    endpointDecision pu@Accum{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointD{ epdRole=Source v, epdAt }
+    endpointDecision pu@Accum{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointSt{ epRole=Source v, epAt }
         | not $ null sources
         , let sources' = sources \\ elems v
         , sources' /= sources
         , let (newEndpoints, process_') = runSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstruction (epdAt-1) Out
+                endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt-1) Out
                 when (null sources') $ do
-                    high <- scheduleFunction (a ... sup epdAt) f
+                    high <- scheduleFunction (a ... sup epAt) f
                     let low = endpoints ++ currentWorkEndpoints
                     establishVerticalRelations high low
 
-                updateTick (sup epdAt)
+                updateTick (sup epAt)
                 return endpoints
         = pu
             { process_=process_'
@@ -142,7 +142,7 @@ instance ( VarValTime v x t
             , doneAt=if null sources' then Nothing else doneAt
             , currentWork=toMaybe (not $ null sources') (a, f)
             , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
-            , tick=sup epdAt
+            , tick=sup epAt
             }
 
     endpointDecision pu@Accum{ targets=[], sources=[], remain } d

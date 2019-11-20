@@ -23,9 +23,8 @@ module NITTA.Intermediate.Variable
     ) where
 
 import           Data.List
-import qualified Data.Set                  as S
+import qualified Data.Set      as S
 import           Data.Typeable
-
 
 
 -- |Variable identifier. Used for simplify type description.
@@ -50,6 +49,7 @@ class Suffix v where
     -- > "v@buf" -> 1
     -- > "b@buf@buf" -> 2
     countSuffix :: v -> Int
+
 
 -- FIXME: unsafe, because can create duplicate variable. Solution options:
 --

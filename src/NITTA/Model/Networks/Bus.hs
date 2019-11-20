@@ -143,9 +143,9 @@ instance ( UnitTag tag, VarValTime v x t
         ) => DataflowProblem (BusNetwork tag v x t) tag v t where
     dataflowOptions BusNetwork{ bnPus, bnProcess }
         = notEmptyDestination $ concat
-            [ map (DataFlowO (source, fixConstrain pullAt)) $ targetOptionsFor $ S.elems vars
+            [ map (DataflowSt (source, fixConstrain pullAt)) $ targetOptionsFor $ S.elems vars
             | (source, opts) <- puOptions
-            , EndpointO (Source vars) pullAt <- opts
+            , EndpointSt (Source vars) pullAt <- opts
             ]
         where
             puOptions = M.assocs $ M.map endpointOptions bnPus
@@ -153,7 +153,7 @@ instance ( UnitTag tag, VarValTime v x t
                     conflictableTargets =
                         [ (pushVar, Just (target, fixConstrain pushAt))
                         | (target, opts) <- puOptions
-                        , EndpointO (Target pushVar) pushAt <- opts
+                        , EndpointSt (Target pushVar) pushAt <- opts
                         , pushVar `elem` vs
                         ]
                     targets = sequence $ L.groupBy (\a b -> tgr a == tgr b) $ L.sortOn tgr conflictableTargets
@@ -167,11 +167,11 @@ instance ( UnitTag tag, VarValTime v x t
                 in
                     constrain { tcAvailable = a ... b}
 
-            notEmptyDestination = filter $ \DataFlowO{ dfoTargets } -> any isJust $ M.elems dfoTargets
+            notEmptyDestination = filter $ \DataflowSt{ dfTargets } -> any isJust $ M.elems dfTargets
             tgr (_, Just (target, _)) = Just target
             tgr _                     = Nothing
 
-    dataflowDecision n@BusNetwork{ bnProcess, bnPus } DataFlowD{ dfdSource=( srcTitle, pullAt ), dfdTargets }
+    dataflowDecision n@BusNetwork{ bnProcess, bnPus } DataflowSt{ dfSource=( srcTitle, pullAt ), dfTargets }
         | nextTick bnProcess > inf pullAt
         = error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show pullAt
         | otherwise
@@ -179,13 +179,13 @@ instance ( UnitTag tag, VarValTime v x t
             pushs = M.fromList $ mapMaybe (\case
                     (k, Just v) -> Just (k,  v)
                     (_, Nothing) -> Nothing
-                ) $ M.assocs dfdTargets
+                ) $ M.assocs dfTargets
             transportStartAt = inf pullAt
             transportDuration = maximum $ map (\(_trg, time) -> (inf time - transportStartAt) + width time) $ M.elems pushs
             transportEndAt = transportStartAt + transportDuration
 
-            subDecisions = ( srcTitle, EndpointD (Source $ S.fromList $ M.keys pushs) pullAt )
-                        :   [ ( trgTitle, EndpointD (Target v) pushAt )
+            subDecisions = ( srcTitle, EndpointSt (Source $ S.fromList $ M.keys pushs) pullAt )
+                        :   [ ( trgTitle, EndpointSt (Target v) pushAt )
                             | (v, (trgTitle, pushAt)) <- M.assocs pushs
                             ]
         in n
@@ -349,9 +349,9 @@ instance ( UnitTag tag, VarValTime v x t
 
             sources tag = M.fromList
                 [ (s, ss `S.difference` S.singleton s)
-                | EndpointO{ epoRole } <- endpointOptions ( bnPus M.! tag )
-                , case epoRole of Source{} -> True; _ -> False
-                , let Source ss = epoRole
+                | EndpointSt{ epRole } <- endpointOptions ( bnPus M.! tag )
+                , case epRole of Source{} -> True; _ -> False
+                , let Source ss = epRole
                 , s <- S.elems ss
                 ]
             allPossibleOutputs tag v

@@ -49,16 +49,16 @@ module NITTA.Synthesis.Types
     ) where
 
 import           Control.Concurrent.STM
-import           Control.Monad                    (forM, unless)
+import           Control.Monad                   (forM, unless)
 import           Data.Default
-import           Data.List                        (find)
+import           Data.List                       (find)
 import           Data.List.Split
-import qualified Data.Map                         as M
+import qualified Data.Map                        as M
 import           Data.Maybe
-import           Data.Semigroup                   (Semigroup, (<>))
-import           Data.Set                         (Set, fromList, intersection,
-                                                   member, (\\))
-import qualified Data.Set                         as S
+import           Data.Semigroup                  (Semigroup, (<>))
+import           Data.Set                        (Set, fromList, intersection,
+                                                  member, (\\))
+import qualified Data.Set                        as S
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
@@ -67,10 +67,10 @@ import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Whole
 import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Model.TargetSystem         (ModelState (..))
+import           NITTA.Model.TargetSystem        (ModelState (..))
 import           NITTA.Model.Types
 import           NITTA.Utils
-import           Numeric.Interval                 (Interval, inf, sup)
+import           Numeric.Interval                (Interval, inf, sup)
 
 
 -- |Type alias for Graph parts, where `e` - graph element (Node or Edge) should be 'Node' or 'Edge';
@@ -411,14 +411,14 @@ False <?> _ = 0
 
 waitingTimeOfVariables net =
     [ (variable, inf $ tcAvailable tc)
-    | DataFlowO{ dfoSource=(_, tc@TimeConstrain{}), dfoTargets } <- dataflowOptions net
-    , (variable, Nothing) <- M.assocs dfoTargets
+    | DataflowSt{ dfSource=(_, tc@TimeConstrain{}), dfTargets } <- dataflowOptions net
+    , (variable, Nothing) <- M.assocs dfTargets
     ]
 
 
 optionsAfterBind f tag ModelState{ mUnit=BusNetwork{ bnPus } }
     = case tryBind f (bnPus M.! tag) of
-        Right pu' -> filter (\(EndpointO act _) -> act `optionOf` f) $ endpointOptions pu'
+        Right pu' -> filter (\(EndpointSt act _) -> act `optionOf` f) $ endpointOptions pu'
         _         -> []
     where
         act `optionOf` f' = not $ S.null (variables act `intersection` variables f')

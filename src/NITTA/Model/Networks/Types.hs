@@ -53,7 +53,7 @@ data PU v x t where
         , IOTestBench pu v x
         , Locks pu v
         ) =>
-            { diff :: Changeset v
+            { diff :: Changeset v -- FIXME: move to end of record
             , unit :: pu
             , ports :: Ports pu
             , ioPorts :: IOPorts pu

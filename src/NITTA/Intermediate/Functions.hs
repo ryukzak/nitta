@@ -15,7 +15,8 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
-Library of functions for an intermediate algorithm representation. Execution relations between functions and process units are many-to-many.
+Library of functions for an intermediate algorithm representation. Execution
+relations between functions and process units are many-to-many.
 
 [@function (functional block)@] atomic operation in intermediate algorithm
 representation. Function has zero or many inputs and zero or many output.

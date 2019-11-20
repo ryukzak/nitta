@@ -28,12 +28,13 @@ module NITTA.Model.MicroArchitecture
     ) where
 
 import           Control.Monad.State.Lazy
-import           Data.Default                     (def)
+import           Data.Default                    (def)
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Implementation
+
 
 -- |__Eval state and create microarch__
 evalNetwork ioSync net = flip evalState ([], []) $ do
@@ -89,6 +90,7 @@ addCustom tag pu io = do
         usedPorts' = usedPorts ++ used
     put (usedPorts', puBlocks')
 
+
 -- |__Add PU automatic with String data type__
 addS tag "fram"  = add tag FramIO
 addS tag "shift" = add tag ShiftIO
@@ -96,6 +98,7 @@ addS tag "accum" = add tag AccumIO
 addS tag "div"   = add tag DividerIO
 addS tag "mul"   = add tag MultiplierIO
 addS _ _         = error "Can't match type PU with existing PU types"
+
 
 -- |__Add SimpleIO PU automatic with String data type__
 addSIO tag "spi" [mode, mosi, miso, sclk, cs] = add tag $
@@ -116,13 +119,16 @@ addSIO tag "spi" [mode, mosi, miso, sclk, cs] = add tag $
 
 addSIO _ _ _ = error "Error while configure SimpleIO uncorrect parameters"
 
--- |__Add manual PU__
+
+-- |Add process unit to network by builder.
+-- FIXME: addByBuilder
 addManual tag mkPU = do
     (usedPorts, pus) <- get
     let pu         = mkPU $ puEnv tag
-        puPorts    = (\PU { ports } -> portsToSignals ports) pu
+        puPorts    = (\PU { ports } -> portsToSignals ports) pu -- FIXME: test: (portsToSignals . ports)
         usedPorts' = usedPorts ++ intersPortsError puPorts usedPorts tag
     put (usedPorts', (tag, mkPU) : pus)
+
 
 -- |__Example for architecture configuration__
 example ioSync = evalNetwork ioSync $ do

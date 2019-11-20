@@ -38,7 +38,7 @@ type Time t = ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, 
 -- |Time comstrain for processor activity.
 data TimeConstrain t
     = TimeConstrain
-        { tcAvailable :: Interval t -- ^Inclusive interval for 
+        { tcAvailable :: Interval t -- ^Inclusive interval for
         , tcDuration  :: Interval t -- ^ Замкнутый интервал допустимой длительности активности.
         } deriving ( Eq )
 

@@ -94,27 +94,27 @@ instance ( VarValTime v x t, SimpleIOInterface i
         ) => EndpointProblem (SimpleIO i v x t) v t
         where
     endpointOptions SimpleIO{ receiveQueue, sendQueue, process_=Process{ nextTick } } = let
-            source vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
+            source vs = EndpointSt (Source $ S.fromList vs) $ TimeConstrain (nextTick + 1 ... maxBound) (1 ... maxBound)
             receiveOpts = map (source . vars) receiveQueue
 
-            target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... 1)
+            target v = EndpointSt (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... 1)
             sendOpts = map (target . head . vars) sendQueue
         in receiveOpts ++ sendOpts
 
-    endpointDecision sio@SimpleIO{ receiveQueue } d@EndpointD{ epdRole=Source vs, epdAt }
+    endpointDecision sio@SimpleIO{ receiveQueue } d@EndpointSt{ epRole=Source vs, epAt }
         | ([ Q{ function } ], receiveQueue') <- partition ((vs ==) . S.fromList . vars) receiveQueue
         , let ( _, process_ ) = runSchedule sio $ do
-                _ <- scheduleEndpoint d $ scheduleInstruction epdAt Receiving
-                updateTick (sup epdAt + 1)
-                scheduleFunction epdAt function
+                _ <- scheduleEndpoint d $ scheduleInstruction epAt Receiving
+                updateTick (sup epAt + 1)
+                scheduleFunction epAt function
         = sio{ receiveQueue=receiveQueue', process_ }
 
-    endpointDecision sio@SimpleIO{ sendQueue, sendN, receiveQueue, receiveN } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision sio@SimpleIO{ sendQueue, sendN, receiveQueue, receiveN } d@EndpointSt{ epRole=Target v, epAt }
         | ([ Q{ function } ], sendQueue') <- partition ((v ==) . head . vars) sendQueue
         , let ( _, process_ ) = runSchedule sio $ do
-                _ <- scheduleEndpoint d $ scheduleInstruction epdAt Sending
-                updateTick (sup epdAt + 1)
-                scheduleFunction epdAt function
+                _ <- scheduleEndpoint d $ scheduleInstruction epAt Sending
+                updateTick (sup epAt + 1)
+                scheduleFunction epAt function
         = sio
             { sendQueue=sendQueue'
             , isReceiveOver=(sendN - length sendQueue) >= (receiveN - length receiveQueue)

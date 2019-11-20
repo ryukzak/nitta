@@ -11,15 +11,15 @@
 
 {-|
 Module      : NITTA.Model.Problems.Endpoint
-Description :
+Description : Isolated processor unit interaction
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.Problems.Endpoint
-    ( EndpointOption(..), EndpointDecision(..), EndpointProblem(..)
-    , EndpointRole(..), (<<), (\\\)
+    ( EndpointSt(..), EndpointProblem(..)
+    , EndpointRole(..)
     , endpointOptionToDecision
     ) where
 
@@ -32,42 +32,32 @@ import           NITTA.Model.Types
 import           Numeric.Interval
 
 
-data EndpointOption v t
-    = EndpointO
-        { epoRole :: EndpointRole v -- ^use processor unit as source or target of data
-        , epoAt   :: TimeConstrain t
+data EndpointSt v tp
+    = EndpointSt
+        { epRole :: EndpointRole v -- ^use processor unit as source or target of data
+        , epAt   :: tp -- ^time of operation
         }
 
-data EndpointDecision v t
-    = EndpointD
-        { epdRole :: EndpointRole v -- ^use processor unit as source or target of data
-        , epdAt   :: Interval t -- ^time of operation
-        }
+instance Variables (EndpointSt v t) v where
+    variables EndpointSt{ epRole } = variables epRole
 
-instance Variables (EndpointOption v t) v where
-    variables EndpointO{ epoRole } = variables epoRole
-instance Variables (EndpointDecision v t) v where
-    variables EndpointD{ epdRole } = variables epdRole
+instance ( Show v, Time t ) => Show (EndpointSt v (TimeConstrain t)) where
+    show EndpointSt{ epRole, epAt } = "?" ++ show epRole ++ "@(" ++ show epAt ++ ")"
+instance ( Show v, Time t ) => Show (EndpointSt v (Interval t)) where
+    show EndpointSt{ epRole, epAt } = "!" ++ show epRole ++ "@(" ++ show epAt ++ ")"
 
-instance ( Show v, Show t, Eq t, Bounded t ) => Show (EndpointOption v t) where
-    show EndpointO{ epoRole, epoAt } = "?" ++ show epoRole ++ "@(" ++ show epoAt ++ ")"
-instance ( Show v, Show t, Eq t, Bounded t ) => Show (EndpointDecision v t) where
-    show EndpointD{ epdRole, epdAt } = "!" ++ show epdRole ++ "@(" ++ show epdAt ++ ")"
-
-instance ( Ord v ) => Patch (EndpointOption v t) (Changeset v) where
-    patch diff ep@EndpointO{ epoRole } = ep{ epoRole=patch diff epoRole }
-instance ( Ord v ) => Patch (EndpointDecision v t) (Changeset v) where
-    patch diff ep@EndpointD{ epdRole } = ep{ epdRole=patch diff epdRole }
+instance ( Ord v ) => Patch (EndpointSt v tp) (Changeset v) where
+    patch diff ep@EndpointSt{ epRole } = ep{ epRole=patch diff epRole }
 
 
 class EndpointProblem u v t | u -> v t where
-    endpointOptions :: u -> [ EndpointOption v t ]
-    endpointDecision :: u -> EndpointDecision v t -> u
+    endpointOptions :: u -> [ EndpointSt v (TimeConstrain t) ]
+    endpointDecision :: u -> EndpointSt v (Interval t) -> u
 
 
 data EndpointRole v
     = Source (S.Set v) -- ^get data from PU
-    | Target v   -- ^put data to PU
+    | Target v -- ^put data to PU
     deriving ( Eq, Ord )
 
 instance {-# OVERLAPPABLE #-} ( Show v ) => Show (EndpointRole v) where
@@ -88,21 +78,11 @@ instance Variables (EndpointRole v) v where
     variables (Target v)  = S.singleton v
 
 
-(Target a) << (Target b) | a == b = True
-(Source a) << (Source b)          = all (`S.member` a) b
-_        << _                     = False
-
-(Source a) `sourceDifference` (Source b) = Source $ S.difference a b
-a `sourceDifference` b = error $ "Can't get sub endpoint for " ++ show a ++ " " ++ show b
-
-(\\\) a b = sourceDifference a b
-
-
 -- |The simplest way to convert an endpoint synthesis option to a endpoint
 -- decision.
-endpointOptionToDecision EndpointO{ epoRole, epoAt }
+endpointOptionToDecision EndpointSt{ epRole, epAt }
     = let
-        a = inf $ tcAvailable epoAt
+        a = inf $ tcAvailable epAt
         -- "-1" - is necessary for reduction transfer time
-        b = a + (inf $ tcDuration epoAt) - 1
-    in EndpointD epoRole (a ... b)
+        b = a + (inf $ tcDuration epAt) - 1
+    in EndpointSt epRole (a ... b)

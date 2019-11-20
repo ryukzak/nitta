@@ -99,7 +99,7 @@ withSynthesis root nId
 
 -- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
-        { dbgEndpointOptions           :: [ ( tag, EndpointOption v t ) ]
+        { dbgEndpointOptions           :: [ ( tag, EndpointSt v (TimeConstrain t) ) ]
         , dbgFunctionLocks             :: [ ( String, [Lock v] ) ]
         , dbgCurrentStateFunctionLocks :: [ ( String, [Lock v] ) ]
         , dbgPULocks                   :: [ ( String, [Lock v] ) ]

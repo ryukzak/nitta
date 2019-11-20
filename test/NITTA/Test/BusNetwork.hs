@@ -133,7 +133,7 @@ test_patchEndpointOptions =
                 o2 = head $ endpointOptions pu'
                 pu'' = endpointDecision pu' $ endpointOptionToDecision o2
             in endpointOptions pu''
-        show' = show . map epoRole
+        show' = show . map epRole
 
 
 test_patchPUone2one =
@@ -163,7 +163,7 @@ test_patchPUone2one =
         pu5 = endpointDecision pu4 $ endpointOptionToDecision $ head o4
         o5 = endpointOptions pu5
 
-        show' = show . map epoRole
+        show' = show . map epRole
 
 
 test_patchPUmany2one =
@@ -193,7 +193,7 @@ test_patchPUmany2one =
         pu5 = endpointDecision pu4 $ endpointOptionToDecision $ head o4
         o5 = endpointOptions pu5
 
-        show' = show . map epoRole
+        show' = show . map epRole
 
 
 busNetworkTests :: TestTree

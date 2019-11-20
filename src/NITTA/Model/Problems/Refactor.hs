@@ -44,39 +44,39 @@ import           NITTA.Utils
 
 data Refactor v x
     = ResolveDeadlock (S.Set v)
-    -- ^ResolveDeadlock example:
-    --
-    -- > ResolveDeadlock [a, b]
-    --
-    -- before:
-    --
-    -- > f1 :: (...) -> ([a, b])
-    -- > f2 :: (a, ...) -> (...)
-    -- > f3 :: (b, ...) -> (...)
-    --
-    -- f1, f2 and f3 process on same process unit. In this case, we have
-    -- deadlock, which can be fixed by insertion of buffer register between
-    -- functions.
-    --
-    -- after:
-    --
-    -- > f1 :: (...) -> ([a@buf])
-    -- > reg :: a@buf -> ([a, b])
-    -- > f2 :: (a, ...) -> (...)
-    -- > f3 :: (b, ...) -> (...)
+      -- ^ResolveDeadlock example:
+      --
+      -- > ResolveDeadlock [a, b]
+      --
+      -- before:
+      --
+      -- > f1 :: (...) -> ([a, b])
+      -- > f2 :: (a, ...) -> (...)
+      -- > f3 :: (b, ...) -> (...)
+      --
+      -- f1, f2 and f3 process on same process unit. In this case, we have
+      -- deadlock, which can be fixed by insertion of buffer register between
+      -- functions.
+      --
+      -- after:
+      --
+      -- > f1 :: (...) -> ([a@buf])
+      -- > reg :: a@buf -> ([a, b])
+      -- > f2 :: (a, ...) -> (...)
+      -- > f3 :: (b, ...) -> (...)
     | BreakLoop
-    -- ^BreakLoop example:
-    --
-    -- > BreakLoop x o i
-    --
-    -- before:
-    --
-    -- > l@( Loop (X x) (O o) (I i) )
-    --
-    -- after:
-    --
-    -- > LoopIn l (I i)
-    -- > LoopOut l (O o)
+      -- ^BreakLoop example:
+      --
+      -- > BreakLoop x o i
+      --
+      -- before:
+      --
+      -- > l@( Loop (X x) (O o) (I i) )
+      --
+      -- after:
+      --
+      -- > LoopIn l (I i)
+      -- > LoopOut l (O o)
         { loopX :: x       -- ^initial looped value
         , loopO :: S.Set v -- ^output variables
         , loopI :: v       -- ^input variable
@@ -93,10 +93,11 @@ recLoopOut _                     = error "applicable only for BreakLoop"
 
 
 class RefactorProblem u v x | u -> v x where
-  refactorOptions :: u -> [ Refactor v x ]
-  refactorOptions _ = []
-  refactorDecision :: u -> Refactor v x -> u
-  refactorDecision _ _ = error "not implemented"
+    refactorOptions :: u -> [ Refactor v x ]
+    refactorOptions _ = []
+
+    refactorDecision :: u -> Refactor v x -> u
+    refactorDecision _ _ = error "not implemented"
 
 
 prepareBuffer :: ( Var v, Val x ) => Refactor v x -> ( F v x, Changeset v )

@@ -20,9 +20,6 @@ module NITTA.Utils
     , minimumOn
     , maximumOn
     , shift, shiftI
-    , fixIndent
-    , fixIndentNoLn
-    , space2tab
     , modify'_
     -- *HDL generation
     , bool2verilog
@@ -45,20 +42,19 @@ module NITTA.Utils
     , maybeInstructionOf
     ) where
 
-import           Control.Monad.State              (State, get, modify', put,
-                                                   runState)
-import           Data.Bits                        (finiteBitSize, setBit,
-                                                   testBit)
-import           Data.List                        (maximumBy, minimumBy, sortOn)
-import           Data.Maybe                       (isJust, mapMaybe)
-import           Data.Set                         (elems, unions)
-import qualified Data.String.Utils                as S
+import           Control.Monad.State             (State, get, modify', put,
+                                                  runState)
+import           Data.Bits                       (finiteBitSize, setBit,
+                                                  testBit)
+import           Data.List                       (maximumBy, minimumBy, sortOn)
+import           Data.Maybe                      (isJust, mapMaybe)
+import           Data.Set                        (elems, unions)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Time
-import           Numeric                          (readInt, showHex)
-import           Numeric.Interval                 ((...))
-import qualified Numeric.Interval                 as I
+import           Numeric                         (readInt, showHex)
+import           Numeric.Interval                ((...))
+import qualified Numeric.Interval                as I
 import           Text.StringTemplate
 
 
@@ -73,7 +69,7 @@ modify'_ = modify'
 minimumOn f = minimumBy (\a b -> f a `compare` f b)
 maximumOn f = maximumBy (\a b -> f a `compare` f b)
 
-shift offset d@EndpointD{ epdAt } = d{ epdAt=shiftI offset epdAt }
+shift offset d@EndpointSt{ epAt } = d{ epAt=shiftI offset epAt }
 shiftI offset i = (I.inf i + offset) ... (I.sup i + offset )
 
 
@@ -114,29 +110,6 @@ hdlValDump x
 
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP st
 
-
-fixIndent s = unlines $ map f ls
-    where
-        _:ls = lines s
-        tabSize = length $ takeWhile (`elem` "| ") $ last ls
-        f l@('|':l')
-            | let indent = takeWhile (== ' ') l'
-            , tabSize <= length indent + 1
-            = drop tabSize l
-            | all (== ' ') l'
-            = []
-            | otherwise = error $ "fixIndent error " ++ show tabSize ++ " \"" ++ l ++ "\""
-        f l = l
-
-fixIndentNoLn s
-    = let
-        s' = fixIndent s
-    in take (length s' - 1) s'
-
-
-space2tab = S.replace "    " "\t"
-
-
 modifyProcess p st = runState st p
 
 addStep placeInTime info = do
@@ -173,8 +146,8 @@ transferred pu = unionsMap variables $ getEndpoints $ process pu
 
 
 
-isTarget (EndpointO (Target _) _) = True
-isTarget _                        = False
+isTarget (EndpointSt (Target _) _) = True
+isTarget _                         = False
 
 isInstruction (InstructionStep _) = True
 isInstruction _                   = False
