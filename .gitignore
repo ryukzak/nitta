@@ -15,4 +15,4 @@ hdl/gen/*
 gen/*
 .vscode/*
 web/api.txt
-stack.yaml.lock
+.#*

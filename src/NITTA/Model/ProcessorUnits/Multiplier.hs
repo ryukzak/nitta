@@ -50,7 +50,7 @@ Connect necessary modules and set up terminals prompt string.
 [ 8 of 10] Compiling NITTA.Intermediate.Functions ( /Users/penskoi/Documents/src/nitta/src/NITTA/Functions.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Functions.o ) [flags changed]
 [10 of 10] Compiling NITTA.Model.ProcessorUnits.Multiplier ( /Users/penskoi/Documents/src/nitta/src/NITTA/ProcessUnits/Multiplier.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/ProcessUnits/Multiplier.o )
 Ok, 10 modules loaded.
->>> :module +NITTA.Types NITTA.Intermediate.Functions Numeric.Interval Data.Set
+>>> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval Data.Set
 >>> :set prompt "\ESC[34mλ> \ESC[m"
 
 Now create the function and multiplier initial state. Unfortunately, it is not
@@ -59,11 +59,11 @@ implicitly.
 
 >>> let f = multiply "a" "b" ["c", "d"] :: F String Int
 >>> f
-<Multiply (I "a") (I "b") (O (fromList ["c","d"]))>
+c = d = a * b
 >>> let st0 = multiplier True :: Multiplier String Int Int
 >>> st0
 Multiplier {puRemain = [], targets = [], sources = [], doneAt = Nothing, process_ = Process {steps = [], relations = [], nextTick = 0, nextUid = 0}, isMocked = True}
->>> options endpointDT st0
+>>> endpointOptions st0
 []
 
 Bind a function to the multiplier. This operation could be executed at any time
@@ -76,9 +76,8 @@ planning, even it is inefficient.
 >>> let Right st1 = tryBind f st0
 >>> st1
 Multiplier {puRemain = [<Multiply (I "a") (I "b") (O (fromList ["c","d"]))>], targets = [], sources = [], doneAt = Nothing, process_ = Process {steps = [], relations = [], nextTick = 0, nextUid = 0}, isMocked = True}
->>> mapM_ print $ options endpointDT st1
-?Target "a"@(0..∞ /P 1..∞)
-?Target "b"@(0..∞ /P 1..∞)
+>>> endpointOptions st1
+[?Target "a"@(1..∞ /P 1..∞),?Target "b"@(1..∞ /P 1..∞)]
 
 As we can see, after binding we have two different options of computational
 process planning, that match different argument loading sequences: @a@ or @b@.
@@ -88,15 +87,15 @@ argument needed only one tick, but it can continue for an arbitrary time. Choose
 the variant (note, that if decision matches to proposed options then it cannot
 cause a mistake or block another function).
 
->>> let st2 = decision endpointDT st1 $ EndpointD (Target "a") (0...2)
+>>> let st2 = endpointDecision st1 $ EndpointD (Target "a") (0...2)
 >>> st2
 Multiplier {puRemain = [], targets = ["b"], sources = ["c","d"], doneAt = Nothing, process_ = Process {steps = [Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 3, nextUid = 2}, isMocked = True}
->>> mapM_ print $ options endpointDT st2
+>>> mapM_ print $ endpointOptions st2
 ?Target "b"@(3..∞ /P 1..∞)
->>> let st3 = decision endpointDT st2 $ EndpointD (Target "b") (3...3)
+>>> let st3 = endpointDecision st2 $ EndpointD (Target "b") (3...3)
 >>> st3
 Multiplier {puRemain = [], targets = [], sources = ["c","d"], doneAt = Just 6, process_ = Process {steps = [Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 4, nextUid = 4}, isMocked = True}
->>> mapM_ print $ options endpointDT st3
+>>> mapM_ print $ endpointOptions st3
 ?Source (fromList ["c","d"])@(6..∞ /P 1..∞)
 
 After loading of all arguments, we can see that the next option is unloading @c@
@@ -104,15 +103,15 @@ and @d@ variables. Note, these variables can be unloaded ether concurrently or
 sequentially (for details, see how the multiplier works). Consider the second
 option:
 
->>> let st4 = decision endpointDT st3 $ EndpointD (Source $ fromList ["c"]) (6...6)
+>>> let st4 = endpointDecision st3 $ EndpointD (Source $ fromList ["c"]) (6...6)
 >>> st4
 Multiplier {puRemain = [], targets = [], sources = ["d"], doneAt = Just 6, process_ = Process {steps = [Step {sKey = 5, sTime = Activity (6 ... 6), sDesc = Out},Step {sKey = 4, sTime = Activity (6 ... 6), sDesc = Source (fromList ["c"])},Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 7, nextUid = 6}, isMocked = True}
->>> mapM_ print $ options endpointDT st4
+>>> mapM_ print $ endpointOptions st4
 ?Source (fromList ["d"])@(7..∞ /P 1..∞)
->>> let st5 = decision endpointDT st4 $ EndpointD (Source $ fromList ["d"]) (7...7)
+>>> let st5 = endpointDecision st4 $ EndpointD (Source $ fromList ["d"]) (7...7)
 >>> st5
 Multiplier {puRemain = [], targets = [], sources = [], doneAt = Nothing, process_ = Process {steps = [Step {sKey = 7, sTime = Activity (7 ... 7), sDesc = Out},Step {sKey = 6, sTime = Activity (7 ... 7), sDesc = Source (fromList ["d"])},Step {sKey = 5, sTime = Activity (6 ... 6), sDesc = Out},Step {sKey = 4, sTime = Activity (6 ... 6), sDesc = Source (fromList ["c"])},Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 8, nextUid = 8}, isMocked = True}
->>> options endpointDT st5
+>>> endpointOptions st5
 []
 
 All options of computing process planning are run out. All bound functions
@@ -339,14 +338,15 @@ instance ( VarValTime v x t
 
 
 -- |This function carry out actual take functional block to work.
-assignment pu@Multiplier{ targets=[], sources=[], remain, tick } f
+execution pu@Multiplier{ targets=[], sources=[], remain, tick } f
     | Just (F.Multiply (I a) (I b) (O c)) <- castF f
     = pu
         { targets=[a, b]
         , currentWork=Just (tick + 1, f)
-        , sources=elems c, remain=remain \\ [ f ]
+        , sources=elems c
+        , remain=remain \\ [ f ]
         }
-assignment _ _ = error "Multiplier: internal assignment error."
+execution _ _ = error "Multiplier: internal execution error."
 
 
 
@@ -379,7 +379,7 @@ instance ( VarValTime v x t
 
     -- list of variables of uploading to mUnit variables, upload any one of that
     -- will cause to actual start of working with mathched function.
-    endpointOptions pu@Multiplier{ remain } = concatMap (endpointOptions . assignment pu) remain
+    endpointOptions pu@Multiplier{ remain } = concatMap (endpointOptions . execution pu) remain
 
     -- Note, that options provided by this function require clarification, because:
 
@@ -462,7 +462,7 @@ instance ( VarValTime v x t
     endpointDecision pu@Multiplier{ targets=[], sources=[], remain } d
         | let v = oneOf $ variables d
         , Just f <- find (\f -> v `member` variables f) remain
-        = endpointDecision (assignment pu f) d
+        = endpointDecision (execution pu f) d
     -- If smth went wrong.
     endpointDecision pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
@@ -519,8 +519,8 @@ instance Controllable (Multiplier v x t) where
 
     portsToSignals MultiplierPorts{ wr, wrSel, oe } = [wr, wrSel, oe]
 
-    signalsToPorts (wr:wrSel:oe:_) = MultiplierPorts wr wrSel oe
-    signalsToPorts _               = error "pattern match error in signalsToPorts MultiplierPorts"
+    signalsToPorts (wr:wrSel:oe:_) _ = MultiplierPorts wr wrSel oe
+    signalsToPorts _               _ = error "pattern match error in signalsToPorts MultiplierPorts"
 
 -- |Also we need to define default state for microcode (that is match to implicit @nop@ function)
 -- This state mean that mUnit is in inaction state, but doesn't busy the bus and storage
@@ -605,27 +605,27 @@ instance ( VarValTime v x t
     -- 	The main task of the function is to include mUnit to mUnit infostructure correctly.
     --	and set uo all parameters, names and wires.
     --
-    -- Take attention to function @fixIndent@. This function allows a programmer to use
+    -- Take attention to function @codeBlock@. This function allows a programmer to use
     -- normal code block indentation.
     hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } MultiplierPorts{..} MultiplierIO
-        = fixIndent [qc|
-|           pu_multiplier #
-|                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-|                   , .ATTR_WIDTH( { parameterAttrWidth } )
-|                   , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
-|                   , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
-|                   ) { tag }
-|               ( .clk( {signalClk} )
-|               , .rst( {signalRst} )
-|               , .signal_wr( { signal wr } )
-|               , .signal_sel( { signal wrSel } )
-|               , .data_in( { dataIn } )
-|               , .attr_in( { attrIn } )
-|               , .signal_oe( { signal oe } )
-|               , .data_out( { dataOut } )
-|               , .attr_out( { attrOut } )
-|               );
-|           |]
+        = codeBlock [qc|
+            pu_multiplier #
+                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+                    , .ATTR_WIDTH( { parameterAttrWidth } )
+                    , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
+                    , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
+                    ) { tag }
+                ( .clk( {signalClk} )
+                , .rst( {signalRst} )
+                , .signal_wr( { signal wr } )
+                , .signal_sel( { signal wrSel } )
+                , .data_in( { dataIn } )
+                , .attr_in( { attrIn } )
+                , .signal_oe( { signal oe } )
+                , .data_out( { dataOut } )
+                , .attr_out( { attrOut } )
+                );
+            |]
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 

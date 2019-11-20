@@ -21,8 +21,8 @@ module NITTA.Project.Parts.Icarus
 import qualified Data.String.Utils             as S
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
+import           NITTA.Project.Snippets
 import           NITTA.Project.Types
-import           NITTA.Utils
 import           System.Directory              (createDirectoryIfMissing)
 import           System.FilePath.Posix         (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
@@ -38,8 +38,8 @@ instance ( TargetSystemComponent (m v x t), Testable (m v x t) v x
 
 
 makefile prj@Project{ pPath }
-    = writeFile (joinPath [ pPath, "Makefile" ]) $ space2tab $ fixIndent [qc|
-|           icarus:
-|               iverilog { S.join " " $ projectFiles prj }
-|               vvp a.out
-|           |]
+    = writeFile (joinPath [ pPath, "Makefile" ]) $ codeBlock [qc|
+        icarus:
+            iverilog { S.join " " $ projectFiles prj }
+            vvp a.out
+        |]

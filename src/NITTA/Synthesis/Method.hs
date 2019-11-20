@@ -21,13 +21,31 @@ module NITTA.Synthesis.Method
     , smartBindSynthesisIO
     , obviousBindThreadIO
     , allBestThreadIO
+    , stateOfTheArtSynthesisIO
+    , allBindsAndRefsIO
     ) where
 
 import           Data.List             (find, sortOn)
 import           Data.Ord              (Down (..))
+import           Debug.Trace
 import           NITTA.Synthesis.Types
 import           NITTA.Synthesis.Utils (targetProcessDuration)
 import           NITTA.Utils           (maximumOn, minimumOn)
+import           Safe
+
+
+-- |The constant, which restricts the maximum number of synthesis steps. Avoids
+-- the endless synthesis process.
+stepLimit = 100 :: Int
+
+
+-- |The most complex synthesis method, which embedded all another. That all.
+stateOfTheArtSynthesisIO node = do
+    n1 <- simpleSynthesisIO node
+    n2 <- smartBindSynthesisIO node
+    n3 <- bestThreadIO stepLimit node
+    n4 <- bestThreadIO stepLimit =<< allBindsAndRefsIO node
+    return $ getBestNode node [ n1, n2, n3, n4 ]
 
 
 -- |Schedule process by simple synthesis.
@@ -41,11 +59,12 @@ smartBindSynthesisIO root = do
     allBestThreadIO 1 node
 
 
-bestThreadIO node = do
+bestThreadIO 0 node = return $ trace "bestThreadIO reach step limit!" node
+bestThreadIO limit node = do
     edges <- getPositiveEdgesIO node
     case edges of
         [] -> return node
-        _  -> bestThreadIO $ eNode $ maximumOn eObjectiveFunctionValue edges
+        _  -> bestThreadIO (limit - 1) $ eNode $ maximumOn eObjectiveFunctionValue edges
 
 
 obviousBindThreadIO node = do
@@ -60,6 +79,15 @@ obviousBindThreadIO node = do
     case obliousBind of
         Just Edge{ eNode } -> obviousBindThreadIO eNode
         Nothing            -> return node
+
+
+allBindsAndRefsIO node = do
+    edges <- filter
+        ( \Edge{ eParameters } -> case eParameters of BindEdgeParameter{} -> True; RefactorEdgeParameter{} -> True; _ -> False )
+        <$> getPositiveEdgesIO node
+    if null edges
+        then return node
+        else allBindsAndRefsIO $ eNode $ minimumOn eObjectiveFunctionValue edges
 
 
 refactorThreadIO node = do
@@ -89,15 +117,15 @@ smartBindThreadIO node = do
         []              -> return node'
 
 
-allBestThreadIO (0 :: Int) node = bestThreadIO node
+allBestThreadIO (0 :: Int) node = bestThreadIO stepLimit node
 allBestThreadIO n node = do
     edges <- getPositiveEdgesIO node
-    lastNodes <- mapM (\Edge{ eNode } -> allBestThreadIO (n-1) eNode) edges
-    let 
-        outNode [] = node
-        outNode ln = case filter nIsComplete ln of
-            []             -> head ln
-            completedNodes -> minimumOn (targetProcessDuration . nModel) completedNodes
-                           
-    return $ outNode lastNodes 
-         
+    sythesizedNodes <- mapM (\Edge{ eNode } -> allBestThreadIO (n-1) eNode) edges
+    return $ getBestNode node sythesizedNodes
+
+
+getBestNode node nodes = let
+        successNodes = filter nIsComplete nodes
+    in case successNodes of
+        _:_ -> minimumOn (targetProcessDuration . nModel) successNodes
+        []  -> headDef node nodes

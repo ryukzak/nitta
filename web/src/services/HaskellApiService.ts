@@ -15,6 +15,7 @@ export const haskellApiService = {
   allBestThread: (nid: any, n: any) => api.postSynthesisByNIdAllBestThread(nid, n),
   obviousBindThread: (nid: any) => api.postSynthesisByNIdObviousBindThread(nid),
   runTestBench: (nid: any, name: any) => api.getSynthesisByNIdTestBenchOutput(nid, name),
-  getEndpointOptions: (nid: any) => api.getSynthesisByNIdEndpointOptions(nid),
-  getHistory: (nid: SelectedNodeId) => api.getSynthesisByNIdHistory(nid),
+  getDebugOptions: (nid: any) => api.getSynthesisByNIdDebug(nid),
+  allBindsAndRefsIO: (nid: string) => api.postSynthesisByNIdAllBindsAndRefsIO(nid),
+  getHistory: (nid: SelectedNodeId) => api.getSynthesisByNIdHistory(nid)
 };

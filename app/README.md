@@ -1,12 +1,20 @@
 # NITTA CAD
 
+
 ## Before you start
 - get the project from repository by `git` or by [site](https://nitta.io/nitta-corp/nitta);
 - install [The Haskell Tool Stack](../doc/stack-install.md);
 - install [Icarus Verilog](../doc/hdl-install.md);
 - install [npm](https://www.npmjs.com/get-npm).
 
+
 ## Building
+
+### Building via make
+
+See [Makefile options](../doc/make.md)
+
+
 
 ### Building CAD
 
@@ -17,7 +25,16 @@ You can add the following command line options:
 - `--fast` for disabling optimization, which significantly reduces compile time;
 - `--haddock` for generation project documentation.
 
+That command build the following executables:
+- `:nitta` -- CAD as is;
+- `:nitta-api-gen` -- service files generator for interaction between CAD and UI;
+- `:nitta-test` -- unit and property tests.
+
+You can build only needed by specific: `:nitta`, which can significantly reduce build time.
+
 ### Building UI
+
+To build UI static files you should execute:
 
 For preparing REST API typescript interfaces and request functions you should execute in the project path:
 > stack exec nitta-api-gen
@@ -32,11 +49,8 @@ To build UI static files you should execute:
 
 > npm run-script build
 
-## Execution
 
-> stack exec nitta -- --help
-
-### Testing
+## Testing
 
 To test project ([test spefication](../test/Spec.hs)):
 > stack test
@@ -44,7 +58,8 @@ To test project ([test spefication](../test/Spec.hs)):
 To test and build documentation (you should run this before all commits):
 > stack build --test --haddock
 
-### Running
+
+## Execution
 
 To execute without UI:
 
@@ -58,15 +73,18 @@ Options:
 
 To execute with UI:
 
-> stack exec nitta -- --web FILE_NAME
+> stack exec nitta -- FILE_NAME --web
 
 where FILE_NAME is a `.lua` file with a specific algorithm. 
 
 To open UI in a web browser you should go to <http://localhost:8080/index.html>. From the UI you can synthesis target system and generate a target project in `hdl/gen/web_ui` path by the `testbench` button.
 
+
 ## Running for UI development
+
 > cd web
 > npm run start
+
 
 # Demos
 
@@ -77,6 +95,7 @@ To execute the demo:
 3. Execute the target system demo project on a hardware test bench.
 
 Further, you can find some demo projects.
+
 
 ## Fibonacci
 
@@ -94,6 +113,7 @@ Generate command:
 
 `--type=fx24.32` option is necessary because, without this, the modeling process can't progress.
 
+
 ## Teacup
 
 This is a classic example of the system dynamic model. The model description presented here: <https://pysd-cookbook.readthedocs.io/en/latest/analyses/getting_started/Hello_World_Teacup.html>. Calculations are performed in fixed-point numbers. Decimals are not converted.
@@ -107,6 +127,7 @@ Every element of the sequences sends to the external interface, definable by the
 
 Generate command: 
 > `stack exec nitta -- --type=fx24.32 --web examples/teacup.lua`
+
 
 # Hardware test bench
 
@@ -143,4 +164,4 @@ For running prject on a real hardware you can follow :
 
 - [DE0nano](DE0nano.md);
 - [Electric Imp imp001](imp001.md);
-- [Raspberry Pi 3](RaspberryPi3.md);
+- [Raspberry Pi 3](RaspberryPi3.md).

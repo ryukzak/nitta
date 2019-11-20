@@ -12,16 +12,25 @@
 
 {-|
 Module      : NITTA.Model.Problems.Refactor
-Description :
+Description : Automatic manipulation over an intermediate representation
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
+
+Some times, CAD can not synthesis a target system because of a features of an
+algorithm and microarchitecture (too less process units, too many functions, too
+complicated algorithm).
+
+In this case user can manually add some tweaks to the algorithm, but for that he
+should be an expert with deep understanding of NITTA project. Of course, it is
+not acceptable. This module defines type of that tweaks.
 -}
 module NITTA.Model.Problems.Refactor
     ( Refactor(..), RefactorProblem(..)
     , recLoop, recLoopOut, recLoopIn
     , prepareBuffer
+    , maxBufferStack
     ) where
 
 import           Data.Default
@@ -34,19 +43,44 @@ import           NITTA.Utils
 
 
 data Refactor v x
-    -- |Example:
+    = ResolveDeadlock (S.Set v)
+    -- ^ResolveDeadlock example:
     --
-    -- >>> f1 :: (...) -> (a)
-    -- f2 :: (a, ...) -> (...)
-    -- f1 and f2 process on same mUnit
-    -- In this case, we have deadlock, which can be fixed by insertion of register between functions:
-    -- f1 :: (...) -> (a)
-    -- reg :: a -> buf_a
-    -- f2 :: (buf_a, ...) -> (...)
-    = InsertOutRegister v v
-    | SelfSending (S.Set v)
-    -- |Example: l = Loop (X x) (O o) (I i) -> LoopIn l (I i), LoopOut (I o)
-    | BreakLoop{ loopX :: x, loopO :: S.Set v, loopI :: v } -- (Loop v x) (LoopOut v x) (LoopIn v x)
+    -- > ResolveDeadlock [a, b]
+    --
+    -- before:
+    --
+    -- > f1 :: (...) -> ([a, b])
+    -- > f2 :: (a, ...) -> (...)
+    -- > f3 :: (b, ...) -> (...)
+    --
+    -- f1, f2 and f3 process on same process unit. In this case, we have
+    -- deadlock, which can be fixed by insertion of buffer register between
+    -- functions.
+    --
+    -- after:
+    --
+    -- > f1 :: (...) -> ([a@buf])
+    -- > reg :: a@buf -> ([a, b])
+    -- > f2 :: (a, ...) -> (...)
+    -- > f3 :: (b, ...) -> (...)
+    | BreakLoop
+    -- ^BreakLoop example:
+    --
+    -- > BreakLoop x o i
+    --
+    -- before:
+    --
+    -- > l@( Loop (X x) (O o) (I i) )
+    --
+    -- after:
+    --
+    -- > LoopIn l (I i)
+    -- > LoopOut l (O o)
+        { loopX :: x       -- ^initial looped value
+        , loopO :: S.Set v -- ^output variables
+        , loopI :: v       -- ^input variable
+        }
     deriving ( Generic, Show, Eq )
 
 
@@ -65,10 +99,15 @@ class RefactorProblem u v x | u -> v x where
   refactorDecision _ _ = error "not implemented"
 
 
-prepareBuffer (SelfSending vs) = let
+prepareBuffer :: ( Var v, Val x ) => Refactor v x -> ( F v x, Diff v )
+prepareBuffer (ResolveDeadlock vs) = let
         bufferI = bufferSuffix $ oneOf vs
         bufferO = S.elems vs
-        diff = def{ diffO=M.fromList $ map (\o -> (o, bufferI)) bufferO }
+        diff = def{ diffO=M.fromList $ map (\o -> (o, S.singleton bufferI)) bufferO }
     in ( reg bufferI bufferO, diff )
 
 prepareBuffer _ = undefined
+
+
+-- |The constant, which restrict maximum length of a buffer sequence.
+maxBufferStack = 2 :: Int

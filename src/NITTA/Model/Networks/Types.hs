@@ -22,6 +22,7 @@ module NITTA.Model.Networks.Types
     , IOSynchronization(..)
     ) where
 
+import qualified Data.List                        as L
 import qualified Data.Map                         as M
 import qualified Data.Set                         as S
 import           Data.Typeable
@@ -36,7 +37,7 @@ import           NITTA.Project.Parts.TestBench
 
 -- |Existential container for a processor unit .
 data PU v x t where
-    PU :: 
+    PU ::
         ( ByTime pu t
         , Connected pu
         , IOConnected pu
@@ -51,7 +52,7 @@ data PU v x t where
         , Controllable pu
         , IOTestBench pu v x
         , Locks pu v
-        ) => 
+        ) =>
             { diff :: Diff v
             , unit :: pu
             , ports :: Ports pu
@@ -63,6 +64,7 @@ data PU v x t where
 instance ( Ord v ) => EndpointProblem (PU v x t) v t where
     endpointOptions PU{ diff, unit }
         = map (patch diff) $ endpointOptions unit
+
     endpointDecision PU{ diff, unit, ports, ioPorts, systemEnv } d
         = PU
             { diff
@@ -102,10 +104,28 @@ instance ( Ord v ) => Patch (PU v x t) (I v, I v) where
 
 instance ( Ord v ) => Patch (PU v x t) (O v, O v) where
     patch (O vs, O vs') pu@PU{ diff=diff@Diff{ diffO } }
-        = pu{ diff=diff{ diffO=foldl (\s (v, v') -> M.insert v v' s) diffO $ zip (S.elems vs) (S.elems vs')  }}
+        = pu{ diff=diff
+                { diffO=foldl (\s (v, v') -> M.insert v (S.singleton v') s)
+                    diffO
+                    $ [ (a, b) | b <- S.elems vs', a <- S.elems vs ]
+                }
+            }
 
 instance ( Var v ) => Locks (PU v x t) v where
-    locks PU{ unit } = locks unit
+    locks PU{ unit, diff=Diff{ diffI, diffO } }
+        | not $ M.null diffI = error $ "Locks (PU v x t) with non empty diffI: " ++ show diffI
+        | otherwise = let
+                (locked', locks') = L.partition (\Lock{ locked } -> locked `M.member` diffO) $ locks unit
+                (lockBy', locks'') = L.partition (\Lock{ lockBy } -> lockBy `M.member` diffO) locks'
+            in concat
+                [ locks''
+                , L.nub $ concatMap
+                    ( \Lock{ locked, lockBy } -> [ Lock{ locked, lockBy=v } | v <- S.elems (diffO M.! lockBy) ] )
+                    lockBy'
+                , L.nub $ concatMap
+                    ( \Lock{ locked, lockBy } -> [ Lock{ locked=v, lockBy } | v <- S.elems (diffO M.! locked) ] )
+                    locked'
+                ]
 
 instance Simulatable (PU v x t) v x where
     simulateOn cntx PU{ unit } fb = simulateOn cntx unit fb
@@ -123,7 +143,7 @@ instance IOTestBench (PU v x t) v x where
         = testEnvironment tag unit systemEnv ports ioPorts cntxs
 
 
-data IOSynchronization 
+data IOSynchronization
     = Sync  -- ^IO cycle synchronously to process cycle
     | ASync -- ^if IO cycle lag behiend - ignore them
     | OnBoard -- ^defined by onboard signal (sync - false, async - true)

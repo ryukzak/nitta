@@ -25,7 +25,7 @@ module NITTA.Test.Microarchitectures
     , externalTestCntr
     , runTargetSynthesis'
     , microarch, IOUnit(..)
-    , pInt, pIntX32, pIntX48, pIntX64, pIntX128, pFX22_32, pFX42_64
+    , pInt, pIntX32, pIntX48, pIntX64, pIntX128, pFX32_32, pFX22_32, pFX42_64
     ) where
 
 import           Control.Monad                    (void)
@@ -50,6 +50,7 @@ pIntX48 = Proxy :: Proxy (IntX 48)
 pIntX64 = Proxy :: Proxy (IntX 64)
 pIntX128 = Proxy :: Proxy (IntX 128)
 pFX22_32 = Proxy :: Proxy (FX 22 32)
+pFX32_32 = Proxy :: Proxy (FX 32 32)
 pFX42_64 = Proxy :: Proxy (FX 42 64)
 
 

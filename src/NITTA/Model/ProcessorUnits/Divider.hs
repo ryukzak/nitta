@@ -313,8 +313,8 @@ instance Controllable (Divider v x t) where
 
     portsToSignals DividerPorts{ wr, wrSel, oe, oeSel } = [wr, wrSel, oe, oeSel]
 
-    signalsToPorts (wr:wrSel:oe:oeSel:_) = DividerPorts wr wrSel oe oeSel
-    signalsToPorts _                     = error "pattern match error in signalsToPorts DividerPorts"
+    signalsToPorts (wr:wrSel:oe:oeSel:_) _ = DividerPorts wr wrSel oe oeSel
+    signalsToPorts _                     _ = error "pattern match error in signalsToPorts DividerPorts"
 
 instance Default (Microcode (Divider v x t)) where
     def = Microcode
@@ -361,27 +361,27 @@ instance ( Val x, Show t
                 }
             DividerPorts{ oe, oeSel, wr, wrSel }
             DividerIO
-        = fixIndent [qc|
-|           pu_div #
-|                   ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-|                   , .ATTR_WIDTH( { parameterAttrWidth } )
-|                   , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
-|                   , .PIPELINE( { pipeline } )
-|                   , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
-|                   , .MOCK_DIV( { bool2verilog mock } )
-|                   ) { tag }
-|               ( .clk( { signalClk } )
-|               , .rst( { signalRst } )
-|               , .signal_wr( { signal wr } )
-|               , .signal_wr_sel( { signal wrSel } )
-|               , .data_in( { dataIn } )
-|               , .attr_in( { attrIn } )
-|               , .signal_oe( { signal oe } )
-|               , .signal_oe_sel( { signal oeSel } )
-|               , .data_out( { dataOut } )
-|               , .attr_out( { attrOut } )
-|               );
-|           |]
+        = codeBlock [qc|
+            pu_div #
+                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
+                    , .ATTR_WIDTH( { parameterAttrWidth } )
+                    , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
+                    , .PIPELINE( { pipeline } )
+                    , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
+                    , .MOCK_DIV( { bool2verilog mock } )
+                    ) { tag }
+                ( .clk( { signalClk } )
+                , .rst( { signalRst } )
+                , .signal_wr( { signal wr } )
+                , .signal_wr_sel( { signal wrSel } )
+                , .data_in( { dataIn } )
+                , .attr_in( { attrIn } )
+                , .signal_oe( { signal oe } )
+                , .signal_oe_sel( { signal oeSel } )
+                , .data_out( { dataOut } )
+                , .attr_out( { attrOut } )
+                );
+            |]
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
