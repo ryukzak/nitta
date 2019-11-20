@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
@@ -45,6 +46,7 @@ module NITTA.Intermediate.Functions
 
 import qualified Data.Bits                as B
 import           Data.Default
+import           Data.List.Split          (splitWhen)
 import           Data.Maybe               (mapMaybe)
 import qualified Data.Map                 as M
 import           Data.Set                 (elems, fromList, union)
@@ -133,7 +135,6 @@ data Status s v = Push s (I v) | Pull (O v) deriving (Show, Eq)
 
 newtype Acc s v x = Acc [Status s v] deriving (Eq)
 
-
 instance {-# OVERLAPS #-} Label (Acc Sign v x) where label Acc{} = "+"
 instance ( Show v) => Show (Acc Sign v x) where
     show (Acc lst) =  concatMap printStatus lst
@@ -141,11 +142,11 @@ instance ( Show v) => Show (Acc Sign v x) where
             printStatus :: (Show v) => Status Sign v -> String
             printStatus (Push Plus (I v))   = " +" ++ show v
             printStatus (Push Minus (I v))  = " -" ++ show v
-            printStatus (Pull (O v))        = concatMap ((" => "++) . show) (elems v) ++ " ; "
+            printStatus (Pull (O v))        = concatMap ((" => "++) . show) (elems v) ++ "; "
 
--- add a b c = F $ Add (I a) (I b) $ O $ fromList c
---
-instance (Ord v) => Function (Acc s v x) v where
+accum lst = F $ Acc lst
+
+instance (Ord v) => Function (Acc Sign v x) v where
     inputs  (Acc lst) = fromList $ mapMaybe get lst
         where
             get s = case s of
@@ -164,8 +165,45 @@ instance ( Ord v ) => Patch (Acc Sign v x) (v, v) where
             Pull vs  -> Pull (patch diff vs)
         ) lst
 
--- instance ( Var v ) => Locks (Add v x) v where
---     locks = inputsLockOutputs
+instance ( Var v ) => Locks (Acc Sign v x) v where
+    locks = locksAcc
+
+pushGroups (Acc lst) = map (map (\(Push _ (I v)) -> v)) $
+    filter (/= []) $ splitWhen
+        (\case
+            Pull _ -> True
+            _      -> False
+        ) lst
+
+pullGroups (Acc lst) = map (concatMap (elems . \(Pull (O v)) -> v)) $
+    filter (/= []) $ splitWhen
+        (\case
+            Push _ _ -> True
+            _        -> False
+        ) lst
+
+locksPush [] allLocks = filter ((/=[]) . fst) allLocks
+locksPush (x:xs) [] = locksPush xs [([], x)]
+locksPush (x:xs) allLocks@((lockedBefore, lockByBefore):_) = locksPush xs ((x, lockedBefore ++ lockByBefore ):allLocks)
+
+locksPull [] allLocks = allLocks
+locksPull ((lockedP, lockByP):xs) [] = locksPull xs [(lockedP, lockByP)]
+locksPull ((lockedP, lockByP):xs) allLocks@((lockedBefore, lockByBefore):_) = locksPull xs ((lockedP, lockByP ++ lockedBefore ++ lockByBefore):allLocks)
+
+locksAcc acc = let
+        pushs = pushGroups acc
+        pulls = pullGroups acc
+        accTuple = zip pulls pushs
+        locksListPush = locksPush pushs []
+        locksListPull = locksPull accTuple []
+        allLocks = locksListPush ++ locksListPull
+    in
+        concatMap (\eachLock ->
+            [Lock { locked = y, lockBy = x}
+            | x <- snd eachLock
+            , y <- fst eachLock
+            ]) allLocks
+
 
 instance ( Var v, Num x ) => FunctionSimulation (Acc Sign v x) v x where
     simulate cntx (Acc lst) = let
