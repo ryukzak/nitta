@@ -16,14 +16,9 @@ export function nidColumn(onUpdateNid: (nid: string) => void) {
     Cell: (row: { original: Edge }) => {
       let nid: string[] = row.original.nid.split(nInSeparator);
       return (
-        <Button
-          variant="link"
-          className="btn btn-link bg-transparent p-0  border-0"
-          style={style}
-          onClick={() => onUpdateNid(row.original.nid)}
-        >
+        <a href="#" onClick={() => onUpdateNid(row.original.nid)}>
           {nid[nid.length - 1]}>
-        </Button>
+        </a>
       );
     }
   };
