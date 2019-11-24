@@ -1,39 +1,29 @@
-# docker container for nitta project building and testing
-# sudo docker build --build-arg http_proxy=http://proxy.ifmo.ru:3128 --build-arg HTTP_PROXY=http://proxy.ifmo.ru:3128 -t nitta-build .
-
 FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND noninteractive
 
-# haskell stack
+ENV \
+    RESOLVER=lts-13.27 \
+    PATH="/root/.local/bin:${PATH}" \
+    LANG=C.UTF-8
+
 
 RUN apt-get update && apt-get install -y \
-	haskell-stack netbase git libghc-zlib-dev libghc-zlib-bindings-dev \
-	iverilog
+    haskell-stack netbase git libghc-zlib-dev libghc-zlib-bindings-dev \
+    iverilog npm
 
 RUN stack upgrade && \
-	echo "export PATH=/root/.local/bin:$PATH" >> ~/.profile
+    echo "export PATH=/root/.local/bin:$PATH" >> ~/.profile
 
-ENV \
-	RESOLVER=lts-13.27 \
-	PATH="/root/.local/bin:${PATH}" \
-	LANG=C.UTF-8
+RUN npm install -g npm
 
-# nitta deps
-
-ADD stack.yaml nitta.cabal /data/
 WORKDIR /data
 
-RUN stack setup --resolver ${RESOLVER}
-RUN stack --resolver ${RESOLVER} build --only-dependencies --haddock --test
+ADD Makefile stack.yaml nitta.cabal /data/
+ADD web/package.json web/package-lock.json /data/web/
 
-# npm
+RUN make configure-stack
 
-RUN apt-get install -y npm && npm install -g npm
+RUN make configure-npm && cp -Rv web/node_modules /tmp/node_modules
 
-ADD web/package.json web/package-lock.json /data/
-RUN npm install --only=dev --global
-
-# f%$#ing itmo network
-ENV \
-	HTTP_PROXY=http://proxy.ifmo.ru:3128 \
-	http_proxy=http://proxy.ifmo.ru:3128
+# for restore node_modules cache
+# ln -s /tmp/node_modules web/node_modules

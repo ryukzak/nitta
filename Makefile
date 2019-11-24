@@ -1,43 +1,31 @@
-all: stack.build stack.gen npm.build
+all: nitta-backend nitta-frontend
 
-prod: stack.prod stack.gen npm.build
 
-build: stack.haddock
+configure: configure-stack configure-npm
+
+configure-stack:
+	stack setup
+	stack build --only-dependencies --haddock --test
+
+configure-npm:
+	cd web && npm ci
+
+
+build: build-nitta-backend build-nitta-frontend
+
+build-nitta-backend:
+	stack build --test --haddock --copy-bins
+	stack exec nitta-api-gen
+
+build-nitta-frontend:
+	cd web && npm run build
 
 clean:
 	stack clean
 	rm -rf web/build
 
-deps: stack.install npm.install
 
-
-
-
-npm.build:
-	cd web && npm run build
-
-npm.dev: 
-	cd web && npm run start
-
-npm.install: 
-	cd web && npm ci
-
-stack.install:
-	stack build --only-dependencies --haddock --test
-
-stack.prod:
-	stack build --test --copy-bins
-
-stack.build:
-	stack build
-
-stack.haddock:
-	stack build  --haddock
-
-stack.gen: stack.build
-	stack exec nitta-api-gen
-
-stack.web: stack.build
+nitta: build
 	if [ -z "${sim}" ]; \
 	then \
 		stack exec nitta -- --web examples/fibonacci.lua \
