@@ -9,6 +9,7 @@ export const haskellApiService = {
   getEdge: (nid: any) => api.getSynthesisByNIdEdge(nid),
   getEdges: (nid: string) => api.getSynthesisByNIdEdges(nid),
   getTimelines: (nid: SelectedNodeId) => api.getSynthesisByNIdTimelines(nid),
+  stateOfTheArtSynthesis: (nid: any) => api.postSynthesisByNIdStateOfTheArtSynthesisIO(nid),
   simpleSynthesis: (nid: any) => api.postSynthesisByNIdSimpleSynthesis(nid),
   simpleSynthesisGraph: (nid: any) => api.getSynthesisByNIdModelAlg(nid),
   smartBindSynthesisIO: (nid: any) => api.postSynthesisByNIdSmartBindSynthesisIO(nid),

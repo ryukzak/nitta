@@ -129,6 +129,7 @@ debug root nId = do
 
 type SimpleCompilerAPI tag v x t
     =    "edges" :> Get '[JSON] [ EdgeView tag v x t ]
+    :<|> "stateOfTheArtSynthesisIO" :> Post '[JSON] NId
     :<|> "simpleSynthesis" :> Post '[JSON] NId
     :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
     :<|> "obviousBindThread" :> Post '[JSON] NId
@@ -137,6 +138,7 @@ type SimpleCompilerAPI tag v x t
 
 simpleCompilerServer root n
     =    liftIO ( return . map view =<< getEdgesIO =<< getNodeIO root n )
+    :<|> liftIO ( nId <$> (stateOfTheArtSynthesisIO =<< getNodeIO root n))
     :<|> liftIO ( nId <$> (simpleSynthesisIO =<< getNodeIO root n))
     :<|> liftIO ( nId <$> (smartBindSynthesisIO =<< getNodeIO root n))
     :<|> liftIO ( nId <$> (obviousBindThreadIO =<< getNodeIO root n))

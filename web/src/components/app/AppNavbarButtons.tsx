@@ -26,6 +26,9 @@ export const AppNavbarButtons: React.FC = () => {
   return (
     <div className="d-flex">
       <div className="mr-3">
+        <Button {...btnAttrs} onClick={requestNidBy(api.stateOfTheArtSynthesis, appContext.selectedNodeId)}>
+          state-of-the-art
+        </Button>
         <Button {...btnAttrs} onClick={requestNidBy(api.simpleSynthesis, appContext.selectedNodeId)}>
           simple
         </Button>
