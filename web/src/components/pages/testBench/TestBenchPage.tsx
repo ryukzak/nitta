@@ -11,6 +11,7 @@ import { SimulationDataView } from "./SimulationDataView";
 export const TestBenchPage: React.FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
+  const [requestSuccess, setRequestSuccess] = useState<boolean | null>(null);
   const [testBenchDump, setTestBenchDump] = useState<TestbenchReport<string, number> | null>(null);
 
   useEffect(() => {
@@ -18,14 +19,25 @@ export const TestBenchPage: React.FC = () => {
       .runTestBench(appContext.selectedNodeId, "web_ui")
       .then((response: AxiosResponse<TestbenchReport<string, number> | null>) => {
         setTestBenchDump(response.data);
+        setRequestSuccess(true);
       })
-      .catch((err: AxiosError) => {});
+      .catch((err: AxiosError) => { 
+        setRequestSuccess(false);
+      });
   }, [appContext.selectedNodeId]);
 
-  if (testBenchDump === null) {
+  if (requestSuccess === null) {
     return (
       <div className="m-3 text-black-50">
-        <h5>Empty test bench</h5>
+        <h5>Loading...</h5>
+      </div>
+    );
+  }
+
+  if (requestSuccess === false) {
+    return (
+      <div className="m-3 text-black-50">
+        <h5>Can not get testbench data for the not finished synthesis.</h5>
       </div>
     );
   }
