@@ -7,7 +7,7 @@ module pu_accum
   ( input  wire                  clk
   , input  wire                  rst
   , input  wire                  signal_load
-  , input  wire                  signal_init
+  , input  wire                  signal_resetAcc
   , input  wire                  signal_neg
   , input  wire [DATA_WIDTH-1:0] data_in
   , input  wire [ATTR_WIDTH-1:0] attr_in
@@ -30,7 +30,7 @@ always @(posedge clk)
     int_arg <= 0;
     ext_arg <= 0;
   end else if ( signal_load ) begin
-    int_arg <= signal_init ? 0 : wacc[DATA_WIDTH-1:0];
+    int_arg <= signal_resetAcc ? 0 : wacc[DATA_WIDTH-1:0];
     ext_arg <= signal_neg ? -data_in : data_in;
   end
 
@@ -49,7 +49,7 @@ always @(posedge clk)
     acc[DATA_WIDTH:0] <= wacc;
 
     if ( signal_load ) begin
-      if ( signal_init ) begin
+      if ( signal_resetAcc ) begin
         overflow <= attr_in[ OVERFLOW ];           
       end else begin 
         overflow <= overflow || attr_in[ OVERFLOW ];

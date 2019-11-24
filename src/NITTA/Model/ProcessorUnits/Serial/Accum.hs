@@ -25,6 +25,7 @@ import           Data.Bits                        (finiteBitSize)
 import           Data.Default
 import           Data.List                        (find, partition, (\\))
 import           Data.Set                         (elems, fromList, member)
+import           Data.Maybe.HT                    (toMaybe)
 import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
@@ -118,9 +119,7 @@ instance ( VarValTime v x t
             { process_=process_'
             , targets=xs
             , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-            , doneAt=if null xs
-                then Just $ sup epdAt + 3
-                else Nothing
+            , doneAt=toMaybe (null xs) (sup epdAt + 3)
             , tick=sup epdAt
             }
 
@@ -141,7 +140,7 @@ instance ( VarValTime v x t
             { process_=process_'
             , sources=sources'
             , doneAt=if null sources' then Nothing else doneAt
-            , currentWork=if null sources' then Nothing else Just (a, f)
+            , currentWork=toMaybe (not $ null sources') (a, f)
             , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
             , tick=sup epdAt
             }
@@ -159,34 +158,34 @@ instance Controllable (Accum v x t) where
     data Microcode (Accum v x t) =
         Microcode
             { oeSignal :: Bool
-            , initSignal :: Bool
+            , resetAccSignal :: Bool
             , loadSignal :: Bool
             , negSignal :: Maybe Bool
             } deriving ( Show, Eq, Ord )
 
     mapMicrocodeToPorts Microcode{..} AccumPorts{..} =
-        [ (init, Bool initSignal)
+        [ (resetAcc, Bool resetAccSignal)
         , (load, Bool loadSignal)
         , (neg, maybe Undef Bool negSignal)
         , (oe, Bool oeSignal)
         ]
 
-    portsToSignals AccumPorts{ init, load, neg, oe } = [init, load, neg, oe]
+    portsToSignals AccumPorts{ resetAcc, load, neg, oe } = [resetAcc, load, neg, oe]
 
-    signalsToPorts (init:load:neg:oe:_) _ = AccumPorts init load neg oe
+    signalsToPorts (resetAcc:load:neg:oe:_) _ = AccumPorts resetAcc load neg oe
     signalsToPorts _                    _ = error "pattern match error in signalsToPorts AccumPorts"
 
 instance Default (Microcode (Accum v x t)) where
     def = Microcode
         { oeSignal=False
-        , initSignal=False
+        , resetAccSignal=False
         , loadSignal=False
         , negSignal=Nothing
         }
 
 instance UnambiguouslyDecode (Accum v x t) where
-    decodeInstruction (Init neg) = def{ initSignal=False, loadSignal=True, negSignal=Just neg }
-    decodeInstruction (Load neg) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
+    decodeInstruction (Init neg) = def{ resetAccSignal=False, loadSignal=True, negSignal=Just neg }
+    decodeInstruction (Load neg) = def{ resetAccSignal=True, loadSignal=True, negSignal=Just neg }
     decodeInstruction Out        = def{ oeSignal=True }
 
 
@@ -201,7 +200,7 @@ instance ( VarValTime v x t
 
 instance Connected (Accum v x t) where
     data Ports (Accum v x t)
-        = AccumPorts{ init, load, neg, oe :: SignalTag } deriving ( Show )
+        = AccumPorts{ resetAcc, load, neg, oe :: SignalTag } deriving ( Show )
 
 instance IOConnected (Accum v x t) where
     data IOPorts (Accum v x t) = AccumIO
@@ -230,7 +229,7 @@ instance ( Val x, Default x ) => TargetSystemComponent (Accum v x t) where
                     ) { tag }
                 ( .clk( { signalClk } )
                 , .rst( { signalRst } )
-                , .signal_init( { signal init } )
+                , .signal_resetAcc( { signal resetAcc } )
                 , .signal_load( { signal load } )
                 , .signal_neg( { signal neg } )
                 , .signal_oe( { signal oe } )
