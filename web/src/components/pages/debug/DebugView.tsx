@@ -15,15 +15,15 @@ export const DebugView: React.FC<IDebugViewProps> = props => {
   // TODO: generalize/leave what's needed
   React.useEffect(() => {
     haskellApiService
-      .getNode(selectedNodeId)
-      .then((response: any) => setSynthesisNodeData(response.data))
+      .getDebugOptions(selectedNodeId)
+      .then((response: any) => setDebugData(response.data))
       .catch((err: any) => console.error(err));
   }, [selectedNodeId]);
 
   React.useEffect(() => {
     haskellApiService
-      .getDebugOptions(selectedNodeId)
-      .then((response: any) => setDebugData(response.data))
+      .getNode(selectedNodeId)
+      .then((response: any) => setSynthesisNodeData(response.data))
       .catch((err: any) => console.error(err));
   }, [selectedNodeId]);
 
