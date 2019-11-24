@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
-import { haskellApiService } from "../../services/HaskellApiService";
+import { haskellApiService as api } from "../../services/HaskellApiService";
 import { AppContext, IAppContext, SelectedNodeId } from "./AppContext";
 import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
 
@@ -19,38 +19,35 @@ export const AppNavbarButtons: React.FC = () => {
     };
   }
 
-  const buttonAttrs = {
+  const btnAttrs = {
     className: "mr-1 btn-sm btn-secondary appNavbarButton",
   };
 
   return (
     <div className="d-flex">
       <div className="mr-3">
-        <Button {...buttonAttrs} onClick={requestNidBy(haskellApiService.simpleSynthesis, appContext.selectedNodeId)}>
-          Simple synthesis
+        <Button {...btnAttrs} onClick={requestNidBy(api.simpleSynthesis, appContext.selectedNodeId)}>
+          simple
         </Button>
-        <Button
-          {...buttonAttrs}
-          onClick={requestNidBy(haskellApiService.smartBindSynthesisIO, appContext.selectedNodeId)}
-        >
-          Smart bind synthesis
+        <Button {...btnAttrs} onClick={requestNidBy(api.smartBindSynthesisIO, appContext.selectedNodeId)}>
+          with-smart-bind
         </Button>
-        <Button {...buttonAttrs} onClick={requestNidBy(haskellApiService.allBindsAndRefsIO, appContext.selectedNodeId)}>
-          All bindings and refactorings
+        <Button {...btnAttrs} onClick={requestNidBy(api.allBindsAndRefsIO, appContext.selectedNodeId)}>
+          bind-and-refactors
         </Button>
       </div>
       <div>
-        <Button {...buttonAttrs} onClick={requestNidBy(haskellApiService.allBestThread, appContext.selectedNodeId, 2)}>
-          All best tread 2
+        <Button {...btnAttrs} onClick={requestNidBy(api.allBestThread, appContext.selectedNodeId, 2)}>
+          ∀-best-thread-2
         </Button>
-        <Button {...buttonAttrs} onClick={requestNidBy(haskellApiService.allBestThread, appContext.selectedNodeId, 1)}>
-          All best tread 1
+        <Button {...btnAttrs} onClick={requestNidBy(api.allBestThread, appContext.selectedNodeId, 1)}>
+          ∀-best-thread-1
         </Button>
-        <Button {...buttonAttrs} onClick={requestNidBy(haskellApiService.allBestThread, appContext.selectedNodeId, 0)}>
-          Best tread
+        <Button {...btnAttrs} onClick={requestNidBy(api.allBestThread, appContext.selectedNodeId, 0)}>
+          best-thread
         </Button>
-        <Button {...buttonAttrs} onClick={requestNidBy(haskellApiService.obviousBindThread, appContext.selectedNodeId)}>
-          Obvious bind thread
+        <Button {...btnAttrs} onClick={requestNidBy(api.obviousBindThread, appContext.selectedNodeId)}>
+          obvious-bind-thread
         </Button>
       </div>
     </div>
