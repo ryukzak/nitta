@@ -1,0 +1,8 @@
+// Import locally customized variables
+@import "./custom.scss";
+
+// Import Bootstrap and its default variables
+@import "~bootstrap/scss/bootstrap.scss";
+
+// Import Glyphicons
+@import "~glyphicons-only-bootstrap/css/bootstrap.min.css";

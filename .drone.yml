@@ -2,7 +2,7 @@ kind: pipeline
 name: default
 
 steps:
-
+  
   - name: stack build
     image: nitta-build:latest
     pull: if-not-exists
@@ -29,7 +29,7 @@ steps:
       - curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
     when:
       status:
-      - success
+        - success
     environment:
       TELEGRAM_BOT_TOKEN:
         from_secret: TELEGRAM_BOT_TOKEN
@@ -49,7 +49,7 @@ steps:
       - curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
     when:
       status:
-      - failure
+        - failure
     environment:
       TELEGRAM_BOT_TOKEN:
         from_secret: TELEGRAM_BOT_TOKEN
