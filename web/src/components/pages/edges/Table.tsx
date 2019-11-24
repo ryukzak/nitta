@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Button } from "react-bootstrap";
 import { EdgeView, Interval } from "../../../gen/types";
 import { nInSeparator } from "../../app/AppContext";
 
@@ -16,9 +15,9 @@ export function nidColumn(onUpdateNid: (nid: string) => void) {
     Cell: (row: { original: Edge }) => {
       let nid: string[] = row.original.nid.split(nInSeparator);
       return (
-        <a href="#" onClick={() => onUpdateNid(row.original.nid)}>
+        <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(row.original.nid)}>
           {nid[nid.length - 1]}>
-        </a>
+        </button>
       );
     }
   };
