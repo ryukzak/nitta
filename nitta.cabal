@@ -144,6 +144,8 @@ test-suite nitta-test
                      , MissingH
                      , nitta
                      , QuickCheck
+                     , split
+                     , regex-compat
                      , tasty
                      , tasty-hunit
                      , tasty-quickcheck

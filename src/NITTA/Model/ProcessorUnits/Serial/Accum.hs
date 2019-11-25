@@ -5,6 +5,7 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 {-|
 Module      : NITTA.Model.ProcessorUnits.Serial.Accum
@@ -65,6 +66,7 @@ accum = Accum
 
 instance ( VarValTime v x t
          ) => ProcessorUnit (Accum v x t) v x t where
+
     tryBind f pu@Accum{ remain }
         | Just F.Add {} <- castF f = Right pu{ remain=f : remain }
         | Just F.Sub {} <- castF f = Right pu{ remain=f : remain }

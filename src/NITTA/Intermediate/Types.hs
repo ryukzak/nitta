@@ -135,7 +135,7 @@ data Lock v
         { locked :: v
         , lockBy :: v
         }
-    deriving ( Show, Eq, Generic )
+    deriving ( Show, Ord, Eq, Generic )
 
 
 

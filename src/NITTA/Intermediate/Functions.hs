@@ -30,7 +30,8 @@ Stability   : experimental
 -}
 module NITTA.Intermediate.Functions
     ( -- *Arithmetics
-      Add(..), add
+      Acc(..), Status(..), Sign(..), acc
+    , Add(..), add
     , Division(..), division
     , Multiply(..), multiply
     , ShiftLR(..), shiftL, shiftR
@@ -47,14 +48,12 @@ module NITTA.Intermediate.Functions
 import qualified Data.Bits                as B
 import           Data.Default
 import           Data.List.Split          (splitWhen)
-import           Data.Maybe               (mapMaybe)
 import qualified Data.Map                 as M
 import           Data.Set                 (elems, fromList, union)
 import qualified Data.String.Utils        as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Utils
-
 
 
 data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq, Show )
@@ -129,93 +128,89 @@ instance ( Var v ) => FunctionSimulation (Reg v x) v x where
         setZipX cntx vs x
 
 
-data Sign = Plus | Minus deriving (Show, Eq)
+data Sign = Plus | Minus deriving (Typeable, Show, Eq)
 
-data Status s v = Push s (I v) | Pull (O v) deriving (Show, Eq)
+data Status v = Push Sign (I v) | Pull (O v) deriving (Typeable, Show, Eq)
 
-newtype Acc s v x = Acc [Status s v] deriving (Eq)
+newtype Acc v x = Acc [Status v] deriving (Typeable, Eq)
 
-instance {-# OVERLAPS #-} Label (Acc Sign v x) where label Acc{} = "+"
-instance ( Show v) => Show (Acc Sign v x) where
+instance {-# OVERLAPS #-} Label (Acc v x) where label Acc{} = "+"
+instance ( Show v) => Show (Acc v x) where
     show (Acc lst) =  concatMap printStatus lst
         where
-            printStatus :: (Show v) => Status Sign v -> String
             printStatus (Push Plus (I v))   = " +" ++ show v
             printStatus (Push Minus (I v))  = " -" ++ show v
             printStatus (Pull (O v))        = concatMap ((" => "++) . show) (elems v) ++ "; "
 
-accum lst = F $ Acc lst
+acc lst = F $ Acc lst
 
-instance (Ord v) => Function (Acc Sign v x) v where
-    inputs  (Acc lst) = fromList $ mapMaybe get lst
-        where
-            get s = case s of
-                Push _ (I v) -> Just v
-                _            -> Nothing
-    outputs (Acc lst) = foldl1 union $ mapMaybe get lst
-        where
-            get s = case s of
-                Pull (O v) -> Just v
-                _          -> Nothing
+isPull (Pull _) = True
+isPull _        = False
 
-instance ( Ord v ) => Patch (Acc Sign v x) (v, v) where
+isPush (Push _ _) = True
+isPush _          = False
+
+fromPush (Push _ (I v)) = v
+fromPush _              = error "Error in fromPush function in acc"
+
+fromPull (Pull (O s)) = s
+fromPull _            = error "Error in fromPull function in acc"
+
+instance (Ord v) => Function (Acc v x) v where
+    inputs (Acc lst) = fromList $ map fromPush $ filter isPush lst
+    outputs (Acc lst) = foldl1 union $ map fromPull $ filter isPull lst
+
+instance ( Ord v ) => Patch (Acc v x) (v, v) where
     patch diff (Acc lst) = Acc $ map
         (\case
             Push s v -> Push s (patch diff v)
             Pull vs  -> Pull (patch diff vs)
         ) lst
 
-instance ( Var v ) => Locks (Acc Sign v x) v where
+instance ( Var v ) => Locks (Acc v x) v where
     locks = locksAcc
+        where
+            pushGroups (Acc lst) = map (map fromPush) $
+                filter (/= []) $
+                    splitWhen isPull lst
 
-pushGroups (Acc lst) = map (map (\(Push _ (I v)) -> v)) $
-    filter (/= []) $ splitWhen
-        (\case
-            Pull _ -> True
-            _      -> False
-        ) lst
+            pullGroups (Acc lst) = map (concatMap (elems . fromPull)) $
+                filter (/= []) $
+                    splitWhen isPush lst
 
-pullGroups (Acc lst) = map (concatMap (elems . \(Pull (O v)) -> v)) $
-    filter (/= []) $ splitWhen
-        (\case
-            Push _ _ -> True
-            _        -> False
-        ) lst
+            locksPush []     buff                     = filter ((/=[]) . fst) buff
+            locksPush (x:xs) []                       = locksPush xs [([], x)]
+            locksPush (x:xs) buff@((lastL, lastLB):_) = locksPush xs ((x, lastL ++ lastLB):buff)
 
-locksPush [] allLocks = filter ((/=[]) . fst) allLocks
-locksPush (x:xs) [] = locksPush xs [([], x)]
-locksPush (x:xs) allLocks@((lockedBefore, lockByBefore):_) = locksPush xs ((x, lockedBefore ++ lockByBefore ):allLocks)
+            locksPull []              buff                     = buff
+            locksPull (x:xs)          []                       = locksPull xs [x]
+            locksPull ((inp, out):xs) buff@((lastL, lastLB):_) = locksPull xs ((inp, out ++ lastL ++ lastLB):buff)
 
-locksPull [] allLocks = allLocks
-locksPull ((lockedP, lockByP):xs) [] = locksPull xs [(lockedP, lockByP)]
-locksPull ((lockedP, lockByP):xs) allLocks@((lockedBefore, lockByBefore):_) = locksPull xs ((lockedP, lockByP ++ lockedBefore ++ lockByBefore):allLocks)
+            locksAcc accList = let
+                    pushList = pushGroups accList
+                    pullList = pullGroups accList
+                    exprTuple = zip pullList pushList
+                    locksListPush = locksPush pushList []
+                    locksListPull = locksPull exprTuple []
+                    allLocks = locksListPush ++ locksListPull
+                in
+                    concatMap (\eachLock ->
+                        [Lock { locked = y, lockBy = x}
+                        | x <- snd eachLock
+                        , y <- fst eachLock
+                        ]) allLocks
 
-locksAcc acc = let
-        pushs = pushGroups acc
-        pulls = pullGroups acc
-        accTuple = zip pulls pushs
-        locksListPush = locksPush pushs []
-        locksListPull = locksPull accTuple []
-        allLocks = locksListPush ++ locksListPull
-    in
-        concatMap (\eachLock ->
-            [Lock { locked = y, lockBy = x}
-            | x <- snd eachLock
-            , y <- fst eachLock
-            ]) allLocks
-
-
-instance ( Var v, Num x ) => FunctionSimulation (Acc Sign v x) v x where
+instance ( Var v, Num x) => FunctionSimulation (Acc v x) v x where
     simulate cntx (Acc lst) = let
-            genPush v s acc context
+            genPush v s accum context
                 | Right x <- getX context v = case s of
-                    Plus  -> (acc + x, Right context)
-                    Minus -> (acc - x, Right context)
-                | otherwise = (acc, Left "Error in accum Push value to context")
+                    Plus  -> (accum + x, Right context)
+                    Minus -> (accum - x, Right context)
+                | otherwise = (accum, Left "Error in accum Push value to context")
 
-            select (acc, Right context) (Push s (I v)) = genPush v s acc context
-            select (acc, Right context) (Pull (O vs)) = (acc, setZipX context vs acc)
-            select (acc, Left err) _ = (acc, Left err)
+            select (accum, Right context) (Push s (I v)) = genPush v s accum context
+            select (accum, Right context) (Pull (O vs)) = (accum, setZipX context vs accum)
+            select (accum, Left err) _ = (accum, Left err)
 
             (_, eitherContext) = foldl select (0, Right cntx) lst
         in eitherContext
