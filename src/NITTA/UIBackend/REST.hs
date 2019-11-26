@@ -66,7 +66,7 @@ type WithSynthesis tag v x t
     :<|> "model" :> Get '[JSON] (ModelState (BusNetwork tag v x t) v x)
     :<|> "timelines" :> Get '[JSON] (ProcessTimelines t)
     :<|> "debug" :> Get '[JSON] (Debug tag v t)
-    :<|> "history" :> Get '[JSON] [SynthesisDecisionView tag v x (Interval t)]
+    :<|> "history" :> Get '[JSON] [( NId, SynthesisDecisionView tag v x (Interval t) )]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] (TestbenchReport v x)
     :<|> SimpleCompilerAPI tag v x t

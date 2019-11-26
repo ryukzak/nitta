@@ -23,7 +23,10 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module Main ( main ) where
+module Main
+    ( main
+    , HistoryStep(..) -- only for suppress warning
+    ) where
 
 import           Data.Aeson
 import           Data.Aeson.TypeScript.TH
@@ -79,6 +82,9 @@ $(deriveTypeScript defaultOptions ''GraphEdge)
 $(deriveTypeScript defaultOptions ''NodeElement)
 $(deriveTypeScript defaultOptions ''GraphStructure)
 
+data HistoryStep tag v x tp = HistoryStep NId ( SynthesisDecisionView tag v x tp )
+$(deriveTypeScript defaultOptions ''HistoryStep)
+
 main = do
     APIGen{ port, opath } <- cmdArgs apiGenArgs
 
@@ -109,6 +115,7 @@ main = do
 
             , getTypeScriptDeclarations (Proxy :: Proxy DataflowEndpointView)
             , getTypeScriptDeclarations (Proxy :: Proxy SynthesisDecisionView)
+            , getTypeScriptDeclarations (Proxy :: Proxy HistoryStep)
             , getTypeScriptDeclarations (Proxy :: Proxy EdgeView)
 
             , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)

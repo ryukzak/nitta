@@ -191,8 +191,8 @@ getSynthesisHistoryIO node nId@(NId (i:is)) = do
     xs <- getSynthesisHistoryIO (eNode $ edges !! i) (NId is)
     return (getSynthesisHistoryIO' node ++ xs)
 
-getSynthesisHistoryIO' Node{ nOrigin=Nothing }                = []
-getSynthesisHistoryIO' Node{ nOrigin=Just Edge{ eDecision } } = [ eDecision ]
+getSynthesisHistoryIO' Node{ nOrigin=Nothing }                     = []
+getSynthesisHistoryIO' Node{ nOrigin=Just Edge{ eDecision }, nId } = [ ( nId, eDecision ) ]
 
 
 mkEdges :: ( UnitTag tag, VarValTime v x t
