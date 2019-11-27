@@ -30,7 +30,6 @@ export const EdgesView: React.FC = () => {
     );
   }
 
-  /* FIXME: history and table view of decision should be similar */
   return (
     <div className="m-3">
       <div className="row">
@@ -39,12 +38,9 @@ export const EdgesView: React.FC = () => {
         </div>
         <TablesView edges={edges} />
       </div>
-      <div className="row mt-2 w-100 columns" style={{ overflowX: "auto" }}>
-        <div className="columns">
-          <pre className="squeze h5">History:</pre>
+      <div className="row mt-2 ml-1 w-100 columns" style={{ overflowX: "auto" }}>
           <SynthesisHistoryView reverse={true} />
         </div>
-      </div>
     </div>
   );
 };
