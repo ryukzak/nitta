@@ -43,6 +43,8 @@ module NITTA.Intermediate.Functions
     -- *Input/Output
     , Receive(..), receive
     , Send(..), send
+    -- *Locks tests
+    , locksSet
     ) where
 
 import qualified Data.Bits                as B
@@ -55,6 +57,9 @@ import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Utils
 
+
+import qualified Data.List                as L
+import           Text.Regex
 
 data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq, Show )
 instance {-# OVERLAPS #-} ( Show x, Label v ) => Label (Loop v x) where
@@ -167,18 +172,46 @@ instance ( Ord v ) => Patch (Acc v x) (v, v) where
             Pull vs  -> Pull (patch diff vs)
         ) lst
 
+------------------------------ for locks tests ---------------------------------
+
+exprPattern = mkRegex "[+,=,-]*[a-zA-Z0-9]+|;"
+
+toBlocksSplit exprInput = splitBySemicolon $ matchAll exprPattern filtered []
+    where
+        matchAll p inpS res =
+            case matchRegexAll p inpS of
+                Just (_, x, xs, _) -> x : matchAll p xs res
+                Nothing            -> []
+        filtered = subRegex (mkRegex "[ ]+") exprInput ""
+        splitBySemicolon = filter (not . null) . splitWhen ( == ";")
+
+accGen blocks = structure
+    where
+        partedExpr = map (L.partition (\(x:_) -> x /= '='))
+        signPush (s:name) = case s of
+            '+' -> Push Plus (I name)
+            '-' -> Push Minus (I name)
+            _   -> error "Error in matching + and -"
+        pushCreate lst = map signPush lst
+        pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_:name) -> name : buff ) [] lst
+        structure = Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
+
+locksSet exprInput = fromList $ locks $ accGen $ toBlocksSplit exprInput
+
+--------------------------------------------------------------------------------
+
 instance ( Var v ) => Locks (Acc v x) v where
     locks = locksAcc
         where
             pushGroups (Acc lst) = map (map fromPush) $
-                filter (/= []) $
+                filter (not . null) $
                     splitWhen isPull lst
 
             pullGroups (Acc lst) = map (concatMap (elems . fromPull)) $
-                filter (/= []) $
+                filter (not . null) $
                     splitWhen isPush lst
 
-            locksPush []     buff                     = filter ((/=[]) . fst) buff
+            locksPush []     buff                     = filter (not . null . fst) buff
             locksPush (x:xs) []                       = locksPush xs [([], x)]
             locksPush (x:xs) buff@((lastL, lastLB):_) = locksPush xs ((x, lastL ++ lastLB):buff)
 

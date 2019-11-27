@@ -11,40 +11,13 @@ module NITTA.Test.Locks
     ( locksTest
     ) where
 
-import NITTA.Intermediate.Functions
-import           Data.Set                 (elems, fromList, union)
-import qualified Data.List                as L
-import           Text.Regex
+import           Data.Set                     (elems, fromList, union)
+import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
-import           Test.Tasty                    (TestTree)
+import           Test.Tasty                   (TestTree)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
-import           Text.InterpolatedString.Perl6 (qc)
-import           Data.List.Split          (splitWhen)
-
-exprPattern = mkRegex "[+,=,-]*[a-zA-Z0-9]+|;"
-
-toBlocksSplit exprInput = splitBySemicolon $ matchAll exprPattern filtered []
-    where
-        matchAll p inpS res =
-            case matchRegexAll p inpS of
-                Just (_, x, xs, _) -> x : matchAll p xs res
-                Nothing            -> []
-        filtered = subRegex (mkRegex "[ ]+") exprInput ""
-        splitBySemicolon = filter (/= []) . splitWhen ( == ";")
-
-accGen blocks = structure
-    where
-        partedExpr = map (L.partition (\(x:_) -> x /= '='))
-        signPush (s:name) = case s of
-            '+' -> Push Plus (I name)
-            '-' -> Push Minus (I name)
-            _   -> error "Error in matching + and -"
-        pushCreate lst = map signPush lst
-        pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_:name) -> name : buff ) [] lst
-        structure = Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
-
-locksSet exprInput = fromList $ locks $ accGen $ toBlocksSplit exprInput
+import           Text.Regex
 
 case_twoExpressions = do
     let
