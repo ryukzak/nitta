@@ -28,7 +28,7 @@ export const HistoryTableView: React.FC<HistoryProps> = ({ history }) => {
             let desc: string | Refactor<string, string> = "";
             if (h[1].tag === "BindingView") desc = h[1].pu + " <- " + h[1].function;
             if (h[1].tag === "RefactorView") desc = h[1].contents;
-            if (h[1].tag === "DataflowView") desc = JSON.stringify(h);
+            if (h[1].tag === "DataflowView") desc = JSON.stringify(h[1]);
             return <div>{desc}</div>;
           }),
         ]}
