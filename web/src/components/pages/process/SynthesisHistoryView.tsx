@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { SynthesisDecisionView } from "../../../gen/types";
+import { HistoryStep } from "../../../gen/types";
 import { AxiosResponse, AxiosError } from "axios";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { HistoryTableView } from "./HistoryTableView";
@@ -12,19 +12,17 @@ export interface ISynthesisHistoryViewProps {
 
 export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props => {
   const appContext = useContext(AppContext) as IAppContext;
-  const [synthesisHistory, setHistory] = useState<[string, SynthesisDecisionView<string, string, string, string>][]>();
-
+  const [synthesisHistory, setHistory] = useState<HistoryStep<string, string, string, string>[]>();
   useEffect(() => {
     haskellApiService
       .getHistory(appContext.selectedNodeId)
-      .then((response: AxiosResponse<[string, SynthesisDecisionView<string, string, string, string>][]>) => {
+      .then((response: AxiosResponse<HistoryStep<string, string, string, string>[]>) => {
+        props.reverse ? setHistory(response.data.reverse()) : setHistory(response.data);
         setHistory(response.data);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedNodeId]);
+  }, [appContext.selectedNodeId, props.reverse]);
 
   if (synthesisHistory == null) return <pre>LOADING...</pre>;
-
-  let history = props.reverse ? synthesisHistory.reverse() : synthesisHistory;
-  return <HistoryTableView history={history} />;
+  return <HistoryTableView history={synthesisHistory} reverse={props.reverse} />;
 };
