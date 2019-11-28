@@ -1,19 +1,25 @@
 import * as React from "react";
 import ReactTable from "react-table";
-import { AppContext, IAppContext, nInSeparator } from "../../app/AppContext";
-import { SynthesisDecisionView, Refactor } from "../../../gen/types";
+import { AppContext, IAppContext } from "../../app/AppContext";
+import { HistoryStep, Refactor } from "../../../gen/types";
 
-type History = [string, SynthesisDecisionView<string, string, string, string>];
+type FirstStep = [string, { tag: ""; desc: string }];
+type History = HistoryStep<string, string, string, string> | FirstStep;
 
 type HistoryProps = {
   history: History[];
+  reverse: boolean;
 };
 
-export const HistoryTableView: React.FC<HistoryProps> = ({ history }) => {
+export const HistoryTableView: React.FC<HistoryProps> = ({ history, reverse }) => {
   const appContext = React.useContext(AppContext) as IAppContext;
   const style = {
     fontWeight: 600,
   };
+
+  const firstStep = ["-", { tag: "", desc: "INITIAL STATE" }] as History;
+  history.map(e => console.log("History arr: " + e[0]));
+  reverse ? (history = history.concat([firstStep])) : (history = [firstStep].concat(history));
 
   return (
     <div className="columns">
@@ -21,11 +27,11 @@ export const HistoryTableView: React.FC<HistoryProps> = ({ history }) => {
         name="History"
         history={history}
         columns={[
-          numberColumn(),
-          nidColumn(appContext.selectNode),
-          textColumn("tag", (h: History) => h[1].tag, 100),
-          textColumn("description", (h: History) => {
+          stepColumn(appContext.selectNode),
+          textColumn("decision type", (h: History) => h[1].tag, 100),
+          textColumn(" description  ", (h: History) => {
             let desc: string | Refactor<string, string> = "";
+            if (h[1].tag === "") desc = h[1].desc;
             if (h[1].tag === "BindingView") desc = h[1].pu + " <- " + h[1].function;
             if (h[1].tag === "RefactorView") desc = h[1].contents;
             if (h[1].tag === "DataflowView") desc = JSON.stringify(h[1]);
@@ -58,27 +64,32 @@ export const HistoryTableView: React.FC<HistoryProps> = ({ history }) => {
     );
   }
 
-  function numberColumn() {
+  function stepColumn(onUpdateNid: (nid: string) => void) {
     return {
-      maxWidth: 30,
-      Cell: (row: any) => {
-        return <div>{row.index + 1}</div>;
-      }
-    };
-  }
-
-  function nidColumn(onUpdateNid: (nid: string) => void) {
-    return {
-      Header: "nid",
-      maxWidth: 30,
+      Header: "step",
+      maxWidth: 40,
       Cell: (row: { original: History }) => {
-        let nid: string[] = row.original[0].split(nInSeparator);
+        if (
+          Object.values(row.original[0])
+            .map(String)
+            .join("") === appContext.selectedNodeId
+        )
+          return <>{reverse ? history.length - (row as any).index : (row as any).index + 1}</>;
         return (
-          <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(row.original[0])}>
-            {nid[nid.length - 1]}>
+          <button
+            className="btn-link bg-transparent p-0 border-0"
+            onClick={() =>
+              onUpdateNid(
+                Object.values(row.original[0])
+                  .map(String)
+                  .join("")
+              )
+            }
+          >
+            {reverse ? history.length - (row as any).index : (row as any).index + 1}
           </button>
         );
-      }
+      },
     };
   }
 
@@ -93,7 +104,7 @@ export const HistoryTableView: React.FC<HistoryProps> = ({ history }) => {
       style: style,
       maxWidth: maxWidth,
       minWidth: minWidth,
-      Cell: (row: { original: History }) => f(row.original)
+      Cell: (row: { original: History }) => f(row.original),
     };
   }
 };
