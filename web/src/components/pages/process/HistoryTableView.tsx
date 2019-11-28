@@ -18,7 +18,6 @@ export const HistoryTableView: React.FC<HistoryProps> = ({ history, reverse }) =
   };
 
   const firstStep = ["-", { tag: "", desc: "INITIAL STATE" }] as History;
-  history.map(e => console.log("History arr: " + e[0]));
   reverse ? (history = history.concat([firstStep])) : (history = [firstStep].concat(history));
 
   return (
