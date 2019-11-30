@@ -70,7 +70,7 @@ $(deriveTypeScript defaultOptions ''TestbenchReport)
 $(deriveTypeScript defaultOptions ''Refactor)
 $(deriveTypeScript defaultOptions ''Parameters)
 
-$(deriveTypeScript defaultOptions ''NId)
+$(deriveTypeScript defaultOptions ''NId) -- in according to custom ToJSON instance, the real type description is hardcoded.
 $(deriveTypeScript defaultOptions ''TreeView)
 $(deriveTypeScript defaultOptions ''SynthesisNodeView)
 
@@ -109,7 +109,6 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy Refactor)
             , getTypeScriptDeclarations (Proxy :: Proxy Parameters)
 
-            , getTypeScriptDeclarations (Proxy :: Proxy NId)
             , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
             , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
 
@@ -127,5 +126,6 @@ main = do
         $ S.replace "interface " "export interface " -- export all interfaces
         $ S.replace "[k: T1]" "[k: string]"          -- dirty hack for fixing map types for TestbenchReport
         $ S.replace "[k: T2]" "[k: string]"          -- dirty hack for fixing map types for TestbenchReport
-        $ ts ++ "\n"
+        $ ts ++ "\n" ++ "type NId = string\n";
+
     putStrLn "Generate typescript interface...OK"
