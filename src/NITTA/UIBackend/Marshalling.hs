@@ -92,7 +92,7 @@ instance ( UnitTag tag, VarValTime v x t
     view Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
         nodesM <- readTVarIO nEdges
         nodes <- case nodesM of
-            Just ns -> mapM (view . eNode) ns
+            Just ns -> mapM (view . eTarget) ns
             Nothing -> return []
         return NodeView
             { rootLabel=SynthesisNodeView
@@ -172,9 +172,9 @@ data EdgeView tag v x t
 instance ( VarValTimeJSON v x t, Hashable v, ToJSON tag ) => ToJSON (EdgeView tag v x t)
 
 instance ( VarValTimeJSON v x t, Hashable v ) => Viewable (G Edge tag v x t) (EdgeView tag v x t) where
-    view Edge{ eNode, eOption, eDecision, eParameters, eObjectiveFunctionValue }
+    view Edge{ eTarget, eOption, eDecision, eParameters, eObjectiveFunctionValue }
         = EdgeView
-            { nid=show $ nId eNode
+            { nid=show $ nId eTarget
             , option=view eOption
             , decision=view eDecision
             , parameters=eParameters

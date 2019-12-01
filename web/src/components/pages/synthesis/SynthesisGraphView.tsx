@@ -149,13 +149,13 @@ export const SynthesisGraphView: React.FC = () => {
         data={dataGraph}
         nodeSize={{ x: 160, y: 60 }}
         separation={{ siblings: 1, nonSiblings: 1 }}
-        pathFunc="diagonal"
+        pathFunc="straight"
         translate={{ x: 20, y: 40 }}
         collapsible={false}
         zoom={0.7}
         transitionDuration={0}
         nodeSvgShape={{
-          shape: "circle",
+          shape: "rect",
           shapeProps: {
             r: 10,
             cx: 0,

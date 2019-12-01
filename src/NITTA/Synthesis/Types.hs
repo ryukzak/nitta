@@ -131,7 +131,8 @@ data Node m o d
 
 data Edge m o d
     = Edge
-        { eNode                   :: Node m o d
+        { eTarget                 :: Node m o d -- ^edge target
+        , eSource                 :: Node m o d -- ^edge source
         , eOption                 :: o
         , eDecision               :: d
           -- |parameters of the 'Edge'
@@ -181,14 +182,14 @@ getNodeIO node (NId []) = return node
 getNodeIO node nId@(NId (i:is)) = do
     edges <- getEdgesIO node
     unless (i < length edges) $ error $ "getNode - wrong nId: " ++ show nId
-    getNodeIO (eNode $ edges !! i) (NId is)
+    getNodeIO (eTarget $ edges !! i) (NId is)
 
 
 getSynthesisHistoryIO node (NId []) = return $ getSynthesisHistoryIO' node
 getSynthesisHistoryIO node nId@(NId (i:is)) = do
     edges <- getEdgesIO node
     unless (i < length edges) $ error $ "getNode - wrong nId: " ++ show nId
-    xs <- getSynthesisHistoryIO (eNode $ edges !! i) (NId is)
+    xs <- getSynthesisHistoryIO (eTarget $ edges !! i) (NId is)
     return (getSynthesisHistoryIO' node ++ xs)
 
 getSynthesisHistoryIO' Node{ nOrigin=Nothing }                     = []
@@ -197,9 +198,9 @@ getSynthesisHistoryIO' Node{ nOrigin=Just Edge{ eDecision }, nId } = [ ( nId, eD
 
 mkEdges :: ( UnitTag tag, VarValTime v x t
     ) => G Node tag v x t -> STM [ G Edge tag v x t ]
-mkEdges n@Node{ nId, nModel, nOrigin } = do
+mkEdges eSource@Node{ nId, nModel, nOrigin } = do
     let conf = def
-        cntx = prepareParametersCntx n
+        cntx = prepareParametersCntx eSource
 
     forM (zip [0..] $ synthesisOptions nModel) $ \(i, opt) ->
         newTVar Nothing >>= \nEdges ->
@@ -209,12 +210,12 @@ mkEdges n@Node{ nId, nModel, nOrigin } = do
             eParameters = estimateParameters conf cntx eOption
             eObjectiveFunctionValue = objectiveFunction conf cntx eParameters
 
-            eNode = mkNode (nId <> NId [i]) (synthesisDecision nModel eDecision) (Just origin `asTypeOf` nOrigin) nEdges
-            origin = Edge{ eOption, eDecision, eParameters, eObjectiveFunctionValue, eNode }
+            eTarget = mkNode (nId <> NId [i]) (synthesisDecision nModel eDecision) (Just origin `asTypeOf` nOrigin) nEdges
+            origin = Edge{ eOption, eDecision, eParameters, eObjectiveFunctionValue, eSource, eTarget }
         in return origin
 
 
-prepareParametersCntx Node{ nModel } = let
+prepareParametersCntx node@Node{ nModel } = let
         opts = synthesisOptions nModel
         bindableFunctions = [ f | (Binding f _) <- opts ]
 
@@ -227,6 +228,7 @@ prepareParametersCntx Node{ nModel } = let
                 ++ mkWaves (n+1) (pool \\ currentWave) (currentWave `S.union` lockedVars)
     in ParametersCntx
         { nModel
+        , node
         , possibleDeadlockBinds = fromList
             [ f
             | (Binding f tag) <- opts
@@ -290,16 +292,18 @@ data Parameters
         , pNotTransferableInputs :: [Float]
         }
     | RefactorEdgeParameter
-        { pRefactor    :: Refactor () ()
-        , pVarsCount   :: Float
-        , pBufferCount :: Float
+        { pRefactor          :: Refactor () ()
+        , pVarsCount         :: Float
+        , pBufferCount       :: Float
+        , pNStepBackRepeated :: Maybe Int
         }
     deriving ( Show, Generic )
 
 
-data ParametersCntx m tag v x
+data ParametersCntx m tag v x t
     = ParametersCntx
         { nModel                    :: m
+        , node                      :: G Node tag v x t
         , possibleDeadlockBinds     :: Set (F v x)
         , transferableVars          :: Set v
         , bindingAlternative        :: M.Map (F v x) [tag]
@@ -366,14 +370,30 @@ estimateParameters
                 notTransferableVars = map (\f -> inputs f \\ transferableVars) affectedFunctions
             in map (fromIntegral . length) notTransferableVars
         }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor BreakLoop{})
-    = RefactorEdgeParameter{ pRefactor=BreakLoop def def def, pVarsCount=0, pBufferCount=0 }
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{} (Refactor (ResolveDeadlock vs))
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{ node } (Refactor BreakLoop{})
+    = RefactorEdgeParameter
+        { pRefactor=BreakLoop def def def
+        , pVarsCount=0
+        , pBufferCount=0
+        , pNStepBackRepeated=nStepBackDecisonRepeated node
+        }
+estimateParameters ObjectiveFunctionConf{} ParametersCntx{ node } (Refactor (ResolveDeadlock vs))
     = RefactorEdgeParameter
         { pRefactor=ResolveDeadlock def
         , pVarsCount=fromIntegral $ S.size vs
         , pBufferCount=fromIntegral $ sum $ map countSuffix $ S.elems vs
+        , pNStepBackRepeated=nStepBackDecisonRepeated node
         }
+
+
+nStepBackDecisonRepeated Node{ nOrigin=Just Edge{ eSource, eDecision } }
+    = nStepBackDecisonRepeated' (1 :: Int) eDecision eSource
+nStepBackDecisonRepeated _ = Nothing
+nStepBackDecisonRepeated' _ _ Node{ nOrigin=Nothing } = Nothing
+nStepBackDecisonRepeated' acc d Node{ nOrigin=Just Edge{ eDecision, eSource } }
+    | d == eDecision = Just acc
+    | otherwise = nStepBackDecisonRepeated' (acc + 1) d eSource
+
 
 
 -- |Function, which map 'Parameters' to 'Float'.
@@ -399,6 +419,8 @@ objectiveFunction
                 + pRestrictedTime <?> 200
                 - sum pNotTransferableInputs * 5
                 - pWaitTime
+        RefactorEdgeParameter{ pNStepBackRepeated=Just _ }
+            -> -1
         RefactorEdgeParameter{ pRefactor=BreakLoop{} }
             -> 5000
         RefactorEdgeParameter{ pRefactor=ResolveDeadlock{}, pVarsCount, pBufferCount }
