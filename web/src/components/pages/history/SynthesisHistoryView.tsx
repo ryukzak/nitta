@@ -7,8 +7,7 @@ import { AppContext, IAppContext } from "../../app/AppContext";
 import { useContext } from "react";
 
 type Row = { original: History; index: number };
-type FirstStep = [NId, { tag: ""; desc: string }];
-type History = HistoryStep<string, string, string, string> | FirstStep;
+type History = HistoryStep<string, string, string, string>;
 
 export interface ISynthesisHistoryViewProps {
   reverse: boolean;
@@ -22,14 +21,14 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
     width: "100%"
   };
 
-  const firstStep = ["-", { tag: "", desc: "INITIAL STATE" }] as History;
+  const firstStep = ["-", { tag: "BindingView", function: "", pu: "" }] as History;
 
   useEffect(() => {
     haskellApiService
       .getHistory(appContext.selectedNodeId)
       .then((response: AxiosResponse<History[]>) => {
-        if(props.reverse) setHistory(response.data.reverse().concat([firstStep]));
-        else setHistory([firstStep].concat(response.data)); 
+        if (props.reverse) setHistory(response.data.reverse().concat([firstStep]));
+        else setHistory([firstStep].concat(response.data));
       })
       .catch((err: AxiosError) => console.log(err));
   }, [appContext.selectedNodeId, props.reverse]);
@@ -66,8 +65,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
       maxWidth: 40,
       Cell: (row: Row) => {
         let nid = row.original[0];
-        if (nid === appContext.selectedNodeId)
-          return <>{stepNumber(row)}</>;
+        if (nid === appContext.selectedNodeId) return <>{stepNumber(row)}</>;
         return (
           <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(nid)}>
             {stepNumber(row)}
@@ -101,13 +99,20 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
         history={synthesisHistory}
         columns={[
           stepColumn(appContext.selectNode),
-          textColumn("decision type", (h: History) => h[1].tag, 100),
+          textColumn(
+            "decision type",
+            (h: History) => {
+              if (h[0] === "-") return "";
+              return h[1].tag;
+            },
+            100
+          ),
           textColumn("description", (h: History) => {
             let desc: string | Refactor<string, string> = "";
-            if (h[1].tag === "") desc = h[1].desc;
             if (h[1].tag === "BindingView") desc = h[1].pu + " <- " + h[1].function;
             if (h[1].tag === "RefactorView") desc = h[1].contents;
             if (h[1].tag === "DataflowView") desc = JSON.stringify(h[1]);
+            if (h[0] === "-") desc = "INITIAL STATE";
             return <div>{desc}</div>;
           })
         ]}
