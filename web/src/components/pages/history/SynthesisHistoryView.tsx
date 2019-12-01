@@ -6,6 +6,7 @@ import { AxiosResponse, AxiosError } from "axios";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { useContext } from "react";
 
+type Row = { original: History; index: number };
 type FirstStep = [NId, { tag: ""; desc: string }];
 type History = HistoryStep<string, string, string, string> | FirstStep;
 
@@ -26,8 +27,8 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
     haskellApiService
       .getHistory(appContext.selectedNodeId)
       .then((response: AxiosResponse<History[]>) => {
-        if (props.reverse) setHistory(response.data.reverse().concat([firstStep]));
-        else setHistory([firstStep].concat(response.data));
+        if(props.reverse) setHistory(response.data.reverse().concat([firstStep]));
+        else setHistory([firstStep].concat(response.data)); 
       })
       .catch((err: AxiosError) => console.log(err));
   }, [appContext.selectedNodeId, props.reverse, firstStep]);
@@ -54,16 +55,21 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
     );
   }
 
-  function stepColumn(onUpdateNid: (nid: string) => void) {
+  function stepNumber(row: Row) {
+    return props.reverse ? synthesisHistory!.length - row.index : row.index + 1;
+  }
+
+  function stepColumn(onUpdateNid: (nid: NId) => void) {
     return {
       Header: "step",
       maxWidth: 40,
-      Cell: (row: { original: History }) => {
-        if (row.original[0] === appContext.selectedNodeId)
-          return <>{props.reverse ? synthesisHistory!.length - (row as any).index : (row as any).index + 1}</>;
+      Cell: (row: Row) => {
+        let nid = row.original[0];
+        if (nid === appContext.selectedNodeId)
+          return <>{stepNumber(row)}</>;
         return (
-          <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(row.original[0])}>
-            {props.reverse ? synthesisHistory!.length - (row as any).index : (row as any).index + 1}
+          <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(nid)}>
+            {stepNumber(row)}
           </button>
         );
       }
