@@ -21,9 +21,8 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
     width: "100%"
   };
 
-  const firstStep = ["-", { tag: "BindingView", function: "", pu: "" }] as History;
-
   useEffect(() => {
+    let firstStep = ["-", { tag: "BindingView", function: "", pu: "" }] as History;
     haskellApiService
       .getHistory(appContext.selectedNodeId)
       .then((response: AxiosResponse<History[]>) => {
