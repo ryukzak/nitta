@@ -18,7 +18,8 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
   const appContext = useContext(AppContext) as IAppContext;
   const [synthesisHistory, setHistory] = useState<History[]>();
   const style = {
-    fontWeight: 600
+    fontWeight: 600,
+    width: "100%"
   };
 
   const firstStep = ["-", { tag: "", desc: "INITIAL STATE" }] as History;
@@ -31,7 +32,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
         else setHistory([firstStep].concat(response.data)); 
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedNodeId, props.reverse, firstStep]);
+  }, [appContext.selectedNodeId, props.reverse]);
 
   function Table(props: { name: string; columns: any[]; history: History[] }) {
     if (props.history.length === 0)
@@ -101,7 +102,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
         columns={[
           stepColumn(appContext.selectNode),
           textColumn("decision type", (h: History) => h[1].tag, 100),
-          textColumn(" description  ", (h: History) => {
+          textColumn("description", (h: History) => {
             let desc: string | Refactor<string, string> = "";
             if (h[1].tag === "") desc = h[1].desc;
             if (h[1].tag === "BindingView") desc = h[1].pu + " <- " + h[1].function;

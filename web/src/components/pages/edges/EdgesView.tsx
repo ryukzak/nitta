@@ -33,14 +33,18 @@ export const EdgesView: React.FC = () => {
   return (
     <div className="m-3">
       <div className="row">
-        <div className="p-1 mr-5">
+        <div className="col-4">
           <IntermediateView />
         </div>
-        <TablesView edges={edges} />
+        <div className="col-8">
+          <TablesView edges={edges} />
+        </div>
       </div>
-      <div className="row mt-2 ml-1 w-100 columns" style={{ overflowX: "auto" }}>
+      <div className="row">
+        <div className="col">
           <SynthesisHistoryView reverse={true} />
         </div>
+      </div>
     </div>
   );
 };
