@@ -2,7 +2,7 @@ import * as React from "react";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { IntermediateView } from "../node/IntermediateView";
-import { SynthesisHistoryView } from "../process/SynthesisHistoryView";
+import { SynthesisHistoryView } from "../history/SynthesisHistoryView";
 import { TablesView } from "./EdgeTablesView";
 import { EdgeView } from "../../../gen/types";
 import { AxiosResponse } from "axios";
