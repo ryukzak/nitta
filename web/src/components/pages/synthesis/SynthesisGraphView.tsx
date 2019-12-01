@@ -73,9 +73,7 @@ export const SynthesisGraphView: React.FC = () => {
       .then((response: AxiosResponse<TreeView<SynthesisNodeView>>) => {
         let nidArray: Ids = {};
         let buildGraph = (gNode: Graph, dNode: TreeView<SynthesisNodeView>) => {
-          let strNid: string = Object.values(dNode.rootLabel.svNnid)
-            .map(String)
-            .join("");
+          let strNid: string = dNode.rootLabel.svNnid;
           gNode.name = reLastNidStep.exec(strNid)![0];
           gNode.nid = dNode.rootLabel.svNnid;
           nidArray[strNid] = gNode;

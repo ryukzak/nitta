@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import ReactTable from "react-table";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { HistoryStep, Refactor } from "../../../gen/types";
+import { HistoryStep, Refactor, NId } from "../../../gen/types";
 import { AxiosResponse, AxiosError } from "axios";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { useContext } from "react";
 
-type FirstStep = [string, { tag: ""; desc: string }];
+type FirstStep = [NId, { tag: ""; desc: string }];
 type History = HistoryStep<string, string, string, string> | FirstStep;
 
 export interface ISynthesisHistoryViewProps {
@@ -21,7 +21,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
   };
 
   const firstStep = ["-", { tag: "", desc: "INITIAL STATE" }] as History;
-  
+
   useEffect(() => {
     haskellApiService
       .getHistory(appContext.selectedNodeId)
@@ -30,7 +30,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
         else setHistory([firstStep].concat(response.data));
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedNodeId, props.reverse]);
+  }, [appContext.selectedNodeId, props.reverse, firstStep]);
 
   function Table(props: { name: string; columns: any[]; history: History[] }) {
     if (props.history.length === 0)
@@ -59,23 +59,10 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
       Header: "step",
       maxWidth: 40,
       Cell: (row: { original: History }) => {
-        if (
-          Object.values(row.original[0])
-            .map(String)
-            .join("") === appContext.selectedNodeId
-        )
+        if (row.original[0] === appContext.selectedNodeId)
           return <>{props.reverse ? synthesisHistory!.length - (row as any).index : (row as any).index + 1}</>;
         return (
-          <button
-            className="btn-link bg-transparent p-0 border-0"
-            onClick={() =>
-              onUpdateNid(
-                Object.values(row.original[0])
-                  .map(String)
-                  .join("")
-              )
-            }
-          >
+          <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(row.original[0])}>
             {props.reverse ? synthesisHistory!.length - (row as any).index : (row as any).index + 1}
           </button>
         );
@@ -101,7 +88,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
   if (synthesisHistory == null) return <pre>LOADING...</pre>;
 
   return (
-    <div className="columns">
+    <>
       <Table
         name="History"
         history={synthesisHistory}
@@ -118,6 +105,6 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
           })
         ]}
       />
-    </div>
+    </>
   );
 };
