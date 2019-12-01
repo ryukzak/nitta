@@ -34,7 +34,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
   };
 
   return (
-    <div className="columns">
+    <>
       <Table
         name="Binding"
         edges={edges.filter(e => e.decision.tag === "BindingView")}
@@ -110,7 +110,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
         )}
         columns={[nidColumn(appContext.selectNode), objectiveColumn(), decisionColumn(), parametersColumn()]}
       />
-    </div>
+    </>
   );
 
   // FIXME: shouldn't it be in Table.tsx?
