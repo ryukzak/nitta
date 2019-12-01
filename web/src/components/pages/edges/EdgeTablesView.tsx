@@ -10,6 +10,7 @@ import {
   IDataflowView,
   IDataFlowEdgeParameter,
   Interval,
+  IRefactorEdgeParameter
 } from "../../../gen/types";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
@@ -20,6 +21,7 @@ type BindingParam = IBindEdgeParameter;
 type Refactor = IRefactorView<string, string, number, number>;
 type Dataflow = IDataflowView<string, string, number, Interval<number>>;
 type DataflowParam = IDataFlowEdgeParameter;
+type RefactorParam = IRefactorEdgeParameter;
 
 type EdgesProps = {
   edges: Edge[];
@@ -32,7 +34,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
   };
 
   return (
-    <div className="columns">
+    <>
       <Table
         name="Binding"
         edges={edges.filter(e => e.decision.tag === "BindingView")}
@@ -62,6 +64,12 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
           nidColumn(appContext.selectNode),
           objectiveColumn(),
           textColumn("description", (e: Edge) => JSON.stringify((e.decision as Refactor).contents)),
+          textColumn("pVarsCount", (e: Edge) => (e.parameters as RefactorParam).pVarsCount, 50),
+          textColumn("pBufferCount", (e: Edge) => (e.parameters as RefactorParam).pBufferCount, 50),
+          textColumn("pNStepBackRepeated", (e: Edge) => {
+            let n = (e.parameters as RefactorParam).pNStepBackRepeated;
+            return n === undefined ? "null" : (n as number).toString()
+          }, 50)
         ]}
       />
       <Table
@@ -102,7 +110,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
         )}
         columns={[nidColumn(appContext.selectNode), objectiveColumn(), decisionColumn(), parametersColumn()]}
       />
-    </div>
+    </>
   );
 
   // FIXME: shouldn't it be in Table.tsx?
