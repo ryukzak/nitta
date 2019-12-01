@@ -59,7 +59,7 @@ data SynthesisStatement tag v x tp
         , dfTargets :: M.Map v (Maybe (tag, tp))
         }
     | Refactor (Refactor v x)
-    deriving ( Generic, Show )
+    deriving ( Generic, Show, Eq )
 
 
 class SynthesisProblem u tag v x t | u -> tag v x t where
