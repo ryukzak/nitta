@@ -50,7 +50,7 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Synthesis.Types
+import           NITTA.Synthesis.Tree
 import           NITTA.Synthesis.Utils
 import           NITTA.UIBackend.Timeline
 import           NITTA.Utils                     (transferred)

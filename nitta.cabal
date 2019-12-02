@@ -52,8 +52,9 @@ library
                      , NITTA.Project.Snippets
                      , NITTA.Project.Types
                      , NITTA.Project.Utils
+                     , NITTA.Synthesis.Estimate
                      , NITTA.Synthesis.Method
-                     , NITTA.Synthesis.Types
+                     , NITTA.Synthesis.Tree
                      , NITTA.Synthesis.Utils
                      , NITTA.UIBackend
                      , NITTA.UIBackend.Marshalling

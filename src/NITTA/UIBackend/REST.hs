@@ -25,8 +25,8 @@ module NITTA.UIBackend.REST
 import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Default
-import qualified Data.Map                         as M
-import qualified Data.Set                         as S
+import qualified Data.Map                        as M
+import qualified Data.Set                        as S
 import           GHC.Generics
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
@@ -37,16 +37,16 @@ import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
-import           NITTA.Project.Utils              (writeAndRunTestbench)
+import           NITTA.Project.Utils             (writeAndRunTestbench)
 import           NITTA.Synthesis.Method
-import           NITTA.Synthesis.Types
+import           NITTA.Synthesis.Tree
 import           NITTA.UIBackend.Marshalling
 import           NITTA.UIBackend.Timeline
-import           NITTA.UIBackend.VisJS            (VisJS, algToVizJS)
+import           NITTA.UIBackend.VisJS           (VisJS, algToVizJS)
 import           NITTA.Utils
 import           Numeric.Interval
 import           Servant
-import           System.FilePath                  (joinPath)
+import           System.FilePath                 (joinPath)
 
 
 
