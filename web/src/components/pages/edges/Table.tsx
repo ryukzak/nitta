@@ -59,7 +59,7 @@ export function parametersColumn() {
 export function objectiveColumn() {
   return {
     Header: "Z(d)",
-    maxWidth: 40,
+    maxWidth: 50,
     style: style,
     Cell: (row: { original: Edge }) => row.original.objectiveFunctionValue,
   };
