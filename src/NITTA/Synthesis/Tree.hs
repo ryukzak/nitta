@@ -41,9 +41,6 @@ module NITTA.Synthesis.Tree
       NId(..), G
     , Node(..), mkRootNodeIO, getNodeIO
     , Edge(..), getEdgesIO, getPositiveEdgesIO, getSynthesisHistoryIO
-      -- *Synthesis decision type & Parameters
-    , ObjectiveFunctionConf(..)
-    , Parameters(..)
       -- *Utils
     , isSynthesisFinish
     ) where
@@ -65,7 +62,8 @@ import           NITTA.Utils
 import           Numeric.Interval                (Interval)
 
 
--- |Type alias for Graph parts, where `e` - graph element (Node or Edge) should be 'Node' or 'Edge';
+-- |Type alias for Graph parts, where `e` - graph element (Node or Edge) should
+-- be 'Node' or 'Edge';
 type G e tag v x t
     = e
         (ModelState (BusNetwork tag v x t) v x)
@@ -162,7 +160,8 @@ data Edge m o d
         , eParameters             :: Parameters
             -- ^parameters of the 'Edge'
         , eObjectiveFunctionValue :: Float
-            -- ^objective function value for the 'Edge', which representing parameters as a number
+            -- ^objective function value for the 'Edge', which representing
+            -- parameters as a number
         }
     deriving ( Generic )
 
@@ -172,7 +171,7 @@ mkEdges
     => G Node tag v x t -> STM [ G Edge tag v x t ]
 mkEdges eSource@Node{ nId, nModel, nOrigin } = do
     let conf = def
-        cntx = prepareParametersCntx' nModel $ nStepBackDecisionRepeated eSource
+        cntx = prepareEstimationCntx nModel $ nStepBackDecisionRepeated eSource
 
     forM (zip [0..] $ synthesisOptions nModel) $ \(i, opt) ->
         newTVar Nothing >>= \nEdges ->
@@ -189,8 +188,9 @@ mkEdges eSource@Node{ nId, nModel, nOrigin } = do
 
 -- |Get all available edges for the node. Edges calculated only for the first
 -- call.
-getEdgesIO :: ( UnitTag tag, VarValTime v x t
-    ) => G Node tag v x t -> IO [ G Edge tag v x t ]
+getEdgesIO
+    :: ( UnitTag tag, VarValTime v x t )
+    => G Node tag v x t -> IO [ G Edge tag v x t ]
 getEdgesIO node@Node{ nEdges } = atomically $
     readTVar nEdges >>= \case
         Just edges -> return edges
@@ -217,8 +217,8 @@ getSynthesisHistoryIO' Node{ nOrigin=Nothing }                = []
 getSynthesisHistoryIO' Node{ nOrigin=Just Edge{ eDecision } } = [ eDecision ]
 
 
--- |Is the last decision repeated? If yes - @Just n@, where n how many steps back
--- its happened if not - @Nothing@.
+-- |Is the last decision repeated? If yes - @Just n@, where n how many steps
+-- back its happened if not - @Nothing@.
 nStepBackDecisionRepeated Node{ nOrigin=Just Edge{ eSource, eDecision } }
     = nStepBackDecisionRepeated' (1 :: Int) eDecision eSource
 nStepBackDecisionRepeated _ = Nothing

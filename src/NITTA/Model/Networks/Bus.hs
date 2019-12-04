@@ -43,14 +43,14 @@ module NITTA.Model.Networks.Bus
     ) where
 
 import           Control.Monad.State
-import qualified Data.Array                       as A
-import           Data.Bits                        (FiniteBits (..))
+import qualified Data.Array                      as A
+import           Data.Bits                       (FiniteBits (..))
 import           Data.Default
-import qualified Data.List                        as L
-import qualified Data.Map                         as M
-import           Data.Maybe                       (fromMaybe, isJust, mapMaybe)
-import qualified Data.Set                         as S
-import qualified Data.String.Utils                as S
+import qualified Data.List                       as L
+import qualified Data.Map                        as M
+import           Data.Maybe                      (fromMaybe, isJust, mapMaybe)
+import qualified Data.Set                        as S
+import qualified Data.String.Utils               as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
@@ -66,9 +66,9 @@ import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                 (inf, singleton, sup, width,
-                                                   (...))
-import           Text.InterpolatedString.Perl6    (qc)
+import           Numeric.Interval                (inf, singleton, sup, width,
+                                                  (...))
+import           Text.InterpolatedString.Perl6   (qc)
 
 
 data BusNetwork tag v x t = BusNetwork
@@ -345,8 +345,6 @@ instance ( UnitTag tag, VarValTime v x t
 instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (BusNetwork tag v x t) v x where
     refactorOptions bn@BusNetwork{ bnPus, bnBinded } = let
-            breakLoops = concatMap refactorOptions $ M.elems bnPus
-
             sources tag = M.fromList
                 [ (s, ss `S.difference` S.singleton s)
                 | EndpointSt{ epRole } <- endpointOptions ( bnPus M.! tag )
@@ -354,6 +352,7 @@ instance ( UnitTag tag, VarValTime v x t
                 , let Source ss = epRole
                 , s <- S.elems ss
                 ]
+
             allPossibleOutputs tag v
                 = map (S.union (S.singleton v)) $ S.elems $ S.powerSet
                 $ S.filter (isBufferRepetionOK maxBufferStack) -- avoid to many buffering
@@ -381,7 +380,7 @@ instance ( UnitTag tag, VarValTime v x t
                 , isBufferRepetionOK maxBufferStack v
                 ]
 
-            deadLockedVs = concat
+            resolveDeadlock = map ResolveDeadlock $ concat
                 [ allPossibleOutputs tag lockBy
                 | ( tag, ls ) <- allPULocks
                 , Lock{ lockBy, locked } <- ls
@@ -391,8 +390,11 @@ instance ( UnitTag tag, VarValTime v x t
                 , lockBy `S.member` maybeSended
                 , isBufferRepetionOK maxBufferStack lockBy
                 ]
-            deadlocks = map ResolveDeadlock deadLockedVs
-        in breakLoops ++ selfSending ++ deadlocks
+        in concat
+            [ concatMap refactorOptions $ M.elems bnPus
+            , selfSending  -- FIXME: not depricated, but why? It is should be a deadlock
+            , resolveDeadlock
+            ]
 
     refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(ResolveDeadlock vs) = let
             (buffer, diff) = prepareBuffer r

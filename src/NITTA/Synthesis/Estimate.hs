@@ -22,7 +22,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Synthesis.Estimate
-    ( ParametersCntx(..), prepareParametersCntx'
+    ( prepareEstimationCntx
     , Parameters(..), estimateParameters
     , ObjectiveFunctionConf(..), objectiveFunction
     ) where
@@ -46,36 +46,43 @@ import           NITTA.Utils
 import           Numeric.Interval                (inf, sup)
 
 
--- |Synthesis process setup, which determines next synthesis step selection.
-newtype ObjectiveFunctionConf
-    = ObjectiveFunctionConf
-        { threshold :: Int
-            -- ^Порог колличества вариантов, после которого пересылка данных
-            -- станет приоритетнее, чем привязка функциональных блоков.
+data EstimationCntx m tag v x t
+    = EstimationCntx
+        { unitModel                  :: m
+            -- ^unit under the synthesis process
+        , numberOfBindOptions        :: Int
+            -- ^number of binding options
+        , numberOfDataflowOptions    :: Int
+            -- ^number of dataflow options
+
+        , alreadyBindedVariables     :: S.Set v
+            -- ^a variable set of all already binded variables
+        , waves                      :: M.Map v Int
+            -- ^if algorithm will be represented as a graph, where nodes -
+            -- variables of not binded functions, edges - casuality, wave is a
+            -- minimal number of a step from an initial node to selected
+
+        , transferableVars           :: S.Set v
+            -- ^a variable set, which can be transferred on the current
+            -- synthesis step
+        , decisionDuplicateNStepBack :: Maybe Int
+            -- ^ how many synthesis step back require for finding a decision
+            -- duplicate
+        , possibleDeadlockBinds      :: S.Set (F v x)
+            -- ^a function set, which binding may cause dead lock
+        , bindingAlternative         :: M.Map (F v x) [tag]
+            -- ^a map from functions to possible processor unit tags
         }
-    deriving ( Generic, Show, Eq, Ord )
 
-instance Default ObjectiveFunctionConf where
-    def = ObjectiveFunctionConf
-        { threshold=20
-        }
-
-
-data ParametersCntx m tag v x t
-    = ParametersCntx
-        { unitModel                 :: m
-        , repeatedDecisionNStepBack :: Maybe Int
-        , possibleDeadlockBinds     :: S.Set (F v x)
-        , transferableVars          :: S.Set v
-        , bindingAlternative        :: M.Map (F v x) [tag]
-        , numberOfBindOptions       :: Int
-        , numberOfDFOptions         :: Int
-        , alreadyBindedVariables    :: S.Set v
-        , outputOfBindableFunctions :: S.Set v
-        , waves                     :: M.Map v Int
-        }
-
-prepareParametersCntx' unitModel repeatedDecisionNStepBack = let
+-- |The synthesis option estimation require many data about a synthesis tree,
+-- current model state and available options. That function allow to create a
+-- single context for all edges of the current node.
+--
+-- Require:
+--
+-- - a unit model;
+-- - how many synthesis step back require for decision duplicate.
+prepareEstimationCntx unitModel decisionDuplicateNStepBack = let
         opts = synthesisOptions unitModel
         bindableFunctions = [ f | (Binding f _) <- opts ]
 
@@ -86,9 +93,9 @@ prepareParametersCntx' unitModel repeatedDecisionNStepBack = let
             = let currentWave = pool `S.intersection` lockedVars
             in zip (S.elems currentWave) (repeat n)
                 ++ mkWaves (n+1) (pool S.\\ currentWave) (currentWave `S.union` lockedVars)
-    in ParametersCntx
-        { unitModel=unitModel
-        , repeatedDecisionNStepBack
+    in EstimationCntx
+        { unitModel
+        , decisionDuplicateNStepBack
         , possibleDeadlockBinds = S.fromList
             [ f
             | (Binding f tag) <- opts
@@ -109,14 +116,14 @@ prepareParametersCntx' unitModel repeatedDecisionNStepBack = let
             M.empty
             $ filter isBinding opts
         , numberOfBindOptions=length $ filter isBinding opts
-        , numberOfDFOptions=length $ filter isDataFlow opts
-        , outputOfBindableFunctions=unionsMap outputs bindableFunctions
+        , numberOfDataflowOptions=length $ filter isDataFlow opts
         }
 
 
 -----------------------------------------------------------
 -- *Parameters
 
+-- |Parameters for estimation of synthesis steps.
 data Parameters
     = BindEdgeParameter
         { pCritical                :: Bool
@@ -148,21 +155,23 @@ data Parameters
         { pWaitTime              :: Float
         , pRestrictedTime        :: Bool
         , pNotTransferableInputs :: [Float]
-            -- ^Number of variables, which is not transferable for affected
+            -- ^number of variables, which is not transferable for affected
             -- functions.
         }
+    -- TODO: split to separated constructor or separated refactor type?
     | RefactorEdgeParameter
-        { pRefactor          :: Refactor () ()
-        , pVarsCount         :: Float
-        , pBufferCount       :: Float
-        , pNStepBackRepeated :: Maybe Int
+        { pRefactorType                  :: Refactor () ()
+        , pNumberOfLockedVariables       :: Float
+        , pBufferCount                   :: Float
+        , pNStepBackRepeated             :: Maybe Int
+        , pNumberOfTransferableVariables :: Float
         }
     deriving ( Show, Generic )
 
 
 estimateParameters
         ObjectiveFunctionConf{}
-        ParametersCntx{ possibleDeadlockBinds, bindingAlternative, unitModel, alreadyBindedVariables, waves }
+        EstimationCntx{ possibleDeadlockBinds, bindingAlternative, unitModel, alreadyBindedVariables, waves }
         (Binding f tag)
     = BindEdgeParameter
         { pCritical=isInternalLockPossible f
@@ -187,7 +196,7 @@ estimateParameters
 
 estimateParameters
         ObjectiveFunctionConf{}
-        ParametersCntx{ transferableVars, unitModel }
+        EstimationCntx{ transferableVars, unitModel }
         (Dataflow (_, TimeConstrain{ tcAvailable, tcDuration }) target )
     = DataFlowEdgeParameter
         { pWaitTime=fromIntegral (inf tcAvailable)
@@ -201,27 +210,44 @@ estimateParameters
             in map (fromIntegral . length) notTransferableVars
         }
 
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{ repeatedDecisionNStepBack } (Refactor BreakLoop{})
+estimateParameters ObjectiveFunctionConf{} EstimationCntx{ decisionDuplicateNStepBack } (Refactor BreakLoop{})
     = RefactorEdgeParameter
-        { pRefactor=BreakLoop def def def
-        , pVarsCount=0
+        { pRefactorType=BreakLoop def def def
+        , pNumberOfLockedVariables=0
         , pBufferCount=0
-        , pNStepBackRepeated=repeatedDecisionNStepBack
+        , pNStepBackRepeated=decisionDuplicateNStepBack
+        , pNumberOfTransferableVariables=0
         }
 
-estimateParameters ObjectiveFunctionConf{} ParametersCntx{ repeatedDecisionNStepBack } (Refactor (ResolveDeadlock vs))
+estimateParameters ObjectiveFunctionConf{} EstimationCntx{ decisionDuplicateNStepBack, transferableVars } (Refactor (ResolveDeadlock vs))
     = RefactorEdgeParameter
-        { pRefactor=ResolveDeadlock def
-        , pVarsCount=fromIntegral $ S.size vs
+        { pRefactorType=ResolveDeadlock def
+        , pNumberOfLockedVariables=fromIntegral $ S.size vs
         , pBufferCount=fromIntegral $ sum $ map countSuffix $ S.elems vs
-        , pNStepBackRepeated=repeatedDecisionNStepBack
+        , pNStepBackRepeated=decisionDuplicateNStepBack
+        , pNumberOfTransferableVariables=fromIntegral (S.size $ vs `S.intersection` transferableVars)
+        }
+
+
+-- |Synthesis process setup, which determines next synthesis step selection.
+newtype ObjectiveFunctionConf
+    = ObjectiveFunctionConf
+        { threshold :: Int
+            -- ^the threshold of a dataflow options number after which dataflow
+            -- options have bonus
+        }
+    deriving ( Generic, Show, Eq, Ord )
+
+instance Default ObjectiveFunctionConf where
+    def = ObjectiveFunctionConf
+        { threshold=20
         }
 
 
 -- |Function, which map 'Parameters' to 'Float'.
 objectiveFunction
         ObjectiveFunctionConf{ threshold }
-        ParametersCntx{ numberOfDFOptions }
+        EstimationCntx{ numberOfDataflowOptions }
         params
     = case params of
         BindEdgeParameter{ pPossibleDeadlock=True } -> 500
@@ -237,16 +263,17 @@ objectiveFunction
                 + pOutputNumber * 2
         DataFlowEdgeParameter{ pWaitTime, pNotTransferableInputs, pRestrictedTime }
             -> 2000
-                + (numberOfDFOptions >= threshold) <?> 1000
+                + (numberOfDataflowOptions >= threshold) <?> 1000
                 + pRestrictedTime <?> 200
                 - sum pNotTransferableInputs * 5
                 - pWaitTime
         RefactorEdgeParameter{ pNStepBackRepeated=Just _ }
             -> -1
-        RefactorEdgeParameter{ pRefactor=BreakLoop{} }
+        RefactorEdgeParameter{ pRefactorType=BreakLoop{} }
             -> 5000
-        RefactorEdgeParameter{ pRefactor=ResolveDeadlock{}, pVarsCount, pBufferCount }
-            -> 1000 + pVarsCount - pBufferCount * 1000
+        RefactorEdgeParameter{ pRefactorType=ResolveDeadlock{}, pNumberOfLockedVariables, pBufferCount, pNumberOfTransferableVariables }
+            -> 1000 + pNumberOfLockedVariables - pBufferCount * 1000
+                - 20 * pNumberOfTransferableVariables
         -- _ -> -1
 
 
