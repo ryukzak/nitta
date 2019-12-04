@@ -112,7 +112,13 @@ data Process v x t
         , nextTick  :: t          -- ^Номер первого свободного такта.
         , nextUid   :: ProcessUid -- ^Следующий свободный идентификатор шага вычислительного процесса.
         }
-    deriving ( Show )
+
+instance (VarValTime v x t) => Show (Process v x t) where
+    show p = "Process\n"
+        ++ "\t\tsteps     = " ++ fst (foldl (\(s, i) next -> (s ++ "\n\t\t\t" ++ show i ++ ") " ++ show next, i+1) ) ("", 0) ( reverse $ steps p )) ++ "\n"
+        ++ "\t\trelations = " ++ fst (foldl (\(s, i) next -> (s ++ "\n\t\t\t" ++ show i ++ ") " ++ show next, i+1) ) ("", 0) ( reverse $ relations p )) ++ "\n"
+        ++ "\t\tnextTick  = " ++ show ( nextTick p ) ++ "\n"
+        ++ "\t\tnextUid  = " ++ show ( nextUid p ) ++ "\n"
 
 instance ( Default t ) => Default (Process v x t) where
     def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
@@ -134,7 +140,14 @@ data Step v x t
         , sTime :: Interval t -- ^Описание типа и положения шага во времени.
         , sDesc :: StepInfo v x t -- ^Описание действия описываемого шага.
         }
-    deriving ( Show )
+        deriving (Show)
+
+-- instance (VarValTime v x t) => Show (Step v x t) where
+--     show p = "Process\n"
+--         ++ "\t\tsteps     = " ++ show ( steps p ) ++ "\n"
+--         ++ "\t\trelations = " ++ show ( relations p ) ++ "\n"
+--         ++ "\t\tnextTick  = " ++ show ( nextTick p ) ++ "\n"
+--         ++ "\t\tnextUid  = " ++ show ( nextUid p ) ++ "\n"
 
 instance ( Ord v ) => Patch (Step v x t) (Diff v) where
     patch diff step@Step{ sDesc } = step{ sDesc=patch diff sDesc }

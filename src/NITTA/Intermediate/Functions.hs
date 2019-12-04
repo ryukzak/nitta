@@ -31,7 +31,7 @@ Stability   : experimental
 module NITTA.Intermediate.Functions
     ( -- *Arithmetics
       Acc(..), Status(..), Sign(..), acc
-    , Add(..), add
+    , Add(..), add, pushStatusGroups, pullStatusGroups
     , Division(..), division
     , Multiply(..), multiply
     , ShiftLR(..), shiftL, shiftR
@@ -198,7 +198,17 @@ accGen blocks = structure
 
 locksSet exprInput = fromList $ locks $ accGen $ toBlocksSplit exprInput
 
+
 --------------------------------------------------------------------------------
+
+pushStatusGroups lst = map (map signCheck) $ filter (not . null) $ splitWhen isPull lst
+    where
+        signCheck =
+            \case
+                Push Plus (I v)  -> (False, v)
+                Push Minus (I v) -> (True, v)
+
+pullStatusGroups lst = concatMap (map (elems . fromPull)) $ filter (not . null) $ splitWhen isPush lst
 
 instance ( Var v ) => Locks (Acc v x) v where
     locks = locksAcc
