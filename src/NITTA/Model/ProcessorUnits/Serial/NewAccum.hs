@@ -131,12 +131,12 @@ go' = let
         (st7, endpointOptionsFunc st7)
 
 
-data Model v = Input (Set (Bool,v)) | Output (Set v) deriving (Show, Eq)
+-- data Model v = Input (Set (Bool,v)) | Output (Set v) deriving (Show, Eq)
 
 data AllmostAccum v =
     AllmostAccum
-        { model :: [Model v ]
-        , real :: [Model v ]
+        { model :: [Set (Bool,v)]
+        , real :: [Set (Bool,v)]
         } deriving (Show)
 
 
@@ -148,59 +148,32 @@ blank =
 
 tryBindFunc f a@AllmostAccum{model} = a {model = lstOfSets}
     where
-        lstOfSets = concatMap (\(i, o) -> [Input (fromList i), Output (fromList o)]) (setRemain f)
-
+        lstOfSets = concatMap (\(i, o) -> [fromList i, fromList $ map (\x -> (False, x)) o]) (setRemain f)
 
 endpointOptionsFunc AllmostAccum {model=[]} = []
 
-endpointOptionsFunc AllmostAccum {model=(Input m:_), real=[]} = map snd (elems m)
-endpointOptionsFunc AllmostAccum {model=(Output m:_), real=[]} = elems m
+endpointOptionsFunc AllmostAccum {model=(m:_), real=[]} = map snd (elems m)
 
-
-endpointOptionsFunc AllmostAccum {model=(Input m:ms), real=(Input r:rs)}
+endpointOptionsFunc AllmostAccum {model=(m:ms), real=(r:rs)}
     | m == r && null ms = []
-    | m == r            = elems $ (\(Output x) -> x) $ head ms
-    | otherwise         = map snd (elems m \\ elems r)
-
-endpointOptionsFunc AllmostAccum {model=(Output m:ms), real=(Output r:rs)}
-    | m == r && null ms = []
-    | m == r            = map snd $ elems $ (\(Input x) -> x) $ head ms
-    | otherwise         = elems m \\ elems r
-
-
-
-
-
+    | m == r            = map snd $ elems $ head ms
+    | otherwise         = map snd $ elems m \\ elems r
 
 endpointDecisionFunc a@AllmostAccum {model=[], real} v = a
 
-endpointDecisionFunc a@AllmostAccum {model=model@(m:ms), real=[]} v = a {real=newReal}
+endpointDecisionFunc a@AllmostAccum {model=model@(m:ms), real=[]} v = a {real=newRealCreate}
     where
         neg ss = fst $ head $ fst $ partition ((== v) . snd) (elems ss)
-        newReal =
-            case m of
-                Input modelSet  -> [Input (fromList [(neg modelSet, v)])]
-                Output modelSet -> [Output (fromList [v])]
-
+        newRealCreate =[fromList [(neg m, v)]]
 
 endpointDecisionFunc a@AllmostAccum {model=model@(m:ms), real=real@(r:rs)} v
-    | m == r = endpointDecisionFunc a {model = ms, real = real} v
-    | otherwise = a {real=newReal}
+    | m == r = endpointDecisionFunc a {model = ms} v
+    | length m <= length r = a {real=newRealAdd}
+    | otherwise = a {real=newRealInsert}
         where
             neg ss = fst $ head $ fst $ partition ((== v) . snd) (elems ss)
-            newReal =
-                case m of
-                    Input modelSet  ->
-                        case r of
-                            Input realSet  -> Input (insert (neg modelSet, v) realSet) : rs
-                            Output realSet -> Input (fromList [(neg modelSet, v)]) : r : rs
-
-
-                    Output modelSet ->
-                        case r of
-                            Output realSet -> Output (insert v realSet) : rs
-                            Input realSet  -> Output (fromList [v]) : r : rs
-
+            newRealInsert =insert (neg m, v) r : rs
+            newRealAdd = fromList [(neg m, v)] : r : rs
 
 
 ----------------------------------------------------------------------------------------
