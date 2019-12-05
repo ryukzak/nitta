@@ -112,7 +112,7 @@ go = let
         st10 = endpointDecision st9 $ EndpointD (Target "d") (25...28)
         st11 = endpointDecision st10 $ EndpointD (Source $ fromList ["f"]) (7...7)
     in
-        (st11, endpointOptions st11)
+        (st11, endpointOptions st22)
 
 
 
@@ -158,7 +158,7 @@ instance ( VarValTime v x t) => EndpointProblem (Accum v x t) v t where
         = [ EndpointO (Source $ fromList sources) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
 
     endpointOptions pu@Accum{ funcs, tick } = let
-            getTarget f = concatMap fst (setRemain f)
+            getTarget = fst . head . setRemain
         in
             concatMap (\f -> endpointOptions pu {targets = getTarget f, tick}) funcs
 
