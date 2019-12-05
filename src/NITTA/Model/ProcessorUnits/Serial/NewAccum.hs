@@ -27,7 +27,7 @@ import           Control.Monad                    (when)
 import           Data.Bits                        (finiteBitSize)
 import           Data.Default
 import           Data.List                        (nub, init, find, partition, (\\))
-import           Data.Set                         (elems, fromList, member)
+import           Data.Set                         (elems, empty, fromList, toList, member, insert, intersection, Set)
 import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
@@ -114,8 +114,96 @@ go = let
     in
         (st11, endpointOptions st22)
 
+------------------------------new version-----------------------------------------------
+
+go' = let
+        testAcc = [F.Push F.Plus (I "a"), F.Push F.Plus (I "b"), F.Pull (O $ fromList ["c", "z"]), F.Push F.Plus (I "x"), F.Push F.Minus (I "d"), F.Pull (O $ fromList ["f"])]
+        f = F.acc testAcc :: F String Int
+        st0 = tryBindFunc f blank
+        st1 = endpointDecisionFunc st0 "b"
+        st2 = endpointDecisionFunc st1 "a"
+        st3 = endpointDecisionFunc st2 "c"
+        st4 = endpointDecisionFunc st3 "z"
+        st5 = endpointDecisionFunc st4 "x"
+        st6 = endpointDecisionFunc st5 "d"
+        st7 = endpointDecisionFunc st6 "f"
+    in
+        (st7, endpointOptionsFunc st7)
 
 
+data Model v = Input (Set (Bool,v)) | Output (Set v) deriving (Show, Eq)
+
+data AllmostAccum v =
+    AllmostAccum
+        { model :: [Model v ]
+        , real :: [Model v ]
+        } deriving (Show)
+
+
+blank =
+    AllmostAccum
+        { model = def
+        , real = def
+        }
+
+tryBindFunc f a@AllmostAccum{model} = a {model = lstOfSets}
+    where
+        lstOfSets = concatMap (\(i, o) -> [Input (fromList i), Output (fromList o)]) (setRemain f)
+
+
+endpointOptionsFunc AllmostAccum {model=[]} = []
+
+endpointOptionsFunc AllmostAccum {model=(Input m:_), real=[]} = map snd (elems m)
+endpointOptionsFunc AllmostAccum {model=(Output m:_), real=[]} = elems m
+
+
+endpointOptionsFunc AllmostAccum {model=(Input m:ms), real=(Input r:rs)}
+    | m == r && null ms = []
+    | m == r            = elems $ (\(Output x) -> x) $ head ms
+    | otherwise         = map snd (elems m \\ elems r)
+
+endpointOptionsFunc AllmostAccum {model=(Output m:ms), real=(Output r:rs)}
+    | m == r && null ms = []
+    | m == r            = map snd $ elems $ (\(Input x) -> x) $ head ms
+    | otherwise         = elems m \\ elems r
+
+
+
+
+
+
+endpointDecisionFunc a@AllmostAccum {model=[], real} v = a
+
+endpointDecisionFunc a@AllmostAccum {model=model@(m:ms), real=[]} v = a {real=newReal}
+    where
+        neg ss = fst $ head $ fst $ partition ((== v) . snd) (elems ss)
+        newReal =
+            case m of
+                Input modelSet  -> [Input (fromList [(neg modelSet, v)])]
+                Output modelSet -> [Output (fromList [v])]
+
+
+endpointDecisionFunc a@AllmostAccum {model=model@(m:ms), real=real@(r:rs)} v
+    | m == r = endpointDecisionFunc a {model = ms, real = real} v
+    | otherwise = a {real=newReal}
+        where
+            neg ss = fst $ head $ fst $ partition ((== v) . snd) (elems ss)
+            newReal =
+                case m of
+                    Input modelSet  ->
+                        case r of
+                            Input realSet  -> Input (insert (neg modelSet, v) realSet) : rs
+                            Output realSet -> Input (fromList [(neg modelSet, v)]) : r : rs
+
+
+                    Output modelSet ->
+                        case r of
+                            Output realSet -> Output (insert v realSet) : rs
+                            Input realSet  -> Output (fromList [v]) : r : rs
+
+
+
+----------------------------------------------------------------------------------------
 
 instance ( VarValTime v x t
          ) => ProcessorUnit (Accum v x t) v x t where
