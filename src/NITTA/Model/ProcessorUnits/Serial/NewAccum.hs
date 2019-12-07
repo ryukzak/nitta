@@ -99,11 +99,11 @@ go = let
         Right st1 = tryBind f st0
         Right st22 = tryBind f2 st1
 
-        st2 = endpointDecision st22 $ EndpointD (Target "l") (0...2)
-        st3 = endpointDecision st2 $ EndpointD (Target "e") (0...2)
-        st4 = endpointDecision st3 $ EndpointD (Source $ fromList ["c"]) (7...7)
+        -- st2 = endpointDecision st22 $ EndpointD (Target "l") (0...2)
+        -- st3 = endpointDecision st2 $ EndpointD (Target "e") (0...2)
+        -- st4 = endpointDecision st3 $ EndpointD (Source $ fromList ["c"]) (7...7)
 
-        st5 = endpointDecision st4 $ EndpointD (Target "a") (8...8)
+        st5 = endpointDecision st1 $ EndpointD (Target "a") (8...8)
         st6 = endpointDecision st5 $ EndpointD (Target "b") (5...8)
         st7 = endpointDecision st6 $ EndpointD (Source $ fromList ["c"]) (7...7)
         st8 = endpointDecision st7 $ EndpointD (Source $ fromList ["z"]) (7...7)
@@ -133,40 +133,40 @@ go' = let
 
 -- data Model v = Input (Set (Bool,v)) | Output (Set v) deriving (Show, Eq)
 
-data AllmostAccum v =
-    AllmostAccum
+data FAccum v =
+    FAccum
         { model :: [Set (Bool,v)]
         , real :: [Set (Bool,v)]
         } deriving (Show)
 
 
 blank =
-    AllmostAccum
+    FAccum
         { model = def
         , real = def
         }
 
-tryBindFunc f a@AllmostAccum{model} = a {model = lstOfSets}
+tryBindFunc f a@FAccum{model} = a {model = lstOfSets}
     where
         lstOfSets = concatMap (\(i, o) -> [fromList i, fromList $ map (\x -> (False, x)) o]) (setRemain f)
 
-endpointOptionsFunc AllmostAccum {model=[]} = []
+endpointOptionsFunc FAccum {model=[]} = []
 
-endpointOptionsFunc AllmostAccum {model=(m:_), real=[]} = map snd (elems m)
+endpointOptionsFunc FAccum {model=(m:_), real=[]} = map snd (elems m)
 
-endpointOptionsFunc AllmostAccum {model=(m:ms), real=(r:rs)}
+endpointOptionsFunc FAccum {model=(m:ms), real=(r:rs)}
     | m == r && null ms = []
     | m == r            = map snd $ elems $ head ms
     | otherwise         = map snd $ elems m \\ elems r
 
-endpointDecisionFunc a@AllmostAccum {model=[], real} v = a
+endpointDecisionFunc a@FAccum {model=[], real} v = a
 
-endpointDecisionFunc a@AllmostAccum {model=model@(m:ms), real=[]} v = a {real=newRealCreate}
+endpointDecisionFunc a@FAccum {model=model@(m:ms), real=[]} v = a {real=newRealCreate}
     where
         neg ss = fst $ head $ fst $ partition ((== v) . snd) (elems ss)
         newRealCreate =[fromList [(neg m, v)]]
 
-endpointDecisionFunc a@AllmostAccum {model=model@(m:ms), real=real@(r:rs)} v
+endpointDecisionFunc a@FAccum {model=model@(m:ms), real=real@(r:rs)} v
     | m == r = endpointDecisionFunc a {model = ms} v
     | length m <= length r = a {real=newRealAdd}
     | otherwise = a {real=newRealInsert}
