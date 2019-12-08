@@ -26,7 +26,7 @@ import           Data.Monoid                   ((<>))
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
 import           Network.Wai.Handler.Warp      (run)
 import           Network.Wai.Middleware.Cors   (simpleCors)
-import           NITTA.Synthesis.Types
+import           NITTA.Synthesis.Tree
 import           NITTA.UIBackend.Marshalling   ()
 import           NITTA.UIBackend.REST
 import           Servant

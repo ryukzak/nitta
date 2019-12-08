@@ -25,12 +25,13 @@ module NITTA.Synthesis.Method
     , allBindsAndRefsIO
     ) where
 
-import           Data.List             (find, sortOn)
-import           Data.Ord              (Down (..))
+import           Data.List                (find, sortOn)
+import           Data.Ord                 (Down (..))
 import           Debug.Trace
-import           NITTA.Synthesis.Types
-import           NITTA.Synthesis.Utils (targetProcessDuration)
-import           NITTA.Utils           (maximumOn, minimumOn)
+import           NITTA.Synthesis.Estimate
+import           NITTA.Synthesis.Tree
+import           NITTA.Synthesis.Utils    (targetProcessDuration)
+import           NITTA.Utils              (maximumOn, minimumOn)
 import           Safe
 
 

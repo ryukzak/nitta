@@ -34,7 +34,7 @@ import           Control.Monad.State
 import           Data.Proxy                       (asProxyTypeOf)
 import           Data.Typeable
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           Numeric.Interval                 (singleton)
 
 -- |Process builder state.
@@ -118,8 +118,8 @@ scheduleFunction ti f = scheduleStep ti $ FStep f
 -- |Add to the process description information about endpoint behaviour, and it's low-level
 -- implementation (on instruction level). Vertical relations connect endpoint level and instruction
 -- level steps.
-scheduleEndpoint EndpointD{ epdAt, epdRole } codeGen = do
-    high <- scheduleStep epdAt $ EndpointRoleStep epdRole
+scheduleEndpoint EndpointSt{ epAt, epRole } codeGen = do
+    high <- scheduleStep epAt $ EndpointRoleStep epRole
     low <- codeGen
     establishVerticalRelations high low
     return high

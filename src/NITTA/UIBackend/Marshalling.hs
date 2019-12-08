@@ -34,26 +34,27 @@ module NITTA.UIBackend.Marshalling
 import           Control.Concurrent.STM
 import           Data.Aeson
 import           Data.Hashable
-import qualified Data.HashMap.Strict              as HM
-import qualified Data.Map                         as M
+import qualified Data.HashMap.Strict             as HM
+import qualified Data.Map                        as M
 import           Data.Maybe
-import qualified Data.Set                         as S
-import qualified Data.String.Utils                as S
-import qualified Data.Text                        as T
+import qualified Data.Set                        as S
+import qualified Data.String.Utils               as S
+import qualified Data.Text                       as T
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Whole
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Synthesis.Types
+import           NITTA.Synthesis.Estimate
+import           NITTA.Synthesis.Tree
 import           NITTA.Synthesis.Utils
 import           NITTA.UIBackend.Timeline
-import           NITTA.Utils                      (transferred)
+import           NITTA.Utils                     (transferred)
 import           Numeric.Interval
 import           Servant
 
@@ -186,9 +187,9 @@ instance ( VarValTimeJSON v x t ) => ToJSON (SynthesisStatement String v x (Time
 instance ( VarValTimeJSON v x t ) => ToJSON (SynthesisStatement String v x (Interval t))
 instance ( ToJSON v, Show v, Show x ) => ToJSON (Refactor v x) where
     toJSON = toJSON . show
-instance ( Time t ) => ToJSON (EndpointOption String t) where
-    toJSON EndpointO{ epoRole=Source vs, epoAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epoAt)
-    toJSON EndpointO{ epoRole=Target v, epoAt } = toJSON ("Target: " ++ v ++ " at " ++ show epoAt)
+instance ( Time t ) => ToJSON (EndpointSt String (TimeConstrain t)) where
+    toJSON EndpointSt{ epRole=Source vs, epAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epAt)
+    toJSON EndpointSt{ epRole=Target v, epAt } = toJSON ("Target: " ++ v ++ " at " ++ show epAt)
 
 
 

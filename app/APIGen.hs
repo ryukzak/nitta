@@ -32,7 +32,8 @@ import qualified Data.String.Utils             as S
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Synthesis.Types
+import           NITTA.Synthesis.Estimate
+import           NITTA.Synthesis.Tree
 import           NITTA.UIBackend
 import           NITTA.UIBackend.Marshalling
 import           NITTA.UIBackend.Timeline

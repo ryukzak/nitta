@@ -10,14 +10,14 @@
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
-Module      : NITTA.Frontend
+Module      : NITTA.LuaFrontend
 Description : Lua frontend prototype
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Frontend
+module NITTA.LuaFrontend
     ( lua2functions
     ) where
 

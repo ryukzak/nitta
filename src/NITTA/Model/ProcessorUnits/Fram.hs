@@ -39,7 +39,7 @@ import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
@@ -281,9 +281,9 @@ instance ( VarValTime v x t
         ) => EndpointProblem (Fram v x t) v t
         where
     endpointOptions Fram{ process_=Process{ nextTick }, remainRegs, memory } = let
-            target v = EndpointO (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
-            source True vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (1 + 1 + nextTick ... maxBound) (1 ... maxBound)
-            source False vs = EndpointO (Source $ S.fromList vs) $ TimeConstrain (1 + nextTick ... maxBound) (1 ... maxBound)
+            target v = EndpointSt (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
+            source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstrain (1 + 1 + nextTick ... maxBound) (1 ... maxBound)
+            source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstrain (1 + nextTick ... maxBound) (1 ... maxBound)
 
             fromRemain = if any (\case ForReg{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory
                 then map ( \(Reg (I v) (O _)) -> target v ) $ map fst remainRegs
@@ -306,7 +306,7 @@ instance ( VarValTime v x t
 
 
     -- Constant
-    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointSt{ epRole=Source vs, epAt }
         | Just ( addr, cell@Cell{ state=DoConstant vs', job=Just Job{ function, binds, endpoints } } )
             <- L.find (\case
                 (_, Cell{ state=DoConstant vs' }) -> (vs' L.\\ S.elems vs) /= vs'
@@ -315,10 +315,10 @@ instance ( VarValTime v x t
         , let
             vsRemain = vs' L.\\ S.elems vs
             ( (), process_' ) = runSchedule fram $ do
-                updateTick (sup epdAt + 1)
-                endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epdAt) $ ReadCell addr
+                updateTick (sup epAt + 1)
+                endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ ReadCell addr
                 when (null vsRemain) $ do
-                    fPID <- scheduleFunction (0 ... sup epdAt) function
+                    fPID <- scheduleFunction (0 ... sup epAt) function
                     establishVerticalRelations binds fPID
                     establishVerticalRelations fPID (endpoints ++ endpoints')
             cell' = case vsRemain of
@@ -335,7 +335,7 @@ instance ( VarValTime v x t
             }
 
     -- Loop
-    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointSt{ epRole=Source vs, epAt }
         | Just ( addr, cell@Cell{ state=DoLoopSource vs' oJob, job=Just job@Job{ binds, function, startAt, endpoints } } )
             <- L.find (\case
                 (_, Cell{ state=DoLoopSource vs' _ }) -> (vs' L.\\ S.elems vs) /= vs'
@@ -344,32 +344,32 @@ instance ( VarValTime v x t
         , let
             vsRemain = vs' L.\\ S.elems vs
             (endpoints', process_) = runSchedule fram $ do
-                updateTick (sup epdAt + 1)
-                eps <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epdAt) $ ReadCell addr
+                updateTick (sup epAt + 1)
+                eps <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ ReadCell addr
                 when (null vsRemain) $ do
-                    fPID <- scheduleFunction (0 ... sup epdAt) function
+                    fPID <- scheduleFunction (0 ... sup epAt) function
                     establishVerticalRelations binds fPID
                     establishVerticalRelations fPID $ eps ++ endpoints
                 return eps
             cell' = if not $ null vsRemain
                 then cell
-                    { job=Just job{ startAt=startAt <|> (Just $ inf epdAt - 1), endpoints=endpoints' ++ endpoints }
+                    { job=Just job{ startAt=startAt <|> (Just $ inf epAt - 1), endpoints=endpoints' ++ endpoints }
                     , state=DoLoopSource vsRemain oJob
                     }
                 else cell
-                    { job=Just oJob{ startAt=startAt <|> (Just $ inf epdAt - 1) }
+                    { job=Just oJob{ startAt=startAt <|> (Just $ inf epAt - 1) }
                     , state=DoLoopTarget $ oJobV oJob
                     }
         = fram{ process_, memory=memory A.// [ (addr, cell') ] }
 
-    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointSt{ epRole=Target v, epAt }
         | Just ( addr, cell@Cell{ job=Just Job{ function, binds, endpoints } } )
             <- L.find (\case (_, Cell{ state=DoLoopTarget v' }) -> v == v'; _ -> False) $ A.assocs memory
         , let
             ((), process_) = runSchedule fram $ do
-                endpoints' <- scheduleEndpoint d $ scheduleInstruction epdAt $ WriteCell addr
-                updateTick (sup epdAt + 1)
-                fPID <- scheduleFunction epdAt function
+                endpoints' <- scheduleEndpoint d $ scheduleInstruction epAt $ WriteCell addr
+                updateTick (sup epAt + 1)
+                fPID <- scheduleFunction epAt function
                 establishVerticalRelations binds fPID
                 establishVerticalRelations fPID (endpoints ++ endpoints')
             cell' = cell
@@ -382,17 +382,17 @@ instance ( VarValTime v x t
             }
 
     -- Reg Target
-    endpointDecision fram@Fram{ memory, remainRegs } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision fram@Fram{ memory, remainRegs } d@EndpointSt{ epRole=Target v, epAt }
         | Just ( addr, cell@Cell{ history } ) <- findForRegCell fram
         , ([ ( Reg (I _) (O vs), j@Job{ function } ) ], remainRegs' ) <- L.partition (\(Reg (I v') (O _), _) -> v' == v) remainRegs
         , let
             (endpoints, process_) = runSchedule fram $ do
-                updateTick (sup epdAt + 1)
-                scheduleEndpoint d $ scheduleInstruction epdAt $ WriteCell addr
+                updateTick (sup epAt + 1)
+                scheduleEndpoint d $ scheduleInstruction epAt $ WriteCell addr
             cell' = cell
-                { job=Just j{ startAt=Just $ inf epdAt, endpoints }
+                { job=Just j{ startAt=Just $ inf epAt, endpoints }
                 , state=DoReg $ S.elems vs
-                , lastWrite=Just $ sup epdAt
+                , lastWrite=Just $ sup epAt
                 , history=function : history
                 }
         = fram
@@ -401,7 +401,7 @@ instance ( VarValTime v x t
             , process_
             }
 
-    endpointDecision fram@Fram{ memory } d@EndpointD{ epdRole=Source vs, epdAt }
+    endpointDecision fram@Fram{ memory } d@EndpointSt{ epRole=Source vs, epAt }
         | Just ( addr, cell@Cell{ state=DoReg vs', job=Just Job{ function, startAt=Just fBegin, binds, endpoints } } )
             <- L.find (\case
                 (_, Cell{ state=DoReg vs' }) -> (vs' L.\\ S.elems vs) /= vs'
@@ -410,10 +410,10 @@ instance ( VarValTime v x t
         , let
             vsRemain = vs' L.\\ S.elems vs
             ( (), process_ ) = runSchedule fram $ do
-                updateTick (sup epdAt + 1)
-                endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epdAt) $ ReadCell addr
+                updateTick (sup epAt + 1)
+                endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ ReadCell addr
                 when (null vsRemain) $ do
-                    fPID <- scheduleFunction (fBegin ... sup epdAt) function
+                    fPID <- scheduleFunction (fBegin ... sup epAt) function
                     establishVerticalRelations binds fPID
                     establishVerticalRelations fPID (endpoints ++ endpoints')
             cell' = case vsRemain of

@@ -20,7 +20,7 @@ TargetSynthesis is an entry point for synthesis process. TargetSynthesis flow sh
 ====================================================================================================================
                                                                                                              Prepare
 NITTA.Project:TargetSynthesis                                                                       NITTA.Project...
-    # tName                                                                                           NITTA.Frontend
+    # tName                                                                                        NITTA.LuaFrontend
     # tMicroArch --------------------------\
     # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
                       |                    |     |  |
@@ -38,16 +38,16 @@ NITTA.Project:TargetSynthesis                                                   
                                                          |                        |
 ===================================================================================================================
                                                          |                        |               Synthesis process
-        NITTA.Synthesis.Types:Node                       |                        |           NITTA.Synthesis.Types
+        NITTA.Synthesis.Tree:Node                        |                        |            NITTA.Synthesis.Tree
             # nModel <------------------------------------------------------------+          NITTA.Synthesis.Method
             # ...                                        |
             # nEdges                                     *<-- search for best synthesis path
                 |                                        |
-                +-----> NITTA.Synthesis.Types:Edge       v
+                +-----> NITTA.Synthesis.Tree:Edge        v
                             # eNode ----------------- // * // -----\
                             # ...                                  |
                                                                    v
-                                                            NITTA.Synthesis.Types:Node
+                                                            NITTA.Synthesis.Tree:Node
                                                                 # nModel
                                        /--------------------------- # mUnit
                                        |        /------------------ # mDataFlowGraph
@@ -80,22 +80,22 @@ module NITTA.Project
     , TargetSynthesis(..), runTargetSynthesis
     ) where
 
-import           Control.Monad                    (when)
-import           Data.Default                     as D
-import           Data.Text                        (Text)
-import           NITTA.Frontend
+import           Control.Monad                   (when)
+import           Data.Default                    as D
+import           Data.Text                       (Text)
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Networks.Bus         (BusNetwork)
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.LuaFrontend
+import           NITTA.Model.Networks.Bus        (BusNetwork)
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
 import           NITTA.Project.Utils
 import           NITTA.Synthesis.Method
-import           NITTA.Synthesis.Types
-import           System.FilePath                  (joinPath)
+import           NITTA.Synthesis.Tree
+import           System.FilePath                 (joinPath)
 
 
 -- |Description of synthesis task. Applicable for target system synthesis and

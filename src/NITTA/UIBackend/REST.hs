@@ -25,28 +25,28 @@ module NITTA.UIBackend.REST
 import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Default
-import qualified Data.Map                         as M
-import qualified Data.Set                         as S
+import qualified Data.Map                        as M
+import qualified Data.Set                        as S
 import           GHC.Generics
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
-import           NITTA.Project.Utils              (writeAndRunTestbench)
+import           NITTA.Project.Utils             (writeAndRunTestbench)
 import           NITTA.Synthesis.Method
-import           NITTA.Synthesis.Types
+import           NITTA.Synthesis.Tree
 import           NITTA.UIBackend.Marshalling
 import           NITTA.UIBackend.Timeline
-import           NITTA.UIBackend.VisJS            (VisJS, algToVizJS)
+import           NITTA.UIBackend.VisJS           (VisJS, algToVizJS)
 import           NITTA.Utils
 import           Numeric.Interval
 import           Servant
-import           System.FilePath                  (joinPath)
+import           System.FilePath                 (joinPath)
 
 
 
@@ -99,7 +99,7 @@ withSynthesis root nId
 
 -- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
-        { dbgEndpointOptions           :: [ ( tag, EndpointOption v t ) ]
+        { dbgEndpointOptions           :: [ ( tag, EndpointSt v (TimeConstrain t) ) ]
         , dbgFunctionLocks             :: [ ( String, [Lock v] ) ]
         , dbgCurrentStateFunctionLocks :: [ ( String, [Lock v] ) ]
         , dbgPULocks                   :: [ ( String, [Lock v] ) ]

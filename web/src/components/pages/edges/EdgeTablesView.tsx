@@ -64,7 +64,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
           nidColumn(appContext.selectNode),
           objectiveColumn(),
           textColumn("description", (e: Edge) => JSON.stringify((e.decision as Refactor).contents)),
-          textColumn("pVarsCount", (e: Edge) => (e.parameters as RefactorParam).pVarsCount, 50),
+          textColumn("pNumberOfLockedVariables", (e: Edge) => (e.parameters as RefactorParam).pNumberOfLockedVariables, 50),
           textColumn("pBufferCount", (e: Edge) => (e.parameters as RefactorParam).pBufferCount, 50),
           textColumn("pNStepBackRepeated", (e: Edge) => {
             let n = (e.parameters as RefactorParam).pNStepBackRepeated;

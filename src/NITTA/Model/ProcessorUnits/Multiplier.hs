@@ -87,12 +87,12 @@ argument needed only one tick, but it can continue for an arbitrary time. Choose
 the variant (note, that if decision matches to proposed options then it cannot
 cause a mistake or block another function).
 
->>> let st2 = endpointDecision st1 $ EndpointD (Target "a") (0...2)
+>>> let st2 = endpointDecision st1 $ EndpointSt (Target "a") (0...2)
 >>> st2
 Multiplier {puRemain = [], targets = ["b"], sources = ["c","d"], doneAt = Nothing, process_ = Process {steps = [Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 3, nextUid = 2}, isMocked = True}
 >>> mapM_ print $ endpointOptions st2
 ?Target "b"@(3..∞ /P 1..∞)
->>> let st3 = endpointDecision st2 $ EndpointD (Target "b") (3...3)
+>>> let st3 = endpointDecision st2 $ EndpointSt (Target "b") (3...3)
 >>> st3
 Multiplier {puRemain = [], targets = [], sources = ["c","d"], doneAt = Just 6, process_ = Process {steps = [Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 4, nextUid = 4}, isMocked = True}
 >>> mapM_ print $ endpointOptions st3
@@ -103,12 +103,12 @@ and @d@ variables. Note, these variables can be unloaded ether concurrently or
 sequentially (for details, see how the multiplier works). Consider the second
 option:
 
->>> let st4 = endpointDecision st3 $ EndpointD (Source $ fromList ["c"]) (6...6)
+>>> let st4 = endpointDecision st3 $ EndpointSt (Source $ fromList ["c"]) (6...6)
 >>> st4
 Multiplier {puRemain = [], targets = [], sources = ["d"], doneAt = Just 6, process_ = Process {steps = [Step {sKey = 5, sTime = Activity (6 ... 6), sDesc = Out},Step {sKey = 4, sTime = Activity (6 ... 6), sDesc = Source (fromList ["c"])},Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 7, nextUid = 6}, isMocked = True}
 >>> mapM_ print $ endpointOptions st4
 ?Source (fromList ["d"])@(7..∞ /P 1..∞)
->>> let st5 = endpointDecision st4 $ EndpointD (Source $ fromList ["d"]) (7...7)
+>>> let st5 = endpointDecision st4 $ EndpointSt (Source $ fromList ["d"]) (7...7)
 >>> st5
 Multiplier {puRemain = [], targets = [], sources = [], doneAt = Nothing, process_ = Process {steps = [Step {sKey = 7, sTime = Activity (7 ... 7), sDesc = Out},Step {sKey = 6, sTime = Activity (7 ... 7), sDesc = Source (fromList ["d"])},Step {sKey = 5, sTime = Activity (6 ... 6), sDesc = Out},Step {sKey = 4, sTime = Activity (6 ... 6), sDesc = Source (fromList ["c"])},Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 8, nextUid = 8}, isMocked = True}
 >>> endpointOptions st5
@@ -139,7 +139,7 @@ import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
@@ -257,7 +257,7 @@ data Multiplier v x t = Multiplier
     -- function and this send.
     , currentWorkEndpoints :: [ ProcessUid ]
     -- |Description of target computation process
-    -- ('NITTA.Model.ProcessorUnits.Types')
+    -- ('NITTA.Model.ProcessorUnits.Time')
     , process_             :: Process v x t
     , tick                 :: t
     -- |HDL implementation of PU contains multiplier IP core from Altera
@@ -370,12 +370,12 @@ instance ( VarValTime v x t
     --list of variants of uploading to mUnit variables, which are needed to function
     --that is in work;
     endpointOptions Multiplier{ targets=vs@(_:_), tick }
-        = map (\v -> EndpointO (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
+        = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
 
      --   list of variants of downloading from mUnit variables;
     endpointOptions Multiplier{ sources, doneAt=Just at, tick }
         | not $ null sources
-        = [ EndpointO (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
+        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
 
     -- list of variables of uploading to mUnit variables, upload any one of that
     -- will cause to actual start of working with mathched function.
@@ -398,7 +398,7 @@ instance ( VarValTime v x t
     --		We can distinguish the following solutions:
     --
     --		1. If model wait variable uploading:
-    endpointDecision pu@Multiplier{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
+    endpointDecision pu@Multiplier{ targets=vs, currentWorkEndpoints } d@EndpointSt{ epRole=Target v, epAt }
            -- From the list of uploading value we get a needed value, and remainder is saved
            -- for the next steps.
         | ([_], xs) <- partition (== v) vs
@@ -409,8 +409,8 @@ instance ( VarValTime v x t
         , let (newEndpoints, process_') = runSchedule pu $ do
                 -- this is required for correct work of automatically generated tests,
                 -- that takes information about time from Process
-                updateTick (sup epdAt)
-                scheduleEndpoint d $ scheduleInstruction epdAt $ Load sel
+                updateTick (sup epAt)
+                scheduleEndpoint d $ scheduleInstruction epAt $ Load sel
         = pu
             { process_=process_'
             -- The remainder of the work is saved for the next loop
@@ -421,28 +421,28 @@ instance ( VarValTime v x t
             -- If all required arguments are upload (@null xs@), then the moment of time
             -- when we get a result is saved.
              , doneAt=if null xs
-                then Just $ sup epdAt + 3
+                then Just $ sup epAt + 3
                 else Nothing
             -- Model time is running
-             , tick=sup epdAt
+             , tick=sup epAt
             }
 --	2. If model is waiting, that we will download variables from it.
-    endpointDecision pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointD{ epdRole=Source v, epdAt }
+    endpointDecision pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointSt{ epRole=Source v, epAt }
         | not $ null sources
         , let sources' = sources \\ elems v
         , sources' /= sources
         -- Compututation process planning is carring on.
         , let (newEndpoints, process_') = runSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstruction epdAt Out
+                endpoints <- scheduleEndpoint d $ scheduleInstruction epAt Out
                 when (null sources') $ do
-                    high <- scheduleFunction (a ... sup epdAt) f
+                    high <- scheduleFunction (a ... sup epAt) f
                     let low = endpoints ++ currentWorkEndpoints
                     -- Set up the vertical relantions between functional unit
                     -- and related to that data sending.
                     establishVerticalRelations high low
                 -- this is needed to correct work of automatically generated tests
                 -- that takes time about time from Process
-                updateTick (sup epdAt)
+                updateTick (sup epAt)
                 return endpoints
         = pu
             { process_=process_'
@@ -454,7 +454,7 @@ instance ( VarValTime v x t
             , currentWork=if null sources' then Nothing else Just (a, f)
             , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
               -- Model time is running up
-            , tick=sup epdAt
+            , tick=sup epAt
             }
     --    3. If no function is executed at the moment, then we need to find function in the list
     --    of assigned function, executed it to work and only then make decision

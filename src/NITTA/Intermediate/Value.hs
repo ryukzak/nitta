@@ -1,11 +1,11 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE KindSignatures         #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE KindSignatures        #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
-Module      : NITTA.Intermediate.Values
+Module      : NITTA.Intermediate.Value
 Description : Transferable over nets values.
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
@@ -18,7 +18,7 @@ Stability   : experimental
 -- TODO: instance Arbitrary (IntX w)
 -- TODO: instance Arbitrary (FX m b w)
 
-module NITTA.Intermediate.Values
+module NITTA.Intermediate.Value
   ( -- *Type classes
     FixedPointCompatible(..)
   , Val(..)
@@ -70,9 +70,9 @@ newtype IntX (w :: Nat) = IntX Integer
     deriving ( Show, Eq, Ord )
 
 instance Read ( IntX w ) where
-    readsPrec d r = case readsPrec d r of 
+    readsPrec d r = case readsPrec d r of
         [(x, r')] -> [(IntX x, r')]
-        _ -> error $ "can not read IntX from: " ++ r
+        _         -> error $ "can not read IntX from: " ++ r
 
 instance Default ( IntX w ) where
     def = IntX 0

@@ -31,7 +31,7 @@ import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Serial.Generic
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
@@ -69,17 +69,17 @@ instance ( VarValTime v x t ) => SerialPUState (State v x t) v x t where
 
   -- тихая ругань по поводу решения
   stateOptions State{ sIn=Just v } now
-    = [ EndpointO (Target v) (TimeConstrain (now ... maxBound) (singleton 2)) ]
+    = [ EndpointSt (Target v) (TimeConstrain (now ... maxBound) (singleton 2)) ]
   stateOptions State{ sOut=vs@(_:_) } now -- вывод
-    = [ EndpointO (Source $ fromList vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
+    = [ EndpointSt (Source $ fromList vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
-  simpleSynthesis st@State{ sIn=Just v, sRight } act@EndpointD{ epdAt }
+  simpleSynthesis st@State{ sIn=Just v, sRight } act@EndpointSt{ epAt }
     | v `elem` variables act
     = let st' = st{ sIn=Nothing }
           work = do
-            a <- serialSchedule @(Shift v x t) Init act{ epdAt=singleton $ inf epdAt }
-            b <- serialSchedule @(Shift v x t) (Work sRight Bit Logic) act{ epdAt=inf epdAt + 1 ... sup epdAt }
+            a <- serialSchedule @(Shift v x t) Init act{ epAt=singleton $ inf epAt }
+            b <- serialSchedule @(Shift v x t) (Work sRight Bit Logic) act{ epAt=inf epAt + 1 ... sup epAt }
             return $ a ++ b
       in (st', work)
   simpleSynthesis st@State{ sOut=vs } act
