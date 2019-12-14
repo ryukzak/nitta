@@ -35,7 +35,7 @@ import qualified NITTA.Intermediate.Functions     as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
@@ -155,12 +155,12 @@ inProgress2Output _ _ = error "divider inProgress2Output internal error"
 
 
 resolveColisions [] opt = [ opt ]
-resolveColisions intervals opt@EndpointO{ epoAt=tc@TimeConstrain{ tcAvailable } }
+resolveColisions intervals opt@EndpointSt{ epAt=tc@TimeConstrain{ tcAvailable } }
     | all ((0 ==) . width . intersection tcAvailable) intervals
     = [ opt ]
     | otherwise  -- FIXME: we must prick out work point from intervals
     , let from = maximum $ map sup intervals
-    = [ opt{ epoAt=tc{ tcAvailable=from ... inf tcAvailable } } ]
+    = [ opt{ epAt=tc{ tcAvailable=from ... inf tcAvailable } } ]
 
 
 rottenTime Divider{ pipeline, latency } jobs
@@ -204,7 +204,7 @@ instance ( VarValTime v x t
         = concatMap (resolveColisions sourceIntervals) targets
         ++ concatMap (resolveColisions targetIntervals) sources
         where
-            target v = EndpointO
+            target v = EndpointSt
                 (Target v)
                 $ TimeConstrain (nextTargetTick pu ... maxBound) (singleton 1)
             targets
@@ -214,7 +214,7 @@ instance ( VarValTime v x t
 
             source Output{ outputRnd, rottenAt, finishAt }
                 = map
-                    ( \(_tag, vs) -> EndpointO
+                    ( \(_tag, vs) -> EndpointSt
                         (Source vs)
                         $ TimeConstrain
                             (max finishAt (nextSourceTick pu) ... fromMaybe maxBound rottenAt)
@@ -232,33 +232,33 @@ instance ( VarValTime v x t
     -- FIXME: vertical relations
     endpointDecision
             pu@Divider{ jobs, targetIntervals, remains, pipeline, latency }
-            d@EndpointD{ epdRole=Target v, epdAt }
+            d@EndpointSt{ epRole=Target v, epAt }
         | ([f], fs) <- partition (\f -> v `member` variables f) remains
         = endpointDecision
             pu
                 { remains=fs
-                , jobs=remain2input (sup epdAt) f : jobs
+                , jobs=remain2input (sup epAt) f : jobs
                 }
             d
 
         | Just (i@Input{ inputSeq=((tag, nextV):vs), function, startAt }, other) <- findInput jobs
         , v == nextV
-        , let finishAt = sup epdAt + pipeline + latency
+        , let finishAt = sup epAt + pipeline + latency
         = pushOutput pu
-            { targetIntervals=epdAt : targetIntervals
+            { targetIntervals=epAt : targetIntervals
             , jobs=if null vs
                 then InProgress{ function, startAt, finishAt } : other
                 else i{ inputSeq=vs } : other
             , process_=execSchedule pu $ do
-                _endpoints <- scheduleEndpoint d $ scheduleInstruction epdAt $ Load tag
+                _endpoints <- scheduleEndpoint d $ scheduleInstruction epAt $ Load tag
                 -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
                 -- которые берут информацию о времени из Process
-                updateTick (sup epdAt)
+                updateTick (sup epAt)
             }
 
     endpointDecision
             pu@Divider{ jobs, sourceIntervals }
-            d@EndpointD{ epdRole=Source vs, epdAt }
+            d@EndpointSt{ epRole=Source vs, epAt }
         | Just (out@Output{ outputRnd, startAt, function }, other) <- findOutput jobs
         , (vss, [(tag, vs')]) <- partition (\(_tag, vs') -> null (vs `S.intersection` vs')) outputRnd
         , let vss' = let tmp = vs' `S.difference` vs
@@ -266,16 +266,16 @@ instance ( VarValTime v x t
                     then vss
                     else (tag, tmp) : vss
         = pushOutput pu
-            { sourceIntervals=epdAt : sourceIntervals
+            { sourceIntervals=epAt : sourceIntervals
             , jobs=if null vss'
                 then other
                 else out{ outputRnd=vss' } : other
             , process_=execSchedule pu $ do
-                _endpoints <- scheduleEndpoint d $ scheduleInstruction epdAt $ Out tag
-                when (null vss') $ void $ scheduleFunction (startAt ... sup epdAt) function
+                _endpoints <- scheduleEndpoint d $ scheduleInstruction epAt $ Out tag
+                when (null vss') $ void $ scheduleFunction (startAt ... sup epAt) function
                 -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
                 -- которые берут информацию о времени из Process
-                updateTick (sup epdAt)
+                updateTick (sup epAt)
             }
 
     endpointDecision _ _ = error "divider decision internal error"

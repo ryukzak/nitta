@@ -26,7 +26,7 @@ import           Data.Monoid                   ((<>))
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
 import           Network.Wai.Handler.Warp      (run)
 import           Network.Wai.Middleware.Cors   (simpleCors)
-import           NITTA.Synthesis.Types
+import           NITTA.Synthesis.Tree
 import           NITTA.UIBackend.Marshalling   ()
 import           NITTA.UIBackend.REST
 import           Servant
@@ -41,7 +41,8 @@ import           Text.InterpolatedString.Perl6 (qq)
 prepareJSAPI port path = do
     let prefix = [qq|import axios from 'axios';
 var api = \{\};
-export default api;|]
+export default api;
+/* eslint no-useless-concat: "off" */|]
     let axios' = SJS.axiosWith SJS.defAxiosOptions SJS.defCommonGeneratorOptions
             { SJS.urlPrefix=[qq|http://localhost:$port|]
             , SJS.moduleName="api"

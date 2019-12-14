@@ -25,12 +25,13 @@ module NITTA.Synthesis.Method
     , allBindsAndRefsIO
     ) where
 
-import           Data.List             (find, sortOn)
-import           Data.Ord              (Down (..))
+import           Data.List                (find, sortOn)
+import           Data.Ord                 (Down (..))
 import           Debug.Trace
-import           NITTA.Synthesis.Types
-import           NITTA.Synthesis.Utils (targetProcessDuration)
-import           NITTA.Utils           (maximumOn, minimumOn)
+import           NITTA.Synthesis.Estimate
+import           NITTA.Synthesis.Tree
+import           NITTA.Synthesis.Utils    (targetProcessDuration)
+import           NITTA.Utils              (maximumOn, minimumOn)
 import           Safe
 
 
@@ -64,7 +65,7 @@ bestThreadIO limit node = do
     edges <- getPositiveEdgesIO node
     case edges of
         [] -> return node
-        _  -> bestThreadIO (limit - 1) $ eNode $ maximumOn eObjectiveFunctionValue edges
+        _  -> bestThreadIO (limit - 1) $ eTarget $ maximumOn eObjectiveFunctionValue edges
 
 
 obviousBindThreadIO node = do
@@ -77,8 +78,8 @@ obviousBindThreadIO node = do
             ) . eParameters)
             edges
     case obliousBind of
-        Just Edge{ eNode } -> obviousBindThreadIO eNode
-        Nothing            -> return node
+        Just Edge{ eTarget } -> obviousBindThreadIO eTarget
+        Nothing              -> return node
 
 
 allBindsAndRefsIO node = do
@@ -87,7 +88,7 @@ allBindsAndRefsIO node = do
         <$> getPositiveEdgesIO node
     if null edges
         then return node
-        else allBindsAndRefsIO $ eNode $ minimumOn eObjectiveFunctionValue edges
+        else allBindsAndRefsIO $ eTarget $ minimumOn eObjectiveFunctionValue edges
 
 
 refactorThreadIO node = do
@@ -99,8 +100,8 @@ refactorThreadIO node = do
             ) . eParameters)
             edges
     case refEdge of
-        Just Edge{ eNode } -> refactorThreadIO eNode
-        Nothing            -> return node
+        Just Edge{ eTarget } -> refactorThreadIO eTarget
+        Nothing              -> return node
 
 
 smartBindThreadIO node = do
@@ -113,14 +114,14 @@ smartBindThreadIO node = do
             ) . eParameters)
             edges
     case binds of
-        Edge{ eNode }:_ -> smartBindThreadIO eNode
-        []              -> return node'
+        Edge{ eTarget }:_ -> smartBindThreadIO eTarget
+        []                -> return node'
 
 
 allBestThreadIO (0 :: Int) node = bestThreadIO stepLimit node
 allBestThreadIO n node = do
     edges <- getPositiveEdgesIO node
-    sythesizedNodes <- mapM (\Edge{ eNode } -> allBestThreadIO (n-1) eNode) edges
+    sythesizedNodes <- mapM (\Edge{ eTarget } -> allBestThreadIO (n-1) eTarget) edges
     return $ getBestNode node sythesizedNodes
 
 

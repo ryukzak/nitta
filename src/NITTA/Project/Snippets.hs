@@ -25,7 +25,7 @@ module NITTA.Project.Snippets
 import qualified Data.String.Utils                as S
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Implementation
 import           NITTA.Project.Types
 import           NITTA.Utils

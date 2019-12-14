@@ -21,38 +21,25 @@ module NITTA.Model.ProcessorUnits.Serial.Accum
   , Ports(..), IOPorts(..)
   ) where
 
-import           Control.Monad                    (when)
-import           Data.Bits                        (finiteBitSize)
+import           Control.Monad                   (when)
+import           Data.Bits                       (finiteBitSize)
 import           Data.Default
-import           Data.List                        (find, partition, (\\))
-import           Data.Set                         (elems, fromList, member)
-import qualified NITTA.Intermediate.Functions     as F
+import           Data.List                       (find, partition, (\\))
+import           Data.Maybe.HT                   (toMaybe)
+import           Data.Set                        (elems, fromList, member)
+import qualified NITTA.Intermediate.Functions    as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                 (singleton, sup, (...))
-import           Text.InterpolatedString.Perl6    (qc)
-
-
-
-go3 = let
-        f = F.add "a" "b" ["c"] :: F String Int
-        st0 = accum :: Accum String Int Int
-        Right st1 = tryBind f st0
-
-        st2 = endpointDecision st1 $ EndpointD (Target "a") (0...2)
-        st3 = endpointDecision st2 $ EndpointD (Target "b") (0...2)
-        st4 = endpointDecision st3 $ EndpointD (Source $ fromList ["c"]) (7...7)
-    in
-        (st4, endpointOptions st4)
-
+import           Numeric.Interval                (singleton, sup, (...))
+import           Text.InterpolatedString.Perl6   (qc)
 
 data Accum v x t = Accum
     { remain               :: [ F v x ]
@@ -80,6 +67,102 @@ accum = Accum
 
 instance ( VarValTime v x t
          ) => ProcessorUnit (Accum v x t) v x t where
+    tryBind f pu@Accum{ remain }
+        | Just F.Add {} <- castF f = Right pu{ remain=f : remain }
+        | Just F.Sub {} <- castF f = Right pu{ remain=f : remain }
+        | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
+
+    process = process_
+
+    setTime t pu@Accum{} = pu{ tick=t }
+
+
+execution pu@Accum{ targets=[], sources=[], remain, tick } f
+    | Just (F.Add (I a) (I b) (O c)) <- castF f
+    = pu
+        { targets=[(False, a), (False, b)]
+        , currentWork=Just (tick + 1, f)
+        , sources=elems c
+        , remain=remain \\ [ f ]
+        }
+    | Just (F.Sub (I a) (I b) (O c)) <- castF f
+    = pu
+        -- mark True when value is negative
+        { targets=[(False, a), (True, b)]
+        , currentWork=Just (tick + 1, f)
+        , sources=elems c
+        , remain=remain \\ [ f ]
+        }
+execution _ _ = error "Accum: internal execution error."
+
+accum :: (VarValTime v x t) => Accum v x t
+accum = Accum
+    { remain=[]
+    , targets=[]
+    , sources=[]
+    , doneAt=Nothing
+    , currentWork=Nothing
+    , currentWorkEndpoints=[]
+    , process_=def
+    , tick=def
+    }
+
+instance ( VarValTime v x t
+        ) => EndpointProblem (Accum v x t) v t
+        where
+
+    endpointOptions Accum{ targets=vs@(_:_), tick }
+        = map (\(_, v) -> EndpointSt (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) vs
+
+    endpointOptions Accum{ sources, doneAt=Just _, tick }
+        | not $ null sources
+        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
+
+    endpointOptions pu@Accum{ remain } = concatMap (endpointOptions . execution pu) remain
+
+
+    endpointDecision pu@Accum{ targets=vs, currentWorkEndpoints } d@EndpointSt{ epRole=Target v, epAt }
+        | ([(neg, _)], xs) <- partition ((== v) . snd) vs
+        , let sel = if null xs then Init neg else Load neg
+              (newEndpoints, process_') = runSchedule pu $ do
+                    updateTick (sup epAt)
+                    scheduleEndpoint d $ scheduleInstruction epAt sel
+        = pu
+            { process_=process_'
+            , targets=xs
+            , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
+            , doneAt=toMaybe (null xs) (sup epAt + 3)
+            , tick=sup epAt
+            }
+
+    endpointDecision pu@Accum{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointSt{ epRole=Source v, epAt }
+        | not $ null sources
+        , let sources' = sources \\ elems v
+        , sources' /= sources
+        , let (newEndpoints, process_') = runSchedule pu $ do
+                endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt-1) Out
+                when (null sources') $ do
+                    high <- scheduleFunction (a ... sup epAt) f
+                    let low = endpoints ++ currentWorkEndpoints
+                    establishVerticalRelations high low
+
+                updateTick (sup epAt)
+                return endpoints
+        = pu
+            { process_=process_'
+            , sources=sources'
+            , doneAt=if null sources' then Nothing else doneAt
+            , currentWork=toMaybe (not $ null sources') (a, f)
+            , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
+            , tick=sup epAt
+            }
+
+    endpointDecision pu@Accum{ targets=[], sources=[], remain } d
+        | let v = oneOf $ variables d
+        , Just f <- find (\f -> v `member` variables f) remain
+        = endpointDecision (execution pu f) d
+
+    endpointDecision pu d = error $ "Accum decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
     tryBind f pu@Accum{ remain }
         | Just F.Add {} <- castF f = Right pu{ remain=f : remain }
@@ -123,86 +206,39 @@ instance ( VarValTime v x t
 
     endpointOptions pu@Accum{ remain } = concatMap (endpointOptions . assignment pu) remain
 
-
-    endpointDecision pu@Accum{ targets=vs, currentWorkEndpoints } d@EndpointD{ epdRole=Target v, epdAt }
-        | ([(neg, _)], xs) <- partition ((== v) . snd) vs
-        , let sel = if null xs then Init neg else Load neg
-        , let (newEndpoints, process_') = runSchedule pu $ do
-                updateTick (sup epdAt)
-                scheduleEndpoint d $ scheduleInstruction epdAt sel
-        = pu
-            { process_=process_'
-            , targets=xs
-            , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-            , doneAt=if null xs
-                then Just $ sup epdAt + 3
-                else Nothing
-            , tick=sup epdAt
-            }
-
-    endpointDecision pu@Accum{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointD{ epdRole=Source v, epdAt }
-        | not $ null sources
-        , let sources' = sources \\ elems v
-        , sources' /= sources
-        , let (newEndpoints, process_') = runSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstruction (epdAt-1) Out
-                when (null sources') $ do
-                    high <- scheduleFunction (a ... sup epdAt) f
-                    let low = endpoints ++ currentWorkEndpoints
-                    establishVerticalRelations high low
-
-                updateTick (sup epdAt)
-                return endpoints
-        = pu
-            { process_=process_'
-            , sources=sources'
-            , doneAt=if null sources' then Nothing else doneAt
-            , currentWork=if null sources' then Nothing else Just (a, f)
-            , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
-            , tick=sup epdAt
-            }
-
-    endpointDecision pu@Accum{ targets=[], sources=[], remain } d
-        | let v = oneOf $ variables d
-        , Just f <- find (\f -> v `member` variables f) remain
-        = endpointDecision (assignment pu f) d
-
-    endpointDecision pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
-
-
 instance Controllable (Accum v x t) where
     data Instruction (Accum v x t) = Init Bool | Load Bool | Out deriving (Show)
     data Microcode (Accum v x t) =
         Microcode
             { oeSignal :: Bool
-            , initSignal :: Bool
+            , resetAccSignal :: Bool
             , loadSignal :: Bool
             , negSignal :: Maybe Bool
             } deriving ( Show, Eq, Ord )
 
     mapMicrocodeToPorts Microcode{..} AccumPorts{..} =
-        [ (init, Bool initSignal)
+        [ (resetAcc, Bool resetAccSignal)
         , (load, Bool loadSignal)
         , (neg, maybe Undef Bool negSignal)
         , (oe, Bool oeSignal)
         ]
 
-    portsToSignals AccumPorts{ init, load, neg, oe } = [init, load, neg, oe]
+    portsToSignals AccumPorts{ resetAcc, load, neg, oe } = [resetAcc, load, neg, oe]
 
-    signalsToPorts (init:load:neg:oe:_) _ = AccumPorts init load neg oe
+    signalsToPorts (resetAcc:load:neg:oe:_) _ = AccumPorts resetAcc load neg oe
     signalsToPorts _                    _ = error "pattern match error in signalsToPorts AccumPorts"
 
 instance Default (Microcode (Accum v x t)) where
     def = Microcode
         { oeSignal=False
-        , initSignal=False
+        , resetAccSignal=False
         , loadSignal=False
         , negSignal=Nothing
         }
 
 instance UnambiguouslyDecode (Accum v x t) where
-    decodeInstruction (Init neg) = def{ initSignal=False, loadSignal=True, negSignal=Just neg }
-    decodeInstruction (Load neg) = def{ initSignal=True, loadSignal=True, negSignal=Just neg }
+    decodeInstruction (Init neg) = def{ resetAccSignal=False, loadSignal=True, negSignal=Just neg }
+    decodeInstruction (Load neg) = def{ resetAccSignal=True, loadSignal=True, negSignal=Just neg }
     decodeInstruction Out        = def{ oeSignal=True }
 
 
@@ -217,24 +253,21 @@ instance ( VarValTime v x t
 
 instance Connected (Accum v x t) where
     data Ports (Accum v x t)
-        = AccumPorts{ init, load, neg, oe :: SignalTag } deriving ( Show )
+        = AccumPorts{ resetAcc, load, neg, oe :: SignalTag } deriving ( Show )
 
 instance IOConnected (Accum v x t) where
     data IOPorts (Accum v x t) = AccumIO
-
 
 instance ( Var v ) => Locks (Accum v x t) v where
     locks Accum{ remain, sources, targets } =
         [ Lock{ lockBy, locked }
         | locked <- sources
-        , lockBy <- snds targets
+        , lockBy <- map snd targets
         ]
-
         ++
-
         [ Lock{ lockBy, locked }
         | locked <- concatMap (elems . variables) remain
-        , lockBy <- sources ++ snds targets
+        , lockBy <- sources ++ map snd targets
         ]
 
 instance ( Val x, Default x ) => TargetSystemComponent (Accum v x t) where
@@ -249,7 +282,7 @@ instance ( Val x, Default x ) => TargetSystemComponent (Accum v x t) where
                     ) { tag }
                 ( .clk( { signalClk } )
                 , .rst( { signalRst } )
-                , .signal_init( { signal init } )
+                , .signal_resetAcc( { signal resetAcc } )
                 , .signal_load( { signal load } )
                 , .signal_neg( { signal neg } )
                 , .signal_oe( { signal oe } )
@@ -268,5 +301,3 @@ instance ( VarValTime v x t ) => Default (Accum v x t) where
 instance IOTestBench (Accum v x t) v x
 
 instance RefactorProblem (Accum v x t) v x
-
-snds = map snd

@@ -9,7 +9,7 @@
 
 {-|
 Module      : NITTA.Model.Types
-Description :
+Description : Types for time description
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -31,17 +31,14 @@ import           Numeric.Interval
 type VarValTime v x t = ( Var v, Val x, Time t )
 
 
--- *Time
-
--- |Type class for time description.
+-- |Shortcut for time type constrain.
 type Time t = ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, Integral t )
 
 
--- | Описание временных ограничений на активности (Ativity). Используется при описании доступных
--- опций для планирования вычислительного процесса.
+-- |Time comstrain for processor activity.
 data TimeConstrain t
     = TimeConstrain
-        { tcAvailable :: Interval t -- ^ Замкнутый интервал, в рамках которого можно выполнить активность.
+        { tcAvailable :: Interval t -- ^Inclusive interval for
         , tcDuration  :: Interval t -- ^ Замкнутый интервал допустимой длительности активности.
         } deriving ( Eq )
 

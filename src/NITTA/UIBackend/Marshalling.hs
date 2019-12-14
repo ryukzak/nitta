@@ -28,32 +28,33 @@ module NITTA.UIBackend.Marshalling
     , SynthesisDecisionView
     , DataflowEndpointView
     , EdgeView
+    , TreeView
     ) where
 
 import           Control.Concurrent.STM
 import           Data.Aeson
 import           Data.Hashable
-import qualified Data.HashMap.Strict              as HM
-import qualified Data.Map                         as M
+import qualified Data.HashMap.Strict             as HM
+import qualified Data.Map                        as M
 import           Data.Maybe
-import qualified Data.Set                         as S
-import qualified Data.String.Utils                as S
-import qualified Data.Text                        as T
-import qualified Data.Tree                        as T
+import qualified Data.Set                        as S
+import qualified Data.String.Utils               as S
+import qualified Data.Text                       as T
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Problems.Whole
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Synthesis.Types
+import           NITTA.Synthesis.Estimate
+import           NITTA.Synthesis.Tree
 import           NITTA.Synthesis.Utils
 import           NITTA.UIBackend.Timeline
-import           NITTA.Utils                      (transferred)
+import           NITTA.Utils                     (transferred)
 import           Numeric.Interval
 import           Servant
 
@@ -78,15 +79,24 @@ data SynthesisNodeView
 
 instance ToJSON SynthesisNodeView
 
+data TreeView a = NodeView
+        { rootLabel :: a
+        , subForest :: [ TreeView a ]
+        }
+    deriving ( Generic )
+
+instance ( ToJSON a ) => ToJSON (TreeView a)
+
+
 instance ( UnitTag tag, VarValTime v x t
-        ) => Viewable (G Node tag v x t) (IO (T.Tree SynthesisNodeView)) where
+        ) => Viewable (G Node tag v x t) (IO (TreeView SynthesisNodeView)) where
     view Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
         nodesM <- readTVarIO nEdges
         nodes <- case nodesM of
-            Just ns -> mapM (view . eNode) ns
+            Just ns -> mapM (view . eTarget) ns
             Nothing -> return []
-        return T.Node
-            { T.rootLabel=SynthesisNodeView
+        return NodeView
+            { rootLabel=SynthesisNodeView
                 { svNnid=nId
                 , svCntx=[]
                 , svIsComplete=nIsComplete
@@ -99,7 +109,7 @@ instance ( UnitTag tag, VarValTime v x t
                     Just Edge{ eOption=Refactor{} } -> "Refactor"
                     Nothing                         -> "-"
                 }
-            , T.subForest=nodes
+            , subForest=nodes
             }
 
 
@@ -157,9 +167,9 @@ data EdgeView tag v x t
 instance ( VarValTimeJSON v x t, Hashable v, ToJSON tag ) => ToJSON (EdgeView tag v x t)
 
 instance ( VarValTimeJSON v x t, Hashable v ) => Viewable (G Edge tag v x t) (EdgeView tag v x t) where
-    view Edge{ eNode, eOption, eDecision, eParameters, eObjectiveFunctionValue }
+    view Edge{ eTarget, eOption, eDecision, eParameters, eObjectiveFunctionValue }
         = EdgeView
-            { nid=show $ nId eNode
+            { nid=show $ nId eTarget
             , option=view eOption
             , decision=view eDecision
             , parameters=eParameters
@@ -177,9 +187,9 @@ instance ( VarValTimeJSON v x t ) => ToJSON (SynthesisStatement String v x (Time
 instance ( VarValTimeJSON v x t ) => ToJSON (SynthesisStatement String v x (Interval t))
 instance ( ToJSON v, Show v, Show x ) => ToJSON (Refactor v x) where
     toJSON = toJSON . show
-instance ( Time t ) => ToJSON (EndpointOption String t) where
-    toJSON EndpointO{ epoRole=Source vs, epoAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epoAt)
-    toJSON EndpointO{ epoRole=Target v, epoAt } = toJSON ("Target: " ++ v ++ " at " ++ show epoAt)
+instance ( Time t ) => ToJSON (EndpointSt String (TimeConstrain t)) where
+    toJSON EndpointSt{ epRole=Source vs, epAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epAt)
+    toJSON EndpointSt{ epRole=Target v, epAt } = toJSON ("Target: " ++ v ++ " at " ++ show epAt)
 
 
 

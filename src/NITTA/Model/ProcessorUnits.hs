@@ -2,7 +2,7 @@
 
 {-|
 Module      : NITTA.Model.ProcessorUnits
-Description : Set of processor unit models
+Description : Library of processor unit models
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com

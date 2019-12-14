@@ -26,6 +26,7 @@ import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Utils
 
+
 -- |Functional algorithm simulation
 simulateDataFlowGraph cycle0 transmission dfg
     = simulateAlg cycle0 transmission $ reorderAlgorithm $ functions dfg
