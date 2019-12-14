@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ReactTable from "react-table";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { HistoryStep, Refactor, NId } from "../../../gen/types";
+import { HistoryStep, NId } from "../../../gen/types";
 import { AxiosResponse, AxiosError } from "axios";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { useContext } from "react";
@@ -114,13 +114,15 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
             100
           ),
           textColumn("description", (h: History) => {
-            let desc: string | Refactor<string, string> = "";
             let nid = h[0];
-            if (h[1].tag === "BindingView") desc = h[1].pu + " <- " + h[1].function;
-            if (h[1].tag === "RefactorView") desc = h[1].contents;
-            if (h[1].tag === "DataflowView") desc = JSON.stringify(h[1]);
-            if (nid === "-") desc = "INITIAL STATE";
-            return <div>{desc}</div>;
+            return (
+              <>
+                {h[1].tag === "BindingView" && nid !== "-" && h[1].pu + " <- " + h[1].function}
+                {h[1].tag === "RefactorView" && h[1].contents}
+                {h[1].tag === "DataflowView" && JSON.stringify(h[1])}
+                {nid === "-" && "INITIAL STATE"}
+              </>
+            );
           })
         ]}
       />
