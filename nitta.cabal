@@ -134,6 +134,7 @@ test-suite nitta-test
                      , NITTA.Test.ProcessorUnits
                      , NITTA.Test.Refactor
                      , NITTA.Test.Types
+                     , NITTA.Test.Locks
                      , NITTA.Test.LuaFrontend
                      , NITTA.Test.Utils
                      , NITTA.Test.CodeBlock

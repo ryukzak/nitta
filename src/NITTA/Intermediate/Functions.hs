@@ -183,10 +183,9 @@ toBlocksSplit exprInput = splitBySemicolon $ matchAll exprPattern filtered []
 accGen blocks = structure
     where
         partedExpr = map (L.partition (\(x:_) -> x /= '='))
-        signPush (s:name) = case s of
-            '+' -> Push Plus (I name)
-            '-' -> Push Minus (I name)
-            _   -> error "Error in matching + and -"
+        signPush ('+':name) = Push Plus (I name)
+        signPush ('-':name) = Push Minus (I name)
+        signPush _          = error "Error in matching + and -"
         pushCreate lst = map signPush lst
         pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_:name) -> name : buff ) [] lst
         structure = Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
@@ -198,10 +197,9 @@ locksSet exprInput = fromList $ locks $ accGen $ toBlocksSplit exprInput
 
 pushStatusGroups lst = map (map signCheck) $ filter (not . null) $ splitWhen isPull lst
     where
-        signCheck =
-            \case
-                Push Plus (I v)  -> (False, v)
-                Push Minus (I v) -> (True, v)
+        signCheck (Push Plus (I v))  = (False, v)
+        signCheck (Push Minus (I v)) = (True, v)
+        signCheck _                  = error "Error . pattern matching in signCheck func in Functions.hs"
 
 pullStatusGroups lst = concatMap (map (elems . fromPull)) $ filter (not . null) $ splitWhen isPush lst
 

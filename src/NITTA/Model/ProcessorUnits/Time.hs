@@ -112,14 +112,14 @@ data Process v x t
                                   -- (отношения описываются через "кортежи" из ProcessUid).
         , nextTick  :: t          -- ^Номер первого свободного такта.
         , nextUid   :: ProcessUid -- ^Следующий свободный идентификатор шага вычислительного процесса.
-        }
+        } deriving (Show)
 
-instance (VarValTime v x t) => Show (Process v x t) where
-    show p = "Process\n"
-        ++ "\t\tsteps     = " ++ fst (foldl (\(s, i) next -> (s ++ "\n\t\t\t" ++ show i ++ ") " ++ show next, i+1) ) ("", 0) ( steps p )) ++ "\n"
-        ++ "\t\trelations = " ++ fst (foldl (\(s, i) next -> (s ++ "\n\t\t\t" ++ show i ++ ") " ++ show next, i+1) ) ("", 0) ( relations p )) ++ "\n"
-        ++ "\t\tnextTick  = " ++ show ( nextTick p ) ++ "\n"
-        ++ "\t\tnextUid  = " ++ show ( nextUid p ) ++ "\n"
+-- instance (VarValTime v x t) => Show (Process v x t) where
+--     show p = "Process\n"
+--         ++ "\t\tsteps     = " ++ fst (foldl (\(s, i) next -> (s ++ "\n\t\t\t" ++ show i ++ ") " ++ show next, i+1) ) ("", 0) ( steps p )) ++ "\n"
+--         ++ "\t\trelations = " ++ fst (foldl (\(s, i) next -> (s ++ "\n\t\t\t" ++ show i ++ ") " ++ show next, i+1) ) ("", 0) ( relations p )) ++ "\n"
+--         ++ "\t\tnextTick  = " ++ show ( nextTick p ) ++ "\n"
+--         ++ "\t\tnextUid  = " ++ show ( nextUid p ) ++ "\n"
 
 instance ( Default t ) => Default (Process v x t) where
     def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
