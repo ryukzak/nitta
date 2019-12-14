@@ -68,7 +68,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
           textColumn("pBufferCount", (e: Edge) => (e.parameters as RefactorParam).pBufferCount, 50),
           textColumn("pNStepBackRepeated", (e: Edge) => {
             let n = (e.parameters as RefactorParam).pNStepBackRepeated;
-            return n === undefined ? "null" : (n as number).toString()
+            return n === undefined || n === null ? "null" : (n as number).toString()
           }, 50)
         ]}
       />
