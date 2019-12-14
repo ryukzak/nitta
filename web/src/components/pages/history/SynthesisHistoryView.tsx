@@ -107,17 +107,19 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
           textColumn(
             "decision type",
             (h: History) => {
-              if (h[0] === "-") return "";
+              let nid = h[0];
+              if (nid === "-") return "";
               return h[1].tag;
             },
             100
           ),
           textColumn("description", (h: History) => {
             let desc: string | Refactor<string, string> = "";
+            let nid = h[0];
             if (h[1].tag === "BindingView") desc = h[1].pu + " <- " + h[1].function;
             if (h[1].tag === "RefactorView") desc = h[1].contents;
             if (h[1].tag === "DataflowView") desc = JSON.stringify(h[1]);
-            if (h[0] === "-") desc = "INITIAL STATE";
+            if (nid === "-") desc = "INITIAL STATE";
             return <div>{desc}</div>;
           })
         ]}
