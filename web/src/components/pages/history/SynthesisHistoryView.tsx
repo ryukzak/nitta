@@ -26,8 +26,14 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
     haskellApiService
       .getHistory(appContext.selectedNodeId)
       .then((response: AxiosResponse<History[]>) => {
-        if (props.reverse) setHistory(response.data.reverse().concat([firstStep]));
-        else setHistory([firstStep].concat(response.data));
+        if (props.reverse) {
+          let result = response.data.reverse();
+          result = result.concat([firstStep]);
+          setHistory(result);
+        } else {
+          let result = [firstStep].concat(response.data);
+          setHistory(result);
+        }
       })
       .catch((err: AxiosError) => console.log(err));
   }, [appContext.selectedNodeId, props.reverse]);
