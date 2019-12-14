@@ -18,7 +18,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Serial.NewAccum
+module NITTA.Model.ProcessorUnits.Serial.Accum
   ( accum
   , Accum
   , Ports(..), IOPorts(..)
@@ -79,7 +79,7 @@ accum = Accum
 {-
 >>> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval Data.Set
 >>> :set prompt "\ESC[34mλ> \ESC[m"
->>> :l NITTA.Model.ProcessorUnits.Serial.NewAccum
+>>> :l NITTA.Model.ProcessorUnits.Serial.Accum
 -}
 
 -- function for testing in ghci
@@ -104,25 +104,35 @@ go = let
         st10 = endpointDecision st9 $ EndpointD (Target "d") (25...28)
         st11 = endpointDecision st10 $ EndpointD (Source $ fromList ["f"]) (7...7)
     in
-        (locks st6, st6)
+        (st4, endpointOptions st6)
 
 
+go2 = let
+        f = F.add "a1" "b1" ["c1"] :: F String Int
+        st0 = accum :: Accum String Int Int
+        Right st1 = tryBind f st0
+
+        st2 = endpointDecision st1 $ EndpointD (Target "a1") (0...2)
+        st3 = endpointDecision st2 $ EndpointD (Target "b1") (0...2)
+        st4 = endpointDecision st3 $ EndpointD (Source $ fromList ["c1"]) (7...7)
+    in
+        (st4, endpointOptions st4)
 
 ------------------------------new version-----------------------------------------------
 
 go' = let
-        testAcc = [F.Push F.Plus (I "a"), F.Push F.Plus (I "b"), F.Pull (O $ fromList ["c", "z"]), F.Push F.Plus (I "x"), F.Push F.Minus (I "d"), F.Pull (O $ fromList ["f"])]
+        testAcc = [F.Push F.Plus (I "a1"), F.Push F.Plus (I "b1"), F.Pull (O $ fromList ["c1", "z1"]), F.Push F.Plus (I "x1"), F.Push F.Minus (I "d1"), F.Pull (O $ fromList ["f1"])]
         f = F.acc testAcc :: F String Int
         st0 = tryBindFunc f
-        st1 = endpointDecisionFunc st0 "b"
-        st2 = endpointDecisionFunc st1 "a"
-        st3 = endpointDecisionFunc st2 "c"
-        st4 = endpointDecisionFunc st3 "z"
-        st5 = endpointDecisionFunc st4 "x"
-        st6 = endpointDecisionFunc st5 "d"
-        st7 = endpointDecisionFunc st6 "f"
+        st1 = endpointDecisionFunc st0 "b1"
+        st2 = endpointDecisionFunc st1 "a1"
+        st3 = endpointDecisionFunc st2 "c1"
+        st4 = endpointDecisionFunc st3 "z1"
+        st5 = endpointDecisionFunc st4 "x1"
+        st6 = endpointDecisionFunc st5 "d1"
+        st7 = endpointDecisionFunc st6 "f1"
     in
-        (st7, endpointOptionsFunc st7)
+        (st7, endpointOptionsFunc st1)
 
 
 data FAccum v x =
@@ -136,6 +146,10 @@ data FAccum v x =
 tryBindFunc f = FAccum {model = functionModel, real = [], func = f}
     where
         functionModel = concatMap (\(i, o) -> [i, map (\x -> (False, x)) o]) (setRemain f)
+
+-- tryBindFunc' f f2 = FAccum {model = functionModel, real = [], func = f2}
+--     where
+--         functionModel = concatMap (\(i, o) -> [i, map (\x -> (False, x)) o]) (setRemain f)
 
 endpointOptionsFunc FAccum {model=[]} = []
 
@@ -171,8 +185,8 @@ endpointDecisionFunc a@FAccum {model=model@(m:ms), real=real@(r:rs)} v
 instance ( VarValTime v x t, Num x
          ) => ProcessorUnit (Accum v x t) v x t where
     tryBind f pu@Accum{remain}
-        | Just (F.Add a b c)  <- castF f = Right pu{ remain = tryBindFunc ( F.acc [F.Push F.Plus a, F.Push F.Plus b, F.Pull c] ) : remain }
-        | Just (F.Sub a b c)  <- castF f = Right pu{ remain = tryBindFunc ( F.acc [F.Push F.Plus a, F.Push F.Minus b, F.Pull c] ) : remain }
+        | Just (F.Add a b c)  <- castF f = Right pu{ remain = tryBindFunc ( F.acc [F.Push F.Plus a, F.Push F.Plus b, F.Pull c] )  : remain }
+        | Just (F.Sub a b c)  <- castF f = Right pu{ remain = tryBindFunc ( F.acc [F.Push F.Plus a, F.Push F.Minus b, F.Pull c])  : remain }
         | Just F.Acc{}        <- castF f = Right pu{ remain = tryBindFunc f : remain}
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 
@@ -185,12 +199,12 @@ setRemain f
 
 --- NEW -----------------------------------------------------------------
 instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
-    endpointOptions Accum{ currentWork = Just (_, a@FAccum {real}), tick }
-        | even (length real)  = map (\v -> EndpointO (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) (endpointOptionsFunc a)
-        | odd (length real) = [ EndpointO (Source $ fromList (endpointOptionsFunc a) ) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
+    endpointOptions Accum{ currentWork = Just (_, a@FAccum {real, model}), tick }
+        | even (length model)  = map (\v -> EndpointO (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) (endpointOptionsFunc a)
+        | odd (length model) = [ EndpointO (Source $ fromList (endpointOptionsFunc a) ) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
 
-    endpointOptions p@Accum{ remain, currentWork = Nothing } =
-        concatMap (\a -> endpointOptions p {currentWork = Just (0, a)}) remain
+    endpointOptions p@Accum{ remain, currentWork = Nothing, tick } =
+        concatMap (\a -> endpointOptions p {currentWork = Just (tick + 1, a)}) remain
 
     endpointDecision pu@Accum{ currentWork=Just (t, a@FAccum {model, real}), currentWorkEndpoints, remain, isInit } d@EndpointD{ epdRole=Target v, epdAt }
         | not (null model) && even ( length model) = let
@@ -225,6 +239,7 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     return endpoints
             in pu
                 { process_=process_'
+                -- , doneAt=if null newModel then Nothing else doneAt
                 , doneAt=if null newModel then Nothing else doneAt
                 , currentWork=if null newModel then Nothing else Just(t, fAccum)
                 , currentWorkEndpoints=if null newModel then [] else newEndpoints ++ currentWorkEndpoints
@@ -235,7 +250,10 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
     endpointDecision pu@Accum{remain, currentWork=Nothing, tick} d
         | let v = oneOf $ variables d
         , Just fAccum <- find (\FAccum {func} -> v `member` variables func) remain
-        = endpointDecision pu {remain = remain \\ [fAccum], currentWork = Just (tick, fAccum), isInit = True } d
+        = endpointDecision pu {remain = remain \\ [fAccum], currentWork = Just (tick+1, fAccum), isInit = True } d
+
+
+    endpointDecision pu  d = error $ "error in Endpoint Decision function" ++ show pu ++ show d
 
 instance Controllable (Accum v x t) where
     data Instruction (Accum v x t) = Init Bool | Load Bool | Out deriving (Show)
@@ -278,8 +296,9 @@ instance ( VarValTime v x t
          , Num x
          ) => Simulatable (Accum v x t) v x where
   simulateOn cntx _ f
+    | Just f'@F.Add{} <- castF f = simulate cntx f'
+    | Just f'@F.Sub{} <- castF f = simulate cntx f'
     | Just f'@F.Acc{} <- castF f = simulate cntx f'
-    -- | Just f'@F.Sub{} <- castF f = simulate cntx f'
     | otherwise = error $ "Can't simulate " ++ show f ++ " on Accum."
 --
 --

@@ -40,6 +40,20 @@ import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                 (singleton, sup, (...))
 import           Text.InterpolatedString.Perl6    (qc)
 
+
+
+go3 = let
+        f = F.add "a" "b" ["c"] :: F String Int
+        st0 = accum :: Accum String Int Int
+        Right st1 = tryBind f st0
+
+        st2 = endpointDecision st1 $ EndpointD (Target "a") (0...2)
+        st3 = endpointDecision st2 $ EndpointD (Target "b") (0...2)
+        st4 = endpointDecision st3 $ EndpointD (Source $ fromList ["c"]) (7...7)
+    in
+        (st4, endpointOptions st4)
+
+
 data Accum v x t = Accum
     { remain               :: [ F v x ]
     , targets              :: [ (Bool, v) ]
