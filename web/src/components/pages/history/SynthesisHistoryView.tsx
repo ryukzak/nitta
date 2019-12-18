@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
-import ReactTable from "react-table";
+import React, { useEffect, useState, useContext } from "react";
+import ReactTable, { Column } from "react-table";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { HistoryStep, NId } from "../../../gen/types";
 import { AxiosResponse, AxiosError } from "axios";
 import { AppContext, IAppContext } from "../../app/AppContext";
-import { useContext } from "react";
 
 type Row = { original: History; index: number };
 type History = HistoryStep<string, string, string, string>;
@@ -26,19 +25,16 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
     haskellApiService
       .getHistory(appContext.selectedNodeId)
       .then((response: AxiosResponse<History[]>) => {
+        let result = [firstStep].concat(response.data);
         if (props.reverse) {
-          let result = response.data.reverse();
-          result = result.concat([firstStep]);
-          setHistory(result);
-        } else {
-          let result = [firstStep].concat(response.data);
-          setHistory(result);
+          result = result.reverse();
         }
+        setHistory(result);
       })
       .catch((err: AxiosError) => console.log(err));
   }, [appContext.selectedNodeId, props.reverse]);
 
-  function Table(props: { name: string; columns: any[]; history: History[] }) {
+  function Table(props: { name: string; columns: Column[]; history: History[] }) {
     if (props.history.length === 0)
       return (
         <small>
