@@ -40,7 +40,7 @@ export const EdgesView: React.FC = () => {
           <TablesView edges={edges} />
         </div>
       </div>
-      <div className="row">
+      <div className="row mt-1">
         <div className="col">
           <SynthesisHistoryView reverse={true} />
         </div>
