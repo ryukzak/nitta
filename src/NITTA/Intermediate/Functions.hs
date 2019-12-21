@@ -1,11 +1,12 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
@@ -26,7 +27,7 @@ Function can contains state between process cycles.
 -}
 module NITTA.Intermediate.Functions
     ( -- *Arithmetics
-      Acc(..), Status(..), Sign(..), acc
+      Acc(..), Status(..), Sign(..), acc, accFromStr
     , Add(..), add, pushStatusGroups, pullStatusGroups
     , Division(..), division
     , Multiply(..), multiply
@@ -39,8 +40,6 @@ module NITTA.Intermediate.Functions
     -- *Input/Output
     , Receive(..), receive
     , Send(..), send
-    -- *Locks tests
-    , locksSet
     ) where
 
 import qualified Data.Bits                as B
@@ -134,7 +133,7 @@ data Status v = Push Sign (I v) | Pull (O v) deriving (Typeable, Show, Eq)
 
 newtype Acc v x = Acc [Status v] deriving (Typeable, Eq)
 
-instance {-# OVERLAPS #-} Label (Acc v x) where label Acc{} = "+"
+instance Label (Acc v x) where label Acc{} = "+"
 instance ( Show v) => Show (Acc v x) where
     show (Acc lst) =  concatMap printStatus lst
         where
@@ -170,7 +169,6 @@ instance ( Ord v ) => Patch (Acc v x) (v, v) where
 ------------------------------ for locks tests ---------------------------------
 
 exprPattern = mkRegex "[+,=,-]*[a-zA-Z0-9]+|;"
-
 toBlocksSplit exprInput = splitBySemicolon $ matchAll exprPattern filtered []
     where
         matchAll p inpS res =
@@ -190,8 +188,7 @@ accGen blocks = structure
         pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_:name) -> name : buff ) [] lst
         structure = Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
 
-locksSet exprInput = fromList $ locks $ accGen $ toBlocksSplit exprInput
-
+accFromStr = accGen . toBlocksSplit
 
 --------------------------------------------------------------------------------
 

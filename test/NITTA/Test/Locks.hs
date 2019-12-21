@@ -11,13 +11,45 @@ module NITTA.Test.Locks
     ( locksTest
     ) where
 
-import           Data.Set                     (elems, fromList, union)
+import           Data.Set                     (fromList)
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           Test.Tasty                   (TestTree)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
-import           Text.Regex
+
+
+locksSet exprInput = fromList $ locks $ accFromStr exprInput
+
+
+case_basicTestAdd = do
+    let
+        b = locksSet "+a + b = c;"
+        a = fromList
+            [ Lock {locked = "c", lockBy = "a"}
+            , Lock {locked = "c", lockBy = "b"}
+            ]
+    b @?= a
+
+case_basicTestAdd2 = do
+    let
+        b = locksSet "+a + b = c = e;"
+        a = fromList
+            [ Lock {locked = "c", lockBy = "a"}
+            , Lock {locked = "c", lockBy = "b"}
+            , Lock {locked = "e", lockBy = "a"}
+            , Lock {locked = "e", lockBy = "b"}
+            ]
+    b @?= a
+
+case_basicTestSub = do
+    let
+        b = locksSet "+a - b = c;"
+        a = fromList
+            [ Lock {locked = "c", lockBy = "a"}
+            , Lock {locked = "c", lockBy = "b"}
+            ]
+    b @?= a
 
 case_twoExpressions = do
     let
@@ -110,34 +142,6 @@ case_threeExpressions = do
             ]
     b @?= a
 
-case_basicTestAdd = do
-    let
-        b = locksSet "+a + b = c;"
-        a = fromList
-            [ Lock {locked = "c", lockBy = "a"}
-            , Lock {locked = "c", lockBy = "b"}
-            ]
-    b @?= a
-
-case_basicTestAdd2 = do
-    let
-        b = locksSet "+a + b = c = e;"
-        a = fromList
-            [ Lock {locked = "c", lockBy = "a"}
-            , Lock {locked = "c", lockBy = "b"}
-            , Lock {locked = "e", lockBy = "a"}
-            , Lock {locked = "e", lockBy = "b"}
-            ]
-    b @?= a
-
-case_basicTestSub = do
-    let
-        b = locksSet "+a - b = c;"
-        a = fromList
-            [ Lock {locked = "c", lockBy = "a"}
-            , Lock {locked = "c", lockBy = "b"}
-            ]
-    b @?= a
 
 
 

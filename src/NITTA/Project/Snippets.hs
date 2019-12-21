@@ -23,7 +23,10 @@ module NITTA.Project.Snippets
     ) where
 
 import qualified Data.String.Utils                as S
+import           Data.Default
+import           Data.Typeable
 import           NITTA.Intermediate.Types
+import           NITTA.Model.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Implementation
@@ -138,6 +141,9 @@ data SnippetTestBenchConf m
         , tbDataBusWidth   :: Int
         }
 
+-- snippetTestBench :: () -> Snippet-> ()
+--
+snippetTestBench :: (VarValTime v x t, WithFunctions m (F v x), TargetSystemComponent m, Num x, ProcessorUnit m v x t, UnambiguouslyDecode m, Typeable m, Show (Instruction m), Default (Microcode m), Show (EndpointRole v)) => Project m v x -> SnippetTestBenchConf m -> String
 snippetTestBench
         Project{ pName, pUnit, pTestCntx=Cntx{ cntxProcess } }
         SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcIOPorts, tbcCtrl, tbDataBusWidth }
@@ -167,7 +173,7 @@ snippetTestBench
             tbcPorts
             tbcIOPorts
 
-        controlSignals = S.join "\n" $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
+        controlSignals = S.join "\n" $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc|data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
             = either error id $ getX cycleCntx v

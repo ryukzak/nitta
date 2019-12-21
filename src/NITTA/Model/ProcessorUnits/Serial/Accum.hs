@@ -1,15 +1,16 @@
-{-# LANGUAGE InstanceSigs          #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE InstanceSigs          #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE ViewPatterns          #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+
 {-|
 Module      : NITTA.Model.ProcessorUnits.Serial.Accum
 Description :
@@ -24,12 +25,13 @@ module NITTA.Model.ProcessorUnits.Serial.Accum
   , Ports(..), IOPorts(..)
   ) where
 
-import           Control.Monad                    (when)
-import           Data.Bits                        (finiteBitSize)
+import           Control.Monad                   (when)
+import           Data.Bits                       (finiteBitSize)
 import           Data.Default
-import           Data.List                        (find, partition, (\\))
-import           Data.Set                         (elems, fromList, member)
-import qualified NITTA.Intermediate.Functions     as F
+import           Data.List                       (find, partition, (\\))
+import           Data.Set                        (elems, fromList, member)
+import           Data.Maybe                      (fromMaybe)
+import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
@@ -38,33 +40,34 @@ import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
+import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                 (singleton, sup, (...))
-import           Text.InterpolatedString.Perl6    (qc)
+import           Numeric.Interval                (singleton, sup, (...))
+import           Text.InterpolatedString.Perl6   (qc)
 
 -- |Accumulator for each function
-data FAccum v x =
-    FAccum
-        { model :: [[(Bool,v)]]
-        , real  :: [[(Bool,v)]]
-        , func  :: F v x
-        } deriving (Eq, Show)
+data Job v x = Job
+        { tasks      :: [[( Bool,v )]]
+        , current :: [[( Bool,v )]]
+        , func       :: F v x
+        }
+    deriving (Eq, Show)
 
 data Accum v x t = Accum
-    { remain               :: [FAccum v x]
-    , doneAt               :: Maybe t
-    , currentWork          :: Maybe ( t, FAccum v x )
-    , currentWorkEndpoints :: [ ProcessUid ]
-    , process_             :: Process v x t
-    , tick                 :: t
-    , isInit               :: Bool
-    }
+        { work                 :: [Job v x]
+        , doneAt               :: Maybe t
+        , currentWork          :: Maybe ( t, Job v x )
+        , currentWorkEndpoints :: [ ProcessUid ]
+        , process_             :: Process v x t
+        , tick                 :: t
+        , isInit               :: Bool
+        }
 
 instance (VarValTime v x t) => Show (Accum v x t) where
     show a = [qc|"
         Accum:
-            remain               = {remain a}
+            work                 = {work a}
             doneAt               = {doneAt a}
             currentWork          = {currentWork a}
             currentWorkEndpoints = {currentWorkEndpoints a}
@@ -75,7 +78,7 @@ instance (VarValTime v x t) => Show (Accum v x t) where
 
 accum :: (VarValTime v x t) => Accum v x t
 accum = Accum
-    { remain=[]
+    { work=[]
     , doneAt=Nothing
     , currentWork=Nothing
     , currentWorkEndpoints=[]
@@ -90,51 +93,52 @@ instance ( VarValTime v x t ) => Default (Accum v x t) where
 
 
 setRemain f
-    | Just (F.Acc (vs :: [F.Status v])) <- castF f = zip (F.pushStatusGroups vs) (F.pullStatusGroups vs)
-    | otherwise                                    = error "Error! Function is not Acc"
+    | Just (Acc vs) <- castF f = zip (pushStatusGroups vs) (pullStatusGroups vs)
+    | otherwise                                = error "Error! Function is not Acc"
 
 
-tryBindFunc f = FAccum {model = functionModel, real = [], func = f}
+tryBindFunc f = Job {tasks = functionModel, current = [], func = f}
     where
         functionModel = concatMap (\(i, o) -> [i, map (\x -> (False, x)) o]) (setRemain f)
 
 
-endpointOptionsFunc FAccum {model=[]} = []
-
-endpointOptionsFunc FAccum {model=(m:_), real=[]} = map snd m
-
-endpointOptionsFunc FAccum {model=(m:ms), real=(r:_)}
-    | null ( m \\ r) && null ms = []
-    | null $ m \\ r             = map snd $ head ms
-    | otherwise                 = map snd $ m \\ r
+endpointOptionsFunc Job {tasks=[]} = []
+endpointOptionsFunc Job {tasks=(t:_), current=[]} = map snd t
+endpointOptionsFunc Job {tasks=(t:ts), current=(p:_)}
+    | null ( t \\ p) && null ts = []
+    | null $ t \\ p             = map snd $ head ts
+    | otherwise                 = map snd $ t \\ p
 
 
-endpointDecisionFunc a@FAccum {model=[]} _ = a
-
-endpointDecisionFunc a@FAccum {model=(m:_), real=[]} v = a {real=newRealCreate}
+endpointDecisionFunc a@Job {tasks=[]} _ = a
+endpointDecisionFunc a@Job {tasks=tasks@(t:ts), current=[]} v = a {tasks = newModel newRealCreate, current=newRealCreate}
     where
-        ([(neg, _)], _) = partition ((== v) . snd) m
+        ([(neg, _)], _) = partition ((== v) . snd) t
         newRealCreate =[[(neg, v)]]
+        newModel []               = error "current is null"
+        newModel (newReal:_)
+            | null $ t \\ newReal = ts
+            | otherwise           = tasks
 
-endpointDecisionFunc a@FAccum {model=model@(m:ms), real=(r:rs)} v
-    | null $ m \\ r                               = endpointDecisionFunc a {model = ms} v
-    | not ((==m) $ m \\ r) && length m > length r = a {model = newModel newRealInsert, real=newRealInsert}
-    | otherwise                                   = a {model = newModel newRealAdd, real = newRealAdd}
+endpointDecisionFunc a@Job {tasks=tasks@(t:ts), current=(p:ps)} v
+    | null $ t \\ p                      = endpointDecisionFunc a {tasks = ts} v
+    | t \\ p /= t && length t > length p = a {tasks = newModel newRealInsert, current=newRealInsert}
+    | otherwise                          = a {tasks = newModel newRealAdd, current = newRealAdd}
         where
-            ([val], _) = partition ((== v) . snd) m
-            newRealInsert = (val : r) : rs
-            newRealAdd = [val] : r : rs
-            newModel []               = error "real is null"
+            ([val], _) = partition ((== v) . snd) t
+            newRealInsert = (val : p) : ps
+            newRealAdd = [val] : p : ps
+            newModel []               = error "current is null"
             newModel (newReal:_)
-                | null $ m \\ newReal = ms
-                | otherwise           = model
+                | null $ t \\ newReal = ts
+                | otherwise           = tasks
 
 
 instance ( VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
-    tryBind f pu@Accum{remain}
-        | Just (F.Add a b c)  <- castF f = Right pu{ remain = tryBindFunc ( F.acc [F.Push F.Plus a, F.Push F.Plus b, F.Pull c] )  : remain }
-        | Just (F.Sub a b c)  <- castF f = Right pu{ remain = tryBindFunc ( F.acc [F.Push F.Plus a, F.Push F.Minus b, F.Pull c])  : remain }
-        | Just F.Acc{}        <- castF f = Right pu{ remain = tryBindFunc f : remain}
+    tryBind f pu@Accum{work}
+        | Just (Add a b c) <- castF f = Right pu{ work=tryBindFunc ( acc [Push Plus a, Push Plus b, Pull c] ) : work }
+        | Just (Sub a b c) <- castF f = Right pu{ work=tryBindFunc ( acc [Push Plus a, Push Minus b, Pull c] ) : work }
+        | Just Acc{}       <- castF f = Right pu{ work=tryBindFunc f : work}
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 
     process = process_
@@ -143,18 +147,18 @@ instance ( VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
 
 
 instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
-    endpointOptions Accum{ currentWork = Just (_, a@FAccum {model}), tick }
-        | even (length model)  = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick ... maxBound) (singleton 1)) (endpointOptionsFunc a)
-        | odd (length model) = [ EndpointSt (Source $ fromList (endpointOptionsFunc a) ) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
+    endpointOptions Accum{ currentWork = Just (_, a@Job {tasks}), tick }
+        | even (length tasks) = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick+1 ... maxBound) (singleton 1)) (endpointOptionsFunc a)
+        | odd (length tasks) = [ EndpointSt (Source $ fromList (endpointOptionsFunc a) ) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
 
-    endpointOptions p@Accum{ remain, currentWork = Nothing, tick } =
-        concatMap (\a -> endpointOptions p {currentWork = Just (tick + 1, a)}) remain
+    endpointOptions p@Accum{ work, currentWork = Nothing, tick } =
+        concatMap (\a -> endpointOptions p {currentWork = Just (tick + 1, a)}) work
 
     endpointOptions _ = error "Error in matching in endpointOptions function"
 
-    endpointDecision pu@Accum{ currentWork=Just (t, a@FAccum {model}), currentWorkEndpoints, isInit } d@EndpointSt{ epRole=Target v, epAt }
-        | not (null model) && even ( length model) = let
-                fAccum@FAccum {model=newModel, real = (((neg, _):_):_)} = endpointDecisionFunc a v
+    endpointDecision pu@Accum{ currentWork=Just (t, a@Job {tasks}), currentWorkEndpoints, isInit } d@EndpointSt{ epRole=Target v, epAt }
+        | not (null tasks) && even ( length tasks ) = let
+                job@Job {tasks=newModel, current = (((neg, _):_):_)} = endpointDecisionFunc a v
                 sel = if isInit then Init neg else Load neg
                 (newEndpoints, process_') = runSchedule pu $ do
                     updateTick (sup epAt)
@@ -162,7 +166,7 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
             in
                 pu
                     { process_=process_'
-                    , currentWork = Just(t, fAccum)
+                    , currentWork = Just(t, job)
                     , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
                     , doneAt=if null newModel
                         then Just $ sup epAt + 3
@@ -171,9 +175,9 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     , isInit=null newModel
                     }
 
-    endpointDecision pu@Accum{ currentWork=Just (t, a@FAccum {model, real, func}), currentWorkEndpoints, doneAt} d@EndpointSt{ epRole=Source v, epAt }
-        | not (null real) && odd ( length model) = let
-                fAccum@FAccum {model=newModel} = foldl endpointDecisionFunc a (elems v)
+    endpointDecision pu@Accum{ currentWork=Just (t, a@Job {tasks, current, func}), currentWorkEndpoints, doneAt} d@EndpointSt{ epRole=Source v, epAt }
+        | not (null current) && odd ( length tasks ) = let
+                job@Job {tasks=newModel} = foldl endpointDecisionFunc a (elems v)
                 (newEndpoints, process_') = runSchedule pu $ do
                     endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt-1) Out
                     when (null newModel) $ do
@@ -186,16 +190,16 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
             in pu
                 { process_=process_'
                 , doneAt=if null newModel then Nothing else doneAt
-                , currentWork=if null newModel then Nothing else Just(t, fAccum)
+                , currentWork=if null newModel then Nothing else Just(t, job)
                 , currentWorkEndpoints=if null newModel then [] else newEndpoints ++ currentWorkEndpoints
                 , tick=sup epAt
                 , isInit=null newModel
                 }
 
-    endpointDecision pu@Accum{remain, currentWork=Nothing, tick} d
+    endpointDecision pu@Accum{work, currentWork=Nothing, tick} d
         | let v = oneOf $ variables d
-        , Just fAccum <- find (\FAccum {func} -> v `member` variables func) remain
-        = endpointDecision pu {remain = remain \\ [fAccum], currentWork = Just (tick+1, fAccum), isInit = True } d
+        , Just job <- find (\Job {func} -> v `member` variables func) work
+        = endpointDecision pu {work = work \\ [job], currentWork = Just (tick+1, job), isInit = True } d
 
 
     endpointDecision pu  d = error $ "error in Endpoint Decision function" ++ show pu ++ show d
@@ -206,7 +210,7 @@ instance Connected (Accum v x t) where
 
 
 instance IOConnected (Accum v x t) where
-    data IOPorts (Accum v x t) = AccumIO
+    data IOPorts (Accum v x t) = AccumIO deriving (Show)
 
 
 instance Controllable (Accum v x t) where
@@ -223,8 +227,8 @@ instance Controllable (Accum v x t) where
     mapMicrocodeToPorts Microcode{..} AccumPorts{..} =
         [ (resetAcc, Bool resetAccSignal)
         , (load, Bool loadSignal)
-        , (neg, maybe Undef Bool negSignal)
         , (oe, Bool oeSignal)
+        , (neg, maybe Undef Bool negSignal)
         ]
 
     portsToSignals AccumPorts{ resetAcc, load, neg, oe } = [resetAcc, load, neg, oe]
@@ -250,26 +254,26 @@ instance UnambiguouslyDecode (Accum v x t) where
 
 instance (VarValTime v x t, Num x) => Simulatable (Accum v x t) v x where
   simulateOn cntx _ f
-    | Just f'@F.Add{} <- castF f = simulate cntx f'
-    | Just f'@F.Sub{} <- castF f = simulate cntx f'
-    | Just f'@F.Acc{} <- castF f = simulate cntx f'
+    | Just f'@Add{} <- castF f = simulate cntx f'
+    | Just f'@Sub{} <- castF f = simulate cntx f'
+    | Just f'@Acc{} <- castF f = simulate cntx f'
     | otherwise = error $ "Can't simulate " ++ show f ++ " on Accum."
 
 
 instance ( Var v ) => Locks (Accum v x t) v where
     locks Accum{ currentWork = Nothing }                  = []
-    locks Accum{ currentWork = Just (_, fAccum), remain } = locks' fAccum remain
+    locks Accum{ currentWork = Just (_, job), work } = locks' job work
             where
-                locks' FAccum{model=[]} _ = []
-                locks' FAccum{real =[]} _ = []
-                locks' FAccum{model=(m:ms), real =(r:_)} other =
+                locks' Job{tasks=[]} _ = []
+                locks' Job{current =[]} _ = []
+                locks' Job{tasks=(m:ms), current =(r:_)} other =
                     [ Lock{ lockBy, locked }
-                    | locked <- concatMap (map snd) ms ++ concatMap (concatMap (map snd) . model) other
+                    | locked <- concatMap (map snd) ms ++ concatMap (concatMap (map snd) . tasks) other
                     , lockBy <- map snd (m \\ r)
                     ]
 
 
-instance ( Val x, Default x ) => TargetSystemComponent (Accum v x t) where
+instance ( VarValTime v x t ) => TargetSystemComponent (Accum v x t) where
     moduleName _ _ = "pu_accum"
     hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
     software _ _ = Empty
@@ -293,6 +297,45 @@ instance ( Val x, Default x ) => TargetSystemComponent (Accum v x t) where
             |]
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
+
+instance WithFunctions (Accum v x t) (F v x) where
+    functions Accum{ process_, work}
+        = functions process_
+        ++ map func work
+
+
+instance ( VarValTime v x t, Integral x
+         ) => Testable (Accum v x t) v x where
+    testBenchImplementation prj@Project{ pName, pUnit} = let
+            tbcSignalsConst = ["resetAcc", "load", "oe", "neg"]
+
+            showMicrocode Microcode{ resetAccSignal, loadSignal, oeSignal, negSignal } = codeBlock [qc|
+                resetAcc   <= { bool2verilog resetAccSignal };
+                load       <= { bool2verilog loadSignal };
+                oe         <= { bool2verilog oeSignal };
+                neg        <= { bool2verilog $ fromMaybe False negSignal };
+                |]
+
+            signal (SignalTag i) = case i of
+                0 -> "resetAcc"
+                1 -> "load"
+                2 -> "oe"
+                3 -> "neg"
+                _ -> error "Can't match SignalTag in Accum testBenchImplementation"
+            conf = SnippetTestBenchConf
+                    { tbcSignals=tbcSignalsConst
+                    , tbcPorts = AccumPorts
+                        { resetAcc   = SignalTag 0
+                        , load       = SignalTag 1
+                        , oe         = SignalTag 2
+                        , neg        = SignalTag 3
+                        }
+                    , tbcIOPorts=AccumIO
+                    , tbcSignalConnect=signal
+                    , tbcCtrl=showMicrocode
+                    , tbDataBusWidth=finiteBitSize (def :: x)
+                    }
+        in Immediate (moduleName pName pUnit ++ "_tb.v") $ snippetTestBench prj conf
 
 instance IOTestBench (Accum v x t) v x
 
