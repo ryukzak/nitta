@@ -99,39 +99,36 @@ setRemain f
 
 tryBindFunc f = Job {tasks = functionModel, current = [], func = f}
     where
-        functionModel = concatMap (\(i, o) -> [i, map (\x -> (False, x)) o]) (setRemain f)
+        functionModel = concatMap (\(push, pull) -> [push, map (\x -> (False, x)) pull]) (setRemain f)
 
 
 endpointOptionsFunc Job {tasks=[]} = []
 endpointOptionsFunc Job {tasks=(t:_), current=[]} = map snd t
-endpointOptionsFunc Job {tasks=(t:ts), current=(p:_)}
-    | null ( t \\ p) && null ts = []
-    | null $ t \\ p             = map snd $ head ts
-    | otherwise                 = map snd $ t \\ p
-
+endpointOptionsFunc Job {tasks=(t:ts), current=(c:_)}
+    | null ( t \\ c) && null ts = []
+    | null $ t \\ c             = map snd $ head ts
+    | otherwise                 = map snd $ t \\ c
 
 endpointDecisionFunc a@Job {tasks=[]} _ = a
-endpointDecisionFunc a@Job {tasks=tasks@(t:ts), current=[]} v = a {tasks = newModel newRealCreate, current=newRealCreate}
+endpointDecisionFunc a@Job {tasks=tasks@(t:_), current=[]} v = a {tasks = updateTasks current' tasks, current=current'}
     where
         ([(neg, _)], _) = partition ((== v) . snd) t
-        newRealCreate =[[(neg, v)]]
-        newModel []               = error "current is null"
-        newModel (newReal:_)
-            | null $ t \\ newReal = ts
-            | otherwise           = tasks
+        current' =[[(neg, v)]]
 
-endpointDecisionFunc a@Job {tasks=tasks@(t:ts), current=(p:ps)} v
-    | null $ t \\ p                      = endpointDecisionFunc a {tasks = ts} v
-    | t \\ p /= t && length t > length p = a {tasks = newModel newRealInsert, current=newRealInsert}
-    | otherwise                          = a {tasks = newModel newRealAdd, current = newRealAdd}
+endpointDecisionFunc a@Job {tasks=tasks@(t:ts), current=(c:cs)} v
+    | null $ t \\ c                      = endpointDecisionFunc a {tasks = ts} v
+    | t \\ c /= t && length t > length c = a { tasks = updateTasks currentInsert tasks, current = currentInsert }
+    | otherwise                          = a { tasks = updateTasks currentAdd tasks, current = currentAdd }
         where
             ([val], _) = partition ((== v) . snd) t
-            newRealInsert = (val : p) : ps
-            newRealAdd = [val] : p : ps
-            newModel []               = error "current is null"
-            newModel (newReal:_)
-                | null $ t \\ newReal = ts
-                | otherwise           = tasks
+            currentInsert = (val : c) : cs
+            currentAdd = [val] : c : cs
+
+updateTasks (c:_) tasks@(t:ts)
+    | null $ t \\ c = ts
+    | otherwise     = tasks
+updateTasks []    _ = error "Current is null"
+updateTasks _     _ = error "Matching error updateTasks"
 
 
 instance ( VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
@@ -148,32 +145,34 @@ instance ( VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
 
 instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
     endpointOptions Accum{ currentWork = Just (_, a@Job {tasks}), tick }
-        | even (length tasks) = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick+1 ... maxBound) (singleton 1)) (endpointOptionsFunc a)
-        | odd (length tasks) = [ EndpointSt (Source $ fromList (endpointOptionsFunc a) ) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
-
+        | even (length tasks) = targets
+        | odd (length tasks) = sources
+            where
+                targets = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick+1 ... maxBound) (singleton 1)) (endpointOptionsFunc a)
+                sources = [ EndpointSt (Source $ fromList (endpointOptionsFunc a) ) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
     endpointOptions p@Accum{ work, currentWork = Nothing, tick } =
         concatMap (\a -> endpointOptions p {currentWork = Just (tick + 1, a)}) work
 
     endpointOptions _ = error "Error in matching in endpointOptions function"
 
     endpointDecision pu@Accum{ currentWork=Just (t, a@Job {tasks}), currentWorkEndpoints, isInit } d@EndpointSt{ epRole=Target v, epAt }
-        | not (null tasks) && even ( length tasks ) = let
+        | not (null tasks) && even ( length tasks )
+        = let
                 job@Job {tasks=newModel, current = (((neg, _):_):_)} = endpointDecisionFunc a v
                 sel = if isInit then Init neg else Load neg
                 (newEndpoints, process_') = runSchedule pu $ do
                     updateTick (sup epAt)
                     scheduleEndpoint d $ scheduleInstruction epAt sel
-            in
-                pu
-                    { process_=process_'
-                    , currentWork = Just(t, job)
-                    , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-                    , doneAt=if null newModel
-                        then Just $ sup epAt + 3
-                        else Nothing
-                    , tick=sup epAt
-                    , isInit=null newModel
-                    }
+            in pu
+                { process_=process_'
+                , currentWork = Just(t, job)
+                , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
+                , doneAt=if null newModel
+                    then Just $ sup epAt + 3
+                    else Nothing
+                , tick=sup epAt
+                , isInit=null newModel
+                }
 
     endpointDecision pu@Accum{ currentWork=Just (t, a@Job {tasks, current, func}), currentWorkEndpoints, doneAt} d@EndpointSt{ epRole=Source v, epAt }
         | not (null current) && odd ( length tasks ) = let
@@ -199,7 +198,7 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
     endpointDecision pu@Accum{work, currentWork=Nothing, tick} d
         | let v = oneOf $ variables d
         , Just job <- find (\Job {func} -> v `member` variables func) work
-        = endpointDecision pu {work = work \\ [job], currentWork = Just (tick+1, job), isInit = True } d
+            = endpointDecision pu {work = work \\ [job], currentWork = Just (tick+1, job), isInit = True } d
 
 
     endpointDecision pu  d = error $ "error in Endpoint Decision function" ++ show pu ++ show d
@@ -218,11 +217,12 @@ instance Controllable (Accum v x t) where
 
     data Microcode (Accum v x t) =
         Microcode
-            { oeSignal   :: Bool
+            { oeSignal       :: Bool
             , resetAccSignal :: Bool
-            , loadSignal :: Bool
-            , negSignal  :: Maybe Bool
-            } deriving ( Show, Eq, Ord )
+            , loadSignal     :: Bool
+            , negSignal      :: Maybe Bool
+            }
+        deriving ( Show, Eq, Ord )
 
     mapMicrocodeToPorts Microcode{..} AccumPorts{..} =
         [ (resetAcc, Bool resetAccSignal)
