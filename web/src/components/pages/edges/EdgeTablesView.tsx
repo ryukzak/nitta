@@ -1,5 +1,5 @@
 import * as React from "react";
-import ReactTable from "react-table";
+import ReactTable, { Column } from "react-table";
 import { nidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn } from "./Table";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import {
@@ -68,7 +68,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
           textColumn("pBufferCount", (e: Edge) => (e.parameters as RefactorParam).pBufferCount, 50),
           textColumn("pNStepBackRepeated", (e: Edge) => {
             let n = (e.parameters as RefactorParam).pNStepBackRepeated;
-            return n === undefined ? "null" : (n as number).toString()
+            return n === undefined || n === null ? "null" : (n as number).toString()
           }, 50)
         ]}
       />
@@ -114,7 +114,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
   );
 
   // FIXME: shouldn't it be in Table.tsx?
-  function Table(props: { name: string; columns: any[]; edges: Edge[] }) {
+  function Table(props: { name: string; columns: Column[]; edges: Edge[] }) {
     if (props.edges.length === 0)
       return (
         <small>

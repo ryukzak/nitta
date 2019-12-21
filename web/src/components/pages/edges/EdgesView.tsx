@@ -2,7 +2,7 @@ import * as React from "react";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { IntermediateView } from "../node/IntermediateView";
-import { SynthesisHistoryView } from "../process/SynthesisHistoryView";
+import { SynthesisHistoryView } from "../history/SynthesisHistoryView";
 import { TablesView } from "./EdgeTablesView";
 import { EdgeView } from "../../../gen/types";
 import { AxiosResponse } from "axios";
@@ -30,7 +30,6 @@ export const EdgesView: React.FC = () => {
     );
   }
 
-  /* FIXME: history and table view of decision should be similar */
   return (
     <div className="m-3">
       <div className="row">
@@ -41,9 +40,8 @@ export const EdgesView: React.FC = () => {
           <TablesView edges={edges} />
         </div>
       </div>
-      <div className="row">
+      <div className="row mt-1">
         <div className="col">
-          <pre className="squeze h5">History:</pre>
           <SynthesisHistoryView reverse={true} />
         </div>
       </div>

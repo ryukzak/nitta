@@ -214,7 +214,7 @@ getSynthesisHistoryIO node nId@(NId (i:is)) = do
     return (getSynthesisHistoryIO' node ++ xs)
 
 getSynthesisHistoryIO' Node{ nOrigin=Nothing }                = []
-getSynthesisHistoryIO' Node{ nOrigin=Just Edge{ eDecision } } = [ eDecision ]
+getSynthesisHistoryIO' Node{ nOrigin=Just Edge{ eDecision }, nId } = [ ( nId, eDecision ) ]
 
 
 -- |Is the last decision repeated? If yes - @Just n@, where n how many steps

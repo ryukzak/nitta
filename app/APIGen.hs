@@ -23,7 +23,10 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module Main ( main ) where
+module Main
+    ( main
+    , HistoryStep(..) -- only for suppress warning
+    ) where
 
 import           Data.Aeson
 import           Data.Aeson.TypeScript.TH
@@ -68,7 +71,7 @@ $(deriveTypeScript defaultOptions ''TestbenchReport)
 $(deriveTypeScript defaultOptions ''Refactor)
 $(deriveTypeScript defaultOptions ''Parameters)
 
-$(deriveTypeScript defaultOptions ''NId)
+$(deriveTypeScript defaultOptions ''NId) -- in according to custom ToJSON instance, the real type description is hardcoded.
 $(deriveTypeScript defaultOptions ''TreeView)
 $(deriveTypeScript defaultOptions ''SynthesisNodeView)
 
@@ -79,6 +82,9 @@ $(deriveTypeScript defaultOptions ''EdgeView)
 $(deriveTypeScript defaultOptions ''GraphEdge)
 $(deriveTypeScript defaultOptions ''NodeElement)
 $(deriveTypeScript defaultOptions ''GraphStructure)
+
+data HistoryStep tag v x tp = HistoryStep NId ( SynthesisDecisionView tag v x tp )
+$(deriveTypeScript defaultOptions ''HistoryStep)
 
 main = do
     APIGen{ port, opath } <- cmdArgs apiGenArgs
@@ -104,12 +110,12 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy Refactor)
             , getTypeScriptDeclarations (Proxy :: Proxy Parameters)
 
-            , getTypeScriptDeclarations (Proxy :: Proxy NId)
             , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
             , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
 
             , getTypeScriptDeclarations (Proxy :: Proxy DataflowEndpointView)
             , getTypeScriptDeclarations (Proxy :: Proxy SynthesisDecisionView)
+            , getTypeScriptDeclarations (Proxy :: Proxy HistoryStep)
             , getTypeScriptDeclarations (Proxy :: Proxy EdgeView)
 
             , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
@@ -121,5 +127,6 @@ main = do
         $ S.replace "interface " "export interface " -- export all interfaces
         $ S.replace "[k: T1]" "[k: string]"          -- dirty hack for fixing map types for TestbenchReport
         $ S.replace "[k: T2]" "[k: string]"          -- dirty hack for fixing map types for TestbenchReport
-        $ ts ++ "\n"
+        $ ts ++ "\n" ++ "type NId = string\n";
+
     putStrLn "Generate typescript interface...OK"

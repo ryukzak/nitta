@@ -49,7 +49,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
 
   return (
     <div className="bg-light border edgeGraphContainer">
-      {algorithmGraph && <Graphviz dot={renderGraphJsonToDot(algorithmGraph)} options={{ height: 399, zoom: true }} />}
+      {algorithmGraph && <Graphviz dot={renderGraphJsonToDot(algorithmGraph)} options={{ height: 399, width: "100%", zoom: true }} />}
     </div>
   );
 };

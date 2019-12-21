@@ -142,6 +142,12 @@ data SynthesisDecisionView tag v x tp
 instance ( Show x, Show v, ToJSON v, ToJSONKey v, ToJSON tp, ToJSON tag
         ) => ToJSON (SynthesisDecisionView tag v x tp)
 
+instance ( Eq v, Hashable v
+         ) => Viewable
+             ( NId, SynthesisStatement tag v x tp )
+             ( NId, SynthesisDecisionView tag v x tp ) where
+    view ( nid, st ) = ( nid, view st )
+
 instance ( Eq v, Hashable v ) => Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp) where
     view (Binding f pu) = BindingView{ function=show f, pu }
     view Dataflow{ dfSource=(stag, st), dfTargets } = DataflowView
