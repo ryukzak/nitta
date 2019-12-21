@@ -66,17 +66,17 @@ case_selfSending3 = let
 
 
 case_patchSource = do
-    patch Diff{ diffO=M.fromList [("a1@buf", S.fromList ["a1", "a2"])], diffI=M.fromList [] } (Source $ S.fromList ["a1@buf"])
+    patch Changeset{ changeO=M.fromList [("a1@buf", S.fromList ["a1", "a2"])], changeI=M.fromList [] } (Source $ S.fromList ["a1@buf"])
         @?= (Source $ S.fromList ["a1", "a2"])
-    patch Diff{ diffO=M.fromList [("a1", S.fromList ["a1@buf"]), ("a2", S.fromList ["a1@buf"])], diffI=M.fromList [] } (Source $ S.fromList ["a1", "a2"])
+    patch Changeset{ changeO=M.fromList [("a1", S.fromList ["a1@buf"]), ("a2", S.fromList ["a1@buf"])], changeI=M.fromList [] } (Source $ S.fromList ["a1", "a2"])
         @?= (Source $ S.fromList ["a1@buf"])
 
 
 case_reverseDiff = do
-    reverseDiff Diff{ diffI=M.fromList [("a", "b")], diffO=M.fromList [("c", S.fromList ["e", "f"])] }
-        @?= Diff{ diffI=M.fromList [("b", "a")], diffO=M.fromList [("e", S.fromList ["c"]), ("f", S.fromList ["c"])] }
-    reverseDiff Diff{ diffI=M.fromList [("a", "b")], diffO=M.fromList [("c", S.fromList ["e"]),("d", S.fromList ["e"])] }
-        @?= Diff{ diffI=M.fromList [("b", "a")], diffO=M.fromList [("e", S.fromList ["c", "d"])] }
+    reverseDiff Changeset{ changeI=M.fromList [("a", "b")], changeO=M.fromList [("c", S.fromList ["e", "f"])] }
+        @?= Changeset{ changeI=M.fromList [("b", "a")], changeO=M.fromList [("e", S.fromList ["c"]), ("f", S.fromList ["c"])] }
+    reverseDiff Changeset{ changeI=M.fromList [("a", "b")], changeO=M.fromList [("c", S.fromList ["e"]),("d", S.fromList ["e"])] }
+        @?= Changeset{ changeI=M.fromList [("b", "a")], changeO=M.fromList [("e", S.fromList ["c", "d"])] }
 
 
 refactorTests :: TestTree

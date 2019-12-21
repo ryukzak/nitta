@@ -37,7 +37,7 @@ import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.ProcessorUnits.Fram
 import           NITTA.Model.ProcessorUnits.Multiplier
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
 import           NITTA.Project.Utils
@@ -247,7 +247,7 @@ processAlgOnEndpointGen pu0 algGen' = do
                             let pu' = endpointDecision pu d
                             inner fRemain fPassed pu'
             where
-                endpointGen option@EndpointO{ epoRole=Source vs } = do
+                endpointGen option@EndpointSt{ epRole=Source vs } = do
                     vs' <- suchThat (sublistOf $ elems vs) (not . null)
-                    return option{ epoRole=Source $ fromList vs' }
+                    return option{ epRole=Source $ fromList vs' }
                 endpointGen o = return o

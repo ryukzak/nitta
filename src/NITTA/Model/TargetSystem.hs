@@ -17,21 +17,22 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.TargetSystem
+-- TODO: rename to ModelState
     ( ModelState(..)
     , DataFlowGraph(..), fsToDataFlowGraph
     ) where
 
-import           Control.Exception                (assert)
-import qualified Data.List                        as L
-import qualified Data.Set                         as S
+import           Control.Exception               (assert)
+import qualified Data.List                       as L
+import qualified Data.Set                        as S
 import           GHC.Generics
-import           NITTA.Intermediate.Functions     (reg)
+import           NITTA.Intermediate.Functions    (reg)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Binding
 import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Utils
 
@@ -71,14 +72,11 @@ instance ( UnitTag tag, VarValTime v x t
             , mUnit=refactorDecision mUnit r
             }
 
-    refactorDecision ModelState{ mUnit, mDataFlowGraph=DFCluster leafs } bl@BreakLoop{} = let
-            revokeLoop = leafs L.\\ [ DFLeaf $ F $ recLoop bl ]
-            addLoopParts = [ DFLeaf $ F $ recLoopOut bl, DFLeaf $ F $ recLoopIn bl ] ++ revokeLoop
-        in ModelState
-            { mDataFlowGraph=DFCluster addLoopParts
+    refactorDecision ModelState{ mUnit, mDataFlowGraph } bl@BreakLoop{}
+        = ModelState
+            { mDataFlowGraph=refactorDecision mDataFlowGraph bl
             , mUnit=refactorDecision mUnit bl
             }
-    refactorDecision m _ = m
 
 
 -- |Data flow graph - intermediate representation of application algorithm.
@@ -115,11 +113,16 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 instance ( Var v, Val x
         ) => RefactorProblem (DataFlowGraph v x) v x where
     refactorOptions _ = []
+
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
             fs' = buffer : map (patch diff) (functions dfg)
         in fsToDataFlowGraph fs'
-    refactorDecision _ _ = undefined
+    refactorDecision (DFCluster leafs) bl@BreakLoop{} = let
+            withoutLoop = leafs L.\\ [ DFLeaf $ F $ recLoop bl ]
+            brokenParts = [ DFLeaf $ F $ recLoopOut bl, DFLeaf $ F $ recLoopIn bl ] ++ withoutLoop
+        in DFCluster brokenParts
+    refactorDecision _ _ = error "DataFlowGraph "
 
 
 -- |Convert @[ F v x ]@ to 'DataFlowGraph'.

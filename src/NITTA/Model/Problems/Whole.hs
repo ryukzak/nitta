@@ -14,7 +14,7 @@
 
 {-|
 Module      : NITTA.Model.Problems.Whole
-Description :
+Description : A whole system synthesis options and decisions
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -22,43 +22,46 @@ Stability   : experimental
 -}
 module NITTA.Model.Problems.Whole
     ( SynthesisStatement(..), SynthesisProblem(..)
-    , specializeDataFlowOption, isDataFlow, isBinding
+    , isDataFlow, isBinding
     , option2decision
     ) where
 
-import           Control.Arrow                    (second)
-import qualified Data.Map                         as M
-import           Data.Maybe
+import qualified Data.Map                        as M
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Binding
 import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Types
-import           NITTA.Model.TargetSystem         (ModelState (..))
+import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.TargetSystem        (ModelState (..))
 import           NITTA.Model.Types
-import           Numeric.Interval                 (Interval, inf, (...))
+import           Numeric.Interval
 
 
 isBinding = \case Binding{} -> True; _ -> False
 isDataFlow = \case Dataflow{} -> True; _ -> False
 
-specializeDataFlowOption (Dataflow s t) = DataFlowO s t
-specializeDataFlowOption _ = error "Can't specialize non Model option!"
+specializeDataflow (Dataflow s t) = DataflowSt s t
+specializeDataflow _              = error "Can't specialize non Model option!"
 
-generalizeDataFlowOption (DataFlowO s t) = Dataflow s t
-generalizeBindingOption (Bind s t) = Binding s t
+generalizeDataflow (DataflowSt s t) = Dataflow s t
+generalizeBinding (Bind s t) = Binding s t
 
 
-
+-- |It is a wrapper over another low-level synthesis problem, which allows
+-- controlling over the whole synthesis process from one place (synthesis method
+-- or user interface).
+--
+-- - option if @tp ~ TimeConstrain t@;
+-- - decision if @tp ~ Interval t@.
 data SynthesisStatement tag v x tp
-    = Binding (F v x) tag
-    | Dataflow
+    = Binding (F v x) tag -- ^see: "NITTA.Model.Problems.Binding"
+    | Dataflow -- ^see: "NITTA.Model.Problems.Dataflow"
         { dfSource  :: (tag, tp)
         , dfTargets :: M.Map v (Maybe (tag, tp))
         }
-    | Refactor (Refactor v x)
+    | Refactor (Refactor v x) -- ^see: "NITTA.Model.Problems.Refactor"
     deriving ( Generic, Show, Eq )
 
 
@@ -70,26 +73,21 @@ class SynthesisProblem u tag v x t | u -> tag v x t where
 instance ( UnitTag tag, VarValTime v x t
          ) => SynthesisProblem (ModelState (BusNetwork tag v x t) v x) tag v x t where
     synthesisOptions m@ModelState{ mUnit } = concat
-        [ map generalizeBindingOption $ bindOptions m
-        , map generalizeDataFlowOption $ dataflowOptions mUnit
+        [ map generalizeBinding $ bindOptions m
+        , map generalizeDataflow $ dataflowOptions mUnit
         , map Refactor $ refactorOptions m
         ]
 
     synthesisDecision m (Binding f tag) = bindDecision m $ Bind f tag
-    synthesisDecision m@ModelState{ mUnit } (Dataflow src trg) = m{ mUnit=dataflowDecision mUnit $ DataFlowD src trg }
+    synthesisDecision m@ModelState{ mUnit } (Dataflow src trg) = m{ mUnit=dataflowDecision mUnit $ DataflowSt src trg }
     synthesisDecision m (Refactor d) = refactorDecision m d
 
 
--- |The simplest way to convert 'Option SynthesisDT' to 'Decision SynthesisDT'.
+-- |The simplest way to convert 'synthesisOptions' to 'synthesisDecision'.
+option2decision
+    :: ( Var v, Time t )
+    => SynthesisStatement tag v x (TimeConstrain t)
+    -> SynthesisStatement tag v x (Interval t)
 option2decision (Binding f tag) = Binding f tag
-option2decision (Dataflow src trg)
-    = let
-        pushTimeConstrains = map snd $ catMaybes $ M.elems trg
-        pullStart    = maximum $ map (inf . tcAvailable) $ snd src : pushTimeConstrains
-        pullDuration = maximum $ map (inf . tcDuration) $ snd src : pushTimeConstrains
-        pullEnd = pullStart + pullDuration - 1
-        pushStart = pullStart
-        mkEvent (from_, tc) = Just (from_, pushStart ... (pushStart + inf (tcDuration tc) - 1))
-        pushs = map (second $ maybe Nothing mkEvent) $ M.assocs trg
-    in Dataflow ( fst src, pullStart ... pullEnd ) $ M.fromList pushs
+option2decision df@Dataflow{} = generalizeDataflow $ dataflowOption2decision $ specializeDataflow df
 option2decision (Refactor o) = Refactor o

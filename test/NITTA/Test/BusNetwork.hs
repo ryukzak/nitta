@@ -30,7 +30,7 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Project
 import           NITTA.Test.Microarchitectures
@@ -85,19 +85,19 @@ test_patchFunction =
         show (patch ("c", "c'") f1) @?= "c' = d = a + b"
 
     , testCase "diff patched function input by input" $
-        show (patch def{ diffI=fromList [("a", "a'")] } f1) @?= "c = d = a' + b"
+        show (patch def{ changeI=fromList [("a", "a'")] } f1) @?= "c = d = a' + b"
     , testCase "diff non patched function input by output" $
-        show (patch def{ diffO=fromList [("a", S.singleton "a'")] } f1) @?= "c = d = a + b"
+        show (patch def{ changeO=fromList [("a", S.singleton "a'")] } f1) @?= "c = d = a + b"
 
     , testCase "diff patched function output by output" $
-        show (patch def{ diffO=fromList [("c", S.singleton "c'")] } f1) @?= "c' = d = a + b"
+        show (patch def{ changeO=fromList [("c", S.singleton "c'")] } f1) @?= "c' = d = a + b"
     , testCase "diff non patched function output by input" $
-        show (patch def{ diffI=fromList [("c", "c'")] } f1) @?= "c = d = a + b"
+        show (patch def{ changeI=fromList [("c", "c'")] } f1) @?= "c = d = a + b"
 
     , testCase "diff non patched function output by input" $
         show (patch def
-                { diffI=fromList [("b", "b'"), ("d", "d!")]
-                , diffO=fromList [("d", S.singleton "d'"), ("b", S.singleton "b!")]
+                { changeI=fromList [("b", "b'"), ("d", "d!")]
+                , changeO=fromList [("d", S.singleton "d'"), ("b", S.singleton "b!")]
                 } f1) @?= "c = d' = a + b'"
     ]
 
@@ -116,14 +116,14 @@ test_patchEndpointOptions =
     [ testCase "non-patched function options" $
         show' opts @?= "[Target a,Target b]"
     , testCase "patched function options input by input" $
-        show' (patch def{ diffI=fromList [("a", "a'")]} opts) @?= "[Target a',Target b]"
+        show' (patch def{ changeI=fromList [("a", "a'")]} opts) @?= "[Target a',Target b]"
     , testCase "non-patched function options input by output" $
-        show' (patch def{ diffO=fromList [("a", S.singleton "a'")]} opts) @?= "[Target a,Target b]"
+        show' (patch def{ changeO=fromList [("a", S.singleton "a'")]} opts) @?= "[Target a,Target b]"
 
     , testCase "patched function options output by output" $
-        show' (patch def{ diffO=fromList [("d", S.singleton "d'")]} opts') @?= "[Source c,d']"
+        show' (patch def{ changeO=fromList [("d", S.singleton "d'")]} opts') @?= "[Source c,d']"
     , testCase "non-patched function options output by input" $
-        show' (patch def{ diffI=fromList [("d","d'")]} opts') @?= "[Source c,d]"
+        show' (patch def{ changeI=fromList [("d","d'")]} opts') @?= "[Source c,d]"
     ]
     where
         opts = endpointOptions pu
@@ -133,7 +133,7 @@ test_patchEndpointOptions =
                 o2 = head $ endpointOptions pu'
                 pu'' = endpointDecision pu' $ endpointOptionToDecision o2
             in endpointOptions pu''
-        show' = show . map epoRole
+        show' = show . map epRole
 
 
 test_patchPUone2one =
@@ -163,7 +163,7 @@ test_patchPUone2one =
         pu5 = endpointDecision pu4 $ endpointOptionToDecision $ head o4
         o5 = endpointOptions pu5
 
-        show' = show . map epoRole
+        show' = show . map epRole
 
 
 test_patchPUmany2one =
@@ -193,7 +193,7 @@ test_patchPUmany2one =
         pu5 = endpointDecision pu4 $ endpointOptionToDecision $ head o4
         o5 = endpointOptions pu5
 
-        show' = show . map epoRole
+        show' = show . map epRole
 
 
 busNetworkTests :: TestTree

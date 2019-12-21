@@ -23,25 +23,25 @@ Stability   : experimental
 -}
 module Main ( main ) where
 
-import           Control.Monad                    (void, when)
-import           Data.Default                     (def)
+import           Control.Monad                   (void, when)
+import           Data.Default                    (def)
 import           Data.Maybe
 import           Data.Proxy
-import qualified Data.Text.IO                     as T
+import qualified Data.Text.IO                    as T
 import           GHC.TypeLits
-import           NITTA.Frontend
 import           NITTA.Intermediate.Types
+import           NITTA.LuaFrontend
 import           NITTA.Model.MicroArchitecture
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
-import           NITTA.Model.ProcessorUnits.Types
-import           NITTA.Project                    (TargetSynthesis (..),
-                                                   mkModelWithOneNetwork,
-                                                   runTargetSynthesis)
+import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Project                   (TargetSynthesis (..),
+                                                  mkModelWithOneNetwork,
+                                                  runTargetSynthesis)
 import           NITTA.UIBackend
-import           System.Console.CmdArgs           hiding (def)
-import           Text.InterpolatedString.Perl6    (qc)
+import           System.Console.CmdArgs          hiding (def)
+import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
 
 

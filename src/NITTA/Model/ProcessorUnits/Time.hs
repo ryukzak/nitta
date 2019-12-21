@@ -8,18 +8,19 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE StandaloneDeriving     #-}
-{-# LANGUAGE TypeFamilies           #-} {-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
-Module      : NITTA.Model.ProcessorUnits.Types
+Module      : NITTA.Model.ProcessorUnits.Time
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Types
+module NITTA.Model.ProcessorUnits.Time
     ( UnitTag
     , ProcessorUnit(..), Simulatable(..), Controllable(..), UnambiguouslyDecode(..)
     , Process(..), ProcessUid, Step(..), StepInfo(..), Relation(..)
@@ -136,7 +137,7 @@ data Step v x t
         }
     deriving ( Show )
 
-instance ( Ord v ) => Patch (Step v x t) (Diff v) where
+instance ( Ord v ) => Patch (Step v x t) (Changeset v) where
     patch diff step@Step{ sDesc } = step{ sDesc=patch diff sDesc }
 
 
@@ -175,7 +176,7 @@ instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show (InstructionStep instr)     = show instr
     show NestedStep{ nTitle, nStep } = S.replace "\"" "" (show nTitle) ++ "." ++ show nStep
 
-instance ( Ord v ) => Patch (StepInfo v x t) (Diff v) where
+instance ( Ord v ) => Patch (StepInfo v x t) (Changeset v) where
     patch diff (FStep f)              = FStep $ patch diff f
     patch diff (EndpointRoleStep ep)  = EndpointRoleStep $ patch diff ep
     patch diff (NestedStep tag nStep) = NestedStep tag $ patch diff nStep

@@ -8,8 +8,8 @@
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
-Module      : NITTA.Model.Problems.Endpoint
-Description :
+Module      : NITTA.Model.Problems.Binding
+Description : Function distribution between processor units
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -22,7 +22,11 @@ module NITTA.Model.Problems.Binding
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 
-data Bind tag v x = Bind (F v x) tag deriving ( Generic )
+
+data Bind tag v x
+    = Bind (F v x) tag
+    deriving ( Generic )
+
 
 class BindProblem u tag v x | u -> tag v x where
     bindOptions :: u -> [ Bind tag v x ]
