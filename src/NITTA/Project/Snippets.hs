@@ -141,9 +141,13 @@ data SnippetTestBenchConf m
         , tbDataBusWidth   :: Int
         }
 
--- snippetTestBench :: () -> Snippet-> ()
---
-snippetTestBench :: (VarValTime v x t, WithFunctions m (F v x), TargetSystemComponent m, Num x, ProcessorUnit m v x t, UnambiguouslyDecode m, Typeable m, Show (Instruction m), Default (Microcode m), Show (EndpointRole v)) => Project m v x -> SnippetTestBenchConf m -> String
+snippetTestBench ::
+    ( VarValTime v x t, Num x
+    , Show (EndpointRole v)
+    , WithFunctions m (F v x)
+    , ProcessorUnit m v x t, TargetSystemComponent m, UnambiguouslyDecode m, Typeable m
+    , Show (Instruction m), Default (Microcode m)
+    ) => Project m v x -> SnippetTestBenchConf m -> String
 snippetTestBench
         Project{ pName, pUnit, pTestCntx=Cntx{ cntxProcess } }
         SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcIOPorts, tbcCtrl, tbDataBusWidth }

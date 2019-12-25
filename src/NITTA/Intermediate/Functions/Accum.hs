@@ -5,13 +5,14 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.Intermediate.Functions
-Description : Library of functions
+Description : Accum function
 Copyright   : (c) Daniil Prohorov, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -19,48 +20,58 @@ Stability   : experimental
 -}
 
 module NITTA.Intermediate.Functions.Accum
-    ( Acc(..), Status(..), Sign(..), acc, accFromStr, pullStatusGroups, pushStatusGroups
+    ( Acc(..), Action(..), Sign(..)
+      -- * Acc constructors
+    , acc, accFromStr
+      -- * Utils functions
+    , pullActionGroups, pushActionGroups
     ) where
 
-import           Data.List                (partition)
-import           Data.List.Split          (splitWhen)
-import           Data.Set                 (elems, fromList, union)
+import           Data.List                     (partition)
+import           Data.List.Split               (splitWhen)
+import           Data.Set                      (elems, fromList)
 import           Data.Typeable
 import           NITTA.Intermediate.Types
+import           NITTA.Utils                   (unionsMap)
+import           Text.InterpolatedString.Perl6 (qc)
 import           Text.Regex
 
-data Sign = Plus | Minus deriving (Typeable, Show, Eq)
+data Sign = Plus | Minus deriving (Typeable, Eq)
 
-data Status v = Push Sign (I v) | Pull (O v) deriving (Typeable, Show, Eq)
+instance Show Sign where
+    show Plus  = "+"
+    show Minus = "-"
 
-newtype Acc v x = Acc [Status v] deriving (Typeable, Eq)
+data Action v = Push Sign (I v) | Pull (O v) deriving (Typeable, Eq)
+
+instance (Show v) => Show ( Action v ) where
+    show (Push s v)   = [qc| { show s }{ show v }|]
+    show (Pull (O v)) = concatMap (\res -> [qc| => {show res}|]) (elems v) ++ ";"
+
+newtype Acc v x = Acc [Action v] deriving (Typeable, Eq)
+
+instance ( Show v ) => Show (Acc v x) where
+    show (Acc lst) =  concatMap show lst
 
 instance Label (Acc v x) where label Acc{} = "+"
 
-instance ( Show v) => Show (Acc v x) where
-    show (Acc lst) =  concatMap printStatus lst
-        where
-            printStatus (Push Plus (I v))   = " +" ++ show v
-            printStatus (Push Minus (I v))  = " -" ++ show v
-            printStatus (Pull (O v))        = concatMap ((" => "++) . show) (elems v) ++ "; "
-
 acc lst = F $ Acc lst
 
-isPull (Pull _) = True
-isPull _        = False
+isPull Pull{} = True
+isPull _      = False
 
-isPush (Push _ _) = True
-isPush _          = False
+isPush Push{} = True
+isPush _      = False
 
 fromPush (Push _ (I v)) = v
 fromPush _              = error "Error in fromPush function in acc"
 
-fromPull (Pull (O s)) = s
-fromPull _            = error "Error in fromPull function in acc"
+fromPull (Pull (O vs)) = vs
+fromPull _             = error "Error in fromPull function in acc"
 
 instance (Ord v) => Function (Acc v x) v where
     inputs (Acc lst) = fromList $ map fromPush $ filter isPush lst
-    outputs (Acc lst) = foldl1 union $ map fromPull $ filter isPull lst
+    outputs (Acc lst) = unionsMap fromPull $ filter isPull lst
 
 instance ( Ord v ) => Patch (Acc v x) (v, v) where
     patch diff (Acc lst) = Acc $ map
@@ -69,39 +80,38 @@ instance ( Ord v ) => Patch (Acc v x) (v, v) where
             Pull vs  -> Pull (patch diff vs)
         ) lst
 
------------------------------- for locks tests ---------------------------------
 
 exprPattern = mkRegex "[+,=,-]*[a-zA-Z0-9]+|;"
-toBlocksSplit exprInput = splitBySemicolon $ matchAll exprPattern filtered []
-    where
+toBlocksSplit exprInput = let
+        splitBySemicolon = filter (not . null) . splitWhen ( == ";")
         matchAll p inpS res =
             case matchRegexAll p inpS of
                 Just (_, x, xs, _) -> x : matchAll p xs res
                 Nothing            -> []
         filtered = subRegex (mkRegex "[ ]+") exprInput ""
-        splitBySemicolon = filter (not . null) . splitWhen ( == ";")
+    in
+        splitBySemicolon $ matchAll exprPattern filtered []
 
-accGen blocks = structure
-    where
+accGen blocks = let
         partedExpr = map (partition (\(x:_) -> x /= '='))
         signPush ('+':name) = Push Plus (I name)
         signPush ('-':name) = Push Minus (I name)
         signPush _          = error "Error in matching + and -"
         pushCreate lst = map signPush lst
         pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_:name) -> name : buff ) [] lst
-        structure = Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
+    in
+        Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
 
 accFromStr = accGen . toBlocksSplit
 
---------------------------------------------------------------------------------
-
-pushStatusGroups lst = map (map signCheck) $ filter (not . null) $ splitWhen isPull lst
-    where
+pushActionGroups lst = let
         signCheck (Push Plus (I v))  = (False, v)
         signCheck (Push Minus (I v)) = (True, v)
         signCheck _                  = error "Error . pattern matching in signCheck func in Functions.hs"
+    in
+        map (map signCheck) $ filter (not . null) $ splitWhen isPull lst
 
-pullStatusGroups lst = concatMap (map (elems . fromPull)) $ filter (not . null) $ splitWhen isPush lst
+pullActionGroups lst = concatMap (map (elems . fromPull)) $ filter (not . null) $ splitWhen isPush lst
 
 instance ( Var v ) => Locks (Acc v x) v where
     locks accList = let
@@ -125,12 +135,12 @@ instance ( Var v ) => Locks (Acc v x) v where
             allLocks = locksListPush ++ locksListPull
 
         in concatMap (\eachLock ->
-            [Lock { locked = y, lockBy = x }
+            [ Lock { locked = y, lockBy = x }
             | x <- snd eachLock
             , y <- fst eachLock
             ]) allLocks
 
-instance ( Var v, Num x) => FunctionSimulation (Acc v x) v x where
+instance ( Var v, Num x ) => FunctionSimulation (Acc v x) v x where
     simulate cntx (Acc lst) = let
             operation v s accum context
                 | Right x <- getX context v = case s of

@@ -112,7 +112,8 @@ data Process v x t
                                   -- (отношения описываются через "кортежи" из ProcessUid).
         , nextTick  :: t          -- ^Номер первого свободного такта.
         , nextUid   :: ProcessUid -- ^Следующий свободный идентификатор шага вычислительного процесса.
-        } deriving (Show)
+        }
+    deriving (Show)
 
 -- instance (VarValTime v x t) => Show (Process v x t) where
 --     show p = "Process\n"
@@ -130,8 +131,6 @@ instance WithFunctions (Process v x t) (F v x) where
             get Step{ sDesc } | FStep f <- descent sDesc = Just f
             get _             = Nothing
 
-
-
 type ProcessUid = Int -- ^Уникальный идентификатор шага вычислительного процесса.
 
 -- |Описание шага вычислительного процесса.
@@ -141,14 +140,8 @@ data Step v x t
         , sTime :: Interval t -- ^Описание типа и положения шага во времени.
         , sDesc :: StepInfo v x t -- ^Описание действия описываемого шага.
         }
-        deriving (Show)
+    deriving (Show)
 
--- instance (VarValTime v x t) => Show (Step v x t) where
---     show p = "Process\n"
---         ++ "\t\tsteps     = " ++ show ( steps p ) ++ "\n"
---         ++ "\t\trelations = " ++ show ( relations p ) ++ "\n"
---         ++ "\t\tnextTick  = " ++ show ( nextTick p ) ++ "\n"
---         ++ "\t\tnextUid  = " ++ show ( nextUid p ) ++ "\n"
 
 instance ( Ord v ) => Patch (Step v x t) (Changeset v) where
     patch diff step@Step{ sDesc } = step{ sDesc=patch diff sDesc }

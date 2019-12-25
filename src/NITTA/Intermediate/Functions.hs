@@ -122,7 +122,6 @@ instance ( Var v ) => FunctionSimulation (Reg v x) v x where
         setZipX cntx vs x
 
 
-
 data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Add v x) where label Add{} = "+"
 instance ( Show v ) => Show (Add v x) where

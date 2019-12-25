@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE LambdaCase            #-}
@@ -7,7 +8,6 @@
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
@@ -29,8 +29,8 @@ import           Control.Monad                   (when)
 import           Data.Bits                       (finiteBitSize)
 import           Data.Default
 import           Data.List                       (find, partition, (\\))
-import           Data.Set                        (elems, fromList, member)
 import           Data.Maybe                      (fromMaybe)
+import           Data.Set                        (elems, fromList, member)
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
@@ -48,9 +48,9 @@ import           Text.InterpolatedString.Perl6   (qc)
 
 -- |Accumulator for each function
 data Job v x = Job
-        { tasks      :: [[( Bool,v )]]
+        { tasks   :: [[( Bool,v )]]
         , current :: [[( Bool,v )]]
-        , func       :: F v x
+        , func    :: F v x
         }
     deriving (Eq, Show)
 
@@ -93,7 +93,7 @@ instance ( VarValTime v x t ) => Default (Accum v x t) where
 
 
 setRemain f
-    | Just (Acc vs) <- castF f = zip (pushStatusGroups vs) (pullStatusGroups vs)
+    | Just (Acc vs) <- castF f = zip (pushActionGroups vs) (pullActionGroups vs)
     | otherwise                                = error "Error! Function is not Acc"
 
 
@@ -159,7 +159,7 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
     endpointDecision pu@Accum{ currentWork=Just (t, a@Job {tasks}), currentWorkEndpoints, isInit } d@EndpointSt{ epRole=Target v, epAt }
         | not (null tasks) && even ( length tasks )
         = let
-                job@Job {tasks=newModel, current = (((neg, _):_):_)} = endpointDecisionFunc a v
+                job@Job {tasks=newModel, current = (((neg, _):_):_)} =endpointDecisionFunc a v
                 sel = if isInit then Init neg else Load neg
                 (newEndpoints, process_') = runSchedule pu $ do
                     updateTick (sup epAt)
