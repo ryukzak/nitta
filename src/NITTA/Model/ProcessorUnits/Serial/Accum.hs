@@ -150,6 +150,7 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
             where
                 targets = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick+1 ... maxBound) (singleton 1)) (endpointOptionsFunc a)
                 sources = [ EndpointSt (Source $ fromList (endpointOptionsFunc a) ) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
+
     endpointOptions p@Accum{ work, currentWork = Nothing, tick } =
         concatMap (\a -> endpointOptions p {currentWork = Just (tick + 1, a)}) work
 
@@ -174,8 +175,9 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                 , isInit=null newModel
                 }
 
-    endpointDecision pu@Accum{ currentWork=Just (t, a@Job {tasks, current, func}), currentWorkEndpoints, doneAt} d@EndpointSt{ epRole=Source v, epAt }
-        | not (null current) && odd ( length tasks ) = let
+    endpointDecision pu@Accum{ currentWork=Just (t, a@Job {tasks, current, func}), currentWorkEndpoints, doneAt } d@EndpointSt{ epRole=Source v, epAt }
+        | not (null current) && odd ( length tasks )
+        = let
                 job@Job {tasks=newModel} = foldl endpointDecisionFunc a (elems v)
                 (newEndpoints, process_') = runSchedule pu $ do
                     endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt-1) Out
@@ -196,12 +198,13 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                 }
 
     endpointDecision pu@Accum{work, currentWork=Nothing, tick} d
-        | let v = oneOf $ variables d
-        , Just job <- find (\Job {func} -> v `member` variables func) work
-            = endpointDecision pu {work = work \\ [job], currentWork = Just (tick+1, job), isInit = True } d
+        | Just job <- getJob work
+        = endpointDecision pu { work = work \\ [job], currentWork = Just (tick+1, job), isInit = True } d
+            where
+                getJob = find (\Job {func} -> d `isIn` func)
+                e `isIn` f = oneOf (variables e) `member` variables f
 
-
-    endpointDecision pu  d = error $ "error in Endpoint Decision function" ++ show pu ++ show d
+    endpointDecision pu d = error $ "error in Endpoint Decision function" ++ show pu ++ show d
 
 instance Connected (Accum v x t) where
     data Ports (Accum v x t)

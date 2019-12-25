@@ -36,6 +36,7 @@ data Status v = Push Sign (I v) | Pull (O v) deriving (Typeable, Show, Eq)
 newtype Acc v x = Acc [Status v] deriving (Typeable, Eq)
 
 instance Label (Acc v x) where label Acc{} = "+"
+
 instance ( Show v) => Show (Acc v x) where
     show (Acc lst) =  concatMap printStatus lst
         where
