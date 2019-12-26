@@ -48,7 +48,7 @@ instance (Show v) => Show ( Action v ) where
     show (Push s v)   = [qc| { show s }{ show v }|]
     show (Pull (O v)) = concatMap (\res -> [qc| => {show res}|]) (elems v) ++ ";"
 
-newtype Acc v x = Acc [Action v] deriving (Typeable, Eq)
+newtype Acc v x = Acc {actions :: [Action v]} deriving (Typeable, Eq)
 
 instance ( Show v ) => Show (Acc v x) where
     show (Acc lst) =  concatMap show lst

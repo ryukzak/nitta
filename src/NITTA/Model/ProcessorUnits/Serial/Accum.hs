@@ -13,15 +13,14 @@
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Serial.Accum
-Description :
+Description : Accumulator processor unit implementation
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Serial.Accum
-  ( accum
-  , Accum
+  ( Accum
   , Ports(..), IOPorts(..)
   ) where
 
@@ -46,10 +45,11 @@ import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                (singleton, sup, (...))
 import           Text.InterpolatedString.Perl6   (qc)
 
--- |Accumulator for each function
+-- |Type that contains one expression like a + b = c; c + d = e;
+
 data Job v x = Job
-        { tasks   :: [[( Bool,v )]]
-        , current :: [[( Bool,v )]]
+        { tasks   :: [[(Bool, v)]]
+        , current :: [[(Bool, v)]]
         , func    :: F v x
         }
     deriving (Eq, Show)
@@ -65,7 +65,7 @@ data Accum v x t = Accum
         }
 
 instance (VarValTime v x t) => Show (Accum v x t) where
-    show a = [qc|"
+    show a = codeBlock [qc|"
         Accum:
             work                 = {work a}
             doneAt               = {doneAt a}
@@ -76,49 +76,45 @@ instance (VarValTime v x t) => Show (Accum v x t) where
             isInit               = {isInit a}|]
 
 
-accum :: (VarValTime v x t) => Accum v x t
-accum = Accum
-    { work=[]
-    , doneAt=Nothing
-    , currentWork=Nothing
-    , currentWorkEndpoints=[]
-    , process_=def
-    , tick=def
-    , isInit=True
-    }
-
 
 instance ( VarValTime v x t ) => Default (Accum v x t) where
-    def = accum
-
+    def = Accum
+        { work=[]
+        , doneAt=Nothing
+        , currentWork=Nothing
+        , currentWorkEndpoints=[]
+        , process_=def
+        , tick=def
+        , isInit=True
+        }
 
 setRemain f
     | Just (Acc vs) <- castF f = zip (pushActionGroups vs) (pullActionGroups vs)
-    | otherwise                                = error "Error! Function is not Acc"
+    | otherwise                = error "Error! Function is not Acc"
 
 
-tryBindFunc f = Job {tasks = functionModel, current = [], func = f}
+tryBindJob f = Job{ tasks = functionModel, current = [], func = f }
     where
         functionModel = concatMap (\(push, pull) -> [push, map (\x -> (False, x)) pull]) (setRemain f)
 
 
-endpointOptionsFunc Job {tasks=[]} = []
-endpointOptionsFunc Job {tasks=(t:_), current=[]} = map snd t
-endpointOptionsFunc Job {tasks=(t:ts), current=(c:_)}
+endpointOptionsJob Job{ tasks=[] } = []
+endpointOptionsJob Job{ tasks=(t:_), current=[] } = map snd t
+endpointOptionsJob Job{ tasks=(t:ts), current=(c:_) }
     | null ( t \\ c) && null ts = []
     | null $ t \\ c             = map snd $ head ts
     | otherwise                 = map snd $ t \\ c
 
-endpointDecisionFunc a@Job {tasks=[]} _ = a
-endpointDecisionFunc a@Job {tasks=tasks@(t:_), current=[]} v = a {tasks = updateTasks current' tasks, current=current'}
+endpointDecisionJob j@Job{ tasks=[] } _ = j
+endpointDecisionJob j@Job{ tasks=tasks@(t:_), current=[] } v = j{ tasks = updateTasks current' tasks, current=current' }
     where
         ([(neg, _)], _) = partition ((== v) . snd) t
         current' =[[(neg, v)]]
 
-endpointDecisionFunc a@Job {tasks=tasks@(t:ts), current=(c:cs)} v
-    | null $ t \\ c                      = endpointDecisionFunc a {tasks = ts} v
-    | t \\ c /= t && length t > length c = a { tasks = updateTasks currentInsert tasks, current = currentInsert }
-    | otherwise                          = a { tasks = updateTasks currentAdd tasks, current = currentAdd }
+endpointDecisionJob j@Job{ tasks=tasks@(t:ts), current=(c:cs) } v
+    | null $ t \\ c                      = endpointDecisionJob j{ tasks = ts } v
+    | t \\ c /= t && length t > length c = j{ tasks = updateTasks currentInsert tasks, current = currentInsert }
+    | otherwise                          = j{ tasks = updateTasks currentAdd tasks, current = currentAdd }
         where
             ([val], _) = partition ((== v) . snd) t
             currentInsert = (val : c) : cs
@@ -130,12 +126,14 @@ updateTasks (c:_) tasks@(t:ts)
 updateTasks []    _ = error "Current is null"
 updateTasks _     _ = error "Matching error updateTasks"
 
+toTarget = even . length
+toSource = odd . length
 
-instance ( VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
+instance ( VarValTime v x t, Num x ) => ProcessorUnit (Accum v x t) v x t where
     tryBind f pu@Accum{work}
-        | Just (Add a b c) <- castF f = Right pu{ work=tryBindFunc ( acc [Push Plus a, Push Plus b, Pull c] ) : work }
-        | Just (Sub a b c) <- castF f = Right pu{ work=tryBindFunc ( acc [Push Plus a, Push Minus b, Pull c] ) : work }
-        | Just Acc{}       <- castF f = Right pu{ work=tryBindFunc f : work}
+        | Just (Add a b c) <- castF f = Right pu{ work=tryBindJob ( acc [Push Plus a, Push Plus b, Pull c] ) : work }
+        | Just (Sub a b c) <- castF f = Right pu{ work=tryBindJob ( acc [Push Plus a, Push Minus b, Pull c] ) : work }
+        | Just Acc{}       <- castF f = Right pu{ work=tryBindJob f : work}
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 
     process = process_
@@ -145,21 +143,21 @@ instance ( VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
 
 instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
     endpointOptions Accum{ currentWork = Just (_, a@Job {tasks}), tick }
-        | even (length tasks) = targets
-        | odd (length tasks) = sources
+        | toTarget tasks = targets
+        | toSource tasks = sources
             where
-                targets = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick+1 ... maxBound) (singleton 1)) (endpointOptionsFunc a)
-                sources = [ EndpointSt (Source $ fromList (endpointOptionsFunc a) ) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
+                targets = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick+1 ... maxBound) (singleton 1)) (endpointOptionsJob a)
+                sources = [ EndpointSt (Source $ fromList (endpointOptionsJob a) ) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
 
     endpointOptions p@Accum{ work, currentWork = Nothing, tick } =
-        concatMap (\a -> endpointOptions p {currentWork = Just (tick + 1, a)}) work
+        concatMap (\a -> endpointOptions p{ currentWork = Just (tick + 1, a) }) work
 
     endpointOptions _ = error "Error in matching in endpointOptions function"
 
-    endpointDecision pu@Accum{ currentWork=Just (t, a@Job {tasks}), currentWorkEndpoints, isInit } d@EndpointSt{ epRole=Target v, epAt }
-        | not (null tasks) && even ( length tasks )
+    endpointDecision pu@Accum{ currentWork=Just (t, j@Job {tasks}), currentWorkEndpoints, isInit } d@EndpointSt{ epRole=Target v, epAt }
+        | not (null tasks) && toTarget tasks
         = let
-                job@Job {tasks=newModel, current = (((neg, _):_):_)} =endpointDecisionFunc a v
+                job@Job{ tasks=newModel, current = (((neg, _):_):_) } = endpointDecisionJob j v
                 sel = if isInit then Init neg else Load neg
                 (newEndpoints, process_') = runSchedule pu $ do
                     updateTick (sup epAt)
@@ -175,10 +173,12 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                 , isInit=null newModel
                 }
 
-    endpointDecision pu@Accum{ currentWork=Just (t, a@Job {tasks, current, func}), currentWorkEndpoints, doneAt } d@EndpointSt{ epRole=Source v, epAt }
-        | not (null current) && odd ( length tasks )
+    endpointDecision
+        pu@Accum{ currentWork=Just (t, j@Job{ tasks, current, func }), currentWorkEndpoints, doneAt }
+        d@EndpointSt{ epRole=Source v, epAt }
+        | not (null current) && toSource tasks
         = let
-                job@Job {tasks=newModel} = foldl endpointDecisionFunc a (elems v)
+                job@Job{ tasks=newModel } = foldl endpointDecisionJob j (elems v)
                 (newEndpoints, process_') = runSchedule pu $ do
                     endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt-1) Out
                     when (null newModel) $ do
@@ -197,9 +197,9 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                 , isInit=null newModel
                 }
 
-    endpointDecision pu@Accum{work, currentWork=Nothing, tick} d
+    endpointDecision pu@Accum{ work, currentWork=Nothing, tick } d
         | Just job <- getJob work
-        = endpointDecision pu { work = work \\ [job], currentWork = Just (tick+1, job), isInit = True } d
+        = endpointDecision pu{ work = work \\ [job], currentWork = Just (tick+1, job), isInit = True } d
             where
                 getJob = find (\Job {func} -> d `isIn` func)
                 e `isIn` f = oneOf (variables e) `member` variables f
@@ -267,9 +267,9 @@ instance ( Var v ) => Locks (Accum v x t) v where
     locks Accum{ currentWork = Nothing }                  = []
     locks Accum{ currentWork = Just (_, job), work } = locks' job work
             where
-                locks' Job{tasks=[]} _ = []
-                locks' Job{current =[]} _ = []
-                locks' Job{tasks=(m:ms), current =(r:_)} other =
+                locks' Job{ tasks=[] } _ = []
+                locks' Job{ current =[] } _ = []
+                locks' Job{ tasks=(m:ms), current =(r:_) } other =
                     [ Lock{ lockBy, locked }
                     | locked <- concatMap (map snd) ms ++ concatMap (concatMap (map snd) . tasks) other
                     , lockBy <- map snd (m \\ r)
@@ -302,14 +302,13 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Accum v x t) where
         = error "Should be defined in network."
 
 instance WithFunctions (Accum v x t) (F v x) where
-    functions Accum{ process_, work}
-        = functions process_
-        ++ map func work
+    functions Accum{ process_, work }
+        = functions process_ ++ map func work
 
 
 instance ( VarValTime v x t, Integral x
          ) => Testable (Accum v x t) v x where
-    testBenchImplementation prj@Project{ pName, pUnit} = let
+    testBenchImplementation prj@Project{ pName, pUnit } = let
             tbcSignalsConst = ["resetAcc", "load", "oe", "neg"]
 
             showMicrocode Microcode{ resetAccSignal, loadSignal, oeSignal, negSignal } = codeBlock [qc|
