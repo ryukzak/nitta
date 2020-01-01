@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
 import { SynthesisGraphView } from "./SynthesisGraphView";
-import { AppContext, IAppContext } from "../../app/AppContext";
+import { AppContext, IAppContext, reLastNidStep } from "../../app/AppContext";
 
 export const SynthesisGraphContainer: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
@@ -12,12 +12,18 @@ export const SynthesisGraphContainer: React.FC = () => {
 
   const buttonAttrs = {
     className: "btn btn-sm mr-3",
-    variant: "link" as any,
+    variant: "link" as any
   };
 
   const expandSynthesisGraphView = () => setHeight(height + step);
 
-  const reduceSynthesisGraphView = () => height > minHeight ? setHeight(height - step) : null ;
+  const reduceSynthesisGraphView = () => (height > minHeight ? setHeight(height - step) : null);
+
+  const backNavigation = () => {
+    let newId = appContext.selectedNodeId.replace(reLastNidStep, "");
+    if (newId != null && newId.length !== 0) appContext.selectNode(newId);
+    else appContext.selectNode("-");
+  };
 
   return (
     <div className="flex-grow-1">
@@ -31,6 +37,12 @@ export const SynthesisGraphContainer: React.FC = () => {
           </Button>
           <Button {...buttonAttrs} onClick={() => appContext.reloadSelectedNode()}>
             Refresh
+          </Button>
+        </div>
+
+        <div className="mr-3">
+          <Button {...buttonAttrs} onClick={() => backNavigation()}>
+            Back
           </Button>
         </div>
         <span className="text-muted">black - processed node; white - in progress node; green - succees synthesis</span>
