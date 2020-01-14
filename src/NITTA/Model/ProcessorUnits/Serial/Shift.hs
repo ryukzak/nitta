@@ -35,7 +35,6 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Snippets
 import           NITTA.Utils
 import           Numeric.Interval                          (inf, singleton, sup,
                                                             (...))
@@ -99,7 +98,7 @@ instance Controllable (Shift v x t) where
         | Work Bool StepSize Mode
         | Out
         deriving (Show)
- 
+
     data Microcode (Shift v x t)
         = Microcode
             { workSignal :: Bool
@@ -109,8 +108,8 @@ instance Controllable (Shift v x t) where
             , initSignal :: Bool
             , oeSignal :: Bool
             } deriving ( Show, Eq, Ord )
- 
-    mapMicrocodeToPorts Microcode{..} ShiftPorts{..} = 
+
+    mapMicrocodeToPorts Microcode{..} ShiftPorts{..} =
         [ (work, Bool workSignal)
         , (direction, Bool directionSignal)
         , (mode, Bool modeSignal)
@@ -118,8 +117,8 @@ instance Controllable (Shift v x t) where
         , (init, Bool initSignal)
         , (oe, Bool oeSignal)
         ]
- 
-    portsToSignals ShiftPorts{ work, direction, mode, step, init, oe} 
+
+    portsToSignals ShiftPorts{ work, direction, mode, step, init, oe}
         = [work, direction, mode, step, init, oe]
 
     signalsToPorts (work:direction:mode:step:init:oe:_) _ = ShiftPorts work direction mode step init oe

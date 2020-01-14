@@ -12,7 +12,7 @@ module NITTA.Test.CodeBlock
     ) where
 
 import qualified Data.String.Utils             as S
-import           NITTA.Project.Snippets
+import           NITTA.Utils
 import           Test.Tasty                    (TestTree)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH

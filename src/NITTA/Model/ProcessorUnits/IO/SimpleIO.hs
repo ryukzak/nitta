@@ -5,6 +5,8 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE TemplateHaskell       #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -33,7 +35,9 @@ import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Utils.ProcessDescription
+import           NITTA.Utils
 import           Numeric.Interval                 (sup, (...))
+import           Text.InterpolatedString.Perl6    (qc)
 
 
 class ( Typeable i ) => SimpleIOInterface i
@@ -48,7 +52,20 @@ data SimpleIO i v x t = SimpleIO
         , sendN         :: Int
         , process_      :: Process v x t
         }
-    deriving ( Show )
+    -- deriving ( Show )
+
+instance (VarValTime v x t, SimpleIOInterface i) => Show (SimpleIO i v x t) where
+    show io = codeBlock [qc|
+        bounceFilter  = {bounceFilter io}
+        bufferSize    = {bufferSize io}
+        receiveQueue  = {receiveQueue io}
+        receiveN      = {receiveN io}
+        isReceiveOver = {isReceiveOver io}
+        sendQueue     = {sendQueue io}
+        sendN         = {sendN io}
+        process_      =
+            {inline $ show $ process_ io}
+        |]
 
 data Q v x = Q{ vars :: [ v ], function :: F v x, cads :: [ ProcessUid ] }
     deriving ( Show )

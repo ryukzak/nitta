@@ -33,8 +33,8 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.Utils
-import           NITTA.Project.Snippets
 import           NITTA.Project.Types
+import           NITTA.Utils
 import           System.Directory                 (createDirectoryIfMissing)
 import           System.FilePath.Posix            (joinPath)
 import           Text.InterpolatedString.Perl6    (qc)

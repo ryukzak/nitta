@@ -19,54 +19,22 @@ module NITTA.Project.Snippets
     , snippetInitialFinish
     , snippetTestBench, SnippetTestBenchConf(..)
     , snippetTraceAndCheck, assertRe
-    , codeBlock, inline, codeLine
     ) where
 
-import qualified Data.String.Utils                as S
 import           Data.Default
+import qualified Data.String.Utils               as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           Safe                             (headDef, minimumDef)
-import           Text.InterpolatedString.Perl6    (qc)
+import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
 
 
-inlineMarker = "###"
-
-inline str = unlines $ map (inlineMarker ++ ) $ lines str
-
-codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
-    where
-        codeBlock' []     buff _         = delInline $ S.join "\n" $ reverse buff
-        codeBlock' (x:xs) buff minIndent = codeBlock' xs buff' minIndent
-            where
-                buffHead = headDef "" buff
-                inlineSpacesCount = length $ takeWhile (== ' ') buffHead
-                inlineSpaces = replicate inlineSpacesCount ' '
-                line
-                    | isInline x = inlineSpaces ++ x
-                    | otherwise  = drop minIndent x
-
-                buff' = line : buff
-
-        isInline = S.startswith inlineMarker
-        delInline = S.replace inlineMarker ""
-
-        minIndentCalc inp = minimumDef 0 spaces
-            where
-                spaces = filter (> 0 ) $ map (length . takeWhile (== ' ')) inlines
-                inlines = filter (not . isInline) inp
-
-        linesList = drop 1 $ lines str
-
-
-codeLine str = dropWhile (== ' ') str ++ "\n"
 
 snippetClkGen :: String
 snippetClkGen = codeBlock [qc|

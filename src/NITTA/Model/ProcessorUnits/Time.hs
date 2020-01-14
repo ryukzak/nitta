@@ -10,6 +10,8 @@
 {-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE QuasiQuotes            #-}
+{-# LANGUAGE TemplateHaskell        #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -40,7 +42,9 @@ import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Types
+import           NITTA.Utils.CodeFormat
 import           Numeric.Interval
+import           Text.InterpolatedString.Perl6   (qc)
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
@@ -113,14 +117,19 @@ data Process v x t
         , nextTick  :: t          -- ^Номер первого свободного такта.
         , nextUid   :: ProcessUid -- ^Следующий свободный идентификатор шага вычислительного процесса.
         }
-    deriving (Show)
 
--- instance (VarValTime v x t) => Show (Process v x t) where
---     show p = "Process\n"
---         ++ "\t\tsteps     = " ++ fst (foldl (\(s, i) next -> (s ++ "\n\t\t\t" ++ show i ++ ") " ++ show next, i+1) ) ("", 0) ( steps p )) ++ "\n"
---         ++ "\t\trelations = " ++ fst (foldl (\(s, i) next -> (s ++ "\n\t\t\t" ++ show i ++ ") " ++ show next, i+1) ) ("", 0) ( relations p )) ++ "\n"
---         ++ "\t\tnextTick  = " ++ show ( nextTick p ) ++ "\n"
---         ++ "\t\tnextUid  = " ++ show ( nextUid p ) ++ "\n"
+instance (VarValTime v x t) => Show (Process v x t) where
+    show p = codeBlock [qc|
+        Process
+            steps     =
+                {inline $ listShow $ steps p  }
+            relations =
+                {inline $ listShow $ relations p  }
+            nextTick  = { show ( nextTick p ) }
+            nextUid   = { show ( nextUid p ) }
+        |]
+        where
+            listShow list = unlines $ map (\(i, value) -> [qc|{i}) {value}|]) $ zip [0::Integer ..] list 
 
 instance ( Default t ) => Default (Process v x t) where
     def = Process { steps=[], relations=[], nextTick=def, nextUid=def }

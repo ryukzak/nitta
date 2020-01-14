@@ -63,6 +63,7 @@ library
                      , NITTA.UIBackend.Timeline
                      , NITTA.UIBackend.VisJS
                      , NITTA.Utils
+                     , NITTA.Utils.CodeFormat
                      , NITTA.Utils.ProcessDescription
   build-depends:       aeson
                      , array

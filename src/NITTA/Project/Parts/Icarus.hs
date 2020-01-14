@@ -21,8 +21,8 @@ module NITTA.Project.Parts.Icarus
 import qualified Data.String.Utils             as S
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Snippets
 import           NITTA.Project.Types
+import           NITTA.Utils
 import           System.Directory              (createDirectoryIfMissing)
 import           System.FilePath.Posix         (joinPath)
 import           Text.InterpolatedString.Perl6 (qc)
