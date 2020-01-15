@@ -40,6 +40,8 @@ module NITTA.Utils
     , isInstruction
     , isTarget
     , maybeInstructionOf
+    -- code format
+    , module NITTA.Utils.CodeFormat
     ) where
 
 import           Control.Monad.State             (State, get, modify', put,
@@ -55,6 +57,7 @@ import           NITTA.Model.ProcessorUnits.Time
 import           Numeric                         (readInt, showHex)
 import           Numeric.Interval                ((...))
 import qualified Numeric.Interval                as I
+import           NITTA.Utils.CodeFormat
 import           Text.StringTemplate
 
 
@@ -124,7 +127,6 @@ setProcessTime t = do
     put p{ nextTick=t }
 
 bindFB fb t = addStep (I.singleton t) $ CADStep $ "bind: " ++ show fb
-
 
 endpointAt t p
     = case mapMaybe getEndpoint $ whatsHappen t p of

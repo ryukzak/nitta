@@ -19,19 +19,19 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Divider
-    ( Divider(..) 
+    ( Divider(..)
     , divider
     , Ports(..), IOPorts(..)
     ) where
 
-import           Control.Monad                    (void, when)
-import           Data.Bits                        (finiteBitSize)
+import           Control.Monad                   (void, when)
+import           Data.Bits                       (finiteBitSize)
 import           Data.Default
-import           Data.List                        (partition, sortBy)
-import           Data.Maybe                       (fromMaybe)
-import           Data.Set                         (Set, member)
-import qualified Data.Set                         as S
-import qualified NITTA.Intermediate.Functions     as F
+import           Data.List                       (partition, sortBy)
+import           Data.Maybe                      (fromMaybe)
+import           Data.Set                        (Set, member)
+import qualified Data.Set                        as S
+import qualified NITTA.Intermediate.Functions    as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
@@ -39,13 +39,12 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                 (Interval, inf, intersection,
-                                                   singleton, sup, width, (...))
-import           Text.InterpolatedString.Perl6    (qc)
+import           Numeric.Interval                (Interval, inf, intersection,
+                                                  singleton, sup, width, (...))
+import           Text.InterpolatedString.Perl6   (qc)
 
 
 data InputDesc

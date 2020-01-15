@@ -78,6 +78,7 @@ simulateTest received (v, expect) alg = let
 varNameSize = 7
 outputVarsGen = O . fromList <$> resize 3 (listOf1 $ vectorOf varNameSize $ elements ['a'..'z'])
 inputVarGen = I <$> vectorOf varNameSize (elements ['a'..'z'])
+maxLenght = 8
 
 -- TODO: Иногда, может получиться вот такой вот функциональный блок: < "qqq" = "joi" * "joi" >, что
 -- необходимо исправить. Не очень ясно как решать эту проблему, ведь у нас везде Set, а дубль
@@ -98,3 +99,9 @@ instance Arbitrary (Multiply String Int) where
 
 instance Arbitrary (Division String Int) where
     arbitrary = suchThat (Division <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
+
+instance Arbitrary (Acc String Int) where
+    arbitrary = suchThat (Acc . concat <$> resize maxLenght (listOf1 $ (++) <$> genPush <*> genPull) ) uniqueVars
+        where
+            genPush = resize maxLenght $ listOf1 $ oneof [Push Plus <$> inputVarGen,  Push Minus <$> inputVarGen]
+            genPull = resize 1 $ listOf1 $ Pull <$> outputVarsGen

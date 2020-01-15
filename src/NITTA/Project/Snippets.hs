@@ -17,53 +17,14 @@ module NITTA.Project.Snippets
     ( snippetClkGen
     , snippetDumpFile
     , snippetInitialFinish
-    , snippetTestBench, SnippetTestBenchConf(..)
     , snippetTraceAndCheck, assertRe
-    , codeBlock, inline, codeLine
     ) where
 
-import qualified Data.String.Utils                as S
-import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Project.Implementation
-import           NITTA.Project.Types
 import           NITTA.Utils
-import           Safe                             (headDef, minimumDef)
-import           Text.InterpolatedString.Perl6    (qc)
+import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
 
 
-inlineMarker = "###"
-
-inline str = unlines $ map (inlineMarker ++ ) $ lines str
-
-codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
-    where
-        codeBlock' []     buff _         = delInline $ S.join "\n" $ reverse buff
-        codeBlock' (x:xs) buff minIndent = codeBlock' xs buff' minIndent
-            where
-                buffHead = headDef "" buff
-                inlineSpacesCount = length $ takeWhile (== ' ') buffHead
-                inlineSpaces = replicate inlineSpacesCount ' '
-                line
-                    | isInline x = inlineSpaces ++ x
-                    | otherwise  = drop minIndent x
-
-                buff' = line : buff
-
-        isInline = S.startswith inlineMarker
-        delInline = S.replace inlineMarker ""
-
-        minIndentCalc inp = minimumDef 0 spaces
-            where
-                spaces = filter (> 0 ) $ map (length . takeWhile (== ' ')) inlines
-                inlines = filter (not . isInline) inp
-
-        linesList = drop 1 $ lines str
-
-
-codeLine str = dropWhile (== ' ') str ++ "\n"
 
 snippetClkGen :: String
 snippetClkGen = codeBlock [qc|
@@ -128,103 +89,3 @@ assertRe = mkRegex $ concat
     , "([^\t ]+)"
     ]
 
-data SnippetTestBenchConf m
-    = SnippetTestBenchConf
-        { tbcSignals       :: [String]
-        , tbcPorts         :: Ports m
-        , tbcIOPorts       :: IOPorts m
-        , tbcSignalConnect :: SignalTag -> String
-        , tbcCtrl          :: Microcode m -> String
-        , tbDataBusWidth   :: Int
-        }
-
-snippetTestBench
-        Project{ pName, pUnit, pTestCntx=Cntx{ cntxProcess } }
-        SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcIOPorts, tbcCtrl, tbDataBusWidth }
-    = let
-        cycleCntx:_ = cntxProcess
-        name = moduleName pName pUnit
-        p@Process{ steps, nextTick } = process pUnit
-        fs = functions pUnit
-
-        inst = hardwareInstance pName pUnit
-            TargetEnvironment
-                { signalClk="clk"
-                , signalRst="rst"
-                , signalCycle="cycle"
-                , inputPort=undefined
-                , outputPort=undefined
-                , inoutPort=undefined
-                , unitEnv=ProcessUnitEnv
-                    { parameterAttrWidth=IntParam 4
-                    , dataIn="data_in"
-                    , attrIn="attr_in"
-                    , dataOut="data_out"
-                    , attrOut="attr_out"
-                    , signal=tbcSignalConnect
-                    }
-                }
-            tbcPorts
-            tbcIOPorts
-
-        controlSignals = S.join "\n" $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc| data_in <= { targetVal t }; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
-        targetVal t
-            | Just (Target v) <- endpointAt t p
-            = either error id $ getX cycleCntx v
-            | otherwise = 0
-        busCheck = concatMap busCheck' [ 0 .. nextTick + 1 ]
-            where
-                busCheck' t
-                    | Just (Source vs) <- endpointAt t p
-                    , let v = oneOf vs
-                    , let x = either error id $ getX cycleCntx v
-                    = codeBlock [qc|
-                        @(posedge clk);
-                            $write( "data_out: %d == %d    (%s)", data_out, { x }, { v } );
-                            if ( !( data_out === { x } ) ) $display(" FAIL");
-                            else $display();
-                        |]
-                    | otherwise
-                    = codeLine [qc|@(posedge clk); $display( "data_out: %d", data_out );|]
-        tbcSignals' = map (\x -> "reg " ++ x ++ ";") tbcSignals
-
-    in codeBlock [qc|
-        {"module"} {name}_tb();
-
-        parameter DATA_WIDTH = { tbDataBusWidth };
-        parameter ATTR_WIDTH = 4;
-
-        /*
-        Algorithm:
-        { inline $ unlines $ map show $ fs }
-        Process:
-        { inline $ unlines $ map show $ reverse steps }
-        Context:
-        { inline $ show cycleCntx }
-        */
-
-        reg clk, rst;
-        { inline $ S.join "\\n" tbcSignals' };
-        reg [DATA_WIDTH-1:0]  data_in;
-        reg [ATTR_WIDTH-1:0]  attr_in;
-        wire [DATA_WIDTH-1:0] data_out;
-        wire [ATTR_WIDTH-1:0] attr_out;
-
-        { inline inst }
-
-        { inline snippetClkGen }
-        { inline $ snippetDumpFile name }
-
-        initial begin
-            @(negedge rst);
-            {inline controlSignals}
-            $finish;
-        end
-
-        initial begin
-            @(negedge rst);
-            {inline busCheck}
-            $finish;
-        end
-        endmodule
-        |] :: String

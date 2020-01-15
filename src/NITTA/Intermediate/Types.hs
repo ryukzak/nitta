@@ -98,7 +98,7 @@ data Lock v
         { locked :: v
         , lockBy :: v
         }
-    deriving ( Show, Eq, Generic )
+    deriving ( Show, Eq, Ord, Generic )
 
 
 -- |All input variables locks all output variables.
