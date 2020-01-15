@@ -38,7 +38,6 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
@@ -46,7 +45,6 @@ import           Numeric.Interval                (singleton, sup, (...))
 import           Text.InterpolatedString.Perl6   (qc)
 
 -- |Type that contains one expression like a + b = c; c + d = e;
-
 data Job v x = Job
         { tasks   :: [[(Bool, v)]]
         , current :: [[(Bool, v)]]
@@ -133,7 +131,7 @@ instance ( VarValTime v x t, Num x ) => ProcessorUnit (Accum v x t) v x t where
     tryBind f pu@Accum{work}
         | Just (Add a b c) <- castF f = Right pu{ work=tryBindJob ( acc [Push Plus a, Push Plus b, Pull c] ) : work }
         | Just (Sub a b c) <- castF f = Right pu{ work=tryBindJob ( acc [Push Plus a, Push Minus b, Pull c] ) : work }
-        | Just Acc{}       <- castF f = Right pu{ work=tryBindJob f : work}
+        | Just Acc{}       <- castF f = Right pu{ work=tryBindJob f : work }
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 
     process = process_

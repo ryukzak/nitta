@@ -52,7 +52,6 @@ data SimpleIO i v x t = SimpleIO
         , sendN         :: Int
         , process_      :: Process v x t
         }
-    -- deriving ( Show )
 
 instance (VarValTime v x t, SimpleIOInterface i) => Show (SimpleIO i v x t) where
     show io = codeBlock [qc|

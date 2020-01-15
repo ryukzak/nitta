@@ -128,7 +128,6 @@ setProcessTime t = do
 
 bindFB fb t = addStep (I.singleton t) $ CADStep $ "bind: " ++ show fb
 
-
 endpointAt t p
     = case mapMaybe getEndpoint $ whatsHappen t p of
         [ep] -> Just ep

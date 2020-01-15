@@ -2,7 +2,7 @@
 
 {-|
 Module      : NITTA.Utils.CodeFormat
-Description : functions for more comfortable work with output codestyle
+Description : Functions for output code. Examples in Test.CodeBlock.hs
 Copyright   : (c) Daniil Prohorov, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -17,13 +17,16 @@ module NITTA.Utils.CodeFormat
 import qualified Data.String.Utils               as S
 import           Safe                            (headDef, minimumDef)
 
--- |Code format functions
+
 inlineMarker = "###"
 
+-- |For right indentations of multiple lines
 inline str = unlines $ map (inlineMarker ++ ) $ lines str
 
+-- |Add comment for each line
 comment str = unlines $ map ("// " ++ ) $ lines str
 
+-- |Function for more comfortable formatting code
 codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
     where
         codeBlock' []     buff _         = delInline $ S.join "\n" $ reverse buff
@@ -48,5 +51,5 @@ codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
 
         linesList = drop 1 $ lines str
 
-
+-- |Simple function for writing just one line of something
 codeLine str = dropWhile (== ' ') str ++ "\n"

@@ -143,7 +143,6 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
