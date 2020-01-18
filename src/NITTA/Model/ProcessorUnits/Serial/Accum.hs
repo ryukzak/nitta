@@ -140,12 +140,15 @@ instance ( VarValTime v x t, Num x ) => ProcessorUnit (Accum v x t) v x t where
 
 
 instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
-    endpointOptions Accum{ currentWork = Just (_, a@Job {tasks}), tick }
+    endpointOptions Accum{ currentWork = Just (at, a@Job {tasks}), tick, work }
         | toTarget tasks = targets
         | toSource tasks = sources
             where
+                sourceOut [] = tick
+                sourceOut _  = tick+3
                 targets = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick+1 ... maxBound) (singleton 1)) (endpointOptionsJob a)
-                sources = [ EndpointSt (Source $ fromList (endpointOptionsJob a) ) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
+                sources = [ EndpointSt (Source $ fromList (endpointOptionsJob a) ) $ TimeConstrain (sourceOut work ... maxBound) (1 ... maxBound) ]
+                -- sources = [ EndpointSt (Source $ fromList (endpointOptionsJob a) ) $ TimeConstrain (sourceOut work ... maxBound) (1 ... maxBound) ]
 
     endpointOptions p@Accum{ work, currentWork = Nothing, tick } =
         concatMap (\a -> endpointOptions p{ currentWork = Just (tick + 1, a) }) work
@@ -165,7 +168,7 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                 , currentWork = Just(t, job)
                 , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
                 , doneAt=if null newModel
-                    then Just $ sup epAt + 3
+                    then Just $ sup epAt
                     else Nothing
                 , tick=sup epAt
                 , isInit=null newModel
@@ -178,7 +181,7 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
         = let
                 job@Job{ tasks=newModel } = foldl endpointDecisionJob j (elems v)
                 (newEndpoints, process_') = runSchedule pu $ do
-                    endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt-1) Out
+                    endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt) Out
                     when (null newModel) $ do
                         high <- scheduleFunction (t ... sup epAt) func
                         let low = endpoints ++ currentWorkEndpoints
@@ -188,7 +191,10 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     return endpoints
             in pu
                 { process_=process_'
-                , doneAt=if null newModel then Nothing else doneAt
+                -- , doneAt=if null newModel then Nothing else doneAt
+                , doneAt=if null newModel
+                    then Just $ sup epAt
+                    else Nothing
                 , currentWork=if null newModel then Nothing else Just(t, job)
                 , currentWorkEndpoints=if null newModel then [] else newEndpoints ++ currentWorkEndpoints
                 , tick=sup epAt
