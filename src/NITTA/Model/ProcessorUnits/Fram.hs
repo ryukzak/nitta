@@ -25,16 +25,16 @@ module NITTA.Model.ProcessorUnits.Fram
   , framWithSize
   ) where
 
-import           Control.Applicative              ((<|>))
+import           Control.Applicative             ((<|>))
 import           Control.Monad
-import qualified Data.Array                       as A
-import           Data.Array.Base                  (numElements)
-import           Data.Bits                        (finiteBitSize, testBit)
+import qualified Data.Array                      as A
+import           Data.Array.Base                 (numElements)
+import           Data.Bits                       (finiteBitSize, testBit)
 import           Data.Default
-import qualified Data.List                        as L
+import qualified Data.List                       as L
 import           Data.Maybe
-import qualified Data.Set                         as S
-import qualified Data.String.Utils                as S
+import qualified Data.Set                        as S
+import qualified Data.String.Utils               as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
@@ -47,8 +47,8 @@ import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                 (inf, sup, (...))
-import           Text.InterpolatedString.Perl6    (qc)
+import           Numeric.Interval                (inf, sup, (...))
+import           Text.InterpolatedString.Perl6   (qc)
 
 
 
