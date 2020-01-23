@@ -50,12 +50,12 @@ always @(posedge clk)
 
     if ( signal_load ) begin
       if ( signal_resetAcc ) begin
-        overflow <= attr_in[ OVERFLOW ];           
-      end else begin 
+        overflow <= attr_in[ OVERFLOW ];
+      end else begin
         overflow <= overflow || attr_in[ OVERFLOW ];
       end
     end else begin
-        overflow <= carry ^ wacc[DATA_WIDTH]; 
+        overflow <= carry ^ wacc[DATA_WIDTH];
     end
   end
 
@@ -66,6 +66,6 @@ always @(posedge clk)
     data_out           <= acc[DATA_WIDTH-1:0];
     attr_out[SIGN]     <= acc[DATA_WIDTH];
     attr_out[OVERFLOW] <= overflow;
-  end             
+  end
 
 endmodule

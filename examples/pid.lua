@@ -1,4 +1,4 @@
-function pid(I, prev_err) 
+function pid(I, prev_err)
     local Kp = 2
     local Ki = 0
     local Kd = 0
@@ -10,7 +10,7 @@ function pid(I, prev_err)
 
     P = Kp * err
     I = I + Ki * err
-    D = Kd * (err - prev_err)
+    D = Kd * err - Kd * prev_err
 
     local PID = P + I + D
     send(PID)

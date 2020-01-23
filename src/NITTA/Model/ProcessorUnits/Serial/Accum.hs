@@ -30,6 +30,7 @@ import           Data.Default
 import           Data.List                       (find, partition, (\\))
 import           Data.Maybe                      (fromMaybe)
 import           Data.Set                        (elems, fromList, member)
+import           Debug.Trace
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
@@ -49,12 +50,12 @@ data Job v x = Job
         { tasks   :: [[(Bool, v)]]
         , current :: [[(Bool, v)]]
         , func    :: F v x
+        , calcEnd :: Bool
         }
     deriving (Eq, Show)
 
 data Accum v x t = Accum
         { work                 :: [Job v x]
-        , doneAt               :: Maybe t
         , currentWork          :: Maybe ( t, Job v x )
         , currentWorkEndpoints :: [ ProcessUid ]
         , process_             :: Process v x t
@@ -66,7 +67,6 @@ instance (VarValTime v x t) => Show (Accum v x t) where
     show a = codeBlock [qc|"
         Accum:
             work                 = {work a}
-            doneAt               = {doneAt a}
             currentWork          = {currentWork a}
             currentWorkEndpoints = {currentWorkEndpoints a}
             process_             = {process_ a}
@@ -78,7 +78,6 @@ instance (VarValTime v x t) => Show (Accum v x t) where
 instance ( VarValTime v x t ) => Default (Accum v x t) where
     def = Accum
         { work=[]
-        , doneAt=Nothing
         , currentWork=Nothing
         , currentWorkEndpoints=[]
         , process_=def
@@ -91,7 +90,7 @@ setRemain f
     | otherwise                = error "Error! Function is not Acc"
 
 
-tryBindJob f = Job{ tasks = functionModel, current = [], func = f }
+tryBindJob f = Job{ tasks = functionModel, current = [], func = f, calcEnd = False}
     where
         functionModel = concatMap (\(push, pull) -> [push, map (\x -> (False, x)) pull]) (setRemain f)
 
@@ -140,22 +139,23 @@ instance ( VarValTime v x t, Num x ) => ProcessorUnit (Accum v x t) v x t where
 
 
 instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
-    endpointOptions Accum{ currentWork = Just (at, a@Job {tasks}), tick, work }
+    endpointOptions Accum{ currentWork = Just (at, a@Job { tasks, calcEnd }), tick }
         | toTarget tasks = targets
         | toSource tasks = sources
             where
-                sourceOut [] = tick
-                sourceOut _  = tick+3
                 targets = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick+1 ... maxBound) (singleton 1)) (endpointOptionsJob a)
-                sources = [ EndpointSt (Source $ fromList (endpointOptionsJob a) ) $ TimeConstrain (sourceOut work ... maxBound) (1 ... maxBound) ]
-                -- sources = [ EndpointSt (Source $ fromList (endpointOptionsJob a) ) $ TimeConstrain (sourceOut work ... maxBound) (1 ... maxBound) ]
+                sources = [ EndpointSt (Source $ fromList (endpointOptionsJob a) ) $ TimeConstrain (max tick (tickSource calcEnd) ... maxBound) (1 ... maxBound) ]
+                tickSource True = tick+1
+                tickSource _    = tick+3
 
     endpointOptions p@Accum{ work, currentWork = Nothing, tick } =
-        concatMap (\a -> endpointOptions p{ currentWork = Just (tick + 1, a) }) work
+        concatMap (\a -> endpointOptions p{ currentWork = Just (tick, a) }) work
 
     endpointOptions _ = error "Error in matching in endpointOptions function"
 
-    endpointDecision pu@Accum{ currentWork=Just (t, j@Job {tasks}), currentWorkEndpoints, isInit } d@EndpointSt{ epRole=Target v, epAt }
+    endpointDecision
+        pu@Accum{ currentWork=Just (t, j@Job {tasks}), currentWorkEndpoints, isInit }
+        d@EndpointSt{ epRole=Target v, epAt }
         | not (null tasks) && toTarget tasks
         = let
                 job@Job{ tasks=newModel, current = (((neg, _):_):_) } = endpointDecisionJob j v
@@ -165,23 +165,21 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     scheduleEndpoint d $ scheduleInstruction epAt sel
             in pu
                 { process_=process_'
-                , currentWork = Just(t, job)
+                , currentWork = Just(t, job { calcEnd = False })
                 , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-                , doneAt=if null newModel
-                    then Just $ sup epAt
-                    else Nothing
                 , tick=sup epAt
                 , isInit=null newModel
                 }
 
     endpointDecision
-        pu@Accum{ currentWork=Just (t, j@Job{ tasks, current, func }), currentWorkEndpoints, doneAt }
+        pu@Accum{ currentWork=Just (t, j@Job{ tasks, current, func }), currentWorkEndpoints, tick}
         d@EndpointSt{ epRole=Source v, epAt }
         | not (null current) && toSource tasks
         = let
                 job@Job{ tasks=newModel } = foldl endpointDecisionJob j (elems v)
+                -- (newEndpoints, process_') = trace (show tick ++ ")  " ++show job ++ "\n\n") $ runSchedule pu $ do
                 (newEndpoints, process_') = runSchedule pu $ do
-                    endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt) Out
+                    endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt-1) Out
                     when (null newModel) $ do
                         high <- scheduleFunction (t ... sup epAt) func
                         let low = endpoints ++ currentWorkEndpoints
@@ -191,11 +189,7 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     return endpoints
             in pu
                 { process_=process_'
-                -- , doneAt=if null newModel then Nothing else doneAt
-                , doneAt=if null newModel
-                    then Just $ sup epAt
-                    else Nothing
-                , currentWork=if null newModel then Nothing else Just(t, job)
+                , currentWork=if null newModel then Nothing else Just(tick, job{ calcEnd = True })
                 , currentWorkEndpoints=if null newModel then [] else newEndpoints ++ currentWorkEndpoints
                 , tick=sup epAt
                 , isInit=null newModel
@@ -203,7 +197,7 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
 
     endpointDecision pu@Accum{ work, currentWork=Nothing, tick } d
         | Just job <- getJob work
-        = endpointDecision pu{ work = work \\ [job], currentWork = Just (tick+1, job), isInit = True } d
+        = endpointDecision pu{ work = work \\ [job], currentWork = Just (tick, job {calcEnd = False}), isInit = True } d
             where
                 getJob = find (\Job {func} -> d `isIn` func)
                 e `isIn` f = oneOf (variables e) `member` variables f
