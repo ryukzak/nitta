@@ -269,8 +269,13 @@ instance ( Var v ) => Locks (Accum v x t) v where
                 locks' Job{ current =[] } _ = []
                 locks' Job{ tasks=(m:ms), current =(r:_) } other =
                     [ Lock{ lockBy, locked }
-                    | locked <- concatMap (map snd) ms ++ concatMap (concatMap (map snd) . tasks) other
+                    | locked <- concatMap (map snd) ms
                     , lockBy <- map snd (m \\ r)
+                    ]
+                    ++
+                    [ Lock{ lockBy, locked }
+                    | locked <- concatMap (concatMap (map snd) . tasks) other
+                    , lockBy <- map snd (m ++ r)
                     ]
 
 

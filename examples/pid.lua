@@ -1,21 +1,16 @@
-function pid(I, prev_err)
-    local Kp = 2
+function pid(prev_err)
     local Ki = 0
     local Kd = 0
+    err = reg(receive())
 
-    local temperature_desired = 50
-    local getValueSPI = receive()
 
-    err = temperature_desired - getValueSPI
+    I = Ki * err
+    D = Kd * (err - prev_err)
 
-    P = Kp * err
-    I = I + Ki * err
-    D = Kd * err - Kd * prev_err
-
-    local PID = P + I + D
+    local PID = err + I + D
     send(PID)
 
-    pid(I, err)
+    pid(err)
 end
 
-pid(0, 0)
+pid(0)
