@@ -399,7 +399,7 @@ instance ( UnitTag tag, VarValTime v x t
     refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(ResolveDeadlock vs) = let
             (buffer, diff) = prepareBuffer r
             Just (tag, _) = L.find
-                (\(_, f) -> not $ null $ S.intersection vs $ unionsMap variables f)
+                (\(_, f) -> not $ null $ S.intersection vs $ unionsMap outputs f)
                 $ M.assocs bnBinded
             bnRemains' = buffer : patch diff bnRemains
         in bn
