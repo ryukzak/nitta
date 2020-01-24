@@ -30,7 +30,6 @@ import           Data.Default
 import           Data.List                       (find, partition, (\\))
 import           Data.Maybe                      (fromMaybe)
 import           Data.Set                        (elems, fromList, member)
-import           Debug.Trace
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
@@ -139,7 +138,7 @@ instance ( VarValTime v x t, Num x ) => ProcessorUnit (Accum v x t) v x t where
 
 
 instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
-    endpointOptions Accum{ currentWork = Just (at, a@Job { tasks, calcEnd }), tick }
+    endpointOptions Accum{ currentWork = Just (_, a@Job { tasks, calcEnd }), tick }
         | toTarget tasks = targets
         | toSource tasks = sources
             where
