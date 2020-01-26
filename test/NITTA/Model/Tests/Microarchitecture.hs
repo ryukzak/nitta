@@ -20,6 +20,7 @@ module NITTA.Model.Tests.Microarchitecture
     ( march
     , marchSPI
     , marchSPIDropData
+    , maBroken
     , algTestCase
     , externalTestCntr
     , runTargetSynthesisWithUniqName
@@ -66,6 +67,15 @@ basic _proxy = evalNetwork ASync $ do
 
 
 march = basic pInt
+
+
+-- |Simple microarchitecture with broken PU for negative tests
+maBroken :: ( Integral x, Val x ) => Proxy x -> BusNetwork String String x Int
+maBroken _proxy = evalNetwork ASync $ do
+    add "fram1" FramIO
+    add "fram2" FramIO
+    add "accum" AccumIO
+    add "broken" BrokenIO
 
 
 marchSPI ::

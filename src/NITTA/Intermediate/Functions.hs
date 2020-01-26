@@ -29,6 +29,7 @@ module NITTA.Intermediate.Functions
     , Multiply(..), multiply
     , ShiftLR(..), shiftL, shiftR
     , Sub(..), sub
+    , module NITTA.Intermediate.Functions.Accum
     -- *Memory
     , Constant(..), constant
     , Loop(..), loop, isLoop, LoopIn(..), LoopOut(..)
@@ -36,7 +37,8 @@ module NITTA.Intermediate.Functions
     -- *Input/Output
     , Receive(..), receive
     , Send(..), send
-    , module NITTA.Intermediate.Functions.Accum
+    -- *Internal
+    , BrokenReg(..), brokenReg
     ) where
 
 import qualified Data.Bits as B
@@ -389,3 +391,23 @@ instance ( Var v, Val x ) => FunctionSimulation (Receive v x) v x where
             Just _  -> return cntx
             -- if output variables are not defined - set initial value
             Nothing -> setZipX cntx vs def
+
+
+data BrokenReg v x = BrokenReg (I v) (O v) deriving ( Typeable, Eq )
+instance Label (BrokenReg v x) where label BrokenReg{} = "broken"
+instance ( Show v ) => Show (BrokenReg v x) where
+    show (BrokenReg (I k1) (O k2)) = "brokenReg(" <> show k1 <> ")" <> " = " <> showOut k2
+brokenReg :: ( Var v, Val x ) => v -> [v] -> F v x
+brokenReg a b = packF $ BrokenReg (I a) (O $ fromList b)
+
+instance ( Ord v ) => Function (BrokenReg v x) v where
+    inputs  (BrokenReg a _b) = variables a
+    outputs (BrokenReg _a b) = variables b
+instance ( Ord v ) => Patch (BrokenReg v x) (v, v) where
+    patch diff (BrokenReg a b) = BrokenReg (patch diff a) (patch diff b)
+instance ( Var v ) => Locks (BrokenReg v x) v where
+    locks = inputsLockOutputs
+instance ( Var v ) => FunctionSimulation (BrokenReg v x) v x where
+    simulate cntx (BrokenReg (I v) (O vs)) = do
+        x <- cntx `getX` v
+        setZipX cntx vs x
