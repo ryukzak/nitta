@@ -46,10 +46,10 @@ import           Text.InterpolatedString.Perl6   (qc)
 
 -- |Type that contains one expression like a + b = c; c + d = e;
 data Job v x = Job
-        { tasks   :: [[(Bool, v)]]
-        , current :: [[(Bool, v)]]
-        , func    :: F v x
-        , calcEnd :: Bool
+        { tasks   :: [[(Bool, v)]] -- ^contains expressions to eval (c + d = e)
+        , current :: [[(Bool, v)]] -- ^contain current expressions (a + b = c)
+        , func    :: F v x -- ^func of this expression
+        , calcEnd :: Bool -- ^flag for right output timings (indicates when evaluation ended)
         }
     deriving (Eq, Show)
 
