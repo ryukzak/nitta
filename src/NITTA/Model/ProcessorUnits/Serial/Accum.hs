@@ -154,7 +154,7 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
         d@EndpointSt{ epRole=Target v, epAt }
         | not (null tasks) && toTarget tasks
         = let
-                job@Job{ tasks=newModel, current = (((neg, _):_):_) } = endpointDecisionJob j v
+                job@Job{ tasks=tasks', current = (((neg, _):_):_) } = endpointDecisionJob j v
                 sel = if isInit then Init neg else Load neg
                 (newEndpoints, process_') = runSchedule pu $ do
                     updateTick (sup epAt)
@@ -163,7 +163,7 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                 { process_=process_'
                 , currentWork = Just(t, job { calcEnd = False })
                 , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-                , isInit=null newModel
+                , isInit=null tasks'
                 }
 
     endpointDecision
@@ -171,10 +171,10 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
         d@EndpointSt{ epRole=Source v, epAt }
         | not (null current) && toSource tasks
         = let
-                job@Job{ tasks=newModel } = foldl endpointDecisionJob j (elems v)
+                job@Job{ tasks=tasks' } = foldl endpointDecisionJob j (elems v)
                 (newEndpoints, process_') = runSchedule pu $ do
                     endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt-1) Out
-                    when (null newModel) $ do
+                    when (null tasks') $ do
                         high <- scheduleFunction (t ... sup epAt) func
                         let low = endpoints ++ currentWorkEndpoints
                         establishVerticalRelations high low
@@ -183,9 +183,9 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     return endpoints
             in pu
                 { process_=process_'
-                , currentWork=if null newModel then Nothing else Just(tick, job{ calcEnd = True })
-                , currentWorkEndpoints=if null newModel then [] else newEndpoints ++ currentWorkEndpoints
-                , isInit=null newModel
+                , currentWork=if null tasks' then Nothing else Just(tick, job{ calcEnd = True })
+                , currentWorkEndpoints=if null tasks' then [] else newEndpoints ++ currentWorkEndpoints
+                , isInit=null tasks'
                 }
 
     endpointDecision pu@Accum{ work, currentWork=Nothing, process_ = Process { nextTick=tick } } d
