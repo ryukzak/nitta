@@ -401,11 +401,18 @@ instance ( UnitTag tag, VarValTime v x t
             Just (tag, _) = L.find
                 (\(_, f) -> not $ null $ S.intersection vs $ unionsMap outputs f)
                 $ M.assocs bnBinded
+            addBinded tag' buff = M.alter
+                (\case  Just binded -> Just $ buff : binded
+                        Nothing     -> Just [buff]
+                ) tag'
+
             bnRemains' = buffer : patch diff bnRemains
+            bnPus'     = M.adjust (patch diff) tag bnPus
+            bnBinded'  = addBinded tag buffer $ M.map (patch diff) bnBinded
         in bn
             { bnRemains=bnRemains'
-            , bnPus=M.adjust (patch diff) tag bnPus
-            , bnBinded=M.map (\fs -> map (patch diff) fs) bnBinded
+            , bnPus=bnPus'
+            , bnBinded=bnBinded'
             }
 
     refactorDecision bn@BusNetwork{ bnBinded, bnPus } bl@BreakLoop{} = let
