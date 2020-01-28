@@ -44,20 +44,34 @@ import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                (singleton, sup, (...))
 import           Text.InterpolatedString.Perl6   (qc)
 
--- |Type that contains one expression like a + b = c; c + d = e;
+-- |Type that contains expression:
+-- a + b = c is exression and it equals:
+--     [[(False, "a"), (False, "b")], [(False, "c")]]
+--
+-- a + b = c; d - e = f; is one expression too and it equals:
+--     [[(False, "a"), (False, "b")], [(False, "c")], [(False, "d"), (True, "d")], [(False, "f")]]
 data Job v x = Job
-        { tasks   :: [[(Bool, v)]] -- ^contains future expressions to eval (c + d = e)
-        , current :: [[(Bool, v)]] -- ^contain current expressions (a + b = c)
-        , func    :: F v x -- ^func of this expression
-        , calcEnd :: Bool -- ^flag for right output timings (indicates when evaluation ended)
+        { -- |Contains future parts expression to eval (c + d = e)
+          tasks   :: [[(Bool, v)]]
+          -- |Contain current parts expression (a + b = c)
+        , current :: [[(Bool, v)]]
+          -- |Func of this expression
+        , func    :: F v x
+          -- |Flag indicates when evaluation ended
+        , calcEnd :: Bool
         }
     deriving (Eq, Show)
 
 data Accum v x t = Accum
-        { work                 :: [Job v x]
+        { -- |List of jobs (expressions)
+          work                 :: [Job v x]
+          -- |Current job
         , currentWork          :: Maybe ( t, Job v x )
+          -- |Current endpoints
         , currentWorkEndpoints :: [ ProcessUid ]
+          -- |Process
         , process_             :: Process v x t
+          -- |Flag is indicated when new job starts
         , isInit               :: Bool
         }
 

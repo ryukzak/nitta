@@ -331,7 +331,7 @@ instance ( UnitTag tag, VarValTime v x t
     bindDecision bn@BusNetwork{ bnProcess=p@Process{..}, ..} (Bind fb puTitle)
         = bn
             { bnPus=M.adjust (bind fb) puTitle bnPus
-            , bnBinded=addFunc puTitle fb bnBinded
+            , bnBinded=registerBinding puTitle fb bnBinded
             , bnProcess=snd $ modifyProcess p $
                 addStep (singleton nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ show puTitle
             , bnRemains=filter (/= fb) bnRemains
@@ -401,7 +401,7 @@ instance ( UnitTag tag, VarValTime v x t
 
             bnRemains' = buffer : patch diff bnRemains
             bnPus'     = M.adjust (patch diff) tag bnPus
-            bnBinded'  = addFunc tag buffer $ M.map (patch diff) bnBinded
+            bnBinded'  = registerBinding tag buffer $ M.map (patch diff) bnBinded
         in bn
             { bnRemains=bnRemains'
             , bnPus=bnPus'
@@ -417,8 +417,8 @@ instance ( UnitTag tag, VarValTime v x t
 
 
 --------------------------------------------------------------------------
--- |Add function to Map tag [F v x] dict
-addFunc tag f dict = M.alter
+-- |Add binding to Map tag [F v x] dict
+registerBinding tag f dict = M.alter
     (\case  Just fs -> Just $ f : fs
             Nothing     -> Just [f]
     ) tag dict
