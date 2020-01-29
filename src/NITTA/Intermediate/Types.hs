@@ -98,7 +98,7 @@ data Lock v
         { locked :: v
         , lockBy :: v
         }
-    deriving ( Show, Eq, Generic )
+    deriving ( Show, Eq, Ord, Generic )
 
 
 -- |All input variables locks all output variables.
@@ -275,8 +275,6 @@ class Patch f diff where
 
 
 -- |Change set for patch.
---
--- FIXME: rename to change set
 data Changeset v = Changeset
         { changeI :: M.Map v v
           -- ^change set for input variables (one to one)

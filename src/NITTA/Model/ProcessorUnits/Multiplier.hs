@@ -143,7 +143,6 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
@@ -447,7 +446,7 @@ instance ( VarValTime v x t
         = pu
             { process_=process_'
               -- In case if not all variables what asked - remaining are saved.
-             , sources=sources'
+            , sources=sources'
               -- if all of works is done, then time when result is ready,
               -- current work and data transfering, what is done is the current function is reset.
             , doneAt=if null sources' then Nothing else doneAt

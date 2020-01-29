@@ -37,6 +37,7 @@ import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.ProcessorUnits.Fram
 import           NITTA.Model.ProcessorUnits.Multiplier
+import           NITTA.Model.ProcessorUnits.Serial.Accum
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
@@ -90,6 +91,52 @@ test_shift =
         ]
     ]
 
+test_acc =
+    [ algTestCase "alg_simple_acc" march
+        [ constant 5 ["a"]
+        , loop 1 "d" ["b", "c"]
+        , F $ accFromStr "+a + b + c = d"
+        ]
+    , algTestCase "alg_medium_acc" march
+        [ constant (-1) ["a"]
+        , loop 1 "i" ["b", "c", "e", "f", "g", "h"]
+        , F $ accFromStr "+a + b + c = d; +e + f -g -h = i;"
+        ]
+    , algTestCase "alg_hard_acc" march
+        [ constant (-10) ["a", "e", "k"]
+        , loop 1 "l" ["b", "c", "f", "g", "h", "j"]
+        , F $ accFromStr "+a + b + c = d; +e + f -g -h = i; -j + k = l = m"
+        ]
+    , unitCoSimulationTestCase "coSimulationTest0" accumDef [("a", 99)]
+        [
+        F $ accFromStr "+a = c;"
+        ]
+    , unitCoSimulationTestCase "coSimulationTest1" accumDef [("a", 1), ("b", 2)]
+        [
+        F $ accFromStr "+a +b = c;"
+        ]
+    , unitCoSimulationTestCase "coSimulationTest2" accumDef [("a", 1), ("b", 2), ("e", 4)]
+        [
+        F $ accFromStr "+a +b -e = c;"
+        ]
+    , unitCoSimulationTestCase "coSimulationTest3" accumDef [("a", 1), ("b", 2), ("e", 4)]
+        [
+        F $ accFromStr "+a +b -e = c = d;"
+        ]
+    , unitCoSimulationTestCase "coSimulationTest4" accumDef [("a", 1), ("b", 2), ("e", 4), ("f", -4)]
+        [
+        F $ accFromStr "+a +b = c = d; +e -f = g;"
+        ]
+    , unitCoSimulationTestCase "coSimulationTest5" accumDef [("a", 1), ("b", 2), ("e", 4), ("f", -4), ("j", 8)]
+        [
+        F $ accFromStr "+a +b = c = d; +e -f = g; +j = k"
+        ]
+    , isUnitSynthesisFinishTestProperty "acc_isFinish" accumDef fsGen
+    , coSimulationTestProperty "acc_coSimulation" accumDef fsGen
+    ]
+        where
+            accumDef = def :: Accum String Int Int
+            fsGen = algGen [F <$> (arbitrary :: Gen (Acc _ _))]
 
 test_multiplier =
     [ algTestCase "simple_mul" march

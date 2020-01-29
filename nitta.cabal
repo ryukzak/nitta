@@ -44,6 +44,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     NITTA.Intermediate.Functions
+                     , NITTA.Intermediate.Functions.Accum
                      , NITTA.Intermediate.Simulation
                      , NITTA.Intermediate.Types
                      , NITTA.Intermediate.Value
@@ -90,6 +91,7 @@ library
                      , NITTA.UIBackend.Timeline
                      , NITTA.UIBackend.VisJS
                      , NITTA.Utils
+                     , NITTA.Utils.CodeFormat
                      , NITTA.Utils.ProcessDescription
   build-depends:       aeson
                      , array
@@ -162,6 +164,7 @@ test-suite nitta-test
                      , NITTA.Test.ProcessorUnits
                      , NITTA.Test.Refactor
                      , NITTA.Test.Types
+                     , NITTA.Test.Locks
                      , NITTA.Test.LuaFrontend
                      , NITTA.Test.Utils
                      , NITTA.Test.CodeBlock
@@ -175,6 +178,8 @@ test-suite nitta-test
                      , MissingH
                      , nitta
                      , QuickCheck
+                     , split
+                     , regex-compat
                      , tasty
                      , tasty-hunit
                      , tasty-quickcheck

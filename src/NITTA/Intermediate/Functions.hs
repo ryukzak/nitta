@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
@@ -36,14 +38,16 @@ module NITTA.Intermediate.Functions
     -- *Input/Output
     , Receive(..), receive
     , Send(..), send
+    , module NITTA.Intermediate.Functions.Accum
     ) where
 
-import qualified Data.Bits                as B
+import qualified Data.Bits                          as B
 import           Data.Default
-import qualified Data.Map                 as M
-import           Data.Set                 (elems, fromList, union)
-import qualified Data.String.Utils        as S
+import qualified Data.Map                           as M
+import           Data.Set                           (elems, fromList, union)
+import qualified Data.String.Utils                  as S
 import           Data.Typeable
+import           NITTA.Intermediate.Functions.Accum
 import           NITTA.Intermediate.Types
 import           NITTA.Utils
 

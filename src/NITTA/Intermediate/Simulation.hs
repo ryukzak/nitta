@@ -74,7 +74,7 @@ simulateAlg' fromPrevCycle cycleCntx0 transmission alg = let
             ) [] fromPrevCycle
         simulateCycle cntx00 fs = foldl (\cntx f ->
             case simulate cntx f of
-                Left err    -> error $ "functional simulation error: " ++ err ++ " functino: " ++ show f
+                Left err    -> error $ "functional simulation error: " ++ err ++ " function: " ++ show f
                 Right cntx' -> cntx'
             ) cntx00 fs
 

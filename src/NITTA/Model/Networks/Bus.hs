@@ -331,10 +331,7 @@ instance ( UnitTag tag, VarValTime v x t
     bindDecision bn@BusNetwork{ bnProcess=p@Process{..}, ..} (Bind fb puTitle)
         = bn
             { bnPus=M.adjust (bind fb) puTitle bnPus
-            , bnBinded=M.alter
-                (\case  Just fbs -> Just $ fb : fbs
-                        Nothing  -> Just [fb]
-                ) puTitle bnBinded
+            , bnBinded=registerBinding puTitle fb bnBinded
             , bnProcess=snd $ modifyProcess p $
                 addStep (singleton nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ show puTitle
             , bnRemains=filter (/= fb) bnRemains
@@ -399,13 +396,16 @@ instance ( UnitTag tag, VarValTime v x t
     refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(ResolveDeadlock vs) = let
             (buffer, diff) = prepareBuffer r
             Just (tag, _) = L.find
-                (\(_, f) -> not $ null $ S.intersection vs $ unionsMap variables f)
+                (\(_, f) -> not $ null $ S.intersection vs $ unionsMap outputs f)
                 $ M.assocs bnBinded
+
             bnRemains' = buffer : patch diff bnRemains
+            bnPus'     = M.adjust (patch diff) tag bnPus
+            bnBinded'  = registerBinding tag buffer $ M.map (patch diff) bnBinded
         in bn
             { bnRemains=bnRemains'
-            , bnPus=M.adjust (patch diff) tag bnPus
-            , bnBinded=M.map (\fs -> map (patch diff) fs) bnBinded
+            , bnPus=bnPus'
+            , bnBinded=bnBinded'
             }
 
     refactorDecision bn@BusNetwork{ bnBinded, bnPus } bl@BreakLoop{} = let
@@ -417,6 +417,11 @@ instance ( UnitTag tag, VarValTime v x t
 
 
 --------------------------------------------------------------------------
+-- |Add binding to Map tag [F v x] dict
+registerBinding tag f dict = M.alter
+    (\case  Just fs -> Just $ f : fs
+            Nothing     -> Just [f]
+    ) tag dict
 
 programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 

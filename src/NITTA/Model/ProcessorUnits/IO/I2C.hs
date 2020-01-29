@@ -27,7 +27,7 @@ import           NITTA.Model.ProcessorUnits.IO.SimpleIO
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
-import           NITTA.Project.Snippets
+import           NITTA.Utils
 import           Text.InterpolatedString.Perl6          (qc)
 
 
@@ -62,14 +62,14 @@ instance IOConnected (I2C v x t) where
             }
         deriving ( Show )
 
-    inputPorts I2CMaster{..}  = []
-    inputPorts I2CSlave{..} = [ slaveSCL ]
+    inputPorts I2CMaster{..} = []
+    inputPorts I2CSlave{..}  = [ slaveSCL ]
 
-    outputPorts I2CMaster{..}  = [ masterSCL ]
-    outputPorts I2CSlave{..} = []
+    outputPorts I2CMaster{..} = [ masterSCL ]
+    outputPorts I2CSlave{..}  = []
 
     inoutPorts I2CMaster{..} = [ masterSDA ]
-    inoutPorts I2CSlave{..} = [ slaveSDA ]
+    inoutPorts I2CSlave{..}  = [ slaveSDA ]
 
 
 instance ( VarValTime v x t ) => TargetSystemComponent (I2C v x t) where
