@@ -28,7 +28,6 @@ module NITTA.Synthesis.Estimate
     ) where
 
 import           Data.Default
-import           Data.List                       (find)
 import qualified Data.List                       as L
 import qualified Data.Map                        as M
 import           Data.Maybe
@@ -47,6 +46,8 @@ import           NITTA.Utils
 import           Numeric.Interval                (inf, sup)
 
 
+-- |EstimationCntx contains some data about the node, for which we need to
+-- estimate all edges
 data EstimationCntx m tag v x t
     = EstimationCntx
         { unitModel                  :: m
@@ -55,7 +56,6 @@ data EstimationCntx m tag v x t
             -- ^number of binding options
         , numberOfDataflowOptions    :: Int
             -- ^number of dataflow options
-
         , alreadyBindedVariables     :: S.Set v
             -- ^a variable set of all already binded variables
         , bindWaves                  :: M.Map v Int
@@ -193,7 +193,7 @@ estimateParameters
         , pAlternative=fromIntegral $ length (bindingAlternative M.! f)
         , pAllowDataFlow=fromIntegral $ length $ unionsMap variables $ filter isTarget $ optionsAfterBind f tag unitModel
         , pRestless=fromMaybe 0 $ do
-            (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables unitModel
+            (_var, tcFrom) <- L.find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables unitModel
             return $ fromIntegral tcFrom
         , pOutputNumber=fromIntegral $ length $ S.elems $ outputs f
         , pPossibleDeadlock=f `S.member` possibleDeadlockBinds
