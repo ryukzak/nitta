@@ -44,21 +44,34 @@ import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                (singleton, sup, (...))
 import           Text.InterpolatedString.Perl6   (qc)
 
--- |Type that contains one expression like a + b = c; c + d = e;
+-- |Type that contains expression:
+-- a + b = c is exression and it equals:
+--     [[(False, "a"), (False, "b")], [(False, "c")]]
+--
+-- a + b = c; d - e = f; is one expression too and it equals:
+--     [[(False, "a"), (False, "b")], [(False, "c")], [(False, "d"), (True, "d")], [(False, "f")]]
 data Job v x = Job
-        { tasks   :: [[(Bool, v)]]
+        { -- |Contains future parts expression to eval (c + d = e)
+          tasks   :: [[(Bool, v)]]
+          -- |Contain current parts expression (a + b = c)
         , current :: [[(Bool, v)]]
+          -- |Func of this expression
         , func    :: F v x
+          -- |Flag indicates when evaluation ended
+        , calcEnd :: Bool
         }
     deriving (Eq, Show)
 
 data Accum v x t = Accum
-        { work                 :: [Job v x]
-        , doneAt               :: Maybe t
+        { -- |List of jobs (expressions)
+          work                 :: [Job v x]
+          -- |Current job
         , currentWork          :: Maybe ( t, Job v x )
+          -- |Current endpoints
         , currentWorkEndpoints :: [ ProcessUid ]
+          -- |Process
         , process_             :: Process v x t
-        , tick                 :: t
+          -- |Flag is indicated when new job starts
         , isInit               :: Bool
         }
 
@@ -66,11 +79,9 @@ instance (VarValTime v x t) => Show (Accum v x t) where
     show a = codeBlock [qc|"
         Accum:
             work                 = {work a}
-            doneAt               = {doneAt a}
             currentWork          = {currentWork a}
             currentWorkEndpoints = {currentWorkEndpoints a}
             process_             = {process_ a}
-            tick_                = {tick a}
             isInit               = {isInit a}|]
 
 
@@ -78,11 +89,9 @@ instance (VarValTime v x t) => Show (Accum v x t) where
 instance ( VarValTime v x t ) => Default (Accum v x t) where
     def = Accum
         { work=[]
-        , doneAt=Nothing
         , currentWork=Nothing
         , currentWorkEndpoints=[]
         , process_=def
-        , tick=def
         , isInit=True
         }
 
@@ -91,7 +100,7 @@ setRemain f
     | otherwise                = error "Error! Function is not Acc"
 
 
-tryBindJob f = Job{ tasks = functionModel, current = [], func = f }
+tryBindJob f = Job{ tasks = functionModel, current = [], func = f, calcEnd = False}
     where
         functionModel = concatMap (\(push, pull) -> [push, map (\x -> (False, x)) pull]) (setRemain f)
 
@@ -136,50 +145,50 @@ instance ( VarValTime v x t, Num x ) => ProcessorUnit (Accum v x t) v x t where
 
     process = process_
 
-    setTime t pu@Accum{} = pu{ tick=t }
+    setTime t pu@Accum{} = pu{ process_ = (process_ pu) { nextTick = t } }
 
 
 instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
-    endpointOptions Accum{ currentWork = Just (_, a@Job {tasks}), tick }
+    endpointOptions Accum{ currentWork = Just (_, a@Job { tasks, calcEnd }), process_ = Process { nextTick=tick } }
         | toTarget tasks = targets
         | toSource tasks = sources
             where
                 targets = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick+1 ... maxBound) (singleton 1)) (endpointOptionsJob a)
-                sources = [ EndpointSt (Source $ fromList (endpointOptionsJob a) ) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
+                sources = [ EndpointSt (Source $ fromList (endpointOptionsJob a) ) $ TimeConstrain (max tick (tickSource calcEnd) ... maxBound) (1 ... maxBound) ]
+                tickSource True = tick+1
+                tickSource _    = tick+3
 
-    endpointOptions p@Accum{ work, currentWork = Nothing, tick } =
-        concatMap (\a -> endpointOptions p{ currentWork = Just (tick + 1, a) }) work
+    endpointOptions p@Accum{ work, currentWork = Nothing, process_ = Process { nextTick=tick } } =
+        concatMap (\a -> endpointOptions p{ currentWork = Just (tick, a) }) work
 
     endpointOptions _ = error "Error in matching in endpointOptions function"
 
-    endpointDecision pu@Accum{ currentWork=Just (t, j@Job {tasks}), currentWorkEndpoints, isInit } d@EndpointSt{ epRole=Target v, epAt }
+    endpointDecision
+        pu@Accum{ currentWork=Just (t, j@Job {tasks}), currentWorkEndpoints, isInit }
+        d@EndpointSt{ epRole=Target v, epAt }
         | not (null tasks) && toTarget tasks
         = let
-                job@Job{ tasks=newModel, current = (((neg, _):_):_) } = endpointDecisionJob j v
+                job@Job{ tasks=tasks', current = (((neg, _):_):_) } = endpointDecisionJob j v
                 sel = if isInit then Init neg else Load neg
                 (newEndpoints, process_') = runSchedule pu $ do
                     updateTick (sup epAt)
                     scheduleEndpoint d $ scheduleInstruction epAt sel
             in pu
                 { process_=process_'
-                , currentWork = Just(t, job)
+                , currentWork = Just(t, job { calcEnd = False })
                 , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-                , doneAt=if null newModel
-                    then Just $ sup epAt + 3
-                    else Nothing
-                , tick=sup epAt
-                , isInit=null newModel
+                , isInit=null tasks'
                 }
 
     endpointDecision
-        pu@Accum{ currentWork=Just (t, j@Job{ tasks, current, func }), currentWorkEndpoints, doneAt }
+        pu@Accum{ currentWork=Just (t, j@Job{ tasks, current, func }), currentWorkEndpoints, process_ = Process { nextTick=tick } }
         d@EndpointSt{ epRole=Source v, epAt }
         | not (null current) && toSource tasks
         = let
-                job@Job{ tasks=newModel } = foldl endpointDecisionJob j (elems v)
+                job@Job{ tasks=tasks' } = foldl endpointDecisionJob j (elems v)
                 (newEndpoints, process_') = runSchedule pu $ do
                     endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt-1) Out
-                    when (null newModel) $ do
+                    when (null tasks') $ do
                         high <- scheduleFunction (t ... sup epAt) func
                         let low = endpoints ++ currentWorkEndpoints
                         establishVerticalRelations high low
@@ -188,16 +197,14 @@ instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                     return endpoints
             in pu
                 { process_=process_'
-                , doneAt=if null newModel then Nothing else doneAt
-                , currentWork=if null newModel then Nothing else Just(t, job)
-                , currentWorkEndpoints=if null newModel then [] else newEndpoints ++ currentWorkEndpoints
-                , tick=sup epAt
-                , isInit=null newModel
+                , currentWork=if null tasks' then Nothing else Just(tick, job{ calcEnd = True })
+                , currentWorkEndpoints=if null tasks' then [] else newEndpoints ++ currentWorkEndpoints
+                , isInit=null tasks'
                 }
 
-    endpointDecision pu@Accum{ work, currentWork=Nothing, tick } d
+    endpointDecision pu@Accum{ work, currentWork=Nothing, process_ = Process { nextTick=tick } } d
         | Just job <- getJob work
-        = endpointDecision pu{ work = work \\ [job], currentWork = Just (tick+1, job), isInit = True } d
+        = endpointDecision pu{ work = work \\ [job], currentWork = Just (tick, job {calcEnd = False}), isInit = True } d
             where
                 getJob = find (\Job {func} -> d `isIn` func)
                 e `isIn` f = oneOf (variables e) `member` variables f
@@ -269,8 +276,13 @@ instance ( Var v ) => Locks (Accum v x t) v where
                 locks' Job{ current =[] } _ = []
                 locks' Job{ tasks=(m:ms), current =(r:_) } other =
                     [ Lock{ lockBy, locked }
-                    | locked <- concatMap (map snd) ms ++ concatMap (concatMap (map snd) . tasks) other
+                    | locked <- concatMap (map snd) ms
                     , lockBy <- map snd (m \\ r)
+                    ]
+                    ++
+                    [ Lock{ lockBy, locked }
+                    | locked <- concatMap (concatMap (map snd) . tasks) other
+                    , lockBy <- map snd (m ++ r)
                     ]
 
 

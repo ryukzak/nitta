@@ -136,7 +136,7 @@ test_acc =
     ]
         where
             accumDef = def :: Accum String Int Int
-            fsGen = algGen [fmap F (arbitrary :: Gen (Acc _ _))]
+            fsGen = algGen [F <$> (arbitrary :: Gen (Acc _ _))]
 
 test_multiplier =
     [ algTestCase "simple_mul" march
