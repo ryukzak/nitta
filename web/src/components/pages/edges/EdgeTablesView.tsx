@@ -47,7 +47,10 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
 
           textColumn("crit", (e: Edge) => String((e.parameters as BindingParam).pCritical), 50),
           textColumn("lock", (e: Edge) => String((e.parameters as BindingParam).pPossibleDeadlock), 50),
-          textColumn("wave", (e: Edge) => (e.parameters as BindingParam).pWave, 50),
+          textColumn("wave", (e: Edge) => {
+            let x = (e.parameters as BindingParam).pWave;
+              return x === undefined || x === null ? "null" : (x as number).toString()
+            }, 50),
           textColumn("outputs", (e: Edge) => (e.parameters as BindingParam).pOutputNumber, 70),
           textColumn("alt", (e: Edge) => (e.parameters as BindingParam).pAlternative, 50),
           textColumn("rest", (e: Edge) => (e.parameters as BindingParam).pRestless, 50),
