@@ -22,15 +22,16 @@ module NITTA.Project.Snippets
     , codeBlock, inline, codeLine
     ) where
 
-import qualified Data.String.Utils                as S
+import           Data.Maybe
+import qualified Data.String.Utils               as S
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Implementation
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           Safe                             (headDef, minimumDef)
-import           Text.InterpolatedString.Perl6    (qc)
+import           Safe                            (headDef, minimumMay)
+import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
 
 
@@ -55,7 +56,7 @@ codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
         isInline = S.startswith inlineMarker
         delInline = S.replace inlineMarker ""
 
-        minIndentCalc inp = minimumDef 0 spaces
+        minIndentCalc inp = fromMaybe 0 $ minimumMay spaces
             where
                 spaces = filter (> 0 ) $ map (length . takeWhile (== ' ')) inlines
                 inlines = filter (not . isInline) inp
