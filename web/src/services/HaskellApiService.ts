@@ -18,5 +18,6 @@ export const haskellApiService = {
   runTestBench: (nid: any, name: any) => api.getSynthesisByNIdTestBenchOutput(nid, name),
   getDebugOptions: (nid: any) => api.getSynthesisByNIdDebug(nid),
   allBindsAndRefsIO: (nid: string) => api.postSynthesisByNIdAllBindsAndRefsIO(nid),
-  getHistory: (nid: SelectedNodeId) => api.getSynthesisByNIdHistory(nid)
+  getHistory: (nid: SelectedNodeId) => api.getSynthesisByNIdHistory(nid),
+  getPath: (nid: SelectedNodeId) => api.getSynthesisByNIdPath(nid)
 };
