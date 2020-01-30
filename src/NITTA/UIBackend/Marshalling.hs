@@ -27,8 +27,8 @@ module NITTA.UIBackend.Marshalling
     , SynthesisNodeView
     , SynthesisDecisionView
     , DataflowEndpointView
-    , EdgeView
-    , TreeView
+    , NodeView, EdgeView
+    , TreeView, viewNodeTree
     ) where
 
 import           Control.Concurrent.STM
@@ -79,7 +79,7 @@ data SynthesisNodeView
 
 instance ToJSON SynthesisNodeView
 
-data TreeView a = NodeView
+data TreeView a = TreeNodeView
         { rootLabel :: a
         , subForest :: [ TreeView a ]
         }
@@ -88,29 +88,27 @@ data TreeView a = NodeView
 instance ( ToJSON a ) => ToJSON (TreeView a)
 
 
-instance ( UnitTag tag, VarValTime v x t
-        ) => Viewable (G Node tag v x t) (IO (TreeView SynthesisNodeView)) where
-    view Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
-        nodesM <- readTVarIO nEdges
-        nodes <- case nodesM of
-            Just ns -> mapM (view . eTarget) ns
-            Nothing -> return []
-        return NodeView
-            { rootLabel=SynthesisNodeView
-                { svNnid=nId
-                , svCntx=[]
-                , svIsComplete=nIsComplete
-                , svIsEdgesProcessed=isJust nodesM
-                , svDuration=fromEnum $ targetProcessDuration nModel
-                , svCharacteristic=maybe (read "NaN") eObjectiveFunctionValue nOrigin
-                , svOptionType=case nOrigin of
-                    Just Edge{ eOption=Binding{} }  -> "Bind"
-                    Just Edge{ eOption=Dataflow{} } -> "Transport"
-                    Just Edge{ eOption=Refactor{} } -> "Refactor"
-                    Nothing                         -> "-"
-                }
-            , subForest=nodes
+viewNodeTree Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
+    nodesM <- readTVarIO nEdges
+    nodes <- case nodesM of
+        Just ns -> mapM (viewNodeTree . eTarget) ns
+        Nothing -> return []
+    return TreeNodeView
+        { rootLabel=SynthesisNodeView
+            { svNnid=nId
+            , svCntx=[]
+            , svIsComplete=nIsComplete
+            , svIsEdgesProcessed=isJust nodesM
+            , svDuration=fromEnum $ targetProcessDuration nModel
+            , svCharacteristic=maybe (read "NaN") eObjectiveFunctionValue nOrigin
+            , svOptionType=case nOrigin of
+                Just Edge{ eOption=Binding{} }  -> "Bind"
+                Just Edge{ eOption=Dataflow{} } -> "Transport"
+                Just Edge{ eOption=Refactor{} } -> "Refactor"
+                Nothing                         -> "-"
             }
+        , subForest=nodes
+        }
 
 
 
@@ -157,6 +155,29 @@ instance ( Eq v, Hashable v ) => Viewable (SynthesisStatement tag v x tp) (Synth
             $ HM.fromList $ M.assocs dfTargets
         }
     view (Refactor r) = RefactorView r
+
+
+
+data NodeView tag v x t
+    = NodeView
+        { nvId         :: NId
+        --, nvModel      :: ModelState (BusNetwork tag v x t) v x
+        , nvIsComplete :: Bool
+        , nvOrigin     :: Maybe (EdgeView tag v x t)
+        }
+    deriving ( Generic )
+
+instance ( VarValTimeJSON v x t, Hashable v, ToJSON tag ) => ToJSON (NodeView tag v x t)
+
+instance ( VarValTimeJSON v x t, Hashable v
+         ) => Viewable (G Node tag v x t) (NodeView tag v x t) where
+    view Node{ nId, nOrigin, nIsComplete }
+        = NodeView
+            { nvId=nId
+            --, nvModel=nModel
+            , nvIsComplete=nIsComplete
+            , nvOrigin=fmap view nOrigin
+            }
 
 
 

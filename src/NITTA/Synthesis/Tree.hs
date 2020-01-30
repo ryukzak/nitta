@@ -39,7 +39,7 @@ wrong steps.
 module NITTA.Synthesis.Tree
     ( -- *Synthesis graph
       NId(..), G
-    , Node(..), mkRootNodeIO, getNodeIO
+    , Node(..), mkRootNodeIO, getNodeIO, getNodePathIO
     , Edge(..), getEdgesIO, getPositiveEdgesIO, getSynthesisHistoryIO
       -- *Utils
     , isSynthesisFinish
@@ -215,6 +215,15 @@ getSynthesisHistoryIO node nId@(NId (i:is)) = do
 
 getSynthesisHistoryIO' Node{ nOrigin=Nothing }                = []
 getSynthesisHistoryIO' Node{ nOrigin=Just Edge{ eDecision }, nId } = [ ( nId, eDecision ) ]
+
+
+-- |Get list of all nodes from root to selected.
+getNodePathIO node (NId []) = return [ node ]
+getNodePathIO node nId@(NId (i:is)) = do
+    edges <- getEdgesIO node
+    unless (i < length edges) $ error $ "getNode - wrong nId: " ++ show nId
+    nodes <- getNodePathIO (eTarget $ edges !! i) (NId is)
+    return $ node : nodes
 
 
 -- |Is the last decision repeated? If yes - @Just n@, where n how many steps

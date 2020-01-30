@@ -55,7 +55,7 @@ type SynthesisAPI tag v x t
     :<|> "synthesis" :> Capture "nId" NId :> WithSynthesis tag v x t
 
 synthesisServer root
-    =    liftIO ( view root )
+    =    liftIO ( viewNodeTree root )
     :<|> \nId -> withSynthesis root nId
 
 
@@ -67,6 +67,7 @@ type WithSynthesis tag v x t
     :<|> "timelines" :> Get '[JSON] (ProcessTimelines t)
     :<|> "debug" :> Get '[JSON] (Debug tag v t)
     :<|> "history" :> Get '[JSON] [( NId, SynthesisDecisionView tag v x (Interval t) )]
+    :<|> "path" :> Get '[JSON] [NodeView tag v x t]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] (TestbenchReport v x)
     :<|> SimpleCompilerAPI tag v x t
@@ -78,6 +79,7 @@ withSynthesis root nId
     :<|> liftIO ( processTimelines . process . mUnit . nModel <$> getNodeIO root nId )
     :<|> liftIO ( debug root nId )
     :<|> liftIO ( map view <$> getSynthesisHistoryIO root nId )
+    :<|> liftIO ( map view <$> getNodePathIO root nId )
     :<|> liftIO ( algToVizJS . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
