@@ -27,11 +27,11 @@ module NITTA.UIBackend.VisJS
     ) where
 
 import           Data.Aeson
-import qualified Data.Set                     as S
-import qualified Data.String.Utils            as S
+import qualified Data.Set                 as S
+import qualified Data.String.Utils        as S
 import           GHC.Generics
-import qualified NITTA.Intermediate.Types     as F
-import           Prelude                      hiding (id)
+import qualified NITTA.Intermediate.Types as F
+import           Prelude                  hiding (id)
 
 
 type VisJS = GraphStructure GraphEdge
