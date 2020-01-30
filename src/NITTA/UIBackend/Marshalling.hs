@@ -129,7 +129,11 @@ instance ( ToJSON tp, ToJSON tag ) => ToJSON (DataflowEndpointView tag tp)
 
 
 data SynthesisDecisionView tag v x tp
-    = BindingView{ function :: String, pu :: tag }
+    = BindingView
+      { function :: String
+      , pu       :: tag
+      , vars     :: [ String ]
+      }
     | DataflowView
         { source  :: DataflowEndpointView tag tp
         , targets :: HM.HashMap v (Maybe (DataflowEndpointView tag tp))
@@ -140,14 +144,19 @@ data SynthesisDecisionView tag v x tp
 instance ( Show x, Show v, ToJSON v, ToJSONKey v, ToJSON tp, ToJSON tag
         ) => ToJSON (SynthesisDecisionView tag v x tp)
 
-instance ( Eq v, Hashable v
+instance ( Var v, Hashable v
          ) => Viewable
              ( NId, SynthesisStatement tag v x tp )
              ( NId, SynthesisDecisionView tag v x tp ) where
     view ( nid, st ) = ( nid, view st )
 
-instance ( Eq v, Hashable v ) => Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp) where
-    view (Binding f pu) = BindingView{ function=show f, pu }
+instance ( Var v, Hashable v
+         ) => Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp) where
+    view (Binding f pu) = BindingView
+        { function=show f
+        , pu
+        , vars=map (S.replace "\"" "" . show) $ S.elems $ variables f
+        }
     view Dataflow{ dfSource=(stag, st), dfTargets } = DataflowView
         { source=DataflowEndpointView stag st
         , targets=HM.map
