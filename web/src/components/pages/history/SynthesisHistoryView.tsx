@@ -112,7 +112,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
             let decision = n.nvOrigin!.decision;
             return (
               <>
-                {decision.tag === "BindingView" && decision.pu + " <- " + decision.function}
+                {decision.tag === "BindingView" && decision.pu + " <- " + decision.function.fvFun}
                 {decision.tag === "RefactorView" && decision.contents}
                 {decision.tag === "DataflowView" && JSON.stringify(decision)}
               </>

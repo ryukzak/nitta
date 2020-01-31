@@ -131,7 +131,7 @@ data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq, Show )
 instance ( Show x, Show v ) => Label (Loop v x) where
     label (Loop (X x) _ (I b)) = show x ++ "->" ++ show b
 loop :: ( Var v, Val x ) => x -> v -> [v] -> F v x
-loop x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
+loop x a bs = packF $ Loop (X x) (O $ fromList bs) $ I a
 isLoop f
     | Just Loop{} <- castF f = True
     | otherwise = False
@@ -185,7 +185,7 @@ instance Label (Reg v x) where label Reg{} = "r"
 instance ( Show v ) => Show (Reg v x) where
     show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = reg(" ++ show k1 ++ ")"
 reg :: ( Var v, Val x ) => v -> [v] -> F v x
-reg a b = F $ Reg (I a) (O $ fromList b)
+reg a b = packF $ Reg (I a) (O $ fromList b)
 
 instance ( Ord v ) => Function (Reg v x) v where
     inputs  (Reg a _b) = variables a
@@ -205,7 +205,7 @@ instance Label (Add v x) where label Add{} = "+"
 instance ( Show v ) => Show (Add v x) where
     show (Add (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " + " ++ show k2
 add :: ( Var v, Val x, Num x ) => v -> v -> [v] -> F v x
-add a b c = F $ Add (I a) (I b) $ O $ fromList c
+add a b c = packF $ Add (I a) (I b) $ O $ fromList c
 
 instance ( Ord v ) => Function (Add v x) v where
     inputs  (Add  a  b _c) = variables a `union` variables b
@@ -227,7 +227,7 @@ instance Label (Sub v x) where label Sub{} = "-"
 instance ( Show v ) => Show (Sub v x) where
     show (Sub (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " - " ++ show k2
 sub :: ( Var v, Val x, Num x ) => v -> v -> [v] -> F v x
-sub a b c = F $ Sub (I a) (I b) $ O $ fromList c
+sub a b c = packF $ Sub (I a) (I b) $ O $ fromList c
 
 instance ( Ord v ) => Function (Sub v x) v where
     inputs  (Sub  a  b _c) = variables a `union` variables b
@@ -249,7 +249,7 @@ instance Label (Multiply v x) where label Multiply{} = "*"
 instance ( Show v ) => Show (Multiply v x) where
     show (Multiply (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " * " ++ show k2
 multiply :: ( Var v, Val x, Num x ) => v -> v -> [v] -> F v x
-multiply a b c = F $ Multiply (I a) (I b) $ O $ fromList c
+multiply a b c = packF $ Multiply (I a) (I b) $ O $ fromList c
 
 instance ( Ord v ) => Function (Multiply v x) v where
     inputs  (Multiply  a  b _c) = variables a `union` variables b
@@ -276,12 +276,13 @@ instance ( Show v ) => Show (Division v x) where
         =  S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " / " ++ show k2 ++ "; "
         ++ S.join " = " (if null k4 then ["_"] else map show $ elems k4) ++ " = " ++ show k1 ++ " `mod` " ++ show k2
 division :: ( Var v, Val x, Integral x ) => v -> v -> [v] -> [v] -> F v x
-division d n q r = F Division
-    { denom=I d
-    , numer=I n
-    , quotient=O $ fromList q
-    , remain=O $ fromList r
-    }
+division d n q r = packF $ Division
+        { denom=I d
+        , numer=I n
+        , quotient=O $ fromList q
+        , remain=O $ fromList r
+        }
+
 
 instance ( Ord v ) => Function (Division v x) v where
     inputs  Division{ denom, numer } = variables denom `union` variables numer
@@ -304,7 +305,7 @@ instance ( Show x ) => Label (Constant v x) where label (Constant (X x) _) = sho
 instance ( Show v, Show x ) => Show (Constant v x) where
     show (Constant (X x) (O k)) = S.join " = " (map show $ elems k) ++ " = const(" ++ show x ++ ")"
 constant :: ( Var v, Val x ) => x -> [v] -> F v x
-constant x vs = F $ Constant (X x) $ O $ fromList vs
+constant x vs = packF $ Constant (X x) $ O $ fromList vs
 
 instance ( Show x, Eq x, Typeable x ) => Function (Constant v x) v where
     outputs (Constant _ o) = variables o
@@ -326,9 +327,9 @@ instance ( Show v ) => Show (ShiftLR v x) where
 instance ( Show v ) => Label (ShiftLR v x) where label = show
 
 shiftL :: ( Var v, Val x ) => v -> [v] -> F v x
-shiftL a b = F $ ShiftL (I a) $ O $ fromList b
+shiftL a b = packF $ ShiftL (I a) $ O $ fromList b
 shiftR :: ( Var v, Val x ) => v -> [v] -> F v x
-shiftR a b = F $ ShiftR (I a) $ O $ fromList b
+shiftR a b = packF $ ShiftR (I a) $ O $ fromList b
 
 instance ( Ord v ) => Function (ShiftLR v x) v where
     outputs (ShiftL i o) = variables i `union` variables o
@@ -352,7 +353,7 @@ instance ( Var v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
 newtype Send v x = Send (I v) deriving ( Typeable, Eq, Show )
 instance Label (Send v x) where label Send{} = "send"
 send :: ( Var v, Val x ) => v -> F v x
-send a = F $ Send $ I a
+send a = packF $ Send $ I a
 instance ( Ord v ) => Function (Send v x) v where
     inputs (Send i) = variables i
 instance ( Ord v ) => Patch (Send v x) (v, v) where
@@ -365,7 +366,7 @@ instance FunctionSimulation (Send v x) v x where
 newtype Receive v x = Receive (O v) deriving ( Typeable, Eq, Show )
 instance Label (Receive v x) where label Receive{} = "receive"
 receive :: ( Var v, Val x ) => [v] -> F v x
-receive a = F $ Receive $ O $ fromList a
+receive a = packF $ Receive $ O $ fromList a
 instance ( Ord v ) => Function (Receive v x) v where
     outputs (Receive o) = variables o
 instance ( Ord v ) => Patch (Receive v x) (v, v) where

@@ -30,7 +30,7 @@ type EdgesProps = {
 export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
   const appContext = React.useContext(AppContext) as IAppContext;
   const style = {
-    fontWeight: 600,
+    fontWeight: 600
   };
 
   return (
@@ -42,22 +42,26 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
           nidColumn(appContext.selectNode),
           objectiveColumn(),
 
-          textColumn("function", (e: Edge) => (e.decision as Binding).function),
+          textColumn("function", (e: Edge) => (e.decision as Binding).function.fvFun),
           textColumn("pu", (e: Edge) => (e.decision as Binding).pu, 50),
 
           textColumn("crit", (e: Edge) => String((e.parameters as BindingParam).pCritical), 50),
           textColumn("lock", (e: Edge) => String((e.parameters as BindingParam).pPossibleDeadlock), 50),
-          textColumn("wave", (e: Edge) => {
-            let x = (e.parameters as BindingParam).pWave;
-              return x === undefined || x === null ? "null" : (x as number).toString()
-            }, 50),
+          textColumn(
+            "wave",
+            (e: Edge) => {
+              let x = (e.parameters as BindingParam).pWave;
+              return x === undefined || x === null ? "null" : (x as number).toString();
+            },
+            50
+          ),
           textColumn("outputs", (e: Edge) => (e.parameters as BindingParam).pOutputNumber, 70),
           textColumn("alt", (e: Edge) => (e.parameters as BindingParam).pAlternative, 50),
           textColumn("rest", (e: Edge) => (e.parameters as BindingParam).pRestless, 50),
 
           textColumn("newDF", (e: Edge) => (e.parameters as BindingParam).pAllowDataFlow, 70),
           textColumn("newBind", (e: Edge) => (e.parameters as BindingParam).pNumberOfBindedFunctions, 70),
-          textColumn("|inputs|", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs, 70),
+          textColumn("|inputs|", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs, 70)
         ]}
       />
       <Table
@@ -67,12 +71,20 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
           nidColumn(appContext.selectNode),
           objectiveColumn(),
           textColumn("description", (e: Edge) => JSON.stringify((e.decision as Refactor).contents)),
-          textColumn("pNumberOfLockedVariables", (e: Edge) => (e.parameters as RefactorParam).pNumberOfLockedVariables, 50),
+          textColumn(
+            "pNumberOfLockedVariables",
+            (e: Edge) => (e.parameters as RefactorParam).pNumberOfLockedVariables,
+            50
+          ),
           textColumn("pBufferCount", (e: Edge) => (e.parameters as RefactorParam).pBufferCount, 50),
-          textColumn("pNStepBackRepeated", (e: Edge) => {
-            let n = (e.parameters as RefactorParam).pNStepBackRepeated;
-            return n === undefined || n === null ? "null" : (n as number).toString()
-          }, 50)
+          textColumn(
+            "pNStepBackRepeated",
+            (e: Edge) => {
+              let n = (e.parameters as RefactorParam).pNStepBackRepeated;
+              return n === undefined || n === null ? "null" : (n as number).toString();
+            },
+            50
+          )
         ]}
       />
       <Table
@@ -103,7 +115,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
           textColumn("not transferable input", (e: Edge) =>
             JSON.stringify((e.parameters as DataflowParam).pNotTransferableInputs)
           ),
-          textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime)),
+          textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime))
         ]}
       />
       <Table

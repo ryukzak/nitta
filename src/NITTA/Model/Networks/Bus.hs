@@ -409,10 +409,11 @@ instance ( UnitTag tag, VarValTime v x t
             }
 
     refactorDecision bn@BusNetwork{ bnBinded, bnPus } bl@BreakLoop{} = let
-            Just (puTag, puBinded) = L.find (elem (F $ recLoop bl) . snd) $ M.assocs bnBinded
+            Just (puTag, bindedToPU) = L.find (elem (recLoop bl) . snd) $ M.assocs bnBinded
+            bindedToPU' = recLoopIn bl : recLoopOut bl : ( bindedToPU L.\\ [ recLoop bl ] )
         in bn
             { bnPus=M.adjust (flip refactorDecision bl) puTag bnPus
-            , bnBinded=M.insert puTag (( puBinded L.\\ [ F $ recLoop bl] ) ++ [ F $ recLoopOut bl, F $ recLoopIn bl ] ) bnBinded
+            , bnBinded=M.insert puTag bindedToPU' bnBinded
             }
 
 

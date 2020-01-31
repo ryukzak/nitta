@@ -27,7 +27,7 @@ module NITTA.UIBackend.Marshalling
     , SynthesisNodeView
     , SynthesisDecisionView
     , DataflowEndpointView
-    , NodeView, EdgeView
+    , NodeView, EdgeView, FView
     , TreeView, viewNodeTree
     ) where
 
@@ -112,11 +112,6 @@ viewNodeTree Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
 
 
 
-instance Viewable (F v x) String where
-    view = show
-
-
-
 data DataflowEndpointView tag tp
     = DataflowEndpointView
         { pu   :: tag
@@ -130,10 +125,10 @@ instance ( ToJSON tp, ToJSON tag ) => ToJSON (DataflowEndpointView tag tp)
 
 data SynthesisDecisionView tag v x tp
     = BindingView
-      { function :: String
-      , pu       :: tag
-      , vars     :: [ String ]
-      }
+        { function :: FView
+        , pu       :: tag
+        , vars     :: [ String ]
+        }
     | DataflowView
         { source  :: DataflowEndpointView tag tp
         , targets :: HM.HashMap v (Maybe (DataflowEndpointView tag tp))
@@ -153,7 +148,7 @@ instance ( Var v, Hashable v
 instance ( Var v, Hashable v
          ) => Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp) where
     view (Binding f pu) = BindingView
-        { function=show f
+        { function=view f
         , pu
         , vars=map (S.replace "\"" "" . show) $ S.elems $ variables f
         }
@@ -323,6 +318,18 @@ instance ( VarValTimeJSON v x t
 
 -- *Basic data
 instance ( ToJSON tag, ToJSON t ) => ToJSON (TaggedTime tag t)
+
+data FView = FView
+           { fvFun     :: String
+           , fvHistory :: [ String ]
+           }
+    deriving ( Generic )
+instance ToJSON FView
+instance Viewable (F v x) FView where
+    view F{ fun, funHistory } = FView
+        { fvFun=S.replace "\"" "" $ show fun
+        , fvHistory=map (S.replace "\"" "" . show) funHistory
+        }
 
 instance ( Show v ) => ToJSON (F v x) where
     toJSON = String . T.pack . show

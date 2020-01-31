@@ -54,6 +54,8 @@ data GraphStructure v = GraphStructure
 data NodeElement = NodeElement
         { id        :: Int
         , label     :: String
+        , function  :: String
+        , history   :: [ String ]
         , nodeColor :: String
         , nodeShape :: String
         , fontSize  :: String
@@ -106,16 +108,18 @@ algToVizJS fbs = let
                     inVertexes
 
 
-toVizJS (F.F f) = GraphStructure
+toVizJS F.F{ fun, funHistory } = GraphStructure
         { nodes=NodeElement
             { id=1
-            , label=S.replace "\"" "" $ F.label f
+            , label=S.replace "\"" "" $ F.label fun
+            , function=S.replace "\"" "" $ show fun
+            , history=map (S.replace "\"" "" . show) funHistory
             , nodeColor="#cbbeb5"
             , nodeShape="box"
             , fontSize="20"
             , nodeSize="30"
             } : []
-        , edges=mkEdges InVertex (F.inputs f) ++ mkEdges OutVertex (F.outputs f)
+        , edges=mkEdges InVertex (F.inputs fun) ++ mkEdges OutVertex (F.outputs fun)
         }
     where
         mkEdges t = map ( \v -> GraphVertex t (F.label v) 1 ) . S.elems

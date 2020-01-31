@@ -186,7 +186,7 @@ descent desc                = desc
 
 instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show (CADStep s)                 = s
-    show (FStep (F f))               = show f
+    show (FStep F{ fun })            = show fun
     show (EndpointRoleStep eff)      = show eff
     show (InstructionStep instr)     = show instr
     show NestedStep{ nTitle, nStep } = S.replace "\"" "" (show nTitle) ++ "." ++ show nStep

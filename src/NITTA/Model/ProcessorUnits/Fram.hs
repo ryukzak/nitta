@@ -77,7 +77,7 @@ instance ( Default t, Default x
 instance ( VarValTime v x t
         ) => WithFunctions (Fram v x t) (F v x) where
     functions Fram{ remainRegs, memory }
-        = map (F . fst) remainRegs ++ concatMap functions (A.elems memory)
+        = map (packF . fst) remainRegs ++ concatMap functions (A.elems memory)
 
 instance ( VarValTime v x t
         ) => Variables (Fram v x t) v where
@@ -254,20 +254,20 @@ instance ( VarValTime v x t ) => RefactorProblem (Fram v x t) v x where
     refactorDecision fram@Fram{ memory } bl@BreakLoop{ loopO } = let
             Just ( addr, cell@Cell{ history, job=Just Job{ binds } } )
                 = L.find (\case
-                    (_, Cell{job=Just Job{ function } }) -> function == F (recLoop bl)
+                    (_, Cell{job=Just Job{ function } }) -> function == recLoop bl
                     _ -> False
                     ) $ A.assocs memory
             ((iPid, oPid), process_) = runSchedule fram $ do
                 revoke <- scheduleFunctionRevoke $ recLoop bl
-                f1 <- scheduleFunctionBind $ F $ recLoopOut bl
-                f2 <- scheduleFunctionBind $ F $ recLoopIn bl
+                f1 <- scheduleFunctionBind $ recLoopOut bl
+                f2 <- scheduleFunctionBind $ recLoopIn bl
                 establishVerticalRelations binds (f1 ++ f2 ++ revoke)
                 return (f1, f2)
-            iJob = (defJob $ F $ recLoopOut bl){ binds=iPid, startAt=Just 0 }
-            oJob = (defJob $ F $ recLoopIn bl){ binds=oPid }
+            iJob = (defJob $ recLoopOut bl){ binds=iPid, startAt=Just 0 }
+            oJob = (defJob $ recLoopIn bl){ binds=oPid }
             cell' = cell
                 { job=Just iJob
-                , history=[ F $ recLoopOut bl, F $ recLoopIn bl ] ++ history
+                , history=[ recLoopOut bl, recLoopIn bl ] ++ history
                 , state=DoLoopSource (S.elems loopO) oJob
                 }
         in fram

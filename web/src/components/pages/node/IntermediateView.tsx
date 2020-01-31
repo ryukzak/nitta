@@ -2,7 +2,7 @@ import * as React from "react";
 import "react-table/react-table.css";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { Graphviz } from "graphviz-react";
-import { IGraphStructure, IGraphEdge } from "../../../gen/types";
+import { IGraphStructure, IGraphEdge, INodeElement } from "../../../gen/types";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { AxiosResponse, AxiosError } from "axios";
 import { NodeView } from "../../../gen/types";
@@ -39,6 +39,8 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
             return {
               id: index + 1,
               label: String(nodeData.label),
+              function: nodeData.function,
+              history: nodeData.history,
               nodeColor: "",
               nodeShape: "",
               fontSize: "",
@@ -60,10 +62,13 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
         let result: ProcessState = { bindeFuns: [], transferedVars: [] };
         response.data.forEach((n: Node) => {
           if (n.nvOrigin !== null && n.nvOrigin!.decision.tag === "DataflowView") {
-            Object.keys(n.nvOrigin!.decision.targets).forEach((v: string) => result.transferedVars.push(v));
+            let targets = n.nvOrigin!.decision.targets;
+            Object.keys(targets).forEach((v: string) => {
+              if (targets[v] !== null) result.transferedVars.push(v);
+            });
           }
           if (n.nvOrigin !== null && n.nvOrigin!.decision.tag === "BindingView") {
-            result.bindeFuns.push(n.nvOrigin!.decision.function);
+            result.bindeFuns.push(n.nvOrigin!.decision.function.fvFun, ...n.nvOrigin!.decision.function.fvHistory);
           }
         });
         setVarStatus(result);
@@ -102,6 +107,16 @@ function renderDotOptions(options: DotOptions) {
   return `[${result.join("; ")}]`;
 }
 
+function isFunctionBinded(binded: string[], node: INodeElement): boolean {
+  if (binded.indexOf(node.function) >= 0) {
+    return true;
+  }
+  for (let e of node.history) {
+    if (binded.indexOf(e) >= 0) return true;
+  }
+  return false;
+}
+
 function renderGraphJsonToDot(json: IGraphJson, state: ProcessState): string {
   let lines = [
     // "rankdir=LR"
@@ -114,7 +129,7 @@ function renderGraphJsonToDot(json: IGraphJson, state: ProcessState): string {
       // FIXME: incorrect work with function after Refactoring, should be fixed on
       renderDotOptions({
         label: node.label,
-        style: state.bindeFuns.indexOf(node.function) >= 0 ? "line" : "dashed"
+        style: isFunctionBinded(state.bindeFuns, node) ? "line" : "dashed"
       })
     );
   });

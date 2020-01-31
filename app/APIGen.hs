@@ -72,6 +72,7 @@ $(deriveTypeScript defaultOptions ''Refactor)
 $(deriveTypeScript defaultOptions ''Parameters)
 
 $(deriveTypeScript defaultOptions ''NId) -- in according to custom ToJSON instance, the real type description is hardcoded.
+$(deriveTypeScript defaultOptions ''FView)
 $(deriveTypeScript defaultOptions ''TreeView)
 $(deriveTypeScript defaultOptions ''SynthesisNodeView)
 
@@ -111,6 +112,7 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy Refactor)
             , getTypeScriptDeclarations (Proxy :: Proxy Parameters)
 
+            , getTypeScriptDeclarations (Proxy :: Proxy FView)
             , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
             , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
 
