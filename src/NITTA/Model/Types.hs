@@ -38,8 +38,8 @@ type Time t = ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, 
 -- |Time comstrain for processor activity.
 data TimeConstrain t
     = TimeConstrain
-        { tcAvailable :: Interval t -- ^Inclusive interval for
-        , tcDuration  :: Interval t -- ^ Замкнутый интервал допустимой длительности активности.
+        { tcAvailable :: Interval t -- ^Inclusive interval, when value available to transfer.
+        , tcDuration  :: Interval t -- ^Inclusive interval, possible for value transfers.
         } deriving ( Eq )
 
 instance ( Show t, Eq t, Bounded t ) => Show (TimeConstrain t) where
