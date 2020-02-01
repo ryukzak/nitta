@@ -83,7 +83,7 @@ $(deriveTypeScript defaultOptions ''NodeView)
 $(deriveTypeScript defaultOptions ''EdgeView)
 
 $(deriveTypeScript defaultOptions ''GraphEdge)
-$(deriveTypeScript defaultOptions ''NodeElement)
+$(deriveTypeScript defaultOptions ''GraphNode)
 $(deriveTypeScript defaultOptions ''GraphStructure)
 
 $(deriveTypeScript defaultOptions ''IntervalView)
@@ -130,7 +130,7 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy EdgeView)
 
             , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
-            , getTypeScriptDeclarations (Proxy :: Proxy NodeElement)
+            , getTypeScriptDeclarations (Proxy :: Proxy GraphNode)
             , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)
 
             , getTypeScriptDeclarations (Proxy :: Proxy IntervalView)

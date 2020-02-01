@@ -1,11 +1,15 @@
 import * as React from "react";
 import "react-table/react-table.css";
-import { haskellApiService, UnitEndpoints } from "../../../services/HaskellApiService";
 import { Graphviz } from "graphviz-react";
-import { IGraphStructure, IGraphEdge, INodeElement } from "../../../gen/types";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { AxiosResponse, AxiosError } from "axios";
-import { NodeView, GraphStructure, NodeElement, GraphEdge } from "../../../gen/types";
+import { GraphNode, GraphEdge } from "../../../gen/types";
+import {
+  haskellApiService,
+  UnitEndpoints,
+  IntermediateGraph,
+  SynthesisNode
+} from "../../../services/HaskellApiService";
 
 import "./IntermediateView.scss";
 
@@ -15,15 +19,12 @@ import "./IntermediateView.scss";
 
 export interface IIntermediateViewProps {}
 
-export type IGraphJson = IGraphStructure<IGraphEdge>;
-type Node = NodeView<string, string, string, string>;
-
 interface ProcessState {
   bindeFuns: string[];
   transferedVars: string[];
 }
 
-interface EndpointStatus {
+interface Endpoints {
   sources: string[];
   targets: string[];
 }
@@ -31,18 +32,18 @@ interface EndpointStatus {
 export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
   const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
 
-  const [algorithmGraph, setAlgorithmGraph] = React.useState<IGraphJson | null>(null);
-  const [varStatus, setVarStatus] = React.useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
-  const [endpointSt, setEndpointSt] = React.useState<EndpointStatus>({ sources: [], targets: [] });
+  const [algorithmGraph, setAlgorithmGraph] = React.useState<IntermediateGraph | null>(null);
+  const [procState, setProcState] = React.useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
+  const [endpoints, setEndpoints] = React.useState<Endpoints>({ sources: [], targets: [] });
 
   // Updating graph
   React.useEffect(() => {
     haskellApiService
-      .simpleSynthesisGraph(selectedNodeId)
-      .then((response: AxiosResponse<GraphStructure<GraphEdge>>) => {
+      .getIntermediateAlg(selectedNodeId)
+      .then((response: AxiosResponse<IntermediateGraph>) => {
         const graphData = response.data;
-        const newGraph: IGraphJson = {
-          nodes: graphData.nodes.map((nodeData: NodeElement, index: number) => {
+        const newGraph: IntermediateGraph = {
+          nodes: graphData.nodes.map((nodeData: GraphNode, index: number) => {
             return {
               id: index + 1,
               label: String(nodeData.label),
@@ -54,20 +55,19 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
               nodeSize: ""
             };
           }),
-          edges: graphData.edges.map((edgeData: GraphEdge, index: number) => {
+          edges: graphData.edges.map((edgeData: GraphEdge) => {
             return edgeData;
           })
         };
-
         setAlgorithmGraph(newGraph);
       })
-      .catch((err: any) => console.error(err));
+      .catch((err: AxiosError) => console.error(err));
 
     haskellApiService
       .getPath(selectedNodeId)
-      .then((response: AxiosResponse<Node[]>) => {
+      .then((response: AxiosResponse<SynthesisNode[]>) => {
         let result: ProcessState = { bindeFuns: [], transferedVars: [] };
-        response.data.forEach((n: Node) => {
+        response.data.forEach((n: SynthesisNode) => {
           if (n.nvOrigin !== null && n.nvOrigin!.decision.tag === "DataflowView") {
             let targets = n.nvOrigin!.decision.targets;
             Object.keys(targets).forEach((v: string) => {
@@ -75,17 +75,18 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
             });
           }
           if (n.nvOrigin !== null && n.nvOrigin!.decision.tag === "BindingView") {
-            result.bindeFuns.push(n.nvOrigin!.decision.function.fvFun, ...n.nvOrigin!.decision.function.fvHistory);
+            let d = n.nvOrigin!.decision;
+            result.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
           }
         });
-        setVarStatus(result);
+        setProcState(result);
       })
       .catch((err: AxiosError) => console.log(err));
 
     haskellApiService
       .getEndpoints(selectedNodeId)
       .then((response: AxiosResponse<UnitEndpoints>) => {
-        let result: EndpointStatus = { sources: [], targets: [] };
+        let result: Endpoints = { sources: [], targets: [] };
         response.data.forEach(e => {
           let role = e.endpoints.epRole;
           if (role.tag === "Source") {
@@ -95,7 +96,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
             result.targets.push(role.contents);
           }
         });
-        setEndpointSt(result);
+        setEndpoints(result);
       })
       .catch((err: AxiosError) => console.log(err));
   }, [selectedNodeId]);
@@ -104,7 +105,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
     <div className="bg-light border edgeGraphContainer">
       {algorithmGraph && (
         <Graphviz
-          dot={renderGraphJsonToDot(algorithmGraph, varStatus, endpointSt)}
+          dot={renderGraphJsonToDot(algorithmGraph, procState, endpoints)}
           options={{ height: 399, width: "100%", zoom: true }}
         />
       )}
@@ -127,11 +128,10 @@ function renderDotOptions(options: DotOptions) {
     let representation: string = isString(options[key]) ? `"${options[key]}"` : options[key];
     result.push(`${key}=${representation}`);
   }
-
   return `[${result.join("; ")}]`;
 }
 
-function isFunctionBinded(binded: string[], node: INodeElement): boolean {
+function isFunctionBinded(binded: string[], node: GraphNode): boolean {
   if (binded.indexOf(node.function) >= 0) {
     return true;
   }
@@ -141,7 +141,7 @@ function isFunctionBinded(binded: string[], node: INodeElement): boolean {
   return false;
 }
 
-function renderGraphJsonToDot(json: IGraphJson, state: ProcessState, endpoints: EndpointStatus): string {
+function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endpoints: Endpoints): string {
   let lines = [
     // "rankdir=LR"
   ];
@@ -164,10 +164,10 @@ function renderGraphJsonToDot(json: IGraphJson, state: ProcessState, endpoints: 
       `${edge.from} -> ${edge.to} ` +
       renderDotOptions({
         label: edge.label,
-        style: isTransfered(edge.label) ? "line" : "dashed"
+        style: isTransfered(edge.label) ? "line" : "dashed",
         dir: "both",
         arrowhead: endpoints.targets.indexOf(edge.label) >= 0 || isTransfered(edge.label) ? "" : "o",
-        arrowtail: endpoints.sources.indexOf(edge.label) >= 0 || isTransfered(edge.label) ? "dot" : "odot",
+        arrowtail: endpoints.sources.indexOf(edge.label) >= 0 || isTransfered(edge.label) ? "dot" : "odot"
       })
     );
   });

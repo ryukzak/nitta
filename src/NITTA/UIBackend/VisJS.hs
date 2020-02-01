@@ -23,7 +23,7 @@ module NITTA.UIBackend.VisJS
     ( VisJS
     , algToVizJS
     , GraphStructure(..)
-    , NodeElement(..), GraphEdge(..)
+    , GraphNode(..), GraphEdge(..)
     ) where
 
 import           Data.Aeson
@@ -46,12 +46,12 @@ data GraphEdge = GraphEdge
     deriving ( Generic )
 
 data GraphStructure v = GraphStructure
-        { nodes :: [NodeElement]
-        , edges :: [v]
+        { nodes :: [ GraphNode ]
+        , edges :: [ v ]
         }
     deriving ( Generic )
 
-data NodeElement = NodeElement
+data GraphNode = GraphNode
         { id        :: Int
         , label     :: String
         , function  :: String
@@ -109,7 +109,7 @@ algToVizJS fbs = let
 
 
 toVizJS F.F{ fun, funHistory } = GraphStructure
-        { nodes=NodeElement
+        { nodes=GraphNode
             { id=1
             , label=S.replace "\"" "" $ F.label fun
             , function=S.replace "\"" "" $ show fun
@@ -127,5 +127,5 @@ toVizJS F.F{ fun, funHistory } = GraphStructure
 
 -- *JSON Marshaling
 instance ToJSON ( GraphStructure GraphEdge )
-instance ToJSON NodeElement
+instance ToJSON GraphNode
 instance ToJSON GraphEdge
