@@ -9,6 +9,7 @@
 {-# LANGUAGE OverloadedStrings      #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE StandaloneDeriving     #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
@@ -29,6 +30,7 @@ module NITTA.UIBackend.Marshalling
     , DataflowEndpointView
     , NodeView, EdgeView, FView
     , TreeView, viewNodeTree
+    , IntervalView, TimeConstrainView, UnitEndpointView(..)
     ) where
 
 import           Control.Concurrent.STM
@@ -221,6 +223,36 @@ instance ( ToJSON v, Show v, Show x ) => ToJSON (Refactor v x) where
 instance ( Time t ) => ToJSON (EndpointSt String (TimeConstrain t)) where
     toJSON EndpointSt{ epRole=Source vs, epAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epAt)
     toJSON EndpointSt{ epRole=Target v, epAt } = toJSON ("Target: " ++ v ++ " at " ++ show epAt)
+instance ( ToJSON v ) => ToJSON (EndpointRole v)
+
+
+data TimeConstrainView = TimeConstrainView
+        { vAvailable :: IntervalView
+        , vDuration  :: IntervalView
+        }
+    deriving ( Generic )
+
+instance ToJSON TimeConstrainView
+instance ( Show t, Bounded t ) => Viewable (TimeConstrain t) TimeConstrainView where
+    view TimeConstrain{ tcAvailable, tcDuration } = TimeConstrainView
+            { vAvailable=view tcAvailable
+            , vDuration=view tcDuration
+            }
+
+instance ( Show t, Bounded t
+        ) => Viewable (EndpointSt v (TimeConstrain t)) (EndpointSt v TimeConstrainView) where
+    view EndpointSt{ epRole, epAt } = EndpointSt{ epRole, epAt=view epAt }
+
+instance ( ToJSON v ) => ToJSON (EndpointSt v TimeConstrainView)
+
+
+data UnitEndpointView tag v = UnitEndpointView
+        { unitTag   :: tag
+        , endpoints :: EndpointSt v TimeConstrainView
+        }
+    deriving ( Generic )
+
+instance ( ToJSON tag, ToJSON v ) => ToJSON ( UnitEndpointView tag v )
 
 
 
@@ -360,5 +392,13 @@ instance ToJSON (FX m b) where
 
 
 -- *System
+data IntervalView = IntervalView String
+    deriving ( Generic )
+
+instance ( Show a, Bounded a ) => Viewable (Interval a) IntervalView where
+    view = IntervalView . S.replace (show (maxBound :: a)) "∞" . show
+
+instance ToJSON IntervalView
+
 instance ( Show a, Bounded a ) => ToJSON (Interval a) where
     toJSON = String . T.pack . S.replace (show (maxBound :: a)) "∞" . show

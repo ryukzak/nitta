@@ -1,11 +1,11 @@
 import * as React from "react";
 import "react-table/react-table.css";
-import { haskellApiService } from "../../../services/HaskellApiService";
+import { haskellApiService, UnitEndpoints } from "../../../services/HaskellApiService";
 import { Graphviz } from "graphviz-react";
 import { IGraphStructure, IGraphEdge, INodeElement } from "../../../gen/types";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { AxiosResponse, AxiosError } from "axios";
-import { NodeView } from "../../../gen/types";
+import { NodeView, GraphStructure, NodeElement, GraphEdge } from "../../../gen/types";
 
 import "./IntermediateView.scss";
 
@@ -17,9 +17,15 @@ export interface IIntermediateViewProps {}
 
 export type IGraphJson = IGraphStructure<IGraphEdge>;
 type Node = NodeView<string, string, string, string>;
+
 interface ProcessState {
   bindeFuns: string[];
   transferedVars: string[];
+}
+
+interface EndpointStatus {
+  sources: string[];
+  targets: string[];
 }
 
 export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
@@ -27,15 +33,16 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
 
   const [algorithmGraph, setAlgorithmGraph] = React.useState<IGraphJson | null>(null);
   const [varStatus, setVarStatus] = React.useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
+  const [endpointSt, setEndpointSt] = React.useState<EndpointStatus>({ sources: [], targets: [] });
 
   // Updating graph
   React.useEffect(() => {
     haskellApiService
       .simpleSynthesisGraph(selectedNodeId)
-      .then((response: any) => {
+      .then((response: AxiosResponse<GraphStructure<GraphEdge>>) => {
         const graphData = response.data;
         const newGraph: IGraphJson = {
-          nodes: graphData.nodes.map((nodeData: any, index: number) => {
+          nodes: graphData.nodes.map((nodeData: NodeElement, index: number) => {
             return {
               id: index + 1,
               label: String(nodeData.label),
@@ -47,7 +54,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
               nodeSize: ""
             };
           }),
-          edges: graphData.edges.map((edgeData: any, index: number) => {
+          edges: graphData.edges.map((edgeData: GraphEdge, index: number) => {
             return edgeData;
           })
         };
@@ -74,13 +81,30 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
         setVarStatus(result);
       })
       .catch((err: AxiosError) => console.log(err));
+
+    haskellApiService
+      .getEndpoints(selectedNodeId)
+      .then((response: AxiosResponse<UnitEndpoints>) => {
+        let result: EndpointStatus = { sources: [], targets: [] };
+        response.data.forEach(e => {
+          let role = e.endpoints.epRole;
+          if (role.tag === "Source") {
+            result.sources.push(...role.contents);
+          }
+          if (role.tag === "Target") {
+            result.targets.push(role.contents);
+          }
+        });
+        setEndpointSt(result);
+      })
+      .catch((err: AxiosError) => console.log(err));
   }, [selectedNodeId]);
 
   return (
     <div className="bg-light border edgeGraphContainer">
       {algorithmGraph && (
         <Graphviz
-          dot={renderGraphJsonToDot(algorithmGraph, varStatus)}
+          dot={renderGraphJsonToDot(algorithmGraph, varStatus, endpointSt)}
           options={{ height: 399, width: "100%", zoom: true }}
         />
       )}
@@ -117,7 +141,7 @@ function isFunctionBinded(binded: string[], node: INodeElement): boolean {
   return false;
 }
 
-function renderGraphJsonToDot(json: IGraphJson, state: ProcessState): string {
+function renderGraphJsonToDot(json: IGraphJson, state: ProcessState, endpoints: EndpointStatus): string {
   let lines = [
     // "rankdir=LR"
   ];
@@ -126,19 +150,24 @@ function renderGraphJsonToDot(json: IGraphJson, state: ProcessState): string {
     return (
       node.id +
       " " +
-      // FIXME: incorrect work with function after Refactoring, should be fixed on
       renderDotOptions({
         label: node.label,
         style: isFunctionBinded(state.bindeFuns, node) ? "line" : "dashed"
       })
     );
   });
+  function isTransfered(v: string): boolean {
+    return state.transferedVars.indexOf(v) >= 0;
+  }
   let edges = json.edges.map(edge => {
     return (
       `${edge.from} -> ${edge.to} ` +
       renderDotOptions({
         label: edge.label,
-        style: state.transferedVars.indexOf(edge.label) >= 0 ? "line" : "dashed"
+        style: isTransfered(edge.label) ? "line" : "dashed"
+        dir: "both",
+        arrowhead: endpoints.targets.indexOf(edge.label) >= 0 || isTransfered(edge.label) ? "" : "o",
+        arrowtail: endpoints.sources.indexOf(edge.label) >= 0 || isTransfered(edge.label) ? "dot" : "odot",
       })
     );
   });

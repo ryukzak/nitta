@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -27,6 +28,7 @@ import qualified Data.Map                 as M
 import           Data.Maybe               (fromMaybe)
 import qualified Data.Set                 as S
 import qualified Data.String.Utils        as S
+import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Types
 import           Numeric.Interval
@@ -37,6 +39,7 @@ data EndpointSt v tp
         { epRole :: EndpointRole v -- ^use processor unit as source or target of data
         , epAt   :: tp -- ^time of operation
         }
+    deriving ( Generic )
 
 instance Variables (EndpointSt v t) v where
     variables EndpointSt{ epRole } = variables epRole
@@ -58,7 +61,7 @@ class EndpointProblem u v t | u -> v t where
 data EndpointRole v
     = Source (S.Set v) -- ^get data from PU
     | Target v -- ^put data to PU
-    deriving ( Eq, Ord )
+    deriving ( Eq, Ord, Generic )
 
 instance {-# OVERLAPPABLE #-} ( Show v ) => Show (EndpointRole v) where
     show (Source vs) = "Source " ++ S.join "," (map show $ S.elems vs)

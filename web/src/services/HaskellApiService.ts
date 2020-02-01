@@ -1,7 +1,10 @@
 import api from "../gen/rest_api.js";
 import { SelectedNodeId } from "../components/app/AppContext.js";
+import { UnitEndpointView } from "../gen/types";
+import { AxiosPromise } from "axios";
 
 // TODO: argument typing
+export type UnitEndpoints = UnitEndpointView<string, string>[];
 
 export const haskellApiService = {
   getSynthesis: () => api.getSynthesis(),
@@ -17,6 +20,7 @@ export const haskellApiService = {
   obviousBindThread: (nid: any) => api.postSynthesisByNIdObviousBindThread(nid),
   runTestBench: (nid: any, name: any) => api.getSynthesisByNIdTestBenchOutput(nid, name),
   getDebugOptions: (nid: any) => api.getSynthesisByNIdDebug(nid),
+  getEndpoints: (nid: SelectedNodeId): AxiosPromise<UnitEndpoints> => api.getSynthesisByNIdEndpoints(nid),
   allBindsAndRefsIO: (nid: string) => api.postSynthesisByNIdAllBindsAndRefsIO(nid),
   getHistory: (nid: SelectedNodeId) => api.getSynthesisByNIdHistory(nid),
   getPath: (nid: SelectedNodeId) => api.getSynthesisByNIdPath(nid)
