@@ -22,9 +22,7 @@ Stability   : experimental
 module NITTA.Intermediate.Functions.Accum
     ( Acc(..), Action(..), Sign(..)
       -- * Acc to function
-    , acc
-      -- * Acc constructor
-    , accFromStr
+    , acc, accFromStr
       -- * Utils functions
     , pullActionGroups, pushActionGroups
     ) where
@@ -58,7 +56,10 @@ instance ( Show v ) => Show (Acc v x) where
 instance Label (Acc v x) where label Acc{} = "+"
 
 -- |Create function with type F of Acc
-acc lst = F $ Acc lst
+acc lst = packF $ Acc lst
+
+-- |Special function for generating Acc from string, examples in tests
+accFromStr desc = packF $ accGen $ toBlocksSplit desc
 
 isPull Pull{} = True
 isPull _      = False
@@ -104,9 +105,6 @@ accGen blocks = let
         pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_:name) -> name : buff ) [] lst
     in
         Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
-
--- |Special function for generating Acc from string, examples in tests
-accFromStr = accGen . toBlocksSplit
 
 -- |Get groups of pushs
 pushActionGroups lst = let

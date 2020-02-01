@@ -9,6 +9,7 @@
 {-# LANGUAGE OverloadedStrings      #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE StandaloneDeriving     #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
@@ -27,8 +28,9 @@ module NITTA.UIBackend.Marshalling
     , SynthesisNodeView
     , SynthesisDecisionView
     , DataflowEndpointView
-    , EdgeView
-    , TreeView
+    , NodeView, EdgeView, FView
+    , TreeView, viewNodeTree
+    , IntervalView, TimeConstrainView, UnitEndpointView(..)
     ) where
 
 import           Control.Concurrent.STM
@@ -79,7 +81,7 @@ data SynthesisNodeView
 
 instance ToJSON SynthesisNodeView
 
-data TreeView a = NodeView
+data TreeView a = TreeNodeView
         { rootLabel :: a
         , subForest :: [ TreeView a ]
         }
@@ -88,34 +90,27 @@ data TreeView a = NodeView
 instance ( ToJSON a ) => ToJSON (TreeView a)
 
 
-instance ( UnitTag tag, VarValTime v x t
-        ) => Viewable (G Node tag v x t) (IO (TreeView SynthesisNodeView)) where
-    view Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
-        nodesM <- readTVarIO nEdges
-        nodes <- case nodesM of
-            Just ns -> mapM (view . eTarget) ns
-            Nothing -> return []
-        return NodeView
-            { rootLabel=SynthesisNodeView
-                { svNnid=nId
-                , svCntx=[]
-                , svIsComplete=nIsComplete
-                , svIsEdgesProcessed=isJust nodesM
-                , svDuration=fromEnum $ targetProcessDuration nModel
-                , svCharacteristic=maybe (read "NaN") eObjectiveFunctionValue nOrigin
-                , svOptionType=case nOrigin of
-                    Just Edge{ eOption=Binding{} }  -> "Bind"
-                    Just Edge{ eOption=Dataflow{} } -> "Transport"
-                    Just Edge{ eOption=Refactor{} } -> "Refactor"
-                    Nothing                         -> "-"
-                }
-            , subForest=nodes
+viewNodeTree Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
+    nodesM <- readTVarIO nEdges
+    nodes <- case nodesM of
+        Just ns -> mapM (viewNodeTree . eTarget) ns
+        Nothing -> return []
+    return TreeNodeView
+        { rootLabel=SynthesisNodeView
+            { svNnid=nId
+            , svCntx=[]
+            , svIsComplete=nIsComplete
+            , svIsEdgesProcessed=isJust nodesM
+            , svDuration=fromEnum $ targetProcessDuration nModel
+            , svCharacteristic=maybe (read "NaN") eObjectiveFunctionValue nOrigin
+            , svOptionType=case nOrigin of
+                Just Edge{ eOption=Binding{} }  -> "Bind"
+                Just Edge{ eOption=Dataflow{} } -> "Transport"
+                Just Edge{ eOption=Refactor{} } -> "Refactor"
+                Nothing                         -> "-"
             }
-
-
-
-instance Viewable (F v x) String where
-    view = show
+        , subForest=nodes
+        }
 
 
 
@@ -131,7 +126,11 @@ instance ( ToJSON tp, ToJSON tag ) => ToJSON (DataflowEndpointView tag tp)
 
 
 data SynthesisDecisionView tag v x tp
-    = BindingView{ function :: String, pu :: tag }
+    = BindingView
+        { function :: FView
+        , pu       :: tag
+        , vars     :: [ String ]
+        }
     | DataflowView
         { source  :: DataflowEndpointView tag tp
         , targets :: HM.HashMap v (Maybe (DataflowEndpointView tag tp))
@@ -142,14 +141,19 @@ data SynthesisDecisionView tag v x tp
 instance ( Show x, Show v, ToJSON v, ToJSONKey v, ToJSON tp, ToJSON tag
         ) => ToJSON (SynthesisDecisionView tag v x tp)
 
-instance ( Eq v, Hashable v
+instance ( Var v, Hashable v
          ) => Viewable
              ( NId, SynthesisStatement tag v x tp )
              ( NId, SynthesisDecisionView tag v x tp ) where
     view ( nid, st ) = ( nid, view st )
 
-instance ( Eq v, Hashable v ) => Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp) where
-    view (Binding f pu) = BindingView{ function=show f, pu }
+instance ( Var v, Hashable v
+         ) => Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp) where
+    view (Binding f pu) = BindingView
+        { function=view f
+        , pu
+        , vars=map (S.replace "\"" "" . show) $ S.elems $ variables f
+        }
     view Dataflow{ dfSource=(stag, st), dfTargets } = DataflowView
         { source=DataflowEndpointView stag st
         , targets=HM.map
@@ -157,6 +161,29 @@ instance ( Eq v, Hashable v ) => Viewable (SynthesisStatement tag v x tp) (Synth
             $ HM.fromList $ M.assocs dfTargets
         }
     view (Refactor r) = RefactorView r
+
+
+
+data NodeView tag v x t
+    = NodeView
+        { nvId         :: NId
+        --, nvModel      :: ModelState (BusNetwork tag v x t) v x
+        , nvIsComplete :: Bool
+        , nvOrigin     :: Maybe (EdgeView tag v x t)
+        }
+    deriving ( Generic )
+
+instance ( VarValTimeJSON v x t, Hashable v, ToJSON tag ) => ToJSON (NodeView tag v x t)
+
+instance ( VarValTimeJSON v x t, Hashable v
+         ) => Viewable (G Node tag v x t) (NodeView tag v x t) where
+    view Node{ nId, nOrigin, nIsComplete }
+        = NodeView
+            { nvId=nId
+            --, nvModel=nModel
+            , nvIsComplete=nIsComplete
+            , nvOrigin=fmap view nOrigin
+            }
 
 
 
@@ -196,6 +223,36 @@ instance ( ToJSON v, Show v, Show x ) => ToJSON (Refactor v x) where
 instance ( Time t ) => ToJSON (EndpointSt String (TimeConstrain t)) where
     toJSON EndpointSt{ epRole=Source vs, epAt } = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epAt)
     toJSON EndpointSt{ epRole=Target v, epAt } = toJSON ("Target: " ++ v ++ " at " ++ show epAt)
+instance ( ToJSON v ) => ToJSON (EndpointRole v)
+
+
+data TimeConstrainView = TimeConstrainView
+        { vAvailable :: IntervalView
+        , vDuration  :: IntervalView
+        }
+    deriving ( Generic )
+
+instance ToJSON TimeConstrainView
+instance ( Show t, Bounded t ) => Viewable (TimeConstrain t) TimeConstrainView where
+    view TimeConstrain{ tcAvailable, tcDuration } = TimeConstrainView
+            { vAvailable=view tcAvailable
+            , vDuration=view tcDuration
+            }
+
+instance ( Show t, Bounded t
+        ) => Viewable (EndpointSt v (TimeConstrain t)) (EndpointSt v TimeConstrainView) where
+    view EndpointSt{ epRole, epAt } = EndpointSt{ epRole, epAt=view epAt }
+
+instance ( ToJSON v ) => ToJSON (EndpointSt v TimeConstrainView)
+
+
+data UnitEndpointView tag v = UnitEndpointView
+        { unitTag   :: tag
+        , endpoints :: EndpointSt v TimeConstrainView
+        }
+    deriving ( Generic )
+
+instance ( ToJSON tag, ToJSON v ) => ToJSON ( UnitEndpointView tag v )
 
 
 
@@ -294,6 +351,18 @@ instance ( VarValTimeJSON v x t
 -- *Basic data
 instance ( ToJSON tag, ToJSON t ) => ToJSON (TaggedTime tag t)
 
+data FView = FView
+           { fvFun     :: String
+           , fvHistory :: [ String ]
+           }
+    deriving ( Generic )
+instance ToJSON FView
+instance Viewable (F v x) FView where
+    view F{ fun, funHistory } = FView
+        { fvFun=S.replace "\"" "" $ show fun
+        , fvHistory=map (S.replace "\"" "" . show) funHistory
+        }
+
 instance ( Show v ) => ToJSON (F v x) where
     toJSON = String . T.pack . show
 
@@ -323,5 +392,13 @@ instance ToJSON (FX m b) where
 
 
 -- *System
+data IntervalView = IntervalView String
+    deriving ( Generic )
+
+instance ( Show a, Bounded a ) => Viewable (Interval a) IntervalView where
+    view = IntervalView . S.replace (show (maxBound :: a)) "∞" . show
+
+instance ToJSON IntervalView
+
 instance ( Show a, Bounded a ) => ToJSON (Interval a) where
     toJSON = String . T.pack . S.replace (show (maxBound :: a)) "∞" . show

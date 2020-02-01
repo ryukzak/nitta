@@ -51,10 +51,87 @@ import           NITTA.Intermediate.Functions.Accum
 import           NITTA.Intermediate.Types
 import           NITTA.Utils
 
+-- |Loop -- function for transfer data between computational cycles.
+-- Let see the simple example with the following implementation of the
+-- Fibonacci algorithm.
+--
+-- Data flow graph:
+--
+-- @
+--     +---------------------------------+
+--     |                                 |
+--     v                                 |
+-- +------+                          b2  |
+-- | Loop |      b1_1  +-----+    +------+
+-- +------+----+------>|     |    |
+--             | a1    | sum +----+
+-- +------+----------->|     |
+-- | Loop |    |       +-----+      b1_2
+-- +------+    +-------------------------+
+--     ^                                 |
+--     |                                 |
+--     +---------------------------------+
+-- @
+--
+-- Lua source code:
+--
+-- @
+-- function fib(a1, b1)
+--     b2 = a1 + b1
+--     fib(b1, b2)
+-- end
+-- fib(0, 1)
+-- @
+--
+-- Data flow defines computation for a single computational cycle. But
+-- a controller should repeat the algorithm infinite times, and
+-- usually, it is required to transfer data between cycles. `Loop`
+-- allows doing that. At first cycle, `Loop` function produces an
+-- initial value (`X x`), after that on each cycle `Loop` produces a
+-- variable value from the previous cycle, and consumes a new value at
+-- the end of the cycle.
+--
+-- Computational process:
+--
+-- @
+--          ][                 Cycle 1                 ][                Cycle 2                  ]
+--          ][                                         ][                                         ]
+-- initial  ][ ---+                          b2   +--- ][ ---+                          b2   +--- ]
+--  value   ][ op |      b1_1  +-----+    +------>| Lo ][ op |      b1_1  +-----+    +------>| Lo ]
+--  is a    ][ ---+----+------>|     |    |       +--- ][ ---+----+------>|     |    |       +--- ]
+-- part of  ][         |       | sum +----+            ][         |       | sum +----+            ]
+-- software ][ ---+----------->|     |            +--- ][ ---+----------->|     |            +--- ]
+--          ][ op |    |       +-----+     b1_2   | Lo ][ op |    |       +-----+      b1_2  | Lo ]
+--          ][ ---+    +------------------------->+--- ][ ---+    +------------------------->+--- ]
+--          ][                                         ][                                         ]
+-- @
+--
+-- Similation data:
+--
+-- +--------------+----+----+----+
+-- | Cycle number | a1 | b1 | b2 |
+-- +==============+====+====+====+
+-- | 1            | 0  | 1  | 1  |
+-- +--------------+----+----+----+
+-- | 2            | 1  | 1  | 2  |
+-- +--------------+----+----+----+
+-- | 3            | 1  | 2  | 3  |
+-- +--------------+----+----+----+
+-- | 4            | 2  | 3  | 5  |
+-- +--------------+----+----+----+
+--
+-- In practice, Loop function supported by Fram processor unit in the
+-- following way: Loop function should be prepared before execution by
+-- automatical refactor @BreakLoop@, which replace Loop by @LoopIn@
+-- and @LoopOut@.
+
+
+
 data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq, Show )
 instance ( Show x, Show v ) => Label (Loop v x) where
     label (Loop (X x) _ (I b)) = show x ++ "->" ++ show b
-loop x a bs = F $ Loop (X x) (O $ fromList bs) $ I a
+loop :: ( Var v, Val x ) => x -> v -> [v] -> F v x
+loop x a bs = packF $ Loop (X x) (O $ fromList bs) $ I a
 isLoop f
     | Just Loop{} <- castF f = True
     | otherwise = False
@@ -107,7 +184,8 @@ data Reg v x = Reg (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Reg v x) where label Reg{} = "r"
 instance ( Show v ) => Show (Reg v x) where
     show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = reg(" ++ show k1 ++ ")"
-reg a b = F $ Reg (I a) (O $ fromList b)
+reg :: ( Var v, Val x ) => v -> [v] -> F v x
+reg a b = packF $ Reg (I a) (O $ fromList b)
 
 instance ( Ord v ) => Function (Reg v x) v where
     inputs  (Reg a _b) = variables a
@@ -126,7 +204,8 @@ data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Add v x) where label Add{} = "+"
 instance ( Show v ) => Show (Add v x) where
     show (Add (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " + " ++ show k2
-add a b c = F $ Add (I a) (I b) $ O $ fromList c
+add :: ( Var v, Val x, Num x ) => v -> v -> [v] -> F v x
+add a b c = packF $ Add (I a) (I b) $ O $ fromList c
 
 instance ( Ord v ) => Function (Add v x) v where
     inputs  (Add  a  b _c) = variables a `union` variables b
@@ -147,7 +226,8 @@ data Sub v x = Sub (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Sub v x) where label Sub{} = "-"
 instance ( Show v ) => Show (Sub v x) where
     show (Sub (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " - " ++ show k2
-sub a b c = F $ Sub (I a) (I b) $ O $ fromList c
+sub :: ( Var v, Val x, Num x ) => v -> v -> [v] -> F v x
+sub a b c = packF $ Sub (I a) (I b) $ O $ fromList c
 
 instance ( Ord v ) => Function (Sub v x) v where
     inputs  (Sub  a  b _c) = variables a `union` variables b
@@ -168,7 +248,8 @@ data Multiply v x = Multiply (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Multiply v x) where label Multiply{} = "*"
 instance ( Show v ) => Show (Multiply v x) where
     show (Multiply (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " * " ++ show k2
-multiply a b c = F $ Multiply (I a) (I b) $ O $ fromList c
+multiply :: ( Var v, Val x, Num x ) => v -> v -> [v] -> F v x
+multiply a b c = packF $ Multiply (I a) (I b) $ O $ fromList c
 
 instance ( Ord v ) => Function (Multiply v x) v where
     inputs  (Multiply  a  b _c) = variables a `union` variables b
@@ -194,12 +275,14 @@ instance ( Show v ) => Show (Division v x) where
     show (Division (I k1) (I k2) (O k3) (O k4))
         =  S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " / " ++ show k2 ++ "; "
         ++ S.join " = " (if null k4 then ["_"] else map show $ elems k4) ++ " = " ++ show k1 ++ " `mod` " ++ show k2
-division d n q r = F Division
-    { denom=I d
-    , numer=I n
-    , quotient=O $ fromList q
-    , remain=O $ fromList r
-    }
+division :: ( Var v, Val x, Integral x ) => v -> v -> [v] -> [v] -> F v x
+division d n q r = packF $ Division
+        { denom=I d
+        , numer=I n
+        , quotient=O $ fromList q
+        , remain=O $ fromList r
+        }
+
 
 instance ( Ord v ) => Function (Division v x) v where
     inputs  Division{ denom, numer } = variables denom `union` variables numer
@@ -221,7 +304,8 @@ data Constant v x = Constant (X x) (O v) deriving ( Typeable, Eq )
 instance ( Show x ) => Label (Constant v x) where label (Constant (X x) _) = show x
 instance ( Show v, Show x ) => Show (Constant v x) where
     show (Constant (X x) (O k)) = S.join " = " (map show $ elems k) ++ " = const(" ++ show x ++ ")"
-constant x vs = F $ Constant (X x) $ O $ fromList vs
+constant :: ( Var v, Val x ) => x -> [v] -> F v x
+constant x vs = packF $ Constant (X x) $ O $ fromList vs
 
 instance ( Show x, Eq x, Typeable x ) => Function (Constant v x) v where
     outputs (Constant _ o) = variables o
@@ -242,8 +326,10 @@ instance ( Show v ) => Show (ShiftLR v x) where
     show (ShiftR (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1 ++ " >> 1"
 instance ( Show v ) => Label (ShiftLR v x) where label = show
 
-shiftL a b = F $ ShiftL (I a) $ O $ fromList b
-shiftR a b = F $ ShiftR (I a) $ O $ fromList b
+shiftL :: ( Var v, Val x ) => v -> [v] -> F v x
+shiftL a b = packF $ ShiftL (I a) $ O $ fromList b
+shiftR :: ( Var v, Val x ) => v -> [v] -> F v x
+shiftR a b = packF $ ShiftR (I a) $ O $ fromList b
 
 instance ( Ord v ) => Function (ShiftLR v x) v where
     outputs (ShiftL i o) = variables i `union` variables o
@@ -266,7 +352,8 @@ instance ( Var v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
 
 newtype Send v x = Send (I v) deriving ( Typeable, Eq, Show )
 instance Label (Send v x) where label Send{} = "send"
-send a = F $ Send $ I a
+send :: ( Var v, Val x ) => v -> F v x
+send a = packF $ Send $ I a
 instance ( Ord v ) => Function (Send v x) v where
     inputs (Send i) = variables i
 instance ( Ord v ) => Patch (Send v x) (v, v) where
@@ -278,7 +365,8 @@ instance FunctionSimulation (Send v x) v x where
 
 newtype Receive v x = Receive (O v) deriving ( Typeable, Eq, Show )
 instance Label (Receive v x) where label Receive{} = "receive"
-receive a = F $ Receive $ O $ fromList a
+receive :: ( Var v, Val x ) => [v] -> F v x
+receive a = packF $ Receive $ O $ fromList a
 instance ( Ord v ) => Function (Receive v x) v where
     outputs (Receive o) = variables o
 instance ( Ord v ) => Patch (Receive v x) (v, v) where

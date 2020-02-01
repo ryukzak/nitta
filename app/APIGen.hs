@@ -32,6 +32,7 @@ import           Data.Aeson
 import           Data.Aeson.TypeScript.TH
 import           Data.Proxy
 import qualified Data.String.Utils             as S
+import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.Types
 import           NITTA.Project.Parts.TestBench
@@ -72,16 +73,24 @@ $(deriveTypeScript defaultOptions ''Refactor)
 $(deriveTypeScript defaultOptions ''Parameters)
 
 $(deriveTypeScript defaultOptions ''NId) -- in according to custom ToJSON instance, the real type description is hardcoded.
+$(deriveTypeScript defaultOptions ''FView)
 $(deriveTypeScript defaultOptions ''TreeView)
 $(deriveTypeScript defaultOptions ''SynthesisNodeView)
 
 $(deriveTypeScript defaultOptions ''DataflowEndpointView)
 $(deriveTypeScript defaultOptions ''SynthesisDecisionView)
+$(deriveTypeScript defaultOptions ''NodeView)
 $(deriveTypeScript defaultOptions ''EdgeView)
 
 $(deriveTypeScript defaultOptions ''GraphEdge)
-$(deriveTypeScript defaultOptions ''NodeElement)
+$(deriveTypeScript defaultOptions ''GraphNode)
 $(deriveTypeScript defaultOptions ''GraphStructure)
+
+$(deriveTypeScript defaultOptions ''IntervalView)
+$(deriveTypeScript defaultOptions ''TimeConstrainView)
+$(deriveTypeScript defaultOptions ''EndpointRole)
+$(deriveTypeScript defaultOptions ''EndpointSt)
+$(deriveTypeScript defaultOptions ''UnitEndpointView)
 
 data HistoryStep tag v x tp = HistoryStep NId ( SynthesisDecisionView tag v x tp )
 $(deriveTypeScript defaultOptions ''HistoryStep)
@@ -110,17 +119,25 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy Refactor)
             , getTypeScriptDeclarations (Proxy :: Proxy Parameters)
 
+            , getTypeScriptDeclarations (Proxy :: Proxy FView)
             , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
             , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
 
             , getTypeScriptDeclarations (Proxy :: Proxy DataflowEndpointView)
             , getTypeScriptDeclarations (Proxy :: Proxy SynthesisDecisionView)
             , getTypeScriptDeclarations (Proxy :: Proxy HistoryStep)
+            , getTypeScriptDeclarations (Proxy :: Proxy NodeView)
             , getTypeScriptDeclarations (Proxy :: Proxy EdgeView)
 
             , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
-            , getTypeScriptDeclarations (Proxy :: Proxy NodeElement)
+            , getTypeScriptDeclarations (Proxy :: Proxy GraphNode)
             , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)
+
+            , getTypeScriptDeclarations (Proxy :: Proxy IntervalView)
+            , getTypeScriptDeclarations (Proxy :: Proxy TimeConstrainView)
+            , getTypeScriptDeclarations (Proxy :: Proxy EndpointRole)
+            , getTypeScriptDeclarations (Proxy :: Proxy EndpointSt)
+            , getTypeScriptDeclarations (Proxy :: Proxy UnitEndpointView)
             ]
     writeFile (joinPath [ opath, "types.ts" ])
         $ S.replace "type " "export type "           -- export all types

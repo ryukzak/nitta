@@ -28,7 +28,7 @@ module NITTA.Synthesis.Estimate
     ) where
 
 import           Data.Default
-import           Data.List                       (find)
+import qualified Data.List                       as L
 import qualified Data.Map                        as M
 import           Data.Maybe
 import qualified Data.Set                        as S
@@ -46,6 +46,8 @@ import           NITTA.Utils
 import           Numeric.Interval                (inf, sup)
 
 
+-- |EstimationCntx contains some data about the node, for which we need to
+-- estimate all edges
 data EstimationCntx m tag v x t
     = EstimationCntx
         { unitModel                  :: m
@@ -54,10 +56,9 @@ data EstimationCntx m tag v x t
             -- ^number of binding options
         , numberOfDataflowOptions    :: Int
             -- ^number of dataflow options
-
         , alreadyBindedVariables     :: S.Set v
             -- ^a variable set of all already binded variables
-        , waves                      :: M.Map v Int
+        , bindWaves                  :: M.Map v Int
             -- ^if algorithm will be represented as a graph, where nodes -
             -- variables of not binded functions, edges - casuality, wave is a
             -- minimal number of a step from an initial node to selected
@@ -82,17 +83,11 @@ data EstimationCntx m tag v x t
 --
 -- - a unit model;
 -- - how many synthesis step back require for decision duplicate.
-prepareEstimationCntx unitModel decisionDuplicateNStepBack = let
+prepareEstimationCntx unitModel@ModelState{ mUnit, mDataFlowGraph } decisionDuplicateNStepBack
+    = let
         opts = synthesisOptions unitModel
         bindableFunctions = [ f | (Binding f _) <- opts ]
 
-        mkWaves n pool lockedVars
-            | pool == S.empty = []
-            | pool `S.intersection` lockedVars == S.empty = zip (S.elems lockedVars) (repeat n)
-        mkWaves n pool lockedVars
-            = let currentWave = pool `S.intersection` lockedVars
-            in zip (S.elems currentWave) (repeat n)
-                ++ mkWaves (n+1) (pool S.\\ currentWave) (currentWave `S.union` lockedVars)
     in EstimationCntx
         { unitModel
         , decisionDuplicateNStepBack
@@ -100,17 +95,17 @@ prepareEstimationCntx unitModel decisionDuplicateNStepBack = let
             [ f
             | (Binding f tag) <- opts
             , Lock{ lockBy } <- locks f
-            , lockBy `S.member` unionsMap variables (bindedFunctions tag $ mUnit unitModel)
+            , lockBy `S.member` unionsMap variables (bindedFunctions tag mUnit)
             ]
         , transferableVars = S.fromList
             [ v
             | (Dataflow _ targets) <- opts
             , (v, Just _) <- M.assocs targets
             ]
-        , alreadyBindedVariables = variables $ mUnit unitModel
-        , waves = M.fromList $ mkWaves 0
-            (unionsMap variables bindableFunctions)
-            (S.fromList (map locked $ concatMap locks bindableFunctions))
+        , alreadyBindedVariables = variables mUnit
+        , bindWaves=estimateWaves
+               (functions mDataFlowGraph)
+               (S.elems (variables mUnit S.\\ unionsMap variables bindableFunctions))
         , bindingAlternative=foldl
             ( \st (Binding f tag) -> M.alter (return . maybe [tag] (tag:)) f st )
             M.empty
@@ -118,6 +113,26 @@ prepareEstimationCntx unitModel decisionDuplicateNStepBack = let
         , numberOfBindOptions=length $ filter isBinding opts
         , numberOfDataflowOptions=length $ filter isDataFlow opts
         }
+
+
+-- |see usage for 'bindWaves' above
+estimateWaves fs alreadyVars = let
+        io = [ ( is, os )
+            | f <- fs
+            , let is = (S.elems $ inputs f) L.\\ alreadyVars
+                  os = (S.elems $ outputs f)
+            ]
+    in estimateWaves' io 0 def
+
+estimateWaves' [] _n acc = acc
+estimateWaves' io n acc = let
+        (first, another) = L.partition (null . fst) io
+        firstVs = concatMap snd first
+        io' = map (\(is, os) -> (is L.\\ firstVs, os)) another
+        acc' = M.union acc $ M.fromList $ map (\v -> (v, n)) firstVs
+    in if null first
+          then acc -- in case of cycle (maybe some loops are not broken)
+          else estimateWaves' io' (n+1) acc'
 
 
 -----------------------------------------------------------
@@ -149,7 +164,7 @@ data Parameters
         , pNumberOfBindedFunctions :: Float
         , pPercentOfBindedInputs   :: Float
             -- ^number of binded input variables / number of all input variables
-        , pWave                    :: Float
+        , pWave                    :: Maybe Float
         }
     | DataFlowEdgeParameter
         { pWaitTime              :: Float
@@ -171,14 +186,14 @@ data Parameters
 
 estimateParameters
         ObjectiveFunctionConf{}
-        EstimationCntx{ possibleDeadlockBinds, bindingAlternative, unitModel, alreadyBindedVariables, waves }
+        EstimationCntx{ possibleDeadlockBinds, bindingAlternative, unitModel, alreadyBindedVariables, bindWaves }
         (Binding f tag)
     = BindEdgeParameter
         { pCritical=isInternalLockPossible f
         , pAlternative=fromIntegral $ length (bindingAlternative M.! f)
         , pAllowDataFlow=fromIntegral $ length $ unionsMap variables $ filter isTarget $ optionsAfterBind f tag unitModel
         , pRestless=fromMaybe 0 $ do
-            (_var, tcFrom) <- find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables unitModel
+            (_var, tcFrom) <- L.find (\(v, _) -> v `elem` variables f) $ waitingTimeOfVariables unitModel
             return $ fromIntegral tcFrom
         , pOutputNumber=fromIntegral $ length $ S.elems $ outputs f
         , pPossibleDeadlock=f `S.member` possibleDeadlockBinds
@@ -188,10 +203,10 @@ estimateParameters
                 n = fromIntegral $ length $ S.intersection is alreadyBindedVariables
                 nAll = fromIntegral $ length is
             in if nAll == 0 then 1 else n / nAll
-        , pWave=let
-                    allInputs = S.elems $ inputs f
-                    ns = map (\v -> fromMaybe 0 (waves M.!? v)) allInputs
-                in fromIntegral $ maximum (0 : ns)
+        , pWave=fmap fromIntegral $ case map (bindWaves M.!?) $ S.elems $ inputs f of
+                    []                       -> Just 0
+                    waves | all isJust waves -> Just $ maximum $ catMaybes waves
+                    _                        -> Nothing
         }
 
 estimateParameters
@@ -257,7 +272,7 @@ objectiveFunction
                 + (pAlternative == 1) <?> 500
                 + pAllowDataFlow * 10
                 + pPercentOfBindedInputs * 50
-                - pWave * 50
+                - (fromMaybe (-1) pWave) * 50
                 - pNumberOfBindedFunctions * 10
                 - pRestless * 4
                 + pOutputNumber * 2

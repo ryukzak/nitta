@@ -19,7 +19,7 @@ import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 
 
-locksSet exprInput = fromList $ locks $ accFromStr exprInput
+locksSet accExp = fromList $ locks $ (accFromStr accExp :: F String Int)
 
 
 case_basicTestAdd = do

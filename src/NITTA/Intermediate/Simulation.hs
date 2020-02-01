@@ -8,7 +8,7 @@
 
 {-|
 Module      : NITTA.Intermediate.Simulation
-Description :
+Description : Functional simulation
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -28,6 +28,9 @@ import           NITTA.Utils
 
 
 -- |Functional algorithm simulation
+simulateDataFlowGraph
+    :: ( Var v, Val x, WithFunctions g (F v x) )
+    => CycleCntx v x -> [(v, [x])] -> g -> Cntx v x
 simulateDataFlowGraph cycle0 transmission dfg
     = simulateAlg cycle0 transmission $ reorderAlgorithm $ functions dfg
 

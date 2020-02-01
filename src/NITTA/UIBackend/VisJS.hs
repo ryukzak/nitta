@@ -23,15 +23,15 @@ module NITTA.UIBackend.VisJS
     ( VisJS
     , algToVizJS
     , GraphStructure(..)
-    , NodeElement(..), GraphEdge(..)
+    , GraphNode(..), GraphEdge(..)
     ) where
 
 import           Data.Aeson
-import qualified Data.Set                     as S
-import qualified Data.String.Utils            as S
+import qualified Data.Set                 as S
+import qualified Data.String.Utils        as S
 import           GHC.Generics
-import qualified NITTA.Intermediate.Types     as F
-import           Prelude                      hiding (id)
+import qualified NITTA.Intermediate.Types as F
+import           Prelude                  hiding (id)
 
 
 type VisJS = GraphStructure GraphEdge
@@ -46,14 +46,16 @@ data GraphEdge = GraphEdge
     deriving ( Generic )
 
 data GraphStructure v = GraphStructure
-        { nodes :: [NodeElement]
-        , edges :: [v]
+        { nodes :: [ GraphNode ]
+        , edges :: [ v ]
         }
     deriving ( Generic )
 
-data NodeElement = NodeElement
+data GraphNode = GraphNode
         { id        :: Int
         , label     :: String
+        , function  :: String
+        , history   :: [ String ]
         , nodeColor :: String
         , nodeShape :: String
         , fontSize  :: String
@@ -106,16 +108,18 @@ algToVizJS fbs = let
                     inVertexes
 
 
-toVizJS (F.F f) = GraphStructure
-        { nodes=NodeElement
+toVizJS F.F{ fun, funHistory } = GraphStructure
+        { nodes=GraphNode
             { id=1
-            , label=S.replace "\"" "" $ F.label f
+            , label=S.replace "\"" "" $ F.label fun
+            , function=S.replace "\"" "" $ show fun
+            , history=map (S.replace "\"" "" . show) funHistory
             , nodeColor="#cbbeb5"
             , nodeShape="box"
             , fontSize="20"
             , nodeSize="30"
             } : []
-        , edges=mkEdges InVertex (F.inputs f) ++ mkEdges OutVertex (F.outputs f)
+        , edges=mkEdges InVertex (F.inputs fun) ++ mkEdges OutVertex (F.outputs fun)
         }
     where
         mkEdges t = map ( \v -> GraphVertex t (F.label v) 1 ) . S.elems
@@ -123,5 +127,5 @@ toVizJS (F.F f) = GraphStructure
 
 -- *JSON Marshaling
 instance ToJSON ( GraphStructure GraphEdge )
-instance ToJSON NodeElement
+instance ToJSON GraphNode
 instance ToJSON GraphEdge

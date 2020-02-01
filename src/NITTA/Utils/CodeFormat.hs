@@ -14,8 +14,9 @@ module NITTA.Utils.CodeFormat
     ) where
 
 
-import qualified Data.String.Utils               as S
-import           Safe                            (headDef, minimumDef)
+import           Data.Maybe
+import qualified Data.String.Utils as S
+import           Safe              (headDef, minimumMay)
 
 
 inlineMarker = "###"
@@ -44,7 +45,7 @@ codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
         isInline = S.startswith inlineMarker
         delInline = S.replace inlineMarker ""
 
-        minIndentCalc inp = minimumDef 0 spaces
+        minIndentCalc inp = fromMaybe 0 $ minimumMay spaces
             where
                 spaces = filter (> 0 ) $ map (length . takeWhile (== ' ')) inlines
                 inlines = filter (not . isInline) inp

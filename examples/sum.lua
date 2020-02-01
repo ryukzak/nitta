@@ -1,8 +1,5 @@
-function sum()
-    local a = receive()
-    local b = receive()
-    local c = a + b
-    send(c)
-    sum()
+function sum(a, b, c)
+    local d = a + b + c
+    sum(d, d, d)
 end
-sum()
+sum(0,0,0)

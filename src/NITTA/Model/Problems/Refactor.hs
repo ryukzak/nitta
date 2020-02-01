@@ -84,12 +84,17 @@ data Refactor v x
     deriving ( Generic, Show, Eq )
 
 
-recLoop BreakLoop{ loopX, loopO, loopI } = Loop (X loopX) (O loopO) (I loopI)
+recLoop BreakLoop{ loopX, loopO, loopI }
+    = packF $ Loop (X loopX) (O loopO) (I loopI)
 recLoop _ = error "applicable only for BreakLoop"
-recLoopIn bl@BreakLoop{ loopI } = LoopIn (recLoop bl) (I loopI)
-recLoopIn _                     = error "applicable only for BreakLoop"
-recLoopOut bl@BreakLoop{ loopO } = LoopOut (recLoop bl) (O loopO)
-recLoopOut _                     = error "applicable only for BreakLoop"
+
+recLoopIn BreakLoop{ loopX, loopO, loopI }
+    = packF $ LoopIn (Loop (X loopX) (O loopO) (I loopI)) (I loopI)
+recLoopIn _ = error "applicable only for BreakLoop"
+
+recLoopOut BreakLoop{ loopX, loopO, loopI }
+    = packF $ LoopOut (Loop (X loopX) (O loopO) (I loopI)) (O loopO)
+recLoopOut _ = error "applicable only for BreakLoop"
 
 
 class RefactorProblem u v x | u -> v x where

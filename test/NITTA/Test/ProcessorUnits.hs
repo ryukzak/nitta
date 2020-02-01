@@ -23,12 +23,12 @@ module NITTA.Test.ProcessorUnits
     ( processUnitTests
     ) where
 
-import           Data.Atomics.Counter                  (incrCounter)
+import           Data.Atomics.Counter                    (incrCounter)
 import           Data.Default
-import qualified Data.Map                              as M
-import           Data.Set                              (difference, elems,
-                                                        empty, fromList,
-                                                        intersection, union)
+import qualified Data.Map                                as M
+import           Data.Set                                (difference, elems,
+                                                          empty, fromList,
+                                                          intersection, union)
 import           Debug.Trace
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Simulation
@@ -42,16 +42,16 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
 import           NITTA.Project.Utils
-import           NITTA.Test.FunctionSimulation         ()
+import           NITTA.Test.FunctionSimulation           ()
 import           NITTA.Test.Microarchitectures
 import           NITTA.Utils
-import           System.FilePath.Posix                 (joinPath)
+import           System.FilePath.Posix                   (joinPath)
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
-import           Test.Tasty                            (TestTree, testGroup)
-import           Test.Tasty.HUnit                      (testCase, (@?))
-import           Test.Tasty.QuickCheck                 (Gen, arbitrary,
-                                                        testProperty)
+import           Test.Tasty                              (TestTree, testGroup)
+import           Test.Tasty.HUnit                        (testCase, (@?))
+import           Test.Tasty.QuickCheck                   (Gen, arbitrary,
+                                                          testProperty)
 import           Test.Tasty.TH
 
 
@@ -76,9 +76,9 @@ test_fram =
     where
         u = def :: Fram String Int Int
         fsGen = algGen
-            [ fmap F (arbitrary :: Gen (Constant _ _))
-            , fmap F (arbitrary :: Gen (Loop _ _))
-            , fmap F (arbitrary :: Gen (Reg _ _))
+            [ fmap packF (arbitrary :: Gen (Constant _ _))
+            , fmap packF (arbitrary :: Gen (Loop _ _))
+            , fmap packF (arbitrary :: Gen (Reg _ _))
             ]
 
 
@@ -95,48 +95,42 @@ test_acc =
     [ algTestCase "alg_simple_acc" march
         [ constant 5 ["a"]
         , loop 1 "d" ["b", "c"]
-        , F $ accFromStr "+a + b + c = d"
+        , accFromStr "+a + b + c = d"
         ]
     , algTestCase "alg_medium_acc" march
         [ constant (-1) ["a"]
         , loop 1 "i" ["b", "c", "e", "f", "g", "h"]
-        , F $ accFromStr "+a + b + c = d; +e + f -g -h = i;"
+        , accFromStr "+a + b + c = d; +e + f -g -h = i;"
         ]
     , algTestCase "alg_hard_acc" march
         [ constant (-10) ["a", "e", "k"]
         , loop 1 "l" ["b", "c", "f", "g", "h", "j"]
-        , F $ accFromStr "+a + b + c = d; +e + f -g -h = i; -j + k = l = m"
+        , accFromStr "+a + b + c = d; +e + f -g -h = i; -j + k = l = m"
         ]
     , unitCoSimulationTestCase "coSimulationTest0" accumDef [("a", 99)]
-        [
-        F $ accFromStr "+a = c;"
+        [ accFromStr "+a = c;"
         ]
     , unitCoSimulationTestCase "coSimulationTest1" accumDef [("a", 1), ("b", 2)]
-        [
-        F $ accFromStr "+a +b = c;"
+        [ accFromStr "+a +b = c;"
         ]
     , unitCoSimulationTestCase "coSimulationTest2" accumDef [("a", 1), ("b", 2), ("e", 4)]
-        [
-        F $ accFromStr "+a +b -e = c;"
+        [ accFromStr "+a +b -e = c;"
         ]
     , unitCoSimulationTestCase "coSimulationTest3" accumDef [("a", 1), ("b", 2), ("e", 4)]
-        [
-        F $ accFromStr "+a +b -e = c = d;"
+        [ accFromStr "+a +b -e = c = d;"
         ]
     , unitCoSimulationTestCase "coSimulationTest4" accumDef [("a", 1), ("b", 2), ("e", 4), ("f", -4)]
-        [
-        F $ accFromStr "+a +b = c = d; +e -f = g;"
+        [ accFromStr "+a +b = c = d; +e -f = g;"
         ]
     , unitCoSimulationTestCase "coSimulationTest5" accumDef [("a", 1), ("b", 2), ("e", 4), ("f", -4), ("j", 8)]
-        [
-        F $ accFromStr "+a +b = c = d; +e -f = g; +j = k"
+        [ accFromStr "+a +b = c = d; +e -f = g; +j = k"
         ]
     , isUnitSynthesisFinishTestProperty "acc_isFinish" accumDef fsGen
     , coSimulationTestProperty "acc_coSimulation" accumDef fsGen
     ]
         where
             accumDef = def :: Accum String Int Int
-            fsGen = algGen [F <$> (arbitrary :: Gen (Acc _ _))]
+            fsGen = algGen [packF <$> (arbitrary :: Gen (Acc _ _))]
 
 test_multiplier =
     [ algTestCase "simple_mul" march
@@ -154,7 +148,7 @@ test_multiplier =
     where
         u = multiplier True :: Multiplier String Int Int
         fsGen = algGen
-            [ fmap F (arbitrary :: Gen (Multiply _ _))
+            [ fmap packF (arbitrary :: Gen (Multiply _ _))
             ]
 
 

@@ -25,7 +25,6 @@ import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
 
 
-
 snippetClkGen :: String
 snippetClkGen = codeBlock [qc|
     initial begin
