@@ -2,11 +2,11 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -23,21 +23,22 @@ module NITTA.Model.ProcessorUnits.IO.SimpleIO
     , Ports(..)
     ) where
 
+import           Control.Monad
 import           Data.Default
-import           Data.List                        (partition)
+import qualified Data.List                       as L
 import           Data.Maybe
-import qualified Data.Set                         as S
+import qualified Data.Set                        as S
 import           Data.Typeable
-import qualified NITTA.Intermediate.Functions     as F
+import qualified NITTA.Intermediate.Functions    as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
-import           NITTA.Utils.ProcessDescription
 import           NITTA.Utils
-import           Numeric.Interval                 (sup, (...))
-import           Text.InterpolatedString.Perl6    (qc)
+import           NITTA.Utils.ProcessDescription
+import           Numeric.Interval                (sup, (...))
+import           Text.InterpolatedString.Perl6   (qc)
 
 
 class ( Typeable i ) => SimpleIOInterface i
@@ -75,10 +76,10 @@ instance ( VarValTime v x t, SimpleIOInterface i
     tryBind f sio@SimpleIO{ sendQueue, receiveQueue, receiveN, sendN, bufferSize }
 
         | Just F.Receive{} <- castF f, fromMaybe maxBound bufferSize == receiveN
-        = Left "SPI to small buffer size"
+        = Left "IO process unit to small buffer size"
 
         | Just F.Send{} <- castF f, fromMaybe maxBound bufferSize == sendN
-        = Left "SPI to small buffer size"
+        = Left "IO process unit to small buffer size"
 
         | Just (F.Receive (O vs)) <- castF f
         , let ( cads, process_ ) = runSchedule sio $ scheduleFunctionBind f
@@ -96,7 +97,7 @@ instance ( VarValTime v x t, SimpleIOInterface i
             , process_
             }
 
-        | otherwise = Left $ "SPI processor unit do not support: " ++ show f
+        | otherwise = Left $ "IO processor unit do not support: " ++ show f
 
     process = process_
 
@@ -118,15 +119,22 @@ instance ( VarValTime v x t, SimpleIOInterface i
         in receiveOpts ++ sendOpts
 
     endpointDecision sio@SimpleIO{ receiveQueue } d@EndpointSt{ epRole=Source vs, epAt }
-        | ([ Q{ function } ], receiveQueue') <- partition ((vs ==) . S.fromList . vars) receiveQueue
-        , let ( _, process_ ) = runSchedule sio $ do
-                _ <- scheduleEndpoint d $ scheduleInstruction epAt Receiving
+        | ([ q@Q{ function, vars=allVars } ], receiveQueue')
+            <- L.partition ((vs `S.isSubsetOf`) . S.fromList . vars) receiveQueue
+        , let
+            remainVars = allVars L.\\ S.elems vs
+            process_ = execSchedule sio $ do
+                void $ scheduleEndpoint d $ scheduleInstruction epAt Receiving
+                when (null remainVars) $ void $ scheduleFunction epAt function
                 updateTick (sup epAt + 1)
-                scheduleFunction epAt function
-        = sio{ receiveQueue=receiveQueue', process_ }
+                return ()
+            receiveQueue'' = if null remainVars
+                then receiveQueue'
+                else q{ vars=remainVars } : receiveQueue'
+        = sio{ receiveQueue=receiveQueue'', process_ }
 
     endpointDecision sio@SimpleIO{ sendQueue, sendN, receiveQueue, receiveN } d@EndpointSt{ epRole=Target v, epAt }
-        | ([ Q{ function } ], sendQueue') <- partition ((v ==) . head . vars) sendQueue
+        | ([ Q{ function } ], sendQueue') <- L.partition ((v ==) . head . vars) sendQueue
         , let ( _, process_ ) = runSchedule sio $ do
                 _ <- scheduleEndpoint d $ scheduleInstruction epAt Sending
                 updateTick (sup epAt + 1)
@@ -172,11 +180,11 @@ instance Controllable (SimpleIO i v x t) where
     mapMicrocodeToPorts Microcode{..} SimpleIOPorts{..} =
         [ ( wr, Bool wrSignal )
         , ( oe, Bool oeSignal )
-        ] 
+        ]
 
     portsToSignals SimpleIOPorts{ wr, oe } = [wr, oe]
 
-    signalsToPorts (wr:oe:_) _ = SimpleIOPorts wr oe "stop" 
+    signalsToPorts (wr:oe:_) _ = SimpleIOPorts wr oe "stop"
     signalsToPorts _         _ = error "pattern match error in signalsToPorts SimpleIOPorts"
 
 instance Default (Microcode (SimpleIO i v x t)) where
