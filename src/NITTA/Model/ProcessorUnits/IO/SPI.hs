@@ -37,7 +37,6 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Snippets
 import           NITTA.Utils
 import           Text.InterpolatedString.Perl6          (qc)
 
@@ -210,7 +209,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
 
                     envInstance = codeBlock [qc|
                         // SPI Input/Output environment
-                        // { show sio }
+                        { inline $ comment $ show sio }
                         reg { tag }_io_test_start_transaction;
                         reg  [{ frameWidth }-1:0] { tag }_io_test_input;
                         wire { tag }_io_test_ready;
@@ -283,7 +282,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
 
                     envInstance = codeBlock [qc|
                         // SPI Input/Output environment
-                        // { show sio }
+                        { inline $ comment $ show sio }
                         reg { tag }_io_test_start_transaction;
                         reg  [{ frameWidth }-1:0] { tag }_io_test_input;
                         wire { tag }_io_test_ready;

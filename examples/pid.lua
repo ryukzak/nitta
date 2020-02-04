@@ -1,4 +1,4 @@
-function pid(I, prev_err) 
+function pid(I, prev_err)
     local Kp = 2
     local Ki = 0
     local Kd = 0

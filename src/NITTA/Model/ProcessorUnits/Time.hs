@@ -10,6 +10,8 @@
 {-# LANGUAGE StandaloneDeriving     #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE QuasiQuotes            #-}
+{-# LANGUAGE TemplateHaskell        #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -40,7 +42,9 @@ import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Types
+import           NITTA.Utils.CodeFormat
 import           Numeric.Interval
+import           Text.InterpolatedString.Perl6   (qc)
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
@@ -113,7 +117,19 @@ data Process v x t
         , nextTick  :: t          -- ^Номер первого свободного такта.
         , nextUid   :: ProcessUid -- ^Следующий свободный идентификатор шага вычислительного процесса.
         }
-    deriving ( Show )
+
+instance (VarValTime v x t) => Show (Process v x t) where
+    show p = codeBlock [qc|
+        Process
+            steps     =
+                {inline $ listShow $ steps p  }
+            relations =
+                {inline $ listShow $ relations p  }
+            nextTick  = { show ( nextTick p ) }
+            nextUid   = { show ( nextUid p ) }
+        |]
+        where
+            listShow list = unlines $ map (\(i, value) -> [qc|{i}) {value}|]) $ zip [0::Integer ..] list 
 
 instance ( Default t ) => Default (Process v x t) where
     def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
@@ -124,8 +140,6 @@ instance WithFunctions (Process v x t) (F v x) where
             get Step{ sDesc } | FStep f <- descent sDesc = Just f
             get _             = Nothing
 
-
-
 type ProcessUid = Int -- ^Уникальный идентификатор шага вычислительного процесса.
 
 -- |Описание шага вычислительного процесса.
@@ -135,7 +149,8 @@ data Step v x t
         , sTime :: Interval t -- ^Описание типа и положения шага во времени.
         , sDesc :: StepInfo v x t -- ^Описание действия описываемого шага.
         }
-    deriving ( Show )
+    deriving (Show)
+
 
 instance ( Ord v ) => Patch (Step v x t) (Changeset v) where
     patch diff step@Step{ sDesc } = step{ sDesc=patch diff sDesc }
@@ -171,7 +186,7 @@ descent desc                = desc
 
 instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show (CADStep s)                 = s
-    show (FStep (F f))               = show f
+    show (FStep F{ fun })            = show fun
     show (EndpointRoleStep eff)      = show eff
     show (InstructionStep instr)     = show instr
     show NestedStep{ nTitle, nStep } = S.replace "\"" "" (show nTitle) ++ "." ++ show nStep

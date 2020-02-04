@@ -5,7 +5,7 @@ module pu_accum_tb
    , parameter SIGN       = 0
    , parameter OVERFLOW   = 1
    )
-  (); 
+  ();
 
 reg clk, rst, signal_load, signal_resetAcc, signal_neg, signal_oe;
 
@@ -14,10 +14,10 @@ reg [ATTR_WIDTH-1:0] attr_in;
 
 wire [DATA_WIDTH-1:0] data_out;
 
-pu_accum 
+pu_accum
   #( .DATA_WIDTH( DATA_WIDTH )
    , .ATTR_WIDTH( ATTR_WIDTH )
-   ) unit_under_test 
+   ) unit_under_test
   ( .clk(clk)
   , .rst(rst)
   , .signal_resetAcc(signal_resetAcc)
@@ -103,10 +103,10 @@ initial begin
   load(0, 5); @(posedge clk);
   nop(); @(posedge clk);
   out(); @(posedge clk);
-  
+
   @(posedge clk);
-  
+
   $finish;
-end  
-       
+end
+
 endmodule

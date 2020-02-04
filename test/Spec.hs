@@ -17,6 +17,7 @@ module Main where
 import           Data.Maybe
 import           NITTA.Test.BusNetwork
 import           NITTA.Test.CodeBlock
+import           NITTA.Test.Locks
 import           NITTA.Test.FunctionSimulation
 import           NITTA.Test.LuaFrontend
 import           NITTA.Test.ProcessorUnits
@@ -41,5 +42,6 @@ main = do
         , busNetworkTests
         , refactorTests
         , luaTests
-        , codeTests 
+        , codeTests
+        , locksTest
         ]

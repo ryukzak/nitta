@@ -31,7 +31,6 @@ import           NITTA.UIBackend.Marshalling   ()
 import           NITTA.UIBackend.REST
 import           Servant
 import qualified Servant.JS                    as SJS
-import           Servant.Server.StaticFiles    (serveDirectoryWebApp)
 import           System.Exit                   (ExitCode (..), die)
 import           System.FilePath.Posix         (joinPath)
 import           System.Process
@@ -71,9 +70,12 @@ application model = do
     return $ serve
         ( Proxy :: Proxy
             (    SynthesisAPI _ _ _ _
+            :<|> Get '[JSON] () -- root
             :<|> Raw
-            ) )
+            )
+        )
         (    synthesisServer root
+        :<|> throwError err301 { errHeaders = [("Location", "index.html")] }
         :<|> serveDirectoryWebApp (joinPath ["web", "build"])
         )
 

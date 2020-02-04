@@ -55,7 +55,7 @@ type SynthesisAPI tag v x t
     :<|> "synthesis" :> Capture "nId" NId :> WithSynthesis tag v x t
 
 synthesisServer root
-    =    liftIO ( view root )
+    =    liftIO ( viewNodeTree root )
     :<|> \nId -> withSynthesis root nId
 
 
@@ -66,7 +66,9 @@ type WithSynthesis tag v x t
     :<|> "model" :> Get '[JSON] (ModelState (BusNetwork tag v x t) v x)
     :<|> "timelines" :> Get '[JSON] (ProcessTimelines t)
     :<|> "debug" :> Get '[JSON] (Debug tag v t)
+    :<|> "endpoints" :> Get '[JSON] [ UnitEndpointView tag v ]
     :<|> "history" :> Get '[JSON] [( NId, SynthesisDecisionView tag v x (Interval t) )]
+    :<|> "path" :> Get '[JSON] [NodeView tag v x t]
     :<|> "model" :> "alg" :> Get '[JSON] VisJS
     :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] (TestbenchReport v x)
     :<|> SimpleCompilerAPI tag v x t
@@ -77,7 +79,9 @@ withSynthesis root nId
     :<|> liftIO ( nModel <$> getNodeIO root nId )
     :<|> liftIO ( processTimelines . process . mUnit . nModel <$> getNodeIO root nId )
     :<|> liftIO ( debug root nId )
+    :<|> liftIO ( dbgEndpointOptions <$> debug root nId )
     :<|> liftIO ( map view <$> getSynthesisHistoryIO root nId )
+    :<|> liftIO ( map view <$> getNodePathIO root nId )
     :<|> liftIO ( algToVizJS . alg . nModel <$> getNodeIO root nId )
     :<|> (\name -> liftIO ( do
         node <- getNodeIO root nId
@@ -99,7 +103,7 @@ withSynthesis root nId
 
 -- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
-        { dbgEndpointOptions           :: [ ( tag, EndpointSt v (TimeConstrain t) ) ]
+        { dbgEndpointOptions           :: [ UnitEndpointView tag v ]
         , dbgFunctionLocks             :: [ ( String, [Lock v] ) ]
         , dbgCurrentStateFunctionLocks :: [ ( String, [Lock v] ) ]
         , dbgPULocks                   :: [ ( String, [Lock v] ) ]
@@ -123,7 +127,7 @@ debug root nId = do
         }
     where
         endpointOptions' BusNetwork{ bnPus }
-            = let f (tag, pu) = zip (repeat tag) $ endpointOptions pu
+            = let f (tag, pu) = map (\(t, ep) -> UnitEndpointView t $ view ep) $ zip (repeat tag) $ endpointOptions pu
             in concatMap f $ M.assocs bnPus
 
 

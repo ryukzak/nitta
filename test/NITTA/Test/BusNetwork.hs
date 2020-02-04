@@ -21,11 +21,11 @@ module NITTA.Test.BusNetwork
     ( busNetworkTests
     ) where
 
-import           Control.Monad                    (void)
+import           Control.Monad                   (void)
 import           Data.Default
-import           Data.Map                         (fromList)
-import qualified Data.Set                         as S
-import qualified NITTA.Intermediate.Functions     as F
+import           Data.Map                        (fromList)
+import qualified Data.Set                        as S
+import qualified NITTA.Intermediate.Functions    as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems.Endpoint
@@ -34,7 +34,7 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Project
 import           NITTA.Test.Microarchitectures
-import           Test.Tasty                       (TestTree, testGroup)
+import           Test.Tasty                      (TestTree, testGroup)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 
@@ -51,22 +51,40 @@ test_fibonacci =
     where
         algWithSend =
             [ F.loop 0 "b2" ["a1"      ]
-            , F.loop 1 "c"  ["b1", "b2"]
-            , F.add "a1" "b1" ["c", "c_copy"]
-            , F.send "c_copy"
+            , F.loop 1 "c1"  ["b1", "b2"]
+            , F.add "a1" "b1" ["c1", "c2"]
+            , F.send "c2"
             ]
-
 
 test_io =
     [ testCase "receive two variables" $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
         { tName="double_receive"
         , tMicroArch=marchSPI True pInt
-        , tReceivedValues=[ ("a", [10..15]), ("b", [20..25]) ]
+        , tReceivedValues=[ ("a", [10..15]), ("b", [20..25])]
         , tDFG=fsToDataFlowGraph
             [ F.receive ["a"]
             , F.receive ["b"]
             , F.add "a" "b" ["c"]
             , F.send "c"
+            ]
+        }
+    ]
+
+test_add_and_io =
+    [ testCase "receive 4 variables" $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
+        { tName="Two functions 4 variables"
+        , tMicroArch=marchSPI True pInt
+        , tReceivedValues=[ ("a", [10..15]), ("b", [20..25]), ("e", [0..25]), ("f", [20..30])]
+        , tDFG=fsToDataFlowGraph
+            [ F.receive ["a"]
+            , F.receive ["b"]
+            , F.receive ["e"]
+            , F.receive ["f"]
+            , F.accFromStr "+a +b = c = d; +e - f = g = h"
+            , F.send "d"
+            , F.send "c"
+            , F.send "g"
+            , F.send "h"
             ]
         }
     ]

@@ -119,9 +119,12 @@ instance ( Var v, Val x
             fs' = buffer : map (patch diff) (functions dfg)
         in fsToDataFlowGraph fs'
     refactorDecision (DFCluster leafs) bl@BreakLoop{} = let
-            withoutLoop = leafs L.\\ [ DFLeaf $ F $ recLoop bl ]
-            brokenParts = [ DFLeaf $ F $ recLoopOut bl, DFLeaf $ F $ recLoopIn bl ] ++ withoutLoop
-        in DFCluster brokenParts
+            origin = recLoop bl
+        in DFCluster
+            $ ( DFLeaf (recLoopIn bl){ funHistory=[origin] } )
+            : ( DFLeaf (recLoopOut bl){ funHistory=[origin] } )
+            : ( leafs L.\\ [ DFLeaf origin ] )
+
     refactorDecision _ _ = error "DataFlowGraph "
 
 

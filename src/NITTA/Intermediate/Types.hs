@@ -22,7 +22,7 @@ module NITTA.Intermediate.Types
     ( -- *Function interface
       I(..), O(..), X(..)
       -- *Function description
-    , F(..), castF, Function(..)
+    , F(..), packF, castF, Function(..)
     , Lock(..), Locks(..), inputsLockOutputs
     , WithFunctions(..)
     , Label(..)
@@ -98,7 +98,7 @@ data Lock v
         { locked :: v
         , lockBy :: v
         }
-    deriving ( Show, Eq, Generic )
+    deriving ( Show, Eq, Ord, Generic )
 
 
 -- |All input variables locks all output variables.
@@ -150,30 +150,39 @@ data F v x where
         , Label f
         , FunctionSimulation f v x
         , Typeable f
-        ) => f -> F v x
+        ) =>
+            { fun :: f
+            , funHistory :: [ F v x ]
+            } -> F v x
+
+packF f = F{ fun=f, funHistory=[] }
 
 instance Eq (F v x) where
-    F a == F b = show a == show b
+    F{ fun=a } == F{ fun=b } = show a == show b
 
 instance Function (F v x) v where
-    isInternalLockPossible (F f) = isInternalLockPossible f
-    inputs (F f) = inputs f
-    outputs (F f) = outputs f
+    isInternalLockPossible F{ fun } = isInternalLockPossible fun
+    inputs F{ fun } = inputs fun
+    outputs F{ fun } = outputs fun
 
 instance FunctionSimulation (F v x) v x where
-    simulate cntx (F f) = simulate cntx f
+    simulate cntx F{ fun } = simulate cntx fun
 
 instance Label (F v x) where
-    label (F f) = S.replace "\"" "" $ label f
+    label F{ fun } = S.replace "\"" "" $ label fun
 
 instance ( Var v ) => Locks (F v x) v where
-    locks (F f) = locks f
+    locks F{ fun } = locks fun
 
 instance Ord (F v x) where
-    (F a) `compare` (F b) = show a `compare` show b
+    F{ fun=a } `compare` F{ fun=b } = show a `compare` show b
 
 instance Patch (F v x) (v, v) where
-    patch diff (F f) = F $ patch diff f
+    patch diff fun0@F{ fun, funHistory }
+        = F
+            { fun=patch diff fun
+            , funHistory=fun0 : funHistory
+            }
 
 instance ( Ord v ) => Patch (F v x) (Changeset v) where
     patch Changeset{ changeI, changeO } f0 = let
@@ -192,15 +201,15 @@ instance ( Patch b v ) => Patch [b] v where
     patch diff fs = map (patch diff) fs
 
 instance Show (F v x) where
-    show (F f) = S.replace "\"" "" $ show f
+    show F{ fun } = S.replace "\"" "" $ show fun
 
 instance ( Var v ) => Variables (F v x) v where
-    variables (F f) = inputs f `S.union` outputs f
+    variables F{ fun } = inputs fun `S.union` outputs fun
 
 
 -- |Helper for extraction function from existential container 'F'.
 castF :: ( Typeable f, Typeable v, Typeable x ) => F v x -> Maybe (f v x)
-castF (F f) = cast f
+castF F{ fun } = cast fun
 
 
 -----------------------------------------------------------
@@ -275,8 +284,6 @@ class Patch f diff where
 
 
 -- |Change set for patch.
---
--- FIXME: rename to change set
 data Changeset v = Changeset
         { changeI :: M.Map v v
           -- ^change set for input variables (one to one)
