@@ -16,6 +16,7 @@ export const haskellApiService = {
   getTimelines: (nid: SelectedNodeId) => api.getSynthesisByNIdTimelines(nid),
   stateOfTheArtSynthesis: (nid: any) => api.postSynthesisByNIdStateOfTheArtSynthesisIO(nid),
   simpleSynthesis: (nid: any) => api.postSynthesisByNIdSimpleSynthesis(nid),
+  bestStep: (nid: SelectedNodeId): AxiosPromise<SelectedNodeId> => api.postSynthesisByNIdBestStep(nid),
   getIntermediateAlg: (nid: SelectedNodeId): AxiosPromise<IntermediateGraph> => api.getSynthesisByNIdModelAlg(nid),
   smartBindSynthesisIO: (nid: any) => api.postSynthesisByNIdSmartBindSynthesisIO(nid),
   allBestThread: (nid: any, n: any) => api.postSynthesisByNIdAllBestThread(nid, n),
