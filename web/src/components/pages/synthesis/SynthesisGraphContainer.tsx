@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
 import { SynthesisGraphView } from "./SynthesisGraphView";
-import { AppContext, IAppContext, reLastNidStep, SelectedNodeId } from "../../app/AppContext";
+import { AppContext, IAppContext, reLastNidStep, nInSeparator, SelectedNodeId } from "../../app/AppContext";
 import { haskellApiService } from "../../../services/HaskellApiService";
 import { AxiosResponse, AxiosError } from "axios";
 
@@ -27,7 +27,7 @@ export const SynthesisGraphContainer: React.FC = () => {
   const backNavigation = () => {
     let newId = appContext.selectedNodeId.replace(reLastNidStep, "");
     if (newId != null && newId.length !== 0) appContext.selectNode(newId);
-    else appContext.selectNode("-");
+    else appContext.selectNode(nInSeparator);
   };
 
   const forwardNavigation = () => {
@@ -35,7 +35,7 @@ export const SynthesisGraphContainer: React.FC = () => {
       .allBestThread(appContext.selectedNodeId, 0)
       .then((response: AxiosResponse<SelectedNodeId>) => {
         let newId = response.data;
-        if (appContext.selectedNodeId === "-") newId = firstNidStep.exec(newId)![0];
+        if (appContext.selectedNodeId === nInSeparator) newId = firstNidStep.exec(newId)![0];
         else newId = nextNidStep.exec(newId)![0];
 
         if (newId != null) appContext.selectNode(newId);
