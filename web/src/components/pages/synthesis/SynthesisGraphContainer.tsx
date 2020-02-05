@@ -1,9 +1,9 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
 import { SynthesisGraphView } from "./SynthesisGraphView";
-import { AppContext, IAppContext, reLastNidStep, nInSeparator, SelectedNodeId } from "../../app/AppContext";
-import { haskellApiService } from "../../../services/HaskellApiService";
-import { AxiosResponse, AxiosError } from "axios";
+import { AppContext, IAppContext, reLastNidStep, nInSeparator } from "../../app/AppContext";
+import { haskellApiService as api } from "../../../services/HaskellApiService";
+import { requestNidBy } from "../../../utils/componentUtils";
 
 export const SynthesisGraphContainer: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
@@ -11,9 +11,6 @@ export const SynthesisGraphContainer: React.FC = () => {
   const step = 100;
   const minHeight = 200;
   const [height, setHeight] = React.useState<number>(minHeight);
-
-  const nextNidStep = new RegExp(appContext.selectedNodeId + "-[^-]*");
-  const firstNidStep = /-[^-]*/;
 
   const buttonAttrs = {
     className: "btn btn-sm mr-3",
@@ -28,19 +25,6 @@ export const SynthesisGraphContainer: React.FC = () => {
     let newId = appContext.selectedNodeId.replace(reLastNidStep, "");
     if (newId != null && newId.length !== 0) appContext.selectNode(newId);
     else appContext.selectNode(nInSeparator);
-  };
-
-  const forwardNavigation = () => {
-    haskellApiService
-      .allBestThread(appContext.selectedNodeId, 0)
-      .then((response: AxiosResponse<SelectedNodeId>) => {
-        let newId = response.data;
-        if (appContext.selectedNodeId === nInSeparator) newId = firstNidStep.exec(newId)![0];
-        else newId = nextNidStep.exec(newId)![0];
-
-        if (newId != null) appContext.selectNode(newId);
-      })
-      .catch((err: AxiosError) => console.log(err));
   };
 
   return (
@@ -59,7 +43,7 @@ export const SynthesisGraphContainer: React.FC = () => {
           <Button {...buttonAttrs} onClick={() => backNavigation()}>
             Back
           </Button>
-          <Button {...buttonAttrs} onClick={() => forwardNavigation()}>
+          <Button {...buttonAttrs} onClick={requestNidBy(appContext, api.bestStep, appContext.selectedNodeId)}>
             Forward
           </Button>
         </div>
