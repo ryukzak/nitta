@@ -23,6 +23,7 @@ module NITTA.Synthesis.Method
     , allBestThreadIO
     , stateOfTheArtSynthesisIO
     , allBindsAndRefsIO
+    , bestStepIO
     ) where
 
 import           Data.List                (find, sortOn)
@@ -66,6 +67,12 @@ bestThreadIO limit node = do
     case edges of
         [] -> return node
         _  -> bestThreadIO (limit - 1) $ eTarget $ maximumOn eObjectiveFunctionValue edges
+
+bestStepIO node = do
+    edges <- getPositiveEdgesIO node
+    case edges of
+        [] -> error "all step is over"
+        _  -> return $ eTarget $ maximumOn eObjectiveFunctionValue edges
 
 
 obviousBindThreadIO node = do
