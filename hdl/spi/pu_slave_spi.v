@@ -2,8 +2,6 @@
 
 // FIXME: Почистить реализацию модуля. Перенести модули тестового окружения в поддиректорию "test".
 
-// FIXME: Необходимо сделать получение данных через данный вычислительный блок.
-
 // FIXME: Необходимо сделать корректную работу с атрибутами (архитектура, testbench-и, испытания в железе).
 
 module pu_slave_spi #
@@ -139,8 +137,8 @@ generate
             , .wr( receive_buffer_wr[j] )
             , .data_in( receive_buffer_data_in[j] )
 
-            , .oe_other( receive_buffer_oe[j] )
-            , .data_out_other( receive_buffer_data_out[j] )
+            , .oe( receive_buffer_oe[j] )
+            , .data_out( receive_buffer_data_out[j] )
             ); 
     end
 endgenerate
