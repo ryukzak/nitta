@@ -173,6 +173,8 @@ pu_slave_spi_driver #
     );
 
 // bounce filter
+//
+// FIXME: looks bad. Original signals are synchoronised, but filtered signals not.
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_mosi_filter ( rst, clk, mosi, f_mosi );
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_cs_filter   ( rst, clk, cs,   f_cs   );
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_sclk_filter ( rst, clk, sclk, f_sclk );

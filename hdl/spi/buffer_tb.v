@@ -8,27 +8,27 @@ reg wr, oe;
 reg [31:0] data_in;
 wire [31:0] data_out;
 
-buffer 
-  #( .DATA_WIDTH( 32 )
-   , .ATTR_WIDTH( 0 )
-   , .BUF_SIZE( 6 )
-   ) buffer 
-  ( .clk( clk )
-  , .rst( rst )
+buffer #
+        ( .DATA_WIDTH( 32 )
+        , .ATTR_WIDTH( 0 )
+        , .BUF_SIZE( 6 )
+        ) buffer
+    ( .clk( clk )
+    , .rst( rst )
 
-  , .wr( wr )
-  , .data_in( data_in )
+    , .wr( wr )
+    , .data_in( data_in )
 
-  , .oe( oe )
-  , .data_out( data_out )
-  );
+    , .oe( oe )
+    , .data_out( data_out )
+    );
 
 always begin
-  clk <= 1;
-  rst <= 1;
-  repeat(4) #5 clk <= ~clk;
-  rst <= 0;
-  forever #5 clk <= ~clk;
+    clk <= 1;
+    rst <= 1;
+    repeat(4) #5 clk <= ~clk;
+    rst <= 0;
+    forever #5 clk <= ~clk;
 end 
 
 task assert32;
