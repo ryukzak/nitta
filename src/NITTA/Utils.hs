@@ -39,7 +39,6 @@ module NITTA.Utils
     , isFB
     , isInstruction
     , isTarget
-    , maybeInstructionOf
     -- code format
     , module NITTA.Utils.CodeFormat
     ) where
@@ -54,10 +53,10 @@ import           Data.Set                        (elems, unions)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Utils.CodeFormat
 import           Numeric                         (readInt, showHex)
 import           Numeric.Interval                ((...))
 import qualified Numeric.Interval                as I
-import           NITTA.Utils.CodeFormat
 import           Text.StringTemplate
 
 
@@ -155,9 +154,3 @@ isInstruction (InstructionStep _) = True
 isInstruction _                   = False
 
 stepStart Step{ sTime } = I.inf sTime
-
-
--- modern
-
-maybeInstructionOf :: Maybe (Instruction pu) -> pu -> Maybe (Instruction pu)
-i `maybeInstructionOf` _pu = i

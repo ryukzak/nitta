@@ -53,7 +53,9 @@ import           System.FilePath                 (joinPath)
 data BackendCntx tag v x t
     = BackendCntx
         { root           :: G Node tag v x t
+          -- ^root synthesis node
         , receivedValues :: [ (v, [x]) ]
+          -- ^lists of received by IO values
         }
 
 

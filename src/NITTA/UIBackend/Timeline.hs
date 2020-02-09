@@ -12,7 +12,7 @@
 
 {-|
 Module      : NITTA.UIBackend.Timeline
-Description :
+Description : Preparing data for process visualization.
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -22,9 +22,9 @@ module NITTA.UIBackend.Timeline
     ( ViewPointID, TimelinePoint, processTimelines, ProcessTimelines(..), TimelineWithViewPoint(..)
     ) where
 
-import qualified Data.Map                         as M
+import qualified Data.Map                        as M
 import           Data.Maybe
-import qualified Data.String.Utils                as S
+import qualified Data.String.Utils               as S
 import           GHC.Generics
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types

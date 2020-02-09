@@ -189,7 +189,7 @@ instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show (FStep F{ fun })            = show fun
     show (EndpointRoleStep eff)      = show eff
     show (InstructionStep instr)     = show instr
-    show NestedStep{ nTitle, nStep } = S.replace "\"" "" (show nTitle) ++ "." ++ show nStep
+    show NestedStep{ nTitle, nStep } = S.replace "\"" "" ("Nested " ++ show nTitle ++ ": " ++ show nStep)
 
 instance ( Ord v ) => Patch (StepInfo v x t) (Changeset v) where
     patch diff (FStep f)              = FStep $ patch diff f
