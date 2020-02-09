@@ -20,6 +20,7 @@ Stability   : experimental
 module NITTA.UIBackend.REST
     ( SynthesisAPI
     , synthesisServer
+    , BackendCntx(..)
     ) where
 
 import           Control.Monad.Except
@@ -49,6 +50,13 @@ import           System.FilePath                 (joinPath)
 
 
 
+data BackendCntx tag v x t
+    = BackendCntx
+        { root           :: G Node tag v x t
+        , receivedValues :: [ (v, [x]) ]
+        }
+
+
 type SynthesisAPI tag v x t
     =    "synthesisTree"                  :> Get '[JSON] (TreeView SynthesisNodeView)
     :<|> "synthesis" :> Capture "nId" NId :> GetSynthesis tag v x t
@@ -57,11 +65,11 @@ type SynthesisAPI tag v x t
                      :> QueryParam' '[Required] "name" String
                      :> Post '[JSON] (TestbenchReport v x)
 
-synthesisServer root
+synthesisServer cntx@BackendCntx{ root }
     =    liftIO ( viewNodeTree root )
-    :<|> ( \nId -> getSynthesis root nId )
-    :<|> ( \nId -> postSynthesis root nId )
-    :<|> testBench root
+    :<|> ( \nId -> getSynthesis cntx nId )
+    :<|> ( \nId -> postSynthesis cntx nId )
+    :<|> testBench cntx
 
 
 
@@ -77,7 +85,7 @@ type GetSynthesis tag v x t
     :<|> "debug"       :> Get '[JSON] (Debug tag v t)
     :<|> "puEndpoints" :> Get '[JSON] [ UnitEndpointView tag v ]
 
-getSynthesis root nId
+getSynthesis BackendCntx{ root } nId
     =    liftIO ( getNodeIO root nId )
     :<|> liftIO ( map view <$> getNodePathIO root nId )
     :<|> liftIO ( nOrigin <$> getNodeIO root nId )
@@ -102,7 +110,7 @@ type PostSynthesis tag v x t
 
     :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
 
-postSynthesis root n
+postSynthesis BackendCntx{ root } n
     =    liftIO ( nId <$> ( stateOfTheArtSynthesisIO =<< getNodeIO root n ) )
     :<|> liftIO ( nId <$> ( simpleSynthesisIO        =<< getNodeIO root n ) )
     :<|> liftIO ( nId <$> ( smartBindSynthesisIO     =<< getNodeIO root n ) )
@@ -115,7 +123,7 @@ postSynthesis root n
 
 
 
-testBench root nId pName = liftIO $ do
+testBench BackendCntx{ root, receivedValues } nId pName = liftIO $ do
         node <- getNodeIO root nId
         let ModelState{ mDataFlowGraph } = nModel node
         unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
@@ -124,7 +132,7 @@ testBench root nId pName = liftIO $ do
             , pLibPath=joinPath ["..", "..", "hdl"]
             , pPath=joinPath ["gen", pName]
             , pUnit=mUnit $ nModel node
-            , pTestCntx=simulateDataFlowGraph def def mDataFlowGraph
+            , pTestCntx=simulateDataFlowGraph def receivedValues mDataFlowGraph
             }
 
 
