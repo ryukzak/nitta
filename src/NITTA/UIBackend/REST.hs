@@ -44,69 +44,104 @@ import           NITTA.UIBackend.Marshalling
 import           NITTA.UIBackend.Timeline
 import           NITTA.UIBackend.VisJS           (VisJS, algToVizJS)
 import           NITTA.Utils
-import           Numeric.Interval
 import           Servant
 import           System.FilePath                 (joinPath)
 
 
 
 type SynthesisAPI tag v x t
-    =    "synthesis" :> Get '[JSON] (TreeView SynthesisNodeView)
-    :<|> "synthesis" :> Capture "nId" NId :> WithSynthesis tag v x t
+    =    "synthesisTree"                  :> Get '[JSON] (TreeView SynthesisNodeView)
+    :<|> "synthesis" :> Capture "nId" NId :> GetSynthesis tag v x t
+    :<|> "synthesis" :> Capture "nId" NId :> PostSynthesis tag v x t
+    :<|> "testbench" :> Capture "nId" NId
+                     :> QueryParam' '[Required] "name" String
+                     :> Post '[JSON] (TestbenchReport v x)
 
 synthesisServer root
     =    liftIO ( viewNodeTree root )
-    :<|> \nId -> withSynthesis root nId
+    :<|> ( \nId -> getSynthesis root nId )
+    :<|> ( \nId -> postSynthesis root nId )
+    :<|> testBench root
 
 
 
-type WithSynthesis tag v x t
-    =    Get '[JSON] (G Node tag v x t)
-    :<|> "edge" :> Get '[JSON] (Maybe (G Edge tag v x t))
-    :<|> "model" :> Get '[JSON] (ModelState (BusNetwork tag v x t) v x)
-    :<|> "timelines" :> Get '[JSON] (ProcessTimelines t)
-    :<|> "debug" :> Get '[JSON] (Debug tag v t)
-    :<|> "endpoints" :> Get '[JSON] [ UnitEndpointView tag v ]
-    :<|> "history" :> Get '[JSON] [( NId, SynthesisDecisionView tag v x (Interval t) )]
-    :<|> "path" :> Get '[JSON] [NodeView tag v x t]
-    :<|> "model" :> "alg" :> Get '[JSON] VisJS
-    :<|> "testBench" :> "output" :> QueryParam' '[Required] "name" String :> Get '[JSON] (TestbenchReport v x)
-    :<|> SimpleCompilerAPI tag v x t
+type GetSynthesis tag v x t
+    =                    Get '[JSON] (G Node tag v x t) -- FIXME: TypeScriptDeclaration
+    :<|> "path"       :> Get '[JSON] [ NodeView tag v x t ]
+    :<|> "originEdge" :> Get '[JSON] (Maybe (G Edge tag v x t)) -- FIXME: TypeScriptDeclaration
+    :<|> "edges"      :> Get '[JSON] [ EdgeView tag v x t ]
 
-withSynthesis root nId
+    :<|> "intermediateView" :> Get '[JSON] VisJS
+    :<|> "timelines"        :> Get '[JSON] (ProcessTimelines t) -- FIXME: TypeScriptDeclaration
+
+    :<|> "debug"       :> Get '[JSON] (Debug tag v t)
+    :<|> "puEndpoints" :> Get '[JSON] [ UnitEndpointView tag v ]
+
+getSynthesis root nId
     =    liftIO ( getNodeIO root nId )
+    :<|> liftIO ( map view <$> getNodePathIO root nId )
     :<|> liftIO ( nOrigin <$> getNodeIO root nId )
-    :<|> liftIO ( nModel <$> getNodeIO root nId )
+    :<|> liftIO ( map view <$> ( getEdgesIO =<< getNodeIO root nId ) )
+
+    :<|> liftIO ( algToVizJS . extractFuns . nModel <$> getNodeIO root nId )
     :<|> liftIO ( processTimelines . process . mUnit . nModel <$> getNodeIO root nId )
+
     :<|> liftIO ( debug root nId )
     :<|> liftIO ( dbgEndpointOptions <$> debug root nId )
-    :<|> liftIO ( map view <$> getSynthesisHistoryIO root nId )
-    :<|> liftIO ( map view <$> getNodePathIO root nId )
-    :<|> liftIO ( algToVizJS . alg . nModel <$> getNodeIO root nId )
-    :<|> (\name -> liftIO ( do
+
+
+
+type PostSynthesis tag v x t
+    =    "stateOfTheArtSynthesisIO" :> Post '[JSON] NId
+    :<|> "simpleSynthesis"          :> Post '[JSON] NId
+    :<|> "smartBindSynthesisIO"     :> Post '[JSON] NId
+
+    :<|> "bestStep"                 :> Post '[JSON] NId
+    :<|> "obviousBindThread"        :> Post '[JSON] NId
+    :<|> "allBindsAndRefsIO"        :> Post '[JSON] NId
+
+    :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
+
+postSynthesis root n
+    =    liftIO ( nId <$> ( stateOfTheArtSynthesisIO =<< getNodeIO root n ) )
+    :<|> liftIO ( nId <$> ( simpleSynthesisIO        =<< getNodeIO root n ) )
+    :<|> liftIO ( nId <$> ( smartBindSynthesisIO     =<< getNodeIO root n ) )
+
+    :<|> liftIO ( nId <$> ( bestStepIO               =<< getNodeIO root n ) )
+    :<|> liftIO ( nId <$> ( obviousBindThreadIO      =<< getNodeIO root n ) )
+    :<|> liftIO ( nId <$> ( allBindsAndRefsIO        =<< getNodeIO root n ) )
+
+    :<|> ( \deep -> liftIO ( nId <$> ( allBestThreadIO deep =<< getNodeIO root n ) ) )
+
+
+
+testBench root nId pName = liftIO $ do
         node <- getNodeIO root nId
         let ModelState{ mDataFlowGraph } = nModel node
         unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
         writeAndRunTestbench Project
-            { pName=name
+            { pName
             , pLibPath=joinPath ["..", "..", "hdl"]
-            , pPath=joinPath ["gen", name]
+            , pPath=joinPath ["gen", pName]
             , pUnit=mUnit $ nModel node
             , pTestCntx=simulateDataFlowGraph def def mDataFlowGraph
             }
-    ))
-    :<|> simpleCompilerServer root nId
-    where
-        alg ModelState{ mDataFlowGraph=DFCluster nodes } = map (\(DFLeaf f) -> f) nodes
-        alg _                                            = error "unsupported algorithm structure"
+
+
+------------------------------------------------------------
+
+extractFuns ModelState{ mDataFlowGraph=DFCluster nodes }
+    = map (\(DFLeaf f) -> f) nodes
+extractFuns _ = error "unsupported algorithm structure"
+
 
 
 -- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
         { dbgEndpointOptions           :: [ UnitEndpointView tag v ]
-        , dbgFunctionLocks             :: [ ( String, [Lock v] ) ]
-        , dbgCurrentStateFunctionLocks :: [ ( String, [Lock v] ) ]
-        , dbgPULocks                   :: [ ( String, [Lock v] ) ]
+        , dbgFunctionLocks             :: [ ( String, [ Lock v ] ) ]
+        , dbgCurrentStateFunctionLocks :: [ ( String, [ Lock v ] ) ]
+        , dbgPULocks                   :: [ ( String, [ Lock v ] ) ]
         }
     deriving ( Generic )
 
@@ -129,24 +164,3 @@ debug root nId = do
         endpointOptions' BusNetwork{ bnPus }
             = let f (tag, pu) = map (\(t, ep) -> UnitEndpointView t $ view ep) $ zip (repeat tag) $ endpointOptions pu
             in concatMap f $ M.assocs bnPus
-
-
-type SimpleCompilerAPI tag v x t
-    =    "edges" :> Get '[JSON] [ EdgeView tag v x t ]
-    :<|> "stateOfTheArtSynthesisIO" :> Post '[JSON] NId
-    :<|> "simpleSynthesis" :> Post '[JSON] NId
-    :<|> "bestStep" :> Post '[JSON] NId
-    :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
-    :<|> "obviousBindThread" :> Post '[JSON] NId
-    :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
-    :<|> "allBindsAndRefsIO" :> Post '[JSON] NId
-
-simpleCompilerServer root n
-    =    liftIO ( return . map view =<< getEdgesIO =<< getNodeIO root n )
-    :<|> liftIO ( nId <$> (stateOfTheArtSynthesisIO =<< getNodeIO root n))
-    :<|> liftIO ( nId <$> (simpleSynthesisIO =<< getNodeIO root n))
-    :<|> liftIO ( nId <$> (bestStepIO =<< getNodeIO root n))
-    :<|> liftIO ( nId <$> (smartBindSynthesisIO =<< getNodeIO root n))
-    :<|> liftIO ( nId <$> (obviousBindThreadIO =<< getNodeIO root n))
-    :<|> ( \deep -> liftIO ( nId <$> (allBestThreadIO deep =<< getNodeIO root n)) )
-    :<|> liftIO ( nId <$> (allBindsAndRefsIO =<< getNodeIO root n))

@@ -80,10 +80,7 @@ application model = do
         )
 
 
--- |Run backend server. Parameters:
---
--- - if true - prepare static files for the web UI by @npm@;
--- - initial model state.
+-- |Run backend server.
 backendServer port modelState = do
     putStrLn $ "Running NITTA server at http://localhost:" ++ show port ++ "/index.html"
     app <- application modelState

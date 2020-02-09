@@ -1,7 +1,7 @@
 import * as React from "react";
 import Tree from "react-d3-tree";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { AppContext, IAppContext, SelectedNodeId, reLastNidStep } from "../../app/AppContext";
+import { AppContext, IAppContext, NodeId, reLastNidStep } from "../../app/AppContext";
 import { SynthesisNodeView, TreeView, NId } from "../../../gen/types";
 import { AxiosResponse, AxiosError } from "axios";
 
@@ -30,10 +30,10 @@ export const SynthesisGraphView: React.FC = () => {
 
   const [dataGraph, setDataGraph] = React.useState<Graph[]>([] as Graph[]);
   const [nIds, setNIds] = React.useState<Ids>({});
-  const [currentSelectedNodeId, setCurrentSelectedNodeId] = React.useState<SelectedNodeId>("");
+  const [currentSelectedNodeId, setCurrentSelectedNodeId] = React.useState<NodeId>("");
 
   const markNode = React.useCallback(
-    (nid: SelectedNodeId, nidArray?: Ids, color?: string) => {
+    (nid: NodeId, nidArray?: Ids, color?: string) => {
       if (color === undefined) color = "blue";
       if (nidArray === undefined) nidArray = nIds;
       if (nidArray === null) return;
@@ -47,15 +47,15 @@ export const SynthesisGraphView: React.FC = () => {
           r: 10,
           cx: 0,
           cy: 0,
-          fill: color,
-        },
+          fill: color
+        }
       };
     },
     [nIds]
   );
 
   const unmarkNode = React.useCallback(
-    (nid: SelectedNodeId) => {
+    (nid: NodeId) => {
       if (nid === null) return;
       let tmp: string = nIds[nid].nodeSvgShapeOriginal;
       let nids = nIds;
@@ -69,7 +69,7 @@ export const SynthesisGraphView: React.FC = () => {
     let nid = appContext.selectedNodeId;
 
     haskellApiService
-      .getSynthesis()
+      .getSynthesisTree()
       .then((response: AxiosResponse<TreeView<SynthesisNodeView>>) => {
         let nidArray: Ids = {};
         let buildGraph = (gNode: Graph, dNode: TreeView<SynthesisNodeView>) => {
@@ -81,7 +81,7 @@ export const SynthesisGraphView: React.FC = () => {
           if (dNode.rootLabel.svIsComplete) markNode(strNid, nidArray, "lime");
           gNode.attributes = {
             dec: dNode.rootLabel.svOptionType,
-            ch: dNode.rootLabel.svDuration + " / " + dNode.rootLabel.svCharacteristic,
+            ch: dNode.rootLabel.svDuration + " / " + dNode.rootLabel.svCharacteristic
           };
           gNode.status = dNode.rootLabel.svIsComplete;
           dNode.rootLabel.svCntx.forEach((e: string, i: number) => {
@@ -133,7 +133,7 @@ export const SynthesisGraphView: React.FC = () => {
     dataGraph,
     markNode,
     nIds,
-    unmarkNode,
+    unmarkNode
   ]);
 
   if (!dataGraph === null || dataGraph.length === 0) {
@@ -160,20 +160,20 @@ export const SynthesisGraphView: React.FC = () => {
             r: 10,
             cx: 0,
             cy: 0,
-            fill: "white",
-          },
+            fill: "white"
+          }
         }}
         styles={{
           nodes: {
             node: {
               name: { fontSize: "12px" },
-              attributes: { fontSize: "10px" },
+              attributes: { fontSize: "10px" }
             },
             leafNode: {
               name: { fontSize: "12px" },
-              attributes: { fontSize: "10px" },
-            },
-          },
+              attributes: { fontSize: "10px" }
+            }
+          }
         }}
         onClick={(node: any) => {
           appContext.selectNode(node.nid);
