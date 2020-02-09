@@ -40,7 +40,7 @@ module NITTA.Synthesis.Tree
     ( -- *Synthesis graph
       NId(..), G
     , Node(..), mkRootNodeIO, getNodeIO, getNodePathIO
-    , Edge(..), getEdgesIO, getPositiveEdgesIO, getSynthesisHistoryIO
+    , Edge(..), getEdgesIO, getPositiveEdgesIO
       -- *Utils
     , isSynthesisFinish
     ) where
@@ -203,18 +203,6 @@ getEdgesIO node@Node{ nEdges } = atomically $
 -- |For synthesis method is more usefull, because throw away all useless edges
 -- (objective function value less than zero).
 getPositiveEdgesIO n = filter ((> 0) . eObjectiveFunctionValue) <$> getEdgesIO n
-
-
--- |Get a decision history from root to speific nid.
-getSynthesisHistoryIO node (NId []) = return $ getSynthesisHistoryIO' node
-getSynthesisHistoryIO node nId@(NId (i:is)) = do
-    edges <- getEdgesIO node
-    unless (i < length edges) $ error $ "getNode - wrong nId: " ++ show nId
-    xs <- getSynthesisHistoryIO (eTarget $ edges !! i) (NId is)
-    return (getSynthesisHistoryIO' node ++ xs)
-
-getSynthesisHistoryIO' Node{ nOrigin=Nothing }                = []
-getSynthesisHistoryIO' Node{ nOrigin=Just Edge{ eDecision }, nId } = [ ( nId, eDecision ) ]
 
 
 -- |Get list of all nodes from root to selected.

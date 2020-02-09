@@ -3,11 +3,11 @@ import React from "react";
 export const nInSeparator = "-";
 export const reLastNidStep = /-[^-]*$/;
 
-export type SelectedNodeId = string;
+export type NodeId = string;
 
 export interface IAppContext {
-  selectedNodeId: SelectedNodeId;
-  selectNode: (id: SelectedNodeId) => void;
+  selectedNodeId: NodeId;
+  selectNode: (id: NodeId) => void;
   reloadSelectedNode: () => void;
 }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { haskellApiService } from "../../../services/HaskellApiService";
+import { haskellApiService, TestBenchReport } from "../../../services/HaskellApiService";
 import { TestbenchReport } from "../../../gen/types";
 import { AxiosResponse, AxiosError } from "axios";
 import { AppContext, IAppContext } from "../../app/AppContext";
@@ -17,11 +17,11 @@ export const TestBenchPage: React.FC = () => {
   useEffect(() => {
     haskellApiService
       .runTestBench(appContext.selectedNodeId, "web_ui")
-      .then((response: AxiosResponse<TestbenchReport<string, number> | null>) => {
+      .then((response: AxiosResponse<TestBenchReport | null>) => {
         setTestBenchDump(response.data);
         setRequestSuccess(true);
       })
-      .catch((err: AxiosError) => { 
+      .catch((err: AxiosError) => {
         setRequestSuccess(false);
       });
   }, [appContext.selectedNodeId]);

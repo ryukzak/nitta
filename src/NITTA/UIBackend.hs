@@ -65,7 +65,7 @@ prepareStaticFiles = do
 
 
 
-application model = do
+application receivedValues model = do
     root <- mkRootNodeIO model
     return $ serve
         ( Proxy :: Proxy
@@ -74,18 +74,15 @@ application model = do
             :<|> Raw
             )
         )
-        (    synthesisServer root
+        (    synthesisServer BackendCntx{ root, receivedValues }
         :<|> throwError err301 { errHeaders = [("Location", "index.html")] }
         :<|> serveDirectoryWebApp (joinPath ["web", "build"])
         )
 
 
--- |Run backend server. Parameters:
---
--- - if true - prepare static files for the web UI by @npm@;
--- - initial model state.
-backendServer port modelState = do
+-- |Run backend server.
+backendServer port receivedValues modelState = do
     putStrLn $ "Running NITTA server at http://localhost:" ++ show port ++ "/index.html"
-    app <- application modelState
+    app <- application receivedValues modelState
     setLocaleEncoding utf8
     run port $ simpleCors app
