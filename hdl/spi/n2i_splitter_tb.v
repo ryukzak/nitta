@@ -10,11 +10,11 @@ wire [7:0] to_spi;
 wire splitter_ready;
 reg [31:0] from_nitta;
 
-nitta_to_spi_splitter 
+n2i_splitter
   #( .DATA_WIDTH( 32 )
    , .ATTR_WIDTH( 0 )
    , .SPI_DATA_WIDTH( 8 )
-   ) nitta_to_spi_splitter 
+   ) n2i_splitter
   ( .clk( clk )
   , .rst( rst )
 
@@ -93,8 +93,8 @@ initial begin
 end
 
 initial begin
-  $dumpfile("nitta_to_spi_splitter_tb.vcd");
-  $dumpvars(-1, nitta_to_spi_splitter_tb);
+  $dumpfile("n2i_splitter_tb.vcd");
+  $dumpvars(-1, n2i_splitter_tb);
 end 
 
 endmodule
