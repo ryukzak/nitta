@@ -647,7 +647,7 @@ instance ( VarValTime v x t
                     @(posedge clk);
                     while (!env_init_flag) @(posedge clk);
                     { inline assertions }
-                    repeat ( 2000 ) @(posedge clk);
+                    repeat ( { 2 * nextTick bnProcess } ) @(posedge clk);
                     $finish;
                 end
 
