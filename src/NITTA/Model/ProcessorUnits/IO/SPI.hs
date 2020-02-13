@@ -190,21 +190,23 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                     receiveCycle transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
                         in codeBlock [qc|
+                            $display( "set data for sending { xs } by { tag }_io_test_input" );
                             { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
                             { tag }_io_test_start_transaction = 1;                           @(posedge { signalClk });
                             { tag }_io_test_start_transaction = 0;                           @(posedge { signalClk });
                             repeat( { frameWidth * 2 + bounceFilter + 2 } ) @(posedge { signalClk });
+
                             |]
 
                     sendingAssert transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
                         in codeBlock [qc|
                             @(posedge { tag }_io_test_start_transaction);
-                                $display( "{ tag }_io_test_output except: %H (\{ { toVerilogLiteral xs } })", \{ { toVerilogLiteral xs } } );
-                                $display( "{ tag }_io_test_output actual: %H", { tag }_io_test_output );
-                                if ( { tag }_io_test_output !=  \{ { toVerilogLiteral xs } } )
-                                    $display("                       FAIL");
-                                $display();
+                                $write( "{ tag }_io_test_output actual: %H except: %H (\{ { toVerilogLiteral xs } })",
+                                    { tag }_io_test_output, \{ { toVerilogLiteral xs } } );
+                                if ( { tag }_io_test_output !== \{ { toVerilogLiteral xs } } ) $display("\t\tFAIL");
+                                else $display();
+
                             |]
 
                     endDeviceInstance = codeBlock [qc|
@@ -238,24 +240,33 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                             { tag }_io_test_input <= 0;
                             @(negedge { signalRst });
                             repeat({ timeLag }) @(posedge { signalClk });
-                            { envInitFlagName } <= 1;
 
                             { inline $ concat $ map receiveCycle receivedVarsValues }
-                            repeat(70) @(posedge { signalClk });
+                            repeat ( 5 ) begin
+                                { inline $ receiveCycle def }
+                            end
+
                             // $finish; // DON'T DO THAT (with this line test can pass without data checking)
                         end
                         |]
                     envDeviceCheck = codeBlock [qc|
                         initial begin
                             @(negedge { signalRst });
-                            repeat (3) @(posedge { tag }_io_test_start_transaction); // latency
+                            repeat ( OUTPUT_LATENCY ) @(posedge { tag }_io_test_start_transaction); // latency
+
                             { inline $ concat $ map sendingAssert sendedVarsValues }
+                            forever begin
+                                @(posedge spi_io_test_start_transaction);
+                                $display( "{ tag }_io_test_output actual: %H", { tag }_io_test_output );
+                            end
                         end
                         |]
                     -- FIXME: do not check output signals when we drop data
                 in codeBlock [qc|
                     ////////////////////////////////////////
                     // SPI test environment
+                    localparam NITTA_LATENCY = 3;
+                    localparam OUTPUT_LATENCY = 5;
 
                     // SPI device in test environment
                     { inline endDeviceInstance }
@@ -265,6 +276,12 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
 
                     // SPI device in test environment check
                     { inline $ if frameWordCount == 0 then disable else envDeviceCheck }
+
+                    // SPI environment initialization flag set
+                    initial begin
+                        repeat ( NITTA_LATENCY ) @(posedge spi_io_test_start_transaction);
+                        spi_env_init_flag <= 1;
+                    end
                     |]
 
             SPIMaster{..} -> let
