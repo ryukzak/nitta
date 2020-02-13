@@ -207,8 +207,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                                 $display();
                             |]
 
-                    envInstance = codeBlock [qc|
-                        // SPI Input/Output environment
+                    endDeviceInstance = codeBlock [qc|
                         { inline $ comment $ show sio }
                         reg { tag }_io_test_start_transaction;
                         reg  [{ frameWidth }-1:0] { tag }_io_test_input;
@@ -233,8 +232,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                         initial { tag }_io_test.inner.shiftreg <= 0;
                         |]
 
-                    interactions = codeBlock [qc|
-                        // SPI Input signal generation
+                    envDeviceControl = codeBlock [qc|
                         initial begin
                             { tag }_io_test_start_transaction <= 0;
                             { tag }_io_test_input <= 0;
@@ -246,8 +244,8 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                             repeat(70) @(posedge { signalClk });
                             // $finish; // DON'T DO THAT (with this line test can pass without data checking)
                         end
-
-                        // SPI Output signal checking
+                        |]
+                    envDeviceCheck = codeBlock [qc|
                         initial begin
                             @(negedge { signalRst });
                             repeat (3) @(posedge { tag }_io_test_start_transaction); // latency
@@ -256,9 +254,17 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                         |]
                     -- FIXME: do not check output signals when we drop data
                 in codeBlock [qc|
-                    { inline envInstance }
+                    ////////////////////////////////////////
+                    // SPI test environment
 
-                    { inline $ if frameWordCount == 0 then disable else interactions }
+                    // SPI device in test environment
+                    { inline endDeviceInstance }
+
+                    // SPI device in test environment control
+                    { inline $ if frameWordCount == 0 then disable else envDeviceControl }
+
+                    // SPI device in test environment check
+                    { inline $ if frameWordCount == 0 then disable else envDeviceCheck }
                     |]
 
             SPIMaster{..} -> let
@@ -281,7 +287,6 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                             |]
 
                     envInstance = codeBlock [qc|
-                        // SPI Input/Output environment
                         { inline $ comment $ show sio }
                         reg { tag }_io_test_start_transaction;
                         reg  [{ frameWidth }-1:0] { tag }_io_test_input;

@@ -22,7 +22,7 @@ import           Safe              (headDef, minimumMay)
 inlineMarker = "###"
 
 -- |For right indentations of multiple lines
-inline str = unlines $ map (inlineMarker ++ ) $ lines str
+inline str = S.join "\n" $ map (inlineMarker ++ ) $ lines str
 
 -- |Add comment for each line
 comment str = unlines $ map ("// " ++ ) $ lines str

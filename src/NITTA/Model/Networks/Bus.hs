@@ -600,24 +600,46 @@ instance ( VarValTime v x t
 
         in Immediate (moduleName pName n ++ "_tb.v") $ codeBlock [qc|
             `timescale 1 ps / 1 ps
-            {"module"} { moduleName pName n }_tb();
+            module { moduleName pName n }_tb();
+
             /*
             Functions:
             { inline $ S.join "\\n" $ map show $ functions n }
+            */
 
+            /*
             Steps:
             { inline $ S.join "\\n" $ map show $ reverse $ steps $ process n }
             */
 
+            // system signals
             reg clk, rst;
-            { inline $ if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
-
-            {inline $ snippetTraceAndCheck $ finiteBitSize (def :: x) }
             wire cycle;
 
-            // test environment initialization flags
+            // clk and rst generator
+            { inline snippetClkGen }
+
+            // vcd dump
+            { inline $ snippetDumpFile $ moduleName pName n }
+
+
+
+            ////////////////////////////////////////////////////////////
+            // test environment
+
+            // external ports (IO)
+            { inline $ if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
+
+            // initialization flags
             reg { S.join ", " envInitFlags };
             assign env_init_flag = { defEnvInitFlag envInitFlags ioSync };
+
+            { inline testEnv }
+
+
+
+            ////////////////////////////////////////////////////////////
+            // unit under test
 
             { moduleName pName n } #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -632,12 +654,8 @@ instance ( VarValTime v x t
                 , .is_drop_allow( { isDrowAllowSignal ioSync } )
                 );
 
-            { inline testEnv }
 
-            { inline $ snippetDumpFile $ moduleName pName n }
-
-            { inline snippetClkGen }
-
+            // internal unit under test checks
             initial
                 begin
                     // microcode when rst == 1 -> program[0], and must be nop for all PUs
@@ -650,6 +668,12 @@ instance ( VarValTime v x t
                     repeat ( { 2 * nextTick bnProcess } ) @(posedge clk);
                     $finish;
                 end
+
+
+
+            ////////////////////////////////////////////////////////////
+            // Utils
+            { inline $ snippetTraceAndCheck $ finiteBitSize (def :: x) }
 
             endmodule
             |]
