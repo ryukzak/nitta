@@ -124,7 +124,7 @@ instance ( VarValTime v x t, SimpleIOInterface i
         , let
             remainVars = allVars L.\\ S.elems vs
             process_ = execSchedule sio $ do
-                void $ scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) Receiving
+                void $ scheduleEndpoint d $ scheduleInstruction (shiftI (0) epAt) $ Receiving $ null remainVars
                 when (null remainVars) $ void $ scheduleFunction epAt function
                 updateTick (sup epAt + 1)
                 return ()
@@ -166,7 +166,7 @@ instance Controllable (SimpleIO i v x t) where
     -- 6. Send - В блок загружается с шины слово по адресу 1.
     -- 7. Receive - Из блока выгружается на шину слово по адресу 1.
     data Instruction (SimpleIO i v x t)
-        = Receiving
+        = Receiving Bool
         | Sending
         deriving ( Show )
 
@@ -195,8 +195,8 @@ instance Default (Microcode (SimpleIO i v x t)) where
 
 
 instance UnambiguouslyDecode (SimpleIO i v x t) where
-    decodeInstruction Sending   = def{ wrSignal=True }
-    decodeInstruction Receiving = def{ oeSignal=True }
+    decodeInstruction Sending          = def{ wrSignal=True }
+    decodeInstruction (Receiving next) = def{ oeSignal=True, wrSignal=next }
 
 
 instance Connected (SimpleIO i v x t) where

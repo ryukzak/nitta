@@ -204,7 +204,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                             @(posedge { tag }_io_test_start_transaction);
                                 $write( "{ tag }_io_test_output actual: %H except: %H (\{ { toVerilogLiteral xs } })",
                                     { tag }_io_test_output, \{ { toVerilogLiteral xs } } );
-                                if ( { tag }_io_test_output !== \{ { toVerilogLiteral xs } } ) $display("\t\tFAIL");
+                                if ( { tag }_io_test_output != \{ { toVerilogLiteral xs } } ) $display("\t\tFAIL");
                                 else $display();
 
                             |]
@@ -265,8 +265,8 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                 in codeBlock [qc|
                     ////////////////////////////////////////
                     // SPI test environment
-                    localparam NITTA_LATENCY = 3;
-                    localparam OUTPUT_LATENCY = 5;
+                    localparam NITTA_LATENCY = 1;
+                    localparam OUTPUT_LATENCY = 3;
 
                     // SPI device in test environment
                     { inline endDeviceInstance }

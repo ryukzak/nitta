@@ -36,16 +36,15 @@ module pu_slave_spi #
     );
 
 reg disabled = 0;
+reg buffer_sel; // buffer selector
+
 
 ///////////////////////////////////////////////////////////
 // [NITTA >>> SPI]
 
-// send_buffers
-reg send_buffer_sel;
+wire send_buffer_receive_mode[1:0];
+wire send_buffer_action[1:0];
 
-wire send_buffer_wr[1:0];
-wire send_buffer_oe[1:0];
-wire [DATA_WIDTH-1:0] send_buffer_data_in[1:0];
 wire [DATA_WIDTH-1:0] send_buffer_data_out[1:0];
 
 generate
@@ -54,29 +53,27 @@ generate
         buffer #
                 ( .BUF_SIZE( BUF_SIZE )
                 , .DATA_WIDTH( DATA_WIDTH )
+                , .I(i)
                 ) send_buffer // from nitta to spi
             ( .clk( clk )
             , .rst( rst || flag_stop )
 
-            , .wr( send_buffer_wr[i] )
-            , .data_in( send_buffer_data_in[i] )
+            , .receive_mode( send_buffer_receive_mode[i] )
+            , .action( send_buffer_action[i] )
 
-            , .oe( send_buffer_oe[i] )
+            , .data_in( data_in )
             , .data_out( send_buffer_data_out[i] )
             ); 
     end
 endgenerate
 
-// signal_wr can be received only from the nitta's side.
-assign send_buffer_wr[0] =  send_buffer_sel ? signal_wr : 1'h0;
-assign send_buffer_wr[1] = !send_buffer_sel ? signal_wr : 1'h0;
-assign send_buffer_data_in[0] =  send_buffer_sel ? data_in : 0;
-assign send_buffer_data_in[1] = !send_buffer_sel ? data_in : 0;
+assign send_buffer_receive_mode[0] = signal_cycle ? !buffer_sel : buffer_sel;
+assign send_buffer_receive_mode[1] = signal_cycle ?  buffer_sel : !buffer_sel;
 
-// signal_oe can be received only from the spi driver's side (splitter).
-assign send_buffer_oe[0] = !send_buffer_sel ? splitter_ready : 1'h0;
-assign send_buffer_oe[1] =  send_buffer_sel ? splitter_ready : 1'h0;
-wire [DATA_WIDTH-1:0] nitta_to_splitter =  send_buffer_data_out[send_buffer_sel];
+assign send_buffer_action[0] = send_buffer_receive_mode[0] ? (signal_wr & !signal_oe) : splitter_ready ;
+assign send_buffer_action[1] = send_buffer_receive_mode[1] ? (signal_wr & !signal_oe) : splitter_ready ;
+
+wire [DATA_WIDTH-1:0] nitta_to_splitter = send_buffer_data_out[buffer_sel];
 
 // splitter: translate from DATA_WIDTH to SPI_DATA_WIDTH
 wire splitter_ready;
@@ -103,7 +100,7 @@ nitta_to_spi_splitter #
 // splitter: translate from SPI_DATA_WIDTH to DATA_WIDTH
 wire spi_ready;
 wire [SPI_DATA_WIDTH-1:0] splitter_from_spi;
-wire splitter_ready_sn;
+wire spi_to_nitta_splitter_ready;
 wire [DATA_WIDTH-1:0] to_nitta;
 spi_to_nitta_splitter #
         ( .DATA_WIDTH( DATA_WIDTH )
@@ -114,14 +111,14 @@ spi_to_nitta_splitter #
     , .rst( rst || flag_stop )
     , .spi_ready( spi_ready )
     , .from_spi( splitter_from_spi )
-    , .splitter_ready( splitter_ready_sn )
+    , .splitter_ready( spi_to_nitta_splitter_ready )
     , .to_nitta( to_nitta )
     );
 
-wire receive_buffer_wr[1:0];
-wire receive_buffer_oe[1:0];
-wire receive_buffer_fs[1:0];
-wire [DATA_WIDTH-1:0] receive_buffer_data_in[1:0];
+
+wire receive_buffer_write_mode[1:0];
+wire receive_buffer_action[1:0];
+
 wire [DATA_WIDTH-1:0] receive_buffer_data_out[1:0];
 
 generate
@@ -130,27 +127,30 @@ generate
         buffer #
                 ( .DATA_WIDTH( DATA_WIDTH )
                 , .BUF_SIZE( BUF_SIZE )
+                , .I(j)
                 ) receive_buffer
             ( .clk( clk )
-            , .rst( rst || receive_buffer_fs[j] )
+            , .rst( rst )
 
-            , .wr( receive_buffer_wr[j] )
-            , .data_in( receive_buffer_data_in[j] )
+            , .receive_mode( receive_buffer_write_mode[j] )
+            , .action( receive_buffer_action[j] )
 
-            , .oe( receive_buffer_oe[j] )
+            , .data_in( to_nitta )
             , .data_out( receive_buffer_data_out[j] )
             ); 
     end
 endgenerate
 
-assign receive_buffer_wr[0] =  send_buffer_sel ? splitter_ready_sn : 1'h0;
-assign receive_buffer_wr[1] = !send_buffer_sel ? splitter_ready_sn : 1'h0;
-assign receive_buffer_fs[0] = !send_buffer_sel ? flag_stop : 1'h0;
-assign receive_buffer_fs[1] =  send_buffer_sel ? flag_stop : 1'h0;
-assign receive_buffer_data_in[0] =  send_buffer_sel ? to_nitta : 0;
-assign receive_buffer_data_in[1] = !send_buffer_sel ? to_nitta : 0;
-assign receive_buffer_oe[0] = !send_buffer_sel ? signal_oe : 1'h0;
-assign receive_buffer_oe[1] =  send_buffer_sel ? signal_oe : 1'h0;
+
+// Buffer select can't wait one tick to buffer_sel update after new
+// computational cycle start. We should predict buffer_sel change.
+assign receive_buffer_write_mode[0] = signal_cycle ? !buffer_sel : buffer_sel;
+assign receive_buffer_write_mode[1] = signal_cycle ?  buffer_sel : !buffer_sel;
+
+assign receive_buffer_action[0] = receive_buffer_write_mode[0] ? spi_to_nitta_splitter_ready : (signal_oe & signal_wr) ;
+assign receive_buffer_action[1] = receive_buffer_write_mode[1] ? spi_to_nitta_splitter_ready : (signal_oe & signal_wr) ;
+
+
 
 // SPI driver
 wire f_mosi, f_cs, f_sclk;
@@ -171,7 +171,7 @@ pu_slave_spi_driver #
     );
 
 // bounce filter
-//
+
 // FIXME: looks bad. Original signals are synchoronised, but filtered signals not.
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_mosi_filter ( rst, clk, mosi, f_mosi );
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_cs_filter   ( rst, clk, cs,   f_cs   );
@@ -184,21 +184,23 @@ reg prev_f_cs;
 always @( posedge clk ) prev_f_cs <= f_cs;
 
 always @( posedge clk ) begin
-    if ( rst ) send_buffer_sel <= 0;
-    else if ( signal_cycle && f_cs ) send_buffer_sel <= !send_buffer_sel;
+    if ( rst ) buffer_sel <= 0;
+    else if ( signal_cycle && f_cs ) buffer_sel <= !buffer_sel;
 end
+
+wire transport_end = !prev_f_cs && f_cs;
 
 always @( posedge clk ) begin
     if ( rst ) flag_stop <= 0;
     else if ( disabled ) flag_stop <= 1;
-    else if ( !prev_f_cs && f_cs ) flag_stop <= 1;
+    else if ( transport_end ) flag_stop <= 1;
     else flag_stop <= 0;
 end
 
 reg [1:0] count_word;
 always @( posedge clk ) begin
     if ( rst | flag_stop )        count_word <= 0;
-    else if ( splitter_ready_sn ) count_word <= count_word + 1;
+    else if ( spi_to_nitta_splitter_ready ) count_word <= count_word + 1;
 end
 
 reg capture_word;
@@ -210,7 +212,6 @@ end
 assign attr_out[3:1] = 3'b000;
 assign attr_out[INVALID] = capture_word;
 
-assign data_out   = receive_buffer_oe[1] ? receive_buffer_data_out[1] : 
-                    receive_buffer_oe[0] ? receive_buffer_data_out[0] : {DATA_WIDTH{1'b0}};
+assign data_out = signal_oe ? receive_buffer_data_out[buffer_sel] : {DATA_WIDTH{1'b0}};
 
 endmodule
