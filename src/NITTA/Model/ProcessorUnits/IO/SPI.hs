@@ -28,8 +28,8 @@ import           Data.Bits                              (finiteBitSize)
 import           Data.Default
 import qualified Data.Map                               as M
 import           Data.Maybe                             (fromMaybe, mapMaybe)
-import qualified Data.Set                               as S
 import qualified Data.String.Utils                      as S
+import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.IO.SimpleIO
@@ -153,11 +153,12 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
         TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
         SimpleIOPorts{..}
         ioPorts
-        cntx@Cntx{ cntxCycleNumber, cntxProcess } = let
-            receivedVariablesSeq = mapMaybe (\case
-                    Source vs -> Just $ head $ S.elems vs
-                    _ -> Nothing
-                ) $ getEndpoints process_
+        cntx@Cntx{ cntxCycleNumber, cntxProcess }
+        = let
+            receivedVariablesSeq = mapMaybe (\f -> case castF f of
+                    Just Receive{} -> Just $ oneOf $ variables f
+                    _              -> Nothing
+                ) $ functions process_
             receivedVarsValues = take cntxCycleNumber $ cntxReceivedBySlice cntx
             sendedVariableSeq = mapMaybe (\case
                     (Target v) -> Just v

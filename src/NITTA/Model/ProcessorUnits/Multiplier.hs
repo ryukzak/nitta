@@ -130,12 +130,12 @@ module NITTA.Model.ProcessorUnits.Multiplier
     , Ports(..), IOPorts(..)
     ) where
 
-import           Control.Monad                    (when)
-import           Data.Bits                        (finiteBitSize)
+import           Control.Monad                   (when)
+import           Data.Bits                       (finiteBitSize)
 import           Data.Default
-import           Data.List                        (find, partition, (\\))
-import           Data.Set                         (elems, fromList, member)
-import qualified NITTA.Intermediate.Functions     as F
+import           Data.List                       (find, partition, (\\))
+import           Data.Set                        (elems, fromList, member)
+import qualified NITTA.Intermediate.Functions    as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
@@ -146,8 +146,8 @@ import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                 (sup, (...))
-import           Text.InterpolatedString.Perl6    (qc)
+import           Numeric.Interval                (sup, (...))
+import           Text.InterpolatedString.Perl6   (qc)
 
 {-
 = Processor (or process unit in an early version)
@@ -637,7 +637,7 @@ instance IOTestBench (Multiplier v x t) v x
 -- This class is easy realized: we take process description
 -- (all planned functions) from mUnit, and function in progress,
 -- if it is.
-instance WithFunctions (Multiplier v x t) (F v x) where
+instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
     functions Multiplier{ process_, remain, currentWork }
         = functions process_
         ++ remain
