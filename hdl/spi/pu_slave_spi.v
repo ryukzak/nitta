@@ -45,6 +45,7 @@ reg disabled = 0;
 reg buffer_sel; // buffer selector
 
 
+
 ///////////////////////////////////////////////////////////
 // data flow from NITTA to SPI driver (n2i)
 
@@ -81,6 +82,7 @@ assign n2i_action[1] = n2i_buf_mode[1] ? (signal_wr & !signal_oe) : n2i_splitter
 // splitter: translate from DATA_WIDTH to SPI_DATA_WIDTH
 wire [SPI_DATA_WIDTH-1:0] n2i_splitter_data_out;
 wire                      n2i_splitter_ready;
+wire spi_prepare;
 
 n2i_splitter #
         ( .DATA_WIDTH( DATA_WIDTH )
@@ -98,6 +100,7 @@ n2i_splitter #
     );
 
 
+
 ///////////////////////////////////////////////////////////
 // data flow from SPI driver to NITTA (i2n)
 
@@ -105,6 +108,8 @@ n2i_splitter #
 wire [SPI_DATA_WIDTH-1:0] i2n_splitter_from_spi;
 wire i2n_splitter_ready;
 wire [DATA_WIDTH-1:0] i2n_splitter_data_out;
+wire spi_ready;
+
 i2n_splitter #
         ( .DATA_WIDTH( DATA_WIDTH )
         , .ATTR_WIDTH( ATTR_WIDTH )
@@ -145,7 +150,6 @@ generate
     end
 endgenerate
 
-
 // Buffer select can't wait one tick to buffer_sel update after new
 // computational cycle start. We should predict buffer_sel change.
 assign i2n_buf_mode[0] = signal_cycle ? !buffer_sel : buffer_sel;
@@ -156,10 +160,9 @@ assign i2n_action[1] = i2n_buf_mode[1] ? i2n_splitter_ready : (signal_oe & signa
 
 
 
+///////////////////////////////////////////////////////////
 // SPI driver
 wire f_mosi, f_cs, f_sclk;
-wire spi_prepare;
-wire spi_ready;
 
 pu_slave_spi_driver #
         ( .DATA_WIDTH( SPI_DATA_WIDTH )
@@ -182,6 +185,8 @@ pu_slave_spi_driver #
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_mosi_filter ( rst, clk, mosi, f_mosi );
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_cs_filter   ( rst, clk, cs,   f_cs   );
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_sclk_filter ( rst, clk, sclk, f_sclk );
+
+
 
 ///////////////////////////////////////////////////////////
 // Control logic
