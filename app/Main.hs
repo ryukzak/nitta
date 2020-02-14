@@ -85,18 +85,27 @@ main = do
     let cadDesc = if web then Just port else Nothing
 
     ( \( SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b) ) ->
-          selectCAD cadDesc src ( microarch io_sync :: BusNetwork String String (FX m b) Int)
+          selectCAD
+              cadDesc
+              src
+              [ ("a#0", [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ])
+              , ("a#1", [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ])
+              , ("b#0", reverse [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ])
+              , ("b#1", reverse [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ])
+              ]
+              ( microarch io_sync :: BusNetwork String String (FX m b) Int)
         ) $ parseFX type_
 
 
-selectCAD (Just port) src ma = backendServer port $ mkModelWithOneNetwork ma $ lua2functions src
+selectCAD (Just port) src received ma
+    = backendServer port received $ mkModelWithOneNetwork ma $ lua2functions src
 
-selectCAD Nothing src ma = void $ runTargetSynthesis def
+selectCAD Nothing src received ma = void $ runTargetSynthesis def
         { tName="main"
         , tMicroArch=ma
         , tDFG=lua2functions src
         , tVerbose=True
-        , tReceivedValues=def
+        , tReceivedValues=received
         }
 
 

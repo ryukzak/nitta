@@ -47,46 +47,48 @@ export const ProcessView: React.FC = () => {
       .catch((err: AxiosError) => console.log(err));
   }, [appContext.selectedNodeId]);
 
+  if (!data) return <pre>LOADING</pre>;
+
+  if (data.timelines.length === 0) return <pre>EMPTY PROCESS TIMELINE</pre>;
+
   return (
     <div className="p-3 d-flex flex-nowrap">
-      {!data ? (
-        <pre>LOADING</pre>
-      ) : data.timelines.length === 0 ? (
-        <pre>EMPTY PROCESS TIMELINE</pre>
-      ) : (
-        <>
-          <TimelineView
-            timelines={data.timelines}
-            highlight={highlight}
-            data={data}
-            onHighlightChange={h => setHighlight(h)}
-            onDetailChange={d => setDetail(d)}
-          />
-          <div className="ml-2 flex-grow-1" style={{ minWidth: "30%" }}>
-            <hr />
-            <div className="squeeze upRelation">upper related:</div>
-            <div className="x-scrollable">
-              {highlight.up.map(e =>
-                pIdIndex !== null && pIdIndex[e] !== undefined ? <div className="squeeze">- {pIdIndex[e].pInfo}</div> : ""
-              )}
-            </div>
-            <hr />
-            <div className="squeeze current">current:</div>
-            <div className="x-scrollable">
-              {detail.map(e => (
-                <div className="squeeze">- {e.pInfo}</div>
-              ))}
-            </div>
-            <hr />
-            <div className="squeeze downRelation">bottom related:</div>
-            <div className="x-scrollable">
-              {highlight.down.map(e =>
-                pIdIndex != null && pIdIndex[e] != null ? <div className="squeeze">-- {pIdIndex[e].pInfo}</div> : ""
-              )}
-            </div>
-          </div>
-        </>
-      )}
+      <TimelineView
+        timelines={data.timelines}
+        highlight={highlight}
+        data={data}
+        onHighlightChange={h => setHighlight(h)}
+        onDetailChange={d => setDetail(d)}
+      />
+      <div className="ml-2 flex-grow-1" style={{ minWidth: "30%" }}>
+        <hr />
+        <div className="squeeze upRelation">upper related:</div>
+        <div className="x-scrollable">
+          {highlight.up.map((e, i) =>
+            pIdIndex !== null && pIdIndex[e] !== undefined ? (
+              <div key={i} className="squeeze">
+                - {pIdIndex[e].pInfo}
+              </div>
+            ) : (
+              ""
+            )
+          )}
+        </div>
+        <hr />
+        <div className="squeeze current">current:</div>
+        <div className="x-scrollable">
+          {detail.map(e => (
+            <div className="squeeze">- {e.pInfo}</div>
+          ))}
+        </div>
+        <hr />
+        <div className="squeeze downRelation">bottom related:</div>
+        <div className="x-scrollable">
+          {highlight.down.map(e =>
+            pIdIndex != null && pIdIndex[e] != null ? <div className="squeeze">-- {pIdIndex[e].pInfo}</div> : ""
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -94,7 +96,7 @@ export const ProcessView: React.FC = () => {
 function resortTimeline(data: ProcessTimelines<number>) {
   let result: ProcessTimelines<number> = {
     timelines: [],
-    verticalRelations: data.verticalRelations,
+    verticalRelations: data.verticalRelations
   };
   function cmp(a: TimelineWithViewPoint<number>, b: TimelineWithViewPoint<number>) {
     if (a.timelineViewpoint.component < b.timelineViewpoint.component) return -1;

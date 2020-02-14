@@ -39,7 +39,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
   // Updating graph
   React.useEffect(() => {
     haskellApiService
-      .getIntermediateAlg(selectedNodeId)
+      .getIntermediateView(selectedNodeId)
       .then((response: AxiosResponse<IntermediateGraph>) => {
         const graphData = response.data;
         const newGraph: IntermediateGraph = {
@@ -84,7 +84,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
       .catch((err: AxiosError) => console.log(err));
 
     haskellApiService
-      .getEndpoints(selectedNodeId)
+      .getPUEndpoints(selectedNodeId)
       .then((response: AxiosResponse<UnitEndpoints>) => {
         let result: Endpoints = { sources: [], targets: [] };
         response.data.forEach(e => {

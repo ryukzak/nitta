@@ -195,6 +195,12 @@ test_examples =
         =<< lua "spi_many_outputs" (pFX32_32, microarch Sync SlaveSPI) $(embedStringFile "test/lua/spi-many-outputs.lua")
     -- , testCase "examples/pid.lua drop" $ either assertFailure return
     --     =<< lua "pid_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/pid.lua")
+    , testCase "test/lua/spi1.lua" $ either assertFailure return
+        =<< lua "spi1" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/spi1.lua")
+    , testCase "test/lua/spi2.lua" $ either assertFailure return
+        =<< lua "spi2" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/spi2.lua")
+    , testCase "test/lua/spi3.lua" $ either assertFailure return
+        =<< lua "spi3" (pFX22_32, microarch Sync SlaveSPI) $(embedStringFile "examples/spi3.lua")
     ]
 
 

@@ -26,16 +26,16 @@ module NITTA.Utils.ProcessDescription
     , scheduleInstruction
     , scheduleNestedStep
     , establishVerticalRelations, establishVerticalRelation
-    , getProcessSlice
+    , getProcessSlice, castInstruction
     , updateTick -- TODO: must be hidded
     ) where
 
 import           Control.Monad.State
-import           Data.Proxy                       (asProxyTypeOf)
+import           Data.Proxy                      (asProxyTypeOf)
 import           Data.Typeable
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Time
-import           Numeric.Interval                 (singleton)
+import           Numeric.Interval                (singleton)
 
 -- |Process builder state.
 data Schedule pu v x t
@@ -140,6 +140,11 @@ getProcessSlice :: State (Schedule pu v x t) (Process v x t)
 getProcessSlice = do
     Schedule{ schProcess } <- get
     return schProcess
+
+-- |Helper for instruction extraction from a rigid type variable.
+castInstruction :: ( Typeable a, Typeable pu ) => pu -> a -> Maybe (Instruction pu)
+castInstruction _pu i = cast i
+
 
 -- FIXME: deprecated, but why&
 updateTick tick = do

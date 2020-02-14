@@ -23,7 +23,7 @@ steps:
       - export TIME="10"
       - export URL="https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
       - export CHAT_ID="-1001238497609"
-      - export TEXT="build success branch $DRONE_BRANCH of $DRONE_REPO_NAME"
+      - export TEXT="build success branch $DRONE_BRANCH of $DRONE_REPO_NAME https://drone.lcps.nitta.io/nitta-corp/nitta"
       - echo curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
       - curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
     when:
@@ -43,7 +43,7 @@ steps:
       - export TIME="10"
       - export URL="https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
       - export CHAT_ID="-1001238497609"
-      - export TEXT="build failure branch $DRONE_BRANCH of $DRONE_REPO_NAME"
+      - export TEXT="build failure branch $DRONE_BRANCH of $DRONE_REPO_NAME https://drone.lcps.nitta.io/nitta-corp/nitta"
       - echo curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
       - curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
     when:

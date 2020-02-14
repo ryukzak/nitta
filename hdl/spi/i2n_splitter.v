@@ -1,6 +1,6 @@
 `timescale 1 ms/ 1 ms
 
-module spi_to_nitta_splitter #
+module i2n_splitter #
         ( parameter DATA_WIDTH     = 32
         , parameter ATTR_WIDTH     = 4
         , parameter SPI_DATA_WIDTH = 8
@@ -11,8 +11,8 @@ module spi_to_nitta_splitter #
     , input                           spi_ready
     , input      [SPI_DATA_WIDTH-1:0] from_spi
 
-    , output reg                      splitter_ready
-    , output reg [DATA_WIDTH-1:0]     to_nitta
+    , output                          splitter_ready
+    , output     [DATA_WIDTH-1:0]     to_nitta
     );
 
 localparam SUBFRAME_NUMBER = DATA_WIDTH / SPI_DATA_WIDTH;
@@ -40,13 +40,7 @@ always @( posedge clk ) begin
     end
 end
 
-always @( posedge clk ) begin
-    if(counter == SUBFRAME_NUMBER & !wait_spi_ready) begin 
-       splitter_ready <= 1;
-       to_nitta <= data;
-    end else begin
-       splitter_ready <= 0;
-    end
-end
+assign splitter_ready = counter == SUBFRAME_NUMBER & !wait_spi_ready;
+assign to_nitta = data;
 
 endmodule

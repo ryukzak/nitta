@@ -7,11 +7,11 @@
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE QuasiQuotes            #-}
 {-# LANGUAGE StandaloneDeriving     #-}
+{-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE TemplateHaskell        #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -36,6 +36,7 @@ module NITTA.Model.ProcessorUnits.Time
 
 import           Data.Default
 import           Data.Ix
+import qualified Data.List                     as L
 import           Data.Maybe
 import qualified Data.String.Utils             as S
 import           Data.Typeable
@@ -44,7 +45,8 @@ import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Types
 import           NITTA.Utils.CodeFormat
 import           Numeric.Interval
-import           Text.InterpolatedString.Perl6   (qc)
+import qualified Numeric.Interval              as I
+import           Text.InterpolatedString.Perl6 (qc)
 
 
 -- | Класс идентификатора вложенного вычислительного блока.
@@ -129,13 +131,13 @@ instance (VarValTime v x t) => Show (Process v x t) where
             nextUid   = { show ( nextUid p ) }
         |]
         where
-            listShow list = unlines $ map (\(i, value) -> [qc|{i}) {value}|]) $ zip [0::Integer ..] list 
+            listShow list = unlines $ map (\(i, value) -> [qc|{i}) {value}|]) $ zip [0::Integer ..] list
 
 instance ( Default t ) => Default (Process v x t) where
     def = Process { steps=[], relations=[], nextTick=def, nextUid=def }
 
-instance WithFunctions (Process v x t) (F v x) where
-    functions Process{ steps } = mapMaybe get steps
+instance ( Ord t ) => WithFunctions (Process v x t) (F v x) where
+    functions Process{ steps } = mapMaybe get $ L.sortOn (I.inf . sTime) steps
         where
             get Step{ sDesc } | FStep f <- descent sDesc = Just f
             get _             = Nothing
@@ -189,7 +191,7 @@ instance ( Show (Step v x t), Show v ) => Show (StepInfo v x t) where
     show (FStep F{ fun })            = show fun
     show (EndpointRoleStep eff)      = show eff
     show (InstructionStep instr)     = show instr
-    show NestedStep{ nTitle, nStep } = S.replace "\"" "" (show nTitle) ++ "." ++ show nStep
+    show NestedStep{ nTitle, nStep } = S.replace "\"" "" ("Nested " ++ show nTitle ++ ": " ++ show nStep)
 
 instance ( Ord v ) => Patch (StepInfo v x t) (Changeset v) where
     patch diff (FStep f)              = FStep $ patch diff f

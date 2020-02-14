@@ -206,7 +206,7 @@ snippetTestBench
         */
 
         reg clk, rst;
-        { inline $ S.join "\\n" tbcSignals' };
+        { inline $ S.join "\\n" tbcSignals' }
         reg [DATA_WIDTH-1:0]  data_in;
         reg [ATTR_WIDTH-1:0]  attr_in;
         wire [DATA_WIDTH-1:0] data_out;

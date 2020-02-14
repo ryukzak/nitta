@@ -86,7 +86,7 @@ instance ( Time t ) => Default (Divider v x t) where
     def = divider 4 True
 
 
-instance WithFunctions (Divider v x t) (F v x) where
+instance ( Ord t ) => WithFunctions (Divider v x t) (F v x) where
     functions Divider{ process_, remains, jobs }
         = functions process_
         ++ remains

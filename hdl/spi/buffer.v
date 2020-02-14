@@ -4,24 +4,29 @@ module buffer #
         , parameter ATTR_WIDTH = 4
         , parameter BUF_SIZE   = 10
         , parameter FILE       = ""
+        , parameter I = 0
         )
     ( input                   clk
     , input                   rst
 
-    , input                   wr
-    , input  [DATA_WIDTH-1:0] data_in
+    , input                   receive_mode
+    , input                   action
 
-    , input                   oe 
+    , input      [DATA_WIDTH-1:0] data_in
     , output reg [DATA_WIDTH-1:0] data_out
-
-    , input                   oe_other
-    , output     [DATA_WIDTH-1:0] data_out_other
     );
 
 localparam ADDR_WIDTH = $clog2( BUF_SIZE );
 
-reg [DATA_WIDTH-1:0] memory [0:BUF_SIZE-1]; 
+// for wr - current value
+// for oe - previous value
 reg [ADDR_WIDTH-1:0] addr;
+
+reg [DATA_WIDTH-1:0] memory [0:BUF_SIZE-1];
+
+reg prev_receive_mode;
+always @( posedge clk ) prev_receive_mode <= receive_mode;
+wire is_mode_changed = prev_receive_mode != receive_mode;
 
 generate
     if ( FILE != "" ) begin
@@ -30,24 +35,22 @@ generate
 endgenerate
 
 always @( posedge clk ) begin
-    if ( rst ) begin
+    if ( rst | !action & is_mode_changed ) begin
         addr <= 0;
         data_out <= memory[ 0 ];
-    end else if ( wr || oe ) begin
-        if ( wr ) memory[ addr ] <= data_in;
-        if ( oe ) data_out <= memory[ addr + 1 ];
-        addr <= addr + 1;
+    end else if (  receive_mode ) begin
+        if ( action ) begin
+            // $display("%d> write to buffer %d %H", I, addr, data_in);
+            memory[ addr ] <= data_in;
+            addr <= addr + 1;
+        end
+    end else if ( !receive_mode & action ) begin // if (  receive_mode )
+        if ( action ) begin
+            // $display("%d> read from buffer %d %H", I, addr + 1, memory[ addr ]);
+            data_out <= memory[ addr + 1 ];
+            addr <= addr + 1;
+        end
     end
 end
-
-reg [ADDR_WIDTH-1:0] addr_other;
-always @( posedge clk ) begin
-    if ( rst ) begin
-        addr_other <= 0;
-    end else if ( oe_other ) begin
-        addr_other <= addr_other + 1;
-    end
-end
-assign data_out_other = memory[ addr_other ];
 
 endmodule

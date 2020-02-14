@@ -116,7 +116,6 @@ case_concatLinesWithSpaceLikeLineBefore = do
             , "    123"
             , "    456"
             , ""
-            , ""
             ]
         bar2 = codeBlock [qc|
             bar2
@@ -138,7 +137,6 @@ case_concatLinesWithSpaceWithoutBeforeLine = do
             [ "bar"
             , "    123"
             , "    456"
-            , ""
             , ""
             ]
         nums1 = codeLine [qc|123|]

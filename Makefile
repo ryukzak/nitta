@@ -23,6 +23,8 @@ build-nitta-frontend:
 clean:
 	stack clean
 	rm -rf web/build
+	rm a.out
+	rm *.vcd
 
 
 nitta: build
@@ -32,3 +34,7 @@ nitta: build
 	else \
 		stack exec nitta -- --web examples/${sim}.lua \
 	fi;
+
+hdl-spi: hdl/spi/bounce_filter_tb.v
+	iverilog hdl/spi/bounce_filter_tb.v hdl/spi/bounce_filter.v
+	test 0 -eq $(shell ./a.out | grep -c FAIL) # number of FAIL in output

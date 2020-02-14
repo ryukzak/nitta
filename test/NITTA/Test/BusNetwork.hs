@@ -58,12 +58,22 @@ test_fibonacci =
 
 test_io =
     [ testCase "receive two variables" $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
-        { tName="double_receive"
+        { tName="receive_two_variables"
         , tMicroArch=marchSPI True pInt
         , tReceivedValues=[ ("a", [10..15]), ("b", [20..25])]
         , tDFG=fsToDataFlowGraph
             [ F.receive ["a"]
             , F.receive ["b"]
+            , F.add "a" "b" ["c"]
+            , F.send "c"
+            ]
+        }
+    , testCase "receive variable two times" $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
+        { tName="receive_variable_two_times"
+        , tMicroArch=marchSPI True pInt
+        , tReceivedValues=[ ("a", [10..15]), ("b", [20..25])]
+        , tDFG=fsToDataFlowGraph
+            [ F.receive ["a", "b"]
             , F.add "a" "b" ["c"]
             , F.send "c"
             ]

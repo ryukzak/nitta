@@ -14,7 +14,7 @@
 
 {-|
 Module      : NITTA.Model.Networks.Bus
-Description :
+Description : Simple process unit network - pseudo bus.
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -72,18 +72,16 @@ import           Text.InterpolatedString.Perl6   (qc)
 
 
 data BusNetwork tag v x t = BusNetwork
-    { -- | Список функциональных блоков привязанных к сети, но ещё не привязанных к конкретным
-      -- вычислительным блокам.
-      bnRemains        :: [F v x]
-    -- | Таблица привязок функциональных блоков ко вложенным вычислительным блокам.
+    { bnRemains        :: [F v x]
+      -- ^List of functions binded to network, but not binded to any process unit.
     , bnBinded         :: M.Map tag [F v x]
-    -- | Описание вычислительного процесса сети, как элемента процессора.
+      -- ^Map process unit name to list of binded functions.
     , bnProcess        :: Process v x t
-    -- | Словарь вложенных вычислительных блоков по именам.
+      -- ^Network process (bindings and transport instructions)
     , bnPus            :: M.Map tag (PU v x t)
-    -- | Ширина шины управления.
+     -- ^Map of process units.
     , bnSignalBusWidth :: Int
-    -- |Why Maybe? If Just : hardcoded parameter; if Nothing - connect to @is_drop_allow@ wire.
+    -- ^Controll bus width.
     , ioSync           :: IOSynchronization
     , bnEnv            :: TargetEnvironment
     , bnIOPorts        :: IOPorts (BusNetwork tag v x t)
@@ -190,14 +188,13 @@ instance ( UnitTag tag, VarValTime v x t
                             ]
         in n
             { bnPus=foldl applyDecision bnPus subDecisions
-            , bnProcess=snd $ runSchedule n $ do
-                mapM_
-                    (\(pushedValue, (targetTitle, _tc)) ->
+            , bnProcess=execSchedule n $ do
+                updateTick (sup pullAt + 1)
+                mapM_ (\(pushedValue, (targetTitle, _tc)) ->
                         scheduleInstruction (transportStartAt ... transportEndAt)
                             (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork tag v x t))
                     )
                     $ M.assocs pushs
-                updateTick (sup pullAt + 1)
             }
         where
             applyDecision pus (trgTitle, d') = M.adjust (\pu -> endpointDecision pu d') trgTitle pus
@@ -218,50 +215,48 @@ instance ( UnitTag tag, VarValTime v x t
             showReject (tag, _) = "    [" ++ show tag ++ "]: undefined"
 
 
-    process net@BusNetwork{ bnProcess, bnPus }
-        = let
-            v2transportStepUid = M.fromList
+    process net@BusNetwork{ bnProcess, bnPus } = let
+            v2transportStepKey = M.fromList
                 [ (v, sKey)
                 | Step{ sKey, sDesc } <- steps bnProcess
                 , isInstruction sDesc
                 , v <- case sDesc of
-                    (InstructionStep i)
-                        | Just (Transport var _ _) <- cast i `maybeInstructionOf` net
-                        -> [var]
+                    ( InstructionStep i ) | Just (Transport var _ _) <- castInstruction net i -> [var]
                     _ -> []
                 ]
-        in execScheduleWithProcess net bnProcess $ do
-            -- Копируем нижележащие процессы наверх.
-            mapM_ addNestedProcess $ L.sortOn fst $ M.assocs bnPus
+            wholeProcess = execScheduleWithProcess net bnProcess $ do
+                mapM_ (uncurry includeNestedProcess) $ L.sortOn fst $ M.assocs bnPus
+                Process{ steps } <- getProcessSlice
 
-            Process{ steps } <- getProcessSlice
-            -- Transport - Endpoint
-            let low = concatMap (\Step{ sKey, sDesc } ->
-                    case sDesc of
-                        NestedStep{ nStep=Step{ sDesc=EndpointRoleStep role } } -> [ (sKey, v) | v <- S.elems $ variables role ]
-                        _ -> []
-                    ) steps
-            mapM_
-                ( \(l, v) ->
-                    when (v `M.member` v2transportStepUid)
-                        $ establishVerticalRelation (v2transportStepUid M.! v) l )
-                low
-            -- FB - Transport
-            mapM_ ( \Step{ sKey, sDesc=NestedStep{ nStep=Step{ sDesc=FStep f } } } ->
-                    mapM_ ( \v ->
-                            when (v `M.member` v2transportStepUid)
-                                $ establishVerticalRelation sKey (v2transportStepUid M.! v) )
+                -- Vertical relations between Transport and Endpoint
+                let enpointStepKeyVars = concatMap (\Step{ sKey, sDesc } ->
+                        case sDesc of
+                            NestedStep{ nStep=Step{ sDesc=EndpointRoleStep role } }
+                                -> zip (repeat sKey) $ S.elems $ variables role
+                            _ -> []
+                        ) steps
+                mapM_ ( \(epKey, v) ->
+                            when (v `M.member` v2transportStepKey)
+                                $ establishVerticalRelation (v2transportStepKey M.! v) epKey )
+                    enpointStepKeyVars
+
+                -- Vertical relations between FB and Transport
+                mapM_ ( \Step{ sKey, sDesc=NestedStep{ nStep=Step{ sDesc=FStep f } } } ->
+                            mapM_ ( \v ->
+                                when (v `M.member` v2transportStepKey)
+                                    $ establishVerticalRelation sKey (v2transportStepKey M.! v) )
                         $ variables f )
-                $ filter isFB steps
+                    $ filter isFB steps
+        in wholeProcess
         where
-            addNestedProcess (tag, pu) = do
+            includeNestedProcess tag pu = do
                 let Process{ steps, relations } = process pu
-                uidDict <- M.fromList <$> mapM
+                pu2netKey <- M.fromList <$> mapM
                     ( \step@Step{ sKey } -> do
                         sKey' <- scheduleNestedStep tag step
                         return (sKey, sKey') )
                     steps
-                mapM_ (\(Vertical h l) -> establishVerticalRelation (uidDict M.! h) (uidDict M.! l)) relations
+                mapM_ (\(Vertical h l) -> establishVerticalRelation (pu2netKey M.! h) (pu2netKey M.! l)) relations
 
     setTime t net@BusNetwork{..} = net
         { bnProcess=bnProcess{ nextTick=t }
@@ -605,24 +600,46 @@ instance ( VarValTime v x t
 
         in Immediate (moduleName pName n ++ "_tb.v") $ codeBlock [qc|
             `timescale 1 ps / 1 ps
-            {"module"} { moduleName pName n }_tb();
+            module { moduleName pName n }_tb();
+
             /*
             Functions:
             { inline $ S.join "\\n" $ map show $ functions n }
+            */
 
+            /*
             Steps:
             { inline $ S.join "\\n" $ map show $ reverse $ steps $ process n }
             */
 
+            // system signals
             reg clk, rst;
-            { inline $ if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
-
-            {inline $ snippetTraceAndCheck $ finiteBitSize (def :: x) }
             wire cycle;
 
-            // test environment initialization flags
+            // clk and rst generator
+            { inline snippetClkGen }
+
+            // vcd dump
+            { inline $ snippetDumpFile $ moduleName pName n }
+
+
+
+            ////////////////////////////////////////////////////////////
+            // test environment
+
+            // external ports (IO)
+            { inline $ if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
+
+            // initialization flags
             reg { S.join ", " envInitFlags };
             assign env_init_flag = { defEnvInitFlag envInitFlags ioSync };
+
+            { inline testEnv }
+
+
+
+            ////////////////////////////////////////////////////////////
+            // unit under test
 
             { moduleName pName n } #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -637,12 +654,8 @@ instance ( VarValTime v x t
                 , .is_drop_allow( { isDrowAllowSignal ioSync } )
                 );
 
-            { inline testEnv }
 
-            { inline $ snippetDumpFile $ moduleName pName n }
-
-            { inline snippetClkGen }
-
+            // internal unit under test checks
             initial
                 begin
                     // microcode when rst == 1 -> program[0], and must be nop for all PUs
@@ -652,9 +665,15 @@ instance ( VarValTime v x t
                     @(posedge clk);
                     while (!env_init_flag) @(posedge clk);
                     { inline assertions }
-                    repeat ( 2000 ) @(posedge clk);
+                    repeat ( { 2 * nextTick bnProcess } ) @(posedge clk);
                     $finish;
                 end
+
+
+
+            ////////////////////////////////////////////////////////////
+            // Utils
+            { inline $ snippetTraceAndCheck $ finiteBitSize (def :: x) }
 
             endmodule
             |]

@@ -10,11 +10,11 @@ reg [7:0] from_spi;
 wire splitter_ready;
 wire [31:0] to_nitta;
 
-spi_to_nitta_splitter 
+i2n_splitter
   #( .DATA_WIDTH( 32 )
    , .ATTR_WIDTH( 0 )
    , .SPI_DATA_WIDTH( 8 )
-   ) spi_to_nitta_splitter 
+   ) i2n_splitter
   ( .clk( clk )
   , .rst( rst )
 
@@ -25,7 +25,7 @@ spi_to_nitta_splitter
   , .to_nitta( to_nitta )
   );
 
-initial spi_to_nitta_splitter.data = 0;
+initial i2n_splitter.data = 0;
 
 always begin
   clk <= 1;
@@ -84,8 +84,8 @@ initial begin
 end
 
 initial begin
-  $dumpfile("spi_to_nitta_splitter_tb.vcd");
-  $dumpvars(-1, spi_to_nitta_splitter_tb);
+  $dumpfile("i2n_splitter_tb.vcd");
+  $dumpvars(-1, i2n_splitter_tb);
 end 
 
 endmodule

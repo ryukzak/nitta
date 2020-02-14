@@ -28,8 +28,8 @@ import           Data.Bits                              (finiteBitSize)
 import           Data.Default
 import qualified Data.Map                               as M
 import           Data.Maybe                             (fromMaybe, mapMaybe)
-import qualified Data.Set                               as S
 import qualified Data.String.Utils                      as S
+import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.IO.SimpleIO
@@ -92,12 +92,11 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
         = Aggregate Nothing
             [ FromLibrary "spi/pu_slave_spi_driver.v"
             , FromLibrary "spi/spi_slave_driver.v"
-            , FromLibrary "spi/spi_to_nitta_splitter.v"
+            , FromLibrary "spi/i2n_splitter.v"
             , FromLibrary "spi/buffer.v"
             , FromLibrary "spi/bounce_filter.v"
             , FromLibrary "spi/spi_master_driver.v"
-            , FromLibrary "spi/nitta_to_spi_splitter.v"
-            , FromLibrary "spi/spi_to_nitta_splitter.v"
+            , FromLibrary "spi/n2i_splitter.v"
             , FromLibrary "spi/pu_slave_spi.v"
             , FromLibrary "spi/pu_master_spi.v"
             ]
@@ -153,11 +152,12 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
         TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
         SimpleIOPorts{..}
         ioPorts
-        cntx@Cntx{ cntxCycleNumber, cntxProcess } = let
-            receivedVariablesSeq = mapMaybe (\case
-                    Source vs -> Just $ head $ S.elems vs
-                    _ -> Nothing
-                ) $ getEndpoints process_
+        cntx@Cntx{ cntxCycleNumber, cntxProcess }
+        = let
+            receivedVariablesSeq = mapMaybe (\f -> case castF f of
+                    Just Receive{} -> Just $ oneOf $ variables f
+                    _              -> Nothing
+                ) $ functions process_
             receivedVarsValues = take cntxCycleNumber $ cntxReceivedBySlice cntx
             sendedVariableSeq = mapMaybe (\case
                     (Target v) -> Just v
@@ -190,25 +190,26 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                     receiveCycle transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) receivedVariablesSeq
                         in codeBlock [qc|
+                            $display( "set data for sending { xs } by { tag }_io_test_input" );
                             { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
                             { tag }_io_test_start_transaction = 1;                           @(posedge { signalClk });
                             { tag }_io_test_start_transaction = 0;                           @(posedge { signalClk });
                             repeat( { frameWidth * 2 + bounceFilter + 2 } ) @(posedge { signalClk });
+
                             |]
 
                     sendingAssert transmit = let
                             xs = map (\v -> fromMaybe def $ transmit M.!? v) sendedVariableSeq
                         in codeBlock [qc|
                             @(posedge { tag }_io_test_start_transaction);
-                                $display( "{ tag }_io_test_output except: %H (\{ { toVerilogLiteral xs } })", \{ { toVerilogLiteral xs } } );
-                                $display( "{ tag }_io_test_output actual: %H", { tag }_io_test_output );
-                                if ( { tag }_io_test_output !=  \{ { toVerilogLiteral xs } } )
-                                    $display("                       FAIL");
-                                $display();
+                                $write( "{ tag }_io_test_output actual: %H except: %H (\{ { toVerilogLiteral xs } })",
+                                    { tag }_io_test_output, \{ { toVerilogLiteral xs } } );
+                                if ( { tag }_io_test_output != \{ { toVerilogLiteral xs } } ) $display("\t\tFAIL");
+                                else $display();
+
                             |]
 
-                    envInstance = codeBlock [qc|
-                        // SPI Input/Output environment
+                    endDeviceInstance = codeBlock [qc|
                         { inline $ comment $ show sio }
                         reg { tag }_io_test_start_transaction;
                         reg  [{ frameWidth }-1:0] { tag }_io_test_input;
@@ -233,32 +234,54 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                         initial { tag }_io_test.inner.shiftreg <= 0;
                         |]
 
-                    interactions = codeBlock [qc|
-                        // SPI Input signal generation
+                    envDeviceControl = codeBlock [qc|
                         initial begin
                             { tag }_io_test_start_transaction <= 0;
                             { tag }_io_test_input <= 0;
                             @(negedge { signalRst });
                             repeat({ timeLag }) @(posedge { signalClk });
-                            { envInitFlagName } <= 1;
 
                             { inline $ concat $ map receiveCycle receivedVarsValues }
-                            repeat(70) @(posedge { signalClk });
+                            repeat ( 5 ) begin
+                                { inline $ receiveCycle def }
+                            end
+
                             // $finish; // DON'T DO THAT (with this line test can pass without data checking)
                         end
-
-                        // SPI Output signal checking
+                        |]
+                    envDeviceCheck = codeBlock [qc|
                         initial begin
                             @(negedge { signalRst });
-                            repeat (3) @(posedge { tag }_io_test_start_transaction); // latency
+                            repeat ( OUTPUT_LATENCY ) @(posedge { tag }_io_test_start_transaction); // latency
+
                             { inline $ concat $ map sendingAssert sendedVarsValues }
+                            forever begin
+                                @(posedge spi_io_test_start_transaction);
+                                $display( "{ tag }_io_test_output actual: %H", { tag }_io_test_output );
+                            end
                         end
                         |]
                     -- FIXME: do not check output signals when we drop data
                 in codeBlock [qc|
-                    { inline envInstance }
+                    ////////////////////////////////////////
+                    // SPI test environment
+                    localparam NITTA_LATENCY = 1;
+                    localparam OUTPUT_LATENCY = 3;
 
-                    { inline $ if frameWordCount == 0 then disable else interactions }
+                    // SPI device in test environment
+                    { inline endDeviceInstance }
+
+                    // SPI device in test environment control
+                    { inline $ if frameWordCount == 0 then disable else envDeviceControl }
+
+                    // SPI device in test environment check
+                    { inline $ if frameWordCount == 0 then disable else envDeviceCheck }
+
+                    // SPI environment initialization flag set
+                    initial begin
+                        repeat ( NITTA_LATENCY ) @(posedge spi_io_test_start_transaction);
+                        spi_env_init_flag <= 1;
+                    end
                     |]
 
             SPIMaster{..} -> let
@@ -281,7 +304,6 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                             |]
 
                     envInstance = codeBlock [qc|
-                        // SPI Input/Output environment
                         { inline $ comment $ show sio }
                         reg { tag }_io_test_start_transaction;
                         reg  [{ frameWidth }-1:0] { tag }_io_test_input;

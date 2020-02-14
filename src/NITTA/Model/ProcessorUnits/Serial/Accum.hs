@@ -311,7 +311,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Accum v x t) where
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
-instance WithFunctions (Accum v x t) (F v x) where
+instance ( Ord t ) => WithFunctions (Accum v x t) (F v x) where
     functions Accum{ process_, work }
         = functions process_ ++ map func work
 
