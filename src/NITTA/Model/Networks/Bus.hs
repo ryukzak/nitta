@@ -188,7 +188,7 @@ instance ( UnitTag tag, VarValTime v x t
                             ]
         in n
             { bnPus=foldl applyDecision bnPus subDecisions
-            , bnProcess=execSchedule n $ do
+            , bnProcess=execScheduleWithProcess n bnProcess $ do
                 updateTick (sup pullAt + 1)
                 mapM_ (\(pushedValue, (targetTitle, _tc)) ->
                         scheduleInstruction (transportStartAt ... transportEndAt)
