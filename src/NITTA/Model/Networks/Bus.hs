@@ -66,8 +66,7 @@ import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                (inf, singleton, sup, width,
-                                                  (...))
+import           Numeric.Interval                (inf, sup, width, (...))
 import           Text.InterpolatedString.Perl6   (qc)
 
 
@@ -79,9 +78,9 @@ data BusNetwork tag v x t = BusNetwork
     , bnProcess        :: Process v x t
       -- ^Network process (bindings and transport instructions)
     , bnPus            :: M.Map tag (PU v x t)
-     -- ^Map of process units.
+      -- ^Map of process units.
     , bnSignalBusWidth :: Int
-    -- ^Controll bus width.
+      -- ^Controll bus width.
     , ioSync           :: IOSynchronization
     , bnEnv            :: TargetEnvironment
     , bnIOPorts        :: IOPorts (BusNetwork tag v x t)
@@ -97,9 +96,6 @@ bindedFunctions puTitle BusNetwork{ bnBinded }
     | otherwise = []
 
 
--- TODO: Проверка подключения сигнальных линий.
-
--- TODO: Вариант функции, где провода будут подключаться автоматически.
 busNetwork w ioSync pus = BusNetwork
         { bnRemains=[]
         , bnBinded=M.empty
@@ -305,14 +301,6 @@ instance ( UnitTag tag ) => Simulatable (BusNetwork tag v x t) v x where
 
 ----------------------------------------------------------------------
 
-
--- Функция позволяет проанализировать сеть и получить наружу варианты для управления привязками
--- функциональных блоков к вычислительным блокам. В текущем виде место для данной функции не
--- определено, так как:
---
--- 1. В случае если сеть выступает в качестве вычислительного блока, то она должна инкапсулировать
---    в себя эти настройки (но не hardcode-ить).
--- 2. Эти функции должны быть представленны классом типов.
 instance ( UnitTag tag, VarValTime v x t
         ) => BindProblem (BusNetwork tag v x t) tag v x where
     bindOptions BusNetwork{ bnRemains, bnPus } = concatMap optionsFor bnRemains
@@ -323,14 +311,13 @@ instance ( UnitTag tag, VarValTime v x t
                 , allowToProcess f pu
                 ]
 
-    bindDecision bn@BusNetwork{ bnProcess=p@Process{..}, ..} (Bind fb puTitle)
-        = bn
-            { bnPus=M.adjust (bind fb) puTitle bnPus
-            , bnBinded=registerBinding puTitle fb bnBinded
-            , bnProcess=snd $ modifyProcess p $
-                addStep (singleton nextTick) $ CADStep $ "Bind " ++ show fb ++ " to " ++ show puTitle
-            , bnRemains=filter (/= fb) bnRemains
-        }
+    bindDecision n@BusNetwork{ bnProcess, bnPus, bnBinded, bnRemains } (Bind f tag)
+        = n
+            { bnPus=M.adjust (bind f) tag bnPus
+            , bnBinded=registerBinding tag f bnBinded
+            , bnProcess=execScheduleWithProcess n bnProcess $ scheduleFunctionBind f
+            , bnRemains=filter (/= f) bnRemains
+            }
 
 
 
@@ -516,8 +503,9 @@ instance ( VarValTime v x t
         in Aggregate (Just mn) $ subSW ++ sw
         where
             mn = moduleName tag pu
-            -- По нулевоу адресу устанавливается команда Nop (он же def) для всех вычислиетльных блоков.
-            -- Именно этот адрес выставляется на сигнальные линии когда поднят сигнал rst.
+            -- Nop operation sets for all processor units at address 0. It is a
+            -- safe state of the processor which is selected when rst signal is
+            -- active.
             memoryDump = unlines $ map ( values2dump . values . microcodeAt pu ) $ programTicks pu
             values (BusNetworkMC arr) = reverse $ A.elems arr
 
