@@ -115,10 +115,22 @@ function resortTimeline(data: ProcessTimelines<number>) {
     });
     tmp = newTmp;
   }
-  extract(e => e.component.length === 0);
+  function section(msg: string) {
+    result.timelines.push({
+      timelineViewpoint: { level: msg, component: [] },
+      timelinePoints: []
+    });
+  }
+
+  section("# CADs:");
   extract(e => e.level === "CAD");
+  section("# Functions:");
   extract(e => e.level === "Fun");
+  section("# Dataflow:");
+  extract(e => e.level === "INST" && e.component.length === 0);
   extract(e => e.level === "EndPoint");
+  section("# Intructions:");
+  extract(e => e.component.length === 0);
   extract(e => true);
   return result;
 }
