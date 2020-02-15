@@ -17,12 +17,12 @@ export const TimelineView: React.FC<TimelineProps> = ({
   highlight,
   data,
   onHighlightChange,
-  onDetailChange,
+  onDetailChange
 }) => {
   let viewColumnHead = "view point";
   let viewColumnLength: number = viewColumnHead.length;
   timelines.forEach(e => {
-    let l: number = viewpoint2string(e.timelineViewpoint).length;
+    let l: number = viewpoint2string(e.timelineViewpoint, 0).length;
     if (l > viewColumnLength) {
       viewColumnLength = l;
     }
@@ -92,12 +92,9 @@ export const TimelineView: React.FC<TimelineProps> = ({
   }
 
   function renderLine(i: number, viewLength: number, view: ViewPointID, points: TimelinePoint<number>[][]) {
-    let v = viewpoint2string(view);
-    let n = viewLength - v.length;
     return (
       <div key={i} className="squeeze m-0">
-        {" ".repeat(n)}
-        {v} | {points.map(renderPoint)}
+        {viewpoint2string(view, viewLength)} | {points.map(renderPoint)}
       </div>
     );
   }
@@ -117,6 +114,15 @@ export const TimelineView: React.FC<TimelineProps> = ({
   );
 };
 
-function viewpoint2string(view: ViewPointID): string {
-  return view.component + "@" + view.level;
+function viewpoint2string(view: ViewPointID, n: number): string {
+  if (view.level.startsWith("#")) {
+    let s = view.level;
+    return s + spaces(n - s.length);
+  }
+  let s = view.component + "@" + view.level;
+  return spaces(n - s.length) + s;
+}
+
+function spaces(l: number): string {
+  return l > 0 ? " ".repeat(l) : "";
 }
