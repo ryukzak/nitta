@@ -21,9 +21,12 @@ module NITTA.UIBackend
     , prepareJSAPI
     ) where
 
-import           Control.Monad                 (when)
+import           Control.Exception             (SomeException, try)
+import           Control.Monad                 (unless, when)
+import           Data.Either
 import           Data.Monoid                   ((<>))
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
+import           Network.Simple.TCP            (connect)
 import           Network.Wai.Handler.Warp      (run)
 import           Network.Wai.Middleware.Cors   (simpleCors)
 import           NITTA.Synthesis.Tree
@@ -80,9 +83,17 @@ application receivedValues model = do
         )
 
 
+isLocalPortFree port
+    = isLeft <$> (try $ connect "localhost" (show port) (\_ -> return ()) :: IO (Either SomeException ()))
+
+
 -- |Run backend server.
 backendServer port receivedValues modelState = do
     putStrLn $ "Running NITTA server at http://localhost:" ++ show port ++ "/index.html"
+    -- on OS X, if we run system with busy port - application ignore that.
+    -- see: https://nitta.io/nitta-corp/nitta/issues/9
+    isFree <- isLocalPortFree port
+    unless isFree $ error "resource busy (Port already in use)"
     app <- application receivedValues modelState
     setLocaleEncoding utf8
     run port $ simpleCors app

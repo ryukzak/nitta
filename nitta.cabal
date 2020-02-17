@@ -109,6 +109,7 @@ library
                      , language-lua
                      , MissingH
                      , mtl
+                     , network-simple
                      , process
                      , regex-compat
                      , safe
