@@ -29,6 +29,7 @@ import qualified Data.Map                                as M
 import           Data.Set                                (difference, elems,
                                                           empty, fromList,
                                                           intersection, union)
+import           Data.List                               (delete)
 import           Debug.Trace
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Simulation
@@ -263,31 +264,36 @@ algGen fListGen = fmap avoidDupVariables $ listOf1 $ oneof fListGen
 -- случайным образом. В случае если какой-либо функциональный блок не может быть привязан к
 -- вычислительному блоку (например по причине закончившихся внутренних ресурсов), то он просто
 -- отбрасывается.
+
+data Task r f e = Refactor r | Bind f | Move e deriving (Eq, Ord, Show, Read)
+
 processAlgOnEndpointGen pu0 algGen' = do
         alg <- algGen'
         inner alg [] pu0
     where
-        inner fRemain fPassed pu = do
-            let
-                refs = refactorOptions pu
-                other = map Left fRemain ++ map Right (endpointOptions pu)
-            case ( refs, other ) of
-                ( [], [] ) -> return ( pu, fPassed )
-                ( _:_, _ ) -> do
-                    i <- choose (0, length refs - 1)
-                    inner fRemain fPassed $ refactorDecision pu (refs !! i)
-                ( _, _:_ ) -> do
-                    i <- choose (0, length other - 1)
-                    case other !! i of
-                        Left f -> let fRemain' = filter (/= f) fRemain
-                            in case tryBind f pu of
-                                Right pu' -> inner fRemain' (f : fPassed) pu'
-                                Left _err -> inner fRemain' fPassed pu
-                        Right o -> do
-                            d <- fmap endpointOptionToDecision $ endpointGen o
-                            let pu' = endpointDecision pu d
-                            inner fRemain fPassed pu'
+        inner fRemain fPassed pu = select tasksList
             where
+                refactorTasks = map Refactor (refactorOptions pu)
+                bindTasks = map Bind fRemain
+                moveTasks = map Move (endpointOptions pu)
+
+                tasksList = refactorTasks ++ bindTasks ++ moveTasks
+
+                select []    = return ( pu, fPassed )
+                select tasks = taskPattern =<< elements tasks
+
+                taskPattern (Refactor r) = inner fRemain fPassed $ refactorDecision pu r
+                taskPattern (Bind f)
+                    | (Right pu') <- tryBind f pu = inner fRemain' (f : fPassed) pu'
+                    | (Left _err) <- tryBind f pu = inner fRemain' fPassed pu
+                        where
+                            fRemain' = delete f fRemain
+                taskPattern (Bind _) = error "Bind error"
+                taskPattern (Move e) = do
+                    d <- endpointOptionToDecision <$> endpointGen e
+                    let pu' = endpointDecision pu d
+                    inner fRemain fPassed pu'
+
                 endpointGen option@EndpointSt{ epRole=Source vs } = do
                     vs' <- suchThat (sublistOf $ elems vs) (not . null)
                     return option{ epRole=Source $ fromList vs' }
