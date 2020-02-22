@@ -123,7 +123,8 @@ data TargetSynthesis tag v x t
           -- ^IP-core library directory
         , tPath             :: String
           -- ^output directory, where CAD create project directory with 'tName' name
-        , tPath            :: String
+        , tSimulationCycleN :: Int
+          -- ^number of simulation and testbench cycles
         }
 
 
@@ -139,12 +140,13 @@ instance ( VarValTime v x t ) => Default (TargetSynthesis String v x t) where
         , tWriteProject=writeWholeProject
         , tLibPath="../../hdl"
         , tPath=joinPath [ "gen" ]
+        , tSimulationCycleN=5
         }
 
 
 runTargetSynthesis TargetSynthesis
             { tName, tMicroArch, tSourceCode, tDFG, tReceivedValues, tSynthesisMethod, tVerbose, tWriteProject
-            , tLibPath, tPath
+            , tLibPath, tPath, tSimulationCycleN
             } = do
     tDFG' <- maybe (return tDFG) translateToIntermediate tSourceCode
     rootNode <- mkRootNodeIO (mkModelWithOneNetwork tMicroArch tDFG')
@@ -178,7 +180,8 @@ runTargetSynthesis TargetSynthesis
             , pLibPath=tLibPath
             , pPath=joinPath [ tPath, tName ]
             , pUnit=mUnit
-            , pTestCntx=simulateDataFlowGraph def tReceivedValues mDataFlowGraph -- because application algorithm can be refactored
+              -- because application algorithm can be refactored we use synthesised version
+            , pTestCntx=simulateDataFlowGraph tSimulationCycleN def tReceivedValues mDataFlowGraph
             }
 
         write prj@Project{ pPath } = do

@@ -134,7 +134,8 @@ testBench BackendCntx{ root, receivedValues } nId pName = liftIO $ do
             , pLibPath=joinPath ["..", "..", "hdl"]
             , pPath=joinPath ["gen", pName]
             , pUnit=mUnit $ nModel node
-            , pTestCntx=simulateDataFlowGraph def receivedValues mDataFlowGraph
+            -- TODO: extract 5 to parameter
+            , pTestCntx=simulateDataFlowGraph 5 def receivedValues mDataFlowGraph
             }
 
 
