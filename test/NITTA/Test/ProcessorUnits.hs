@@ -25,11 +25,11 @@ module NITTA.Test.ProcessorUnits
 
 import           Data.Atomics.Counter                    (incrCounter)
 import           Data.Default
+import           Data.List                               (delete)
 import qualified Data.Map                                as M
 import           Data.Set                                (difference, elems,
                                                           empty, fromList,
                                                           intersection, union)
-import           Data.List                               (delete)
 import           Debug.Trace
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Simulation
@@ -261,37 +261,37 @@ algGen fListGen = fmap avoidDupVariables $ listOf1 $ oneof fListGen
 
 
 
-
 -- |Automatic synthesis evaluation process with random decisions.
 -- If we can't bind function to PU then we skip it.
 processAlgOnEndpointGen pu0 algGen' = do
         alg <- algGen'
-        randomAlgSynth alg [] pu0
+        algSynthesisGen alg [] pu0
 
-data Task r f e = Refactor r | Bind f | Transport e
+data PUSynthesisTask r f e = Refactor r | Bind f | Transport e
 
-randomAlgSynth fRemain fPassed pu = select tasksList
+algSynthesisGen fRemain fPassed pu = select tasksList
     where
         tasksList = concat
-            [ map Refactor (refactorOptions pu)
+            [ map Refactor $ refactorOptions pu
             , map Bind fRemain
-            , map Transport (endpointOptions pu)
+            , map Transport $ endpointOptions pu
             ]
 
         select []    = return ( pu, fPassed )
         select tasks = taskPattern =<< elements tasks
 
-        taskPattern (Refactor r) = randomAlgSynth fRemain fPassed $ refactorDecision pu r
-        taskPattern (Bind f)
-            | (Right pu') <- tryBind f pu = randomAlgSynth fRemain' (f : fPassed) pu'
-            | (Left _err) <- tryBind f pu = randomAlgSynth fRemain' fPassed pu
-                where
-                    fRemain' = delete f fRemain
-        taskPattern (Bind _) = error "Bind error"
+        taskPattern (Refactor r) = algSynthesisGen fRemain fPassed $ refactorDecision pu r
+
+        taskPattern (Bind f) = case tryBind f pu of
+            (Right pu') -> algSynthesisGen fRemain' (f : fPassed) pu'
+            (Left _err) -> algSynthesisGen fRemain' fPassed pu
+            where
+                fRemain' = delete f fRemain
+
         taskPattern (Transport e) = do
             d <- endpointOptionToDecision <$> endpointGen e
             let pu' = endpointDecision pu d
-            randomAlgSynth fRemain fPassed pu'
+            algSynthesisGen fRemain fPassed pu'
 
         endpointGen option@EndpointSt{ epRole=Source vs } = do
             vs' <- suchThat (sublistOf $ elems vs) (not . null)
