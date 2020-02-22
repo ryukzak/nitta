@@ -34,6 +34,7 @@ import           Data.Maybe
 import           Data.Proxy
 import           Data.Typeable
 import           GHC.TypeLits
+import           Numeric
 
 
 -- |Type class for Value types.
@@ -138,7 +139,7 @@ newtype FX (m :: Nat) (b :: Nat) = FX Integer
     deriving ( Eq, Ord )
 
 instance ( KnownNat m, KnownNat b ) => Show ( FX m b ) where
-    show t@(FX x) = show (fromIntegral x / scalingFactor t :: Double)
+    show t@(FX x) = showFFloat (Just 3) (fromIntegral x / scalingFactor t :: Double) ""
 
 instance ( KnownNat m, KnownNat b ) => Read ( FX m b ) where
     readsPrec d r

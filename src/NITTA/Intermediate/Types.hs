@@ -241,7 +241,7 @@ instance {-# OVERLAPS #-} ( Show v, Show x ) => Show (Cntx v x) where
     show Cntx{ cntxProcess, cntxCycleNumber } = let
             header = S.join "\t" $ sort $ map show $ M.keys $ cycleCntx $ head cntxProcess
             body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
-        in S.join "\n" (header : body)
+        in S.replace "\"" "" $ S.join "\n" (header : body)
         where
             row cntx = S.join "\t" $ map (show . snd) $ sortOn (show . fst) $ M.assocs cntx
 
