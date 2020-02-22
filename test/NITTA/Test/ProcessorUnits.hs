@@ -260,41 +260,40 @@ algGen fListGen = fmap avoidDupVariables $ listOf1 $ oneof fListGen
                 ) (empty, []) alg
 
 
--- |Автоматическое планирование вычислительного процесса, в рамках которого решения принимаются
--- случайным образом. В случае если какой-либо функциональный блок не может быть привязан к
--- вычислительному блоку (например по причине закончившихся внутренних ресурсов), то он просто
--- отбрасывается.
 
-data Task r f e = Refactor r | Bind f | Move e deriving (Eq, Ord, Show, Read)
 
+-- |Automatic synthesis evaluation process with random decisions.
+-- If we can't bind function to PU then we skip it.
 processAlgOnEndpointGen pu0 algGen' = do
         alg <- algGen'
-        inner alg [] pu0
+        randomAlgSynth alg [] pu0
+
+data Task r f e = Refactor r | Bind f | Transport e
+
+randomAlgSynth fRemain fPassed pu = select tasksList
     where
-        inner fRemain fPassed pu = select tasksList
-            where
-                refactorTasks = map Refactor (refactorOptions pu)
-                bindTasks = map Bind fRemain
-                moveTasks = map Move (endpointOptions pu)
+        tasksList = concat
+            [ map Refactor (refactorOptions pu)
+            , map Bind fRemain
+            , map Transport (endpointOptions pu)
+            ]
 
-                tasksList = refactorTasks ++ bindTasks ++ moveTasks
+        select []    = return ( pu, fPassed )
+        select tasks = taskPattern =<< elements tasks
 
-                select []    = return ( pu, fPassed )
-                select tasks = taskPattern =<< elements tasks
+        taskPattern (Refactor r) = randomAlgSynth fRemain fPassed $ refactorDecision pu r
+        taskPattern (Bind f)
+            | (Right pu') <- tryBind f pu = randomAlgSynth fRemain' (f : fPassed) pu'
+            | (Left _err) <- tryBind f pu = randomAlgSynth fRemain' fPassed pu
+                where
+                    fRemain' = delete f fRemain
+        taskPattern (Bind _) = error "Bind error"
+        taskPattern (Transport e) = do
+            d <- endpointOptionToDecision <$> endpointGen e
+            let pu' = endpointDecision pu d
+            randomAlgSynth fRemain fPassed pu'
 
-                taskPattern (Refactor r) = inner fRemain fPassed $ refactorDecision pu r
-                taskPattern (Bind f)
-                    | (Right pu') <- tryBind f pu = inner fRemain' (f : fPassed) pu'
-                    | (Left _err) <- tryBind f pu = inner fRemain' fPassed pu
-                        where
-                            fRemain' = delete f fRemain
-                taskPattern (Bind _) = error "Bind error"
-                taskPattern (Move e) = do
-                    d <- endpointOptionToDecision <$> endpointGen e
-                    let pu' = endpointDecision pu d
-                    inner fRemain fPassed pu'
-
-                endpointGen option@EndpointSt{ epRole=Source vs } = do
-                    vs' <- suchThat (sublistOf $ elems vs) (not . null)
-                    return option{ epRole=Source $ fromList vs' }
-                endpointGen o = return o
+        endpointGen option@EndpointSt{ epRole=Source vs } = do
+            vs' <- suchThat (sublistOf $ elems vs) (not . null)
+            return option{ epRole=Source $ fromList vs' }
+        endpointGen o = return o
