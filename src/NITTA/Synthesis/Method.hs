@@ -38,7 +38,7 @@ import           Safe
 
 -- |The constant, which restricts the maximum number of synthesis steps. Avoids
 -- the endless synthesis process.
-stepLimit = 100 :: Int
+stepLimit = 750 :: Int
 
 
 -- |The most complex synthesis method, which embedded all another. That all.
