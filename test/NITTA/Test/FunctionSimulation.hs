@@ -67,7 +67,7 @@ functionSimulationTests = $(testGroupGenerator)
 
 simulateTest received (v, expect) alg = let
         dfg = fsToDataFlowGraph (alg :: [F String Int])
-        Cntx{ cntxProcess } = simulateDataFlowGraph def received dfg
+        Cntx{ cntxProcess } = simulateDataFlowGraph 5 def received dfg
         cycles = take (length expect) cntxProcess
         actual = map (\(CycleCntx c) -> fromMaybe (error $ show c) (c M.!? v)) cycles
     in expect @=? actual

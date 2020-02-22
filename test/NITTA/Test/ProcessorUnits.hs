@@ -189,7 +189,7 @@ unitCoSimulationTestCase name u cntxCycle alg
                 , pLibPath=joinPath ["..", "..", "hdl"]
                 , pPath=joinPath ["gen", name]
                 , pUnit=bindAllAndNaiveSynthesis alg u
-                , pTestCntx=simulateAlg (CycleCntx $ M.fromList cntxCycle) [] alg
+                , pTestCntx=simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
                 }
         (tbStatus <$> writeAndRunTestbench prj) @? name
 
@@ -243,7 +243,7 @@ initialCycleCntxGen fs = do
     let vs = elems $ unionsMap inputs fs
     xs <- infiniteListOf $ choose (0, 1000)
     let vxs = M.fromList $ zip vs xs
-        cntx0 = simulateAlg (CycleCntx vxs) [] fs
+        cntx0 = simulateAlg 5 (CycleCntx vxs) [] fs
     return cntx0
 
 
