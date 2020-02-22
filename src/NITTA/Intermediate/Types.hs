@@ -243,7 +243,7 @@ instance {-# OVERLAPS #-} ( Show v, Show x ) => Show (Cntx v x) where
             body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
         in S.join "\n" (header : body)
         where
-            row cntx = S.join "\t" $  map (show . snd) $ sortOn (show . fst) $ M.assocs cntx
+            row cntx = S.join "\t" $ map (show . snd) $ sortOn (show . fst) $ M.assocs cntx
 
 instance Default (Cntx v x) where
     def = Cntx

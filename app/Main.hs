@@ -102,7 +102,7 @@ main = do
 
 selectCAD True Nothing src tReceivedValues n _ma = do
     let cntx = simulateDataFlowGraph n def tReceivedValues $ lua2functions src
-    putStrLn $ show $ filterCntx ["u#0", "freq#0"] cntx
+    putStrLn $ show $ filterCntx ["freq#0", "r_x0#0","r_x1#0","r_x2#0","r_x3#0"] cntx
 
 selectCAD _ (Just port) src received _n ma
     = backendServer port received $ mkModelWithOneNetwork ma $ lua2functions src
