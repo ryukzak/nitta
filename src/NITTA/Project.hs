@@ -102,26 +102,27 @@ import           System.FilePath                 (joinPath)
 -- testing purpose.
 data TargetSynthesis tag v x t
     = TargetSynthesis
-        { -- |target name, used for top level module name and project path
-          tName            :: String
-          -- |composition of processor units, IO ports and its interconnect
-        , tMicroArch       :: BusNetwork tag v x t
-          -- |optional application source code (lua)
-        , tSourceCode      :: Maybe Text
-          -- |algorithm in intermediate data flow graph representation (if
+        { tName             :: String
+          -- ^target name, used for top level module name and project path
+        , tMicroArch        :: BusNetwork tag v x t
+          -- ^composition of processor units, IO ports and its interconnect
+        , tSourceCode       :: Maybe Text
+          -- ^optional application source code (lua)
+        , tDFG              :: DataFlowGraph v x
+          -- ^algorithm in intermediate data flow graph representation (if
           -- tSourceCode present will be overwritten)
-        , tDFG             :: DataFlowGraph v x
-          -- |values from input interface for testing purpose
-        , tReceivedValues  :: [ (v, [x]) ]
-          -- |verbose standard output (dumps, progress info, etc).
-        , tVerbose         :: Bool
-          -- |synthesis method
-        , tSynthesisMethod :: G Node tag v x t -> IO (G Node tag v x t)
-          -- |project writer, which defines necessary project part
-        , tWriteProject    :: Project (BusNetwork tag v x t) v x -> IO ()
-          -- |IP-core library directory
-        , tLibPath         :: String
-          -- |output directory, where CAD create project directory with 'tName' name
+        , tReceivedValues   :: [ (v, [x]) ]
+          -- ^values from input interface for testing purpose
+        , tVerbose          :: Bool
+          -- ^verbose standard output (dumps, progress info, etc).
+        , tSynthesisMethod  :: G Node tag v x t -> IO (G Node tag v x t)
+          -- ^synthesis method
+        , tWriteProject     :: Project (BusNetwork tag v x t) v x -> IO ()
+          -- ^project writer, which defines necessary project part
+        , tLibPath          :: String
+          -- ^IP-core library directory
+        , tPath             :: String
+          -- ^output directory, where CAD create project directory with 'tName' name
         , tPath            :: String
         }
 
