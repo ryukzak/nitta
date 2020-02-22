@@ -25,6 +25,7 @@ module NITTA.Test.ProcessorUnits
 
 import           Data.Atomics.Counter                    (incrCounter)
 import           Data.Default
+import           Data.List                               (delete)
 import qualified Data.Map                                as M
 import           Data.Set                                (difference, elems,
                                                           empty, fromList,
@@ -259,36 +260,40 @@ algGen fListGen = fmap avoidDupVariables $ listOf1 $ oneof fListGen
                 ) (empty, []) alg
 
 
--- |Автоматическое планирование вычислительного процесса, в рамках которого решения принимаются
--- случайным образом. В случае если какой-либо функциональный блок не может быть привязан к
--- вычислительному блоку (например по причине закончившихся внутренних ресурсов), то он просто
--- отбрасывается.
+
+-- |Automatic synthesis evaluation process with random decisions.
+-- If we can't bind function to PU then we skip it.
 processAlgOnEndpointGen pu0 algGen' = do
         alg <- algGen'
-        inner alg [] pu0
+        algSynthesisGen alg [] pu0
+
+data PUSynthesisTask r f e = Refactor r | Bind f | Transport e
+
+algSynthesisGen fRemain fPassed pu = select tasksList
     where
-        inner fRemain fPassed pu = do
-            let
-                refs = refactorOptions pu
-                other = map Left fRemain ++ map Right (endpointOptions pu)
-            case ( refs, other ) of
-                ( [], [] ) -> return ( pu, fPassed )
-                ( _:_, _ ) -> do
-                    i <- choose (0, length refs - 1)
-                    inner fRemain fPassed $ refactorDecision pu (refs !! i)
-                ( _, _:_ ) -> do
-                    i <- choose (0, length other - 1)
-                    case other !! i of
-                        Left f -> let fRemain' = filter (/= f) fRemain
-                            in case tryBind f pu of
-                                Right pu' -> inner fRemain' (f : fPassed) pu'
-                                Left _err -> inner fRemain' fPassed pu
-                        Right o -> do
-                            d <- fmap endpointOptionToDecision $ endpointGen o
-                            let pu' = endpointDecision pu d
-                            inner fRemain fPassed pu'
+        tasksList = concat
+            [ map Refactor $ refactorOptions pu
+            , map Bind fRemain
+            , map Transport $ endpointOptions pu
+            ]
+
+        select []    = return ( pu, fPassed )
+        select tasks = taskPattern =<< elements tasks
+
+        taskPattern (Refactor r) = algSynthesisGen fRemain fPassed $ refactorDecision pu r
+
+        taskPattern (Bind f) = case tryBind f pu of
+            (Right pu') -> algSynthesisGen fRemain' (f : fPassed) pu'
+            (Left _err) -> algSynthesisGen fRemain' fPassed pu
             where
-                endpointGen option@EndpointSt{ epRole=Source vs } = do
-                    vs' <- suchThat (sublistOf $ elems vs) (not . null)
-                    return option{ epRole=Source $ fromList vs' }
-                endpointGen o = return o
+                fRemain' = delete f fRemain
+
+        taskPattern (Transport e) = do
+            d <- endpointOptionToDecision <$> endpointGen e
+            let pu' = endpointDecision pu d
+            algSynthesisGen fRemain fPassed pu'
+
+        endpointGen option@EndpointSt{ epRole=Source vs } = do
+            vs' <- suchThat (sublistOf $ elems vs) (not . null)
+            return option{ epRole=Source $ fromList vs' }
+        endpointGen o = return o
