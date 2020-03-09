@@ -511,7 +511,7 @@ instance ( VarValTime v x t
 
     hardwareInstance tag BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } _ports ioPorts
         | let
-            io2v n = "    , " ++ n ++ "( " ++ n ++ " )"
+            io2v n = ", ." ++ n ++ "( " ++ n ++ " )"
             is = map (\(InputPortTag n) -> io2v n) $ inputPorts ioPorts
             os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts
         = codeBlock [qc|
