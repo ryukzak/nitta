@@ -105,7 +105,9 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
     hardwareInstance
             tag
             SimpleIO{ bounceFilter, sendN, receiveN }
-            TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
+            TargetEnvironment{ unitEnv=ProcessUnitEnv{..}
+                             , signalClk, signalRst, signalCycleBegin, signalInCycle, signalCycleEnd
+                             , inputPort, outputPort }
             SimpleIOPorts{..}
             ioPorts
         = codeBlock [qc|
@@ -117,7 +119,9 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
                 ( .clk( { signalClk } )
                 , .rst( { signalRst } )
                 , .flag_stop( { stop } )
-                , .signal_cycle( { signalCycle } )
+                , .signal_cycle_begin( { signalCycleBegin } )
+                , .signal_in_cycle( { signalInCycle  } )
+                , .signal_cycle_end( { signalCycleEnd } )
                 , .signal_oe( { signal oe } )
                 , .signal_wr( { signal wr } )
                 , .data_in( { dataIn } ), .attr_in( { attrIn } )
