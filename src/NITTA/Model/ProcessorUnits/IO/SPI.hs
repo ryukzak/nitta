@@ -106,7 +106,8 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
             tag
             SimpleIO{ bounceFilter, sendN, receiveN }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}
-                             , signalClk, signalRst, signalCycleBegin, signalInCycle, signalCycleEnd
+                             , signalClk, signalRst
+                             , signalCycleBegin, signalInCycle, signalCycleEnd
                              , inputPort, outputPort }
             SimpleIOPorts{..}
             ioPorts
@@ -115,6 +116,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( { show parameterAttrWidth } )
                     , .BOUNCE_FILTER( { show bounceFilter } )
+                    , .DISABLED( { if sendN == 0 && receiveN == 0 then (1 :: Int) else 0 } )
                     ) { tag }
                 ( .clk( { signalClk } )
                 , .rst( { signalRst } )
@@ -128,7 +130,6 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
                 , .data_out( { dataOut } ), .attr_out( { attrOut } )
                 { inline $ extIO ioPorts }
                 );
-            initial { tag }.disabled <= { if sendN == 0 && receiveN == 0 then (1 :: Int) else 0 };
             |]
                 where
                     module_ SPISlave{}  = "pu_slave_spi"

@@ -37,6 +37,7 @@ module pu_slave_spi #
         , parameter BOUNCE_FILTER  = 4
         , parameter INVALID        = 0
         , parameter SIZE_WORDS     = 2
+        , parameter DISABLED       = 0
         )
     ( input                     clk
     , input                     rst
@@ -68,7 +69,7 @@ module pu_slave_spi #
     );
 
 
-reg disabled = 0;
+reg disabled = DISABLED;
 reg buffer_sel; // buffer selector
 
 
