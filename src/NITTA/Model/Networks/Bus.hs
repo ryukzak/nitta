@@ -441,6 +441,8 @@ instance ( VarValTime v x t
                         , input                     rst
                         , input                     is_drop_allow
                         , output                    flag_cycle_begin
+                        , output                    flag_in_cycle
+                        , output                    flag_cycle_end
                         { inline $ externalPortsDecl $ bnExternalPorts bnPus }
                         , output              [7:0] debug_status
                         , output              [7:0] debug_bus1
@@ -450,7 +452,6 @@ instance ( VarValTime v x t
                     parameter MICROCODE_WIDTH = { bnSignalBusWidth };
 
                     wire start, stop;
-                    wire flag_cycle_begin, flag_in_cycle, flag_cycle_end;
 
                     wire [MICROCODE_WIDTH-1:0] control_bus;
                     wire [DATA_WIDTH-1:0] data_bus;
@@ -522,7 +523,7 @@ instance ( VarValTime v x t
 
     hardwareInstance tag BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } _ports ioPorts
         | let
-            io2v n = "    , " ++ n ++ "( " ++ n ++ " )"
+            io2v n = ", ." ++ n ++ "( " ++ n ++ " )"
             is = map (\(InputPortTag n) -> io2v n) $ inputPorts ioPorts
             os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts
         = codeBlock [qc|
