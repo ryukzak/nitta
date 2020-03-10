@@ -160,12 +160,6 @@ generate
     end
 endgenerate
 
-assign n2i_buf_mode[0] = signal_cycle_begin ? !buffer_sel :  buffer_sel;
-assign n2i_buf_mode[1] = signal_cycle_begin ?  buffer_sel : !buffer_sel;
-
-assign n2i_action[0] = n2i_buf_mode[0] ? (signal_wr & !signal_oe) : n2i_splitter_ready ;
-assign n2i_action[1] = n2i_buf_mode[1] ? (signal_wr & !signal_oe) : n2i_splitter_ready ;
-
 
 // splitter: translate from DATA_WIDTH to SPI_DATA_WIDTH
 wire                      n2i_splitter_ready;
@@ -187,6 +181,13 @@ n2i_splitter #
     , .splitter_ready( n2i_splitter_ready )
     , .from_nitta( n2i_buf_data_out[buffer_sel] )
     );
+
+
+assign n2i_buf_mode[0] = signal_cycle_begin ? !buffer_sel :  buffer_sel;
+assign n2i_buf_mode[1] = signal_cycle_begin ?  buffer_sel : !buffer_sel;
+
+assign n2i_action[0] = n2i_buf_mode[0] ? (signal_wr & !signal_oe) : n2i_splitter_ready ;
+assign n2i_action[1] = n2i_buf_mode[1] ? (signal_wr & !signal_oe) : n2i_splitter_ready ;
 
 
 
