@@ -6,6 +6,7 @@ module pu_master_spi #
         , parameter SPI_DATA_WIDTH = 8
         , parameter BUF_SIZE       = 6
         , parameter BOUNCE_FILTER  = 4
+        , parameter DISABLED       = 0
         )
     ( input                     clk
     , input                     rst
@@ -31,7 +32,7 @@ module pu_master_spi #
     , output                    mosi
     );
 
-reg disabled = 0;
+reg disabled = DISABLED;
 
 wire f_miso;
 bounce_filter #( .DIV(BOUNCE_FILTER) ) f_mosi_filter ( rst, clk, miso, f_miso );
