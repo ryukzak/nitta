@@ -91,7 +91,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (I2C v x t) where
     hardwareInstance
             tag
             SimpleIO{ bounceFilter }
-            TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort, inoutPort }
+            TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycleBegin, inputPort, outputPort, inoutPort }
             SimpleIOPorts{..}
             ioPorts
         = codeBlock [qc|
@@ -103,7 +103,7 @@ instance ( VarValTime v x t ) => TargetSystemComponent (I2C v x t) where
                 ( .clk( { signalClk } )
                 , .rst( { signalRst } )
                 , .flag_stop( { stop } )
-                , .signal_cycle( { signalCycle } )
+                , .signal_cycle( { signalCycleBegin } )
                 , .signal_oe( { signal oe } )
                 , .signal_wr( { signal wr } )
                 , .data_in( { dataIn } ), .attr_in( { attrIn } )

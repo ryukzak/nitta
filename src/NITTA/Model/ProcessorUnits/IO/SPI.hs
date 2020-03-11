@@ -105,7 +105,10 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
     hardwareInstance
             tag
             SimpleIO{ bounceFilter, sendN, receiveN }
-            TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, signalCycle, inputPort, outputPort }
+            TargetEnvironment{ unitEnv=ProcessUnitEnv{..}
+                             , signalClk, signalRst
+                             , signalCycleBegin, signalInCycle, signalCycleEnd
+                             , inputPort, outputPort }
             SimpleIOPorts{..}
             ioPorts
         = codeBlock [qc|
@@ -113,18 +116,20 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( { show parameterAttrWidth } )
                     , .BOUNCE_FILTER( { show bounceFilter } )
+                    , .DISABLED( { if sendN == 0 && receiveN == 0 then (1 :: Int) else 0 } )
                     ) { tag }
                 ( .clk( { signalClk } )
                 , .rst( { signalRst } )
                 , .flag_stop( { stop } )
-                , .signal_cycle( { signalCycle } )
+                , .signal_cycle_begin( { signalCycleBegin } )
+                , .signal_in_cycle( { signalInCycle  } )
+                , .signal_cycle_end( { signalCycleEnd } )
                 , .signal_oe( { signal oe } )
                 , .signal_wr( { signal wr } )
                 , .data_in( { dataIn } ), .attr_in( { attrIn } )
                 , .data_out( { dataOut } ), .attr_out( { attrOut } )
                 { inline $ extIO ioPorts }
                 );
-            initial { tag }.disabled <= { if sendN == 0 && receiveN == 0 then (1 :: Int) else 0 };
             |]
                 where
                     module_ SPISlave{}  = "pu_slave_spi"

@@ -50,13 +50,15 @@ intersPortsError ports usedPorts tag
 -- |Create environment for PU
 puEnv tag =
     TargetEnvironment
-        { signalClk   = "clk"
-        , signalRst   = "rst"
-        , signalCycle = "cycle"
-        , inputPort   = inputPortTag
-        , outputPort  = outputPortTag
-        , inoutPort   = inoutPortTag
-        , unitEnv     =
+        { signalClk        = "clk"
+        , signalRst        = "rst"
+        , signalCycleBegin = "signal_cycle_begin"
+        , signalInCycle    = "signal_computation"
+        , signalCycleEnd   = "signal_cycle_end"
+        , inputPort        = inputPortTag
+        , outputPort       = outputPortTag
+        , inoutPort        = inoutPortTag
+        , unitEnv =
             ProcessUnitEnv
                 { parameterAttrWidth = InlineParam "ATTR_WIDTH"
                 , dataIn             = "data_bus"

@@ -75,13 +75,15 @@ instance Show Parameter where
 -- |Target mUnit environment, including IO ports, clk, rst and cycle signals.
 data TargetEnvironment
     = TargetEnvironment
-        { signalClk   :: String -- ^clock
-        , signalRst   :: String -- ^reset
-        , signalCycle :: String -- ^posedge on computation cycle start
-        , inputPort   :: InputPortTag -> String
-        , outputPort  :: OutputPortTag -> String
-        , inoutPort   :: InoutPortTag -> String
-        , unitEnv     :: UnitEnv -- unit specific environment
+        { signalClk        :: String -- ^clock
+        , signalRst        :: String -- ^reset
+        , signalCycleBegin :: String -- ^posedge on computation cycle begin
+        , signalInCycle    :: String -- ^positive on computation cycle
+        , signalCycleEnd   :: String -- ^posedge on computation cycle end
+        , inputPort        :: InputPortTag -> String
+        , outputPort       :: OutputPortTag -> String
+        , inoutPort        :: InoutPortTag -> String
+        , unitEnv          :: UnitEnv -- unit specific environment
         }
 
 

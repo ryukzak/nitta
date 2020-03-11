@@ -37,10 +37,13 @@ module pu_slave_spi #
         , parameter BOUNCE_FILTER  = 4
         , parameter INVALID        = 0
         , parameter SIZE_WORDS     = 2
+        , parameter DISABLED       = 0
         )
     ( input                     clk
     , input                     rst
-    , input                     signal_cycle
+    , input                     signal_cycle_begin
+    , input                     signal_in_cycle
+    , input                     signal_cycle_end
 
     // NITTA interface
     , input                     signal_wr // Write data to send buffer (n2i). A
@@ -66,7 +69,7 @@ module pu_slave_spi #
     );
 
 
-reg disabled = 0;
+reg disabled = DISABLED;
 reg buffer_sel; // buffer selector
 
 
@@ -122,8 +125,8 @@ endgenerate
 
 // Buffer select can't wait one tick to buffer_sel update after new
 // computational cycle start. We should predict buffer_sel change.
-assign i2n_buf_mode[0] = signal_cycle ? !buffer_sel : buffer_sel;
-assign i2n_buf_mode[1] = signal_cycle ?  buffer_sel : !buffer_sel;
+assign i2n_buf_mode[0] = signal_cycle_begin ? !buffer_sel :  buffer_sel;
+assign i2n_buf_mode[1] = signal_cycle_begin ?  buffer_sel : !buffer_sel;
 
 assign i2n_action[0] = i2n_buf_mode[0] ? i2n_splitter_ready : (signal_oe & signal_wr);
 assign i2n_action[1] = i2n_buf_mode[1] ? i2n_splitter_ready : (signal_oe & signal_wr);
@@ -157,12 +160,6 @@ generate
     end
 endgenerate
 
-assign n2i_buf_mode[0] = signal_cycle ? !buffer_sel :  buffer_sel;
-assign n2i_buf_mode[1] = signal_cycle ?  buffer_sel : !buffer_sel;
-
-assign n2i_action[0] = n2i_buf_mode[0] ? (signal_wr & !signal_oe) : n2i_splitter_ready ;
-assign n2i_action[1] = n2i_buf_mode[1] ? (signal_wr & !signal_oe) : n2i_splitter_ready ;
-
 
 // splitter: translate from DATA_WIDTH to SPI_DATA_WIDTH
 wire                      n2i_splitter_ready;
@@ -184,6 +181,13 @@ n2i_splitter #
     , .splitter_ready( n2i_splitter_ready )
     , .from_nitta( n2i_buf_data_out[buffer_sel] )
     );
+
+
+assign n2i_buf_mode[0] = signal_cycle_begin ? !buffer_sel :  buffer_sel;
+assign n2i_buf_mode[1] = signal_cycle_begin ?  buffer_sel : !buffer_sel;
+
+assign n2i_action[0] = n2i_buf_mode[0] ? (signal_wr & !signal_oe) : n2i_splitter_ready ;
+assign n2i_action[1] = n2i_buf_mode[1] ? (signal_wr & !signal_oe) : n2i_splitter_ready ;
 
 
 
@@ -223,7 +227,7 @@ always @( posedge clk ) prev_f_cs <= f_cs;
 
 always @( posedge clk ) begin
     if      ( rst ) buffer_sel <= 0;
-    else if ( signal_cycle && f_cs ) buffer_sel <= !buffer_sel;
+    else if ( signal_cycle_begin && f_cs ) buffer_sel <= !buffer_sel;
 end
 
 wire transport_end = !prev_f_cs && f_cs;
