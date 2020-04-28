@@ -1,3 +1,4 @@
+-- reference implementation in sin_ident/main.go
 function sin(x0, x1, x2, x3)
     local Alpha = 0.7
     local Beta = 5
