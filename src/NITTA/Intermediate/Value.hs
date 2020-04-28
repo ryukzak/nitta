@@ -159,7 +159,7 @@ instance ( KnownNat m, KnownNat b ) => Enum ( FX m b ) where
 
 instance ( KnownNat m, KnownNat b ) => Num ( FX m b ) where
     ( FX a ) + ( FX b ) = FX ( a + b )
-    t@( FX a ) * ( FX b ) = FX ( truncate (fromIntegral (a * b) / scalingFactor t :: Double) )
+    t@( FX a ) * ( FX b ) = FX ( a * b ) `shiftR` (fromInteger $ scalingFactorPower t)
     abs ( FX a ) = FX $ abs a
     signum ( FX a ) = fromInteger $ signum a
     fromInteger x
