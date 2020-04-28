@@ -138,15 +138,15 @@ instance ( KnownNat w ) => FixedPointCompatible (IntX w) where
 newtype FX (m :: Nat) (b :: Nat) = FX Integer
     deriving ( Eq, Ord )
 
-instance ( KnownNat m, KnownNat b ) => Show ( FX m b ) where
-    show t@(FX x) = showFFloat (Just 3) (fromIntegral x / scalingFactor t :: Double) ""
-
 instance ( KnownNat m, KnownNat b ) => Read ( FX m b ) where
     readsPrec d r
         = let
-            [(x, "")] = readsPrec d r
-            result = FX $ truncate (x * scalingFactor result :: Double)
+            [(x :: Double, "")] = readsPrec d r
+            result = FX $ round (x * scalingFactor result)
         in [(result, "")]
+
+instance ( KnownNat m, KnownNat b ) => Show ( FX m b ) where
+    show t@(FX x) = showFFloat (Just 6) (fromIntegral x / scalingFactor t :: Double) ""
 
 instance Default ( FX m b ) where
     def = FX 0
