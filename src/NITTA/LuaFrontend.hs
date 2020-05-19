@@ -6,6 +6,8 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
@@ -18,7 +20,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.LuaFrontend
-    ( lua2functions
+    ( lua2functions, InternalFunc
     ) where
 
 import           Control.Monad                 (when)
@@ -36,17 +38,32 @@ import           NITTA.Model.TargetSystem
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
+import           Debug.Trace
+import           NITTA.Intermediate.Value
+import           Data.String
+import           NITTA.Intermediate.Variable
+import           Type.Reflection
 
+data InternalFunc = InternalFunc { iName :: String, iIn :: [String]} deriving (Show, Read)
+
+fakeFuncToInternal FakeFunction {fName, fIn} = InternalFunc {iName = fName, iIn = map unpack fIn}
+
+-- lua2functions :: (Monoid c, IsString c, Val x, Integral x, Suffix c, Ord c, Typeable c, Show c) => Text -> (DataFlowGraph c x, [InternalFunc])
 lua2functions src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         AlgBuilder{ algItems } = buildAlg ast
-        fs = filter (\case Function{} -> True; _ -> False) algItems
+        algItems' = trace (show algItems) algItems
+        fs = filter (\case Function{} -> True; _ -> False) algItems'
+        fakeFs = filter (\case FakeFunction{} -> True; _ -> False) algItems'
+        fs' = trace (show fakeFs) fs
         varDict = M.fromList
             $ map varRow
-            $ group $ sort $ concatMap fIn fs
-        alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
-    in fsToDataFlowGraph alg
+            $ group $ sort $ concatMap fIn fs'
+        varDict' = trace (show varDict) varDict
+        alg = snd $ execState (mapM_ (store <=< function2nitta) fs') (varDict', [])
+        flg = trace (show $ fsToDataFlowGraph alg) fsToDataFlowGraph alg
+    in (flg, map fakeFuncToInternal fakeFs)
     where
         varRow lst@(x:_)
             = let vs = zipWith f lst [0..]
@@ -99,6 +116,12 @@ data AlgBuilderItem x
     | Alias{ aFrom :: Text, aTo :: Text }
     | Renamed{ rFrom :: Text, rTo :: Text }
     | Function
+        { fIn     :: [Text]
+        , fOut    :: [Text]
+        , fName   :: String
+        , fValues :: [x]
+        }
+    | FakeFunction
         { fIn     :: [Text]
         , fOut    :: [Text]
         , fName   :: String
@@ -214,7 +237,11 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
     fIn <- mapM (expArg []) args
-    addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[] }
+
+    let fName' = trace (show fName) fName
+    if fName' == "trace"
+      then addFunction FakeFunction{ fName=unpack fName', fIn, fOut=[], fValues=[] }
+      else addFunction Function{ fName=unpack fName', fIn, fOut=[], fValues=[] }
 
 processStatement _fn st = error $ "statement: " ++ show st
 
@@ -315,11 +342,18 @@ expConstant _ _ = undefined
 addFunction f@Function{ fOut } = do
     diff <- renameVarsIfNeeded fOut
     patchAndAddFunction f diff
+addFunction f@FakeFunction{ fOut } = do
+    diff <- renameVarsIfNeeded fOut
+    patchAndAddFunction f diff
 addFunction _ = error "addFunction error"
 
 
 
 patchAndAddFunction f@Function{ fIn } diff = do
+    let fIn' = map (applyPatch diff) fIn
+    modify'_ $ \alg@AlgBuilder{ algItems } ->
+        alg{ algItems=f{ fIn=fIn' } : algItems }
+patchAndAddFunction f@FakeFunction{ fIn } diff = do
     let fIn' = map (applyPatch diff) fIn
     modify'_ $ \alg@AlgBuilder{ algItems } ->
         alg{ algItems=f{ fIn=fIn' } : algItems }

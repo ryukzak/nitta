@@ -8,6 +8,8 @@
 {-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE StandaloneDeriving        #-}
+{-# LANGUAGE AllowAmbiguousTypes      #-}
+
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-# OPTIONS -fno-warn-overlapping-patterns -fno-warn-orphans #-}
@@ -44,7 +46,15 @@ import           NITTA.UIBackend
 import           System.Console.CmdArgs          hiding (def)
 import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
+import           Debug.Trace
+import qualified Data.Text as TE
 
+
+import           NITTA.Intermediate.Value
+import           Data.String
+import           NITTA.Intermediate.Variable
+import           Type.Reflection
+import           NITTA.Model.TargetSystem
 
 -- |Command line interface.
 data Nitta
@@ -86,7 +96,7 @@ main = do
     when npm_build prepareStaticFiles
     putStrLn [qc|> readFile: { file }|]
     when (null file) $ error "input file not specified"
-    src <- T.readFile file
+    src :: TE.Text <- T.readFile file
     let cadDesc = if web then Just port else Nothing
 
     ( \( SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b) ) ->
@@ -99,23 +109,30 @@ main = do
               ( microarch io_sync :: BusNetwork String String (FX m b) Int)
         ) $ parseFX type_
 
-
+-- selectCAD :: (Integral x1, Val x1, Num t0, Monoid c, IsString c, Suffix c, Ord c, Typeable c, Show c) => Bool -> Maybe Int -> TE.Text -> [(String, [x1])] -> Int -> BusNetwork String String x1 t0 -> IO ()
 selectCAD True Nothing src tReceivedValues n _ma = do
-    let cntx = simulateDataFlowGraph n def tReceivedValues $ lua2functions src
-    putStrLn $ show $ filterCntx ["freq#0", "r_x0#0","r_x1#0","r_x2#0","r_x3#0"] cntx
+    let res = lua2functions src
+    -- let alg :: DataFlowGraph c x1
+        alg = fst res
+    let fakeFs :: [InternalFunc]
+        fakeFs = snd res
+    let cntx = simulateDataFlowGraph n def tReceivedValues alg
+    -- let
+    --   trace FakeFunction {fName = "trace"}
+    -- print $ (fakeFs)
+    print $ filterCntx ["d#0", "a#0","r_x1#0","r_x2#0","r_x3#0"] cntx
 
 selectCAD _ (Just port) src received _n ma
-    = backendServer port received $ mkModelWithOneNetwork ma $ lua2functions src
+    = backendServer port received $ mkModelWithOneNetwork ma $ fst $ lua2functions src
 
 selectCAD _ Nothing src received n ma = void $ runTargetSynthesis def
         { tName="main"
         , tMicroArch=ma
-        , tDFG=lua2functions src
+        , tDFG=fst $ lua2functions src
         , tVerbose=True
         , tReceivedValues=received
         , tSimulationCycleN=n
         }
-
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
 

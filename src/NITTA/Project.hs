@@ -161,7 +161,7 @@ runTargetSynthesis TargetSynthesis
     where
         translateToIntermediate src = do
             when tVerbose $ putStrLn "lua transpiler"
-            let tmp = lua2functions src
+            let tmp = fst $ lua2functions src
             when tVerbose $ putStrLn "lua transpiler - ok"
             return tmp
 
