@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiWayIf            #-}
@@ -6,7 +7,6 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE AllowAmbiguousTypes   #-}
 
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -fno-cse #-}
@@ -29,26 +29,25 @@ import           Control.Monad.State
 import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
 import           Data.Maybe                    (fromMaybe)
+import           Data.String
 import qualified Data.String.Utils             as S
 import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
+import           Debug.Trace
 import           Language.Lua
 import qualified NITTA.Intermediate.Functions  as F
+import           NITTA.Intermediate.Value
+import           NITTA.Intermediate.Variable
 import           NITTA.Model.TargetSystem
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
-import           Debug.Trace
-import           NITTA.Intermediate.Value
-import           Data.String
-import           NITTA.Intermediate.Variable
-import           Type.Reflection
 
-data InternalFunc = InternalFunc { iName :: String, iIn :: [String]} deriving (Show, Read)
-
-fakeFuncToInternal FakeFunction {fName, fIn} = InternalFunc {iName = fName, iIn = map unpack fIn}
+data InternalFunc = InternalFunc{ iName :: String, iIn :: [ String ] } deriving ( Show, Read )
+fakeFuncToInternal FakeFunction{ fName, fIn } = InternalFunc { iName=fName, iIn=map unpack fIn }
 
 -- lua2functions :: (Monoid c, IsString c, Val x, Integral x, Suffix c, Ord c, Typeable c, Show c) => Text -> (DataFlowGraph c x, [InternalFunc])
+lua2functions :: ( NITTA.Intermediate.Variable.Var v, Val x, Monoid v, IsString v, Integral x ) => Text -> (DataFlowGraph v x, [InternalFunc])
 lua2functions src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src

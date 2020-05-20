@@ -29,7 +29,9 @@ import           Control.Monad                   (void, when)
 import           Data.Default                    (def)
 import           Data.Maybe
 import           Data.Proxy
+import qualified Data.Text                       as TE
 import qualified Data.Text.IO                    as T
+import           Debug.Trace
 import           GHC.TypeLits
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
@@ -46,15 +48,7 @@ import           NITTA.UIBackend
 import           System.Console.CmdArgs          hiding (def)
 import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
-import           Debug.Trace
-import qualified Data.Text as TE
 
-
-import           NITTA.Intermediate.Value
-import           Data.String
-import           NITTA.Intermediate.Variable
-import           Type.Reflection
-import           NITTA.Model.TargetSystem
 
 -- |Command line interface.
 data Nitta
@@ -109,18 +103,15 @@ main = do
               ( microarch io_sync :: BusNetwork String String (FX m b) Int)
         ) $ parseFX type_
 
+
 -- selectCAD :: (Integral x1, Val x1, Num t0, Monoid c, IsString c, Suffix c, Ord c, Typeable c, Show c) => Bool -> Maybe Int -> TE.Text -> [(String, [x1])] -> Int -> BusNetwork String String x1 t0 -> IO ()
 selectCAD True Nothing src tReceivedValues n _ma = do
-    let res = lua2functions src
-    -- let alg :: DataFlowGraph c x1
-        alg = fst res
-    let fakeFs :: [InternalFunc]
-        fakeFs = snd res
+    let ( alg, fakeFs ) = lua2functions src
     let cntx = simulateDataFlowGraph n def tReceivedValues alg
     -- let
     --   trace FakeFunction {fName = "trace"}
-    -- print $ (fakeFs)
-    print $ filterCntx ["d#0", "a#0","r_x1#0","r_x2#0","r_x3#0"] cntx
+    print fakeFs
+    print $ filterCntx ["de#0", "a#0","r_x1#0","r_x2#0","r_x3#0"] cntx
 
 selectCAD _ (Just port) src received _n ma
     = backendServer port received $ mkModelWithOneNetwork ma $ fst $ lua2functions src
