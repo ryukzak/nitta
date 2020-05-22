@@ -20,7 +20,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.LuaFrontend
-    ( lua2functions, InternalFunc
+    ( lua2functions
     ) where
 
 import           Control.Monad                 (when)
@@ -29,40 +29,39 @@ import           Control.Monad.State
 import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
 import           Data.Maybe                    (fromMaybe)
-import           Data.String
 import qualified Data.String.Utils             as S
 import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
-import           Debug.Trace
 import           Language.Lua
 import qualified NITTA.Intermediate.Functions  as F
-import           NITTA.Intermediate.Value
-import           NITTA.Intermediate.Variable
 import           NITTA.Model.TargetSystem
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
 
-data InternalFunc = InternalFunc{ iName :: String, iIn :: [ String ] } deriving ( Show, Read )
-fakeFuncToInternal FakeFunction{ fName, fIn } = InternalFunc { iName=fName, iIn=map unpack fIn }
+fakeFuncToListStr dict (FakeFunction{ fName="trace", fIn } : fs) buffer = let
+        getFromDict x = head $ fst $ dict M.! x
+        newBuffer = buffer ++ map getFromDict fIn
+    in
+        fakeFuncToListStr dict fs newBuffer
+fakeFuncToListStr _ (FakeFunction{ fName="trace", fIn=[] } : _) [] = error "trace function not contain input arguments"
+fakeFuncToListStr _ [] buffer = buffer
+fakeFuncToListStr _ _ _ = error "pattern matching fake function error"
 
--- lua2functions :: (Monoid c, IsString c, Val x, Integral x, Suffix c, Ord c, Typeable c, Show c) => Text -> (DataFlowGraph c x, [InternalFunc])
-lua2functions :: ( NITTA.Intermediate.Variable.Var v, Val x, Monoid v, IsString v, Integral x ) => Text -> (DataFlowGraph v x, [InternalFunc])
+
 lua2functions src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         AlgBuilder{ algItems } = buildAlg ast
-        algItems' = trace (show algItems) algItems
-        fs = filter (\case Function{} -> True; _ -> False) algItems'
-        fakeFs = filter (\case FakeFunction{} -> True; _ -> False) algItems'
-        fs' = trace (show fakeFs) fs
+        fs = filter (\case Function{} -> True; _ -> False) algItems
+        fakeFs = filter (\case FakeFunction{} -> True; _ -> False) algItems
         varDict = M.fromList
             $ map varRow
-            $ group $ sort $ concatMap fIn fs'
-        varDict' = trace (show varDict) varDict
-        alg = snd $ execState (mapM_ (store <=< function2nitta) fs') (varDict', [])
-        flg = trace (show $ fsToDataFlowGraph alg) fsToDataFlowGraph alg
-    in (flg, map fakeFuncToInternal fakeFs)
+            $ group $ sort $ concatMap fIn fs
+        alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
+        flg = fsToDataFlowGraph alg
+        tracingLabels = fakeFuncToListStr varDict fakeFs []
+    in (flg, tracingLabels)
     where
         varRow lst@(x:_)
             = let vs = zipWith f lst [0..]
@@ -237,10 +236,9 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
 processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
     fIn <- mapM (expArg []) args
 
-    let fName' = trace (show fName) fName
-    if fName' == "trace"
-      then addFunction FakeFunction{ fName=unpack fName', fIn, fOut=[], fValues=[] }
-      else addFunction Function{ fName=unpack fName', fIn, fOut=[], fValues=[] }
+    if fName == "trace"
+      then addFunction FakeFunction{ fName=unpack fName, fIn, fOut=[], fValues=[] }
+      else addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[] }
 
 processStatement _fn st = error $ "statement: " ++ show st
 

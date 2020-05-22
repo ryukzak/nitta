@@ -7,8 +7,6 @@
 {-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE StandaloneDeriving        #-}
-{-# LANGUAGE AllowAmbiguousTypes      #-}
-
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-# OPTIONS -fno-warn-overlapping-patterns -fno-warn-orphans #-}
@@ -30,7 +28,6 @@ import           Data.Maybe
 import           Data.Proxy
 import qualified Data.Text                       as TE
 import qualified Data.Text.IO                    as T
-import           Debug.Trace
 import           GHC.TypeLits
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
@@ -47,7 +44,6 @@ import           NITTA.UIBackend
 import           System.Console.CmdArgs          hiding (def)
 import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
-
 
 -- |Command line interface.
 data Nitta
@@ -91,26 +87,21 @@ main = do
     when (null file) $ error "input file not specified"
     src :: TE.Text <- T.readFile file
     let cadDesc = if web then Just port else Nothing
-
     ( \( SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b) ) ->
           selectCAD
               sim
               cadDesc
               src
-              [ ("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0..toEnum n])]
+              [ ("u#0", map (\i -> (read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i))) [0..toEnum n])]
               n
               ( microarch io_sync :: BusNetwork String String (FX m b) Int)
         ) $ parseFX type_
 
 
--- selectCAD :: (Integral x1, Val x1, Num t0, Monoid c, IsString c, Suffix c, Ord c, Typeable c, Show c) => Bool -> Maybe Int -> TE.Text -> [(String, [x1])] -> Int -> BusNetwork String String x1 t0 -> IO ()
 selectCAD True Nothing src tReceivedValues n _ma = do
-    let ( alg, fakeFs ) = lua2functions src
+    let ( alg, tracingLabels ) = lua2functions src
     let cntx = simulateDataFlowGraph n def tReceivedValues alg
-    -- let
-    --   trace FakeFunction {fName = "trace"}
-    print fakeFs
-    print $ filterCntx ["de#0", "a#0","r_x1#0","r_x2#0","r_x3#0"] cntx
+    print $ filterCntx tracingLabels cntx
 
 selectCAD _ (Just port) src received _n ma
     = backendServer port received $ mkModelWithOneNetwork ma $ fst $ lua2functions src
