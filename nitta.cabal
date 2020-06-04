@@ -118,6 +118,7 @@ library
                      , servant-server
                      , split
                      , stm
+                     , table-layout
                      , text
                      , transformers
                      , unordered-containers
@@ -148,6 +149,7 @@ executable nitta
   build-depends:       base
                      , regex-compat
                      , cmdargs
+                     , containers
                      , data-default
                      , interpolatedstring-perl6
                      , nitta

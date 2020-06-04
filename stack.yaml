@@ -45,6 +45,8 @@ extra-deps:
 -   alex-tools-0.4
 -   grammatical-parsers-0.3.2
 - aeson-typescript-0.2.0.0
+- table-layout-0.9.0.0
+- data-default-instances-base-0.1.0.1
 
 allow-newer: true
 

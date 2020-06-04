@@ -41,13 +41,15 @@ import           Data.Default
 import           Data.List
 import qualified Data.Map                    as M
 import           Data.Maybe
-import qualified Data.Set                    as S
+import qualified Data.Set                    as S hiding (split)
 import qualified Data.String.Utils           as S
 import           Data.Tuple
 import           Data.Typeable
 import           GHC.Generics
 import           NITTA.Intermediate.Value
 import           NITTA.Intermediate.Variable
+
+import Text.Layout.Table
 
 
 -- |Input variable.
@@ -239,11 +241,17 @@ data Cntx v x
         }
 instance {-# OVERLAPS #-} ( Show v, Show x ) => Show (Cntx v x) where
     show Cntx{ cntxProcess, cntxCycleNumber } = let
-            header = S.join "\t" $ sort $ map show $ M.keys $ cycleCntx $ head cntxProcess
+            deleteHashtags x = head $ S.split "#" x
+            row cntx = map (show . snd) $ sortOn (show . fst) $ M.assocs cntx
+            header = sort $ map ((S.replace "\"" "") . deleteHashtags . show) $ M.keys $ cycleCntx $ head cntxProcess
             body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
-        in S.replace "\"" "" $ S.join "\n" (header : body)
-        where
-            row cntx = S.join "\t" $ map (show . snd) $ sortOn (show . fst) $ M.assocs cntx
+            columnsCount = length header
+        in
+            tableString
+                (replicate columnsCount def )
+                unicodeS
+                (titlesH header)
+                (map rowG body)
 
 instance Default (Cntx v x) where
     def = Cntx

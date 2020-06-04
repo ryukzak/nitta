@@ -7,6 +7,7 @@
 {-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE StandaloneDeriving        #-}
+{-# LANGUAGE LambdaCase                #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-# OPTIONS -fno-warn-overlapping-patterns -fno-warn-orphans #-}
@@ -26,6 +27,7 @@ import           Control.Monad                   (void, when)
 import           Data.Default                    (def)
 import           Data.Maybe
 import           Data.Proxy
+import qualified Data.Map                        as M
 import qualified Data.Text                       as TE
 import qualified Data.Text.IO                    as T
 import           GHC.TypeLits
@@ -99,9 +101,9 @@ main = do
 
 
 selectCAD True Nothing src tReceivedValues n _ma = do
-    let ( alg, tracingLabels ) = lua2functions src
+    let ( alg, debugData ) = lua2functions src
     let cntx = simulateDataFlowGraph n def tReceivedValues alg
-    print $ filterCntx tracingLabels cntx
+    debugTrace debugData cntx
 
 selectCAD _ (Just port) src received _n ma
     = backendServer port received $ mkModelWithOneNetwork ma $ fst $ lua2functions src
@@ -114,6 +116,14 @@ selectCAD _ Nothing src received n ma = void $ runTargetSynthesis def
         , tReceivedValues=received
         , tSimulationCycleN=n
         }
+
+debugTrace (DebugData debugFunctions varDict) cntx = let
+        getFromDict x = head $ fst $ varDict M.! x
+        tracingFuncs = filter (\case DebugFunctionT {name = "trace"} -> True; _ -> False) debugFunctions
+        tracingVars = map (getFromDict) $ concatMap inputVars tracingFuncs
+    in
+        print $ filterCntx tracingVars cntx
+
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
 

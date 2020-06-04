@@ -21,6 +21,8 @@ Stability   : experimental
 -}
 module NITTA.LuaFrontend
     ( lua2functions
+    , DebugData(..)
+    , DebugFunctionT(..)
     ) where
 
 import           Control.Monad                 (when)
@@ -39,29 +41,38 @@ import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
 
-fakeFuncToListStr dict (FakeFunction{ fName="trace", fIn } : fs) buffer = let
-        getFromDict x = head $ fst $ dict M.! x
-        newBuffer = buffer ++ map getFromDict fIn
-    in
-        fakeFuncToListStr dict fs newBuffer
-fakeFuncToListStr _ (FakeFunction{ fName="trace", fIn=[] } : _) [] = error "trace function not contain input arguments"
-fakeFuncToListStr _ [] buffer = buffer
-fakeFuncToListStr _ _ _ = error "pattern matching fake function error"
+type VarDict = M.Map Text ([String], [String])
 
+-- |Data type for collecting functions for debug
+data DebugFunctionT = DebugFunctionT
+      { inputVars  :: [Text]
+      , outputVars :: [Text]
+      , name   :: String
+      } deriving (Show)
+
+-- |Data type that contains all information for debugging functions
+data DebugData = DebugData [DebugFunctionT] VarDict deriving (Show)
+
+toDebugData debugFunctions varDict = let
+        toDebugFunctionT (DebugFunction inputVars outputVars name _) = DebugFunctionT inputVars outputVars name
+        toDebugFunctionT _                                           = error "error in pattern mathing DebugFunction"
+    in
+        DebugData (map toDebugFunctionT debugFunctions) varDict
 
 lua2functions src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         AlgBuilder{ algItems } = buildAlg ast
         fs = filter (\case Function{} -> True; _ -> False) algItems
-        fakeFs = filter (\case FakeFunction{} -> True; _ -> False) algItems
+        debugFunctions = filter (\case DebugFunction{} -> True; _ -> False) algItems
+        varDict :: VarDict
         varDict = M.fromList
             $ map varRow
             $ group $ sort $ concatMap fIn fs
         alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
         flg = fsToDataFlowGraph alg
-        tracingLabels = fakeFuncToListStr varDict fakeFs []
-    in (flg, tracingLabels)
+        debugData = toDebugData debugFunctions varDict
+    in (flg, debugData)
     where
         varRow lst@(x:_)
             = let vs = zipWith f lst [0..]
@@ -119,7 +130,7 @@ data AlgBuilderItem x
         , fName   :: String
         , fValues :: [x]
         }
-    | FakeFunction
+    | DebugFunction
         { fIn     :: [Text]
         , fOut    :: [Text]
         , fName   :: String
@@ -233,12 +244,16 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
                 modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=fun : algItems }
             f _ _ = undefined
 
-processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
+processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName (Name "debug"))) (Name fName))) (Args args))) = do
     fIn <- mapM (expArg []) args
 
     if fName == "trace"
-      then addFunction FakeFunction{ fName=unpack fName, fIn, fOut=[], fValues=[] }
+      then addFunction DebugFunction{ fName=unpack fName, fIn, fOut=[], fValues=[] }
       else addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[] }
+
+processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
+    fIn <- mapM (expArg []) args
+    addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[] }
 
 processStatement _fn st = error $ "statement: " ++ show st
 
@@ -339,7 +354,7 @@ expConstant _ _ = undefined
 addFunction f@Function{ fOut } = do
     diff <- renameVarsIfNeeded fOut
     patchAndAddFunction f diff
-addFunction f@FakeFunction{ fOut } = do
+addFunction f@DebugFunction{ fOut } = do
     diff <- renameVarsIfNeeded fOut
     patchAndAddFunction f diff
 addFunction _ = error "addFunction error"
@@ -350,7 +365,7 @@ patchAndAddFunction f@Function{ fIn } diff = do
     let fIn' = map (applyPatch diff) fIn
     modify'_ $ \alg@AlgBuilder{ algItems } ->
         alg{ algItems=f{ fIn=fIn' } : algItems }
-patchAndAddFunction f@FakeFunction{ fIn } diff = do
+patchAndAddFunction f@DebugFunction{ fIn } diff = do
     let fIn' = map (applyPatch diff) fIn
     modify'_ $ \alg@AlgBuilder{ algItems } ->
         alg{ algItems=f{ fIn=fIn' } : algItems }
