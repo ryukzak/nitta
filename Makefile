@@ -14,7 +14,7 @@ configure-npm:
 build: build-nitta-backend build-nitta-frontend
 
 build-nitta-backend:
-  stack build
+	stack build
 	stack build --test --haddock --copy-bins
 	stack exec nitta-api-gen
 
