@@ -175,6 +175,7 @@ test-suite nitta-test
                      , NITTA.Test.CodeBlock
   build-depends:       atomic-primops
                      , base
+	             , boxes
                      , containers
                      , data-default
                      , file-embed
