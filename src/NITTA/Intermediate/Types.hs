@@ -49,7 +49,8 @@ import           GHC.Generics
 import           NITTA.Intermediate.Value
 import           NITTA.Intermediate.Variable
 
-import Text.Layout.Table
+
+import Text.PrettyPrint.Boxes
 
 
 -- |Input variable.
@@ -245,13 +246,10 @@ instance {-# OVERLAPS #-} ( Show v, Show x ) => Show (Cntx v x) where
             row cntx = map (show . snd) $ sortOn (show . fst) $ M.assocs cntx
             header = sort $ map ((S.replace "\"" "") . deleteHashtags . show) $ M.keys $ cycleCntx $ head cntxProcess
             body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
-            columnsCount = length header
+            table = map (\(h, b) -> h : b) $ zip header (transpose body)
         in
-            tableString
-                (replicate columnsCount def )
-                unicodeS
-                (titlesH header)
-                (map rowG body)
+            render $ hsep 1 left $
+                map (vcat left) $ map (map text) table
 
 instance Default (Cntx v x) where
     def = Cntx

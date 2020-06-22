@@ -96,6 +96,7 @@ library
   build-depends:       aeson
                      , array
                      , base
+                     , boxes
                      , containers
                      , data-default
                      , directory
@@ -118,7 +119,6 @@ library
                      , servant-server
                      , split
                      , stm
-                     , table-layout
                      , text
                      , transformers
                      , unordered-containers

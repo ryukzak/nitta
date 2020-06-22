@@ -37,19 +37,12 @@ packages:
   original:
     hackage: aeson-typescript-0.2.0.0
 - completed:
-    hackage: table-layout-0.9.0.0@sha256:66dc7b7b9d14fa4769f1192a58ab9721ef8efd1d5773acae34dc5e2dce3fec0a,7106
+    hackage: boxes-0.1.5@sha256:fa1b39569777bc4c1ccb1b847808d0a637b5a118c26b8f63f54f348eda03eebe,1191
     pantry-tree:
-      size: 2215
-      sha256: 6165b25b77808ae9e0447d3816358ef2a94c21d23fa33c05292856fba7aaa4ec
+      size: 433
+      sha256: 105fe43aeafc83b09b0641d85aac30876bbc50a7769081b7ef288fc0984e79e3
   original:
-    hackage: table-layout-0.9.0.0
-- completed:
-    hackage: data-default-instances-base-0.1.0.1@sha256:985a13d7103e45a65f06f277b735ef025636014f0d29dd6de998bc7628e09be9,509
-    pantry-tree:
-      size: 242
-      sha256: 92969ddf22c5f54123fb2bcfbe5917b59a7e6382473b0306bcd8fb7990d9aa1a
-  original:
-    hackage: data-default-instances-base-0.1.0.1
+    hackage: boxes-0.1.5
 snapshots:
 - completed:
     size: 524164
