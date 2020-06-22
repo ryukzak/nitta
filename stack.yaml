@@ -44,8 +44,8 @@ extra-deps:
   commit: 671a8a24b25926e6a9cffbb85062a7db1b50a332
 -   alex-tools-0.4
 -   grammatical-parsers-0.3.2
-- aeson-typescript-0.2.0.0
-- boxes-0.1.5
+-   aeson-typescript-0.2.0.0
+-   boxes-0.1.5
 
 allow-newer: true
 
