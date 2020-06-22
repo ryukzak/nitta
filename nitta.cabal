@@ -133,6 +133,7 @@ executable nitta-api-gen
   build-depends:       aeson
                      , aeson-typescript
                      , base
+		     , boxes
                      , containers
                      , cmdargs
                      , directory
@@ -147,6 +148,7 @@ executable nitta
   hs-source-dirs:      app
   main-is:             Main.hs
   build-depends:       base
+	             , boxes
                      , regex-compat
                      , cmdargs
                      , containers
