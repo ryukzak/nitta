@@ -24,7 +24,6 @@ module NITTA.UIBackend
 import           Control.Exception             (SomeException, try)
 import           Control.Monad                 (unless, when)
 import           Data.Either
-import           Data.Monoid                   ((<>))
 import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
 import           Network.Simple.TCP            (connect)
 import           Network.Wai.Handler.Warp      (run)

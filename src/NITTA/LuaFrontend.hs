@@ -21,7 +21,6 @@ module NITTA.LuaFrontend
     ( lua2functions
     ) where
 
-import           Control.Monad                 (when)
 import           Control.Monad.Identity
 import           Control.Monad.State
 import           Data.List                     (find, group, sort)
