@@ -20,6 +20,7 @@ function sin(x0, x1, x2, x3)
     local b = x0 * omega
     local c = x1 * tmp2
     debug.trace(Alpha, omega)
+    debug.trace(Alpha, omega)
 
     local dotx0 = x1 * omega
     local dotx1 = a - b - c

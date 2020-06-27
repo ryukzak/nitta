@@ -36,13 +36,6 @@ packages:
       sha256: 92ba5548e53be350edd6f5961a51375d77c0358a738a9a4f6bb496bf85f6935a
   original:
     hackage: aeson-typescript-0.2.0.0
-- completed:
-    hackage: boxes-0.1.5@sha256:fa1b39569777bc4c1ccb1b847808d0a637b5a118c26b8f63f54f348eda03eebe,1191
-    pantry-tree:
-      size: 433
-      sha256: 105fe43aeafc83b09b0641d85aac30876bbc50a7769081b7ef288fc0984e79e3
-  original:
-    hackage: boxes-0.1.5
 snapshots:
 - completed:
     size: 524164

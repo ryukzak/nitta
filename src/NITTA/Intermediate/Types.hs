@@ -48,9 +48,7 @@ import           Data.Typeable
 import           GHC.Generics
 import           NITTA.Intermediate.Value
 import           NITTA.Intermediate.Variable
-
-
-import Text.PrettyPrint.Boxes
+import           Text.PrettyPrint.Boxes
 
 
 -- |Input variable.
@@ -258,7 +256,7 @@ instance Default (Cntx v x) where
         , cntxCycleNumber=5
         }
 
--- |Show only listed variables in context
+-- |Filter only listed variables in context
 filterCntx vs cntx@Cntx{ cntxProcess }
     = cntx{ cntxProcess=map
               (CycleCntx . (`M.intersection` (M.fromList $ map (\v -> (v, undefined)) vs)) . cycleCntx)

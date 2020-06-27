@@ -40,14 +40,13 @@ import           NITTA.Model.TargetSystem
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
-
 type VarDict = M.Map Text ([String], [String])
 
 -- |Data type for collecting functions for debug
 data DebugFunctionT = DebugFunctionT
       { inputVars  :: [Text]
       , outputVars :: [Text]
-      , name   :: String
+      , name       :: String
       } deriving (Show)
 
 -- |Data type that contains all information for debugging functions
@@ -70,9 +69,9 @@ lua2functions src
             $ map varRow
             $ group $ sort $ concatMap fIn fs
         alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
-        flg = fsToDataFlowGraph alg
+        dataFlowG = fsToDataFlowGraph alg
         debugData = toDebugData debugFunctions varDict
-    in (flg, debugData)
+    in (dataFlowG, debugData)
     where
         varRow lst@(x:_)
             = let vs = zipWith f lst [0..]
@@ -240,8 +239,9 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
         where
             f InputVar{ iX, iVar } rexp = do
                 i <- expArg [] rexp
-                let fun = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
-                modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=fun : algItems }
+                let loop = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
+                let traceLoop = DebugFunction{ fName="trace", fIn=[i], fOut=[], fValues=[] }
+                modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=traceLoop : loop : algItems }
             f _ _ = undefined
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName (Name "debug"))) (Name fName))) (Args args))) = do

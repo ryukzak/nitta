@@ -28,7 +28,6 @@ import           Data.Default                    (def)
 import           Data.Maybe
 import           Data.Proxy
 import qualified Data.Map                        as M
-import qualified Data.Text                       as TE
 import qualified Data.Text.IO                    as T
 import           GHC.TypeLits
 import           NITTA.Intermediate.Simulation
@@ -87,7 +86,7 @@ main = do
     when npm_build prepareStaticFiles
     putStrLn [qc|> readFile: { file }|]
     when (null file) $ error "input file not specified"
-    src :: TE.Text <- T.readFile file
+    src <- T.readFile file
     let cadDesc = if web then Just port else Nothing
     ( \( SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b) ) ->
           selectCAD
