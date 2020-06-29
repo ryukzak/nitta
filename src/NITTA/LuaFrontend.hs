@@ -40,6 +40,9 @@ import           NITTA.Model.TargetSystem
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
+
+import Debug.Trace
+
 type VarDict = M.Map Text ([String], [String])
 
 -- |Data type for collecting functions for debug
@@ -63,12 +66,13 @@ lua2functions src
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         AlgBuilder{ algItems } = buildAlg ast
         fs = filter (\case Function{} -> True; _ -> False) algItems
+        fs' = trace (show fs) fs
         debugFunctions = filter (\case DebugFunction{} -> True; _ -> False) algItems
         varDict :: VarDict
         varDict = M.fromList
             $ map varRow
-            $ group $ sort $ concatMap fIn fs
-        alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
+            $ group $ sort $ concatMap fIn fs'
+        alg = snd $ execState (mapM_ (store <=< function2nitta) fs') (varDict, [])
         dataFlowG = fsToDataFlowGraph alg
         debugData = toDebugData debugFunctions varDict
     in (dataFlowG, debugData)

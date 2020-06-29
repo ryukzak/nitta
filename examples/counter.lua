@@ -1,8 +1,6 @@
 function counter(x)
-    local y = x + 1
-    debug.trace(y)
-    send(y)
-    debug.trace(y)
+    local y = 10
+    y = y + 1
     counter(y)
 end
 counter(0)
