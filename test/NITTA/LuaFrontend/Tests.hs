@@ -23,6 +23,7 @@ module NITTA.LuaFrontend.Tests
     ( tests
     ) where
 
+import           Data.CallStack
 import           Data.Default
 import           Data.Either
 import qualified Data.String.Utils             as S
@@ -149,11 +150,11 @@ tests = $(testGroupGenerator)
 -----------------------------------------------------------
 
 
+luaTestCase :: HasCallStack => String -> T.Text -> TestTree
 luaTestCase name src = testCase name $ do
     let wd = "lua_" ++ S.replace " " "_" name
     status <- runLua wd src
     let errMsg = codeBlock (T.unpack src) ++ "-- runTargetSynthesis fail with: " ++ fromLeft undefined status
-    -- FIXME: error place is not here, it should be a @luaTestCase@ call
     assertBool errMsg $ isRight status
 
 runLua wd src = do
