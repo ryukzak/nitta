@@ -15,10 +15,11 @@ Stability   : experimental
 module Main where
 
 import           Data.Maybe
+import qualified NITTA.LuaFrontend.Tests
 import           NITTA.Test.BusNetwork
 import           NITTA.Test.CodeBlock
-import           NITTA.Test.Locks
 import           NITTA.Test.FunctionSimulation
+import           NITTA.Test.Locks
 import           NITTA.Test.LuaFrontend
 import           NITTA.Test.ProcessorUnits
 import           NITTA.Test.Refactor
@@ -44,4 +45,5 @@ main = do
         , luaTests
         , codeTests
         , locksTest
+        , NITTA.LuaFrontend.Tests.tests
         ]
