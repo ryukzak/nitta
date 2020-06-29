@@ -185,13 +185,14 @@ processStatement _fn (LocalAssign _names Nothing)
 processStatement fn (LocalAssign names (Just rexp))
     = processStatement fn $ Assign (map VarName names) rexp
 
+
 -- e.g. @n, d = a / b@, or @n, d = f()@
 processStatement _fn (Assign lexps [rexp])
     | length lexps > 1 = do
         let outs = parseLeftExp lexps
         diff <- renameVarsIfNeeded outs
         rightExp diff outs rexp
-        flushBuffer
+        flushBuffer diff outs
 
 -- e.g. @a = 1@ or @a, b = 1, 2@
 processStatement _fn st@(Assign lexps rexps)
@@ -199,7 +200,7 @@ processStatement _fn st@(Assign lexps rexps)
         let outs = parseLeftExp lexps
         diff <- renameVarsIfNeeded outs
         zipWithM_ (rightExp diff) (map (:[]) outs) rexps
-        flushBuffer
+        flushBuffer diff outs
     | otherwise = error $ "assignment mismatch: " ++ show st
 
 -- recursive call of main function
@@ -363,10 +364,11 @@ funAssignStatements (FunAssign _ (FunBody _ _ (Block statments _))) = statments
 funAssignStatements _                                               = error "funAssignStatements : not function assignment"
 
 
-flushBuffer = modify'_
-    $ \alg@AlgBuilder{ algBuffer, algItems } -> alg
+flushBuffer diff outs = modify'_
+    $ \alg@AlgBuilder{ algBuffer, algItems, algVars } -> alg
         { algItems=algBuffer ++ algItems
         , algBuffer=[]
+        , algVars=outs ++ map (applyPatch diff) algVars
         }
 
 
