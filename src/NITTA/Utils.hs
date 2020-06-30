@@ -25,6 +25,7 @@ module NITTA.Utils
     , bool2verilog
     , values2dump
     , hdlValDump
+    , toModuleName
     -- *HDL generation (deprecated)
     , renderST
     -- *Process construction (deprecated)
@@ -50,6 +51,7 @@ import           Data.Bits                       (finiteBitSize, setBit,
 import           Data.List                       (maximumBy, minimumBy, sortOn)
 import           Data.Maybe                      (isJust, mapMaybe)
 import           Data.Set                        (elems, unions)
+import qualified Data.String.Utils               as S
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Time
@@ -108,6 +110,9 @@ hdlValDump x
     where
         groupBy4 [] = []
         groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)
+
+
+toModuleName = S.replace " " "_"
 
 
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP st

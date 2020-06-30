@@ -32,7 +32,7 @@ import           NITTA.Model.Networks.Types
 import           NITTA.Project
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Test.Microarchitectures
-import           NITTA.Utils.CodeFormat
+import           NITTA.Utils
 import           Test.Tasty                    (TestTree, testGroup)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
@@ -152,7 +152,7 @@ tests = $(testGroupGenerator)
 
 luaTestCase :: HasCallStack => String -> T.Text -> TestTree
 luaTestCase name src = testCase name $ do
-    let wd = "lua_" ++ S.replace " " "_" name
+    let wd = "lua_" ++ toModuleName name
     status <- runLua wd src
     let errMsg = codeBlock (T.unpack src) ++ "-- runTargetSynthesis fail with: " ++ fromLeft undefined status
     assertBool errMsg $ isRight status

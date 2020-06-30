@@ -1,5 +1,4 @@
 {-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -19,6 +18,7 @@ Stability   : experimental
 -}
 module NITTA.Model.Networks.Types
     ( PU(..)
+    , PUClasses
     , IOSynchronization(..)
     ) where
 
@@ -35,24 +35,27 @@ import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 
 
+type PUClasses pu v x t =
+    ( ByTime pu t
+    , Connected pu
+    , IOConnected pu
+    , EndpointProblem pu v t
+    , RefactorProblem pu v x
+    , ProcessorUnit pu v x t
+    , Show (Instruction pu)
+    , Simulatable pu v x
+    , Typeable pu
+    , UnambiguouslyDecode pu
+    , TargetSystemComponent pu
+    , Controllable pu
+    , IOTestBench pu v x
+    , Locks pu v
+    )
+
+
 -- |Existential container for a processor unit .
 data PU v x t where
-    PU ::
-        ( ByTime pu t
-        , Connected pu
-        , IOConnected pu
-        , EndpointProblem pu v t
-        , RefactorProblem pu v x
-        , ProcessorUnit pu v x t
-        , Show (Instruction pu)
-        , Simulatable pu v x
-        , Typeable pu
-        , UnambiguouslyDecode pu
-        , TargetSystemComponent pu
-        , Controllable pu
-        , IOTestBench pu v x
-        , Locks pu v
-        ) =>
+    PU :: ( PUClasses pu v x t ) =>
             { diff :: Changeset v -- FIXME: move to end of record
             , unit :: pu
             , ports :: Ports pu

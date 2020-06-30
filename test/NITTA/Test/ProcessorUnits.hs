@@ -36,7 +36,6 @@ import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Fram
 import           NITTA.Model.ProcessorUnits.Multiplier
 import           NITTA.Model.ProcessorUnits.Serial.Accum
 import           NITTA.Model.ProcessorUnits.Time
@@ -53,33 +52,6 @@ import           Test.Tasty                              (TestTree, testGroup)
 import           Test.Tasty.HUnit                        (testCase, (@?))
 import           Test.Tasty.QuickCheck                   (testProperty)
 import           Test.Tasty.TH
-
-
-test_fram =
-    [ unitCoSimulationTestCase "register" u [("a", 42)]
-        [ reg "a" ["b"]
-        ]
-    , unitCoSimulationTestCase "constant" u []
-        [ constant 11 ["ovj"]
-        ]
-    , unitCoSimulationTestCase "loop" u [("b", 42)]
-        [ loop 10 "b" ["a"]
-        ]
-    -- not available, because needed self transaction
-    -- , unitCoSimulationTestCase "loop_reg" u []
-    --     [ reg "a" ["b"]
-    --     , loop 10 "b" ["a"]
-    --     ]
-    , isUnitSynthesisFinishTestProperty "isFinish" u fsGen
-    , coSimulationTestProperty "fram_coSimulation" u fsGen
-    ]
-    where
-        u = def :: Fram String Int Int
-        fsGen = algGen
-            [ fmap packF (arbitrary :: Gen (Constant _ _))
-            , fmap packF (arbitrary :: Gen (Loop _ _))
-            , fmap packF (arbitrary :: Gen (Reg _ _))
-            ]
 
 
 test_shift =
