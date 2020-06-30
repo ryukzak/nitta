@@ -25,7 +25,7 @@ import           NITTA.Test.LuaFrontend
 import           NITTA.Test.ProcessorUnits
 import           NITTA.Test.Refactor
 import           NITTA.Test.Types
-import           NITTA.Test.Utils
+import qualified NITTA.Utils.Tests
 import           System.Environment              (lookupEnv, setEnv)
 import           Test.Tasty                      (defaultMain, testGroup)
 
@@ -37,8 +37,7 @@ main = do
     qtests <- fromMaybe "10" <$> lookupEnv "TASTY_QUICKCHECK_TESTS"
     setEnv "TASTY_QUICKCHECK_TESTS" qtests
     defaultMain $ testGroup "NITTA"
-        [ utilTests
-        , typesTests
+        [ typesTests
         , functionSimulationTests
         , processUnitTests
         , busNetworkTests
@@ -46,6 +45,7 @@ main = do
         , luaTests
         , codeTests
         , locksTest
-        , NITTA.ProcessorUnits.Fram.Tests.tests
         , NITTA.LuaFrontend.Tests.tests
+        , NITTA.ProcessorUnits.Fram.Tests.tests
+        , NITTA.Utils.Tests.tests
         ]

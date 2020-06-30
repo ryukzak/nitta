@@ -162,6 +162,7 @@ test-suite nitta-test
   other-modules:       NITTA.LuaFrontend.Tests
                      , NITTA.ProcessorUnits.Fram.Tests
                      , NITTA.ProcessorUnits.Tests.Utils
+                     , NITTA.Utils.Tests
                      , NITTA.Test.BusNetwork
                      , NITTA.Test.FunctionSimulation
                      , NITTA.Test.Microarchitectures
@@ -170,7 +171,6 @@ test-suite nitta-test
                      , NITTA.Test.Types
                      , NITTA.Test.Locks
                      , NITTA.Test.LuaFrontend
-                     , NITTA.Test.Utils
                      , NITTA.Test.CodeBlock
   build-depends:       atomic-primops
                      , base
