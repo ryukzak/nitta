@@ -106,7 +106,38 @@ test_support =
                     counter(x)
                 end
                 counter(0)
-            |]    , testCase "i = i + 1; counter(reg(i))" $ either assertFailure return
+            |]
+    , testCase "local identified by const" $ either assertFailure return
+        =<< lua "counter_reg" (pIntX32, microarch ASync SlaveSPI)
+            [qc|function counter(i)
+                    x = 1
+                    x = x + 1
+                    x = x + i
+                    counter(x)
+                end
+                counter(0)
+            |]
+    , testCase "local identified by neg const" $ either assertFailure return
+        =<< lua "counter_reg" (pIntX32, microarch ASync SlaveSPI)
+            [qc|function counter(i)
+                    x = -1
+                    x = x + 1
+                    x = x + i
+                    counter(x)
+                end
+                counter(0)
+            |]
+    , testCase "local identified by zero" $ either assertFailure return
+        =<< lua "counter_reg" (pIntX32, microarch ASync SlaveSPI)
+            [qc|function counter(i)
+                    x = 0
+                    x = x + 1
+                    x = x + i
+                    counter(x)
+                end
+                counter(0)
+            |]
+     , testCase "i = i + 1; counter(reg(i))" $ either assertFailure return
         =<< lua "counter_reg" (pIntX32, microarch ASync SlaveSPI)
             [qc|function counter(i)
                     i = i + 1
