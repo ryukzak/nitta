@@ -26,7 +26,7 @@ import           Data.Default
 import           NITTA.Model.ProcessorUnits.IO.SimpleIO
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
-import           NITTA.Project.Implementation
+import           NITTA.Project
 import           NITTA.Utils
 import           Text.InterpolatedString.Perl6          (qc)
 

@@ -55,7 +55,7 @@ NITTA.Project:TargetSynthesis                                                   
                                        |        |
 ===================================================================================================================
                                        |        |                                         Target project generation
-NITTA.Project.Types:Project      |        |                                                       NITTA.Project....
+NITTA.Project.Types:Project            |        |                                                 NITTA.Project....
  |      # pName <--------- $tName      |        |
  |      # pLibPath                     |        +<----- $tReceivedValues
  |      # pPath                        |        |
@@ -90,9 +90,7 @@ import           NITTA.Model.Networks.Bus        (BusNetwork)
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
-import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Types
-import           NITTA.Project.Utils
+import           NITTA.Project
 import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Tree
 import           System.FilePath                 (joinPath)

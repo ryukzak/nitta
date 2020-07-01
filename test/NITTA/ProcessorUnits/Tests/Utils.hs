@@ -38,10 +38,8 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems            hiding (Bind, Refactor)
 import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Project.Parts.TestBench
-import qualified NITTA.Project.Parts.TestBench   as N
-import           NITTA.Project.Types
-import           NITTA.Project.Utils
+import           NITTA.Project
+import qualified NITTA.Project                   as N
 import           NITTA.Test.FunctionSimulation   ()
 import           NITTA.Test.Microarchitectures
 import           NITTA.Utils

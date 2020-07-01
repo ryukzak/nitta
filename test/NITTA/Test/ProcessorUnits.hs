@@ -38,9 +38,7 @@ import           NITTA.Model.Problems                    hiding (Bind, Refactor)
 import           NITTA.Model.ProcessorUnits.Multiplier
 import           NITTA.Model.ProcessorUnits.Serial.Accum
 import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Types
-import           NITTA.Project.Utils
+import           NITTA.Project
 import           NITTA.Test.FunctionSimulation           ()
 import           NITTA.Test.Microarchitectures
 import           NITTA.Utils

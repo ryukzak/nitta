@@ -29,7 +29,7 @@ import           Data.Either
 import qualified Data.String.Utils             as S
 import qualified Data.Text                     as T
 import           NITTA.Model.Networks.Types
-import           NITTA.Project.Parts.TestBench
+import           NITTA.Project
 import           NITTA.TargetSynthesis
 import           NITTA.Test.Microarchitectures
 import           NITTA.Utils

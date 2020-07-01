@@ -32,7 +32,7 @@ import qualified Data.Text                     as T
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
-import           NITTA.Project.Parts.TestBench
+import           NITTA.Project
 import           NITTA.Synthesis.Method
 import           NITTA.TargetSynthesis
 import           NITTA.Test.Microarchitectures

@@ -57,6 +57,7 @@ import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
+-- import           NITTA.Project
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets

@@ -72,7 +72,7 @@ library
                      , NITTA.Model.ProcessorUnits.Time
                      , NITTA.Model.TargetSystem
                      , NITTA.Model.Types
-                     -- , NITTA.Project
+                     , NITTA.Project
                      , NITTA.Project.Implementation
                      , NITTA.Project.Parts.Icarus
                      , NITTA.Project.Parts.Quartus
