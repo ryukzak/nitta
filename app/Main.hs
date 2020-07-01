@@ -70,7 +70,7 @@ nittaArgs = Nitta
     , io_sync=Sync &= help "IO synchronization mode: sync, async, onboard"
     , file=def &= args &= typFile
     , sim=False &= help "Functional simulation only"
-    , n=5 &= help "Number of simulation and testbench cycles"
+    , n=30 &= help "Number of simulation and testbench cycles"
     }
 
 
