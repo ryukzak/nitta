@@ -32,9 +32,9 @@ import qualified Data.Text                     as T
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
-import           NITTA.Project
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Synthesis.Method
+import           NITTA.TargetSynthesis
 import           NITTA.Test.Microarchitectures
 import           Test.Tasty                    (TestTree, testGroup)
 import           Test.Tasty.HUnit

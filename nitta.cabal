@@ -71,7 +71,7 @@ library
                      , NITTA.Model.ProcessorUnits.Time
                      , NITTA.Model.TargetSystem
                      , NITTA.Model.Types
-                     , NITTA.Project
+                     -- , NITTA.Project
                      , NITTA.Project.Implementation
                      , NITTA.Project.Parts.Icarus
                      , NITTA.Project.Parts.Quartus
@@ -85,6 +85,7 @@ library
                      , NITTA.Synthesis.Method
                      , NITTA.Synthesis.Tree
                      , NITTA.Synthesis.Utils
+                     , NITTA.TargetSynthesis
                      , NITTA.UIBackend
                      , NITTA.UIBackend.Marshalling
                      , NITTA.UIBackend.REST

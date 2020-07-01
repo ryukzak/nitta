@@ -28,8 +28,8 @@ module NITTA.Test.Microarchitectures
     , pInt, pIntX32, pIntX48, pIntX64, pIntX128, pFX32_32, pFX22_32, pFX42_64
     ) where
 
-import           Control.Monad                    (void)
-import           Data.Atomics.Counter             (incrCounter, newCounter)
+import           Control.Monad                   (void)
+import           Data.Atomics.Counter            (incrCounter, newCounter)
 import           Data.Default
 import           Data.Proxy
 import           NITTA.Intermediate.Types
@@ -39,8 +39,8 @@ import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
-import           NITTA.Project
-import           System.IO.Unsafe                 (unsafePerformIO)
+import           NITTA.TargetSynthesis
+import           System.IO.Unsafe                (unsafePerformIO)
 import           Test.Tasty.HUnit
 
 
@@ -72,7 +72,7 @@ marchSPI isSlave _proxy = evalNetwork Sync $ do
     add "fram2" FramIO
     add "shift" ShiftIO
     add "accum" AccumIO
-    add "spi" $ if isSlave 
+    add "spi" $ if isSlave
         then SPISlave
                 { slave_mosi = InputPortTag "mosi"
                 , slave_miso = OutputPortTag "miso"
@@ -121,7 +121,7 @@ microarch ioSync ioUnit = evalNetwork ioSync $ do
     add "accum" AccumIO
     add "mul" MultiplierIO
     add "div" DividerIO
-    add "spi" $ case ioUnit of 
+    add "spi" $ case ioUnit of
         SlaveSPI -> SPISlave
                 { slave_mosi = InputPortTag "mosi"
                 , slave_miso = OutputPortTag "miso"

@@ -32,7 +32,7 @@ import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
-import           NITTA.Project
+import           NITTA.TargetSynthesis
 import           NITTA.Test.Microarchitectures
 import           Test.Tasty                      (TestTree, testGroup)
 import           Test.Tasty.HUnit

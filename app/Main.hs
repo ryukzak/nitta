@@ -36,7 +36,7 @@ import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Project                   (TargetSynthesis (..),
+import           NITTA.TargetSynthesis           (TargetSynthesis (..),
                                                   mkModelWithOneNetwork,
                                                   runTargetSynthesis)
 import           NITTA.UIBackend

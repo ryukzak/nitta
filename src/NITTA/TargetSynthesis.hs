@@ -7,7 +7,7 @@
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
-Module      : NITTA.Project
+Module      : NITTA.TargetSynthesis
 Description : Entry point for synthesis process and target system generation.
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
@@ -75,7 +75,7 @@ NITTA.Project.Types:Project      |        |                                     
  \---> filesystem
 @
 -}
-module NITTA.Project
+module NITTA.TargetSynthesis
     ( mkModelWithOneNetwork
     , TargetSynthesis(..), runTargetSynthesis
     ) where
