@@ -29,7 +29,7 @@ import           Data.List                                 (intersect, (\\))
 import           Data.Set                                  (elems, fromList)
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Serial.Generic
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types

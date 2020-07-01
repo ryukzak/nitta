@@ -29,9 +29,7 @@ import           GHC.Generics
 import           NITTA.Intermediate.Functions    (reg)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
-import           NITTA.Model.Problems.Binding
-import           NITTA.Model.Problems.Dataflow
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Utils
@@ -121,11 +119,23 @@ instance ( Var v, Val x
     refactorDecision (DFCluster leafs) bl@BreakLoop{} = let
             origin = recLoop bl
         in DFCluster
-            $ ( DFLeaf (recLoopIn bl){ funHistory=[origin] } )
-            : ( DFLeaf (recLoopOut bl){ funHistory=[origin] } )
+            $ DFLeaf (recLoopIn bl){ funHistory=[origin] }
+            : DFLeaf (recLoopOut bl){ funHistory=[origin] }
             : ( leafs L.\\ [ DFLeaf origin ] )
 
     refactorDecision _ _ = error "DataFlowGraph "
+
+instance ( UnitTag tag, VarValTime v x t
+         ) => SynthesisProblem (ModelState (BusNetwork tag v x t) v x) tag v x t where
+    synthesisOptions m@ModelState{ mUnit } = concat
+        [ map generalizeBinding $ bindOptions m
+        , map generalizeDataflow $ dataflowOptions mUnit
+        , map Refactor $ refactorOptions m
+        ]
+
+    synthesisDecision m (Binding f tag) = bindDecision m $ Bind f tag
+    synthesisDecision m@ModelState{ mUnit } (Dataflow src trg) = m{ mUnit=dataflowDecision mUnit $ DataflowSt src trg }
+    synthesisDecision m (Refactor d) = refactorDecision m d
 
 
 -- |Convert @[ F v x ]@ to 'DataFlowGraph'.

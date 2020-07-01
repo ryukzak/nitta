@@ -53,6 +53,7 @@ library
                      , NITTA.Model.MicroArchitecture
                      , NITTA.Model.Networks.Bus
                      , NITTA.Model.Networks.Types
+                     , NITTA.Model.Problems
                      , NITTA.Model.Problems.Binding
                      , NITTA.Model.Problems.Dataflow
                      , NITTA.Model.Problems.Endpoint
@@ -92,6 +93,7 @@ library
                      , NITTA.UIBackend.Timeline
                      , NITTA.UIBackend.VisJS
                      , NITTA.Utils
+                     , NITTA.Utils.Base
                      , NITTA.Utils.CodeFormat
                      , NITTA.Utils.ProcessDescription
   build-depends:       aeson

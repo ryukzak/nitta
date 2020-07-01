@@ -31,7 +31,7 @@ import           Data.Maybe                             (fromMaybe, mapMaybe)
 import qualified Data.String.Utils                      as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.IO.SimpleIO
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types

@@ -42,7 +42,7 @@ import           Data.Maybe
 import qualified Data.String.Utils             as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems
 import           NITTA.Model.Types
 import           NITTA.Utils.CodeFormat
 import           Numeric.Interval

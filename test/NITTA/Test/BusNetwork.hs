@@ -28,7 +28,7 @@ import qualified Data.Set                        as S
 import qualified NITTA.Intermediate.Functions    as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
-import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem

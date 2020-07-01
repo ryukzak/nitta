@@ -15,11 +15,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Utils
-    ( unionsMap
-    , oneOf
-    , minimumOn
-    , maximumOn
-    , shift, shiftI
+    ( shift, shiftI
     , modify'_
     -- *HDL generation
     , bool2verilog
@@ -40,7 +36,8 @@ module NITTA.Utils
     , isFB
     , isInstruction
     , isTarget
-    -- code format
+
+    , module NITTA.Utils.Base
     , module NITTA.Utils.CodeFormat
     ) where
 
@@ -48,13 +45,13 @@ import           Control.Monad.State             (State, get, modify', put,
                                                   runState)
 import           Data.Bits                       (finiteBitSize, setBit,
                                                   testBit)
-import           Data.List                       (maximumBy, minimumBy, sortOn)
+import           Data.List                       (sortOn)
 import           Data.Maybe                      (isJust, mapMaybe)
-import           Data.Set                        (elems, unions)
 import qualified Data.String.Utils               as S
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Utils.Base
 import           NITTA.Utils.CodeFormat
 import           Numeric                         (readInt, showHex)
 import           Numeric.Interval                ((...))
@@ -62,20 +59,12 @@ import qualified Numeric.Interval                as I
 import           Text.StringTemplate
 
 
-unionsMap f lst = unions $ map f lst
-oneOf = head . elems
-
-
 modify'_ :: (s -> s) -> State s ()
 modify'_ = modify'
 
 
-minimumOn f = minimumBy (\a b -> f a `compare` f b)
-maximumOn f = maximumBy (\a b -> f a `compare` f b)
-
 shift offset d@EndpointSt{ epAt } = d{ epAt=shiftI offset epAt }
 shiftI offset i = (I.inf i + offset) ... (I.sup i + offset )
-
 
 
 bool2verilog True  = "1'b1"

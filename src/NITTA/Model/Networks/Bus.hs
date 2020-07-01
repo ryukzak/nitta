@@ -54,10 +54,7 @@ import qualified Data.String.Utils               as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
-import           NITTA.Model.Problems.Binding
-import           NITTA.Model.Problems.Dataflow
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation

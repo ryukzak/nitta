@@ -36,8 +36,7 @@ import           Debug.Trace
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems            hiding (Bind, Refactor)
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Parts.TestBench
 import qualified NITTA.Project.Parts.TestBench   as N

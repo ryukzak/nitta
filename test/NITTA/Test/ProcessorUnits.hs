@@ -34,8 +34,7 @@ import           Debug.Trace
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems                    hiding (Bind, Refactor)
 import           NITTA.Model.ProcessorUnits.Multiplier
 import           NITTA.Model.ProcessorUnits.Serial.Accum
 import           NITTA.Model.ProcessorUnits.Time

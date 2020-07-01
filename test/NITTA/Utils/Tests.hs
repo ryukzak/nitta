@@ -19,7 +19,7 @@ module NITTA.Utils.Tests
 
 import           Data.Set                        (fromList)
 import           NITTA.Intermediate.Functions    ()
-import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Utils
 import           Test.Tasty

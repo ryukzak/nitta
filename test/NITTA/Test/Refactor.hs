@@ -21,14 +21,13 @@ module NITTA.Test.Refactor
     ( refactorTests
     ) where
 
-import qualified Data.Map                      as M
-import qualified Data.Set                      as S
+import qualified Data.Map                     as M
+import qualified Data.Set                     as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems
 import           NITTA.Model.TargetSystem
-import           Test.Tasty                    (TestTree)
+import           Test.Tasty                   (TestTree)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 
