@@ -98,7 +98,15 @@ test_support =
                 end
                 counter(0)
             |]
-    , testCase "i = i + 1; counter(reg(i))" $ either assertFailure return
+    , testCase "local variable reassignment" $ either assertFailure return
+        =<< lua "counter_reg" (pIntX32, microarch ASync SlaveSPI)
+            [qc|function counter(i)
+                    x = i + 1
+                    x = x + 1
+                    counter(x)
+                end
+                counter(0)
+            |]    , testCase "i = i + 1; counter(reg(i))" $ either assertFailure return
         =<< lua "counter_reg" (pIntX32, microarch ASync SlaveSPI)
             [qc|function counter(i)
                     i = i + 1

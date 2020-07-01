@@ -51,8 +51,7 @@ import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
 import           Test.Tasty                              (TestTree, testGroup)
 import           Test.Tasty.HUnit                        (testCase, (@?))
-import           Test.Tasty.QuickCheck                   (Gen, arbitrary,
-                                                          testProperty)
+import           Test.Tasty.QuickCheck                   (testProperty)
 import           Test.Tasty.TH
 
 

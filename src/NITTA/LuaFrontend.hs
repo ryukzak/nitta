@@ -25,7 +25,6 @@ module NITTA.LuaFrontend
     , DebugFunctionT(..)
     ) where
 
-import           Control.Monad                 (when)
 import           Control.Monad.Identity
 import           Control.Monad.State
 import           Data.List                     (find, group, sort)
@@ -86,20 +85,18 @@ lua2functions src
             in [qq|{v'}#{i}|]
 
 
-buildAlg ast
-    = let
+buildAlg ast = flip execState st0 $ do
+        addMainInputs mainFunDef mainCall
+        mapM_ (processStatement mainName) $ funAssignStatements mainFunDef
+        addConstants
+    where
         Right ( mainName, mainCall, mainFunDef ) = findMain ast
-        alg0 = AlgBuilder
+        st0 = AlgBuilder
             { algItems=[]
             , algBuffer=[]
             , algVarGen=map (pack . show) [0..]
             , algVars=[]
             }
-        builder = do
-            addMainInputs mainFunDef mainCall
-            mapM_ (processStatement mainName) $ funAssignStatments mainFunDef
-            addConstants
-    in execState builder alg0
 
 
 data AlgBuilder x
@@ -169,7 +166,7 @@ input v = do
 output v
     | T.head v == '_' = return []
     | otherwise = gets $ \(dict, _fs) ->
-        snd (fromMaybe (error [qq|unknown variable: $v|]) (dict M.!? v))
+        snd (fromMaybe (error $ "unknown variable: " ++ show v) (dict M.!? v))
 
 store f = modify'_ $ \(dict, fs) -> (dict, f:fs)
 
@@ -210,30 +207,38 @@ addConstants = do
         addFunction Function{ fName="constant", fIn=[], fOut=[cVar], fValues=[cX] }
 
 
+parseLeftExp = map $ \case
+    VarName (Name v) -> v
+    e -> error $ "bad left expression: " ++ show e
 
-processStatement fn (LocalAssign names (Just [rexp])) = do
-    processStatement fn $ LocalAssign names Nothing
-    processStatement fn $ Assign (map VarName names) [rexp]
 
-processStatement _fn (LocalAssign names Nothing) = do
-    AlgBuilder{ algVars } <- get
-    forM_ names $ \(Name n) ->
-        when (n `elem` algVars) $ error "local variable already defined"
+-- define a local variable: @local x@ or @local x = ...@. We ignore it, because
+-- don't need to support scopes.
+processStatement _fn (LocalAssign _names Nothing)
+    = return ()
 
+processStatement fn (LocalAssign names (Just rexp))
+    = processStatement fn $ Assign (map VarName names) rexp
+
+
+-- e.g. @n, d = a / b@, or @n, d = f()@
+processStatement _fn (Assign lexps [rexp])
+    | length lexps > 1 = do
+        let outs = parseLeftExp lexps
+        diff <- renameVarsIfNeeded outs
+        rightExp diff outs rexp
+        flushBuffer diff outs
+
+-- e.g. @a = 1@ or @a, b = 1, 2@
 processStatement _fn st@(Assign lexps rexps)
-    = if
-        | length lexps == length rexps -> do
-            let outs = map (\case (VarName (Name v)) -> [v]; l -> error $ "bad left expression: " ++ show l) lexps
-            diff <- concat <$> mapM renameVarsIfNeeded outs
-            zipWithM_ (rightExp diff) outs rexps
-            flushBuffer
-        | length lexps > 1 && length rexps == 1 -> do
-            let outs = map (\case (VarName (Name v)) -> v; l -> error $ "bad left expression: " ++ show l) lexps
-            diff <- renameVarsIfNeeded outs
-            rightExp diff outs $ head rexps
-            flushBuffer
-        | otherwise -> error $ "processStatement: " ++ show st
+    | length lexps == length rexps = do
+        let outs = parseLeftExp lexps
+        diff <- renameVarsIfNeeded outs
+        zipWithM_ (rightExp diff) (map (:[]) outs) rexps
+        flushBuffer diff outs
+    | otherwise = error $ "assignment mismatch: " ++ show st
 
+-- recursive call of main function
 processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
     | fn == fName
     = do
@@ -405,15 +410,15 @@ renameFromTo rFrom rTo = do
             | otherwise = v
 
 
+funAssignStatements (FunAssign _ (FunBody _ _ (Block statments _))) = statments
+funAssignStatements _                                               = error "funAssignStatements : not function assignment"
 
-funAssignStatments (FunAssign _ (FunBody _ _ (Block statments _))) = statments
-funAssignStatments _                                               = error "funAssignStatments : not function assignment"
 
-
-flushBuffer = modify'_
-    $ \alg@AlgBuilder{ algBuffer, algItems } -> alg
+flushBuffer diff outs = modify'_
+    $ \alg@AlgBuilder{ algBuffer, algItems, algVars } -> alg
         { algItems=algBuffer ++ algItems
         , algBuffer=[]
+        , algVars=outs ++ map (applyPatch diff) algVars
         }
 
 
