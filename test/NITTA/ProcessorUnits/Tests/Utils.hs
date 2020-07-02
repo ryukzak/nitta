@@ -8,7 +8,7 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
+{-# OPTIONS -Wall -Wcompat -fno-warn-redundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
 {-|
@@ -21,13 +21,18 @@ Stability   : experimental
 -}
 module NITTA.ProcessorUnits.Tests.Utils
     ( puCoSimTestCase
+    , nittaCoSimTestCase
+
     , finitePUSynthesisProp
     , puCoSimProp
+
     , algGen
     ) where
 
+import           Control.Monad                   (void)
 import           Data.Atomics.Counter            (incrCounter)
 import           Data.CallStack
+import           Data.Default
 import           Data.List                       (delete)
 import qualified Data.Map                        as M
 import           Data.Set                        (difference, elems, empty,
@@ -35,11 +40,14 @@ import           Data.Set                        (difference, elems, empty,
 import           Debug.Trace
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
+import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems            hiding (Bind, Refactor)
 import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.TargetSystem
 import           NITTA.Project
 import qualified NITTA.Project                   as N
+import           NITTA.TargetSynthesis
 import           NITTA.Test.FunctionSimulation   ()
 import           NITTA.Test.Microarchitectures
 import           NITTA.Utils
@@ -81,6 +89,19 @@ naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
             | opt : _ <- endpointOptions u
             = naiveSynthesis' $ endpointDecision u $ endpointOptionToDecision opt
             | otherwise = u
+
+
+-- |Execute co-simulation test for the specific microarchitecture and algorithm
+nittaCoSimTestCase ::
+    ( HasCallStack
+    , Val x, Integral x
+    ) => String -> ( BusNetwork String String x Int ) -> [ F String x ] -> TestTree
+nittaCoSimTestCase n tMicroArch alg
+    = testCase n $ void $ runTargetSynthesis' def
+        { tName=n
+        , tMicroArch
+        , tDFG=fsToDataFlowGraph alg
+        }
 
 
 -- *Properties

@@ -63,8 +63,8 @@ library
                      , NITTA.Model.ProcessorUnits.Divider
                      , NITTA.Model.ProcessorUnits.Fram
                      , NITTA.Model.ProcessorUnits.IO.I2C
-                     , NITTA.Model.ProcessorUnits.IO.SimpleIO
                      , NITTA.Model.ProcessorUnits.IO.SPI
+                     , NITTA.Model.ProcessorUnits.IO.SimpleIO
                      , NITTA.Model.ProcessorUnits.Multiplier
                      , NITTA.Model.ProcessorUnits.Serial.Accum
                      , NITTA.Model.ProcessorUnits.Serial.Generic
@@ -164,17 +164,19 @@ test-suite nitta-test
   main-is:             Spec.hs
   other-modules:       NITTA.LuaFrontend.Tests
                      , NITTA.ProcessorUnits.Fram.Tests
+                     , NITTA.ProcessorUnits.Serial.Accum.Tests
+                     , NITTA.ProcessorUnits.Serial.Shift.Tests
                      , NITTA.ProcessorUnits.Tests.Utils
-                     , NITTA.Utils.Tests
                      , NITTA.Test.BusNetwork
+                     , NITTA.Test.CodeBlock
                      , NITTA.Test.FunctionSimulation
+                     , NITTA.Test.Locks
+                     , NITTA.Test.LuaFrontend
                      , NITTA.Test.Microarchitectures
                      , NITTA.Test.ProcessorUnits
                      , NITTA.Test.Refactor
                      , NITTA.Test.Types
-                     , NITTA.Test.Locks
-                     , NITTA.Test.LuaFrontend
-                     , NITTA.Test.CodeBlock
+                     , NITTA.Utils.Tests
   build-depends:       atomic-primops
                      , base
                      , call-stack

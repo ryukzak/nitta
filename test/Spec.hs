@@ -17,6 +17,8 @@ module Main where
 import           Data.Maybe
 import qualified NITTA.LuaFrontend.Tests
 import qualified NITTA.ProcessorUnits.Fram.Tests
+import qualified NITTA.ProcessorUnits.Serial.Accum.Tests
+import qualified NITTA.ProcessorUnits.Serial.Shift.Tests
 import           NITTA.Test.BusNetwork
 import           NITTA.Test.CodeBlock
 import           NITTA.Test.FunctionSimulation
@@ -26,8 +28,9 @@ import           NITTA.Test.ProcessorUnits
 import           NITTA.Test.Refactor
 import           NITTA.Test.Types
 import qualified NITTA.Utils.Tests
-import           System.Environment              (lookupEnv, setEnv)
-import           Test.Tasty                      (defaultMain, testGroup)
+import           System.Environment                      (lookupEnv, setEnv)
+import           Test.Tasty                              (defaultMain,
+                                                          testGroup)
 
 
 -- FIXME: Тестирование очень активно работает с диском. В связи с этим рационально положить папку
@@ -47,5 +50,7 @@ main = do
         , locksTest
         , NITTA.LuaFrontend.Tests.tests
         , NITTA.ProcessorUnits.Fram.Tests.tests
+        , NITTA.ProcessorUnits.Serial.Accum.Tests.tests
+        , NITTA.ProcessorUnits.Serial.Shift.Tests.tests
         , NITTA.Utils.Tests.tests
         ]
