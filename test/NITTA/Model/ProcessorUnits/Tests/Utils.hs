@@ -3,23 +3,21 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -Wcompat -fno-warn-redundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
 {-|
-Module      : NITTA.ProcessorUnits.Tests.Utils
+Module      : NITTA.Model.ProcessorUnits.Tests.Utils
 Description : Utils for processor unit testing
 Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.ProcessorUnits.Tests.Utils
+module NITTA.Model.ProcessorUnits.Tests.Utils
     ( puCoSimTestCase
     , nittaCoSimTestCase
 
@@ -95,7 +93,7 @@ naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
 nittaCoSimTestCase ::
     ( HasCallStack
     , Val x, Integral x
-    ) => String -> ( BusNetwork String String x Int ) -> [ F String x ] -> TestTree
+    ) => String -> BusNetwork String String x Int -> [ F String x ] -> TestTree
 nittaCoSimTestCase n tMicroArch alg
     = testCase n $ void $ runTargetSynthesis' def
         { tName=n
