@@ -166,6 +166,7 @@ test-suite nitta-test
                      , NITTA.Intermediate.Tests.Functions
                      , NITTA.Intermediate.Types.Tests
                      , NITTA.LuaFrontend.Tests
+                     , NITTA.Model.Problems.Refactor.Tests
                      , NITTA.Model.ProcessorUnits.Divider.Tests
                      , NITTA.Model.ProcessorUnits.Fram.Tests
                      , NITTA.Model.ProcessorUnits.Multiplier.Tests
@@ -176,7 +177,6 @@ test-suite nitta-test
                      , NITTA.Test.BusNetwork
                      , NITTA.Test.Locks
                      , NITTA.Test.LuaFrontend
-                     , NITTA.Test.Refactor
                      , NITTA.Utils.CodeFormat.Tests
                      , NITTA.Utils.Tests
   build-depends:       atomic-primops
