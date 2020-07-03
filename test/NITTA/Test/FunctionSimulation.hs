@@ -15,62 +15,14 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Test.FunctionSimulation
-    ( functionSimulationTests
+    (
     ) where
 
-import           Data.Default
-import           Data.List                     (permutations)
-import qualified Data.Map                      as M
-import           Data.Maybe
-import           Data.Set                      (fromList, intersection)
-import qualified Data.Set                      as S
+import           Data.Set                     (fromList, intersection)
+import qualified Data.Set                     as S
 import           NITTA.Intermediate.Functions
-import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
-import           NITTA.Model.TargetSystem
 import           Test.QuickCheck
-import           Test.Tasty                    (TestTree)
-import           Test.Tasty.HUnit
-import           Test.Tasty.TH
-
-
-case_reorderAlgorithm = do
-    let f = reorderAlgorithm :: [F String Int] -> [F String Int]
-    let l1 = loop 0 "b2" ["a1"      ]
-    let l2 = loop 1 "c" ["b1", "b2"]
-    let a = add "a1" "b1" ["c"]
-    mapM_ (([ l1, l2, a ] @=?) . f) $ permutations [ l1, l2, a ]
-
-
-case_fibonacci = simulateTest def
-        ("a1", [ 0, 1, 1, 2, 3, 5, 8 ])
-        [ loop 0 "b2" ["a1"     ]
-        , loop 1 "c"  ["b1", "b2"]
-        , add "a1" "b1" ["c"]
-        ]
-
-
-case_receiveAndSend = simulateTest [("a", [1,2,3,4,5])]
-        ("c", [ 11, 12, 13, 14, 15 ])
-        [ receive ["a"]
-        , constant 10 ["b"]
-        , add "a" "b" ["c"]
-        , send "c"
-        ]
-
-
-functionSimulationTests :: TestTree
-functionSimulationTests = $(testGroupGenerator)
-
-
--- *Utils
-
-simulateTest received (v, expect) alg = let
-        dfg = fsToDataFlowGraph (alg :: [F String Int])
-        Cntx{ cntxProcess } = simulateDataFlowGraph def received dfg
-        cycles = take (length expect) cntxProcess
-        actual = map (\(CycleCntx c) -> fromMaybe (error $ show c) (c M.!? v)) cycles
-    in expect @=? actual
 
 
 -- *Orphans instances for Arbitrary
