@@ -18,7 +18,6 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
 module NITTA.Intermediate.Functions.Accum
     ( Acc(..), Action(..), Sign(..)
       -- * Acc to function

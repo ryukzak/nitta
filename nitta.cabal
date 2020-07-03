@@ -162,7 +162,8 @@ test-suite nitta-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       NITTA.Intermediate.Simulation.Tests
+  other-modules:       NITTA.Intermediate.Functions.Accum.Tests
+                     , NITTA.Intermediate.Simulation.Tests
                      , NITTA.Intermediate.Tests.Functions
                      , NITTA.Intermediate.Types.Tests
                      , NITTA.LuaFrontend.Tests
@@ -175,7 +176,6 @@ test-suite nitta-test
                      , NITTA.Model.ProcessorUnits.Tests.Utils
                      , NITTA.Model.Tests.Microarchitecture
                      , NITTA.Test.BusNetwork
-                     , NITTA.Test.Locks
                      , NITTA.Test.LuaFrontend
                      , NITTA.Utils.CodeFormat.Tests
                      , NITTA.Utils.Tests

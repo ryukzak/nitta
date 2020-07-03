@@ -15,6 +15,7 @@ Stability   : experimental
 module Main where
 
 import           Data.Maybe
+import qualified NITTA.Intermediate.Functions.Accum.Tests
 import qualified NITTA.Intermediate.Simulation.Tests
 import qualified NITTA.Intermediate.Types.Tests
 import qualified NITTA.LuaFrontend.Tests
@@ -25,7 +26,6 @@ import qualified NITTA.Model.ProcessorUnits.Multiplier.Tests
 import qualified NITTA.Model.ProcessorUnits.Serial.Accum.Tests
 import qualified NITTA.Model.ProcessorUnits.Serial.Shift.Tests
 import           NITTA.Test.BusNetwork
-import           NITTA.Test.Locks
 import           NITTA.Test.LuaFrontend
 import qualified NITTA.Utils.CodeFormat.Tests
 import qualified NITTA.Utils.Tests
@@ -44,7 +44,7 @@ main = do
     defaultMain $ testGroup "NITTA"
         [ busNetworkTests
         , luaTests
-        , locksTest
+        , NITTA.Intermediate.Functions.Accum.Tests.tests
         , NITTA.Intermediate.Simulation.Tests.tests
         , NITTA.Intermediate.Types.Tests.tests
         , NITTA.LuaFrontend.Tests.tests
