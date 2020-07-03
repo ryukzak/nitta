@@ -15,6 +15,7 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests
     ) where
 
 import           NITTA.Intermediate.Functions
+import           NITTA.Intermediate.Tests.Functions     ()
 import           NITTA.Intermediate.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Tests.Utils

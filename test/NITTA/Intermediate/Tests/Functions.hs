@@ -7,16 +7,14 @@
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
 {-|
-Module      : NITTA.Test.FunctionSimulation
+Module      : NITTA.Intermediate.Tests.Functions
 Description :
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Test.FunctionSimulation
-    (
-    ) where
+module NITTA.Intermediate.Tests.Functions () where
 
 import           Data.Set                     (fromList, intersection)
 import qualified Data.Set                     as S

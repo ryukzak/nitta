@@ -163,6 +163,7 @@ test-suite nitta-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       NITTA.Intermediate.Simulation.Tests
+                     , NITTA.Intermediate.Tests.Functions
                      , NITTA.Intermediate.Types.Tests
                      , NITTA.LuaFrontend.Tests
                      , NITTA.Model.ProcessorUnits.Divider.Tests
@@ -172,7 +173,6 @@ test-suite nitta-test
                      , NITTA.Model.ProcessorUnits.Serial.Shift.Tests
                      , NITTA.Model.ProcessorUnits.Tests.Utils
                      , NITTA.Test.BusNetwork
-                     , NITTA.Test.FunctionSimulation
                      , NITTA.Test.Locks
                      , NITTA.Test.LuaFrontend
                      , NITTA.Test.Microarchitectures

@@ -36,6 +36,7 @@ import qualified Data.Map                        as M
 import           Data.Set                        (difference, elems, empty,
                                                   fromList, intersection, union)
 import           Debug.Trace
+import           NITTA.Intermediate.Functions    ()
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
@@ -46,7 +47,6 @@ import           NITTA.Model.TargetSystem
 import           NITTA.Project
 import qualified NITTA.Project                   as N
 import           NITTA.TargetSynthesis
-import           NITTA.Test.FunctionSimulation   ()
 import           NITTA.Test.Microarchitectures
 import           NITTA.Utils
 import           System.FilePath.Posix           (joinPath)

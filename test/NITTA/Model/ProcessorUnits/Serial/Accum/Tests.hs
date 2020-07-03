@@ -16,6 +16,7 @@ module NITTA.Model.ProcessorUnits.Serial.Accum.Tests
 
 import           Data.Default
 import           NITTA.Intermediate.Functions
+import           NITTA.Intermediate.Tests.Functions     ()
 import           NITTA.Intermediate.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Tests.Utils
