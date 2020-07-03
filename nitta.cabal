@@ -172,10 +172,10 @@ test-suite nitta-test
                      , NITTA.Model.ProcessorUnits.Serial.Accum.Tests
                      , NITTA.Model.ProcessorUnits.Serial.Shift.Tests
                      , NITTA.Model.ProcessorUnits.Tests.Utils
+                     , NITTA.Model.Tests.Microarchitecture
                      , NITTA.Test.BusNetwork
                      , NITTA.Test.Locks
                      , NITTA.Test.LuaFrontend
-                     , NITTA.Test.Microarchitectures
                      , NITTA.Test.Refactor
                      , NITTA.Utils.CodeFormat.Tests
                      , NITTA.Utils.Tests

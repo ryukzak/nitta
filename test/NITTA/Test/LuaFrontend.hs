@@ -24,22 +24,22 @@ module NITTA.Test.LuaFrontend
     ) where
 
 import           Data.Default
-import           Data.Either                   (isRight)
-import           Data.FileEmbed                (embedStringFile)
+import           Data.Either                         (isRight)
+import           Data.FileEmbed                      (embedStringFile)
 import           Data.Proxy
-import qualified Data.String.Utils             as S
-import qualified Data.Text                     as T
+import qualified Data.String.Utils                   as S
+import qualified Data.Text                           as T
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
+import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.Project
 import           NITTA.Synthesis.Method
 import           NITTA.TargetSynthesis
-import           NITTA.Test.Microarchitectures
-import           Test.Tasty                    (TestTree, testGroup)
+import           Test.Tasty                          (TestTree, testGroup)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
-import           Text.InterpolatedString.Perl6 (qc)
+import           Text.InterpolatedString.Perl6       (qc)
 
 
 

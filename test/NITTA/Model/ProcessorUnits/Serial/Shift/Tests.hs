@@ -16,7 +16,7 @@ module NITTA.Model.ProcessorUnits.Serial.Shift.Tests
 
 import           NITTA.Intermediate.Functions
 import           NITTA.Model.ProcessorUnits.Tests.Utils
-import           NITTA.Test.Microarchitectures
+import           NITTA.Model.Tests.Microarchitecture
 import           Test.Tasty                             (testGroup)
 
 

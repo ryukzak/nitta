@@ -21,20 +21,20 @@ module NITTA.Test.BusNetwork
     ( busNetworkTests
     ) where
 
-import           Control.Monad                   (void)
+import           Control.Monad                       (void)
 import           Data.Default
-import           Data.Map                        (fromList)
-import qualified Data.Set                        as S
-import qualified NITTA.Intermediate.Functions    as F
+import           Data.Map                            (fromList)
+import qualified Data.Set                            as S
+import qualified NITTA.Intermediate.Functions        as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
+import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.TargetSynthesis
-import           NITTA.Test.Microarchitectures
-import           Test.Tasty                      (TestTree, testGroup)
+import           Test.Tasty                          (TestTree, testGroup)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 

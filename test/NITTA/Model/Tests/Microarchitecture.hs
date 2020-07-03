@@ -10,14 +10,14 @@
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
 {-|
-Module      : NITTA.Test.Microarchitectures
+Module      : NITTA.Model.Tests.Microarchitecture
 Description :
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Test.Microarchitectures
+module NITTA.Model.Tests.Microarchitecture
     ( march
     , marchSPI
     , marchSPIDropData
