@@ -1,4 +1,5 @@
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
@@ -15,9 +16,12 @@ module NITTA.Model.ProcessorUnits.Divider.Tests
     ) where
 
 import           NITTA.Intermediate.Functions
+import           NITTA.LuaFrontend.Tests                hiding (tests)
+import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits.Tests.Utils
 import           NITTA.Model.Tests.Microarchitecture
 import           Test.Tasty                             (testGroup)
+import           Text.InterpolatedString.Perl6          (qc)
 
 
 tests = testGroup "Divider PU"
@@ -32,6 +36,47 @@ tests = testGroup "Divider PU"
         , division "a1" "b1" ["c1"] ["d1"]
         , add "c1" "d1" ["e1"]
         ]
+
+    , luaTestCase "one division" [qc|
+        function f(a)
+            a, _b = a / 2
+            f(a)
+        end
+        f(1024)
+        |]
+    , luaTestCase "two division" [qc|
+        function f(a, b)
+            a, _ = a / 2
+            b, _ = b / 3
+            f(a, b)
+        end
+        f(1024, 1024)
+        |]
+
+    , typedLuaTestCase (microarch ASync SlaveSPI) pFX22_32 "fixed point 22 32" [qc|
+        function f(a, b)
+            a, b = -1.25 / 0.5
+            send(a)
+            send(b)
+            c, d = 75 / -2
+            send(c)
+            send(d)
+        end
+        f(1024, 1024)
+        |]
+
+    , typedLuaTestCase (microarch ASync SlaveSPI) pFX42_64 "fixed point 42 64" [qc|
+        function f(a, b)
+            a, b = -1.25 / 0.5
+            send(a)
+            send(b)
+            c, d = 75 / -2
+            send(c)
+            send(d)
+        end
+        f(1024, 1024)
+        |]
+
     -- FIXME: Auto text can't work correctly, because processGen don't take into account the
     -- facts that some variables may go out.
     -- , testProperty "isUnitSynthesisFinish" $ isUnitSynthesisFinish <$> dividerGen

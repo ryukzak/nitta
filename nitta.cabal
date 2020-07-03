@@ -170,13 +170,13 @@ test-suite nitta-test
                      , NITTA.Model.Problems.Refactor.Tests
                      , NITTA.Model.ProcessorUnits.Divider.Tests
                      , NITTA.Model.ProcessorUnits.Fram.Tests
+                     , NITTA.Model.ProcessorUnits.IO.SPI.Tests
                      , NITTA.Model.ProcessorUnits.Multiplier.Tests
                      , NITTA.Model.ProcessorUnits.Serial.Accum.Tests
                      , NITTA.Model.ProcessorUnits.Serial.Shift.Tests
                      , NITTA.Model.ProcessorUnits.Tests.Utils
                      , NITTA.Model.Tests.Microarchitecture
                      , NITTA.Test.BusNetwork
-                     , NITTA.Test.LuaFrontend
                      , NITTA.Utils.CodeFormat.Tests
                      , NITTA.Utils.Tests
   build-depends:       atomic-primops

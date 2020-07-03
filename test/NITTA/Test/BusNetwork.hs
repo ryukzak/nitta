@@ -57,7 +57,7 @@ test_fibonacci =
             ]
 
 test_io =
-    [ testCase "receive two variables" $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
+    [ testCase "receive two variables" $ void $ runTargetSynthesisWithUniqName (def :: TargetSynthesis _ _ _ Int)
         { tName="receive_two_variables"
         , tMicroArch=marchSPI True pInt
         , tReceivedValues=[ ("a", [10..15]), ("b", [20..25])]
@@ -68,7 +68,7 @@ test_io =
             , F.send "c"
             ]
         }
-    , testCase "receive variable two times" $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
+    , testCase "receive variable two times" $ void $ runTargetSynthesisWithUniqName (def :: TargetSynthesis _ _ _ Int)
         { tName="receive_variable_two_times"
         , tMicroArch=marchSPI True pInt
         , tReceivedValues=[ ("a", [10..15]), ("b", [20..25])]
@@ -81,7 +81,7 @@ test_io =
     ]
 
 test_add_and_io =
-    [ testCase "receive 4 variables" $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
+    [ testCase "receive 4 variables" $ void $ runTargetSynthesisWithUniqName (def :: TargetSynthesis _ _ _ Int)
         { tName="Two functions 4 variables"
         , tMicroArch=marchSPI True pInt
         , tReceivedValues=[ ("a", [10..15]), ("b", [20..25]), ("e", [0..25]), ("f", [20..30])]

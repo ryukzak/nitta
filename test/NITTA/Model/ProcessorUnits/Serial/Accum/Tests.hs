@@ -1,4 +1,5 @@
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
@@ -18,11 +19,14 @@ import           Data.Default
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Tests.Functions     ()
 import           NITTA.Intermediate.Types
+import           NITTA.LuaFrontend.Tests                hiding (tests)
+import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Tests.Utils
 import           NITTA.Model.Tests.Microarchitecture
 import           Test.QuickCheck
 import           Test.Tasty                             (testGroup)
+import           Text.InterpolatedString.Perl6          (qc)
 
 
 tests = testGroup "Accum PU"
@@ -59,6 +63,23 @@ tests = testGroup "Accum PU"
     , puCoSimTestCase "complex test" accumDef [("a", 1), ("b", 2), ("e", 4), ("f", -4), ("j", 8)]
         [ accFromStr "+a +b = c = d; +e -f = g; +j = k"
         ]
+
+    , typedLuaTestCase (microarch ASync SlaveSPI) pFX22_32 "fixpoint 22 32" [qc|
+        function f()
+            send(0.5 - 0.25)
+            send(-1.25 + 2.5)
+        end
+        f()
+        |]
+
+    , typedLuaTestCase (microarch ASync SlaveSPI) pFX42_64 "fixpoint 42 64" [qc|
+        function f()
+            send(0.5 - 0.25)
+            send(-1.25 + 2.5)
+        end
+        f()
+        |]
+
     , finitePUSynthesisProp "finite synthesis process" accumDef fsGen
     , puCoSimProp "co simulation" accumDef fsGen
     ]

@@ -96,7 +96,7 @@ nittaCoSimTestCase ::
     , Val x, Integral x
     ) => String -> BusNetwork String String x Int -> [ F String x ] -> TestTree
 nittaCoSimTestCase n tMicroArch alg
-    = testCase n $ void $ runTargetSynthesis' def
+    = testCase n $ void $ runTargetSynthesisWithUniqName def
         { tName=n
         , tMicroArch
         , tDFG=fsToDataFlowGraph alg

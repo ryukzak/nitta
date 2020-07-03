@@ -21,13 +21,18 @@ Stability   : experimental
 -}
 module NITTA.LuaFrontend.Tests
     ( tests
+    , luaTestCase, typedLuaTestCase, typedIOLuaTestCase
     ) where
 
 import           Data.CallStack
 import           Data.Default
 import           Data.Either
+import           Data.FileEmbed                      (embedStringFile)
+import           Data.Proxy
 import qualified Data.String.Utils                   as S
 import qualified Data.Text                           as T
+import           NITTA.Intermediate.Types
+import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.Project
@@ -143,6 +148,68 @@ test_assignment_and_reassignment =
     ]
 
 
+test_complex_examples =
+    [ luaTestCase "fibonacci" [qc|
+        function fib(a, b)
+            b, a = a + b, b
+            fib(a, b)
+        end
+        fib(0, 1)
+        |]
+    , luaTestCase "fibonacci with registers" [qc|
+        function fib(a, b)
+            a, b = b, reg(reg(a) + reg(b))
+            fib(a, b)
+        end
+        fib(0, 1)
+        |]
+    , luaTestCase "fibonacci with registers and zeros" [qc|
+        function fib(a, b)
+            a, b = b, reg(a + reg(b + 0)) + 0
+            fib(a, b)
+        end
+        fib(0, 1)
+        |]
+    ]
+
+
+test_examples =
+    [ typedLuaTestCase (microarch Sync SlaveSPI) pFX22_32 "teacup io wait"
+        $(embedStringFile "examples/teacup.lua")
+    , typedLuaTestCase (microarch ASync SlaveSPI) pFX22_32 "teacup io drop"
+        $(embedStringFile "examples/teacup.lua")
+
+    , typedLuaTestCase (microarch Sync SlaveSPI) pFX22_32 "fibonacci io wait"
+        $(embedStringFile "examples/fibonacci.lua")
+
+    , typedLuaTestCase (microarch ASync SlaveSPI) pFX22_32 "self sending 1 io drop"
+        $(embedStringFile "test/lua/self-send1.lua")
+    , typedLuaTestCase (microarch Sync SlaveSPI) pFX22_32 "self sending2 io wait"
+        $(embedStringFile "test/lua/self-send2.lua")
+    , typedLuaTestCase (microarch Sync SlaveSPI) pFX32_32 "pu deadlock"
+        $(embedStringFile "test/lua/pu-deadlock.lua")
+
+    -- FIXME: uncomment when IO synchronization propogation and SPI will be fixed.
+    -- , testCase "examples/fibonacci.lua drop" $ either assertFailure return
+    --     =<< lua "fibonacci_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/fibonacci.lua")
+    , typedLuaTestCase (microarch Sync SlaveSPI) pFX32_32 "pid io wait"
+        $(embedStringFile "examples/pid.lua")
+    , typedLuaTestCase (microarch Sync SlaveSPI) pFX32_32 "fail io wait"
+        $(embedStringFile "test/lua/fail.lua")
+    , typedLuaTestCase (microarch Sync SlaveSPI) pFX32_32 "spi many outputs"
+        $(embedStringFile "test/lua/spi-many-outputs.lua")
+
+    -- , testCase "examples/pid.lua drop" $ either assertFailure return
+    --     =<< lua "pid_drop" (pFX22_32, microarch ASync SlaveSPI) $(embedStringFile "examples/pid.lua")
+    , typedLuaTestCase (microarch Sync SlaveSPI) pFX22_32 "example spi1 lua"
+        $(embedStringFile "examples/spi1.lua")
+    , typedLuaTestCase (microarch Sync SlaveSPI) pFX22_32 "example spi2 lua"
+        $(embedStringFile "examples/spi2.lua")
+    , typedLuaTestCase (microarch Sync SlaveSPI) pFX22_32 "example spi3 lua"
+        $(embedStringFile "examples/spi3.lua")
+    ]
+
+
 tests :: TestTree
 tests = $(testGroupGenerator)
 
@@ -151,18 +218,36 @@ tests = $(testGroupGenerator)
 
 
 luaTestCase :: HasCallStack => String -> T.Text -> TestTree
-luaTestCase name src = testCase name $ do
+luaTestCase name src = typedIOLuaTestCase (microarch ASync SlaveSPI) pInt name def src
+
+
+typedLuaTestCase ::
+    ( HasCallStack, Val x, Integral x
+    ) => BusNetwork String String x Int -> Proxy x -> String -> T.Text -> TestTree
+typedLuaTestCase arch proxy name src = typedIOLuaTestCase arch proxy name def src
+
+
+typedIOLuaTestCase ::
+    ( HasCallStack, Val x, Integral x
+    ) => BusNetwork String String x Int -> Proxy x -> String
+    -> [ ( String, [x] ) ] -> T.Text -> TestTree
+typedIOLuaTestCase arch proxy name received src = testCase name $ do
     let wd = "lua_" ++ toModuleName name
-    status <- runLua wd src
+    status <- runLua arch proxy wd received src
     let errMsg = codeBlock (T.unpack src) ++ "-- runTargetSynthesis fail with: " ++ fromLeft undefined status
     assertBool errMsg $ isRight status
 
-runLua wd src = do
-    report <- runTargetSynthesis (def :: TargetSynthesis String String Int Int)
+
+runLua :: forall x.
+    ( Val x, Integral x
+    ) => BusNetwork String String x Int -> Proxy x -> String
+    -> [ ( String, [x] ) ] -> T.Text -> IO ( Either String () )
+runLua arch _proxy wd received src = do
+    report <- runTargetSynthesisWithUniqName (def :: TargetSynthesis String String x Int)
         { tName=wd
-        , tMicroArch=microarch ASync SlaveSPI
+        , tMicroArch=arch
         , tSourceCode=Just src
-        , tReceivedValues=def
+        , tReceivedValues=received
         }
     return $ case report of
         Right TestbenchReport{ tbStatus=True } -> Right ()

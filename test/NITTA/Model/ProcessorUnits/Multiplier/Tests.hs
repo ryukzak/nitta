@@ -1,4 +1,5 @@
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
@@ -17,11 +18,14 @@ module NITTA.Model.ProcessorUnits.Multiplier.Tests
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Tests.Functions     ()
 import           NITTA.Intermediate.Types
+import           NITTA.LuaFrontend.Tests                hiding (tests)
+import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Tests.Utils
 import           NITTA.Model.Tests.Microarchitecture
 import           Test.QuickCheck
 import           Test.Tasty                             (testGroup)
+import           Text.InterpolatedString.Perl6          (qc)
 
 
 tests = testGroup "Multiplier PU"
@@ -34,6 +38,23 @@ tests = testGroup "Multiplier PU"
         , loop 1 "z" ["y"]
         , multiply "y" "x" ["z"]
         ]
+
+    , typedLuaTestCase (microarch ASync SlaveSPI) pFX22_32 "fixpoint 22 32" [qc|
+        function f()
+            send(0.5 * -0.5)
+            send(-20.5 * -2)
+        end
+        f()
+        |]
+
+    , typedLuaTestCase (microarch ASync SlaveSPI) pFX42_64 "fixpoint 42 64" [qc|
+        function f()
+            send(0.5 * -0.5)
+            send(-20.5 * -2)
+        end
+        f()
+        |]
+
     , finitePUSynthesisProp "isFinish" u fsGen
     , puCoSimProp "multiplier_coSimulation" u fsGen
     ]

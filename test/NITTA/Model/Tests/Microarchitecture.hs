@@ -23,7 +23,7 @@ module NITTA.Model.Tests.Microarchitecture
     , marchSPIDropData
     , algTestCase
     , externalTestCntr
-    , runTargetSynthesis'
+    , runTargetSynthesisWithUniqName
     , microarch, IOUnit(..)
     , pInt, pIntX32, pIntX48, pIntX64, pIntX128, pFX32_32, pFX22_32, pFX42_64
     ) where
@@ -97,12 +97,12 @@ marchSPIDropData isSlave proxy = (marchSPI isSlave proxy){ ioSync=ASync }
 externalTestCntr = unsafePerformIO $ newCounter 0
 {-# NOINLINE externalTestCntr #-}
 
-runTargetSynthesis' t@TargetSynthesis{ tName } = do
+runTargetSynthesisWithUniqName t@TargetSynthesis{ tName } = do
     i <- incrCounter 1 externalTestCntr
     runTargetSynthesis t{ tName=tName ++ "_" ++ show i }
 
 algTestCase n tMicroArch alg
-    = testCase n $ void $ runTargetSynthesis' (def :: TargetSynthesis _ _ _ Int)
+    = testCase n $ void $ runTargetSynthesisWithUniqName (def :: TargetSynthesis _ _ _ Int)
         { tName=n
         , tMicroArch
         , tDFG=fsToDataFlowGraph alg
