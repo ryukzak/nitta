@@ -23,11 +23,11 @@ import qualified NITTA.Model.ProcessorUnits.Multiplier.Tests
 import qualified NITTA.Model.ProcessorUnits.Serial.Accum.Tests
 import qualified NITTA.Model.ProcessorUnits.Serial.Shift.Tests
 import           NITTA.Test.BusNetwork
-import           NITTA.Test.CodeBlock
 import           NITTA.Test.FunctionSimulation
 import           NITTA.Test.Locks
 import           NITTA.Test.LuaFrontend
 import           NITTA.Test.Refactor
+import qualified NITTA.Utils.CodeFormat.Tests
 import qualified NITTA.Utils.Tests
 import           System.Environment                            (lookupEnv,
                                                                 setEnv)
@@ -46,7 +46,6 @@ main = do
         , busNetworkTests
         , refactorTests
         , luaTests
-        , codeTests
         , locksTest
         , NITTA.Intermediate.Types.Tests.tests
         , NITTA.LuaFrontend.Tests.tests
@@ -55,5 +54,6 @@ main = do
         , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
         , NITTA.Model.ProcessorUnits.Serial.Accum.Tests.tests
         , NITTA.Model.ProcessorUnits.Serial.Shift.Tests.tests
+        , NITTA.Utils.CodeFormat.Tests.tests
         , NITTA.Utils.Tests.tests
         ]

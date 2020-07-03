@@ -7,12 +7,20 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
-module NITTA.Test.CodeBlock
-    ( codeTests
+{-|
+Module      : NITTA.Utils.CodeFormat.Tests
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
+module NITTA.Utils.CodeFormat.Tests
+    ( tests
     ) where
 
 import qualified Data.String.Utils             as S
-import           NITTA.Utils
+import           NITTA.Utils.CodeFormat
 import           Test.Tasty                    (TestTree)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
@@ -149,5 +157,5 @@ case_concatLinesWithSpaceWithoutBeforeLine = do
 
     b @?= a
 
-codeTests :: TestTree
-codeTests = $(testGroupGenerator)
+tests :: TestTree
+tests = $(testGroupGenerator)
