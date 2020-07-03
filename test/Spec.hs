@@ -15,6 +15,7 @@ Stability   : experimental
 module Main where
 
 import           Data.Maybe
+import qualified NITTA.Intermediate.Types.Tests
 import qualified NITTA.LuaFrontend.Tests
 import qualified NITTA.Model.ProcessorUnits.Divider.Tests
 import qualified NITTA.Model.ProcessorUnits.Fram.Tests
@@ -27,7 +28,6 @@ import           NITTA.Test.FunctionSimulation
 import           NITTA.Test.Locks
 import           NITTA.Test.LuaFrontend
 import           NITTA.Test.Refactor
-import           NITTA.Test.Types
 import qualified NITTA.Utils.Tests
 import           System.Environment                            (lookupEnv,
                                                                 setEnv)
@@ -42,13 +42,13 @@ main = do
     qtests <- fromMaybe "10" <$> lookupEnv "TASTY_QUICKCHECK_TESTS"
     setEnv "TASTY_QUICKCHECK_TESTS" qtests
     defaultMain $ testGroup "NITTA"
-        [ typesTests
-        , functionSimulationTests
+        [ functionSimulationTests
         , busNetworkTests
         , refactorTests
         , luaTests
         , codeTests
         , locksTest
+        , NITTA.Intermediate.Types.Tests.tests
         , NITTA.LuaFrontend.Tests.tests
         , NITTA.Model.ProcessorUnits.Divider.Tests.tests
         , NITTA.Model.ProcessorUnits.Fram.Tests.tests

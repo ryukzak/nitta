@@ -6,13 +6,21 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
-module NITTA.Test.Types
-    ( typesTests
+{-|
+Module      : NITTA.Intermediate.Types.Tests
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
+module NITTA.Intermediate.Types.Tests
+    ( tests
     ) where
 
-import           Data.Ratio       ((%))
+import           Data.Ratio               ((%))
 import           NITTA.Intermediate.Types
-import           Test.Tasty       (TestTree)
+import           Test.Tasty               (TestTree)
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 
@@ -80,5 +88,5 @@ case_fixpointIntegral = do
     ( read "0.0", read "0.25" :: FX 25 32 ) @?= read "0.25" `quotRem` read "0.75"
 
 
-typesTests :: TestTree
-typesTests = $(testGroupGenerator)
+tests :: TestTree
+tests = $(testGroupGenerator)

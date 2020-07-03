@@ -162,7 +162,8 @@ test-suite nitta-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       NITTA.LuaFrontend.Tests
+  other-modules:       NITTA.Intermediate.Types.Tests
+                     , NITTA.LuaFrontend.Tests
                      , NITTA.Model.ProcessorUnits.Divider.Tests
                      , NITTA.Model.ProcessorUnits.Fram.Tests
                      , NITTA.Model.ProcessorUnits.Multiplier.Tests
@@ -176,7 +177,6 @@ test-suite nitta-test
                      , NITTA.Test.LuaFrontend
                      , NITTA.Test.Microarchitectures
                      , NITTA.Test.Refactor
-                     , NITTA.Test.Types
                      , NITTA.Utils.Tests
   build-depends:       atomic-primops
                      , base
