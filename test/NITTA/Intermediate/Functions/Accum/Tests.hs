@@ -1,14 +1,12 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 {-|
-Module      : NITTA.Intermediate.Functions
+Module      : NITTA.Intermediate.Functions.Accum.Tests
 Description : Accum function
 Copyright   : (c) Daniil Prohorov, 2019
 License     : BSD3
@@ -19,14 +17,11 @@ module NITTA.Intermediate.Functions.Accum.Tests
     ( tests
     ) where
 
-import           Data.Set                           (fromList)
+import           Data.Set ( fromList )
 import           NITTA.Intermediate.Functions.Accum
 import           NITTA.Intermediate.Types
-import           Test.Tasty                         (testGroup)
+import           Test.Tasty ( testGroup )
 import           Test.Tasty.HUnit
-
-
-locksSet accExp = fromList $ locks $ (accFromStr accExp :: F String Int)
 
 
 tests = testGroup "Accum function"
@@ -77,3 +72,5 @@ tests = testGroup "Accum function"
         in b @?= a
 
     ]
+    where
+        locksSet accExp = fromList $ locks (accFromStr accExp :: F String Int)

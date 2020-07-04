@@ -1,8 +1,6 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
@@ -16,23 +14,22 @@ Stability   : experimental
 -}
 module NITTA.Intermediate.Tests.Functions () where
 
-import           Data.Set                     (fromList, intersection)
-import qualified Data.Set                     as S
+import           Data.Set ( fromList, intersection )
+import qualified Data.Set as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           Test.QuickCheck
 
-
--- *Orphans instances for Arbitrary
 
 maxLenght = 8
 varNameSize = 7
 outputVarsGen = O . fromList <$> resize maxLenght (listOf1 $ vectorOf varNameSize $ elements ['a'..'z'])
 inputVarGen = I <$> vectorOf varNameSize (elements ['a'..'z'])
 
--- TODO: Иногда, может получиться вот такой вот функциональный блок: < "qqq" = "joi" * "joi" >, что
--- необходимо исправить. Не очень ясно как решать эту проблему, ведь у нас везде Set, а дубль
--- происходит с одной стороны.
+
+-- FIXME: Sometimes the algorithm can generate the following function: "qqq =
+-- joi * joi", and we cannot recognize this case, because we use outputs returns
+-- singleton.
 uniqueVars fb = S.null (inputs fb `intersection` outputs fb)
 
 instance Arbitrary (Loop String Int) where

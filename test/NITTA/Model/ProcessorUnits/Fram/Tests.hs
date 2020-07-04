@@ -16,12 +16,12 @@ module NITTA.Model.ProcessorUnits.Fram.Tests
 
 import           Data.Default
 import           NITTA.Intermediate.Functions
-import           NITTA.Intermediate.Tests.Functions     ()
+import           NITTA.Intermediate.Tests.Functions ()
 import           NITTA.Intermediate.Types
 import           NITTA.Model.ProcessorUnits.Fram
 import           NITTA.Model.ProcessorUnits.Tests.Utils
 import           Test.QuickCheck
-import           Test.Tasty                             (testGroup)
+import           Test.Tasty ( testGroup )
 
 
 tests = testGroup "Fram PU"

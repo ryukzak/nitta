@@ -1,11 +1,11 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS -Wall -Wcompat -fno-warn-redundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
@@ -27,35 +27,33 @@ module NITTA.Model.ProcessorUnits.Tests.Utils
     , algGen
     ) where
 
-import           Control.Monad                       (void)
-import           Data.Atomics.Counter                (incrCounter)
+import           Control.Monad ( void )
+import           Data.Atomics.Counter ( incrCounter )
 import           Data.CallStack
 import           Data.Default
-import           Data.List                           (delete)
-import qualified Data.Map                            as M
-import           Data.Set                            (difference, elems, empty,
-                                                      fromList, intersection,
-                                                      union)
+import           Data.List ( delete )
+import qualified Data.Map as M
+import           Data.Set ( difference, elems, empty, fromList, intersection, union )
 import           Debug.Trace
-import           NITTA.Intermediate.Functions        ()
+import           NITTA.Intermediate.Functions ()
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
-import           NITTA.Model.Problems                hiding (Bind, Refactor)
+import           NITTA.Model.Problems hiding ( Bind, Refactor )
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.Project
-import qualified NITTA.Project                       as N
+import qualified NITTA.Project as N
 import           NITTA.TargetSynthesis
 import           NITTA.Utils
-import           System.FilePath.Posix               (joinPath)
+import           System.FilePath.Posix ( joinPath )
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
-import           Test.Tasty                          (TestTree)
-import           Test.Tasty.HUnit                    (testCase, (@?))
-import           Test.Tasty.QuickCheck               (testProperty)
+import           Test.Tasty ( TestTree )
+import           Test.Tasty.HUnit ( testCase, (@?) )
+import           Test.Tasty.QuickCheck ( testProperty )
 
 
 -- *Test cases

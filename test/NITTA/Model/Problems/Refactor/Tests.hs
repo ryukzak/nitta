@@ -1,11 +1,10 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE IncoherentInstances   #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-|
@@ -20,13 +19,13 @@ module NITTA.Model.Problems.Refactor.Tests
     ( tests
     ) where
 
-import qualified Data.Map                     as M
-import qualified Data.Set                     as S
+import qualified Data.Map as M
+import qualified Data.Set as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.TargetSystem
-import           Test.Tasty                   (testGroup)
+import           Test.Tasty ( testGroup )
 import           Test.Tasty.HUnit
 
 
@@ -61,10 +60,10 @@ tests = testGroup "Refactor problem"
             ]
 
     , testCase "patch source" $ do
-        patch Changeset{ changeO=M.fromList [("a1@buf", S.fromList ["a1", "a2"])], changeI=M.fromList [] } (Source $ S.fromList ["a1@buf"])
-            @?= (Source $ S.fromList ["a1", "a2"])
-        patch Changeset{ changeO=M.fromList [("a1", S.fromList ["a1@buf"]), ("a2", S.fromList ["a1@buf"])], changeI=M.fromList [] } (Source $ S.fromList ["a1", "a2"])
-            @?= (Source $ S.fromList ["a1@buf"])
+        patch Changeset{ changeO=M.fromList [("a1@buf", S.fromList ["a1", "a2"])], changeI=M.empty } (Source $ S.fromList ["a1@buf"])
+            @?= Source (S.fromList ["a1", "a2"])
+        patch Changeset{ changeO=M.fromList [("a1", S.fromList ["a1@buf"]), ("a2", S.fromList ["a1@buf"])], changeI=M.empty } (Source $ S.fromList ["a1", "a2"])
+            @?= Source (S.fromList ["a1@buf"])
 
     , testCase "reverse diff" $ do
         reverseDiff Changeset{ changeI=M.fromList [("a", "b")], changeO=M.fromList [("c", S.fromList ["e", "f"])] }

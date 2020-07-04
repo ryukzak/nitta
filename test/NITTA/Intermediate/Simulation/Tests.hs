@@ -1,6 +1,6 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
@@ -19,14 +19,14 @@ module NITTA.Intermediate.Simulation.Tests
 
 import           Data.CallStack
 import           Data.Default
-import           Data.List                     (permutations)
-import qualified Data.Map                      as M
+import           Data.List ( permutations )
+import qualified Data.Map as M
 import           Data.Maybe
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.TargetSystem
-import           Test.Tasty                    (TestTree, testGroup)
+import           Test.Tasty ( TestTree, testGroup )
 import           Test.Tasty.HUnit
 
 

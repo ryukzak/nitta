@@ -1,7 +1,7 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -29,10 +29,8 @@ import qualified NITTA.Model.ProcessorUnits.Serial.Shift.Tests
 import qualified NITTA.Tests
 import qualified NITTA.Utils.CodeFormat.Tests
 import qualified NITTA.Utils.Tests
-import           System.Environment                            (lookupEnv,
-                                                                setEnv)
-import           Test.Tasty                                    (defaultMain,
-                                                                testGroup)
+import           System.Environment ( lookupEnv, setEnv )
+import           Test.Tasty ( defaultMain, testGroup )
 
 
 -- FIXME: Тестирование очень активно работает с диском. В связи с этим рационально положить папку

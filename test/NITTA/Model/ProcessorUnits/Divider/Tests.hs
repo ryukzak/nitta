@@ -1,5 +1,5 @@
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
@@ -16,12 +16,12 @@ module NITTA.Model.ProcessorUnits.Divider.Tests
     ) where
 
 import           NITTA.Intermediate.Functions
-import           NITTA.LuaFrontend.Tests                hiding (tests)
+import           NITTA.LuaFrontend.Tests.Utils
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits.Tests.Utils
 import           NITTA.Model.Tests.Microarchitecture
-import           Test.Tasty                             (testGroup)
-import           Text.InterpolatedString.Perl6          (qc)
+import           Test.Tasty ( testGroup )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 tests = testGroup "Divider PU"

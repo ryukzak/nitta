@@ -1,9 +1,9 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 {-|
@@ -18,9 +18,9 @@ module NITTA.Intermediate.Types.Tests
     ( tests
     ) where
 
-import           Data.Ratio               ((%))
+import           Data.Ratio ( (%) )
 import           NITTA.Intermediate.Types
-import           Test.Tasty               (TestTree)
+import           Test.Tasty ( TestTree )
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 

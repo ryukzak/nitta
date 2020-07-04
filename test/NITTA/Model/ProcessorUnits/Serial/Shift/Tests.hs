@@ -17,7 +17,7 @@ module NITTA.Model.ProcessorUnits.Serial.Shift.Tests
 import           NITTA.Intermediate.Functions
 import           NITTA.Model.ProcessorUnits.Tests.Utils
 import           NITTA.Model.Tests.Microarchitecture
-import           Test.Tasty                             (testGroup)
+import           Test.Tasty ( testGroup )
 
 
 tests = testGroup "Shift PU"

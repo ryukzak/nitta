@@ -1,7 +1,7 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE PartialTypeSignatures     #-}
-{-# LANGUAGE QuasiQuotes               #-}
-{-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
@@ -17,19 +17,19 @@ module NITTA.Model.ProcessorUnits.IO.SPI.Tests
     ( tests
     ) where
 
-import           Control.Monad                       (void)
+import           Control.Monad ( void )
 import           Data.Default
-import qualified NITTA.Intermediate.Functions        as F
-import           NITTA.Intermediate.Tests.Functions  ()
-import           NITTA.LuaFrontend.Tests             hiding (tests)
+import qualified NITTA.Intermediate.Functions as F
+import           NITTA.Intermediate.Tests.Functions ()
+import           NITTA.LuaFrontend.Tests.Utils
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.TargetSynthesis
-import           Test.Tasty                          (TestTree, testGroup)
+import           Test.Tasty ( TestTree, testGroup )
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
-import           Text.InterpolatedString.Perl6       (qc)
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 test_multiple_receives =
@@ -59,6 +59,7 @@ test_multiple_receives =
     ]
 
 
+-- TODO: proof test work
 test_different_type =
     [ typedIOLuaTestCase (microarch Sync SlaveSPI) pIntX32 "pIntX32 IO by sync slave"
         received alg

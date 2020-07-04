@@ -1,5 +1,5 @@
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
@@ -17,16 +17,16 @@ module NITTA.Model.ProcessorUnits.Serial.Accum.Tests
 
 import           Data.Default
 import           NITTA.Intermediate.Functions
-import           NITTA.Intermediate.Tests.Functions     ()
+import           NITTA.Intermediate.Tests.Functions ()
 import           NITTA.Intermediate.Types
-import           NITTA.LuaFrontend.Tests                hiding (tests)
+import           NITTA.LuaFrontend.Tests.Utils
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Tests.Utils
 import           NITTA.Model.Tests.Microarchitecture
 import           Test.QuickCheck
-import           Test.Tasty                             (testGroup)
-import           Text.InterpolatedString.Perl6          (qc)
+import           Test.Tasty ( testGroup )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 tests = testGroup "Accum PU"

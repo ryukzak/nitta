@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE NamedFieldPuns            #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE PartialTypeSignatures     #-}
-{-# LANGUAGE QuasiQuotes               #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures  -fno-warn-partial-type-signatures #-}
 
@@ -21,27 +21,15 @@ Stability   : experimental
 -}
 module NITTA.LuaFrontend.Tests
     ( tests
-    , luaTestCase, typedLuaTestCase, typedIOLuaTestCase
     ) where
 
-import           Data.CallStack
-import           Data.Default
-import           Data.Either
-import           Data.FileEmbed                      (embedStringFile)
-import           Data.Proxy
-import qualified Data.String.Utils                   as S
-import qualified Data.Text                           as T
-import           NITTA.Intermediate.Types
-import           NITTA.Model.Networks.Bus
+import           Data.FileEmbed ( embedStringFile )
+import           NITTA.LuaFrontend.Tests.Utils
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Tests.Microarchitecture
-import           NITTA.Project
-import           NITTA.TargetSynthesis
-import           NITTA.Utils
-import           Test.Tasty                          (TestTree, testGroup)
-import           Test.Tasty.HUnit
+import           Test.Tasty ( TestTree, testGroup )
 import           Test.Tasty.TH
-import           Text.InterpolatedString.Perl6       (qc)
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 test_simple_recursion =
@@ -77,6 +65,7 @@ test_simple_recursion =
         counter(0)
         |]
     ]
+
 
 test_assignment_and_reassignment =
    [ luaTestCase "assignment statement with new global variable" [qc|
@@ -173,6 +162,7 @@ test_complex_examples =
     ]
 
 
+-- TODO: actualize
 test_examples =
     [ typedLuaTestCase (microarch Sync SlaveSPI) pFX22_32 "teacup io wait"
         $(embedStringFile "examples/teacup.lua")
@@ -212,47 +202,3 @@ test_examples =
 
 tests :: TestTree
 tests = $(testGroupGenerator)
-
-
------------------------------------------------------------
-
-
-luaTestCase :: HasCallStack => String -> T.Text -> TestTree
-luaTestCase name src = typedIOLuaTestCase (microarch ASync SlaveSPI) pInt name def src
-
-
-typedLuaTestCase ::
-    ( HasCallStack, Val x, Integral x
-    ) => BusNetwork String String x Int -> Proxy x -> String -> T.Text -> TestTree
-typedLuaTestCase arch proxy name src = typedIOLuaTestCase arch proxy name def src
-
-
-typedIOLuaTestCase ::
-    ( HasCallStack, Val x, Integral x
-    ) => BusNetwork String String x Int -> Proxy x -> String
-    -> [ ( String, [x] ) ] -> T.Text -> TestTree
-typedIOLuaTestCase arch proxy name received src = testCase name $ do
-    let wd = "lua_" ++ toModuleName name
-    status <- runLua arch proxy wd received src
-    let errMsg = codeBlock (T.unpack src) ++ "-- runTargetSynthesis fail with: " ++ fromLeft undefined status
-    assertBool errMsg $ isRight status
-
-
-runLua :: forall x.
-    ( Val x, Integral x
-    ) => BusNetwork String String x Int -> Proxy x -> String
-    -> [ ( String, [x] ) ] -> T.Text -> IO ( Either String () )
-runLua arch _proxy wd received src = do
-    report <- runTargetSynthesisWithUniqName (def :: TargetSynthesis String String x Int)
-        { tName=wd
-        , tMicroArch=arch
-        , tSourceCode=Just src
-        , tReceivedValues=received
-        }
-    return $ case report of
-        Right TestbenchReport{ tbStatus=True } -> Right ()
-        Left err -> Left $ "synthesis process fail: " ++ err
-        Right TestbenchReport{ tbCompilerDump } | length tbCompilerDump > 2 -- [ "stdout:", "stderr:" ]
-            -> Left $ "icarus synthesis error:\n" ++ S.join "\n" tbCompilerDump
-        Right TestbenchReport{ tbSimulationDump }
-            -> Left $ "icarus simulation error:\n" ++ S.join "\n" tbSimulationDump

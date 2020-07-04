@@ -1,8 +1,7 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -17,14 +16,15 @@ module NITTA.Utils.Tests
     ( tests
     ) where
 
-import           Data.Set                        (fromList)
-import           NITTA.Intermediate.Functions    ()
+import           Data.Set ( fromList )
+import           NITTA.Intermediate.Functions ()
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Utils
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
+{-# ANN module "HLint: ignore Reduce duplication" #-}
 
 tests = testGroup "NITTA.Utils.Tests"
     [ testCase "values2dump" $ do
@@ -34,7 +34,7 @@ tests = testGroup "NITTA.Utils.Tests"
         "17" @=? values2dump [Bool True, Bool False, Bool True, Bool True, Bool True]
         "000000" @=? values2dump (replicate 24 $ Bool False)
 
-    , testCase "enpoint role equality" $ do
+    , testCase "endpoint role equality" $ do
         let source = Source . fromList
         Target "a" == Target "a" @? "Target eq"
         Target "a" /= Target "b" @? "Target not eq"

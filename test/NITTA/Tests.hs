@@ -1,12 +1,12 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE IncoherentInstances   #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-|
@@ -21,11 +21,11 @@ module NITTA.Tests
     ( tests
     ) where
 
-import           Control.Monad                       (void)
+import           Control.Monad ( void )
 import           Data.Default
-import           Data.Map                            (fromList)
-import qualified Data.Set                            as S
-import qualified NITTA.Intermediate.Functions        as F
+import           Data.Map ( fromList )
+import qualified Data.Set as S
+import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems
@@ -34,10 +34,11 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.TargetSynthesis
-import           Test.Tasty                          (TestTree, testGroup)
+import           Test.Tasty ( TestTree, testGroup )
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
 
+{-# ANN module "HLint: ignore Reduce duplication" #-}
 
 test_fibonacci =
     [ algTestCase "simple" march
@@ -55,6 +56,7 @@ test_fibonacci =
             , F.add "a1" "b1" ["c1", "c2"]
             , F.send "c2"
             ]
+
 
 test_add_and_io =
     [ testCase "receive 4 variables" $ void $ runTargetSynthesisWithUniqName (def :: TargetSynthesis _ _ _ Int)
@@ -115,6 +117,7 @@ pu = let
         , systemEnv=undefined
         }
     in pu'
+
 
 test_patchEndpointOptions =
     [ testCase "non-patched function options" $
