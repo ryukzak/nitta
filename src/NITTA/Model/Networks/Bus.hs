@@ -94,12 +94,12 @@ bindedFunctions puTitle BusNetwork{ bnBinded }
     | otherwise = []
 
 
-busNetwork w ioSync pus = BusNetwork
+busNetwork signalBusWidth ioSync pus = BusNetwork
         { bnRemains=[]
         , bnBinded=M.empty
         , bnProcess=def
         , bnPus=M.fromList pus'
-        , bnSignalBusWidth=w
+        , bnSignalBusWidth=signalBusWidth
         , ioSync
         , bnIOPorts=BusNetworkIO{ extInputs, extOutputs }
         , bnEnv

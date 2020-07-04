@@ -9,15 +9,14 @@
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
-Module      : NITTA.Model.MicroArchitecture
+Module      : NITTA.Model.Microarchitecture
 Description : Create micro architecture functions
 Copyright   : (c) Daniil Prohorov, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
-module NITTA.Model.MicroArchitecture
+module NITTA.Model.Microarchitecture
     ( add
     , addCustom
     , addS
