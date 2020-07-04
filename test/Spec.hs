@@ -26,7 +26,7 @@ import qualified NITTA.Model.ProcessorUnits.IO.SPI.Tests
 import qualified NITTA.Model.ProcessorUnits.Multiplier.Tests
 import qualified NITTA.Model.ProcessorUnits.Serial.Accum.Tests
 import qualified NITTA.Model.ProcessorUnits.Serial.Shift.Tests
-import           NITTA.Test.BusNetwork
+import qualified NITTA.Tests
 import qualified NITTA.Utils.CodeFormat.Tests
 import qualified NITTA.Utils.Tests
 import           System.Environment                            (lookupEnv,
@@ -42,8 +42,7 @@ main = do
     qtests <- fromMaybe "10" <$> lookupEnv "TASTY_QUICKCHECK_TESTS"
     setEnv "TASTY_QUICKCHECK_TESTS" qtests
     defaultMain $ testGroup "NITTA"
-        [ busNetworkTests
-        , NITTA.Intermediate.Functions.Accum.Tests.tests
+        [ NITTA.Intermediate.Functions.Accum.Tests.tests
         , NITTA.Intermediate.Simulation.Tests.tests
         , NITTA.Intermediate.Types.Tests.tests
         , NITTA.LuaFrontend.Tests.tests
@@ -54,6 +53,7 @@ main = do
         , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
         , NITTA.Model.ProcessorUnits.Serial.Accum.Tests.tests
         , NITTA.Model.ProcessorUnits.Serial.Shift.Tests.tests
+        , NITTA.Tests.tests
         , NITTA.Utils.CodeFormat.Tests.tests
         , NITTA.Utils.Tests.tests
         ]

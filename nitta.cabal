@@ -176,7 +176,7 @@ test-suite nitta-test
                      , NITTA.Model.ProcessorUnits.Serial.Shift.Tests
                      , NITTA.Model.ProcessorUnits.Tests.Utils
                      , NITTA.Model.Tests.Microarchitecture
-                     , NITTA.Test.BusNetwork
+                     , NITTA.Tests
                      , NITTA.Utils.CodeFormat.Tests
                      , NITTA.Utils.Tests
   build-depends:       atomic-primops

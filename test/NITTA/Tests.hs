@@ -10,15 +10,15 @@
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-|
-Module      : NITTA.Test.BusNetwork
+Module      : NITTA.Tests
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Test.BusNetwork
-    ( busNetworkTests
+module NITTA.Tests
+    ( tests
     ) where
 
 import           Control.Monad                       (void)
@@ -55,30 +55,6 @@ test_fibonacci =
             , F.add "a1" "b1" ["c1", "c2"]
             , F.send "c2"
             ]
-
-test_io =
-    [ testCase "receive two variables" $ void $ runTargetSynthesisWithUniqName (def :: TargetSynthesis _ _ _ Int)
-        { tName="receive_two_variables"
-        , tMicroArch=marchSPI True pInt
-        , tReceivedValues=[ ("a", [10..15]), ("b", [20..25])]
-        , tDFG=fsToDataFlowGraph
-            [ F.receive ["a"]
-            , F.receive ["b"]
-            , F.add "a" "b" ["c"]
-            , F.send "c"
-            ]
-        }
-    , testCase "receive variable two times" $ void $ runTargetSynthesisWithUniqName (def :: TargetSynthesis _ _ _ Int)
-        { tName="receive_variable_two_times"
-        , tMicroArch=marchSPI True pInt
-        , tReceivedValues=[ ("a", [10..15]), ("b", [20..25])]
-        , tDFG=fsToDataFlowGraph
-            [ F.receive ["a", "b"]
-            , F.add "a" "b" ["c"]
-            , F.send "c"
-            ]
-        }
-    ]
 
 test_add_and_io =
     [ testCase "receive 4 variables" $ void $ runTargetSynthesisWithUniqName (def :: TargetSynthesis _ _ _ Int)
@@ -224,5 +200,5 @@ test_patchPUmany2one =
         show' = show . map epRole
 
 
-busNetworkTests :: TestTree
-busNetworkTests = $(testGroupGenerator)
+tests :: TestTree
+tests = $(testGroupGenerator)
