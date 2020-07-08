@@ -30,7 +30,7 @@ function sin(x0, x1, x2, x3)
     local r_x2 = x2 + dotx2 * T
     local r_x3 = x3 + dotx3 * T
 
-    local freq = OmegaNDIVPi2 * x2
+    local freq = OmegaNDIVPi2 + x2
     send(freq)
 
     sin(r_x0, r_x1, r_x2, r_x3)
