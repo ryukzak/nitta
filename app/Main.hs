@@ -46,6 +46,8 @@ import           System.Console.CmdArgs          hiding (def)
 import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
 
+import Debug.Trace
+
 -- |Command line interface.
 data Nitta
     = Nitta
@@ -120,8 +122,9 @@ debugTrace (DebugData debugFunctions varDict) cntx = let
         getFromDict x = head $ fst $ varDict M.! x
         tracingFuncs = filter (\case DebugFunctionT {name = "trace"} -> True; _ -> False) debugFunctions
         tracingVars = map (getFromDict) $ concatMap inputVars tracingFuncs
+        cntx' = trace (show cntx) cntx
     in
-        print $ filterCntx tracingVars cntx
+        putStrLn $ fmtContextShow "%.8f" $ filterCntx tracingVars cntx'
 
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
