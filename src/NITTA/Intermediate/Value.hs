@@ -139,8 +139,8 @@ instance ( KnownNat w ) => FixedPointCompatible (IntX w) where
 newtype FX (m :: Nat) (b :: Nat) = FX Integer
     deriving ( Eq, Ord )
 
--- instance ( KnownNat m, KnownNat b ) => PrintfArg ( FX m b ) where
---     formatArg (FX x) = formatInteger x
+instance ( KnownNat m, KnownNat b ) => PrintfArg ( FX m b ) where
+    formatArg (FX x) = formatInteger x
 
 instance ( KnownNat m, KnownNat b ) => Read ( FX m b ) where
     readsPrec d r
@@ -150,7 +150,7 @@ instance ( KnownNat m, KnownNat b ) => Read ( FX m b ) where
         in [(result, "")]
 
 instance ( KnownNat m, KnownNat b ) => Show ( FX m b ) where
-    show t@(FX x) = showFFloat (Just 6) (fromIntegral x / scalingFactor t :: Double) ""
+    show t@(FX x) = showFFloat (Just 9) (fromIntegral x / scalingFactor t :: Double) ""
 
 instance Default ( FX m b ) where
     def = FX 0
@@ -225,3 +225,7 @@ instance ( KnownNat m, KnownNat b ) => FixedPointCompatible ( FX m b ) where
             m = natVal (Proxy :: Proxy m)
             b = natVal (Proxy :: Proxy b)
         in b - m
+
+-- toDouble :: ( KnownNat m, KnownNat b ) => ( FX m b ) -> Double
+instance (KnownNat m, KnownNat b) => Fractional (FX m b) where
+    fromRational = fromRational . toRational

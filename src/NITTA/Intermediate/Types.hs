@@ -240,14 +240,14 @@ data Cntx v x
           -- ^sequences of all received values, one value per process cycle
         , cntxCycleNumber :: Int
         }
-instance {-# OVERLAPS #-} (Show v, Show x, Integral x) => Show (Cntx v x) where
+instance {-# OVERLAPS #-} (Show v, Show x, Integral x, PrintfArg x, FixedPointCompatible x, Real x) => Show (Cntx v x) where
     show c@Cntx { cntxProcess } = fmtContextShow ptrns c
         where
             deleteHashtags x = head $ S.split "#" x
             header = sort $ map ((S.replace "\"" "") . deleteHashtags . show) $ M.keys $ cycleCntx $ head cntxProcess
             ptrns = M.fromList $ zip header (repeat "%.3f")
 
-fmtContextShow :: (Show v, Integral x) => M.Map String String -> Cntx v x -> String
+fmtContextShow :: (Show v, Integral x, Show x, PrintfArg x, FixedPointCompatible x, Real x ) => M.Map String String -> Cntx v x -> String
 fmtContextShow ptrns Cntx{ cntxProcess, cntxCycleNumber } = let
             deleteHashtags x = head $ S.split "#" x
             sortedValues cntx =  map snd $ sortOn (show . fst) $ M.assocs cntx
@@ -255,11 +255,10 @@ fmtContextShow ptrns Cntx{ cntxProcess, cntxCycleNumber } = let
             header = sort $ map ((S.replace "\"" "") . deleteHashtags . show) $ M.keys $ cycleCntx $ head cntxProcess
             body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
             table = map (\(h, b) -> h : b) $ zip header (transpose body)
-            fmt p v = printf "%.3f" (fromIntegral v :: Double)
-            -- fmt p v
-            --   | 'f' `elem` p = delete_ $ printf p (fromIntegral v :: Double)
-            --   | 's' `elem` p = delete_ $ printf p (show v)
-            --   | otherwise    = delete_ $ printf p v
+            fmt p v
+              | 'f' `elem` p = delete_ $ printf p $ (fromRational (toRational v) :: Double )
+              | 's' `elem` p = delete_ $ printf p (show v)
+              | otherwise    = delete_ $ printf p v
 
             delete_ = S.replace "_" ""
         in
