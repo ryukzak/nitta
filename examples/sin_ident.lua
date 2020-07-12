@@ -32,6 +32,9 @@ function sin(x0, x1, x2, x3)
 
     local freq = OmegaNDIVPi2 + x2
     send(freq)
+    debug.trace(freq)
+    debug.trace("%.8f", freq)
+    debug.trace("%.8f", r_x0)
 
     sin(r_x0, r_x1, r_x2, r_x3)
 end

@@ -150,7 +150,7 @@ instance ( KnownNat m, KnownNat b ) => Read ( FX m b ) where
         in [(result, "")]
 
 instance ( KnownNat m, KnownNat b ) => Show ( FX m b ) where
-    show t@(FX x) = showFFloat (Just 9) (fromIntegral x / scalingFactor t :: Double) ""
+    show t@(FX x) = showFFloat (Just 6) (fromIntegral x / scalingFactor t :: Double) ""
 
 instance Default ( FX m b ) where
     def = FX 0
@@ -226,6 +226,7 @@ instance ( KnownNat m, KnownNat b ) => FixedPointCompatible ( FX m b ) where
             b = natVal (Proxy :: Proxy b)
         in b - m
 
--- toDouble :: ( KnownNat m, KnownNat b ) => ( FX m b ) -> Double
 instance (KnownNat m, KnownNat b) => Fractional (FX m b) where
     fromRational = fromRational . toRational
+    (/) = undefined
+    recip = undefined

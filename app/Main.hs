@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE DeriveDataTypeable        #-}
-{-# LANGUAGE DuplicateRecordFields     #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE PartialTypeSignatures     #-}
-{-# LANGUAGE QuasiQuotes               #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE StandaloneDeriving        #-}
-{-# LANGUAGE LambdaCase                #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-# OPTIONS -fno-warn-overlapping-patterns -fno-warn-orphans #-}
@@ -25,9 +25,9 @@ module Main ( main ) where
 
 import           Control.Monad                   (void, when)
 import           Data.Default                    (def)
+import qualified Data.Map                        as M
 import           Data.Maybe
 import           Data.Proxy
-import qualified Data.Map                        as M
 import qualified Data.Text.IO                    as T
 import           GHC.TypeLits
 import           NITTA.Intermediate.Simulation
@@ -46,9 +46,8 @@ import           System.Console.CmdArgs          hiding (def)
 import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
 
-import Data.Text (unpack, pack )
+import           Data.Text                       (pack, unpack)
 
-import Debug.Trace
 
 -- |Command line interface.
 data Nitta
@@ -131,9 +130,8 @@ debugTrace (DebugData debugFunctions varDict) cntx = let
         mVPPattern = M.fromList $ map ((\[p, v] -> (unpack v, unpack p)) . inputVars) tracingPattern
         mVPGlobal = mVPPattern `M.union` mVPDefault `M.union` mVPLoop
         tracingVars = map (getFromDict) $ map pack $ M.keys mVPGlobal
-        cntx' = trace (show cntx) cntx
     in
-        putStrLn $ fmtContextShow mVPGlobal $ filterCntx tracingVars cntx'
+        putStrLn $ fmtContextShow mVPGlobal $ filterCntx tracingVars cntx
 
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
