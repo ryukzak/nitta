@@ -35,6 +35,7 @@ import           Data.Proxy
 import           Data.Typeable
 import           GHC.TypeLits
 import           Numeric
+import           Text.Printf
 
 
 -- |Type class for Value types.
@@ -137,6 +138,9 @@ instance ( KnownNat w ) => FixedPointCompatible (IntX w) where
 -- with 1 magnitude bit and 15 fractional bits in a 16 bit word.[3]
 newtype FX (m :: Nat) (b :: Nat) = FX Integer
     deriving ( Eq, Ord )
+
+-- instance ( KnownNat m, KnownNat b ) => PrintfArg ( FX m b ) where
+--     formatArg (FX x) = formatInteger x
 
 instance ( KnownNat m, KnownNat b ) => Read ( FX m b ) where
     readsPrec d r

@@ -240,17 +240,28 @@ data Cntx v x
           -- ^sequences of all received values, one value per process cycle
         , cntxCycleNumber :: Int
         }
-instance {-# OVERLAPS #-} (Integral x, Show v, Show x ) => Show (Cntx v x) where
-    show = fmtContextShow "%.3f"
-
-fmtContextShow :: (Integral x, Show v) => String -> Cntx v x -> String
-fmtContextShow ptrn Cntx{ cntxProcess, cntxCycleNumber } = let
+instance {-# OVERLAPS #-} (Show v, Show x, Integral x) => Show (Cntx v x) where
+    show c@Cntx { cntxProcess } = fmtContextShow ptrns c
+        where
             deleteHashtags x = head $ S.split "#" x
-            row cntx = map (fmt . snd) $ sortOn (show . fst) $ M.assocs cntx
+            header = sort $ map ((S.replace "\"" "") . deleteHashtags . show) $ M.keys $ cycleCntx $ head cntxProcess
+            ptrns = M.fromList $ zip header (repeat "%.3f")
+
+fmtContextShow :: (Show v, Integral x) => M.Map String String -> Cntx v x -> String
+fmtContextShow ptrns Cntx{ cntxProcess, cntxCycleNumber } = let
+            deleteHashtags x = head $ S.split "#" x
+            sortedValues cntx =  map snd $ sortOn (show . fst) $ M.assocs cntx
+            row cntx = map (\(k, v) -> fmt (ptrns M.! k ) v) $ zip header $ sortedValues cntx
             header = sort $ map ((S.replace "\"" "") . deleteHashtags . show) $ M.keys $ cycleCntx $ head cntxProcess
             body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
             table = map (\(h, b) -> h : b) $ zip header (transpose body)
-            fmt x = printf ptrn (fromIntegral x :: Double)
+            fmt p v = printf "%.3f" (fromIntegral v :: Double)
+            -- fmt p v
+            --   | 'f' `elem` p = delete_ $ printf p (fromIntegral v :: Double)
+            --   | 's' `elem` p = delete_ $ printf p (show v)
+            --   | otherwise    = delete_ $ printf p v
+
+            delete_ = S.replace "_" ""
         in
             render $ hsep 1 left $
                 map (vcat left) $ map (map text) table

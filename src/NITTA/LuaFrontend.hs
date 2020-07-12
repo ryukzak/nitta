@@ -39,7 +39,6 @@ import           NITTA.Model.TargetSystem
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
-import Debug.Trace
 
 type VarDict = M.Map Text ([String], [String])
 
@@ -62,8 +61,7 @@ toDebugData debugFunctions varDict = let
 lua2functions src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
-        ast' = trace (show ast) ast
-        AlgBuilder{ algItems } = buildAlg ast'
+        AlgBuilder{ algItems } = buildAlg ast
         fs = filter (\case Function{} -> True; _ -> False) algItems
         debugFunctions = filter (\case DebugFunction{} -> True; _ -> False) algItems
         varDict :: VarDict
@@ -248,16 +246,19 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
             f InputVar{ iX, iVar } rexp = do
                 i <- expArg [] rexp
                 let loop = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
-                let traceLoop = DebugFunction{ fName="trace", fIn=[i], fOut=[], fValues=[] }
+                let traceLoop = DebugFunction{ fName="traceLoop", fIn=[i], fOut=[], fValues=[] }
                 modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=traceLoop : loop : algItems }
             f _ _ = undefined
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName (Name "debug"))) (Name fName))) (Args args))) = do
     fIn <- mapM (expArg []) args
 
-    if fName == "trace"
-      then addFunction DebugFunction{ fName=unpack fName, fIn, fOut=[], fValues=[] }
-      else addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[] }
+    case (fName, fIn) of
+        ("trace", [_])    -> addFunction DebugFunction{ fName="traceDefault", fIn, fOut=[], fValues=[] }
+        ("trace", [_, _]) -> addFunction DebugFunction{ fName="tracePattern", fIn, fOut=[], fValues=[] }
+        ("trace", [])     -> error "trace function not contain value"
+        ("trace", _)      -> error "trace function contain more than one value"
+        _                 -> addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[] }
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
     fIn <- mapM (expArg []) args
@@ -311,6 +312,8 @@ rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
 expArg _diff n@(Number _ _) = expConstant "@const" n
 
+expArg _diff (String s) = expConstant "" $ String $ pack $ S.replace "\"" "" $ unpack s
+
 expArg _diff (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
 
 expArg diff call@(PrefixExp (PEFunCall _)) = do
@@ -353,6 +356,22 @@ expConstant suffix (Number _ textX) = do
                 []
             return cVar
         Just _ -> error "internal error"
+
+expConstant suffix (String textX) = do
+    AlgBuilder{ algItems } <- get
+    case find (\case Constant{ cTextX } | cTextX == textX -> True; _ -> False) algItems of
+        Just Constant{ cVar } -> return cVar
+        Nothing -> do
+            let cVar = T.concat [ pack "_", textX, suffix ]
+            addItem Constant
+                { cX=0
+                , cVar
+                , cTextX=textX
+                }
+                []
+            return cVar
+        Just _ -> error "internal error"
+
 expConstant _ _ = undefined
 
 

@@ -46,6 +46,8 @@ import           System.Console.CmdArgs          hiding (def)
 import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
 
+import Data.Text (unpack, pack )
+
 import Debug.Trace
 
 -- |Command line interface.
@@ -100,7 +102,6 @@ main = do
               ( microarch io_sync :: BusNetwork String String (FX m b) Int)
         ) $ parseFX type_
 
-
 selectCAD True Nothing src tReceivedValues n _ma = do
     let ( alg, debugData ) = lua2functions src
     let cntx = simulateDataFlowGraph n def tReceivedValues alg
@@ -120,11 +121,19 @@ selectCAD _ Nothing src received n ma = void $ runTargetSynthesis def
 
 debugTrace (DebugData debugFunctions varDict) cntx = let
         getFromDict x = head $ fst $ varDict M.! x
-        tracingFuncs = filter (\case DebugFunctionT {name = "trace"} -> True; _ -> False) debugFunctions
-        tracingVars = map (getFromDict) $ concatMap inputVars tracingFuncs
+        tracingLoop = filter (\case DebugFunctionT {name = "traceLoop"} -> True; _ -> False) debugFunctions
+        tracingDefault = filter (\case DebugFunctionT {name = "traceDefault"} -> True; _ -> False) debugFunctions
+        tracingPattern = filter (\case DebugFunctionT {name = "tracePattern"} -> True; _ -> False) debugFunctions
+        defaultPattern = "%.3f"
+        -- Data Maps of value as key and pattern as value
+        mVPLoop    = M.fromList $ zip (map (unpack . head . inputVars) tracingLoop) (repeat defaultPattern)
+        mVPDefault = M.fromList $ zip (map (unpack . head . inputVars) tracingDefault) (repeat defaultPattern)
+        mVPPattern = M.fromList $ map ((\[p, v] -> (unpack v, unpack p)) . inputVars) tracingPattern
+        mVPGlobal = mVPPattern `M.union` mVPDefault `M.union` mVPLoop
+        tracingVars = map (getFromDict) $ map pack $ M.keys mVPGlobal
         cntx' = trace (show cntx) cntx
     in
-        putStrLn $ fmtContextShow "%.8f" $ filterCntx tracingVars cntx'
+        putStrLn $ fmtContextShow mVPGlobal $ filterCntx tracingVars cntx'
 
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.

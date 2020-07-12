@@ -19,14 +19,11 @@ function sin(x0, x1, x2, x3)
     local a = Alpha * tmp1 * omega
     local b = x0 * omega
     local c = x1 * tmp2
-    debug.trace(Alpha, omega)
-    debug.trace(Alpha, omega)
 
     local dotx0 = x1 * omega
     local dotx1 = a - b - c
     local dotx2 = -1 * omega * x0 * Beta * tmp1
     local dotx3 = Gamma * tmp1
-    debug.trace(dotx0, dotx1, dotx2, dotx3)
 
     local r_x0 = x0 + dotx0 * T
     local r_x1 = x1 + dotx1 * T
@@ -35,7 +32,6 @@ function sin(x0, x1, x2, x3)
 
     local freq = OmegaNDIVPi2 + x2
     send(freq)
-    debug.trace(freq)
 
     sin(r_x0, r_x1, r_x2, r_x3)
 end

@@ -1,6 +1,6 @@
 function counter(x)
-    local y = reg(1.5)
-    y = y + x
-    counter(y)
+    local y = reg(0.7)
+    x = y + x
+    counter(x)
 end
 counter(0)
