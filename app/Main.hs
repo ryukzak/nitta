@@ -28,6 +28,7 @@ import           Data.Default                    (def)
 import qualified Data.Map                        as M
 import           Data.Maybe
 import           Data.Proxy
+import           Data.Text                       (pack, unpack)
 import qualified Data.Text.IO                    as T
 import           GHC.TypeLits
 import           NITTA.Intermediate.Simulation
@@ -45,8 +46,6 @@ import           NITTA.UIBackend
 import           System.Console.CmdArgs          hiding (def)
 import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
-
-import           Data.Text                       (pack, unpack)
 
 
 -- |Command line interface.
@@ -96,6 +95,7 @@ main = do
               sim
               cadDesc
               src
+              -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
               [ ("u#0", map (\i -> (read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i))) [0..toEnum n])]
               n
               ( microarch io_sync :: BusNetwork String String (FX m b) Int)
