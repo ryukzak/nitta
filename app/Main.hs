@@ -102,17 +102,17 @@ main = do
         ) $ parseFX type_
 
 selectCAD True Nothing src tReceivedValues n _ma = do
-    let ( alg, debugData ) = lua2functions src
-    let cntx = simulateDataFlowGraph n def tReceivedValues alg
-    debugTrace debugData cntx
+    let FrontendResult{ frDataFlow, frNonSynConf } = lua2functions src
+    let cntx = simulateDataFlowGraph n def tReceivedValues frDataFlow
+    debugTrace frNonSynConf cntx
 
 selectCAD _ (Just port) src received _n ma
-    = backendServer port received $ mkModelWithOneNetwork ma $ fst $ lua2functions src
+    = backendServer port received $ mkModelWithOneNetwork ma $ frDataFlow $ lua2functions src
 
 selectCAD _ Nothing src received n ma = void $ runTargetSynthesis def
         { tName="main"
         , tMicroArch=ma
-        , tDFG=fst $ lua2functions src
+        , tDFG=frDataFlow $ lua2functions src
         , tVerbose=True
         , tReceivedValues=received
         , tSimulationCycleN=n

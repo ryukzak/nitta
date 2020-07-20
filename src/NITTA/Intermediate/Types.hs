@@ -247,7 +247,6 @@ instance {-# OVERLAPS #-} (Show v, Show x, Integral x, PrintfArg x, FixedPointCo
             header = sort $ map ((S.replace "\"" "") . deleteHashtags . show) $ M.keys $ cycleCntx $ head cntxProcess
             ptrns = M.fromList $ zip header (repeat "%.3f")
 
-fmtContextShow :: (Show v, Integral x, Show x, PrintfArg x) => M.Map String String -> Cntx v x -> String
 fmtContextShow ptrns Cntx{ cntxProcess, cntxCycleNumber } = let
             deleteHashtags x = head $ S.split "#" x
             sortedValues cntx =  map snd $ sortOn (show . fst) $ M.assocs cntx

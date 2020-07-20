@@ -21,6 +21,7 @@ Stability   : experimental
 -}
 module NITTA.LuaFrontend
     ( lua2functions
+    , FrontendResult(..)
     , DebugData(..)
     , DebugFunctionT(..)
     ) where
@@ -40,14 +41,21 @@ import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
 
 
+data FrontendResult x
+    = FrontendResult
+        { frDataFlow   :: DataFlowGraph String x
+        , frNonSynConf :: DebugData
+        }
+
+
 type VarDict = M.Map Text ([String], [String])
 
 -- |Data type for collecting functions for debug
 data DebugFunctionT = DebugFunctionT
-      { inputVars  :: [Text]
-      , outputVars :: [Text]
+      { inputVars  :: [ Text ]
+      , outputVars :: [ Text ]
       , name       :: String
-      } deriving (Show)
+      } deriving ( Show )
 
 -- |Data type that contains all information for debugging functions
 data DebugData = DebugData [DebugFunctionT] VarDict deriving (Show)
@@ -69,9 +77,9 @@ lua2functions src
             $ map varRow
             $ group $ sort $ concatMap fIn fs
         alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
-        dataFlowG = fsToDataFlowGraph alg
-        debugData = toDebugData debugFunctions varDict
-    in (dataFlowG, debugData)
+        frDataFlow = fsToDataFlowGraph alg
+        frNonSynConf = toDebugData debugFunctions varDict
+    in FrontendResult{ frDataFlow, frNonSynConf }
     where
         varRow lst@(x:_)
             = let vs = zipWith f lst [0..]
