@@ -241,7 +241,8 @@ data Cntx v x
 
 
 instance ( Show v, Val x ) => Show ( Cntx v x ) where
-    show cntx = cntx2table $ showCntx (\v x -> Just (show v, show x)) cntx
+    show cntx = cntx2table $ showCntx (\v x -> Just (show' v, show x)) cntx
+        where show' = S.replace "\"" "" . show
 
 
 showCntx f Cntx{ cntxProcess, cntxCycleNumber }
