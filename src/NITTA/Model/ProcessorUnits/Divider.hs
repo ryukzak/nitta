@@ -33,13 +33,10 @@ import           Data.Set                        (Set, member)
 import qualified Data.Set                        as S
 import qualified NITTA.Intermediate.Functions    as F
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
-import           NITTA.Project.Implementation
-import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Types
+import           NITTA.Project
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                (Interval, inf, intersection,

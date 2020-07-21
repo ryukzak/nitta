@@ -1,7 +1,7 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -15,17 +15,22 @@ Stability   : experimental
 module Main where
 
 import           Data.Maybe
-import           NITTA.Test.BusNetwork
-import           NITTA.Test.CodeBlock
-import           NITTA.Test.Locks
-import           NITTA.Test.FunctionSimulation
-import           NITTA.Test.LuaFrontend
-import           NITTA.Test.ProcessorUnits
-import           NITTA.Test.Refactor
-import           NITTA.Test.Types
-import           NITTA.Test.Utils
-import           System.Environment            (lookupEnv, setEnv)
-import           Test.Tasty                    (defaultMain, testGroup)
+import qualified NITTA.Intermediate.Functions.Accum.Tests
+import qualified NITTA.Intermediate.Simulation.Tests
+import qualified NITTA.Intermediate.Types.Tests
+import qualified NITTA.LuaFrontend.Tests
+import qualified NITTA.Model.Problems.Refactor.Tests
+import qualified NITTA.Model.ProcessorUnits.Divider.Tests
+import qualified NITTA.Model.ProcessorUnits.Fram.Tests
+import qualified NITTA.Model.ProcessorUnits.IO.SPI.Tests
+import qualified NITTA.Model.ProcessorUnits.Multiplier.Tests
+import qualified NITTA.Model.ProcessorUnits.Serial.Accum.Tests
+import qualified NITTA.Model.ProcessorUnits.Serial.Shift.Tests
+import qualified NITTA.Tests
+import qualified NITTA.Utils.CodeFormat.Tests
+import qualified NITTA.Utils.Tests
+import           System.Environment ( lookupEnv, setEnv )
+import           Test.Tasty ( defaultMain, testGroup )
 
 
 -- FIXME: Тестирование очень активно работает с диском. В связи с этим рационально положить папку
@@ -35,13 +40,18 @@ main = do
     qtests <- fromMaybe "10" <$> lookupEnv "TASTY_QUICKCHECK_TESTS"
     setEnv "TASTY_QUICKCHECK_TESTS" qtests
     defaultMain $ testGroup "NITTA"
-        [ utilTests
-        , typesTests
-        , functionSimulationTests
-        , processUnitTests
-        , busNetworkTests
-        , refactorTests
-        , luaTests
-        , codeTests
-        , locksTest
+        [ NITTA.Intermediate.Functions.Accum.Tests.tests
+        , NITTA.Intermediate.Simulation.Tests.tests
+        , NITTA.Intermediate.Types.Tests.tests
+        , NITTA.LuaFrontend.Tests.tests
+        , NITTA.Model.Problems.Refactor.Tests.tests
+        , NITTA.Model.ProcessorUnits.Divider.Tests.tests
+        , NITTA.Model.ProcessorUnits.Fram.Tests.tests
+        , NITTA.Model.ProcessorUnits.IO.SPI.Tests.tests
+        , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
+        , NITTA.Model.ProcessorUnits.Serial.Accum.Tests.tests
+        , NITTA.Model.ProcessorUnits.Serial.Shift.Tests.tests
+        , NITTA.Tests.tests
+        , NITTA.Utils.CodeFormat.Tests.tests
+        , NITTA.Utils.Tests.tests
         ]

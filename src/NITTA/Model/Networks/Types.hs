@@ -1,8 +1,6 @@
 {-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
@@ -19,6 +17,7 @@ Stability   : experimental
 -}
 module NITTA.Model.Networks.Types
     ( PU(..)
+    , PUClasses
     , IOSynchronization(..)
     ) where
 
@@ -27,32 +26,34 @@ import qualified Data.Map                         as M
 import qualified Data.Set                         as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 
 
+type PUClasses pu v x t =
+    ( ByTime pu t
+    , Connected pu
+    , IOConnected pu
+    , EndpointProblem pu v t
+    , RefactorProblem pu v x
+    , ProcessorUnit pu v x t
+    , Show (Instruction pu)
+    , Simulatable pu v x
+    , Typeable pu
+    , UnambiguouslyDecode pu
+    , TargetSystemComponent pu
+    , Controllable pu
+    , IOTestBench pu v x
+    , Locks pu v
+    )
+
+
 -- |Existential container for a processor unit .
 data PU v x t where
-    PU ::
-        ( ByTime pu t
-        , Connected pu
-        , IOConnected pu
-        , EndpointProblem pu v t
-        , RefactorProblem pu v x
-        , ProcessorUnit pu v x t
-        , Show (Instruction pu)
-        , Simulatable pu v x
-        , Typeable pu
-        , UnambiguouslyDecode pu
-        , TargetSystemComponent pu
-        , Controllable pu
-        , IOTestBench pu v x
-        , Locks pu v
-        ) =>
+    PU :: ( PUClasses pu v x t ) =>
             { diff :: Changeset v -- FIXME: move to end of record
             , unit :: pu
             , ports :: Ports pu

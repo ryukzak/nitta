@@ -54,12 +54,10 @@ import qualified Data.String.Utils               as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
-import           NITTA.Model.Problems.Binding
-import           NITTA.Model.Problems.Dataflow
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
+-- import           NITTA.Project
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
@@ -96,12 +94,12 @@ bindedFunctions puTitle BusNetwork{ bnBinded }
     | otherwise = []
 
 
-busNetwork w ioSync pus = BusNetwork
+busNetwork signalBusWidth ioSync pus = BusNetwork
         { bnRemains=[]
         , bnBinded=M.empty
         , bnProcess=def
         , bnPus=M.fromList pus'
-        , bnSignalBusWidth=w
+        , bnSignalBusWidth=signalBusWidth
         , ioSync
         , bnIOPorts=BusNetworkIO{ extInputs, extOutputs }
         , bnEnv
