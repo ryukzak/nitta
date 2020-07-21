@@ -32,10 +32,9 @@ import           Data.Aeson
 import           Data.Aeson.TypeScript.TH
 import           Data.Proxy
 import qualified Data.String.Utils             as S
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems
 import           NITTA.Model.Types
-import           NITTA.Project.Parts.TestBench
+import           NITTA.Project
 import           NITTA.Synthesis.Estimate
 import           NITTA.Synthesis.Tree
 import           NITTA.UIBackend

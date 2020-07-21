@@ -49,7 +49,7 @@ import qualified Data.String.Utils                  as S
 import           Data.Typeable
 import           NITTA.Intermediate.Functions.Accum
 import           NITTA.Intermediate.Types
-import           NITTA.Utils
+import           NITTA.Utils.Base
 
 -- |Loop -- function for transfer data between computational cycles.
 -- Let see the simple example with the following implementation of the

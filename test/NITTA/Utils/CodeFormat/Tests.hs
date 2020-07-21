@@ -1,23 +1,32 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
-module NITTA.Test.CodeBlock
-    ( codeTests
+{-|
+Module      : NITTA.Utils.CodeFormat.Tests
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
+module NITTA.Utils.CodeFormat.Tests
+    ( tests
     ) where
 
-import qualified Data.String.Utils             as S
-import           NITTA.Utils
-import           Test.Tasty                    (TestTree)
+import qualified Data.String.Utils as S
+import           NITTA.Utils.CodeFormat
+import           Test.Tasty ( TestTree )
 import           Test.Tasty.HUnit
 import           Test.Tasty.TH
-import           Text.InterpolatedString.Perl6 (qc)
+import           Text.InterpolatedString.Perl6 ( qc )
 
+{-# ANN module "HLint: ignore Reduce duplication" #-}
 
 case_justTextInCodeBlock = do
     let
@@ -149,5 +158,5 @@ case_concatLinesWithSpaceWithoutBeforeLine = do
 
     b @?= a
 
-codeTests :: TestTree
-codeTests = $(testGroupGenerator)
+tests :: TestTree
+tests = $(testGroupGenerator)

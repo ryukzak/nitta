@@ -31,8 +31,7 @@ import qualified Data.Set                        as S
 import           Data.Typeable
 import qualified NITTA.Intermediate.Functions    as F
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Utils

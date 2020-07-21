@@ -37,13 +37,10 @@ import qualified Data.Set                        as S
 import qualified Data.String.Utils               as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
-import           NITTA.Project.Implementation
-import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Types
+import           NITTA.Project
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval                (inf, sup, (...))

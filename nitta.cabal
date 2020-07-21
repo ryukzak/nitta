@@ -50,9 +50,10 @@ library
                      , NITTA.Intermediate.Value
                      , NITTA.Intermediate.Variable
                      , NITTA.LuaFrontend
-                     , NITTA.Model.MicroArchitecture
+                     , NITTA.Model.Microarchitecture
                      , NITTA.Model.Networks.Bus
                      , NITTA.Model.Networks.Types
+                     , NITTA.Model.Problems
                      , NITTA.Model.Problems.Binding
                      , NITTA.Model.Problems.Dataflow
                      , NITTA.Model.Problems.Endpoint
@@ -62,8 +63,8 @@ library
                      , NITTA.Model.ProcessorUnits.Divider
                      , NITTA.Model.ProcessorUnits.Fram
                      , NITTA.Model.ProcessorUnits.IO.I2C
-                     , NITTA.Model.ProcessorUnits.IO.SimpleIO
                      , NITTA.Model.ProcessorUnits.IO.SPI
+                     , NITTA.Model.ProcessorUnits.IO.SimpleIO
                      , NITTA.Model.ProcessorUnits.Multiplier
                      , NITTA.Model.ProcessorUnits.Serial.Accum
                      , NITTA.Model.ProcessorUnits.Serial.Generic
@@ -85,12 +86,14 @@ library
                      , NITTA.Synthesis.Method
                      , NITTA.Synthesis.Tree
                      , NITTA.Synthesis.Utils
+                     , NITTA.TargetSynthesis
                      , NITTA.UIBackend
                      , NITTA.UIBackend.Marshalling
                      , NITTA.UIBackend.REST
                      , NITTA.UIBackend.Timeline
                      , NITTA.UIBackend.VisJS
                      , NITTA.Utils
+                     , NITTA.Utils.Base
                      , NITTA.Utils.CodeFormat
                      , NITTA.Utils.ProcessDescription
   build-depends:       aeson
@@ -163,19 +166,28 @@ test-suite nitta-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       NITTA.Test.BusNetwork
-                     , NITTA.Test.FunctionSimulation
-                     , NITTA.Test.Microarchitectures
-                     , NITTA.Test.ProcessorUnits
-                     , NITTA.Test.Refactor
-                     , NITTA.Test.Types
-                     , NITTA.Test.Locks
-                     , NITTA.Test.LuaFrontend
-                     , NITTA.Test.Utils
-                     , NITTA.Test.CodeBlock
+  other-modules:       NITTA.Intermediate.Functions.Accum.Tests
+                     , NITTA.Intermediate.Simulation.Tests
+                     , NITTA.Intermediate.Tests.Functions
+                     , NITTA.Intermediate.Types.Tests
+                     , NITTA.LuaFrontend.Tests
+                     , NITTA.LuaFrontend.Tests.Utils
+                     , NITTA.Model.Problems.Refactor.Tests
+                     , NITTA.Model.ProcessorUnits.Divider.Tests
+                     , NITTA.Model.ProcessorUnits.Fram.Tests
+                     , NITTA.Model.ProcessorUnits.IO.SPI.Tests
+                     , NITTA.Model.ProcessorUnits.Multiplier.Tests
+                     , NITTA.Model.ProcessorUnits.Serial.Accum.Tests
+                     , NITTA.Model.ProcessorUnits.Serial.Shift.Tests
+                     , NITTA.Model.ProcessorUnits.Tests.Utils
+                     , NITTA.Model.Tests.Microarchitecture
+                     , NITTA.Tests
+                     , NITTA.Utils.CodeFormat.Tests
+                     , NITTA.Utils.Tests
   build-depends:       atomic-primops
                      , base
                      , boxes
+                     , call-stack
                      , containers
                      , data-default
                      , file-embed

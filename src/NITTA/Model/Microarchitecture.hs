@@ -9,15 +9,14 @@
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
-Module      : NITTA.Model.MicroArchitecture
+Module      : NITTA.Model.Microarchitecture
 Description : Create micro architecture functions
 Copyright   : (c) Daniil Prohorov, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
-module NITTA.Model.MicroArchitecture
+module NITTA.Model.Microarchitecture
     ( add
     , addCustom
     , addS
@@ -33,7 +32,7 @@ import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Project.Implementation
+import           NITTA.Project
 
 
 -- |__Eval state and create microarch__

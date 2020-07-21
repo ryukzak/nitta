@@ -23,18 +23,16 @@ Stability   : experimental
 module NITTA.Model.Problems.Whole
     ( SynthesisStatement(..), SynthesisProblem(..)
     , isDataFlow, isBinding
+    , specializeDataflow, generalizeDataflow, generalizeBinding
     , option2decision
     ) where
 
-import qualified Data.Map                        as M
+import qualified Data.Map                      as M
 import           GHC.Generics
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems.Binding
 import           NITTA.Model.Problems.Dataflow
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Model.TargetSystem        (ModelState (..))
 import           NITTA.Model.Types
 import           Numeric.Interval
 
@@ -68,19 +66,6 @@ data SynthesisStatement tag v x tp
 class SynthesisProblem u tag v x t | u -> tag v x t where
     synthesisOptions :: u -> [ SynthesisStatement tag v x (TimeConstrain t) ]
     synthesisDecision :: u -> SynthesisStatement tag v x (Interval t) -> u
-
-
-instance ( UnitTag tag, VarValTime v x t
-         ) => SynthesisProblem (ModelState (BusNetwork tag v x t) v x) tag v x t where
-    synthesisOptions m@ModelState{ mUnit } = concat
-        [ map generalizeBinding $ bindOptions m
-        , map generalizeDataflow $ dataflowOptions mUnit
-        , map Refactor $ refactorOptions m
-        ]
-
-    synthesisDecision m (Binding f tag) = bindDecision m $ Bind f tag
-    synthesisDecision m@ModelState{ mUnit } (Dataflow src trg) = m{ mUnit=dataflowDecision mUnit $ DataflowSt src trg }
-    synthesisDecision m (Refactor d) = refactorDecision m d
 
 
 -- |The simplest way to convert 'synthesisOptions' to 'synthesisDecision'.

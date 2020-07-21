@@ -234,6 +234,7 @@ processStatement fn (LocalAssign names (Just rexp))
     = processStatement fn $ Assign (map VarName names) rexp
 
 
+
 -- e.g. @n, d = a / b@, or @n, d = f()@
 processStatement _fn (Assign lexps [rexp])
     | length lexps > 1 = do
