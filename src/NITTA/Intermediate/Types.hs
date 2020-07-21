@@ -30,7 +30,7 @@ module NITTA.Intermediate.Types
     , FunctionSimulation(..)
     , CycleCntx(..), Cntx(..)
     , filterCntx
-    , fmtContextShow
+    , showCntx, cntx2table
     , getX, setZipX, cntxReceivedBySlice
       -- *Patch
     , Patch(..), Changeset(..), reverseDiff
@@ -50,7 +50,6 @@ import           GHC.Generics
 import           NITTA.Intermediate.Value
 import           NITTA.Intermediate.Variable
 import           Text.PrettyPrint.Boxes
-import           Text.Printf
 
 
 -- |Input variable.
@@ -236,33 +235,44 @@ data Cntx v x
     = Cntx
         { cntxProcess     :: [ CycleCntx v x ]
           -- ^all variables on each process cycle
-        , cntxReceived    :: M.Map v [x]
+        , cntxReceived    :: M.Map v [ x ]
           -- ^sequences of all received values, one value per process cycle
         , cntxCycleNumber :: Int
         }
-instance {-# OVERLAPS #-} (Show v, Show x, Integral x, PrintfArg x, FixedPointCompatible x, Real x) => Show (Cntx v x) where
-    show c@Cntx { cntxProcess } = fmtContextShow ptrns c
-        where
-            deleteHashtags x = head $ S.split "#" x
-            header = sort $ map ((S.replace "\"" "") . deleteHashtags . show) $ M.keys $ cycleCntx $ head cntxProcess
-            ptrns = M.fromList $ zip header (repeat "%.3f")
 
-fmtContextShow ptrns Cntx{ cntxProcess, cntxCycleNumber } = let
-            deleteHashtags x = head $ S.split "#" x
-            sortedValues cntx =  map snd $ sortOn (show . fst) $ M.assocs cntx
-            row cntx = map (\(k, v) -> fmt (ptrns M.! k ) v) $ zip header $ sortedValues cntx
-            header = sort $ map ((S.replace "\"" "") . deleteHashtags . show) $ M.keys $ cycleCntx $ head cntxProcess
-            body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
-            table = map (\(h, b) -> h : b) $ zip header (transpose body)
-            fmt p v
-              | 'f' `elem` p = delete_ $ printf p $ (fromRational (toRational v) :: Double )
-              | 's' `elem` p = delete_ $ printf p (show v)
-              | otherwise    = delete_ $ printf p v
 
-            delete_ = S.replace "_" ""
-        in
-            render $ hsep 1 left $
-                map (vcat left) $ map (map text) table
+instance ( Show v, Val x ) => Show ( Cntx v x ) where
+    show cntx = cntx2table $ showCntx (\v x -> Just (show v, show x)) cntx
+
+
+showCntx f Cntx{ cntxProcess, cntxCycleNumber }
+    = Cntx
+        { cntxProcess=map (CycleCntx . foo . cycleCntx) cntxProcess
+        , cntxReceived=def
+        , cntxCycleNumber=cntxCycleNumber
+        }
+    where
+        foo vx = M.fromList
+            [ (v', x')
+            | (v, x) <- M.assocs vx
+            , let vx' = f v x
+            , isJust vx'
+            , let Just (v', x') = vx'
+            ]
+
+
+cntx2table Cntx{ cntxProcess, cntxCycleNumber }
+    = let
+        header = sort $ M.keys $ cycleCntx $ head cntxProcess
+        body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
+        row cntx = map snd $ zip header $ sortedValues cntx
+        table = map (\(h, b) -> h : b) $ zip header (transpose body)
+    in
+        render $ hsep 1 left $
+            map (vcat left) $ map (map text) table
+    where
+        sortedValues cntx = map snd $ sortOn fst $ M.assocs cntx
+
 
 instance Default (Cntx v x) where
     def = Cntx

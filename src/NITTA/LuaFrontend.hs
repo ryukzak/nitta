@@ -22,64 +22,75 @@ Stability   : experimental
 module NITTA.LuaFrontend
     ( lua2functions
     , FrontendResult(..)
-    , DebugData(..)
-    , DebugFunctionT(..)
+    , TraceVar(..)
     ) where
 
 import           Control.Monad.Identity
 import           Control.Monad.State
 import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
-import           Data.Maybe                    (fromMaybe)
+import           Data.Maybe
 import qualified Data.String.Utils             as S
 import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Intermediate.Functions  as F
+import           NITTA.Intermediate.Types      hiding (patch)
 import           NITTA.Model.TargetSystem
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
+import           Text.Printf
 
 
 data FrontendResult x
     = FrontendResult
         { frDataFlow   :: DataFlowGraph String x
-        , frNonSynConf :: DebugData
+        , frTrace      :: [ TraceVar ]
+        , frPrettyCntx :: Cntx String x -> Cntx String String
         }
 
+data TraceVar = TraceVar{ tvFmt, tvVar :: Text }
+    deriving ( Show )
 
+-- |Unique variable aliases for data flow.
 type VarDict = M.Map Text ([String], [String])
 
--- |Data type for collecting functions for debug
-data DebugFunctionT = DebugFunctionT
-      { inputVars  :: [ Text ]
-      , outputVars :: [ Text ]
-      , name       :: String
-      } deriving ( Show )
 
--- |Data type that contains all information for debugging functions
-data DebugData = DebugData [DebugFunctionT] VarDict deriving (Show)
+prettyCntx traceVars cntx
+    = showCntx
+        (\v x -> if v `M.member` v2fmt
+            then Just ( take (length v - 2) v, printx (v2fmt M.! v) x )
+            else Nothing)
+        cntx
+    where
+        v2fmt = M.fromList $ map (\(TraceVar fmt v) -> (T.unpack v, T.unpack fmt)) traceVars
+        printx p x
+            | 'f' `elem` p = printf p ( fromRational (toRational x) :: Double )
+            | 's' `elem` p = printf p $ show x
+            | otherwise    = printf p x
 
-toDebugData debugFunctions varDict = let
-        toDebugFunctionT (DebugFunction inputVars outputVars name _) = DebugFunctionT inputVars outputVars name
-        toDebugFunctionT _                                           = error "error in pattern mathing DebugFunction"
-    in
-        DebugData (map toDebugFunctionT debugFunctions) varDict
 
 lua2functions src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         AlgBuilder{ algItems } = buildAlg ast
         fs = filter (\case Function{} -> True; _ -> False) algItems
-        debugFunctions = filter (\case DebugFunction{} -> True; _ -> False) algItems
         varDict :: VarDict
         varDict = M.fromList
             $ map varRow
             $ group $ sort $ concatMap fIn fs
         alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
         frDataFlow = fsToDataFlowGraph alg
-        frNonSynConf = toDebugData debugFunctions varDict
-    in FrontendResult{ frDataFlow, frNonSynConf }
+        frTrace =
+            [ TraceVar tFmt $ T.append v "#0"
+            | TraceFunction{ tFmt, tVars } <- algItems
+            , v <- tVars
+            ]
+    in FrontendResult
+       { frDataFlow
+       , frTrace
+       , frPrettyCntx=prettyCntx frTrace
+       }
     where
         varRow lst@(x:_)
             = let vs = zipWith f lst [0..]
@@ -135,15 +146,12 @@ data AlgBuilderItem x
         , fName   :: String
         , fValues :: [x]
         }
-    | DebugFunction
-        { fIn     :: [Text]
-        , fOut    :: [Text]
-        , fName   :: String
-        , fValues :: [x]
+    | TraceFunction
+        { tVars :: [ Text ]
+        , tFmt  :: Text
         }
     -- FIXME: check all local variable declaration
     deriving ( Show )
-
 
 
 -- *Translate AlgBuiler functions to nitta functions
@@ -254,19 +262,19 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
             f InputVar{ iX, iVar } rexp = do
                 i <- expArg [] rexp
                 let loop = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
-                let traceLoop = DebugFunction{ fName="traceLoop", fIn=[i], fOut=[], fValues=[] }
-                modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=traceLoop : loop : algItems }
+                -- let traceLoop = undefined -- DebugFunction{ fName="traceLoop", fIn=[i], fOut=[], fValues=[] }
+                modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=loop : algItems }
             f _ _ = undefined
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName (Name "debug"))) (Name fName))) (Args args))) = do
     fIn <- mapM (expArg []) args
+    case ( fName, fIn ) of
+        ("trace", tFmt:vs)
+            | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt
+            -> addFunction TraceFunction{ tVars=vs, tFmt=T.replace "\"" "" tFmt }
+        ("trace", vs) -> addFunction TraceFunction{ tVars=vs, tFmt="%.3f" }
+        _ -> error $ "unknown debug method: " ++ show fName ++ " " ++ show args
 
-    case (fName, fIn) of
-        ("trace", [_])    -> addFunction DebugFunction{ fName="traceDefault", fIn, fOut=[], fValues=[] }
-        ("trace", [_, _]) -> addFunction DebugFunction{ fName="tracePattern", fIn, fOut=[], fValues=[] }
-        ("trace", [])     -> error "trace function not contain value"
-        ("trace", _)      -> error "trace function contain more than one value"
-        _                 -> addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[] }
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
     fIn <- mapM (expArg []) args
@@ -320,7 +328,7 @@ rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
 expArg _diff n@(Number _ _) = expConstant "@const" n
 
-expArg _diff (String s) = expConstant "" $ String $ pack $ S.replace "\"" "" $ unpack s
+expArg _diff (String s) = return s
 
 expArg _diff (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
 
@@ -387,18 +395,14 @@ expConstant _ _ = undefined
 addFunction f@Function{ fOut } = do
     diff <- renameVarsIfNeeded fOut
     patchAndAddFunction f diff
-addFunction f@DebugFunction{ fOut } = do
-    diff <- renameVarsIfNeeded fOut
-    patchAndAddFunction f diff
+addFunction f@TraceFunction{} =
+    modify'_ $ \alg@AlgBuilder{ algItems } ->
+        alg{ algItems=f : algItems }
 addFunction _ = error "addFunction error"
 
 
 
 patchAndAddFunction f@Function{ fIn } diff = do
-    let fIn' = map (applyPatch diff) fIn
-    modify'_ $ \alg@AlgBuilder{ algItems } ->
-        alg{ algItems=f{ fIn=fIn' } : algItems }
-patchAndAddFunction f@DebugFunction{ fIn } diff = do
     let fIn' = map (applyPatch diff) fIn
     modify'_ $ \alg@AlgBuilder{ algItems } ->
         alg{ algItems=f{ fIn=fIn' } : algItems }

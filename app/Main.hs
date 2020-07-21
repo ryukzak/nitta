@@ -25,10 +25,8 @@ module Main ( main ) where
 
 import           Control.Monad                   (void, when)
 import           Data.Default                    (def)
-import qualified Data.Map                        as M
 import           Data.Maybe
 import           Data.Proxy
-import           Data.Text                       (pack, unpack)
 import qualified Data.Text.IO                    as T
 import           GHC.TypeLits
 import           NITTA.Intermediate.Simulation
@@ -46,7 +44,6 @@ import           NITTA.UIBackend
 import           System.Console.CmdArgs          hiding (def)
 import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
-
 
 -- |Command line interface.
 data Nitta
@@ -102,9 +99,9 @@ main = do
         ) $ parseFX type_
 
 selectCAD True Nothing src tReceivedValues n _ma = do
-    let FrontendResult{ frDataFlow, frNonSynConf } = lua2functions src
+    let FrontendResult{ frDataFlow, frPrettyCntx } = lua2functions src
     let cntx = simulateDataFlowGraph n def tReceivedValues frDataFlow
-    debugTrace frNonSynConf cntx
+    putStrLn $ cntx2table $ frPrettyCntx cntx
 
 selectCAD _ (Just port) src received _n ma
     = backendServer port received $ mkModelWithOneNetwork ma $ frDataFlow $ lua2functions src
@@ -117,21 +114,6 @@ selectCAD _ Nothing src received n ma = void $ runTargetSynthesis def
         , tReceivedValues=received
         , tSimulationCycleN=n
         }
-
-debugTrace (DebugData debugFunctions varDict) cntx = let
-        getFromDict x = head $ fst $ varDict M.! x
-        tracingLoop = filter (\case DebugFunctionT {name = "traceLoop"} -> True; _ -> False) debugFunctions
-        tracingDefault = filter (\case DebugFunctionT {name = "traceDefault"} -> True; _ -> False) debugFunctions
-        tracingPattern = filter (\case DebugFunctionT {name = "tracePattern"} -> True; _ -> False) debugFunctions
-        defaultPattern = "%.3f"
-        -- Data Maps of value as key and pattern as value
-        mVPLoop    = M.fromList $ zip (map (unpack . head . inputVars) tracingLoop) (repeat defaultPattern)
-        mVPDefault = M.fromList $ zip (map (unpack . head . inputVars) tracingDefault) (repeat defaultPattern)
-        mVPPattern = M.fromList $ map ((\[p, v] -> (unpack v, unpack p)) . inputVars) tracingPattern
-        mVPGlobal = mVPPattern `M.union` mVPDefault `M.union` mVPLoop
-        tracingVars = map (getFromDict) $ map pack $ M.keys mVPGlobal
-    in
-        putStrLn $ fmtContextShow mVPGlobal $ filterCntx tracingVars cntx
 
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
@@ -152,4 +134,3 @@ microarch ioSync = evalNetwork ioSync $ do
             , slave_sclk = InputPortTag "sclk"
             , slave_cs   = InputPortTag "cs"
             }
-
