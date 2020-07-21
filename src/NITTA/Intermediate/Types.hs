@@ -29,7 +29,6 @@ module NITTA.Intermediate.Types
       -- *Functional simulation
     , FunctionSimulation(..)
     , CycleCntx(..), Cntx(..)
-    , filterCntx
     , showCntx, cntx2table
     , getX, setZipX, cntxReceivedBySlice
       -- *Patch
@@ -280,13 +279,6 @@ instance Default (Cntx v x) where
         , cntxReceived=def
         , cntxCycleNumber=5
         }
-
--- |Filter only listed variables in context
-filterCntx vs cntx@Cntx{ cntxProcess }
-    = cntx{ cntxProcess=map
-              (CycleCntx . (`M.intersection` (M.fromList $ map (\v -> (v, undefined)) vs)) . cycleCntx)
-              cntxProcess
-          }
 
 
 -- |Make sequence of received values '[ Map v x ]'
