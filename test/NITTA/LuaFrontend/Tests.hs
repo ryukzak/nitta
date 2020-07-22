@@ -162,6 +162,89 @@ test_complex_examples =
     ]
 
 
+test_trace_features =
+    [ traceLuaSimulationTestCase pInt "simple trace" [qc|
+        function counter(i)
+            debug.trace(i)
+            counter(i + 1)
+        end
+        counter(0)
+        |] $ unlines
+            [ "i    "
+            , "0.000"
+            , "1.000"
+            , "2.000"
+            , "3.000"
+            , "4.000"
+            ]
+
+    , traceLuaSimulationTestCase pInt "specific fmt" [qc|
+        function counter(i)
+            debug.trace("%.0f", i)
+            counter(i + 1)
+        end
+        counter(0)
+        |] $ unlines
+            [ "i"
+            , "0"
+            , "1"
+            , "2"
+            , "3"
+            , "4"
+            ]
+
+    , traceLuaSimulationTestCase pInt "specific fmt and multiple variable" [qc|
+        function counter(i)
+            local tmp = i + 1
+            debug.trace("%.0f", i, tmp)
+            counter(tmp)
+        end
+        counter(0)
+        |] $ unlines
+            [ "i tmp"
+            , "0 1  "
+            , "1 2  "
+            , "2 3  "
+            , "3 4  "
+            , "4 5  "
+            ]
+
+    -- FIXME:
+    -- , traceLuaSimulationTestCase pInt "variable before changing" [qc|
+    --     function counter(i)
+    --         debug.trace("%.0f", i)
+    --         i = i + 1
+    --         counter(i)
+    --     end
+    --     counter(0)
+    --     |] $ unlines
+    --         [ "i"
+    --         , "0"
+    --         , "1"
+    --         , "2"
+    --         , "3"
+    --         , "4"
+    --         ]
+
+    , traceLuaSimulationTestCase pInt "variable after changing" [qc|
+        function counter(i)
+            i = i + 1
+            debug.trace("%.0f", i)
+            counter(i)
+        end
+        counter(0)
+        |] $ unlines
+            [ "i"
+            , "1"
+            , "2"
+            , "3"
+            , "4"
+            , "5"
+            ]
+
+    -- TODO: traceLuaSimulationTestCase pInt "variable before and after changing"
+    ]
+
 -- TODO: actualize
 test_examples =
     [ typedLuaTestCase (microarch Sync SlaveSPI) pFX22_32 "teacup io wait"
