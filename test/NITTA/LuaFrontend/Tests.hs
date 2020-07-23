@@ -209,6 +209,22 @@ test_trace_features =
             , "4 5  "
             ]
 
+    , traceLuaSimulationTestCase pInt "default trace" [qc|
+        function counter(i, two)
+            local one = 1
+            local tmp = i + one + two
+            counter(tmp, 2)
+        end
+        counter(0, 2)
+        |] $ unlines
+            [ "i      two  "
+            , "0.000  2.000"
+            , "3.000  2.000"
+            , "6.000  2.000"
+            , "9.000  2.000"
+            , "12.000 2.000"
+            ]
+
     -- FIXME:
     -- , traceLuaSimulationTestCase pInt "variable before changing" [qc|
     --     function counter(i)

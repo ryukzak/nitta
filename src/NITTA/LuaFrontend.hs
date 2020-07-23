@@ -83,11 +83,18 @@ lua2functions src
             $ group $ sort $ concatMap fIn fs
         alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
         frDataFlow = fsToDataFlowGraph alg
-        frTrace =
-            [ TraceVar tFmt $ T.append v "#0"
-            | TraceFunction{ tFmt, tVars } <- algItems
-            , v <- tVars
-            ]
+        traceFunctions = [ tf | tf@TraceFunction{} <- algItems ]
+
+        frTrace=if not $ null traceFunctions
+            then
+                [ TraceVar tFmt $ T.append v "#0"
+                | TraceFunction{ tFmt, tVars } <- traceFunctions
+                , v <- tVars
+                ]
+            else
+                [ TraceVar defaultFmt $ T.append iVar "#0"
+                | InputVar{ iVar } <- algItems
+                ]
     in FrontendResult
        { frDataFlow
        , frTrace
@@ -265,7 +272,6 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
             f InputVar{ iX, iVar } rexp = do
                 i <- expArg [] rexp
                 let loop = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
-                -- let traceLoop = undefined -- DebugFunction{ fName="traceLoop", fIn=[i], fOut=[], fValues=[] }
                 modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=loop : algItems }
             f _ _ = undefined
 
