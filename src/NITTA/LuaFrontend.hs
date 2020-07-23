@@ -52,6 +52,8 @@ data FrontendResult x
 data TraceVar = TraceVar{ tvFmt, tvVar :: Text }
     deriving ( Show )
 
+defaultFmt = "%.3f"
+
 -- |Unique variable aliases for data flow.
 type VarDict = M.Map Text ([String], [String])
 
@@ -273,7 +275,7 @@ processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName 
         ("trace", tFmt:vs)
             | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt
             -> addFunction TraceFunction{ tVars=vs, tFmt=T.replace "\"" "" tFmt }
-        ("trace", vs) -> addFunction TraceFunction{ tVars=vs, tFmt="%.3f" }
+        ("trace", vs) -> addFunction TraceFunction{ tVars=vs, tFmt=defaultFmt }
         _ -> error $ "unknown debug method: " ++ show fName ++ " " ++ show args
 
 
