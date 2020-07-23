@@ -30,11 +30,11 @@ import           NITTA.Utils
 -- |Functional algorithm simulation
 simulateDataFlowGraph
     :: ( Var v, Val x, WithFunctions g (F v x) )
-    => CycleCntx v x -> [(v, [x])] -> g -> Cntx v x
-simulateDataFlowGraph cycle0 transmission dfg
-    = simulateAlg cycle0 transmission $ reorderAlgorithm $ functions dfg
+    => Int -> CycleCntx v x -> [(v, [x])] -> g -> Cntx v x
+simulateDataFlowGraph cycleN cycle0 transmission dfg
+    = simulateAlg cycleN cycle0 transmission $ reorderAlgorithm $ functions dfg
 
-simulateAlg cycle0 transmission alg
+simulateAlg cycleN cycle0 transmission alg
     | let
         cycleConnections [] = []
         cycleConnections (f:fs)
@@ -48,7 +48,7 @@ simulateAlg cycle0 transmission alg
     = Cntx
         { cntxReceived=M.fromList transmission
         , cntxProcess=simulateAlg' fromPrevCycle cycle0 transmission alg
-        , cntxCycleNumber=5
+        , cntxCycleNumber=cycleN
         }
 
 simulateAlg' fromPrevCycle cycleCntx0 transmission alg = let

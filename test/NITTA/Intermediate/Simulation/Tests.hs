@@ -30,8 +30,7 @@ import           Test.Tasty ( TestTree, testGroup )
 import           Test.Tasty.HUnit
 
 
-tests :: TestTree
-tests = testGroup "functional simulation"
+simulationTests = testGroup "functional simulation"
     [ testCase "reorder algorithm" $ do
         let f = reorderAlgorithm :: [F String Int] -> [F String Int]
             l1 = loop 0 "b2"  [ "a1"       ]
@@ -45,6 +44,7 @@ tests = testGroup "functional simulation"
         , add "a1" "b1" [ "c"        ]
         ]
         ( "a1", [ 0, 1, 1, 2, 3, 5, 8 ] )
+
     , simulationTestCase "send and receive"
         [ ( "a", [ 1, 2, 3, 4, 5 ] )
         ]
@@ -58,12 +58,43 @@ tests = testGroup "functional simulation"
     ]
 
 
+showTests = testGroup "show simulation result"
+    [ simulationTraceTestCase "simple show"
+        [ loop 0 "b2"   [ "a1"       ]
+        , loop 1 "c"    [ "b1", "b2" ]
+        , add "a1" "b1" [ "c"        ]
+        ] $ unlines
+            [ "a1 b1 b2 c"
+            , "0  1  1  1"
+            , "1  1  1  2"
+            , "1  2  2  3"
+            , "2  3  3  5"
+            , "3  5  5  8"
+            ]
+    ]
+
+
+tests = testGroup "intermediate simulation"
+    [ simulationTests
+    , showTests
+    ]
+
+
 simulationTestCase :: HasCallStack
     => String -> [ ( String, [ Int] ) ] -> [ F String Int ] -> ( String, [ Int ] )
     -> TestTree
 simulationTestCase name received alg (v, expect) = testCase name $ let
         dfg = fsToDataFlowGraph alg
-        Cntx{ cntxProcess } = simulateDataFlowGraph def received dfg
+        Cntx{ cntxProcess } = simulateDataFlowGraph 5 def received dfg
         cycles = take (length expect) cntxProcess
         actual = map (\(CycleCntx c) -> fromMaybe (error $ show c) (c M.!? v)) cycles
+    in expect @=? actual
+
+
+simulationTraceTestCase :: HasCallStack
+    => String -> [ F String Int ] -> String -> TestTree
+simulationTraceTestCase name alg expect = testCase name $ let
+        dfg = fsToDataFlowGraph alg
+        cntx = simulateDataFlowGraph 5 def def dfg
+        actual = show cntx
     in expect @=? actual

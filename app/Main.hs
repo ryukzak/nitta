@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE DeriveDataTypeable        #-}
-{-# LANGUAGE DuplicateRecordFields     #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE PartialTypeSignatures     #-}
-{-# LANGUAGE QuasiQuotes               #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE StandaloneDeriving        #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 {-# OPTIONS -fno-warn-overlapping-patterns -fno-warn-orphans #-}
@@ -29,6 +29,7 @@ import           Data.Maybe
 import           Data.Proxy
 import qualified Data.Text.IO                    as T
 import           GHC.TypeLits
+import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.LuaFrontend
 import           NITTA.Model.Microarchitecture
@@ -44,7 +45,6 @@ import           System.Console.CmdArgs          hiding (def)
 import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
 
-
 -- |Command line interface.
 data Nitta
     = Nitta
@@ -54,6 +54,8 @@ data Nitta
         , type_     :: String
         , io_sync   :: IOSynchronization
         , file      :: FilePath
+        , sim       :: Bool
+        , n         :: Int
         }
     deriving ( Show, Data, Typeable )
 
@@ -66,6 +68,8 @@ nittaArgs = Nitta
     , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
     , io_sync=Sync &= help "IO synchronization mode: sync, async, onboard"
     , file=def &= args &= typFile
+    , sim=False &= help "Functional simulation only"
+    , n=30 &= help "Number of simulation and testbench cycles"
     }
 
 
@@ -77,35 +81,38 @@ parseFX input = let
 
 
 main = do
-    Nitta{ web, port, npm_build, file, type_, io_sync } <- cmdArgs nittaArgs
+    Nitta{ web, port, npm_build, file, type_, io_sync, sim, n } <- cmdArgs nittaArgs
     when npm_build prepareStaticFiles
     putStrLn [qc|> readFile: { file }|]
     when (null file) $ error "input file not specified"
     src <- T.readFile file
     let cadDesc = if web then Just port else Nothing
-
     ( \( SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b) ) ->
           selectCAD
+              sim
               cadDesc
               src
-              [ ("a#0", [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ])
-              , ("a#1", [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ])
-              , ("b#0", reverse [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ])
-              , ("b#1", reverse [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ])
-              ]
+              -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
+              [ ("u#0", map (\i -> (read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i))) [0..toEnum n])]
+              n
               ( microarch io_sync :: BusNetwork String String (FX m b) Int)
         ) $ parseFX type_
 
+selectCAD True Nothing src tReceivedValues n _ma = do
+    let FrontendResult{ frDataFlow, frPrettyCntx } = lua2functions src
+    let cntx = simulateDataFlowGraph n def tReceivedValues frDataFlow
+    putStrLn $ cntx2table $ frPrettyCntx cntx
 
-selectCAD (Just port) src received ma
-    = backendServer port received $ mkModelWithOneNetwork ma $ lua2functions src
+selectCAD _ (Just port) src received _n ma
+    = backendServer port received $ mkModelWithOneNetwork ma $ frDataFlow $ lua2functions src
 
-selectCAD Nothing src received ma = void $ runTargetSynthesis def
+selectCAD _ Nothing src received n ma = void $ runTargetSynthesis def
         { tName="main"
         , tMicroArch=ma
-        , tDFG=lua2functions src
+        , tDFG=frDataFlow $ lua2functions src
         , tVerbose=True
         , tReceivedValues=received
+        , tSimulationCycleN=n
         }
 
 
@@ -127,4 +134,3 @@ microarch ioSync = evalNetwork ioSync $ do
             , slave_sclk = InputPortTag "sclk"
             , slave_cs   = InputPortTag "cs"
             }
-

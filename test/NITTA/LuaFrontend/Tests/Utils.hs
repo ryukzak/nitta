@@ -19,6 +19,7 @@ Stability   : experimental
 -}
 module NITTA.LuaFrontend.Tests.Utils
     ( luaTestCase, typedLuaTestCase, typedIOLuaTestCase
+    , traceLuaSimulationTestCase
     ) where
 
 import           Data.CallStack
@@ -27,7 +28,9 @@ import           Data.Either
 import           Data.Proxy
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
+import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
+import           NITTA.LuaFrontend
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Tests.Microarchitecture
@@ -36,6 +39,17 @@ import           NITTA.TargetSynthesis
 import           NITTA.Utils
 import           Test.Tasty ( TestTree )
 import           Test.Tasty.HUnit
+
+
+traceLuaSimulationTestCase
+    :: forall x.
+    ( HasCallStack, Val x, Integral x
+    ) => Proxy x -> String -> T.Text -> String -> TestTree
+traceLuaSimulationTestCase _ name src expect = testCase name $ let
+        FrontendResult{ frDataFlow, frPrettyCntx } :: FrontendResult x = lua2functions src
+        cntx = simulateDataFlowGraph 5 def def frDataFlow
+        actual = cntx2table $ frPrettyCntx cntx
+    in expect @=? actual
 
 
 luaTestCase :: HasCallStack => String -> T.Text -> TestTree

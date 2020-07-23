@@ -35,12 +35,12 @@ case_fixpointInternal = do
 
 
 case_fixpointShowRead = do
-    "1.0" @?= show (read "1.0" :: FX 32 32)
-    "1.0" @?= show (read "1.5" :: FX 32 32)
-    "0.5" @?= show (read "0.5" :: FX 31 32)
-    "0.25" @?= show (read "0.25" :: FX 30 32)
-    "0.5" @?= show (read "0.75" :: FX 31 32)
-    "0.0" @?= show (read "0.25" :: FX 31 32)
+    "1.000000" @?= show (read "1.0" :: FX 32 32)
+    "2.000000" @?= show (read "1.5" :: FX 32 32)
+    "0.500000" @?= show (read "0.5" :: FX 31 32)
+    "0.250000" @?= show (read "0.25" :: FX 30 32)
+    "1.000000" @?= show (read "0.75" :: FX 31 32)
+    "0.000000" @?= show (read "0.25" :: FX 31 32)
 
 
 case_fixpointEnum = do

@@ -99,6 +99,7 @@ library
   build-depends:       aeson
                      , array
                      , base
+                     , boxes
                      , containers
                      , data-default
                      , directory
@@ -135,6 +136,7 @@ executable nitta-api-gen
   build-depends:       aeson
                      , aeson-typescript
                      , base
+                     , boxes
                      , containers
                      , cmdargs
                      , directory
@@ -149,8 +151,10 @@ executable nitta
   hs-source-dirs:      app
   main-is:             Main.hs
   build-depends:       base
+                     , boxes
                      , regex-compat
                      , cmdargs
+                     , containers
                      , data-default
                      , interpolatedstring-perl6
                      , nitta
@@ -182,6 +186,7 @@ test-suite nitta-test
                      , NITTA.Utils.Tests
   build-depends:       atomic-primops
                      , base
+                     , boxes
                      , call-stack
                      , containers
                      , data-default
