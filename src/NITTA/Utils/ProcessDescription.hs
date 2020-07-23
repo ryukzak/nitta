@@ -33,7 +33,7 @@ module NITTA.Utils.ProcessDescription
 import           Control.Monad.State
 import           Data.Proxy                      (asProxyTypeOf)
 import           Data.Typeable
-import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           Numeric.Interval                (singleton)
 

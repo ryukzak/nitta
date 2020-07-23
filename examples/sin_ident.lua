@@ -1,11 +1,11 @@
 -- reference implementation in sin_ident/main.go
 function sin(x0, x1, x2, x3)
-    local Alpha = 0.7
+    local Alpha = 0.699997
     local Beta = 5
     local Gamma = 80
     -- local R = 1
     local RPow2 = 1 -- 1 * 1
-    local OmegaN = 125.66  -- 2 * 3.1415 * 20
+    local OmegaN = 2 * 3.1415 * 20
     local Pi2 = 6.28318    -- 3.14159 * 2
     local OmegaNDIVPi2 = 19.9994270417  -- (2 * 3.1415 * 20) / (3.14159 * 2)
     local T = 0.001
@@ -32,6 +32,9 @@ function sin(x0, x1, x2, x3)
 
     local freq = OmegaNDIVPi2 + x2
     send(freq)
+    debug.trace(freq)
+    debug.trace("%.8f", freq)
+    debug.trace("%.8f", r_x0)
 
     sin(r_x0, r_x1, r_x2, r_x3)
 end

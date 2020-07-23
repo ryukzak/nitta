@@ -8,207 +8,30 @@
 
 {-|
 Module      : NITTA.Project
-Description : Entry point for synthesis process and target system generation.
+Description :
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
-
-TargetSynthesis is an entry point for synthesis process. TargetSynthesis flow shown on fig.
-
-@
-====================================================================================================================
-                                                                                                             Prepare
-NITTA.Project:TargetSynthesis                                                                       NITTA.Project...
-    # tName                                                                                        NITTA.LuaFrontend
-    # tMicroArch --------------------------\
-    # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
-                      |                    |     |  |
-                      *<--lua2functions    |     |  |
-                      |                    |     |  v      NITTA.Model.TargetSystem:ModelState--\
-    # tDFG <----------+                    +--------*------------> # mUnit        |             |    NITTA.Model...
-        |                                        |                                |             |     /-----------\
-        |                                        v                                |             |     |  Target   |
-        +----------------------------------------*-----------> # mDataFlowGraph   |             \-----+  System   |
-                                                                                  |                   | Imitation |
-    # tReceivedValues                                                             |                   |   Model   |
-    # tVerbose                                                                    |                   \-----------/
-    # tSynthesisMethod ----------------------------------\                        |
-    # tWriteProject                                      |                        |
-                                                         |                        |
-===================================================================================================================
-                                                         |                        |               Synthesis process
-        NITTA.Synthesis.Tree:Node                        |                        |            NITTA.Synthesis.Tree
-            # nModel <------------------------------------------------------------+          NITTA.Synthesis.Method
-            # ...                                        |
-            # nEdges                                     *<-- search for best synthesis path
-                |                                        |
-                +-----> NITTA.Synthesis.Tree:Edge        v
-                            # eNode ----------------- // * // -----\
-                            # ...                                  |
-                                                                   v
-                                                            NITTA.Synthesis.Tree:Node
-                                                                # nModel
-                                       /--------------------------- # mUnit
-                                       |        /------------------ # mDataFlowGraph
-                                       |        |               # ...
-                                       |        |
-===================================================================================================================
-                                       |        |                                         Target project generation
-NITTA.Project.Types:Project      |        |                                                       NITTA.Project....
- |      # pName <--------- $tName      |        |
- |      # pLibPath                     |        +<----- $tReceivedValues
- |      # pPath                        |        |
- |      # pModel<----------------------/        *<----- functional simulation (FIXME)
- |                                              |
- |      # pTestCntx <---------------------------/
- |
- |
- *<---------- $tWriteProject by ProjectPart pt m
- |                # TargetSystem
- |                    # hardware
- |                    # software
- |                # QuartusProject
- |                # TestBench
- |                # IcarusMakefile
- |
- \---> filesystem
-@
 -}
 module NITTA.Project
-    ( mkModelWithOneNetwork
-    , TargetSynthesis(..), runTargetSynthesis
+    ( module NITTA.Project.Implementation
+    , module NITTA.Project.Parts.Icarus
+    , module NITTA.Project.Parts.Quartus
+    , module NITTA.Project.Parts.TargetSystem
+    , module NITTA.Project.Parts.TestBench
+    , module NITTA.Project.Parts.Utils
+    , module NITTA.Project.Snippets
+    , module NITTA.Project.Types
+    , module NITTA.Project.Utils
     ) where
 
-import           Control.Monad                   (when)
-import           Data.Default                    as D
-import           Data.Text                       (Text)
-import           NITTA.Intermediate.Simulation
-import           NITTA.Intermediate.Types
-import           NITTA.LuaFrontend
-import           NITTA.Model.Networks.Bus        (BusNetwork)
-import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Model.TargetSystem
-import           NITTA.Model.Types
+import           NITTA.Project.Implementation
+import           NITTA.Project.Parts.Icarus
+import           NITTA.Project.Parts.Quartus
+import           NITTA.Project.Parts.TargetSystem
 import           NITTA.Project.Parts.TestBench
+import           NITTA.Project.Parts.Utils
+import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Project.Utils
-import           NITTA.Synthesis.Method
-import           NITTA.Synthesis.Tree
-import           System.FilePath                 (joinPath)
-
-
--- |Description of synthesis task. Applicable for target system synthesis and
--- testing purpose.
-data TargetSynthesis tag v x t
-    = TargetSynthesis
-        { tName             :: String
-          -- ^target name, used for top level module name and project path
-        , tMicroArch        :: BusNetwork tag v x t
-          -- ^composition of processor units, IO ports and its interconnect
-        , tSourceCode       :: Maybe Text
-          -- ^optional application source code (lua)
-        , tDFG              :: DataFlowGraph v x
-          -- ^algorithm in intermediate data flow graph representation (if
-          -- tSourceCode present will be overwritten)
-        , tReceivedValues   :: [ (v, [x]) ]
-          -- ^values from input interface for testing purpose
-        , tVerbose          :: Bool
-          -- ^verbose standard output (dumps, progress info, etc).
-        , tSynthesisMethod  :: G Node tag v x t -> IO (G Node tag v x t)
-          -- ^synthesis method
-        , tWriteProject     :: Project (BusNetwork tag v x t) v x -> IO ()
-          -- ^project writer, which defines necessary project part
-        , tLibPath          :: String
-          -- ^IP-core library directory
-        , tPath             :: String
-          -- ^output directory, where CAD create project directory with 'tName' name
-        , tSimulationCycleN :: Int
-          -- ^number of simulation and testbench cycles
-        }
-
-
-instance ( VarValTime v x t ) => Default (TargetSynthesis String v x t) where
-    def = TargetSynthesis
-        { tName=undefined
-        , tMicroArch=undefined
-        , tSourceCode=Nothing
-        , tDFG=undefined
-        , tReceivedValues=def
-        , tVerbose=False
-        , tSynthesisMethod=stateOfTheArtSynthesisIO
-        , tWriteProject=writeWholeProject
-        , tLibPath="../../hdl"
-        , tPath=joinPath [ "gen" ]
-        , tSimulationCycleN=5
-        }
-
-
-runTargetSynthesis TargetSynthesis
-            { tName, tMicroArch, tSourceCode, tDFG, tReceivedValues, tSynthesisMethod, tVerbose, tWriteProject
-            , tLibPath, tPath, tSimulationCycleN
-            } = do
-    tDFG' <- maybe (return tDFG) translateToIntermediate tSourceCode
-    rootNode <- mkRootNodeIO (mkModelWithOneNetwork tMicroArch tDFG')
-    synthesisResult <- synthesis rootNode
-    case synthesisResult of
-        Left err -> return $ Left err
-        Right leafNode -> do
-            let prj = project leafNode
-            write prj
-            report <- testbench prj
-            return $ Right report
-    where
-        translateToIntermediate src = do
-            when tVerbose $ putStrLn "lua transpiler"
-            let tmp = fst $ lua2functions src
-            when tVerbose $ putStrLn "lua transpiler - ok"
-            return tmp
-
-        synthesis rootNode = do
-            when tVerbose $ putStrLn "synthesis process"
-            leafNode <- tSynthesisMethod rootNode
-            let isComplete = isSynthesisFinish $ nModel leafNode
-            when (tVerbose && isComplete) $ putStrLn "synthesis process - ok"
-            when (tVerbose && not isComplete) $ putStrLn "synthesis process - fail"
-            return $ if isComplete
-                then Right leafNode
-                else Left "synthesis process - fail"
-
-        project Node{ nModel=ModelState{ mUnit, mDataFlowGraph } } = Project
-            { pName=tName
-            , pLibPath=tLibPath
-            , pPath=joinPath [ tPath, tName ]
-            , pUnit=mUnit
-              -- because application algorithm can be refactored we use synthesised version
-            , pTestCntx=simulateDataFlowGraph tSimulationCycleN def tReceivedValues mDataFlowGraph
-            }
-
-        write prj@Project{ pPath } = do
-            when tVerbose $ putStrLn $ "write target project (" ++ pPath ++ ")"
-            tWriteProject prj
-            when tVerbose $ putStrLn $ "write target project (" ++ pPath ++ ") - ok"
-
-        testbench prj = do
-            when tVerbose $ putStrLn "run testbench"
-            report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump, tbLogicalSimulationCntx } <- runTestbench prj
-            when tVerbose $ case tbStatus of
-                True  -> putStrLn "run testbench - ok"
-                False -> do
-                    putStrLn "run testbench - fail"
-                    putStrLn "-----------------------------------------------------------"
-                    putStrLn "testbench compiler dump:"
-                    putStrLn $ unlines tbCompilerDump
-                    putStrLn "-----------------------------------------------------------"
-                    putStrLn "testbench simulation dump:"
-                    putStrLn $ unlines tbSimulationDump
-                    putStrLn $ show tbLogicalSimulationCntx
-            return report
-
-
--- |Make a model of NITTA process with one network and a specific algorithm. All
--- functions are already bound to the network.
-mkModelWithOneNetwork arch dfg = ModelState
-    { mUnit=foldl (flip bind) arch $ functions dfg
-    , mDataFlowGraph=dfg
-    }

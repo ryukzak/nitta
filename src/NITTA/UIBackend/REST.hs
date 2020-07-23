@@ -32,13 +32,11 @@ import           GHC.Generics
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
-import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
-import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Types
-import           NITTA.Project.Utils             (writeAndRunTestbench)
+import           NITTA.Project
 import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Tree
 import           NITTA.UIBackend.Marshalling

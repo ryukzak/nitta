@@ -45,13 +45,11 @@ import qualified Data.Text                       as T
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.Problems.Whole
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
-import           NITTA.Project.Parts.TestBench
+import           NITTA.Project
 import           NITTA.Synthesis.Estimate
 import           NITTA.Synthesis.Tree
 import           NITTA.Synthesis.Utils

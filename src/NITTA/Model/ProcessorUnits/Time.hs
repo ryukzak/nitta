@@ -36,12 +36,13 @@ module NITTA.Model.ProcessorUnits.Time
 
 import           Data.Default
 import           Data.Ix
+import           Data.Kind
 import qualified Data.List                     as L
 import           Data.Maybe
 import qualified Data.String.Utils             as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems
 import           NITTA.Model.Types
 import           NITTA.Utils.CodeFormat
 import           Numeric.Interval
@@ -221,10 +222,10 @@ data Relation
 class Controllable pu where
     -- |Instruction describe unit behaviour on each mUnit cycle. If instruction not defined for
     -- some cycles - it should be interpreted as NOP. In future, Instruction should be extracted, because
-    data Instruction pu :: *
+    data Instruction pu :: Type
 
     -- |Microcode desctibe controll signals on each mUnit cycle (without exclusion).
-    data Microcode pu :: *
+    data Microcode pu :: Type
 
     -- |Map microcode to unit signal ports.
     mapMicrocodeToPorts :: Microcode pu -> Ports pu -> [(SignalTag, SignalValue)]
@@ -240,11 +241,11 @@ class Controllable pu where
 -- |Type class of processor units with control ports.
 class Connected pu where
     -- |A processor unit control ports (signals, flags).
-    data Ports pu :: *
+    data Ports pu :: Type
 
 -- |Type class of processor units with IO ports.
 class IOConnected pu where
-    data IOPorts pu :: *
+    data IOPorts pu :: Type
     -- |External input ports, which go outside of NITTA mUnit.
     inputPorts :: IOPorts pu -> [ InputPortTag ]
     inputPorts _ = []

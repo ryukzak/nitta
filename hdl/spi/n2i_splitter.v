@@ -19,18 +19,19 @@ localparam SUBFRAME_NUMBER = DATA_WIDTH / SPI_DATA_WIDTH;
 localparam SUBFRAME_COUNTER_WIDTH = $clog2( SUBFRAME_NUMBER );
 
 reg [DATA_WIDTH-1:0] data;
+reg [SPI_DATA_WIDTH-1:0] subframe;
 reg [SUBFRAME_COUNTER_WIDTH-1:0] counter;
+reg wait_spi_ready;
 
 wire [SUBFRAME_COUNTER_WIDTH-1:0] counter_wire = spi_ready && wait_spi_ready ? counter + 1 : counter;
 wire [$clog2( DATA_WIDTH )-1:0] shift = (SUBFRAME_NUMBER - counter_wire - 1) * SPI_DATA_WIDTH;
 assign to_spi = subframe[ SPI_DATA_WIDTH-1 : 0 ];
-reg [SPI_DATA_WIDTH-1:0] subframe;
+
 
 always @( posedge clk )
     if ( rst ) subframe <= 0;
     else subframe <= from_nitta >> shift;
 
-reg wait_spi_ready;
 
 always @( posedge clk ) begin
     if ( rst ) begin

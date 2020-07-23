@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiWayIf            #-}
@@ -6,7 +7,6 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE AllowAmbiguousTypes   #-}
 
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -fno-cse #-}
@@ -20,50 +20,86 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.LuaFrontend
-    ( lua2functions, InternalFunc
+    ( lua2functions
+    , FrontendResult(..)
+    , TraceVar(..)
     ) where
 
-import           Control.Monad                 (when)
 import           Control.Monad.Identity
 import           Control.Monad.State
 import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
-import           Data.Maybe                    (fromMaybe)
+import           Data.Maybe
 import qualified Data.String.Utils             as S
 import           Data.Text                     (Text, pack, unpack)
 import qualified Data.Text                     as T
 import           Language.Lua
 import qualified NITTA.Intermediate.Functions  as F
+import           NITTA.Intermediate.Types      hiding (patch)
 import           NITTA.Model.TargetSystem
 import           NITTA.Utils                   (modify'_)
 import           Text.InterpolatedString.Perl6 (qq)
+import           Text.Printf
 
-import           Debug.Trace
-import           NITTA.Intermediate.Value
-import           Data.String
-import           NITTA.Intermediate.Variable
-import           Type.Reflection
 
-data InternalFunc = InternalFunc { iName :: String, iIn :: [String]} deriving (Show, Read)
+data FrontendResult x
+    = FrontendResult
+        { frDataFlow   :: DataFlowGraph String x
+        , frTrace      :: [ TraceVar ]
+        , frPrettyCntx :: Cntx String x -> Cntx String String
+        }
 
-fakeFuncToInternal FakeFunction {fName, fIn} = InternalFunc {iName = fName, iIn = map unpack fIn}
+data TraceVar = TraceVar{ tvFmt, tvVar :: Text }
+    deriving ( Show )
 
--- lua2functions :: (Monoid c, IsString c, Val x, Integral x, Suffix c, Ord c, Typeable c, Show c) => Text -> (DataFlowGraph c x, [InternalFunc])
+defaultFmt = "%.3f"
+
+-- |Unique variable aliases for data flow.
+type VarDict = M.Map Text ([String], [String])
+
+
+prettyCntx traceVars cntx
+    = showCntx
+        (\v x -> if v `M.member` v2fmt
+            then Just ( take (length v - 2) v, printx (v2fmt M.! v) x )
+            else Nothing)
+        cntx
+    where
+        v2fmt = M.fromList $ map (\(TraceVar fmt v) -> (T.unpack v, T.unpack fmt)) traceVars
+        printx p x
+            | 'f' `elem` p = printf p ( fromRational (toRational x) :: Double )
+            | 's' `elem` p = printf p $ show x
+            | otherwise    = printf p x
+
+
 lua2functions src
     = let
         ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         AlgBuilder{ algItems } = buildAlg ast
-        algItems' = trace (show algItems) algItems
-        fs = filter (\case Function{} -> True; _ -> False) algItems'
-        fakeFs = filter (\case FakeFunction{} -> True; _ -> False) algItems'
-        fs' = trace (show fakeFs) fs
+        fs = filter (\case Function{} -> True; _ -> False) algItems
+        varDict :: VarDict
         varDict = M.fromList
             $ map varRow
-            $ group $ sort $ concatMap fIn fs'
-        varDict' = trace (show varDict) varDict
-        alg = snd $ execState (mapM_ (store <=< function2nitta) fs') (varDict', [])
-        flg = trace (show $ fsToDataFlowGraph alg) fsToDataFlowGraph alg
-    in (flg, map fakeFuncToInternal fakeFs)
+            $ group $ sort $ concatMap fIn fs
+        alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
+        frDataFlow = fsToDataFlowGraph alg
+        traceFunctions = [ tf | tf@TraceFunction{} <- algItems ]
+
+        frTrace=if not $ null traceFunctions
+            then
+                [ TraceVar tFmt $ T.append v "#0"
+                | TraceFunction{ tFmt, tVars } <- traceFunctions
+                , v <- tVars
+                ]
+            else
+                [ TraceVar defaultFmt $ T.append iVar "#0"
+                | InputVar{ iVar } <- algItems
+                ]
+    in FrontendResult
+       { frDataFlow
+       , frTrace
+       , frPrettyCntx=prettyCntx frTrace
+       }
     where
         varRow lst@(x:_)
             = let vs = zipWith f lst [0..]
@@ -74,20 +110,18 @@ lua2functions src
             in [qq|{v'}#{i}|]
 
 
-buildAlg ast
-    = let
+buildAlg ast = flip execState st0 $ do
+        addMainInputs mainFunDef mainCall
+        mapM_ (processStatement mainName) $ funAssignStatements mainFunDef
+        addConstants
+    where
         Right ( mainName, mainCall, mainFunDef ) = findMain ast
-        alg0 = AlgBuilder
+        st0 = AlgBuilder
             { algItems=[]
             , algBuffer=[]
             , algVarGen=map (pack . show) [0..]
             , algVars=[]
             }
-        builder = do
-            addMainInputs mainFunDef mainCall
-            mapM_ (processStatement mainName) $ funAssignStatments mainFunDef
-            addConstants
-    in execState builder alg0
 
 
 data AlgBuilder x
@@ -121,15 +155,12 @@ data AlgBuilderItem x
         , fName   :: String
         , fValues :: [x]
         }
-    | FakeFunction
-        { fIn     :: [Text]
-        , fOut    :: [Text]
-        , fName   :: String
-        , fValues :: [x]
+    | TraceFunction
+        { tVars :: [ Text ]
+        , tFmt  :: Text
         }
     -- FIXME: check all local variable declaration
     deriving ( Show )
-
 
 
 -- *Translate AlgBuiler functions to nitta functions
@@ -157,7 +188,7 @@ input v = do
 output v
     | T.head v == '_' = return []
     | otherwise = gets $ \(dict, _fs) ->
-        snd (fromMaybe (error [qq|unknown variable: $v|]) (dict M.!? v))
+        snd (fromMaybe (error $ "unknown variable: " ++ show v) (dict M.!? v))
 
 store f = modify'_ $ \(dict, fs) -> (dict, f:fs)
 
@@ -198,30 +229,39 @@ addConstants = do
         addFunction Function{ fName="constant", fIn=[], fOut=[cVar], fValues=[cX] }
 
 
+parseLeftExp = map $ \case
+    VarName (Name v) -> v
+    e -> error $ "bad left expression: " ++ show e
 
-processStatement fn (LocalAssign names (Just [rexp])) = do
-    processStatement fn $ LocalAssign names Nothing
-    processStatement fn $ Assign (map VarName names) [rexp]
 
-processStatement _fn (LocalAssign names Nothing) = do
-    AlgBuilder{ algVars } <- get
-    forM_ names $ \(Name n) ->
-        when (n `elem` algVars) $ error "local variable already defined"
+-- define a local variable: @local x@ or @local x = ...@. We ignore it, because
+-- don't need to support scopes.
+processStatement _fn (LocalAssign _names Nothing)
+    = return ()
 
+processStatement fn (LocalAssign names (Just rexp))
+    = processStatement fn $ Assign (map VarName names) rexp
+
+
+
+-- e.g. @n, d = a / b@, or @n, d = f()@
+processStatement _fn (Assign lexps [rexp])
+    | length lexps > 1 = do
+        let outs = parseLeftExp lexps
+        diff <- renameVarsIfNeeded outs
+        rightExp diff outs rexp
+        flushBuffer diff outs
+
+-- e.g. @a = 1@ or @a, b = 1, 2@
 processStatement _fn st@(Assign lexps rexps)
-    = if
-        | length lexps == length rexps -> do
-            let outs = map (\case (VarName (Name v)) -> [v]; l -> error $ "bad left expression: " ++ show l) lexps
-            diff <- concat <$> mapM renameVarsIfNeeded outs
-            zipWithM_ (rightExp diff) outs rexps
-            flushBuffer
-        | length lexps > 1 && length rexps == 1 -> do
-            let outs = map (\case (VarName (Name v)) -> v; l -> error $ "bad left expression: " ++ show l) lexps
-            diff <- renameVarsIfNeeded outs
-            rightExp diff outs $ head rexps
-            flushBuffer
-        | otherwise -> error $ "processStatement: " ++ show st
+    | length lexps == length rexps = do
+        let outs = parseLeftExp lexps
+        diff <- renameVarsIfNeeded outs
+        zipWithM_ (rightExp diff) (map (:[]) outs) rexps
+        flushBuffer diff outs
+    | otherwise = error $ "assignment mismatch: " ++ show st
 
+-- recursive call of main function
 processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args)))
     | fn == fName
     = do
@@ -231,17 +271,23 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
         where
             f InputVar{ iX, iVar } rexp = do
                 i <- expArg [] rexp
-                let fun = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
-                modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=fun : algItems }
+                let loop = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX] }
+                modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=loop : algItems }
             f _ _ = undefined
+
+processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName (Name "debug"))) (Name fName))) (Args args))) = do
+    fIn <- mapM (expArg []) args
+    case ( fName, fIn ) of
+        ("trace", tFmt:vs)
+            | T.isPrefixOf "\"" tFmt && T.isPrefixOf "\"" tFmt
+            -> addFunction TraceFunction{ tVars=vs, tFmt=T.replace "\"" "" tFmt }
+        ("trace", vs) -> addFunction TraceFunction{ tVars=vs, tFmt=defaultFmt }
+        _ -> error $ "unknown debug method: " ++ show fName ++ " " ++ show args
+
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
     fIn <- mapM (expArg []) args
-
-    let fName' = trace (show fName) fName
-    if fName' == "trace"
-      then addFunction FakeFunction{ fName=unpack fName', fIn, fOut=[], fValues=[] }
-      else addFunction Function{ fName=unpack fName', fIn, fOut=[], fValues=[] }
+    addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[] }
 
 processStatement _fn st = error $ "statement: " ++ show st
 
@@ -276,11 +322,9 @@ rightExp diff [a] (PrefixExp (PEVar (VarName (Name b)))) -- a = b
 rightExp diff out (PrefixExp (Paren e)) -- a = (...)
     = rightExp diff out e
 
-rightExp diff [a] n@(Number _ _) = do -- a = 42
-    b <- expConstant (T.concat ["@", a, "@const"]) n
-    addItemToBuffer Alias{ aFrom=a, aTo=applyPatch diff b }
+rightExp diff [a] n@(Number _ _) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "reg"))) (Args [n]))))
 
-rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] $ Number numType $ T.cons '-' n
+rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] $ (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "reg"))) (Args [Number numType $ T.cons '-' n]))))
 
 rightExp diff [a] (Unop Neg expr@(PrefixExp _)) =
     -- FIXME: add negative function
@@ -292,6 +336,8 @@ rightExp _diff _out rexp = error $ "rightExp: " ++ show rexp
 
 
 expArg _diff n@(Number _ _) = expConstant "@const" n
+
+expArg _diff (String s) = return s
 
 expArg _diff (PrefixExp (PEVar (VarName (Name var)))) = findAlias var
 
@@ -335,6 +381,22 @@ expConstant suffix (Number _ textX) = do
                 []
             return cVar
         Just _ -> error "internal error"
+
+expConstant suffix (String textX) = do
+    AlgBuilder{ algItems } <- get
+    case find (\case Constant{ cTextX } | cTextX == textX -> True; _ -> False) algItems of
+        Just Constant{ cVar } -> return cVar
+        Nothing -> do
+            let cVar = T.concat [ pack "_", textX, suffix ]
+            addItem Constant
+                { cX=0
+                , cVar
+                , cTextX=textX
+                }
+                []
+            return cVar
+        Just _ -> error "internal error"
+
 expConstant _ _ = undefined
 
 
@@ -342,18 +404,14 @@ expConstant _ _ = undefined
 addFunction f@Function{ fOut } = do
     diff <- renameVarsIfNeeded fOut
     patchAndAddFunction f diff
-addFunction f@FakeFunction{ fOut } = do
-    diff <- renameVarsIfNeeded fOut
-    patchAndAddFunction f diff
+addFunction f@TraceFunction{} =
+    modify'_ $ \alg@AlgBuilder{ algItems } ->
+        alg{ algItems=f : algItems }
 addFunction _ = error "addFunction error"
 
 
 
 patchAndAddFunction f@Function{ fIn } diff = do
-    let fIn' = map (applyPatch diff) fIn
-    modify'_ $ \alg@AlgBuilder{ algItems } ->
-        alg{ algItems=f{ fIn=fIn' } : algItems }
-patchAndAddFunction f@FakeFunction{ fIn } diff = do
     let fIn' = map (applyPatch diff) fIn
     modify'_ $ \alg@AlgBuilder{ algItems } ->
         alg{ algItems=f{ fIn=fIn' } : algItems }
@@ -389,15 +447,15 @@ renameFromTo rFrom rTo = do
             | otherwise = v
 
 
+funAssignStatements (FunAssign _ (FunBody _ _ (Block statments _))) = statments
+funAssignStatements _                                               = error "funAssignStatements : not function assignment"
 
-funAssignStatments (FunAssign _ (FunBody _ _ (Block statments _))) = statments
-funAssignStatments _                                               = error "funAssignStatments : not function assignment"
 
-
-flushBuffer = modify'_
-    $ \alg@AlgBuilder{ algBuffer, algItems } -> alg
+flushBuffer diff outs = modify'_
+    $ \alg@AlgBuilder{ algBuffer, algItems, algVars } -> alg
         { algItems=algBuffer ++ algItems
         , algBuffer=[]
+        , algVars=outs ++ map (applyPatch diff) algVars
         }
 
 

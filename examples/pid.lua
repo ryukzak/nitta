@@ -7,7 +7,6 @@ function pid(I, prev_err)
     local getValueSPI = receive()
 
     err = temperature_desired - getValueSPI
-
     P = Kp * err
     I = I + Ki * err
     D = Kd * (err - prev_err)

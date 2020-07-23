@@ -9,15 +9,14 @@
 {-# OPTIONS_GHC -fno-cse #-}
 
 {-|
-Module      : NITTA.Model.MicroArchitecture
+Module      : NITTA.Model.Microarchitecture
 Description : Create micro architecture functions
 Copyright   : (c) Daniil Prohorov, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
-module NITTA.Model.MicroArchitecture
+module NITTA.Model.Microarchitecture
     ( add
     , addCustom
     , addS
@@ -33,7 +32,7 @@ import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Project.Implementation
+import           NITTA.Project
 
 
 -- |__Eval state and create microarch__
@@ -50,13 +49,15 @@ intersPortsError ports usedPorts tag
 -- |Create environment for PU
 puEnv tag =
     TargetEnvironment
-        { signalClk   = "clk"
-        , signalRst   = "rst"
-        , signalCycle = "cycle"
-        , inputPort   = inputPortTag
-        , outputPort  = outputPortTag
-        , inoutPort   = inoutPortTag
-        , unitEnv     =
+        { signalClk        = "clk"
+        , signalRst        = "rst"
+        , signalCycleBegin = "signal_cycle_begin"
+        , signalInCycle    = "signal_computation"
+        , signalCycleEnd   = "signal_cycle_end"
+        , inputPort        = inputPortTag
+        , outputPort       = outputPortTag
+        , inoutPort        = inoutPortTag
+        , unitEnv =
             ProcessUnitEnv
                 { parameterAttrWidth = InlineParam "ATTR_WIDTH"
                 , dataIn             = "data_bus"

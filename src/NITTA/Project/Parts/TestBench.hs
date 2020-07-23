@@ -33,7 +33,7 @@ import qualified Data.Text                       as T
 import           Data.Typeable
 import           GHC.Generics                    (Generic)
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems.Endpoint
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
@@ -153,7 +153,9 @@ snippetTestBench
             TargetEnvironment
                 { signalClk="clk"
                 , signalRst="rst"
-                , signalCycle="cycle"
+                , signalCycleBegin="flag_cycle_begin"
+                , signalInCycle="flag_in_cycle"
+                , signalCycleEnd="flag_cycle_end"
                 , inputPort=undefined
                 , outputPort=undefined
                 , inoutPort=undefined

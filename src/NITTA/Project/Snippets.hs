@@ -21,7 +21,7 @@ module NITTA.Project.Snippets
     ) where
 
 import           NITTA.Utils
-import           Text.InterpolatedString.Perl6   (qc)
+import           Text.InterpolatedString.Perl6 (qc)
 import           Text.Regex
 
 
@@ -87,4 +87,3 @@ assertRe = mkRegex $ concat
     , "expect:[[:space:]]*([[:digit:]]+)[[:space:]]*"
     , "([^\t ]+)"
     ]
-

@@ -18,7 +18,6 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
 module NITTA.Intermediate.Functions.Accum
     ( Acc(..), Action(..), Sign(..)
       -- * Acc to function
@@ -32,9 +31,10 @@ import           Data.List.Split               (splitWhen)
 import           Data.Set                      (elems, fromList)
 import           Data.Typeable
 import           NITTA.Intermediate.Types
-import           NITTA.Utils                   (unionsMap)
+import           NITTA.Utils.Base
 import           Text.InterpolatedString.Perl6 (qc)
 import           Text.Regex
+
 
 data Sign = Plus | Minus deriving (Typeable, Eq)
 
@@ -46,7 +46,7 @@ data Action v = Push Sign (I v) | Pull (O v) deriving (Typeable, Eq)
 
 instance (Show v) => Show ( Action v ) where
     show (Push s (I v)) = [qc| { show s } { show v }|]
-    show (Pull (O v)) = concatMap (\res -> [qc| => {show res}|]) (elems v) ++ ";"
+    show (Pull (O v))   = concatMap (\res -> [qc| => {show res}|]) (elems v) ++ ";"
 
 newtype Acc v x = Acc { actions :: [Action v] } deriving (Typeable, Eq)
 
@@ -153,8 +153,8 @@ instance ( Var v, Num x ) => FunctionSimulation (Acc v x) v x where
                 | otherwise = (accum, Left "Error in accum Push value to context")
 
             select (accum, Right context) (Push s (I v)) = operation v s accum context
-            select (accum, Right context) (Pull (O vs)) = (accum, setZipX context vs accum)
-            select (accum, Left err) _ = (accum, Left err)
+            select (accum, Right context) (Pull (O vs))  = (accum, setZipX context vs accum)
+            select (accum, Left err) _                   = (accum, Left err)
 
             (_, eitherContext) = foldl select (0, Right cntx) lst
         in eitherContext

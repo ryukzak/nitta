@@ -29,7 +29,7 @@ module NITTA.Intermediate.Types
       -- *Functional simulation
     , FunctionSimulation(..)
     , CycleCntx(..), Cntx(..)
-    , filterCntx
+    , showCntx, cntx2table
     , getX, setZipX, cntxReceivedBySlice
       -- *Patch
     , Patch(..), Changeset(..), reverseDiff
@@ -41,13 +41,14 @@ import           Data.Default
 import           Data.List
 import qualified Data.Map                    as M
 import           Data.Maybe
-import qualified Data.Set                    as S
+import qualified Data.Set                    as S hiding (split)
 import qualified Data.String.Utils           as S
 import           Data.Tuple
 import           Data.Typeable
 import           GHC.Generics
 import           NITTA.Intermediate.Value
 import           NITTA.Intermediate.Variable
+import           Text.PrettyPrint.Boxes
 
 
 -- |Input variable.
@@ -233,17 +234,45 @@ data Cntx v x
     = Cntx
         { cntxProcess     :: [ CycleCntx v x ]
           -- ^all variables on each process cycle
-        , cntxReceived    :: M.Map v [x]
+        , cntxReceived    :: M.Map v [ x ]
           -- ^sequences of all received values, one value per process cycle
         , cntxCycleNumber :: Int
         }
-instance {-# OVERLAPS #-} ( Show v, Show x ) => Show (Cntx v x) where
-    show Cntx{ cntxProcess, cntxCycleNumber } = let
-            header = S.join "\t" $ sort $ map show $ M.keys $ cycleCntx $ head cntxProcess
-            body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
-        in S.replace "\"" "" $ S.join "\n" (header : body)
-        where
-            row cntx = S.join "\t" $ map (show . snd) $ sortOn (show . fst) $ M.assocs cntx
+
+
+instance ( Show v, Val x ) => Show ( Cntx v x ) where
+    show cntx = cntx2table $ showCntx (\v x -> Just (show' v, show x)) cntx
+        where show' = S.replace "\"" "" . show
+
+
+showCntx f Cntx{ cntxProcess, cntxCycleNumber }
+    = Cntx
+        { cntxProcess=map (CycleCntx . foo . cycleCntx) cntxProcess
+        , cntxReceived=def
+        , cntxCycleNumber=cntxCycleNumber
+        }
+    where
+        foo vx = M.fromList
+            [ (v', x')
+            | (v, x) <- M.assocs vx
+            , let vx' = f v x
+            , isJust vx'
+            , let Just (v', x') = vx'
+            ]
+
+
+cntx2table Cntx{ cntxProcess, cntxCycleNumber }
+    = let
+        header = sort $ M.keys $ cycleCntx $ head cntxProcess
+        body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
+        row cntx = map snd $ zip header $ sortedValues cntx
+        table = map (\(h, b) -> h : b) $ zip header (transpose body)
+    in
+        render $ hsep 1 left $
+            map (vcat left) $ map (map text) table
+    where
+        sortedValues cntx = map snd $ sortOn fst $ M.assocs cntx
+
 
 instance Default (Cntx v x) where
     def = Cntx
@@ -251,13 +280,6 @@ instance Default (Cntx v x) where
         , cntxReceived=def
         , cntxCycleNumber=5
         }
-
--- |Show only listed variables in context
-filterCntx vs cntx@Cntx{ cntxProcess }
-    = cntx{ cntxProcess=map
-              (CycleCntx . (`M.intersection` (M.fromList $ map (\v -> (v, undefined)) vs)) . cycleCntx)
-              cntxProcess
-          }
 
 
 -- |Make sequence of received values '[ Map v x ]'

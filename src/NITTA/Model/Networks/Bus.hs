@@ -54,12 +54,10 @@ import qualified Data.String.Utils               as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
-import           NITTA.Model.Problems.Binding
-import           NITTA.Model.Problems.Dataflow
-import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.Problems.Refactor
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
+-- import           NITTA.Project
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
@@ -96,12 +94,12 @@ bindedFunctions puTitle BusNetwork{ bnBinded }
     | otherwise = []
 
 
-busNetwork w ioSync pus = BusNetwork
+busNetwork signalBusWidth ioSync pus = BusNetwork
         { bnRemains=[]
         , bnBinded=M.empty
         , bnProcess=def
         , bnPus=M.fromList pus'
-        , bnSignalBusWidth=w
+        , bnSignalBusWidth=signalBusWidth
         , ioSync
         , bnIOPorts=BusNetworkIO{ extInputs, extOutputs }
         , bnEnv
@@ -110,7 +108,9 @@ busNetwork w ioSync pus = BusNetwork
         bnEnv = TargetEnvironment
             { signalClk="clk"
             , signalRst="rst"
-            , signalCycle="cycle"
+            , signalCycleBegin="flag_cycle_begin"
+            , signalInCycle="flag_in_cycle"
+            , signalCycleEnd="flag_cycle_end"
             , inputPort= \(InputPortTag n) -> n
             , outputPort= \(OutputPortTag n) -> n
             , inoutPort= \(InoutPortTag n) -> n
@@ -437,25 +437,31 @@ instance ( VarValTime v x t
                             )
                         ( input                     clk
                         , input                     rst
-                        , output                    cycle
+                        , input                     is_drop_allow
+                        , output                    flag_cycle_begin
+                        , output                    flag_in_cycle
+                        , output                    flag_cycle_end
                         { inline $ externalPortsDecl $ bnExternalPorts bnPus }
                         , output              [7:0] debug_status
                         , output              [7:0] debug_bus1
                         , output              [7:0] debug_bus2
-                        , input                     is_drop_allow
                         );
 
                     parameter MICROCODE_WIDTH = { bnSignalBusWidth };
-                    // Sub module_ instances
+
+                    wire start, stop;
+
                     wire [MICROCODE_WIDTH-1:0] control_bus;
                     wire [DATA_WIDTH-1:0] data_bus;
                     wire [ATTR_WIDTH-1:0] attr_bus;
-                    wire start, stop;
 
-                    wire [7:0] debug_pc;
-                    assign debug_status = \{ cycle, debug_pc[6:0] };
+                    // Debug
+                    assign debug_status = \{ flag_cycle_begin, flag_in_cycle, flag_cycle_end, data_bus[4:0] };
                     assign debug_bus1 = data_bus[7:0];
                     assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
+
+
+                    // Sub module instances
 
                     pu_simple_control #
                             ( .MICROCODE_WIDTH( MICROCODE_WIDTH )
@@ -464,10 +470,14 @@ instance ( VarValTime v x t
                             ) control_unit
                         ( .clk( clk )
                         , .rst( rst )
-                        , .start_cycle( { isDrowAllowSignal ioSync } || stop )
-                        , .cycle( cycle )
+
+                        , .signal_cycle_start( { isDrowAllowSignal ioSync } || stop )
+
                         , .signals_out( control_bus )
-                        , .trace_pc( debug_pc )
+
+                        , .flag_cycle_begin( flag_cycle_begin )
+                        , .flag_in_cycle( flag_in_cycle )
+                        , .flag_cycle_end( flag_cycle_end )
                         );
 
                     { inline $ S.join "\\n\\n" instances }
@@ -511,7 +521,7 @@ instance ( VarValTime v x t
 
     hardwareInstance tag BusNetwork{} TargetEnvironment{ unitEnv=NetworkEnv, signalClk, signalRst } _ports ioPorts
         | let
-            io2v n = "    , " ++ n ++ "( " ++ n ++ " )"
+            io2v n = ", ." ++ n ++ "( " ++ n ++ " )"
             is = map (\(InputPortTag n) -> io2v n) $ inputPorts ioPorts
             os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts
         = codeBlock [qc|
@@ -635,7 +645,7 @@ instance ( VarValTime v x t
                     ) net
                 ( .clk( clk )
                 , .rst( rst )
-                , .cycle( cycle )
+                , .flag_cycle_begin( cycle )
                 { externalIO }
                 // if 1 - The process cycle are indipendent from a SPI.
                 // else - The process cycle are wait for the SPI.

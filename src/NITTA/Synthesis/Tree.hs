@@ -49,11 +49,10 @@ import           Control.Concurrent.STM
 import           Control.Monad                   (forM, unless)
 import           Data.Default
 import           Data.List.Split
-import           Data.Semigroup                  (Semigroup, (<>))
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
-import           NITTA.Model.Problems.Whole
+import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem        (ModelState (..))
 import           NITTA.Model.Types
