@@ -672,6 +672,14 @@ instance ( VarValTime v x t
                 end
 
 
+            // TIMEOUT
+            initial
+                begin
+                repeat (100000) @(posedge clk);
+                $display("FAIL too long simulation process");
+                $finish;
+                end
+
 
             ////////////////////////////////////////////////////////////
             // Utils
