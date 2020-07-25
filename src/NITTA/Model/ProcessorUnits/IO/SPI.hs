@@ -172,6 +172,9 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
             frameWordCount = max (length receivedVariablesSeq) (length $ sendedVariableSeq)
             frameWidth = frameWordCount * wordWidth
             timeLag = 10 :: Int
+            sendingDuration = max
+                (teComputationDuration + 2)
+                (frameWidth * 2 + bounceFilter + 2)
 
             toVerilogLiteral xs = let
                     xs' = map toVerilogLiteral' xs
@@ -198,7 +201,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                             { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
                             { tag }_io_test_start_transaction = 1;                           @(posedge { signalClk });
                             { tag }_io_test_start_transaction = 0;                           @(posedge { signalClk });
-                            repeat( { frameWidth * 2 + bounceFilter + 2 } ) @(posedge { signalClk });
+                            repeat( { sendingDuration } ) @(posedge { signalClk });
 
                             |]
 
