@@ -156,7 +156,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
         TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
         SimpleIOPorts{..}
         ioPorts
-        cntx@Cntx{ cntxCycleNumber, cntxProcess }
+        TestEnvironment{ teCntx=cntx@Cntx{ cntxCycleNumber, cntxProcess }, teComputationDuration }
         = let
             receivedVariablesSeq = mapMaybe (\f -> case castF f of
                     Just Receive{} -> Just $ oneOf $ variables f

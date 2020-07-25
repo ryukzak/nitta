@@ -575,7 +575,11 @@ instance ( VarValTime v x t
                 [ tbEnv
                 | (t, PU{ unit, systemEnv, ports, ioPorts }) <- M.assocs bnPus
                 , let t' = filter (/= '"') $ show t
-                , let tbEnv = testEnvironment t' unit systemEnv ports ioPorts pTestCntx
+                , let tbEnv = testEnvironment t' unit systemEnv ports ioPorts
+                                  TestEnvironment
+                                      { teCntx=pTestCntx
+                                      , teComputationDuration=fromEnum $ nextTick bnProcess
+                                      }
                 , not $ null tbEnv
                 ]
 
