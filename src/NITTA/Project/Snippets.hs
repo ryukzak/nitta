@@ -17,12 +17,10 @@ module NITTA.Project.Snippets
     ( snippetClkGen
     , snippetDumpFile
     , snippetInitialFinish
-    , snippetTraceAndCheck, assertRe
     ) where
 
 import           NITTA.Utils
 import           Text.InterpolatedString.Perl6 (qc)
-import           Text.Regex
 
 
 snippetClkGen :: String
@@ -53,37 +51,3 @@ snippetInitialFinish block = codeBlock [qc|
         $finish;
     end
     |]
-
-snippetTraceAndCheck :: Int -> String
-snippetTraceAndCheck width = codeBlock [qc|
-    task trace;
-        input integer cycle;
-        input integer tick;
-        input [{ width }-1:0] dt;
-        begin
-            $display("cycle: %d\ttick: %d\tactual: %d", cycle, tick, dt);
-        end
-    endtask
-
-    task check;
-        input integer cycle;
-        input integer tick;
-        input [{ width }-1:0] dt;
-        input [{ width }-1:0] expect;
-        input [256*8-1:0] var;
-        begin
-            $write("cycle: %d\ttick: %d\tactual: %d\texpect: %d\t%0s", cycle, tick, dt, expect, var);
-            if ( !( dt === expect ) ) $display("\t\tFAIL");
-            else $display();
-        end
-    endtask
-    |]
-
-assertRe = mkRegex $ concat
-    -- cycle:           4	tick:           2	actual:          1	expect:          1	nst_inline_1_0:0
-    [ "cycle:[[:space:]]*([[:digit:]]+)[[:space:]]*"
-    , "tick:[[:space:]]*([[:digit:]]+)[[:space:]]*"
-    , "actual:[[:space:]]*([[:digit:]]+)[[:space:]]*"
-    , "expect:[[:space:]]*([[:digit:]]+)[[:space:]]*"
-    , "([^\t ]+)"
-    ]
