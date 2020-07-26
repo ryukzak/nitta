@@ -1,8 +1,9 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE KindSignatures        #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE KindSignatures         #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE QuasiQuotes            #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -23,6 +24,7 @@ module NITTA.Intermediate.Value
   ( -- *Type classes
     FixedPointCompatible(..)
   , Val(..)
+  , DefaultX(..)
   , scalingFactor
     -- *Value types
   , IntX(..)
@@ -38,6 +40,12 @@ import           GHC.TypeLits
 import           Numeric
 import           Text.InterpolatedString.Perl6 (qc)
 import           Text.Printf
+import           Text.Regex
+
+
+class ( Default x ) => DefaultX u x | u -> x where
+    defX :: u -> x
+    defX _ = def
 
 
 -- |Type class for Value types.

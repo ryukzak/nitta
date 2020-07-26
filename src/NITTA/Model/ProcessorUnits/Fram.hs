@@ -71,6 +71,9 @@ instance ( Default t, Default x
             defaultSize = 16
 
 
+instance Default x => DefaultX (Fram v x t) x
+
+
 instance ( VarValTime v x t
         ) => WithFunctions (Fram v x t) (F v x) where
     functions Fram{ remainRegs, memory }

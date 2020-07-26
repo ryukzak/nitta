@@ -92,6 +92,9 @@ instance ( VarValTime v x t ) => Default (Accum v x t) where
         , isInit=True
         }
 
+instance Default x => DefaultX (Accum v x t) x
+
+
 setRemain f
     | Just (Acc vs) <- castF f = zip (pushActionGroups vs) (pullActionGroups vs)
     | otherwise                = error "Error! Function is not Acc"

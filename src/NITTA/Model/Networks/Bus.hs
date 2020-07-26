@@ -94,6 +94,9 @@ bindedFunctions puTitle BusNetwork{ bnBinded }
     | otherwise = []
 
 
+instance ( Default x ) => DefaultX (BusNetwork tag v x t) x
+
+
 busNetwork signalBusWidth ioSync pus = BusNetwork
         { bnRemains=[]
         , bnBinded=M.empty
