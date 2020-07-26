@@ -85,7 +85,7 @@ values2dump vs
 
 hdlValDump x
     = let
-        v = verilogInteger x
+        v = toVerilogLit x
         w = finiteBitSize x
         bins = map (testBit v) $ reverse [0 .. w - 1]
 
