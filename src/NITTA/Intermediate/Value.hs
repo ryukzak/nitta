@@ -83,12 +83,21 @@ task assert;
         $write("%0d:%0d\t", cycle, tick);
         $write("actual: %d\t", actual);
         $write("expect: %d\t", expect);
-        $write("var: %0s\t", var);
+        $write("var: %0s", var);
         if ( !( actual === expect ) ) $write("FAIL");
         $display();
     end
 endtask // assert
 |]
+
+    -- |RE for extraction assertion data from a testbench log
+    verilogAssertRE :: x -> Regex
+    verilogAssertRE _ = mkRegex $ concat
+        [ "([[:digit:]]+):([[:digit:]]+)\t"
+        , "actual: ([[:digit:]]+)\t"
+        , "expect: ([[:digit:]]+)\t"
+        , "var: ([^\t ]+)"
+        ]
 
 
 -- |Type class for values, which contain information about fractional part of value (for fixed point arithmetics).
@@ -299,6 +308,15 @@ function real fxtor(input integer x);
     end
 endfunction // fxtor
 |]
+
+    verilogAssertRE _ = mkRegex $ concat
+        [ "([[:digit:]]+):([[:digit:]]+)\t"
+        , "actual: ([[:digit:]]+\\.[[:digit:]]+)\t"
+        , "expect: ([[:digit:]]+\\.[[:digit:]]+)\t"
+        , "var: ([^\t ]+)"
+        ]
+
+
 
 instance ( KnownNat m, KnownNat b ) => FixedPointCompatible ( FX m b ) where
     fractionalBitSize x = finiteBitSize x - fromInteger (natVal (Proxy :: Proxy m))
