@@ -38,7 +38,7 @@ instance ( TargetSystemComponent (m v x t), Testable (m v x t) v x
 
 
 makefile prj@Project{ pPath }
-    = writeFile (joinPath [ pPath, "Makefile" ]) $ codeBlock [qc|
+    = writeFile (joinPath [ pPath, "Makefile" ]) $ space2tab 4 $ codeBlock [qc|
         icarus:
             iverilog { S.join " " $ projectFiles prj }
             vvp a.out
