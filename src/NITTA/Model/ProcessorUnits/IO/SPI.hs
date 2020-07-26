@@ -156,7 +156,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
         TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort }
         SimpleIOPorts{..}
         ioPorts
-        cntx@Cntx{ cntxCycleNumber, cntxProcess }
+        TestEnvironment{ teCntx=cntx@Cntx{ cntxCycleNumber, cntxProcess }, teComputationDuration }
         = let
             receivedVariablesSeq = mapMaybe (\f -> case castF f of
                     Just Receive{} -> Just $ oneOf $ variables f
@@ -172,14 +172,17 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
             frameWordCount = max (length receivedVariablesSeq) (length $ sendedVariableSeq)
             frameWidth = frameWordCount * wordWidth
             timeLag = 10 :: Int
+            sendingDuration = max
+                (teComputationDuration + 2)
+                (frameWidth * 2 + bounceFilter + 2)
 
             toVerilogLiteral xs = let
                     xs' = map toVerilogLiteral' xs
                     placeholder = replicate (frameWordCount - length xs) [qc|{ wordWidth }'d00|]
                 in S.join ", " (xs' ++ placeholder)
             toVerilogLiteral' x
-                | abs x /= x = [qc|-{ wordWidth }'sd{ verilogInteger (-x) }|]
-                | otherwise = [qc|{ wordWidth }'sd{ verilogInteger x }|]
+                | abs x /= x = [qc|-{ wordWidth }'sd{ toVerilogLit (-x) }|]
+                | otherwise = [qc|{ wordWidth }'sd{ toVerilogLit x }|]
 
             disable = codeBlock [qc|
                 initial begin
@@ -198,7 +201,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                             { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
                             { tag }_io_test_start_transaction = 1;                           @(posedge { signalClk });
                             { tag }_io_test_start_transaction = 0;                           @(posedge { signalClk });
-                            repeat( { frameWidth * 2 + bounceFilter + 2 } ) @(posedge { signalClk });
+                            repeat( { sendingDuration } ) @(posedge { signalClk });
 
                             |]
 

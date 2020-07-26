@@ -575,7 +575,11 @@ instance ( VarValTime v x t
                 [ tbEnv
                 | (t, PU{ unit, systemEnv, ports, ioPorts }) <- M.assocs bnPus
                 , let t' = filter (/= '"') $ show t
-                , let tbEnv = testEnvironment t' unit systemEnv ports ioPorts pTestCntx
+                , let tbEnv = testEnvironment t' unit systemEnv ports ioPorts
+                                  TestEnvironment
+                                      { teCntx=pTestCntx
+                                      , teComputationDuration=fromEnum $ nextTick bnProcess
+                                      }
                 , not $ null tbEnv
                 ]
 
@@ -594,7 +598,7 @@ instance ( VarValTime v x t
             assertion ( cycleI, t, Nothing )
                 = codeLine [qc|@(posedge clk); trace({ cycleI }, { t }, net.data_bus);|]
             assertion ( cycleI, t, Just (v, x) )
-                = codeLine [qc|@(posedge clk); check({ cycleI }, { t }, net.data_bus, { verilogInteger x }, { v });|]
+                = codeLine [qc|@(posedge clk); assert({ cycleI }, { t }, net.data_bus, { toVerilogLit x }, { v });|]
 
         in Immediate (moduleName pName n ++ "_tb.v") $ codeBlock [qc|
             `timescale 1 ps / 1 ps
@@ -668,14 +672,21 @@ instance ( VarValTime v x t
                 end
 
 
+            // TIMEOUT
+            initial
+                begin
+                repeat (100000) @(posedge clk);
+                $display("FAIL too long simulation process");
+                $finish;
+                end
+
 
             ////////////////////////////////////////////////////////////
             // Utils
-            { inline $ snippetTraceAndCheck $ finiteBitSize (def :: x) }
+            { inline $ verilogHelper (def :: x) }
 
             endmodule
             |]
-
         where
             defEnvInitFlag flags Sync = S.join " && "$ "1'b1" : flags
             defEnvInitFlag flags ASync = S.join " || " $ "1'b1" : flags

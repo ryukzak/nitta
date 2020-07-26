@@ -10,7 +10,7 @@ Stability   : experimental
 -}
 
 module NITTA.Utils.CodeFormat
-    ( codeBlock, inline, codeLine, comment
+    ( codeBlock, inline, codeLine, comment, space2tab
     ) where
 
 
@@ -54,3 +54,6 @@ codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
 
 -- |Simple function for writing just one line of something
 codeLine str = dropWhile (== ' ') str ++ "\n"
+
+-- |Convert space sequence with specific length to tabs
+space2tab n = S.replace (take n $ repeat ' ') "\t"
