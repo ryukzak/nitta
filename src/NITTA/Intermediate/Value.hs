@@ -83,7 +83,7 @@ task assert;
         $write("%0d:%0d\t", cycle, tick);
         $write("actual: %d\t", actual);
         $write("expect: %d\t", expect);
-        $write("var: %0s", var);
+        $write("var: %0s\t", var);
         if ( !( actual === expect ) ) $write("FAIL");
         $display();
     end
@@ -96,7 +96,7 @@ endtask // assert
         [ "([[:digit:]]+):([[:digit:]]+)\t"
         , "actual: ([[:digit:]]+)\t"
         , "expect: ([[:digit:]]+)\t"
-        , "var: ([^\t ]+)"
+        , "var: ([^ \t\n]+)"
         ]
 
 
@@ -313,7 +313,7 @@ endfunction // fxtor
         [ "([[:digit:]]+):([[:digit:]]+)\t"
         , "actual: ([[:digit:]]+\\.[[:digit:]]+)\t"
         , "expect: ([[:digit:]]+\\.[[:digit:]]+)\t"
-        , "var: ([^\t ]+)"
+        , "var: ([^ \t\n]+)"
         ]
 
 

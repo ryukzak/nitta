@@ -23,7 +23,7 @@ Stability   : experimental
 -}
 module Main ( main ) where
 
-import           Control.Monad                   (void, when)
+import           Control.Monad                   (when)
 import           Data.Default                    (def)
 import           Data.Maybe
 import           Data.Proxy
@@ -37,6 +37,7 @@ import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Project.Parts.TestBench
 import           NITTA.TargetSynthesis           (TargetSynthesis (..),
                                                   mkModelWithOneNetwork,
                                                   runTargetSynthesis)
@@ -106,15 +107,17 @@ selectCAD True Nothing src tReceivedValues n _ma = do
 selectCAD _ (Just port) src received _n ma
     = backendServer port received $ mkModelWithOneNetwork ma $ frDataFlow $ lua2functions src
 
-selectCAD _ Nothing src received n ma = void $ runTargetSynthesis def
+selectCAD _ Nothing src received n ma = do
+    let FrontendResult{ frDataFlow, frPrettyCntx } = lua2functions src
+    Right TestbenchReport{ tbLogicalSimulationCntx } <- runTargetSynthesis def
         { tName="main"
         , tMicroArch=ma
-        , tDFG=frDataFlow $ lua2functions src
+        , tDFG=frDataFlow
         , tVerbose=True
         , tReceivedValues=received
         , tSimulationCycleN=n
         }
-
+    putStrLn $ cntx2table $ frPrettyCntx tbLogicalSimulationCntx
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
 

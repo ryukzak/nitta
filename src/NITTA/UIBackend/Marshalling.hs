@@ -31,6 +31,7 @@ module NITTA.UIBackend.Marshalling
     , NodeView, EdgeView, FView
     , TreeView, viewNodeTree
     , IntervalView, TimeConstrainView, UnitEndpointView(..)
+    , TestbenchReportView(..)
     ) where
 
 import           Control.Concurrent.STM
@@ -328,7 +329,29 @@ instance ( VarValTimeJSON v x t
         ]
 
 instance ( ToJSONKey v, ToJSON v, ToJSON x ) => ToJSON (CycleCntx v x)
-instance ( ToJSONKey v, ToJSON v, ToJSON x ) => ToJSON (TestbenchReport v x)
+
+data TestbenchReportView v x
+    = TestbenchReportView
+        { tbStatus                   :: Bool
+        , tbPath                     :: String
+        , tbFiles                    :: [ String ]
+        , tbFunctions                :: [ String ]
+        , tbSynthesisSteps           :: [ String ]
+        , tbCompilerDump             :: [ String ]
+        , tbSimulationDump           :: [ String ]
+        , tbFunctionalSimulationCntx :: [ HM.HashMap v x ]
+        , tbLogicalSimulationCntx    :: [ HM.HashMap v x ]
+        }
+    deriving ( Generic )
+
+instance ( ToJSONKey v, ToJSON x ) => ToJSON (TestbenchReportView v x)
+
+instance ( Eq v, Hashable v ) => Viewable (TestbenchReport v x) (TestbenchReportView v x) where
+    view TestbenchReport{ tbLogicalSimulationCntx, .. } = TestbenchReportView
+        { tbLogicalSimulationCntx=map (HM.fromList . M.assocs . cycleCntx) $ cntxProcess tbLogicalSimulationCntx
+        , ..
+        }
+
 
 
 -- *Simple synthesis

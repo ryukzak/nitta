@@ -23,6 +23,7 @@ module NITTA.Project.Utils
     ) where
 
 import           Control.Monad                    (unless)
+import           Data.Default
 import qualified Data.HashMap.Strict              as HM
 import qualified Data.List                        as L
 import qualified Data.Map                         as M
@@ -83,7 +84,7 @@ runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNu
         , tbCompilerDump=dump compileOut compileErr
         , tbSimulationDump=dump simOut simErr
         , tbFunctionalSimulationCntx=map (HM.fromList . M.assocs . cycleCntx) $ take cntxCycleNumber cntxProcess
-        , tbLogicalSimulationCntx=toCntxs $ extractLogValues (defX pUnit) simOut
+        , tbLogicalSimulationCntx=log2cntx $ extractLogValues (defX pUnit) simOut
         }
     where
         createIVerilogProcess workdir files = (proc "iverilog" files){ cwd=Just workdir }
@@ -93,12 +94,19 @@ runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNu
 extractLogValues x0 text = mapMaybe f $ lines text
     where
         f s = case matchRegex (verilogAssertRE x0) s of
-            Just [c, _t, x, _e, v] -> Just (read c, v, fromVerilog x)
+            Just [c, _t, x, _e, v] -> Just (read c, v, read x)
             _                      -> Nothing
 
-toCntxs lst0 = inner (0 :: Int) lst0
+log2cntx lst0 = Cntx
+    { cntxProcess
+    , cntxReceived=def
+    , cntxCycleNumber=length cntxProcess
+    }
     where
+        cntxProcess = inner (0 :: Int) lst0
         inner n lst
             | (xs, ys) <- L.partition (\(c, _v, _x) -> c == n) lst
-            , not $ null xs = (HM.fromList $ map (\(_c, v, x) -> (v, x)) xs) : inner (n + 1) ys
+            , not $ null xs = let
+                    cycleCntx = CycleCntx $ M.fromList $ map (\(_c, v, x) -> (v, x)) xs
+                in cycleCntx : inner (n + 1) ys
             | otherwise = []
