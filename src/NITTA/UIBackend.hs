@@ -88,7 +88,7 @@ isLocalPortFree port
 
 -- |Run backend server.
 backendServer port receivedValues modelState = do
-    putStrLn $ "Running NITTA server at http://localhost:" ++ show port ++ "/index.html"
+    putStrLn $ "> Running NITTA server at http://localhost:" ++ show port
     -- on OS X, if we run system with busy port - application ignore that.
     -- see: https://nitta.io/nitta-corp/nitta/issues/9
     isFree <- isLocalPortFree port
