@@ -28,6 +28,7 @@ import           Data.Default                    (def)
 import           Data.Maybe
 import           Data.Proxy
 import qualified Data.Text.IO                    as T
+import           Data.Version
 import           GHC.TypeLits
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
@@ -42,6 +43,7 @@ import           NITTA.TargetSynthesis           (TargetSynthesis (..),
                                                   mkModelWithOneNetwork,
                                                   runTargetSynthesis)
 import           NITTA.UIBackend
+import           Paths_nitta
 import           System.Console.CmdArgs          hiding (def)
 import           Text.InterpolatedString.Perl6   (qc)
 import           Text.Regex
@@ -71,7 +73,7 @@ nittaArgs = Nitta
     , file=def &= args &= typFile
     , sim=False &= help "Functional simulation only"
     , n=30 &= help "Number of simulation and testbench cycles"
-    }
+    } &= summary ("nitta v" ++ showVersion version ++ " - CAD for reconfigurable real-time ASIP")
 
 
 parseFX input = let

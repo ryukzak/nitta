@@ -150,6 +150,7 @@ executable nitta-api-gen
 executable nitta
   hs-source-dirs:      app
   main-is:             Main.hs
+  exposed-modules:     Paths_nitta
   build-depends:       base
                      , boxes
                      , regex-compat
