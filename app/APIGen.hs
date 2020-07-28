@@ -23,7 +23,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module Main
+module APIGen
     ( main
     , HistoryStep(..) -- only for suppress warning
     ) where

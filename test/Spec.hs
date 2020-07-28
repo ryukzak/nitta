@@ -5,14 +5,14 @@
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
-Module      : Main
+Module      : Spec
 Description : Test specification
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module Main where
+module Spec where
 
 import           Data.Maybe
 import qualified NITTA.Intermediate.Functions.Accum.Tests
