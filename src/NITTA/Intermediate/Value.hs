@@ -317,7 +317,6 @@ endfunction // fxtor
         ]
 
 
-
 instance ( KnownNat m, KnownNat b ) => FixedPointCompatible ( FX m b ) where
     fractionalBitSize x = finiteBitSize x - fromInteger (natVal (Proxy :: Proxy m))
     scalingFactorPower _
