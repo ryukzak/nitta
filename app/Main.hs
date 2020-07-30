@@ -91,11 +91,13 @@ main = do
     Nitta{ port, filename, type_, io_sync, fsim, lsim, n, verbose } <- cmdArgs nittaArgs
     src <- readSourceCode verbose filename
     ( \( SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b) ) -> do
-            let FrontendResult{ frDataFlow, frPrettyCntx } = lua2functions src
+            let FrontendResult{ frDataFlow, frTrace, frPrettyCntx } = lua2functions src
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [ ("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0..toEnum n])]
                 ma = ( microarch io_sync :: BusNetwork String String (FX m b) Int)
+
+            when verbose $ putStrLn $ "will trace: \n" ++ unlines (map (("  " ++) . show) frTrace)
 
             when (port > 0) $ do
                 backendServer port received $ mkModelWithOneNetwork ma frDataFlow
