@@ -97,7 +97,7 @@ main = do
                 received = [ ("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0..toEnum n])]
                 ma = ( microarch io_sync :: BusNetwork String String (FX m b) Int)
 
-            when verbose $ putStrLn $ "will trace: \n" ++ unlines (map (("  " ++) . show) frTrace)
+            when verbose $ putStr $ "> will trace: \n" ++ unlines (map ((">  " ++) . show) frTrace)
 
             when (port > 0) $ do
                 backendServer port received $ mkModelWithOneNetwork ma frDataFlow
@@ -115,18 +115,18 @@ main = do
 
 
 readSourceCode verbose filename = do
-    when verbose $ putStrLn $ "> read source code from: " ++ show filename
+    when verbose $ putStrLn $ "> read source code from: " ++ show filename ++ "..."
     when (null filename) $ error "no input files"
     src <- T.readFile filename
-    when verbose $ putStrLn $ "> read source code from: " ++ show filename ++ " - ok"
+    when verbose $ putStrLn $ "> read source code from: " ++ show filename ++ "...ok"
     return src
 
 functionalSimulation verbose n received src = do
     let FrontendResult{ frDataFlow, frPrettyCntx } = lua2functions src
         cntx = simulateDataFlowGraph n def received frDataFlow
-    when verbose $ putStrLn "> run functional simulation"
-    putStrLn $ cntx2table $ frPrettyCntx cntx
-    when verbose $ putStrLn "> run functional simulation - ok"
+    when verbose $ putStrLn "> run functional simulation..."
+    putStr $ cntx2table $ frPrettyCntx cntx
+    when verbose $ putStrLn "> run functional simulation...ok"
 
 synthesizeAndTest verbose ma n dataflow received = do
     Right report <- runTargetSynthesis def
@@ -139,7 +139,7 @@ synthesizeAndTest verbose ma n dataflow received = do
         }
     return report
 
-putCntx cntx = putStrLn $ cntx2table cntx
+putCntx cntx = putStr $ cntx2table cntx
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
 

@@ -158,20 +158,20 @@ runTargetSynthesis TargetSynthesis
             return $ Right report
     where
         translateToIntermediate src = do
-            when tVerbose $ putStrLn "> lua transpiler"
+            when tVerbose $ putStrLn "> lua transpiler..."
             let tmp = frDataFlow $ lua2functions src
-            when tVerbose $ putStrLn "> lua transpiler - ok"
+            when tVerbose $ putStrLn "> lua transpiler...ok"
             return tmp
 
         synthesis rootNode = do
-            when tVerbose $ putStrLn "> synthesis process"
+            when tVerbose $ putStrLn "> synthesis process..."
             leafNode <- tSynthesisMethod rootNode
             let isComplete = isSynthesisFinish $ nModel leafNode
-            when (tVerbose && isComplete) $ putStrLn "> synthesis process - ok"
-            when (tVerbose && not isComplete) $ putStrLn "> synthesis process - fail"
+            when (tVerbose && isComplete) $ putStrLn "> synthesis process...ok"
+            when (tVerbose && not isComplete) $ putStrLn "> synthesis process...fail"
             return $ if isComplete
                 then Right leafNode
-                else Left "synthesis process - fail"
+                else Left "synthesis process...fail"
 
         project Node{ nModel=ModelState{ mUnit, mDataFlowGraph } } = Project
             { pName=tName
@@ -184,17 +184,17 @@ runTargetSynthesis TargetSynthesis
             }
 
         write prj@Project{ pPath } = do
-            when tVerbose $ putStrLn $ "> write target project (" ++ pPath ++ ")"
+            when tVerbose $ putStrLn $ "> write target project to: \"" ++ pPath ++ "\"..."
             tWriteProject prj
-            when tVerbose $ putStrLn $ "> write target project (" ++ pPath ++ ") - ok"
+            when tVerbose $ putStrLn $ "> write target project to: \"" ++ pPath ++ "\"...ok"
 
         testbench prj = do
-            when tVerbose $ putStrLn "> run logical synthesis"
+            when tVerbose $ putStrLn "> run logical synthesis..."
             report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestbench prj
             when tVerbose $ case tbStatus of
-                True  -> putStrLn "> run logical simulation - ok"
+                True  -> putStrLn "> run logical simulation...ok"
                 False -> do
-                    putStrLn "> run logical simulation - fail"
+                    putStrLn "> run logical simulation...fail"
                     putStrLn "-----------------------------------------------------------"
                     putStrLn "testbench compiler dump:"
                     putStrLn $ unlines tbCompilerDump
