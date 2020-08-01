@@ -2,10 +2,8 @@
 {-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
@@ -23,7 +21,7 @@ Stability   : experimental
 -}
 module Main ( main ) where
 
-import           Control.Monad                   (void, when)
+import           Control.Monad                   (when)
 import           Data.Default                    (def)
 import           Data.Maybe
 import           Data.Proxy
@@ -37,39 +35,48 @@ import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Project.Parts.TestBench
 import           NITTA.TargetSynthesis           (TargetSynthesis (..),
                                                   mkModelWithOneNetwork,
                                                   runTargetSynthesis)
 import           NITTA.UIBackend
 import           System.Console.CmdArgs          hiding (def)
-import           Text.InterpolatedString.Perl6   (qc)
+import           System.Exit
 import           Text.Regex
 
 -- |Command line interface.
 data Nitta
     = Nitta
-        { web       :: Bool
-        , port      :: Int
-        , npm_build :: Bool
-        , type_     :: String
-        , io_sync   :: IOSynchronization
-        , file      :: FilePath
-        , sim       :: Bool
-        , n         :: Int
+        { filename :: FilePath
+
+        , type_    :: String
+        , io_sync  :: IOSynchronization
+
+        , port     :: Int
+
+        , n        :: Int
+        , fsim     :: Bool
+        , lsim     :: Bool
+
+        , verbose  :: Bool
         }
     deriving ( Show, Data, Typeable )
 
 deriving instance Data IOSynchronization
 
 nittaArgs = Nitta
-    { web=False &= help "Run web server"
-    , port=8080 &= help "WebUI port"
-    , npm_build=False &= help "No regenerate WebUI static files"
-    , type_="fx32.32" &= help "Bus type, default value: \"fx32.32\""
+    { filename=def &= argPos 0 &= typFile
+
+    , type_="fx32.32" &= help "Data type (default: 'fx32.32')"
     , io_sync=Sync &= help "IO synchronization mode: sync, async, onboard"
-    , file=def &= args &= typFile
-    , sim=False &= help "Functional simulation only"
-    , n=30 &= help "Number of simulation and testbench cycles"
+
+    , port=0 &= help "Run control panel on a specific port (by default - not run)"
+
+    , n=10 &= help "Number of computation cycles for simulation and testbench"
+    , fsim=False &= help "Functional simulation with trace"
+    , lsim=False &= help "Logical (HDL) simulation with trace"
+
+    , verbose=False &= help "Verbose"
     }
 
 
@@ -81,40 +88,58 @@ parseFX input = let
 
 
 main = do
-    Nitta{ web, port, npm_build, file, type_, io_sync, sim, n } <- cmdArgs nittaArgs
-    when npm_build prepareStaticFiles
-    putStrLn [qc|> readFile: { file }|]
-    when (null file) $ error "input file not specified"
-    src <- T.readFile file
-    let cadDesc = if web then Just port else Nothing
-    ( \( SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b) ) ->
-          selectCAD
-              sim
-              cadDesc
-              src
-              -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
-              [ ("u#0", map (\i -> (read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i))) [0..toEnum n])]
-              n
-              ( microarch io_sync :: BusNetwork String String (FX m b) Int)
+    Nitta{ port, filename, type_, io_sync, fsim, lsim, n, verbose } <- cmdArgs nittaArgs
+    src <- readSourceCode verbose filename
+    ( \( SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b) ) -> do
+            let FrontendResult{ frDataFlow, frTrace, frPrettyCntx } = lua2functions src
+                -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
+                -- data for sin_ident
+                received = [ ("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0..toEnum n])]
+                ma = ( microarch io_sync :: BusNetwork String String (FX m b) Int)
+
+            when verbose $ putStr $ "> will trace: \n" ++ unlines (map ((">  " ++) . show) frTrace)
+
+            when (port > 0) $ do
+                backendServer port received $ mkModelWithOneNetwork ma frDataFlow
+                exitSuccess -- never happen
+
+            when fsim $ functionalSimulation verbose n received src
+
+            TestbenchReport
+                { tbLogicalSimulationCntx
+                } <- synthesizeAndTest verbose ma n frDataFlow received
+
+            when lsim $ do
+                putCntx $ frPrettyCntx tbLogicalSimulationCntx
         ) $ parseFX type_
 
-selectCAD True Nothing src tReceivedValues n _ma = do
+
+readSourceCode verbose filename = do
+    when verbose $ putStrLn $ "> read source code from: " ++ show filename ++ "..."
+    when (null filename) $ error "no input files"
+    src <- T.readFile filename
+    when verbose $ putStrLn $ "> read source code from: " ++ show filename ++ "...ok"
+    return src
+
+functionalSimulation verbose n received src = do
     let FrontendResult{ frDataFlow, frPrettyCntx } = lua2functions src
-    let cntx = simulateDataFlowGraph n def tReceivedValues frDataFlow
-    putStrLn $ cntx2table $ frPrettyCntx cntx
+        cntx = simulateDataFlowGraph n def received frDataFlow
+    when verbose $ putStrLn "> run functional simulation..."
+    putStr $ cntx2table $ frPrettyCntx cntx
+    when verbose $ putStrLn "> run functional simulation...ok"
 
-selectCAD _ (Just port) src received _n ma
-    = backendServer port received $ mkModelWithOneNetwork ma $ frDataFlow $ lua2functions src
-
-selectCAD _ Nothing src received n ma = void $ runTargetSynthesis def
+synthesizeAndTest verbose ma n dataflow received = do
+    Right report <- runTargetSynthesis def
         { tName="main"
         , tMicroArch=ma
-        , tDFG=frDataFlow $ lua2functions src
-        , tVerbose=True
+        , tDFG=dataflow
+        , tVerbose=verbose
         , tReceivedValues=received
         , tSimulationCycleN=n
         }
+    return report
 
+putCntx cntx = putStr $ cntx2table cntx
 
 -- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
 

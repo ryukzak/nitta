@@ -31,10 +31,9 @@ module Main
 import           Data.Aeson
 import           Data.Aeson.TypeScript.TH
 import           Data.Proxy
-import qualified Data.String.Utils             as S
+import qualified Data.String.Utils           as S
 import           NITTA.Model.Problems
 import           NITTA.Model.Types
-import           NITTA.Project
 import           NITTA.Synthesis.Estimate
 import           NITTA.Synthesis.Tree
 import           NITTA.UIBackend
@@ -43,8 +42,8 @@ import           NITTA.UIBackend.Timeline
 import           NITTA.UIBackend.VisJS
 import           Numeric.Interval
 import           System.Console.CmdArgs
-import           System.Directory              (createDirectoryIfMissing)
-import           System.FilePath.Posix         (joinPath)
+import           System.Directory            (createDirectoryIfMissing)
+import           System.FilePath.Posix       (joinPath)
 
 
 data APIGen
@@ -66,7 +65,7 @@ $(deriveTypeScript defaultOptions ''Interval)
 $(deriveTypeScript defaultOptions ''TimeConstrain)
 $(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
 $(deriveTypeScript defaultOptions ''ProcessTimelines)
-$(deriveTypeScript defaultOptions ''TestbenchReport)
+$(deriveTypeScript defaultOptions ''TestbenchReportView)
 
 $(deriveTypeScript defaultOptions ''Refactor)
 $(deriveTypeScript defaultOptions ''Parameters)
@@ -113,7 +112,7 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy TimeConstrain)
             , getTypeScriptDeclarations (Proxy :: Proxy TimelineWithViewPoint)
             , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
-            , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReport)
+            , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReportView)
 
             , getTypeScriptDeclarations (Proxy :: Proxy Refactor)
             , getTypeScriptDeclarations (Proxy :: Proxy Parameters)

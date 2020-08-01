@@ -8,7 +8,7 @@ import {
   EdgeView,
   TreeView,
   SynthesisNodeView,
-  TestbenchReport
+  TestbenchReportView
 } from "../gen/types";
 import { AxiosPromise } from "axios";
 
@@ -17,7 +17,7 @@ export type UnitEndpoints = UnitEndpointView<string, string>[];
 export type IntermediateGraph = GraphStructure<GraphEdge>;
 export type SynthesisNode = NodeView<string, string, string, string>;
 export type Edge = EdgeView<string, string, number, number>;
-export type TestBenchReport = TestbenchReport<string, number>;
+export type TestBenchReport = TestbenchReportView<string, number>;
 
 export const haskellApiService = {
   // SynthesisAPI

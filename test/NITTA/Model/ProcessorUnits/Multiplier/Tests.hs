@@ -39,6 +39,14 @@ tests = testGroup "Multiplier PU"
         , multiply "y" "x" ["z"]
         ]
 
+    , luaTestCase "geometric progression" [qc|
+        function f(x)
+            local tmp = reg(2 * x)
+            f(tmp)
+        end
+        f(1)
+        |]
+
     , typedLuaTestCase (microarch ASync SlaveSPI) pFX22_32 "fixpoint 22 32" [qc|
         function f()
             send(0.5 * -0.5)

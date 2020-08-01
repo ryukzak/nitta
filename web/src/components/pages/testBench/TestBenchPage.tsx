@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { haskellApiService, TestBenchReport } from "../../../services/HaskellApiService";
-import { TestbenchReport } from "../../../gen/types";
+import { TestbenchReportView } from "../../../gen/types";
 import { AxiosResponse, AxiosError } from "axios";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { useContext } from "react";
@@ -12,7 +12,7 @@ export const TestBenchPage: React.FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
   const [requestSuccess, setRequestSuccess] = useState<boolean | null>(null);
-  const [testBenchDump, setTestBenchDump] = useState<TestbenchReport<string, number> | null>(null);
+  const [testBenchDump, setTestBenchDump] = useState<TestbenchReportView<string, number> | null>(null);
 
   useEffect(() => {
     haskellApiService

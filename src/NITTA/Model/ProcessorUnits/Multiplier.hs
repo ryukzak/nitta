@@ -530,8 +530,13 @@ instance Default (Microcode (Multiplier v x t)) where
         , oeSignal=False
         }
 
+
 instance ( Time t ) => Default (Multiplier v x t) where
     def = multiplier True
+
+
+instance Default x => DefaultX (Multiplier v x t) x
+
 
 -- |Instruction and microcode binding is carried up by this class, which requires their
 -- unambiguous matching, as well as regardless of the status and settings of the model.

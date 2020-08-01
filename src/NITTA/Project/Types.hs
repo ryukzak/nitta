@@ -1,8 +1,8 @@
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -18,7 +18,9 @@ module NITTA.Project.Types
     , ProjectPart(..)
     ) where
 
+import           Data.Default
 import           NITTA.Intermediate.Types
+import           NITTA.Intermediate.Value ()
 
 
 -- |Target project for different purpose (testing, target system, etc). Should
@@ -34,6 +36,9 @@ data Project m v x
         , pUnit     :: m      -- ^'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
         , pTestCntx :: Cntx v x -- ^testbench context with input values
         } deriving ( Show )
+
+
+instance ( Default x ) => DefaultX (Project m v x) x
 
 
 -- |Target system project contain multiple parts for different applications. Usually, for any

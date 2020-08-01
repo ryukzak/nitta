@@ -89,7 +89,7 @@ data TestbenchReport v x
         , tbCompilerDump             :: [ String ]
         , tbSimulationDump           :: [ String ]
         , tbFunctionalSimulationCntx :: [ HM.HashMap v x ]
-        , tbLogicalSimulationCntx    :: [ HM.HashMap v x ]
+        , tbLogicalSimulationCntx    :: Cntx v x
         }
     deriving ( Generic )
 

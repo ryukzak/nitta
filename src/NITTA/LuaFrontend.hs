@@ -59,11 +59,12 @@ type VarDict = M.Map Text ([String], [String])
 
 
 prettyCntx traceVars cntx
-    = showCntx
-        (\v x -> if v `M.member` v2fmt
-            then Just ( take (length v - 2) v, printx (v2fmt M.! v) x )
-            else Nothing)
-        cntx
+    = showCntx (\v0 x -> do
+            -- variables names end on #0, #1..., so we trim this suffix
+            let v = takeWhile (/= '#') v0
+            fmt <- v2fmt M.!? v
+            Just (v, printx fmt x)
+        ) cntx
     where
         v2fmt = M.fromList $ map (\(TraceVar fmt v) -> (T.unpack v, T.unpack fmt)) traceVars
         printx p x
@@ -87,12 +88,12 @@ lua2functions src
 
         frTrace=if not $ null traceFunctions
             then
-                [ TraceVar tFmt $ T.append v "#0"
+                [ TraceVar tFmt v
                 | TraceFunction{ tFmt, tVars } <- traceFunctions
                 , v <- tVars
                 ]
             else
-                [ TraceVar defaultFmt $ T.append iVar "#0"
+                [ TraceVar defaultFmt iVar
                 | InputVar{ iVar } <- algItems
                 ]
     in FrontendResult

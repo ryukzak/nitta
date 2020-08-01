@@ -63,7 +63,7 @@ type SynthesisAPI tag v x t
     :<|> "synthesis" :> Capture "nId" NId :> PostSynthesis tag v x t
     :<|> "testbench" :> Capture "nId" NId
                      :> QueryParam' '[Required] "name" String
-                     :> Post '[JSON] (TestbenchReport v x)
+                     :> Post '[JSON] (TestbenchReportView v x)
 
 synthesisServer cntx@BackendCntx{ root }
     =    liftIO ( viewNodeTree root )
@@ -127,7 +127,7 @@ testBench BackendCntx{ root, receivedValues } nId pName = liftIO $ do
         node <- getNodeIO root nId
         let ModelState{ mDataFlowGraph } = nModel node
         unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
-        writeAndRunTestbench Project
+        view <$> writeAndRunTestbench Project
             { pName
             , pLibPath=joinPath ["..", "..", "hdl"]
             , pPath=joinPath ["gen", pName]

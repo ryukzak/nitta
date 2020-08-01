@@ -64,6 +64,7 @@ puCoSimTestCase ::
     , PUClasses (pu String x Int) String x Int
     , WithFunctions (pu String x Int) ( F String x )
     , N.Testable (pu String x Int) String x
+    , DefaultX (pu String x Int) x
     ) => String -> pu String x Int -> [(String, x)] -> [F String x] -> TestTree
 puCoSimTestCase name u cntxCycle alg
     = testCase name $ do

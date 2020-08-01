@@ -23,6 +23,7 @@ module NITTA.Project.Utils
     ) where
 
 import           Control.Monad                    (unless)
+import           Data.Default
 import qualified Data.HashMap.Strict              as HM
 import qualified Data.List                        as L
 import qualified Data.Map                         as M
@@ -33,7 +34,6 @@ import           NITTA.Project.Parts.Icarus
 import           NITTA.Project.Parts.Quartus
 import           NITTA.Project.Parts.TargetSystem
 import           NITTA.Project.Parts.TestBench
-import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           System.Exit
 import           System.IO                        (hPutStrLn, stderr)
@@ -75,7 +75,6 @@ runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNu
         <- readCreateProcessWithExitCode (shell "vvp a.out"){ cwd=Just pPath } []
     let isSimOk = simExitCode == ExitSuccess && not ("FAIL" `L.isSubsequenceOf` simOut)
 
-
     return TestbenchReport
         { tbStatus=isCompileOk && isSimOk
         , tbPath=pPath
@@ -85,22 +84,29 @@ runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNu
         , tbCompilerDump=dump compileOut compileErr
         , tbSimulationDump=dump simOut simErr
         , tbFunctionalSimulationCntx=map (HM.fromList . M.assocs . cycleCntx) $ take cntxCycleNumber cntxProcess
-        , tbLogicalSimulationCntx=toCntxs $ extractLogValues simOut
+        , tbLogicalSimulationCntx=log2cntx $ extractLogValues (defX pUnit) simOut
         }
     where
         createIVerilogProcess workdir files = (proc "iverilog" files){ cwd=Just workdir }
         dump out err = [ "stdout:" ] ++ lines out ++ [ "stderr:" ] ++ lines err
 
 
-extractLogValues text = mapMaybe f $ lines text
+extractLogValues x0 text = mapMaybe f $ lines text
     where
-        f s = case matchRegex assertRe s of
-            Just [c, _t, x, _e, v] -> Just (read c, v, fromVerilog x)
+        f s = case matchRegex (verilogAssertRE x0) s of
+            Just [c, _t, x, _e, v] -> Just (read c, v, read x)
             _                      -> Nothing
 
-toCntxs lst0 = inner (0 :: Int) lst0
+log2cntx lst0 = Cntx
+    { cntxProcess
+    , cntxReceived=def
+    , cntxCycleNumber=length cntxProcess
+    }
     where
+        cntxProcess = inner (0 :: Int) lst0
         inner n lst
             | (xs, ys) <- L.partition (\(c, _v, _x) -> c == n) lst
-            , not $ null xs = (HM.fromList $ map (\(_c, v, x) -> (v, x)) xs) : inner (n + 1) ys
+            , not $ null xs = let
+                    cycleCntx = CycleCntx $ M.fromList $ map (\(_c, v, x) -> (v, x)) xs
+                in cycleCntx : inner (n + 1) ys
             | otherwise = []

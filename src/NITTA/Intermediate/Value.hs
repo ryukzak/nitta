@@ -1,8 +1,9 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE KindSignatures        #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE KindSignatures         #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE QuasiQuotes            #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -23,6 +24,7 @@ module NITTA.Intermediate.Value
   ( -- *Type classes
     FixedPointCompatible(..)
   , Val(..)
+  , DefaultX(..)
   , scalingFactor
     -- *Value types
   , IntX(..)
@@ -38,6 +40,12 @@ import           GHC.TypeLits
 import           Numeric
 import           Text.InterpolatedString.Perl6 (qc)
 import           Text.Printf
+import           Text.Regex
+
+
+class ( Default x ) => DefaultX u x | u -> x where
+    defX :: u -> x
+    defX _ = def
 
 
 -- |Type class for Value types.
@@ -81,6 +89,15 @@ task assert;
     end
 endtask // assert
 |]
+
+    -- |RE for extraction assertion data from a testbench log
+    verilogAssertRE :: x -> Regex
+    verilogAssertRE _ = mkRegex $ concat
+        [ "([[:digit:]]+):([[:digit:]]+)\t"
+        , "actual: (-?[[:digit:]]+)\t"
+        , "expect: (-?[[:digit:]]+)\t"
+        , "var: ([^ \t\n]+)"
+        ]
 
 
 -- |Type class for values, which contain information about fractional part of value (for fixed point arithmetics).
@@ -291,6 +308,14 @@ function real fxtor(input integer x);
     end
 endfunction // fxtor
 |]
+
+    verilogAssertRE _ = mkRegex $ concat
+        [ "([[:digit:]]+):([[:digit:]]+)\t"
+        , "actual: (-?[[:digit:]]+\\.[[:digit:]]+)\t"
+        , "expect: (-?[[:digit:]]+\\.[[:digit:]]+)\t"
+        , "var: ([^ \t\n]+)"
+        ]
+
 
 instance ( KnownNat m, KnownNat b ) => FixedPointCompatible ( FX m b ) where
     fractionalBitSize x = finiteBitSize x - fromInteger (natVal (Proxy :: Proxy m))
