@@ -17,7 +17,7 @@ module Main where
 import           Data.Maybe
 import qualified NITTA.Intermediate.Functions.Accum.Tests
 import qualified NITTA.Intermediate.Simulation.Tests
-import qualified NITTA.Intermediate.Types.Tests
+import qualified NITTA.Intermediate.Value.Tests
 import qualified NITTA.LuaFrontend.Tests
 import qualified NITTA.Model.Problems.Refactor.Tests
 import qualified NITTA.Model.ProcessorUnits.Divider.Tests
@@ -42,7 +42,7 @@ main = do
     defaultMain $ testGroup "NITTA"
         [ NITTA.Intermediate.Functions.Accum.Tests.tests
         , NITTA.Intermediate.Simulation.Tests.tests
-        , NITTA.Intermediate.Types.Tests.tests
+        , NITTA.Intermediate.Value.Tests.tests
         , NITTA.LuaFrontend.Tests.tests
         , NITTA.Model.Problems.Refactor.Tests.tests
         , NITTA.Model.ProcessorUnits.Divider.Tests.tests

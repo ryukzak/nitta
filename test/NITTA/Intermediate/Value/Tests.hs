@@ -10,14 +10,14 @@
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults -fno-warn-orphans #-}
 
 {-|
-Module      : NITTA.Intermediate.Types.Tests
+Module      : NITTA.Intermediate.Value.Tests
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Intermediate.Types.Tests
+module NITTA.Intermediate.Value.Tests
     ( tests
     ) where
 
