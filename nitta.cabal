@@ -199,8 +199,11 @@ test-suite nitta-test
                      , split
                      , regex-compat
                      , tasty
+                     , genvalidity
                      , tasty-hunit
                      , tasty-quickcheck
+                     , genvalidity-property
+                     , validity
                      , tasty-th
                      , text
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
