@@ -1,207 +1,238 @@
-name:                nitta
-version:             0.0.0.1
-synopsis:            CAD for reconfigurable real-time ASIP
-description:
-      Application area:
-      .
-      - developing cyber-physical systems which are based on adaptive robust
-        control algorithms and artificial intelligence with high requirements on
-        latency and computational volume, power and area consumption;
-      - developing hardware programmable accelerators and co-processors;
-      - developing problem-oriented programmable ASIC;
-      - developing dynamically reconfigurable IP-core and soft-core for FPGA.
-      .
-      Project goals:
-      .
-      - rapid prototyping of control and cyber-physical systems;
-      - hardware in the loop simulation;
-      - target system synthesis and its components;
-      - integration of the real-time system with nonreal-time environment and
-        automation of its interaction;
-      - developing of IP-core for embedded systems and systems on a chip.
-      .
-      Key features:
-      .
-      - the orientation on model-driven engineering and not on software
-        engineering;
-      - automation of most of the development stages, including algorithm and
-        model design and functional simulation, prototyping and complex
-        verification, complex automatisation of cross-layer testing and
-        synthesis and optimisation of a target system;
-      - deeply computational platform reconfiguration on hardware, software and
-        tool levels, transparency of CAD system workflow.
-homepage:            https://nitta.io
-license:             BSD3
-license-file:        LICENSE
-author:              Aleksandr Penskoi
-maintainer:          aleksandr.penskoi@gmail.com
-copyright:           2020 Aleksandr Penskoi
-category:            hardware, CAD, ASIP
-build-type:          Simple
-extra-source-files:  README.md
-cabal-version:       >=1.10
+cabal-version: 1.18
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 821c688ffbff7f2ed3f27b118555c78b80addd1a94e1418549b346922b77f33e
+
+name:           nitta
+version:        0.0.0.1
+synopsis:       CAD for reconfigurable real-time ASIP
+description:    Application area:
+                .
+                - developing cyber-physical systems which are based on adaptive robust
+                control algorithms and artificial intelligence with high requirements on
+                latency and computational volume, power and area consumption;
+                - developing hardware programmable accelerators and co-processors;
+                - developing dynamically reconfigurable IP-core and soft-core for FPGA;
+                - developing problem-oriented programmable ASIC.
+                .
+                Project goals:
+                .
+                - rapid prototyping of control and cyber-physical systems;
+                - hardware in the loop simulation;
+                - target system synthesis and its components;
+                - integration of the real-time system with nonreal-time environment and
+                automation of its interaction;
+                - developing of IP-core for embedded systems and systems on a chip.
+                .
+                Key features:
+                .
+                - the orientation on model-driven engineering and not on software
+                engineering;
+                - automation of most of the development stages, including algorithm and
+                model design and functional simulation, prototyping and complex
+                verification, complex automatisation of cross-layer testing and
+                synthesis and optimisation of a target system;
+                - deeply computational platform reconfiguration on hardware, software and
+                tool levels, transparency of CAD system workflow.
+category:       hardware, CAD, ASIP
+homepage:       https://nitta.io
+author:         Aleksandr Penskoi
+maintainer:     aleksandr.penskoi@gmail.com
+copyright:      2020 Aleksandr Penskoi
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-doc-files:
+    README.md
 
 library
-  hs-source-dirs:      src
-  exposed-modules:     NITTA.Intermediate.Functions
-                     , NITTA.Intermediate.Functions.Accum
-                     , NITTA.Intermediate.Simulation
-                     , NITTA.Intermediate.Types
-                     , NITTA.Intermediate.Value
-                     , NITTA.Intermediate.Variable
-                     , NITTA.LuaFrontend
-                     , NITTA.Model.Microarchitecture
-                     , NITTA.Model.Networks.Bus
-                     , NITTA.Model.Networks.Types
-                     , NITTA.Model.Problems
-                     , NITTA.Model.Problems.Binding
-                     , NITTA.Model.Problems.Dataflow
-                     , NITTA.Model.Problems.Endpoint
-                     , NITTA.Model.Problems.Refactor
-                     , NITTA.Model.Problems.Whole
-                     , NITTA.Model.ProcessorUnits
-                     , NITTA.Model.ProcessorUnits.Divider
-                     , NITTA.Model.ProcessorUnits.Fram
-                     , NITTA.Model.ProcessorUnits.IO.I2C
-                     , NITTA.Model.ProcessorUnits.IO.SPI
-                     , NITTA.Model.ProcessorUnits.IO.SimpleIO
-                     , NITTA.Model.ProcessorUnits.Multiplier
-                     , NITTA.Model.ProcessorUnits.Serial.Accum
-                     , NITTA.Model.ProcessorUnits.Serial.Generic
-                     , NITTA.Model.ProcessorUnits.Serial.Shift
-                     , NITTA.Model.ProcessorUnits.Time
-                     , NITTA.Model.TargetSystem
-                     , NITTA.Model.Types
-                     , NITTA.Project
-                     , NITTA.Project.Implementation
-                     , NITTA.Project.Parts.Icarus
-                     , NITTA.Project.Parts.Quartus
-                     , NITTA.Project.Parts.TargetSystem
-                     , NITTA.Project.Parts.TestBench
-                     , NITTA.Project.Parts.Utils
-                     , NITTA.Project.Snippets
-                     , NITTA.Project.Types
-                     , NITTA.Project.Utils
-                     , NITTA.Synthesis.Estimate
-                     , NITTA.Synthesis.Method
-                     , NITTA.Synthesis.Tree
-                     , NITTA.Synthesis.Utils
-                     , NITTA.TargetSynthesis
-                     , NITTA.UIBackend
-                     , NITTA.UIBackend.Marshalling
-                     , NITTA.UIBackend.REST
-                     , NITTA.UIBackend.Timeline
-                     , NITTA.UIBackend.VisJS
-                     , NITTA.Utils
-                     , NITTA.Utils.Base
-                     , NITTA.Utils.CodeFormat
-                     , NITTA.Utils.ProcessDescription
-  build-depends:       aeson
-                     , array
-                     , base
-                     , boxes
-                     , containers
-                     , data-default
-                     , directory
-                     , file-embed
-                     , filepath
-                     , hashable
-                     , HStringTemplate
-                     , http-api-data
-                     , interpolatedstring-perl6
-                     , intervals
-                     , language-lua
-                     , MissingH
-                     , mtl
-                     , network-simple
-                     , process
-                     , regex-compat
-                     , safe
-                     , servant
-                     , servant-js
-                     , servant-server
-                     , split
-                     , stm
-                     , text
-                     , transformers
-                     , unordered-containers
-                     , utility-ht
-                     , wai-cors
-                     , warp
-  default-language:    Haskell2010
-
-executable nitta-api-gen
-  hs-source-dirs:      app
-  main-is:             APIGen.hs
-  build-depends:       aeson
-                     , aeson-typescript
-                     , base
-                     , boxes
-                     , containers
-                     , cmdargs
-                     , directory
-                     , filepath
-                     , intervals
-                     , MissingH
-                     , nitta
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  default-language:    Haskell2010
+  exposed-modules:
+      NITTA.Intermediate.Functions
+      NITTA.Intermediate.Functions.Accum
+      NITTA.Intermediate.Simulation
+      NITTA.Intermediate.Types
+      NITTA.Intermediate.Value
+      NITTA.Intermediate.Variable
+      NITTA.LuaFrontend
+      NITTA.Model.Microarchitecture
+      NITTA.Model.Networks.Bus
+      NITTA.Model.Networks.Types
+      NITTA.Model.Problems
+      NITTA.Model.Problems.Binding
+      NITTA.Model.Problems.Dataflow
+      NITTA.Model.Problems.Endpoint
+      NITTA.Model.Problems.Refactor
+      NITTA.Model.Problems.Whole
+      NITTA.Model.ProcessorUnits
+      NITTA.Model.ProcessorUnits.Divider
+      NITTA.Model.ProcessorUnits.Fram
+      NITTA.Model.ProcessorUnits.IO.I2C
+      NITTA.Model.ProcessorUnits.IO.SimpleIO
+      NITTA.Model.ProcessorUnits.IO.SPI
+      NITTA.Model.ProcessorUnits.Multiplier
+      NITTA.Model.ProcessorUnits.Serial.Accum
+      NITTA.Model.ProcessorUnits.Serial.Generic
+      NITTA.Model.ProcessorUnits.Serial.Shift
+      NITTA.Model.ProcessorUnits.Time
+      NITTA.Model.TargetSystem
+      NITTA.Model.Types
+      NITTA.Project
+      NITTA.Project.Implementation
+      NITTA.Project.Parts.Icarus
+      NITTA.Project.Parts.Quartus
+      NITTA.Project.Parts.TargetSystem
+      NITTA.Project.Parts.TestBench
+      NITTA.Project.Parts.Utils
+      NITTA.Project.Snippets
+      NITTA.Project.Types
+      NITTA.Project.Utils
+      NITTA.Synthesis.Estimate
+      NITTA.Synthesis.Method
+      NITTA.Synthesis.Tree
+      NITTA.Synthesis.Utils
+      NITTA.TargetSynthesis
+      NITTA.UIBackend
+      NITTA.UIBackend.Marshalling
+      NITTA.UIBackend.REST
+      NITTA.UIBackend.Timeline
+      NITTA.UIBackend.VisJS
+      NITTA.Utils
+      NITTA.Utils.Base
+      NITTA.Utils.CodeFormat
+      NITTA.Utils.ProcessDescription
+  other-modules:
+      Paths_nitta
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -j
+  build-depends:
+      HStringTemplate
+    , MissingH
+    , aeson
+    , array
+    , base
+    , boxes
+    , containers
+    , data-default
+    , directory
+    , file-embed
+    , filepath
+    , hashable
+    , http-api-data
+    , interpolatedstring-perl6
+    , intervals
+    , language-lua
+    , mtl
+    , network-simple
+    , process
+    , regex-compat
+    , safe
+    , servant
+    , servant-js
+    , servant-server
+    , split
+    , stm
+    , text
+    , transformers
+    , unordered-containers
+    , utility-ht
+    , wai-cors
+    , warp
+  default-language: Haskell2010
 
 executable nitta
-  hs-source-dirs:      app
-  main-is:             Main.hs
-  build-depends:       base
-                     , boxes
-                     , regex-compat
-                     , cmdargs
-                     , containers
-                     , data-default
-                     , interpolatedstring-perl6
-                     , nitta
-                     , text
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  default-language:    Haskell2010
+  main-is: Main.hs
+  other-modules:
+      Paths_nitta
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -j -threaded -rtsopts -with-rtsopts=-N -main-is Main
+  build-depends:
+      MissingH
+    , base
+    , boxes
+    , cmdargs
+    , containers
+    , data-default
+    , filepath
+    , interpolatedstring-perl6
+    , nitta
+    , regex-compat
+    , text
+  default-language: Haskell2010
+
+executable nitta-api-gen
+  main-is: APIGen.hs
+  other-modules:
+      Paths_nitta
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -j -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
+  build-depends:
+      MissingH
+    , aeson
+    , aeson-typescript
+    , base
+    , boxes
+    , cmdargs
+    , containers
+    , data-default
+    , directory
+    , filepath
+    , interpolatedstring-perl6
+    , intervals
+    , nitta
+    , regex-compat
+    , text
+  default-language: Haskell2010
 
 test-suite nitta-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  other-modules:       NITTA.Intermediate.Functions.Accum.Tests
-                     , NITTA.Intermediate.Simulation.Tests
-                     , NITTA.Intermediate.Tests.Functions
-                     , NITTA.Intermediate.Types.Tests
-                     , NITTA.LuaFrontend.Tests
-                     , NITTA.LuaFrontend.Tests.Utils
-                     , NITTA.Model.Problems.Refactor.Tests
-                     , NITTA.Model.ProcessorUnits.Divider.Tests
-                     , NITTA.Model.ProcessorUnits.Fram.Tests
-                     , NITTA.Model.ProcessorUnits.IO.SPI.Tests
-                     , NITTA.Model.ProcessorUnits.Multiplier.Tests
-                     , NITTA.Model.ProcessorUnits.Serial.Accum.Tests
-                     , NITTA.Model.ProcessorUnits.Serial.Shift.Tests
-                     , NITTA.Model.ProcessorUnits.Tests.Utils
-                     , NITTA.Model.Tests.Microarchitecture
-                     , NITTA.Tests
-                     , NITTA.Utils.CodeFormat.Tests
-                     , NITTA.Utils.Tests
-  build-depends:       atomic-primops
-                     , base
-                     , boxes
-                     , call-stack
-                     , containers
-                     , data-default
-                     , file-embed
-                     , filepath
-                     , interpolatedstring-perl6
-                     , MissingH
-                     , nitta
-                     , QuickCheck
-                     , split
-                     , regex-compat
-                     , tasty
-                     , tasty-hunit
-                     , tasty-quickcheck
-                     , tasty-th
-                     , text
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  default-language:    Haskell2010
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      NITTA.Intermediate.Functions.Accum.Tests
+      NITTA.Intermediate.Simulation.Tests
+      NITTA.Intermediate.Tests.Functions
+      NITTA.Intermediate.Types.Tests
+      NITTA.LuaFrontend.Tests
+      NITTA.LuaFrontend.Tests.Utils
+      NITTA.Model.Problems.Refactor.Tests
+      NITTA.Model.ProcessorUnits.Divider.Tests
+      NITTA.Model.ProcessorUnits.Fram.Tests
+      NITTA.Model.ProcessorUnits.IO.SPI.Tests
+      NITTA.Model.ProcessorUnits.Multiplier.Tests
+      NITTA.Model.ProcessorUnits.Serial.Accum.Tests
+      NITTA.Model.ProcessorUnits.Serial.Shift.Tests
+      NITTA.Model.ProcessorUnits.Tests.Utils
+      NITTA.Model.Tests.Microarchitecture
+      NITTA.Tests
+      NITTA.Utils.CodeFormat.Tests
+      NITTA.Utils.Tests
+      Paths_nitta
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -j -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
+  build-depends:
+      MissingH
+    , QuickCheck
+    , atomic-primops
+    , base
+    , boxes
+    , call-stack
+    , containers
+    , data-default
+    , file-embed
+    , filepath
+    , interpolatedstring-perl6
+    , nitta
+    , regex-compat
+    , split
+    , tasty
+    , tasty-hunit
+    , tasty-quickcheck
+    , tasty-th
+    , text
+  default-language: Haskell2010
