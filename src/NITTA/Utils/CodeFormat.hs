@@ -56,4 +56,4 @@ codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
 codeLine str = dropWhile (== ' ') str ++ "\n"
 
 -- |Convert space sequence with specific length to tabs
-space2tab n = S.replace (take n $ repeat ' ') "\t"
+space2tab n = S.replace (replicate n ' ') "\t"

@@ -191,9 +191,9 @@ runTargetSynthesis TargetSynthesis
         testbench prj = do
             when tVerbose $ putStrLn "> run logical synthesis..."
             report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestbench prj
-            when tVerbose $ case tbStatus of
-                True  -> putStrLn "> run logical simulation...ok"
-                False -> do
+            when tVerbose $ if tbStatus
+                then putStrLn "> run logical simulation...ok"
+                else do
                     putStrLn "> run logical simulation...fail"
                     putStrLn "-----------------------------------------------------------"
                     putStrLn "testbench compiler dump:"

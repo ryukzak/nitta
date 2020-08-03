@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
@@ -80,7 +79,7 @@ runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNu
         , tbPath=pPath
         , tbFiles=files
         , tbFunctions=map show $ functions pUnit
-        , tbSynthesisSteps=map show $ steps $ process $ pUnit
+        , tbSynthesisSteps=map show $ steps $ process pUnit
         , tbCompilerDump=dump compileOut compileErr
         , tbSimulationDump=dump simOut simErr
         , tbFunctionalSimulationCntx=map (HM.fromList . M.assocs . cycleCntx) $ take cntxCycleNumber cntxProcess

@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE KindSignatures         #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE QuasiQuotes            #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
@@ -220,7 +219,7 @@ instance ( KnownNat m, KnownNat b ) => Enum ( FX m b ) where
 
 instance ( KnownNat m, KnownNat b ) => Num ( FX m b ) where
     ( FX a ) + ( FX b ) = FX ( a + b )
-    t@( FX a ) * ( FX b ) = FX ( a * b ) `shiftR` (fromInteger $ scalingFactorPower t)
+    t@( FX a ) * ( FX b ) = FX ( a * b ) `shiftR` fromInteger (scalingFactorPower t)
     abs ( FX a ) = FX $ abs a
     signum ( FX a ) = fromInteger $ signum a
     fromInteger x

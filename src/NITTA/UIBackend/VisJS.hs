@@ -109,16 +109,18 @@ algToVizJS fbs = let
 
 
 toVizJS F.F{ fun, funHistory } = GraphStructure
-        { nodes=GraphNode
-            { id=1
-            , label=S.replace "\"" "" $ F.label fun
-            , function=S.replace "\"" "" $ show fun
-            , history=map (S.replace "\"" "" . show) funHistory
-            , nodeColor="#cbbeb5"
-            , nodeShape="box"
-            , fontSize="20"
-            , nodeSize="30"
-            } : []
+        { nodes=
+            [ GraphNode
+                { id=1
+                , label=S.replace "\"" "" $ F.label fun
+                , function=S.replace "\"" "" $ show fun
+                , history=map (S.replace "\"" "" . show) funHistory
+                , nodeColor="#cbbeb5"
+                , nodeShape="box"
+                , fontSize="20"
+                , nodeSize="30"
+                }
+            ]
         , edges=mkEdges InVertex (F.inputs fun) ++ mkEdges OutVertex (F.outputs fun)
         }
     where

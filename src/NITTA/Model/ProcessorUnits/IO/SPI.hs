@@ -169,7 +169,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                 ) $ getEndpoints process_
             sendedVarsValues = take cntxCycleNumber $ map cycleCntx cntxProcess
             wordWidth = finiteBitSize (def :: x)
-            frameWordCount = max (length receivedVariablesSeq) (length $ sendedVariableSeq)
+            frameWordCount = max (length receivedVariablesSeq) $ length sendedVariableSeq
             frameWidth = frameWordCount * wordWidth
             timeLag = 10 :: Int
             sendingDuration = max

@@ -10,8 +10,6 @@
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE TypeOperators             #-}
-{-# LANGUAGE TypeSynonymInstances      #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures #-}
 
@@ -89,7 +87,7 @@ instance Read NId where
     readsPrec d (x:xs)
         | x == nIdSep
         , let is = map (readsPrec d) $ splitOn [nIdSep] xs
-        , all (not . null) is
+        , not $ any null is
         = [(NId $ map fst $ concat is, "")]
     readsPrec _ _ = []
 

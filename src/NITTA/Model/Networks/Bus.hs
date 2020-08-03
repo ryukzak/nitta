@@ -44,6 +44,7 @@ module NITTA.Model.Networks.Bus
 
 import           Control.Monad.State
 import qualified Data.Array                      as A
+import           Data.Bifunctor
 import           Data.Bits                       (FiniteBits (..))
 import           Data.Default
 import qualified Data.List                       as L
@@ -196,7 +197,7 @@ instance ( UnitTag tag, VarValTime v x t
                     $ M.assocs pushs
             }
         where
-            applyDecision pus (trgTitle, d') = M.adjust (\pu -> endpointDecision pu d') trgTitle pus
+            applyDecision pus (trgTitle, d') = M.adjust (`endpointDecision` d') trgTitle pus
 
 
 
@@ -342,7 +343,7 @@ instance ( UnitTag tag, VarValTime v x t
 
             alreadyVs = transferred bn
             fLocks = filter (\Lock{ lockBy } -> S.notMember lockBy alreadyVs) $ concatMap locks $ functions bn
-            allPULocks = map (\(tag, pu) -> (tag, locks pu)) $ M.assocs bnPus
+            allPULocks = map (second locks) $ M.assocs bnPus
             maybeSended = unionsMap variables $ concatMap endpointOptions $ M.elems bnPus
 
             isBufferRepetionOK 0 _ = False
@@ -397,7 +398,7 @@ instance ( UnitTag tag, VarValTime v x t
             Just (puTag, bindedToPU) = L.find (elem (recLoop bl) . snd) $ M.assocs bnBinded
             bindedToPU' = recLoopIn bl : recLoopOut bl : ( bindedToPU L.\\ [ recLoop bl ] )
         in bn
-            { bnPus=M.adjust (flip refactorDecision bl) puTag bnPus
+            { bnPus=M.adjust (`refactorDecision` bl) puTag bnPus
             , bnBinded=M.insert puTag bindedToPU' bnBinded
             }
 

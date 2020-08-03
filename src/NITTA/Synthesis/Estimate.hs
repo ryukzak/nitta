@@ -8,8 +8,6 @@
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE TypeOperators             #-}
-{-# LANGUAGE TypeSynonymInstances      #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures #-}
 
@@ -116,8 +114,8 @@ prepareEstimationCntx unitModel@ModelState{ mUnit, mDataFlowGraph } decisionDupl
 estimateWaves fs alreadyVars = let
         io = [ ( is, os )
             | f <- fs
-            , let is = (S.elems $ inputs f) L.\\ alreadyVars
-                  os = (S.elems $ outputs f)
+            , let is = S.elems (inputs f) L.\\ alreadyVars
+                  os = S.elems $ outputs f
             ]
     in estimateWaves' io 0 def
 
@@ -269,7 +267,7 @@ objectiveFunction
                 + (pAlternative == 1) <?> 500
                 + pAllowDataFlow * 10
                 + pPercentOfBindedInputs * 50
-                - (fromMaybe (-1) pWave) * 50
+                - fromMaybe (-1) pWave * 50
                 - pNumberOfBindedFunctions * 10
                 - pRestless * 4
                 + pOutputNumber * 2

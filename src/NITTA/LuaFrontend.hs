@@ -7,7 +7,6 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
@@ -27,6 +26,7 @@ module NITTA.LuaFrontend
 
 import           Control.Monad.Identity
 import           Control.Monad.State
+import           Data.Bifunctor
 import           Data.List                     (find, group, sort)
 import qualified Data.Map                      as M
 import           Data.Maybe
@@ -191,7 +191,7 @@ output v
     | otherwise = gets $ \(dict, _fs) ->
         snd (fromMaybe (error $ "unknown variable: " ++ show v) (dict M.!? v))
 
-store f = modify'_ $ \(dict, fs) -> (dict, f:fs)
+store f = modify'_ $ second (f:)
 
 
 
@@ -325,7 +325,7 @@ rightExp diff out (PrefixExp (Paren e)) -- a = (...)
 
 rightExp diff [a] n@(Number _ _) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "reg"))) (Args [n]))))
 
-rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] $ (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "reg"))) (Args [Number numType $ T.cons '-' n]))))
+rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "reg"))) (Args [Number numType $ T.cons '-' n]))))
 
 rightExp diff [a] (Unop Neg expr@(PrefixExp _)) =
     -- FIXME: add negative function

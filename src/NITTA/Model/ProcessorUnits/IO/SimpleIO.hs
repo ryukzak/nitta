@@ -123,7 +123,7 @@ instance ( VarValTime v x t, SimpleIOInterface i
         , let
             remainVars = allVars L.\\ S.elems vs
             process_ = execSchedule sio $ do
-                void $ scheduleEndpoint d $ scheduleInstruction (shiftI (0) epAt) $ Receiving $ null remainVars
+                void $ scheduleEndpoint d $ scheduleInstruction (shiftI 0 epAt) $ Receiving $ null remainVars
                 when (null remainVars) $ void $ scheduleFunction epAt function
                 updateTick (sup epAt + 1)
                 return ()

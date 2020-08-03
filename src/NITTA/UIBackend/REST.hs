@@ -6,7 +6,6 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE TypeSynonymInstances  #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -25,6 +24,7 @@ module NITTA.UIBackend.REST
 
 import           Control.Monad.Except
 import           Data.Aeson
+import           Data.Bifunctor
 import           Data.Default
 import qualified Data.Map                        as M
 import qualified Data.Set                        as S
@@ -167,9 +167,10 @@ debug root nId = do
             [ (tag, filter (\Lock{ lockBy, locked } -> S.notMember lockBy already && S.notMember locked already) ls)
             | (tag, ls) <- dbgFunctionLocks
             ]
-        , dbgPULocks=map (\(tag, pu) -> (tag, locks pu)) $ M.assocs $ bnPus $ mUnit $ nModel node
+        , dbgPULocks=map (second locks) $ M.assocs $ bnPus $ mUnit $ nModel node
         }
     where
         endpointOptions' BusNetwork{ bnPus }
-            = let f (tag, pu) = map (\(t, ep) -> UnitEndpointView t $ view ep) $ zip (repeat tag) $ endpointOptions pu
+            = let f (tag, pu) = map (\(t, ep) -> UnitEndpointView t $ view ep)
+                      $ zip (repeat tag) $ endpointOptions pu
             in concatMap f $ M.assocs bnPus

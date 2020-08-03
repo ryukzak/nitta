@@ -4,12 +4,10 @@
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE OverloadedStrings      #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE StandaloneDeriving     #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
 {-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
 
@@ -156,7 +154,7 @@ instance ( Var v, Hashable v
     view Dataflow{ dfSource=(stag, st), dfTargets } = DataflowView
         { source=DataflowEndpointView stag st
         , targets=HM.map
-            (fmap $ \(tag, t) -> DataflowEndpointView tag t)
+            (fmap $ uncurry DataflowEndpointView)
             $ HM.fromList $ M.assocs dfTargets
         }
     view (Refactor r) = RefactorView r
@@ -413,7 +411,7 @@ instance ToJSON (FX m b) where
 
 
 -- *System
-data IntervalView = IntervalView String
+newtype IntervalView = IntervalView String
     deriving ( Generic )
 
 instance ( Show a, Bounded a ) => Viewable (Interval a) IntervalView where

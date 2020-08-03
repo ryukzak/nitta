@@ -1,0 +1,10 @@
+# HLint configuration file
+# https://github.com/ndmitchell/hlint
+##########################
+
+- ignore: {name: "Eta reduce"}
+- ignore: {name: "Avoid lambda"}
+- ignore: {name: "Use zipWith"}
+- ignore: {name: "Use tuple-section"}
+- ignore: {name: "Redundant map", within: "NITTA.Model.ProcessorUnits.Fram"}
+- ignore: {name: "Redundant map", within: "NITTA.Model.ProcessorUnits.Fram"}

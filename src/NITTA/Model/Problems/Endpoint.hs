@@ -5,7 +5,6 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE IncoherentInstances    #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE UndecidableInstances   #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
@@ -87,5 +86,5 @@ endpointOptionToDecision EndpointSt{ epRole, epAt }
     = let
         a = inf $ tcAvailable epAt
         -- "-1" - is necessary for reduction transfer time
-        b = a + (inf $ tcDuration epAt) - 1
+        b = a + inf (tcDuration epAt) - 1
     in EndpointSt epRole (a ... b)

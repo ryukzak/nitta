@@ -4,7 +4,6 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
@@ -223,7 +222,7 @@ class FunctionSimulation f v x | f -> v x where
     simulate :: CycleCntx v x -> f -> Either String (CycleCntx v x)
 
 
-data CycleCntx v x = CycleCntx{ cycleCntx :: M.Map v x }
+newtype CycleCntx v x = CycleCntx{ cycleCntx :: M.Map v x }
     deriving ( Show, Generic )
 
 instance Default (CycleCntx v x) where
@@ -266,10 +265,10 @@ cntx2table Cntx{ cntxProcess, cntxCycleNumber }
         header = sort $ M.keys $ cycleCntx $ head cntxProcess
         body = map (row . cycleCntx) $ take cntxCycleNumber cntxProcess
         row cntx = map snd $ zip header $ sortedValues cntx
-        table = map (\(h, b) -> h : b) $ zip header (transpose body)
+        table = map (uncurry (:)) $ zip header (transpose body)
     in
         render $ hsep 1 left $
-            map (vcat left) $ map (map text) table
+            map (vcat left . map text) table
     where
         sortedValues cntx = map snd $ sortOn fst $ M.assocs cntx
 
@@ -286,7 +285,7 @@ instance Default (Cntx v x) where
 cntxReceivedBySlice :: ( Ord v ) => Cntx v x -> [ M.Map v x ]
 cntxReceivedBySlice Cntx{ cntxReceived } = cntxReceivedBySlice' $ M.assocs cntxReceived
 cntxReceivedBySlice' received
-    | all (not . null . snd) received
+    | not $ any (null . snd) received
     = let
         slice = M.fromList [ (v, x) | ( v, x:_ ) <- received ]
         received' = [ (v, xs) | ( v, _:xs ) <- received ]
