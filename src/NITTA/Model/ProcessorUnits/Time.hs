@@ -1,16 +1,16 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE LambdaCase             #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE StandaloneDeriving     #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Time
@@ -35,17 +35,17 @@ module NITTA.Model.ProcessorUnits.Time
 import           Data.Default
 import           Data.Ix
 import           Data.Kind
-import qualified Data.List                     as L
+import qualified Data.List as L
 import           Data.Maybe
-import qualified Data.String.Utils             as S
+import qualified Data.String.Utils as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.Types
 import           NITTA.Utils.CodeFormat
 import           Numeric.Interval
-import qualified Numeric.Interval              as I
-import           Text.InterpolatedString.Perl6 (qc)
+import qualified Numeric.Interval as I
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 -- | Класс идентификатора вложенного вычислительного блока.

@@ -1,15 +1,15 @@
-{-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE DeriveGeneric             #-}
-{-# LANGUAGE DuplicateRecordFields     #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE LambdaCase                #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE OverloadedStrings         #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Module      : NITTA.Synthesis.Tree
@@ -42,7 +42,7 @@ module NITTA.Synthesis.Tree
     ) where
 
 import           Control.Concurrent.STM
-import           Control.Monad                   (forM, unless)
+import           Control.Monad ( forM, unless )
 import           Data.Default
 import           Data.List.Split
 import           GHC.Generics
@@ -50,11 +50,11 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Model.TargetSystem        (ModelState (..))
+import           NITTA.Model.TargetSystem ( ModelState (..) )
 import           NITTA.Model.Types
 import           NITTA.Synthesis.Estimate
 import           NITTA.Utils
-import           Numeric.Interval                (Interval)
+import           Numeric.Interval ( Interval )
 
 
 -- |Type alias for Graph parts, where `e` - graph element (Node or Edge) should

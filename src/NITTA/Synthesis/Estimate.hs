@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE DeriveGeneric             #-}
-{-# LANGUAGE DuplicateRecordFields     #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Module      : NITTA.Synthesis.Estimate
@@ -24,19 +24,19 @@ module NITTA.Synthesis.Estimate
     ) where
 
 import           Data.Default
-import qualified Data.List                       as L
-import qualified Data.Map                        as M
+import qualified Data.List as L
+import qualified Data.Map as M
 import           Data.Maybe
-import qualified Data.Set                        as S
+import qualified Data.Set as S
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Model.TargetSystem        (ModelState (..))
+import           NITTA.Model.TargetSystem ( ModelState (..) )
 import           NITTA.Model.Types
 import           NITTA.Utils
-import           Numeric.Interval                (inf, sup)
+import           Numeric.Interval ( inf, sup )
 
 
 -- |EstimationCntx contains some data about the node, for which we need to

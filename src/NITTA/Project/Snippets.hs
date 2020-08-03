@@ -1,8 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 {-|
 Module      : NITTA.Project.Snippets
@@ -19,7 +19,7 @@ module NITTA.Project.Snippets
     ) where
 
 import           NITTA.Utils
-import           Text.InterpolatedString.Perl6 (qc)
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 snippetClkGen :: String

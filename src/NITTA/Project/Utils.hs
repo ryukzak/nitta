@@ -1,9 +1,9 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Project.Utils
@@ -20,11 +20,11 @@ module NITTA.Project.Utils
     , writeWholeProject
     ) where
 
-import           Control.Monad                    (unless)
+import           Control.Monad ( unless )
 import           Data.Default
-import qualified Data.HashMap.Strict              as HM
-import qualified Data.List                        as L
-import qualified Data.Map                         as M
+import qualified Data.HashMap.Strict as HM
+import qualified Data.List as L
+import qualified Data.Map as M
 import           Data.Maybe
 import           NITTA.Intermediate.Types
 import           NITTA.Model.ProcessorUnits.Time
@@ -34,7 +34,7 @@ import           NITTA.Project.Parts.TargetSystem
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
 import           System.Exit
-import           System.IO                        (hPutStrLn, stderr)
+import           System.IO ( hPutStrLn, stderr )
 import           System.Process
 import           Text.Regex
 

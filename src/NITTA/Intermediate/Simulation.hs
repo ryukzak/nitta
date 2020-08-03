@@ -1,9 +1,9 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Intermediate.Simulation
@@ -18,9 +18,9 @@ module NITTA.Intermediate.Simulation
     , reorderAlgorithm
     ) where
 
-import           Data.List                    (intersect, (\\))
-import qualified Data.Map                     as M
-import           Data.Set                     (elems)
+import           Data.List ( intersect, (\\) )
+import qualified Data.Map as M
+import           Data.Set ( elems )
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Utils
@@ -85,7 +85,7 @@ reorderAlgorithm alg = orderAlgorithm' [] alg
             | loops@(_:_) <- filter isLoop fs
             , let loopOutputs = elems $ unionsMap outputs loops
             = case filter (not . null . intersect loopOutputs . elems . inputs) loops of
-                [] -> loops ++ orderAlgorithm' (elems (unionsMap variables loops) ++ vs) (fs \\ loops)
+                []    -> loops ++ orderAlgorithm' (elems (unionsMap variables loops) ++ vs) (fs \\ loops)
                 ready -> ready ++ orderAlgorithm' (elems (unionsMap variables ready) ++ vs) (fs \\ ready)
         orderAlgorithm' vs fs
             | let ready = filter (null . (\\ vs) . elems . inputs) fs

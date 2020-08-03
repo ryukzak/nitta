@@ -1,11 +1,11 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.IO.I2C
@@ -20,14 +20,14 @@ module NITTA.Model.ProcessorUnits.IO.I2C
     , Ports(..), IOPorts(..)
     ) where
 
-import           Data.Bits                              (finiteBitSize)
+import           Data.Bits ( finiteBitSize )
 import           Data.Default
 import           NITTA.Model.ProcessorUnits.IO.SimpleIO
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
-import           Text.InterpolatedString.Perl6          (qc)
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 data I2Cinterface

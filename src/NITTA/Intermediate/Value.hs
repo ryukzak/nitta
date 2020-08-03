@@ -1,8 +1,8 @@
-{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE KindSignatures         #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {-|
 Module      : NITTA.Intermediate.Value
@@ -36,7 +36,7 @@ import           Data.Proxy
 import           Data.Typeable
 import           GHC.TypeLits
 import           Numeric
-import           Text.InterpolatedString.Perl6 (qc)
+import           Text.InterpolatedString.Perl6 ( qc )
 import           Text.Printf
 import           Text.Regex
 

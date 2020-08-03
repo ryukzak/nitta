@@ -1,10 +1,10 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
 
 {-|
@@ -21,22 +21,22 @@ module NITTA.UIBackend
     , prepareJSAPI
     ) where
 
-import           Control.Exception             (SomeException, try)
-import           Control.Monad                 (unless, when)
+import           Control.Exception ( SomeException, try )
+import           Control.Monad ( unless, when )
 import           Data.Either
-import           GHC.IO.Encoding               (setLocaleEncoding, utf8)
-import           Network.Simple.TCP            (connect)
-import           Network.Wai.Handler.Warp      (run)
-import           Network.Wai.Middleware.Cors   (simpleCors)
+import           GHC.IO.Encoding ( setLocaleEncoding, utf8 )
+import           Network.Simple.TCP ( connect )
+import           Network.Wai.Handler.Warp ( run )
+import           Network.Wai.Middleware.Cors ( simpleCors )
 import           NITTA.Synthesis.Tree
-import           NITTA.UIBackend.Marshalling   ()
+import           NITTA.UIBackend.Marshalling ()
 import           NITTA.UIBackend.REST
 import           Servant
-import qualified Servant.JS                    as SJS
-import           System.Exit                   (ExitCode (..), die)
-import           System.FilePath.Posix         (joinPath)
+import qualified Servant.JS as SJS
+import           System.Exit ( ExitCode (..), die )
+import           System.FilePath.Posix ( joinPath )
 import           System.Process
-import           Text.InterpolatedString.Perl6 (qq)
+import           Text.InterpolatedString.Perl6 ( qq )
 
 
 prepareJSAPI port path = do

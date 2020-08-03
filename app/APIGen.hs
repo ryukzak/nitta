@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE DeriveDataTypeable     #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS -fno-warn-orphans #-}
 
 {-|
@@ -26,7 +26,7 @@ module APIGen
 import           Data.Aeson
 import           Data.Aeson.TypeScript.TH
 import           Data.Proxy
-import qualified Data.String.Utils           as S
+import qualified Data.String.Utils as S
 import           NITTA.Model.Problems
 import           NITTA.Model.Types
 import           NITTA.Synthesis.Estimate
@@ -37,8 +37,8 @@ import           NITTA.UIBackend.Timeline
 import           NITTA.UIBackend.VisJS
 import           Numeric.Interval
 import           System.Console.CmdArgs
-import           System.Directory            (createDirectoryIfMissing)
-import           System.FilePath.Posix       (joinPath)
+import           System.Directory ( createDirectoryIfMissing )
+import           System.FilePath.Posix ( joinPath )
 
 
 data APIGen

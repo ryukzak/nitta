@@ -1,12 +1,12 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Intermediate.Types
@@ -37,10 +37,10 @@ module NITTA.Intermediate.Types
 
 import           Data.Default
 import           Data.List
-import qualified Data.Map                    as M
+import qualified Data.Map as M
 import           Data.Maybe
-import qualified Data.Set                    as S hiding (split)
-import qualified Data.String.Utils           as S
+import qualified Data.Set as S hiding ( split )
+import qualified Data.String.Utils as S
 import           Data.Tuple
 import           Data.Typeable
 import           GHC.Generics

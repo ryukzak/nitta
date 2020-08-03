@@ -1,12 +1,12 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE MultiWayIf            #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -fno-warn-type-defaults #-}
 
 {-|
@@ -26,18 +26,18 @@ module NITTA.LuaFrontend
 import           Control.Monad.Identity
 import           Control.Monad.State
 import           Data.Bifunctor
-import           Data.List                     (find, group, sort)
-import qualified Data.Map                      as M
+import           Data.List ( find, group, sort )
+import qualified Data.Map as M
 import           Data.Maybe
-import qualified Data.String.Utils             as S
-import           Data.Text                     (Text, pack, unpack)
-import qualified Data.Text                     as T
+import qualified Data.String.Utils as S
+import           Data.Text ( Text, pack, unpack )
+import qualified Data.Text as T
 import           Language.Lua
-import qualified NITTA.Intermediate.Functions  as F
-import           NITTA.Intermediate.Types      hiding (patch)
+import qualified NITTA.Intermediate.Functions as F
+import           NITTA.Intermediate.Types hiding ( patch )
 import           NITTA.Model.TargetSystem
-import           NITTA.Utils                   (modify'_)
-import           Text.InterpolatedString.Perl6 (qq)
+import           NITTA.Utils ( modify'_ )
+import           Text.InterpolatedString.Perl6 ( qq )
 import           Text.Printf
 
 
@@ -435,12 +435,12 @@ renameFromTo rFrom rTo = do
         , algVars=rTo : algVars
         }
     where
-        patch [] = []
-        patch (i@InputVar{ iVar } : xs) = i{ iVar=rn iVar } : patch xs
+        patch []                                  = []
+        patch (i@InputVar{ iVar } : xs)           = i{ iVar=rn iVar } : patch xs
         patch (Constant{ cX, cVar, cTextX } : xs) = Constant{ cX, cVar=rn cVar, cTextX } : patch xs
-        patch (Alias{ aFrom, aTo } : xs) = Alias (rn aFrom) (rn aTo) : patch xs
-        patch (f@Function{ fIn, fOut } : xs) = f{ fIn=map rn fIn, fOut=map rn fOut } : patch xs
-        patch (x:xs) = x : patch xs
+        patch (Alias{ aFrom, aTo } : xs)          = Alias (rn aFrom) (rn aTo) : patch xs
+        patch (f@Function{ fIn, fOut } : xs)      = f{ fIn=map rn fIn, fOut=map rn fOut } : patch xs
+        patch (x:xs)                              = x : patch xs
 
         rn v
             | v == rFrom = rTo

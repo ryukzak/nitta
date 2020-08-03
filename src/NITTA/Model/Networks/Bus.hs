@@ -1,15 +1,15 @@
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE MultiWayIf            #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Model.Networks.Bus
@@ -42,15 +42,15 @@ module NITTA.Model.Networks.Bus
     ) where
 
 import           Control.Monad.State
-import qualified Data.Array                      as A
+import qualified Data.Array as A
 import           Data.Bifunctor
-import           Data.Bits                       (FiniteBits (..))
+import           Data.Bits ( FiniteBits (..) )
 import           Data.Default
-import qualified Data.List                       as L
-import qualified Data.Map                        as M
-import           Data.Maybe                      (fromMaybe, isJust, mapMaybe)
-import qualified Data.Set                        as S
-import qualified Data.String.Utils               as S
+import qualified Data.List as L
+import qualified Data.Map as M
+import           Data.Maybe ( fromMaybe, isJust, mapMaybe )
+import qualified Data.Set as S
+import qualified Data.String.Utils as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
@@ -64,8 +64,8 @@ import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                (inf, sup, width, (...))
-import           Text.InterpolatedString.Perl6   (qc)
+import           Numeric.Interval ( inf, sup, width, (...) )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 data BusNetwork tag v x t = BusNetwork
@@ -211,7 +211,7 @@ instance ( UnitTag tag, VarValTime v x t
         where
             rejects = S.join "\n" $ map showReject $ M.assocs bnPus
             showReject (tag, pu) | Left err <- tryBind f pu = "    [" ++ show tag ++ "]: " ++ err
-            showReject (tag, _) = "    [" ++ show tag ++ "]: undefined"
+            showReject (tag, _)  = "    [" ++ show tag ++ "]: undefined"
 
 
     process net@BusNetwork{ bnProcess, bnPus } = let
@@ -221,7 +221,7 @@ instance ( UnitTag tag, VarValTime v x t
                 , isInstruction sDesc
                 , v <- case sDesc of
                     ( InstructionStep i ) | Just (Transport var _ _) <- castInstruction net i -> [var]
-                    _ -> []
+                    _                                                                         -> []
                 ]
             wholeProcess = execScheduleWithProcess net bnProcess $ do
                 mapM_ (uncurry includeNestedProcess) $ L.sortOn fst $ M.assocs bnPus
@@ -691,8 +691,8 @@ instance ( VarValTime v x t
             endmodule
             |]
         where
-            defEnvInitFlag flags Sync = S.join " && "$ "1'b1" : flags
-            defEnvInitFlag flags ASync = S.join " || " $ "1'b1" : flags
+            defEnvInitFlag flags Sync     = S.join " && "$ "1'b1" : flags
+            defEnvInitFlag flags ASync    = S.join " || " $ "1'b1" : flags
             defEnvInitFlag _flags OnBoard = error "can't generate testbench without specific IOSynchronization"
 
 

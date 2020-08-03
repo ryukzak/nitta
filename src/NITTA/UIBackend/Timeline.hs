@@ -1,13 +1,13 @@
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.UIBackend.Timeline
@@ -21,9 +21,9 @@ module NITTA.UIBackend.Timeline
     ( ViewPointID, TimelinePoint, processTimelines, ProcessTimelines(..), TimelineWithViewPoint(..)
     ) where
 
-import qualified Data.Map                        as M
+import qualified Data.Map as M
 import           Data.Maybe
-import qualified Data.String.Utils               as S
+import qualified Data.String.Utils as S
 import           GHC.Generics
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
@@ -128,5 +128,5 @@ timeline a b steps = map findSteps [a..b]
             , pTime=sTime
             , pInfo=S.replace "\"" "" $ case sDesc of
                 NestedStep{ nTitle, nStep=Step{ sDesc=subDesc } } -> show nTitle ++ " do " ++ show subDesc
-                _ -> show sDesc
+                _                                                 -> show sDesc
             }

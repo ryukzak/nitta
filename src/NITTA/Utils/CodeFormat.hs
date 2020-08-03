@@ -1,4 +1,3 @@
-
 {-|
 Module      : NITTA.Utils.CodeFormat
 Description : Functions for output code. Examples in Test.CodeBlock.hs
@@ -15,7 +14,7 @@ module NITTA.Utils.CodeFormat
 
 import           Data.Maybe
 import qualified Data.String.Utils as S
-import           Safe              (headDef, minimumMay)
+import           Safe ( headDef, minimumMay )
 
 
 inlineMarker = "###"

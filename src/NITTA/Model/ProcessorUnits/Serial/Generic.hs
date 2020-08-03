@@ -1,10 +1,10 @@
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Serial.Generic
@@ -31,17 +31,16 @@ module NITTA.Model.ProcessorUnits.Serial.Generic
 import           Control.Monad.State
 import           Data.Default
 import           Data.Either
-import           Data.List                       (find)
-import           Data.Set                        (elems, (\\))
-import qualified Data.Set                        as S
+import           Data.List ( find )
+import           Data.Set ( elems, (\\) )
+import qualified Data.Set as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Utils
-import           Numeric.Interval                (Interval, inf, sup, width,
-                                                  (...))
+import           Numeric.Interval ( Interval, inf, sup, width, (...) )
 
 
 -- | Внешняя обёртка для вычислительных блоков, выполняющих функции последовательно.

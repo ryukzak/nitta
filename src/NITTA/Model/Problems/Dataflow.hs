@@ -1,10 +1,10 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Model.Problems.Dataflow
@@ -19,8 +19,8 @@ module NITTA.Model.Problems.Dataflow
     , dataflowOption2decision
     ) where
 
-import           Control.Arrow               (second)
-import qualified Data.Map                    as M
+import           Control.Arrow ( second )
+import qualified Data.Map as M
 import           Data.Maybe
 import           GHC.Generics
 import           NITTA.Intermediate.Variable

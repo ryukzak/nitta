@@ -1,14 +1,14 @@
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.UIBackend.VisJS
@@ -26,11 +26,11 @@ module NITTA.UIBackend.VisJS
     ) where
 
 import           Data.Aeson
-import qualified Data.Set                 as S
-import qualified Data.String.Utils        as S
+import qualified Data.Set as S
+import qualified Data.String.Utils as S
 import           GHC.Generics
 import qualified NITTA.Intermediate.Types as F
-import           Prelude                  hiding (id)
+import           Prelude hiding ( id )
 
 
 type VisJS = GraphStructure GraphEdge

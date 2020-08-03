@@ -1,12 +1,12 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Intermediate.Functions
@@ -24,13 +24,13 @@ module NITTA.Intermediate.Functions.Accum
     , pullActionGroups, pushActionGroups
     ) where
 
-import           Data.List                     (partition)
-import           Data.List.Split               (splitWhen)
-import           Data.Set                      (elems, fromList)
+import           Data.List ( partition )
+import           Data.List.Split ( splitWhen )
+import           Data.Set ( elems, fromList )
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Utils.Base
-import           Text.InterpolatedString.Perl6 (qc)
+import           Text.InterpolatedString.Perl6 ( qc )
 import           Text.Regex
 
 

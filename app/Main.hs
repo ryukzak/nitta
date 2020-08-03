@@ -1,11 +1,11 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS -fno-warn-orphans #-}
 
 {-|
@@ -18,11 +18,11 @@ Stability   : experimental
 -}
 module Main ( main ) where
 
-import           Control.Monad                   (when)
-import           Data.Default                    (def)
+import           Control.Monad ( when )
+import           Data.Default ( def )
 import           Data.Maybe
 import           Data.Proxy
-import qualified Data.Text.IO                    as T
+import qualified Data.Text.IO as T
 import           Data.Version
 import           GHC.TypeLits
 import           NITTA.Intermediate.Simulation
@@ -34,12 +34,10 @@ import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Parts.TestBench
-import           NITTA.TargetSynthesis           (TargetSynthesis (..),
-                                                  mkModelWithOneNetwork,
-                                                  runTargetSynthesis)
+import           NITTA.TargetSynthesis ( TargetSynthesis (..), mkModelWithOneNetwork, runTargetSynthesis )
 import           NITTA.UIBackend
 import           Paths_nitta
-import           System.Console.CmdArgs          hiding (def)
+import           System.Console.CmdArgs hiding ( def )
 import           System.Exit
 import           Text.Regex
 

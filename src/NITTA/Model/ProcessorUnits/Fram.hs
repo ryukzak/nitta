@@ -1,14 +1,14 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Fram
@@ -24,16 +24,16 @@ module NITTA.Model.ProcessorUnits.Fram
   , framWithSize
   ) where
 
-import           Control.Applicative             ((<|>))
+import           Control.Applicative ( (<|>) )
 import           Control.Monad
-import qualified Data.Array                      as A
-import           Data.Array.Base                 (numElements)
-import           Data.Bits                       (finiteBitSize, testBit)
+import qualified Data.Array as A
+import           Data.Array.Base ( numElements )
+import           Data.Bits ( finiteBitSize, testBit )
 import           Data.Default
-import qualified Data.List                       as L
+import qualified Data.List as L
 import           Data.Maybe
-import qualified Data.Set                        as S
-import qualified Data.String.Utils               as S
+import qualified Data.Set as S
+import qualified Data.String.Utils as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
@@ -42,8 +42,8 @@ import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                (inf, sup, (...))
-import           Text.InterpolatedString.Perl6   (qc)
+import           Numeric.Interval ( inf, sup, (...) )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 
@@ -287,17 +287,17 @@ instance ( VarValTime v x t
                 then map ( (\(Reg (I v) (O _)) -> target v) . fst ) remainRegs
                 else []
 
-            foo Cell{ state=NotUsed } = Nothing
-            foo Cell{ state=Done } = Nothing
+            foo Cell{ state=NotUsed }                      = Nothing
+            foo Cell{ state=Done }                         = Nothing
 
-            foo Cell{ state=DoConstant vs } = Just $ source False vs
+            foo Cell{ state=DoConstant vs }                = Just $ source False vs
 
-            foo Cell{ state=DoReg vs, lastWrite } = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
-            foo Cell{ state=ForReg } = Nothing
+            foo Cell{ state=DoReg vs, lastWrite }          = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
+            foo Cell{ state=ForReg }                       = Nothing
 
-            foo Cell{ state=NotBrokenLoop } = Nothing
+            foo Cell{ state=NotBrokenLoop }                = Nothing
             foo Cell{ state=DoLoopSource vs _, lastWrite } = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
-            foo Cell{ state=DoLoopTarget v } = Just $ target v
+            foo Cell{ state=DoLoopTarget v }               = Just $ target v
 
             fromCells = mapMaybe foo $ A.elems memory
         in fromRemain ++ fromCells

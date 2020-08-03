@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {-|
 Module      : NITTA.TargetSynthesis
@@ -77,20 +77,20 @@ module NITTA.TargetSynthesis
     , TargetSynthesis(..), runTargetSynthesis
     ) where
 
-import           Control.Monad                   (when)
-import           Data.Default                    as D
-import           Data.Text                       (Text)
+import           Control.Monad ( when )
+import           Data.Default as D
+import           Data.Text ( Text )
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.LuaFrontend
-import           NITTA.Model.Networks.Bus        (BusNetwork)
+import           NITTA.Model.Networks.Bus ( BusNetwork )
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Tree
-import           System.FilePath                 (joinPath)
+import           System.FilePath ( joinPath )
 
 
 -- |Description of synthesis task. Applicable for target system synthesis and
