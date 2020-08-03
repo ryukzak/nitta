@@ -94,8 +94,8 @@ endtask // assert
     verilogAssertRE :: x -> Regex
     verilogAssertRE _ = mkRegex $ concat
         [ "([[:digit:]]+):([[:digit:]]+)\t"
-        , "actual: ([[:digit:]]+)\t"
-        , "expect: ([[:digit:]]+)\t"
+        , "actual: (-?[[:digit:]]+)\t"
+        , "expect: (-?[[:digit:]]+)\t"
         , "var: ([^ \t\n]+)"
         ]
 
@@ -311,11 +311,10 @@ endfunction // fxtor
 
     verilogAssertRE _ = mkRegex $ concat
         [ "([[:digit:]]+):([[:digit:]]+)\t"
-        , "actual: ([[:digit:]]+\\.[[:digit:]]+)\t"
-        , "expect: ([[:digit:]]+\\.[[:digit:]]+)\t"
+        , "actual: (-?[[:digit:]]+\\.[[:digit:]]+)\t"
+        , "expect: (-?[[:digit:]]+\\.[[:digit:]]+)\t"
         , "var: ([^ \t\n]+)"
         ]
-
 
 
 instance ( KnownNat m, KnownNat b ) => FixedPointCompatible ( FX m b ) where

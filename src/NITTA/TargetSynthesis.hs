@@ -143,9 +143,9 @@ instance ( VarValTime v x t ) => Default (TargetSynthesis String v x t) where
 
 
 runTargetSynthesis TargetSynthesis
-            { tName, tMicroArch, tSourceCode, tDFG, tReceivedValues, tSynthesisMethod, tVerbose, tWriteProject
-            , tLibPath, tPath, tSimulationCycleN
-            } = do
+        { tName, tMicroArch, tSourceCode, tDFG, tReceivedValues, tSynthesisMethod, tVerbose, tWriteProject
+        , tLibPath, tPath, tSimulationCycleN
+        } = do
     tDFG' <- maybe (return tDFG) translateToIntermediate tSourceCode
     rootNode <- mkRootNodeIO (mkModelWithOneNetwork tMicroArch tDFG')
     synthesisResult <- synthesis rootNode
@@ -158,42 +158,43 @@ runTargetSynthesis TargetSynthesis
             return $ Right report
     where
         translateToIntermediate src = do
-            when tVerbose $ putStrLn "lua transpiler"
+            when tVerbose $ putStrLn "> lua transpiler..."
             let tmp = frDataFlow $ lua2functions src
-            when tVerbose $ putStrLn "lua transpiler - ok"
+            when tVerbose $ putStrLn "> lua transpiler...ok"
             return tmp
 
         synthesis rootNode = do
-            when tVerbose $ putStrLn "synthesis process"
+            when tVerbose $ putStrLn "> synthesis process..."
             leafNode <- tSynthesisMethod rootNode
             let isComplete = isSynthesisFinish $ nModel leafNode
-            when (tVerbose && isComplete) $ putStrLn "synthesis process - ok"
-            when (tVerbose && not isComplete) $ putStrLn "synthesis process - fail"
+            when (tVerbose && isComplete) $ putStrLn "> synthesis process...ok"
+            when (tVerbose && not isComplete) $ putStrLn "> synthesis process...fail"
             return $ if isComplete
                 then Right leafNode
-                else Left "synthesis process - fail"
+                else Left "synthesis process...fail"
 
         project Node{ nModel=ModelState{ mUnit, mDataFlowGraph } } = Project
             { pName=tName
             , pLibPath=tLibPath
             , pPath=joinPath [ tPath, tName ]
             , pUnit=mUnit
-            -- because application algorithm can be refactored we use synthesised version
+              -- because application algorithm can be refactored we need to use
+              -- synthesised version
             , pTestCntx=simulateDataFlowGraph tSimulationCycleN def tReceivedValues mDataFlowGraph
             }
 
         write prj@Project{ pPath } = do
-            when tVerbose $ putStrLn $ "write target project (" ++ pPath ++ ")"
+            when tVerbose $ putStrLn $ "> write target project to: \"" ++ pPath ++ "\"..."
             tWriteProject prj
-            when tVerbose $ putStrLn $ "write target project (" ++ pPath ++ ") - ok"
+            when tVerbose $ putStrLn $ "> write target project to: \"" ++ pPath ++ "\"...ok"
 
         testbench prj = do
-            when tVerbose $ putStrLn "run testbench"
+            when tVerbose $ putStrLn "> run logical synthesis..."
             report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestbench prj
             when tVerbose $ case tbStatus of
-                True  -> putStrLn "run testbench - ok"
+                True  -> putStrLn "> run logical simulation...ok"
                 False -> do
-                    putStrLn "run testbench - fail"
+                    putStrLn "> run logical simulation...fail"
                     putStrLn "-----------------------------------------------------------"
                     putStrLn "testbench compiler dump:"
                     putStrLn $ unlines tbCompilerDump
