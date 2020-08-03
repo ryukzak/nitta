@@ -7,8 +7,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
-{-# OPTIONS_GHC -fno-cse #-}
+{-# OPTIONS -fno-warn-type-defaults #-}
 
 {-|
 Module      : NITTA.LuaFrontend

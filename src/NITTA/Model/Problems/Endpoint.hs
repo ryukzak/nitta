@@ -7,7 +7,6 @@
 {-# LANGUAGE IncoherentInstances    #-}
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.Model.Problems.Endpoint

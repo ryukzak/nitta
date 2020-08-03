@@ -5,8 +5,6 @@
 {-# LANGUAGE NamedFieldPuns         #-}
 {-# LANGUAGE QuasiQuotes            #-}
 {-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.Project.Parts.TestBench

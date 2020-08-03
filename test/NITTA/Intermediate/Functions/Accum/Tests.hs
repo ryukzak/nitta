@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
 
 {-|
 Module      : NITTA.Intermediate.Functions.Accum.Tests

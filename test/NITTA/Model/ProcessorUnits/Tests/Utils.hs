@@ -6,8 +6,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS -Wall -Wcompat -fno-warn-redundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Tests.Utils

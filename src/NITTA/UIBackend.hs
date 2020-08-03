@@ -5,7 +5,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE TypeOperators         #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
+{-# OPTIONS -fno-warn-partial-type-signatures #-}
 
 {-|
 Module      : NITTA.UIBackend

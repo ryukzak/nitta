@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 821c688ffbff7f2ed3f27b118555c78b80addd1a94e1418549b346922b77f33e
+-- hash: 050185d3c53fba0ac413719be494f4745dd144c0770a0059892b92ebfff0caaa
 
 name:           nitta
 version:        0.0.0.1
@@ -107,7 +107,7 @@ library
       Paths_nitta
   hs-source-dirs:
       src
-  ghc-options: -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -j
+  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures
   build-depends:
       HStringTemplate
     , MissingH
@@ -149,7 +149,7 @@ executable nitta
       Paths_nitta
   hs-source-dirs:
       app
-  ghc-options: -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -j -threaded -rtsopts -with-rtsopts=-N -main-is Main
+  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -threaded -rtsopts -with-rtsopts=-N -main-is Main
   build-depends:
       MissingH
     , base
@@ -170,7 +170,7 @@ executable nitta-api-gen
       Paths_nitta
   hs-source-dirs:
       app
-  ghc-options: -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -j -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
+  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
   build-depends:
       MissingH
     , aeson
@@ -214,7 +214,7 @@ test-suite nitta-test
       Paths_nitta
   hs-source-dirs:
       test
-  ghc-options: -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -j -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
+  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
   build-depends:
       MissingH
     , QuickCheck

@@ -6,10 +6,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
-{-# OPTIONS -fno-warn-overlapping-patterns -fno-warn-orphans #-}
-{-# OPTIONS_GHC -fno-cse #-}
+{-# OPTIONS -fno-warn-orphans #-}
 
 {-|
 Module      : Main

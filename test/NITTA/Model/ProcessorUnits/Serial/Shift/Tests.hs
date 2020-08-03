@@ -1,6 +1,4 @@
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Serial.Shift.Tests
