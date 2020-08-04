@@ -6,8 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
+{-# OPTIONS -fno-warn-partial-type-signatures #-}
 
 {-|
 Module      : NITTA.Model.Tests.Microarchitecture

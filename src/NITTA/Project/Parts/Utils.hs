@@ -1,10 +1,8 @@
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Project.Parts.Utils
@@ -19,12 +17,12 @@ module NITTA.Project.Parts.Utils
     , copyLibraryFiles
     ) where
 
-import qualified Data.List                    as L
-import qualified Data.String.Utils            as S
+import qualified Data.List as L
+import qualified Data.String.Utils as S
 import           NITTA.Project.Implementation
 import           NITTA.Project.Types
 import           System.Directory
-import           System.FilePath.Posix        (joinPath, pathSeparator)
+import           System.FilePath.Posix ( joinPath, pathSeparator )
 
 
 -- |Записать реализацию на диск. Данные размещаются в указанном рабочем каталоге.
@@ -60,6 +58,6 @@ copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
             = L.nub $ concatMap (args "") [ hardware pName pUnit ]
             where
                 args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
-                args p (Aggregate Nothing subInstances) = concatMap (args $ joinPath [p]) subInstances
-                args _ (FromLibrary fn) = [ joinPath [ pLibPath, fn ] ]
-                args _ _ = []
+                args p (Aggregate Nothing subInstances)   = concatMap (args $ joinPath [p]) subInstances
+                args _ (FromLibrary fn)                   = [ joinPath [ pLibPath, fn ] ]
+                args _ _                                  = []

@@ -1,11 +1,9 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Project.Utils
@@ -22,11 +20,11 @@ module NITTA.Project.Utils
     , writeWholeProject
     ) where
 
-import           Control.Monad                    (unless)
+import           Control.Monad ( unless )
 import           Data.Default
-import qualified Data.HashMap.Strict              as HM
-import qualified Data.List                        as L
-import qualified Data.Map                         as M
+import qualified Data.HashMap.Strict as HM
+import qualified Data.List as L
+import qualified Data.Map as M
 import           Data.Maybe
 import           NITTA.Intermediate.Types
 import           NITTA.Model.ProcessorUnits.Time
@@ -36,7 +34,7 @@ import           NITTA.Project.Parts.TargetSystem
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
 import           System.Exit
-import           System.IO                        (hPutStrLn, stderr)
+import           System.IO ( hPutStrLn, stderr )
 import           System.Process
 import           Text.Regex
 
@@ -80,7 +78,7 @@ runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNu
         , tbPath=pPath
         , tbFiles=files
         , tbFunctions=map show $ functions pUnit
-        , tbSynthesisSteps=map show $ steps $ process $ pUnit
+        , tbSynthesisSteps=map show $ steps $ process pUnit
         , tbCompilerDump=dump compileOut compileErr
         , tbSimulationDump=dump simOut simErr
         , tbFunctionalSimulationCntx=map (HM.fromList . M.assocs . cycleCntx) $ take cntxCycleNumber cntxProcess

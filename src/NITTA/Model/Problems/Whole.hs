@@ -1,16 +1,13 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE DuplicateRecordFields  #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE LambdaCase             #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Model.Problems.Whole
@@ -27,7 +24,7 @@ module NITTA.Model.Problems.Whole
     , option2decision
     ) where
 
-import qualified Data.Map                      as M
+import qualified Data.Map as M
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Binding
@@ -74,5 +71,5 @@ option2decision
     => SynthesisStatement tag v x (TimeConstrain t)
     -> SynthesisStatement tag v x (Interval t)
 option2decision (Binding f tag) = Binding f tag
-option2decision df@Dataflow{} = generalizeDataflow $ dataflowOption2decision $ specializeDataflow df
-option2decision (Refactor o) = Refactor o
+option2decision df@Dataflow{}   = generalizeDataflow $ dataflowOption2decision $ specializeDataflow df
+option2decision (Refactor o)    = Refactor o

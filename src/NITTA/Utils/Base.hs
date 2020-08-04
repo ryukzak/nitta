@@ -1,5 +1,3 @@
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
-
 {-|
 Module      : NITTA.Utils.Base
 Description : Utils for external libraries
@@ -14,8 +12,8 @@ module NITTA.Utils.Base
     , minimumOn, maximumOn
     ) where
 
-import           Data.List (maximumBy, minimumBy)
-import           Data.Set  (elems, unions)
+import           Data.List ( maximumBy, minimumBy )
+import           Data.Set ( elems, unions )
 
 
 unionsMap f lst = unions $ map f lst

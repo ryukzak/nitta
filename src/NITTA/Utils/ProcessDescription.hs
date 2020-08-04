@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns   #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {-|
 Module      : NITTA.Utils.ProcessDescription
@@ -31,11 +30,11 @@ module NITTA.Utils.ProcessDescription
     ) where
 
 import           Control.Monad.State
-import           Data.Proxy                      (asProxyTypeOf)
+import           Data.Proxy ( asProxyTypeOf )
 import           Data.Typeable
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
-import           Numeric.Interval                (singleton)
+import           Numeric.Interval ( singleton )
 
 -- |Process builder state.
 data Schedule pu v x t

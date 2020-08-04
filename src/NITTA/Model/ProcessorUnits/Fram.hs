@@ -1,15 +1,14 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Fram
@@ -25,16 +24,16 @@ module NITTA.Model.ProcessorUnits.Fram
   , framWithSize
   ) where
 
-import           Control.Applicative             ((<|>))
+import           Control.Applicative ( (<|>) )
 import           Control.Monad
-import qualified Data.Array                      as A
-import           Data.Array.Base                 (numElements)
-import           Data.Bits                       (finiteBitSize, testBit)
+import qualified Data.Array as A
+import           Data.Array.Base ( numElements )
+import           Data.Bits ( finiteBitSize, testBit )
 import           Data.Default
-import qualified Data.List                       as L
+import qualified Data.List as L
 import           Data.Maybe
-import qualified Data.Set                        as S
-import qualified Data.String.Utils               as S
+import qualified Data.Set as S
+import qualified Data.String.Utils as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
@@ -43,8 +42,8 @@ import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                (inf, sup, (...))
-import           Text.InterpolatedString.Perl6   (qc)
+import           Numeric.Interval ( inf, sup, (...) )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 
@@ -285,20 +284,20 @@ instance ( VarValTime v x t
             source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstrain (1 + nextTick ... maxBound) (1 ... maxBound)
 
             fromRemain = if any (\case ForReg{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory
-                then map ( \(Reg (I v) (O _)) -> target v ) $ map fst remainRegs
+                then map ( (\(Reg (I v) (O _)) -> target v) . fst ) remainRegs
                 else []
 
-            foo Cell{ state=NotUsed } = Nothing
-            foo Cell{ state=Done } = Nothing
+            foo Cell{ state=NotUsed }                      = Nothing
+            foo Cell{ state=Done }                         = Nothing
 
-            foo Cell{ state=DoConstant vs } = Just $ source False vs
+            foo Cell{ state=DoConstant vs }                = Just $ source False vs
 
-            foo Cell{ state=DoReg vs, lastWrite } = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
-            foo Cell{ state=ForReg } = Nothing
+            foo Cell{ state=DoReg vs, lastWrite }          = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
+            foo Cell{ state=ForReg }                       = Nothing
 
-            foo Cell{ state=NotBrokenLoop } = Nothing
+            foo Cell{ state=NotBrokenLoop }                = Nothing
             foo Cell{ state=DoLoopSource vs _, lastWrite } = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
-            foo Cell{ state=DoLoopTarget v } = Just $ target v
+            foo Cell{ state=DoLoopTarget v }               = Just $ target v
 
             fromCells = mapMaybe foo $ A.elems memory
         in fromRemain ++ fromCells
@@ -352,11 +351,11 @@ instance ( VarValTime v x t
                 return eps
             cell' = if not $ null vsRemain
                 then cell
-                    { job=Just job{ startAt=startAt <|> (Just $ inf epAt - 1), endpoints=endpoints' ++ endpoints }
+                    { job=Just job{ startAt=startAt <|> Just (inf epAt - 1), endpoints=endpoints' ++ endpoints }
                     , state=DoLoopSource vsRemain oJob
                     }
                 else cell
-                    { job=Just oJob{ startAt=startAt <|> (Just $ inf epAt - 1) }
+                    { job=Just oJob{ startAt=startAt <|> Just (inf epAt - 1) }
                     , state=DoLoopTarget $ oJobV oJob
                     }
         = fram{ process_, memory=memory A.// [ (addr, cell') ] }
@@ -457,9 +456,9 @@ instance Controllable (Fram v x t) where
         ] ++ addrs
         where
             addrs = map (\(linkId, i) -> ( linkId
-                                        , maybe Undef Bool $ fmap (`testBit` i) addrSignal
+                                         , maybe Undef (Bool . (`testBit` i)) addrSignal
                                         )
-                        ) $ zip (reverse addr) [0..]
+                         ) $ zip (reverse addr) [0..]
 
     portsToSignals FramPorts{ oe, wr, addr } = oe : wr : addr
 

@@ -1,15 +1,14 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE InstanceSigs          #-}
-{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Serial.Accum
@@ -24,12 +23,12 @@ module NITTA.Model.ProcessorUnits.Serial.Accum
   , Ports(..), IOPorts(..)
   ) where
 
-import           Control.Monad                   (when)
-import           Data.Bits                       (finiteBitSize)
+import           Control.Monad ( when )
+import           Data.Bits ( finiteBitSize )
 import           Data.Default
-import           Data.List                       (find, partition, (\\))
-import           Data.Maybe                      (fromMaybe)
-import           Data.Set                        (elems, fromList, member)
+import           Data.List ( find, partition, (\\) )
+import           Data.Maybe ( fromMaybe )
+import           Data.Set ( elems, fromList, member )
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
@@ -38,8 +37,8 @@ import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                (singleton, sup, (...))
-import           Text.InterpolatedString.Perl6   (qc)
+import           Numeric.Interval ( singleton, sup, (...) )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 -- |Type that contains expression:
 -- a + b = c is exression and it equals:
@@ -242,7 +241,7 @@ instance Controllable (Accum v x t) where
     portsToSignals AccumPorts{ resetAcc, load, neg, oe } = [resetAcc, load, neg, oe]
 
     signalsToPorts (resetAcc:load:neg:oe:_) _ = AccumPorts resetAcc load neg oe
-    signalsToPorts _                    _ = error "pattern match error in signalsToPorts AccumPorts"
+    signalsToPorts _                    _     = error "pattern match error in signalsToPorts AccumPorts"
 
 
 instance Default (Microcode (Accum v x t)) where

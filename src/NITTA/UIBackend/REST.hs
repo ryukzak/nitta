@@ -1,13 +1,11 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE TypeSynonymInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 {-|
 Module      : NITTA.UIBackend.REST
@@ -25,9 +23,10 @@ module NITTA.UIBackend.REST
 
 import           Control.Monad.Except
 import           Data.Aeson
+import           Data.Bifunctor
 import           Data.Default
-import qualified Data.Map                        as M
-import qualified Data.Set                        as S
+import qualified Data.Map as M
+import qualified Data.Set as S
 import           GHC.Generics
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
@@ -41,10 +40,10 @@ import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Tree
 import           NITTA.UIBackend.Marshalling
 import           NITTA.UIBackend.Timeline
-import           NITTA.UIBackend.VisJS           (VisJS, algToVizJS)
+import           NITTA.UIBackend.VisJS ( VisJS, algToVizJS )
 import           NITTA.Utils
 import           Servant
-import           System.FilePath                 (joinPath)
+import           System.FilePath ( joinPath )
 
 
 
@@ -167,9 +166,10 @@ debug root nId = do
             [ (tag, filter (\Lock{ lockBy, locked } -> S.notMember lockBy already && S.notMember locked already) ls)
             | (tag, ls) <- dbgFunctionLocks
             ]
-        , dbgPULocks=map (\(tag, pu) -> (tag, locks pu)) $ M.assocs $ bnPus $ mUnit $ nModel node
+        , dbgPULocks=map (second locks) $ M.assocs $ bnPus $ mUnit $ nModel node
         }
     where
         endpointOptions' BusNetwork{ bnPus }
-            = let f (tag, pu) = map (\(t, ep) -> UnitEndpointView t $ view ep) $ zip (repeat tag) $ endpointOptions pu
+            = let f (tag, pu) = map (\(t, ep) -> UnitEndpointView t $ view ep)
+                      $ zip (repeat tag) $ endpointOptions pu
             in concatMap f $ M.assocs bnPus

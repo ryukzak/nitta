@@ -1,10 +1,9 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Utils
@@ -41,21 +40,19 @@ module NITTA.Utils
     , module NITTA.Utils.CodeFormat
     ) where
 
-import           Control.Monad.State             (State, get, modify', put,
-                                                  runState)
-import           Data.Bits                       (finiteBitSize, setBit,
-                                                  testBit)
-import           Data.List                       (sortOn)
-import           Data.Maybe                      (isJust, mapMaybe)
-import qualified Data.String.Utils               as S
+import           Control.Monad.State ( State, get, modify', put, runState )
+import           Data.Bits ( finiteBitSize, setBit, testBit )
+import           Data.List ( sortOn )
+import           Data.Maybe ( isJust, mapMaybe )
+import qualified Data.String.Utils as S
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Utils.Base
 import           NITTA.Utils.CodeFormat
-import           Numeric                         (readInt, showHex)
-import           Numeric.Interval                ((...))
-import qualified Numeric.Interval                as I
+import           Numeric ( readInt, showHex )
+import           Numeric.Interval ( (...) )
+import qualified Numeric.Interval as I
 import           Text.StringTemplate
 
 

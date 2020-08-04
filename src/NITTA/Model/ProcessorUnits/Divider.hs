@@ -1,14 +1,13 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -fno-warn-type-defaults #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Divider
@@ -24,14 +23,14 @@ module NITTA.Model.ProcessorUnits.Divider
     , Ports(..), IOPorts(..)
     ) where
 
-import           Control.Monad                   (void, when)
-import           Data.Bits                       (finiteBitSize)
+import           Control.Monad ( void, when )
+import           Data.Bits ( finiteBitSize )
 import           Data.Default
-import           Data.List                       (partition, sortBy)
-import           Data.Maybe                      (fromMaybe)
-import           Data.Set                        (Set, member)
-import qualified Data.Set                        as S
-import qualified NITTA.Intermediate.Functions    as F
+import           Data.List ( partition, sortBy )
+import           Data.Maybe ( fromMaybe )
+import           Data.Set ( Set, member )
+import qualified Data.Set as S
+import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
@@ -39,9 +38,8 @@ import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                (Interval, inf, intersection,
-                                                  singleton, sup, width, (...))
-import           Text.InterpolatedString.Perl6   (qc)
+import           Numeric.Interval ( Interval, inf, intersection, singleton, sup, width, (...) )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 data InputDesc

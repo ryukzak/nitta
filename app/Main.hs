@@ -1,15 +1,12 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE StandaloneDeriving    #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
-{-# OPTIONS -fno-warn-overlapping-patterns -fno-warn-orphans #-}
-{-# OPTIONS_GHC -fno-cse #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# OPTIONS -fno-warn-orphans #-}
 
 {-|
 Module      : Main
@@ -21,11 +18,11 @@ Stability   : experimental
 -}
 module Main ( main ) where
 
-import           Control.Monad                   (when)
-import           Data.Default                    (def)
+import           Control.Monad ( when )
+import           Data.Default ( def )
 import           Data.Maybe
 import           Data.Proxy
-import qualified Data.Text.IO                    as T
+import qualified Data.Text.IO as T
 import           Data.Version
 import           GHC.TypeLits
 import           NITTA.Intermediate.Simulation
@@ -37,12 +34,10 @@ import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Project.Parts.TestBench
-import           NITTA.TargetSynthesis           (TargetSynthesis (..),
-                                                  mkModelWithOneNetwork,
-                                                  runTargetSynthesis)
+import           NITTA.TargetSynthesis ( TargetSynthesis (..), mkModelWithOneNetwork, runTargetSynthesis )
 import           NITTA.UIBackend
 import           Paths_nitta
-import           System.Console.CmdArgs          hiding (def)
+import           System.Console.CmdArgs hiding ( def )
 import           System.Exit
 import           Text.Regex
 

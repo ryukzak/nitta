@@ -4,7 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults #-}
+{-# OPTIONS -fno-warn-type-defaults #-}
 
 {-|
 Module      : NITTA.Intermediate.Types.Tests

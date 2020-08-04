@@ -1,15 +1,14 @@
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.UIBackend.VisJS
@@ -27,11 +26,11 @@ module NITTA.UIBackend.VisJS
     ) where
 
 import           Data.Aeson
-import qualified Data.Set                 as S
-import qualified Data.String.Utils        as S
+import qualified Data.Set as S
+import qualified Data.String.Utils as S
 import           GHC.Generics
 import qualified NITTA.Intermediate.Types as F
-import           Prelude                  hiding (id)
+import           Prelude hiding ( id )
 
 
 type VisJS = GraphStructure GraphEdge
@@ -109,16 +108,18 @@ algToVizJS fbs = let
 
 
 toVizJS F.F{ fun, funHistory } = GraphStructure
-        { nodes=GraphNode
-            { id=1
-            , label=S.replace "\"" "" $ F.label fun
-            , function=S.replace "\"" "" $ show fun
-            , history=map (S.replace "\"" "" . show) funHistory
-            , nodeColor="#cbbeb5"
-            , nodeShape="box"
-            , fontSize="20"
-            , nodeSize="30"
-            } : []
+        { nodes=
+            [ GraphNode
+                { id=1
+                , label=S.replace "\"" "" $ F.label fun
+                , function=S.replace "\"" "" $ show fun
+                , history=map (S.replace "\"" "" . show) funHistory
+                , nodeColor="#cbbeb5"
+                , nodeShape="box"
+                , fontSize="20"
+                , nodeSize="30"
+                }
+            ]
         , edges=mkEdges InVertex (F.inputs fun) ++ mkEdges OutVertex (F.outputs fun)
         }
     where

@@ -1,14 +1,11 @@
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Project.Parts.Quartus
@@ -23,15 +20,15 @@ module NITTA.Project.Parts.Quartus
     ) where
 
 import           Data.FileEmbed
-import qualified Data.String.Utils             as S
+import qualified Data.String.Utils as S
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           System.Directory              (createDirectoryIfMissing)
-import           System.FilePath.Posix         (joinPath)
+import           System.Directory ( createDirectoryIfMissing )
+import           System.FilePath.Posix ( joinPath )
 
 
 data QuartusProject = QuartusProject

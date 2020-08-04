@@ -1,10 +1,8 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Project.Parts.TargetSystem
@@ -21,7 +19,7 @@ module NITTA.Project.Parts.TargetSystem
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.Utils
 import           NITTA.Project.Types
-import           System.Directory             (createDirectoryIfMissing)
+import           System.Directory ( createDirectoryIfMissing )
 
 
 data TargetSystem = TargetSystem
