@@ -1,0 +1,138 @@
+name: nitta
+version: 0.0.0.1
+synopsis: CAD for reconfigurable real-time ASIP
+description: |-
+  Application area:
+
+  - developing cyber-physical systems which are based on adaptive robust
+  control algorithms and artificial intelligence with high requirements on
+  latency and computational volume, power and area consumption;
+  - developing hardware programmable accelerators and co-processors;
+  - developing dynamically reconfigurable IP-core and soft-core for FPGA;
+  - developing problem-oriented programmable ASIC.
+
+  Project goals:
+
+  - rapid prototyping of control and cyber-physical systems;
+  - hardware in the loop simulation;
+  - target system synthesis and its components;
+  - integration of the real-time system with nonreal-time environment and
+  automation of its interaction;
+  - developing of IP-core for embedded systems and systems on a chip.
+
+  Key features:
+
+  - the orientation on model-driven engineering and not on software
+  engineering;
+  - automation of most of the development stages, including algorithm and
+  model design and functional simulation, prototyping and complex
+  verification, complex automatisation of cross-layer testing and
+  synthesis and optimisation of a target system;
+  - deeply computational platform reconfiguration on hardware, software and
+  tool levels, transparency of CAD system workflow.
+
+category: 'hardware, CAD, ASIP'
+author: Aleksandr Penskoi
+maintainer: aleksandr.penskoi@gmail.com
+copyright: 2020 Aleksandr Penskoi
+license: BSD3
+homepage: 'https://nitta.io'
+extra-doc-files:
+  - README.md
+
+ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures
+
+dependencies:
+  - MissingH
+  - base
+  - boxes
+  - containers
+  - data-default
+  - filepath
+  - interpolatedstring-perl6
+  - regex-compat
+  - text
+
+
+library:
+  source-dirs: src
+  dependencies:
+    - HStringTemplate
+    - aeson
+    - array
+    - directory
+    - file-embed
+    - hashable
+    - http-api-data
+    - intervals
+    - language-lua
+    - mtl
+    - network-simple
+    - process
+    - safe
+    - servant
+    - servant-js
+    - servant-server
+    - split
+    - stm
+    - transformers
+    - unordered-containers
+    - utility-ht
+    - wai-cors
+    - warp
+
+    
+executables:
+  nitta:
+    main: Main
+    other-modules:
+      - Paths_nitta
+    source-dirs: app
+    ghc-options:
+      - '-threaded'
+      - '-rtsopts'
+      - '-with-rtsopts=-N'
+    dependencies:
+      - cmdargs
+      - nitta
+      
+  nitta-api-gen:
+    main: APIGen
+    source-dirs: app
+    other-modules:
+      - Paths_nitta
+    ghc-options:
+      - '-threaded'
+      - '-rtsopts'
+      - '-with-rtsopts=-N'
+    dependencies:
+      - aeson
+      - aeson-typescript
+      - cmdargs
+      - directory
+      - intervals
+      - nitta
+
+
+tests:
+  nitta-test:
+    main: Spec
+    source-dirs: test
+    ghc-options:
+      - '-threaded'
+      - '-rtsopts'
+      - '-with-rtsopts=-N'
+      - '-j'
+    dependencies:
+      - QuickCheck
+      - atomic-primops
+      - call-stack
+      - file-embed
+      - genvalidity
+      - genvalidity-property
+      - nitta
+      - split
+      - tasty
+      - tasty-hunit
+      - tasty-quickcheck
+      - tasty-th

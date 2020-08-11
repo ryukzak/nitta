@@ -1,13 +1,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.IO.SPI
@@ -24,11 +23,11 @@ module NITTA.Model.ProcessorUnits.IO.SPI
     , Ports(..), IOPorts(..)
     ) where
 
-import           Data.Bits                              (finiteBitSize)
+import           Data.Bits ( finiteBitSize )
 import           Data.Default
-import qualified Data.Map                               as M
-import           Data.Maybe                             (fromMaybe, mapMaybe)
-import qualified Data.String.Utils                      as S
+import qualified Data.Map as M
+import           Data.Maybe ( fromMaybe, mapMaybe )
+import qualified Data.String.Utils as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
@@ -37,7 +36,7 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
-import           Text.InterpolatedString.Perl6          (qc)
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 data SPIinterface
@@ -169,7 +168,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                 ) $ getEndpoints process_
             sendedVarsValues = take cntxCycleNumber $ map cycleCntx cntxProcess
             wordWidth = finiteBitSize (def :: x)
-            frameWordCount = max (length receivedVariablesSeq) (length $ sendedVariableSeq)
+            frameWordCount = max (length receivedVariablesSeq) $ length sendedVariableSeq
             frameWidth = frameWordCount * wordWidth
             timeLag = 10 :: Int
             sendingDuration = max

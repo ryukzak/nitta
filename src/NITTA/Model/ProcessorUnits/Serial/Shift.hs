@@ -1,13 +1,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Serial.Shift
@@ -23,10 +22,10 @@ module NITTA.Model.ProcessorUnits.Serial.Shift
   )
   where
 
-import           Data.Bits                                 (finiteBitSize)
+import           Data.Bits ( finiteBitSize )
 import           Data.Default
-import           Data.List                                 (intersect, (\\))
-import           Data.Set                                  (elems, fromList)
+import           Data.List ( intersect, (\\) )
+import           Data.Set ( elems, fromList )
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
@@ -35,10 +34,9 @@ import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
-import           Numeric.Interval                          (inf, singleton, sup,
-                                                            (...))
-import           Prelude                                   hiding (init)
-import           Text.InterpolatedString.Perl6             (qc)
+import           Numeric.Interval ( inf, singleton, sup, (...) )
+import           Prelude hiding ( init )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 type Shift v x t = SerialPU (State v x t) v x t

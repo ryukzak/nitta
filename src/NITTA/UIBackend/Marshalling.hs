@@ -1,17 +1,14 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE DuplicateRecordFields  #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE OverloadedStrings      #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE StandaloneDeriving     #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.UIBackend.Marshalling
@@ -37,12 +34,12 @@ module NITTA.UIBackend.Marshalling
 import           Control.Concurrent.STM
 import           Data.Aeson
 import           Data.Hashable
-import qualified Data.HashMap.Strict             as HM
-import qualified Data.Map                        as M
+import qualified Data.HashMap.Strict as HM
+import qualified Data.Map as M
 import           Data.Maybe
-import qualified Data.Set                        as S
-import qualified Data.String.Utils               as S
-import qualified Data.Text                       as T
+import qualified Data.Set as S
+import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
@@ -55,7 +52,7 @@ import           NITTA.Synthesis.Estimate
 import           NITTA.Synthesis.Tree
 import           NITTA.Synthesis.Utils
 import           NITTA.UIBackend.Timeline
-import           NITTA.Utils                     (transferred)
+import           NITTA.Utils ( transferred )
 import           Numeric.Interval
 import           Servant
 
@@ -156,7 +153,7 @@ instance ( Var v, Hashable v
     view Dataflow{ dfSource=(stag, st), dfTargets } = DataflowView
         { source=DataflowEndpointView stag st
         , targets=HM.map
-            (fmap $ \(tag, t) -> DataflowEndpointView tag t)
+            (fmap $ uncurry DataflowEndpointView)
             $ HM.fromList $ M.assocs dfTargets
         }
     view (Refactor r) = RefactorView r
@@ -188,10 +185,10 @@ instance ( VarValTimeJSON v x t, Hashable v
 
 data EdgeView tag v x t
     = EdgeView
-        { nid :: String
-        , option :: SynthesisDecisionView tag v x (TimeConstrain t)
-        , decision :: SynthesisDecisionView tag v x (Interval t)
-        , parameters :: Parameters
+        { nid                    :: String
+        , option                 :: SynthesisDecisionView tag v x (TimeConstrain t)
+        , decision               :: SynthesisDecisionView tag v x (Interval t)
+        , parameters             :: Parameters
         , objectiveFunctionValue :: Float
         }
     deriving ( Generic )
@@ -413,7 +410,7 @@ instance ToJSON (FX m b) where
 
 
 -- *System
-data IntervalView = IntervalView String
+newtype IntervalView = IntervalView String
     deriving ( Generic )
 
 instance ( Show a, Bounded a ) => Viewable (Interval a) IntervalView where

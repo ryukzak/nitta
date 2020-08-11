@@ -1,5 +1,3 @@
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
-
 {-|
 Module      : NITTA.Utils.CodeFormat
 Description : Functions for output code. Examples in Test.CodeBlock.hs
@@ -16,7 +14,7 @@ module NITTA.Utils.CodeFormat
 
 import           Data.Maybe
 import qualified Data.String.Utils as S
-import           Safe              (headDef, minimumMay)
+import           Safe ( headDef, minimumMay )
 
 
 inlineMarker = "###"
@@ -56,4 +54,4 @@ codeBlock str = codeBlock' linesList [] (minIndentCalc linesList)
 codeLine str = dropWhile (== ' ') str ++ "\n"
 
 -- |Convert space sequence with specific length to tabs
-space2tab n = S.replace (take n $ repeat ' ') "\t"
+space2tab n = S.replace (replicate n ' ') "\t"

@@ -1,10 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE NamedFieldPuns      #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
-{-# OPTIONS_GHC -fno-cse #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {-|
 Module      : NITTA.TargetSynthesis
@@ -80,20 +77,20 @@ module NITTA.TargetSynthesis
     , TargetSynthesis(..), runTargetSynthesis
     ) where
 
-import           Control.Monad                   (when)
-import           Data.Default                    as D
-import           Data.Text                       (Text)
+import           Control.Monad ( when )
+import           Data.Default as D
+import           Data.Text ( Text )
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.LuaFrontend
-import           NITTA.Model.Networks.Bus        (BusNetwork)
+import           NITTA.Model.Networks.Bus ( BusNetwork )
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Tree
-import           System.FilePath                 (joinPath)
+import           System.FilePath ( joinPath )
 
 
 -- |Description of synthesis task. Applicable for target system synthesis and
@@ -191,9 +188,9 @@ runTargetSynthesis TargetSynthesis
         testbench prj = do
             when tVerbose $ putStrLn "> run logical synthesis..."
             report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestbench prj
-            when tVerbose $ case tbStatus of
-                True  -> putStrLn "> run logical simulation...ok"
-                False -> do
+            when tVerbose $ if tbStatus
+                then putStrLn "> run logical simulation...ok"
+                else do
                     putStrLn "> run logical simulation...fail"
                     putStrLn "-----------------------------------------------------------"
                     putStrLn "testbench compiler dump:"

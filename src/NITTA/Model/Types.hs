@@ -1,11 +1,10 @@
-{-# LANGUAGE ConstraintKinds      #-}
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE NamedFieldPuns       #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.Model.Types
@@ -65,8 +64,8 @@ instance ( Show t, Eq t, Bounded t ) => Show (TimeConstrain t) where
 -- умолчению и как ими оперировать. Также есть вопрос о том, как быть с арфметикой при разных тегах.
 data TaggedTime tag t
     = TaggedTime
-    { tag   :: Maybe tag -- ^ Идентификатор ветки вычислительного процесса.
-    , clock :: t
+    { tTag   :: Maybe tag -- ^ Идентификатор ветки вычислительного процесса.
+    , tClock :: t
     }
     deriving ( Typeable, Generic )
 
@@ -101,7 +100,7 @@ instance ( Num t, Show tag, Eq tag ) => Num (TaggedTime tag t) where
         | tag_a == tag_b = TaggedTime tag_a (a + b)
         | otherwise = error $ "Not equal time tag! " ++ show tag_a ++ " " ++ show tag_b
     fromInteger = TaggedTime Nothing . fromInteger
-    negate t = t{ clock=negate $ clock t }
+    negate t = t{ tClock=negate $ tClock t }
     (*) = undefined
     abs = undefined
     signum = undefined

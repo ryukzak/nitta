@@ -1,12 +1,10 @@
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Project.Parts.TestBench
@@ -26,12 +24,12 @@ module NITTA.Project.Parts.TestBench
     ) where
 
 import           Data.Default
-import qualified Data.HashMap.Strict             as HM
-import qualified Data.List                       as L
-import qualified Data.String.Utils               as S
-import qualified Data.Text                       as T
+import qualified Data.HashMap.Strict as HM
+import qualified Data.List as L
+import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import           Data.Typeable
-import           GHC.Generics                    (Generic)
+import           GHC.Generics ( Generic )
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
@@ -41,9 +39,9 @@ import           NITTA.Project.Parts.Utils
 import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           System.Directory                (createDirectoryIfMissing)
-import           System.FilePath.Posix           (joinPath)
-import           Text.InterpolatedString.Perl6   (qc)
+import           System.Directory ( createDirectoryIfMissing )
+import           System.FilePath.Posix ( joinPath )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 data TestBench = TestBench

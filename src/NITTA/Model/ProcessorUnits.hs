@@ -1,5 +1,3 @@
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
-
 {-|
 Module      : NITTA.Model.ProcessorUnits
 Description : Library of processor unit models

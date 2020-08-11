@@ -1,17 +1,13 @@
-{-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE DeriveGeneric             #-}
-{-# LANGUAGE DuplicateRecordFields     #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE NamedFieldPuns            #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE TypeOperators             #-}
-{-# LANGUAGE TypeSynonymInstances      #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Module      : NITTA.Synthesis.Estimate
@@ -28,19 +24,19 @@ module NITTA.Synthesis.Estimate
     ) where
 
 import           Data.Default
-import qualified Data.List                       as L
-import qualified Data.Map                        as M
+import qualified Data.List as L
+import qualified Data.Map as M
 import           Data.Maybe
-import qualified Data.Set                        as S
+import qualified Data.Set as S
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Model.TargetSystem        (ModelState (..))
+import           NITTA.Model.TargetSystem ( ModelState (..) )
 import           NITTA.Model.Types
 import           NITTA.Utils
-import           Numeric.Interval                (inf, sup)
+import           Numeric.Interval ( inf, sup )
 
 
 -- |EstimationCntx contains some data about the node, for which we need to
@@ -116,8 +112,8 @@ prepareEstimationCntx unitModel@ModelState{ mUnit, mDataFlowGraph } decisionDupl
 estimateWaves fs alreadyVars = let
         io = [ ( is, os )
             | f <- fs
-            , let is = (S.elems $ inputs f) L.\\ alreadyVars
-                  os = (S.elems $ outputs f)
+            , let is = S.elems (inputs f) L.\\ alreadyVars
+                  os = S.elems $ outputs f
             ]
     in estimateWaves' io 0 def
 
@@ -269,7 +265,7 @@ objectiveFunction
                 + (pAlternative == 1) <?> 500
                 + pAllowDataFlow * 10
                 + pPercentOfBindedInputs * 50
-                - (fromMaybe (-1) pWave) * 50
+                - fromMaybe (-1) pWave * 50
                 - pNumberOfBindedFunctions * 10
                 - pRestless * 4
                 + pOutputNumber * 2

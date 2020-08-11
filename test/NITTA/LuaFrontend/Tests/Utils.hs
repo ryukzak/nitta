@@ -6,8 +6,7 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures  -fno-warn-partial-type-signatures #-}
+{-# OPTIONS -fno-warn-redundant-constraints #-}
 
 {-|
 Module      : NITTA.LuaFrontend.Tests.Utils

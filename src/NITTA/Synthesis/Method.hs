@@ -1,12 +1,11 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Module      : NITTA.Synthesis.Method
@@ -26,13 +25,13 @@ module NITTA.Synthesis.Method
     , bestStepIO
     ) where
 
-import           Data.List                (find, sortOn)
-import           Data.Ord                 (Down (..))
+import           Data.List ( find, sortOn )
+import           Data.Ord ( Down (..) )
 import           Debug.Trace
 import           NITTA.Synthesis.Estimate
 import           NITTA.Synthesis.Tree
-import           NITTA.Synthesis.Utils    (targetProcessDuration)
-import           NITTA.Utils              (maximumOn, minimumOn)
+import           NITTA.Synthesis.Utils ( targetProcessDuration )
+import           NITTA.Utils ( maximumOn, minimumOn )
 import           Safe
 
 

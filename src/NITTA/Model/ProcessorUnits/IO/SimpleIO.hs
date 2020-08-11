@@ -1,13 +1,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.IO.SimpleIO
@@ -25,19 +24,19 @@ module NITTA.Model.ProcessorUnits.IO.SimpleIO
 
 import           Control.Monad
 import           Data.Default
-import qualified Data.List                       as L
+import qualified Data.List as L
 import           Data.Maybe
-import qualified Data.Set                        as S
+import qualified Data.Set as S
 import           Data.Typeable
-import qualified NITTA.Intermediate.Functions    as F
+import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                (sup, (...))
-import           Text.InterpolatedString.Perl6   (qc)
+import           Numeric.Interval ( sup, (...) )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 class ( Typeable i ) => SimpleIOInterface i
@@ -123,7 +122,7 @@ instance ( VarValTime v x t, SimpleIOInterface i
         , let
             remainVars = allVars L.\\ S.elems vs
             process_ = execSchedule sio $ do
-                void $ scheduleEndpoint d $ scheduleInstruction (shiftI (0) epAt) $ Receiving $ null remainVars
+                void $ scheduleEndpoint d $ scheduleInstruction (shiftI 0 epAt) $ Receiving $ null remainVars
                 when (null remainVars) $ void $ scheduleFunction epAt function
                 updateTick (sup epAt + 1)
                 return ()

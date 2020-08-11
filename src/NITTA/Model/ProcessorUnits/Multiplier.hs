@@ -1,15 +1,14 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Multiplier
@@ -130,12 +129,12 @@ module NITTA.Model.ProcessorUnits.Multiplier
     , Ports(..), IOPorts(..)
     ) where
 
-import           Control.Monad                   (when)
-import           Data.Bits                       (finiteBitSize)
+import           Control.Monad ( when )
+import           Data.Bits ( finiteBitSize )
 import           Data.Default
-import           Data.List                       (find, partition, (\\))
-import           Data.Set                        (elems, fromList, member)
-import qualified NITTA.Intermediate.Functions    as F
+import           Data.List ( find, partition, (\\) )
+import           Data.Set ( elems, fromList, member )
+import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
@@ -143,8 +142,8 @@ import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval                (sup, (...))
-import           Text.InterpolatedString.Perl6   (qc)
+import           Numeric.Interval ( sup, (...) )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 {-
 = Processor (or process unit in an early version)

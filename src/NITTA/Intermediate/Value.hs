@@ -43,7 +43,7 @@ import           Data.Typeable
 import           GHC.Generics
 import           GHC.TypeLits
 import           Numeric
-import           Text.InterpolatedString.Perl6 (qc)
+import           Text.InterpolatedString.Perl6 ( qc )
 import           Text.Printf
 import           Text.Regex
 

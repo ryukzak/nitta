@@ -1,12 +1,11 @@
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-|
 Module      : NITTA.Model.TargetSystem
@@ -22,11 +21,11 @@ module NITTA.Model.TargetSystem
     , DataFlowGraph(..), fsToDataFlowGraph
     ) where
 
-import           Control.Exception               (assert)
-import qualified Data.List                       as L
-import qualified Data.Set                        as S
+import           Control.Exception ( assert )
+import qualified Data.List as L
+import qualified Data.Set as S
 import           GHC.Generics
-import           NITTA.Intermediate.Functions    (reg)
+import           NITTA.Intermediate.Functions ( reg )
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems

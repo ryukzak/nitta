@@ -1,14 +1,12 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE IncoherentInstances    #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE UndecidableInstances   #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE IncoherentInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Model.Problems.Endpoint
@@ -24,10 +22,10 @@ module NITTA.Model.Problems.Endpoint
     , endpointOptionToDecision
     ) where
 
-import qualified Data.Map                 as M
-import           Data.Maybe               (fromMaybe)
-import qualified Data.Set                 as S
-import qualified Data.String.Utils        as S
+import qualified Data.Map as M
+import           Data.Maybe ( fromMaybe )
+import qualified Data.Set as S
+import qualified Data.String.Utils as S
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Types
@@ -87,5 +85,5 @@ endpointOptionToDecision EndpointSt{ epRole, epAt }
     = let
         a = inf $ tcAvailable epAt
         -- "-1" - is necessary for reduction transfer time
-        b = a + (inf $ tcDuration epAt) - 1
+        b = a + inf (tcDuration epAt) - 1
     in EndpointSt epRole (a ... b)

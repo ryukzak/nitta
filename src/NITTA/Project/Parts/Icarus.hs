@@ -1,10 +1,9 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Project.Parts.Icarus
@@ -18,14 +17,14 @@ module NITTA.Project.Parts.Icarus
     ( IcarusMakefile(..)
     ) where
 
-import qualified Data.String.Utils             as S
+import qualified Data.String.Utils as S
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
 import           NITTA.Utils
-import           System.Directory              (createDirectoryIfMissing)
-import           System.FilePath.Posix         (joinPath)
-import           Text.InterpolatedString.Perl6 (qc)
+import           System.Directory ( createDirectoryIfMissing )
+import           System.FilePath.Posix ( joinPath )
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 data IcarusMakefile = IcarusMakefile

@@ -1,8 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures -fno-warn-orphans #-}
+{-# OPTIONS -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.Intermediate.Tests.Functions

@@ -7,8 +7,8 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS -Wall -Wcompat -Wredundant-constraints #-}
-{-# OPTIONS -fno-warn-missing-signatures -fno-warn-partial-type-signatures #-}
+{-# OPTIONS -fno-warn-partial-type-signatures #-}
+
 {-|
 Module      : NITTA.Tests
 Description :
