@@ -23,7 +23,7 @@ module NITTA.Tests
 
 import           Control.Monad ( void )
 import           Data.Default
-import           Data.Map ( fromList )
+import           Data.Map.Strict ( fromList )
 import qualified Data.Set as S
 import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Types

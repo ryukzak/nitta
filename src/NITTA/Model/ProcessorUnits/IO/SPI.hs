@@ -25,7 +25,7 @@ module NITTA.Model.ProcessorUnits.IO.SPI
 
 import           Data.Bits ( finiteBitSize )
 import           Data.Default
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Maybe ( fromMaybe, mapMaybe )
 import qualified Data.String.Utils as S
 import           NITTA.Intermediate.Functions

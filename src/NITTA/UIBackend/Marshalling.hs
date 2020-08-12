@@ -35,7 +35,7 @@ import           Control.Concurrent.STM
 import           Data.Aeson
 import           Data.Hashable
 import qualified Data.HashMap.Strict as HM
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import qualified Data.Set as S
 import qualified Data.String.Utils as S

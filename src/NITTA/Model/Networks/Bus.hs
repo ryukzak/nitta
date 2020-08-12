@@ -47,7 +47,7 @@ import           Data.Bifunctor
 import           Data.Bits ( FiniteBits (..) )
 import           Data.Default
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Maybe ( fromMaybe, isJust, mapMaybe )
 import qualified Data.Set as S
 import qualified Data.String.Utils as S

@@ -30,7 +30,7 @@ import           Data.Atomics.Counter ( incrCounter )
 import           Data.CallStack
 import           Data.Default
 import           Data.List ( delete )
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Set ( difference, elems, empty, fromList, intersection, union )
 import           Debug.Trace
 import           NITTA.Intermediate.Functions ()

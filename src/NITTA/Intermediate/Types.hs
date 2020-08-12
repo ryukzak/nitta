@@ -37,7 +37,7 @@ module NITTA.Intermediate.Types
 
 import           Data.Default
 import           Data.List
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import qualified Data.Set as S hiding ( split )
 import qualified Data.String.Utils as S

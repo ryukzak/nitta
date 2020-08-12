@@ -25,7 +25,7 @@ module NITTA.Synthesis.Estimate
 
 import           Data.Default
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import qualified Data.Set as S
 import           GHC.Generics
