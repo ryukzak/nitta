@@ -82,9 +82,36 @@ case_fx_Num = do
     (read "2" :: FX 30 32) @?= negate (read "-2")
     (read "-2" :: FX 30 32) @?= negate (read "2")
 
-prop_validity = do
-    forAllValid $ \(input :: FX 32 32) ->
-        input == negate (negate input)
+
+-- |Incorect because:
+-- (1 + 19) + 109 -> 20 + 109 -> 0 (overflow)
+-- 1 + (19 + 109) -> 1 + 0 (overflow) -> 1
+-- prop_fx_add_associativity = associativeOnValids ((+) @(FX 4 8))
+
+prop_fx_add_commutative = commutative ((+) @(FX 4 8))
+
+prop_fx_fromInteger_0_additive_identity = forAllValid (\(x :: FX 4 8) -> x + fromInteger 0 == x)
+
+prop_fx_negate_additive_inverse = forAllValid (\(x :: FX 4 8) -> x + negate x == fromInteger 0)
+
+-- prop_fx_mul_associativity = associativeOnValids ((*) @(FX 4 8))
+
+prop_fx_mul_commutative = commutative ((*) @(FX 4 8))
+
+prop_fx_fromInteger_1_muliplicative_identity = forAllValid (\(x :: FX 4 8) -> x * fromInteger 1 == x)
+
+prop_distributivity = forAllValid $ num_distributivity (Proxy :: Proxy (FX 4 4)) (Proxy :: Proxy (FX 8 8))
+
+num_distributivity ::
+    ( KnownNat m1, KnownNat b1, KnownNat m2, KnownNat b2
+    ) => Proxy (FX m1 b1) -> Proxy (FX m2 b2) -> ( FX m1 b1, FX m1 b1, FX m1 b1 ) -> Bool
+num_distributivity _ p (a0, b0, c0) = let
+        a = repack a0 p
+        b = repack b0 p
+        c = repack c0 p
+    in a * (b + c) == (a * b) + (a * c)
+       && (b + c) * a == (b * a) + (c * a)
+
 
 prop_fx_add_integrity
     = forAllValid $ addIntegrity (Proxy :: Proxy (FX 8 8) ) ( Proxy :: Proxy (FX 9 9) )

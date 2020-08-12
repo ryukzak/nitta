@@ -1,12 +1,11 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE KindSignatures         #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
@@ -226,12 +225,6 @@ instance ( KnownNat m, KnownNat b ) => Enum ( FX m b ) where
 instance ( KnownNat m, KnownNat b ) => Num ( FX m b ) where
     ( FX a ) + ( FX b ) = zeroOnOverflow $ FX (a + b)
     t@( FX a ) * ( FX b ) = FX ( (a * b) `shiftR` fromInteger (scalingFactorPower t) )
-    -- t@( FX a ) * ( FX b ) = let
-    --         shiftN = fromInteger (scalingFactorPower t) `div` 2
-    --         prepare x = shiftR x shiftN
-    --         a' = prepare a
-    --         b' = prepare b
-    --     in zeroOnOverflow $ FX ( a' * b' )
     abs ( FX a ) = FX $ abs a
     signum ( FX a ) = fromInteger $ signum a
     fromInteger x = FX $ shiftL x $ fromInteger $ scalingFactorPower (def :: FX m b)
