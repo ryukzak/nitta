@@ -19,7 +19,7 @@ module NITTA.Project.Implementation
     , TargetSystemComponent(..)
     ) where
 
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 
 
 -- |Реализация компонента системы или её фрагмента (HW или SW).

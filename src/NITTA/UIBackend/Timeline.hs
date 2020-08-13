@@ -25,7 +25,7 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe
 import qualified Data.String.Utils as S
 import           GHC.Generics
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           Numeric.Interval
 

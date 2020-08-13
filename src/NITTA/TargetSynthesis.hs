@@ -84,7 +84,7 @@ import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.LuaFrontend
 import           NITTA.Model.Networks.Bus ( BusNetwork )
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project

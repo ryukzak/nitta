@@ -23,7 +23,7 @@ module NITTA.Model.ProcessorUnits.IO.I2C
 import           Data.Bits ( finiteBitSize )
 import           Data.Default
 import           NITTA.Model.ProcessorUnits.IO.SimpleIO
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils

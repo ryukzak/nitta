@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS -fno-warn-redundant-constraints #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Tests.Utils
@@ -39,7 +40,7 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems hiding ( Bind, Refactor )
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.Project

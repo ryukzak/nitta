@@ -20,7 +20,7 @@ module NITTA.Synthesis.Utils
 
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Utils
 

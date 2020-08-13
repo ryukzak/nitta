@@ -37,7 +37,7 @@ import qualified Data.Set as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Utils
 import           Numeric.Interval ( Interval, inf, sup, width, (...) )

@@ -13,14 +13,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-|
-Module      : NITTA.Model.ProcessorUnits.Time
+Module      : NITTA.Model.ProcessorUnits.Types
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Time
+module NITTA.Model.ProcessorUnits.Types
     ( UnitTag
     , ProcessorUnit(..), Simulatable(..), Controllable(..), UnambiguouslyDecode(..)
     , Process(..), ProcessUid, Step(..), StepInfo(..), Relation(..)
@@ -48,7 +48,7 @@ import qualified Numeric.Interval as I
 import           Text.InterpolatedString.Perl6 ( qc )
 
 
--- | Класс идентификатора вложенного вычислительного блока.
+-- |Typeclass alias for processor unit tag.
 type UnitTag tag = ( Typeable tag, Ord tag, Show tag )
 
 
