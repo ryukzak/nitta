@@ -250,7 +250,7 @@ data Multiplier v x t = Multiplier
     -- undefined value of uploading / downloading of data to / from mUnit,
     -- to then set up vertical behavior between information about executing
     -- function and this send.
-    , currentWorkEndpoints :: [ ProcessUid ]
+    , currentWorkEndpoints :: [ ProcessStepID ]
     -- |Description of target computation process
     -- ('NITTA.Model.ProcessorUnits.Time')
     , process_             :: Process v x t

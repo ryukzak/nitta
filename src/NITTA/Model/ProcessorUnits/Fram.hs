@@ -97,7 +97,7 @@ data Cell v x t = Cell
 data Job v x t = Job
         { function         :: F v x
         , startAt          :: Maybe t
-        , binds, endpoints :: [ ProcessUid ]
+        , binds, endpoints :: [ ProcessStepID ]
         }
     deriving ( Show, Eq )
 

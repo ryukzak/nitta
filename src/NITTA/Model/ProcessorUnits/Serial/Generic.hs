@@ -52,7 +52,7 @@ data SerialPU st v x t
   -- | Список привязанных к вычислительному блоку функций, но работа над которыми ещё не началась.
   -- Второе значение - ссылка на шаг вычислительного процесса, описывающий привязку функции
   -- к вычислительному блоку.
-  , spuRemain  :: [(F v x, ProcessUid)]
+  , spuRemain  :: [(F v x, ProcessStepID)]
   -- | Описание вычислительного процесса.
   , spuProcess :: Process v x t
   , spuFBs     :: [F v x]
@@ -82,7 +82,7 @@ data CurrentJob v x t
   -- | Выполненные для данной функции вычислительные шаги. Необходимо в значительной
   -- степени для того, чтобы корректно задать все вертикальные отношения между уровнями по
   -- завершению работы над функциональным блоком..
-  , cSteps :: [ProcessUid]
+  , cSteps :: [ ProcessStepID ]
   }
 
 
@@ -101,7 +101,9 @@ class ( VarValTime v x t ) => SerialPUState st v x t | st -> v x t where
   -- - состояние после выполнения вычислительного процесса;
   -- - монада State, которая сформирует необходимое описание многоуровневого вычислительного
   --   процессса.
-  simpleSynthesis :: st -> EndpointSt v (Interval t) -> (st, State (Process v x t) [ProcessUid])
+  simpleSynthesis
+      :: st -> EndpointSt v (Interval t)
+      -> ( st, State (Process v x t) [ ProcessStepID ] )
 
 
 
@@ -202,7 +204,7 @@ instance RefactorProblem (SerialPU st v x t) v x
 
 serialSchedule
   :: ( Show (Instruction pu), Time t, Typeable pu )
-  => Instruction pu -> EndpointSt v (Interval t) -> State (Process v x t) [ProcessUid]
+  => Instruction pu -> EndpointSt v (Interval t) -> State (Process v x t) [ ProcessStepID ]
 serialSchedule instr act@EndpointSt{ epAt } = do
   e <- addStep epAt $ EndpointRoleStep $ epRole act
   i <- addStep epAt $ InstructionStep instr

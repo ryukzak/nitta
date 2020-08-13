@@ -64,7 +64,7 @@ data Accum v x t = Accum
           -- |Current job
         , currentWork          :: Maybe ( t, Job v x )
           -- |Current endpoints
-        , currentWorkEndpoints :: [ ProcessUid ]
+        , currentWorkEndpoints :: [ ProcessStepID ]
           -- |Process
         , process_             :: Process v x t
           -- |Flag is indicated when new job starts

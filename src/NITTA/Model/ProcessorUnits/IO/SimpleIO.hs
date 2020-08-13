@@ -65,7 +65,7 @@ instance (VarValTime v x t, SimpleIOInterface i) => Show (SimpleIO i v x t) wher
             {inline $ show $ process_ io}
         |]
 
-data Q v x = Q{ vars :: [ v ], function :: F v x, cads :: [ ProcessUid ] }
+data Q v x = Q{ vars :: [ v ], function :: F v x, cads :: [ ProcessStepID ] }
     deriving ( Show )
 
 

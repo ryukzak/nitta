@@ -23,7 +23,7 @@ Stability   : experimental
 module NITTA.Model.ProcessorUnits.Types
     ( UnitTag
     , ProcessorUnit(..), Simulatable(..), Controllable(..), UnambiguouslyDecode(..)
-    , Process(..), ProcessUid, Step(..), StepInfo(..), Relation(..)
+    , Process(..), ProcessStepID, Step(..), StepInfo(..), Relation(..)
     , descent, whatsHappen, extractInstructionAt
     , bind, allowToProcess
     , Connected(..), SignalTag(..), SignalValue(..), (+++)
@@ -115,7 +115,7 @@ data Process v x t
         , relations :: [Relation] -- ^Список отношений между шагами вычислительного процесса
                                   -- (отношения описываются через "кортежи" из ProcessUid).
         , nextTick  :: t          -- ^Номер первого свободного такта.
-        , nextUid   :: ProcessUid -- ^Следующий свободный идентификатор шага вычислительного процесса.
+        , nextUid   :: ProcessStepID -- ^Следующий свободный идентификатор шага вычислительного процесса.
         }
 
 instance (VarValTime v x t) => Show (Process v x t) where
@@ -140,12 +140,14 @@ instance ( Ord t ) => WithFunctions (Process v x t) (F v x) where
             get Step{ sDesc } | FStep f <- descent sDesc = Just f
             get _             = Nothing
 
-type ProcessUid = Int -- ^Уникальный идентификатор шага вычислительного процесса.
+
+-- |Unique ID of a process step. Uniquity presented only inside PU.
+type ProcessStepID = Int
 
 -- |Описание шага вычислительного процесса.
 data Step v x t
     = Step
-        { sKey  :: ProcessUid    -- ^Уникальный идентификатор шага.
+        { sKey  :: ProcessStepID    -- ^Уникальный идентификатор шага.
         , sTime :: Interval t -- ^Описание типа и положения шага во времени.
         , sDesc :: StepInfo v x t -- ^Описание действия описываемого шага.
         }
@@ -202,8 +204,8 @@ instance ( Ord v ) => Patch (StepInfo v x t) (Changeset v) where
 data Relation
     -- |Отношение между шагами вычислительного процесса разных уровней, в котором второй шаг получен
     -- путём трансляции/детализации первого шага.
-    = Vertical ProcessUid ProcessUid
-    deriving (Show, Eq)
+    = Vertical ProcessStepID ProcessStepID
+    deriving ( Show, Eq )
 
 
 ---------------------------------------------------------------------

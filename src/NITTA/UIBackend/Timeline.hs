@@ -32,7 +32,7 @@ import           Numeric.Interval
 data ProcessTimelines t
     = ProcessTimelines
         { timelines         :: [ TimelineWithViewPoint t ]
-        , verticalRelations :: [ (ProcessUid, ProcessUid) ]
+        , verticalRelations :: [ ( ProcessStepID, ProcessStepID ) ]
         }
     deriving ( Generic )
 
@@ -62,7 +62,7 @@ instance Show ViewPointID where
 
 data TimelinePoint t
     = TimelinePoint
-        { pID   :: ProcessUid
+        { pID   :: ProcessStepID
         , pTime :: Interval t
         , pInfo :: String
         }
