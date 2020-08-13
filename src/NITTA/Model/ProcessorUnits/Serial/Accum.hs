@@ -144,8 +144,6 @@ instance ( VarValTime v x t, Num x ) => ProcessorUnit (Accum v x t) v x t where
 
     process = process_
 
-    setTime t pu@Accum{} = pu{ process_ = (process_ pu) { nextTick = t } }
-
 
 instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
     endpointOptions Accum{ currentWork = Just (_, a@Job { tasks, calcEnd }), process_ = Process { nextTick=tick } }

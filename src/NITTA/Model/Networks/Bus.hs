@@ -256,11 +256,6 @@ instance ( UnitTag tag, VarValTime v x t
                     steps
                 mapM_ (\(Vertical h l) -> establishVerticalRelation (pu2netKey M.! h) (pu2netKey M.! l)) relations
 
-    setTime t net@BusNetwork{..} = net
-        { bnProcess=bnProcess{ nextTick=t }
-        , bnPus=M.map (setTime t) bnPus
-        }
-
 
 
 instance Controllable (BusNetwork tag v x t) where

@@ -237,7 +237,6 @@ instance ( VarValTime v x t
         | otherwise = Left $ "unsupport or cells over: " ++ show f
 
     process Fram{ process_ } = process_
-    setTime t fram@Fram{ process_ } = fram{ process_=process_{ nextTick=t } }
 
 
 instance ( Var v ) => Locks (Fram v x t) v where

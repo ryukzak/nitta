@@ -99,8 +99,6 @@ instance ( VarValTime v x t, SimpleIOInterface i
 
     process = process_
 
-    setTime t sio@SimpleIO{ process_ } = sio{ process_=process_{ nextTick=t } }
-
 
 instance RefactorProblem (SimpleIO i v x t) v x
 

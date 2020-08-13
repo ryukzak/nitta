@@ -326,10 +326,6 @@ instance ( VarValTime v x t
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
     -- Unificate interface for get computation process description.
     process = process_
-    -- This method is used for set up mUnit time outside.
-    -- At the time this is needed only for realisation
-    -- of branching, which is on the prototyping stage.
-    setTime t pu@Multiplier{} = pu{ tick=t }
 
 
 -- |This function carry out actual take functional block to work.

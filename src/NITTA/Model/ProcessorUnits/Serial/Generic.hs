@@ -173,8 +173,6 @@ instance ( Default st
 
   process = spuProcess
 
-  setTime t pu@SerialPU{ spuProcess } = pu{ spuProcess=spuProcess{ nextTick=t } }
-
 
 instance ( Var v, SerialPUState st v x t, Default st ) => Locks (SerialPU st v x t) v where
     locks SerialPU{ spuCurrent=Nothing } = []

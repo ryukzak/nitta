@@ -86,8 +86,6 @@ instance ( VarValTime v x t ) => ProcessorUnit (PU v x t) v x t where
     process PU{ diff, unit } = let
             p = process unit
         in p{ steps=map (patch diff) $ steps p }
-    setTime t PU{ diff, unit, ports, ioPorts, systemEnv }
-        = PU{ diff, unit=setTime t unit, ports, ioPorts, systemEnv }
 
 instance ( Ord v ) => Patch (PU v x t) (Changeset v) where
     patch diff' PU{ diff, unit, ports, ioPorts, systemEnv }

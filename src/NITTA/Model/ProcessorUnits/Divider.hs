@@ -182,7 +182,6 @@ instance ( VarValTime v x t
             }
         | otherwise = Left $ "Unknown functional block: " ++ show f
     process = process_
-    setTime t pu@Divider{ process_ } = pu{ process_=process_{ nextTick=t } }
 
 
 instance ( Var v ) => Locks (Divider v x t) v where
