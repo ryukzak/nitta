@@ -26,7 +26,6 @@ module NITTA.Model.ProcessorUnits.Types
     , Process(..), ProcessUid, Step(..), StepInfo(..), Relation(..)
     , descent, whatsHappen, extractInstructionAt
     , bind, allowToProcess
-    , showPU
     , Connected(..), SignalTag(..), SignalValue(..), (+++)
     , IOConnected(..), InputPortTag(..), OutputPortTag(..), InoutPortTag(..)
     , ByTime(..)
@@ -198,11 +197,6 @@ instance ( Ord v ) => Patch (StepInfo v x t) (Changeset v) where
     patch diff (NestedStep tag nStep) = NestedStep tag $ patch diff nStep
     patch _    i                      = i
 
-
-showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
-    where
-        showPU' (NestedStep tag Step{ sDesc }) = show tag : showPU' sDesc
-        showPU' _                              = []
 
 -- |Описание отношений между шагами вычисительного процесса.
 data Relation

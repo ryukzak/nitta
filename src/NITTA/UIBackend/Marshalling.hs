@@ -295,6 +295,13 @@ instance ( VarValTimeJSON v x t
         , "sPU"    .= showPU sDesc
         ]
 
+
+showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
+    where
+        showPU' (NestedStep tag Step{ sDesc }) = show tag : showPU' sDesc
+        showPU' _                              = []
+
+
 levelName CADStep{}           = "CAD" :: String
 levelName FStep{}             = "Function"
 levelName EndpointRoleStep{}  = "Endpoint"
