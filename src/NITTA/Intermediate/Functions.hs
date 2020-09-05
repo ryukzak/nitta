@@ -315,7 +315,7 @@ instance ( Var v ) => FunctionSimulation (Constant v x) v x where
         = setZipX cntx vs x
 
 
--- FIXME: just fixme
+-- TODO: separete into two different functions
 data ShiftLR v x = ShiftL (I v) (O v)
                  | ShiftR (I v) (O v)
                 deriving ( Typeable, Eq )

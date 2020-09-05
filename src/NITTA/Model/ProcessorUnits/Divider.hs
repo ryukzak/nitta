@@ -11,7 +11,7 @@
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Divider
-Description :
+Description : Integral divider processor unit with pipeline
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -244,8 +244,6 @@ instance ( VarValTime v x t
                 else i{ inputSeq=vs } : other
             , process_=execSchedule pu $ do
                 _endpoints <- scheduleEndpoint d $ scheduleInstruction epAt $ Load tag
-                -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
-                -- которые берут информацию о времени из Process
                 updateTick (sup epAt)
             }
 
@@ -266,8 +264,6 @@ instance ( VarValTime v x t
             , process_=execSchedule pu $ do
                 _endpoints <- scheduleEndpoint d $ scheduleInstruction epAt $ Out tag
                 when (null vss') $ void $ scheduleFunction (startAt ... sup epAt) function
-                -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
-                -- которые берут информацию о времени из Process
                 updateTick (sup epAt)
             }
 

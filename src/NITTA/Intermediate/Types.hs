@@ -328,8 +328,6 @@ instance Default (Changeset v) where
 
 
 -- |Reverse changeset for patch a process unit options / decision.
-
--- TODO: move to another module
 reverseDiff Changeset{ changeI, changeO } = Changeset
     { changeI=M.fromList $ map swap $ M.assocs changeI
     , changeO=foldl (\st (k, v) -> let

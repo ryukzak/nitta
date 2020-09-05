@@ -14,24 +14,31 @@
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Types
-Description :
-Copyright   : (c) Aleksandr Penskoi, 2019
+Description : Set of types for process unit description
+Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.ProcessorUnits.Types
-    ( UnitTag
-    , ProcessorUnit(..), Controllable(..), UnambiguouslyDecode(..)
+    ( -- *Processor unit
+      UnitTag
+    , ProcessorUnit(..)
+    , bind, allowToProcess
+      -- *Process description
     , Process(..), ProcessStepID, Step(..), StepInfo(..), Relation(..)
     , descent, whatsHappen, extractInstructionAt
-    , bind, allowToProcess
-    , Connected(..), SignalTag(..), SignalValue(..), (+++)
-    , IOConnected(..), InputPortTag(..), OutputPortTag(..), InoutPortTag(..)
+      -- *Control
+    , Controllable(..), SignalTag(..), UnambiguouslyDecode(..)
+    , Connected(..)
     , ByTime(..)
+    , SignalValue(..), (+++)
+      -- *IO
+    , IOConnected(..), InputPortTag(..), OutputPortTag(..), InoutPortTag(..)
     ) where
 
 import           Data.Default
+import           Data.Either
 import           Data.Ix
 import           Data.Kind
 import qualified Data.List as L
@@ -47,62 +54,58 @@ import qualified Numeric.Interval as I
 import           Text.InterpolatedString.Perl6 ( qc )
 
 
--- |Typeclass alias for processor unit tag.
+-- |Typeclass alias for processor unit tag or "name."
 type UnitTag tag = ( Typeable tag, Ord tag, Show tag )
 
 
----------------------------------------------------------------------
--- * Processor & Process Unit (PU)
-
-
--- |Описание вычислительного блока. Используется в совокупности с Decision по интересующим группам
--- вопросов.
+-- |Process unit - part of NITTA process with can execute a function from
+-- intermediate representation:
 --
--- Идеологически, планирование вычислительного процесса производится следующим образом:
---
--- 1. Вычислительному блоку назначаются испоняемые им функции.
--- 2. Блок опрашивается на предмет возможных вариантов развития вычислительного процесса.
--- 3. Выбранный вариант развития вычислительного процесса моделируется в рамках вычислительного
---    блока. Его модельное время продвигается вперёд, в описании вычислительного процесса
---    дополняется записями относительно сделанных шагов вычислительного процесса.
--- 4. Повторение, пока список возможных вариантов не станет пустым.
+-- 1. get function for execution ('tryBind');
+-- 2. store computational process description ('process');
+-- 3. other features implemented by different type classes (see above and in
+-- "NITTA.Model.Problems").
 class ( VarValTime v x t ) => ProcessorUnit u v x t | u -> v x t where
-    -- |Назначить исполнение функционального блока вычислительному узлу.
+
+    -- |If the processor unit can execute a function, then it will return the PU
+    -- model with already bound function (only registeration, actual scheduling
+    -- will be happening later). If not, it will return @Left@ value with a
+    -- specific reason (e.g., not support or all internal resources is over).
     tryBind :: F v x -> u -> Either String u
-    -- |Запрос описания вычилсительного процесса с возможностью включения описания вычислительного
-    -- процесс вложенных структурных элементов.
+
+    -- |Get a computational process description. If the processor unit embedded
+    -- another PUs (like "NITTA.Model.Networks.Bus"), the description should
+    -- contain process steps for all PUs.
     --
-    -- Результат вычисления данной функции не должен редактироваться и возкращаться на место!
+    -- 'ProcessStepID' may change from one call to another.
     process :: u -> Process v x t
 
 
-bind fb pu = case tryBind fb pu of
+bind f pu = case tryBind f pu of
     Right pu' -> pu'
-    Left err  -> error $ "Can't bind F to PU: " ++ err
+    Left err  -> error $ "can't bind function: " <> err
 
 
-allowToProcess fb pu
-    | Right _ <- tryBind fb pu = True
-    | otherwise = False
+allowToProcess f pu = isRight $ tryBind f pu
 
 
 ---------------------------------------------------------------------
--- *Computational process
 
-
--- |Описание многоуровневого вычислительного процесса PU. Подход к моделированию вдохновлён ISO
--- 15926. Процесс описывается относительно вычислительных блоков. При наличии вложенных блоков -
---        структура сохраняется.
+-- |Computational process description. It was designed in ISO 15926 style, with
+-- separated data and relations storage.
 data Process v x t
     = Process
-        { steps     :: [Step v x t] -- ^Список шагов вычислительного процесса.
-        , relations :: [Relation] -- ^Список отношений между шагами вычислительного процесса
-                                  -- (отношения описываются через "кортежи" из ProcessUid).
-        , nextTick  :: t          -- ^Номер первого свободного такта.
-        , nextUid   :: ProcessStepID -- ^Следующий свободный идентификатор шага вычислительного процесса.
+        { steps     :: [ Step v x t ]
+          -- ^All process steps desctiption.
+        , relations :: [ Relation ]
+          -- ^List of relationships between process steps (see 'Relation').
+        , nextTick  :: t
+          -- ^Next free tick.
+        , nextUid   :: ProcessStepID
+          -- ^Next process step ID
         }
 
-instance (VarValTime v x t) => Show (Process v x t) where
+instance ( VarValTime v x t ) => Show (Process v x t) where
     show p = codeBlock [qc|
         Process
             steps     =
@@ -128,12 +131,12 @@ instance ( Ord t ) => WithFunctions (Process v x t) (F v x) where
 -- |Unique ID of a process step. Uniquity presented only inside PU.
 type ProcessStepID = Int
 
--- |Описание шага вычислительного процесса.
+-- |Process step representation
 data Step v x t
     = Step
-        { sKey  :: ProcessStepID    -- ^Уникальный идентификатор шага.
-        , sTime :: Interval t -- ^Описание типа и положения шага во времени.
-        , sDesc :: StepInfo v x t -- ^Описание действия описываемого шага.
+        { sKey  :: ProcessStepID -- ^uniq (inside single the process unit) step ID
+        , sTime :: Interval t -- ^step time
+        , sDesc :: StepInfo v x t -- ^step description
         }
     deriving (Show)
 
@@ -142,30 +145,25 @@ instance ( Ord v ) => Patch (Step v x t) (Changeset v) where
     patch diff step@Step{ sDesc } = step{ sDesc=patch diff sDesc }
 
 
--- |Описание события, соответсвующего шага вычислительного процесса. Каждый вариант соответствует
--- соответствующему отдельному уровню организации вычислительного процесса.
+-- |Informative process step description at a specific process level.
 data StepInfo v x t where
-    -- |Решения, принятые на уровне САПР.
-    CADStep :: String -> StepInfo v x t
-    -- |Время работы над функциональным блоком функционального алгоритма.
-    FStep :: F v x -> StepInfo v x t
-    -- |Описание использования вычислительного блока с точки зрения передачи данных.
-    EndpointRoleStep :: EndpointRole v -> StepInfo v x t
-    -- |Описание инструкций, выполняемых вычислительным блоком. Список доступных инструкций
-    -- определяется типом вычислительного блока.
+    CADStep :: String -> StepInfo v x t -- ^CAD level step
+    FStep :: F v x -> StepInfo v x t -- ^intermidiate level step (funcution
+                                     -- execution)
+    EndpointRoleStep :: EndpointRole v -> StepInfo v x t -- ^endpoint level step
+                                                         -- (source or target)
     InstructionStep ::
         ( Show (Instruction pu)
         , Typeable (Instruction pu)
-        ) => Instruction pu -> StepInfo v x t
-    -- |Используется для описания вычислительного процесса вложенных структурных элементов. Как
-    -- правило не хранится в структурах данных, а генерируется автоматически по требованию при
-    -- помощи опроса вложенных структурных элементов.
+        ) => Instruction pu -> StepInfo v x t -- ^process unit instruction
+                                              -- (depends on process unit type)
     NestedStep ::
         ( UnitTag tag
         ) =>
             { nTitle :: tag
             , nStep :: Step v x t
-            } -> StepInfo v x t
+            } -> StepInfo v x t -- ^wrapper for nested process unit step (used
+                                -- for networks)
 
 descent (NestedStep _ step) = descent $ sDesc step
 descent desc                = desc
@@ -184,22 +182,36 @@ instance ( Ord v ) => Patch (StepInfo v x t) (Changeset v) where
     patch _    i                      = i
 
 
--- |Описание отношений между шагами вычисительного процесса.
+-- |Relations between process steps.
 data Relation
-    -- |Отношение между шагами вычислительного процесса разных уровней, в котором второй шаг получен
-    -- путём трансляции/детализации первого шага.
+    -- |Vertical relationships. For example, the intermediate step (function
+    -- execution) can be translated to a sequence of endpoint steps (receiving
+    -- and sending variable), and process unit instructions.
     = Vertical ProcessStepID ProcessStepID
     deriving ( Show, Eq )
 
 
----------------------------------------------------------------------
--- * Сигналы и инструкции
 
--- |Type class for controllable units. Defines two level of a unit behaviour representation (see
--- ahead).
+whatsHappen t Process{ steps } = filter (atSameTime t . sTime) steps
+    where
+        atSameTime a ti = a `member` ti
+
+
+extractInstructionAt pu t = mapMaybe (inst pu) $ whatsHappen t $ process pu
+    where
+        inst :: ( Typeable (Instruction pu) ) => pu -> Step v x t -> Maybe (Instruction pu)
+        inst _ Step{ sDesc=InstructionStep instr } = cast instr
+        inst _ _                                   = Nothing
+
+
+---------------------------------------------------------------------
+
+-- |Type class for controllable units. Defines two level of a unit behaviour
+-- representation (see ahead).
 class Controllable pu where
-    -- |Instruction describe unit behaviour on each mUnit cycle. If instruction not defined for
-    -- some cycles - it should be interpreted as NOP. In future, Instruction should be extracted, because
+    -- |Instruction describe unit behaviour on each mUnit cycle. If instruction
+    -- not defined for some cycles - it should be interpreted as NOP. In future,
+    -- Instruction should be extracted, because
     data Instruction pu :: Type
 
     -- |Microcode desctibe controll signals on each mUnit cycle (without exclusion).
@@ -215,34 +227,7 @@ class Controllable pu where
     signalsToPorts :: [SignalTag] -> pu -> Ports pu
 
 
-
--- |Type class of processor units with control ports.
-class Connected pu where
-    -- |A processor unit control ports (signals, flags).
-    data Ports pu :: Type
-
--- |Type class of processor units with IO ports.
-class IOConnected pu where
-    data IOPorts pu :: Type
-    -- |External input ports, which go outside of NITTA mUnit.
-    inputPorts :: IOPorts pu -> [ InputPortTag ]
-    inputPorts _ = []
-    -- |External output ports, which go outside of NITTA mUnit.
-    outputPorts :: IOPorts pu -> [ OutputPortTag ]
-    outputPorts _ = []
-    -- |External output ports, which go outside of NITTA mUnit.
-    inoutPorts :: IOPorts pu -> [ InoutPortTag ]
-    inoutPorts _ = []
-
-newtype SignalTag = SignalTag { signalTag :: Int} deriving ( Show, Eq, Ord, Ix )
-newtype InputPortTag = InputPortTag{ inputPortTag :: String } deriving ( Show, Eq, Ord )
-newtype OutputPortTag = OutputPortTag{ outputPortTag :: String } deriving ( Show, Eq, Ord )
-newtype InoutPortTag = InoutPortTag{ inoutPortTag :: String } deriving ( Show, Eq, Ord )
-
-
-
--- |Метод, необходимый для управляемых блоков обработки данных. Позволяет узнать микрокоманду
--- для конкретного такта вычислительного процесса.
+-- |Getting microcode value at a specific time.
 class ByTime pu t | pu -> t where
     microcodeAt :: pu -> t -> Microcode pu
 
@@ -260,36 +245,28 @@ instance ( Show (Instruction pu)
         is  -> error $ "instruction collision at " ++ show t ++ " tick: " ++ show is ++ show (process pu)
 
 
-whatsHappen t Process{ steps } = filter (atSameTime t . sTime) steps
-
-extractInstructionAt pu t = mapMaybe (inst pu) $ whatsHappen t $ process pu
-    where
-        inst :: ( Typeable (Instruction pu) ) => pu -> Step v x t -> Maybe (Instruction pu)
-        inst _ Step{ sDesc=InstructionStep instr } = cast instr
-        inst _ _                                   = Nothing
+newtype SignalTag = SignalTag { signalTag :: Int } deriving ( Show, Eq, Ord, Ix )
 
 
-atSameTime a ti = a `member` ti
+-- |Type class of processor units with control ports.
+class Connected pu where
+    -- |A processor unit control ports (signals, flags).
+    data Ports pu :: Type
 
 
--- |Декодирование инструкции в микрокод.
+-- |Decoding microcode from a simple instruction (microcode don't change over
+-- time).
 --
--- Не может быть реализована для инструкций сетей, так как: (1) инструкция для сетей описывает
--- несколько тактов, а значит должна возвращать последовательность значений микрокода; (2)
--- несколько инструкций может выполняться одновременно.
+-- TODO: Generalize that class for all process units, including networks.
 class UnambiguouslyDecode pu where
     decodeInstruction :: Instruction pu -> Microcode pu
 
 
--- |Значение сигнальной линии.
+-- |Control line value.
 data SignalValue
-    -- |Значение не определено.
-    = Undef
-    -- |Значение сигнальной линии установлено в логическое значение.
-    | Bool Bool
-    -- |Была сделана попытка установить сигнальную линию несколькими источниками, что привело к
-    -- колизии и битому значению.
-    | Broken
+    = Undef -- ^undefined by design (`x`)
+    | Bool Bool -- ^boolean (`0` or `1`)
+    | Broken -- ^broken value (`x`) by data colision
     deriving ( Eq )
 
 instance Default SignalValue where
@@ -304,3 +281,24 @@ instance Show SignalValue where
 Undef +++ v = v
 v +++ Undef = v
 _ +++ _ = Broken
+
+
+------------------------------------------------------------
+
+-- |Type class of processor units with IO ports.
+class IOConnected pu where
+    data IOPorts pu :: Type
+    -- |External input ports, which go outside of NITTA mUnit.
+    inputPorts :: IOPorts pu -> [ InputPortTag ]
+    inputPorts _ = []
+    -- |External output ports, which go outside of NITTA mUnit.
+    outputPorts :: IOPorts pu -> [ OutputPortTag ]
+    outputPorts _ = []
+    -- |External output ports, which go outside of NITTA mUnit.
+    inoutPorts :: IOPorts pu -> [ InoutPortTag ]
+    inoutPorts _ = []
+
+
+newtype InputPortTag = InputPortTag{ inputPortTag :: String } deriving ( Show, Eq, Ord )
+newtype OutputPortTag = OutputPortTag{ outputPortTag :: String } deriving ( Show, Eq, Ord )
+newtype InoutPortTag = InoutPortTag{ inoutPortTag :: String } deriving ( Show, Eq, Ord )
