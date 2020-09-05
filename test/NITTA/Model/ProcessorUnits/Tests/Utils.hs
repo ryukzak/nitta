@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS -fno-warn-redundant-constraints #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Tests.Utils
