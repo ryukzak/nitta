@@ -40,7 +40,6 @@ type PUClasses pu v x t =
     , RefactorProblem pu v x
     , ProcessorUnit pu v x t
     , Show (Instruction pu)
-    , Simulatable pu v x
     , Typeable pu
     , UnambiguouslyDecode pu
     , TargetSystemComponent pu
@@ -124,9 +123,6 @@ instance ( Var v ) => Locks (PU v x t) v where
                     ( \Lock{ locked, lockBy } -> [ Lock{ locked=v, lockBy } | v <- S.elems (changeO M.! locked) ] )
                     locked'
                 ]
-
-instance Simulatable (PU v x t) v x where
-    simulateOn cntx PU{ unit } fb = simulateOn cntx unit fb
 
 instance TargetSystemComponent (PU v x t) where
     moduleName name PU{ unit } = moduleName name unit

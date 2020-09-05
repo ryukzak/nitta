@@ -208,12 +208,3 @@ instance Connected (SimpleIO i v x t) where
 
 instance ( Var v ) => Locks (SimpleIO i v x t) v where
     locks SimpleIO{} = []
-
-
-instance
-        ( VarValTime v x t
-        ) => Simulatable (SimpleIO i v x t) v x where
-    simulateOn cntx _sio f
-        | Just f'@F.Send{} <- castF f = simulate cntx f'
-        | Just f'@F.Receive{} <- castF f = simulate cntx f'
-        | otherwise = error $ "Can't simulate " ++ show f ++ " on SPI."

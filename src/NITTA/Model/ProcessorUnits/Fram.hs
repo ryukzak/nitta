@@ -490,15 +490,6 @@ instance UnambiguouslyDecode (Fram v x t) where
     decodeInstruction (WriteCell addr) = Microcode False True $ Just addr
 
 
-instance ( VarValTime v x t
-         ) => Simulatable (Fram v x t) v x where
-    simulateOn cntx _fram f
-        | Just f'@Constant{} <- castF f = simulate cntx f'
-        | Just f'@Loop{} <- castF f = simulate cntx f'
-        | Just f'@Reg{} <- castF f = simulate cntx f'
-        | otherwise = error $ "Can't simulate " ++ show f ++ " on Fram."
-
-
 instance ( VarValTime v x t, Integral x
          ) => Testable (Fram v x t) v x where
     testBenchImplementation prj@Project{ pName, pUnit}

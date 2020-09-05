@@ -148,11 +148,6 @@ instance Connected (Shift v x t) where
 instance IOConnected (Shift v x t) where
   data IOPorts (Shift v x t) = ShiftIO
 
-instance ( VarValTime v x t ) => Simulatable (Shift v x t) v x where
-  simulateOn cntx _ f
-    | Just (f' :: ShiftLR v x) <- castF f = simulate cntx f'
-    | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
-
 
 instance ( Val x ) => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"

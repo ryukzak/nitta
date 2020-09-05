@@ -275,14 +275,6 @@ instance ( VarValTime v x t
 
 
 
-instance ( VarValTime v x t, Integral x
-        ) => Simulatable (Divider v x t) v x where
-    simulateOn cntx _ f
-        | Just f'@F.Division{} <- castF f = simulate cntx f'
-        | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
-
-
-
 instance Controllable (Divider v x t) where
     data Instruction (Divider v x t)
         = Load InputDesc

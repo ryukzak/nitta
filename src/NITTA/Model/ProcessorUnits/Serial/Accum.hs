@@ -257,14 +257,6 @@ instance UnambiguouslyDecode (Accum v x t) where
     decodeInstruction Out        = def{ oeSignal=True }
 
 
-instance (VarValTime v x t, Num x) => Simulatable (Accum v x t) v x where
-  simulateOn cntx _ f
-    | Just f'@Add{} <- castF f = simulate cntx f'
-    | Just f'@Sub{} <- castF f = simulate cntx f'
-    | Just f'@Acc{} <- castF f = simulate cntx f'
-    | otherwise = error $ "Can't simulate " ++ show f ++ " on Accum."
-
-
 instance ( Var v ) => Locks (Accum v x t) v where
     locks Accum{ currentWork = Nothing }                  = []
     locks Accum{ currentWork = Just (_, job), work } = locks' job work

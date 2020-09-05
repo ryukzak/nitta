@@ -552,16 +552,6 @@ instance IOConnected (Multiplier v x t) where
   data IOPorts (Multiplier v x t) = MultiplierIO
         deriving ( Show )
 
--- |The availability of standard values, with which actual result of mUnit in simlator
--- is compared, has the main role in testing. This class carry on standard values generation.
-instance ( VarValTime v x t, Integral x
-         ) => Simulatable (Multiplier v x t) v x where
-    simulateOn cntx _ f
-        -- We define the function and delegate its calculation to default realization.
-        | Just f'@F.Multiply{} <- castF f = simulate cntx f'
-        | otherwise = error $ "Can't simulate on Multiplier: " ++ show f
-
-
 
 -- | We use functions that is realized below to generate processors and tests, that use this
 -- mUnit. These methods are called while generation of project with net, that include this

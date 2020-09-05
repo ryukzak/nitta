@@ -286,16 +286,6 @@ instance {-# OVERLAPS #-}
             merge' st (s, x) = st A.// [ (s, st A.! s +++ x) ]
 
 
-
-instance ( UnitTag tag ) => Simulatable (BusNetwork tag v x t) v x where
-    simulateOn cntx BusNetwork{..} fb
-        = let
-            Just (tag, _) = L.find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
-            pu = bnPus M.! tag
-        in simulateOn cntx pu fb
-
-
-
 ----------------------------------------------------------------------
 
 instance ( UnitTag tag, VarValTime v x t
