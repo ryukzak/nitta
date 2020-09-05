@@ -187,3 +187,34 @@ $ stack exec nitta -- examples/teacup.lua -p=8080
 Running NITTA server at http://localhost:8080 
 ...
 ```
+
+#### Testing
+``` console
+$ stack test
+nitta-0.0.0.1: unregistering (local file changes: test/NITTA/Model/ProcessorUnits/Tests/Utils.hs)
+nitta> configure (lib + exe + test)
+Configuring nitta-0.0.0.1...
+nitta> build (lib + exe + test)
+Preprocessing library for nitta-0.0.0.1..
+Building library for nitta-0.0.0.1..
+Preprocessing executable 'nitta' for nitta-0.0.0.1..
+Building executable 'nitta' for nitta-0.0.0.1..
+Preprocessing executable 'nitta-api-gen' for nitta-0.0.0.1..
+Building executable 'nitta-api-gen' for nitta-0.0.0.1..
+Preprocessing test suite 'nitta-test' for nitta-0.0.0.1..
+Building test suite 'nitta-test' for nitta-0.0.0.1..
+[14 of 20] Compiling NITTA.Model.ProcessorUnits.Tests.Utils
+[17 of 20] Compiling NITTA.Model.ProcessorUnits.Serial.Accum.Tests [TH]
+
+...
+
+    concatLinesWithSpaceWithoutBeforeLine:                       OK
+  NITTA.Utils.Tests
+    values2dump:                                                 OK
+    endpoint role equality:                                      OK
+
+All 127 tests passed (7.28s)
+
+nitta> Test suite nitta-test passed
+Completed 2 action(s).
+```
