@@ -29,7 +29,6 @@ import           Data.Proxy
 import qualified Data.String.Utils as S
 import           NITTA.Model.Problems
 import           NITTA.Model.Types
-import           NITTA.Synthesis.Estimate
 import           NITTA.Synthesis.Tree
 import           NITTA.UIBackend
 import           NITTA.UIBackend.Marshalling
@@ -62,8 +61,8 @@ $(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
 $(deriveTypeScript defaultOptions ''ProcessTimelines)
 $(deriveTypeScript defaultOptions ''TestbenchReportView)
 
-$(deriveTypeScript defaultOptions ''Refactor)
-$(deriveTypeScript defaultOptions ''Parameters)
+$(deriveTypeScript defaultOptions ''RefactorData)
+$(deriveTypeScript defaultOptions ''ParametersView)
 
 $(deriveTypeScript defaultOptions ''NId) -- in according to custom ToJSON instance, the real type description is hardcoded.
 $(deriveTypeScript defaultOptions ''FView)
@@ -109,8 +108,8 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
             , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReportView)
 
-            , getTypeScriptDeclarations (Proxy :: Proxy Refactor)
-            , getTypeScriptDeclarations (Proxy :: Proxy Parameters)
+            , getTypeScriptDeclarations (Proxy :: Proxy RefactorData)
+            , getTypeScriptDeclarations (Proxy :: Proxy ParametersView)
 
             , getTypeScriptDeclarations (Proxy :: Proxy FView)
             , getTypeScriptDeclarations (Proxy :: Proxy TreeView)

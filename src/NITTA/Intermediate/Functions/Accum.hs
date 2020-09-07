@@ -5,8 +5,9 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE DeriveGeneric         #-}
 
 {-|
 Module      : NITTA.Intermediate.Functions
@@ -28,6 +29,8 @@ import           Data.List ( partition )
 import           Data.List.Split ( splitWhen )
 import           Data.Set ( elems, fromList )
 import           Data.Typeable
+import           Debug.Trace
+import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Utils.Base
 import           Text.InterpolatedString.Perl6 ( qc )
@@ -46,7 +49,7 @@ instance (Show v) => Show ( Action v ) where
     show (Push s (I v)) = [qc| { show s } { show v }|]
     show (Pull (O v))   = concatMap (\res -> [qc| => {show res}|]) (elems v) ++ ";"
 
-newtype Acc v x = Acc { actions :: [Action v] } deriving (Typeable, Eq)
+newtype Acc v x = Acc { actions :: [Action v] } deriving (Typeable, Eq, Generic)
 
 instance ( Show v ) => Show (Acc v x) where
     show (Acc lst) =  concatMap show lst

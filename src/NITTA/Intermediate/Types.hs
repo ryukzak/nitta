@@ -150,6 +150,7 @@ data F v x where
         , Label f
         , FunctionSimulation f v x
         , Typeable f
+        , Generic f
         ) =>
             { fun :: f
             , funHistory :: [ F v x ]

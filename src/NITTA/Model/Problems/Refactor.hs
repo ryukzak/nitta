@@ -8,6 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+
 {-|
 Module      : NITTA.Model.Problems.Refactor
 Description : Automatic manipulation over an intermediate representation
@@ -38,6 +39,7 @@ import           GHC.Generics
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Utils.Base
+import           Data.Aeson
 
 
 data Refactor v x
@@ -79,8 +81,11 @@ data Refactor v x
         , loopO :: S.Set v -- ^output variables
         , loopI :: v       -- ^input variable
         }
+    | AlgSub [F v x]
     deriving ( Generic, Show, Eq )
 
+-- instance ( Show x, Show v, ToJSON v, ToJSON x
+--         ) => ToJSON (Refactor v x)
 
 recLoop BreakLoop{ loopX, loopO, loopI }
     = packF $ Loop (X loopX) (O loopO) (I loopI)
