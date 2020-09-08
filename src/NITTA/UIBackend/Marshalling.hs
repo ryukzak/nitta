@@ -24,8 +24,7 @@ module NITTA.UIBackend.Marshalling
     ( Viewable(..)
     , SynthesisNodeView
     , SynthesisDecisionView
-      -- change to Refactor View
-    , RefactorData
+    , RefactorView
     , ParametersView
     , DataflowEndpointView
     , NodeView, EdgeView, FView
@@ -134,7 +133,7 @@ data SynthesisDecisionView tag v x tp
         { source  :: DataflowEndpointView tag tp
         , targets :: HM.HashMap v (Maybe (DataflowEndpointView tag tp))
         }
-    | RefactorView RefactorData
+    | RefactorData RefactorView
     deriving ( Generic )
 
 instance ( Show x, Show v, ToJSON v, ToJSONKey v, ToJSON tp, ToJSON tag
@@ -148,7 +147,7 @@ instance ( Var v, Hashable v, Show x
 
 
 
-instance Viewable (Refactor () ()) RefactorData where
+instance Viewable (Refactor () ()) RefactorView where
     view (ResolveDeadlock set ) = ResolveDeadlockView $ map show $ S.toList set
     view (BreakLoop {loopX, loopO, loopI}) = BreakLoopView {loopX = show loopX, loopO = map show ( S.toList loopO ), loopI = show loopI}
     view (AlgSub fs) = AlgSubView $ map view fs
@@ -167,12 +166,12 @@ instance ( Var v, Show x, Hashable v
             (fmap $ uncurry DataflowEndpointView)
             $ HM.fromList $ M.assocs dfTargets
         }
-    view (Refactor (ResolveDeadlock set )) = RefactorView $ ResolveDeadlockView $ map show $ S.toList set
-    view (Refactor (BreakLoop {loopX, loopO, loopI})) = RefactorView $ BreakLoopView {loopX = show loopX, loopO = map show ( S.toList loopO ), loopI = show loopI}
-    view (Refactor (AlgSub fs)) = RefactorView $ AlgSubView $ map view fs
+    view (Refactor (ResolveDeadlock set )) = RefactorData $ ResolveDeadlockView $ map show $ S.toList set
+    view (Refactor (BreakLoop {loopX, loopO, loopI})) = RefactorData $ BreakLoopView {loopX = show loopX, loopO = map show ( S.toList loopO ), loopI = show loopI}
+    view (Refactor (AlgSub fs)) = RefactorData $ AlgSubView $ map view fs
 
 
-data RefactorData
+data RefactorView
     = ResolveDeadlockView [String]
     | BreakLoopView
         { loopX :: String       -- ^initial looped value
@@ -182,7 +181,7 @@ data RefactorData
     | AlgSubView [FView]
     deriving ( Generic , Show)
 
-instance ToJSON RefactorData
+instance ToJSON RefactorView
 
 data NodeView tag v x t
     = NodeView
@@ -247,7 +246,7 @@ data ParametersView
         , pNotTransferableInputs :: [Float]
         }
     | RefactorEdgeParameterView
-        { pRefactorType                  :: RefactorData
+        { pRefactorType                  :: RefactorView
         , pNumberOfLockedVariables       :: Float
         , pBufferCount                   :: Float
         , pNStepBackRepeated             :: Maybe Int

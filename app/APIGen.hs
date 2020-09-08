@@ -61,7 +61,7 @@ $(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
 $(deriveTypeScript defaultOptions ''ProcessTimelines)
 $(deriveTypeScript defaultOptions ''TestbenchReportView)
 
-$(deriveTypeScript defaultOptions ''RefactorData)
+$(deriveTypeScript defaultOptions ''RefactorView)
 $(deriveTypeScript defaultOptions ''ParametersView)
 
 $(deriveTypeScript defaultOptions ''NId) -- in according to custom ToJSON instance, the real type description is hardcoded.
@@ -108,7 +108,7 @@ main = do
             , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
             , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReportView)
 
-            , getTypeScriptDeclarations (Proxy :: Proxy RefactorData)
+            , getTypeScriptDeclarations (Proxy :: Proxy RefactorView)
             , getTypeScriptDeclarations (Proxy :: Proxy ParametersView)
 
             , getTypeScriptDeclarations (Proxy :: Proxy FView)
