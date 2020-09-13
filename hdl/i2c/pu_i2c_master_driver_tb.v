@@ -19,7 +19,7 @@ pu_i2c_slave_driver
   #( .I2C_DATA_WIDTH( 8 )
    , .DATA_WIDTH( 32 )
    , .ADDRES_DEVICE( 7'h47 )
-   ) slave_driver_i2c 
+   ) slave_driver_i2c
   ( .clk( clk )
   , .rst( rst )
   , .scl( scl )
@@ -32,7 +32,7 @@ pu_i2c_master_driver
   #( .I2C_DATA_WIDTH( 8 )
    , .DATA_WIDTH( 32 )
    , .ADDRES_DEVICE( 7'h47 )
-   ) master_driver_i2c 
+   ) master_driver_i2c
   ( .clk( clk )
   , .rst( rst )
   , .scl( scl )
@@ -59,20 +59,14 @@ initial begin
 
   rw <= WRITE;
   start_transaction <= 1'b1; @(posedge clk);
-  start_transaction <= 1'b0; 
-
-  // repeat(1000) @(posedge clk);
-
-  // rw <= WRITE;
-  // start_transaction <= 1'b1; @(posedge clk);
-  // start_transaction <= 1'b0; 
+  start_transaction <= 1'b0;
 
   repeat(1000) @(posedge clk);
 
   rw <= READ;
   start_transaction <= 1'b1; @(posedge clk);
-  start_transaction <= 1'b0; 
-   
+  start_transaction <= 1'b0;
+
   repeat(1000) @(posedge clk); $finish;
 end
 
@@ -90,18 +84,6 @@ initial begin
   @(posedge i2c_prepare); @(posedge clk);
   data_in <= 8'hA4;       @(posedge clk);
 
-  // @(posedge i2c_prepare); @(posedge clk);
-  // data_in <= 8'hB1;       @(posedge clk);
-
-  // @(posedge i2c_prepare); @(posedge clk);
-  // data_in <= 8'hB2;       @(posedge clk);
-
-  // @(posedge i2c_prepare); @(posedge clk);
-  // data_in <= 8'hB3;       @(posedge clk);
-
-  // @(posedge i2c_prepare); @(posedge clk);
-  // data_in <= 8'hB4;       @(posedge clk);
-
   @(posedge i2c_prepare_slave); @(posedge clk);
   data_in_slave <= 8'hC1;       @(posedge clk);
 
@@ -118,6 +100,6 @@ end
 initial begin
   $dumpfile("pu_i2c_master_driver_tb.vcd");
   $dumpvars(-1, pu_i2c_master_driver_tb);
-end 
+end
 
 endmodule

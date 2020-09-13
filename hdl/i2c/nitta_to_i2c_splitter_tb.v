@@ -10,11 +10,11 @@ wire [7:0] to_i2c;
 wire splitter_ready;
 reg [31:0] from_nitta;
 
-nitta_to_i2c_splitter 
+nitta_to_i2c_splitter
   #( .DATA_WIDTH( 32 )
    , .ATTR_WIDTH( 0 )
    , .I2C_DATA_WIDTH( 8 )
-   ) nitta_to_i2c_splitter 
+   ) nitta_to_i2c_splitter
   ( .clk( clk )
   , .rst( rst )
 
@@ -31,7 +31,7 @@ always begin
   repeat(4) #5 clk <= ~clk;
   rst <= 0;
   forever #5 clk <= ~clk;
-end 
+end
 
 task assert8;
   input [7:0] a;
@@ -95,6 +95,6 @@ end
 initial begin
   $dumpfile("nitta_to_i2c_splitter_tb.vcd");
   $dumpvars(-1, nitta_to_i2c_splitter_tb);
-end 
+end
 
 endmodule

@@ -1,4 +1,4 @@
-module i2c_master_driver 
+module i2c_master_driver
   #( parameter I2C_DATA_WIDTH = 8
    , parameter DATA_WIDTH     = 32
    , parameter ATTR_WIDTH     = 4
@@ -9,9 +9,9 @@ module i2c_master_driver
   // system interface
   , input                       start_transaction
   , input                       rw                 /* 1 read, 0 write */
-  , input  [I2C_DATA_WIDTH-1:0] data_in  
+  , input  [I2C_DATA_WIDTH-1:0] data_in
   , output [I2C_DATA_WIDTH-1:0] data_out
-  , output reg                  ready   
+  , output reg                  ready
 
   // i2c interface
   , output reg                  scl
@@ -32,7 +32,7 @@ always @( posedge rst, negedge clk ) begin
   if ( rst ) begin
     scl          <= 1;
     start_stop   <= 1;
-    state_scl    <= STATE_IDLE; 
+    state_scl    <= STATE_IDLE;
   end
   else begin
     case ( state_scl )
@@ -41,7 +41,7 @@ always @( posedge rst, negedge clk ) begin
         start_stop <= 1;
         if ( start_transaction ) begin
           state_scl <= STATE_START;
-        end 
+        end
       end
       STATE_START: begin
         start_stop <= 0;
@@ -49,18 +49,18 @@ always @( posedge rst, negedge clk ) begin
       end
       STATE_SCL_LOW: begin
         scl <= 0;
-        state_scl <= stop_transaction ? STATE_FINALIZE : wait_scl ? STATE_SCL_LOW : STATE_SCL_HIGH;         
+        state_scl <= stop_transaction ? STATE_FINALIZE : wait_scl ? STATE_SCL_LOW : STATE_SCL_HIGH;
       end
       STATE_SCL_HIGH: begin
         scl <= 1;
-        state_scl <= STATE_SCL_LOW;         
+        state_scl <= STATE_SCL_LOW;
       end
       STATE_FINALIZE: begin
         scl <= 1;
         state_scl <= STATE_IDLE;
       end
       default: state_scl <= STATE_IDLE;
-    endcase        
+    endcase
   end
 end
 
@@ -104,8 +104,8 @@ always @(posedge rst, posedge clk) begin
         end
       end
       STATE_SEND_ADDRES, STATE_SEND_BYTE: begin
-        if (!scl) begin          
-          shiftreg <= {shiftreg[I2C_DATA_WIDTH - 2:0], 1'b0};         
+        if (!scl) begin
+          shiftreg <= {shiftreg[I2C_DATA_WIDTH - 2:0], 1'b0};
           sda_o <= shiftreg[I2C_DATA_WIDTH-1];
           data_counter <= data_counter + 1;
           if ( data_counter == I2C_DATA_WIDTH ) begin
@@ -113,9 +113,9 @@ always @(posedge rst, posedge clk) begin
             sda_o <= 0;
             byte_counter <= byte_counter + 1;
             ready <= 1;
-            state_ms <= STATE_RECEIVE_ACK; 
+            state_ms <= STATE_RECEIVE_ACK;
           end
-        end  
+        end
       end
       STATE_RECEIVE_ACK: begin
         if (!sda && !scl) begin
@@ -124,14 +124,14 @@ always @(posedge rst, posedge clk) begin
           shiftreg <= data_in;
           wait_scl <= 0;
           ready <= 0;
-          state_ms <= rw ? STATE_RECEIVE_BYTE : STATE_SEND_BYTE; 
-        end else 
+          state_ms <= rw ? STATE_RECEIVE_BYTE : STATE_SEND_BYTE;
+        end else
         if (byte_counter == DATA_WIDTH / 8 + 1) begin
           highz_mode <= 0;
           stop_transaction <= 1;
           sda_o <= 0;
           wait_scl <= 0;
-          state_ms <= STATE_FINALIZE; 
+          state_ms <= STATE_FINALIZE;
         end else begin
           wait_scl <= 1;
         end
@@ -139,15 +139,15 @@ always @(posedge rst, posedge clk) begin
       STATE_RECEIVE_BYTE: begin
         if (scl) begin
           data_counter <= data_counter + 1;
-          shiftreg <= {shiftreg[I2C_DATA_WIDTH - 2:0], sda};       
+          shiftreg <= {shiftreg[I2C_DATA_WIDTH - 2:0], sda};
         end else begin
           if ( data_counter == I2C_DATA_WIDTH ) begin
             highz_mode <= 0;
             sda_o <= byte_counter == DATA_WIDTH / 8 ? 1 : 0; // here
             ready <= 1;
             byte_counter <= byte_counter + 1;
-            state_ms <= STATE_SEND_ACK; 
-          end  
+            state_ms <= STATE_SEND_ACK;
+          end
         end
       end
       STATE_SEND_ACK: begin
@@ -156,12 +156,12 @@ always @(posedge rst, posedge clk) begin
           highz_mode <= 1;
           wait_scl <= 0;
           state_ms <= STATE_RECEIVE_BYTE;
-        end else 
+        end else
         if (byte_counter == DATA_WIDTH / 8 + 1) begin
           highz_mode <= 0;
           stop_transaction <= 1;
           wait_scl <= 0;
-          state_ms <= STATE_FINALIZE; 
+          state_ms <= STATE_FINALIZE;
         end else begin
           ready <= 0;
           wait_scl <= 1;
@@ -169,7 +169,7 @@ always @(posedge rst, posedge clk) begin
       end
       STATE_FINALIZE: begin
         stop_transaction <= 0;
-        state_ms <= STATE_IDLE; 
+        state_ms <= STATE_IDLE;
       end
     endcase
   end

@@ -8,8 +8,8 @@ module i2c_tb
    )
   ();
 
-reg clk; 
-reg rst; 
+reg clk;
+reg rst;
 reg start_transaction;
 
 reg scl;
@@ -39,9 +39,9 @@ task delay;
   begin
       repeat(10) @(posedge clk);
   end
-endtask 
+endtask
 
-initial begin  
+initial begin
   clk   <= 0;
   sda_o <= 1;
   scl   <= 1;
@@ -53,11 +53,11 @@ always begin
   #5 clk <= ~clk;
 end
 
-initial begin  
+initial begin
   @(negedge rst); repeat(10) @(posedge clk);
 
   // Start
-  sda_o <= 0; delay(); scl <= 0; 
+  sda_o <= 0; delay(); scl <= 0;
 
   delay();
 
@@ -97,7 +97,7 @@ initial begin
   delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
-  delay(); sda_o <= 1'bz; scl <= 0;  
+  delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
   delay(); sda_o <= 1'bz; scl <= 0;
@@ -129,7 +129,7 @@ initial begin
   delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
-  delay(); sda_o <= 1'bz; scl <= 0;  
+  delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
   delay(); sda_o <= 1'bz; scl <= 0;
@@ -161,7 +161,7 @@ initial begin
   delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
-  delay(); sda_o <= 1'bz; scl <= 0;  
+  delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
   delay(); sda_o <= 1'bz; scl <= 0;
@@ -193,7 +193,7 @@ initial begin
   delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
-  delay(); sda_o <= 1'bz; scl <= 0;  
+  delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
   delay(); sda_o <= 1'bz; scl <= 0;
@@ -220,7 +220,7 @@ initial begin
   sda_o <= 0; delay(); scl <= 1;
   delay(); sda_o <= 1; scl <= 1;
 
-  
+
   repeat(100) @(posedge clk); $finish;
 end
 

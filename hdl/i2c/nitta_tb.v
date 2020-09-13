@@ -1,7 +1,7 @@
 `timescale 1 ms/ 1 ms
 
 module nitta_tb
-  #( parameter I2C_DATA_WIDTH    = 8 
+  #( parameter I2C_DATA_WIDTH    = 8
    , parameter DATA_WIDTH        = 32
    , parameter ADDRES_DEVICE     = 7'h47
    , parameter ADDRES_BAD_DEVICE = 7'h44
@@ -20,7 +20,7 @@ localparam WRITE = 0;
 
 nitta #() driver_slave
   ( .external_clk( clk )
-  
+
   , .scl( scl )
   , .sda( sda )
 
@@ -36,127 +36,127 @@ task read_byte;
     @(negedge clk);
     f_sda = 1'bz;                       // !-- Read 1 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = 1'bz;                       // !-- Read 2 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = 1'bz;                       // !-- Read 3 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = 1'bz;                       // !-- Read 4 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = 1'bz;                       // !-- Read 5 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = 1'bz;                       // !-- Read 6 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = 1'bz;                       // !-- Read 7 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = 1'bz;                       // !-- Read 8 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
   end
-endtask 
+endtask
 
 task write_ack;
   begin
     @(negedge clk);
     f_sda = 1'b0;                       // !-- Read ACK
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
   end
-endtask 
+endtask
 
 task write_byte;
   input [7:0] data;
   begin
     f_sda = data[7];                       // !-- Read 1 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = data[6];                       // !-- Read 2 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = data[5];                       // !-- Read 3 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = data[4];                       // !-- Read 4 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = data[3];                       // !-- Read 5 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = data[2];                       // !-- Read 6 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = data[1];                       // !-- Read 7 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     @(negedge clk);
     f_sda = data[0];                       // !-- Read 8 bit
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
   end
@@ -167,11 +167,11 @@ task read_ack;
     @(negedge clk);
     f_sda = 1'bz;                       // !-- Wait ACK
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
   end
-endtask 
+endtask
 
 task stop_transfer;
   begin
@@ -179,15 +179,15 @@ task stop_transfer;
     f_sda = 1'b0;                       // !-- Set zero
 
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
     f_sda = 1'b1;                       // !-- Set Stop
   end
-endtask 
+endtask
 
 task start_transfer;
   begin
-    repeat(5) @(posedge clk); 
+    repeat(5) @(posedge clk);
     f_sda = 0;
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Start transfer ADDRES_DEVICE
@@ -201,49 +201,49 @@ task read_addres;
   begin
     f_sda = addres[6];       // !-- Set the 1 bit  ADDRES_DEVICE
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 0; // !-- Tact 
+                               scl = 0; // !-- Tact
 
     f_sda = addres[5];       // !-- Set the 2 bit  ADDRES_DEVICE
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     f_sda = addres[4];       // !-- Set the 3 bit  ADDRES_DEVICE
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     f_sda = addres[3];       // !-- Set the 4 bit  ADDRES_DEVICE
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     f_sda = addres[2];       // !-- Set the 5 bit  ADDRES_DEVICE
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     f_sda = addres[1];       // !-- Set the 6 bit  ADDRES_DEVICE
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     f_sda = addres[0];       // !-- Set the 7 bit  ADDRES_DEVICE
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
 
     f_sda = rw;                       // !-- Set READ
     repeat(5) @(posedge clk);           // !-- delay
-                               scl = 1; // !-- Tact 
+                               scl = 1; // !-- Tact
     repeat(5) @(posedge clk);           // !-- delay
                                scl = 0; // !-- Tact
   end
@@ -254,7 +254,7 @@ task step_write;
   input [31:0] word_2;
   begin
     start_transfer();
-  read_addres(ADDRES_DEVICE, WRITE); 
+  read_addres(ADDRES_DEVICE, WRITE);
   read_ack();
 
   write_byte(word_1[31:24]);
@@ -288,7 +288,7 @@ endtask
 task step_read;
   begin
   start_transfer();
-  read_addres(ADDRES_DEVICE, READ); 
+  read_addres(ADDRES_DEVICE, READ);
   read_ack();
 
   read_byte();
@@ -319,7 +319,7 @@ task step_read;
     end
 endtask
 
-initial begin  
+initial begin
   clk   <= 0;
   f_sda <= 1;
   scl   <= 1;
@@ -328,8 +328,8 @@ initial begin
   dips[3]   <= 0;
 end
 
-initial begin 
-  @(negedge dips[3]); repeat(10) @(posedge clk); 
+initial begin
+  @(negedge dips[3]); repeat(10) @(posedge clk);
 
 
   step_write(32'h00000003, 32'h00000004);

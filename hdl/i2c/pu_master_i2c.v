@@ -1,13 +1,13 @@
 `timescale 1 ms/ 1 ms
-module pu_master_i2c #
-        ( parameter DATA_WIDTH     = 32
-        , parameter ATTR_WIDTH     = 4
-        , parameter I2C_DATA_WIDTH = 8
-        , parameter BUF_SIZE       = 6
-        , parameter BOUNCE_FILTER  = 4
-        , parameter INVALID        = 0
-        , parameter SIZE_WORDS     = 2
-        )
+module pu_master_i2c
+    #( parameter DATA_WIDTH     = 32
+    , parameter ATTR_WIDTH     = 4
+    , parameter I2C_DATA_WIDTH = 8
+    , parameter BUF_SIZE       = 6
+    , parameter BOUNCE_FILTER  = 4
+    , parameter INVALID        = 0
+    , parameter SIZE_WORDS     = 2
+    )
     ( input                     clk
     , input                     rst
     , input                     signal_cycle
@@ -54,7 +54,7 @@ generate
 
             , .oe( send_buffer_oe[i] )
             , .data_out( send_buffer_data_out[i] )
-            ); 
+            );
     end
 endgenerate
 
@@ -76,7 +76,7 @@ nitta_to_i2c_splitter #
         ( .DATA_WIDTH( DATA_WIDTH )
         , .ATTR_WIDTH( ATTR_WIDTH )
         , .I2C_DATA_WIDTH( I2C_DATA_WIDTH )
-        ) nitta_to_i2c_splitter 
+        ) nitta_to_i2c_splitter
     ( .clk( clk )
     , .rst( rst || flag_stop )
 
@@ -98,7 +98,7 @@ i2c_to_nitta_splitter #
         ( .DATA_WIDTH( DATA_WIDTH )
         , .ATTR_WIDTH( ATTR_WIDTH )
         , .I2C_DATA_WIDTH( I2C_DATA_WIDTH )
-        ) i2c_to_nitta_splitter 
+        ) i2c_to_nitta_splitter
     ( .clk( clk )
     , .rst( rst || flag_stop )
     , .i2c_ready( i2c_ready_write )
@@ -128,7 +128,7 @@ generate
 
             , .oe_other( receive_buffer_oe[j] )
             , .data_out_other( receive_buffer_data_out[j] )
-            ); 
+            );
     end
 endgenerate
 
@@ -153,7 +153,7 @@ pu_i2c_master_driver #
   , .rst( rst )
   , .scl( f_scl )
   , .sda( sda )
-  
+
   , .data_in( splitter_to_i2c )
   , .data_out( splitter_from_i2c )
 
@@ -198,8 +198,8 @@ always @(posedge clk) begin
         flag_stop <= 1'b1;
       end else begin
         flag_stop <= 1'b0;
-      end 
-    end   
+      end
+    end
   end
 end
 
@@ -223,7 +223,7 @@ end
 assign attr_out[3:1] = 3'b000;
 assign attr_out[INVALID] = capture_word;
 
-assign data_out   = receive_buffer_oe[1] ? receive_buffer_data_out[1] : 
+assign data_out   = receive_buffer_oe[1] ? receive_buffer_data_out[1] :
                     receive_buffer_oe[0] ? receive_buffer_data_out[0] : {DATA_WIDTH{1'b0}};
 
 endmodule
