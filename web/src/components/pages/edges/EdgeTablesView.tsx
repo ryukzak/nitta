@@ -6,7 +6,7 @@ import {
   EdgeView,
   IBindingView,
   IBindEdgeParameterView,
-  IRefactorData,
+  IRefactorView,
   IDataflowView,
   IDataFlowEdgeParameterView,
   Interval,
@@ -18,7 +18,7 @@ import {
 type Edge = EdgeView<string, string, number, number>;
 type Binding = IBindingView<string, string, number, number>;
 type BindingParam = IBindEdgeParameterView;
-type Refactor = IRefactorData<string, string, number, number>;
+type Refactor = IRefactorView<string, string, number, number>;
 type Dataflow = IDataflowView<string, string, number, Interval<number>>;
 type DataflowParam = IDataFlowEdgeParameterView;
 type RefactorParam = IRefactorEdgeParameterView;
@@ -66,7 +66,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       />
       <Table
         name="Refactor"
-        edges={edges.filter((e: Edge) => e.decision.tag === "RefactorData")}
+        edges={edges.filter((e: Edge) => e.decision.tag === "RefactorView")}
         columns={[
           nidColumn(appContext.selectNode),
           objectiveColumn(),
@@ -121,7 +121,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       <Table
         name="Other"
         edges={edges.filter(
-          (e: Edge) => ["BindingView", "RefactorData", "DataflowView"].indexOf(e.decision.tag) === -1
+          (e: Edge) => ["BindingView", "RefactorView", "DataflowView"].indexOf(e.decision.tag) === -1
         )}
         columns={[nidColumn(appContext.selectNode), objectiveColumn(), decisionColumn(), parametersColumn()]}
       />
