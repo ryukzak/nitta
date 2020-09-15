@@ -1,41 +1,43 @@
 PWD := $(shell pwd)
 IVERILOG := $(shell which iverilog)
+TEST := $(PWD)/test
+CALL_TEST := $(shell which vvp) $(PWD)/test
+GTKWAVE := $(shell which gtkwave)
 
 clean:
 	rm $(PWD)/test; rm -r $(PWD)/*.vcd
 
 pu_accum:
-	$(IVERILOG) -o test -I./ -y./ $(PWD)/pu_accum.v $(PWD)/pu_accum_tb.v
-	vvp test
-	$(PWD)/test;gtkwave $(PWD)/pu_accum_tb.vcd
-	rm $(PWD)/test; rm -r $(PWD)/*.vcd
+	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_accum.v $(PWD)/pu_accum_tb.v
+	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_accum_tb.vcd
+	rm $(TEST); rm -r $(PWD)/*.vcd
 
 pu_fram:
-	$(IVERILOG) -o test -I./ -y./ $(PWD)/pu_fram.v $(PWD)/pu_fram_tb.v
-	vvp test
-	$(PWD)/test;gtkwave $(PWD)/pu_fram_tb.vcd
-	rm $(PWD)/test; rm -r $(PWD)/*.vcd
+	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_fram.v $(PWD)/pu_fram_tb.v
+	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_fram_tb.vcd
+	rm $(TEST); rm -r $(PWD)/*.vcd
 
 pu_mux:
-	$(IVERILOG) -o test -I./ -y./ $(PWD)/pu_mux.v $(PWD)/pu_mux_tb.v
-	vvp test
-	$(PWD)/test;gtkwave $(PWD)/pu_mux_tb.vcd
-	rm $(PWD)/test; rm -r $(PWD)/*.vcd
+	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_mux.v $(PWD)/pu_mux_tb.v
+	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_mux_tb.vcd
+	rm $(TEST); rm -r $(PWD)/*.vcd
 
 pu_fifo:
-	$(IVERILOG) -o test -I./ -y./ $(PWD)/pu_fifo.v $(PWD)/pu_fifo_tb.v
-	vvp test
-	$(PWD)/test;gtkwave $(PWD)/pu_fifo_tb.vcd
-	rm $(PWD)/test; rm -r $(PWD)/*.vcd
+	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_fifo.v $(PWD)/pu_fifo_tb.v
+	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_fifo_tb.vcd
+	rm $(TEST); rm -r $(PWD)/*.vcd
 
 pu_shift:
-	$(IVERILOG) -o test -I./ -y./ $(PWD)/pu_shift.v $(PWD)/pu_shift_tb.v
-	vvp test
-	$(PWD)/test;gtkwave $(PWD)/pu_shift_tb.vcd
-	rm $(PWD)/test; rm -r $(PWD)/*.vcd
+	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_shift.v $(PWD)/pu_shift_tb.v
+	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_shift_tb.vcd
+	rm $(TEST); rm -r $(PWD)/*.vcd
 
 pu_control:
-	$(IVERILOG) -o test -I./ -y./ $(PWD)/pu_control.v $(PWD)/pu_control_tb.v
-	vvp test
-	$(PWD)/test;gtkwave $(PWD)/pu_control_tb.vcd
-	rm $(PWD)/test; rm -r $(PWD)/*.vcd
+	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_control.v $(PWD)/pu_control_tb.v
+	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_control_tb.vcd
+	rm $(TEST); rm -r $(PWD)/*.vcd
+
+pu_div:
+	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/div/pu_div.v $(PWD)/div/div_mock.v $(PWD)/div/pu_div_tb.v
+	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_div_tb.vcd
+	rm $(TEST); rm -r $(PWD)/*.vcd
