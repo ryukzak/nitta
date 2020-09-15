@@ -1,10 +1,14 @@
-all:	comp vvp gtk clean
-	
-comp: 
-	iverilog -o test -I./ -y./ pu_accum.v pu_accum_tb.v
+PWD := $(shell pwd)
 
-vvp: 
+all:	comp vvp gtk clean
+
+comp:
+	iverilog -o test -I./ -y./ $(PWD)/pu_accum.v $(PWD)/pu_accum_tb.v
+
+vvp:
 	vvp test
 
 gtk:
-	gtkwave pu_accum.vcd
+	$(PWD)/test;gtkwave $(PWD)/pu_accum_tb.vcd
+clean:
+	rm $(PWD)/test
