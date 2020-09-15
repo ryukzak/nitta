@@ -1,21 +1,21 @@
 `timescale 1 ps / 1 ps
-module fibonacci_net_tb();                                                                                 
-                                                                                                          
-reg clk, rst;                                                                                             
+module fibonacci_net_tb();
+
+reg clk, rst;
 wire mosi, sclk, cs, miso;
 
-fibonacci_net net                                                                                          
-  ( .clk( clk )                                                                                           
-  , .rst( rst )                                                                                           
+fibonacci_net net
+  ( .clk( clk )
+  , .rst( rst )
   , .mosi( mosi ), .sclk( sclk ), .cs( cs ), .miso( miso )
-  );                                                                                                      
-                                                                                                          
+  );
+
 reg spi_start_transaction;
 reg  [32-1:0] spi_master_in;
 wire [32-1:0] spi_master_out;
 wire spi_ready;
-spi_master_driver 
-  #( .DATA_WIDTH( 32 ) 
+spi_master_driver
+  #( .DATA_WIDTH( 32 )
    , .SCLK_HALFPERIOD( 1 )
    ) spi_master
   ( .clk( clk )
@@ -30,56 +30,56 @@ spi_master_driver
   , .cs( cs )
   );
 initial spi_master.inner.shiftreg <= 0;
-                                                                                                          
-initial begin 
-  spi_start_transaction <= 0; spi_master_in <= 0;                                                                 
+
+initial begin
+  spi_start_transaction <= 0; spi_master_in <= 0;
   @(negedge rst);
-  repeat(8) @(posedge clk); 
-                                                                                                          
-  spi_master_in = 32'h01234567;                        @(posedge clk); 
+  repeat(8) @(posedge clk);
+
+  spi_master_in = 32'h01234567;                        @(posedge clk);
   spi_start_transaction = 1;                           @(posedge clk);
   spi_start_transaction = 0;                           @(posedge clk);
-  repeat(70) @(posedge clk); 
-                                                                                                          
-  spi_master_in = 32'h89ABCDEF;                        @(posedge clk); 
+  repeat(70) @(posedge clk);
+
+  spi_master_in = 32'h89ABCDEF;                        @(posedge clk);
   spi_start_transaction = 1;                           @(posedge clk);
   spi_start_transaction = 0;                           @(posedge clk);
-  repeat(70) @(posedge clk); 
-                                                                                                          
-  spi_master_in = 32'h01234567;                        @(posedge clk); 
+  repeat(70) @(posedge clk);
+
+  spi_master_in = 32'h01234567;                        @(posedge clk);
   spi_start_transaction = 1;                           @(posedge clk);
   spi_start_transaction = 0;                           @(posedge clk);
-  repeat(70) @(posedge clk); 
-                                                                                                          
-  spi_master_in = 32'h89ABCDEF;                        @(posedge clk); 
+  repeat(70) @(posedge clk);
+
+  spi_master_in = 32'h89ABCDEF;                        @(posedge clk);
   spi_start_transaction = 1;                           @(posedge clk);
   spi_start_transaction = 0;                           @(posedge clk);
-  repeat(70) @(posedge clk); 
+  repeat(70) @(posedge clk);
 end
-                                                                                                          
-                                                                                                          
-initial                                                                                                   
-  begin                                                                                                   
-    $dumpfile("fibonacci_net_tb.vcd");                                                                 
-    $dumpvars(0, fibonacci_net_tb);                                                                      
-  end                                                                                                     
 
-                                                                                                          
-initial begin                                                                                             
-  clk = 1'b0;                                                                                             
-  rst = 1'b1;                                                                                             
-  repeat(4) #10 clk = ~clk;                                                                               
-  rst = 1'b0;                                                                                             
-  forever #10 clk = ~clk;                                                                                 
-end                                                                                                       
 
-                                                                                                          
-  initial                                                                                                 
-    begin                                                                                                 
-      // microcode when rst == 1 -> program[0], and must be nop for all PUs                               
-      @(negedge rst); // Turn nitta processor on.                                                         
-      // Start computational cycle from program[1] to program[n] and repeat.                              
-      // Signals effect to processor state after first clk posedge.                                       
+initial
+  begin
+    $dumpfile("fibonacci_net_tb.vcd");
+    $dumpvars(0, fibonacci_net_tb);
+  end
+
+
+initial begin
+  clk = 1'b0;
+  rst = 1'b1;
+  repeat(4) #10 clk = ~clk;
+  rst = 1'b0;
+  forever #10 clk = ~clk;
+end
+
+
+  initial
+    begin
+      // microcode when rst == 1 -> program[0], and must be nop for all PUs
+      @(negedge rst); // Turn nitta processor on.
+      // Start computational cycle from program[1] to program[n] and repeat.
+      // Signals effect to processor state after first clk posedge.
       @(posedge clk); $write("%s, bus: %h", "0", net.data_bus); $display();
       @(posedge clk); $write("%s, bus: %h", "0", net.data_bus); $display();
       @(posedge clk); $write("%s, bus: %h", "1", net.data_bus); $write(" == %h (%s)", 0, "a1");if ( !( net.data_bus === 0) ) $display(" FAIL"); else $display();
@@ -187,7 +187,7 @@ end
       @(posedge clk); $write("%s, bus: %h", "5", net.data_bus); $display();
       @(posedge clk); $write("%s, bus: %h", "6", net.data_bus); $write(" == %h (%s)", 987, "c");if ( !( net.data_bus === 987) ) $display(" FAIL"); else $display();
 
-      $finish;                                                                                          
-    end                                                                                                   
-                                                                                                          
-endmodule                                                                                                 
+      $finish;
+    end
+
+endmodule
