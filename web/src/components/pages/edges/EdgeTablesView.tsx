@@ -5,23 +5,23 @@ import { AppContext, IAppContext } from "../../app/AppContext";
 import {
   EdgeView,
   IBindingView,
-  IBindEdgeParameter,
-  IRefactorView,
+  IBindEdgeParameterView,
+  IRefactorData,
   IDataflowView,
-  IDataFlowEdgeParameter,
+  IDataFlowEdgeParameterView,
   Interval,
-  IRefactorEdgeParameter
+  IRefactorEdgeParameterView
 } from "../../../gen/types";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
 
 type Edge = EdgeView<string, string, number, number>;
 type Binding = IBindingView<string, string, number, number>;
-type BindingParam = IBindEdgeParameter;
-type Refactor = IRefactorView<string, string, number, number>;
+type BindingParam = IBindEdgeParameterView;
+type Refactor = IRefactorData<string, string, number, number>;
 type Dataflow = IDataflowView<string, string, number, Interval<number>>;
-type DataflowParam = IDataFlowEdgeParameter;
-type RefactorParam = IRefactorEdgeParameter;
+type DataflowParam = IDataFlowEdgeParameterView;
+type RefactorParam = IRefactorEdgeParameterView;
 
 type EdgesProps = {
   edges: Edge[];
@@ -66,7 +66,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       />
       <Table
         name="Refactor"
-        edges={edges.filter((e: Edge) => e.decision.tag === "RefactorView")}
+        edges={edges.filter((e: Edge) => e.decision.tag === "RefactorData")}
         columns={[
           nidColumn(appContext.selectNode),
           objectiveColumn(),
@@ -121,7 +121,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       <Table
         name="Other"
         edges={edges.filter(
-          (e: Edge) => ["BindingView", "RefactorView", "DataflowView"].indexOf(e.decision.tag) === -1
+          (e: Edge) => ["BindingView", "RefactorData", "DataflowView"].indexOf(e.decision.tag) === -1
         )}
         columns={[nidColumn(appContext.selectNode), objectiveColumn(), decisionColumn(), parametersColumn()]}
       />
