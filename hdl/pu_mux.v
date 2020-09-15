@@ -31,10 +31,10 @@ always @(posedge clk) mode <= signal_mode;
 
 reg [SEL_WIDTH-1:0] port_SEL;
 always @(posedge clk)
-  if ( sel )       port_SEL <= data[ DATA_WIDTH-1 : DATA_WIDTH - SEL_WIDTH ] >> (3 - mode);      
+  if ( sel )       port_SEL <= data[ DATA_WIDTH-1 : DATA_WIDTH - SEL_WIDTH ] >> (3 - mode);
 
 reg [SEL_WIDTH-1:0] port_N;
-always @(posedge clk) 
+always @(posedge clk)
   if       ( sel ) port_N <= 0;
   else if ( load ) port_N <= port_N + 1;
 
@@ -46,7 +46,7 @@ always @(posedge clk)
 
 
 always @(posedge clk)
-  if ( ~signal_oe ) { attr_out, data_out } <= 0; 
+  if ( ~signal_oe ) { attr_out, data_out } <= 0;
   else              { attr_out, data_out } <= { attr_latch, data_latch };
 
 endmodule

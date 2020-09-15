@@ -1,6 +1,6 @@
-module pu_control( 
+module pu_control(
                    pu_clk,
-                   pu_jump, 
+                   pu_jump,
                    pu_data_in,
                    pu_attr_in,
                    pu_control_bus
@@ -20,7 +20,7 @@ output [INSTRUCTION_SIZE-1:0] pu_control_bus;
 
 reg [INSTRUCTION_SIZE-1:0]     program_memory[PROGRAM_SIZE-1:0];
 reg [PROGRAN_COUNTER_SIZE-1:0] program_counter;
-   
+
 input [DATA_WIDTH-1:0]    data_in;
 input [ATTR_WIDTH-1:0]    attr_in;
 reg [INSTRUCTION_SIZE-1:0] control_bus;
@@ -41,7 +41,7 @@ assign pu_control_bus = control_bus;
 always @(posedge pu_clk)
   if (pu_jump)
     program_counter <= pu_data_in;
-  else 
+  else
     if (program_counter < PROGRAM_SIZE)
       program_counter <= program_counter + 1;
     else

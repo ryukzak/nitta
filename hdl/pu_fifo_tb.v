@@ -28,7 +28,7 @@ pu_fifo
   .attr_out(attr_out)
   );
 
-initial 
+initial
   begin
     $dumpfile("pu_fifo_tb.vcd");
     $dumpvars(0, pu_fifo_tb);
@@ -42,18 +42,18 @@ initial
     data_in <= 12; signal_wr <= 1;  attr_in <= 4;  signal_oe <= 0;  @(posedge clk);
     data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 0;  @(posedge clk);
     data_in <= 13; signal_wr <= 1;  attr_in <= 5;  signal_oe <= 0;  @(posedge clk);
-  
+
     data_in <= 14; signal_wr <= 1;  attr_in <= 6;  signal_oe <= 0;  @(posedge clk);
     data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 1;  @(posedge clk);
-    data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 0;  @(posedge clk); 
-    data_in <= 15; signal_wr <= 1;  attr_in <= 7;  signal_oe <= 0;  @(posedge clk);    
+    data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 0;  @(posedge clk);
+    data_in <= 15; signal_wr <= 1;  attr_in <= 7;  signal_oe <= 0;  @(posedge clk);
 
-    data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 1;  @(posedge clk);
-    data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 0;  @(posedge clk);   
     data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 1;  @(posedge clk);
     data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 0;  @(posedge clk);
     data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 1;  @(posedge clk);
-    data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 0;  @(posedge clk);             
+    data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 0;  @(posedge clk);
+    data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 1;  @(posedge clk);
+    data_in <= 0;  signal_wr <= 0;  attr_in <= 0;  signal_oe <= 0;  @(posedge clk);
     $finish;
   end
 
