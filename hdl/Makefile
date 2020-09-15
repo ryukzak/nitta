@@ -41,3 +41,8 @@ pu_div:
 	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/div/pu_div.v $(PWD)/div/div_mock.v $(PWD)/div/pu_div_tb.v
 	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_div_tb.vcd
 	rm $(TEST); rm -r $(PWD)/*.vcd
+
+pu_multiplier:
+	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/multiplier/pu_multiplier.v $(PWD)/multiplier/mult_mock.v $(PWD)/multiplier/pu_multiplier_tb.v
+	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_multiplier_tb.vcd
+	rm $(TEST); rm -r $(PWD)/*.vcd
