@@ -1,14 +1,14 @@
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS -fno-warn-orphans #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# OPTIONS -fno-warn-orphans       #-}
 
 {-|
 Module      : NITTA.UIBackend.Marshalling
@@ -133,7 +133,7 @@ data SynthesisDecisionView tag v x tp
         { source  :: DataflowEndpointView tag tp
         , targets :: HM.HashMap v (Maybe (DataflowEndpointView tag tp))
         }
-    | RefactorData RefactorView
+    | RefactorView RefactorView
     deriving ( Generic )
 
 instance ( Show x, Show v, ToJSON v, ToJSONKey v, ToJSON tp, ToJSON tag
@@ -166,9 +166,9 @@ instance ( Var v, Show x, Hashable v
             (fmap $ uncurry DataflowEndpointView)
             $ HM.fromList $ M.assocs dfTargets
         }
-    view (Refactor (ResolveDeadlock set )) = RefactorData $ ResolveDeadlockView $ map show $ S.toList set
-    view (Refactor (BreakLoop {loopX, loopO, loopI})) = RefactorData $ BreakLoopView {loopX = show loopX, loopO = map show ( S.toList loopO ), loopI = show loopI}
-    view (Refactor (AlgSub fs)) = RefactorData $ AlgSubView $ map view fs
+    view (Refactor (ResolveDeadlock set )) = RefactorView $ ResolveDeadlockView $ map show $ S.toList set
+    view (Refactor (BreakLoop {loopX, loopO, loopI})) = RefactorView $ BreakLoopView {loopX = show loopX, loopO = map show ( S.toList loopO ), loopI = show loopI}
+    view (Refactor (AlgSub fs)) = RefactorView $ AlgSubView $ map view fs
 
 
 data RefactorView
@@ -224,7 +224,7 @@ instance ( VarValTimeJSON v x t, Hashable v ) => Viewable (G Edge tag v x t) (Ed
             { nid=show $ nId eTarget
             , option=view eOption
             , decision=view eDecision
-            , parameters= view eParameters
+            , parameters=view eParameters
             , objectiveFunctionValue=eObjectiveFunctionValue
             }
 
@@ -256,18 +256,28 @@ data ParametersView
 
 instance ToJSON ParametersView
 
-instance Viewable (Parameters) (ParametersView) where
-    view BindEdgeParameter {pCritical, pAlternative, pRestless, pOutputNumber, pAllowDataFlow, pPossibleDeadlock, pNumberOfBindedFunctions, pPercentOfBindedInputs, pWave } = BindEdgeParameterView
-        { pCritical = pCritical
-        , pAlternative = pAlternative
-        , pRestless = pRestless
-        , pOutputNumber = pOutputNumber
-        , pAllowDataFlow = pAllowDataFlow
-        , pPossibleDeadlock = pPossibleDeadlock
-        , pNumberOfBindedFunctions = pNumberOfBindedFunctions
-        , pPercentOfBindedInputs = pPercentOfBindedInputs
-        , pWave = pWave
-        }
+instance Viewable Parameters ParametersView where
+    view BindEdgeParameter
+        { pCritical
+        , pAlternative
+        , pRestless
+        , pOutputNumber
+        , pAllowDataFlow
+        , pPossibleDeadlock
+        , pNumberOfBindedFunctions
+        , pPercentOfBindedInputs
+        , pWave
+        } = BindEdgeParameterView
+            { pCritical = pCritical
+            , pAlternative = pAlternative
+            , pRestless = pRestless
+            , pOutputNumber = pOutputNumber
+            , pAllowDataFlow = pAllowDataFlow
+            , pPossibleDeadlock = pPossibleDeadlock
+            , pNumberOfBindedFunctions = pNumberOfBindedFunctions
+            , pPercentOfBindedInputs = pPercentOfBindedInputs
+            , pWave = pWave
+            }
 
     view DataFlowEdgeParameter { pWaitTime, pRestrictedTime, pNotTransferableInputs } = DataFlowEdgeParameterView
         { pWaitTime = pWaitTime

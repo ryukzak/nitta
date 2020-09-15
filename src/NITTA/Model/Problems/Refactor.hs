@@ -1,12 +1,12 @@
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
 
 {-|
@@ -82,10 +82,10 @@ data Refactor v x
         , loopI :: v       -- ^input variable
         }
     | AlgSub [F v x]
-    deriving ( Generic, Show, Eq )
+    -- AlgSub is used for saving list Functions
+    -- after refactor something like sum or product
 
--- instance ( Show x, Show v, ToJSON v, ToJSON x
---         ) => ToJSON (Refactor v x)
+    deriving ( Generic, Show, Eq )
 
 recLoop BreakLoop{ loopX, loopO, loopI }
     = packF $ Loop (X loopX) (O loopO) (I loopI)
