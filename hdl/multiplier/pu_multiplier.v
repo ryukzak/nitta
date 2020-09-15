@@ -1,23 +1,22 @@
-module pu_multiplier #
-        ( parameter DATA_WIDTH           = 32
-        , parameter ATTR_WIDTH           = 4
-        , parameter SCALING_FACTOR_POWER = 0
-        , parameter INVALID              = 0 
-        )
+module pu_multiplier
+    #( parameter DATA_WIDTH           = 32
+    , parameter ATTR_WIDTH           = 4
+    , parameter SCALING_FACTOR_POWER = 0
+    , parameter INVALID              = 0
+    )
     ( input  wire                  clk
     , input  wire                  rst
 
-    , input  wire                  signal_wr  
+    , input  wire                  signal_wr
     , input  wire                  signal_sel
     , input  wire [DATA_WIDTH-1:0] data_in
     , input  wire [ATTR_WIDTH-1:0] attr_in
 
     , input  wire                  signal_oe
-    , output wire [DATA_WIDTH-1:0] data_out 
+    , output wire [DATA_WIDTH-1:0] data_out
     , output wire [ATTR_WIDTH-1:0] attr_out
     );
 
-                                              
 reg [DATA_WIDTH-1:0]              arg [0:1];
 reg                               arg_invalid [0:1];
 
@@ -25,7 +24,7 @@ always @(posedge clk) begin
     if ( rst ) begin
         arg[0] <= 0;
         arg[1] <= 0;
-    end else begin 
+    end else begin
         if ( signal_wr ) begin
             arg[signal_sel] <= data_in[DATA_WIDTH-1:0];
             arg_invalid[signal_sel] <= attr_in[INVALID];
@@ -41,8 +40,8 @@ function invalid_value1;
     input attr_arg2;
     begin
         invalid_value1 = !((data_arg1[DATA_WIDTH-1:DATA_WIDTH/2-1] == 0)^(~data_arg1[DATA_WIDTH-1:DATA_WIDTH/2-1] == {(DATA_WIDTH/2+1){1'b0}}))
-                    || !((data_arg2[DATA_WIDTH-1:DATA_WIDTH/2-1] == 0)^(~data_arg2[DATA_WIDTH-1:DATA_WIDTH/2-1] == {(DATA_WIDTH/2+1){1'b0}}))  
-                    || attr_arg1 
+                    || !((data_arg2[DATA_WIDTH-1:DATA_WIDTH/2-1] == 0)^(~data_arg2[DATA_WIDTH-1:DATA_WIDTH/2-1] == {(DATA_WIDTH/2+1){1'b0}}))
+                    || attr_arg1
                     || attr_arg2;
     end
 endfunction
@@ -88,8 +87,8 @@ always @(posedge clk) begin
 end
 
 assign data_out = signal_oe ? data_multresult : 0;
-assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INVALID) 
-                              | {(ATTR_WIDTH-1){1'b0}} 
+assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INVALID)
+                              | {(ATTR_WIDTH-1){1'b0}}
                             : 0;
 
 endmodule
