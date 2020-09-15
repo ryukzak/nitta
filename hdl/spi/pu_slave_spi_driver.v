@@ -11,7 +11,7 @@ module pu_slave_spi_driver #
     , input            rst
     // system interface
     , input  [DATA_WIDTH-1:0] data_in  // data that master can read from slave
-    , output reg              ready    // transaction is not processed now 
+    , output reg              ready    // transaction is not processed now
     , output                  prepare
     , output reg [DATA_WIDTH-1:0] data_out // data written to slave in last transaction
     // SPI iterface
@@ -20,10 +20,10 @@ module pu_slave_spi_driver #
     , input            sclk
     , input            cs
     );
-    
-    
+
+
 // В связи с тем, что "прокачать" все данные по комбинационной схеме не удаётся на нужной частоте,
-// необходимо сделать это заранее. Это может быть реализовано за счёт использования нескольких 
+// необходимо сделать это заранее. Это может быть реализовано за счёт использования нескольких
 // сдвиговых регистров, где один используется для загрузки данных "на будущее", а второй в работе.
 reg shiftreg_sel;
 reg [DATA_WIDTH-1:0] shiftreg [0:1];
@@ -70,7 +70,7 @@ always @( posedge clk ) begin
                 end else begin
                     miso <= shiftreg[work][ DATA_WIDTH - 1 ];
                 end
-                counter <= counter + 1;  
+                counter <= counter + 1;
                 state <= STATE_WAIT_SCLK_0;
             end else if ( cs ) begin
                 counter <= DATA_WIDTH + 1;
@@ -96,5 +96,5 @@ end
 
 assign prepare = state == STATE_WAIT_SCLK_1 && sclk && counter + 1 == DATA_WIDTH;
 
-  
+
 endmodule

@@ -1,10 +1,10 @@
 `timescale 1 ms/ 1 ms
 
-module n2i_splitter #
-        ( parameter DATA_WIDTH     = 32
-        , parameter ATTR_WIDTH     = 4
-        , parameter SPI_DATA_WIDTH = 8
-        )
+module n2i_splitter
+    #( parameter DATA_WIDTH     = 32
+    , parameter ATTR_WIDTH     = 4
+    , parameter SPI_DATA_WIDTH = 8
+    )
     ( input                       clk
     , input                       rst
 
@@ -53,7 +53,7 @@ always @( posedge clk ) begin
 end
 
 assign splitter_ready = counter == SUBFRAME_NUMBER - 1
-                     && wait_spi_ready 
+                     && wait_spi_ready
                      && spi_ready ;
 
 endmodule

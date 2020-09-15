@@ -1,13 +1,13 @@
 `timescale 1 ms/ 1 ms
 
-module pu_master_spi #
-        ( parameter DATA_WIDTH     = 32
-        , parameter ATTR_WIDTH     = 4
-        , parameter SPI_DATA_WIDTH = 8
-        , parameter BUF_SIZE       = 6
-        , parameter BOUNCE_FILTER  = 4
-        , parameter DISABLED       = 0
-        )
+module pu_master_spi
+    #( parameter DATA_WIDTH     = 32
+    , parameter ATTR_WIDTH     = 4
+    , parameter SPI_DATA_WIDTH = 8
+    , parameter BUF_SIZE       = 6
+    , parameter BOUNCE_FILTER  = 4
+    , parameter DISABLED       = 0
+    )
     ( input                     clk
     , input                     rst
     , input                     signal_cycle_begin

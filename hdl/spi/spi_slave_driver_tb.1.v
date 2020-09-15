@@ -14,14 +14,14 @@ reg mosi, sclk, cs;
 wire miso;
 
 
-spi_slave_driver 
+spi_slave_driver
   #( .DATA_WIDTH( DATA_WIDTH )
-   ) spi_slave_driver 
+   ) spi_slave_driver
   ( .clk( clk )
   , .rst( rst )
 
-  , .data_in( data_in ) 
-  , .data_out( data_out )  
+  , .data_in( data_in )
+  , .data_out( data_out )
   , .ready( ready )
 
   , .mosi( mosi )
@@ -38,7 +38,7 @@ always begin
   repeat(4) #5 clk <= ~clk;
   rst <= 0;
   forever #5 clk <= ~clk;
-end 
+end
 
 
 task assertDT;
@@ -126,6 +126,6 @@ end
 initial begin
   $dumpfile("spi_slave_driver_tb.1.vcd");
   $dumpvars(-1, spi_slave_driver_tb);
-end 
+end
 
 endmodule

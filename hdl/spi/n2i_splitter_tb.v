@@ -31,7 +31,7 @@ always begin
   repeat(4) #5 clk <= ~clk;
   rst <= 0;
   forever #5 clk <= ~clk;
-end 
+end
 
 task assert8;
   input [7:0] a;
@@ -95,6 +95,6 @@ end
 initial begin
   $dumpfile("n2i_splitter_tb.vcd");
   $dumpvars(-1, n2i_splitter_tb);
-end 
+end
 
 endmodule
