@@ -34,7 +34,7 @@ end
 
 initial
   begin
-     $dumpfile("test.vcd");
+     $dumpfile("pu_control_tb.vcd");
      $dumpvars(0, pu_control_tb);
 
      @(negedge rst);

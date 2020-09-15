@@ -33,3 +33,9 @@ pu_shift:
 	vvp test
 	$(PWD)/test;gtkwave $(PWD)/pu_shift_tb.vcd
 	rm $(PWD)/test; rm -r $(PWD)/*.vcd
+
+pu_control:
+	$(IVERILOG) -o test -I./ -y./ $(PWD)/pu_control.v $(PWD)/pu_control_tb.v
+	vvp test
+	$(PWD)/test;gtkwave $(PWD)/pu_control_tb.vcd
+	rm $(PWD)/test; rm -r $(PWD)/*.vcd
