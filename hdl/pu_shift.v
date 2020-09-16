@@ -1,11 +1,7 @@
 // `timescale 1ns / 1ps
 
-/*
-
-Длинна шага в step-ах зависит от того, сколько времени считается функция. Надо сделать два сдвига -
-делаем 2 такта. Надо 4 - 4 такта, надо 9, делаем один шаг на 8 бит и 1 на 1.
-
-*/
+// The length of the step depends on how long the function is considered.
+// Need to make two shifts - do 2 bars. If 4 - 4 measures, If 9, take one step for 8 bits and 1 for 1.
 
 module pu_shift
   #( parameter DATA_WIDTH = 32
