@@ -49,34 +49,34 @@ initial begin
   rst <= 1; repeat (2) @(posedge clk);
   rst <= 0; @(posedge clk);
 
-// -100 / 4 = -25 (загрузка)
+// -100 / 4 = -25 (downloading)
   signal_oe <= 0; signal_wr <= 1; signal_wr_sel <= 0; signal_oe_sel <= 0; data_in <= -100; attr_in <= 1;  @(posedge clk);
   signal_oe <= 0; signal_wr <= 1; signal_wr_sel <= 1; signal_oe_sel <= 0; data_in <= 4;    attr_in <= 1;  @(posedge clk);
 
-// 100 / -5 = -20 (загрузка)
+// 100 / -5 = -20 (downloading)
   signal_oe <= 0; signal_wr <= 1; signal_wr_sel <= 0; signal_oe_sel <= 0; data_in <= 100; attr_in <= 0;  @(posedge clk);
   signal_oe <= 0; signal_wr <= 1; signal_wr_sel <= 1; signal_oe_sel <= 0; data_in <= -5;  attr_in <= 0;  @(posedge clk);
 
-// -100 / 4 = -25 (результат)
+// -100 / 4 = -25 (result)
   signal_oe <= 0; signal_wr <= 0; signal_wr_sel <= 0; signal_oe_sel <= 0; data_in <= 0; attr_in <= 0; repeat (2) @(posedge clk);
   signal_oe <= 1; signal_wr <= 0; signal_wr_sel <= 0; signal_oe_sel <= 1; data_in <= 0; attr_in <= 0; repeat (2) @(posedge clk);
 
-// 100 / -5 = -20 (результат), -100 / -5 = 25 (загрузка)
+// 100 / -5 = -20 (result), -100 / -5 = 25 (downloading)
   signal_oe <= 1; signal_wr <= 1; signal_wr_sel <= 0; signal_oe_sel <= 1; data_in <= -100; attr_in <= 1;  @(posedge clk);
   signal_oe <= 1; signal_wr <= 1; signal_wr_sel <= 1; signal_oe_sel <= 1; data_in <= -5;   attr_in <= 0;  @(posedge clk);
 
-// 100 / 0 = x (загрузка)
+// 100 / 0 = x (downloading)
   signal_oe <= 1; signal_wr <= 1; signal_wr_sel <= 0; signal_oe_sel <= 1; data_in <= 100; attr_in <= 0;  @(posedge clk);
   signal_oe <= 1; signal_wr <= 1; signal_wr_sel <= 1; signal_oe_sel <= 1; data_in <= 0;   attr_in <= 1;  @(posedge clk);
 
-// 100 / 0 = x (результат)
+// 100 / 0 = x (result)
   signal_oe <= 1; signal_wr <= 0; signal_wr_sel <= 0; signal_oe_sel <= 1; data_in <= 0; attr_in <= 0; repeat (50) @(posedge clk);
 
-// -100 / 4 = -25 (загрузка)
+// -100 / 4 = -25 (downloading)
   signal_oe <= 0; signal_wr <= 1; signal_wr_sel <= 0; signal_oe_sel <= 0; data_in <= -100; attr_in <= 1;  @(posedge clk);
   signal_oe <= 0; signal_wr <= 1; signal_wr_sel <= 1; signal_oe_sel <= 0; data_in <= 4;    attr_in <= 1;  @(posedge clk);
 
-// -100 / 4 = -25 (результат)
+// -100 / 4 = -25 (result)
   signal_oe <= 1; signal_wr <= 0; signal_wr_sel <= 0; signal_oe_sel <= 1; data_in <= 0;    attr_in <= 0; repeat (20) @(posedge clk);
 
   repeat (20) @(posedge clk);
