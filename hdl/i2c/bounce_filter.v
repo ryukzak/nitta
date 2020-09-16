@@ -1,7 +1,7 @@
-// FIXME: Для подавления дребезга нужен отдельный модуль. В нем счетчик, который
-// инкрементируется, если на линии 1, и декрементируется, если 0. Счетчик с насыщением.
-// Когда значение доходит до порога, переключается "отфильтрованный" выход. Да вообще
-// это 4 лаба по ИУС))) Там все написано. Необходимо протестировать в железе.
+// FIXME: A separate module is required to suppress bounce.
+// It has a counter that it is incremented if on line 1, and decremented if 0.
+// Counter with saturation.
+// When the value reaches the threshold, the filtered output switches.
 
 module bounce_filter
    #( parameter DIV = 5
