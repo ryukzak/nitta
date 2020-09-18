@@ -57,6 +57,84 @@ tests = testGroup "Refactor problem"
             , DFLeaf $ reg "b1" ["c1"]
             , DFLeaf $ reg "b2" ["c2"]
             ]
+  , testCase "simple 3 items sum refactor" $ let
+            func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1"])]
+            func2 = acc [Push Plus (I "tmp1"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])]
+            funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])] :: F String Int
+            df = fsToDataFlowGraph ([func1, func2] :: [F String Int])
+            dfRes = fsToDataFlowGraph ([funcRes] :: [F String Int])
+            option = head $ refactorOptions df
+            dfRefactored = refactorDecision df option
+        in dfRefactored @?= dfRes
+
+    , testCase "simple 4 items sum refactor" $ let
+            func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1"])]
+            func2 = acc [Push Plus (I "tmp1"), Push Plus (I "c"), Pull (O $ S.fromList ["tmp2"])]
+            func3 = acc [Push Plus (I "tmp2"), Push Minus (I "d"), Pull (O $ S.fromList ["res"])]
+            funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Push Minus (I "d"), Pull (O $ S.fromList ["res"])] :: F String Int
+            df = fsToDataFlowGraph ([func1, func2, func3] :: [F String Int])
+            dfRes = fsToDataFlowGraph ([funcRes] :: [F String Int])
+            option = head $ refactorOptions df
+            dfRefactored = refactorDecision df option
+        in dfRefactored @?= dfRes
+
+    , testCase "4 items sum refactor, two tmp vals in one expression" $ let
+            func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1"])]
+            func2 = acc [Push Plus (I "c"), Push Plus (I "d"), Pull (O $ S.fromList ["tmp2"])]
+            func3 = acc [Push Plus (I "tmp1"), Push Plus (I "tmp2"), Pull (O $ S.fromList ["res"])]
+            funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Push Plus (I "d"), Pull (O $ S.fromList ["res"])] :: F String Int
+            df = fsToDataFlowGraph ([func1, func2, func3] :: [F String Int])
+            dfRes = fsToDataFlowGraph ([funcRes] :: [F String Int])
+            option = head $ refactorOptions df
+            dfRefactored = refactorDecision df option
+        in dfRefactored @?= dfRes
+
+    , testCase "Complex items sum refactor" $ let
+            func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1", "tmp2"])]
+            func2 = acc [Push Plus (I "c"), Push Plus (I "d"), Pull (O $ S.fromList ["tmp3", "tmp4"])]
+            func3 = acc [Push Plus (I "one"), Push Plus (I "tmp1"), Push Plus (I "tmp3"), Pull (O $ S.fromList ["res1"])]
+            func4 = acc [Push Plus (I "two"), Push Plus (I "tmp2"), Push Plus (I "tmp4"), Pull (O $ S.fromList ["res2"])]
+            func5 = acc [Push Plus (I "res1"), Push Plus (I "res2"), Pull (O $ S.fromList ["res"])]
+
+            funcRes = acc
+                [ Push Plus (I "one")
+                , Push Plus (I "a")
+                , Push Plus (I "b")
+                , Push Plus (I "c")
+                , Push Plus (I "d")
+                , Push Plus (I "two")
+                , Push Plus (I "a")
+                , Push Plus (I "b")
+                , Push Plus (I "c")
+                , Push Plus (I "d")
+                , Pull (O $ S.fromList ["res"])] :: F String Int
+            df = fsToDataFlowGraph ([func1, func2, func3, func4, func5] :: [F String Int])
+            dfRes = fsToDataFlowGraph ([funcRes] :: [F String Int])
+            option = head $ refactorOptions df
+            dfRefactored = refactorDecision df option
+        in dfRefactored @?= dfRes
+
+    , testCase "Super complex items sum refactor" $ let
+            func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1", "tmp2"])]
+            func2 = acc [Push Plus (I "c"), Push Plus (I "d"), Pull (O $ S.fromList ["tmp3", "tmp4"])]
+            func3 = acc [Push Plus (I "one"), Push Plus (I "tmp1"), Push Plus (I "tmp3"), Pull (O $ S.fromList ["res1"])]
+            func4 = acc [Push Plus (I "two"), Push Plus (I "tmp4"), Pull (O $ S.fromList ["res2"])]
+            func5 = acc [Push Plus (I "res1"), Push Plus (I "res2"), Pull (O $ S.fromList ["res"])]
+
+            funcRes = acc
+                [ Push Plus (I "one")
+                , Push Plus (I "tmp1")
+                , Push Plus (I "c")
+                , Push Plus (I "d")
+                , Push Plus (I "two")
+                , Push Plus (I "c")
+                , Push Plus (I "d")
+                , Pull (O $ S.fromList ["res"])] :: F String Int
+            df = fsToDataFlowGraph ([func1, func2, func3, func4, func5] :: [F String Int])
+            dfRes = fsToDataFlowGraph ([func1, funcRes] :: [F String Int])
+            option = head $ refactorOptions df
+            dfRefactored = refactorDecision df option
+        in dfRefactored @?= dfRes
 
     , testCase "patch source" $ do
         patch Changeset{ changeO=M.fromList [("a1@buf", S.fromList ["a1", "a2"])], changeI=M.empty } (Source $ S.fromList ["a1@buf"])
