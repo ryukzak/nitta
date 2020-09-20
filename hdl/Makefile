@@ -1,32 +1,31 @@
 PWD := $(shell pwd)
 IVERILOG := $(shell which iverilog)
-TEST := $(PWD)/test
-CALL_TEST := $(shell which vvp) $(PWD)/test
-GTKWAVE := $(shell which gtkwave)
+
+define test
+	$(IVERILOG) -o $(PWD)/$(3) -I./ -y./ $(PWD)/$(1) $(PWD)/$(2)
+	$(shell which vvp) $(PWD)/$(3)
+	rm $(PWD)/$(3)
+endef
+
+all: pu_accum pu_fram pu_mux pu_fifo pu_shift pu_control
 
 clean:
-	rm $(TEST); rm -r $(PWD)/*.vcd
+	rm -r $(PWD)/*.vcd
 
 pu_accum:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_accum.v $(PWD)/pu_accum_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_accum_tb.vcd
+	$(call test,pu_accum.v,pu_accum_tb.v,test_pu_accum_tb)
 
 pu_fram:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_fram.v $(PWD)/pu_fram_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_fram_tb.vcd
+	$(call test,pu_fram.v,pu_fram_tb.v,test_pu_fram_tb)
 
 pu_mux:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_mux.v $(PWD)/pu_mux_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_mux_tb.vcd
+	$(call test,pu_mux.v,pu_mux_tb.v,test_pu_mux_tb)
 
 pu_fifo:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_fifo.v $(PWD)/pu_fifo_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_fifo_tb.vcd
+	$(call test,pu_fifo.v,pu_fifo_tb.v,test_pu_fifo_tb)
 
 pu_shift:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_shift.v $(PWD)/pu_shift_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_shift_tb.vcd
+	$(call test,pu_shift.v,pu_shift_tb.v,test_pu_shift_tb)
 
 pu_control:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_control.v $(PWD)/pu_control_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_control_tb.vcd
+	$(call test,pu_control.v,pu_control_tb.v,test_pu_control_tb)
