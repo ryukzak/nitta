@@ -60,4 +60,4 @@ pu_master_spi_tb: pu_master_spi_tb.out
 pu_master_spi_tb.out: $(FILE) pu_master_spi_tb.v
 	$(CC) -o pu_master_spi_tb.out $^
 clean:
-	rm -r $(PWD)/*.vcd; rm -rf $(PWD)/*.out
+	rm -rf $(PWD)/*.vcd; rm -rf $(PWD)/*.out

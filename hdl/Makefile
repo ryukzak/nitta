@@ -1,17 +1,18 @@
 PWD := $(shell pwd)
 IVERILOG := $(shell which iverilog)
 MAKE := $(shell which make)
+RM := $(shell which rm ) -f
 
 define test
 	$(IVERILOG) -o $(PWD)/$(3) -I./ -y./ $(PWD)/$(1) $(PWD)/$(2)
 	$(shell which vvp) $(PWD)/$(3)
-	rm $(PWD)/$(3)
+	$(RM) $(PWD)/$(3)
 endef
 
 all: pu_accum pu_fram pu_mux pu_fifo pu_shift pu_control pu_div pu_multiplier pu_i2c pu_spi
 
 clean:
-	rm -r $(PWD)/*.vcd
+	$(RM) -r $(PWD)/*.vcd
 	$(MAKE) clean -C $(PWD)/i2c
 	$(MAKE) clean -C $(PWD)/div
 	$(MAKE) clean -C $(PWD)/multiplier

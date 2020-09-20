@@ -1,16 +1,17 @@
 PWD := $(shell pwd)
 IVERILOG := $(shell which iverilog)
+RM := $(shell which rm) -f
 
 define test
 	$(IVERILOG) -o $(PWD)/$(3) -I./ -y./ $(PWD)/$(1) $(PWD)/$(2)
 	$(shell which vvp) $(PWD)/$(3)
-	rm $(PWD)/$(3)
+	$(RM) $(PWD)/$(3)
 endef
 
 all: buffer bounce_filter i2c nitta_to_i2c_splitter pu_i2c_master_driver
 
 clean:
-	rm -r $(PWD)/*.vcd
+	$(RM) -r $(PWD)/*.vcd
 
 buffer:
 	$(call test,buffer.v,buffer_tb.v,test_buffer_tb)
