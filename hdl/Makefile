@@ -1,5 +1,6 @@
 PWD := $(shell pwd)
 IVERILOG := $(shell which iverilog)
+MAKE := $(shell which make)
 
 define test
 	$(IVERILOG) -o $(PWD)/$(3) -I./ -y./ $(PWD)/$(1) $(PWD)/$(2)
@@ -29,3 +30,9 @@ pu_shift:
 
 pu_control:
 	$(call test,pu_control.v,pu_control_tb.v,test_pu_control_tb)
+
+pu_div:
+	$(MAKE) -C $(PWD)/pu_div
+
+pu_multiplier:
+	$(MAKE) -C $(PWD)/multiplier

@@ -1,12 +1,16 @@
 PWD := $(shell pwd)
 IVERILOG := $(shell which iverilog)
-TEST := $(PWD)/test
-CALL_TEST := $(shell which vvp) $(PWD)/test
-GTKWAVE := $(shell which gtkwave)
+
+define test
+	$(IVERILOG) -o $(PWD)/$(4) -I./ -y./ $(PWD)/$(1) $(PWD)/$(2) $(PWD)/$(3)
+	$(shell which vvp) $(PWD)/$(4)
+	rm $(PWD)/$(4)
+endef
+
+all: pu_multiplier
 
 clean:
-	rm $(TEST); rm -r $(PWD)/*.vcd
+	rm -r $(PWD)/*.vcd
 
 pu_multiplier:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_multiplier.v $(PWD)/mult_mock.v $(PWD)/pu_multiplier_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_multiplier_tb.vcd
+	$(call test,pu_multiplier.v,mult_mock.v,pu_multiplier_tb.v,test_pu_multiplier_tb)
