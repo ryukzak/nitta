@@ -8,13 +8,14 @@ define test
 	rm $(PWD)/$(3)
 endef
 
-all: pu_accum pu_fram pu_mux pu_fifo pu_shift pu_control pu_div pu_multiplier pu_i2c
+all: pu_accum pu_fram pu_mux pu_fifo pu_shift pu_control pu_div pu_multiplier pu_i2c pu_spi
 
 clean:
 	rm -r $(PWD)/*.vcd
 	$(MAKE) clean -C $(PWD)/i2c
 	$(MAKE) clean -C $(PWD)/div
 	$(MAKE) clean -C $(PWD)/multiplier
+	$(MAKE) clean -C $(PWD)/spi
 
 pu_accum:
 	$(call test,pu_accum.v,pu_accum_tb.v,test_pu_accum_tb)
@@ -42,3 +43,6 @@ pu_multiplier:
 
 pu_i2c:
 	$(MAKE) -C $(PWD)/i2c
+
+pu_spi:
+	$(MAKE) -C $(PWD)/spi

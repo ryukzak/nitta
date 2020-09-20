@@ -1,6 +1,7 @@
 CC          := iverilog
 CFLAGS      := -Wall
 FILE        := $(filter-out $(wildcard *_tb*.v), $(wildcard *.v))
+PWD         := $(shell pwd)
 
 all: buffer_tb                \
 	 bounce_filter_tb         \
@@ -58,3 +59,5 @@ pu_master_spi_tb: pu_master_spi_tb.out
 
 pu_master_spi_tb.out: $(FILE) pu_master_spi_tb.v
 	$(CC) -o pu_master_spi_tb.out $^
+clean:
+	rm -r $(PWD)/*.vcd; rm -rf $(PWD)/*.out
