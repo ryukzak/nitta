@@ -2,7 +2,7 @@ kind: pipeline
 name: default
 
 steps:
-  
+
   - name: stack build
     image: nitta-build:latest
     pull: if-not-exists
@@ -16,6 +16,12 @@ steps:
       # - ln -s /tmp/node_modules web/node_modules
       - make configure-npm
       - make build-nitta-frontend
+
+  - name: hdl
+    image: nitta-build:latest
+    pull: if-not-exists
+    commands:
+    - make hdl
 
   - name: success-telegram-notify
     image: byrnedo/alpine-curl
