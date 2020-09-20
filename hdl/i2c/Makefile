@@ -1,6 +1,5 @@
 PWD := $(shell pwd)
 IVERILOG := $(shell which iverilog)
-MAKE := $(shell which make)
 
 define test
 	$(IVERILOG) -o $(PWD)/$(3) -I./ -y./ $(PWD)/$(1) $(PWD)/$(2)
