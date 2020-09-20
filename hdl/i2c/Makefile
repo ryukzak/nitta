@@ -1,29 +1,29 @@
 PWD := $(shell pwd)
 IVERILOG := $(shell which iverilog)
-TEST := $(PWD)/test
-CALL_TEST := $(shell which vvp) $(PWD)/test
-GTKWAVE := $(shell which gtkwave)
+MAKE := $(shell which make)
+
+define test
+	$(IVERILOG) -o $(PWD)/$(3) -I./ -y./ $(PWD)/$(1) $(PWD)/$(2)
+	$(shell which vvp) $(PWD)/$(3)
+	rm $(PWD)/$(3)
+endef
+
+all: buffer bounce_filter i2c nitta_to_i2c_splitter pu_i2c_master_driver
 
 clean:
-	rm $(TEST); rm -r $(PWD)/*.vcd
+	rm -r $(PWD)/*.vcd
 
 buffer:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/buffer.v $(PWD)/buffer_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/buffer_tb.vcd
+	$(call test,buffer.v,buffer_tb.v,test_buffer_tb)
 
 bounce_filter:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/bounce_filter.v $(PWD)/bounce_filter_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/bounce_filter_tb.vcd
+	$(call test,bounce_filter.v,bounce_filter_tb.v,test_bounce_filter_tb)
 
 i2c:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/i2c_master_driver.v $(PWD)/i2c_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/i2c_tb.vcd
-	rm $(TEST); rm -r $(PWD)/*.vcd
+	$(call test,i2c_master_driver.v,i2c_tb.v,test_i2c_tb)
 
 nitta_to_i2c_splitter:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/nitta_to_i2c_splitter.v $(PWD)/nitta_to_i2c_splitter_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/nitta_to_i2c_splitter_tb.vcd
+	$(call test,nitta_to_i2c_splitter_tb.v,i2c_tb.v,test_nitta_to_i2c_splitter_tb)
 
 pu_i2c_master_driver:
-	$(IVERILOG) -o $(TEST) -I./ -y./ $(PWD)/pu_i2c_master_driver.v $(PWD)/pu_i2c_master_driver_tb.v
-	$(CALL_TEST); $(GTKWAVE) $(PWD)/pu_i2c_master_driver_tb.vcd
+	$(call test,pu_i2c_master_driver.v,pu_i2c_master_driver_tb.v,test_pu_i2c_master_driver_tb)
