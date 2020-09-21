@@ -112,7 +112,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 instance ( Var v, Val x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions dfg = trace (show $ ref (dataFlowGraphToFs dfg)) []
+    refactorOptions dfg = trace (show $ createContainers (dataFlowGraphToFs dfg)) []
 
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
@@ -162,16 +162,16 @@ filterAddSub (f:fs)
 toOneContainer fs fs'
     | not $ null $ S.intersection
       (foldl1 S.union (map inputs fs))
-      (foldl1 S.union (map outputs fs')) = fs ++ fs'
+      (foldl1 S.union (map outputs fs')) = S.fromList $ fs ++ fs'
     | not $ null $ S.intersection
       (foldl1 S.union (map inputs fs'))
-      (foldl1 S.union (map outputs fs)) = fs ++ fs'
+      (foldl1 S.union (map outputs fs)) = S.fromList $ fs ++ fs'
+    | otherwise = S.fromList fs
 
-    | otherwise = fs
 
-
-ref fs = [toOneContainer f1 f2 | f1 <- containered , f2 <- containered]
+createContainers fs = map S.toList listOfSets
     where
+        listOfSets = L.nub [toOneContainer f1 f2 | f1 <- containered , f2 <- containered, f1 /= f2]
         filtered = catMaybes $ filterAddSub fs
         containered = map (\x -> [x]) filtered
 
