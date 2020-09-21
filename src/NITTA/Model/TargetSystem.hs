@@ -25,13 +25,15 @@ import           Control.Exception ( assert )
 import qualified Data.List as L
 import qualified Data.Set as S
 import           GHC.Generics
-import           NITTA.Intermediate.Functions ( reg )
+import           NITTA.Intermediate.Functions ( reg)
+import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Utils
+import           Debug.Trace
 
 
 -- |Model of target unit, which is a main subject of synthesis process and
@@ -109,7 +111,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 instance ( Var v, Val x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions _ = []
+    refactorOptions dfg = trace (show $ filterAddSub [] (dataFlowGraphToFs dfg)) []
 
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
@@ -139,3 +141,39 @@ instance ( UnitTag tag, VarValTime v x t
 
 -- |Convert @[ F v x ]@ to 'DataFlowGraph'.
 fsToDataFlowGraph alg = DFCluster $ map DFLeaf alg
+
+-- |Convert 'DataFlowGraph' to @[ F v x ]@.
+dataFlowGraphToFs (DFCluster leafs) = map
+    (\case
+        DFLeaf f -> f
+        _        -> error "Data flow graph structure error"
+    )
+    leafs
+dataFlowGraphToFs _ = error "Data flow graph structure error"
+
+filterAddSub state []      = let
+           newState = filterAddSub state (concatMap snd state)
+       in
+           if state == newState
+              then state
+              else filterAddSub state (concatMap snd newState)
+
+filterAddSub state (f:fs)
+    | Just Add{} <- castF f = filterAddSub (writeToState state f) fs
+    | Just Sub{} <- castF f = filterAddSub (writeToState state f) fs
+    | otherwise             = filterAddSub (notMatchedF state f) fs
+        where
+            notMatchedF state' f' = (S.empty, [f']) : state'
+
+            writeToState [] f = [(inputs f, [f])]
+            writeToState state f = let
+                    (v1':v2':_) = S.toList $ inputs f
+                    res' = outputs f
+
+                in
+                    case L.partition (\(s, fList) -> not $ S.null $ S.intersection s res' ) state of
+                        ([], last) -> (S.fromList [v1', v2'], [f]) : last
+                        (filtered, last) -> (map (\(s, fList) -> (S.union (s S.\\ res') (S.fromList [v1', v2']) , f : fList)) filtered) ++ last
+
+
+

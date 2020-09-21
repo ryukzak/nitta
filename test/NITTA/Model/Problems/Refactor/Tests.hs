@@ -57,6 +57,15 @@ tests = testGroup "Refactor problem"
             , DFLeaf $ reg "b1" ["c1"]
             , DFLeaf $ reg "b2" ["c2"]
             ]
+  , testCase "testCase" $ let
+            func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1"])]
+            func2 = acc [Push Plus (I "tmp1"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])]
+            funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])] :: F String Int
+            df = fsToDataFlowGraph ([func1, func2] :: [F String Int])
+            dfRes = fsToDataFlowGraph ([funcRes] :: [F String Int])
+            option = refactorOptions df
+            -- dfRefactored = refactorDecision df option
+        in  "" @?= (show $ option)
   , testCase "simple 3 items sum refactor" $ let
             func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1"])]
             func2 = acc [Push Plus (I "tmp1"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])]
