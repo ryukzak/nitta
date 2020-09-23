@@ -28,7 +28,7 @@ reg [INSTRUCTION_SIZE-1:0] control_bus;
 
 initial
   begin
-     $readmemh("hdl/dump.hex", program_memory, 0, PROGRAM_SIZE-1);
+     $readmemh("dump/control.hex", program_memory, 0, PROGRAM_SIZE-1);
   end
 
 
