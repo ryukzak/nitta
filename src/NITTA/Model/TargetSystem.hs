@@ -25,6 +25,7 @@ import           Control.Exception ( assert )
 import qualified Data.List as L
 import           Data.Maybe
 import qualified Data.Set as S
+import qualified Data.Map as M
 import           Debug.Trace
 import           GHC.Generics
 import           NITTA.Intermediate.Functions ( reg )
@@ -62,7 +63,7 @@ instance ( UnitTag tag, VarValTime v x t
     dataflowOptions ModelState{ mUnit }      = dataflowOptions mUnit
     dataflowDecision f@ModelState{ mUnit } d = f{ mUnit=dataflowDecision mUnit d }
 
-instance ( UnitTag tag, VarValTime v x t
+instance ( UnitTag tag, VarValTime v x t, Num x
         ) => RefactorProblem (ModelState (BusNetwork tag v x t) v x) v x where
     refactorOptions ModelState{ mUnit } = refactorOptions mUnit
 
@@ -110,9 +111,9 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
     functions (DFLeaf f)    = [ f ]
     functions (DFCluster g) = concatMap functions g
 
-instance ( Var v, Val x
+instance ( Var v, Val x, Num x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions dfg = trace (show $ createContainers (dataFlowGraphToFs dfg)) []
+    refactorOptions dfg = [AlgSub $ dataFlowGraphToFs $ trace (show $ refactorDfg dfg) (refactorDfg dfg)]
 
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
@@ -125,9 +126,11 @@ instance ( Var v, Val x
             : DFLeaf (recLoopOut bl){ funHistory=[origin] }
             : ( leafs L.\\ [ DFLeaf origin ] )
 
+    refactorDecision _ (AlgSub fList) = fsToDataFlowGraph fList
+
     refactorDecision _ _ = error "DataFlowGraph "
 
-instance ( UnitTag tag, VarValTime v x t
+instance ( UnitTag tag, VarValTime v x t, Num x
          ) => SynthesisProblem (ModelState (BusNetwork tag v x t) v x) tag v x t where
     synthesisOptions m@ModelState{ mUnit } = concat
         [ map generalizeBinding $ bindOptions m
@@ -171,8 +174,77 @@ toOneContainer fs fs'
 
 createContainers fs = map S.toList listOfSets
     where
-        listOfSets = L.nub [toOneContainer f1 f2 | f1 <- containered , f2 <- containered, f1 /= f2]
+        listOfSets = S.toList $ S.fromList [toOneContainer f1 f2 | f1 <- containered , f2 <- containered, f1 /= f2]
         filtered = catMaybes $ filterAddSub fs
         containered = map (\x -> [x]) filtered
+
+refactorContainers containers = L.nub $ concatMap refactorContainer containers
+
+
+refactorContainer [f] = [f]
+refactorContainer lst = refactored lst
+    where
+        containerMap = M.unions $ map (\f -> foldl (\b k -> M.insertWith (++) k [f] b) M.empty $ S.toList $ inputs f) lst
+        refactored [] = []
+        refactored (f:fs) = let
+            outputList = S.toList $ outputs f
+            in
+            concatMap (\o ->
+                case M.findWithDefault [] o containerMap of
+                    [] -> [f]
+                    lst -> concatMap (refactorFunctions f) lst
+            ) outputList
+            ++ refactored fs
+
+-- FIXME: rewrite logic
+deleteFromPull v (Pull (O s))
+    | deleted == S.empty = Nothing
+    | otherwise        = Just $ Pull $ O $ deleted
+        where
+            deleted = S.delete v s
+deleteFromPull _ (Push _ _) = error "delete only Pull"
+
+refactorFunctions f' f
+    | Just (Acc lst') <- castF f'
+    , Just (Acc lst ) <- castF f
+    , let
+        multipleOutBool = (1 <) $ length $ outputs f'
+        isOutInpIntersect = any
+            (\case
+                Push _ (I v) -> elem v $ outputs f'
+                _            -> False
+            ) lst
+        makeRefactor = not multipleOutBool && isOutInpIntersect
+    in
+        makeRefactor =
+            [ packF
+                ( Acc $ concatMap
+                    (\case
+                        Push Plus i@(I v) -> if elem v $ outputs f'
+                            then mapMaybe (\case
+                                            pull@(Pull _) -> deleteFromPull v pull;
+                                            inp -> Just inp
+                                    ) lst'
+                            else [Push Plus i]
+                        Push Minus i@(I v) -> if elem v $ outputs f'
+                            then mapMaybe
+                                (\case
+                                    Push Plus x -> Just $ Push Minus x
+                                    Push Minus x -> Just $ Push Plus x
+                                    pull@(Pull _) -> deleteFromPull v pull
+                                ) lst'
+                            else [Push Minus i]
+                        Pull vs  -> [Pull vs]
+                    ) lst
+                ) `asTypeOf` f
+            ]
+    | otherwise = [f', f]
+
+refactorDfg dfg = if startFS == newFS
+    then fsToDataFlowGraph newFS
+    else refactorDfg $ fsToDataFlowGraph newFS
+    where
+      startFS = dataFlowGraphToFs dfg
+      newFS = refactorContainers $ createContainers startFS
 
 

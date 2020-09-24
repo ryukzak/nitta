@@ -6,7 +6,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveGeneric         #-}
 
 {-|
 Module      : NITTA.Intermediate.Functions
@@ -46,7 +45,6 @@ import qualified Data.Map as M
 import           Data.Set ( elems, fromList, union )
 import qualified Data.String.Utils as S
 import           Data.Typeable
-import           GHC.Generics
 import           NITTA.Intermediate.Functions.Accum
 import           NITTA.Intermediate.Types
 import           NITTA.Utils.Base
@@ -127,7 +125,7 @@ import           NITTA.Utils.Base
 
 
 
-data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq, Show, Generic )
+data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq, Show )
 instance ( Show x, Show v ) => Label (Loop v x) where
     label (Loop (X x) _ (I b)) = show x ++ "->" ++ show b
 loop :: ( Var v, Val x ) => x -> v -> [v] -> F v x
@@ -153,7 +151,7 @@ instance ( Var v ) => FunctionSimulation (Loop v x) v x where
             Nothing -> setZipX cntx vs x
 
 
-data LoopOut v x = LoopOut (Loop v x) (O v) deriving ( Typeable, Eq, Show, Generic )
+data LoopOut v x = LoopOut (Loop v x) (O v) deriving ( Typeable, Eq, Show )
 instance ( Show v ) => Label (LoopOut v x) where
     label (LoopOut _ (O vs)) = show (oneOf vs) ++ " ->"
 instance ( Ord v ) => Function (LoopOut v x) v where
@@ -167,7 +165,7 @@ instance ( Var v ) => FunctionSimulation (LoopOut v x) v x where
     simulate cntx (LoopOut l _) = simulate cntx l
 
 
-data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq, Show, Generic  )
+data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq, Show  )
 instance ( Show v ) => Label (LoopIn v x) where
     label (LoopIn (Loop _ (O vs) _) (I v)) = "-> " ++ show v ++ " (" ++ show (oneOf vs) ++ ")"
 instance ( Ord v ) => Function (LoopIn v x) v where
@@ -180,7 +178,7 @@ instance ( Var v ) => FunctionSimulation (LoopIn v x) v x where
     simulate cntx (LoopIn l _) = simulate cntx l
 
 
-data Reg v x = Reg (I v) (O v) deriving ( Typeable, Eq, Generic )
+data Reg v x = Reg (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Reg v x) where label Reg{} = "r"
 instance ( Show v ) => Show (Reg v x) where
     show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = reg(" ++ show k1 ++ ")"
@@ -200,7 +198,7 @@ instance ( Var v ) => FunctionSimulation (Reg v x) v x where
         setZipX cntx vs x
 
 
-data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq, Generic)
+data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq)
 instance Label (Add v x) where label Add{} = "+"
 instance ( Show v ) => Show (Add v x) where
     show (Add (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " + " ++ show k2
@@ -222,7 +220,7 @@ instance ( Var v, Num x ) => FunctionSimulation (Add v x) v x where
         setZipX cntx vs x3
 
 
-data Sub v x = Sub (I v) (I v) (O v) deriving ( Typeable, Eq, Generic )
+data Sub v x = Sub (I v) (I v) (O v) deriving ( Typeable, Eq)
 instance Label (Sub v x) where label Sub{} = "-"
 instance ( Show v ) => Show (Sub v x) where
     show (Sub (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " - " ++ show k2
@@ -244,7 +242,7 @@ instance ( Var v, Num x ) => FunctionSimulation (Sub v x) v x where
         setZipX cntx vs x3
 
 
-data Multiply v x = Multiply (I v) (I v) (O v) deriving ( Typeable, Eq, Generic )
+data Multiply v x = Multiply (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Multiply v x) where label Multiply{} = "*"
 instance ( Show v ) => Show (Multiply v x) where
     show (Multiply (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " * " ++ show k2
@@ -269,7 +267,7 @@ instance ( Var v, Num x ) => FunctionSimulation (Multiply v x) v x where
 data Division v x = Division
     { denom, numer     :: I v
     , quotient, remain :: O v
-    } deriving ( Typeable, Eq, Generic )
+    } deriving ( Typeable, Eq )
 instance Label (Division v x) where label Division{} = "/"
 instance ( Show v ) => Show (Division v x) where
     show (Division (I k1) (I k2) (O k3) (O k4))
@@ -300,7 +298,7 @@ instance ( Var v, Integral x ) => FunctionSimulation (Division v x) v x where
         setZipX cntx' rs rx
 
 
-data Constant v x = Constant (X x) (O v) deriving ( Typeable, Eq, Generic )
+data Constant v x = Constant (X x) (O v) deriving ( Typeable, Eq )
 instance ( Show x ) => Label (Constant v x) where label (Constant (X x) _) = show x
 instance ( Show v, Show x ) => Show (Constant v x) where
     show (Constant (X x) (O k)) = S.join " = " (map show $ elems k) ++ " = const(" ++ show x ++ ")"
@@ -320,7 +318,7 @@ instance ( Var v ) => FunctionSimulation (Constant v x) v x where
 -- FIXME: just fixme
 data ShiftLR v x = ShiftL (I v) (O v)
                  | ShiftR (I v) (O v)
-                deriving ( Typeable, Eq, Generic )
+                deriving ( Typeable, Eq )
 instance ( Show v ) => Show (ShiftLR v x) where
     show (ShiftL (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1 ++ " << 1"
     show (ShiftR (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1 ++ " >> 1"
@@ -350,7 +348,7 @@ instance ( Var v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
         setZipX cntx vs x'
 
 
-newtype Send v x = Send (I v) deriving ( Typeable, Eq, Show, Generic )
+newtype Send v x = Send (I v) deriving ( Typeable, Eq, Show )
 instance Label (Send v x) where label Send{} = "send"
 send :: ( Var v, Val x ) => v -> F v x
 send a = packF $ Send $ I a
@@ -363,7 +361,7 @@ instance FunctionSimulation (Send v x) v x where
     simulate cntx Send{} = return cntx
 
 
-newtype Receive v x = Receive (O v) deriving ( Typeable, Eq, Show, Generic )
+newtype Receive v x = Receive (O v) deriving ( Typeable, Eq, Show )
 instance Label (Receive v x) where label Receive{} = "receive"
 receive :: ( Var v, Val x ) => [v] -> F v x
 receive a = packF $ Receive $ O $ fromList a

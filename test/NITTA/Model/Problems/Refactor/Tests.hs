@@ -63,9 +63,9 @@ tests = testGroup "Refactor problem"
             funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])] :: F String Int
             df = fsToDataFlowGraph ([func1, func2] :: [F String Int])
             dfRes = fsToDataFlowGraph ([funcRes] :: [F String Int])
-            option = refactorOptions df
-            -- dfRefactored = refactorDecision df option
-        in  "" @?= (show $ option)
+            option = head $ refactorOptions df
+            dfRefactored = refactorDecision df option
+        in dfRefactored @?= dfRes
   , testCase "simple 3 items sum refactor" $ let
             func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1"])]
             func2 = acc [Push Plus (I "tmp1"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])]
