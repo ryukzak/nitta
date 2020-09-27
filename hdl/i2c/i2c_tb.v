@@ -27,7 +27,6 @@ pu_slave_i2c #
   ( .DATA_WIDTH( DATA_WIDTH )
   , .ATTR_WIDTH( ATTR_WIDTH )
   , .I2C_DATA_WIDTH( I2C_DATA_WIDTH )
-  , .ADDRES_DEVICE( ADDRES_DEVICE )
   ) driver_slave
   ( .clk( clk )
   , .rst( rst )
@@ -226,7 +225,7 @@ end
 
 initial begin
   $dumpfile("i2c_tb.vcd");
-  $dumpvars(0, i2c_tb);
+  $dumpvars(-1, i2c_tb);
 end
 
 endmodule
