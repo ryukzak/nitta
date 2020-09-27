@@ -99,9 +99,9 @@ initial begin
   $display("finish");
 end
 
-// Вычислительный цикл, включая:
-// 1. Чтение полученных через SPI данных. Получаем 1 слово.
-// 2. Запись данных в SPI. Пишем два слова.
+// Computing cycle, including:
+// 1. Reading data received via SPI. We get 1 word.
+// 2. Writing data to SPI. We write two words.
 
 task display_buffers;
   integer i;
@@ -117,10 +117,10 @@ initial begin
   pu_spi_data_in <= 32'h00000000; oe <= 0; wr <= 0;
   @(negedge rst);
 
-  /////////////////// Первый цикл.
+  /////////////////// First cycle.
   cycle <= 1;                              @(posedge clk);
   cycle <= 0;                  repeat(199) @(posedge clk);
-  oe <= 1;                                 @(posedge clk); // Ожидаем на шине флаг invalid, так как после RST новых загрузок небыло.
+  oe <= 1;                                 @(posedge clk); // We are waiting for the invalid flag on the bus, since there were no new downloads after RST.
   oe <= 0;                     repeat( 10) @(posedge clk);
   wr <= 1; pu_spi_data_in <= 32'hB0B1B2B3; @(posedge clk);
   wr <= 0;                     repeat( 48) @(posedge clk);
@@ -131,11 +131,11 @@ initial begin
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
   display_buffers();
 
-  /////////////////// Второй цикл.
-  cycle <= 1;                              @(posedge clk); // сигнал о начале второго цикла
+  /////////////////// Second cycle.
+  cycle <= 1;                              @(posedge clk); // Second cycle start signal
   cycle <= 0;                  repeat( 99) @(posedge clk);
-  oe <= 1;                                 @(posedge clk);  // В буфере ожидаем: A0A1A2A3A4A5A6A7
-                                                            // На шине A0A1A2A3
+  oe <= 1;                                 @(posedge clk);  // Waiting in the buffer: A0A1A2A3A4A5A6A7
+                                                            // on wire A0A1A2A3
   oe <= 0;                     repeat( 10) @(posedge clk);
   wr <= 1; pu_spi_data_in <= 32'hB8B9BABB; @(posedge clk);
   wr <= 0;                     repeat( 48) @(posedge clk);
@@ -146,10 +146,10 @@ initial begin
   $display("Buffers dump receive, transfer (data_out), tarnsfer (data_in), send:");
   display_buffers();
 
-  /////////////////// Третий цикл.
+  /////////////////// Third cycle.
   cycle <= 1;                              @(posedge clk);
   cycle <= 0;                  repeat( 99) @(posedge clk);
-  oe <= 1;                                 @(posedge clk); // Ожидаем на шине флаг invalid, так как после RST новых загрузок небыло.
+  oe <= 1;                                 @(posedge clk); // We are waiting for the invalid flag on the bus, since there were no new downloads after RST.
   oe <= 0;                     repeat( 10) @(posedge clk);
   wr <= 1; pu_spi_data_in <= 32'hC0C1C2C3; @(posedge clk);
   wr <= 0;                     repeat( 48) @(posedge clk);
@@ -161,11 +161,11 @@ initial begin
   display_buffers();
 
 
-  /////////////////// Четвёртый цикл.
-  cycle <= 1;                              @(posedge clk); // сигнал о начале второго цикла
+  /////////////////// Fourth cycle.
+  cycle <= 1;                              @(posedge clk); // Second cycle start signal
   cycle <= 0;                  repeat( 99) @(posedge clk);
-  oe <= 1;                                 @(posedge clk);  // В буфере ожидаем: A0A1A2A3A4A5A6A7
-                                                            // На шине A0A1A2A3
+  oe <= 1;                                 @(posedge clk);  // Waiting in the buffer: A0A1A2A3A4A5A6A7
+                                                            // On wire A0A1A2A3
   oe <= 0;                     repeat( 10) @(posedge clk);
   wr <= 1; pu_spi_data_in <= 32'hC8C9CACB; @(posedge clk);
   wr <= 0;                     repeat( 48) @(posedge clk);
@@ -182,53 +182,52 @@ initial begin // spi communication
   @(negedge rst);
 
   repeat(35) @(posedge slow_clk);
-  // Во входном буфере должно появиться два слова: A1A2A3A4 и A5A6A7A8.
-  // В канал должно уйти два слова из выходного буфера.
 
+// Two words should appear in the input buffer: A1A2A3A4 and A5A6A7A8.
+// Two words from the output buffer must go to the pipe.
   master_in = 64'hA0A1A2A3A4A5A6A7;                        @(posedge slow_clk);
   start_transaction = 1;                                   @(posedge slow_clk);
   start_transaction = 0;                                   @(posedge slow_clk);
-  // Из канала при этом ожидаем получить значение по умолчанию, а именно -
-  // hCCCCCCCC, так как буфер не был заполнен для отправки.
+  // In this case, we expect to receive a default value from the channel hCCCCCCCC,
+  // since the buffer was not full for sending.
   repeat(130) @(posedge slow_clk);
   repeat(35) @(posedge slow_clk);
 
 
 
   repeat(35) @(posedge slow_clk);
-  // Во входном буфере должно появиться два слова: A9AAABAC и ADAEAFA0.
-  // В канал должно уйти два слова из выходного буфера.
 
+  // Two words should appear in the input buffer: A9AAABAC and ADAEAFA0.
+  // Two words from the output buffer should go to the channel.
   master_in = 64'hA8A9AAABACADAEAF;                        @(posedge slow_clk);
   start_transaction = 1;                                   @(posedge slow_clk);
   start_transaction = 0;                                   @(posedge slow_clk);
-  // Из канала при этом ожидаем получить значение hB0B1B2B3B4B5B6B7
+  // From the channel, we expect to get the value hB0B1B2B3B4B5B6B7
   repeat(130 - 3) @(posedge slow_clk);
   repeat(35) @(posedge slow_clk);
 
 
 
   repeat(35) @(posedge slow_clk);
-  // Во входном буфере должно появиться два слова: A9AAABAC и ADAEAFA0.
-  // В канал должно уйти два слова из выходного буфера.
-
+  // Two words should appear in the input buffer: A9AAABAC and ADAEAFA0.
+  // Two words from the output buffer should go to the channel.
   master_in = 64'hA8A9AAABACADAEAF;                        @(posedge slow_clk);
   start_transaction = 1;                                   @(posedge slow_clk);
   start_transaction = 0;                                   @(posedge slow_clk);
-  // Из канала при этом ожидаем получить значение hB0B1B2B3B4B5B6B7
+  // From the channel, we expect to get the value hB0B1B2B3B4B5B6B7
   repeat(130 - 3) @(posedge slow_clk);
   repeat(35) @(posedge slow_clk);
 
 
 
   repeat(35) @(posedge slow_clk);
-  // Во входном буфере должно появиться два слова: A9AAABAC и ADAEAFA0.
-  // В канал должно уйти два слова из выходного буфера.
+  // Two words should appear in the input buffer: A9AAABAC and ADAEAFA0.
+  // Two words should go to the channel from the output buffer.
 
   master_in = 64'hA8A9AAABACADAEAF;                        @(posedge slow_clk);
   start_transaction = 1;                                   @(posedge slow_clk);
   start_transaction = 0;                                   @(posedge slow_clk);
-  // Из канала при этом ожидаем получить значение hB0B1B2B3B4B5B6B7
+  // From the channel, we expect to get the value hB0B1B2B3B4B5B6B7
   repeat(130 - 3) @(posedge slow_clk);
   repeat(35) @(posedge slow_clk);
 
@@ -238,6 +237,5 @@ initial begin // spi communication
 
   $finish;
 end
-
 
 endmodule

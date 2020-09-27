@@ -21,19 +21,19 @@ module pu_slave_spi_driver #
     , input            cs
     );
 
-
-// В связи с тем, что "прокачать" все данные по комбинационной схеме не удаётся на нужной частоте,
-// необходимо сделать это заранее. Это может быть реализовано за счёт использования нескольких
-// сдвиговых регистров, где один используется для загрузки данных "на будущее", а второй в работе.
+// Due to the fact that it is impossible to load all the data according to
+// the combinational circuit at the desired frequency,
+// need to be done in advance. This can be done with several
+// shift registers in which one is used to load data in the future and the other is used.
 reg shiftreg_sel;
 reg [DATA_WIDTH-1:0] shiftreg [0:1];
 wire [DATA_WIDTH-1:0] shiftreg0 = shiftreg[0];
 wire [DATA_WIDTH-1:0] shiftreg1 = shiftreg[1];
 wire work = shiftreg_sel;
 wire load = !shiftreg_sel;
-reg [$clog2( DATA_WIDTH + 1 )-1:0] counter; // 0 - ничего не передано.
-                                            // 1..n - сейчас передаётся
-                                            // n+1 - пошли на круг.
+reg [$clog2( DATA_WIDTH + 1 )-1:0] counter; // 0 - nothing transferred.
+                                            // 1..n - now transmitted
+                                            // n+1 - looped.
 
 localparam STATE_IDLE = 0; // wait for transaction begin
 localparam STATE_WAIT_CS_0 = 1;
@@ -93,8 +93,6 @@ always @( posedge clk ) begin
     end
 end
 
-
 assign prepare = state == STATE_WAIT_SCLK_1 && sclk && counter + 1 == DATA_WIDTH;
-
 
 endmodule
