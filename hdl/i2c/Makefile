@@ -8,7 +8,7 @@ define test
 	$(RM) $(PWD)/$(3)
 endef
 
-all: buffer bounce_filter i2c nitta_to_i2c_splitter pu_i2c_master_driver
+all: buffer bounce_filter i2c pu_i2c_master_driver
 
 clean:
 	$(RM) -r $(PWD)/*.vcd
@@ -21,9 +21,6 @@ bounce_filter:
 
 i2c:
 	$(call test,i2c_master_driver.v,i2c_tb.v,test_i2c_tb)
-
-nitta_to_i2c_splitter:
-	$(call test,nitta_to_i2c_splitter.v,nitta_to_i2c_splitter_tb.v,test_nitta_to_i2c_splitter_tb)
 
 pu_i2c_master_driver:
 	$(call test,pu_i2c_master_driver.v,pu_i2c_master_driver_tb.v,test_pu_i2c_master_driver_tb)
