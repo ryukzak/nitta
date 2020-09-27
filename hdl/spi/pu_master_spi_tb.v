@@ -29,8 +29,8 @@ pu_master_spi #
   , .rst( rst )
   , .signal_wr( wr )
   , .data_in( data_in )
-  , .start_transaction( start_transaction )
-  , .signal_cycle( signal_cycle )
+  , .signal_cycle_begin( start_transaction )
+  , .signal_in_cycle( signal_cycle )
   , .miso( miso )
   , .mosi( mosi )
   );
