@@ -178,9 +178,7 @@ createContainers fs
     where
         listOfSets = S.toList $ S.fromList [toOneContainer f1 f2 | f1 <- containered , f2 <- containered, f1 /= f2]
         filtered = catMaybes $ filterAddSub fs
-        containered = map (\x -> [x]) filtered
-        listOfSets' = trace ("SETS : " ++ show listOfSets) listOfSets
-        filtered' = trace ("FILTERED : " ++ show filtered ) filtered
+        containered = map (\x -> [x]) filtered -- TODO: ADD HERE DIVIDING
 
 refactorContainers containers = L.nub $ concatMap refactorContainer containers
 
@@ -267,7 +265,7 @@ refactorDfg dfg = if startFS == newFS
 
         funcsForDelete' = trace ("FOR DELETE : " ++ show funcsForDelete) funcsForDelete
 
-        findFuncForDelete [] outToFuncsMap = []
+        findFuncForDelete [] _ = []
         findFuncForDelete (f:fs) outToFuncsMap =
             concatMap (\o ->
                 case M.findWithDefault [] o outToFuncsMap of
