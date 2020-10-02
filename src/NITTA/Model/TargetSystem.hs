@@ -172,27 +172,39 @@ toOneContainer fs fs'
     | otherwise = S.fromList fs
 
 
-createContainers fs = map S.toList listOfSets
+createContainers fs
+    | (length filtered) == 1 = containered
+    | otherwise              = map S.toList listOfSets
     where
         listOfSets = S.toList $ S.fromList [toOneContainer f1 f2 | f1 <- containered , f2 <- containered, f1 /= f2]
         filtered = catMaybes $ filterAddSub fs
         containered = map (\x -> [x]) filtered
+        listOfSets' = trace ("SETS : " ++ show listOfSets) listOfSets
+        filtered' = trace ("FILTERED : " ++ show filtered ) filtered
 
 refactorContainers containers = L.nub $ concatMap refactorContainer containers
 
+data DataflowGraphSubstitute v x = DataflowGraphSubstitute{ oldSubGraph :: [F v x], newSubGraph :: Maybe [ F v x ] } deriving (Show, Eq)
+
+containerMapCreate lstOf = M.unions $ map (\f -> foldl (\b k -> M.insertWith (++) k [f] b) M.empty $ S.toList $ inputs f) lstOf
 
 refactorContainer [f] = [f]
-refactorContainer lst = refactored lst
+refactorContainer lst = refactoredFuncs
     where
-        containerMap = M.unions $ map (\f -> foldl (\b k -> M.insertWith (++) k [f] b) M.empty $ S.toList $ inputs f) lst
+        -- Map (String (output)) (F v x)
+        containerMap = containerMapCreate lst
+
+        refactoredFuncs = refactored lst
+
+
         refactored [] = []
         refactored (f:fs) = let
             outputList = S.toList $ outputs f
             in
             concatMap (\o ->
                 case M.findWithDefault [] o containerMap of
-                    [] -> [f]
-                    lst -> concatMap (refactorFunctions f) lst
+                    [] -> []
+                    lst -> concat $ catMaybes $ map ( newSubGraph . (refactorFunctions f)) lst
             ) outputList
             ++ refactored fs
 
@@ -216,35 +228,52 @@ refactorFunctions f' f
             ) lst
         makeRefactor = not multipleOutBool && isOutInpIntersect
     in
-        makeRefactor =
-            [ packF
-                ( Acc $ concatMap
-                    (\case
-                        Push Plus i@(I v) -> if elem v $ outputs f'
-                            then mapMaybe (\case
-                                            pull@(Pull _) -> deleteFromPull v pull;
-                                            inp -> Just inp
+        makeRefactor = let
+                newFList = [ packF
+                    ( Acc $ concatMap
+                        (\case
+                            Push Plus i@(I v) -> if elem v $ outputs f'
+                                then mapMaybe (\case
+                                                pull@(Pull _) -> deleteFromPull v pull;
+                                                inp -> Just inp
+                                        ) lst'
+                                else [Push Plus i]
+                            Push Minus i@(I v) -> if elem v $ outputs f'
+                                then mapMaybe
+                                    (\case
+                                        Push Plus x -> Just $ Push Minus x
+                                        Push Minus x -> Just $ Push Plus x
+                                        pull@(Pull _) -> deleteFromPull v pull
                                     ) lst'
-                            else [Push Plus i]
-                        Push Minus i@(I v) -> if elem v $ outputs f'
-                            then mapMaybe
-                                (\case
-                                    Push Plus x -> Just $ Push Minus x
-                                    Push Minus x -> Just $ Push Plus x
-                                    pull@(Pull _) -> deleteFromPull v pull
-                                ) lst'
-                            else [Push Minus i]
-                        Pull vs  -> [Pull vs]
-                    ) lst
-                ) `asTypeOf` f
-            ]
-    | otherwise = [f', f]
+                                else [Push Minus i]
+                            Pull vs  -> [Pull vs]
+                        ) lst
+                    ) `asTypeOf` f
+                    ]
+            in
+                DataflowGraphSubstitute{ oldSubGraph = [f', f], newSubGraph = Just newFList }
+    | otherwise = DataflowGraphSubstitute{ oldSubGraph = [f', f], newSubGraph = Nothing }
 
 refactorDfg dfg = if startFS == newFS
-    then fsToDataFlowGraph newFS
+    then fsToDataFlowGraph $ newFS L.\\ funcsForDelete'
     else refactorDfg $ fsToDataFlowGraph newFS
     where
-      startFS = dataFlowGraphToFs dfg
-      newFS = refactorContainers $ createContainers startFS
+        startFS = dataFlowGraphToFs dfg
+        newFS = refactorContainers $ createContainers startFS
+
+        containerMapRefactored = trace ("CONTAINER MAP : " ++ (show $ containerMapCreate newFS)) (containerMapCreate newFS)
+
+        funcsForDelete = findFuncForDelete newFS containerMapRefactored
+
+        funcsForDelete' = trace ("FOR DELETE : " ++ show funcsForDelete) funcsForDelete
+
+        findFuncForDelete [] outToFuncsMap = []
+        findFuncForDelete (f:fs) outToFuncsMap =
+            concatMap (\o ->
+                case M.findWithDefault [] o outToFuncsMap of
+                    [] -> []
+                    lst -> f : lst
+            ) (S.toList $ outputs f)
+                ++ findFuncForDelete fs outToFuncsMap
 
 
