@@ -26,9 +26,7 @@ import qualified Data.List as L
 import           Data.Maybe
 import qualified Data.Set as S
 import qualified Data.Map as M
-import           Debug.Trace
 import           GHC.Generics
-import           NITTA.Intermediate.Functions ( reg )
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
@@ -113,7 +111,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 instance ( Var v, Val x, Num x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions dfg = [AlgSub $ dataFlowGraphToFs $ (refactorDfg dfg)]
+    refactorOptions dfg = [AlgSub $ dataFlowGraphToFs $ refactorDfg dfg]
 
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
@@ -257,6 +255,27 @@ refactorFunction f' f
             in
                 DataflowGraphSubstitute{ oldSubGraph = [f', f], newSubGraph = Just newFS }
     | otherwise = DataflowGraphSubstitute{ oldSubGraph = [f', f], newSubGraph = Nothing }
+
+data HistoryTree f = JustFunc f | RefactoredFunc f [HistoryTree f] deriving (Show, Eq)
+
+toHistoryTree fs = map JustFunc fs
+
+fromHistoryTree [] = []
+fromHistoryTree (JustFunc f : lstTail) = f : fromHistoryTree lstTail
+fromHistoryTree (RefactoredFunc f _ : lstTail) = f : fromHistoryTree lstTail
+
+compareHistoryF f (JustFunc fh) = fh == f
+compareHistoryF f (RefactoredFunc fh _) = fh == f
+
+
+updateHistoryTree historyTree historyFS newF = updatedHistoryTree
+    where
+        oldHistoryTreeFS = [htf | htf <- historyTree, hf <- historyFS, compareHistoryF hf htf ]
+        newHistoryTreeF = RefactoredFunc newF oldHistoryTreeFS
+        deletedOldHistoryTreeFS = historyTree L.\\ oldHistoryTreeFS
+        updatedHistoryTree = newHistoryTreeF : deletedOldHistoryTreeFS
+
+
 
 refactorDfg dfg
     | startFS == newFS = fsToDataFlowGraph $ newFS L.\\ funcsForDelete
