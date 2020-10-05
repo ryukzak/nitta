@@ -28,7 +28,6 @@ import           Data.List ( partition )
 import           Data.List.Split ( splitWhen )
 import           Data.Set ( elems, fromList )
 import           Data.Typeable
-import           Debug.Trace
 import           NITTA.Intermediate.Types
 import           NITTA.Utils.Base
 import           Text.InterpolatedString.Perl6 ( qc )

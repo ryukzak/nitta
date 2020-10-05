@@ -39,7 +39,6 @@ import           GHC.Generics
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Utils.Base
-import           Data.Aeson
 
 
 data Refactor v x

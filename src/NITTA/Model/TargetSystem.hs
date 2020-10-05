@@ -113,7 +113,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 instance ( Var v, Val x, Num x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions dfg = [AlgSub $ dataFlowGraphToFs $ trace (show $ refactorDfg dfg) (refactorDfg dfg)]
+    refactorOptions dfg = [AlgSub $ dataFlowGraphToFs $ (refactorDfg dfg)]
 
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
@@ -155,6 +155,9 @@ dataFlowGraphToFs (DFCluster leafs) = map
     leafs
 dataFlowGraphToFs _ = error "Data flow graph structure error"
 
+
+data DataflowGraphSubstitute v x = DataflowGraphSubstitute{ oldSubGraph :: [F v x], newSubGraph :: Maybe [ F v x ] } deriving (Show, Eq)
+
 filterAddSub []             = []
 filterAddSub (f:fs)
     | Just Add{} <- castF f = Just f : filterAddSub fs
@@ -162,14 +165,16 @@ filterAddSub (f:fs)
     | Just Acc{} <- castF f = Just f : filterAddSub fs
     | otherwise             = Nothing : filterAddSub fs
 
+
+-- |Check intersections between input and output, and create container
 toOneContainer fs fs'
     | not $ null $ S.intersection
-      (foldl1 S.union (map inputs fs))
-      (foldl1 S.union (map outputs fs')) = S.fromList $ fs ++ fs'
+        (foldl1 S.union (map inputs fs))
+        (foldl1 S.union (map outputs fs')) = S.fromList $ fs ++ fs'
     | not $ null $ S.intersection
-      (foldl1 S.union (map inputs fs'))
-      (foldl1 S.union (map outputs fs)) = S.fromList $ fs ++ fs'
-    | otherwise = S.fromList fs
+        (foldl1 S.union (map inputs fs'))
+        (foldl1 S.union (map outputs fs)) = S.fromList $ fs ++ fs'
+    | otherwise                           = S.fromList fs
 
 
 createContainers fs
@@ -178,43 +183,43 @@ createContainers fs
     where
         listOfSets = S.toList $ S.fromList [toOneContainer f1 f2 | f1 <- containered , f2 <- containered, f1 /= f2]
         filtered = catMaybes $ filterAddSub fs
-        containered = map (\x -> [x]) filtered -- TODO: ADD HERE DIVIDING
+        containered = map (\x -> [x]) filtered -- TODO: ADD HERE DIVIDING SUM (May be in the next generation)
 
 refactorContainers containers = L.nub $ concatMap refactorContainer containers
 
-data DataflowGraphSubstitute v x = DataflowGraphSubstitute{ oldSubGraph :: [F v x], newSubGraph :: Maybe [ F v x ] } deriving (Show, Eq)
 
-containerMapCreate lstOf = M.unions $ map (\f -> foldl (\b k -> M.insertWith (++) k [f] b) M.empty $ S.toList $ inputs f) lstOf
+-- |Create Map String (F v x), where Key is input label and Value is FU that contain this input label
+containerMapCreate fs = M.unions $
+    map
+    (\f ->
+       foldl
+       (\dataMap k ->
+          M.insertWith (++) k [f] dataMap
+       ) M.empty (S.toList $ inputs f)
+    ) fs
 
+-- |Takes container and refactor it, if it can be
 refactorContainer [f] = [f]
-refactorContainer lst = refactoredFuncs
+refactorContainer fs = concatMap refactored fs
     where
-        -- Map (String (output)) (F v x)
-        containerMap = containerMapCreate lst
+        containerMap = containerMapCreate fs
 
-        refactoredFuncs = refactored lst
-
-
-        refactored [] = []
-        refactored (f:fs) = let
-            outputList = S.toList $ outputs f
-            in
-            concatMap (\o ->
+        refactored f = concatMap
+            (\o ->
                 case M.findWithDefault [] o containerMap of
-                    [] -> []
-                    lst -> concat $ catMaybes $ map ( newSubGraph . (refactorFunctions f)) lst
-            ) outputList
-            ++ refactored fs
+                    []         -> []
+                    matchedFUs -> concat $ catMaybes $ map ( newSubGraph . (refactorFunction f)) matchedFUs
+            ) (S.toList $ outputs f)
 
--- FIXME: rewrite logic
 deleteFromPull v (Pull (O s))
     | deleted == S.empty = Nothing
-    | otherwise        = Just $ Pull $ O $ deleted
+    | otherwise          = Just $ Pull $ O $ deleted
         where
             deleted = S.delete v s
+
 deleteFromPull _ (Push _ _) = error "delete only Pull"
 
-refactorFunctions f' f
+refactorFunction f' f
     | Just (Acc lst') <- castF f'
     , Just (Acc lst ) <- castF f
     , let
@@ -227,51 +232,49 @@ refactorFunctions f' f
         makeRefactor = not multipleOutBool && isOutInpIntersect
     in
         makeRefactor = let
-                newFList = [ packF
-                    ( Acc $ concatMap
-                        (\case
-                            Push Plus i@(I v) -> if elem v $ outputs f'
-                                then mapMaybe (\case
-                                                pull@(Pull _) -> deleteFromPull v pull;
-                                                inp -> Just inp
+                newFS =
+                    [ packF
+                        ( Acc $ concatMap
+                            (\case
+                                Push Plus i@(I v) -> if elem v $ outputs f'
+                                    then mapMaybe (\case
+                                                    pull@(Pull _) -> deleteFromPull v pull;
+                                                    inp -> Just inp
+                                            ) lst'
+                                    else [Push Plus i]
+                                Push Minus i@(I v) -> if elem v $ outputs f'
+                                    then mapMaybe
+                                        (\case
+                                            Push Plus x -> Just $ Push Minus x
+                                            Push Minus x -> Just $ Push Plus x
+                                            pull@(Pull _) -> deleteFromPull v pull
                                         ) lst'
-                                else [Push Plus i]
-                            Push Minus i@(I v) -> if elem v $ outputs f'
-                                then mapMaybe
-                                    (\case
-                                        Push Plus x -> Just $ Push Minus x
-                                        Push Minus x -> Just $ Push Plus x
-                                        pull@(Pull _) -> deleteFromPull v pull
-                                    ) lst'
-                                else [Push Minus i]
-                            Pull vs  -> [Pull vs]
-                        ) lst
-                    ) `asTypeOf` f
+                                    else [Push Minus i]
+                                Pull vs  -> [Pull vs]
+                            ) lst
+                        ) `asTypeOf` f
                     ]
             in
-                DataflowGraphSubstitute{ oldSubGraph = [f', f], newSubGraph = Just newFList }
+                DataflowGraphSubstitute{ oldSubGraph = [f', f], newSubGraph = Just newFS }
     | otherwise = DataflowGraphSubstitute{ oldSubGraph = [f', f], newSubGraph = Nothing }
 
-refactorDfg dfg = if startFS == newFS
-    then fsToDataFlowGraph $ newFS L.\\ funcsForDelete'
-    else refactorDfg $ fsToDataFlowGraph newFS
+refactorDfg dfg
+    | startFS == newFS = fsToDataFlowGraph $ newFS L.\\ funcsForDelete
+    | otherwise        = refactorDfg $ fsToDataFlowGraph newFS
     where
         startFS = dataFlowGraphToFs dfg
         newFS = refactorContainers $ createContainers startFS
 
-        containerMapRefactored = trace ("CONTAINER MAP : " ++ (show $ containerMapCreate newFS)) (containerMapCreate newFS)
+        containerMapRefactored = containerMapCreate newFS
 
-        funcsForDelete = findFuncForDelete newFS containerMapRefactored
+        funcsForDelete = concatMap (findFuncForDelete containerMapRefactored) newFS
 
-        funcsForDelete' = trace ("FOR DELETE : " ++ show funcsForDelete) funcsForDelete
 
-        findFuncForDelete [] _ = []
-        findFuncForDelete (f:fs) outToFuncsMap =
-            concatMap (\o ->
+        findFuncForDelete outToFuncsMap f = concatMap
+            (\o ->
                 case M.findWithDefault [] o outToFuncsMap of
                     [] -> []
                     lst -> f : lst
             ) (S.toList $ outputs f)
-                ++ findFuncForDelete fs outToFuncsMap
 
 
