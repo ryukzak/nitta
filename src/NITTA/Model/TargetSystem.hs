@@ -23,9 +23,10 @@ module NITTA.Model.TargetSystem
 
 import           Control.Exception ( assert )
 import qualified Data.List as L
+import qualified Data.Map as M
 import           Data.Maybe
 import qualified Data.Set as S
-import qualified Data.Map as M
+import           Debug.Trace
 import           GHC.Generics
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
@@ -77,6 +78,7 @@ instance ( UnitTag tag, VarValTime v x t, Num x
             , mUnit=refactorDecision mUnit bl
             }
 
+    refactorDecision (ModelState _ _) (AlgSub _) = error "AlgSub matched"
 
 -- |Data flow graph - intermediate representation of application algorithm.
 -- Right now can be replaced by @[F v x]@, but for future features like
@@ -111,7 +113,10 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 instance ( Var v, Val x, Num x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions dfg = [AlgSub $ dataFlowGraphToFs $ refactorDfg dfg]
+    refactorOptions dfg = [AlgSub $ fromHistoryTree refactored']
+       where
+         refactored = refactorHfs $ toHistoryTree $ dataFlowGraphToFs dfg
+         refactored' = trace ("REFACTORED: " ++ show refactored) refactored
 
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
@@ -157,57 +162,60 @@ dataFlowGraphToFs _ = error "Data flow graph structure error"
 data DataflowGraphSubstitute v x = DataflowGraphSubstitute{ oldSubGraph :: [F v x], newSubGraph :: Maybe [ F v x ] } deriving (Show, Eq)
 
 filterAddSub []             = []
-filterAddSub (f:fs)
-    | Just Add{} <- castF f = Just f : filterAddSub fs
-    | Just Sub{} <- castF f = Just f : filterAddSub fs
-    | Just Acc{} <- castF f = Just f : filterAddSub fs
-    | otherwise             = Nothing : filterAddSub fs
+filterAddSub (hf:hfs)
+    | Just Add{} <- castF $ getF hf = Just hf : filterAddSub hfs
+    | Just Sub{} <- castF $ getF hf = Just hf : filterAddSub hfs
+    | Just Acc{} <- castF $ getF hf = Just hf : filterAddSub hfs
+    | otherwise             = Nothing : filterAddSub hfs
 
 
 -- |Check intersections between input and output, and create container
-toOneContainer fs fs'
+toOneContainer hfs hfs'
     | not $ null $ S.intersection
         (foldl1 S.union (map inputs fs))
-        (foldl1 S.union (map outputs fs')) = S.fromList $ fs ++ fs'
+        (foldl1 S.union (map outputs fs')) = S.fromList $ hfs ++ hfs'
     | not $ null $ S.intersection
         (foldl1 S.union (map inputs fs'))
-        (foldl1 S.union (map outputs fs)) = S.fromList $ fs ++ fs'
-    | otherwise                           = S.fromList fs
+        (foldl1 S.union (map outputs fs)) = S.fromList $ hfs ++ hfs'
+    | otherwise                           = S.fromList hfs
+        where
+            fs = getFS hfs
+            fs' = getFS hfs'
 
 
-createContainers fs
+createContainers hfs
     | (length filtered) == 1 = containered
     | otherwise              = map S.toList listOfSets
     where
-        listOfSets = S.toList $ S.fromList [toOneContainer f1 f2 | f1 <- containered , f2 <- containered, f1 /= f2]
-        filtered = catMaybes $ filterAddSub fs
+        listOfSets = S.toList $ S.fromList [toOneContainer hfs1 hfs2 | hfs1 <- containered , hfs2 <- containered, hfs1 /= hfs2]
+        filtered = catMaybes $ filterAddSub hfs
         containered = map (\x -> [x]) filtered -- TODO: ADD HERE DIVIDING SUM (May be in the next generation)
 
 refactorContainers containers = L.nub $ concatMap refactorContainer containers
 
 
--- |Create Map String (F v x), where Key is input label and Value is FU that contain this input label
-containerMapCreate fs = M.unions $
+-- |Create Map String (HistoryTree (F v x)), where Key is input label and Value is FU that contain this input label
+containerMapCreate hfs = M.unions $
     map
-    (\f ->
+    (\hf ->
        foldl
        (\dataMap k ->
-          M.insertWith (++) k [f] dataMap
-       ) M.empty (S.toList $ inputs f)
-    ) fs
+          M.insertWith (++) k [hf] dataMap
+       ) M.empty (S.toList $ inputs $ getF hf)
+    ) $ hfs
 
 -- |Takes container and refactor it, if it can be
-refactorContainer [f] = [f]
-refactorContainer fs = concatMap refactored fs
+refactorContainer [hf] = [hf]
+refactorContainer hfs = concatMap refactored hfs
     where
-        containerMap = containerMapCreate fs
+        containerMap = containerMapCreate hfs
 
-        refactored f = concatMap
+        refactored hf = concatMap
             (\o ->
                 case M.findWithDefault [] o containerMap of
                     []         -> []
-                    matchedFUs -> concat $ catMaybes $ map ( newSubGraph . (refactorFunction f)) matchedFUs
-            ) (S.toList $ outputs f)
+                    matchedFUs -> map (refactorFunction hf) matchedFUs
+            ) (S.toList $ outputs $ getF hf)
 
 deleteFromPull v (Pull (O s))
     | deleted == S.empty = Nothing
@@ -217,30 +225,31 @@ deleteFromPull v (Pull (O s))
 
 deleteFromPull _ (Push _ _) = error "delete only Pull"
 
-refactorFunction f' f
-    | Just (Acc lst') <- castF f'
-    , Just (Acc lst ) <- castF f
+refactorFunction hf' hf
+    | Just (Acc lst') <- castF $ getF hf'
+    , Just (Acc lst ) <- castF $ getF hf
     , let
-        multipleOutBool = (1 <) $ length $ outputs f'
+        multipleOutBool = (1 <) $ length $ outputs $ getF hf'
         isOutInpIntersect = any
             (\case
-                Push _ (I v) -> elem v $ outputs f'
+                Push _ (I v) -> elem v $ outputs $ getF hf'
                 _            -> False
             ) lst
         makeRefactor = not multipleOutBool && isOutInpIntersect
+
     in
         makeRefactor = let
                 newFS =
-                    [ packF
+                    packF
                         ( Acc $ concatMap
                             (\case
-                                Push Plus i@(I v) -> if elem v $ outputs f'
+                                Push Plus i@(I v) -> if elem v $ outputs $ getF hf'
                                     then mapMaybe (\case
                                                     pull@(Pull _) -> deleteFromPull v pull;
                                                     inp -> Just inp
                                             ) lst'
                                     else [Push Plus i]
-                                Push Minus i@(I v) -> if elem v $ outputs f'
+                                Push Minus i@(I v) -> if elem v $ outputs $ getF hf'
                                     then mapMaybe
                                         (\case
                                             Push Plus x -> Just $ Push Minus x
@@ -250,38 +259,41 @@ refactorFunction f' f
                                     else [Push Minus i]
                                 Pull vs  -> [Pull vs]
                             ) lst
-                        ) `asTypeOf` f
-                    ]
+                        ) `asTypeOf` (getF hf)
             in
-                DataflowGraphSubstitute{ oldSubGraph = [f', f], newSubGraph = Just newFS }
-    | otherwise = DataflowGraphSubstitute{ oldSubGraph = [f', f], newSubGraph = Nothing }
+                RefactoredFunc newFS [hf', hf]
+    | otherwise = hf
 
-data HistoryTree f = JustFunc f | RefactoredFunc f [HistoryTree f] deriving (Show, Eq)
+data HistoryTree f = JustFunc f | RefactoredFunc f [HistoryTree f] deriving (Show, Eq, Ord)
 
 toHistoryTree fs = map JustFunc fs
 
-fromHistoryTree [] = []
-fromHistoryTree (JustFunc f : lstTail) = f : fromHistoryTree lstTail
+fromHistoryTree []                             = []
+fromHistoryTree (JustFunc f : lstTail)         = f : fromHistoryTree lstTail
 fromHistoryTree (RefactoredFunc f _ : lstTail) = f : fromHistoryTree lstTail
 
-compareHistoryF f (JustFunc fh) = fh == f
-compareHistoryF f (RefactoredFunc fh _) = fh == f
+-- compareHistoryF f (JustFunc fh) = fh == f
+-- compareHistoryF f (RefactoredFunc fh _) = fh == f
+
+getF (JustFunc f)         = f
+getF (RefactoredFunc f _) = f
+
+getFS hfs = map getF hfs
+
+-- updateHistoryTree historyTree historyFS newF = updatedHistoryTree
+--     where
+--         oldHistoryTreeFS = [htf | htf <- historyTree, hf <- historyFS, compareHistoryF hf htf ]
+--         newHistoryTreeF = RefactoredFunc newF oldHistoryTreeFS
+--         deletedOldHistoryTreeFS = historyTree L.\\ oldHistoryTreeFS
+--         updatedHistoryTree = newHistoryTreeF : deletedOldHistoryTreeFS
 
 
-updateHistoryTree historyTree historyFS newF = updatedHistoryTree
+
+refactorHfs hfs
+    | startFS == newFS = newFS L.\\ funcsForDelete
+    | otherwise        = refactorHfs newFS
     where
-        oldHistoryTreeFS = [htf | htf <- historyTree, hf <- historyFS, compareHistoryF hf htf ]
-        newHistoryTreeF = RefactoredFunc newF oldHistoryTreeFS
-        deletedOldHistoryTreeFS = historyTree L.\\ oldHistoryTreeFS
-        updatedHistoryTree = newHistoryTreeF : deletedOldHistoryTreeFS
-
-
-
-refactorDfg dfg
-    | startFS == newFS = fsToDataFlowGraph $ newFS L.\\ funcsForDelete
-    | otherwise        = refactorDfg $ fsToDataFlowGraph newFS
-    where
-        startFS = dataFlowGraphToFs dfg
+        startFS = hfs
         newFS = refactorContainers $ createContainers startFS
 
         containerMapRefactored = containerMapCreate newFS
@@ -289,11 +301,11 @@ refactorDfg dfg
         funcsForDelete = concatMap (findFuncForDelete containerMapRefactored) newFS
 
 
-        findFuncForDelete outToFuncsMap f = concatMap
+        findFuncForDelete outToFuncsMap hf = concatMap
             (\o ->
                 case M.findWithDefault [] o outToFuncsMap of
-                    [] -> []
-                    lst -> f : lst
-            ) (S.toList $ outputs f)
+                    []  -> []
+                    lst -> hf : lst
+            ) (S.toList $ outputs $ getF hf)
 
 
