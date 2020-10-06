@@ -81,7 +81,7 @@ data Refactor v x
         , loopI :: v       -- ^input variable
         }
     | AlgSub [F v x]
-    -- AlgSub is used for saving list Functions
+    -- ^AlgSub is used for saving list Functions
     -- after refactor something like sum or product
 
     deriving ( Generic, Show, Eq )
