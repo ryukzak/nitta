@@ -158,9 +158,6 @@ dataFlowGraphToFs (DFCluster leafs) = map
     leafs
 dataFlowGraphToFs _ = error "Data flow graph structure error"
 
-
-data DataflowGraphSubstitute v x = DataflowGraphSubstitute{ oldSubGraph :: [F v x], newSubGraph :: Maybe [ F v x ] } deriving (Show, Eq)
-
 filterAddSub []             = []
 filterAddSub (hf:hfs)
     | Just Add{} <- castF $ getF hf = Just hf : filterAddSub hfs
