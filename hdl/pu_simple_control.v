@@ -17,7 +17,7 @@ module pu_simple_control #
 
 reg [MICROCODE_WIDTH-1:0]       program_memory[MEMORY_SIZE-1:0];
 reg [PROGRAM_COUNTER_WIDTH-1:0] pc;
-   
+
 initial $readmemh(PROGRAM_DUMP, program_memory, 0, MEMORY_SIZE-1);
 
 always @(posedge clk)

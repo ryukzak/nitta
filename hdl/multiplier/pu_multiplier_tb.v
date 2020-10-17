@@ -5,24 +5,23 @@ module pu_multiplier_tb #
     , parameter ATTR_WIDTH = 4
     , parameter INVALID    =  0
     );
-  
+
 reg  [DATA_WIDTH-1:0]  data_in;
 reg                  signal_oe;
 reg                        rst;
 reg                 signal_sel;
 reg                  signal_wr;
 reg                        clk;
-reg  [ATTR_WIDTH-1:0]  attr_in;                                              
+reg  [ATTR_WIDTH-1:0]  attr_in;
 wire [DATA_WIDTH-1:0] data_out;
 wire [ATTR_WIDTH-1:0] attr_out;
 
-                          
 pu_multiplier #
         ( .DATA_WIDTH( DATA_WIDTH )
         , .ATTR_WIDTH( ATTR_WIDTH )
         , .INVALID( INVALID )
-        ) i1 
-    // port map - connection between master ports and signals/registers   
+        ) i1
+    // port map - connection between master ports and signals/registers
     ( .data_in(data_in)
     , .signal_oe(signal_oe)
     , .rst(rst)
@@ -42,49 +41,49 @@ end
 initial begin
     $display("Start programm");
 
-    signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0;  
+    signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0;
     rst <= 1; repeat (2) @(posedge clk);
     rst <= 0; @(posedge clk);
-    
+
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; data_in <= 5; attr_in <= 0; @(posedge clk);
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; data_in <= 32'h00100007; attr_in <= 0; @(posedge clk);
 
     signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat(2) @(posedge clk);
 
     signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat (5) @(posedge clk);
-    
+
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; data_in <= 4; attr_in <= 0; @(posedge clk);
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; data_in <= 5; attr_in <= 0; @(posedge clk);
     signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat(2) @(posedge clk);
-    
+
     signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat (5) @(posedge clk);
-    
+
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; data_in <= -10; attr_in <= 0; @(posedge clk);
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; data_in <= -10; attr_in <= 0; @(posedge clk);
     signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat(2) @(posedge clk);
-    
+
     signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat (5) @(posedge clk);
-    
+
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; data_in <= 32'h00000111; attr_in <= 0; @(posedge clk);
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; data_in <= 32'h00000111; attr_in <= 0; @(posedge clk);
     signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat(2) @(posedge clk);
-    
+
     signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat (5) @(posedge clk);
-    
+
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; data_in <= 4; attr_in <= 1; @(posedge clk);
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; data_in <= 5; attr_in <= 0; @(posedge clk);
     signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat(2) @(posedge clk);
-    
+
     signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat (5) @(posedge clk);
-    
+
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 0; data_in <= -4; attr_in <= 0; @(posedge clk);
     signal_oe <= 0; signal_wr <= 1; signal_sel <= 1; data_in <= 5; attr_in <= 0; @(posedge clk);
     signal_oe <= 0; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat(2) @(posedge clk);
-    
+
     signal_oe <= 1; signal_wr <= 0; signal_sel <= 0; data_in <= 0; attr_in <= 0; repeat (5) @(posedge clk);
-    
+
     repeat (20) @(posedge clk);
-    $finish();    
+    $finish();
 end
 
 initial begin

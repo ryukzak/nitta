@@ -3,7 +3,7 @@
 // Simple SPI master controller with CPOL=0, CPHA=1
 //////////////////////////////////////////////////////////////////////////////////
 
-module spi_master_driver 
+module spi_master_driver
   #( parameter DATA_WIDTH = 8
    , parameter SCLK_HALFPERIOD = 1
    )
@@ -33,16 +33,16 @@ localparam STATE_WAIT_SCLK_0 = 2;
 localparam STATE_FINALIZE    = 3;
 reg  [2:0] state;
 
-spi_slave_driver  
+spi_slave_driver
   #( .DATA_WIDTH(DATA_WIDTH)
    ) inner
   ( .clk(clk)
   , .rst(rst)
-  
+
   , .data_in(data_in)
   , .ready(ready)
   , .data_out(data_out)
-  
+
   , .mosi(miso)
   , .miso(mosi)
   , .sclk(sclk)
@@ -64,34 +64,34 @@ always @( posedge rst, posedge clk ) begin
           bit_count <= DATA_WIDTH - 1;
           cs <= 0;
           state <= STATE_WAIT_SCLK_1;
-        end 
+        end
         else cs <= 1;
       end
       STATE_WAIT_SCLK_1: begin
         if ( !sclk_count ) begin
           sclk <= 1;
           state <= STATE_WAIT_SCLK_0;
-        end 
+        end
       end
       STATE_WAIT_SCLK_0: begin
         if ( !sclk_count && bit_count ) begin
           sclk <= 0;
           bit_count <= bit_count - 1;
           state <= STATE_WAIT_SCLK_1;
-        end 
+        end
         else if ( !sclk_count ) begin
           sclk <= 0;
           state <= STATE_FINALIZE;
         end
       end
       STATE_FINALIZE: begin
-        if ( !sclk_count ) begin 
+        if ( !sclk_count ) begin
           cs <= 1;
           state <= STATE_IDLE;
         end
       end
       default: state <= STATE_IDLE;
-    endcase        
+    endcase
   end
 end
 

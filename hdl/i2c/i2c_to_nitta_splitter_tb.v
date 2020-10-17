@@ -10,11 +10,11 @@ reg [7:0] from_i2c;
 wire splitter_ready;
 wire [31:0] to_nitta;
 
-i2c_to_nitta_splitter 
+i2c_to_nitta_splitter
   #( .DATA_WIDTH( 32 )
    , .ATTR_WIDTH( 0 )
    , .I2C_DATA_WIDTH( 8 )
-   ) i2c_to_nitta_splitter 
+   ) i2c_to_nitta_splitter
   ( .clk( clk )
   , .rst( rst )
 
@@ -33,7 +33,7 @@ always begin
   repeat(4) #5 clk <= ~clk;
   rst <= 0;
   forever #5 clk <= ~clk;
-end 
+end
 
 task assert32;
   input [31:0] a;
@@ -60,7 +60,7 @@ initial begin
   i2c_ready <= 1; from_i2c = 8'hA2; @(posedge clk);
   i2c_ready <= 0;                   @(posedge clk);
   i2c_ready <= 1; from_i2c = 8'hA3; @(posedge clk);
-  i2c_ready <= 0;                   @(posedge clk);  
+  i2c_ready <= 0;                   @(posedge clk);
   i2c_ready <= 1; rst <= 1;         @(posedge clk);
   assert32(to_nitta, 32'hA3A2A1A0);
   i2c_ready <= 1; rst <= 0;         @(posedge clk);
@@ -75,7 +75,7 @@ initial begin
   i2c_ready <= 1; from_i2c = 8'hB2; @(posedge clk);
   i2c_ready <= 0;                   @(posedge clk);
   i2c_ready <= 1; from_i2c = 8'hB3; @(posedge clk);
-  i2c_ready <= 0;                   @(posedge clk);  
+  i2c_ready <= 0;                   @(posedge clk);
   i2c_ready <= 1; rst <= 1;         @(posedge clk);
   assert32(to_nitta, 32'hB3B2B1B0);
   i2c_ready <= 1; rst <= 0;         @(posedge clk);
@@ -86,6 +86,6 @@ end
 initial begin
   $dumpfile("i2c_to_nitta_splitter_tb.vcd");
   $dumpvars(-1, i2c_to_nitta_splitter_tb);
-end 
+end
 
 endmodule

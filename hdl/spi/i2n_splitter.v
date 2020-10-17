@@ -1,10 +1,10 @@
 `timescale 1 ms/ 1 ms
 
-module i2n_splitter #
-        ( parameter DATA_WIDTH     = 32
-        , parameter ATTR_WIDTH     = 4
-        , parameter SPI_DATA_WIDTH = 8
-        )
+module i2n_splitter
+    #( parameter DATA_WIDTH     = 32
+    , parameter ATTR_WIDTH     = 4
+    , parameter SPI_DATA_WIDTH = 8
+    )
     ( input                           clk
     , input                           rst
 

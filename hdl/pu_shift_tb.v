@@ -13,7 +13,7 @@ wire [ATTR_WIDTH-1:0] attr_out;
 
 pu_shift #( .DATA_WIDTH(DATA_WIDTH)
           , .ATTR_WIDTH(ATTR_WIDTH)
-          ) dup 
+          ) dup
   ( .clk(clk)
   , .signal_work(signal_work), .signal_direction(signal_direction)
   , .signal_mode(signal_mode), .signal_step(signal_step)

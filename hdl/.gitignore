@@ -15,3 +15,12 @@ work/
 *.qip
 *.qsf
 *.qpf
+*.done
+*.fit.smsg
+*.jdi
+*.map.summary
+*.pin
+*.sld
+*.sof
+*.sta.summary
+*.fit.summary
