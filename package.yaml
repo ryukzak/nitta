@@ -43,13 +43,13 @@ extra-doc-files:
 ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures
 
 dependencies:
+  - MissingH
   - base
   - boxes
   - containers
   - data-default
   - filepath
   - interpolatedstring-perl6
-  - MissingH
   - regex-compat
   - text
 
@@ -57,12 +57,12 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
+    - HStringTemplate
     - aeson
     - array
     - directory
     - file-embed
     - hashable
-    - HStringTemplate
     - http-api-data
     - intervals
     - language-lua
@@ -124,11 +124,13 @@ tests:
       - '-with-rtsopts=-N'
       - '-j'
     dependencies:
+      - QuickCheck
       - atomic-primops
       - call-stack
       - file-embed
+      - genvalidity
+      - genvalidity-property
       - nitta
-      - QuickCheck
       - split
       - tasty
       - tasty-hunit

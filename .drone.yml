@@ -7,6 +7,7 @@ steps:
     image: nitta-build:latest
     pull: if-not-exists
     commands:
+      - export TASTY_QUICKCHECK_TESTS=100
       - stack setup
       - stack build --test --haddock --copy-bins
       - stack exec nitta-api-gen  # generate REST API library for frontend
