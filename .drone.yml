@@ -2,41 +2,28 @@ kind: pipeline
 name: default
 
 steps:
-  
-  - name: stack build
+
+  - name: build and test nitta backend
     image: nitta-build:latest
     pull: if-not-exists
     commands:
       - export TASTY_QUICKCHECK_TESTS=100
-      - make build-nitta-backend
-
-  - name: npm build
+      - stack setup
+      - stack build --test --haddock --copy-bins
+      - stack exec nitta-api-gen  # generate REST API library for frontend
+      
+  - name: build nitta frontend
     image: nitta-build:latest
     pull: if-not-exists
     commands:
-      # - ln -s /tmp/node_modules web/node_modules
-      - make configure-npm
-      - make build-nitta-frontend
+      - npm --prefix=web ci
+      - npm --prefix=web run build
 
-  - name: success-telegram-notify
-    image: byrnedo/alpine-curl
+  - name: hardware smoke tests
+    image: nitta-build:latest
+    pull: if-not-exists
     commands:
-      - export TIME="10"
-      - export URL="https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
-      - export CHAT_ID="-1001238497609"
-      - export TEXT="build success branch $DRONE_BRANCH of $DRONE_REPO_NAME https://drone.lcps.nitta.io/nitta-corp/nitta"
-      - echo curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
-      - curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
-    when:
-      status:
-        - success
-    environment:
-      TELEGRAM_BOT_TOKEN:
-        from_secret: TELEGRAM_BOT_TOKEN
-      SOCK5_HOST:
-        from_secret: SOCK5_HOST
-      SOCK5_AUTH:
-        from_secret: SOCK5_AUTH
+      - make -C hdl
 
   - name: failure-telegram-notify
     image: byrnedo/alpine-curl
@@ -45,15 +32,27 @@ steps:
       - export URL="https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
       - export CHAT_ID="-1001238497609"
       - export TEXT="build failure branch $DRONE_BRANCH of $DRONE_REPO_NAME https://drone.lcps.nitta.io/nitta-corp/nitta"
-      - echo curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
-      - curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" --socks5-hostname $SOCK5_HOST --proxy-user $SOCK5_AUTH $URL
+      - echo curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" $URL
+      - curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" $URL
     when:
       status:
         - failure
     environment:
       TELEGRAM_BOT_TOKEN:
         from_secret: TELEGRAM_BOT_TOKEN
-      SOCK5_HOST:
-        from_secret: SOCK5_HOST
-      SOCK5_AUTH:
-        from_secret: SOCK5_AUTH
+
+  - name: success-telegram-notify
+    image: byrnedo/alpine-curl
+    commands:
+      - export TIME="10"
+      - export URL="https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
+      - export CHAT_ID="-1001238497609"
+      - export TEXT="build success branch $DRONE_BRANCH of $DRONE_REPO_NAME https://drone.lcps.nitta.io/nitta-corp/nitta"
+      - echo curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" $URL
+      - curl -v -s --max-time $TIME -d "chat_id=$CHAT_ID&disable_web_page_preview=1&text=$TEXT" $URL
+    when:
+      status:
+        - success
+    environment:
+      TELEGRAM_BOT_TOKEN:
+        from_secret: TELEGRAM_BOT_TOKEN

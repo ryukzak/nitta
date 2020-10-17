@@ -8,11 +8,11 @@ reg wr, oe;
 reg [31:0] data_in;
 wire [31:0] data_out;
 
-buffer 
+buffer
   #( .DATA_WIDTH( 32 )
    , .ATTR_WIDTH( 0 )
    , .BUF_SIZE( 6 )
-   ) buffer 
+   ) buffer
   ( .clk( clk )
   , .rst( rst )
 
@@ -29,7 +29,7 @@ always begin
   repeat(4) #5 clk <= ~clk;
   rst <= 0;
   forever #5 clk <= ~clk;
-end 
+end
 
 task assert32;
   input [31:0] a;
@@ -74,6 +74,6 @@ end
 initial begin
   $dumpfile("buffer_tb.vcd");
   $dumpvars(-1, buffer_tb);
-end 
+end
 
 endmodule

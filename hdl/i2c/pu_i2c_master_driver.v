@@ -2,7 +2,7 @@
 // Simple I2C master controller
 //////////////////////////////////////////////////////////////////////////////////
 
-module pu_i2c_master_driver 
+module pu_i2c_master_driver
   #( parameter I2C_DATA_WIDTH = 8
    , parameter DATA_WIDTH     = 32
    , parameter ADDRES_DEVICE  = 7'h25
@@ -13,12 +13,12 @@ module pu_i2c_master_driver
   , input                           start_transaction
   , input                           rw
   // system interface
-  , input      [I2C_DATA_WIDTH-1:0] data_in  
+  , input      [I2C_DATA_WIDTH-1:0] data_in
   , output reg                      i2c_prepare
 
-  , output reg [I2C_DATA_WIDTH-1:0] data_out 
+  , output reg [I2C_DATA_WIDTH-1:0] data_out
   , output reg                      ready_write
-  
+
   // i2c interface
   , output reg                      scl
   , inout                           sda
@@ -37,7 +37,7 @@ reg   [SCL_COUNTER_WIDTH-1:0] scl_count;
 always @( posedge rst, negedge clk ) begin
   if (rst || scl_stop) begin
     scl       <= 1'b1;
-    state_scl <= STATE_IDLE; 
+    state_scl <= STATE_IDLE;
   end
   else begin
     case ( state_scl )
@@ -59,7 +59,7 @@ always @( posedge rst, negedge clk ) begin
           state_scl <= STATE_SCL_LOW;
         end
       end
-    endcase        
+    endcase
   end
 end
 
@@ -80,13 +80,13 @@ localparam STATE_WAIT_SCL_0   = 1;
 localparam STATE_WAIT_SCL_1   = 0;
 reg       wait_scl;
 reg       sda_en_o;
-reg       sda_o;  
+reg       sda_o;
 
 localparam ENABLE             = 1;
 localparam DISABLE            = 0;
 
 localparam DATA_COUNTER_WIDTH = $clog2( I2C_DATA_WIDTH + 1 );
-reg [DATA_COUNTER_WIDTH-1:0] data_counter; 
+reg [DATA_COUNTER_WIDTH-1:0] data_counter;
 
 reg [7:0] shiftreg;
 
@@ -152,13 +152,13 @@ always @(posedge rst, negedge clk) begin
           end else begin
             if (rw) begin
               wait_scl     <= STATE_WAIT_SCL_0;
-              state_ms     <= STATE_RECEIVE_BYTE;  
+              state_ms     <= STATE_RECEIVE_BYTE;
             end else begin
               i2c_prepare  <= 1'b1;
               wait_scl     <= STATE_WAIT_SCL_1;
               state_ms     <= STATE_SEND_BYTE;
-            end   
-            data_counter   <= 0;         
+            end
+            data_counter   <= 0;
             //wait_scl       <= STATE_WAIT_SCL_1;
           end
         end
@@ -168,7 +168,7 @@ always @(posedge rst, negedge clk) begin
         case ( wait_scl )
           STATE_WAIT_SCL_0: begin
             if (~scl) begin
-              sda_en_o     <= ENABLE; 
+              sda_en_o     <= ENABLE;
               sda_o        <= shiftreg[I2C_DATA_WIDTH-1];
               data_counter <= data_counter + 1;
               wait_scl     <= STATE_WAIT_SCL_1;
@@ -177,7 +177,7 @@ always @(posedge rst, negedge clk) begin
                 byte_counter <= byte_counter + 1;
                 state_ms   <= STATE_RECEIVE_ACK;
               end
-            end            
+            end
           end
           STATE_WAIT_SCL_1: begin
             if (scl) begin
@@ -195,7 +195,7 @@ always @(posedge rst, negedge clk) begin
               shiftreg  <= {shiftreg[I2C_DATA_WIDTH - 2:0], sda};
               data_counter <= data_counter + 1;
               wait_scl  <= STATE_WAIT_SCL_0;
-            end            
+            end
           end
           STATE_WAIT_SCL_0: begin
             if (~scl) begin
@@ -225,7 +225,7 @@ always @(posedge rst, negedge clk) begin
               end else begin
                 state_ms <= STATE_RECEIVE_BYTE;
               end
-            end            
+            end
           end
           STATE_WAIT_SCL_1: begin
             if (scl) begin
@@ -240,7 +240,7 @@ always @(posedge rst, negedge clk) begin
             if (~scl) begin
               sda_en_o <= ENABLE;
               wait_scl <= STATE_WAIT_SCL_1;
-            end            
+            end
           end
           STATE_WAIT_SCL_1: begin
             if (scl) begin

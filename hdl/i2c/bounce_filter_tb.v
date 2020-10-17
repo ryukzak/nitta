@@ -8,8 +8,7 @@ always begin
   clk <= 1;
   repeat(4) #5 clk <= ~clk;
   forever #5 clk <= ~clk;
-end 
-
+end
 
 initial begin
   repeat(10) @(posedge clk); $finish;
@@ -18,6 +17,6 @@ end
 initial begin
   $dumpfile("bounce_filter_tb.vcd");
   $dumpvars(-1, bounce_filter_tb);
-end 
+end
 
 endmodule
