@@ -3,9 +3,8 @@ IVERILOG := $(shell which iverilog)
 RM := $(shell which rm) -f
 
 define test
-	$(IVERILOG) -o $(PWD)/$(3) -I./ -y./ $(PWD)/$(1) $(PWD)/$(2)
-	$(shell which vvp) $(PWD)/$(3)
-	$(RM) $(PWD)/$(3)
+	$(IVERILOG) -o $(PWD)/$(3).out -I./ -y./ $(PWD)/$(1) $(PWD)/$(2)
+	$(shell which vvp) $(PWD)/$(3).out
 endef
 
 all: bounce_filter_tb \
@@ -23,4 +22,4 @@ spi_slave_driver_tb.1:
 	$(call test,spi_slave_driver.v,spi_slave_driver_tb.1.v,testspi_slave_driver_tb.1)
 
 clean:
-	rm -rf $(PWD)/*.vcd; rm -rf $(PWD)/*.out
+	$(RM) -r $(PWD)/*.vcd $(PWD)/*.out

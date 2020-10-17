@@ -3,15 +3,14 @@ IVERILOG := $(shell which iverilog)
 RM := $(shell which rm) -f
 
 define test
-	$(IVERILOG) -o $(PWD)/$(3) -I./ -y./ $(PWD)/$(1) $(PWD)/$(2)
-	$(shell which vvp) $(PWD)/$(3)
-	$(RM) $(PWD)/$(3)
+	$(IVERILOG) -o $(PWD)/$(3).out -I./ -y./ $(PWD)/$(1) $(PWD)/$(2)
+	$(shell which vvp) $(PWD)/$(3).out
 endef
 
 all: buffer bounce_filter i2c pu_i2c_master_driver
 
 clean:
-	$(RM) -r $(PWD)/*.vcd
+	$(RM) -r $(PWD)/*.vcd $(PWD)/*.out
 
 buffer:
 	$(call test,buffer.v,buffer_tb.v,test_buffer_tb)
