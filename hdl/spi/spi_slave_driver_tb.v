@@ -30,6 +30,7 @@ spi_slave_driver
   , .cs( cs )
   );
 
+always @(posedge clk) if ( ready ) data_in <= data_out;
 
 always begin
   clk <= 1;
@@ -65,83 +66,65 @@ endtask
 
 
 initial begin
-  mosi <= 0; sclk <= 0; cs <= 1; data_in <= 4'h0;
+  mosi <= 0; sclk <= 0; cs <= 1;
 
   @(negedge rst);
-  mosi <= 0; sclk <= 0; cs <= 1; data_in <= 4'h0; @(posedge clk);
-  mosi <= 0; sclk <= 0; cs <= 0; data_in <= 4'b1010; repeat(1) @(posedge clk);
+  mosi <= 0; sclk <= 0; cs <= 1; @(posedge clk);
+  mosi <= 0; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
   begin
-    mosi <= 1; sclk <= 1; cs <= 0; data_in <= 4'b1010; repeat(1) @(posedge clk);
-    mosi <= 1; sclk <= 0; cs <= 0; data_in <= 4'b1010; repeat(1) @(posedge clk);
+    mosi <= 1; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 1; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
 
-    mosi <= 0; sclk <= 1; cs <= 0; data_in <= 4'b1010; repeat(1) @(posedge clk);
-    mosi <= 0; sclk <= 0; cs <= 0; data_in <= 4'b1010; repeat(1) @(posedge clk);
+    mosi <= 0; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 0; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
 
-    mosi <= 1; sclk <= 1; cs <= 0; data_in <= 4'b1010; repeat(1) @(posedge clk);
-    mosi <= 1; sclk <= 0; cs <= 0; data_in <= 4'b1010; repeat(1) @(posedge clk);
+    mosi <= 1; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 1; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
 
-    mosi <= 0; sclk <= 1; cs <= 0; data_in <= 4'b1010; repeat(1) @(posedge clk);
-    mosi <= 0; sclk <= 0; cs <= 0; data_in <= 4'b1010; repeat(1) @(posedge clk);
+    mosi <= 0; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 0; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
   end
+  mosi <= 0; sclk <= 0; cs <= 1; repeat(10) @(posedge clk);
+
+  mosi <= 0; sclk <= 0; cs <= 1; @(posedge clk);
+  mosi <= 0; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
   begin
-    mosi <= 1; sclk <= 1; cs <= 0; data_in <= 4'b0110;
-    #1assert(ready, 1); assertDT(data_out, 'hA); repeat(1) @(posedge clk);
-    mosi <= 1; sclk <= 0; cs <= 0; data_in <= 4'b0110; repeat(1) @(posedge clk);
+    mosi <= 1; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 1; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
 
-    mosi <= 0; sclk <= 1; cs <= 0; data_in <= 4'b0110; repeat(1) @(posedge clk);
-    mosi <= 0; sclk <= 0; cs <= 0; data_in <= 4'b0110; repeat(1) @(posedge clk);
+    mosi <= 0; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 0; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
 
-    mosi <= 1; sclk <= 1; cs <= 0; data_in <= 4'b0110; repeat(1) @(posedge clk);
-    mosi <= 1; sclk <= 0; cs <= 0; data_in <= 4'b0110; repeat(1) @(posedge clk);
+    mosi <= 1; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 1; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
 
-    mosi <= 1; sclk <= 1; cs <= 0; data_in <= 4'b0110; repeat(1) @(posedge clk);
-    mosi <= 1; sclk <= 0; cs <= 0; data_in <= 4'b0110; repeat(1) @(posedge clk);
+    mosi <= 0; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 0; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
   end
-  // И тут система будет ждать либо sclk == 1 либо cs == 1, лишь после чего передача данных будет закончена.
-  mosi <= 0; sclk <= 0; cs <= 0; data_in <= 4'h0; #1assert(ready, 1); assertDT(data_out, 'hB); repeat(1) @(posedge clk);
-  mosi <= 0; sclk <= 0; cs <= 0; data_in <= 4'h0; #1assert(ready, 0);                          repeat(1) @(posedge clk);
-  mosi <= 0; sclk <= 0; cs <= 1; data_in <= 4'h0; repeat(10) @(posedge clk);
+  mosi <= 0; sclk <= 0; cs <= 1; repeat(10) @(posedge clk);
 
-
-  mosi <= 0; sclk <= 0; cs <= 1; data_in <= 4'h0; @(posedge clk);
-  mosi <= 0; sclk <= 0; cs <= 0; data_in <= 4'b1010; repeat(2) @(posedge clk);
+  mosi <= 0; sclk <= 0; cs <= 1; @(posedge clk);
+  mosi <= 0; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
   begin
-    mosi <= 1; sclk <= 1; cs <= 0; data_in <= 4'b1010; repeat(2) @(posedge clk);
-    mosi <= 1; sclk <= 0; cs <= 0; data_in <= 4'b1010; repeat(2) @(posedge clk);
+    mosi <= 1; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 1; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
 
-    mosi <= 0; sclk <= 1; cs <= 0; data_in <= 4'b1010; repeat(2) @(posedge clk);
-    mosi <= 0; sclk <= 0; cs <= 0; data_in <= 4'b1010; repeat(2) @(posedge clk);
+    mosi <= 0; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 0; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
 
-    mosi <= 1; sclk <= 1; cs <= 0; data_in <= 4'b1010; repeat(2) @(posedge clk);
-    mosi <= 1; sclk <= 0; cs <= 0; data_in <= 4'b1010; repeat(2) @(posedge clk);
+    mosi <= 1; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 1; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
 
-    mosi <= 0; sclk <= 1; cs <= 0; data_in <= 4'b1010; repeat(2) @(posedge clk);
-    mosi <= 0; sclk <= 0; cs <= 0; data_in <= 4'b1010; repeat(1) @(posedge clk);
-    mosi <= 0; sclk <= 0; cs <= 0; data_in <= 4'b1010; #1assertDT(data_out, 'hA); assert(ready, 1); repeat(1) @(posedge clk);
-
-
+    mosi <= 0; sclk <= 1; cs <= 0; repeat(1) @(posedge clk);
+    mosi <= 0; sclk <= 0; cs <= 0; repeat(1) @(posedge clk);
   end
+  mosi <= 0; sclk <= 0; cs <= 1; repeat(10) @(posedge clk);
 
-  begin
-    mosi <= 1; sclk <= 1; cs <= 0; data_in <= 4'b0110; repeat(2) @(posedge clk);
-    mosi <= 1; sclk <= 0; cs <= 0; data_in <= 4'b0110; repeat(2) @(posedge clk);
-
-    mosi <= 0; sclk <= 1; cs <= 0; data_in <= 4'b0110; repeat(2) @(posedge clk);
-    mosi <= 0; sclk <= 0; cs <= 0; data_in <= 4'b0110; repeat(2) @(posedge clk);
-
-    mosi <= 1; sclk <= 1; cs <= 0; data_in <= 4'b0110; repeat(2) @(posedge clk);
-    mosi <= 1; sclk <= 0; cs <= 0; data_in <= 4'b0110; repeat(2) @(posedge clk);
-
-    mosi <= 1; sclk <= 1; cs <= 0; data_in <= 4'b0110; repeat(2) @(posedge clk);
-    mosi <= 1; sclk <= 0; cs <= 0; data_in <= 4'b0110; repeat(1) @(posedge clk);
-    mosi <= 1; sclk <= 0; cs <= 0; data_in <= 4'b0110; #1assertDT(data_out, 'hB); assert(ready, 1); repeat(1) @(posedge clk);
-  end
-  mosi <= 0; sclk <= 0; cs <= 1; data_in <= 4'h0; repeat(10) @(posedge clk);
   $finish;
 end
 
 initial begin
-  $dumpfile("spi_slave_driver_tb.vcd");
+  $dumpfile("spi_slave_driver_tb.1.vcd");
   $dumpvars(-1, spi_slave_driver_tb);
 end
 
