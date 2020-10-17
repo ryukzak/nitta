@@ -83,7 +83,9 @@ case_fx_Num = do
     (read "-2" :: FX 30 32) @?= negate (read "2")
 
 
--- |Incorect because:
+-- FIXME: valid data generation
+--
+-- Fail example:
 -- (1 + 19) + 109 -> 20 + 109 -> 0 (overflow)
 -- 1 + (19 + 109) -> 1 + 0 (overflow) -> 1
 -- prop_fx_add_associativity = associativeOnValids ((+) @(FX 4 8))
