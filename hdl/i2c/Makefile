@@ -19,7 +19,7 @@ bounce_filter:
 	$(call test,bounce_filter.v,bounce_filter_tb.v,test_bounce_filter_tb)
 
 i2c:
-	$(call test,i2c_master_driver.v,i2c_tb.v,test_i2c_tb)
+	$(call test,i2c_master_driver.v,pu_slave_i2c_tb.v,test_pu_slave_i2c_tb)
 
 pu_i2c_master_driver:
 	$(call test,pu_i2c_master_driver.v,pu_i2c_master_driver_tb.v,test_pu_i2c_master_driver_tb)
