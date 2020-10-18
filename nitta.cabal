@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9c31e1615eb203ae7c5d89731add7ca53294237eae5548b5527f49904264d24e
+-- hash: 3e49fb460047952d5f469b53e99255784d5c428ca3cee89254a7bc09afd7efac
 
 name:           nitta
 version:        0.0.0.1
@@ -196,7 +196,7 @@ test-suite nitta-test
       NITTA.Intermediate.Functions.Accum.Tests
       NITTA.Intermediate.Simulation.Tests
       NITTA.Intermediate.Tests.Functions
-      NITTA.Intermediate.Types.Tests
+      NITTA.Intermediate.Value.Tests
       NITTA.LuaFrontend.Tests
       NITTA.LuaFrontend.Tests.Utils
       NITTA.Model.Problems.Refactor.Tests
@@ -226,6 +226,8 @@ test-suite nitta-test
     , data-default
     , file-embed
     , filepath
+    , genvalidity
+    , genvalidity-property
     , interpolatedstring-perl6
     , nitta
     , regex-compat

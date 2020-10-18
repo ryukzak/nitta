@@ -1,8 +1,7 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.10
 ENV DEBIAN_FRONTEND noninteractive
 
 ENV \
-    RESOLVER=lts-13.27 \
     PATH="/root/.local/bin:${PATH}" \
     LANG=C.UTF-8
 
@@ -18,12 +17,9 @@ RUN npm install -g npm
 
 WORKDIR /data
 
-ADD Makefile stack.yaml nitta.cabal /data/
+ADD stack.yaml stack.yaml.lock nitta.cabal package.yaml /data/
 ADD web/package.json web/package-lock.json /data/web/
 
-RUN make configure-stack
+RUN stack setup && stack build --only-dependencies --haddock --test
 
-RUN make configure-npm && cp -Rv web/node_modules /tmp/node_modules
-
-# for restore node_modules cache
-# ln -s /tmp/node_modules web/node_modules
+RUN npm --prefix=web ci

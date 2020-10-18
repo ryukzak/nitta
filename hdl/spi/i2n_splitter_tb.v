@@ -33,7 +33,7 @@ always begin
   repeat(4) #5 clk <= ~clk;
   rst <= 0;
   forever #5 clk <= ~clk;
-end 
+end
 
 task assert32;
   input [31:0] a;
@@ -60,7 +60,7 @@ initial begin
   spi_ready <= 1; from_spi = 8'hA2; @(posedge clk);
   spi_ready <= 0;                   @(posedge clk);
   spi_ready <= 1; from_spi = 8'hA3; @(posedge clk);
-  spi_ready <= 0;                   @(posedge clk);  
+  spi_ready <= 0;                   @(posedge clk);
   spi_ready <= 1; rst <= 1;         @(posedge clk);
   assert32(to_nitta, 32'hA3A2A1A0);
   spi_ready <= 1; rst <= 0;         @(posedge clk);
@@ -75,7 +75,7 @@ initial begin
   spi_ready <= 1; from_spi = 8'hB2; @(posedge clk);
   spi_ready <= 0;                   @(posedge clk);
   spi_ready <= 1; from_spi = 8'hB3; @(posedge clk);
-  spi_ready <= 0;                   @(posedge clk);  
+  spi_ready <= 0;                   @(posedge clk);
   spi_ready <= 1; rst <= 1;         @(posedge clk);
   assert32(to_nitta, 32'hB3B2B1B0);
   spi_ready <= 1; rst <= 0;         @(posedge clk);
@@ -86,6 +86,6 @@ end
 initial begin
   $dumpfile("i2n_splitter_tb.vcd");
   $dumpvars(-1, i2n_splitter_tb);
-end 
+end
 
 endmodule

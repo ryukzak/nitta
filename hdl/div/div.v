@@ -39,6 +39,7 @@
 module div 
 	#( parameter DATA_WIDTH = 32
      , parameter PIPELINE   = 4
+	)
 	(
 	clock,
 	denom,

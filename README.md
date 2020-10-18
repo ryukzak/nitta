@@ -75,46 +75,52 @@ sudo apt-get install npm
 
 Inside the project path:
 
-``` sh
+##### Build back-end
+
+``` console
 $ stack build
-Building all executables for `nitta' once. After a successful build of all of them, only specified executables will be rebuilt.
+Building all executables for 'nitta' once. After a successful build of all of them, only specified executables will be rebuilt.
 nitta> configure (lib + exe)
 
 ...
 
 Registering library for nitta-0.0.0.1..
+
+```
+
+##### Build front-end
+``` console
 $ stack exec nitta-api-gen
+
 Create output directory...
 Create output directory...OK
 Generate rest_api.js library...
 Generate rest_api.js library...OK
 Generate typescript interface...
 Generate typescript interface...OK
+
 $ cd web
+
 $ npm ci
 
-...
+ ...
+ 
+ added 2070 packages in 168.926s
 
-added 2070 packages in 112.248s
 $ npm run-script build
+ 
+ ...
 
-...
+ Compiled successfully.
 
-Find out more about deployment here:
+$ cd ..
 
-  https://bit.ly/CRA-deploy
 ```
 
-Build haddock:
+#### Build haddock:
 
 ``` sh
-$ stack build --haddock 
-Haddock index for local packages already up to date at:
-/Users/penskoi/Documents/nitta-corp/nitta/.stack-work/install/x86_64-osx/75da7d82d2ac2937653040dd68b7548578241dbd1610357c079cfaad88f03879/8.8.3/doc/index.html
-Haddock index for local packages and dependencies already up to date at:
-/Users/penskoi/Documents/nitta-corp/nitta/.stack-work/install/x86_64-osx/75da7d82d2ac2937653040dd68b7548578241dbd1610357c079cfaad88f03879/8.8.3/doc/all/index.html
-Haddock index for snapshot packages already up to date at:
-/Users/penskoi/.stack/snapshots/x86_64-osx/75da7d82d2ac2937653040dd68b7548578241dbd1610357c079cfaad88f03879/8.8.3/doc/index.html
+stack build --haddock
 ```
 
 For the fast rebuild, the project adds `--fast` flag.
@@ -122,7 +128,7 @@ For the fast rebuild, the project adds `--fast` flag.
 
 ## Usage
 
-``` sh
+``` console
 $ stack exec nitta -- --help
 nitta v0.0.0.1 - CAD for reconfigurable real-time ASIP
 
@@ -143,8 +149,8 @@ Common flags:
   -V     --version                    Print version information
 ```
 
-Logical simulation for a specific algorithm:
-``` sh
+#### Logical simulation for a specific algorithm:
+``` console
 $ stack exec nitta -- examples/teacup.lua -f -t=fx12.32
 temp_cup_1 time_0
 180.000    0.000 
@@ -159,24 +165,56 @@ temp_cup_1 time_0
 168.750    1.125 
 ```
 
-Synthesis a target system for a specific algorithm:
-``` sh
+#### Synthesis a target system for a specific algorithm:
+``` console
 $ stack exec nitta -- examples/teacup.lua -v
-> read source code from: "examples/teacup.lua"...
-> read source code from: "examples/teacup.lua"...ok
-> will trace: 
->  TraceVar {tvFmt = "%.3f", tvVar = "temp_cup_1"}
->  TraceVar {tvFmt = "%.3f", tvVar = "time_0"}
-> synthesis process...
-> synthesis process...ok
-> write target project to: "gen/main"...
-> write target project to: "gen/main"...ok
-> run logical synthesis...
-> run logical simulation...ok
+read source code from: "examples/teacup.lua"...
+read source code from: "examples/teacup.lua"...ok
+will trace: 
+TraceVar {tvFmt = "%.3f", tvVar = "temp_cup_1"}
+TraceVar {tvFmt = "%.3f", tvVar = "time_0"}
+synthesis process...
+synthesis process...ok
+write target project to: "gen/main"...
+write target project to: "gen/main"...ok
+run logical synthesis...
+run logical simulation...ok
 ```
 
-Run control panel:
-``` sh
-stack exec nitta -- examples/teacup.lua -p=8080 
-> Running NITTA server at http://localhost:8080 ...
+#### Run control panel:
+``` console
+$ stack exec nitta -- examples/teacup.lua -p=8080 
+Running NITTA server at http://localhost:8080 
+...
+```
+
+#### Testing
+``` console
+$ stack test
+nitta-0.0.0.1: unregistering (local file changes: test/NITTA/Model/ProcessorUnits/Tests/Utils.hs)
+nitta> configure (lib + exe + test)
+Configuring nitta-0.0.0.1...
+nitta> build (lib + exe + test)
+Preprocessing library for nitta-0.0.0.1..
+Building library for nitta-0.0.0.1..
+Preprocessing executable 'nitta' for nitta-0.0.0.1..
+Building executable 'nitta' for nitta-0.0.0.1..
+Preprocessing executable 'nitta-api-gen' for nitta-0.0.0.1..
+Building executable 'nitta-api-gen' for nitta-0.0.0.1..
+Preprocessing test suite 'nitta-test' for nitta-0.0.0.1..
+Building test suite 'nitta-test' for nitta-0.0.0.1..
+[14 of 20] Compiling NITTA.Model.ProcessorUnits.Tests.Utils
+[17 of 20] Compiling NITTA.Model.ProcessorUnits.Serial.Accum.Tests [TH]
+
+...
+
+    concatLinesWithSpaceWithoutBeforeLine:                       OK
+  NITTA.Utils.Tests
+    values2dump:                                                 OK
+    endpoint role equality:                                      OK
+
+All 127 tests passed (7.28s)
+
+nitta> Test suite nitta-test passed
+Completed 2 action(s).
 ```

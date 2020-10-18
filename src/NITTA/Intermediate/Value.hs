@@ -1,8 +1,12 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
+{-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
 {-|
 Module      : NITTA.Intermediate.Value
@@ -26,14 +30,16 @@ module NITTA.Intermediate.Value
   , scalingFactor
     -- *Value types
   , IntX(..)
-  , FX(..)
+  , FX(..), minMaxRaw
   ) where
 
 import           Data.Bits
 import           Data.Default
 import           Data.Maybe
 import           Data.Proxy
+import           Data.Ratio
 import           Data.Typeable
+import           GHC.Generics
 import           GHC.TypeLits
 import           Numeric
 import           Text.InterpolatedString.Perl6 ( qc )
@@ -191,15 +197,15 @@ instance ( KnownNat w ) => FixedPointCompatible (IntX w) where
 -- fxm.b: The "fx" prefix is similar to the above, but uses the word length as
 -- the second item in the dotted pair. For example, fx1.16 describes a number
 -- with 1 magnitude bit and 15 fractional bits in a 16 bit word.[3]
-newtype FX (m :: Nat) (b :: Nat) = FX Integer
-    deriving ( Eq, Ord )
+newtype FX (m :: Nat) (b :: Nat) = FX{ rawFX :: Integer }
+    deriving ( Eq, Ord, Generic )
 
 instance ( KnownNat m, KnownNat b ) => Read ( FX m b ) where
     readsPrec d r
         = let
             [(x :: Double, "")] = readsPrec d r
             result = FX $ round (x * scalingFactor result)
-        in [(result, "")]
+        in [ (result, "") ]
 
 instance ( KnownNat m, KnownNat b ) => PrintfArg ( FX m b ) where
     formatArg (FX x) = formatInteger x
@@ -217,17 +223,27 @@ instance ( KnownNat m, KnownNat b ) => Enum ( FX m b ) where
     fromEnum t@(FX x) = truncate (fromIntegral x / scalingFactor t :: Double)
 
 instance ( KnownNat m, KnownNat b ) => Num ( FX m b ) where
-    ( FX a ) + ( FX b ) = FX ( a + b )
-    t@( FX a ) * ( FX b ) = FX ( a * b ) `shiftR` fromInteger (scalingFactorPower t)
+    ( FX a ) + ( FX b ) = zeroOnOverflow $ FX (a + b)
+    t@( FX a ) * ( FX b ) = FX ( (a * b) `shiftR` fromInteger (scalingFactorPower t) )
     abs ( FX a ) = FX $ abs a
     signum ( FX a ) = fromInteger $ signum a
-    fromInteger x
-        = let res = FX $ fromIntegral (x * truncate (scalingFactor res :: Double))
-        in res
+    fromInteger x = FX $ shiftL x $ fromInteger $ scalingFactorPower (def :: FX m b)
     negate ( FX a ) = FX $ negate a
 
-instance ( KnownNat m, KnownNat b ) => Real ( FX m b ) where
-    toRational t@( FX x ) = toRational (fromIntegral x / scalingFactor t :: Double)
+
+minMaxRaw t@FX{} = let
+        n = finiteBitSize t
+        maxRaw = 2^(n - 1) - 1
+        minRaw = negate (maxRaw + 1)
+    in ( minRaw, maxRaw )
+
+
+zeroOnOverflow t@FX{ rawFX }
+    | let ( minRaw, maxRaw ) = minMaxRaw t
+    , minRaw <= rawFX && rawFX <= maxRaw
+    = t
+    | otherwise = 0
+
 
 instance ( KnownNat m, KnownNat b ) => Integral ( FX m b ) where
     toInteger t = toInteger $ fromEnum t
@@ -323,7 +339,6 @@ instance ( KnownNat m, KnownNat b ) => FixedPointCompatible ( FX m b ) where
             b = natVal (Proxy :: Proxy b)
         in b - m
 
-instance (KnownNat m, KnownNat b) => Fractional (FX m b) where
-    fromRational = fromRational . toRational
-    (/) = undefined
-    recip = undefined
+
+instance ( KnownNat m, KnownNat b ) => Real ( FX m b ) where
+    toRational x@FX{ rawFX } = rawFX % 2 ^ scalingFactorPower x

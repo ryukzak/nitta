@@ -8,8 +8,8 @@ module pu_master_spi_tb
    )
   ();
 
-reg clk; 
-reg rst; 
+reg clk;
+reg rst;
 reg start_transaction;
 
 reg  [DATA_WIDTH-1:0] data_in;
@@ -29,15 +29,15 @@ pu_master_spi #
   , .rst( rst )
   , .signal_wr( wr )
   , .data_in( data_in )
-  , .start_transaction( start_transaction )
-  , .signal_cycle( signal_cycle )
+  , .signal_cycle_begin( start_transaction )
+  , .signal_in_cycle( signal_cycle )
   , .miso( miso )
   , .mosi( mosi )
   );
 
 always begin
   #5 clk <= ~clk;
-end 
+end
 
 initial begin
   clk <= 0; rst <= 1; @(posedge clk);
@@ -49,7 +49,7 @@ initial begin
   $display("Start");
 end
 
-initial begin 
+initial begin
   @(negedge rst);
 
   data_in <= 32'hA1B1C1D1; wr <= 1; @(posedge clk);
@@ -58,7 +58,7 @@ initial begin
                            wr <= 0; @(posedge clk);
 
   start_transaction <= 1;           @(posedge clk);
-  start_transaction <= 0;           
+  start_transaction <= 0;
 
   repeat(300) @(posedge clk);
 
@@ -71,7 +71,7 @@ initial begin
                            wr <= 0; @(posedge clk);
 
   start_transaction <= 1;           @(posedge clk);
-  start_transaction <= 0; 
+  start_transaction <= 0;
 
   repeat(300) @(posedge clk);
 
@@ -84,7 +84,7 @@ initial begin
                            wr <= 0; @(posedge clk);
 
   start_transaction <= 1;           @(posedge clk);
-  start_transaction <= 0; 
+  start_transaction <= 0;
 
   repeat(300) @(posedge clk);
 

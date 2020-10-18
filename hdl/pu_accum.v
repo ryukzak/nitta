@@ -20,8 +20,8 @@ module pu_accum
 
 reg [DATA_WIDTH-1:0]   ext_arg;
 reg [DATA_WIDTH-1:0]   int_arg;
-reg [DATA_WIDTH:0]     acc; // +1 на переполнение
-wire [DATA_WIDTH:0]   wacc; // +1 на переполнение
+reg [DATA_WIDTH:0]     acc; // +1 on overflow
+wire [DATA_WIDTH:0]   wacc; // +1 on overflow
 reg overflow;
 
 // 10 11

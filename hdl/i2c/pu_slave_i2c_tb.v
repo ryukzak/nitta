@@ -8,8 +8,8 @@ module i2c_tb
    )
   ();
 
-reg clk; 
-reg rst; 
+reg clk;
+reg rst;
 reg start_transaction;
 
 reg scl;
@@ -27,7 +27,6 @@ pu_slave_i2c #
   ( .DATA_WIDTH( DATA_WIDTH )
   , .ATTR_WIDTH( ATTR_WIDTH )
   , .I2C_DATA_WIDTH( I2C_DATA_WIDTH )
-  , .ADDRES_DEVICE( ADDRES_DEVICE )
   ) driver_slave
   ( .clk( clk )
   , .rst( rst )
@@ -39,9 +38,9 @@ task delay;
   begin
       repeat(10) @(posedge clk);
   end
-endtask 
+endtask
 
-initial begin  
+initial begin
   clk   <= 0;
   sda_o <= 1;
   scl   <= 1;
@@ -53,11 +52,11 @@ always begin
   #5 clk <= ~clk;
 end
 
-initial begin  
+initial begin
   @(negedge rst); repeat(10) @(posedge clk);
 
   // Start
-  sda_o <= 0; delay(); scl <= 0; 
+  sda_o <= 0; delay(); scl <= 0;
 
   delay();
 
@@ -97,7 +96,7 @@ initial begin
   delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
-  delay(); sda_o <= 1'bz; scl <= 0;  
+  delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
   delay(); sda_o <= 1'bz; scl <= 0;
@@ -129,7 +128,7 @@ initial begin
   delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
-  delay(); sda_o <= 1'bz; scl <= 0;  
+  delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
   delay(); sda_o <= 1'bz; scl <= 0;
@@ -161,7 +160,7 @@ initial begin
   delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
-  delay(); sda_o <= 1'bz; scl <= 0;  
+  delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
   delay(); sda_o <= 1'bz; scl <= 0;
@@ -193,7 +192,7 @@ initial begin
   delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
-  delay(); sda_o <= 1'bz; scl <= 0;  
+  delay(); sda_o <= 1'bz; scl <= 0;
 
   sda_o <= 1'bz; delay(); scl <= 1;
   delay(); sda_o <= 1'bz; scl <= 0;
@@ -220,13 +219,13 @@ initial begin
   sda_o <= 0; delay(); scl <= 1;
   delay(); sda_o <= 1; scl <= 1;
 
-  
+
   repeat(100) @(posedge clk); $finish;
 end
 
 initial begin
   $dumpfile("i2c_tb.vcd");
-  $dumpvars(0, i2c_tb);
+  $dumpvars(-1, i2c_tb);
 end
 
 endmodule
