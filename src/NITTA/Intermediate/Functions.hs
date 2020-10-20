@@ -220,7 +220,7 @@ instance ( Var v, Num x ) => FunctionSimulation (Add v x) v x where
         setZipX cntx vs x3
 
 
-data Sub v x = Sub (I v) (I v) (O v) deriving ( Typeable, Eq)
+data Sub v x = Sub (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Sub v x) where label Sub{} = "-"
 instance ( Show v ) => Show (Sub v x) where
     show (Sub (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " - " ++ show k2

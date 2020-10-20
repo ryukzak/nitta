@@ -26,7 +26,6 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import           Data.Maybe
 import qualified Data.Set as S
-import           Debug.Trace
 import           GHC.Generics
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
@@ -78,7 +77,7 @@ instance ( UnitTag tag, VarValTime v x t, Num x
             , mUnit=refactorDecision mUnit bl
             }
 
-    refactorDecision (ModelState _ _) (AlgSub _) = error "AlgSub matched"
+    refactorDecision (ModelState _ _) (AlgSub _) = error "not implemented"
 
 -- |Data flow graph - intermediate representation of application algorithm.
 -- Right now can be replaced by @[F v x]@, but for future features like
@@ -113,10 +112,9 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 instance ( Var v, Val x, Num x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions dfg = [AlgSub $ fromHistoryTree refactored']
+    refactorOptions dfg = [AlgSub $ fromHistoryTree refactored]
        where
          refactored = refactorHfs $ toHistoryTree $ dataFlowGraphToFs dfg
-         refactored' = trace ("REFACTORED: " ++ show refactored) refactored
 
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r

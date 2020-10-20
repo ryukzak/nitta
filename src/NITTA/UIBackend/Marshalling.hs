@@ -1,14 +1,14 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE DuplicateRecordFields  #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE OverloadedStrings      #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# OPTIONS -fno-warn-orphans       #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS -fno-warn-orphans #-}
 
 {-|
 Module      : NITTA.UIBackend.Marshalling
@@ -148,8 +148,13 @@ instance ( Var v, Hashable v, Show x
 
 
 instance Viewable (Refactor () ()) RefactorView where
-    view (ResolveDeadlock set ) = ResolveDeadlockView $ map show $ S.toList set
-    view (BreakLoop {loopX, loopO, loopI}) = BreakLoopView {loopX = show loopX, loopO = map show ( S.toList loopO ), loopI = show loopI}
+    view (ResolveDeadlock set) = ResolveDeadlockView $ map show $ S.toList set
+    view BreakLoop {loopX, loopO, loopI} =
+        BreakLoopView
+            { loopX = show loopX
+            , loopO = map show ( S.toList loopO )
+            , loopI = show loopI
+            }
     view (AlgSub fs) = AlgSubView $ map view fs
 
 
@@ -167,16 +172,21 @@ instance ( Var v, Show x, Hashable v
             $ HM.fromList $ M.assocs dfTargets
         }
     view (Refactor (ResolveDeadlock set )) = RefactorView $ ResolveDeadlockView $ map show $ S.toList set
-    view (Refactor (BreakLoop {loopX, loopO, loopI})) = RefactorView $ BreakLoopView {loopX = show loopX, loopO = map show ( S.toList loopO ), loopI = show loopI}
+    view (Refactor (BreakLoop {loopX, loopO, loopI})) = RefactorView $
+        BreakLoopView
+            { loopX = show loopX
+            , loopO = map show ( S.toList loopO )
+            , loopI = show loopI
+            }
     view (Refactor (AlgSub fs)) = RefactorView $ AlgSubView $ map view fs
 
 
 data RefactorView
     = ResolveDeadlockView [String]
     | BreakLoopView
-        { loopX :: String       -- ^initial looped value
+        { loopX :: String -- ^initial looped value
         , loopO :: [String] -- ^output variables
-        , loopI :: String       -- ^input variable
+        , loopI :: String -- ^input variable
         }
     | AlgSubView [FView]
     deriving ( Generic , Show)
@@ -285,13 +295,18 @@ instance Viewable Parameters ParametersView where
         , pNotTransferableInputs
         }
 
-    view RefactorEdgeParameter { pRefactorType, pNumberOfLockedVariables, pBufferCount, pNStepBackRepeated, pNumberOfTransferableVariables } = RefactorEdgeParameterView
-        { pRefactorType  = view pRefactorType
-        , pNumberOfLockedVariables = pNumberOfLockedVariables
-        , pBufferCount = pBufferCount
-        , pNStepBackRepeated = pNStepBackRepeated
-        , pNumberOfTransferableVariables = pNumberOfTransferableVariables
-        }
+    view RefactorEdgeParameter
+        { pRefactorType
+        , pNumberOfLockedVariables
+        , pBufferCount
+        , pNStepBackRepeated
+        , pNumberOfTransferableVariables } = RefactorEdgeParameterView
+            { pRefactorType  = view pRefactorType
+            , pNumberOfLockedVariables = pNumberOfLockedVariables
+            , pBufferCount = pBufferCount
+            , pNStepBackRepeated = pNStepBackRepeated
+            , pNumberOfTransferableVariables = pNumberOfTransferableVariables
+            }
 
 
 type VarValTimeJSON v x t = ( Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t )
