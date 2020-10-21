@@ -145,22 +145,24 @@ instance ( VarValTime v x t, SimpleIOInterface i
 
 
 instance Controllable (SimpleIO i v x t) where
-    -- | Доступ к входному буферу осуществляется как к очереди. это сделано для
-    -- того, что бы сократить колличество сигнальных линий (убрать адрес).
-    -- Увеличение адреса производится по негативному фронту сигналов OE и WR для
-    -- Receive и Send соответственно.
+    -- |Access to received data buffer was implemented like a queue. OE signal
+    -- read received value multiple times __without changing__ "pointer" to the
+    -- next value. OE and WR signals simultaneously read received value and
+    -- __increment__ "pointer" to the next value. We do that for the reduced
+    -- number of signal lines.
     --
-    -- Управление передачей данных осуществляется полностью вычислительным блоком.
+    -- Example:
     --
-    -- Пример:
-    --
-    -- 1. Nop - отдых
-    -- 2. Send - В блок загружается с шины слово по адресу 0.
-    -- 3. Send - В блок загружается с шины слово по адресу 0.
-    -- 4. Nop - отдых
-    -- 5. Receive - Из блока выгружается на шину слово по адресу 0.
-    -- 6. Send - В блок загружается с шины слово по адресу 1.
-    -- 7. Receive - Из блока выгружается на шину слово по адресу 1.
+    -- 1. Nop - do nothing;
+    -- 2. Send (WR signal) - read a value from data_bus to send buffer[0], pointer
+    -- increments automatically;
+    -- 3. Send (WR signal) - read a value from data_bus to send buffer[1], pointer
+    -- increments automatically;
+    -- 4. Nop - do nothing;
+    -- 5. Receive False (OE signal) - write a value to data_bus from receive
+    -- buffer[0] without pointer changing;
+    -- 6. Receive True (OE and WR signal) - write a value to data_bus from receive
+    -- buffer[0] with pointer increment.
     data Instruction (SimpleIO i v x t)
         = Receiving Bool
         | Sending
@@ -199,9 +201,10 @@ instance Connected (SimpleIO i v x t) where
     data Ports (SimpleIO i v x t)
         = SimpleIOPorts
             { wr, oe :: SignalTag
-             -- |Данный сигнал используется для оповещения процессора о завершении передачи данных. Необходимо для
-             -- приостановки работы пока передача не будет завершена, так как в противном случае данные будут потеряны.
             , stop :: String
+              -- ^this flag which indicates an end of the data transaction 
+              -- requires for stop computational process while data transferring 
+              -- to avoid loses
             }
         deriving ( Show )
 
