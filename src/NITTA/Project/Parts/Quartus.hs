@@ -57,7 +57,7 @@ writeModelsimDo prj@Project{ pPath } = do
             ]
 
 
--- |Сгенерировать служебные файлы для Quartus.
+-- |Generate Quartus project files.
 writeQuartus prj@Project{ pName, pPath, pUnit } = do
     let files = projectFiles prj
         tb = testBenchTopModuleName prj
