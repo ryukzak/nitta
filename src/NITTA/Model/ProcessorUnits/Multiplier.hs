@@ -599,7 +599,7 @@ instance ( VarValTime v x t
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( { parameterAttrWidth } )
                     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
-                    , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
+                    , .INVALID( 0 )
                     ) { tag }
                 ( .clk( {signalClk} )
                 , .rst( {signalRst} )

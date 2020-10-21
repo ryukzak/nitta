@@ -138,11 +138,6 @@ synthesizeAndTest verbose ma n dataflow received = do
 
 putCntx cntx = putStr $ cntx2table cntx
 
--- FIXME: В настоящее время при испытании на стенде сигнал rst не приводит к сбросу вычислителя в начальное состояние.
-
--- TODO: Необходимо иметь возможность указать, какая именно частота будет у целевого вычислителя. Данная задача связана
--- с задачей о целевой платформе.
-
 microarch ioSync = evalNetwork ioSync $ do
         addManual "fram1" (PU def (framWithSize 16) FramPorts{ oe=SignalTag 0, wr=SignalTag 1, addr=map SignalTag [2, 3, 4, 5] } FramIO )
         addCustom "fram2" (framWithSize 32) FramIO

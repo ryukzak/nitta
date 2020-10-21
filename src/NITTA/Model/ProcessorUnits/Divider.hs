@@ -346,7 +346,7 @@ instance ( Val x, Show t
             pu_div #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( { parameterAttrWidth } )
-                    , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
+                    , .INVALID( 0 )
                     , .PIPELINE( { pipeline } )
                     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
                     , .MOCK_DIV( { bool2verilog mock } )
