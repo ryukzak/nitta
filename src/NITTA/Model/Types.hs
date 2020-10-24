@@ -26,7 +26,7 @@ import           NITTA.Intermediate.Types
 import           Numeric.Interval
 
 
--- |Shortcut for variable, value and time type constrains.
+-- |Shortcut for variable ('v'), value ('x') and time ('t') type constrains.
 type VarValTime v x t = ( Var v, Val x, Time t )
 
 
@@ -34,7 +34,7 @@ type VarValTime v x t = ( Var v, Val x, Time t )
 type Time t = ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, Integral t )
 
 
--- |Time comstrain for processor activity.
+-- |Time constrain for processor activity.
 data TimeConstrain t
     = TimeConstrain
         { tcAvailable :: Interval t -- ^Inclusive interval, when value available to transfer.
