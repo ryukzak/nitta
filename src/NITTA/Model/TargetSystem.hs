@@ -112,8 +112,9 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 instance ( Var v, Val x, Num x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions dfg = [AlgSub $ fromHistoryTree refactored]
+    refactorOptions dfg = result
        where
+         result = [AlgSub $ fromHistoryTree refactored]
          refactored = refactorHfs $ toHistoryTree $ dataFlowGraphToFs dfg
 
     refactorDecision dfg r@ResolveDeadlock{} = let
@@ -184,7 +185,8 @@ createContainers hfs
     where
         listOfSets = S.toList $ S.fromList [toOneContainer hfs1 hfs2 | hfs1 <- containered , hfs2 <- containered, hfs1 /= hfs2]
         filtered = catMaybes $ filterAddSub hfs
-        containered = map (\x -> [x]) filtered -- TODO: ADD HERE DIVIDING SUM (May be in the next generation)
+        containered = map (\x -> [x]) filtered
+        -- TODO: ADD HERE DIVIDING SUM https://nitta.io/nitta-corp/nitta/-/issues/75
 
 refactorContainers containers = L.nub $ concatMap refactorContainer containers
 
@@ -267,22 +269,10 @@ fromHistoryTree []                             = []
 fromHistoryTree (JustFunc f : lstTail)         = f : fromHistoryTree lstTail
 fromHistoryTree (RefactoredFunc f _ : lstTail) = f : fromHistoryTree lstTail
 
--- compareHistoryF f (JustFunc fh) = fh == f
--- compareHistoryF f (RefactoredFunc fh _) = fh == f
-
 getF (JustFunc f)         = f
 getF (RefactoredFunc f _) = f
 
 getFS hfs = map getF hfs
-
--- updateHistoryTree historyTree historyFS newF = updatedHistoryTree
---     where
---         oldHistoryTreeFS = [htf | htf <- historyTree, hf <- historyFS, compareHistoryF hf htf ]
---         newHistoryTreeF = RefactoredFunc newF oldHistoryTreeFS
---         deletedOldHistoryTreeFS = historyTree L.\\ oldHistoryTreeFS
---         updatedHistoryTree = newHistoryTreeF : deletedOldHistoryTreeFS
-
-
 
 refactorHfs hfs
     | startFS == newFS = newFS L.\\ funcsForDelete
