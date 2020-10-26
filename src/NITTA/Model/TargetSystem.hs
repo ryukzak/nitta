@@ -236,27 +236,23 @@ refactorFunction hf' hf
 
     in
         makeRefactor = let
-                newFS =
-                    packF
-                        ( Acc $ concatMap
-                            (\case
-                                Push Plus i@(I v) -> if elem v $ outputs $ getF hf'
-                                    then mapMaybe (\case
-                                                    pull@(Pull _) -> deleteFromPull v pull;
-                                                    inp -> Just inp
-                                            ) lst'
-                                    else [Push Plus i]
-                                Push Minus i@(I v) -> if elem v $ outputs $ getF hf'
-                                    then mapMaybe
-                                        (\case
-                                            Push Plus x -> Just $ Push Minus x
-                                            Push Minus x -> Just $ Push Plus x
-                                            pull@(Pull _) -> deleteFromPull v pull
-                                        ) lst'
-                                    else [Push Minus i]
-                                Pull vs  -> [Pull vs]
-                            ) lst
-                        ) `asTypeOf` (getF hf)
+                refactorSum _ _ (Pull o) = [Pull o]
+                refactorSum _lst' _hf' f@(Push s i@(I v))
+                    | elem v $ outputs $ getF _hf' = mapMaybe
+                        ( \f' ->
+                            case (f, f') of
+                                (Push Minus _, Push Plus x) -> Just $ Push Minus x
+                                (Push Minus _, Push Minus x) -> Just $ Push Plus x
+                                (Push Plus _, push@(Push _ _) ) -> Just push
+                                (_, pull@(Pull _)) -> deleteFromPull v pull
+                                (_, _) -> error "Pull can not be here"
+                        ) _lst'
+                    | s == Minus = [Push Minus i]
+                    | s == Plus = [Push Plus i]
+
+                newFS = packF
+                    ( Acc $ concatMap (refactorSum lst' hf') lst
+                    ) `asTypeOf` (getF hf)
             in
                 RefactoredFunc newFS [hf', hf]
     | otherwise = hf
