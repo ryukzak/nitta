@@ -1,10 +1,10 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 050185d3c53fba0ac413719be494f4745dd144c0770a0059892b92ebfff0caaa
+-- hash: 92061320e16c5227c1bb89ca034e4267a342d77192d9853b08bbb1aa4629121c
 
 name:           nitta
 version:        0.0.0.1
@@ -65,6 +65,7 @@ library
       NITTA.Model.Problems.Dataflow
       NITTA.Model.Problems.Endpoint
       NITTA.Model.Problems.Refactor
+      NITTA.Model.Problems.RefactorSum
       NITTA.Model.Problems.Whole
       NITTA.Model.ProcessorUnits
       NITTA.Model.ProcessorUnits.Divider

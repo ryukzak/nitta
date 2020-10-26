@@ -36,6 +36,7 @@ import           Language.Lua
 import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Types hiding ( patch )
 import           NITTA.Model.TargetSystem
+import           NITTA.Model.Types
 import           NITTA.Utils ( modify'_ )
 import           Text.InterpolatedString.Perl6 ( qq )
 import           Text.Printf

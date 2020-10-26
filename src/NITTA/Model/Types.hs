@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -17,6 +18,7 @@ Stability   : experimental
 module NITTA.Model.Types
     ( VarValTime, Time
     , TimeConstrain(..), TaggedTime(..)
+    , DataFlowGraph(..), fsToDataFlowGraph, dataFlowGraphToFs
     ) where
 
 import           Data.Default
@@ -25,6 +27,25 @@ import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           Numeric.Interval
 
+-- |Data flow graph - intermediate representation of application algorithm.
+-- Right now can be replaced by @[F v x]@, but for future features like
+-- conduction statement, we don't do that.
+data DataFlowGraph v x
+    = DFLeaf (F v x)
+    | DFCluster [ DataFlowGraph v x ]
+    deriving ( Show, Generic )
+
+-- |Convert @[ F v x ]@ to 'DataFlowGraph'.
+fsToDataFlowGraph alg = DFCluster $ map DFLeaf alg
+
+-- |Convert 'DataFlowGraph' to @[ F v x ]@.
+dataFlowGraphToFs (DFCluster leafs) = map
+    (\case
+        DFLeaf f -> f
+        _        -> error "Data flow graph structure error"
+    )
+    leafs
+dataFlowGraphToFs _ = error "Data flow graph structure error"
 
 -- |Shortcut for variable, value and time type constrains.
 type VarValTime v x t = ( Var v, Val x, Time t )

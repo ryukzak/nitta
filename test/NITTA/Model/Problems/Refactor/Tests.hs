@@ -24,6 +24,7 @@ import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.TargetSystem
+import           NITTA.Model.Types
 import           Test.Tasty ( testGroup )
 import           Test.Tasty.HUnit
 

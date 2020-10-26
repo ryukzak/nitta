@@ -42,6 +42,7 @@ import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems hiding ( Bind, Refactor )
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
+import           NITTA.Model.Types
 import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.Project
 import qualified NITTA.Project as N
