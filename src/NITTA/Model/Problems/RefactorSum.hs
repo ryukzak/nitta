@@ -3,19 +3,14 @@
 
 module NITTA.Model.Problems.RefactorSum (refactorSum) where
 
-import           Control.Exception ( assert )
 import qualified Data.List as L
 import qualified Data.Map as M
 import           Data.Maybe
 import qualified Data.Set as S
-import           GHC.Generics
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
-import           NITTA.Utils
 
 
 
@@ -98,8 +93,8 @@ refactorFunction hf' hf
 
     in
         makeRefactor = let
-                refactorSum _ _ (Pull o) = [Pull o]
-                refactorSum _lst' _hf' f@(Push s i@(I v))
+                refactorAcc _ _ (Pull o) = [Pull o]
+                refactorAcc _lst' _hf' f@(Push s i@(I v))
                     | elem v $ outputs $ getF _hf' = mapMaybe
                         ( \f' ->
                             case (f, f') of
@@ -111,9 +106,9 @@ refactorFunction hf' hf
                         ) _lst'
                     | s == Minus = [Push Minus i]
                     | s == Plus = [Push Plus i]
-                refactorSum _ _ (Pull o) = undefined
+                refactorAcc _ _ (Push _ (I _)) = undefined
                 newFS = packF
-                    ( Acc $ concatMap (refactorSum lst' hf') lst
+                    ( Acc $ concatMap (refactorAcc lst' hf') lst
                     ) `asTypeOf` (getF hf)
             in
                 RefactoredFunc newFS [hf', hf]

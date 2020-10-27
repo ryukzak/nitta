@@ -31,8 +31,9 @@ import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Time
-import           NITTA.Model.Types
+import           NITTA.Model.TargetSystem
 import           NITTA.Model.Tests.Microarchitecture
+import           NITTA.Model.Types
 import           NITTA.TargetSynthesis
 import           Test.Tasty ( TestTree, testGroup )
 import           Test.Tasty.HUnit

@@ -22,8 +22,6 @@ module NITTA.Model.TargetSystem
 
 import           Control.Exception ( assert )
 import qualified Data.List as L
-import qualified Data.Map as M
-import           Data.Maybe
 import qualified Data.Set as S
 import           GHC.Generics
 import           NITTA.Intermediate.Functions
