@@ -74,7 +74,7 @@ NITTA.Project.Types:Project            |        |                               
 -}
 module NITTA.TargetSynthesis
     ( mkModelWithOneNetwork
-    , TargetSynthesis(..), runTargetSynthesis
+    , TargetSynthesis(..), runTargetSynthesis, simpleRefactor
     ) where
 
 import           Control.Monad ( when )
@@ -84,6 +84,7 @@ import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.LuaFrontend
 import           NITTA.Model.Networks.Bus ( BusNetwork )
+import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
@@ -91,6 +92,7 @@ import           NITTA.Project
 import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Tree
 import           System.FilePath ( joinPath )
+import Debug.Trace
 
 
 -- |Description of synthesis task. Applicable for target system synthesis and
@@ -204,6 +206,15 @@ runTargetSynthesis TargetSynthesis
 -- |Make a model of NITTA process with one network and a specific algorithm. All
 -- functions are already bound to the network.
 mkModelWithOneNetwork arch dfg = ModelState
-    { mUnit=foldl (flip bind) arch $ functions dfg
-    , mDataFlowGraph=dfg
+    { mUnit=foldl (flip bind) arch $ functions $ simpleRefactor dfg
+    , mDataFlowGraph= simpleRefactor dfg
     }
+
+simpleRefactor dfg  =
+    case refactorOptions dfg' of
+        []     -> dfg
+        (r:_) -> simpleRefactor $ refactorDecision dfg r
+    where
+        dfg' = trace (show $ dataFlowGraphToFs dfg) dfg
+
+

@@ -25,6 +25,7 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
+import           NITTA.TargetSynthesis
 import           Test.Tasty ( testGroup )
 import           Test.Tasty.HUnit
 
@@ -64,8 +65,7 @@ tests = testGroup "Refactor problem"
             funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])] :: F String Int
             df = fsToDataFlowGraph ([func1, func2] :: [F String Int])
             dfRes = fsToDataFlowGraph ([funcRes] :: [F String Int])
-            option = head $ refactorOptions df
-            dfRefactored = refactorDecision df option
+            dfRefactored = simpleRefactor df
         in dfRefactored @?= dfRes
   , testCase "simple 3 items sum refactor" $ let
             func1 = acc [Push Plus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["tmp1"])]
@@ -73,8 +73,7 @@ tests = testGroup "Refactor problem"
             funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])] :: F String Int
             df = fsToDataFlowGraph ([func1, func2] :: [F String Int])
             dfRes = fsToDataFlowGraph ([funcRes] :: [F String Int])
-            option = head $ refactorOptions df
-            dfRefactored = refactorDecision df option
+            dfRefactored = simpleRefactor df
         in dfRefactored @?= dfRes
 
     , testCase "simple 4 items sum refactor" $ let
@@ -84,8 +83,7 @@ tests = testGroup "Refactor problem"
             funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Push Minus (I "d"), Pull (O $ S.fromList ["res"])] :: F String Int
             df = fsToDataFlowGraph ([func1, func2, func3] :: [F String Int])
             dfRes = fsToDataFlowGraph ([funcRes] :: [F String Int])
-            option = head $ refactorOptions df
-            dfRefactored = refactorDecision df option
+            dfRefactored = simpleRefactor df
         in dfRefactored @?= dfRes
 
     , testCase "4 items sum refactor, two tmp vals in one expression" $ let
@@ -95,8 +93,7 @@ tests = testGroup "Refactor problem"
             funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Push Plus (I "d"), Pull (O $ S.fromList ["res"])] :: F String Int
             df = fsToDataFlowGraph ([func1, func2, func3] :: [F String Int])
             dfRes = fsToDataFlowGraph ([funcRes] :: [F String Int])
-            option = head $ refactorOptions df
-            dfRefactored = refactorDecision df option
+            dfRefactored = simpleRefactor df
         in dfRefactored @?= dfRes
 
 

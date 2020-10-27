@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 
-module NITTA.Model.Problems.RefactorSum (refactorSum) where
+module NITTA.Model.Problems.RefactorSum (refactorFS) where
 
 import qualified Data.List as L
 import qualified Data.Map as M
@@ -14,62 +14,62 @@ import           NITTA.Model.Types
 
 
 
-filterAddSub []             = []
-filterAddSub (hf:hfs)
-    | Just Add{} <- castF $ getF hf = Just hf : filterAddSub hfs
-    | Just Sub{} <- castF $ getF hf = Just hf : filterAddSub hfs
-    | Just Acc{} <- castF $ getF hf = Just hf : filterAddSub hfs
-    | otherwise             = Nothing : filterAddSub hfs
+-- filterAddSub []             = []
+-- filterAddSub (hf:hfs)
+--     | Just Add{} <- castF $ getF hf = Just hf : filterAddSub hfs
+--     | Just Sub{} <- castF $ getF hf = Just hf : filterAddSub hfs
+--     | Just Acc{} <- castF $ getF hf = Just hf : filterAddSub hfs
+--     | otherwise             = Nothing : filterAddSub hfs
 
 
--- |Check intersections between input and output, and create container
-toOneContainer hfs hfs'
-    | not $ null $ S.intersection
-        (foldl1 S.union (map inputs fs))
-        (foldl1 S.union (map outputs fs')) = S.fromList $ hfs ++ hfs'
-    | not $ null $ S.intersection
-        (foldl1 S.union (map inputs fs'))
-        (foldl1 S.union (map outputs fs)) = S.fromList $ hfs ++ hfs'
-    | otherwise                           = S.fromList hfs
-        where
-            fs = getFS hfs
-            fs' = getFS hfs'
+-- -- |Check intersections between input and output, and create container
+-- toOneContainer hfs hfs'
+--     | not $ null $ S.intersection
+--         (foldl1 S.union (map inputs fs))
+--         (foldl1 S.union (map outputs fs')) = S.fromList $ hfs ++ hfs'
+--     | not $ null $ S.intersection
+--         (foldl1 S.union (map inputs fs'))
+--         (foldl1 S.union (map outputs fs)) = S.fromList $ hfs ++ hfs'
+--     | otherwise                           = S.fromList hfs
+--         where
+--             fs = getFS hfs
+--             fs' = getFS hfs'
 
 
-createContainers hfs
-    | (length filtered) == 1 = containered
-    | otherwise              = map S.toList listOfSets
-    where
-        listOfSets = S.toList $ S.fromList [toOneContainer hfs1 hfs2 | hfs1 <- containered , hfs2 <- containered, hfs1 /= hfs2]
-        filtered = catMaybes $ filterAddSub hfs
-        containered = map (\x -> [x]) filtered
-        -- TODO: ADD HERE DIVIDING SUM https://nitta.io/nitta-corp/nitta/-/issues/75
+-- createContainers hfs
+--     | (length filtered) == 1 = containered
+--     | otherwise              = map S.toList listOfSets
+--     where
+--         listOfSets = S.toList $ S.fromList [toOneContainer hfs1 hfs2 | hfs1 <- containered , hfs2 <- containered, hfs1 /= hfs2]
+--         filtered = catMaybes $ filterAddSub hfs
+--         containered = map (\x -> [x]) filtered
+--         -- TODO: ADD HERE DIVIDING SUM https://nitta.io/nitta-corp/nitta/-/issues/75
 
-refactorContainers containers = L.nub $ concatMap refactorContainer containers
+-- refactorContainers containers = L.nub $ concatMap refactorContainer containers
 
 
--- |Create Map String (HistoryTree (F v x)), where Key is input label and Value is FU that contain this input label
-containerMapCreate hfs = M.unions $
-    map
-    (\hf ->
-       foldl
-       (\dataMap k ->
-          M.insertWith (++) k [hf] dataMap
-       ) M.empty (S.toList $ inputs $ getF hf)
-    ) $ hfs
+-- -- |Create Map String (HistoryTree (F v x)), where Key is input label and Value is FU that contain this input label
+-- containerMapCreate hfs = M.unions $
+--     map
+--     (\hf ->
+--        foldl
+--        (\dataMap k ->
+--           M.insertWith (++) k [hf] dataMap
+--        ) M.empty (S.toList $ inputs $ getF hf)
+--     ) $ hfs
 
--- |Takes container and refactor it, if it can be
-refactorContainer [hf] = [hf]
-refactorContainer hfs = concatMap refactored hfs
-    where
-        containerMap = containerMapCreate hfs
+-- -- |Takes container and refactor it, if it can be
+-- refactorContainer [hf] = [hf]
+-- refactorContainer hfs = concatMap refactored hfs
+--     where
+--         containerMap = containerMapCreate hfs
 
-        refactored hf = concatMap
-            (\o ->
-                case M.findWithDefault [] o containerMap of
-                    []         -> []
-                    matchedFUs -> map (refactorFunction hf) matchedFUs
-            ) (S.toList $ outputs $ getF hf)
+--         refactored hf = concatMap
+--             (\o ->
+--                 case M.findWithDefault [] o containerMap of
+--                     []         -> []
+--                     matchedFUs -> map (refactorFunction hf) matchedFUs
+--             ) (S.toList $ outputs $ getF hf)
 
 deleteFromPull v (Pull (O s))
     | deleted == S.empty = Nothing
@@ -79,14 +79,141 @@ deleteFromPull v (Pull (O s))
 
 deleteFromPull _ (Push _ _) = error "delete only Pull"
 
-refactorFunction hf' hf
-    | Just (Acc lst') <- castF $ getF hf'
-    , Just (Acc lst ) <- castF $ getF hf
+-- refactorFunction hf' hf
+--     | Just (Acc lst') <- castF $ getF hf'
+--     , Just (Acc lst ) <- castF $ getF hf
+--     , let
+--         multipleOutBool = (1 <) $ length $ outputs $ getF hf'
+--         isOutInpIntersect = any
+--             (\case
+--                 Push _ (I v) -> elem v $ outputs $ getF hf'
+--                 _            -> False
+--             ) lst
+--         makeRefactor = not multipleOutBool && isOutInpIntersect
+
+--     in
+--         makeRefactor = let
+--                 refactorAcc _ _ (Pull o) = [Pull o]
+--                 refactorAcc _lst' _hf' f@(Push s i@(I v))
+--                     | elem v $ outputs $ getF _hf' = mapMaybe
+--                         ( \f' ->
+--                             case (f, f') of
+--                                 (Push Minus _, Push Plus x) -> Just $ Push Minus x
+--                                 (Push Minus _, Push Minus x) -> Just $ Push Plus x
+--                                 (Push Plus _, push@(Push _ _) ) -> Just push
+--                                 (_, pull@(Pull _)) -> deleteFromPull v pull
+--                                 (_, _) -> error "Pull can not be here"
+--                         ) _lst'
+--                     | s == Minus = [Push Minus i]
+--                     | s == Plus = [Push Plus i]
+--                 refactorAcc _ _ (Push _ (I _)) = undefined
+--                 newFS = packF
+--                     ( Acc $ concatMap (refactorAcc lst' hf') lst
+--                     ) `asTypeOf` (getF hf)
+--             in
+--                 RefactoredFunc newFS [hf', hf]
+--     | otherwise = hf
+
+-- data HistoryTree f = JustFunc f | RefactoredFunc f [HistoryTree f] deriving (Show, Eq, Ord)
+
+-- toHistoryTree fs = map JustFunc fs
+
+-- fromHistoryTree []                             = []
+-- fromHistoryTree (JustFunc f : lstTail)         = f : fromHistoryTree lstTail
+-- fromHistoryTree (RefactoredFunc f _ : lstTail) = f : fromHistoryTree lstTail
+
+-- getF (JustFunc f)         = f
+-- getF (RefactoredFunc f _) = f
+
+-- getFS hfs = map getF hfs
+
+-- refactorHfs hfs
+--     | startFS == newFS = newFS L.\\ funcsForDelete
+--     | otherwise        = refactorHfs newFS
+--     where
+--         startFS = hfs
+--         newFS = refactorContainers $ createContainers startFS
+
+--         containerMapRefactored = containerMapCreate newFS
+
+--         funcsForDelete = concatMap (findFuncForDelete containerMapRefactored) newFS
+
+
+--         findFuncForDelete outToFuncsMap hf = concatMap
+--             (\o ->
+--                 case M.findWithDefault [] o outToFuncsMap of
+--                     []  -> []
+--                     lst -> hf : lst
+--             ) (S.toList $ outputs $ getF hf)
+
+-- refactorSum dfg = refactorResult
+--     where
+--         refactorResult = [AlgSub $ fromHistoryTree refactored]
+--         refactored = refactorHfs $ toHistoryTree $ dataFlowGraphToFs dfg
+
+refactorFS dfg = refactorContainersFS $ filterContainersFS $ createContainersFS $ dataFlowGraphToFs dfg
+
+refactorContainersFS containers = map (\container -> AlgSub container $ refactorContainerFS container) containers
+
+filterContainersFS fs = filter (\case [_] -> False; _ -> True) fs
+
+createContainersFS fs
+    | (length filtered) == 1 = containered
+    | otherwise              = map S.toList listOfSets
+    where
+        listOfSets = S.toList $ S.fromList [toOneContainerFS fs1 fs2 | fs1 <- containered , fs2 <- containered, fs1 /= fs2]
+        filtered = catMaybes $ filterAddSubFS fs
+        containered = map (\x -> [x]) filtered
+
+
+filterAddSubFS []             = []
+filterAddSubFS (f:fs)
+    | Just Add{} <- castF f = Just f : filterAddSubFS fs
+    | Just Sub{} <- castF f = Just f : filterAddSubFS fs
+    | Just Acc{} <- castF f = Just f : filterAddSubFS fs
+    | otherwise             = Nothing : filterAddSubFS fs
+
+toOneContainerFS fs fs'
+    | not $ null $ S.intersection
+        (foldl1 S.union (map inputs fs))
+        (foldl1 S.union (map outputs fs')) = S.fromList $ fs ++ fs'
+    | not $ null $ S.intersection
+        (foldl1 S.union (map inputs fs'))
+        (foldl1 S.union (map outputs fs)) = S.fromList $ fs ++ fs'
+    | otherwise                           = S.fromList fs
+
+
+-- |Create Map String (HistoryTree (F v x)), where Key is input label and Value is FU that contain this input label
+containerMapCreateFS fs = M.unions $
+    map
+    (\f ->
+       foldl
+       (\dataMap k ->
+          M.insertWith (++) k [f] dataMap
+       ) M.empty (S.toList $ inputs $ f)
+    ) $ fs
+
+-- |Takes container and refactor it, if it can be
+refactorContainerFS [f] = [f]
+refactorContainerFS fs = concatMap refactored fs
+    where
+        containerMap = containerMapCreateFS fs
+
+        refactored f = concatMap
+            (\o ->
+                case M.findWithDefault [] o containerMap of
+                    []         -> []
+                    matchedFUs -> map (refactorFunctionFS f) matchedFUs
+            ) (S.toList $ outputs f)
+
+refactorFunctionFS f' f
+    | Just (Acc lst') <- castF f'
+    , Just (Acc lst ) <- castF f
     , let
-        multipleOutBool = (1 <) $ length $ outputs $ getF hf'
+        multipleOutBool = (1 <) $ length $ outputs f'
         isOutInpIntersect = any
             (\case
-                Push _ (I v) -> elem v $ outputs $ getF hf'
+                Push _ (I v) -> elem v $ outputs f'
                 _            -> False
             ) lst
         makeRefactor = not multipleOutBool && isOutInpIntersect
@@ -94,8 +221,8 @@ refactorFunction hf' hf
     in
         makeRefactor = let
                 refactorAcc _ _ (Pull o) = [Pull o]
-                refactorAcc _lst' _hf' f@(Push s i@(I v))
-                    | elem v $ outputs $ getF _hf' = mapMaybe
+                refactorAcc _lst' _f' f@(Push s i@(I v))
+                    | elem v $ outputs _f' = mapMaybe
                         ( \f' ->
                             case (f, f') of
                                 (Push Minus _, Push Plus x) -> Just $ Push Minus x
@@ -108,45 +235,8 @@ refactorFunction hf' hf
                     | s == Plus = [Push Plus i]
                 refactorAcc _ _ (Push _ (I _)) = undefined
                 newFS = packF
-                    ( Acc $ concatMap (refactorAcc lst' hf') lst
-                    ) `asTypeOf` (getF hf)
+                    ( Acc $ concatMap (refactorAcc lst' f') lst
+                    ) `asTypeOf` f
             in
-                RefactoredFunc newFS [hf', hf]
-    | otherwise = hf
-
-data HistoryTree f = JustFunc f | RefactoredFunc f [HistoryTree f] deriving (Show, Eq, Ord)
-
-toHistoryTree fs = map JustFunc fs
-
-fromHistoryTree []                             = []
-fromHistoryTree (JustFunc f : lstTail)         = f : fromHistoryTree lstTail
-fromHistoryTree (RefactoredFunc f _ : lstTail) = f : fromHistoryTree lstTail
-
-getF (JustFunc f)         = f
-getF (RefactoredFunc f _) = f
-
-getFS hfs = map getF hfs
-
-refactorHfs hfs
-    | startFS == newFS = newFS L.\\ funcsForDelete
-    | otherwise        = refactorHfs newFS
-    where
-        startFS = hfs
-        newFS = refactorContainers $ createContainers startFS
-
-        containerMapRefactored = containerMapCreate newFS
-
-        funcsForDelete = concatMap (findFuncForDelete containerMapRefactored) newFS
-
-
-        findFuncForDelete outToFuncsMap hf = concatMap
-            (\o ->
-                case M.findWithDefault [] o outToFuncsMap of
-                    []  -> []
-                    lst -> hf : lst
-            ) (S.toList $ outputs $ getF hf)
-
-refactorSum dfg = refactorResult
-    where
-        refactorResult = [AlgSub $ fromHistoryTree refactored]
-        refactored = refactorHfs $ toHistoryTree $ dataFlowGraphToFs dfg
+                newFS
+    | otherwise = f

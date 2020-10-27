@@ -80,7 +80,10 @@ data Refactor v x
         , loopO :: S.Set v -- ^output variables
         , loopI :: v       -- ^input variable
         }
-    | AlgSub [F v x]
+    | AlgSub
+        { fs :: [F v x]
+        , refFs :: [F v x]
+        }
       -- ^AlgSub example:
       --
       -- > AlgSub [+a +b +c => d]

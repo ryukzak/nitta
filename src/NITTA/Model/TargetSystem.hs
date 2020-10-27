@@ -75,7 +75,7 @@ instance ( UnitTag tag, VarValTime v x t, Num x
             , mUnit=refactorDecision mUnit bl
             }
 
-    refactorDecision (ModelState _ _) (AlgSub _) = error "not implemented"
+    refactorDecision (ModelState _ _) (AlgSub _ _) = error "not implemented"
 
 
 instance Eq ( DataFlowGraph v x) where
@@ -103,7 +103,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 instance ( Var v, Val x, Num x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions dfg = refactorSum dfg
+    refactorOptions dfg = refactorFS dfg
 
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
@@ -116,7 +116,11 @@ instance ( Var v, Val x, Num x
             : DFLeaf (recLoopOut bl){ funHistory=[origin] }
             : ( leafs L.\\ [ DFLeaf origin ] )
 
-    refactorDecision _ (AlgSub fList) = fsToDataFlowGraph fList
+    refactorDecision dfg (AlgSub oldFs refFs) = fsToDataFlowGraph refactoredFs
+        where
+            refactoredFs = filtered ++ refFs
+            filtered = filter (\f -> f `notElem` oldFs) fs
+            fs = dataFlowGraphToFs dfg
 
     refactorDecision _ _ = error "DataFlowGraph "
 

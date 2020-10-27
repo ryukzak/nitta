@@ -155,7 +155,7 @@ instance Viewable (Refactor () ()) RefactorView where
             , loopO = map show ( S.toList loopO )
             , loopI = show loopI
             }
-    view (AlgSub fs) = AlgSubView $ map view fs
+    view (AlgSub fs refFs) = AlgSubView (map view fs) (map view refFs)
 
 
 instance ( Var v, Show x, Hashable v
@@ -178,7 +178,7 @@ instance ( Var v, Show x, Hashable v
             , loopO = map show ( S.toList loopO )
             , loopI = show loopI
             }
-    view (Refactor (AlgSub fs)) = RefactorView $ AlgSubView $ map view fs
+    view (Refactor (AlgSub fs refFs)) = RefactorView $ AlgSubView (map view fs) (map view refFs)
 
 
 data RefactorView
@@ -188,7 +188,7 @@ data RefactorView
         , loopO :: [String] -- ^output variables
         , loopI :: String -- ^input variable
         }
-    | AlgSubView [FView]
+    | AlgSubView [FView] [FView]
     deriving ( Generic , Show)
 
 instance ToJSON RefactorView
