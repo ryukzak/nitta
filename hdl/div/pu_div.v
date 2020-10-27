@@ -1,26 +1,26 @@
-module pu_div #
-        ( parameter DATA_WIDTH           = 32
-        , parameter ATTR_WIDTH           = 4
-        , parameter INVALID              = 0 
-        , parameter PIPELINE             = 4
-        , parameter SCALING_FACTOR_POWER = 0
-        , parameter MOCK_DIV             = 0
-        )
+module pu_div
+    #( parameter DATA_WIDTH           = 32
+    , parameter ATTR_WIDTH           = 4
+    , parameter INVALID              = 0
+    , parameter PIPELINE             = 4
+    , parameter SCALING_FACTOR_POWER = 0
+    , parameter MOCK_DIV             = 0
+    )
     ( input  wire                  clk
     , input  wire                  rst
 
-    , input  wire                  signal_wr  
+    , input  wire                  signal_wr
     , input  wire                  signal_wr_sel
     , input  wire [DATA_WIDTH-1:0] data_in
     , input  wire [ATTR_WIDTH-1:0] attr_in
 
     , input  wire                  signal_oe
     , input  wire                  signal_oe_sel
-    , output wire [DATA_WIDTH-1:0] data_out 
+    , output wire [DATA_WIDTH-1:0] data_out
     , output wire [ATTR_WIDTH-1:0] attr_out
     );
 
-                                              
+
 reg [DATA_WIDTH-1:0]             arg [0:1];
 reg [DATA_WIDTH-1:0]             arg_latch;
 reg                              attr_latch;
@@ -36,7 +36,7 @@ always @(posedge clk) begin
     end else begin
         if (signal_wr && !signal_wr_sel) begin
             arg_latch <= data_in[DATA_WIDTH-1:0];
-            attr_latch <= attr_in;   
+            attr_latch <= attr_in;
         end else if (signal_wr && signal_wr_sel) begin
             arg[0] <= arg_latch;
             attr[0] <= attr_latch;
@@ -68,7 +68,7 @@ generate
     if ( MOCK_DIV ) begin
         div #
                 ( .DATA_WIDTH( DATA_WIDTH )
-                , .PIPELINE( PIPELINE ) 
+                , .PIPELINE( PIPELINE )
                 ) div_inner
             ( .numer( arg[0] )
             , .denom( arg[1] )
@@ -79,7 +79,7 @@ generate
   end else begin
         div #
                 ( .DATA_WIDTH( DATA_WIDTH )
-                , .PIPELINE( PIPELINE ) 
+                , .PIPELINE( PIPELINE )
                 ) div_inner
             ( .numer( arg[0] )
             , .denom( arg[1] )
@@ -89,7 +89,7 @@ generate
             );
     end
 endgenerate
-  
+
 
 reg                  invalid_result;
 reg [DATA_WIDTH-1:0] quotient;
@@ -108,8 +108,8 @@ always @(posedge clk) begin
 end
 
 assign data_out = signal_oe ? (signal_oe_sel ? remain_result : quotient_result <<< SCALING_FACTOR_POWER) : 0;
-assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INVALID) 
-                              | {(ATTR_WIDTH-1){1'b0}} 
+assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INVALID)
+                              | {(ATTR_WIDTH-1){1'b0}}
                             : 0;
 
 endmodule

@@ -16,12 +16,12 @@ wire miso;
 
 pu_slave_spi_driver
   #( .DATA_WIDTH( DATA_WIDTH )
-   ) spi_slave_driver 
+   ) spi_slave_driver
   ( .clk( clk )
   , .rst( rst )
 
-  , .data_in( ready ? data_out : data_in ) 
-  , .data_out( data_out )  
+  , .data_in( ready ? data_out : data_in )
+  , .data_out( data_out )
   , .ready( ready )
   , .prepare( prepare )
 
@@ -47,7 +47,7 @@ always begin
   repeat(6) #5 clk <= ~clk;
   rst <= 0;
   forever #5 clk <= ~clk;
-end 
+end
 
 
 initial begin
@@ -369,6 +369,6 @@ end
 initial begin
   $dumpfile("pu_slave_spi_driver_tb.vcd");
   $dumpvars(-1, pu_slave_spi_driver_tb);
-end 
+end
 
 endmodule

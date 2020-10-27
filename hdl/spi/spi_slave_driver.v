@@ -3,7 +3,7 @@
 // Simple SPI master controller with CPOL=0, CPHA=1
 //////////////////////////////////////////////////////////////////////////////////
 
-module spi_slave_driver 
+module spi_slave_driver
   #( parameter DATA_WIDTH = 8
    , parameter SUB_FRAME = 0
    )
@@ -11,7 +11,7 @@ module spi_slave_driver
   , input            rst
   // system interface
   , input  [DATA_WIDTH-1:0] data_in  // data that master can read from slave
-  , output                  ready    // transaction is not processed now 
+  , output                  ready    // transaction is not processed now
   // , output                  premature_ready
   , output [DATA_WIDTH-1:0] data_out // data written to slave in last transaction
   // SPI iterface
@@ -48,12 +48,12 @@ always @( posedge clk ) begin
           miso_buf <= shiftreg[ DATA_WIDTH - 1 ];
         end
         if ( data_counter == DATA_WIDTH) data_counter <= 1;
-        else data_counter <= data_counter + 1;   
+        else data_counter <= data_counter + 1;
         state <= STATE_WAIT_SCLK_0;
       end else if ( state == STATE_READY ) begin
         state <= STATE_WAIT_SCLK_1;
       end
-  
+
       STATE_WAIT_SCLK_0: if ( !sclk ) begin
         shiftreg <= { shiftreg[DATA_WIDTH - 2:0], mosi } ;
         if ( data_counter == DATA_WIDTH ) state <= STATE_READY;
@@ -74,6 +74,6 @@ assign miso = state == STATE_WAIT_SCLK_1 && sclk
 
 assign data_out = shiftreg;
 assign ready = state == STATE_READY;
-            
-  
+
+
 endmodule

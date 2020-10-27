@@ -1,11 +1,11 @@
 `timescale 1 ms/ 1 ms
-module buffer #
-        ( parameter DATA_WIDTH = 32
-        , parameter ATTR_WIDTH = 4
-        , parameter BUF_SIZE   = 10
-        , parameter FILE       = ""
-        , parameter I = 0
-        )
+module buffer
+    #( parameter DATA_WIDTH = 32
+    , parameter ATTR_WIDTH = 4
+    , parameter BUF_SIZE   = 10
+    , parameter FILE       = ""
+    , parameter I = 0
+    )
     ( input                   clk
     , input                   rst
 

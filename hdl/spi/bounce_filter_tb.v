@@ -1,7 +1,6 @@
 `timescale 1 ms/ 1 ms
 module bounce_filter_tb();
 
-
 reg  clk;
 reg  rst;
 reg in1, in2;
@@ -28,7 +27,7 @@ bounce_filter #
 always begin
     clk <= 0;
     forever #1 clk <= ~clk;
-end 
+end
 
 initial begin
     rst <= 1;
@@ -84,9 +83,7 @@ initial begin
         if (out2 !== 1) $display("FAIL filter1 #6");
     end
 
-
     $finish;
 end
-
 
 endmodule

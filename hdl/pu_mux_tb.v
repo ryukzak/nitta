@@ -15,11 +15,11 @@ wire [WA-1:0] attr_out;
 
 pu_mux pu_mux(
   .clk(clk),
-    
+
   .signal_load(load), .signal_sel(sel), .signal_mode(mode),
   .data_in(data_in), .attr_in(attr_in),
 
-  .signal_oe(oe),    
+  .signal_oe(oe),
   .data_out(data_out), .attr_out(attr_out)
   );
 

@@ -1,10 +1,10 @@
 `timescale 1 ms/ 1 ms
 
 module nitta_to_i2c_splitter #
-        ( parameter DATA_WIDTH     = 32
-        , parameter ATTR_WIDTH     = 4
-        , parameter I2C_DATA_WIDTH = 8
-        )
+    ( parameter DATA_WIDTH     = 32
+    , parameter ATTR_WIDTH     = 4
+    , parameter I2C_DATA_WIDTH = 8
+    )
     ( input                       clk
     , input                       rst
 
@@ -52,7 +52,7 @@ always @( posedge clk ) begin
 end
 
 assign splitter_ready = counter == SUBFRAME_NUMBER - 1
-                     && wait_i2c_ready 
+                     && wait_i2c_ready
                      && i2c_ready ;
 
 endmodule
