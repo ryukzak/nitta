@@ -92,7 +92,6 @@ import           NITTA.Project
 import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Tree
 import           System.FilePath ( joinPath )
-import Debug.Trace
 
 
 -- |Description of synthesis task. Applicable for target system synthesis and
@@ -211,10 +210,8 @@ mkModelWithOneNetwork arch dfg = ModelState
     }
 
 simpleRefactor dfg  =
-    case refactorOptions dfg' of
+    case refactorOptions dfg of
         []     -> dfg
         (r:_) -> simpleRefactor $ refactorDecision dfg r
-    where
-        dfg' = trace (show $ dataFlowGraphToFs dfg) dfg
 
 
