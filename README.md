@@ -38,44 +38,46 @@ Project CI chat (telegram): <https://t.me/nitta_ci>
 
 Papers about the project you can find here (English and Russian): <https://nitta.io/nitta-corp/docs>.
 
+## Install development dependency
 
-## Preparing
+### Mac OS X
+``` console
+# The Haskell Tool Stack
+$ brew install stack
+$ stack install hlint stylish-haskell
+$ echo PATH should contain $HOME/.local/bin
 
-### Install dependency
+# Verilog tools
+$ brew install icarus-verilog
+$ brew tap homebrew/cask
+$ brew cask install gtkwave
 
-#### Stack (build tool for Haskell)
-##### Ubuntu
-```sh
-sudo apt-get install haskell-stack
-stack upgrade --binary-only
+# Frontend tools
+$ brew install npm
+$ npm install --global tern prettier
 ```
 
-Check: `PATH` should contain `$HOME/.local/bin`.
+### Ubuntu
+``` console
+# The Haskell Tool Stack
+$ sudo apt-get install haskell-stack
+$ stack install hlint stylish-haskell
+$ echo PATH should contain $HOME/.local/bin
 
-#### Icarus Verilog (Verilog simulation)
-##### Ubuntu
-```sh
-sudo apt-get install iverilog
+# Verilog tools
+$ sudo apt-get install iverilog
+$ sudo apt-get install gtkwave
+
+# Frontend tools
+$ sudo apt-get install npm
+$ npm install --global tern prettier
 ```
 
-#### GTKWave (wave viewer Verilog VCD/EVCD)
-##### Ubuntu
-```sh
-sudo apt-get install gtkwave
-```
-
-#### npm (Node Package Manager)
-##### Ubuntu
-```sh
-sudo apt-get install npm
-```
-
-
-### Build project
+## Build
 
 Inside the project path:
 
-##### Build back-end
+### Build backend
 
 ``` console
 $ stack build
@@ -88,7 +90,7 @@ Registering library for nitta-0.0.0.1..
 
 ```
 
-##### Build front-end
+### Build frontend
 ``` console
 $ stack exec nitta-api-gen
 
@@ -117,8 +119,7 @@ $ cd ..
 
 ```
 
-#### Build haddock:
-
+### Build haddock:
 ``` sh
 stack build --haddock
 ```
