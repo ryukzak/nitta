@@ -18,7 +18,7 @@ export const AppNavbar: React.FC<IAppNavbarProps> = (props) => {
           height="25"
           className="mr-2 d-inline-block align-center mb-1"
         ></img>
-        NITTA Web UI
+        NITTA
       </Navbar.Brand>
       <Navbar.Collapse id="navbar-nav">
         <Nav className="mr-auto">
