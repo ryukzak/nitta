@@ -39,6 +39,7 @@ import           NITTA.UIBackend
 import           Paths_nitta
 import           System.Console.CmdArgs hiding ( def )
 import           System.Exit
+import           System.FilePath.Posix ( joinPath )
 import           Text.Regex
 
 -- |Command line interface.
@@ -67,7 +68,7 @@ nittaArgs = Nitta
     , type_="fx32.32" &= help "Data type (default: 'fx32.32')"
     , io_sync=Sync &= help "IO synchronization mode: sync, async, onboard"
 
-    , port=0 &= help "Run control panel on a specific port (by default - not run)"
+    , port=0 &= help "Run nitta server for UI on specific port (by default - not run)"
 
     , n=10 &= help "Number of computation cycles for simulation and testbench"
     , fsim=False &= help "Functional simulation with trace"
@@ -97,6 +98,10 @@ main = do
             when verbose $ putStr $ "> will trace: \n" ++ unlines (map ((">  " ++) . show) frTrace)
 
             when (port > 0) $ do
+                expectedPort <- read <$> readFile (joinPath ["web", "src", "gen", "PORT"])
+                when (port /= expectedPort) $
+                  putStrLn $ "WARNING: expected backend port: " <> show expectedPort <> " (maybe you need regenerate API by nitta-api-gen)"
+
                 backendServer port received $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess -- never happen
 

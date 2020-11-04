@@ -49,7 +49,7 @@ data APIGen
     deriving ( Show, Data, Typeable )
 
 apiGenArgs = APIGen
-    { port=8080 &= help "WebUI port"
+    { port=8080 &= help "nitta server port"
     , opath="./web/src/gen" &= typ "output path"
     }
 
@@ -90,6 +90,9 @@ $(deriveTypeScript defaultOptions ''HistoryStep)
 
 main = do
     APIGen{ port, opath } <- cmdArgs apiGenArgs
+
+    putStrLn $ "Expected nitta server port: " <> show port
+    writeFile (joinPath ["web", "src", "gen", "PORT"]) $ show port
 
     putStrLn "Create output directory..."
     createDirectoryIfMissing True opath
