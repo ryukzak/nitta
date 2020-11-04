@@ -91,12 +91,12 @@ $(deriveTypeScript defaultOptions ''HistoryStep)
 main = do
     APIGen{ port, opath } <- cmdArgs apiGenArgs
 
-    putStrLn $ "Expected nitta server port: " <> show port
-    writeFile (joinPath ["web", "src", "gen", "PORT"]) $ show port
-
     putStrLn "Create output directory..."
     createDirectoryIfMissing True opath
     putStrLn "Create output directory...OK"
+
+    putStrLn $ "Expected nitta server port: " <> show port
+    writeFile (joinPath [opath, "PORT"]) $ show port
 
     putStrLn "Generate rest_api.js library..."
     prepareJSAPI port opath
