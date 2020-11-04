@@ -16,7 +16,7 @@ export function nidColumn(onUpdateNid: (nid: string) => void) {
       let nid: string[] = row.original.nid.split(nInSeparator);
       return (
         <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(row.original.nid)}>
-          {nid[nid.length - 1]}>
+          {nid[nid.length - 1]} {">"}
         </button>
       );
     }
