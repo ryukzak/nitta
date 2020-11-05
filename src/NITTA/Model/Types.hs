@@ -26,7 +26,7 @@ import           NITTA.Intermediate.Types
 import           Numeric.Interval
 
 
--- |Shortcut for variable, value and time type constrains.
+-- |Shortcut for variable ('v'), value ('x') and time ('t') type constrains.
 type VarValTime v x t = ( Var v, Val x, Time t )
 
 
@@ -34,7 +34,7 @@ type VarValTime v x t = ( Var v, Val x, Time t )
 type Time t = ( Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, Integral t )
 
 
--- |Time comstrain for processor activity.
+-- |Time constrain for processor activity.
 data TimeConstrain t
     = TimeConstrain
         { tcAvailable :: Interval t -- ^Inclusive interval, when value available to transfer.
@@ -51,20 +51,10 @@ instance ( Show t, Eq t, Bounded t ) => Show (TimeConstrain t) where
                     then show a ++ "..∞"
                     else show a ++ ".." ++ show b
 
--- | Изначально, для описания времени использовался тип Int. Время отсчитывалось с 0, было линейным
--- и совпадало с адресами памяти команд. К сожалению, это никуда не годится в случае если:
---
---     1. В вычислительном процессе присутствуют циклы и ветвления.
---     2. Вычислитель может включаться, выключаться...
---
--- По этому было принято решение добавить тег, идентифицирующий к какой ветку развития
--- вычислительного процесса относится данная точка.
---
--- TODO: Убрать Maybe из описания тега. На самом деле тег есть всегда, вопрос лишь в том какой тег по
--- умолчению и как ими оперировать. Также есть вопрос о том, как быть с арфметикой при разных тегах.
+-- |Forgoten implementation of tagged time for speculative if statement. Current - dead code.
 data TaggedTime tag t
     = TaggedTime
-    { tTag   :: Maybe tag -- ^ Идентификатор ветки вычислительного процесса.
+    { tTag   :: Maybe tag
     , tClock :: t
     }
     deriving ( Typeable, Generic )

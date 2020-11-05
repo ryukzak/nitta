@@ -31,7 +31,7 @@ import           Data.Atomics.Counter ( incrCounter )
 import           Data.CallStack
 import           Data.Default
 import           Data.List ( delete )
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Set ( difference, elems, empty, fromList, intersection, union )
 import           Debug.Trace
 import           NITTA.Intermediate.Functions ()
@@ -40,7 +40,7 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems hiding ( Bind, Refactor )
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.Project

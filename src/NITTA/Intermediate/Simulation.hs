@@ -19,7 +19,7 @@ module NITTA.Intermediate.Simulation
     ) where
 
 import           Data.List ( intersect, (\\) )
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Set ( elems )
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types

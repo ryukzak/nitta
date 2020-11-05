@@ -137,7 +137,7 @@ import           Data.Set ( elems, fromList, member )
 import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
@@ -250,7 +250,7 @@ data Multiplier v x t = Multiplier
     -- undefined value of uploading / downloading of data to / from mUnit,
     -- to then set up vertical behavior between information about executing
     -- function and this send.
-    , currentWorkEndpoints :: [ ProcessUid ]
+    , currentWorkEndpoints :: [ ProcessStepID ]
     -- |Description of target computation process
     -- ('NITTA.Model.ProcessorUnits.Time')
     , process_             :: Process v x t
@@ -326,10 +326,6 @@ instance ( VarValTime v x t
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
     -- Unificate interface for get computation process description.
     process = process_
-    -- This method is used for set up mUnit time outside.
-    -- At the time this is needed only for realisation
-    -- of branching, which is on the prototyping stage.
-    setTime t pu@Multiplier{} = pu{ tick=t }
 
 
 -- |This function carry out actual take functional block to work.
@@ -556,16 +552,6 @@ instance IOConnected (Multiplier v x t) where
   data IOPorts (Multiplier v x t) = MultiplierIO
         deriving ( Show )
 
--- |The availability of standard values, with which actual result of mUnit in simlator
--- is compared, has the main role in testing. This class carry on standard values generation.
-instance ( VarValTime v x t, Integral x
-         ) => Simulatable (Multiplier v x t) v x where
-    simulateOn cntx _ f
-        -- We define the function and delegate its calculation to default realization.
-        | Just f'@F.Multiply{} <- castF f = simulate cntx f'
-        | otherwise = error $ "Can't simulate on Multiplier: " ++ show f
-
-
 
 -- | We use functions that is realized below to generate processors and tests, that use this
 -- mUnit. These methods are called while generation of project with net, that include this
@@ -613,7 +599,7 @@ instance ( VarValTime v x t
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( { parameterAttrWidth } )
                     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
-                    , .INVALID( 0 )  // FIXME: Сделать и протестировать работу с атрибутами.
+                    , .INVALID( 0 )
                     ) { tag }
                 ( .clk( {signalClk} )
                 , .rst( {signalRst} )

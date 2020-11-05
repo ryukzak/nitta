@@ -24,7 +24,7 @@ module NITTA.Model.Problems.Whole
     , option2decision
     ) where
 
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Binding

@@ -27,7 +27,7 @@ import           Control.Monad.Identity
 import           Control.Monad.State
 import           Data.Bifunctor
 import           Data.List ( find, group, sort )
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import qualified Data.String.Utils as S
 import           Data.Text ( Text, pack, unpack )

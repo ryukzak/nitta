@@ -70,13 +70,13 @@ SPI - imp001 connection diagram
                     | o VIN                          |
                     | o                              |
                     | o Pin1                         |
-(синий)     MISO------* Pin2           imp001        |
-(жёлтый)    SCLK------* Pin5                         |
-(оранжевый) MOSI------* Pin7                         |
-(белый)       CS -----* Pin8                         |
+(blue)    MISO------* Pin2           imp001          |
+(yellow)  SCLK------* Pin5                           |
+(orange)  MOSI------* Pin7                           |
+(white)     CS -----* Pin8                           |
                     | o Dtc9                         |
                     | o 3V3   +-----+                |
-(черный)     GND -----* GND   | USB |                |
+(black)    GND -----* GND     | USB |                |
                     +---------+-----+----------------+
 ```
 # Software requirments:
@@ -235,7 +235,7 @@ function fibonacciDemo(n) {
         tmp.swap4();
         local a = tmp.readn('i');
         local b = tmp.readn('i');
-        server.log( format("> Номер: %d\tЗначение:%d", b, a) );
+        server.log( format("> Index: %d\tValue:%d", b, a) );
     }
 }
 
@@ -253,7 +253,7 @@ function teacupDemo(n) {
         tmp.swap4();
         local a = tmp.readn('i');
         local b = tmp.readn('i');
-        server.log( format("> Номер: %d\tЗначение:%d", b, a) );
+        server.log( format("> Index: %d\tValue:%d", b, a) );
     }
 }
 
@@ -278,29 +278,24 @@ It should look like this:
 2018-08-20 16:19:27 +03:00 	[Status] 	Agent restarted: reload.
 2018-08-20 16:19:28 +03:00 	[Status] 	Device connected
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 00 00 00 00 00
-2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 0	Значение: 0
+2018-08-20 16:19:28 +03:00 	[Device] 	> Index: 0	Value: 0
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 01 00 00 00 01
-2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 1	Значение: 1
+2018-08-20 16:19:28 +03:00 	[Device] 	> Index: 1	Value: 1
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 01 00 00 00 02
-2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 2	Значение: 1
+2018-08-20 16:19:28 +03:00 	[Device] 	> Index: 2	Value: 1
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 02 00 00 00 03
-2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 3	Значение: 2
+2018-08-20 16:19:28 +03:00 	[Device] 	> Index: 3	Value: 2
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 03 00 00 00 04
-2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 4	Значение: 3
+2018-08-20 16:19:28 +03:00 	[Device] 	> Index: 4	Value: 3
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 05 00 00 00 05
-2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 5	Значение: 5
+2018-08-20 16:19:28 +03:00 	[Device] 	> Index: 5	Value: 5
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 08 00 00 00 06
-2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 6	Значение: 8
+2018-08-20 16:19:28 +03:00 	[Device] 	> Index: 6	Value: 8
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 0d 00 00 00 07
-2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 7	Значение: 13
+2018-08-20 16:19:28 +03:00 	[Device] 	> Index: 7	Value: 13
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 15 00 00 00 08
-2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 8	Значение: 21
+2018-08-20 16:19:28 +03:00 	[Device] 	> Index: 8	Value: 21
 2018-08-20 16:19:28 +03:00 	[Device] 	binary: 00 00 00 22 00 00 00 09
-2018-08-20 16:19:28 +03:00 	[Device] 	> Номер: 9	Значение: 34
+2018-08-20 16:19:28 +03:00 	[Device] 	> Index: 9	Value: 34
 ```
 The work of another demos will look like simirarly.
-
-
-
-
-

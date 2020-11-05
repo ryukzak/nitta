@@ -18,7 +18,7 @@ module NITTA.Model.Problems.Refactor.Tests
     ( tests
     ) where
 
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types

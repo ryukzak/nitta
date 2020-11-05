@@ -25,14 +25,14 @@ import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Bifunctor
 import           Data.Default
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import           GHC.Generics
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project

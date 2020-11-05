@@ -1,4 +1,4 @@
-# Настройка Raspberry Pi 3
+# Raspberry Pi 3 configuration
 
 ```
 (black)      GND ----------------------+
@@ -19,26 +19,20 @@
                  +--+-----+------------------------------------+
 ```
 
-Для работы с RPi3 нам понадобиться программа [PuTTY](https://www.putty.org/) 
-для подключения по SSH.
+For SSH connection on Windows we recommended to use [PuTTY](https://www.putty.org/).
 
-1. Откройте PuTTY и в соответствующие поля добавьте:
+1. Run PuTTY and fill the following fields:
    - Host Name: 192.168.1.78
    - Port: 22
    - Connection type: SSH
-   - Нажмите Open
-2. RPi потребует логин и пароль:
+   - Click 'Open'
+2. Default login and password:
    - login: pi
    - password: raspberry
-3. Перейдите в директорию с исходниками:
-   ```>> cd NITTA/c-spi/```
-4. Выполните команду сборки и запуска программы:
-   ```>> make && make start``` 
-5. В терминале снизу справа должен будет появиться журнал передачи данных на 
-   подобие приведённого ниже.
-
-```
-pi@raspberrypi:~/NITTA/c-spi $ make && make start
+3. `> cd NITTA/c-spi/`
+4. `> make && make start`
+``` console
+$ make && make start
 gcc -o spi spi.c -l bcm2835
 sudo ./spi
 Read back from SPI: 0x00 0x00 0x00 0x00 | 00000, Number: 0x00 0x00 0x00 0x00
@@ -53,6 +47,7 @@ Read back from SPI: 0x00 0x00 0x00 0x15 | 00021, Number: 0x00 0x00 0x00 0x08
 Read back from SPI: 0x00 0x00 0x00 0x22 | 00034, Number: 0x00 0x00 0x00 0x09
 ```
 
-**ОБЯЗАТЕЛЬНО!** При завершении работы с RPi, нужно выполнить команду:
-
-```>> sudo shutdown -h now```
+**ATTENTION!** After work with RPi you need to execute:
+```console
+$ sudo shutdown -h now
+```

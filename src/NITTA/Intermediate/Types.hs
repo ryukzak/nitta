@@ -37,7 +37,7 @@ module NITTA.Intermediate.Types
 
 import           Data.Default
 import           Data.List
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import qualified Data.Set as S hiding ( split )
 import qualified Data.String.Utils as S
@@ -328,8 +328,6 @@ instance Default (Changeset v) where
 
 
 -- |Reverse changeset for patch a process unit options / decision.
-
--- TODO: move to another module
 reverseDiff Changeset{ changeI, changeO } = Changeset
     { changeI=M.fromList $ map swap $ M.assocs changeI
     , changeO=foldl (\st (k, v) -> let

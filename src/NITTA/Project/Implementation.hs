@@ -19,44 +19,35 @@ module NITTA.Project.Implementation
     , TargetSystemComponent(..)
     ) where
 
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 
 
--- |Реализация компонента системы или её фрагмента (HW или SW).
-
--- TODO: Рассмотреть возможность отказа от Empty в пользу оборачивания в Maybe.
+-- |Element of target system implementation
 data Implementation
-    -- |Непосредственно реализация компонента.
+    -- |Immediate implementation
     = Immediate { impFileName, impText :: String }
-    -- |Библиотечный элемент, приведённый в указанном файле.
+    -- |Fetch implementation from library
     | FromLibrary { impFileName :: String }
-    -- |Релизация описывается совокупностью файлов располагаемых в указанном каталоге относительно
-    -- рабочей папки.
+    -- |Aggregation of many implementation parts in separate paths
     | Aggregate { impPath :: Maybe String, subComponents :: [ Implementation ] }
-    -- |Реализация не требуется (к примеру: для многих вычислительных блоков ПО отсутствует).
+    -- |Nothing
     | Empty
 
 
--- |Type class for target components. Target - a target system project or a testbench.
+-- |Type class for target components. Target -- a target system project or a testbench.
 class TargetSystemComponent pu where
-    -- |Наименование аппаратного модуля, соответствующего вычислительному блоку.
+    -- |Name of the structural hardware module or Verilog module name (network or process unit)
     moduleName :: String -> pu -> String
 
-    -- |Программное обеспечение для вычислительного блока. Под ПО вычислительного блока понимается
-    -- настройка вычислительного блока, которая может меняться при изменении прикладного алгоритма
-    -- без повторного синтеза аппаратуры. Наличие ПО не является обязательным.
+    -- |Software and other specification which depends on application algorithm
+    -- and its changing should not require hardware synthesis process)
     software :: String -> pu -> Implementation
 
-    -- |Аппаратное обеспечение вычислительного блока. Это может быть ссылка на библиотеку,
-    -- сгенерированный файл либо их совокупность.
-    --
-    -- В связи с тем, что в проекте используется несколько целевых платформ (на момент написания это
-    -- Icarus Verilog для тестирования и Quartus для синтеза), для отдельных вычислительных блоков
-    -- может осуществляться конфигурировние.
+    -- |Hardware which depends on microarchitecture description and requires
+    -- synthesis.
     hardware :: String -> pu -> Implementation
 
-    -- |Генерация фрагмента исходного кода для создания экземпляра вычислительного блока в рамках
-    -- вычислительной платформы NITTA.
+    -- |Generate code for making an instance of the hardware module
     hardwareInstance :: String -> pu -> TargetEnvironment -> Ports pu -> IOPorts pu -> String
 
 

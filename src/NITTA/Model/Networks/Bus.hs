@@ -18,21 +18,6 @@ Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
-
-Есть следующие подходы к реализации множественных сетей:
-
-1. Сеть представляется в виде вычислительного блока жадно вычисляющая все функции привязанные к ней.
-Как следствие, она должна содержать в себе некоторый фрагмент компилятора. Наружу, в качестве опций
-выдаются исключительные внешние взаимодействиясети. Соответсвенно любая привязка функционального
-блока может сократить количество вариантов внутри сети, что требует особой обработки при принятие
-решения компилятором. Обвязка для передачи данных реализуется автоматически и рассматривается как
-встроенная часть интерфейса вычислительного блока с сетью. Все сети становятся вложенными друг
-относительно друга.
-2. Все коммуникационные сети представляются  как единое целое, разделённое на домены.
-При биндинге решаются задачи модификации прикладного алгоритма для передачи данных между доменами
-(если надо). Планирование вычислительного процесса производится в рамках отдельных доменов, а также
-относительно пересылок данных между ними, при этом время в сетях должно быть максимально выравнено.
-Любая сетевая структура становится плоской с точки зрения наблюдателя.
 -}
 module NITTA.Model.Networks.Bus
     ( busNetwork
@@ -47,7 +32,7 @@ import           Data.Bifunctor
 import           Data.Bits ( FiniteBits (..) )
 import           Data.Default
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Maybe ( fromMaybe, isJust, mapMaybe )
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
@@ -55,9 +40,8 @@ import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
--- import           NITTA.Project
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Snippets
@@ -257,11 +241,6 @@ instance ( UnitTag tag, VarValTime v x t
                     steps
                 mapM_ (\(Vertical h l) -> establishVerticalRelation (pu2netKey M.! h) (pu2netKey M.! l)) relations
 
-    setTime t net@BusNetwork{..} = net
-        { bnProcess=bnProcess{ nextTick=t }
-        , bnPus=M.map (setTime t) bnPus
-        }
-
 
 
 instance Controllable (BusNetwork tag v x t) where
@@ -290,16 +269,6 @@ instance {-# OVERLAPS #-}
             merge st PU{ unit, ports }
                 = foldl merge' st $ mapMicrocodeToPorts (microcodeAt unit t) ports
             merge' st (s, x) = st A.// [ (s, st A.! s +++ x) ]
-
-
-
-instance ( UnitTag tag ) => Simulatable (BusNetwork tag v x t) v x where
-    simulateOn cntx BusNetwork{..} fb
-        = let
-            Just (tag, _) = L.find (\(_, v) -> fb `elem` v) $ M.assocs bnBinded
-            pu = bnPus M.! tag
-        in simulateOn cntx pu fb
-
 
 
 ----------------------------------------------------------------------
