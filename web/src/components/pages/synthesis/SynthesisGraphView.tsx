@@ -47,8 +47,8 @@ export const SynthesisGraphView: React.FC = () => {
           r: 10,
           cx: 0,
           cy: 0,
-          fill: color
-        }
+          fill: color,
+        },
       };
     },
     [nIds]
@@ -72,6 +72,7 @@ export const SynthesisGraphView: React.FC = () => {
       .getSynthesisTree()
       .then((response: AxiosResponse<TreeView<SynthesisNodeView>>) => {
         let nidArray: Ids = {};
+
         let buildGraph = (gNode: Graph, dNode: TreeView<SynthesisNodeView>) => {
           let strNid: string = dNode.rootLabel.svNnid;
           gNode.name = reLastNidStep.exec(strNid)![0];
@@ -81,20 +82,30 @@ export const SynthesisGraphView: React.FC = () => {
           if (dNode.rootLabel.svIsComplete) markNode(strNid, nidArray, "lime");
           gNode.attributes = {
             dec: dNode.rootLabel.svOptionType,
-            ch: dNode.rootLabel.svDuration + " / " + dNode.rootLabel.svCharacteristic
+            ch: dNode.rootLabel.svDuration + " / " + dNode.rootLabel.svCharacteristic,
           };
           gNode.status = dNode.rootLabel.svIsComplete;
           dNode.rootLabel.svCntx.forEach((e: string, i: number) => {
             gNode.attributes![i] = e;
           });
           gNode.children = [];
-          dNode.subForest.forEach((e: any) => {
-            var tmp: Graph = {};
-            if (gNode.children != null) {
-              gNode.children.push(tmp);
-              buildGraph(tmp, e);
+          var notProcessedCount = 0;
+          dNode.subForest.forEach((e: TreeView<SynthesisNodeView>) => {
+            if (e.rootLabel.svIsEdgesProcessed) {
+              var tmp: Graph = {};
+              if (gNode.children != null) {
+                gNode.children.push(tmp);
+                buildGraph(tmp, e);
+              }
+            } else {
+              notProcessedCount++;
             }
           });
+          if (notProcessedCount > 0) {
+            var tmp: Graph = {};
+            tmp.name = "..." + notProcessedCount;
+            gNode.children.push(tmp);
+          }
           return gNode;
         };
 
@@ -133,7 +144,7 @@ export const SynthesisGraphView: React.FC = () => {
     dataGraph,
     markNode,
     nIds,
-    unmarkNode
+    unmarkNode,
   ]);
 
   if (!dataGraph === null || dataGraph.length === 0) {
@@ -160,20 +171,20 @@ export const SynthesisGraphView: React.FC = () => {
             r: 10,
             cx: 0,
             cy: 0,
-            fill: "white"
-          }
+            fill: "white",
+          },
         }}
         styles={{
           nodes: {
             node: {
               name: { fontSize: "12px" },
-              attributes: { fontSize: "10px" }
+              attributes: { fontSize: "10px" },
             },
             leafNode: {
               name: { fontSize: "12px" },
-              attributes: { fontSize: "10px" }
-            }
-          }
+              attributes: { fontSize: "10px" },
+            },
+          },
         }}
         onClick={(node: any) => {
           appContext.selectNode(node.nid);
