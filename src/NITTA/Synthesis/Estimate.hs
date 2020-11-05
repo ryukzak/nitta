@@ -282,7 +282,7 @@ objectiveFunction
         RefactorEdgeParameter{ pRefactorType=ResolveDeadlock{}, pNumberOfLockedVariables, pBufferCount, pNumberOfTransferableVariables }
             -> 1000 + pNumberOfLockedVariables - pBufferCount * 1000
                 - 20 * pNumberOfTransferableVariables
-        RefactorEdgeParameter{ pRefactorType=AlgSub{} }
+        RefactorEdgeParameter{ pRefactorType=OptimizeAccum{} }
             -> 3000 -- TODO: random value. Have to test.
         -- _ -> -1
 

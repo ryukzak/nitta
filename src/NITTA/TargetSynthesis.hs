@@ -206,7 +206,7 @@ runTargetSynthesis TargetSynthesis
 -- functions are already bound to the network.
 mkModelWithOneNetwork arch dfg = ModelState
     { mUnit=foldl (flip bind) arch $ functions $ simpleRefactor dfg
-    , mDataFlowGraph= simpleRefactor dfg
+    , mDataFlowGraph=simpleRefactor dfg
     }
 
 simpleRefactor dfg  =

@@ -28,7 +28,7 @@ import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
-import           NITTA.Model.Problems.RefactorSum
+import           NITTA.Model.Problems.Refactor.Accum
 import           NITTA.Model.ProcessorUnits.Time
 import           NITTA.Model.Types
 import           NITTA.Utils
@@ -75,7 +75,7 @@ instance ( UnitTag tag, VarValTime v x t, Num x
             , mUnit=refactorDecision mUnit bl
             }
 
-    refactorDecision (ModelState _ _) (AlgSub _ _) = error "not implemented"
+    refactorDecision (ModelState _ _) (OptimizeAccum _ _) = undefined
 
 
 instance Eq ( DataFlowGraph v x) where
@@ -103,7 +103,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 instance ( Var v, Val x, Num x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions dfg = refactorFS dfg
+    refactorOptions dfg = optimizeAccum dfg
 
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
@@ -116,10 +116,10 @@ instance ( Var v, Val x, Num x
             : DFLeaf (recLoopOut bl){ funHistory=[origin] }
             : ( leafs L.\\ [ DFLeaf origin ] )
 
-    refactorDecision dfg (AlgSub oldFs refFs) = fsToDataFlowGraph refactoredFs
+    refactorDecision dfg (OptimizeAccum refOld refNew) = fsToDataFlowGraph refactoredFs
         where
-            refactoredFs = filtered ++ refFs
-            filtered = filter (\f -> f `notElem` oldFs) fs
+            refactoredFs = filtered ++ refNew
+            filtered = filter (\f -> f `notElem` refOld) fs
             fs = dataFlowGraphToFs dfg
 
     refactorDecision _ _ = error "DataFlowGraph "

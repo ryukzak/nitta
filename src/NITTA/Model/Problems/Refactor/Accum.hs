@@ -1,27 +1,29 @@
 {-# LANGUAGE LambdaCase #-}
 
+{-|
+Module      : NITTA.Model.Problems.Refactor
+Description : Refactor accum
+Copyright   : (c) Daniil Prohorov, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
 
-module NITTA.Model.Problems.RefactorSum (refactorFS) where
+implementation of refactor, that takes acc funcs and return its connection, if it can be connected
+-}
+module NITTA.Model.Problems.Refactor.Accum (optimizeAccum) where
 
 import qualified Data.Map as M
 import           Data.Maybe
 import qualified Data.Set as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems hiding ( fs )
+import           NITTA.Model.Problems
 import           NITTA.Model.Types
 
-deleteFromPull v (Pull (O s))
-    | deleted == S.empty = Nothing
-    | otherwise          = Just $ Pull $ O $ deleted
-        where
-            deleted = S.delete v s
+-- |Function takes algorithm in DataflowGraph type and return [Refactors] that can be done
+optimizeAccum dfg = refactorContainers $ filterContainers $ createContainers $ dataFlowGraphToFs dfg
 
-deleteFromPull _ (Push _ _) = error "delete only Pull"
-
-refactorFS dfg = refactorContainers $ filterContainers $ createContainers $ dataFlowGraphToFs dfg
-
-toAlgSub lst = map (uncurry AlgSub) $ filterSameListsTuple lst
+toOptimizeAccum lst = map (uncurry OptimizeAccum) $ filterSameListsTuple lst
 
 filterSameListsTuple lst = filter (uncurry conditionSameLists) lst
 
@@ -29,11 +31,11 @@ conditionSameLists lst1 lst2
     | S.fromList lst1 == S.fromList lst2 = False
     | otherwise   = True
 
-refactorContainers containers = toAlgSub $ zip containers refContainers
+refactorContainers containers = toOptimizeAccum $ zip containers refContainers
     where
         refContainers = map refactorContainer containers
 
-filterContainers fs = filter (\case [_] -> False; _ -> True) fs
+filterContainers fs = filter ((> 1) . length) fs
 
 createContainers fs
     | length filtered == 1 = containered
@@ -119,3 +121,11 @@ refactorFunction f' f
             in
                 newFS
     | otherwise = [f, f']
+
+deleteFromPull v (Pull (O s))
+    | deleted == S.empty = Nothing
+    | otherwise          = Just $ Pull $ O $ deleted
+        where
+            deleted = S.delete v s
+
+deleteFromPull _ (Push _ _) = error "delete only Pull"

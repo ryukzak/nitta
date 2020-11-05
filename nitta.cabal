@@ -65,7 +65,7 @@ library
       NITTA.Model.Problems.Dataflow
       NITTA.Model.Problems.Endpoint
       NITTA.Model.Problems.Refactor
-      NITTA.Model.Problems.RefactorSum
+      NITTA.Model.Problems.Refactor.Accum
       NITTA.Model.Problems.Whole
       NITTA.Model.ProcessorUnits
       NITTA.Model.ProcessorUnits.Divider

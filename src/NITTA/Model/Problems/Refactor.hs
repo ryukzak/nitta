@@ -8,7 +8,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-
 {-|
 Module      : NITTA.Model.Problems.Refactor
 Description : Automatic manipulation over an intermediate representation
@@ -80,9 +79,9 @@ data Refactor v x
         , loopO :: S.Set v -- ^output variables
         , loopI :: v       -- ^input variable
         }
-    | AlgSub
-        { fs :: [F v x]
-        , refFs :: [F v x]
+    | OptimizeAccum
+        { refOld :: [F v x]
+        , refNew :: [F v x]
         }
       -- ^AlgSub example:
       --
@@ -93,6 +92,7 @@ data Refactor v x
       -- > [+a +tmp_1 => d; +b +c => tmp_1]
       --
       -- after:
+      --
       -- > [+a +b +c => d]
 
     deriving ( Generic, Show, Eq )

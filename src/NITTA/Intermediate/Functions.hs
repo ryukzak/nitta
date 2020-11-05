@@ -165,7 +165,7 @@ instance ( Var v ) => FunctionSimulation (LoopOut v x) v x where
     simulate cntx (LoopOut l _) = simulate cntx l
 
 
-data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq, Show  )
+data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq, Show )
 instance ( Show v ) => Label (LoopIn v x) where
     label (LoopIn (Loop _ (O vs) _) (I v)) = "-> " ++ show v ++ " (" ++ show (oneOf vs) ++ ")"
 instance ( Ord v ) => Function (LoopIn v x) v where
@@ -198,7 +198,7 @@ instance ( Var v ) => FunctionSimulation (Reg v x) v x where
         setZipX cntx vs x
 
 
-data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq)
+data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Add v x) where label Add{} = "+"
 instance ( Show v ) => Show (Add v x) where
     show (Add (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " + " ++ show k2
