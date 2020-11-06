@@ -34,7 +34,7 @@ Project chat (telegram):  <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
 
 Project CI chat (telegram): <https://t.me/nitta_ci>
 
-### Papers
+### Publication
 
 Papers about the project you can find here (English and Russian): <https://nitta.io/nitta-corp/docs>.
 
@@ -70,7 +70,7 @@ $ sudo apt-get install gtkwave
 
 # Frontend tools
 $ sudo apt-get install npm
-$ npm install --global tern prettier
+$ npm install --global tern prettier yarn
 ```
 
 ## Build
@@ -93,30 +93,25 @@ Registering library for nitta-0.0.0.1..
 ### Build frontend
 ``` console
 $ stack exec nitta-api-gen
-
+Expected nitta server port: 8080
 Create output directory...
 Create output directory...OK
 Generate rest_api.js library...
 Generate rest_api.js library...OK
 Generate typescript interface...
 Generate typescript interface...OK
-
-$ cd web
-
-$ npm ci
-
- ...
- 
- added 2070 packages in 168.926s
-
-$ npm run-script build
- 
- ...
-
- Compiled successfully.
-
-$ cd ..
-
+$ yarn --cwd web install
+yarn install v1.22.10
+[1/4] 🔍  Resolving packages...
+success Already up-to-date.
+✨  Done in 0.61s.
+$ yarn --cwd web run build
+yarn run v1.22.10
+$ react-scripts --max_old_space_size=4096 build
+Creating an optimized production build...
+Compiled successfully.
+...
+✨  Done in 63.36s.
 ```
 
 ### Build haddock:
@@ -139,8 +134,8 @@ Common flags:
   -t     --type=ITEM                  Data type (default: 'fx32.32')
   -i     --io-sync=IOSYNCHRONIZATION  IO synchronization mode: sync, async,
                                       onboard
-  -p     --port=INT                   Run control panel on a specific port
-                                      (by default - not run)
+  -p     --port=INT                   Run nitta server for UI on specific
+                                      port (by default - not run)
   -n=INT                              Number of computation cycles for
                                       simulation and testbench
   -f     --fsim                       Functional simulation with trace
@@ -148,6 +143,7 @@ Common flags:
   -v     --verbose                    Verbose
   -?     --help                       Display help message
   -V     --version                    Print version information
+         --numeric-version            Print just the version number
 ```
 
 #### Logical simulation for a specific algorithm:
@@ -182,9 +178,9 @@ run logical synthesis...
 run logical simulation...ok
 ```
 
-#### Run control panel:
+#### Run with user interface:
 ``` console
-$ stack exec nitta -- examples/teacup.lua -p=8080 
+$ stack exec nitta -- examples/teacup.lua -p=8080
 Running NITTA server at http://localhost:8080 
 ...
 ```
@@ -209,13 +205,12 @@ Building test suite 'nitta-test' for nitta-0.0.0.1..
 
 ...
 
-    concatLinesWithSpaceWithoutBeforeLine:                       OK
   NITTA.Utils.Tests
     values2dump:                                                 OK
     endpoint role equality:                                      OK
 
-All 127 tests passed (7.28s)
+All 138 tests passed (8.81s)
 
-nitta> Test suite nitta-test passed
-Completed 2 action(s).
+nitta               > Test suite nitta-test passed
+Completed 22 action(s).
 ```

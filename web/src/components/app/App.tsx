@@ -8,7 +8,6 @@ import { TestBenchPage } from "../pages/testBench/TestBenchPage";
 
 import { IAppContext, AppContextProvider, NodeId, nInSeparator } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
-import { AppFooter } from "./AppFooter";
 import { ProcessView } from "../pages/process/ProcessView";
 import { SynthesisGraphContainer } from "../pages/synthesis/SynthesisGraphContainer";
 import { DebugView } from "../pages/debug/DebugView";
@@ -33,7 +32,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
 
       reloadSelectedNode: () => {
         this.setState({ selectedNodeId: nInSeparator });
-      }
+      },
     };
   }
 
@@ -68,8 +67,6 @@ export default class App extends React.Component<IAppProps, IAppState> {
             <Route component={NotFoundErrorPage} />
           </Switch>
         </div>
-
-        <AppFooter />
       </AppContextProvider>
     );
   }
