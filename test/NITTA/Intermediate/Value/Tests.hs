@@ -102,7 +102,12 @@ prop_fx_mul_commutative = commutative ((*) @(FX 4 8))
 
 prop_fx_fromInteger_1_muliplicative_identity = forAllValid (\(x :: FX 4 8) -> x * fromInteger 1 == x)
 
-prop_distributivity = forAllValid $ num_distributivity (Proxy :: Proxy (FX 4 4)) (Proxy :: Proxy (FX 8 8))
+-- |prop_fx_distributivity, corner case:
+--
+-- - `7 * (7 + 7) -> 98` require 8 bits for result
+--
+-- - `-8 * (-8 + -8) -> 128` require 9 bits for result
+prop_fx_distributivity = forAllValid $ num_distributivity (Proxy :: Proxy (FX 4 4)) (Proxy :: Proxy (FX 9 9))
 
 num_distributivity ::
     ( KnownNat m1, KnownNat b1, KnownNat m2, KnownNat b2
