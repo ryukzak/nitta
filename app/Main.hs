@@ -18,6 +18,7 @@ Stability   : experimental
 -}
 module Main ( main ) where
 
+import           Control.Exception
 import           Control.Monad ( when )
 import           Data.Default ( def )
 import           Data.Maybe
@@ -39,6 +40,8 @@ import           NITTA.UIBackend
 import           Paths_nitta
 import           System.Console.CmdArgs hiding ( def )
 import           System.Exit
+import           System.FilePath.Posix ( joinPath )
+import           Text.Read
 import           Text.Regex
 
 -- |Command line interface.
@@ -67,7 +70,7 @@ nittaArgs = Nitta
     , type_="fx32.32" &= help "Data type (default: 'fx32.32')"
     , io_sync=Sync &= help "IO synchronization mode: sync, async, onboard"
 
-    , port=0 &= help "Run control panel on a specific port (by default - not run)"
+    , port=0 &= help "Run nitta server for UI on specific port (by default - not run)"
 
     , n=10 &= help "Number of computation cycles for simulation and testbench"
     , fsim=False &= help "Functional simulation with trace"
@@ -97,8 +100,17 @@ main = do
             when verbose $ putStr $ "> will trace: \n" ++ unlines (map ((">  " ++) . show) frTrace)
 
             when (port > 0) $ do
+                buf <- try $ readFile $ joinPath ["web", "src", "gen", "PORT"]
+                let expect = case buf of
+                        Right p             -> readMaybe p
+                        Left (_ :: IOError) -> Nothing
+                when (expect /= Just port) $
+                    putStrLn $ concat
+                        [ "WARNING: expected backend port: ", show expect, " actual: ", show port
+                        , " (maybe you need regenerate API by nitta-api-gen)"
+                        ]
                 backendServer port received $ mkModelWithOneNetwork ma frDataFlow
-                exitSuccess -- never happen
+                exitSuccess
 
             when fsim $ functionalSimulation verbose n received src
 
