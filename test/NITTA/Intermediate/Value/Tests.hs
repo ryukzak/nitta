@@ -195,8 +195,9 @@ repack a _ = let
     in FX ( rawFX a `shiftL` offset)
 
 case_fx_repack = do
-    ( read "0.5" :: FX 2 4 ) @?= repack ( read "0.5" :: FX 3 4 ) (Proxy :: Proxy (FX 2 4))
-    ( read "0.5" :: FX 3 4 ) @?= repack ( read "0.5" :: FX 2 4 ) (Proxy :: Proxy (FX 3 4))
+    ( read "0.5" :: FX 2 4 ) @?= repack ( read "0.5" :: FX 3 4 ) Proxy
+    ( read "0.5" :: FX 3 4 ) @?= repack ( read "0.5" :: FX 2 4 ) Proxy
+    ( read "-8"  :: FX 8 8 ) @?= repack ( read "-8"  :: FX 4 4 ) Proxy
 
 
 tests :: TestTree
