@@ -16,8 +16,8 @@ steps:
     image: nitta-build:latest
     pull: if-not-exists
     commands:
-      - npm --prefix=web ci
-      - npm --prefix=web run build
+      - yarn --cwd web install
+      - yarn --cwd web run build
 
   - name: hardware smoke tests
     image: nitta-build:latest

@@ -37,7 +37,7 @@ import qualified Data.String.Utils as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
@@ -97,7 +97,7 @@ data Cell v x t = Cell
 data Job v x t = Job
         { function         :: F v x
         , startAt          :: Maybe t
-        , binds, endpoints :: [ ProcessUid ]
+        , binds, endpoints :: [ ProcessStepID ]
         }
     deriving ( Show, Eq )
 
@@ -237,7 +237,6 @@ instance ( VarValTime v x t
         | otherwise = Left $ "unsupport or cells over: " ++ show f
 
     process Fram{ process_ } = process_
-    setTime t fram@Fram{ process_ } = fram{ process_=process_{ nextTick=t } }
 
 
 instance ( Var v ) => Locks (Fram v x t) v where
@@ -489,15 +488,6 @@ instance Default (Microcode (Fram v x t)) where
 instance UnambiguouslyDecode (Fram v x t) where
     decodeInstruction (ReadCell addr)  = Microcode True False $ Just addr
     decodeInstruction (WriteCell addr) = Microcode False True $ Just addr
-
-
-instance ( VarValTime v x t
-         ) => Simulatable (Fram v x t) v x where
-    simulateOn cntx _fram f
-        | Just f'@Constant{} <- castF f = simulate cntx f'
-        | Just f'@Loop{} <- castF f = simulate cntx f'
-        | Just f'@Reg{} <- castF f = simulate cntx f'
-        | otherwise = error $ "Can't simulate " ++ show f ++ " on Fram."
 
 
 instance ( VarValTime v x t ) => Testable (Fram v x t) v x where

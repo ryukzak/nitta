@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Button } from "react-bootstrap";
+import { DropdownButton, Dropdown } from "react-bootstrap";
 import { haskellApiService as api } from "../../services/HaskellApiService";
 import { AppContext, IAppContext } from "./AppContext";
 import { requestNidBy } from "../../utils/componentUtils";
@@ -7,7 +7,7 @@ import { requestNidBy } from "../../utils/componentUtils";
 import "./AppNavbar.scss";
 
 export const AppNavbarButtons: React.FC = () => {
-  const appContext = React.useContext(AppContext) as IAppContext;
+  const ctx = React.useContext(AppContext) as IAppContext;
 
   const btnAttrs = {
     className: "mr-1 btn-sm btn-secondary appNavbarButton"
@@ -16,32 +16,36 @@ export const AppNavbarButtons: React.FC = () => {
   return (
     <div className="d-flex">
       <div className="mr-3">
-        <Button {...btnAttrs} onClick={requestNidBy(appContext, api.stateOfTheArtSynthesis, appContext.selectedNodeId)}>
-          state-of-the-art
-        </Button>
-        <Button {...btnAttrs} onClick={requestNidBy(appContext, api.simpleSynthesis, appContext.selectedNodeId)}>
-          simple
-        </Button>
-        <Button {...btnAttrs} onClick={requestNidBy(appContext, api.smartBindSynthesisIO, appContext.selectedNodeId)}>
-          with-smart-bind
-        </Button>
-        <Button {...btnAttrs} onClick={requestNidBy(appContext, api.allBindsAndRefsIO, appContext.selectedNodeId)}>
-          bind-and-refactors
-        </Button>
+        <DropdownButton id="dropdown-basic-button" title="Synthesis methods" size="sm">
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.stateOfTheArtSynthesis, ctx.selectedNodeId)}>
+            state-of-the-art
+          </Dropdown.Item>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.simpleSynthesis, ctx.selectedNodeId)}>
+            simple
+          </Dropdown.Item>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.smartBindSynthesisIO, ctx.selectedNodeId)}>
+            with-smart-bind
+          </Dropdown.Item>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBindsAndRefsIO, ctx.selectedNodeId)}>
+            bind-and-refactors
+          </Dropdown.Item>
+        </DropdownButton>
       </div>
-      <div>
-        <Button {...btnAttrs} onClick={requestNidBy(appContext, api.allBestThread, appContext.selectedNodeId, 2)}>
-          ∀-best-thread-2
-        </Button>
-        <Button {...btnAttrs} onClick={requestNidBy(appContext, api.allBestThread, appContext.selectedNodeId, 1)}>
-          ∀-best-thread-1
-        </Button>
-        <Button {...btnAttrs} onClick={requestNidBy(appContext, api.allBestThread, appContext.selectedNodeId, 0)}>
-          best-thread
-        </Button>
-        <Button {...btnAttrs} onClick={requestNidBy(appContext, api.obviousBindThread, appContext.selectedNodeId)}>
-          obvious-bind-thread
-        </Button>
+      <div className="mr-3">
+        <DropdownButton id="dropdown-basic-button" title="Synthesis step" size="sm">
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBestThread, ctx.selectedNodeId, 2)}>
+            ∀-best-thread-2
+          </Dropdown.Item>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBestThread, ctx.selectedNodeId, 1)}>
+            ∀-best-thread-1
+          </Dropdown.Item>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBestThread, ctx.selectedNodeId, 0)}>
+            best-thread
+          </Dropdown.Item>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.obviousBindThread, ctx.selectedNodeId)}>
+            obvious-bind-thread
+          </Dropdown.Item>
+        </DropdownButton>
       </div>
     </div>
   );

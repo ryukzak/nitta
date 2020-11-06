@@ -47,7 +47,7 @@ import           Data.Maybe ( isJust, mapMaybe )
 import qualified Data.String.Utils as S
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems.Endpoint
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Utils.Base
 import           NITTA.Utils.CodeFormat
 import           Numeric ( readInt, showHex )

@@ -8,17 +8,17 @@ import { AppNavbarButtons } from "./AppNavbarButtons";
 
 export interface IAppNavbarProps {}
 
-export const AppNavbar: React.FC<IAppNavbarProps> = props => {
+export const AppNavbar: React.FC<IAppNavbarProps> = (props) => {
   return (
     <Navbar bg="dark" variant="dark" expand="md" className="appNavbar">
       <Navbar.Brand className="mr-md-5 " as={Link} to="/">
         <img
           alt="Project Logo"
           src="/logo_white.png"
-          height="35"
+          height="25"
           className="mr-2 d-inline-block align-center mb-1"
         ></img>
-        NITTA Web UI
+        NITTA
       </Navbar.Brand>
       <Navbar.Collapse id="navbar-nav">
         <Nav className="mr-auto">
@@ -43,7 +43,7 @@ export const AppNavbar: React.FC<IAppNavbarProps> = props => {
       </Navbar.Collapse>
       {/* <Navbar.Text className="mr-5 text-white">
               Selected Node ID: {appContext.selectedNodeId || "None"}
-            </Navbar.Text> */}
+              </Navbar.Text> */}
       <Navbar.Toggle aria-controls="navbar-nav" />
     </Navbar>
   );

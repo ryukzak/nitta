@@ -11,7 +11,7 @@
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Divider
-Description :
+Description : Integral divider processor unit with pipeline
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -33,7 +33,7 @@ import qualified Data.Set as S
 import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
@@ -182,7 +182,6 @@ instance ( VarValTime v x t
             }
         | otherwise = Left $ "Unknown functional block: " ++ show f
     process = process_
-    setTime t pu@Divider{ process_ } = pu{ process_=process_{ nextTick=t } }
 
 
 instance ( Var v ) => Locks (Divider v x t) v where
@@ -245,8 +244,6 @@ instance ( VarValTime v x t
                 else i{ inputSeq=vs } : other
             , process_=execSchedule pu $ do
                 _endpoints <- scheduleEndpoint d $ scheduleInstruction epAt $ Load tag
-                -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
-                -- которые берут информацию о времени из Process
                 updateTick (sup epAt)
             }
 
@@ -267,20 +264,10 @@ instance ( VarValTime v x t
             , process_=execSchedule pu $ do
                 _endpoints <- scheduleEndpoint d $ scheduleInstruction epAt $ Out tag
                 when (null vss') $ void $ scheduleFunction (startAt ... sup epAt) function
-                -- костыль, необходимый для корректной работы автоматически сгенерированных тестов,
-                -- которые берут информацию о времени из Process
                 updateTick (sup epAt)
             }
 
     endpointDecision _ _ = error "divider decision internal error"
-
-
-
-instance ( VarValTime v x t, Integral x
-        ) => Simulatable (Divider v x t) v x where
-    simulateOn cntx _ f
-        | Just f'@F.Division{} <- castF f = simulate cntx f'
-        | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
 
 
 
@@ -359,7 +346,7 @@ instance ( Val x, Show t
             pu_div #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( { parameterAttrWidth } )
-                    , .INVALID( 0 ) // FIXME: Сделать и протестировать работу с атрибутами
+                    , .INVALID( 0 )
                     , .PIPELINE( { pipeline } )
                     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
                     , .MOCK_DIV( { bool2verilog mock } )

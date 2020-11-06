@@ -18,7 +18,7 @@ module NITTA.Intermediate.Simulation.Tests
 import           Data.CallStack
 import           Data.Default
 import           Data.List ( permutations )
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Simulation

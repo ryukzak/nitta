@@ -32,7 +32,7 @@ module NITTA.Model.Problems.Refactor
     ) where
 
 import           Data.Default
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import           GHC.Generics
 import           NITTA.Intermediate.Functions

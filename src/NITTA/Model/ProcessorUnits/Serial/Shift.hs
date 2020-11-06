@@ -30,7 +30,7 @@ import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Serial.Generic
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
@@ -63,10 +63,10 @@ instance ( VarValTime v x t ) => SerialPUState (State v x t) v x t where
     | otherwise = Left $ "The functional block is unsupported by Shift: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Shift)"
 
-  -- тихая ругань по поводу решения
+  -- very bad solution
   stateOptions State{ sIn=Just v } now
     = [ EndpointSt (Target v) (TimeConstrain (now ... maxBound) (singleton 2)) ]
-  stateOptions State{ sOut=vs@(_:_) } now -- вывод
+  stateOptions State{ sOut=vs@(_:_) } now -- output
     = [ EndpointSt (Source $ fromList vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
   stateOptions _ _ = []
 
@@ -119,7 +119,7 @@ instance Controllable (Shift v x t) where
         = [work, direction, mode, step, init, oe]
 
     signalsToPorts (work:direction:mode:step:init:oe:_) _ = ShiftPorts work direction mode step init oe
-    signalsToPorts _                                       _ = error "pattern match error in signalsToPorts ShiftPorts"
+    signalsToPorts _                                    _ = error "pattern match error in signalsToPorts ShiftPorts"
 
 instance Default (Microcode (Shift v x t)) where
   def = Microcode{ workSignal=False
@@ -147,11 +147,6 @@ instance Connected (Shift v x t) where
 
 instance IOConnected (Shift v x t) where
   data IOPorts (Shift v x t) = ShiftIO
-
-instance ( VarValTime v x t ) => Simulatable (Shift v x t) v x where
-  simulateOn cntx _ f
-    | Just (f' :: ShiftLR v x) <- castF f = simulate cntx f'
-    | otherwise = error $ "Can't simulate " ++ show f ++ " on Shift."
 
 
 instance ( Val x ) => TargetSystemComponent (Shift v x t) where

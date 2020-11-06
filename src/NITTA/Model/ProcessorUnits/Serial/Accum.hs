@@ -32,7 +32,7 @@ import           Data.Set ( elems, fromList, member )
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
@@ -64,7 +64,7 @@ data Accum v x t = Accum
           -- |Current job
         , currentWork          :: Maybe ( t, Job v x )
           -- |Current endpoints
-        , currentWorkEndpoints :: [ ProcessUid ]
+        , currentWorkEndpoints :: [ ProcessStepID ]
           -- |Process
         , process_             :: Process v x t
           -- |Flag is indicated when new job starts
@@ -143,8 +143,6 @@ instance ( VarValTime v x t, Num x ) => ProcessorUnit (Accum v x t) v x t where
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 
     process = process_
-
-    setTime t pu@Accum{} = pu{ process_ = (process_ pu) { nextTick = t } }
 
 
 instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
@@ -257,14 +255,6 @@ instance UnambiguouslyDecode (Accum v x t) where
     decodeInstruction (Init neg) = def{ resetAccSignal=True, loadSignal=True, negSignal=Just neg }
     decodeInstruction (Load neg) = def{ resetAccSignal=False, loadSignal=True, negSignal=Just neg }
     decodeInstruction Out        = def{ oeSignal=True }
-
-
-instance (VarValTime v x t, Num x) => Simulatable (Accum v x t) v x where
-  simulateOn cntx _ f
-    | Just f'@Add{} <- castF f = simulate cntx f'
-    | Just f'@Sub{} <- castF f = simulate cntx f'
-    | Just f'@Acc{} <- castF f = simulate cntx f'
-    | otherwise = error $ "Can't simulate " ++ show f ++ " on Accum."
 
 
 instance ( Var v ) => Locks (Accum v x t) v where

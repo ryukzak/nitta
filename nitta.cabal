@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 628a7d1d049175b2a6c8f7e5b9f4b2b9095670b150fee7ecf4b81bd2f762884e
+-- hash: 3e49fb460047952d5f469b53e99255784d5c428ca3cee89254a7bc09afd7efac
 
 name:           nitta
 version:        0.0.0.1
@@ -77,7 +77,7 @@ library
       NITTA.Model.ProcessorUnits.Serial.Accum
       NITTA.Model.ProcessorUnits.Serial.Generic
       NITTA.Model.ProcessorUnits.Serial.Shift
-      NITTA.Model.ProcessorUnits.Time
+      NITTA.Model.ProcessorUnits.Types
       NITTA.Model.TargetSystem
       NITTA.Model.Types
       NITTA.Project

@@ -34,48 +34,50 @@ Project chat (telegram):  <https://t.me/joinchat/BC5sV1GY7ADnCuOsKP-bJw>
 
 Project CI chat (telegram): <https://t.me/nitta_ci>
 
-### Papers
+### Publication
 
 Papers about the project you can find here (English and Russian): <https://nitta.io/nitta-corp/docs>.
 
+## Install development dependency
 
-## Preparing
+### Mac OS X
+``` console
+# The Haskell Tool Stack
+$ brew install stack
+$ stack install hlint stylish-haskell
+$ echo PATH should contain $HOME/.local/bin
 
-### Install dependency
+# Verilog tools
+$ brew install icarus-verilog
+$ brew tap homebrew/cask
+$ brew cask install gtkwave
 
-#### Stack (build tool for Haskell)
-##### Ubuntu
-```sh
-sudo apt-get install haskell-stack
-stack upgrade --binary-only
+# Frontend tools
+$ brew install npm
+$ npm install --global tern prettier
 ```
 
-Check: `PATH` should contain `$HOME/.local/bin`.
+### Ubuntu
+``` console
+# The Haskell Tool Stack
+$ sudo apt-get install haskell-stack
+$ stack install hlint stylish-haskell
+$ echo PATH should contain $HOME/.local/bin
 
-#### Icarus Verilog (Verilog simulation)
-##### Ubuntu
-```sh
-sudo apt-get install iverilog
+# Verilog tools
+$ sudo apt-get install iverilog
+$ sudo apt-get install gtkwave
+
+# Frontend tools
+$ sudo apt-get install npm
+$ npm install --global tern prettier yarn
 ```
 
-#### GTKWave (wave viewer Verilog VCD/EVCD)
-##### Ubuntu
-```sh
-sudo apt-get install gtkwave
-```
-
-#### npm (Node Package Manager)
-##### Ubuntu
-```sh
-sudo apt-get install npm
-```
-
-
-### Build project
+## Build
 
 Inside the project path:
 
-##### Build back-end
+### Build backend
 
 ``` console
 $ stack build
@@ -88,37 +90,31 @@ Registering library for nitta-0.0.0.1..
 
 ```
 
-##### Build front-end
+### Build frontend
 ``` console
 $ stack exec nitta-api-gen
-
+Expected nitta server port: 8080
 Create output directory...
 Create output directory...OK
 Generate rest_api.js library...
 Generate rest_api.js library...OK
 Generate typescript interface...
 Generate typescript interface...OK
-
-$ cd web
-
-$ npm ci
-
- ...
- 
- added 2070 packages in 168.926s
-
-$ npm run-script build
- 
- ...
-
- Compiled successfully.
-
-$ cd ..
-
+$ yarn --cwd web install
+yarn install v1.22.10
+[1/4] 🔍  Resolving packages...
+success Already up-to-date.
+✨  Done in 0.61s.
+$ yarn --cwd web run build
+yarn run v1.22.10
+$ react-scripts --max_old_space_size=4096 build
+Creating an optimized production build...
+Compiled successfully.
+...
+✨  Done in 63.36s.
 ```
 
-#### Build haddock:
-
+### Build haddock:
 ``` sh
 stack build --haddock
 ```
@@ -138,8 +134,8 @@ Common flags:
   -t     --type=ITEM                  Data type (default: 'fx32.32')
   -i     --io-sync=IOSYNCHRONIZATION  IO synchronization mode: sync, async,
                                       onboard
-  -p     --port=INT                   Run control panel on a specific port
-                                      (by default - not run)
+  -p     --port=INT                   Run nitta server for UI on specific
+                                      port (by default - not run)
   -n=INT                              Number of computation cycles for
                                       simulation and testbench
   -f     --fsim                       Functional simulation with trace
@@ -147,6 +143,7 @@ Common flags:
   -v     --verbose                    Verbose
   -?     --help                       Display help message
   -V     --version                    Print version information
+         --numeric-version            Print just the version number
 ```
 
 #### Logical simulation for a specific algorithm:
@@ -181,9 +178,9 @@ run logical synthesis...
 run logical simulation...ok
 ```
 
-#### Run control panel:
+#### Run with user interface:
 ``` console
-$ stack exec nitta -- examples/teacup.lua -p=8080 
+$ stack exec nitta -- examples/teacup.lua -p=8080
 Running NITTA server at http://localhost:8080 
 ...
 ```
@@ -208,13 +205,12 @@ Building test suite 'nitta-test' for nitta-0.0.0.1..
 
 ...
 
-    concatLinesWithSpaceWithoutBeforeLine:                       OK
   NITTA.Utils.Tests
     values2dump:                                                 OK
     endpoint role equality:                                      OK
 
-All 127 tests passed (7.28s)
+All 138 tests passed (8.81s)
 
-nitta> Test suite nitta-test passed
-Completed 2 action(s).
+nitta               > Test suite nitta-test passed
+Completed 22 action(s).
 ```

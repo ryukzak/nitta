@@ -20,7 +20,7 @@ module NITTA.Model.Problems.Dataflow
     ) where
 
 import           Control.Arrow ( second )
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           GHC.Generics
 import           NITTA.Intermediate.Variable

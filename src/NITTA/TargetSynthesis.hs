@@ -85,7 +85,7 @@ import           NITTA.Intermediate.Types
 import           NITTA.LuaFrontend
 import           NITTA.Model.Networks.Bus ( BusNetwork )
 import           NITTA.Model.Problems.Refactor
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project
@@ -211,7 +211,7 @@ mkModelWithOneNetwork arch dfg = ModelState
 
 simpleRefactor dfg  =
     case refactorOptions dfg of
-        []     -> dfg
+        []    -> dfg
         (r:_) -> simpleRefactor $ refactorDecision dfg r
 
 

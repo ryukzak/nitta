@@ -25,12 +25,13 @@ import           System.Directory
 import           System.FilePath.Posix ( joinPath, pathSeparator )
 
 
--- |Записать реализацию на диск. Данные размещаются в указанном рабочем каталоге.
+-- |Write 'Implementation' to the file system.
 --
--- Ключ $path$ используется для корректной адресации между вложенными файлами. К примеру, в папке
--- DIR лежит два файла f1 и f2, и при этом f1 импортирует в себя f2. Для этого, зачастую, необходимо
--- указать его адресс относительно рабочего каталога, что осуществляется путём вставки этого адреса
--- на место ключа $path$.
+-- The $path$ placeholder is used for correct addressing between nested files.
+-- For example, the PATH contains two files f1 and f2, and f1 imports f2 into
+-- itself. To do this, you often need to specify its address relative to the
+-- working directory, which is done by inserting this address in place of the
+-- $path$ placeholder.
 writeImplementation pwd = writeImpl ""
     where
         writeImpl p (Immediate fn src)
@@ -43,7 +44,7 @@ writeImplementation pwd = writeImpl ""
         writeImpl _ Empty = return ()
 
 
--- |Скопировать файл в lib, если он находится в pLibPath
+-- |Copy library files to target path.
 copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
     where
         copyLibraryFile Project{ pPath } file = do

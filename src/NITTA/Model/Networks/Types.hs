@@ -21,12 +21,12 @@ module NITTA.Model.Networks.Types
     ) where
 
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
 import           NITTA.Project.Parts.TestBench
@@ -40,7 +40,6 @@ type PUClasses pu v x t =
     , RefactorProblem pu v x
     , ProcessorUnit pu v x t
     , Show (Instruction pu)
-    , Simulatable pu v x
     , Typeable pu
     , UnambiguouslyDecode pu
     , TargetSystemComponent pu
@@ -86,8 +85,6 @@ instance ( VarValTime v x t ) => ProcessorUnit (PU v x t) v x t where
     process PU{ diff, unit } = let
             p = process unit
         in p{ steps=map (patch diff) $ steps p }
-    setTime t PU{ diff, unit, ports, ioPorts, systemEnv }
-        = PU{ diff, unit=setTime t unit, ports, ioPorts, systemEnv }
 
 instance ( Ord v ) => Patch (PU v x t) (Changeset v) where
     patch diff' PU{ diff, unit, ports, ioPorts, systemEnv }
@@ -126,9 +123,6 @@ instance ( Var v ) => Locks (PU v x t) v where
                     ( \Lock{ locked, lockBy } -> [ Lock{ locked=v, lockBy } | v <- S.elems (changeO M.! locked) ] )
                     locked'
                 ]
-
-instance Simulatable (PU v x t) v x where
-    simulateOn cntx PU{ unit } fb = simulateOn cntx unit fb
 
 instance TargetSystemComponent (PU v x t) where
     moduleName name PU{ unit } = moduleName name unit

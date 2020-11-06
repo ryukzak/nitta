@@ -25,14 +25,14 @@ module NITTA.Synthesis.Estimate
 
 import           Data.Default
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import qualified Data.Set as S
 import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Time
+import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem ( ModelState (..) )
 import           NITTA.Model.Types
 import           NITTA.Utils
@@ -135,25 +135,17 @@ estimateWaves' io n acc = let
 data Parameters
     = BindEdgeParameter
         { pCritical                :: Bool
-            -- ^Устанавливается для таких функциональных блоков, привязка
-            -- которых может быть заблокирована другими. Пример - занятие
-            -- Loop-ом адреса, используемого LoopOut.
+            -- ^Can this binding block another one (for example, one 'Loop' can
+            -- take the last free register)?
         , pAlternative             :: Float
-            -- ^Number of binding alternatives
+            -- ^How many alternative binding we have?
         , pRestless                :: Float
-            -- ^Привязка данного функционального блока может быть активировано
-            -- только спустя указанное колличество тактов.
+            -- ^How many ticks requires for executing the function?
         , pOutputNumber            :: Float
         , pAllowDataFlow           :: Float
-            -- ^Данная операция может быть привязана прямо сейчас и это приведёт
-            -- к разрешению указанного количества пересылок.
+            -- ^How many transactions can be executed with this function?
         , pPossibleDeadlock        :: Bool
-            -- ^Если была выполнена привязка функции из серидины алгоритма, то
-            -- это может привести к deadlock-у. В такой ситуации может быть
-            -- активирована пересылка в вычислительный блок, в то время как
-            -- часть из входных данных не доступна, так как требуемая функция
-            -- ещё не привязана, а после привязки не сможет быть вычисленна, так
-            -- как ресурс уже занят.
+            -- ^May this binding cause deadlock?
         , pNumberOfBindedFunctions :: Float
         , pPercentOfBindedInputs   :: Float
             -- ^number of binded input variables / number of all input variables

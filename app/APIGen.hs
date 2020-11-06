@@ -48,7 +48,7 @@ data APIGen
     deriving ( Show, Data, Typeable )
 
 apiGenArgs = APIGen
-    { port=8080 &= help "WebUI port"
+    { port=8080 &= help "nitta server port"
     , opath="./web/src/gen" &= typ "output path"
     }
 
@@ -93,6 +93,9 @@ main = do
     putStrLn "Create output directory..."
     createDirectoryIfMissing True opath
     putStrLn "Create output directory...OK"
+
+    putStrLn $ "Expected nitta server port: " <> show port
+    writeFile (joinPath [opath, "PORT"]) $ show port
 
     putStrLn "Generate rest_api.js library..."
     prepareJSAPI port opath
