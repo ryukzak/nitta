@@ -23,7 +23,7 @@ import           Data.Maybe
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
-import           NITTA.Model.TargetSystem
+import           NITTA.Model.TargetSystem ()
 import           NITTA.Model.Types
 import           Test.Tasty ( TestTree, testGroup )
 import           Test.Tasty.HUnit

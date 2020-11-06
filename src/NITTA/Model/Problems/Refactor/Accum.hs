@@ -27,10 +27,10 @@ import           NITTA.Model.Types
 optimizeAccumOptions dfg = refactorContainers $ filterContainers $ createContainers $ dataFlowGraphToFs dfg
 
 -- |Function takes OptimizeAccum and modify DataFlowGraph
-optimizeAccumDecision dfg (OptimizeAccum refOld refNew) = fsToDataFlowGraph refactoredFs
+optimizeAccumDecision dfg (OptimizeAccum _refOld _refNew) = fsToDataFlowGraph refactoredFs
         where
-            refactoredFs = filtered ++ refNew
-            filtered = filter (\f -> f `notElem` refOld) fs
+            refactoredFs = filtered ++ _refNew
+            filtered = filter (\f -> f `notElem` _refOld) fs
             fs = dataFlowGraphToFs dfg
 
 optimizeAccumDecision _ _ = error "here we can only modify OptimizeAccum"
@@ -112,18 +112,18 @@ refactorFunction f' f
         makeRefactor = not multipleOutBool && isOutInpIntersect
 
     in
+
         makeRefactor = let
+
+                subs _ (Push Minus _) (Push Plus v)   = Just $ Push Minus v
+                subs _ (Push Minus _) (Push Minus v)  = Just $ Push Plus v
+                subs _ (Push Plus _)  push@(Push _ _) = Just push
+                subs v _              pull@(Pull _)   = deleteFromPull v pull
+                subs _ _              _               = error "Pull can not be here"
+
                 refactorAcc _ _ (Pull o) = [Pull o]
                 refactorAcc _lst' _f' _f@(Push s i@(I v))
-                    | elem v $ outputs _f' = mapMaybe
-                        ( \__f' ->
-                            case (_f, __f') of
-                                (Push Minus _, Push Plus x)     -> Just $ Push Minus x
-                                (Push Minus _, Push Minus x)    -> Just $ Push Plus x
-                                (Push Plus _, push@(Push _ _) ) -> Just push
-                                (_, pull@(Pull _))              -> deleteFromPull v pull
-                                (_, _)                          -> error "Pull can not be here"
-                        ) _lst'
+                    | elem v $ outputs _f' = mapMaybe ( subs v _f ) _lst'
                     | s == Minus = [Push Minus i]
                     | s == Plus = [Push Plus i]
                 refactorAcc _ _ (Push _ (I _)) = undefined

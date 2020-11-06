@@ -200,6 +200,7 @@ test-suite nitta-test
       NITTA.Intermediate.Value.Tests
       NITTA.LuaFrontend.Tests
       NITTA.LuaFrontend.Tests.Utils
+      NITTA.Model.Problems.Refactor.Accum.Tests
       NITTA.Model.Problems.Refactor.Tests
       NITTA.Model.ProcessorUnits.Divider.Tests
       NITTA.Model.ProcessorUnits.Fram.Tests
