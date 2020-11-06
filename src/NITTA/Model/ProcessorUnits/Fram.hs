@@ -500,8 +500,7 @@ instance ( VarValTime v x t
         | otherwise = error $ "Can't simulate " ++ show f ++ " on Fram."
 
 
-instance ( VarValTime v x t, Integral x
-         ) => Testable (Fram v x t) v x where
+instance ( VarValTime v x t ) => Testable (Fram v x t) v x where
     testBenchImplementation prj@Project{ pName, pUnit}
         = let
             width = addrWidth pUnit

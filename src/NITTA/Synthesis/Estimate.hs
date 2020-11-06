@@ -236,6 +236,8 @@ estimateParameters ObjectiveFunctionConf{} EstimationCntx{ decisionDuplicateNSte
         , pNumberOfTransferableVariables=fromIntegral (S.size $ vs `S.intersection` transferableVars)
         }
 
+estimateParameters ObjectiveFunctionConf{} EstimationCntx{} (Refactor OptimizeAccum {}) = undefined
+
 
 -- |Synthesis process setup, which determines next synthesis step selection.
 newtype ObjectiveFunctionConf

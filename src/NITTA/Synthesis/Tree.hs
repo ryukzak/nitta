@@ -132,7 +132,7 @@ mkNode nId nModel nOrigin nEdges = Node
 
 
 -- |Get specific by @nId@ node from a synthesis tree.
-getNodeIO :: ( UnitTag tag, VarValTime v x t, Semigroup v, Num x
+getNodeIO :: ( UnitTag tag, VarValTime v x t, Semigroup v
     ) => G Node tag v x t -> NId -> IO ( G Node tag v x t )
 getNodeIO node (NId []) = return node
 getNodeIO node nId@(NId (i:is)) = do
@@ -162,7 +162,7 @@ data Edge m o d
 
 
 mkEdges
-    :: ( UnitTag tag, VarValTime v x t, Num x )
+    :: ( UnitTag tag, VarValTime v x t )
     => G Node tag v x t -> STM [ G Edge tag v x t ]
 mkEdges eSource@Node{ nId, nModel, nOrigin } = do
     let conf = def
@@ -184,7 +184,7 @@ mkEdges eSource@Node{ nId, nModel, nOrigin } = do
 -- |Get all available edges for the node. Edges calculated only for the first
 -- call.
 getEdgesIO
-    :: ( UnitTag tag, VarValTime v x t, Num x )
+    :: ( UnitTag tag, VarValTime v x t )
     => G Node tag v x t -> IO [ G Edge tag v x t ]
 getEdgesIO node@Node{ nEdges } = atomically $
     readTVar nEdges >>= \case

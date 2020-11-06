@@ -53,7 +53,7 @@ class ( Default x ) => DefaultX u x | u -> x where
 
 
 -- |Type class for Value types.
-class ( Typeable x, Show x, Read x, FixedPointCompatible x, Default x, PrintfArg x
+class ( Typeable x, Show x, Read x, FixedPointCompatible x, Default x, PrintfArg x, Num x
       ) => Val x where
     showTypeOf :: Proxy x -> String
 

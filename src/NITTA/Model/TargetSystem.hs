@@ -59,7 +59,7 @@ instance ( UnitTag tag, VarValTime v x t
     dataflowOptions ModelState{ mUnit }      = dataflowOptions mUnit
     dataflowDecision f@ModelState{ mUnit } d = f{ mUnit=dataflowDecision mUnit d }
 
-instance ( UnitTag tag, VarValTime v x t, Num x
+instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (ModelState (BusNetwork tag v x t) v x) v x where
     refactorOptions ModelState{ mUnit } = refactorOptions mUnit
 
@@ -101,7 +101,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
     functions (DFLeaf f)    = [ f ]
     functions (DFCluster g) = concatMap functions g
 
-instance ( Var v, Val x, Num x
+instance ( Var v, Val x
         ) => RefactorProblem (DataFlowGraph v x) v x where
     refactorOptions dfg = optimizeAccum dfg
 
@@ -124,7 +124,7 @@ instance ( Var v, Val x, Num x
 
     refactorDecision _ _ = error "DataFlowGraph "
 
-instance ( UnitTag tag, VarValTime v x t, Num x
+instance ( UnitTag tag, VarValTime v x t
          ) => SynthesisProblem (ModelState (BusNetwork tag v x t) v x) tag v x t where
     synthesisOptions m@ModelState{ mUnit } = concat
         [ map generalizeBinding $ bindOptions m
