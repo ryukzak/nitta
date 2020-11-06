@@ -103,7 +103,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 instance ( Var v, Val x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions dfg = optimizeAccum dfg
+    refactorOptions dfg = optimizeAccumOptions dfg
 
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
@@ -116,11 +116,7 @@ instance ( Var v, Val x
             : DFLeaf (recLoopOut bl){ funHistory=[origin] }
             : ( leafs L.\\ [ DFLeaf origin ] )
 
-    refactorDecision dfg (OptimizeAccum refOld refNew) = fsToDataFlowGraph refactoredFs
-        where
-            refactoredFs = filtered ++ refNew
-            filtered = filter (\f -> f `notElem` refOld) fs
-            fs = dataFlowGraphToFs dfg
+    refactorDecision dfg ref@OptimizeAccum {} = optimizeAccumDecision dfg ref
 
     refactorDecision _ _ = error "DataFlowGraph "
 

@@ -10,7 +10,10 @@ Stability   : experimental
 
 implementation of refactor, that takes acc funcs and return its connection, if it can be connected
 -}
-module NITTA.Model.Problems.Refactor.Accum (optimizeAccum) where
+module NITTA.Model.Problems.Refactor.Accum
+    ( optimizeAccumOptions
+    , optimizeAccumDecision
+    ) where
 
 import qualified Data.Map as M
 import           Data.Maybe
@@ -21,7 +24,16 @@ import           NITTA.Model.Problems
 import           NITTA.Model.Types
 
 -- |Function takes algorithm in DataflowGraph type and return [Refactors] that can be done
-optimizeAccum dfg = refactorContainers $ filterContainers $ createContainers $ dataFlowGraphToFs dfg
+optimizeAccumOptions dfg = refactorContainers $ filterContainers $ createContainers $ dataFlowGraphToFs dfg
+
+-- |Function takes OptimizeAccum and modify DataFlowGraph
+optimizeAccumDecision dfg (OptimizeAccum refOld refNew) = fsToDataFlowGraph refactoredFs
+        where
+            refactoredFs = filtered ++ refNew
+            filtered = filter (\f -> f `notElem` refOld) fs
+            fs = dataFlowGraphToFs dfg
+
+optimizeAccumDecision _ _ = error "here we can only modify OptimizeAccum"
 
 toOptimizeAccum lst = map (uncurry OptimizeAccum) $ filterSameListsTuple lst
 
