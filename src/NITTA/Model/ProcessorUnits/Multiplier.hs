@@ -38,30 +38,60 @@ products actual version will differ.
 
 Connect necessary modules and set up terminals prompt string.
 
->>> :l NITTA.Model.ProcessorUnits.Multiplier
-[ 1 of 10] Compiling NITTA.Model.Problems.Types ( /Users/penskoi/Documents/src/nitta/src/NITTA/Types/Poly.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Types/Poly.o ) [flags changed]
-[ 2 of 10] Compiling NITTA.Model.Types ( /Users/penskoi/Documents/src/nitta/src/NITTA/Types/Time.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Types/Time.o ) [flags changed]
-[ 3 of 10] Compiling NITTA.Types.Base ( /Users/penskoi/Documents/src/nitta/src/NITTA/Types/Base.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Types/Base.o ) [flags changed]
-[ 4 of 10] Compiling NITTA.Model.Networks.Types ( /Users/penskoi/Documents/src/nitta/src/NITTA/Types/Network.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Types/Network.o ) [flags changed]
-[ 5 of 10] Compiling NITTA.Types      ( /Users/penskoi/Documents/src/nitta/src/NITTA/Types.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Types.o ) [flags changed]
-[ 6 of 10] Compiling NITTA.Utils.Lens ( /Users/penskoi/Documents/src/nitta/src/NITTA/Utils/Lens.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Utils/Lens.o ) [flags changed]
-[ 7 of 10] Compiling NITTA.Utils      ( /Users/penskoi/Documents/src/nitta/src/NITTA/Utils.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Utils.o ) [flags changed]
-[ 8 of 10] Compiling NITTA.Intermediate.Functions ( /Users/penskoi/Documents/src/nitta/src/NITTA/Functions.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/Functions.o ) [flags changed]
-[10 of 10] Compiling NITTA.Model.ProcessorUnits.Multiplier ( /Users/penskoi/Documents/src/nitta/src/NITTA/ProcessUnits/Multiplier.hs, /Users/penskoi/Documents/src/nitta/.stack-work/odir/NITTA/ProcessUnits/Multiplier.o )
-Ok, 10 modules loaded.
->>> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval Data.Set
->>> :set prompt "\ESC[34mλ> \ESC[m"
+@
+> :l NITTA.Model.ProcessorUnits.Multiplier
+[ 1 of 30] Compiling NITTA.Intermediate.Value ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Intermediate/Value.hs, interpreted )
+[ 2 of 30] Compiling NITTA.Intermediate.Variable ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Intermediate/Variable.hs, interpreted )
+[ 3 of 30] Compiling NITTA.Intermediate.Types ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Intermediate/Types.hs, interpreted )
+[ 4 of 30] Compiling NITTA.Model.Problems.Binding ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems/Binding.hs, interpreted )
+[ 5 of 30] Compiling NITTA.Model.Types ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Types.hs, interpreted )
+[ 6 of 30] Compiling NITTA.Model.Problems.Endpoint ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems/Endpoint.hs, interpreted )
+[ 7 of 30] Compiling NITTA.Model.Problems.Dataflow ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems/Dataflow.hs, interpreted )
+[ 8 of 30] Compiling NITTA.Project.Types ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Types.hs, interpreted )
+[ 9 of 30] Compiling NITTA.Utils.Base ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Utils/Base.hs, interpreted )
+[10 of 30] Compiling NITTA.Intermediate.Functions.Accum ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Intermediate/Functions/Accum.hs, interpreted )
+[11 of 30] Compiling NITTA.Intermediate.Functions ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Intermediate/Functions.hs, interpreted )
+[12 of 30] Compiling NITTA.Model.Problems.Refactor ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems/Refactor.hs, interpreted )
+[13 of 30] Compiling NITTA.Model.Problems.Whole ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems/Whole.hs, interpreted )
+[14 of 30] Compiling NITTA.Model.Problems ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems.hs, interpreted )
+[15 of 30] Compiling NITTA.Utils.CodeFormat ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Utils/CodeFormat.hs, interpreted )
+[16 of 30] Compiling NITTA.Model.ProcessorUnits.Types ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/ProcessorUnits/Types.hs, interpreted )
+[17 of 30] Compiling NITTA.Utils      ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Utils.hs, interpreted )
+[18 of 30] Compiling NITTA.Project.Snippets ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Snippets.hs, interpreted )
+[19 of 30] Compiling NITTA.Project.Implementation ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Implementation.hs, interpreted )
+[20 of 30] Compiling NITTA.Project.Parts.Utils ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Parts/Utils.hs, interpreted )
+[21 of 30] Compiling NITTA.Project.Parts.TestBench ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Parts/TestBench.hs, interpreted )
+[22 of 30] Compiling NITTA.Project.Parts.TargetSystem ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Parts/TargetSystem.hs, interpreted )
+[23 of 30] Compiling NITTA.Project.Parts.Icarus ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Parts/Icarus.hs, interpreted )
+[24 of 30] Compiling NITTA.Model.Networks.Types ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Networks/Types.hs, interpreted )
+[25 of 30] Compiling NITTA.Utils.ProcessDescription ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Utils/ProcessDescription.hs, interpreted )
+[26 of 30] Compiling NITTA.Model.Networks.Bus ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Networks/Bus.hs, interpreted )
+[27 of 30] Compiling NITTA.Project.Parts.Quartus ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Parts/Quartus.hs, interpreted )
+[28 of 30] Compiling NITTA.Project.Utils ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Utils.hs, interpreted )
+[29 of 30] Compiling NITTA.Project    ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project.hs, interpreted )
+[30 of 30] Compiling NITTA.Model.ProcessorUnits.Multiplier ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/ProcessorUnits/Multiplier.hs, interpreted )
+Ok, 30 modules loaded.
+> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval Data.Set
+> :set prompt "\ESC[34mλ> \ESC[m"
+@
 
 Now create the function and multiplier initial state. Unfortunately, it is not
 enough information for GHC deduction of its type, so let's define its
 implicitly.
 
->>> let f = multiply "a" "b" ["c", "d"] :: F String Int
+>>> let f = F.multiply "a" "b" ["c", "d"] :: F String Int
 >>> f
 c = d = a * b
 >>> let st0 = multiplier True :: Multiplier String Int Int
 >>> st0
-Multiplier {puRemain = [], targets = [], sources = [], doneAt = Nothing, process_ = Process {steps = [], relations = [], nextTick = 0, nextUid = 0}, isMocked = True}
+Multiplier {remain = [], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
+    steps     =
+<BLANKLINE>
+    relations =
+<BLANKLINE>
+    nextTick  = 0
+    nextUid   = 0
+, tick = 0, isMocked = True}
 >>> endpointOptions st0
 []
 
@@ -74,7 +104,14 @@ planning, even it is inefficient.
 
 >>> let Right st1 = tryBind f st0
 >>> st1
-Multiplier {puRemain = [<Multiply (I "a") (I "b") (O (fromList ["c","d"]))>], targets = [], sources = [], doneAt = Nothing, process_ = Process {steps = [], relations = [], nextTick = 0, nextUid = 0}, isMocked = True}
+Multiplier {remain = [c = d = a * b], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
+    steps     =
+<BLANKLINE>
+    relations =
+<BLANKLINE>
+    nextTick  = 0
+    nextUid   = 0
+, tick = 0, isMocked = True}
 >>> endpointOptions st1
 [?Target "a"@(1..∞ /P 1..∞),?Target "b"@(1..∞ /P 1..∞)]
 
@@ -88,14 +125,33 @@ cause a mistake or block another function).
 
 >>> let st2 = endpointDecision st1 $ EndpointSt (Target "a") (0...2)
 >>> st2
-Multiplier {puRemain = [], targets = ["b"], sources = ["c","d"], doneAt = Nothing, process_ = Process {steps = [Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 3, nextUid = 2}, isMocked = True}
+Multiplier {remain = [], targets = ["b"], sources = ["c","d"], doneAt = Nothing, currentWork = Just (1,c = d = a * b), currentWorkEndpoints = [0], process_ = Process
+    steps     =
+        0) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
+        1) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
+    relations =
+        0) Vertical 0 1
+    nextTick  = 2
+    nextUid   = 2
+, tick = 2, isMocked = True}
 >>> mapM_ print $ endpointOptions st2
 ?Target "b"@(3..∞ /P 1..∞)
 >>> let st3 = endpointDecision st2 $ EndpointSt (Target "b") (3...3)
 >>> st3
-Multiplier {puRemain = [], targets = [], sources = ["c","d"], doneAt = Just 6, process_ = Process {steps = [Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 4, nextUid = 4}, isMocked = True}
+Multiplier {remain = [], targets = [], sources = ["c","d"], doneAt = Just 6, currentWork = Just (1,c = d = a * b), currentWorkEndpoints = [2,0], process_ = Process
+    steps     =
+        0) Step {sKey = 3, sTime = 3 ... 3, sDesc = Load B}
+        1) Step {sKey = 2, sTime = 3 ... 3, sDesc = Target "b"}
+        2) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
+        3) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
+    relations =
+        0) Vertical 2 3
+        1) Vertical 0 1
+    nextTick  = 3
+    nextUid   = 4
+, tick = 3, isMocked = True}
 >>> mapM_ print $ endpointOptions st3
-?Source (fromList ["c","d"])@(6..∞ /P 1..∞)
+?Source "c","d"@(6..∞ /P 1..∞)
 
 After loading of all arguments, we can see that the next option is unloading @c@
 and @d@ variables. Note, these variables can be unloaded ether concurrently or
@@ -104,12 +160,48 @@ option:
 
 >>> let st4 = endpointDecision st3 $ EndpointSt (Source $ fromList ["c"]) (6...6)
 >>> st4
-Multiplier {puRemain = [], targets = [], sources = ["d"], doneAt = Just 6, process_ = Process {steps = [Step {sKey = 5, sTime = Activity (6 ... 6), sDesc = Out},Step {sKey = 4, sTime = Activity (6 ... 6), sDesc = Source (fromList ["c"])},Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 7, nextUid = 6}, isMocked = True}
+Multiplier {remain = [], targets = [], sources = ["d"], doneAt = Just 6, currentWork = Just (1,c = d = a * b), currentWorkEndpoints = [4,2,0], process_ = Process
+    steps     =
+        0) Step {sKey = 5, sTime = 6 ... 6, sDesc = Out}
+        1) Step {sKey = 4, sTime = 6 ... 6, sDesc = Source "c"}
+        2) Step {sKey = 3, sTime = 3 ... 3, sDesc = Load B}
+        3) Step {sKey = 2, sTime = 3 ... 3, sDesc = Target "b"}
+        4) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
+        5) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
+    relations =
+        0) Vertical 4 5
+        1) Vertical 2 3
+        2) Vertical 0 1
+    nextTick  = 6
+    nextUid   = 6
+, tick = 6, isMocked = True}
 >>> mapM_ print $ endpointOptions st4
-?Source (fromList ["d"])@(7..∞ /P 1..∞)
+?Source "d"@(7..∞ /P 1..∞)
 >>> let st5 = endpointDecision st4 $ EndpointSt (Source $ fromList ["d"]) (7...7)
 >>> st5
-Multiplier {puRemain = [], targets = [], sources = [], doneAt = Nothing, process_ = Process {steps = [Step {sKey = 7, sTime = Activity (7 ... 7), sDesc = Out},Step {sKey = 6, sTime = Activity (7 ... 7), sDesc = Source (fromList ["d"])},Step {sKey = 5, sTime = Activity (6 ... 6), sDesc = Out},Step {sKey = 4, sTime = Activity (6 ... 6), sDesc = Source (fromList ["c"])},Step {sKey = 3, sTime = Activity (3 ... 3), sDesc = Load B},Step {sKey = 2, sTime = Activity (3 ... 3), sDesc = Target "b"},Step {sKey = 1, sTime = Activity (0 ... 2), sDesc = Load A},Step {sKey = 0, sTime = Activity (0 ... 2), sDesc = Target "a"}], relations = [], nextTick = 8, nextUid = 8}, isMocked = True}
+Multiplier {remain = [], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
+    steps     =
+        0) Step {sKey = 8, sTime = 1 ... 7, sDesc = "c" = "d" = "a" * "b"}
+        1) Step {sKey = 7, sTime = 7 ... 7, sDesc = Out}
+        2) Step {sKey = 6, sTime = 7 ... 7, sDesc = Source "d"}
+        3) Step {sKey = 5, sTime = 6 ... 6, sDesc = Out}
+        4) Step {sKey = 4, sTime = 6 ... 6, sDesc = Source "c"}
+        5) Step {sKey = 3, sTime = 3 ... 3, sDesc = Load B}
+        6) Step {sKey = 2, sTime = 3 ... 3, sDesc = Target "b"}
+        7) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
+        8) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
+    relations =
+        0) Vertical 8 6
+        1) Vertical 8 4
+        2) Vertical 8 2
+        3) Vertical 8 0
+        4) Vertical 6 7
+        5) Vertical 4 5
+        6) Vertical 2 3
+        7) Vertical 0 1
+    nextTick  = 7
+    nextUid   = 9
+, tick = 7, isMocked = True}
 >>> endpointOptions st5
 []
 
