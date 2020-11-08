@@ -30,7 +30,7 @@ steps:
     pull: if-not-exists
     commands:
       - stack build --fast
-      - find src -name '*.hs' | xargs -t -L 1 -P 4 stack exec doctest
+      - find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
 
   - name: failure-telegram-notify
     image: byrnedo/alpine-curl
