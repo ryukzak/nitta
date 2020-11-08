@@ -109,9 +109,9 @@ instance ( VarValTime v x t ) => Show (Process v x t) where
     show p = codeBlock [qc|
         Process
             steps     =
-                {inline $ listShow $ steps p  }
+                { inline $ listShow $ steps p }
             relations =
-                {inline $ listShow $ relations p  }
+                { inline $ listShow $ relations p }
             nextTick  = { show ( nextTick p ) }
             nextUid   = { show ( nextUid p ) }
         |]

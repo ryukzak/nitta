@@ -3,7 +3,7 @@ name: default
 
 steps:
 
-  - name: build and test nitta backend
+  - name: build and test nitta
     image: nitta-build:latest
     pull: if-not-exists
     commands:
@@ -11,7 +11,7 @@ steps:
       - stack setup
       - stack build --test --haddock --copy-bins
       - stack exec nitta-api-gen  # generate REST API library for frontend
-      
+
   - name: build nitta frontend
     image: nitta-build:latest
     pull: if-not-exists
@@ -24,6 +24,13 @@ steps:
     pull: if-not-exists
     commands:
       - make -C hdl
+
+  - name: doctest
+    image: nitta-build:latest
+    pull: if-not-exists
+    commands:
+      - stack build --fast
+      - find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
 
   - name: failure-telegram-notify
     image: byrnedo/alpine-curl
