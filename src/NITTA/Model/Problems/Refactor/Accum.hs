@@ -132,6 +132,27 @@ refactorFunction f' f
                         ) `asTypeOf` f ]
             in
                 newFS
+
+    | Just Add {} <- castF f'
+    , Just Add {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
+            [fNew] -> [fNew]
+            _ -> [f, f']
+
+    | Just Add {} <- castF f'
+    , Just Sub {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
+            [fNew] -> [fNew]
+            _ -> [f, f']
+
+    | Just Sub {} <- castF f'
+    , Just Add {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
+            [fNew] -> [fNew]
+            _ -> [f, f']
+
+    | Just Sub {} <- castF f'
+    , Just Sub {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
+            [fNew] -> [fNew]
+            _ -> [f, f']
+
     | otherwise = [f, f']
 
 deleteFromPull v (Pull (O s))
@@ -141,3 +162,9 @@ deleteFromPull v (Pull (O s))
             deleted = S.delete v s
 
 deleteFromPull _ (Push _ _) = error "delete only Pull"
+
+
+toAddSub f
+    | Just (Add in1 in2 (O out)) <- castF f = acc $ [Push Plus in1, Push Plus in2] ++ [Pull $ O $ S.fromList [o] | o <- S.toList out]
+    | Just (Sub in1 in2 (O out)) <- castF f = acc $ [Push Plus in1, Push Minus in2] ++ [Pull $ O $ S.fromList [o] | o <- S.toList out]
+    | otherwise = undefined

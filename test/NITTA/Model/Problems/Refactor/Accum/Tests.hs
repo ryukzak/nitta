@@ -33,7 +33,19 @@ refactorTo startFs resultFs = dfRefactored @?= dfRes
         dfRefactored = simpleRefactor df
 
 tests = testGroup "Refactor problem (Optimize Accum)"
-        [ testCase "simple 1 tmp variable sum refactor" $ let
+
+        [ testCase "Add refactor test" $ let
+            -- Start algorithm:
+            -- tmp1 = a + b
+            -- res = tmp1 + c
+            --
+            -- Result algorithm:
+            -- res = a + b + c
+            func1 = add "a" "b" ["tmp1"]
+            func2 = add "tmp1" "c" ["res"]
+            funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])]
+            in [func1, func2] `refactorTo` [funcRes]
+        , testCase "simple 1 tmp variable sum refactor" $ let
             -- Start algorithm:
             -- tmp1 = a + b
             -- res = tmp1 + c
