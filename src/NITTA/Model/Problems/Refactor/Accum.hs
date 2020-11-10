@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {-|
 Module      : NITTA.Model.Problems.Refactor
@@ -24,13 +25,13 @@ import           NITTA.Model.Problems
 import           NITTA.Model.Types
 
 -- |Function takes algorithm in DataflowGraph type and return [Refactors] that can be done
-optimizeAccumOptions dfg = refactorContainers $ filterContainers $ createContainers $ dataFlowGraphToFs dfg
+optimizeAccumOptions dfg = refactorContainers $ filter ((> 1) . length) $ createContainers $ dataFlowGraphToFs dfg
 
 -- |Function takes OptimizeAccum and modify DataFlowGraph
-optimizeAccumDecision dfg (OptimizeAccum _refOld _refNew) = fsToDataFlowGraph refactoredFs
+optimizeAccumDecision dfg OptimizeAccum { refOld, refNew } = fsToDataFlowGraph refactoredFs
         where
-            refactoredFs = filtered ++ _refNew
-            filtered = filter (\f -> f `notElem` _refOld) fs
+            refactoredFs = filtered ++ refNew
+            filtered = filter (\f -> f `notElem` refOld) fs
             fs = dataFlowGraphToFs dfg
 
 optimizeAccumDecision _ _ = error "here we can only modify OptimizeAccum"
@@ -47,22 +48,20 @@ refactorContainers containers = toOptimizeAccum $ zip containers refContainers
     where
         refContainers = map refactorContainer containers
 
-filterContainers fs = filter ((> 1) . length) fs
-
 createContainers fs
     | length filtered == 1 = containered
     | otherwise              = map S.toList listOfSets
     where
         listOfSets = S.toList $ S.fromList [toOneContainer fs1 fs2 | fs1 <- containered , fs2 <- containered, fs1 /= fs2]
-        filtered = catMaybes $ filterAddSub fs
+        filtered = filter isSupportByAccum fs
         containered = map (\x -> [x]) filtered
 
-filterAddSub []             = []
-filterAddSub (f:fs)
-    | Just Add{} <- castF f = Just f : filterAddSub fs
-    | Just Sub{} <- castF f = Just f : filterAddSub fs
-    | Just Acc{} <- castF f = Just f : filterAddSub fs
-    | otherwise             = Nothing : filterAddSub fs
+isSupportByAccum f
+    | Just Add{} <- castF f = True
+    | Just Sub{} <- castF f = True
+    | Just Acc{} <- castF f = True
+    | otherwise             = False
+
 
 toOneContainer fs fs'
     | not $ null $ S.intersection
@@ -122,42 +121,40 @@ refactorFunction f' f
                 subs _ _              _               = error "Pull can not be here"
 
                 refactorAcc _ _ (Pull o) = [Pull o]
-                refactorAcc _lst' _f' _f@(Push s i@(I v))
-                    | elem v $ outputs _f' = mapMaybe ( subs v _f ) _lst'
+                refactorAcc accList accNew accOld@(Push s i@(I v))
+                    | elem v $ outputs accNew = mapMaybe ( subs v accOld ) accList
+
                     | s == Minus = [Push Minus i]
                     | s == Plus = [Push Plus i]
                 refactorAcc _ _ (Push _ (I _)) = undefined
-                newFS = [ packF
-                        ( Acc $ concatMap (refactorAcc lst' f') lst
-                        ) `asTypeOf` f ]
             in
-                newFS
+                [ packF $ Acc $ concatMap (refactorAcc lst' f') lst ]
 
     | Just Add {} <- castF f'
     , Just Add {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
             [fNew] -> [fNew]
-            _ -> [f, f']
+            _      -> [f, f']
 
     | Just Add {} <- castF f'
     , Just Sub {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
             [fNew] -> [fNew]
-            _ -> [f, f']
+            _      -> [f, f']
 
     | Just Sub {} <- castF f'
     , Just Add {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
             [fNew] -> [fNew]
-            _ -> [f, f']
+            _      -> [f, f']
 
     | Just Sub {} <- castF f'
     , Just Sub {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
             [fNew] -> [fNew]
-            _ -> [f, f']
+            _      -> [f, f']
 
     | otherwise = [f, f']
 
 deleteFromPull v (Pull (O s))
-    | deleted == S.empty = Nothing
-    | otherwise          = Just $ Pull $ O $ deleted
+    | S.null deleted = Nothing
+    | otherwise      = Just $ Pull $ O $ deleted
         where
             deleted = S.delete v s
 

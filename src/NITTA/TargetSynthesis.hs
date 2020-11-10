@@ -209,9 +209,9 @@ mkModelWithOneNetwork arch dfg = ModelState
     , mDataFlowGraph=simpleRefactor dfg
     }
 
+-- |Apply all refactor options untill they exist
 simpleRefactor dfg  =
     case refactorOptions dfg of
         []    -> dfg
         (r:_) -> simpleRefactor $ refactorDecision dfg r
-
 
