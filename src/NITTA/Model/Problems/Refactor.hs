@@ -83,9 +83,9 @@ data Refactor v x
         { refOld :: [F v x]
         , refNew :: [F v x]
         }
-      -- ^AlgSub example:
+      -- ^OptimizeAccum example:
       --
-      -- > AlgSub [+a +b +c => d]
+      -- > OptimizeAccum [+a +tmp_1 => d; +b +c => tmp_1] [+a +b +c => d]
       --
       -- before:
       --

@@ -3,14 +3,13 @@
 
 {-|
 Module      : NITTA.Model.Problems.Refactor
-Description : Refactor accum
+Description : Optimize an algorithm for Accum processor unit
 Copyright   : (c) Daniil Prohorov, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
-
-implementation of refactor, that takes acc funcs and return its connection, if it can be connected
 -}
+
 module NITTA.Model.Problems.Refactor.Accum
     ( optimizeAccumOptions
     , optimizeAccumDecision
@@ -24,17 +23,17 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.Types
 
--- |Function takes algorithm in DataflowGraph type and return [Refactors] that can be done
+-- |Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
 optimizeAccumOptions dfg = refactorContainers $ filter ((> 1) . length) $ createContainers $ dataFlowGraphToFs dfg
 
--- |Function takes OptimizeAccum and modify DataFlowGraph
-optimizeAccumDecision dfg OptimizeAccum { refOld, refNew } = fsToDataFlowGraph refactoredFs
+-- |Function takes 'OptimizeAccum' and modify 'DataFlowGraph'
+optimizeAccumDecision dfg OptimizeAccum{ refOld, refNew } = fsToDataFlowGraph refactoredFs
         where
             refactoredFs = filtered ++ refNew
             filtered = filter (\f -> f `notElem` refOld) fs
             fs = dataFlowGraphToFs dfg
 
-optimizeAccumDecision _ _ = error "here we can only modify OptimizeAccum"
+optimizeAccumDecision _ _ = error "In this function we can make decision only with OptimizeAccum option"
 
 toOptimizeAccum lst = map (uncurry OptimizeAccum) $ filterSameListsTuple lst
 
@@ -65,9 +64,6 @@ isSupportByAccum f
 
 toOneContainer fs fs'
     | not $ null $ S.intersection
-        (foldl1 S.union (map inputs fs))
-        (foldl1 S.union (map outputs fs')) = S.fromList $ fs ++ fs'
-    | not $ null $ S.intersection
         (foldl1 S.union (map inputs fs'))
         (foldl1 S.union (map outputs fs)) = S.fromList $ fs ++ fs'
     | otherwise                           = S.fromList fs
@@ -80,8 +76,8 @@ containerMapCreate fs = M.unions $
        foldl
        (\dataMap k ->
           M.insertWith (++) k [f] dataMap
-       ) M.empty (S.toList $ inputs $ f)
-    ) $ fs
+       ) M.empty (S.toList $ inputs f)
+    ) fs
 
 
 -- |Takes container and refactor it, if it can be
@@ -109,11 +105,8 @@ refactorFunction f' f
                 _            -> False
             ) lst
         makeRefactor = not multipleOutBool && isOutInpIntersect
-
     in
-
         makeRefactor = let
-
                 subs _ (Push Minus _) (Push Plus v)   = Just $ Push Minus v
                 subs _ (Push Minus _) (Push Minus v)  = Just $ Push Plus v
                 subs _ (Push Plus _)  push@(Push _ _) = Just push
@@ -130,23 +123,8 @@ refactorFunction f' f
             in
                 [ packF $ Acc $ concatMap (refactorAcc lst' f') lst ]
 
-    | Just Add {} <- castF f'
-    , Just Add {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
-            [fNew] -> [fNew]
-            _      -> [f, f']
-
-    | Just Add {} <- castF f'
-    , Just Sub {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
-            [fNew] -> [fNew]
-            _      -> [f, f']
-
-    | Just Sub {} <- castF f'
-    , Just Add {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
-            [fNew] -> [fNew]
-            _      -> [f, f']
-
-    | Just Sub {} <- castF f'
-    , Just Sub {} <- castF f = case refactorFunction (toAddSub f') (toAddSub f) of
+    | Just f1 <- fromAddSub f'
+    , Just f2 <- fromAddSub f = case refactorFunction f1 f2 of
             [fNew] -> [fNew]
             _      -> [f, f']
 
@@ -154,14 +132,16 @@ refactorFunction f' f
 
 deleteFromPull v (Pull (O s))
     | S.null deleted = Nothing
-    | otherwise      = Just $ Pull $ O $ deleted
+    | otherwise      = Just $ Pull $ O deleted
         where
             deleted = S.delete v s
 
 deleteFromPull _ (Push _ _) = error "delete only Pull"
 
 
-toAddSub f
-    | Just (Add in1 in2 (O out)) <- castF f = acc $ [Push Plus in1, Push Plus in2] ++ [Pull $ O $ S.fromList [o] | o <- S.toList out]
-    | Just (Sub in1 in2 (O out)) <- castF f = acc $ [Push Plus in1, Push Minus in2] ++ [Pull $ O $ S.fromList [o] | o <- S.toList out]
-    | otherwise = undefined
+fromAddSub f
+    | Just (Add in1 in2 (O out)) <- castF f = Just $ acc $
+        [Push Plus in1, Push Plus in2] ++ [Pull $ O $ S.fromList [o] | o <- S.toList out]
+    | Just (Sub in1 in2 (O out)) <- castF f = Just $ acc $
+        [Push Plus in1, Push Minus in2] ++ [Pull $ O $ S.fromList [o] | o <- S.toList out]
+    | otherwise = Nothing

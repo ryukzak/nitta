@@ -76,7 +76,7 @@ instance ( UnitTag tag, VarValTime v x t
             , mUnit=refactorDecision mUnit bl
             }
 
-    refactorDecision (ModelState _ _) (OptimizeAccum _ _) = undefined
+    refactorDecision ModelState{} OptimizeAccum{} = undefined
 
 
 instance Eq ( DataFlowGraph v x) where
@@ -117,7 +117,7 @@ instance ( Var v, Val x
             : DFLeaf (recLoopOut bl){ funHistory=[origin] }
             : ( leafs L.\\ [ DFLeaf origin ] )
 
-    refactorDecision dfg ref@OptimizeAccum {} = optimizeAccumDecision dfg ref
+    refactorDecision dfg ref@OptimizeAccum{} = optimizeAccumDecision dfg ref
 
     refactorDecision _ _ = error "DataFlowGraph "
 

@@ -36,14 +36,14 @@ tests = testGroup "Refactor problem (Optimize Accum)"
 
         [ testCase "Add refactor test" $ let
             -- Start algorithm:
-            -- tmp1 = a + b
-            -- res = tmp1 + c
+            -- tmp1 = a - b
+            -- res = c - tmp1
             --
             -- Result algorithm:
-            -- res = a + b + c
-            func1 = add "a" "b" ["tmp1"]
-            func2 = add "tmp1" "c" ["res"]
-            funcRes = acc [Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c"), Pull (O $ S.fromList ["res"])]
+            -- res = c - a + b
+            func1 = sub "a" "b" ["tmp1"]
+            func2 = sub "c" "tmp1"["res"]
+            funcRes = acc [ Push Plus (I "c"), Push Minus (I "a"), Push Plus (I "b"), Pull (O $ S.fromList ["res"])]
             in [func1, func2] `refactorTo` [funcRes]
         , testCase "simple 1 tmp variable sum refactor" $ let
             -- Start algorithm:
