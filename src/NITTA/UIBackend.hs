@@ -17,12 +17,11 @@ Stability   : experimental
 -}
 module NITTA.UIBackend
     ( backendServer
-    , prepareStaticFiles
     , prepareJSAPI
     ) where
 
 import           Control.Exception ( SomeException, try )
-import           Control.Monad ( unless, when )
+import           Control.Monad ( unless )
 import           Data.Either
 import           GHC.IO.Encoding ( setLocaleEncoding, utf8 )
 import           Network.Simple.TCP ( connect )
@@ -33,9 +32,7 @@ import           NITTA.UIBackend.Marshalling ()
 import           NITTA.UIBackend.REST
 import           Servant
 import qualified Servant.JS as SJS
-import           System.Exit ( ExitCode (..), die )
 import           System.FilePath.Posix ( joinPath )
-import           System.Process
 import           Text.InterpolatedString.Perl6 ( qq )
 
 
@@ -49,22 +46,6 @@ export default api;
             , SJS.moduleName="api"
             }
     SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI String String Int Int)) ((prefix <>) . axios') $ joinPath [ path, "rest_api.js"]
-
-
-prepareStaticFiles = do
-    putStrLn "Generate statis files..."
-    ( exitCode, out, err )
-        <- readCreateProcessWithExitCode
-            (shell "npm run-script build"){ cwd=Just "web" }
-            []
-    putStrLn "npm output:"
-    putStrLn out
-    when (exitCode /= ExitSuccess || not (null err)) $ do
-        putStrLn "npm error:"
-        putStrLn err
-        die "npm compilation failed!"
-    putStrLn "Generate statis files...OK"
-
 
 
 application receivedValues model = do

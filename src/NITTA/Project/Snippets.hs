@@ -15,7 +15,6 @@ Stability   : experimental
 module NITTA.Project.Snippets
     ( snippetClkGen
     , snippetDumpFile
-    , snippetInitialFinish
     ) where
 
 import           NITTA.Utils
@@ -39,14 +38,5 @@ snippetDumpFile mn = codeBlock [qc|
     initial begin
         $dumpfile("{ mn }_tb.vcd");
         $dumpvars(0, { mn }_tb);
-    end
-    |]
-
-
-snippetInitialFinish :: String -> String
-snippetInitialFinish block = codeBlock [qc|
-    initial begin
-        {block}
-        $finish;
     end
     |]
