@@ -48,6 +48,7 @@ extra-doc-files:
 
 library
   exposed-modules:
+      NITTA.Intermediate.DataFlow
       NITTA.Intermediate.Functions
       NITTA.Intermediate.Functions.Accum
       NITTA.Intermediate.Simulation
