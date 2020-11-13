@@ -610,7 +610,7 @@ instance ( VarValTime v x t
             { inline $ if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
 
             // initialization flags
-            reg { S.join ", " envInitFlags };
+            { if null envInitFlags then "" else "reg " <> S.join ", " envInitFlags <> ";" }
             assign env_init_flag = { defEnvInitFlag envInitFlags ioSync };
 
             { inline testEnv }
