@@ -22,7 +22,7 @@ NITTA.Project:TargetSynthesis                                                   
     # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
                       |                    |     |  |
                       *<--lua2functions    |     |  |
-                      |                    |     |  v      NITTA.Model.TargetSystem:ModelState--\
+                      |                    |     |  v    NITTA.Model.TargetSystem:TargetSystem--\
     # tDFG <----------+                    +--------*------------> # mUnit        |             |    NITTA.Model...
         |                                        |                                |             |     /-----------\
         |                                        v                                |             |     |  Target   |
@@ -88,7 +88,7 @@ import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
-import           NITTA.Project
+import           NITTA.Project ( Project (..), TestbenchReport (..), runTestbench, writeWholeProject )
 import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Tree
 import           System.FilePath ( joinPath )
@@ -173,7 +173,7 @@ runTargetSynthesis TargetSynthesis
                 then Right leafNode
                 else Left "synthesis process...fail"
 
-        project Node{ nModel=ModelState{ mUnit, mDataFlowGraph } } = Project
+        project Node{ nModel=TargetSystem{ mUnit, mDataFlowGraph } } = Project
             { pName=tName
             , pLibPath=tLibPath
             , pPath=joinPath [ tPath, tName ]
@@ -206,7 +206,7 @@ runTargetSynthesis TargetSynthesis
 
 -- |Make a model of NITTA process with one network and a specific algorithm. All
 -- functions are already bound to the network.
-mkModelWithOneNetwork arch dfg = ModelState
+mkModelWithOneNetwork arch dfg = TargetSystem
     { mUnit=foldl (flip bind) arch $ functions dfg
     , mDataFlowGraph=dfg
     }

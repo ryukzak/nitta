@@ -50,7 +50,7 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Types
-import           NITTA.Model.TargetSystem ( ModelState (..) )
+import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Synthesis.Estimate
 import           NITTA.Utils
@@ -61,7 +61,7 @@ import           Numeric.Interval ( Interval )
 -- be 'Node' or 'Edge';
 type G e tag v x t
     = e
-        (ModelState (BusNetwork tag v x t) v x)
+        (TargetSystem (BusNetwork tag v x t) v x)
         (SynthesisStatement tag v x (TimeConstrain t))
         (SynthesisStatement tag v x (Interval t))
 
@@ -224,8 +224,8 @@ nStepBackDecisionRepeated' acc d Node{ nOrigin=Just Edge{ eDecision, eSource } }
 -- transferred.
 
 -- FIXME: Should be moved.
-isSynthesisFinish :: ( ProcessorUnit u v x t ) => ModelState u v x -> Bool
-isSynthesisFinish ModelState{ mUnit, mDataFlowGraph } = let
+isSynthesisFinish :: ( ProcessorUnit u v x t ) => TargetSystem u v x -> Bool
+isSynthesisFinish TargetSystem{ mUnit, mDataFlowGraph } = let
         inWork = transferred mUnit
         inAlg = variables mDataFlowGraph
     in inWork == inAlg

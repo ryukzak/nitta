@@ -33,7 +33,7 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Types
-import           NITTA.Model.TargetSystem ( ModelState (..) )
+import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Utils
 import           Numeric.Interval ( inf, sup )
@@ -76,7 +76,7 @@ data EstimationCntx m tag v x t
 --
 -- - a unit model;
 -- - how many synthesis step back require for decision duplicate.
-prepareEstimationCntx unitModel@ModelState{ mUnit, mDataFlowGraph } decisionDuplicateNStepBack
+prepareEstimationCntx unitModel@TargetSystem{ mUnit, mDataFlowGraph } decisionDuplicateNStepBack
     = let
         opts = synthesisOptions unitModel
         bindableFunctions = [ f | (Binding f _) <- opts ]
@@ -291,7 +291,7 @@ objectiveFunction
 ------------------------------------------------------------
 -- *Internal
 
-optionsAfterBind f tag ModelState{ mUnit=BusNetwork{ bnPus } }
+optionsAfterBind f tag TargetSystem{ mUnit=BusNetwork{ bnPus } }
     = case tryBind f (bnPus M.! tag) of
         Right pu' -> filter (\(EndpointSt act _) -> act `optionOf` f) $ endpointOptions pu'
         _         -> []

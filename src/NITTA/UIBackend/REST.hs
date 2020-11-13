@@ -35,7 +35,7 @@ import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
-import           NITTA.Project
+import           NITTA.Project ( Project (..), writeAndRunTestbench )
 import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Tree
 import           NITTA.UIBackend.Marshalling
@@ -124,7 +124,7 @@ postSynthesis BackendCntx{ root } n
 
 testBench BackendCntx{ root, receivedValues } nId pName = liftIO $ do
         node <- getNodeIO root nId
-        let ModelState{ mDataFlowGraph } = nModel node
+        let TargetSystem{ mDataFlowGraph } = nModel node
         unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
         view <$> writeAndRunTestbench Project
             { pName
@@ -138,7 +138,7 @@ testBench BackendCntx{ root, receivedValues } nId pName = liftIO $ do
 
 ------------------------------------------------------------
 
-extractFuns ModelState{ mDataFlowGraph=DFCluster nodes }
+extractFuns TargetSystem{ mDataFlowGraph=DFCluster nodes }
     = map (\(DFLeaf f) -> f) nodes
 extractFuns _ = error "unsupported algorithm structure"
 

@@ -49,7 +49,7 @@ import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
-import           NITTA.Project
+import           NITTA.Project ( TestbenchReport (..) )
 import           NITTA.Synthesis.Estimate
 import           NITTA.Synthesis.Tree
 import           NITTA.Synthesis.Utils
@@ -376,7 +376,7 @@ instance ToJSON Relation where
     toJSON (Vertical a b) = toJSON [ a, b ]
 
 instance ( VarValTimeJSON v x t
-        ) => ToJSON (ModelState (BusNetwork String v x t) v x)
+        ) => ToJSON (TargetSystem (BusNetwork String v x t) v x)
 
 instance ( VarValTimeJSON v x t
          ) => ToJSON (Process v x t) where

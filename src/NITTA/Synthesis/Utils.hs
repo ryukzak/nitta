@@ -43,4 +43,4 @@ isPUSynthesisFinite pu
 
 
 -- FIXME: Should be moved.
-targetProcessDuration ModelState{ mUnit } = nextTick $ process mUnit
+targetProcessDuration TargetSystem{ mUnit } = nextTick $ process mUnit
