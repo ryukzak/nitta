@@ -23,10 +23,10 @@ import qualified Data.Set as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
-import           NITTA.Model.TargetSystem
+import           NITTA.Model.Types
+import           NITTA.TargetSynthesis ()
 import           Test.Tasty ( testGroup )
 import           Test.Tasty.HUnit
-
 
 tests = testGroup "Refactor problem"
     [ testCase "self sending 1" $ let

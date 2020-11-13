@@ -5,23 +5,23 @@ import { AppContext, IAppContext } from "../../app/AppContext";
 import {
   EdgeView,
   IBindingView,
-  IBindEdgeParameter,
+  IBindEdgeParameterView,
   IRefactorView,
   IDataflowView,
-  IDataFlowEdgeParameter,
+  IDataFlowEdgeParameterView,
   Interval,
-  IRefactorEdgeParameter
+  IRefactorEdgeParameterView
 } from "../../../gen/types";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
 
 type Edge = EdgeView<string, string, number, number>;
 type Binding = IBindingView<string, string, number, number>;
-type BindingParam = IBindEdgeParameter;
+type BindingParam = IBindEdgeParameterView;
 type Refactor = IRefactorView<string, string, number, number>;
 type Dataflow = IDataflowView<string, string, number, Interval<number>>;
-type DataflowParam = IDataFlowEdgeParameter;
-type RefactorParam = IRefactorEdgeParameter;
+type DataflowParam = IDataFlowEdgeParameterView;
+type RefactorParam = IRefactorEdgeParameterView;
 
 type EdgesProps = {
   edges: Edge[];

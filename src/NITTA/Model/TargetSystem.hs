@@ -6,6 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
 Module      : NITTA.Model.TargetSystem
@@ -18,17 +19,17 @@ Stability   : experimental
 module NITTA.Model.TargetSystem
 -- TODO: rename to ModelState
     ( ModelState(..)
-    , DataFlowGraph(..), fsToDataFlowGraph
     ) where
 
 import           Control.Exception ( assert )
 import qualified Data.List as L
 import qualified Data.Set as S
 import           GHC.Generics
-import           NITTA.Intermediate.Functions ( reg )
+import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
+import           NITTA.Model.Problems.Refactor.Accum
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Utils
@@ -75,14 +76,8 @@ instance ( UnitTag tag, VarValTime v x t
             , mUnit=refactorDecision mUnit bl
             }
 
+    refactorDecision ModelState{} OptimizeAccum{} = undefined
 
--- |Data flow graph - intermediate representation of application algorithm.
--- Right now can be replaced by @[F v x]@, but for future features like
--- conduction statement, we don't do that.
-data DataFlowGraph v x
-    = DFLeaf (F v x)
-    | DFCluster [ DataFlowGraph v x ]
-    deriving ( Show, Generic )
 
 instance Eq ( DataFlowGraph v x) where
     (DFCluster c1) == (DFCluster c2) = S.fromList (map show c1) == S.fromList (map show c2)
@@ -109,7 +104,7 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
 
 instance ( Var v, Val x
         ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions _ = []
+    refactorOptions dfg = optimizeAccumOptions dfg
 
     refactorDecision dfg r@ResolveDeadlock{} = let
             ( buffer, diff ) = prepareBuffer r
@@ -121,6 +116,8 @@ instance ( Var v, Val x
             $ DFLeaf (recLoopIn bl){ funHistory=[origin] }
             : DFLeaf (recLoopOut bl){ funHistory=[origin] }
             : ( leafs L.\\ [ DFLeaf origin ] )
+
+    refactorDecision dfg ref@OptimizeAccum{} = optimizeAccumDecision dfg ref
 
     refactorDecision _ _ = error "DataFlowGraph "
 
@@ -137,5 +134,3 @@ instance ( UnitTag tag, VarValTime v x t
     synthesisDecision m (Refactor d) = refactorDecision m d
 
 
--- |Convert @[ F v x ]@ to 'DataFlowGraph'.
-fsToDataFlowGraph alg = DFCluster $ map DFLeaf alg

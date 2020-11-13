@@ -41,8 +41,9 @@ import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems hiding ( Bind, Refactor )
 import           NITTA.Model.ProcessorUnits.Types
-import           NITTA.Model.TargetSystem
+import           NITTA.Model.TargetSystem ()
 import           NITTA.Model.Tests.Microarchitecture
+import           NITTA.Model.Types
 import           NITTA.Project
 import qualified NITTA.Project as N
 import           NITTA.TargetSynthesis

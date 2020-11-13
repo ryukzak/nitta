@@ -12,12 +12,12 @@ export interface ISynthesisHistoryViewProps {
   reverse: boolean;
 }
 
-export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props => {
+export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props) => {
   const appContext = useContext(AppContext) as IAppContext;
   const [synthesisHistory, setHistory] = useState<Node[]>();
   const style = {
     fontWeight: 600,
-    width: "100%"
+    width: "100%",
   };
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
             {stepNumber(row)}
           </button>
         );
-      }
+      },
     };
   }
 
@@ -86,7 +86,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
       style: style,
       maxWidth: maxWidth,
       minWidth: minWidth,
-      Cell: (row: { original: Node }) => f(row.original)
+      Cell: (row: { original: Node }) => f(row.original),
     };
   }
 
@@ -108,16 +108,16 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = props 
             100
           ),
           textColumn("description", (n: Node) => {
-            if (n.nvId === "-") return <> INITIAL STATE</>;
+            if (n.nvId === "-") return <>INITIAL STATE</>;
             let decision = n.nvOrigin!.decision;
             return (
               <>
                 {decision.tag === "BindingView" && decision.pu + " <- " + decision.function.fvFun}
-                {decision.tag === "RefactorView" && decision.contents}
+                {decision.tag === "RefactorView" && JSON.stringify(decision.contents)}
                 {decision.tag === "DataflowView" && JSON.stringify(decision)}
               </>
             );
-          })
+          }),
         ]}
       />
     </>

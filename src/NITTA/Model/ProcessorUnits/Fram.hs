@@ -490,8 +490,7 @@ instance UnambiguouslyDecode (Fram v x t) where
     decodeInstruction (WriteCell addr) = Microcode False True $ Just addr
 
 
-instance ( VarValTime v x t, Integral x
-         ) => Testable (Fram v x t) v x where
+instance ( VarValTime v x t ) => Testable (Fram v x t) v x where
     testBenchImplementation prj@Project{ pName, pUnit}
         = let
             width = addrWidth pUnit

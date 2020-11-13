@@ -51,7 +51,7 @@ newtype Acc v x = Acc { actions :: [Action v] } deriving (Typeable, Eq)
 instance ( Show v ) => Show (Acc v x) where
     show (Acc lst) =  concatMap show lst
 
-instance Label (Acc v x) where label Acc{} = "+"
+instance Label (Acc v x) where label Acc{} = "Acc"
 
 -- |Create function with type F of Acc
 acc lst = packF $ Acc lst

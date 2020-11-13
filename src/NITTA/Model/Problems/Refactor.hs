@@ -79,8 +79,23 @@ data Refactor v x
         , loopO :: S.Set v -- ^output variables
         , loopI :: v       -- ^input variable
         }
-    deriving ( Generic, Show, Eq )
+    | OptimizeAccum
+        { refOld :: [F v x]
+        , refNew :: [F v x]
+        }
+      -- ^OptimizeAccum example:
+      --
+      -- > OptimizeAccum [+a +tmp_1 => d; +b +c => tmp_1] [+a +b +c => d]
+      --
+      -- before:
+      --
+      -- > [+a +tmp_1 => d; +b +c => tmp_1]
+      --
+      -- after:
+      --
+      -- > [+a +b +c => d]
 
+    deriving ( Generic, Show, Eq )
 
 recLoop BreakLoop{ loopX, loopO, loopI }
     = packF $ Loop (X loopX) (O loopO) (I loopI)

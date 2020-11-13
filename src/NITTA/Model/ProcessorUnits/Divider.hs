@@ -370,8 +370,7 @@ instance ( Val x, Show t
 instance IOTestBench (Divider v x t) v x
 
 
-instance ( VarValTime v x t, Integral x
-         ) => Testable (Divider v x t) v x where
+instance ( VarValTime v x t ) => Testable (Divider v x t) v x where
     testBenchImplementation prj@Project{ pName, pUnit }
         = Immediate (moduleName pName pUnit ++ "_tb.v")
             $ snippetTestBench prj SnippetTestBenchConf

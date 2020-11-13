@@ -24,6 +24,8 @@ module NITTA.UIBackend.Marshalling
     ( Viewable(..)
     , SynthesisNodeView
     , SynthesisDecisionView
+    , RefactorView
+    , ParametersView
     , DataflowEndpointView
     , NodeView, EdgeView, FView
     , TreeView, viewNodeTree
@@ -131,19 +133,32 @@ data SynthesisDecisionView tag v x tp
         { source  :: DataflowEndpointView tag tp
         , targets :: HM.HashMap v (Maybe (DataflowEndpointView tag tp))
         }
-    | RefactorView (Refactor v x)
+    | RefactorView RefactorView
     deriving ( Generic )
 
 instance ( Show x, Show v, ToJSON v, ToJSONKey v, ToJSON tp, ToJSON tag
         ) => ToJSON (SynthesisDecisionView tag v x tp)
 
-instance ( Var v, Hashable v
+instance ( Var v, Hashable v, Show x
          ) => Viewable
              ( NId, SynthesisStatement tag v x tp )
              ( NId, SynthesisDecisionView tag v x tp ) where
     view ( nid, st ) = ( nid, view st )
 
-instance ( Var v, Hashable v
+
+
+instance Viewable (Refactor () ()) RefactorView where
+    view (ResolveDeadlock set) = ResolveDeadlockView $ map show $ S.toList set
+    view BreakLoop {loopX, loopO, loopI} =
+        BreakLoopView
+            { loopX = show loopX
+            , loopO = map show ( S.toList loopO )
+            , loopI = show loopI
+            }
+    view (OptimizeAccum refOld refNew) = OptimizeAccumView (map view refOld) (map view refNew)
+
+
+instance ( Var v, Show x, Hashable v
          ) => Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp) where
     view (Binding f pu) = BindingView
         { function=view f
@@ -156,9 +171,27 @@ instance ( Var v, Hashable v
             (fmap $ uncurry DataflowEndpointView)
             $ HM.fromList $ M.assocs dfTargets
         }
-    view (Refactor r) = RefactorView r
+    view (Refactor (ResolveDeadlock set )) = RefactorView $ ResolveDeadlockView $ map show $ S.toList set
+    view (Refactor (BreakLoop {loopX, loopO, loopI})) = RefactorView $
+        BreakLoopView
+            { loopX = show loopX
+            , loopO = map show ( S.toList loopO )
+            , loopI = show loopI
+            }
+    view (Refactor (OptimizeAccum refOld refNew)) = RefactorView $ OptimizeAccumView (map view refOld) (map view refNew)
 
 
+data RefactorView
+    = ResolveDeadlockView [String]
+    | BreakLoopView
+        { loopX :: String -- ^initial looped value
+        , loopO :: [String] -- ^output variables
+        , loopI :: String -- ^input variable
+        }
+    | OptimizeAccumView [FView] [FView]
+    deriving ( Generic , Show)
+
+instance ToJSON RefactorView
 
 data NodeView tag v x t
     = NodeView
@@ -188,7 +221,7 @@ data EdgeView tag v x t
         { nid                    :: String
         , option                 :: SynthesisDecisionView tag v x (TimeConstrain t)
         , decision               :: SynthesisDecisionView tag v x (Interval t)
-        , parameters             :: Parameters
+        , parameters             :: ParametersView
         , objectiveFunctionValue :: Float
         }
     deriving ( Generic )
@@ -201,12 +234,80 @@ instance ( VarValTimeJSON v x t, Hashable v ) => Viewable (G Edge tag v x t) (Ed
             { nid=show $ nId eTarget
             , option=view eOption
             , decision=view eDecision
-            , parameters=eParameters
+            , parameters=view eParameters
             , objectiveFunctionValue=eObjectiveFunctionValue
             }
 
+data ParametersView
+    = BindEdgeParameterView
+        { pCritical                :: Bool
+        , pAlternative             :: Float
+        , pRestless                :: Float
+        , pOutputNumber            :: Float
+        , pAllowDataFlow           :: Float
+        , pPossibleDeadlock        :: Bool
+        , pNumberOfBindedFunctions :: Float
+        , pPercentOfBindedInputs   :: Float
+        , pWave                    :: Maybe Float
+        }
+    | DataFlowEdgeParameterView
+        { pWaitTime              :: Float
+        , pRestrictedTime        :: Bool
+        , pNotTransferableInputs :: [Float]
+        }
+    | RefactorEdgeParameterView
+        { pRefactorType                  :: RefactorView
+        , pNumberOfLockedVariables       :: Float
+        , pBufferCount                   :: Float
+        , pNStepBackRepeated             :: Maybe Int
+        , pNumberOfTransferableVariables :: Float
+        }
+    deriving ( Show, Generic )
 
--- JSON
+instance ToJSON ParametersView
+
+instance Viewable Parameters ParametersView where
+    view BindEdgeParameter
+        { pCritical
+        , pAlternative
+        , pRestless
+        , pOutputNumber
+        , pAllowDataFlow
+        , pPossibleDeadlock
+        , pNumberOfBindedFunctions
+        , pPercentOfBindedInputs
+        , pWave
+        } = BindEdgeParameterView
+            { pCritical = pCritical
+            , pAlternative = pAlternative
+            , pRestless = pRestless
+            , pOutputNumber = pOutputNumber
+            , pAllowDataFlow = pAllowDataFlow
+            , pPossibleDeadlock = pPossibleDeadlock
+            , pNumberOfBindedFunctions = pNumberOfBindedFunctions
+            , pPercentOfBindedInputs = pPercentOfBindedInputs
+            , pWave = pWave
+            }
+
+    view DataFlowEdgeParameter { pWaitTime, pRestrictedTime, pNotTransferableInputs } = DataFlowEdgeParameterView
+        { pWaitTime = pWaitTime
+        , pRestrictedTime = pRestrictedTime
+        , pNotTransferableInputs
+        }
+
+    view RefactorEdgeParameter
+        { pRefactorType
+        , pNumberOfLockedVariables
+        , pBufferCount
+        , pNStepBackRepeated
+        , pNumberOfTransferableVariables } = RefactorEdgeParameterView
+            { pRefactorType  = view pRefactorType
+            , pNumberOfLockedVariables = pNumberOfLockedVariables
+            , pBufferCount = pBufferCount
+            , pNStepBackRepeated = pNStepBackRepeated
+            , pNumberOfTransferableVariables = pNumberOfTransferableVariables
+            }
+
 
 type VarValTimeJSON v x t = ( Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t )
 
@@ -380,7 +481,8 @@ data FView = FView
            { fvFun     :: String
            , fvHistory :: [ String ]
            }
-    deriving ( Generic )
+    deriving ( Generic, Show )
+
 instance ToJSON FView
 instance Viewable (F v x) FView where
     view F{ fun, funHistory } = FView

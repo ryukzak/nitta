@@ -202,7 +202,7 @@ data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Add v x) where label Add{} = "+"
 instance ( Show v ) => Show (Add v x) where
     show (Add (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " + " ++ show k2
-add :: ( Var v, Val x, Num x ) => v -> v -> [v] -> F v x
+add :: ( Var v, Val x ) => v -> v -> [v] -> F v x
 add a b c = packF $ Add (I a) (I b) $ O $ fromList c
 
 instance ( Ord v ) => Function (Add v x) v where
@@ -224,7 +224,7 @@ data Sub v x = Sub (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Sub v x) where label Sub{} = "-"
 instance ( Show v ) => Show (Sub v x) where
     show (Sub (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " - " ++ show k2
-sub :: ( Var v, Val x, Num x ) => v -> v -> [v] -> F v x
+sub :: ( Var v, Val x ) => v -> v -> [v] -> F v x
 sub a b c = packF $ Sub (I a) (I b) $ O $ fromList c
 
 instance ( Ord v ) => Function (Sub v x) v where
@@ -246,7 +246,7 @@ data Multiply v x = Multiply (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Multiply v x) where label Multiply{} = "*"
 instance ( Show v ) => Show (Multiply v x) where
     show (Multiply (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " * " ++ show k2
-multiply :: ( Var v, Val x, Num x ) => v -> v -> [v] -> F v x
+multiply :: ( Var v, Val x ) => v -> v -> [v] -> F v x
 multiply a b c = packF $ Multiply (I a) (I b) $ O $ fromList c
 
 instance ( Ord v ) => Function (Multiply v x) v where

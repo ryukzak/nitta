@@ -141,7 +141,7 @@ data SnippetTestBenchConf m
 
 -- |Function for testBench PU test
 snippetTestBench ::
-    ( VarValTime v x t, Num x
+    ( VarValTime v x t
     , Show (EndpointRole v)
     , WithFunctions m (F v x)
     , ProcessorUnit m v x t, TargetSystemComponent m, UnambiguouslyDecode m, Typeable m

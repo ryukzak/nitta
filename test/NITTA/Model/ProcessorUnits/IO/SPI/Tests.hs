@@ -22,7 +22,7 @@ import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Tests.Functions ()
 import           NITTA.LuaFrontend.Tests.Utils
 import           NITTA.Model.Networks.Types
-import           NITTA.Model.TargetSystem
+import           NITTA.Model.Types
 import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.TargetSynthesis
 import           Test.Tasty ( TestTree, testGroup )

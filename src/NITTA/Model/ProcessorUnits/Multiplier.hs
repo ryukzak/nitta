@@ -734,8 +734,7 @@ instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
 -- of outer influence o mUnit (signals and input data), and also check sequence of output signals
 -- and data. Output data is compared with results of functional simulations and if they doesn't match
 -- then error message is displaing.
-instance ( VarValTime v x t, Integral x
-         ) => Testable (Multiplier v x t) v x where
+instance ( VarValTime v x t ) => Testable (Multiplier v x t) v x where
     testBenchImplementation prj@Project{ pName, pUnit }
         -- Test bech is one file described below. We use ready snippet for it generation, because
         -- in most cases they will be similar. The data structure 'NITTA.Project.Parts.SnippetTestBenchConf' has the

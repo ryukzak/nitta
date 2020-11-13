@@ -228,6 +228,8 @@ estimateParameters ObjectiveFunctionConf{} EstimationCntx{ decisionDuplicateNSte
         , pNumberOfTransferableVariables=fromIntegral (S.size $ vs `S.intersection` transferableVars)
         }
 
+estimateParameters ObjectiveFunctionConf{} EstimationCntx{} (Refactor OptimizeAccum {}) = undefined
+
 
 -- |Synthesis process setup, which determines next synthesis step selection.
 newtype ObjectiveFunctionConf
@@ -274,6 +276,8 @@ objectiveFunction
         RefactorEdgeParameter{ pRefactorType=ResolveDeadlock{}, pNumberOfLockedVariables, pBufferCount, pNumberOfTransferableVariables }
             -> 1000 + pNumberOfLockedVariables - pBufferCount * 1000
                 - 20 * pNumberOfTransferableVariables
+        RefactorEdgeParameter{ pRefactorType=OptimizeAccum{} }
+            -> 3000 -- TODO: random value. Have to test.
         -- _ -> -1
 
 

@@ -370,6 +370,7 @@ instance ( UnitTag tag, VarValTime v x t
             , bnBinded=M.insert puTag bindedToPU' bnBinded
             }
 
+    refactorDecision BusNetwork{} OptimizeAccum{} = undefined
 
 --------------------------------------------------------------------------
 -- |Add binding to Map tag [F v x] dict

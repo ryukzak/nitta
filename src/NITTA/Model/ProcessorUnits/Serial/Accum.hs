@@ -305,8 +305,7 @@ instance ( Ord t ) => WithFunctions (Accum v x t) (F v x) where
         = functions process_ ++ map func work
 
 
-instance ( VarValTime v x t, Integral x
-         ) => Testable (Accum v x t) v x where
+instance ( VarValTime v x t ) => Testable (Accum v x t) v x where
     testBenchImplementation prj@Project{ pName, pUnit } = let
             tbcSignalsConst = ["resetAcc", "load", "oe", "neg"]
 
