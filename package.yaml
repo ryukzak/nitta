@@ -40,7 +40,7 @@ homepage: 'https://nitta.io'
 extra-doc-files:
   - README.md
 
-ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures
+ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
 
 dependencies:
   - MissingH

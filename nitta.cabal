@@ -3,8 +3,6 @@ cabal-version: 1.18
 -- This file has been generated from package.yaml by hpack version 0.34.2.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: 3e49fb460047952d5f469b53e99255784d5c428ca3cee89254a7bc09afd7efac
 
 name:           nitta
 version:        0.0.0.1
@@ -108,7 +106,7 @@ library
       Paths_nitta
   hs-source-dirs:
       src
-  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures
+  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
       HStringTemplate
     , MissingH
@@ -150,7 +148,7 @@ executable nitta
       Paths_nitta
   hs-source-dirs:
       app
-  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -threaded -rtsopts -with-rtsopts=-N -main-is Main
+  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is Main
   build-depends:
       MissingH
     , base
@@ -171,7 +169,7 @@ executable nitta-api-gen
       Paths_nitta
   hs-source-dirs:
       app
-  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
+  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
   build-depends:
       MissingH
     , aeson
@@ -216,7 +214,7 @@ test-suite nitta-test
       Paths_nitta
   hs-source-dirs:
       test
-  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
+  ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
   build-depends:
       MissingH
     , QuickCheck
