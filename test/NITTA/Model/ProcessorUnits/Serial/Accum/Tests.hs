@@ -15,6 +15,7 @@ module NITTA.Model.ProcessorUnits.Serial.Accum.Tests
     ) where
 
 import           Data.Default
+import qualified Data.Set as S
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Tests.Functions ()
 import           NITTA.Intermediate.Types
@@ -43,6 +44,24 @@ tests = testGroup "Accum PU"
         [ constant (-10) ["a", "e", "k"]
         , loop 1 "l" ["b", "c", "f", "g", "h", "j"]
         , accFromStr "+a + b + c = d; +e + f -g -h = i; -j + k = l = m"
+        ]
+    , nittaCoSimTestCase "many_simul_outputs_grouped" march
+        [ loop 1 "d" ["a"]
+        , loop 1 "e" ["b"]
+        , loop 1 "f" ["c"]
+        , acc [ Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c")
+              , Pull (O $ S.fromList ["d", "e", "f"])
+              ]
+        ]
+    , nittaCoSimTestCase "many_simul_outputs_not_grouped" march
+        [ loop 1 "d" ["a"]
+        , loop 1 "e" ["b"]
+        , loop 1 "f" ["c"]
+        , acc [ Push Plus (I "a"), Push Plus (I "b"), Push Plus (I "c")
+              , Pull (O $ S.fromList ["d"])
+              , Pull (O $ S.fromList ["e"])
+              , Pull (O $ S.fromList ["f"])
+              ]
         ]
     , puCoSimTestCase "as register" accumDef [("a", 99)]
         [ accFromStr "+a = c;"
