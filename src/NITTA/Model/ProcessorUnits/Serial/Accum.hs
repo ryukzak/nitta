@@ -8,6 +8,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {-|
@@ -94,14 +95,21 @@ instance ( VarValTime v x t ) => Default (Accum v x t) where
 instance Default x => DefaultX (Accum v x t) x
 
 
-setRemain f
-    | Just (Acc vs) <- castF f = zip (pushActionGroups vs) (pullActionGroups vs)
-    | otherwise                = error "Error! Function is not Acc"
+tryBindJob f@Acc{ actions } = Job
+    { tasks=concat $ actionGroups actions
+    , current=[]
+    , func=packF f
+    , calcEnd=False
+    }
 
-
-tryBindJob f = Job{ tasks = functionModel, current = [], func = f, calcEnd = False}
-    where
-        functionModel = concatMap (\(push, pull) -> [push, map (\x -> (False, x)) pull]) (setRemain f)
+actionGroups [] = []
+actionGroups as
+    | let
+        (pushs, as') = span isPush as
+        (pulls, as'') = span isPull as'
+    = [ map (\(Push sign (I v)) -> (sign == Minus, v)) pushs
+      , concatMap (\(Pull (O vs)) -> map (True,) $ elems vs) pulls
+      ] : actionGroups as''
 
 
 endpointOptionsJob Job{ tasks=[] } = []
@@ -137,16 +145,16 @@ toSource = odd . length
 
 instance ( VarValTime v x t, Num x ) => ProcessorUnit (Accum v x t) v x t where
     tryBind f pu@Accum{work}
-        | Just (Add a b c) <- castF f = Right pu{ work=tryBindJob ( acc [Push Plus a, Push Plus b, Pull c] ) : work }
-        | Just (Sub a b c) <- castF f = Right pu{ work=tryBindJob ( acc [Push Plus a, Push Minus b, Pull c] ) : work }
-        | Just Acc{}       <- castF f = Right pu{ work=tryBindJob f : work }
+        | Just (Add a b c) <- castF f = Right pu{ work=tryBindJob ( Acc [Push Plus a, Push Plus b, Pull c] ) : work }
+        | Just (Sub a b c) <- castF f = Right pu{ work=tryBindJob ( Acc [Push Plus a, Push Minus b, Pull c] ) : work }
+        | Just f'@Acc{}    <- castF f = Right pu{ work=tryBindJob f' : work }
         | otherwise = Left $ "The function is unsupported by Accum: " ++ show f
 
     process = process_
 
 
 instance ( VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
-    endpointOptions Accum{ currentWork = Just (_, a@Job { tasks, calcEnd }), process_ = Process { nextTick=tick } }
+    endpointOptions Accum{ currentWork=Just (_, a@Job { tasks, calcEnd }), process_=Process { nextTick=tick } }
         | toTarget tasks = targets
         | toSource tasks = sources
             where

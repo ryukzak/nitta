@@ -21,7 +21,7 @@ module NITTA.Intermediate.Functions.Accum
       -- * Acc to function
     , acc, accFromStr
       -- * Utils functions
-    , pullActionGroups, pushActionGroups
+    , isPull, isPush
     ) where
 
 import           Data.List ( partition )
@@ -43,7 +43,7 @@ instance Show Sign where
 data Action v = Push Sign (I v) | Pull (O v) deriving (Typeable, Eq)
 
 instance (Show v) => Show ( Action v ) where
-    show (Push s (I v)) = [qc| { show s } { show v }|]
+    show (Push s (I v)) = [qc| { show s }{ show v }|]
     show (Pull (O v))   = concatMap (\res -> [qc| => {show res}|]) (elems v) ++ ";"
 
 newtype Acc v x = Acc { actions :: [Action v] } deriving (Typeable, Eq)
@@ -103,17 +103,6 @@ accGen blocks = let
         pullCreate lst = Pull $ O $ fromList $ foldl (\buff (_:name) -> name : buff ) [] lst
     in
         Acc $ concatMap (\(push, pull) -> pushCreate push ++ [pullCreate pull]) $ partedExpr blocks
-
--- |Get groups of pushs
-pushActionGroups lst = let
-        signCheck (Push Plus (I v))  = (False, v)
-        signCheck (Push Minus (I v)) = (True, v)
-        signCheck _                  = error "Error . pattern matching in signCheck func in Functions.hs"
-    in
-        map (map signCheck) $ filter (not . null) $ splitWhen isPull lst
-
--- |Get groups of pulls
-pullActionGroups lst = concatMap (map (elems . fromPull)) $ filter (not . null) $ splitWhen isPush lst
 
 instance ( Var v ) => Locks (Acc v x) v where
     locks accList = let
