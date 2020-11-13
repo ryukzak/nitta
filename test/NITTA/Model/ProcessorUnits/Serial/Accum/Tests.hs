@@ -36,13 +36,17 @@ tests = testGroup "Accum PU"
         , accFromStr "+a + b + c = d"
         ]
     , nittaCoSimTestCase "medium" march
-        [ constant (-1) ["a"]
-        , loop 1 "i" ["b", "c", "e", "f", "g", "h"]
+        [ loop 1 "i" ["a"]
+        , loop 1 "d" ["b"]
+        , constant (-1) ["c", "e", "f", "g", "h"]
         , accFromStr "+a + b + c = d; +e + f -g -h = i;"
         ]
     , nittaCoSimTestCase "hard" march
-        [ constant (-10) ["a", "e", "k"]
-        , loop 1 "l" ["b", "c", "f", "g", "h", "j"]
+        [ loop 1 "d" ["a"]
+        , loop 1 "i" ["b"]
+        , loop 1 "l" ["c"]
+        , loop 1 "m" ["e"]
+        , constant (-10) ["f", "g", "h", "j", "k"]
         , accFromStr "+a + b + c = d; +e + f -g -h = i; -j + k = l = m"
         ]
     , nittaCoSimTestCase "many_simul_outputs_grouped" march
