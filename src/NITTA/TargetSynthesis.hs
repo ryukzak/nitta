@@ -145,7 +145,7 @@ runTargetSynthesis TargetSynthesis
         , tLibPath, tPath, tSimulationCycleN
         } = do
     -- TODO: check that tName is a valid verilog module name
-    when (elem ' ' tName) $ error "TargetSynthesis name contain wrong symbols"
+    when (' ' `elem` tName) $ error "TargetSynthesis name contain wrong symbols"
     tDFG' <- maybe (return tDFG) translateToIntermediate tSourceCode
     rootNode <- mkRootNodeIO (mkModelWithOneNetwork tMicroArch tDFG')
     synthesisResult <- synthesis rootNode

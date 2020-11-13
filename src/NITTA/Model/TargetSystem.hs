@@ -25,7 +25,6 @@ import           GHC.Generics
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
-import           NITTA.Model.Problems.Refactor.Accum
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 
@@ -44,10 +43,12 @@ instance WithFunctions (ModelState (BusNetwork tag v x t) v x) (F v x) where
         = assert (S.fromList (functions mUnit) == S.fromList (functions mDataFlowGraph)) -- inconsistent ModelState
             $ functions mUnit
 
+
 instance ( UnitTag tag, VarValTime v x t
         ) => BindProblem (ModelState (BusNetwork tag v x t) v x) tag v x where
     bindOptions ModelState{ mUnit }      = bindOptions mUnit
     bindDecision f@ModelState{ mUnit } d = f{ mUnit=bindDecision mUnit d }
+
 
 instance ( UnitTag tag, VarValTime v x t
         ) => DataflowProblem (ModelState (BusNetwork tag v x t) v x) tag v t
@@ -55,28 +56,16 @@ instance ( UnitTag tag, VarValTime v x t
     dataflowOptions ModelState{ mUnit }      = dataflowOptions mUnit
     dataflowDecision f@ModelState{ mUnit } d = f{ mUnit=dataflowDecision mUnit d }
 
+
 instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (ModelState (BusNetwork tag v x t) v x) v x where
     refactorOptions ModelState{ mUnit } = refactorOptions mUnit
 
-    refactorDecision ModelState{ mUnit, mDataFlowGraph } r@ResolveDeadlock{}
+    refactorDecision ModelState{ mUnit, mDataFlowGraph } d
         = ModelState
-            { mDataFlowGraph=refactorDecision mDataFlowGraph r
-            , mUnit=refactorDecision mUnit r
+            { mDataFlowGraph=refactorDecision mDataFlowGraph d
+            , mUnit=refactorDecision mUnit d
             }
-
-    refactorDecision ModelState{ mUnit, mDataFlowGraph } bl@BreakLoop{}
-        = ModelState
-            { mDataFlowGraph=refactorDecision mDataFlowGraph bl
-            , mUnit=refactorDecision mUnit bl
-            }
-
-    refactorDecision ModelState{ mUnit, mDataFlowGraph } oa@OptimizeAccum{}
-        = ModelState
-            { mDataFlowGraph=optimizeAccumDecision mDataFlowGraph oa
-            , mUnit=refactorDecision mUnit oa
-            }
-
 
 
 instance ( UnitTag tag, VarValTime v x t
@@ -90,5 +79,3 @@ instance ( UnitTag tag, VarValTime v x t
     synthesisDecision m (Binding f tag) = bindDecision m $ Bind f tag
     synthesisDecision m@ModelState{ mUnit } (Dataflow src trg) = m{ mUnit=dataflowDecision mUnit $ DataflowSt src trg }
     synthesisDecision m (Refactor d) = refactorDecision m d
-
-

@@ -55,8 +55,9 @@ optimizeAccumOptions dfg = refactorContainers $ filter ((> 1) . length) $ create
 optimizeAccumDecision dfg OptimizeAccum{ refOld, refNew } = fsToDataFlowGraph refactoredFs
         where
             refactoredFs = filtered ++ refNew
-            filtered = filter (\f -> f `notElem` refOld) fs
+            filtered = filter (`notElem` refOld) fs
             fs = dataFlowGraphToFs dfg
+
 
 optimizeAccumDecision _ _ = error "In this function we can make decision only with OptimizeAccum option"
 
@@ -78,7 +79,7 @@ createContainers fs
     where
         listOfSets = S.toList $ S.fromList [toOneContainer fs1 fs2 | fs1 <- containered , fs2 <- containered, fs1 /= fs2]
         filtered = filter isSupportByAccum fs
-        containered = map (\x -> [x]) filtered
+        containered = map (:[]) filtered
 
 isSupportByAccum f
     | Just Add{} <- castF f = True

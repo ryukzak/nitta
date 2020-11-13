@@ -172,7 +172,7 @@ instance ( Var v, Show x, Hashable v
             $ HM.fromList $ M.assocs dfTargets
         }
     view (Refactor (ResolveDeadlock set )) = RefactorView $ ResolveDeadlockView $ map show $ S.toList set
-    view (Refactor (BreakLoop {loopX, loopO, loopI})) = RefactorView $
+    view (Refactor BreakLoop{loopX, loopO, loopI}) = RefactorView
         BreakLoopView
             { loopX = show loopX
             , loopO = map show ( S.toList loopO )
