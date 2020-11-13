@@ -32,6 +32,7 @@ import           Data.Default
 import           Data.List ( delete )
 import qualified Data.Map.Strict as M
 import           Data.Set ( difference, elems, empty, fromList, intersection, union )
+import qualified Data.String.Utils as S
 import           Debug.Trace
 import           NITTA.Intermediate.Functions ()
 import           NITTA.Intermediate.Simulation
@@ -96,7 +97,7 @@ nittaCoSimTestCase ::
 nittaCoSimTestCase n tMicroArch alg
     = testCase n $ do
         report <- runTargetSynthesisWithUniqName def
-            { tName=n
+            { tName=S.replace " " "_" n
             , tMicroArch
             , tDFG=fsToDataFlowGraph alg
             }

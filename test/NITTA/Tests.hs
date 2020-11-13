@@ -61,7 +61,7 @@ test_fibonacci =
 
 test_add_and_io =
     [ testCase "receive 4 variables" $ void $ runTargetSynthesisWithUniqName (def :: TargetSynthesis _ _ _ Int)
-        { tName="Two functions 4 variables"
+        { tName="receive_4_variables"
         , tMicroArch=marchSPI True pInt
         , tReceivedValues=[ ("a", [10..15]), ("b", [20..25]), ("e", [0..25]), ("f", [20..30])]
         , tDFG=fsToDataFlowGraph
