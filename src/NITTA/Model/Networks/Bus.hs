@@ -40,6 +40,7 @@ import           Data.Typeable
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems
+import           NITTA.Model.Problems.Refactor.Accum
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
@@ -295,7 +296,7 @@ instance ( UnitTag tag, VarValTime v x t
 
 instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (BusNetwork tag v x t) v x where
-    refactorOptions bn@BusNetwork{ bnPus, bnBinded } = let
+    refactorOptions bn@BusNetwork{ bnPus, bnBinded, bnRemains } = let
             sources tag = M.fromList
                 [ (s, ss `S.difference` S.singleton s)
                 | EndpointSt{ epRole } <- endpointOptions ( bnPus M.! tag )
@@ -345,6 +346,7 @@ instance ( UnitTag tag, VarValTime v x t
             [ concatMap refactorOptions $ M.elems bnPus
             , selfSending  -- FIXME: not depricated, but why? It is should be a deadlock
             , resolveDeadlock
+            , optimizeAccumOptions $ fsToDataFlowGraph bnRemains
             ]
 
     refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(ResolveDeadlock vs) = let
@@ -370,7 +372,9 @@ instance ( UnitTag tag, VarValTime v x t
             , bnBinded=M.insert puTag bindedToPU' bnBinded
             }
 
-    refactorDecision BusNetwork{} OptimizeAccum{} = undefined
+    refactorDecision bn@BusNetwork{ bnRemains } oa@OptimizeAccum{}
+        = bn{ bnRemains=dataFlowGraphToFs $ optimizeAccumDecision (fsToDataFlowGraph bnRemains) oa }
+
 
 --------------------------------------------------------------------------
 -- |Add binding to Map tag [F v x] dict

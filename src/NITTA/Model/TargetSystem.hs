@@ -76,7 +76,11 @@ instance ( UnitTag tag, VarValTime v x t
             , mUnit=refactorDecision mUnit bl
             }
 
-    refactorDecision ModelState{} OptimizeAccum{} = undefined
+    refactorDecision ModelState{ mUnit, mDataFlowGraph } oa@OptimizeAccum{}
+        = ModelState
+            { mDataFlowGraph=optimizeAccumDecision mDataFlowGraph oa
+            , mUnit=refactorDecision mUnit oa
+            }
 
 
 instance Eq ( DataFlowGraph v x) where

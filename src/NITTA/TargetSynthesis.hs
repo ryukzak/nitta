@@ -205,8 +205,8 @@ runTargetSynthesis TargetSynthesis
 -- |Make a model of NITTA process with one network and a specific algorithm. All
 -- functions are already bound to the network.
 mkModelWithOneNetwork arch dfg = ModelState
-    { mUnit=foldl (flip bind) arch $ functions $ simpleRefactor dfg
-    , mDataFlowGraph=simpleRefactor dfg
+    { mUnit=foldl (flip bind) arch $ functions dfg
+    , mDataFlowGraph=dfg
     }
 
 -- |Apply all refactor options untill they exist
