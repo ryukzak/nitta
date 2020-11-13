@@ -26,7 +26,6 @@ module NITTA.Model.ProcessorUnits.Tests.Utils
     , algGen
     ) where
 
-import           Control.Monad ( void )
 import           Data.Atomics.Counter ( incrCounter )
 import           Data.CallStack
 import           Data.Default
@@ -52,7 +51,7 @@ import           System.FilePath.Posix ( joinPath )
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
 import           Test.Tasty ( TestTree )
-import           Test.Tasty.HUnit ( testCase, (@?) )
+import           Test.Tasty.HUnit ( assertBool, assertFailure, testCase, (@?) )
 import           Test.Tasty.QuickCheck ( testProperty )
 
 
@@ -95,11 +94,15 @@ nittaCoSimTestCase ::
     , Val x, Integral x
     ) => String -> BusNetwork String String x Int -> [ F String x ] -> TestTree
 nittaCoSimTestCase n tMicroArch alg
-    = testCase n $ void $ runTargetSynthesisWithUniqName def
-        { tName=n
-        , tMicroArch
-        , tDFG=fsToDataFlowGraph alg
-        }
+    = testCase n $ do
+        report <- runTargetSynthesisWithUniqName def
+            { tName=n
+            , tMicroArch
+            , tDFG=fsToDataFlowGraph alg
+            }
+        case report of
+            Right report' -> assertBool "report with bad status" $ tbStatus report'
+            Left err      -> assertFailure $ "can't get report: " ++ err
 
 
 -- *Properties
