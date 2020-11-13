@@ -92,7 +92,6 @@ library
       NITTA.Synthesis.Estimate
       NITTA.Synthesis.Method
       NITTA.Synthesis.Tree
-      NITTA.Synthesis.Utils
       NITTA.TargetSynthesis
       NITTA.UIBackend
       NITTA.UIBackend.Marshalling

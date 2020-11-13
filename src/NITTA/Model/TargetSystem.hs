@@ -9,13 +9,14 @@
 {-|
 Module      : NITTA.Model.TargetSystem
 Description : Model of target system for synthesis and so on.
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Model.TargetSystem
     ( TargetSystem(..)
+    , processDuration, isSynthesisFinish
     ) where
 
 import           Control.Exception ( assert )
@@ -26,6 +27,7 @@ import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
+import           NITTA.Utils
 
 
 -- |Model of target unit, which is a main subject of synthesis process and
@@ -41,6 +43,19 @@ instance WithFunctions (TargetSystem (BusNetwork tag v x t) v x) (F v x) where
     functions TargetSystem{ mUnit, mDataFlowGraph }
         = assert (S.fromList (functions mUnit) == S.fromList (functions mDataFlowGraph)) -- inconsistent TargetSystem
             $ functions mUnit
+
+
+processDuration TargetSystem{ mUnit } = nextTick $ process mUnit
+
+
+-- |Synthesis process is finish when all variable from data flow are
+-- transferred.
+isSynthesisFinish :: ( ProcessorUnit u v x t ) => TargetSystem u v x -> Bool
+isSynthesisFinish TargetSystem{ mUnit, mDataFlowGraph } = let
+        inWork = transferred mUnit
+        inAlg = variables mDataFlowGraph
+    in inWork == inAlg
+
 
 
 instance ( UnitTag tag, VarValTime v x t

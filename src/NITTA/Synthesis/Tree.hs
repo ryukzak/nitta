@@ -37,8 +37,6 @@ module NITTA.Synthesis.Tree
       NId(..), G
     , Node(..), mkRootNodeIO, getNodeIO, getNodePathIO
     , Edge(..), getEdgesIO, getPositiveEdgesIO
-      -- *Utils
-    , isSynthesisFinish
     ) where
 
 import           Control.Concurrent.STM
@@ -46,14 +44,12 @@ import           Control.Monad ( forM, unless )
 import           Data.Default
 import           Data.List.Split
 import           GHC.Generics
-import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Synthesis.Estimate
-import           NITTA.Utils
 import           Numeric.Interval ( Interval )
 
 
@@ -218,14 +214,3 @@ nStepBackDecisionRepeated' _ _ Node{ nOrigin=Nothing } = Nothing
 nStepBackDecisionRepeated' acc d Node{ nOrigin=Just Edge{ eDecision, eSource } }
     | d == eDecision = Just acc
     | otherwise = nStepBackDecisionRepeated' (acc + 1) d eSource
-
-
--- |Synthesis process is finish when all variable from data flow are
--- transferred.
-
--- FIXME: Should be moved.
-isSynthesisFinish :: ( ProcessorUnit u v x t ) => TargetSystem u v x -> Bool
-isSynthesisFinish TargetSystem{ mUnit, mDataFlowGraph } = let
-        inWork = transferred mUnit
-        inAlg = variables mDataFlowGraph
-    in inWork == inAlg

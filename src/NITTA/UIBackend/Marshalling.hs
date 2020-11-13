@@ -52,7 +52,6 @@ import           NITTA.Model.Types
 import           NITTA.Project ( TestbenchReport (..) )
 import           NITTA.Synthesis.Estimate
 import           NITTA.Synthesis.Tree
-import           NITTA.Synthesis.Utils
 import           NITTA.UIBackend.Timeline
 import           NITTA.Utils ( transferred )
 import           Numeric.Interval
@@ -99,7 +98,7 @@ viewNodeTree Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
             , svCntx=[]
             , svIsComplete=nIsComplete
             , svIsEdgesProcessed=isJust nodesM
-            , svDuration=fromEnum $ targetProcessDuration nModel
+            , svDuration=fromEnum $ processDuration nModel
             , svCharacteristic=maybe (read "NaN") eObjectiveFunctionValue nOrigin
             , svOptionType=case nOrigin of
                 Just Edge{ eOption=Binding{} }  -> "Bind"
