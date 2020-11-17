@@ -84,28 +84,28 @@ f1 = F.add "a" "b" ["c", "d"] :: F String Int
 
 test_patchFunction =
     [ testCase "non-patched function" $
-        show f1 @?= "c = d = a + b"
+        show f1 @?= "a + b = c = d"
 
     , testCase "direct patched function input" $
-        show (patch ("a", "a'") f1) @?= "c = d = a' + b"
+        show (patch ("a", "a'") f1) @?= "a' + b = c = d"
     , testCase "direct patched function output" $
-        show (patch ("c", "c'") f1) @?= "c' = d = a + b"
+        show (patch ("c", "c'") f1) @?= "a + b = c' = d"
 
     , testCase "diff patched function input by input" $
-        show (patch def{ changeI=fromList [("a", "a'")] } f1) @?= "c = d = a' + b"
+        show (patch def{ changeI=fromList [("a", "a'")] } f1) @?= "a' + b = c = d"
     , testCase "diff non patched function input by output" $
-        show (patch def{ changeO=fromList [("a", S.singleton "a'")] } f1) @?= "c = d = a + b"
+        show (patch def{ changeO=fromList [("a", S.singleton "a'")] } f1) @?= "a + b = c = d"
 
     , testCase "diff patched function output by output" $
-        show (patch def{ changeO=fromList [("c", S.singleton "c'")] } f1) @?= "c' = d = a + b"
+        show (patch def{ changeO=fromList [("c", S.singleton "c'")] } f1) @?= "a + b = c' = d"
     , testCase "diff non patched function output by input" $
-        show (patch def{ changeI=fromList [("c", "c'")] } f1) @?= "c = d = a + b"
+        show (patch def{ changeI=fromList [("c", "c'")] } f1) @?= "a + b = c = d"
 
     , testCase "diff non patched function output by input" $
         show (patch def
                 { changeI=fromList [("b", "b'"), ("d", "d!")]
                 , changeO=fromList [("d", S.singleton "d'"), ("b", S.singleton "b!")]
-                } f1) @?= "c = d' = a + b'"
+                } f1) @?= "a + b' = c = d'"
     ]
 
 
