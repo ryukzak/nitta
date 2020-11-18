@@ -49,7 +49,27 @@ instance ( Var v, Val x
 
 
 -- |Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
-optimizeAccumOptions dfg = refactorContainers $ filter ((> 1) . length) $ createContainers $ dataFlowGraphToFs dfg
+optimizeAccumOptions dfg =
+    [ OptimizeAccum{ refOld, refNew }
+    | refOld <- selectClusters $ filter isSupportByAccum $ dataFlowGraphToFs dfg
+    , let refNew = optimizeCluster refOld
+    , S.fromList refOld /= S.fromList refNew
+    ]
+
+selectClusters fs = L.nubBy (\a b -> S.fromList a == S.fromList b)
+    [ cluster
+    | f <- fs
+    , let cluster = selectClusterFor f
+    , length cluster > 1
+    ]
+    where
+        selectClusterFor f = f :
+            [ f'
+            | f' <- fs
+            , f' /= f
+            , not $ null (variables f `S.intersection` variables f')
+            ]
+
 
 -- |Function takes 'OptimizeAccum' and modify 'DataFlowGraph'
 optimizeAccumDecision dfg OptimizeAccum{ refOld, refNew } = fsToDataFlowGraph refactoredFs
@@ -58,41 +78,14 @@ optimizeAccumDecision dfg OptimizeAccum{ refOld, refNew } = fsToDataFlowGraph re
             filtered = filter (`notElem` refOld) fs
             fs = dataFlowGraphToFs dfg
 
-
 optimizeAccumDecision _ _ = error "In this function we can make decision only with OptimizeAccum option"
 
-toOptimizeAccum lst = map (uncurry OptimizeAccum) $ filterSameListsTuple lst
-
-filterSameListsTuple lst = filter (uncurry conditionSameLists) lst
-
-conditionSameLists lst1 lst2
-    | S.fromList lst1 == S.fromList lst2 = False
-    | otherwise   = True
-
-refactorContainers containers = toOptimizeAccum $ zip containers refContainers
-    where
-        refContainers = map refactorContainer containers
-
-createContainers fs
-    | length filtered == 1 = containered
-    | otherwise              = map S.toList listOfSets
-    where
-        listOfSets = S.toList $ S.fromList [toOneContainer fs1 fs2 | fs1 <- containered , fs2 <- containered, fs1 /= fs2]
-        filtered = filter isSupportByAccum fs
-        containered = map (:[]) filtered
 
 isSupportByAccum f
     | Just Add{} <- castF f = True
     | Just Sub{} <- castF f = True
     | Just Acc{} <- castF f = True
     | otherwise             = False
-
-
-toOneContainer fs fs'
-    | not $ null $ S.intersection
-        (foldl1 S.union (map inputs fs'))
-        (foldl1 S.union (map outputs fs)) = S.fromList $ fs ++ fs'
-    | otherwise                           = S.fromList fs
 
 
 -- |Create Map String (HistoryTree (F v x)), where Key is input label and Value is FU that contain this input label
@@ -107,8 +100,7 @@ containerMapCreate fs = M.unions $
 
 
 -- |Takes container and refactor it, if it can be
-refactorContainer [f] = [f]
-refactorContainer fs = concatMap refactored fs
+optimizeCluster fs = concatMap refactored fs
     where
         containerMap = containerMapCreate fs
 
