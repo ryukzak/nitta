@@ -1,14 +1,16 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
 Module      : NITTA.Model.Problems.Refactor
 Description : Automatic manipulation over an intermediate representation
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -29,12 +31,37 @@ module NITTA.Model.Problems.Refactor
     ) where
 
 import           Data.Default
+import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
+import           NITTA.Model.Problems.Refactor.Accum
 import           NITTA.Model.Problems.Refactor.Types
 import           NITTA.Utils.Base
+
+
+instance ( Var v, Val x
+        ) => RefactorProblem (DataFlowGraph v x) v x where
+    refactorOptions dfg = optimizeAccumOptions dfg
+
+    refactorDecision dfg r@ResolveDeadlock{} = let
+            ( buffer, diff ) = prepareBuffer r
+            fs' = buffer : map (patch diff) (functions dfg)
+        in fsToDataFlowGraph fs'
+
+    refactorDecision (DFCluster leafs) bl@BreakLoop{} = let
+            origin = recLoop bl
+        in DFCluster
+            $ DFLeaf (recLoopIn bl){ funHistory=[origin] }
+            : DFLeaf (recLoopOut bl){ funHistory=[origin] }
+            : ( leafs L.\\ [ DFLeaf origin ] )
+
+    refactorDecision dfg ref@OptimizeAccum{} = optimizeAccumDecision dfg ref
+
+    refactorDecision _ _ = error "DataFlowGraph "
+
 
 
 recLoop BreakLoop{ loopX, loopO, loopI }

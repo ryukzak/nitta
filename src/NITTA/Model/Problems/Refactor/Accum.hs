@@ -2,7 +2,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
 Module      : NITTA.Model.Problems.Refactor
@@ -21,31 +20,10 @@ import qualified Data.List as L
 import qualified Data.Map as M
 import           Data.Maybe
 import qualified Data.Set as S
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems
-import           NITTA.Model.Types
-
-
-instance ( Var v, Val x
-        ) => RefactorProblem (DataFlowGraph v x) v x where
-    refactorOptions dfg = optimizeAccumOptions dfg
-
-    refactorDecision dfg r@ResolveDeadlock{} = let
-            ( buffer, diff ) = prepareBuffer r
-            fs' = buffer : map (patch diff) (functions dfg)
-        in fsToDataFlowGraph fs'
-
-    refactorDecision (DFCluster leafs) bl@BreakLoop{} = let
-            origin = recLoop bl
-        in DFCluster
-            $ DFLeaf (recLoopIn bl){ funHistory=[origin] }
-            : DFLeaf (recLoopOut bl){ funHistory=[origin] }
-            : ( leafs L.\\ [ DFLeaf origin ] )
-
-    refactorDecision dfg ref@OptimizeAccum{} = optimizeAccumDecision dfg ref
-
-    refactorDecision _ _ = error "DataFlowGraph "
+import           NITTA.Model.Problems.Refactor.Types
 
 
 -- |Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
