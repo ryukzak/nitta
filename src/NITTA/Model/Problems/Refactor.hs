@@ -1,9 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -34,68 +31,11 @@ module NITTA.Model.Problems.Refactor
 import           Data.Default
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import           GHC.Generics
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
+import           NITTA.Model.Problems.Refactor.Types
 import           NITTA.Utils.Base
 
-
-data Refactor v x
-    = ResolveDeadlock (S.Set v)
-      -- ^ResolveDeadlock example:
-      --
-      -- > ResolveDeadlock [a, b]
-      --
-      -- before:
-      --
-      -- > f1 :: (...) -> ([a, b])
-      -- > f2 :: (a, ...) -> (...)
-      -- > f3 :: (b, ...) -> (...)
-      --
-      -- f1, f2 and f3 process on same process unit. In this case, we have
-      -- deadlock, which can be fixed by insertion of buffer register between
-      -- functions.
-      --
-      -- after:
-      --
-      -- > f1 :: (...) -> ([a@buf])
-      -- > reg :: a@buf -> ([a, b])
-      -- > f2 :: (a, ...) -> (...)
-      -- > f3 :: (b, ...) -> (...)
-    | BreakLoop
-      -- ^BreakLoop example:
-      --
-      -- > BreakLoop x o i
-      --
-      -- before:
-      --
-      -- > l@( Loop (X x) (O o) (I i) )
-      --
-      -- after:
-      --
-      -- > LoopIn l (I i)
-      -- > LoopOut l (O o)
-        { loopX :: x       -- ^initial looped value
-        , loopO :: S.Set v -- ^output variables
-        , loopI :: v       -- ^input variable
-        }
-    | OptimizeAccum
-        { refOld :: [F v x]
-        , refNew :: [F v x]
-        }
-      -- ^OptimizeAccum example:
-      --
-      -- > OptimizeAccum [+a +tmp_1 => d; +b +c => tmp_1] [+a +b +c => d]
-      --
-      -- before:
-      --
-      -- > [+a +tmp_1 => d; +b +c => tmp_1]
-      --
-      -- after:
-      --
-      -- > [+a +b +c => d]
-
-    deriving ( Generic, Show, Eq )
 
 recLoop BreakLoop{ loopX, loopO, loopI }
     = packF $ Loop (X loopX) (O loopO) (I loopI)
@@ -110,13 +50,6 @@ recLoopOut BreakLoop{ loopX, loopO, loopI }
 recLoopOut _ = error "applicable only for BreakLoop"
 
 
-class RefactorProblem u v x | u -> v x where
-    refactorOptions :: u -> [ Refactor v x ]
-    refactorOptions _ = []
-
-    refactorDecision :: u -> Refactor v x -> u
-    refactorDecision _ _ = error "not implemented"
-
 
 prepareBuffer :: ( Var v, Val x ) => Refactor v x -> ( F v x, Changeset v )
 prepareBuffer (ResolveDeadlock vs) = let
@@ -126,6 +59,7 @@ prepareBuffer (ResolveDeadlock vs) = let
     in ( reg bufferI bufferO, diff )
 
 prepareBuffer _ = undefined
+
 
 
 -- |The constant, which restrict maximum length of a buffer sequence.
