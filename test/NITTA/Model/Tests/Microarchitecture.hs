@@ -31,12 +31,12 @@ import           Control.Monad ( void )
 import           Data.Atomics.Counter ( incrCounter, newCounter )
 import           Data.Default
 import           Data.Proxy
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Microarchitecture
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
-import           NITTA.Model.Types
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem ()
 import           NITTA.TargetSynthesis
@@ -56,7 +56,7 @@ pFX42_64 = Proxy :: Proxy (FX 42 64)
 
 
 basic :: ( Integral x, Val x ) => Proxy x -> BusNetwork String String x Int
-basic _proxy = evalNetwork Sync $ do
+basic _proxy = evalNetwork ASync $ do
     add "fram1" FramIO
     add "fram2" FramIO
     add "shift" ShiftIO

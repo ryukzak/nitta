@@ -33,7 +33,7 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Types
-import           NITTA.Model.TargetSystem ( ModelState (..) )
+import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Utils
 import           Numeric.Interval ( inf, sup )
@@ -76,7 +76,7 @@ data EstimationCntx m tag v x t
 --
 -- - a unit model;
 -- - how many synthesis step back require for decision duplicate.
-prepareEstimationCntx unitModel@ModelState{ mUnit, mDataFlowGraph } decisionDuplicateNStepBack
+prepareEstimationCntx unitModel@TargetSystem{ mUnit, mDataFlowGraph } decisionDuplicateNStepBack
     = let
         opts = synthesisOptions unitModel
         bindableFunctions = [ f | (Binding f _) <- opts ]
@@ -228,7 +228,14 @@ estimateParameters ObjectiveFunctionConf{} EstimationCntx{ decisionDuplicateNSte
         , pNumberOfTransferableVariables=fromIntegral (S.size $ vs `S.intersection` transferableVars)
         }
 
-estimateParameters ObjectiveFunctionConf{} EstimationCntx{} (Refactor OptimizeAccum {}) = undefined
+estimateParameters ObjectiveFunctionConf{} EstimationCntx{} (Refactor OptimizeAccum{})
+    = RefactorEdgeParameter
+        { pRefactorType=OptimizeAccum def def
+        , pNumberOfLockedVariables=def
+        , pBufferCount=def
+        , pNStepBackRepeated=def
+        , pNumberOfTransferableVariables=def
+        }
 
 
 -- |Synthesis process setup, which determines next synthesis step selection.
@@ -277,14 +284,14 @@ objectiveFunction
             -> 1000 + pNumberOfLockedVariables - pBufferCount * 1000
                 - 20 * pNumberOfTransferableVariables
         RefactorEdgeParameter{ pRefactorType=OptimizeAccum{} }
-            -> 3000 -- TODO: random value. Have to test.
+            -> 5000
         -- _ -> -1
 
 
 ------------------------------------------------------------
 -- *Internal
 
-optionsAfterBind f tag ModelState{ mUnit=BusNetwork{ bnPus } }
+optionsAfterBind f tag TargetSystem{ mUnit=BusNetwork{ bnPus } }
     = case tryBind f (bnPus M.! tag) of
         Right pu' -> filter (\(EndpointSt act _) -> act `optionOf` f) $ endpointOptions pu'
         _         -> []

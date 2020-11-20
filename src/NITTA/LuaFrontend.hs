@@ -33,9 +33,9 @@ import qualified Data.String.Utils as S
 import           Data.Text ( Text, pack, unpack )
 import qualified Data.Text as T
 import           Language.Lua
+import           NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Types hiding ( patch )
-import           NITTA.Model.Types
 import           NITTA.Utils ( modify'_ )
 import           Text.InterpolatedString.Perl6 ( qq )
 import           Text.Printf

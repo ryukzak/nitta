@@ -26,14 +26,15 @@ module NITTA.Model.ProcessorUnits.Tests.Utils
     , algGen
     ) where
 
-import           Control.Monad ( void )
 import           Data.Atomics.Counter ( incrCounter )
 import           Data.CallStack
 import           Data.Default
 import           Data.List ( delete )
 import qualified Data.Map.Strict as M
 import           Data.Set ( difference, elems, empty, fromList, intersection, union )
+import qualified Data.String.Utils as S
 import           Debug.Trace
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Functions ()
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
@@ -43,16 +44,15 @@ import           NITTA.Model.Problems hiding ( Bind, Refactor )
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem ()
 import           NITTA.Model.Tests.Microarchitecture
-import           NITTA.Model.Types
 import           NITTA.Project
-import qualified NITTA.Project as N
+import qualified NITTA.Project as P
 import           NITTA.TargetSynthesis
 import           NITTA.Utils
 import           System.FilePath.Posix ( joinPath )
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
 import           Test.Tasty ( TestTree )
-import           Test.Tasty.HUnit ( testCase, (@?) )
+import           Test.Tasty.HUnit ( assertBool, assertFailure, testCase, (@?) )
 import           Test.Tasty.QuickCheck ( testProperty )
 
 
@@ -63,7 +63,7 @@ puCoSimTestCase ::
     ( HasCallStack
     , PUClasses (pu String x Int) String x Int
     , WithFunctions (pu String x Int) ( F String x )
-    , N.Testable (pu String x Int) String x
+    , P.Testable (pu String x Int) String x
     , DefaultX (pu String x Int) x
     ) => String -> pu String x Int -> [(String, x)] -> [F String x] -> TestTree
 puCoSimTestCase name u cntxCycle alg
@@ -95,11 +95,15 @@ nittaCoSimTestCase ::
     , Val x, Integral x
     ) => String -> BusNetwork String String x Int -> [ F String x ] -> TestTree
 nittaCoSimTestCase n tMicroArch alg
-    = testCase n $ void $ runTargetSynthesisWithUniqName def
-        { tName=n
-        , tMicroArch
-        , tDFG=fsToDataFlowGraph alg
-        }
+    = testCase n $ do
+        report <- runTargetSynthesisWithUniqName def
+            { tName=S.replace " " "_" n
+            , tMicroArch
+            , tDFG=fsToDataFlowGraph alg
+            }
+        case report of
+            Right report' -> assertBool "report with bad status" $ tbStatus report'
+            Left err      -> assertFailure $ "can't get report: " ++ err
 
 
 -- *Properties

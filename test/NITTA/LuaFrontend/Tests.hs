@@ -271,7 +271,7 @@ test_examples =
 
     , typedLuaTestCase (microarch ASync SlaveSPI) pFX22_32 "self sending 1 io drop"
         $(embedStringFile "test/lua/self-send1.lua")
-    , typedLuaTestCase (microarch Sync SlaveSPI) pFX22_32 "self sending2 io wait"
+    , typedLuaTestCase (microarch Sync SlaveSPI) pFX22_32 "self sending 2 io wait"
         $(embedStringFile "test/lua/self-send2.lua")
     , typedLuaTestCase (microarch Sync SlaveSPI) pFX32_32 "pu deadlock"
         $(embedStringFile "test/lua/pu-deadlock.lua")

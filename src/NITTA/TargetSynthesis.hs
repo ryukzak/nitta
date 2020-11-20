@@ -22,7 +22,7 @@ NITTA.Project:TargetSynthesis                                                   
     # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
                       |                    |     |  |
                       *<--lua2functions    |     |  |
-                      |                    |     |  v      NITTA.Model.TargetSystem:ModelState--\
+                      |                    |     |  v    NITTA.Model.TargetSystem:TargetSystem--\
     # tDFG <----------+                    +--------*------------> # mUnit        |             |    NITTA.Model...
         |                                        |                                |             |     /-----------\
         |                                        v                                |             |     |  Target   |
@@ -80,6 +80,7 @@ module NITTA.TargetSynthesis
 import           Control.Monad ( when )
 import           Data.Default as D
 import           Data.Text ( Text )
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.LuaFrontend
@@ -88,7 +89,7 @@ import           NITTA.Model.Problems.Refactor
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
-import           NITTA.Project
+import           NITTA.Project ( Project (..), TestbenchReport (..), runTestbench, writeWholeProject )
 import           NITTA.Synthesis.Method
 import           NITTA.Synthesis.Tree
 import           System.FilePath ( joinPath )
@@ -144,6 +145,8 @@ runTargetSynthesis TargetSynthesis
         { tName, tMicroArch, tSourceCode, tDFG, tReceivedValues, tSynthesisMethod, tVerbose, tWriteProject
         , tLibPath, tPath, tSimulationCycleN
         } = do
+    -- TODO: check that tName is a valid verilog module name
+    when (' ' `elem` tName) $ error "TargetSynthesis name contain wrong symbols"
     tDFG' <- maybe (return tDFG) translateToIntermediate tSourceCode
     rootNode <- mkRootNodeIO (mkModelWithOneNetwork tMicroArch tDFG')
     synthesisResult <- synthesis rootNode
@@ -171,7 +174,7 @@ runTargetSynthesis TargetSynthesis
                 then Right leafNode
                 else Left "synthesis process...fail"
 
-        project Node{ nModel=ModelState{ mUnit, mDataFlowGraph } } = Project
+        project Node{ nModel=TargetSystem{ mUnit, mDataFlowGraph } } = Project
             { pName=tName
             , pLibPath=tLibPath
             , pPath=joinPath [ tPath, tName ]
@@ -204,9 +207,9 @@ runTargetSynthesis TargetSynthesis
 
 -- |Make a model of NITTA process with one network and a specific algorithm. All
 -- functions are already bound to the network.
-mkModelWithOneNetwork arch dfg = ModelState
-    { mUnit=foldl (flip bind) arch $ functions $ simpleRefactor dfg
-    , mDataFlowGraph=simpleRefactor dfg
+mkModelWithOneNetwork arch dfg = TargetSystem
+    { mUnit=foldl (flip bind) arch $ functions dfg
+    , mDataFlowGraph=dfg
     }
 
 -- |Apply all refactor options untill they exist

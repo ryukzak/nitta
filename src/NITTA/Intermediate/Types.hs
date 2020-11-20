@@ -18,7 +18,7 @@ Stability   : experimental
 -}
 module NITTA.Intermediate.Types
     ( -- *Function interface
-      I(..), O(..), X(..)
+      I(..), O(..), X(..), showOut
       -- *Function description
     , F(..), packF, castF, Function(..)
     , Lock(..), Locks(..), inputsLockOutputs
@@ -73,7 +73,9 @@ instance ( Show v ) => Show (O v) where
     show (O vs) = "(O " ++ show (S.elems vs) ++ ")"
 
 instance Variables (O v) v where
-    variables (O v) = v
+    variables (O vs) = vs
+
+showOut vs = S.join " = " $ map show $ S.elems vs
 
 
 -- |Value of variable (constant or initial value).

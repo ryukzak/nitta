@@ -43,7 +43,6 @@ import qualified Data.Bits as B
 import           Data.Default
 import qualified Data.Map as M
 import           Data.Set ( elems, fromList, union )
-import qualified Data.String.Utils as S
 import           Data.Typeable
 import           NITTA.Intermediate.Functions.Accum
 import           NITTA.Intermediate.Types
@@ -127,7 +126,8 @@ import           NITTA.Utils.Base
 
 data Loop v x = Loop (X x) (O v) (I v) deriving ( Typeable, Eq, Show )
 instance ( Show x, Show v ) => Label (Loop v x) where
-    label (Loop (X x) _ (I b)) = show x ++ "->" ++ show b
+    label (Loop (X x) (O o) (I b))
+        = "loop(" <> show x <> ", " <> show b <> ") = " <> showOut o
 loop :: ( Var v, Val x ) => x -> v -> [v] -> F v x
 loop x a bs = packF $ Loop (X x) (O $ fromList bs) $ I a
 isLoop f
@@ -153,7 +153,7 @@ instance ( Var v ) => FunctionSimulation (Loop v x) v x where
 
 data LoopOut v x = LoopOut (Loop v x) (O v) deriving ( Typeable, Eq, Show )
 instance ( Show v ) => Label (LoopOut v x) where
-    label (LoopOut _ (O vs)) = show (oneOf vs) ++ " ->"
+    label (LoopOut _ (O vs)) = "loopOut() = " <> showOut vs
 instance ( Ord v ) => Function (LoopOut v x) v where
     outputs (LoopOut _ o) = variables o
     isInternalLockPossible _ = True
@@ -167,7 +167,7 @@ instance ( Var v ) => FunctionSimulation (LoopOut v x) v x where
 
 data LoopIn v x = LoopIn (Loop v x) (I v) deriving ( Typeable, Eq, Show )
 instance ( Show v ) => Label (LoopIn v x) where
-    label (LoopIn (Loop _ (O vs) _) (I v)) = "-> " ++ show v ++ " (" ++ show (oneOf vs) ++ ")"
+    label (LoopIn (Loop _ (O vs) _) (I v)) = "loopIn(" <> show v <> ") = " <> showOut vs
 instance ( Ord v ) => Function (LoopIn v x) v where
     inputs (LoopIn _ o) = variables o
     isInternalLockPossible _ = True
@@ -181,7 +181,7 @@ instance ( Var v ) => FunctionSimulation (LoopIn v x) v x where
 data Reg v x = Reg (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Reg v x) where label Reg{} = "r"
 instance ( Show v ) => Show (Reg v x) where
-    show (Reg (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = reg(" ++ show k1 ++ ")"
+    show (Reg (I k1) (O k2)) = "reg(" <> show k1 <> ")" <> " = " <> showOut k2
 reg :: ( Var v, Val x ) => v -> [v] -> F v x
 reg a b = packF $ Reg (I a) (O $ fromList b)
 
@@ -201,7 +201,10 @@ instance ( Var v ) => FunctionSimulation (Reg v x) v x where
 data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Add v x) where label Add{} = "+"
 instance ( Show v ) => Show (Add v x) where
-    show (Add (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " + " ++ show k2
+    show (Add (I k1) (I k2) (O k3)) = let
+        lexp = show k1 <> " + " <> show k2
+        rexp = showOut k3
+        in lexp <> " = " <> rexp
 add :: ( Var v, Val x ) => v -> v -> [v] -> F v x
 add a b c = packF $ Add (I a) (I b) $ O $ fromList c
 
@@ -223,7 +226,10 @@ instance ( Var v, Num x ) => FunctionSimulation (Add v x) v x where
 data Sub v x = Sub (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Sub v x) where label Sub{} = "-"
 instance ( Show v ) => Show (Sub v x) where
-    show (Sub (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " - " ++ show k2
+    show (Sub (I k1) (I k2) (O k3)) = let
+        lexp = show k1 <> " - " <> show k2
+        rexp = showOut k3
+        in lexp <> " = " <> rexp
 sub :: ( Var v, Val x ) => v -> v -> [v] -> F v x
 sub a b c = packF $ Sub (I a) (I b) $ O $ fromList c
 
@@ -245,7 +251,8 @@ instance ( Var v, Num x ) => FunctionSimulation (Sub v x) v x where
 data Multiply v x = Multiply (I v) (I v) (O v) deriving ( Typeable, Eq )
 instance Label (Multiply v x) where label Multiply{} = "*"
 instance ( Show v ) => Show (Multiply v x) where
-    show (Multiply (I k1) (I k2) (O k3)) = S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " * " ++ show k2
+    show (Multiply (I k1) (I k2) (O k3))
+        = show k1 ++ " * " ++ show k2 <> " = " <> showOut k3
 multiply :: ( Var v, Val x ) => v -> v -> [v] -> F v x
 multiply a b c = packF $ Multiply (I a) (I b) $ O $ fromList c
 
@@ -270,9 +277,10 @@ data Division v x = Division
     } deriving ( Typeable, Eq )
 instance Label (Division v x) where label Division{} = "/"
 instance ( Show v ) => Show (Division v x) where
-    show (Division (I k1) (I k2) (O k3) (O k4))
-        =  S.join " = " (map show $ elems k3) ++ " = " ++ show k1 ++ " / " ++ show k2 ++ "; "
-        ++ S.join " = " (if null k4 then ["_"] else map show $ elems k4) ++ " = " ++ show k1 ++ " `mod` " ++ show k2
+    show (Division (I k1) (I k2) (O k3) (O k4)) = let
+        q = show k1 <> " / " <> show k2 <> " = " <> showOut k3
+        r = show k1 <> " mod " <> show k2 <> " = " <> showOut k4
+        in q <> "; " <> r
 division :: ( Var v, Val x, Integral x ) => v -> v -> [v] -> [v] -> F v x
 division d n q r = packF $ Division
         { denom=I d
@@ -301,7 +309,7 @@ instance ( Var v, Integral x ) => FunctionSimulation (Division v x) v x where
 data Constant v x = Constant (X x) (O v) deriving ( Typeable, Eq )
 instance ( Show x ) => Label (Constant v x) where label (Constant (X x) _) = show x
 instance ( Show v, Show x ) => Show (Constant v x) where
-    show (Constant (X x) (O k)) = S.join " = " (map show $ elems k) ++ " = const(" ++ show x ++ ")"
+    show (Constant (X x) (O k)) = "const(" <> show x <> ") = " <> showOut k
 constant :: ( Var v, Val x ) => x -> [v] -> F v x
 constant x vs = packF $ Constant (X x) $ O $ fromList vs
 
@@ -320,8 +328,8 @@ data ShiftLR v x = ShiftL (I v) (O v)
                  | ShiftR (I v) (O v)
                 deriving ( Typeable, Eq )
 instance ( Show v ) => Show (ShiftLR v x) where
-    show (ShiftL (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1 ++ " << 1"
-    show (ShiftR (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1 ++ " >> 1"
+    show (ShiftL (I k1) (O k2)) = show k1 <> " << 1 = " <> showOut k2
+    show (ShiftR (I k1) (O k2)) = show k1 <> " >> 1 = " <> showOut k2
 instance ( Show v ) => Label (ShiftLR v x) where label = show
 
 shiftL :: ( Var v, Val x ) => v -> [v] -> F v x
@@ -348,7 +356,9 @@ instance ( Var v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
         setZipX cntx vs x'
 
 
-newtype Send v x = Send (I v) deriving ( Typeable, Eq, Show )
+newtype Send v x = Send (I v) deriving ( Typeable, Eq )
+instance ( Show v ) => Show (Send v x) where
+    show (Send (I k1)) = "send(" <> show k1 <> ")"
 instance Label (Send v x) where label Send{} = "send"
 send :: ( Var v, Val x ) => v -> F v x
 send a = packF $ Send $ I a
@@ -361,7 +371,9 @@ instance FunctionSimulation (Send v x) v x where
     simulate cntx Send{} = return cntx
 
 
-newtype Receive v x = Receive (O v) deriving ( Typeable, Eq, Show )
+newtype Receive v x = Receive (O v) deriving ( Typeable, Eq )
+instance ( Show v ) => Show (Receive v x) where
+    show (Receive (O k1)) = "receive() = " <> showOut k1
 instance Label (Receive v x) where label Receive{} = "receive"
 receive :: ( Var v, Val x ) => [v] -> F v x
 receive a = packF $ Receive $ O $ fromList a

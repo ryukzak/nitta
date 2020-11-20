@@ -19,9 +19,9 @@ module NITTA.Model.Problems.Refactor.Accum.Tests
     ) where
 
 import qualified Data.Set as S
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Types
-import           NITTA.Model.Types
 import           NITTA.TargetSynthesis
 import           Test.Tasty ( testGroup )
 import           Test.Tasty.HUnit

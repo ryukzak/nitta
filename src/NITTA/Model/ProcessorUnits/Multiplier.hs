@@ -82,7 +82,7 @@ implicitly.
 
 >>> let f = F.multiply "a" "b" ["c", "d"] :: F String Int
 >>> f
-c = d = a * b
+a * b = c = d
 >>> let st0 = multiplier True :: Multiplier String Int Int
 >>> st0
 Multiplier {remain = [], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
@@ -105,7 +105,7 @@ planning, even it is inefficient.
 
 >>> let Right st1 = tryBind f st0
 >>> st1
-Multiplier {remain = [c = d = a * b], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
+Multiplier {remain = [a * b = c = d], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
     steps     =
 <BLANKLINE>
     relations =
@@ -126,7 +126,7 @@ cause a mistake or block another function).
 
 >>> let st2 = endpointDecision st1 $ EndpointSt (Target "a") (0...2)
 >>> st2
-Multiplier {remain = [], targets = ["b"], sources = ["c","d"], doneAt = Nothing, currentWork = Just (1,c = d = a * b), currentWorkEndpoints = [0], process_ = Process
+Multiplier {remain = [], targets = ["b"], sources = ["c","d"], doneAt = Nothing, currentWork = Just (1,a * b = c = d), currentWorkEndpoints = [0], process_ = Process
     steps     =
         0) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
         1) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
@@ -139,7 +139,7 @@ Multiplier {remain = [], targets = ["b"], sources = ["c","d"], doneAt = Nothing,
 ?Target "b"@(3..∞ /P 1..∞)
 >>> let st3 = endpointDecision st2 $ EndpointSt (Target "b") (3...3)
 >>> st3
-Multiplier {remain = [], targets = [], sources = ["c","d"], doneAt = Just 6, currentWork = Just (1,c = d = a * b), currentWorkEndpoints = [2,0], process_ = Process
+Multiplier {remain = [], targets = [], sources = ["c","d"], doneAt = Just 6, currentWork = Just (1,a * b = c = d), currentWorkEndpoints = [2,0], process_ = Process
     steps     =
         0) Step {sKey = 3, sTime = 3 ... 3, sDesc = Load B}
         1) Step {sKey = 2, sTime = 3 ... 3, sDesc = Target "b"}
@@ -161,7 +161,7 @@ option:
 
 >>> let st4 = endpointDecision st3 $ EndpointSt (Source $ fromList ["c"]) (6...6)
 >>> st4
-Multiplier {remain = [], targets = [], sources = ["d"], doneAt = Just 6, currentWork = Just (1,c = d = a * b), currentWorkEndpoints = [4,2,0], process_ = Process
+Multiplier {remain = [], targets = [], sources = ["d"], doneAt = Just 6, currentWork = Just (1,a * b = c = d), currentWorkEndpoints = [4,2,0], process_ = Process
     steps     =
         0) Step {sKey = 5, sTime = 6 ... 6, sDesc = Out}
         1) Step {sKey = 4, sTime = 6 ... 6, sDesc = Source "c"}
@@ -182,7 +182,7 @@ Multiplier {remain = [], targets = [], sources = ["d"], doneAt = Just 6, current
 >>> st5
 Multiplier {remain = [], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
     steps     =
-        0) Step {sKey = 8, sTime = 1 ... 7, sDesc = "c" = "d" = "a" * "b"}
+        0) Step {sKey = 8, sTime = 1 ... 7, sDesc = "a" * "b" = "c" = "d"}
         1) Step {sKey = 7, sTime = 7 ... 7, sDesc = Out}
         2) Step {sKey = 6, sTime = 7 ... 7, sDesc = Source "d"}
         3) Step {sKey = 5, sTime = 6 ... 6, sDesc = Out}
