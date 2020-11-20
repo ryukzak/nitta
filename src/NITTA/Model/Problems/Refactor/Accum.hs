@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -29,7 +30,7 @@ import           NITTA.Model.Problems.Refactor.Types
 -- |Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
 optimizeAccumOptions dfg =
     [ OptimizeAccum{ refOld, refNew }
-    | refOld <- selectClusters $ filter isSupportByAccum $ dataFlowGraphToFs dfg
+    | refOld <- selectClusters $ filter isSupportByAccum $ functions dfg
     , let refNew = optimizeCluster refOld
     , S.fromList refOld /= S.fromList refNew
     ]
@@ -54,7 +55,7 @@ optimizeAccumDecision dfg OptimizeAccum{ refOld, refNew } = fsToDataFlowGraph re
         where
             refactoredFs = filtered ++ refNew
             filtered = filter (`notElem` refOld) fs
-            fs = dataFlowGraphToFs dfg
+            fs = functions dfg
 
 optimizeAccumDecision _ _ = error "In this function we can make decision only with OptimizeAccum option"
 

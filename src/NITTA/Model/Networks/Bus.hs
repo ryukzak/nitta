@@ -37,6 +37,7 @@ import           Data.Maybe ( fromMaybe, isJust, mapMaybe )
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import           Data.Typeable
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems
@@ -373,7 +374,7 @@ instance ( UnitTag tag, VarValTime v x t
             }
 
     refactorDecision bn@BusNetwork{ bnRemains } oa@OptimizeAccum{}
-        = bn{ bnRemains=dataFlowGraphToFs $ optimizeAccumDecision (fsToDataFlowGraph bnRemains) oa }
+        = bn{ bnRemains=functions $ optimizeAccumDecision (fsToDataFlowGraph bnRemains) oa }
 
 
 --------------------------------------------------------------------------

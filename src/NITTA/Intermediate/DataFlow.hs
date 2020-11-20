@@ -17,7 +17,7 @@ Stability   : experimental
 -}
 module NITTA.Intermediate.DataFlow
     ( DataFlowGraph(..)
-    , fsToDataFlowGraph, dataFlowGraphToFs
+    , fsToDataFlowGraph
     ) where
 
 import           Control.Exception ( assert )
@@ -62,12 +62,3 @@ instance ( Var v, Val x ) => Patch (DataFlowGraph v x) (v, v) where
 
 -- |Convert @[ F v x ]@ to 'DataFlowGraph'.
 fsToDataFlowGraph alg = DFCluster $ map DFLeaf alg
-
--- |Convert 'DataFlowGraph' to @[ F v x ]@.
-dataFlowGraphToFs (DFCluster leafs) = map
-    (\case
-        DFLeaf f -> f
-        _        -> error "Data flow graph structure error"
-    )
-    leafs
-dataFlowGraphToFs _ = error "Data flow graph structure error"

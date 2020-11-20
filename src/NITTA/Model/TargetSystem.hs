@@ -22,6 +22,7 @@ module NITTA.Model.TargetSystem
 import           Control.Exception ( assert )
 import qualified Data.Set as S
 import           GHC.Generics
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems

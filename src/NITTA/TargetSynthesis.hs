@@ -80,6 +80,7 @@ module NITTA.TargetSynthesis
 import           Control.Monad ( when )
 import           Data.Default as D
 import           Data.Text ( Text )
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.LuaFrontend

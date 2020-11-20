@@ -43,6 +43,7 @@ import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import           GHC.Generics
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems

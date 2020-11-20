@@ -20,11 +20,11 @@ import           Data.Default
 import           Data.List ( permutations )
 import qualified Data.Map.Strict as M
 import           Data.Maybe
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.TargetSystem ()
-import           NITTA.Model.Types
 import           Test.Tasty ( TestTree, testGroup )
 import           Test.Tasty.HUnit
 

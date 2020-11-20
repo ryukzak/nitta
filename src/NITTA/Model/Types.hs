@@ -18,13 +18,11 @@ Stability   : experimental
 module NITTA.Model.Types
     ( VarValTime, Time
     , TimeConstrain(..), TaggedTime(..)
-    , DataFlowGraph(..), fsToDataFlowGraph, dataFlowGraphToFs
     ) where
 
 import           Data.Default
 import           Data.Typeable
 import           GHC.Generics
-import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Types
 import           Numeric.Interval
 

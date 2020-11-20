@@ -31,6 +31,7 @@ import           Control.Monad ( void )
 import           Data.Atomics.Counter ( incrCounter, newCounter )
 import           Data.Default
 import           Data.Proxy
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Microarchitecture
 import           NITTA.Model.Networks.Bus
@@ -38,7 +39,6 @@ import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem ()
-import           NITTA.Model.Types
 import           NITTA.TargetSynthesis
 import           System.IO.Unsafe ( unsafePerformIO )
 import           Test.Tasty.HUnit

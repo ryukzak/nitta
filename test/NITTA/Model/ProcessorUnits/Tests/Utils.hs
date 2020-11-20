@@ -34,6 +34,7 @@ import qualified Data.Map.Strict as M
 import           Data.Set ( difference, elems, empty, fromList, intersection, union )
 import qualified Data.String.Utils as S
 import           Debug.Trace
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Functions ()
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
@@ -43,9 +44,8 @@ import           NITTA.Model.Problems hiding ( Bind, Refactor )
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem ()
 import           NITTA.Model.Tests.Microarchitecture
-import           NITTA.Model.Types
 import           NITTA.Project
-import qualified NITTA.Project as N
+import qualified NITTA.Project as P
 import           NITTA.TargetSynthesis
 import           NITTA.Utils
 import           System.FilePath.Posix ( joinPath )
@@ -63,7 +63,7 @@ puCoSimTestCase ::
     ( HasCallStack
     , PUClasses (pu String x Int) String x Int
     , WithFunctions (pu String x Int) ( F String x )
-    , N.Testable (pu String x Int) String x
+    , P.Testable (pu String x Int) String x
     , DefaultX (pu String x Int) x
     ) => String -> pu String x Int -> [(String, x)] -> [F String x] -> TestTree
 puCoSimTestCase name u cntxCycle alg

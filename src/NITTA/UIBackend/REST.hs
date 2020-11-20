@@ -28,6 +28,7 @@ import           Data.Default
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import           GHC.Generics
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
