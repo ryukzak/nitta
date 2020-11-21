@@ -50,6 +50,8 @@ data Broken v x t = Broken
     , currentWork          :: Maybe ( t, F v x )
     , currentWorkEndpoints :: [ ProcessStepID ]
     , process_             :: Process v x t
+
+    , brokeVerilog         :: Bool
     }
 
 deriving instance ( VarValTime v x t ) => Show (Broken v x t)
@@ -187,6 +189,8 @@ instance ( Time t ) => Default (Broken v x t) where
         , currentWork=Nothing
         , currentWorkEndpoints=[]
         , process_=def
+
+        , brokeVerilog=False
         }
 
 
@@ -217,7 +221,7 @@ instance ( VarValTime v x t
             [ FromLibrary $ "broken/" ++ moduleName tag pu ++ ".v"
             ]
 
-    hardwareInstance tag pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } BrokenPorts{..} BrokenIO
+    hardwareInstance tag pu@Broken{ brokeVerilog } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } BrokenPorts{..} BrokenIO
         = codeBlock [qc|
             {  moduleName tag pu } #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
@@ -230,6 +234,7 @@ instance ( VarValTime v x t
 
                 , .signal_oe( { signal oe } )
                 , .data_out( { dataOut } ), .attr_out( { attrOut } )
+                { if brokeVerilog then "WRONG VERILOG" else ""  }
                 );
             |]
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io

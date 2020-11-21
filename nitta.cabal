@@ -236,6 +236,7 @@ test-suite nitta-test
     , regex-compat
     , split
     , tasty
+    , tasty-expected-failure
     , tasty-hunit
     , tasty-quickcheck
     , tasty-th

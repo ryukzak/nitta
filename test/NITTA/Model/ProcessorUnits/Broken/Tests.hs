@@ -18,20 +18,20 @@ module NITTA.Model.ProcessorUnits.Broken.Tests
 import           Data.Default
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Tests.Functions ()
-import           NITTA.Intermediate.Types
-import           NITTA.LuaFrontend.Tests.Utils
-import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Tests.Utils
 import           NITTA.Model.Tests.Microarchitecture
-import           Test.QuickCheck
 import           Test.Tasty ( testGroup )
-import           Text.InterpolatedString.Perl6 ( qc )
-
+import           Test.Tasty.ExpectedFailure
 
 tests = testGroup "Broken PU"
-    [ nittaCoSimTestCase "correct test" (maBroken pInt)
+    [ nittaCoSimTestCase "correct test" (maBroken def)
         [ loop 1 "b" ["a"]
         , brokenReg "a" ["b"]
         ]
+    , expectFailBecause "negative test"
+        $ nittaCoSimTestCase "generated verilog is broken" (maBroken def{ brokeVerilog=True })
+            [ loop 1 "b" ["a"]
+            , brokenReg "a" ["b"]
+            ]
     ]
