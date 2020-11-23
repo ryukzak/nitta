@@ -48,6 +48,7 @@ import           Data.Typeable
 import           NITTA.Intermediate.Functions.Accum
 import           NITTA.Intermediate.Types
 import           NITTA.Utils.Base
+import           Unsafe.Coerce
 
 -- |Loop -- function for transfer data between computational cycles.
 -- Let see the simple example with the following implementation of the
@@ -316,35 +317,37 @@ instance ( Var v ) => FunctionSimulation (Constant v x) v x where
 
 
 -- TODO: separete into two different functions
-data ShiftLR v x = ShiftL (I v) (O v)
-                 | ShiftR (I v) (O v)
+data ShiftLR v x = ShiftL (I v) (I v) (O v)
+                 | ShiftR (I v) (I v) (O v)
                 deriving ( Typeable, Eq )
 instance ( Show v ) => Show (ShiftLR v x) where
-    show (ShiftL (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1 ++ " << 1"
-    show (ShiftR (I k1) (O k2)) = S.join " = " (map show $ elems k2) ++ " = " ++ show k1 ++ " >> 1"
+    show (ShiftL (I k1) (I shift) (O k2)) = S.join " = " (map show $ elems k2) <> " = " <> show k1 <> " << " <> show shift
+    show (ShiftR (I k1) (I shift) (O k2)) = S.join " = " (map show $ elems k2) <> " = " <> show k1 <> " >> " <> show shift
 instance ( Show v ) => Label (ShiftLR v x) where label = show
 
-shiftL :: ( Var v, Val x ) => v -> [v] -> F v x
-shiftL a b = packF $ ShiftL (I a) $ O $ fromList b
-shiftR :: ( Var v, Val x ) => v -> [v] -> F v x
-shiftR a b = packF $ ShiftR (I a) $ O $ fromList b
+shiftL :: ( Var v, Val x ) => v -> v -> [v] -> F v x
+shiftL a s b = packF $ ShiftL (I a) (I s) $ O $ fromList b
+shiftR :: ( Var v, Val x ) => v -> v -> [v] -> F v x
+shiftR a s b = packF $ ShiftR (I a) (I s) $ O $ fromList b
 
 instance ( Ord v ) => Function (ShiftLR v x) v where
-    outputs (ShiftL i o) = variables i `union` variables o
-    outputs (ShiftR i o) = variables i `union` variables o
+    outputs (ShiftL i s o) = variables i `union` variables o
+    outputs (ShiftR i s o) = variables i `union` variables o
 instance ( Ord v ) => Patch (ShiftLR v x) (v, v) where
-    patch diff (ShiftL a b) = ShiftL (patch diff a) (patch diff b)
-    patch diff (ShiftR a b) = ShiftR (patch diff a) (patch diff b)
+    patch diff (ShiftL i s o) = ShiftL (patch diff i) s (patch diff o)
+    patch diff (ShiftR i s o) = ShiftR (patch diff i) s (patch diff o)
 instance ( Var v ) => Locks (ShiftLR v x) v where
     locks = inputsLockOutputs
 instance ( Var v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
-    simulate cntx (ShiftL (I v1) (O vs)) = do
+    simulate cntx (ShiftL (I v1) (I s1) (O vs)) = do
         x <- cntx `getX` v1
-        let x' = x `B.shiftL` 1
+        s <- cntx `getX` s1
+        let x' = x `B.shiftL` (unsafeCoerce s :: Int)
         setZipX cntx vs x'
-    simulate cntx (ShiftR (I v1) (O vs)) = do
+    simulate cntx (ShiftR (I v1) (I s1) (O vs)) = do
         x <- cntx `getX` v1
-        let x' = x `B.shiftR` 1
+        s <- cntx `getX` s1
+        let x' = x `B.shiftR` (unsafeCoerce s :: Int)
         setZipX cntx vs x'
 
 

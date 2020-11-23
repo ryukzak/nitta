@@ -58,8 +58,8 @@ instance ( VarValTime v x t ) => SerialPUState (State v x t) v x t where
   bindToState fb s@State{ sIn=Nothing, sOut=[] }
     | Just fb' <- castF fb
     = case fb' of
-      ShiftL (I a) (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=False }
-      ShiftR (I a) (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=True }
+      ShiftL (I a) _ (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=False }
+      ShiftR (I a) _ (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=True }
     | otherwise = Left $ "The functional block is unsupported by Shift: " ++ show fb
   bindToState _ _ = error "Try bind to non-zero state. (Shift)"
 

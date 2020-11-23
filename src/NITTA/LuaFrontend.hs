@@ -173,8 +173,8 @@ function2nitta Function{ fName="sub",      fIn=[a, b], fOut=[c],    fValues=[]  
 function2nitta Function{ fName="multiply", fIn=[a, b], fOut=[c],    fValues=[]  } = F.multiply <$> input a <*> input b <*> output c
 function2nitta Function{ fName="divide",   fIn=[d, n], fOut=[q, r], fValues=[]  } = F.division <$> input d <*> input n <*> output q <*> output r
 function2nitta Function{ fName="receive",  fIn=[],     fOut=[o],    fValues=[]  } = F.receive <$> output o
--- function2nitta Function{ fName="shiftL",   fIn=[a],    fOut=[c],    fValues=[]  } = F.shiftL <$> input a <*> output c
--- function2nitta Function{ fName="shiftR",   fIn=[a],    fOut=[c],    fValues=[]  } = F.shiftR <$> input a <*> output c
+function2nitta Function{ fName="shiftL",   fIn=[a, s],    fOut=[c],    fValues=[]  } = F.shiftL <$> input a <*> input s <*> output c
+function2nitta Function{ fName="shiftR",   fIn=[a, s],    fOut=[c],    fValues=[]  } = F.shiftR <$> input a <*> input s <*> output c
 function2nitta f = error $ "frontend don't known function: " ++ show f
 
 
@@ -303,6 +303,8 @@ rightExp diff fOut (Binop op a b) = do
         binop Sub = "sub"
         binop Mul = "multiply"
         binop Div = "divide"
+        binop ShiftL = "shiftL"
+        binop ShiftR = "shiftR"
         binop o   = error $ "unknown binop: " ++ show o
 
 rightExp
