@@ -1,12 +1,14 @@
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Module      : NITTA.Model.ProcessorUnits.Serial.Shift
@@ -16,7 +18,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Serial.NewShift
+module NITTA.Model.ProcessorUnits.Serial.Shift
   ( Shift
   , Ports(..), IOPorts(..)
   )
@@ -25,8 +27,7 @@ module NITTA.Model.ProcessorUnits.Serial.NewShift
 import           Data.Bits ( finiteBitSize )
 import           Data.Default
 import           Data.List ( intersect, (\\) )
-import           Data.Set ( elems, fromList )
-import           NITTA.Intermediate.Functions
+import           NITTA.Intermediate.Functions hiding (remain)
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Serial.Generic
@@ -34,10 +35,25 @@ import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
+import           NITTA.Utils.ProcessDescription
 import           Numeric.Interval ( inf, singleton, sup, (...) )
 import           Prelude hiding ( init )
 import           Text.InterpolatedString.Perl6 ( qc )
 
+import           Control.Monad ( when )
+import           Data.Bits ( finiteBitSize )
+import           Data.Default
+import           Data.List ( find, partition, (\\) )
+import           Data.Set ( elems, fromList, member )
+import qualified NITTA.Intermediate.Functions as F
+import           NITTA.Intermediate.Types
+import           NITTA.Model.Problems
+import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.Types
+import           NITTA.Project
+import           NITTA.Utils
+import           NITTA.Utils.ProcessDescription
+import           Text.InterpolatedString.Perl6 ( qc )
 
 
 
@@ -60,6 +76,7 @@ data Shift v x t = Shift
     -- to notice that all downloading variables match to one value -
     -- multiplying result.
     , sources              :: [ v ]
+    , sRight               :: Bool
     -- Actual process of multiplying will be finished in the specified
     -- moment and its result will be available for download. Value is
     -- established after uploading of all arguments.
@@ -89,8 +106,8 @@ instance ( Var v ) => Locks (Shift v x t) v where
         ]
     locks Shift{ remain, sources, target=Nothing } = []
 
-instance Default (Shift v x t) where
-  def = Shift def def def
+-- instance Default (Shift v x t) where
+--   def = Shift def def def def def def def def def
 
 instance RefactorProblem (Shift v x t) v x
 
@@ -105,38 +122,119 @@ shift = Shift
     , tick=def
     }
 
-instance ( VarValTime v x t ) => SerialPUState (State v x t) v x t where
 
-  bindToState fb s@State{ sIn=Nothing, sOut=[] }
-    | Just fb' <- castF fb
-    = case fb' of
-      ShiftL (I a) _ (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=False }
-      ShiftR (I a) _ (O cs) -> Right s{ sIn=Just a, sOut=elems cs, sRight=True }
-    | otherwise = Left $ "The functional block is unsupported by Shift: " ++ show fb
-  bindToState _ _ = error "Try bind to non-zero state. (Shift)"
+instance ( VarValTime v x t
+         ) => ProcessorUnit (Shift v x t) v x t where
+    -- Binding to mUnit is carried out by this function.
+    tryBind f pu@Shift{ remain }
+        | Just f' <- castF f
+            = case f' of
+                ShiftL (I a) _ (O cs) -> Right pu{ remain=f : remain }
+                ShiftR (I a) _ (O cs) -> Right pu{ remain=f : remain }
 
-  -- very bad solution
-  stateOptions State{ sIn=Just v } now
-    = [ EndpointSt (Target v) (TimeConstrain (now ... maxBound) (singleton 2)) ]
-  stateOptions State{ sOut=vs@(_:_) } now -- output
-    = [ EndpointSt (Source $ fromList vs) $ TimeConstrain (now + 1 ... maxBound) (1 ... maxBound) ]
-  stateOptions _ _ = []
+        | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
+        -- Important to notice, that "binding" doesn't mean actually beginning of work, that
+        -- allows firstly make bindings of all tasks and after plan computation process.
+        | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
+    -- Unificate interface for get computation process description.
+    process = process_
 
-  simpleSynthesis st@State{ sIn=Just v, sRight } act@EndpointSt{ epAt }
-    | v `elem` variables act
-    = let st' = st{ sIn=Nothing }
-          work = do
-            a <- serialSchedule @(Shift v x t) Init act{ epAt=singleton $ inf epAt }
-            b <- serialSchedule @(Shift v x t) (Work sRight Bit Logic) act{ epAt=inf epAt + 1 ... sup epAt }
-            return $ a ++ b
-      in (st', work)
-  simpleSynthesis st@State{ sOut=vs } act
-    | not $ null $ vs `intersect` elems (variables act)
-    = let st' = st{ sOut=vs \\ elems (variables act) }
-          work = serialSchedule @(Shift v x t) Out $ shift (-1) act
-      in (st', work)
-  simpleSynthesis _ _ = error "Accum simpleSynthesis error!"
+-- |This function carry out actual take functional block to work.
+execution pu@Shift{ target=Nothing, sources=[], remain, tick } f
+    | Just f' <- castF f
+        = case f' of
+            ShiftL (I i) _ (O o) -> toPU i o False
+            ShiftR (I i) _ (O o) -> toPU i o True
 
+      where
+          toPU inp out sRight = pu
+              { target=Just inp
+              , currentWork=Just (tick + 1, f)
+              , sources=elems out
+              , remain=remain \\ [ f ]
+              , sRight=sRight
+              }
+execution _ _ = error "Shift: internal execution error."
+
+instance ( VarValTime v x t
+        ) => EndpointProblem (Shift v x t) v t
+        where
+    endpointOptions Shift{ target=Just t, tick }
+        = [ EndpointSt (Target t) $ TimeConstrain (tick ... maxBound) (singleton 2) ]
+
+     --   list of variants of downloading from mUnit variables;
+    endpointOptions Shift{ sources, doneAt=Just at, tick }
+        | not $ null sources
+        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound) ]
+
+    -- list of variables of uploading to mUnit variables, upload any one of that
+    -- will cause to actual start of working with mathched function.
+    endpointOptions pu@Shift{ remain } = concatMap (endpointOptions . execution pu) remain
+
+    endpointDecision pu@Shift{ target=(Just _), currentWorkEndpoints, sRight } d@EndpointSt{ epRole=Target v, epAt } = let
+            (newEndpoints, process_') = runSchedule pu $ do
+                 -- this is required for correct work of automatically generated tests,
+                 -- that takes information about time from Process
+                 updateTick (sup epAt)
+
+                 scheduleEndpoint d $ scheduleInstruction epAt $ Init
+                 scheduleEndpoint d $ scheduleInstruction (epAt+1) $ Work sRight Bit Logic
+        in
+            pu
+                { process_=process_'
+                -- The remainder of the work is saved for the next loop
+                , target=Nothing
+                -- We save information about events that describe sending or recieving data for
+                -- current functionatl unit.
+                , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
+                -- If all required arguments are upload (@null xs@), then the moment of time
+                -- when we get a result is saved.
+                , doneAt=Just $ sup epAt + 3
+                -- Model time is running
+                , tick=sup epAt
+                }
+
+--	2. If model is waiting, that we will download variables from it.
+    endpointDecision pu@Shift{ target=Nothing, sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointSt{ epRole=Source v, epAt }
+        | not $ null sources
+        , let sources' = sources \\ elems v
+        , sources' /= sources  = let
+                (newEndpoints, process_') = runSchedule pu $ do
+                    endpoints <- scheduleEndpoint d $ scheduleInstruction epAt Out
+                    when (null sources') $ do
+                        high <- scheduleFunction (a ... sup epAt) f
+                        let low = endpoints ++ currentWorkEndpoints
+                        -- Set up the vertical relantions between functional unit
+                        -- and related to that data sending.
+                        establishVerticalRelations high low
+                    -- this is needed to correct work of automatically generated tests
+                    -- that takes time about time from Process
+                    updateTick (sup epAt)
+                    return endpoints
+            in
+                pu
+                    { process_=process_'
+                      -- In case if not all variables what asked - remaining are saved.
+                    , sources=sources'
+                      -- if all of works is done, then time when result is ready,
+                      -- current work and data transfering, what is done is the current function is reset.
+                    , doneAt=if null sources' then Nothing else doneAt
+                    , currentWork=if null sources' then Nothing else Just (a, f)
+                    , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
+                      -- Model time is running up
+                    , tick=sup epAt
+                    }
+
+    --    3. If no function is executed at the moment, then we need to find function in the list
+    --    of assigned function, executed it to work and only then make decision
+    --    and plan a fragment of computation process with call recursion in situation 1.
+    endpointDecision pu@Shift{ target=Nothing, sources=[], remain } d
+        | let v = oneOf $ variables d
+        , Just f <- find (\f -> v `member` variables f) remain
+        = endpointDecision (execution pu f) d
+
+    -- If smth went wrong.
+    endpointDecision pu d = error $ "Shift decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
 data StepSize  = Bit   | Byte       deriving ( Show, Eq )
 data Mode      = Logic | Arithmetic deriving ( Show, Eq )
