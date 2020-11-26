@@ -127,6 +127,7 @@ tests:
       - QuickCheck
       - atomic-primops
       - call-stack
+      - directory
       - file-embed
       - genvalidity
       - genvalidity-property

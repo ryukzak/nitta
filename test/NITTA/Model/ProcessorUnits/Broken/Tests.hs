@@ -34,21 +34,18 @@ tests = testGroup "Broken PU"
     , finitePUSynthesisProp "isFinish" u fsGen
     , puCoSimProp "correct coSimulation" u fsGen
 
-    , expectFailBecause "negative test"
+    , expectFail
         $ nittaCoSimTestCase "generated verilog with syntax error" (maBroken def{ brokeVerilog=True })
             [ loop 1 "b" ["a"]
             , brokenReg "a" ["b"]
             ]
-    , expectFailBecause "negative test"
+    , expectFail
         $ nittaCoSimTestCase "generated verilog with error" (maBroken def{ wrongVerilogSimulationValue=True })
             [ loop 1 "b" ["a"]
             , brokenReg "a" ["b"]
             ]
-    , expectFailBecause "negative test"
-    , expectFailBecause "negative test"
-        $ puCoSimProp "coSimulation with brokeVerilog" u{ brokeVerilog=True } fsGen
-    , expectFailBecause "negative test"
-        $ puCoSimProp "coSimulation with brokeVerilog" u{ wrongVerilogSimulationValue=True } fsGen
+    , expectFail $ puCoSimProp "CoSim verilog with syntax error" u{ brokeVerilog=True } fsGen
+    , expectFail $ puCoSimProp "CoSim generated verilog with error" u{ wrongVerilogSimulationValue=True } fsGen
     ]
     where
         u = def :: Broken String Int Int

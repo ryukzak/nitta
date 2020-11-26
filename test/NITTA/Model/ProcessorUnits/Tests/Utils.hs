@@ -26,6 +26,7 @@ module NITTA.Model.ProcessorUnits.Tests.Utils
     , algGen
     ) where
 
+import           Control.Monad
 import           Data.Atomics.Counter ( incrCounter )
 import           Data.CallStack
 import           Data.Default
@@ -48,6 +49,7 @@ import           NITTA.Project
 import qualified NITTA.Project as P
 import           NITTA.TargetSynthesis
 import           NITTA.Utils
+import           System.Directory
 import           System.FilePath.Posix ( joinPath )
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
@@ -132,16 +134,18 @@ puCoSimProp name u fsGen
     = testProperty name $ do
         (pUnit, fs) <- processAlgOnEndpointGen u fsGen
         pTestCntx <- initialCycleCntxGen fs
-        return $ monadicIO $ do
-            i <- run $ incrCounter 1 externalTestCntr
-            res <- run $ writeAndRunTestbench Project
+        return $ monadicIO $ run $ do
+            i <- incrCounter 1 externalTestCntr
+            wd <- getCurrentDirectory
+            let pPath = joinPath [wd, "gen", toModuleName name ++ "_" ++ show i]
+            res <- writeAndRunTestbench Project
                 { pName=toModuleName name
                 , pLibPath=joinPath ["..", "..", "hdl"]
-                , pPath=joinPath ["gen", toModuleName name ++ "_" ++ show i]
+                , pPath
                 , pUnit
                 , pTestCntx
                 }
-            assert $ tbStatus res
+            unless (tbStatus res) $ error ("Fail CoSim in: " <> pPath)
 
 
 algGen fsGen = fmap avoidDupVariables $ listOf1 $ oneof fsGen
