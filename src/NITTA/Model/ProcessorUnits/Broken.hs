@@ -55,6 +55,10 @@ data Broken v x t = Broken
     , brokeVerilog                :: Bool
     -- |use process unit HW implementation with error
     , wrongVerilogSimulationValue :: Bool
+    -- |wrong control sequence for data push (receiving data to PU)
+    , wrongControlOnPush          :: Bool
+    -- |wrong control sequence for data pull (sending data from PU)
+    , wrongControlOnPull          :: Bool
     }
 
 deriving instance ( VarValTime v x t ) => Show (Broken v x t)
@@ -114,11 +118,11 @@ instance ( VarValTime v x t
 
     endpointOptions pu@Broken{ remain } = concatMap (endpointOptions . execution pu) remain
 
-    endpointDecision pu@Broken{ targets=[v], currentWorkEndpoints } d@EndpointSt{ epRole=Target v', epAt }
+    endpointDecision pu@Broken{ targets=[v], currentWorkEndpoints, wrongControlOnPush } d@EndpointSt{ epRole=Target v', epAt }
         | v == v'
         , let (newEndpoints, process_') = runSchedule pu $ do
                 updateTick (sup epAt)
-                scheduleEndpoint d $ scheduleInstruction epAt Load
+                scheduleEndpoint d $ scheduleInstruction (shiftI (if wrongControlOnPush then 1 else 0) epAt) Load
         = pu
             { process_=process_'
             , targets=[]
@@ -126,12 +130,14 @@ instance ( VarValTime v x t
             , doneAt=Just $ sup epAt + 3
             }
 
-    endpointDecision pu@Broken{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointSt{ epRole=Source v, epAt }
+    endpointDecision
+            pu@Broken{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints, wrongControlOnPull }
+            d@EndpointSt{ epRole=Source v, epAt }
         | not $ null sources
         , let sources' = sources \\ elems v
         , sources' /= sources
         , let (newEndpoints, process_') = runSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) Out
+                endpoints <- scheduleEndpoint d $ scheduleInstruction (shiftI (if wrongControlOnPull then 0 else -1) epAt) Out
                 when (null sources') $ do
                     high <- scheduleFunction (a ... sup epAt) f
                     let low = endpoints ++ currentWorkEndpoints
@@ -195,6 +201,8 @@ instance ( Time t ) => Default (Broken v x t) where
 
         , brokeVerilog=False
         , wrongVerilogSimulationValue=False
+        , wrongControlOnPush=False
+        , wrongControlOnPull=False
         }
 
 

@@ -27,28 +27,27 @@ import           Test.Tasty ( testGroup )
 import           Test.Tasty.ExpectedFailure
 
 tests = testGroup "Broken PU"
-    [ nittaCoSimTestCase "correct test" (maBroken def)
-        [ loop 1 "b" ["a"]
-        , brokenReg "a" ["b"]
-        ]
+    [ nittaCoSimTestCase "correct test" (maBroken def) alg
     , finitePUSynthesisProp "isFinish" u fsGen
     , puCoSimProp "correct coSimulation" u fsGen
 
-    , expectFail
-        $ nittaCoSimTestCase "generated verilog with syntax error" (maBroken def{ brokeVerilog=True })
-            [ loop 1 "b" ["a"]
-            , brokenReg "a" ["b"]
-            ]
-    , expectFail
-        $ nittaCoSimTestCase "generated verilog with error" (maBroken def{ wrongVerilogSimulationValue=True })
-            [ loop 1 "b" ["a"]
-            , brokenReg "a" ["b"]
-            ]
+    , expectFail $ nittaCoSimTestCase "generated verilog with syntax error"
+        (maBroken def{ brokeVerilog=True }) alg
+    , expectFail $ nittaCoSimTestCase "generated verilog with error"
+        (maBroken def{ wrongVerilogSimulationValue=True }) alg
+    , expectFail $ nittaCoSimTestCase "generated software with wrong control sequence for data push"
+        (maBroken def{ wrongControlOnPush=True }) alg
+    , expectFail $ nittaCoSimTestCase "generated software with wrong control sequence for data pull"
+        (maBroken def{ wrongControlOnPull=True }) alg
+
     , expectFail $ puCoSimProp "CoSim verilog with syntax error" u{ brokeVerilog=True } fsGen
     , expectFail $ puCoSimProp "CoSim generated verilog with error" u{ wrongVerilogSimulationValue=True } fsGen
+    , expectFail $ puCoSimProp "CoSim generated software with wrong control sequence for data push" u{ wrongControlOnPush=True } fsGen
+    , expectFail $ puCoSimProp "CoSim generated software with wrong control sequence for data pull" u{ wrongControlOnPull=True } fsGen
     ]
     where
         u = def :: Broken String Int Int
+        alg = [ loop 1 "b" ["a"], brokenReg "a" ["b"] ]
         fsGen = algGen
             [ fmap packF (arbitrary :: Gen (BrokenReg _ _))
             ]
