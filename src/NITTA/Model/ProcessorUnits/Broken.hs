@@ -43,15 +43,18 @@ import           Text.InterpolatedString.Perl6 ( qc )
 
 
 data Broken v x t = Broken
-    { remain               :: [ F v x ]
-    , targets              :: [ v ]
-    , sources              :: [ v ]
-    , doneAt               :: Maybe t
-    , currentWork          :: Maybe ( t, F v x )
-    , currentWorkEndpoints :: [ ProcessStepID ]
-    , process_             :: Process v x t
+    { remain                      :: [ F v x ]
+    , targets                     :: [ v ]
+    , sources                     :: [ v ]
+    , doneAt                      :: Maybe t
+    , currentWork                 :: Maybe ( t, F v x )
+    , currentWorkEndpoints        :: [ ProcessStepID ]
+    , process_                    :: Process v x t
 
-    , brokeVerilog         :: Bool
+    -- |generate verilog code with syntax error
+    , brokeVerilog                :: Bool
+    -- |use process unit HW implementation with error
+    , wrongVerilogSimulationValue :: Bool
     }
 
 deriving instance ( VarValTime v x t ) => Show (Broken v x t)
@@ -191,6 +194,7 @@ instance ( Time t ) => Default (Broken v x t) where
         , process_=def
 
         , brokeVerilog=False
+        , wrongVerilogSimulationValue=False
         }
 
 
@@ -221,11 +225,15 @@ instance ( VarValTime v x t
             [ FromLibrary $ "broken/" ++ moduleName tag pu ++ ".v"
             ]
 
-    hardwareInstance tag pu@Broken{ brokeVerilog } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } BrokenPorts{..} BrokenIO
+    hardwareInstance
+            tag
+            pu@Broken{ brokeVerilog, wrongVerilogSimulationValue }
+            TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } BrokenPorts{..} BrokenIO
         = codeBlock [qc|
             {  moduleName tag pu } #
                     ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
                     , .ATTR_WIDTH( { parameterAttrWidth } )
+                    , .IS_BROKEN( { bool2verilog wrongVerilogSimulationValue } )
                     ) { tag }
                 ( .clk( { signalClk } )
 

@@ -30,7 +30,12 @@ tests = testGroup "Broken PU"
         , brokenReg "a" ["b"]
         ]
     , expectFailBecause "negative test"
-        $ nittaCoSimTestCase "generated verilog is broken" (maBroken def{ brokeVerilog=True })
+        $ nittaCoSimTestCase "generated verilog with syntax error" (maBroken def{ brokeVerilog=True })
+            [ loop 1 "b" ["a"]
+            , brokenReg "a" ["b"]
+            ]
+    , expectFailBecause "negative test"
+        $ nittaCoSimTestCase "generated verilog with error" (maBroken def{ wrongVerilogSimulationValue=True })
             [ loop 1 "b" ["a"]
             , brokenReg "a" ["b"]
             ]
