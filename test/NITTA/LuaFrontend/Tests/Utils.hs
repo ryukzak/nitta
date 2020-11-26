@@ -68,8 +68,9 @@ typedIOLuaTestCase ::
 typedIOLuaTestCase arch proxy name received src = testCase name $ do
     let wd = "lua_" ++ toModuleName name
     status <- runLua arch proxy wd received src
-    let errMsg = codeBlock (T.unpack src) ++ "-- runTargetSynthesis fail with: " ++ fromLeft undefined status
-    assertBool errMsg $ isRight status
+    case status of
+        Left err -> assertFailure err
+        Right _  ->  return ()
 
 
 runLua :: forall x.
