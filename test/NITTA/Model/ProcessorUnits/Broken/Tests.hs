@@ -18,9 +18,11 @@ module NITTA.Model.ProcessorUnits.Broken.Tests
 import           Data.Default
 import           NITTA.Intermediate.Functions
 import           NITTA.Intermediate.Tests.Functions ()
+import           NITTA.Intermediate.Types
 import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Tests.Utils
 import           NITTA.Model.Tests.Microarchitecture
+import           Test.QuickCheck
 import           Test.Tasty ( testGroup )
 import           Test.Tasty.ExpectedFailure
 
@@ -29,6 +31,9 @@ tests = testGroup "Broken PU"
         [ loop 1 "b" ["a"]
         , brokenReg "a" ["b"]
         ]
+    , finitePUSynthesisProp "isFinish" u fsGen
+    , puCoSimProp "correct coSimulation" u fsGen
+
     , expectFailBecause "negative test"
         $ nittaCoSimTestCase "generated verilog with syntax error" (maBroken def{ brokeVerilog=True })
             [ loop 1 "b" ["a"]
@@ -40,3 +45,8 @@ tests = testGroup "Broken PU"
             , brokenReg "a" ["b"]
             ]
     ]
+    where
+        u = def :: Broken String Int Int
+        fsGen = algGen
+            [ fmap packF (arbitrary :: Gen (BrokenReg _ _))
+            ]

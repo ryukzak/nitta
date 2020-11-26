@@ -136,7 +136,7 @@ instance ( VarValTime v x t
                     high <- scheduleFunction (a ... sup epAt) f
                     let low = endpoints ++ currentWorkEndpoints
                     establishVerticalRelations high low
-                updateTick (sup epAt)
+                updateTick (sup epAt + 1)
                 return endpoints
         = pu
             { process_=process_'
