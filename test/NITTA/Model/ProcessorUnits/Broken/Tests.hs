@@ -44,6 +44,11 @@ tests = testGroup "Broken PU"
             [ loop 1 "b" ["a"]
             , brokenReg "a" ["b"]
             ]
+    , expectFailBecause "negative test"
+    , expectFailBecause "negative test"
+        $ puCoSimProp "coSimulation with brokeVerilog" u{ brokeVerilog=True } fsGen
+    , expectFailBecause "negative test"
+        $ puCoSimProp "coSimulation with brokeVerilog" u{ wrongVerilogSimulationValue=True } fsGen
     ]
     where
         u = def :: Broken String Int Int
