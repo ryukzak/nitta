@@ -23,9 +23,7 @@ module NITTA.LuaFrontend.Tests.Utils
 
 import           Data.CallStack
 import           Data.Default
-import           Data.Either
 import           Data.Proxy
-import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
@@ -86,8 +84,8 @@ runLua arch _proxy wd received src = do
         }
     return $ case report of
         Right TestbenchReport{ tbStatus=True } -> Right ()
-        Left err -> Left $ "synthesis process fail: " ++ err
-        Right TestbenchReport{ tbCompilerDump } | length tbCompilerDump > 2 -- [ "stdout:", "stderr:" ]
-            -> Left $ "icarus synthesis error:\n" ++ S.join "\n" tbCompilerDump
-        Right TestbenchReport{ tbSimulationDump }
-            -> Left $ "icarus simulation error:\n" ++ S.join "\n" tbSimulationDump
+        Left err -> Left $ "synthesis process fail" <> err
+        Right TestbenchReport{ tbCompilerDump, tbPath } | length tbCompilerDump > 2
+            -> Left $ "icarus synthesis error: " <> tbPath
+        Right TestbenchReport{ tbPath }
+            -> Left $ "icarus simulation error: " <> tbPath

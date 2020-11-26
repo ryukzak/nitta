@@ -32,7 +32,9 @@ import           NITTA.Project.Parts.Quartus
 import           NITTA.Project.Parts.TargetSystem
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
+import           System.Directory
 import           System.Exit
+import           System.FilePath.Posix
 import           System.Process
 import           Text.Regex
 
@@ -60,6 +62,7 @@ writeAndRunTestbench prj = do
 
 runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNumber } } = do
     let files = projectFiles prj
+    wd <- getCurrentDirectory
 
     ( compileExitCode, compileOut, compileErr )
         <- readCreateProcessWithExitCode (createIVerilogProcess pPath files) []
@@ -71,7 +74,7 @@ runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNu
 
     return TestbenchReport
         { tbStatus=isCompileOk && isSimOk
-        , tbPath=pPath
+        , tbPath=joinPath [ wd, pPath ]
         , tbFiles=files
         , tbFunctions=map show $ functions pUnit
         , tbSynthesisSteps=map show $ steps $ process pUnit
