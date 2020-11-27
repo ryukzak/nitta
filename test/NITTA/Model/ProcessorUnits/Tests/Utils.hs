@@ -32,7 +32,7 @@ import           Data.CallStack
 import           Data.Default
 import           Data.List ( delete )
 import qualified Data.Map.Strict as M
-import           Data.Set ( difference, elems, empty, fromList, intersection, union )
+import           Data.Set ( elems, empty, fromList, intersection, union )
 import qualified Data.String.Utils as S
 import           Debug.Trace
 import           NITTA.Intermediate.DataFlow
@@ -111,41 +111,43 @@ nittaCoSimTestCase n tMicroArch alg
 -- *Properties
 
 -- |Is unit synthesis process complete (by function and variables).
-finitePUSynthesisProp name u0 fsGen
+finitePUSynthesisProp name pu0 fsGen
     = testProperty name $ do
-        (u, fs) <- processAlgOnEndpointGen u0 fsGen
-        let
-            p = process u
-            processedVs = unionsMap variables $ getEndpoints p
-            algVs = unionsMap variables fs
-        return $ algVs == processedVs -- all algorithm variables present in process
-            && null (endpointOptions u)
-            || trace (unlines
-                [ ""
-                , "difference between exaceptation and fact: " ++ show (algVs `difference` processedVs)
-                , "algorithm variables: " ++ show algVs
-                , "processed variables: " ++ show processedVs
-                ]) False
+        (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
+        return $ isProcessComplete pu fs
+            && null (endpointOptions pu)
+            || trace (incompleteProcessMsg pu fs) False
+
+isProcessComplete pu fs = unionsMap variables fs == processedVars pu
+
+incompleteProcessMsg pu fs
+    = "expected: " <> show (elems $ unionsMap variables fs)
+    <> "actual: " <> show (elems $ processedVars pu)
+
+
+processedVars pu = unionsMap variables $ getEndpoints $ process pu
 
 
 -- |A computational process of functional (Haskell) and logical (Verilog) simulation
 -- should be identical for any correct algorithm.
-puCoSimProp name u fsGen
+puCoSimProp name pu0 fsGen
     = testProperty name $ do
-        (pUnit, fs) <- processAlgOnEndpointGen u fsGen
+        (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
         pTestCntx <- initialCycleCntxGen fs
         return $ monadicIO $ run $ do
+            unless (isProcessComplete pu fs)
+                $ error $ "process is not complete: " <> incompleteProcessMsg pu fs
             i <- incrCounter 1 externalTestCntr
             wd <- getCurrentDirectory
-            let pPath = joinPath [wd, "gen", toModuleName name ++ "_" ++ show i]
+            let pPath = joinPath [ wd, "gen", toModuleName name ++ "_" ++ show i ]
             res <- writeAndRunTestbench Project
                 { pName=toModuleName name
-                , pLibPath=joinPath ["..", "..", "hdl"]
+                , pLibPath=joinPath [ "..", "..", "hdl" ]
                 , pPath
-                , pUnit
+                , pUnit=pu
                 , pTestCntx
                 }
-            unless (tbStatus res) $ error ("Fail CoSim in: " <> pPath)
+            unless (tbStatus res) $ error $ "Fail CoSim in: " <> pPath
 
 
 algGen fsGen = fmap avoidDupVariables $ listOf1 $ oneof fsGen
