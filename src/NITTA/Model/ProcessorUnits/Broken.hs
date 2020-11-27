@@ -240,7 +240,7 @@ instance ( VarValTime v x t
     software _ _ = Empty
     hardware tag pu
         = Aggregate Nothing
-            [ FromLibrary $ "broken/" ++ moduleName tag pu ++ ".v"
+            [ FromLibrary $ moduleName tag pu <> ".v"
             ]
 
     hardwareInstance
