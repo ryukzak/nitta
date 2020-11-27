@@ -62,10 +62,19 @@ tests = testGroup "Broken PU and negative tests"
         , expectFail $ typedLuaTestCase (maBroken def{ wrongControlOnPull=True }) pInt "wrongControlOnPull wrong control pull" lua
         ]
 
-    , expectFail $ typedLuaTestCase (maBroken def{ brokeVerilog=True }) pInt "lua verilog with syntax error" lua
-    , expectFail $ typedLuaTestCase (maBroken def{ wrongVerilogSimulationValue=True }) pInt "lua generated verilog with error" lua
-    , expectFail $ typedLuaTestCase (maBroken def{ wrongControlOnPush=True }) pInt "lua generated software with wrong control sequence for data push" lua
-    , expectFail $ typedLuaTestCase (maBroken def{ wrongControlOnPull=True }) pInt "lua generated software with wrong control sequence for data pull" lua
+    , testGroup "lost target endpoint due synthesis"
+        [ expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost target endpoint" u{ lostEndpointTarget=True } fsGen
+        , expectFail $ puCoSimProp "puCoSimProp lost target endpoint" u{ lostEndpointTarget=True } fsGen
+        , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost target endpoint" (maBroken def{ lostEndpointTarget=True }) alg
+        , expectFail $ typedLuaTestCase (maBroken def{ lostEndpointTarget=True }) pInt "typedLuaTestCase lost target endpoint" lua
+        ]
+
+    , testGroup "lost source endpoint due synthesis"
+        [ expectFail $ finitePUSynthesisProp "finitePUSynthesisProp lost source endpoint" u{ lostEndpointSource=True } fsGen
+        , expectFail $ puCoSimProp "puCoSimProp lost source endpoint" u{ lostEndpointSource=True } fsGen
+        , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase lost source endpoint" (maBroken def{ lostEndpointSource=True }) alg
+        , expectFail $ typedLuaTestCase (maBroken def{ lostEndpointSource=True }) pInt "typedLuaTestCase lost source endpoint" lua
+        ]
     ]
     where
         u = def :: Broken String Int Int

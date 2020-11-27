@@ -59,6 +59,10 @@ data Broken v x t = Broken
     , wrongControlOnPush          :: Bool
     -- |wrong control sequence for data pull (sending data from PU)
     , wrongControlOnPull          :: Bool
+    -- |lost target endpoint due synthesis
+    , lostEndpointTarget          :: Bool
+    -- |lost source endpoint due synthesis
+    , lostEndpointSource          ::Bool
     }
 
 deriving instance ( VarValTime v x t ) => Show (Broken v x t)
@@ -105,17 +109,21 @@ execution _ _ = error "Broken: internal execution error."
 instance ( VarValTime v x t
         ) => EndpointProblem (Broken v x t) v t
         where
+    endpointOptions Broken{ targets=[_], lostEndpointTarget=True } = []
     endpointOptions Broken{ targets=[v], process_ } = let
             start = nextTick process_ + 1 ... maxBound
             dur = 1 ... maxBound
         in [ EndpointSt (Target v) $ TimeConstrain start dur ]
 
+    endpointOptions Broken{ doneAt=Just _, lostEndpointSource=True } = []
     endpointOptions Broken{ sources, doneAt=Just at, process_ }
         | not $ null sources = let
               start = max at (nextTick process_) ... maxBound
               dur = 1 ... maxBound
         in [ EndpointSt (Source $ fromList sources) $ TimeConstrain start dur ]
 
+    endpointOptions pu@Broken{ remain, lostEndpointTarget=True }
+        | not $ null remain = concatMap (endpointOptions . execution pu) $ tail remain
     endpointOptions pu@Broken{ remain } = concatMap (endpointOptions . execution pu) remain
 
     endpointDecision pu@Broken{ targets=[v], currentWorkEndpoints, wrongControlOnPush } d@EndpointSt{ epRole=Target v', epAt }
@@ -203,6 +211,8 @@ instance ( Time t ) => Default (Broken v x t) where
         , wrongVerilogSimulationValue=False
         , wrongControlOnPush=False
         , wrongControlOnPull=False
+        , lostEndpointTarget=False
+        , lostEndpointSource=False
         }
 
 
