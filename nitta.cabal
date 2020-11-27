@@ -68,6 +68,7 @@ library
       NITTA.Model.Problems.Refactor.Types
       NITTA.Model.Problems.Whole
       NITTA.Model.ProcessorUnits
+      NITTA.Model.ProcessorUnits.Broken
       NITTA.Model.ProcessorUnits.Divider
       NITTA.Model.ProcessorUnits.Fram
       NITTA.Model.ProcessorUnits.IO.I2C
@@ -201,6 +202,7 @@ test-suite nitta-test
       NITTA.LuaFrontend.Tests.Utils
       NITTA.Model.Problems.Refactor.Accum.Tests
       NITTA.Model.Problems.Refactor.Tests
+      NITTA.Model.ProcessorUnits.Broken.Tests
       NITTA.Model.ProcessorUnits.Divider.Tests
       NITTA.Model.ProcessorUnits.Fram.Tests
       NITTA.Model.ProcessorUnits.IO.SPI.Tests
@@ -225,6 +227,7 @@ test-suite nitta-test
     , call-stack
     , containers
     , data-default
+    , directory
     , file-embed
     , filepath
     , genvalidity
@@ -234,6 +237,7 @@ test-suite nitta-test
     , regex-compat
     , split
     , tasty
+    , tasty-expected-failure
     , tasty-hunit
     , tasty-quickcheck
     , tasty-th

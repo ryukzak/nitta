@@ -133,12 +133,14 @@ tests:
       - QuickCheck
       - atomic-primops
       - call-stack
+      - directory
       - file-embed
       - genvalidity
       - genvalidity-property
       - nitta
       - split
       - tasty
+      - tasty-expected-failure
       - tasty-hunit
       - tasty-quickcheck
       - tasty-th

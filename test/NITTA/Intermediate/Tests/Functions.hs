@@ -37,6 +37,9 @@ instance Arbitrary (Loop String Int) where
 instance Arbitrary (Reg String Int) where
     arbitrary = suchThat (Reg <$> inputVarGen <*> outputVarsGen) uniqueVars
 
+instance Arbitrary (BrokenReg String Int) where
+    arbitrary = suchThat (BrokenReg <$> inputVarGen <*> outputVarsGen) uniqueVars
+
 instance Arbitrary (Constant String Int) where
     arbitrary = suchThat (Constant <$> (X <$> choose (10, 16)) <*> outputVarsGen) uniqueVars
 
