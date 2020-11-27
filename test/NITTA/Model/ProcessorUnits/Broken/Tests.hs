@@ -30,25 +30,37 @@ import           Test.Tasty ( testGroup )
 import           Test.Tasty.ExpectedFailure
 import           Text.InterpolatedString.Perl6 ( qc )
 
-tests = testGroup "Broken PU"
-    [ nittaCoSimTestCase "correct test" (maBroken def) alg
-    , finitePUSynthesisProp "isFinish" u fsGen
-    , puCoSimProp "correct coSimulation" u fsGen
-    , typedLuaTestCase (maBroken def) pInt "correct lua test" lua
+tests = testGroup "Broken PU and negative tests"
+    [ testGroup "positive tests"
+        [ finitePUSynthesisProp "finitePUSynthesisProp" u fsGen
+        , puCoSimProp "puCoSimProp" u fsGen
+        , nittaCoSimTestCase "nittaCoSimTestCase" (maBroken def) alg
+        , typedLuaTestCase (maBroken def) pInt "typedLuaTestCase" lua
+        ]
 
-    , expectFail $ nittaCoSimTestCase "generated verilog with syntax error"
-        (maBroken def{ brokeVerilog=True }) alg
-    , expectFail $ nittaCoSimTestCase "generated verilog with error"
-        (maBroken def{ wrongVerilogSimulationValue=True }) alg
-    , expectFail $ nittaCoSimTestCase "generated software with wrong control sequence for data push"
-        (maBroken def{ wrongControlOnPush=True }) alg
-    , expectFail $ nittaCoSimTestCase "generated software with wrong control sequence for data pull"
-        (maBroken def{ wrongControlOnPull=True }) alg
+    , testGroup "verilog with syntax error"
+        [ expectFail $ puCoSimProp "puCoSimProp verilog syntax error" u{ brokeVerilog=True } fsGen
+        , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase verilog syntax error" (maBroken def{ brokeVerilog=True }) alg
+        , expectFail $ typedLuaTestCase (maBroken def{ brokeVerilog=True }) pInt "typedLuaTestCase verilog syntax error" lua
+        ]
 
-    , expectFail $ puCoSimProp "CoSim verilog with syntax error" u{ brokeVerilog=True } fsGen
-    , expectFail $ puCoSimProp "CoSim generated verilog with error" u{ wrongVerilogSimulationValue=True } fsGen
-    , expectFail $ puCoSimProp "CoSim generated software with wrong control sequence for data push" u{ wrongControlOnPush=True } fsGen
-    , expectFail $ puCoSimProp "CoSim generated software with wrong control sequence for data pull" u{ wrongControlOnPull=True } fsGen
+    , testGroup "verilog with error"
+        [ expectFail $ puCoSimProp "puCoSimProp verilog error" u{ wrongVerilogSimulationValue=True } fsGen
+        , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase verilog error" (maBroken def{ wrongVerilogSimulationValue=True }) alg
+        , expectFail $ typedLuaTestCase (maBroken def{ wrongVerilogSimulationValue=True }) pInt "typedLuaTestCase verilog error" lua
+        ]
+
+    , testGroup "wrong control sequence for data push"
+        [ expectFail $ puCoSimProp "puCoSimProp wrong control push" u{ wrongControlOnPush=True } fsGen
+        , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase wrong control push" (maBroken def{ wrongControlOnPush=True }) alg
+        , expectFail $ typedLuaTestCase (maBroken def{ wrongControlOnPush=True }) pInt "typedLuaTestCase wrong control push" lua
+        ]
+
+    , testGroup "wrong control sequence for data pull"
+        [ expectFail $ puCoSimProp "puCoSimProp wrong control pull" u{ wrongControlOnPull=True } fsGen
+        , expectFail $ nittaCoSimTestCase "nittaCoSimTestCase wrong control pull" (maBroken def{ wrongControlOnPull=True }) alg
+        , expectFail $ typedLuaTestCase (maBroken def{ wrongControlOnPull=True }) pInt "wrongControlOnPull wrong control pull" lua
+        ]
 
     , expectFail $ typedLuaTestCase (maBroken def{ brokeVerilog=True }) pInt "lua verilog with syntax error" lua
     , expectFail $ typedLuaTestCase (maBroken def{ wrongVerilogSimulationValue=True }) pInt "lua generated verilog with error" lua
