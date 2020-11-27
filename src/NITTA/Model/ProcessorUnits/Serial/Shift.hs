@@ -77,6 +77,7 @@ data Shift v x t = Shift
     -- multiplying result.
     , sources              :: [ v ]
     , sRight               :: Bool
+    , shiftStep            :: Int
     -- Actual process of multiplying will be finished in the specified
     -- moment and its result will be available for download. Value is
     -- established after uploading of all arguments.
@@ -117,6 +118,7 @@ instance Default t => Default (Shift v x t) where
         , process_=def
         , tick=def
         , sRight=True
+        , shiftStep=1
         }
 
 instance RefactorProblem (Shift v x t) v x
@@ -139,8 +141,8 @@ instance ( VarValTime v x t
     tryBind f pu@Shift{ remain }
         | Just f' <- castF f
             = case f' of
-                ShiftL (I a) _ (O cs) -> Right pu{ remain=f : remain }
-                ShiftR (I a) _ (O cs) -> Right pu{ remain=f : remain }
+                ShiftL s (I a) (O cs) -> Right pu{ remain=f : remain }
+                ShiftR s (I a) (O cs) -> Right pu{ remain=f : remain }
 
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
         -- Important to notice, that "binding" doesn't mean actually beginning of work, that
@@ -153,16 +155,17 @@ instance ( VarValTime v x t
 execution pu@Shift{ target=Nothing, sources=[], remain, tick } f
     | Just f' <- castF f
         = case f' of
-            ShiftL (I i) _ (O o) -> toPU i o False
-            ShiftR (I i) _ (O o) -> toPU i o True
+            ShiftL s (I i) (O o) -> toPU i o False s
+            ShiftR s (I i) (O o) -> toPU i o True s
 
       where
-          toPU inp out sRight = pu
+          toPU inp out sRight step = pu
               { target=Just inp
               , currentWork=Just (tick + 1, f)
               , sources=elems out
               , remain=remain \\ [ f ]
               , sRight=sRight
+              , shiftStep=step
               }
 execution _ _ = error "Shift: internal execution error."
 
@@ -181,14 +184,14 @@ instance ( VarValTime v x t
     -- will cause to actual start of working with mathched function.
     endpointOptions pu@Shift{ remain } = concatMap (endpointOptions . execution pu) remain
 
-    endpointDecision pu@Shift{ target=(Just _), currentWorkEndpoints, sRight } d@EndpointSt{ epRole=Target v, epAt } = let
+    endpointDecision pu@Shift{ target=(Just _), currentWorkEndpoints, sRight, shiftStep } d@EndpointSt{ epRole=Target v, epAt } = let
             (newEndpoints, process_') = runSchedule pu $ do
                  -- this is required for correct work of automatically generated tests,
                  -- that takes information about time from Process
                  updateTick (sup epAt)
                  scheduleEndpoint d $ scheduleInstruction epAt $ Init
-                 updateTick (sup epAt+1)
-                 scheduleEndpoint d $ scheduleInstruction (epAt+2) $ Work sRight Bit Logic
+                 updateTick (sup epAt)
+                 scheduleEndpoint d $ scheduleInstruction (epAt+2) $ Work sRight shiftStep Logic
         in
             pu
                 { process_=process_'
@@ -199,9 +202,9 @@ instance ( VarValTime v x t
                 , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
                 -- If all required arguments are upload (@null xs@), then the moment of time
                 -- when we get a result is saved.
-                , doneAt=Just $ sup epAt + 3
+                , doneAt=Just $ sup epAt + 2
                 -- Model time is running
-                , tick=sup epAt + 2
+                , tick=sup epAt
                 }
 
 --	2. If model is waiting, that we will download variables from it.
@@ -210,16 +213,16 @@ instance ( VarValTime v x t
         , let sources' = sources \\ elems v
         , sources' /= sources  = let
                 (newEndpoints, process_') = runSchedule pu $ do
-                    endpoints <- scheduleEndpoint d $ scheduleInstruction epAt Out
+                    endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt+1) Out
                     when (null sources') $ do
-                        high <- scheduleFunction (a ... sup epAt) f
+                        high <- scheduleFunction (a ... sup epAt+1) f
                         let low = endpoints ++ currentWorkEndpoints
                         -- Set up the vertical relantions between functional unit
                         -- and related to that data sending.
                         establishVerticalRelations high low
                     -- this is needed to correct work of automatically generated tests
                     -- that takes time about time from Process
-                    updateTick (sup epAt)
+                    updateTick (sup epAt+1)
                     return endpoints
             in
                 pu
@@ -246,13 +249,12 @@ instance ( VarValTime v x t
     -- If smth went wrong.
     endpointDecision pu d = error $ "Shift decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
-data StepSize  = Bit   | Byte       deriving ( Show, Eq )
 data Mode      = Logic | Arithmetic deriving ( Show, Eq )
 
 instance Controllable (Shift v x t) where
     data Instruction (Shift v x t)
         = Init
-        | Work Bool StepSize Mode
+        | Work Bool Int Mode
         | Out
         deriving (Show)
 
@@ -261,7 +263,7 @@ instance Controllable (Shift v x t) where
             { workSignal :: Bool
             , directionSignal :: Bool
             , modeSignal :: Bool
-            , stepSignal :: Bool
+            , stepSignal :: Int
             , initSignal :: Bool
             , oeSignal :: Bool
             } deriving ( Show, Eq, Ord )
@@ -270,7 +272,7 @@ instance Controllable (Shift v x t) where
         [ (work, Bool workSignal)
         , (direction, Bool directionSignal)
         , (mode, Bool modeSignal)
-        , (step, Bool stepSignal)
+        , (step, Int stepSignal)
         , (init, Bool initSignal)
         , (oe, Bool oeSignal)
         ]
@@ -285,7 +287,7 @@ instance Default (Microcode (Shift v x t)) where
   def = Microcode{ workSignal=False
                  , directionSignal=False
                  , modeSignal=False
-                 , stepSignal=False
+                 , stepSignal=1
                  , initSignal=False
                  , oeSignal=False
                  }
@@ -297,7 +299,7 @@ instance UnambiguouslyDecode (Shift v x t) where
     = def{ workSignal=True
          , directionSignal=not toRight
          , modeSignal=mode == Arithmetic
-         , stepSignal=step == Byte
+         , stepSignal=step
          }
 
 
@@ -329,6 +331,8 @@ instance ( Val x ) => TargetSystemComponent (Shift v x t) where
                 , .attr_out( { attrOut } )
                 );
             |]
+
+                -- , .signal_mode( { signal mode } ), .signal_step( { signal step } )
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _op
         = error "Should be defined in network."
 

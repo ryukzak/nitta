@@ -19,11 +19,13 @@ import           Test.Tasty ( testGroup )
 
 
 tests = testGroup "Shift PU"
-    [ nittaCoSimTestCase "smoke test" march
-        [ constant 2 ["s"]
+    [ nittaCoSimTestCase "shift test" march
+        [ constant 1 ["1"]
+        , constant 2 ["2"]
+        , constant 3 ["3"]
         , loop 16 "g1" ["f1"]
-        , shiftL "f1" "s" ["g1"]
+        , shiftL "f1" "3" ["g1"]
         , loop 16 "g2" ["f2"]
-        , shiftR "f2" "s" ["g2"]
+        , shiftR "f2" "3" ["g2"]
         ]
     ]
