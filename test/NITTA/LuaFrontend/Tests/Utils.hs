@@ -68,7 +68,7 @@ typedIOLuaTestCase arch proxy name received src = testCase name $ do
     status <- runLua arch proxy wd received src
     case status of
         Left err -> assertFailure err
-        Right _  ->  return ()
+        Right _  -> return ()
 
 
 runLua :: forall x.

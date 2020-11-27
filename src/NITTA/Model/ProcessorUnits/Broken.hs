@@ -19,7 +19,6 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-
 module NITTA.Model.ProcessorUnits.Broken
     ( Broken(..), broken
     , Ports(..), IOPorts(..)
@@ -62,7 +61,7 @@ data Broken v x t = Broken
     -- |lost target endpoint due synthesis
     , lostEndpointTarget          :: Bool
     -- |lost source endpoint due synthesis
-    , lostEndpointSource          ::Bool
+    , lostEndpointSource          :: Bool
     }
 
 deriving instance ( VarValTime v x t ) => Show (Broken v x t)

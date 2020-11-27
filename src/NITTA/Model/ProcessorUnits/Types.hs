@@ -264,9 +264,9 @@ class UnambiguouslyDecode pu where
 
 -- |Control line value.
 data SignalValue
-    = Undef -- ^undefined by design (`x`)
+    = Undef     -- ^undefined by design (`x`)
     | Bool Bool -- ^boolean (`0` or `1`)
-    | Unknown -- ^unknown value (`x`) by data colision
+    | Unknown   -- ^unknown value (`x`) by data colision
     deriving ( Eq )
 
 instance Default SignalValue where

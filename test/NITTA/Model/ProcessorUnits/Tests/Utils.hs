@@ -124,7 +124,6 @@ incompleteProcessMsg pu fs
     = "expected: " <> show (elems $ unionsMap variables fs)
     <> "actual: " <> show (elems $ processedVars pu)
 
-
 processedVars pu = unionsMap variables $ getEndpoints $ process pu
 
 

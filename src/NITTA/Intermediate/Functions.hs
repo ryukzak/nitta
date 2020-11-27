@@ -393,6 +393,7 @@ instance ( Var v, Val x ) => FunctionSimulation (Receive v x) v x where
             Nothing -> setZipX cntx vs def
 
 
+-- |Special function for negative tests only.
 data BrokenReg v x = BrokenReg (I v) (O v) deriving ( Typeable, Eq )
 instance Label (BrokenReg v x) where label BrokenReg{} = "broken"
 instance ( Show v ) => Show (BrokenReg v x) where
