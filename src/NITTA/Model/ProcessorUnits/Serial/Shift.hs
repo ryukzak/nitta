@@ -178,7 +178,7 @@ instance ( VarValTime v x t
      --   list of variants of downloading from mUnit variables;
     endpointOptions Shift{ sources, doneAt=Just at, tick }
         | not $ null sources
-        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound) ]
+        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick + 2 ... maxBound) (1 ... maxBound) ]
 
     -- list of variables of uploading to mUnit variables, upload any one of that
     -- will cause to actual start of working with mathched function.
@@ -189,9 +189,14 @@ instance ( VarValTime v x t
                  -- this is required for correct work of automatically generated tests,
                  -- that takes information about time from Process
                  updateTick (sup epAt)
-                 scheduleEndpoint d $ scheduleInstruction epAt $ Init
-                 updateTick (sup epAt)
-                 scheduleEndpoint d $ scheduleInstruction (epAt+2) $ Work sRight shiftStep Logic
+                 scheduleEndpoint d $ do
+                    scheduleInstruction epAt $ Init
+                    scheduleInstruction (epAt+2) $ Work sRight shiftStep Logic
+
+                 -- updateTick (sup epAt)
+                 -- scheduleEndpoint d $ scheduleInstruction epAt $ Init
+                 -- updateTick (sup epAt)
+                 -- scheduleEndpoint d $ scheduleInstruction (epAt+2) $ Work sRight shiftStep Logic
         in
             pu
                 { process_=process_'
