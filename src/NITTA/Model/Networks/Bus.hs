@@ -576,7 +576,7 @@ instance ( VarValTime v x t
             assertion ( cycleI, t, Nothing )
                 = codeLine [qc|@(posedge clk); trace({ cycleI }, { t }, net.data_bus);|]
             assertion ( cycleI, t, Just (v, x) )
-                = codeLine [qc|@(posedge clk); assert({ cycleI }, { t }, net.data_bus, { toVerilogLit x }, { v });|]
+                = codeLine [qc|@(posedge clk); assert({ cycleI }, { t }, net.data_bus, { verilogLiteral x }, { v });|]
 
         in Immediate (moduleName pName n ++ "_tb.v") $ codeBlock [qc|
             `timescale 1 ps / 1 ps

@@ -55,9 +55,11 @@ class ( Default x ) => DefaultX u x | u -> x where
 -- |Type class for Value types.
 class ( Typeable x, Show x, Read x, FixedPointCompatible x, Default x, PrintfArg x, Num x
       ) => Val x where
+    -- |Serialize value and attributes into binary form inside Integer type
+    serialize :: x -> Integer
 
     -- |Convert value to applicable for Verilog literal
-    toVerilogLit :: x -> Integer
+    verilogLiteral :: x -> String
 
     -- |Helper functions to work with type in verilog
     verilogHelper :: x -> String
@@ -111,7 +113,8 @@ scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 
 -- for Int
 instance Val Int where
-    toVerilogLit = fromIntegral
+    serialize = fromIntegral
+    verilogLiteral = show
 
 instance FixedPointCompatible Int where
     scalingFactorPower _ = 0
@@ -174,7 +177,8 @@ instance ( KnownNat w ) => FiniteBits ( IntX w ) where
     finiteBitSize _ = fromInteger $ natVal (Proxy :: Proxy w)
 
 instance ( KnownNat w ) => Val ( IntX w ) where
-    toVerilogLit (IntX x) = fromIntegral x
+    serialize (IntX x) = fromIntegral x
+    verilogLiteral (IntX x) = show x
 
 instance ( KnownNat w ) => FixedPointCompatible (IntX w) where
     scalingFactorPower _ = 0
@@ -274,7 +278,8 @@ instance ( KnownNat b ) => FiniteBits ( FX m b ) where
     finiteBitSize _ = fromInteger $ natVal (Proxy :: Proxy b)
 
 instance ( KnownNat m, KnownNat b ) => Val ( FX m b ) where
-    toVerilogLit (FX x) = fromIntegral x
+    serialize (FX x) = fromIntegral x
+    verilogLiteral (FX x) = show x
     verilogHelper x = [qc|
 task trace;
     input integer cycle;

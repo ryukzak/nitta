@@ -180,8 +180,8 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                     placeholder = replicate (frameWordCount - length xs) [qc|{ wordWidth }'d00|]
                 in S.join ", " (xs' ++ placeholder)
             toVerilogLiteral' x
-                | abs x /= x = [qc|-{ wordWidth }'sd{ toVerilogLit (-x) }|]
-                | otherwise = [qc|{ wordWidth }'sd{ toVerilogLit x }|]
+                | abs x /= x = [qc|-{ wordWidth }'sd{ verilogLiteral (-x) }|]
+                | otherwise = [qc|{ wordWidth }'sd{ verilogLiteral x }|]
 
             disable = codeBlock [qc|
                 initial begin
