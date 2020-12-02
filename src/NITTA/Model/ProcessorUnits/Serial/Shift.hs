@@ -77,7 +77,7 @@ data Shift v x t = Shift
     -- multiplying result.
     , sources              :: [ v ]
     , sRight               :: Bool
-    , shiftStep            :: Int
+    , shiftStep            :: Bool
     -- Actual process of multiplying will be finished in the specified
     -- moment and its result will be available for download. Value is
     -- established after uploading of all arguments.
@@ -118,7 +118,7 @@ instance Default t => Default (Shift v x t) where
         , process_=def
         , tick=def
         , sRight=True
-        , shiftStep=1
+        , shiftStep=True
         }
 
 instance RefactorProblem (Shift v x t) v x
@@ -155,13 +155,13 @@ instance ( VarValTime v x t
 execution pu@Shift{ target=Nothing, sources=[], remain, tick } f
     | Just f' <- castF f
         = case f' of
-            ShiftL s (I i) (O o) -> toPU i o False s
-            ShiftR s (I i) (O o) -> toPU i o True s
+            ShiftL s (I i) (O o) -> toPU i o False True
+            ShiftR s (I i) (O o) -> toPU i o True True
 
       where
           toPU inp out sRight step = pu
               { target=Just inp
-              , currentWork=Just (tick + 1, f)
+              , currentWork=Just (tick, f)
               , sources=elems out
               , remain=remain \\ [ f ]
               , sRight=sRight
@@ -173,12 +173,13 @@ instance ( VarValTime v x t
         ) => EndpointProblem (Shift v x t) v t
         where
     endpointOptions Shift{ target=Just t, tick }
-        = [ EndpointSt (Target t) $ TimeConstrain (tick ... maxBound) (singleton 2) ]
+        = [ EndpointSt (Target t) $ TimeConstrain (tick ... maxBound) (singleton 1) ]
 
      --   list of variants of downloading from mUnit variables;
     endpointOptions Shift{ sources, doneAt=Just at, tick }
         | not $ null sources
-        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick + 2 ... maxBound) (1 ... maxBound) ]
+        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick ... maxBound) (1 ... maxBound) ]
+        -- = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick ... maxBound) (singleton 2) ]
 
     -- list of variables of uploading to mUnit variables, upload any one of that
     -- will cause to actual start of working with mathched function.
@@ -191,7 +192,7 @@ instance ( VarValTime v x t
                  updateTick (sup epAt)
                  scheduleEndpoint d $ do
                     scheduleInstruction epAt $ Init
-                    scheduleInstruction (epAt+2) $ Work sRight shiftStep Logic
+                    scheduleInstruction (epAt+1) $ Work sRight shiftStep Logic
 
                  -- updateTick (sup epAt)
                  -- scheduleEndpoint d $ scheduleInstruction epAt $ Init
@@ -207,7 +208,7 @@ instance ( VarValTime v x t
                 , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
                 -- If all required arguments are upload (@null xs@), then the moment of time
                 -- when we get a result is saved.
-                , doneAt=Just $ sup epAt + 2
+                , doneAt=Just $ sup epAt + 1
                 -- Model time is running
                 , tick=sup epAt
                 }
@@ -218,6 +219,7 @@ instance ( VarValTime v x t
         , let sources' = sources \\ elems v
         , sources' /= sources  = let
                 (newEndpoints, process_') = runSchedule pu $ do
+                    updateTick (sup epAt)
                     endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt+1) Out
                     when (null sources') $ do
                         high <- scheduleFunction (a ... sup epAt+1) f
@@ -227,7 +229,6 @@ instance ( VarValTime v x t
                         establishVerticalRelations high low
                     -- this is needed to correct work of automatically generated tests
                     -- that takes time about time from Process
-                    updateTick (sup epAt+1)
                     return endpoints
             in
                 pu
@@ -237,7 +238,7 @@ instance ( VarValTime v x t
                       -- if all of works is done, then time when result is ready,
                       -- current work and data transfering, what is done is the current function is reset.
                     , doneAt=if null sources' then Nothing else doneAt
-                    , currentWork=if null sources' then Nothing else Just (a, f)
+                    , currentWork=if null sources' then Nothing else Just (a+1, f)
                     , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
                       -- Model time is running up
                     , tick=sup epAt
@@ -259,7 +260,7 @@ data Mode      = Logic | Arithmetic deriving ( Show, Eq )
 instance Controllable (Shift v x t) where
     data Instruction (Shift v x t)
         = Init
-        | Work Bool Int Mode
+        | Work Bool Bool Mode
         | Out
         deriving (Show)
 
@@ -268,7 +269,7 @@ instance Controllable (Shift v x t) where
             { workSignal :: Bool
             , directionSignal :: Bool
             , modeSignal :: Bool
-            , stepSignal :: Int
+            , stepSignal :: Bool
             , initSignal :: Bool
             , oeSignal :: Bool
             } deriving ( Show, Eq, Ord )
@@ -277,7 +278,7 @@ instance Controllable (Shift v x t) where
         [ (work, Bool workSignal)
         , (direction, Bool directionSignal)
         , (mode, Bool modeSignal)
-        , (step, Int stepSignal)
+        , (step, Bool stepSignal)
         , (init, Bool initSignal)
         , (oe, Bool oeSignal)
         ]
@@ -292,7 +293,7 @@ instance Default (Microcode (Shift v x t)) where
   def = Microcode{ workSignal=False
                  , directionSignal=False
                  , modeSignal=False
-                 , stepSignal=1
+                 , stepSignal=True
                  , initSignal=False
                  , oeSignal=False
                  }
