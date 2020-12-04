@@ -140,7 +140,17 @@ instance ( VarValTime v x t
                  updateTick (sup epAt)
                  scheduleEndpoint d $ do
                     scheduleInstruction epAt $ Init
-                    scheduleInstruction (inf epAt + 1 ... sup epAt + (fromIntegral shiftStep) ) $ Work sRight shiftByte Logic
+                    let byteShiftDiv = shiftStep `div` 8
+                        byteShiftMod = shiftStep `mod` 8
+                    if byteShiftDiv == 0 then
+                        scheduleInstruction (inf epAt + 1 ... sup epAt + (fromIntegral shiftStep) ) $ Work sRight False Logic
+                    else
+                        do
+                            let
+                                startByteShift = inf epAt + 1
+                                endByteShift = sup epAt + (fromIntegral byteShiftDiv)
+                            scheduleInstruction (startByteShift ... endByteShift) $ Work sRight True Logic
+                            scheduleInstruction (endByteShift + 1 ... endByteShift + fromIntegral byteShiftMod ) $ Work sRight False Logic
         in
             pu
                 { process_=process_'
