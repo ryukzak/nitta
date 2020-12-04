@@ -21,7 +21,7 @@ module pu_shift
   , output reg  [ATTR_WIDTH-1:0] attr_out
   );
 
-wire n = signal_step ? 1 : 8;
+wire n = signal_step ? 8 : 1;
 
 reg signed [DATA_WIDTH-1:0] data;
 reg [ATTR_WIDTH-1:0] attr;
