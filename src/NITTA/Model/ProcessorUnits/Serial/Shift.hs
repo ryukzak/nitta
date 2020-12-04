@@ -129,18 +129,18 @@ instance ( VarValTime v x t
     endpointOptions Shift{ target=Just t, tick }
         = [ EndpointSt (Target t) $ TimeConstrain (tick ... maxBound) (singleton 1) ]
 
-    endpointOptions Shift{ sources, tick }
+    endpointOptions Shift{ sources, tick, shiftStep }
         | not $ null sources
-        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick + 3 ... maxBound) (1 ... maxBound) ]
+        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick + fromIntegral shiftStep + 2 ... maxBound) (1 ... maxBound) ]
 
     endpointOptions pu@Shift{ remain } = concatMap (endpointOptions . execution pu) remain
 
-    endpointDecision pu@Shift{ target=(Just _), currentWorkEndpoints, sRight, shiftByte } d@EndpointSt{ epRole=Target v, epAt } = let
+    endpointDecision pu@Shift{ target=(Just _), currentWorkEndpoints, sRight, shiftByte, shiftStep } d@EndpointSt{ epRole=Target v, epAt } = let
             (newEndpoints, process_') = runSchedule pu $ do
                  updateTick (sup epAt)
                  scheduleEndpoint d $ do
                     scheduleInstruction epAt $ Init
-                    scheduleInstruction (epAt+1) $ Work sRight shiftByte Logic
+                    scheduleInstruction (inf epAt + 1 ... sup epAt + (fromIntegral shiftStep) ) $ Work sRight shiftByte Logic
         in
             pu
                 { process_=process_'
