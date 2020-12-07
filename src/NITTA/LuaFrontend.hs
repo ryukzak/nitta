@@ -33,9 +33,9 @@ import qualified Data.String.Utils as S
 import           Data.Text ( Text, pack, unpack )
 import qualified Data.Text as T
 import           Language.Lua
+import           NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Types hiding ( patch )
-import           NITTA.Model.Types
 import           NITTA.Utils ( modify'_ )
 import           Text.InterpolatedString.Perl6 ( qq )
 import           Text.Printf
@@ -167,6 +167,7 @@ data AlgBuilderItem x
 -- *Translate AlgBuiler functions to nitta functions
 function2nitta Function{ fName="loop",     fIn=[i],    fOut=[o],    fValues=[x] } = F.loop x <$> input i <*> output o
 function2nitta Function{ fName="reg",      fIn=[i],    fOut=[o],    fValues=[]  } = F.reg <$> input i <*> output o
+function2nitta Function{ fName="brokenReg",fIn=[i],    fOut=[o],    fValues=[]  } = F.brokenReg <$> input i <*> output o
 function2nitta Function{ fName="constant", fIn=[],     fOut=[o],    fValues=[x] } = F.constant x <$> output o
 function2nitta Function{ fName="send",     fIn=[i],    fOut=[],     fValues=[]  } = F.send <$> input i
 function2nitta Function{ fName="add",      fIn=[a, b], fOut=[c],    fValues=[]  } = F.add <$> input a <*> input b <*> output c

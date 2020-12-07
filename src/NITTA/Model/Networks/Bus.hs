@@ -37,9 +37,11 @@ import           Data.Maybe ( fromMaybe, isJust, mapMaybe )
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import           Data.Typeable
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems
+import           NITTA.Model.Problems.Refactor.Accum
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project.Implementation
@@ -295,7 +297,7 @@ instance ( UnitTag tag, VarValTime v x t
 
 instance ( UnitTag tag, VarValTime v x t
         ) => RefactorProblem (BusNetwork tag v x t) v x where
-    refactorOptions bn@BusNetwork{ bnPus, bnBinded } = let
+    refactorOptions bn@BusNetwork{ bnPus, bnBinded, bnRemains } = let
             sources tag = M.fromList
                 [ (s, ss `S.difference` S.singleton s)
                 | EndpointSt{ epRole } <- endpointOptions ( bnPus M.! tag )
@@ -345,6 +347,7 @@ instance ( UnitTag tag, VarValTime v x t
             [ concatMap refactorOptions $ M.elems bnPus
             , selfSending  -- FIXME: not depricated, but why? It is should be a deadlock
             , resolveDeadlock
+            , optimizeAccumOptions $ fsToDataFlowGraph bnRemains
             ]
 
     refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(ResolveDeadlock vs) = let
@@ -370,7 +373,9 @@ instance ( UnitTag tag, VarValTime v x t
             , bnBinded=M.insert puTag bindedToPU' bnBinded
             }
 
-    refactorDecision BusNetwork{} OptimizeAccum{} = undefined
+    refactorDecision bn@BusNetwork{ bnRemains } oa@OptimizeAccum{}
+        = bn{ bnRemains=functions $ optimizeAccumDecision (fsToDataFlowGraph bnRemains) oa }
+
 
 --------------------------------------------------------------------------
 -- |Add binding to Map tag [F v x] dict
@@ -606,7 +611,7 @@ instance ( VarValTime v x t
             { inline $ if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
 
             // initialization flags
-            reg { S.join ", " envInitFlags };
+            { if null envInitFlags then "" else "reg " <> S.join ", " envInitFlags <> ";" }
             assign env_init_flag = { defEnvInitFlag envInitFlags ioSync };
 
             { inline testEnv }

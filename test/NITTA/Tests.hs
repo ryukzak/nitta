@@ -25,6 +25,7 @@ import           Control.Monad ( void )
 import           Data.Default
 import           Data.Map.Strict ( fromList )
 import qualified Data.Set as S
+import           NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
@@ -33,7 +34,6 @@ import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem ()
 import           NITTA.Model.Tests.Microarchitecture
-import           NITTA.Model.Types
 import           NITTA.TargetSynthesis
 import           Test.Tasty ( TestTree, testGroup )
 import           Test.Tasty.HUnit
@@ -61,7 +61,7 @@ test_fibonacci =
 
 test_add_and_io =
     [ testCase "receive 4 variables" $ void $ runTargetSynthesisWithUniqName (def :: TargetSynthesis _ _ _ Int)
-        { tName="Two functions 4 variables"
+        { tName="receive_4_variables"
         , tMicroArch=marchSPI True pInt
         , tReceivedValues=[ ("a", [10..15]), ("b", [20..25]), ("e", [0..25]), ("f", [20..30])]
         , tDFG=fsToDataFlowGraph
@@ -84,28 +84,28 @@ f1 = F.add "a" "b" ["c", "d"] :: F String Int
 
 test_patchFunction =
     [ testCase "non-patched function" $
-        show f1 @?= "c = d = a + b"
+        show f1 @?= "a + b = c = d"
 
     , testCase "direct patched function input" $
-        show (patch ("a", "a'") f1) @?= "c = d = a' + b"
+        show (patch ("a", "a'") f1) @?= "a' + b = c = d"
     , testCase "direct patched function output" $
-        show (patch ("c", "c'") f1) @?= "c' = d = a + b"
+        show (patch ("c", "c'") f1) @?= "a + b = c' = d"
 
     , testCase "diff patched function input by input" $
-        show (patch def{ changeI=fromList [("a", "a'")] } f1) @?= "c = d = a' + b"
+        show (patch def{ changeI=fromList [("a", "a'")] } f1) @?= "a' + b = c = d"
     , testCase "diff non patched function input by output" $
-        show (patch def{ changeO=fromList [("a", S.singleton "a'")] } f1) @?= "c = d = a + b"
+        show (patch def{ changeO=fromList [("a", S.singleton "a'")] } f1) @?= "a + b = c = d"
 
     , testCase "diff patched function output by output" $
-        show (patch def{ changeO=fromList [("c", S.singleton "c'")] } f1) @?= "c' = d = a + b"
+        show (patch def{ changeO=fromList [("c", S.singleton "c'")] } f1) @?= "a + b = c' = d"
     , testCase "diff non patched function output by input" $
-        show (patch def{ changeI=fromList [("c", "c'")] } f1) @?= "c = d = a + b"
+        show (patch def{ changeI=fromList [("c", "c'")] } f1) @?= "a + b = c = d"
 
     , testCase "diff non patched function output by input" $
         show (patch def
                 { changeI=fromList [("b", "b'"), ("d", "d!")]
                 , changeO=fromList [("d", S.singleton "d'"), ("b", S.singleton "b!")]
-                } f1) @?= "c = d' = a + b'"
+                } f1) @?= "a + b' = c = d'"
     ]
 
 

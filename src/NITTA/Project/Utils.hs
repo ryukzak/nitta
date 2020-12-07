@@ -20,7 +20,6 @@ module NITTA.Project.Utils
     , writeWholeProject
     ) where
 
-import           Control.Monad ( unless )
 import           Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
@@ -33,8 +32,9 @@ import           NITTA.Project.Parts.Quartus
 import           NITTA.Project.Parts.TargetSystem
 import           NITTA.Project.Parts.TestBench
 import           NITTA.Project.Types
+import           System.Directory
 import           System.Exit
-import           System.IO ( hPutStrLn, stderr )
+import           System.FilePath.Posix
 import           System.Process
 import           Text.Regex
 
@@ -57,13 +57,12 @@ writeWholeProject prj = do
 -- |Write project and run testbench by Icarus verilog.
 writeAndRunTestbench prj = do
     writeProjectForTest prj
-    report@TestbenchReport{ tbStatus, tbCompilerDump, tbSimulationDump } <- runTestbench prj
-    unless tbStatus $ hPutStrLn stderr (unlines $ tbCompilerDump ++ tbSimulationDump)
-    return report
+    runTestbench prj
 
 
 runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNumber } } = do
     let files = projectFiles prj
+    wd <- getCurrentDirectory
 
     ( compileExitCode, compileOut, compileErr )
         <- readCreateProcessWithExitCode (createIVerilogProcess pPath files) []
@@ -75,7 +74,7 @@ runTestbench prj@Project{ pPath, pUnit, pTestCntx=Cntx{ cntxProcess, cntxCycleNu
 
     return TestbenchReport
         { tbStatus=isCompileOk && isSimOk
-        , tbPath=pPath
+        , tbPath=joinPath [ wd, pPath ]
         , tbFiles=files
         , tbFunctions=map show $ functions pUnit
         , tbSynthesisSteps=map show $ steps $ process pUnit

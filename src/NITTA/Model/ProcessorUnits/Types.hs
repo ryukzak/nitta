@@ -264,7 +264,7 @@ class UnambiguouslyDecode pu where
 
 -- |Control line value.
 data SignalValue
-    = Undef -- ^undefined by design (`x`)
+    = Undef     -- ^undefined by design (`x`)
     | Bool Bool -- ^boolean (`0` or `1`)
     | Int Int -- ^integer value (0..)
     | Broken -- ^broken value (`x`) by data colision
@@ -282,7 +282,7 @@ instance Show SignalValue where
 
 Undef +++ v = v
 v +++ Undef = v
-_ +++ _ = Broken
+_ +++ _ = Unknown
 
 
 ------------------------------------------------------------

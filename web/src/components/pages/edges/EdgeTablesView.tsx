@@ -5,12 +5,14 @@ import { AppContext, IAppContext } from "../../app/AppContext";
 import {
   EdgeView,
   IBindingView,
+  FView,
   IBindEdgeParameterView,
   IRefactorView,
+  IOptimizeAccumView,
   IDataflowView,
   IDataFlowEdgeParameterView,
   Interval,
-  IRefactorEdgeParameterView
+  IRefactorEdgeParameterView,
 } from "../../../gen/types";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
@@ -30,14 +32,14 @@ type EdgesProps = {
 export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
   const appContext = React.useContext(AppContext) as IAppContext;
   const style = {
-    fontWeight: 600
+    fontWeight: 600,
   };
 
   return (
     <>
       <Table
         name="Binding"
-        edges={edges.filter(e => e.decision.tag === "BindingView")}
+        edges={edges.filter((e) => e.decision.tag === "BindingView")}
         columns={[
           nidColumn(appContext.selectNode),
           objectiveColumn(),
@@ -61,7 +63,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
 
           textColumn("newDF", (e: Edge) => (e.parameters as BindingParam).pAllowDataFlow, 70),
           textColumn("newBind", (e: Edge) => (e.parameters as BindingParam).pNumberOfBindedFunctions, 70),
-          textColumn("|inputs|", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs, 70)
+          textColumn("|inputs|", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs, 70),
         ]}
       />
       <Table
@@ -70,7 +72,18 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
         columns={[
           nidColumn(appContext.selectNode),
           objectiveColumn(),
-          textColumn("description", (e: Edge) => JSON.stringify((e.decision as Refactor).contents)),
+          textColumn("description", (e: Edge) => {
+            let dt = (e.decision as Refactor).contents;
+            if (dt.tag === "OptimizeAccumView") {
+              let sub = dt as IOptimizeAccumView;
+              return (
+                sub.oldSubGraph.map((f: FView) => f.fvFun).join(", ") +
+                " -> " +
+                sub.newSubGraph.map((f: FView) => f.fvFun).join(", ")
+              );
+            }
+            return JSON.stringify((e.decision as Refactor).contents);
+          }),
           textColumn(
             "pNumberOfLockedVariables",
             (e: Edge) => (e.parameters as RefactorParam).pNumberOfLockedVariables,
@@ -84,7 +97,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
               return n === undefined || n === null ? "null" : (n as number).toString();
             },
             50
-          )
+          ),
         ]}
       />
       <Table
@@ -115,7 +128,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
           textColumn("not transferable input", (e: Edge) =>
             JSON.stringify((e.parameters as DataflowParam).pNotTransferableInputs)
           ),
-          textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime))
+          textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime)),
         ]}
       />
       <Table

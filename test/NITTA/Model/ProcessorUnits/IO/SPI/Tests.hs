@@ -18,11 +18,11 @@ module NITTA.Model.ProcessorUnits.IO.SPI.Tests
 
 import           Control.Monad ( void )
 import           Data.Default
+import           NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
 import           NITTA.Intermediate.Tests.Functions ()
 import           NITTA.LuaFrontend.Tests.Utils
 import           NITTA.Model.Networks.Types
-import           NITTA.Model.Types
 import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.TargetSynthesis
 import           Test.Tasty ( TestTree, testGroup )

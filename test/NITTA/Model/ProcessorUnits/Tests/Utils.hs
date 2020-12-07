@@ -26,14 +26,16 @@ module NITTA.Model.ProcessorUnits.Tests.Utils
     , algGen
     ) where
 
-import           Control.Monad ( void )
+import           Control.Monad
 import           Data.Atomics.Counter ( incrCounter )
 import           Data.CallStack
 import           Data.Default
 import           Data.List ( delete )
 import qualified Data.Map.Strict as M
-import           Data.Set ( difference, elems, empty, fromList, intersection, union )
+import           Data.Set ( elems, empty, fromList, intersection, union )
+import qualified Data.String.Utils as S
 import           Debug.Trace
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Functions ()
 import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
@@ -43,16 +45,16 @@ import           NITTA.Model.Problems hiding ( Bind, Refactor )
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem ()
 import           NITTA.Model.Tests.Microarchitecture
-import           NITTA.Model.Types
 import           NITTA.Project
-import qualified NITTA.Project as N
+import qualified NITTA.Project as P
 import           NITTA.TargetSynthesis
 import           NITTA.Utils
+import           System.Directory
 import           System.FilePath.Posix ( joinPath )
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
 import           Test.Tasty ( TestTree )
-import           Test.Tasty.HUnit ( testCase, (@?) )
+import           Test.Tasty.HUnit ( assertBool, assertFailure, testCase, (@?) )
 import           Test.Tasty.QuickCheck ( testProperty )
 
 
@@ -63,7 +65,7 @@ puCoSimTestCase ::
     ( HasCallStack
     , PUClasses (pu String x Int) String x Int
     , WithFunctions (pu String x Int) ( F String x )
-    , N.Testable (pu String x Int) String x
+    , P.Testable (pu String x Int) String x
     , DefaultX (pu String x Int) x
     ) => String -> pu String x Int -> [(String, x)] -> [F String x] -> TestTree
 puCoSimTestCase name u cntxCycle alg
@@ -95,49 +97,56 @@ nittaCoSimTestCase ::
     , Val x, Integral x
     ) => String -> BusNetwork String String x Int -> [ F String x ] -> TestTree
 nittaCoSimTestCase n tMicroArch alg
-    = testCase n $ void $ runTargetSynthesisWithUniqName def
-        { tName=n
-        , tMicroArch
-        , tDFG=fsToDataFlowGraph alg
-        }
+    = testCase n $ do
+        report <- runTargetSynthesisWithUniqName def
+            { tName=S.replace " " "_" n
+            , tMicroArch
+            , tDFG=fsToDataFlowGraph alg
+            }
+        case report of
+            Right report' -> assertBool "report with bad status" $ tbStatus report'
+            Left err      -> assertFailure $ "can't get report: " ++ err
 
 
 -- *Properties
 
 -- |Is unit synthesis process complete (by function and variables).
-finitePUSynthesisProp name u0 fsGen
+finitePUSynthesisProp name pu0 fsGen
     = testProperty name $ do
-        (u, fs) <- processAlgOnEndpointGen u0 fsGen
-        let
-            p = process u
-            processedVs = unionsMap variables $ getEndpoints p
-            algVs = unionsMap variables fs
-        return $ algVs == processedVs -- all algorithm variables present in process
-            && null (endpointOptions u)
-            || trace (unlines
-                [ ""
-                , "difference between exaceptation and fact: " ++ show (algVs `difference` processedVs)
-                , "algorithm variables: " ++ show algVs
-                , "processed variables: " ++ show processedVs
-                ]) False
+        (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
+        return $ isProcessComplete pu fs
+            && null (endpointOptions pu)
+            || trace (incompleteProcessMsg pu fs) False
+
+isProcessComplete pu fs = unionsMap variables fs == processedVars pu
+
+incompleteProcessMsg pu fs
+    = "expected: " <> show (elems $ unionsMap variables fs)
+    <> "actual: " <> show (elems $ processedVars pu)
+
+processedVars pu = unionsMap variables $ getEndpoints $ process pu
 
 
 -- |A computational process of functional (Haskell) and logical (Verilog) simulation
 -- should be identical for any correct algorithm.
-puCoSimProp name u fsGen
+puCoSimProp name pu0 fsGen
     = testProperty name $ do
-        (pUnit, fs) <- processAlgOnEndpointGen u fsGen
+        (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
         pTestCntx <- initialCycleCntxGen fs
-        return $ monadicIO $ do
-            i <- run $ incrCounter 1 externalTestCntr
-            res <- run $ writeAndRunTestbench Project
+        return $ monadicIO $ run $ do
+            unless (isProcessComplete pu fs)
+                $ error $ "process is not complete: " <> incompleteProcessMsg pu fs
+            i <- incrCounter 1 externalTestCntr
+            wd <- getCurrentDirectory
+            let pPath = joinPath [ wd, "gen", toModuleName name ++ "_" ++ show i ]
+            res <- writeAndRunTestbench Project
                 { pName=toModuleName name
-                , pLibPath=joinPath ["..", "..", "hdl"]
-                , pPath=joinPath ["gen", toModuleName name ++ "_" ++ show i]
-                , pUnit
+                , pLibPath=joinPath [ "..", "..", "hdl" ]
+                , pPath
+                , pUnit=pu
                 , pTestCntx
                 }
-            assert $ tbStatus res
+            unless (tbStatus res) $ error $ "Fail CoSim in: " <> pPath
 
 
 algGen fsGen = fmap avoidDupVariables $ listOf1 $ oneof fsGen

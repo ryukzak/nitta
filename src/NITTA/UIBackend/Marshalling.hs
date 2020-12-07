@@ -43,16 +43,16 @@ import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
 import           GHC.Generics
+import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
-import           NITTA.Project
+import           NITTA.Project ( TestbenchReport (..) )
 import           NITTA.Synthesis.Estimate
 import           NITTA.Synthesis.Tree
-import           NITTA.Synthesis.Utils
 import           NITTA.UIBackend.Timeline
 import           NITTA.Utils ( transferred )
 import           Numeric.Interval
@@ -99,7 +99,7 @@ viewNodeTree Node{ nId, nIsComplete, nModel, nEdges, nOrigin } = do
             , svCntx=[]
             , svIsComplete=nIsComplete
             , svIsEdgesProcessed=isJust nodesM
-            , svDuration=fromEnum $ targetProcessDuration nModel
+            , svDuration=fromEnum $ processDuration nModel
             , svCharacteristic=maybe (read "NaN") eObjectiveFunctionValue nOrigin
             , svOptionType=case nOrigin of
                 Just Edge{ eOption=Binding{} }  -> "Bind"
@@ -136,6 +136,7 @@ data SynthesisDecisionView tag v x tp
     | RefactorView RefactorView
     deriving ( Generic )
 
+
 instance ( Show x, Show v, ToJSON v, ToJSONKey v, ToJSON tp, ToJSON tag
         ) => ToJSON (SynthesisDecisionView tag v x tp)
 
@@ -145,19 +146,6 @@ instance ( Var v, Hashable v, Show x
              ( NId, SynthesisDecisionView tag v x tp ) where
     view ( nid, st ) = ( nid, view st )
 
-
-
-instance Viewable (Refactor () ()) RefactorView where
-    view (ResolveDeadlock set) = ResolveDeadlockView $ map show $ S.toList set
-    view BreakLoop {loopX, loopO, loopI} =
-        BreakLoopView
-            { loopX = show loopX
-            , loopO = map show ( S.toList loopO )
-            , loopI = show loopI
-            }
-    view (OptimizeAccum refOld refNew) = OptimizeAccumView (map view refOld) (map view refNew)
-
-
 instance ( Var v, Show x, Hashable v
          ) => Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp) where
     view (Binding f pu) = BindingView
@@ -165,20 +153,15 @@ instance ( Var v, Show x, Hashable v
         , pu
         , vars=map (S.replace "\"" "" . show) $ S.elems $ variables f
         }
+
     view Dataflow{ dfSource=(stag, st), dfTargets } = DataflowView
         { source=DataflowEndpointView stag st
         , targets=HM.map
             (fmap $ uncurry DataflowEndpointView)
             $ HM.fromList $ M.assocs dfTargets
         }
-    view (Refactor (ResolveDeadlock set )) = RefactorView $ ResolveDeadlockView $ map show $ S.toList set
-    view (Refactor (BreakLoop {loopX, loopO, loopI})) = RefactorView $
-        BreakLoopView
-            { loopX = show loopX
-            , loopO = map show ( S.toList loopO )
-            , loopI = show loopI
-            }
-    view (Refactor (OptimizeAccum refOld refNew)) = RefactorView $ OptimizeAccumView (map view refOld) (map view refNew)
+
+    view (Refactor ref) = RefactorView $ view ref
 
 
 data RefactorView
@@ -188,10 +171,26 @@ data RefactorView
         , loopO :: [String] -- ^output variables
         , loopI :: String -- ^input variable
         }
-    | OptimizeAccumView [FView] [FView]
-    deriving ( Generic , Show)
+    | OptimizeAccumView
+        { oldSubGraph :: [ FView ]
+        , newSubGraph :: [ FView ]
+        }
+    deriving ( Generic , Show )
 
 instance ToJSON RefactorView
+
+instance ( Show v, Show x ) => Viewable (Refactor v x) RefactorView where
+    view (ResolveDeadlock set) = ResolveDeadlockView $ map show $ S.toList set
+    view BreakLoop { loopX, loopO, loopI } =
+        BreakLoopView
+            { loopX = show loopX
+            , loopO = map show ( S.toList loopO )
+            , loopI = show loopI
+            }
+    view OptimizeAccum{ refOld, refNew }
+        = OptimizeAccumView (map view refOld) (map view refNew)
+
+
 
 data NodeView tag v x t
     = NodeView
@@ -376,7 +375,7 @@ instance ToJSON Relation where
     toJSON (Vertical a b) = toJSON [ a, b ]
 
 instance ( VarValTimeJSON v x t
-        ) => ToJSON (ModelState (BusNetwork String v x t) v x)
+        ) => ToJSON (TargetSystem (BusNetwork String v x t) v x)
 
 instance ( VarValTimeJSON v x t
          ) => ToJSON (Process v x t) where

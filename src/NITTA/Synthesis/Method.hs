@@ -28,9 +28,9 @@ module NITTA.Synthesis.Method
 import           Data.List ( find, sortOn )
 import           Data.Ord ( Down (..) )
 import           Debug.Trace
+import           NITTA.Model.TargetSystem
 import           NITTA.Synthesis.Estimate
 import           NITTA.Synthesis.Tree
-import           NITTA.Synthesis.Utils ( targetProcessDuration )
 import           NITTA.Utils ( maximumOn, minimumOn )
 import           Safe
 
@@ -134,5 +134,5 @@ allBestThreadIO n node = do
 getBestNode node nodes = let
         successNodes = filter nIsComplete nodes
     in case successNodes of
-        _:_ -> minimumOn (targetProcessDuration . nModel) successNodes
+        _:_ -> minimumOn (processDuration . nModel) successNodes
         []  -> headDef node nodes
