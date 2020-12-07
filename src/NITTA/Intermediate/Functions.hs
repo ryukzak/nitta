@@ -45,6 +45,7 @@ import qualified Data.Bits as B
 import           Data.Default
 import qualified Data.Map as M
 import           Data.Set ( elems, fromList, union )
+import qualified Data.String.Utils as S
 import           Data.Typeable
 import           NITTA.Intermediate.Functions.Accum
 import           NITTA.Intermediate.Types
