@@ -122,8 +122,8 @@ module NITTA.Model.ProcessorUnits
     , module NITTA.Model.ProcessorUnits.Fram
     , module NITTA.Model.ProcessorUnits.IO.SPI
     , module NITTA.Model.ProcessorUnits.Multiplier
-    , module NITTA.Model.ProcessorUnits.Serial.Accum
-    , module NITTA.Model.ProcessorUnits.Serial.Shift
+    , module NITTA.Model.ProcessorUnits.Accum
+    , module NITTA.Model.ProcessorUnits.Shift
     ) where
 
 import           NITTA.Model.ProcessorUnits.Broken
@@ -131,5 +131,5 @@ import           NITTA.Model.ProcessorUnits.Divider
 import           NITTA.Model.ProcessorUnits.Fram
 import           NITTA.Model.ProcessorUnits.IO.SPI
 import           NITTA.Model.ProcessorUnits.Multiplier
-import           NITTA.Model.ProcessorUnits.Serial.Accum
-import           NITTA.Model.ProcessorUnits.Serial.Shift
+import           NITTA.Model.ProcessorUnits.Accum
+import           NITTA.Model.ProcessorUnits.Shift

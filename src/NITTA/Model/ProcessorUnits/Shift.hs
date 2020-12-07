@@ -19,7 +19,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Serial.Shift
+module NITTA.Model.ProcessorUnits.Shift
   ( Shift
   , Ports(..), IOPorts(..)
   )

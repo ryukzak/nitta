@@ -9,7 +9,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Serial.Shift.Tests
+module NITTA.Model.ProcessorUnits.Shift.Tests
     ( tests
     ) where
 
@@ -45,18 +45,18 @@ tests = testGroup "Shift PU"
         shift(1)
         |]
 
-    , luaTestCase "shift left 4 and shift right 3" [qc|
+    , luaTestCase "shift left 16 and shift right 8" [qc|
         function shift(x)
-            local tmp = x << 4
-            local tmp2 = tmp >> 3
+            local tmp = x << 16
+            local tmp2 = tmp >> 8
             shift(tmp2)
         end
         shift(1)
         |]
 
-    , luaTestCase "shift left 8 and shift right 7" [qc|
+    , luaTestCase "shift left 9 and shift right 7" [qc|
         function shift(x)
-            local tmp = x << 8
+            local tmp = x << 9
             local tmp2 = tmp >> 7
             shift(tmp2)
         end
