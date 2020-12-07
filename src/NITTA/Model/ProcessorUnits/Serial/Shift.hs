@@ -10,10 +10,11 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+
 {-|
 Module      : NITTA.Model.ProcessorUnits.Serial.Shift
-Description :
-Copyright   : (c) Aleksandr Penskoi, 2019
+Description : Shift Processor Unit
+Copyright   : (c) Daniil Prohorov, 2020
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -24,13 +25,14 @@ module NITTA.Model.ProcessorUnits.Serial.Shift
   )
   where
 
+import           Control.Monad ( when )
 import           Data.Bits ( finiteBitSize )
 import           Data.Default
-import           Data.List ( intersect, (\\) )
+import           Data.List ( find, (\\) )
+import           Data.Set ( elems, fromList, member )
 import           NITTA.Intermediate.Functions hiding ( remain )
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Serial.Generic
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
 import           NITTA.Project
@@ -40,67 +42,51 @@ import           Numeric.Interval ( inf, singleton, sup, (...) )
 import           Prelude hiding ( init )
 import           Text.InterpolatedString.Perl6 ( qc )
 
-import           Control.Monad ( when )
-import           Data.Bits ( finiteBitSize )
-import           Data.Default
-import           Data.List ( find, partition, (\\) )
-import           Data.Set ( elems, fromList, member )
-import qualified NITTA.Intermediate.Functions as F
-import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Types
-import           NITTA.Model.Types
-import           NITTA.Project
-import           NITTA.Utils
-import           NITTA.Utils.ProcessDescription
-import           Text.InterpolatedString.Perl6 ( qc )
-
 data Shift v x t = Shift
     { remain               :: [ F v x ]
     , target               :: Maybe v
     , sources              :: [ v ]
     , sRight               :: Bool
-    , shiftStep            :: Int
-    , shiftByte            :: Bool
+    , byteShiftDiv         :: Int
+    , byteShiftMod         :: Int
     , currentWork          :: Maybe ( t, F v x )
     , currentWorkEndpoints :: [ ProcessStepID ]
     , process_             :: Process v x t
     , tick                 :: t
-    }
+    } deriving (Show)
 
-instance ( VarValTime v x t ) => Show (Shift v x t)
+-- instance ( VarValTime v x t ) => Show (Shift v x t)
 
 instance ( Var v ) => Locks (Shift v x t) v where
-    locks Shift{ remain, sources, target=Just t } =
+    locks Shift{ sources, target=Just t } =
         [ Lock{ lockBy=t, locked }
         | locked <- sources
         ]
-    locks Shift{ remain, sources, target=Nothing } = []
+    locks Shift{ target=Nothing } = []
 
 instance Default t => Default (Shift v x t) where
   def = Shift
         { remain=[]
         , target=Nothing
         , sources=[]
+        , sRight=True
+        , byteShiftDiv=0
+        , byteShiftMod=0
         , currentWork=Nothing
         , currentWorkEndpoints=[]
         , process_=def
         , tick=def
-        , sRight=True
-        , shiftStep=1
-        , shiftByte=False
         }
 
 instance RefactorProblem (Shift v x t) v x
 
 instance ( VarValTime v x t
          ) => ProcessorUnit (Shift v x t) v x t where
-    -- Binding to mUnit is carried out by this function.
     tryBind f pu@Shift{ remain }
         | Just f' <- castF f
             = case f' of
-                ShiftL s (I a) (O cs) -> Right pu{ remain=f : remain }
-                ShiftR s (I a) (O cs) -> Right pu{ remain=f : remain }
+                ShiftL{} -> Right pu{ remain=f : remain }
+                ShiftR{} -> Right pu{ remain=f : remain }
 
         | otherwise = Left $ "The function is unsupported by Shift: " ++ show f
     process = process_
@@ -119,7 +105,8 @@ execution pu@Shift{ target=Nothing, sources=[], remain, tick } f
               , sources=elems out
               , remain=remain \\ [ f ]
               , sRight=sRight
-              , shiftStep=step
+              , byteShiftDiv = step `div` 8
+              , byteShiftMod = step `mod` 8
               }
 execution _ _ = error "Shift: internal execution error."
 
@@ -129,28 +116,32 @@ instance ( VarValTime v x t
     endpointOptions Shift{ target=Just t, tick }
         = [ EndpointSt (Target t) $ TimeConstrain (tick ... maxBound) (singleton 1) ]
 
-    endpointOptions Shift{ sources, tick, shiftStep }
+    endpointOptions Shift{ sources, tick, byteShiftDiv, byteShiftMod }
         | not $ null sources
-        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick + fromIntegral shiftStep + 2 ... maxBound) (1 ... maxBound) ]
+        , byteShiftDiv == 0
+        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick + fromIntegral byteShiftMod + 2 ... maxBound) (1 ... maxBound) ]
+
+        | not $ null sources
+        = let
+            endByteShift = tick + fromIntegral byteShiftDiv
+        in
+            [ EndpointSt (Source $ fromList sources) $ TimeConstrain (endByteShift + 2 + (fromIntegral byteShiftMod) ... maxBound) (1 ... maxBound) ]
 
     endpointOptions pu@Shift{ remain } = concatMap (endpointOptions . execution pu) remain
 
-    endpointDecision pu@Shift{ target=(Just _), currentWorkEndpoints, sRight, shiftByte, shiftStep } d@EndpointSt{ epRole=Target v, epAt } = let
+    endpointDecision pu@Shift{ target=(Just _), currentWorkEndpoints, sRight, byteShiftDiv, byteShiftMod } d@EndpointSt{ epRole=Target _, epAt } = let
             (newEndpoints, process_') = runSchedule pu $ do
                  updateTick (sup epAt)
                  scheduleEndpoint d $ do
-                    scheduleInstruction epAt $ Init
-                    let byteShiftDiv = shiftStep `div` 8
-                        byteShiftMod = shiftStep `mod` 8
-                    if byteShiftDiv == 0 then
-                        scheduleInstruction (inf epAt + 1 ... sup epAt + (fromIntegral shiftStep) ) $ Work sRight False Logic
-                    else
-                        do
-                            let
-                                startByteShift = inf epAt + 1
-                                endByteShift = sup epAt + (fromIntegral byteShiftDiv)
-                            scheduleInstruction (startByteShift ... endByteShift) $ Work sRight True Logic
-                            scheduleInstruction (endByteShift + 1 ... endByteShift + fromIntegral byteShiftMod ) $ Work sRight False Logic
+                    _ <- scheduleInstruction epAt Init
+                    let startByteShift = inf epAt + 1
+                        endByteShift = sup epAt + fromIntegral byteShiftDiv
+                    case (byteShiftDiv, byteShiftMod) of
+                        (0, _) -> scheduleInstruction (inf epAt + 1 ... sup epAt + fromIntegral byteShiftMod) $ Work sRight False Logic
+                        (_, 0) -> scheduleInstruction (startByteShift ... endByteShift) $ Work sRight True Logic
+                        _      -> do
+                                      _ <- scheduleInstruction (startByteShift ... endByteShift) $ Work sRight True Logic
+                                      scheduleInstruction (endByteShift + 1 ... endByteShift + fromIntegral byteShiftMod) $ Work sRight False Logic
         in
             pu
                 { process_=process_'
@@ -159,7 +150,6 @@ instance ( VarValTime v x t
                 , tick=sup epAt
                 }
 
---	2. If model is waiting, that we will download variables from it.
     endpointDecision pu@Shift{ target=Nothing, sources, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointSt{ epRole=Source v, epAt }
         | not $ null sources
         , let sources' = sources \\ elems v
@@ -180,18 +170,14 @@ instance ( VarValTime v x t
                     , tick=sup epAt
                     }
 
-    --    3. If no function is executed at the moment, then we need to find function in the list
-    --    of assigned function, executed it to work and only then make decision
-    --    and plan a fragment of computation process with call recursion in situation 1.
     endpointDecision pu@Shift{ target=Nothing, sources=[], remain } d
         | let v = oneOf $ variables d
         , Just f <- find (\f -> v `member` variables f) remain
         = endpointDecision (execution pu f) d
 
-    -- If smth went wrong.
     endpointDecision pu d = error $ "Shift decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
-data Mode      = Logic | Arithmetic deriving ( Show, Eq )
+data Mode = Logic | Arithmetic deriving ( Show, Eq )
 
 instance Controllable (Shift v x t) where
     data Instruction (Shift v x t)

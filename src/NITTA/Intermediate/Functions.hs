@@ -48,7 +48,6 @@ import           Data.Typeable
 import           NITTA.Intermediate.Functions.Accum
 import           NITTA.Intermediate.Types
 import           NITTA.Utils.Base
-import           Unsafe.Coerce
 
 -- |Loop -- function for transfer data between computational cycles.
 -- Let see the simple example with the following implementation of the
@@ -331,12 +330,10 @@ shiftR :: ( Var v, Val x ) => Int -> v -> [v] -> F v x
 shiftR s a b = packF $ ShiftR s (I a) $ O $ fromList b
 
 instance ( Ord v ) => Function (ShiftLR v x) v where
-    inputs (ShiftL s i o) = variables i
-    inputs (ShiftR s i o) = variables i
-    -- outputs (ShiftL s i o) = variables i `union` variables o
-    -- outputs (ShiftR s i o) = variables i `union` variables o
-    outputs (ShiftL s i o) = variables o
-    outputs (ShiftR s i o) = variables o
+    inputs (ShiftL _ i _) = variables i
+    inputs (ShiftR _ i _) = variables i
+    outputs (ShiftL _ _ o) = variables o
+    outputs (ShiftR _ _ o) = variables o
 instance ( Ord v ) => Patch (ShiftLR v x) (v, v) where
     patch diff (ShiftL s i o) = ShiftL s (patch diff i) (patch diff o)
     patch diff (ShiftR s i o) = ShiftR s (patch diff i) (patch diff o)
