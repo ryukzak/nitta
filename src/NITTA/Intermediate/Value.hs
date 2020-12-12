@@ -33,6 +33,7 @@ module NITTA.Intermediate.Value
   , FX(..), minMaxRaw
   ) where
 
+import           Control.Applicative
 import           Data.Bits
 import           Data.Default
 import           Data.Maybe
@@ -45,6 +46,75 @@ import           Numeric
 import           Text.InterpolatedString.Perl6 ( qc )
 import           Text.Printf
 import           Text.Regex
+
+
+data Attr t = Attr{ value :: t, invalid :: Bool } deriving ( Eq, Ord )
+
+instance Functor Attr where
+    fmap f Attr{ value, invalid } = Attr{ value=f value, invalid }
+
+instance Applicative Attr where
+    pure x = Attr{ value=x, invalid=True }
+    liftA2 f Attr{ value=x, invalid=x' } Attr{ value=y, invalid=y' }
+        = Attr{ value=f x y, invalid=x' && y' }
+
+instance ( Read x ) => Read ( Attr x ) where
+    readsPrec d r = case readsPrec d r of
+        [(x, r')] -> [(pure x, r')]
+        _         -> error $ "can not read IntX from: " ++ r
+
+instance ( PrintfArg x ) => PrintfArg ( Attr x ) where
+    formatArg Attr{ value } = formatArg value
+
+instance ( Default x ) => Default ( Attr x ) where
+    def = pure def
+
+instance ( Enum x ) => Enum ( Attr x ) where
+    toEnum = pure . toEnum
+    fromEnum Attr{ value } = fromEnum value
+
+instance ( Num x ) => Num ( Attr x ) where
+    (+) = liftA2 (+)
+    (*) = liftA2 (*)
+    abs = fmap abs
+    signum = fmap signum
+    fromInteger = pure . fromInteger
+    negate = fmap negate
+
+
+instance ( Ord x, Real x ) => Real ( Attr x ) where
+    toRational Attr{ value } = toRational value
+
+instance ( Integral x ) => Integral ( Attr x ) where
+    toInteger Attr{ value } = toInteger value
+    Attr{ value=a } `quotRem` Attr{ value=b }
+        = let (a', b') =  a `quotRem` b
+        in ( pure a', pure b' )
+
+instance ( Bits x ) => Bits ( Attr x ) where
+    (.&.) = liftA2 (.&.)
+    (.|.) = liftA2 (.|.)
+    xor = liftA2 xor
+    complement = fmap complement
+    shift Attr{ value } i = pure $ shift value i
+    rotate Attr{ value } i = pure $ rotate value i
+    bitSize Attr{ value } = fromMaybe undefined $ bitSizeMaybe value
+    bitSizeMaybe Attr{ value } = bitSizeMaybe value
+    isSigned Attr{ value } = isSigned value
+    testBit Attr{ value } = testBit value
+    bit i = pure $ bit i
+    popCount Attr{ value } = popCount value
+
+-- instance ( KnownNat w ) => FiniteBits ( IntX w ) where
+--     finiteBitSize _ = fromInteger $ natVal (Proxy :: Proxy w)
+
+-- instance ( Val w ) => Val ( Attr x ) where
+--     serialize (IntX x) = fromIntegral x
+--     verilogLiteral (IntX x) = show x
+
+-- instance ( KnownNat w ) => FixedPointCompatible (IntX w) where
+--     scalingFactorPower _ = 0
+--     fractionalBitSize _ = 0
 
 
 class ( Default x ) => DefaultX u x | u -> x where
