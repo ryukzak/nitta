@@ -341,7 +341,6 @@ instance ( VarValTime v x t ) => Testable (Accum v x t) v x where
                     , tbcIOPorts=AccumIO
                     , tbcSignalConnect=signal
                     , tbcCtrl=showMicrocode
-                    , tbDataBusWidth=finiteBitSize (def :: x)
                     }
         in Immediate (moduleName pName pUnit ++ "_tb.v") $ snippetTestBench prj conf
 

@@ -137,7 +137,6 @@ data SnippetTestBenchConf m
         , tbcIOPorts       :: IOPorts m
         , tbcSignalConnect :: SignalTag -> String
         , tbcCtrl          :: Microcode m -> String
-        , tbDataBusWidth   :: Int
         }
 
 -- |Function for testBench PU test

@@ -294,5 +294,4 @@ instance ( VarValTime v x t ) => Testable (Broken v x t) v x where
                     _ -> error "testBenchImplementation wrong signal"
                 , tbcCtrl= \Microcode{ oeSignal, wrSignal } ->
                     [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal};|]
-                , tbDataBusWidth=finiteBitSize (def :: x)
                 }

@@ -761,6 +761,5 @@ instance ( VarValTime v x t ) => Testable (Multiplier v x t) v x where
                   -- This is described below. Notice, that work with data bus is realized in snippet.
                 , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
                     [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
-                , tbDataBusWidth=finiteBitSize (def :: x)
                 }
 

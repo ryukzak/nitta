@@ -518,7 +518,6 @@ instance ( VarValTime v x t ) => Testable (Fram v x t) v x where
                     , tbcIOPorts=FramIO
                     , tbcSignalConnect= signal
                     , tbcCtrl=showMicrocode
-                    , tbDataBusWidth=finiteBitSize (def :: x)
                     }
 
 softwareFile tag pu = moduleName tag pu ++ "." ++ tag ++ ".dump"
