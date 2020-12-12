@@ -61,6 +61,12 @@ class ( Typeable x, Show x, Read x, FixedPointCompatible x, Default x, PrintfArg
     -- |Convert value to applicable for Verilog literal
     verilogLiteral :: x -> String
 
+    dataWidth :: x -> Int
+    dataWidth = finiteBitSize
+
+    attrWidth :: x -> Int
+    attrWidth _ = 4
+
     -- |Helper functions to work with type in verilog
     verilogHelper :: x -> String
     verilogHelper x = [qc|
@@ -90,6 +96,36 @@ task assert;
         $display();
     end
 endtask // assert
+
+task traceWithAttr;
+    input integer cycle;
+    input integer tick;
+    input [{ dataWidth x }-1:0] actualData;
+    input [{ attrWidth x }-1:0] actualAttr;
+    begin
+        $write("%0d:%0d\t", cycle, tick);
+        $write("actual: %d %d\t", actualData, actualAttr);
+        $display();
+    end
+endtask // traceWithAttr
+
+task assertWithAttr;
+    input integer cycle;
+    input integer tick;
+    input [{ dataWidth x }-1:0] actualData;
+    input [{ attrWidth x }-1:0] actualAttr;
+    input [{ dataWidth x }-1:0] expectData;
+    input [{ attrWidth x }-1:0] expectAttr;
+    input [256*8-1:0] var; // string
+    begin
+        $write("%0d:%0d\t", cycle, tick);
+        $write("actual: %d %d\t", actualData, actualAttr);
+        $write("expect: %d %d\t", expectData, expectAttr);
+        $write("var: %0s\t", var);
+        if ( actualData !== expectData || actualAttr != expectAttr ) $write("FAIL");
+        $display();
+    end
+endtask // assertWithAttr
 |]
 
     -- |RE for extraction assertion data from a testbench log

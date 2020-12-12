@@ -4,6 +4,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-|
@@ -140,7 +141,7 @@ data SnippetTestBenchConf m
         }
 
 -- |Function for testBench PU test
-snippetTestBench ::
+snippetTestBench :: forall m v x t.
     ( VarValTime v x t
     , Show (EndpointRole v)
     , WithFunctions m (F v x)
@@ -149,7 +150,7 @@ snippetTestBench ::
     ) => Project m v x -> SnippetTestBenchConf m -> String
 snippetTestBench
         Project{ pName, pUnit, pTestCntx=Cntx{ cntxProcess } }
-        SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcIOPorts, tbcCtrl, tbDataBusWidth }
+        SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcIOPorts, tbcCtrl }
     = let
         cycleCntx:_ = cntxProcess
         name = moduleName pName pUnit
@@ -178,7 +179,9 @@ snippetTestBench
             tbcPorts
             tbcIOPorts
 
-        controlSignals = S.join "\n" $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc|data_in <= { targetVal t }; attr_in <= 0; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
+        controlSignals = S.join "\n" $ map
+            (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc|data_in <= { targetVal t }; attr_in <= 0; @(posedge clk);|])
+            [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
             = getCntx cycleCntx v
@@ -190,20 +193,17 @@ snippetTestBench
                     , let v = oneOf vs
                     , let x = getCntx cycleCntx v
                     = codeBlock [qc|
-                        @(posedge clk);
-                            $write( "data_out: %d == %d    (%s)", data_out, { x }, { v } );
-                            if ( !( data_out === { x } ) ) $display(" FAIL");
-                            else $display();
+                        @(posedge clk); assertWithAttr(0, 0, data_out, attr_out, { x }, { attrWidth x }'dx, { v });
                         |]
                     | otherwise
-                    = codeLine [qc|@(posedge clk); $display( "data_out: %d", data_out );|]
+                    = codeLine [qc|@(posedge clk); traceWithAttr(0, 0, data_out, attr_out);|]
         tbcSignals' = map (\x -> "reg " ++ x ++ ";") tbcSignals
 
     in codeBlock [qc|
         {"module"} {name}_tb();
 
-        parameter DATA_WIDTH = { tbDataBusWidth };
-        parameter ATTR_WIDTH = 4;
+        parameter DATA_WIDTH = { dataWidth (def :: x) };
+        parameter ATTR_WIDTH = { attrWidth (def :: x) };
 
         /*
         Algorithm:
@@ -237,5 +237,8 @@ snippetTestBench
             {inline busCheck}
             $finish;
         end
+
+        { inline $ verilogHelper (def :: x) }
+
         endmodule
         |] :: String
