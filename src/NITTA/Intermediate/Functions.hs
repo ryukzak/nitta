@@ -145,12 +145,12 @@ instance ( Ord v ) => Patch (Loop v x) (v, v) where
 instance ( Var v ) => Locks (Loop v x) v where
     locks (Loop _ (O as) (I b)) = [ Lock{ locked=b, lockBy=a } | a <- elems as ]
 instance ( Var v ) => FunctionSimulation (Loop v x) v x where
-    simulate cntx@CycleCntx{ cycleCntx } (Loop (X x) (O vs) (I _))
+    simulate CycleCntx{ cycleCntx } (Loop (X x) (O vs) (I _))
         = case cycleCntx M.!? oneOf vs of
             -- if output variables are defined - nothing to do (values thrown on upper level)
-            Just _  -> return cntx
+            Just _  -> []
             -- if output variables are not defined - set initial value
-            Nothing -> setZipX cntx vs x
+            Nothing -> [ (v, x) | v <- elems vs ]
 
 
 data LoopOut v x = LoopOut (Loop v x) (O v) deriving ( Typeable, Eq, Show )
@@ -195,9 +195,8 @@ instance ( Ord v ) => Patch (Reg v x) (v, v) where
 instance ( Var v ) => Locks (Reg v x) v where
     locks = inputsLockOutputs
 instance ( Var v ) => FunctionSimulation (Reg v x) v x where
-    simulate cntx (Reg (I v) (O vs)) = do
-        x <- cntx `getX` v
-        setZipX cntx vs x
+    simulate cntx (Reg (I a) (O vs))
+        = [ (v, cntx `getCntx` a) | v <- elems vs ]
 
 
 data Add v x = Add (I v) (I v) (O v) deriving ( Typeable, Eq )
@@ -218,11 +217,11 @@ instance ( Ord v ) => Patch (Add v x) (v, v) where
 instance ( Var v ) => Locks (Add v x) v where
     locks = inputsLockOutputs
 instance ( Var v, Num x ) => FunctionSimulation (Add v x) v x where
-    simulate cntx (Add (I v1) (I v2) (O vs)) = do
-        x1 <- cntx `getX` v1
-        x2 <- cntx `getX` v2
-        let x3 = x1 + x2 -- + 1 -- can be used for checking test working
-        setZipX cntx vs x3
+    simulate cntx (Add (I v1) (I v2) (O vs)) = let
+            x1 = cntx `getCntx` v1
+            x2 = cntx `getCntx` v2
+            y = x1 + x2
+        in [ (v, y) | v <- elems vs ]
 
 
 data Sub v x = Sub (I v) (I v) (O v) deriving ( Typeable, Eq )
@@ -243,11 +242,11 @@ instance ( Ord v ) => Patch (Sub v x) (v, v) where
 instance ( Var v ) => Locks (Sub v x) v where
     locks = inputsLockOutputs
 instance ( Var v, Num x ) => FunctionSimulation (Sub v x) v x where
-    simulate cntx (Sub (I v1) (I v2) (O vs)) = do
-        x1 <- cntx `getX` v1
-        x2 <- cntx `getX` v2
-        let x3 = x1 - x2
-        setZipX cntx vs x3
+    simulate cntx (Sub (I v1) (I v2) (O vs)) = let
+            x1 = cntx `getCntx` v1
+            x2 = cntx `getCntx` v2
+            y = x1 - x2
+        in [ (v, y) | v <- elems vs ]
 
 
 data Multiply v x = Multiply (I v) (I v) (O v) deriving ( Typeable, Eq )
@@ -266,11 +265,11 @@ instance ( Ord v ) => Patch (Multiply v x) (v, v) where
 instance ( Var v ) => Locks (Multiply v x) v where
     locks = inputsLockOutputs
 instance ( Var v, Num x ) => FunctionSimulation (Multiply v x) v x where
-    simulate cntx (Multiply (I v1) (I v2) (O vs)) = do
-        x1 <- cntx `getX` v1
-        x2 <- cntx `getX` v2
-        let x3 = x1 * x2
-        setZipX cntx vs x3
+    simulate cntx (Multiply (I v1) (I v2) (O vs)) = let
+            x1 = cntx `getCntx` v1
+            x2 = cntx `getCntx` v2
+            y = x1 * x2
+        in [ (v, y) | v <- elems vs ]
 
 
 data Division v x = Division
@@ -291,7 +290,6 @@ division d n q r = packF $ Division
         , remain=O $ fromList r
         }
 
-
 instance ( Ord v ) => Function (Division v x) v where
     inputs  Division{ denom, numer } = variables denom `union` variables numer
     outputs Division{ quotient, remain } = variables quotient `union` variables remain
@@ -300,12 +298,11 @@ instance ( Ord v ) => Patch (Division v x) (v, v) where
 instance ( Var v ) => Locks (Division v x) v where
     locks = inputsLockOutputs
 instance ( Var v, Integral x ) => FunctionSimulation (Division v x) v x where
-    simulate cntx Division{ denom=I d, numer=I n, quotient=O qs, remain=O rs } = do
-        dx <- cntx `getX` d
-        nx <- cntx `getX` n
-        let (qx, rx) = dx `quotRem` nx
-        cntx' <- setZipX cntx qs qx
-        setZipX cntx' rs rx
+    simulate cntx Division{ denom=I d, numer=I n, quotient=O qs, remain=O rs } = let
+            dx = cntx `getCntx` d
+            nx = cntx `getCntx` n
+            (qx, rx) = dx `quotRem` nx
+        in [ (v, qx) | v <- elems qs ] ++ [ (v, rx) | v <- elems rs ]
 
 
 data Constant v x = Constant (X x) (O v) deriving ( Typeable, Eq )
@@ -320,9 +317,8 @@ instance ( Show x, Eq x, Typeable x ) => Function (Constant v x) v where
 instance ( Ord v ) => Patch (Constant v x) (v, v) where
     patch diff (Constant x a) = Constant x (patch diff a)
 instance ( Var v ) => Locks (Constant v x) v where locks _ = []
-instance ( Var v ) => FunctionSimulation (Constant v x) v x where
-    simulate cntx (Constant (X x) (O vs))
-        = setZipX cntx vs x
+instance FunctionSimulation (Constant v x) v x where
+    simulate _cntx (Constant (X x) (O vs)) = [ (v, x) | v <- elems vs ]
 
 
 -- TODO: separete into two different functions
@@ -348,14 +344,10 @@ instance ( Ord v ) => Patch (ShiftLR v x) (v, v) where
 instance ( Var v ) => Locks (ShiftLR v x) v where
     locks = inputsLockOutputs
 instance ( Var v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
-    simulate cntx (ShiftL (I v1) (O vs)) = do
-        x <- cntx `getX` v1
-        let x' = x `B.shiftL` 1
-        setZipX cntx vs x'
-    simulate cntx (ShiftR (I v1) (O vs)) = do
-        x <- cntx `getX` v1
-        let x' = x `B.shiftR` 1
-        setZipX cntx vs x'
+    simulate cntx (ShiftL (I v1) (O vs))
+        = [ (v, getCntx cntx v1 `B.shiftL` 1) | v <- elems vs ]
+    simulate cntx (ShiftR (I v1) (O vs))
+        = [ (v, getCntx cntx v1 `B.shiftR` 1) | v <- elems vs ]
 
 
 newtype Send v x = Send (I v) deriving ( Typeable, Eq )
@@ -370,7 +362,7 @@ instance ( Ord v ) => Patch (Send v x) (v, v) where
     patch diff (Send a) = Send (patch diff a)
 instance ( Var v ) => Locks (Send v x) v where locks _ = []
 instance FunctionSimulation (Send v x) v x where
-    simulate cntx Send{} = return cntx
+    simulate _cntx Send{} = []
 
 
 newtype Receive v x = Receive (O v) deriving ( Typeable, Eq )
@@ -385,12 +377,12 @@ instance ( Ord v ) => Patch (Receive v x) (v, v) where
     patch diff (Receive a) = Receive (patch diff a)
 instance ( Var v ) => Locks (Receive v x) v where locks _ = []
 instance ( Var v, Val x ) => FunctionSimulation (Receive v x) v x where
-    simulate cntx@CycleCntx{ cycleCntx } (Receive (O vs))
+    simulate CycleCntx{ cycleCntx } (Receive (O vs))
         = case cycleCntx M.!? oneOf vs of
             -- if output variables are defined - nothing to do (values thrown on upper level)
-            Just _  -> return cntx
+            Just _  -> []
             -- if output variables are not defined - set initial value
-            Nothing -> setZipX cntx vs def
+            Nothing ->  [ (v, def) | v <- elems vs ]
 
 
 -- |Special function for negative tests only.
@@ -409,6 +401,4 @@ instance ( Ord v ) => Patch (BrokenReg v x) (v, v) where
 instance ( Var v ) => Locks (BrokenReg v x) v where
     locks = inputsLockOutputs
 instance ( Var v ) => FunctionSimulation (BrokenReg v x) v x where
-    simulate cntx (BrokenReg (I v) (O vs)) = do
-        x <- cntx `getX` v
-        setZipX cntx vs x
+    simulate cntx (BrokenReg (I a) (O vs)) = [ (v, cntx `getCntx` a) | v <- elems vs ]

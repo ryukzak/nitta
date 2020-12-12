@@ -673,7 +673,7 @@ instance ( VarValTime v x t
 
             cntxToTransfer cycleCntx t
                 = case extractInstructionAt n t of
-                    Transport v _ _ : _ -> Just (v, either error id $ getX cycleCntx v)
+                    Transport v _ _ : _ -> Just (v, getCntx cycleCntx v)
                     _                   -> Nothing
 
             posedgeCycle = codeBlock [qc|

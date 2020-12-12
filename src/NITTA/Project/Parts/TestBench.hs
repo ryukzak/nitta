@@ -181,14 +181,14 @@ snippetTestBench
         controlSignals = S.join "\n" $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc|data_in <= { targetVal t }; attr_in <= 0; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
-            = either error id $ getX cycleCntx v
+            = getCntx cycleCntx v
             | otherwise = 0
         busCheck = concatMap busCheck' [ 0 .. nextTick + 1 ]
             where
                 busCheck' t
                     | Just (Source vs) <- endpointAt t p
                     , let v = oneOf vs
-                    , let x = either error id $ getX cycleCntx v
+                    , let x = getCntx cycleCntx v
                     = codeBlock [qc|
                         @(posedge clk);
                             $write( "data_out: %d == %d    (%s)", data_out, { x }, { v } );

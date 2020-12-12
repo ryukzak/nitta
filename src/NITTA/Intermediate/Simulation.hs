@@ -72,9 +72,7 @@ simulateAlg' fromPrevCycle cycleCntx0 transmission alg = let
             (\st (thrown, vs) -> map ( \v -> (v, cntx M.! thrown) ) vs ++ st
             ) [] fromPrevCycle
         simulateCycle cntx00 fs = foldl (\cntx f ->
-            case simulate cntx f of
-                Left err    -> error $ "functional simulation error: " ++ err ++ " function: " ++ show f
-                Right cntx' -> cntx'
+            updateCntx cntx $ simulate cntx f
             ) cntx00 fs
 
 
