@@ -344,6 +344,36 @@ task assert;
     end
 endtask // assert
 
+task traceWithAttr;
+    input integer cycle;
+    input integer tick;
+    input [{ dataWidth x }-1:0] actualData;
+    input [{ attrWidth x }-1:0] actualAttr;
+    begin
+        $write("%0d:%0d\t", cycle, tick);
+        $write("actual: %.3f %d\t", fxtor(actualData), actualAttr);
+        $display();
+    end
+endtask // traceWithAttr
+
+task assertWithAttr;
+    input integer cycle;
+    input integer tick;
+    input [{ dataWidth x }-1:0] actualData;
+    input [{ attrWidth x }-1:0] actualAttr;
+    input [{ dataWidth x }-1:0] expectData;
+    input [{ attrWidth x }-1:0] expectAttr;
+    input [256*8-1:0] var; // string
+    begin
+        $write("%0d:%0d\t", cycle, tick);
+        $write("actual: %.3f\t", fxtor(actualData), actualAttr);
+        $write("expect: %.3f\t", fxtor(expectData), expectAttr);
+        $write("var: %0s\t", var);
+        if ( actualData !== expectData || actualAttr != expectAttr ) $write("FAIL");
+        $display();
+    end
+endtask // assertWithAttr
+
 function real fxtor(input integer x);
     begin
         fxtor = $itor(x) / $itor(1 << { scalingFactorPower x });

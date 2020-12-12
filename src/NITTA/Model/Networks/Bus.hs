@@ -574,9 +574,9 @@ instance ( VarValTime v x t
             assertions = concatMap (\cycleTickTransfer -> posedgeCycle ++ concatMap assertion cycleTickTransfer ) tickWithTransfers
 
             assertion ( cycleI, t, Nothing )
-                = codeLine [qc|@(posedge clk); trace({ cycleI }, { t }, net.data_bus);|]
+                = codeLine [qc|@(posedge clk); traceWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus);|]
             assertion ( cycleI, t, Just (v, x) )
-                = codeLine [qc|@(posedge clk); assert({ cycleI }, { t }, net.data_bus, { verilogLiteral x }, { v });|]
+                = codeLine [qc|@(posedge clk); assertWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus, { verilogLiteral x }, { attrWidth x }'dx, { v });|]
 
         in Immediate (moduleName pName n ++ "_tb.v") $ codeBlock [qc|
             `timescale 1 ps / 1 ps
