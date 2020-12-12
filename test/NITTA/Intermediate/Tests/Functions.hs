@@ -50,7 +50,7 @@ instance Arbitrary (Division String Int) where
     arbitrary = suchThat (Division <$> inputVarGen <*> inputVarGen <*> outputVarsGen <*> outputVarsGen) uniqueVars
 
 instance Arbitrary (Acc String Int) where
-    arbitrary = suchThat (Acc . concat <$> resize maxLenght (listOf1 $ (++) <$> genPush <*>  genPull) ) uniqueVars
+    arbitrary = suchThat (Acc . concat <$> resize maxLenght (listOf1 $ (++) <$> genPush <*> genPull) ) uniqueVars
         where
             genPush = resize maxLenght $ listOf1 $ oneof [Push Plus <$> inputVarGen,  Push Minus <$> inputVarGen]
             genPull = resize 1 $ listOf1 $ Pull <$> outputVarsGen
