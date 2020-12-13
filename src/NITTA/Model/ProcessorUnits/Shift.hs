@@ -55,8 +55,6 @@ data Shift v x t = Shift
     , tick                 :: t
     } deriving (Show)
 
--- instance ( VarValTime v x t ) => Show (Shift v x t)
-
 instance ( Var v ) => Locks (Shift v x t) v where
     locks Shift{ sources, target=Just t } =
         [ Lock{ lockBy=t, locked }
@@ -84,9 +82,9 @@ instance ( VarValTime v x t
          ) => ProcessorUnit (Shift v x t) v x t where
     tryBind f pu@Shift{ remain }
         | Just f' <- castF f
-            = case f' of
-                ShiftL{} -> Right pu{ remain=f : remain }
-                ShiftR{} -> Right pu{ remain=f : remain }
+        = case f' of
+            ShiftL{} -> Right pu{ remain=f : remain }
+            ShiftR{} -> Right pu{ remain=f : remain }
 
         | otherwise = Left $ "The function is unsupported by Shift: " ++ show f
     process = process_
@@ -94,9 +92,9 @@ instance ( VarValTime v x t
 -- |This function carry out actual take functional block to work.
 execution pu@Shift{ target=Nothing, sources=[], remain, tick } f
     | Just f' <- castF f
-        = case f' of
-            ShiftL s (I i) (O o) -> toPU i o False s
-            ShiftR s (I i) (O o) -> toPU i o True s
+    = case f' of
+        ShiftL s (I i) (O o) -> toPU i o False s
+        ShiftR s (I i) (O o) -> toPU i o True s
 
       where
           toPU inp out sRight step = pu
@@ -260,7 +258,6 @@ instance ( Val x ) => TargetSystemComponent (Shift v x t) where
                 );
             |]
 
-                -- , .signal_mode( { signal mode } ), .signal_step( { signal step } )
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _op
         = error "Should be defined in network."
 
