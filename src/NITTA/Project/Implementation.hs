@@ -79,10 +79,9 @@ data TargetEnvironment
 data UnitEnv
     -- |Environment of process unit.
     = ProcessUnitEnv
-        { parameterAttrWidth :: Parameter
-        , dataIn, attrIn     :: String -- ^bus name
-        , dataOut, attrOut   :: String -- ^bus name
-        , signal             :: SignalTag -> String -- ^control signal
+        { dataIn, attrIn   :: String -- ^bus name
+        , dataOut, attrOut :: String -- ^bus name
+        , signal           :: SignalTag -> String -- ^control signal
         }
     -- |Environment of network.
     | NetworkEnv

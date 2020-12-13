@@ -167,8 +167,7 @@ snippetTestBench
                 , outputPort=undefined
                 , inoutPort=undefined
                 , unitEnv=ProcessUnitEnv
-                    { parameterAttrWidth=IntParam 4
-                    , dataIn="data_in"
+                    { dataIn="data_in"
                     , attrIn="attr_in"
                     , dataOut="data_out"
                     , attrOut="attr_out"

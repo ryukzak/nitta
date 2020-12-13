@@ -334,7 +334,7 @@ instance ( Val x, Show t
                 { unitEnv=ProcessUnitEnv
                     { signal
                     , dataIn, dataOut
-                    , parameterAttrWidth, attrIn, attrOut
+                    , attrIn, attrOut
                     }
                 , signalClk
                 , signalRst
