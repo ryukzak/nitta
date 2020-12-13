@@ -154,7 +154,7 @@ data AlgBuilderItem x
         , fOut       :: [Text]
         , fName      :: String
         , fValues    :: [x]
-        , binOpConst :: Maybe Int
+        , fInt :: [Int]
         }
     | TraceFunction
         { tVars :: [ Text ]
@@ -175,8 +175,8 @@ function2nitta Function{ fName="sub",      fIn=[a, b], fOut=[c],    fValues=[]  
 function2nitta Function{ fName="multiply", fIn=[a, b], fOut=[c],    fValues=[]  } = F.multiply <$> input a <*> input b <*> output c
 function2nitta Function{ fName="divide",   fIn=[d, n], fOut=[q, r], fValues=[]  } = F.division <$> input d <*> input n <*> output q <*> output r
 function2nitta Function{ fName="receive",  fIn=[],     fOut=[o],    fValues=[]  } = F.receive <$> output o
-function2nitta Function{ fName="shiftL",   fIn=[a],    fOut=[c],    fValues=[], binOpConst=Just s  } = F.shiftL s <$> input a <*> output c
-function2nitta Function{ fName="shiftR",   fIn=[a],    fOut=[c],    fValues=[], binOpConst=Just s  } = F.shiftR s <$> input a <*> output c
+function2nitta Function{ fName="shiftL",   fIn=[a],    fOut=[c],    fValues=[], fInt=[s]  } = F.shiftL s <$> input a <*> output c
+function2nitta Function{ fName="shiftR",   fIn=[a],    fOut=[c],    fValues=[], fInt=[s]  } = F.shiftR s <$> input a <*> output c
 function2nitta f = error $ "frontend don't known function: " ++ show f
 
 
@@ -228,7 +228,7 @@ addConstants = do
     AlgBuilder{ algItems } <- get
     let constants = filter (\case Constant{} -> True; _ -> False) algItems
     forM_ constants $ \Constant{ cVar, cX } ->
-        addFunction Function{ fName="constant", fIn=[], fOut=[cVar], fValues=[cX], binOpConst=Nothing }
+        addFunction Function{ fName="constant", fIn=[], fOut=[cVar], fValues=[cX], fInt=[] }
 
 
 parseLeftExp = map $ \case
@@ -273,7 +273,7 @@ processStatement fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args
         where
             f InputVar{ iX, iVar } rexp = do
                 i <- expArg [] rexp
-                let loop = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX], binOpConst=Nothing }
+                let loop = Function{ fName="loop", fIn=[i], fOut=[iVar], fValues=[iX], fInt=[] }
                 modify'_ $ \alg@AlgBuilder{ algItems } -> alg{ algItems=loop : algItems }
             f _ _ = undefined
 
@@ -289,24 +289,24 @@ processStatement _fn (FunCall (NormalFunCall (PEVar (SelectName (PEVar (VarName 
 
 processStatement _fn (FunCall (NormalFunCall (PEVar (VarName (Name fName))) (Args args))) = do
     fIn <- mapM (expArg []) args
-    addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[], binOpConst=Nothing }
+    addFunction Function{ fName=unpack fName, fIn, fOut=[], fValues=[], fInt=[] }
 
 processStatement _fn st = error $ "statement: " ++ show st
 
 rightExp diff fOut (Binop ShiftL a (Number IntNum s)) = do
     a' <- expArg diff a
-    let f = Function{ fName="shiftL", fIn=[a'], fOut, fValues=[], binOpConst=Just (read $ unpack s :: Int) }
+    let f = Function{ fName="shiftL", fIn=[a'], fOut, fValues=[], fInt=[read $ unpack s :: Int] }
     patchAndAddFunction f diff
 
 rightExp diff fOut (Binop ShiftR a (Number IntNum s)) = do
     a' <- expArg diff a
-    let f = Function{ fName="shiftR", fIn=[a'], fOut, fValues=[], binOpConst=Just (read $ unpack s :: Int) }
+    let f = Function{ fName="shiftR", fIn=[a'], fOut, fValues=[], fInt=[read $ unpack s :: Int] }
     patchAndAddFunction f diff
 
 rightExp diff fOut (Binop op a b) = do
     a' <- expArg diff a
     b' <- expArg diff b
-    let f = Function{ fName=binop op, fIn=[a', b'], fOut, fValues=[], binOpConst=Nothing }
+    let f = Function{ fName=binop op, fIn=[a', b'], fOut, fValues=[], fInt=[] }
     patchAndAddFunction f diff
     where
         binop Add = "add"
@@ -314,7 +314,6 @@ rightExp diff fOut (Binop op a b) = do
         binop Mul = "multiply"
         binop Div = "divide"
         binop o   = error $ "unknown binop: " ++ show o
-
 
 rightExp
         diff
@@ -324,7 +323,7 @@ rightExp
             (Args args)
         ))) = do
     fIn <- mapM (expArg diff) args
-    let f = Function{ fName=unpack fn, fIn, fOut, fValues=[], binOpConst=Nothing }
+    let f = Function{ fName=unpack fn, fIn, fOut, fValues=[], fInt=[] }
     patchAndAddFunction f diff
 
 rightExp diff [a] (PrefixExp (PEVar (VarName (Name b)))) -- a = b
