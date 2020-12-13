@@ -123,7 +123,8 @@ class ( Default x ) => DefaultX u x | u -> x where
 
 
 -- |Type class for Value types.
-class ( Typeable x, Show x, Read x, FixedPointCompatible x, Default x, PrintfArg x, Num x
+class ( Typeable x, Show x, Read x, Default x, PrintfArg x
+      , Eq x, Num x, Bits x, FixedPointCompatible x
       ) => Val x where
     -- |Serialize value and attributes into binary form inside Integer type
     serialize :: x -> Integer
@@ -132,8 +133,6 @@ class ( Typeable x, Show x, Read x, FixedPointCompatible x, Default x, PrintfArg
     verilogLiteral :: x -> String
 
     dataWidth :: x -> Int
-    dataWidth = finiteBitSize
-
     attrWidth :: x -> Int
     attrWidth _ = 4
 
@@ -143,7 +142,7 @@ class ( Typeable x, Show x, Read x, FixedPointCompatible x, Default x, PrintfArg
 task trace;
     input integer cycle;
     input integer tick;
-    input [{ finiteBitSize x }-1:0] actual;
+    input [{ dataWidth x }-1:0] actual;
     begin
         $write("%0d:%0d\t", cycle, tick);
         $write("actual: %d\t", actual);
@@ -154,8 +153,8 @@ endtask // trace
 task assert;
     input integer cycle;
     input integer tick;
-    input [{ finiteBitSize x }-1:0] actual;
-    input [{ finiteBitSize x }-1:0] expect;
+    input [{ dataWidth x }-1:0] actual;
+    input [{ dataWidth x }-1:0] expect;
     input [256*8-1:0] var; // string
     begin
         $write("%0d:%0d\t", cycle, tick);
@@ -208,8 +207,9 @@ endtask // assertWithAttr
         ]
 
 
--- |Type class for values, which contain information about fractional part of value (for fixed point arithmetics).
-class ( FiniteBits a ) => FixedPointCompatible a where
+-- |Type class for values, which contain information about fractional part of
+-- value (for fixed point arithmetics).
+class FixedPointCompatible a where
     scalingFactorPower :: a -> Integer
     fractionalBitSize :: a -> Int
 
@@ -221,6 +221,7 @@ scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 instance Val Int where
     serialize = fromIntegral
     verilogLiteral = show
+    dataWidth x = finiteBitSize x
 
 instance FixedPointCompatible Int where
     scalingFactorPower _ = 0
@@ -279,14 +280,12 @@ instance Bits ( IntX w ) where
     bit i = IntX $ bit i
     popCount ( IntX a ) = popCount a
 
-instance ( KnownNat w ) => FiniteBits ( IntX w ) where
-    finiteBitSize _ = fromInteger $ natVal (Proxy :: Proxy w)
-
 instance ( KnownNat w ) => Val ( IntX w ) where
     serialize (IntX x) = fromIntegral x
     verilogLiteral (IntX x) = show x
+    dataWidth _ = fromInteger $ natVal (Proxy :: Proxy w)
 
-instance ( KnownNat w ) => FixedPointCompatible (IntX w) where
+instance FixedPointCompatible (IntX w) where
     scalingFactorPower _ = 0
     fractionalBitSize _ = 0
 
@@ -334,7 +333,7 @@ instance ( KnownNat m, KnownNat b ) => Num ( FX m b ) where
 
 
 minMaxRaw t@FX{} = let
-        n = finiteBitSize t
+        n = dataWidth t
         maxRaw = 2^(n - 1) - 1
         minRaw = negate (maxRaw + 1)
     in ( minRaw, maxRaw )
@@ -380,17 +379,15 @@ instance Bits ( FX m b ) where
     popCount = undefined
     -- popCount ( FX a ) = popCount a
 
-instance ( KnownNat b ) => FiniteBits ( FX m b ) where
-    finiteBitSize _ = fromInteger $ natVal (Proxy :: Proxy b)
-
 instance ( KnownNat m, KnownNat b ) => Val ( FX m b ) where
     serialize (FX x) = fromIntegral x
     verilogLiteral (FX x) = show x
+    dataWidth _ = fromInteger $ natVal (Proxy :: Proxy b)
     verilogHelper x = [qc|
 task trace;
     input integer cycle;
     input integer tick;
-    input [{ finiteBitSize x }-1:0] actual;
+    input [{ dataWidth x }-1:0] actual;
     begin
         $write("%0d:%0d\t", cycle, tick);
         $write("actual: %.3f\t", fxtor(actual));
@@ -401,8 +398,8 @@ endtask // trace
 task assert;
     input integer cycle;
     input integer tick;
-    input [{ finiteBitSize x }-1:0] actual;
-    input [{ finiteBitSize x }-1:0] expect;
+    input [{ dataWidth x }-1:0] actual;
+    input [{ dataWidth x }-1:0] expect;
     input [256*8-1:0] var; // string
     begin
         $write("%0d:%0d\t", cycle, tick);
@@ -460,7 +457,7 @@ endfunction // fxtor
 
 
 instance ( KnownNat m, KnownNat b ) => FixedPointCompatible ( FX m b ) where
-    fractionalBitSize x = finiteBitSize x - fromInteger (natVal (Proxy :: Proxy m))
+    fractionalBitSize x = dataWidth x - fromInteger (natVal (Proxy :: Proxy m))
     scalingFactorPower _
         = let
             m = natVal (Proxy :: Proxy m)

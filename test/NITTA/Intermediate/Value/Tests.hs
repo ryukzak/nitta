@@ -149,14 +149,14 @@ case_fx_Integral = do
 
 -- *Utils
 
-instance ( KnownNat b ) => Validity (FX m b) where
+instance ( KnownNat b, KnownNat m ) => Validity (FX m b) where
     validate t@(FX raw) = let
             ( minRaw, maxRaw ) = minMaxRaw t
         in check (minRaw <= raw && raw <= maxRaw) "value is not out of range"
 
 instance GenUnchecked (FX m b)
 
-instance ( KnownNat b ) => GenValid (FX m b) where
+instance ( KnownNat b, KnownNat m ) => GenValid (FX m b) where
     genValid = FX <$> choose (minMaxRaw (def :: FX m b))
     shrinkValid = filter isValid . shrinkUnchecked
 

@@ -24,7 +24,6 @@ module NITTA.Model.ProcessorUnits.Divider
     ) where
 
 import           Control.Monad ( void, when )
-import           Data.Bits ( finiteBitSize )
 import           Data.Default
 import           Data.List ( partition, sortBy )
 import           Data.Maybe ( fromMaybe )
@@ -344,8 +343,8 @@ instance ( Val x, Show t
             DividerIO
         = codeBlock [qc|
             pu_div #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( { parameterAttrWidth } )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .INVALID( 0 )
                     , .PIPELINE( { pipeline } )
                     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )

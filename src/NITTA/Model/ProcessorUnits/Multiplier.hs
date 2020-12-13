@@ -223,7 +223,6 @@ module NITTA.Model.ProcessorUnits.Multiplier
     ) where
 
 import           Control.Monad ( when )
-import           Data.Bits ( finiteBitSize )
 import           Data.Default
 import           Data.List ( find, partition, (\\) )
 import           Data.Set ( elems, fromList, member )
@@ -689,8 +688,8 @@ instance ( VarValTime v x t
     hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } MultiplierPorts{..} MultiplierIO
         = codeBlock [qc|
             pu_multiplier #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( { parameterAttrWidth } )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
                     , .INVALID( 0 )
                     ) { tag }

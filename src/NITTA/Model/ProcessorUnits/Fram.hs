@@ -28,7 +28,7 @@ import           Control.Applicative ( (<|>) )
 import           Control.Monad
 import qualified Data.Array as A
 import           Data.Array.Base ( numElements )
-import           Data.Bits ( finiteBitSize, testBit )
+import           Data.Bits ( testBit )
 import           Data.Default
 import qualified Data.List as L
 import           Data.Maybe
@@ -534,8 +534,8 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
     hardwareInstance tag fram@Fram{ memory } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} FramIO
         = codeBlock [qc|
             pu_fram #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( { parameterAttrWidth } )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .RAM_SIZE( { numElements memory } )
                     , .FRAM_DUMP( "$path${ softwareFile tag fram }" )
                     ) { tag }

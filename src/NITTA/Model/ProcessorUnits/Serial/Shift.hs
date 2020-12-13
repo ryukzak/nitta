@@ -22,7 +22,6 @@ module NITTA.Model.ProcessorUnits.Serial.Shift
   )
   where
 
-import           Data.Bits ( finiteBitSize )
 import           Data.Default
 import           Data.List ( intersect, (\\) )
 import           Data.Set ( elems, fromList )
@@ -156,8 +155,8 @@ instance ( Val x ) => TargetSystemComponent (Shift v x t) where
     hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } ShiftPorts{..} ShiftIO
         = codeBlock [qc|
             pu_shift #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( { show parameterAttrWidth } )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) { tag }
                 ( .clk( { signalClk } )
                 , .signal_work( { signal work } ), .signal_direction( { signal direction } )

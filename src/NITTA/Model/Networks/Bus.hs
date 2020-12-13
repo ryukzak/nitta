@@ -29,7 +29,6 @@ module NITTA.Model.Networks.Bus
 import           Control.Monad.State
 import qualified Data.Array as A
 import           Data.Bifunctor
-import           Data.Bits ( FiniteBits (..) )
 import           Data.Default
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
@@ -410,8 +409,8 @@ instance ( VarValTime v x t
             mn = moduleName tag pu
             iml = codeBlock [qc|
                     {"module"} { mn } #
-                            ( parameter DATA_WIDTH = { finiteBitSize (def :: x) }
-                            , parameter ATTR_WIDTH = 4
+                            ( parameter DATA_WIDTH = { dataWidth (def :: x) }
+                            , parameter ATTR_WIDTH = { attrWidth (def :: x) }
                             )
                         ( input                     clk
                         , input                     rst
@@ -504,8 +503,8 @@ instance ( VarValTime v x t
             os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts
         = codeBlock [qc|
             { tag } #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( 4 )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) net
                 ( .rst( { signalRst } )
                 , .clk( { signalClk } )
@@ -622,8 +621,8 @@ instance ( VarValTime v x t
             // unit under test
 
             { moduleName pName n } #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( 4 )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) net
                 ( .clk( clk )
                 , .rst( rst )
