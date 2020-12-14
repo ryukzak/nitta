@@ -178,7 +178,10 @@ snippetTestBench
             tbcIOPorts
 
         controlSignals = S.join "\n" $ map
-            (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc|data_in <= { targetVal t }; attr_in <= 0; @(posedge clk);|])
+            ( \t -> let x = targetVal t
+                in tbcCtrl (microcodeAt pUnit t)
+                    <> [qc| data_in <= { verilogLiteral x }; attr_in <= { attrLiteral x };|]
+                    <> " @(posedge clk);" )
             [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
@@ -191,7 +194,7 @@ snippetTestBench
                     , let v = oneOf vs
                     , let x = getCntx cycleCntx v
                     = codeBlock [qc|
-                        @(posedge clk); assertWithAttr(0, 0, data_out, attr_out, { x }, { attrWidth x }'dx, { v });
+                        @(posedge clk); assertWithAttr(0, 0, data_out, attr_out, { verilogLiteral x }, { attrLiteral x }, { v });
                         |]
                     | otherwise
                     = codeLine [qc|@(posedge clk); traceWithAttr(0, 0, data_out, attr_out);|]

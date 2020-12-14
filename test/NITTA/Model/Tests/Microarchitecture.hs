@@ -70,7 +70,7 @@ march = basic pInt
 
 
 -- |Simple microarchitecture with broken PU for negative tests
-maBroken :: Broken String Int Int -> BusNetwork String String Int Int
+maBroken :: ( Integral x, Val x ) => Broken String x Int -> BusNetwork String String x Int
 maBroken brokenPU = evalNetwork ASync $ do
     add "fram1" FramIO
     add "fram2" FramIO

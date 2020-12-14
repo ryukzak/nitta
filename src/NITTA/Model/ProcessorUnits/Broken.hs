@@ -61,6 +61,7 @@ data Broken v x t = Broken
     , lostEndpointTarget          :: Bool
     -- |lost source endpoint due synthesis
     , lostEndpointSource          :: Bool
+    , wrongAttr                   :: Bool
     }
 
 deriving instance ( VarValTime v x t ) => Show (Broken v x t)
@@ -211,6 +212,7 @@ instance ( Time t ) => Default (Broken v x t) where
         , wrongControlOnPull=False
         , lostEndpointTarget=False
         , lostEndpointSource=False
+        , wrongAttr=False
         }
 
 
@@ -243,13 +245,14 @@ instance ( VarValTime v x t
 
     hardwareInstance
             tag
-            pu@Broken{ brokeVerilog, wrongVerilogSimulationValue }
+            pu@Broken{ brokeVerilog, wrongVerilogSimulationValue, wrongAttr }
             TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } BrokenPorts{..} BrokenIO
         = codeBlock [qc|
             {  moduleName tag pu } #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .IS_BROKEN( { bool2verilog wrongVerilogSimulationValue } )
+                    , .WRONG_ATTR( { bool2verilog wrongAttr } )
                     ) { tag }
                 ( .clk( { signalClk } )
 

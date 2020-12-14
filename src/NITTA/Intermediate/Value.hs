@@ -19,8 +19,7 @@ Stability   : experimental
 
 -- TODO: instance Bounded (IntX w)
 -- TODO: instance Bounded (FX m b w)
--- TODO: instance Arbitrary (IntX w)
--- TODO: instance Arbitrary (FX m b w)
+-- TODO: instance Arbitrary (IntX w), Arbitrary (FX m b w), validity
 
 module NITTA.Intermediate.Value
   ( -- *Type classes
@@ -31,6 +30,7 @@ module NITTA.Intermediate.Value
     -- *Value types
   , IntX(..)
   , FX(..), minMaxRaw
+  , Attr(..)
   ) where
 
 import           Control.Applicative
@@ -48,15 +48,21 @@ import           Text.Printf
 import           Text.Regex
 
 
-data Attr t = Attr{ value :: t, invalid :: Bool } deriving ( Eq, Ord )
+data Attr x = Attr{ value :: x, invalid :: Bool } deriving ( Eq, Ord )
+
+instance ( Show x ) => Show (Attr x) where
+    show Attr{ invalid=True }         = "NaN"
+    show Attr{ value, invalid=False } = show value
 
 instance Functor Attr where
     fmap f Attr{ value, invalid } = Attr{ value=f value, invalid }
 
 instance Applicative Attr where
-    pure x = Attr{ value=x, invalid=True }
+    pure x = Attr{ value=x, invalid=False }
     liftA2 f Attr{ value=x, invalid=x' } Attr{ value=y, invalid=y' }
         = Attr{ value=f x y, invalid=x' && y' }
+    -- Attr{ value=f, invalid=f' } <*> Attr{ value=a, invalid=a' }
+    --     = Attr{ value=f a, invalid=f' && a' }
 
 instance ( Read x ) => Read ( Attr x ) where
     readsPrec d r = case readsPrec d r of
@@ -105,16 +111,17 @@ instance ( Bits x ) => Bits ( Attr x ) where
     bit i = pure $ bit i
     popCount Attr{ value } = popCount value
 
--- instance ( KnownNat w ) => FiniteBits ( IntX w ) where
---     finiteBitSize _ = fromInteger $ natVal (Proxy :: Proxy w)
+instance ( Val x, Integral x ) => Val ( Attr x ) where
+    dataWidth Attr{ value } = dataWidth value
+    serialize = toInteger
+    verilogLiteral Attr{ value } = verilogLiteral value
+    attrLiteral x@Attr{ invalid }
+        = show (attrWidth x) <> "'b000" <> if invalid then "1" else "0"
 
--- instance ( Val w ) => Val ( Attr x ) where
---     serialize (IntX x) = fromIntegral x
---     verilogLiteral (IntX x) = show x
+instance ( FixedPointCompatible x ) => FixedPointCompatible ( Attr x ) where
+    scalingFactorPower Attr{ value } = scalingFactorPower value
+    fractionalBitSize Attr{ value } = fractionalBitSize value
 
--- instance ( KnownNat w ) => FixedPointCompatible (IntX w) where
---     scalingFactorPower _ = 0
---     fractionalBitSize _ = 0
 
 
 class ( Default x ) => DefaultX u x | u -> x where
@@ -131,6 +138,8 @@ class ( Typeable x, Show x, Read x, Default x, PrintfArg x
 
     -- |Convert value to applicable for Verilog literal
     verilogLiteral :: x -> String
+    attrLiteral :: x -> String
+    attrLiteral x = show (attrWidth x) <> "'dx"
 
     dataWidth :: x -> Int
     attrWidth :: x -> Int
@@ -197,6 +206,7 @@ task assertWithAttr;
 endtask // assertWithAttr
 |]
 
+    -- FIXME:
     -- |RE for extraction assertion data from a testbench log
     verilogAssertRE :: x -> Regex
     verilogAssertRE _ = mkRegex $ concat
@@ -354,30 +364,19 @@ instance ( KnownNat m, KnownNat b ) => Integral ( FX m b ) where
             sf = scalingFactor t
         in ( FX $ truncate (fromIntegral a' * sf :: Double), FX b' )
 
-instance Bits ( FX m b ) where
-    (.&.) = undefined
-    -- ( FX a ) .&. ( FX b ) = FX ( a .&. b )
-    (.|.) = undefined
-    -- ( FX a ) .|. ( FX b ) = FX ( a .|. b )
-    xor = undefined
-    -- ( FX a ) `xor` ( FX b ) = FX ( a `xor` b )
-    complement = undefined
-    -- complement ( FX a ) = FX $ complement a
+instance ( KnownNat m, KnownNat b ) => Bits ( FX m b ) where
+    ( FX a ) .&. ( FX b ) = FX ( a .&. b )
+    ( FX a ) .|. ( FX b ) = FX ( a .|. b )
+    ( FX a ) `xor` ( FX b ) = FX ( a `xor` b )
+    complement ( FX a ) = FX $ complement a
     shift ( FX a ) i = FX $ shift a i
     rotate ( FX a ) i = FX $ rotate a i
-
-    bitSize = undefined
-    -- bitSize ( FX a ) = fromMaybe undefined $ bitSizeMaybe a
-    bitSizeMaybe = undefined
-    -- bitSizeMaybe ( FX a ) = bitSizeMaybe a
-    isSigned = undefined
-    -- isSigned ( FX a ) = isSigned a
-    testBit = undefined
-    -- testBit ( FX a ) = testBit a
-    bit = undefined
-    -- bit i = FX $ bit i
-    popCount = undefined
-    -- popCount ( FX a ) = popCount a
+    bitSize = dataWidth
+    bitSizeMaybe = Just . dataWidth
+    isSigned ( FX a ) = isSigned a
+    testBit ( FX a ) = testBit a
+    bit i = FX $ bit i
+    popCount ( FX a ) = popCount a
 
 instance ( KnownNat m, KnownNat b ) => Val ( FX m b ) where
     serialize (FX x) = fromIntegral x
@@ -448,6 +447,7 @@ function real fxtor(input integer x);
 endfunction // fxtor
 |]
 
+    -- FIXME:
     verilogAssertRE _ = mkRegex $ concat
         [ "([[:digit:]]+):([[:digit:]]+)\t"
         , "actual: (-?[[:digit:]]+\\.[[:digit:]]+)\t"
