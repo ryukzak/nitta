@@ -117,29 +117,59 @@ instance ( VarValTime v x t
     endpointOptions Shift{ sources, tick, byteShiftDiv, byteShiftMod }
         | not $ null sources
         , byteShiftDiv == 0
-        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (tick + fromIntegral byteShiftMod + 2 ... maxBound) (1 ... maxBound) ]
+        = let
+            timeConstrain = TimeConstrain (startTime ... maxBound) (1 ... maxBound)
+            startTime = tick + fromIntegral byteShiftMod + 2
+        in
+            [ EndpointSt (Source $ fromList sources) timeConstrain ]
 
         | not $ null sources
         = let
             endByteShift = tick + fromIntegral byteShiftDiv
+            timeConstrain = TimeConstrain (startTime ... maxBound) (1 ... maxBound)
+            startTime = endByteShift + fromIntegral byteShiftMod + 2
         in
-            [ EndpointSt (Source $ fromList sources) $ TimeConstrain (endByteShift + 2 + (fromIntegral byteShiftMod) ... maxBound) (1 ... maxBound) ]
+            [ EndpointSt (Source $ fromList sources) timeConstrain ]
 
     endpointOptions pu@Shift{ remain } = concatMap (endpointOptions . execution pu) remain
 
-    endpointDecision pu@Shift{ target=(Just _), currentWorkEndpoints, sRight, byteShiftDiv, byteShiftMod } d@EndpointSt{ epRole=Target _, epAt } = let
+    endpointDecision
+        pu@Shift
+            { target=(Just _)
+            , currentWorkEndpoints
+            , sRight
+            , byteShiftDiv
+            , byteShiftMod
+            }
+        d@EndpointSt
+            { epRole=Target _
+            , epAt
+            }
+        = let
+            startByteShift = inf epAt + 1
+            numByteShiftMod = fromIntegral byteShiftMod
+            endByteShift = sup epAt + fromIntegral byteShiftDiv
             (newEndpoints, process_') = runSchedule pu $ do
-                 updateTick (sup epAt)
-                 scheduleEndpoint d $ do
+                updateTick (sup epAt)
+                scheduleEndpoint d $ do
                     _ <- scheduleInstruction epAt Init
-                    let startByteShift = inf epAt + 1
-                        endByteShift = sup epAt + fromIntegral byteShiftDiv
                     case (byteShiftDiv, byteShiftMod) of
-                        (0, _) -> scheduleInstruction (inf epAt + 1 ... sup epAt + fromIntegral byteShiftMod) $ Work sRight False Logic
-                        (_, 0) -> scheduleInstruction (startByteShift ... endByteShift) $ Work sRight True Logic
-                        _      -> do
-                                      _ <- scheduleInstruction (startByteShift ... endByteShift) $ Work sRight True Logic
-                                      scheduleInstruction (endByteShift + 1 ... endByteShift + fromIntegral byteShiftMod) $ Work sRight False Logic
+                        (0, _) ->
+                            scheduleInstruction
+                                (inf epAt + 1 ... sup epAt + numByteShiftMod)
+                                (Work sRight False Logic)
+                        (_, 0) ->
+                            scheduleInstruction
+                                (startByteShift ... endByteShift)
+                                (Work sRight True Logic)
+                        _      ->
+                            do
+                                _ <- scheduleInstruction
+                                    (startByteShift ... endByteShift)
+                                    (Work sRight True Logic)
+                                scheduleInstruction
+                                    (endByteShift + 1 ... endByteShift + numByteShiftMod)
+                                    (Work sRight False Logic)
         in
             pu
                 { process_=process_'
@@ -148,25 +178,37 @@ instance ( VarValTime v x t
                 , tick=sup epAt
                 }
 
-    endpointDecision pu@Shift{ target=Nothing, sources, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointSt{ epRole=Source v, epAt }
+    endpointDecision
+        pu@Shift
+            { target=Nothing
+            , sources
+            , currentWork=Just (a, f)
+            , currentWorkEndpoints
+            }
+        d@EndpointSt
+            { epRole=Source v
+            , epAt
+            }
+
         | not $ null sources
         , let sources' = sources \\ elems v
-        , sources' /= sources  = let
-                (newEndpoints, process_') = runSchedule pu $ do
-                    endpoints <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) Out
-                    when (null sources') $ do
-                        high <- scheduleFunction (a ... sup epAt) f
-                        let low = endpoints ++ currentWorkEndpoints
-                        establishVerticalRelations high low
-                    return endpoints
-            in
-                pu
-                    { process_=process_'
-                    , sources=sources'
-                    , currentWork=if null sources' then Nothing else Just (a+1, f)
-                    , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
-                    , tick=sup epAt
-                    }
+        , sources' /= sources
+        = let
+            (newEndpoints, process_') = runSchedule pu $ do
+                endpoints <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) Out
+                when (null sources') $ do
+                    high <- scheduleFunction (a ... sup epAt) f
+                    let low = endpoints ++ currentWorkEndpoints
+                    establishVerticalRelations high low
+                return endpoints
+        in
+            pu
+                { process_=process_'
+                , sources=sources'
+                , currentWork=if null sources' then Nothing else Just (a+1, f)
+                , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
+                , tick=sup epAt
+                }
 
     endpointDecision pu@Shift{ target=Nothing, sources=[], remain } d
         | let v = oneOf $ variables d
