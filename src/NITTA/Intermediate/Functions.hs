@@ -331,14 +331,14 @@ data ShiftLR v x = ShiftL Int (I v) (O v)
                  | ShiftR Int (I v) (O v)
                 deriving ( Typeable, Eq )
 instance ( Show v ) => Show (ShiftLR v x) where
-    show (ShiftL shift (I k1) (O k2)) = S.join " = " (map show $ elems k2) <> " = " <> show k1 <> " << " <> show shift
-    show (ShiftR shift (I k1) (O k2)) = S.join " = " (map show $ elems k2) <> " = " <> show k1 <> " >> " <> show shift
+    show (ShiftL s (I i) (O o)) = show i <> " << " <> show s <> " = " <> S.join " = " (map show $ elems o)
+    show (ShiftR s (I i) (O o)) = show i <> " >> " <> show s <> " = " <> S.join " = " (map show $ elems o)
 instance ( Show v ) => Label (ShiftLR v x) where label = show
 
 shiftL :: ( Var v, Val x ) => Int -> v -> [v] -> F v x
-shiftL s a b = packF $ ShiftL s (I a) $ O $ fromList b
+shiftL s i o = packF $ ShiftL s (I i) $ O $ fromList o
 shiftR :: ( Var v, Val x ) => Int -> v -> [v] -> F v x
-shiftR s a b = packF $ ShiftR s (I a) $ O $ fromList b
+shiftR s i o = packF $ ShiftR s (I i) $ O $ fromList o
 
 instance ( Ord v ) => Function (ShiftLR v x) v where
     inputs (ShiftL _ i _) = variables i
@@ -351,14 +351,14 @@ instance ( Ord v ) => Patch (ShiftLR v x) (v, v) where
 instance ( Var v ) => Locks (ShiftLR v x) v where
     locks = inputsLockOutputs
 instance ( Var v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
-    simulate cntx (ShiftL s1 (I v1) (O vs)) = do
-        x <- cntx `getX` v1
-        let x' = x `B.shiftL` s1
-        setZipX cntx vs x'
-    simulate cntx (ShiftR s1 (I v1) (O vs)) = do
-        x <- cntx `getX` v1
-        let x' = x `B.shiftR` s1
-        setZipX cntx vs x'
+    simulate cntx (ShiftL s (I i) (O o)) = do
+        x <- cntx `getX` i
+        let x' = x `B.shiftL` s
+        setZipX cntx o x'
+    simulate cntx (ShiftR s (I i) (O o)) = do
+        x <- cntx `getX` i
+        let x' = x `B.shiftR` s
+        setZipX cntx o x'
 
 
 newtype Send v x = Send (I v) deriving ( Typeable, Eq )
