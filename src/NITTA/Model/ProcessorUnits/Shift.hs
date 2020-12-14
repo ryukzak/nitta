@@ -52,7 +52,6 @@ data Shift v x t = Shift
     , currentWork          :: Maybe ( t, F v x )
     , currentWorkEndpoints :: [ ProcessStepID ]
     , process_             :: Process v x t
-    , tick                 :: t
     } deriving (Show)
 
 instance ( Var v ) => Locks (Shift v x t) v where
@@ -73,7 +72,6 @@ instance Default t => Default (Shift v x t) where
         , currentWork=Nothing
         , currentWorkEndpoints=[]
         , process_=def
-        , tick=def
         }
 
 instance RefactorProblem (Shift v x t) v x
@@ -90,7 +88,7 @@ instance ( VarValTime v x t
     process = process_
 
 -- |This function carry out actual take functional block to work.
-execution pu@Shift{ target=Nothing, sources=[], remain, tick } f
+execution pu@Shift{ target=Nothing, sources=[], remain, process_} f
     | Just f' <- castF f
     = case f' of
         ShiftL s (I i) (O o) -> toPU i o False s
@@ -99,7 +97,7 @@ execution pu@Shift{ target=Nothing, sources=[], remain, tick } f
       where
           toPU inp out sRight step = pu
               { target=Just inp
-              , currentWork=Just (tick, f)
+              , currentWork=Just (nextTick process_, f)
               , sources=elems out
               , remain=remain \\ [ f ]
               , sRight=sRight
@@ -111,21 +109,21 @@ execution _ _ = error "Shift: internal execution error."
 instance ( VarValTime v x t
         ) => EndpointProblem (Shift v x t) v t
         where
-    endpointOptions Shift{ target=Just t, tick }
-        = [ EndpointSt (Target t) $ TimeConstrain (tick ... maxBound) (singleton 1) ]
+    endpointOptions Shift{ target=Just t, process_ }
+        = [ EndpointSt (Target t) $ TimeConstrain (nextTick process_ ... maxBound) (singleton 1) ]
 
-    endpointOptions Shift{ sources, tick, byteShiftDiv, byteShiftMod }
+    endpointOptions Shift{ sources, process_, byteShiftDiv, byteShiftMod }
         | not $ null sources
         , byteShiftDiv == 0
         = let
             timeConstrain = TimeConstrain (startTime ... maxBound) (1 ... maxBound)
-            startTime = tick + fromIntegral byteShiftMod + 2
+            startTime = (nextTick process_) + fromIntegral byteShiftMod + 2
         in
             [ EndpointSt (Source $ fromList sources) timeConstrain ]
 
         | not $ null sources
         = let
-            endByteShift = tick + fromIntegral byteShiftDiv
+            endByteShift = nextTick process_ + fromIntegral byteShiftDiv
             timeConstrain = TimeConstrain (startTime ... maxBound) (1 ... maxBound)
             startTime = endByteShift + fromIntegral byteShiftMod + 2
         in
@@ -175,7 +173,6 @@ instance ( VarValTime v x t
                 { process_=process_'
                 , target=Nothing
                 , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-                , tick=sup epAt
                 }
 
     endpointDecision
@@ -195,6 +192,7 @@ instance ( VarValTime v x t
         , sources' /= sources
         = let
             (newEndpoints, process_') = runSchedule pu $ do
+                updateTick (sup epAt)
                 endpoints <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) Out
                 when (null sources') $ do
                     high <- scheduleFunction (a ... sup epAt) f
@@ -207,7 +205,6 @@ instance ( VarValTime v x t
                 , sources=sources'
                 , currentWork=if null sources' then Nothing else Just (a+1, f)
                 , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
-                , tick=sup epAt
                 }
 
     endpointDecision pu@Shift{ target=Nothing, sources=[], remain } d
