@@ -43,15 +43,15 @@ import           Prelude hiding ( init )
 import           Text.InterpolatedString.Perl6 ( qc )
 
 data Shift v x t = Shift
-    { remain               :: [ F v x ]
-    , target               :: Maybe v
-    , sources              :: [ v ]
-    , sRight               :: Bool
-    , byteShiftDiv         :: Int
-    , byteShiftMod         :: Int
-    , currentWork          :: Maybe ( t, F v x )
-    , currentWorkEndpoints :: [ ProcessStepID ]
-    , process_             :: Process v x t
+    { remain               :: [ F v x ] -- ^list of FU, that will be binded
+    , target               :: Maybe v -- ^current input value
+    , sources              :: [ v ] -- ^output values
+    , sRight               :: Bool -- ^True -> shift right; False -> shift left
+    , byteShiftDiv         :: Int -- ^shift div 8
+    , byteShiftMod         :: Int -- ^shift mod 8
+    , currentWork          :: Maybe ( t, F v x ) -- ^current work function and tick
+    , currentWorkEndpoints :: [ ProcessStepID ] -- ^list of endpoints
+    , process_             :: Process v x t -- ^description of target computation process
     } deriving (Show)
 
 instance ( Var v ) => Locks (Shift v x t) v where
