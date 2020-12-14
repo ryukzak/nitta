@@ -39,27 +39,30 @@ tests =
     "Broken PU and negative tests"
     [ testGroup
         "positive tests"
-        [ finitePUSynthesisProp "finitePUSynthesisProp" u fsGen,
-          puCoSimTestCase "invalid value" u [("a", 42)] [brokenReg "a" ["b"]],
+        [ puCoSimTestCase "invalid value" u [("a", 42)] [brokenReg "a" ["b"]],
           puCoSimProp "puCoSimProp" u fsGen,
           nittaCoSimTestCase "nittaCoSimTestCase" (maBroken u) alg,
+          finitePUSynthesisProp "finitePUSynthesisProp" u fsGen,
           typedLuaTestCase (maBroken def) pInt "typedLuaTestCase" lua
         ],
       testGroup
-        "working with attributes"
-        [ nittaCoSimTestCase "with attr" (maBroken u2) alg,
-          expectFail $ nittaCoSimTestCase "with broken attr" (maBroken u2 {wrongAttr = True}) alg,
-          puCoSimTestCase
+        "positive tests with attributes"
+        [ puCoSimTestCase
             "invalid value"
             u2
             [("a", Attr {value = 42, invalid = True})]
             [brokenReg "a" ["b"]],
-          expectFail $
+          nittaCoSimTestCase "with attr" (maBroken u2) alg
+        ],
+      testGroup
+        "positive tests with attributes"
+        [ expectFail $
             puCoSimTestCase
               "invalid value with broken attr"
               u2 {wrongAttr = True}
               [("a", Attr {value = 42, invalid = True})]
-              [brokenReg "a" ["b"]]
+              [brokenReg "a" ["b"]],
+          expectFail $ nittaCoSimTestCase "with broken attr" (maBroken u2 {wrongAttr = True}) alg
         ],
       testGroup
         "verilog with syntax error"

@@ -22,16 +22,18 @@
 -- Stability   : experimental
 module NITTA.Intermediate.Value
   ( -- * Type classes
-    FixedPointCompatible (..),
     Val (..),
     DefaultX (..),
+    FixedPointCompatible (..),
     scalingFactor,
+    minMaxRaw,
+
+    -- * Compositional type
+    Attr (..),
 
     -- * Value types
     IntX (..),
     FX (..),
-    minMaxRaw,
-    Attr (..),
   )
 where
 
@@ -49,86 +51,6 @@ import Text.InterpolatedString.Perl6 (qc)
 import Text.Printf
 import Text.Regex
 
-data Attr x = Attr {value :: x, invalid :: Bool} deriving (Eq, Ord)
-
-instance (Show x) => Show (Attr x) where
-  show Attr {invalid = True} = "NaN"
-  show Attr {value, invalid = False} = show value
-
-instance Functor Attr where
-  fmap f Attr {value, invalid} = Attr {value = f value, invalid}
-
-instance Applicative Attr where
-  pure x = Attr {value = x, invalid = False}
-  liftA2 f Attr {value = x, invalid = x'} Attr {value = y, invalid = y'} =
-    Attr {value = f x y, invalid = x' && y'}
-
--- Attr{ value=f, invalid=f' } <*> Attr{ value=a, invalid=a' }
---     = Attr{ value=f a, invalid=f' && a' }
-
-instance (Read x) => Read (Attr x) where
-  readsPrec d r = case readsPrec d r of
-    [(x, r')] -> [(pure x, r')]
-    _ -> error $ "can not read IntX from: " ++ r
-
-instance (PrintfArg x) => PrintfArg (Attr x) where
-  formatArg Attr {value} = formatArg value
-
-instance (Default x) => Default (Attr x) where
-  def = pure def
-
-instance (Enum x) => Enum (Attr x) where
-  toEnum = pure . toEnum
-  fromEnum Attr {value} = fromEnum value
-
-instance (Num x) => Num (Attr x) where
-  (+) = liftA2 (+)
-  (*) = liftA2 (*)
-  abs = fmap abs
-  signum = fmap signum
-  fromInteger = pure . fromInteger
-  negate = fmap negate
-
-instance (Ord x, Real x) => Real (Attr x) where
-  toRational Attr {value} = toRational value
-
-instance (Integral x) => Integral (Attr x) where
-  toInteger Attr {value} = toInteger value
-  Attr {value = a} `quotRem` Attr {value = b} =
-    let (a', b') = a `quotRem` b
-     in (pure a', pure b')
-
-instance (Bits x) => Bits (Attr x) where
-  (.&.) = liftA2 (.&.)
-  (.|.) = liftA2 (.|.)
-  xor = liftA2 xor
-  complement = fmap complement
-  shift Attr {value} i = pure $ shift value i
-  rotate Attr {value} i = pure $ rotate value i
-  bitSize Attr {value} = fromMaybe undefined $ bitSizeMaybe value
-  bitSizeMaybe Attr {value} = bitSizeMaybe value
-  isSigned Attr {value} = isSigned value
-  testBit Attr {value} = testBit value
-  bit i = pure $ bit i
-  popCount Attr {value} = popCount value
-
-instance (Val x, Integral x) => Val (Attr x) where
-  dataWidth Attr {value} = dataWidth value
-  serialize = toInteger
-  attrSerialize Attr {invalid = True} = 1
-  attrSerialize Attr {invalid = False} = 0
-  verilogLiteral Attr {value} = verilogLiteral value
-  attrLiteral x@Attr {invalid} =
-    show (attrWidth x) <> "'b000" <> if invalid then "1" else "0"
-
-instance (FixedPointCompatible x) => FixedPointCompatible (Attr x) where
-  scalingFactorPower Attr {value} = scalingFactorPower value
-  fractionalBitSize Attr {value} = fractionalBitSize value
-
-class (Default x) => DefaultX u x | u -> x where
-  defX :: u -> x
-  defX _ = def
-
 -- | Type class for Value types.
 class
   ( Typeable x,
@@ -144,23 +66,25 @@ class
   ) =>
   Val x
   where
+  -- | Data bus width.
+  dataWidth :: x -> Int
+
+  attrWidth :: x -> Int
+  attrWidth _ = 4
+
   -- | Serialize value and attributes into binary form inside Integer type
-  serialize :: x -> Integer
+  dataSerialize :: x -> Integer
 
   attrSerialize :: x -> Integer
   attrSerialize _ = 0
 
   -- | Convert value to applicable for Verilog literal
-  verilogLiteral :: x -> String
+  dataLiteral :: x -> String
 
   attrLiteral :: x -> String
   attrLiteral x = show (attrWidth x) <> "'dx"
 
-  dataWidth :: x -> Int
-  attrWidth :: x -> Int
-  attrWidth _ = 4
-
-  -- | Helper functions to work with type in verilog
+  -- | Helper functions to work with values in verilog (trace and assert)
   verilogHelper :: x -> String
   verilogHelper x =
     [qc|
@@ -235,6 +159,10 @@ endtask // assertWithAttr
           "var: ([^ \t\n]+)"
         ]
 
+class (Default x) => DefaultX u x | u -> x where
+  defX :: u -> x
+  defX _ = def
+
 -- | Type class for values, which contain information about fractional part of
 --  value (for fixed point arithmetics).
 class FixedPointCompatible a where
@@ -243,11 +171,89 @@ class FixedPointCompatible a where
 
 scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 
+-- | All values with attributes
+data Attr x = Attr {value :: x, invalid :: Bool} deriving (Eq, Ord)
+
+instance (Show x) => Show (Attr x) where
+  show Attr {invalid = True} = "NaN"
+  show Attr {value, invalid = False} = show value
+
+instance Functor Attr where
+  fmap f Attr {value, invalid} = Attr {value = f value, invalid}
+
+instance Applicative Attr where
+  pure x = Attr {value = x, invalid = False}
+  liftA2 f Attr {value = x, invalid = x'} Attr {value = y, invalid = y'} =
+    Attr {value = f x y, invalid = x' && y'}
+
+instance (Read x) => Read (Attr x) where
+  readsPrec d r = case readsPrec d r of
+    [(x, r')] -> [(pure x, r')]
+    _ -> error $ "can not read IntX from: " ++ r
+
+instance (PrintfArg x) => PrintfArg (Attr x) where
+  formatArg Attr {value} = formatArg value
+
+instance (Default x) => Default (Attr x) where
+  def = pure def
+
+instance (Enum x) => Enum (Attr x) where
+  toEnum = pure . toEnum
+  fromEnum Attr {value} = fromEnum value
+
+instance (Num x) => Num (Attr x) where
+  (+) = liftA2 (+)
+  (*) = liftA2 (*)
+  abs = fmap abs
+  signum = fmap signum
+  fromInteger = pure . fromInteger
+  negate = fmap negate
+
+instance (Ord x, Real x) => Real (Attr x) where
+  toRational Attr {value} = toRational value
+
+instance (Integral x) => Integral (Attr x) where
+  toInteger Attr {value} = toInteger value
+  Attr {value = a} `quotRem` Attr {value = b} =
+    let (a', b') = a `quotRem` b
+     in (pure a', pure b')
+
+instance (Bits x) => Bits (Attr x) where
+  (.&.) = liftA2 (.&.)
+  (.|.) = liftA2 (.|.)
+  xor = liftA2 xor
+  complement = fmap complement
+  shift Attr {value} i = pure $ shift value i
+  rotate Attr {value} i = pure $ rotate value i
+  bitSize Attr {value} = fromMaybe undefined $ bitSizeMaybe value
+  bitSizeMaybe Attr {value} = bitSizeMaybe value
+  isSigned Attr {value} = isSigned value
+  testBit Attr {value} = testBit value
+  bit i = pure $ bit i
+  popCount Attr {value} = popCount value
+
+instance (Val x, Integral x) => Val (Attr x) where
+  dataWidth Attr {value} = dataWidth value
+
+  dataSerialize = toInteger
+  attrSerialize Attr {invalid = True} = 1
+  attrSerialize Attr {invalid = False} = 0
+
+  dataLiteral Attr {value} = dataLiteral value
+  attrLiteral x@Attr {invalid} =
+    show (attrWidth x) <> "'b000" <> if invalid then "1" else "0"
+
+instance (FixedPointCompatible x) => FixedPointCompatible (Attr x) where
+  scalingFactorPower Attr {value} = scalingFactorPower value
+  fractionalBitSize Attr {value} = fractionalBitSize value
+
 -- for Int
 instance Val Int where
-  serialize = fromIntegral
-  verilogLiteral = show
   dataWidth x = finiteBitSize x
+
+  dataSerialize = fromIntegral
+
+  dataLiteral = show
 
 instance FixedPointCompatible Int where
   scalingFactorPower _ = 0
@@ -305,9 +311,11 @@ instance Bits (IntX w) where
   popCount (IntX a) = popCount a
 
 instance (KnownNat w) => Val (IntX w) where
-  serialize (IntX x) = fromIntegral x
-  verilogLiteral (IntX x) = show x
   dataWidth _ = fromInteger $ natVal (Proxy :: Proxy w)
+
+  dataSerialize (IntX x) = fromIntegral x
+
+  dataLiteral (IntX x) = show x
 
 instance FixedPointCompatible (IntX w) where
   scalingFactorPower _ = 0
@@ -386,9 +394,12 @@ instance (KnownNat m, KnownNat b) => Bits (FX m b) where
   popCount (FX a) = popCount a
 
 instance (KnownNat m, KnownNat b) => Val (FX m b) where
-  serialize (FX x) = fromIntegral x
-  verilogLiteral (FX x) = show x
   dataWidth _ = fromInteger $ natVal (Proxy :: Proxy b)
+
+  dataSerialize (FX x) = fromIntegral x
+
+  dataLiteral (FX x) = show x
+
   verilogHelper x =
     [qc|
 task trace;

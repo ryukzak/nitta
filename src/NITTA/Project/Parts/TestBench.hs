@@ -180,7 +180,7 @@ snippetTestBench
         controlSignals = S.join "\n" $ map
             ( \t -> let x = targetVal t
                 in tbcCtrl (microcodeAt pUnit t)
-                    <> [qc| data_in <= { verilogLiteral x }; attr_in <= { attrLiteral x };|]
+                    <> [qc| data_in <= { dataLiteral x }; attr_in <= { attrLiteral x };|]
                     <> " @(posedge clk);" )
             [ 0 .. nextTick + 1 ]
         targetVal t
@@ -194,7 +194,7 @@ snippetTestBench
                     , let v = oneOf vs
                     , let x = getCntx cycleCntx v
                     = codeBlock [qc|
-                        @(posedge clk); assertWithAttr(0, 0, data_out, attr_out, { verilogLiteral x }, { attrLiteral x }, { v });
+                        @(posedge clk); assertWithAttr(0, 0, data_out, attr_out, { dataLiteral x }, { attrLiteral x }, { v });
                         |]
                     | otherwise
                     = codeLine [qc|@(posedge clk); traceWithAttr(0, 0, data_out, attr_out);|]

@@ -496,11 +496,10 @@ instance ( VarValTime v x t ) => Testable (Fram v x t) v x where
             width = addrWidth pUnit
             tbcSignalsConst = ["oe", "wr", "[3:0] addr"]
 
-            showMicrocode Microcode{ oeSignal, wrSignal, addrSignal } = codeBlock [qc|
-                oe   <= { bool2verilog oeSignal };
-                wr   <= { bool2verilog wrSignal };
-                addr <= { maybe "0" show addrSignal };
-                |]
+            showMicrocode Microcode{ oeSignal, wrSignal, addrSignal }
+                =  [qc|oe <= { bool2verilog oeSignal };|]
+                <> [qc| wr <= { bool2verilog wrSignal };|]
+                <> [qc| addr <= { maybe "0" show addrSignal };|]
 
             signal (SignalTag i) = case i of
                 0 -> "oe"

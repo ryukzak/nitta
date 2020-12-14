@@ -83,7 +83,7 @@ values2dump vs
 hdlValDump x
     = let
         bins = map (testBit $ attrSerialize x) (reverse [0 .. attrWidth x - 1])
-            ++ map (testBit $ serialize x) (reverse [0 .. dataWidth x - 1])
+            ++ map (testBit $ dataSerialize x) (reverse [0 .. dataWidth x - 1])
 
         lMod = length bins `mod` 4
         bins' = groupBy4 $ if lMod == 0
