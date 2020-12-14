@@ -50,8 +50,8 @@ data Shift v x t = Shift
     , byteShiftDiv         :: Int -- ^shift div 8
     , byteShiftMod         :: Int -- ^shift mod 8
     , currentWork          :: Maybe ( t, F v x ) -- ^current work function and tick
-    , currentWorkEndpoints :: [ ProcessStepID ] -- ^list of endpoints
-    , process_             :: Process v x t -- ^description of target computation process
+    , currentWorkEndpoints :: [ ProcessStepID ] -- ^list of 
+    , process_             :: Process v x t -- ^Description of target computation process
     } deriving (Show)
 
 instance ( Var v ) => Locks (Shift v x t) v where
@@ -104,7 +104,7 @@ execution pu@Shift{ target=Nothing, sources=[], remain, process_} f
               , byteShiftDiv = step `div` 8
               , byteShiftMod = step `mod` 8
               }
-execution _ _ = error "Shift: internal execution error."
+execution _ _ = error "Not right arguments in execution function in shift module"
 
 instance ( VarValTime v x t
         ) => EndpointProblem (Shift v x t) v t
