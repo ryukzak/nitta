@@ -115,6 +115,8 @@ instance (Bits x) => Bits (Attr x) where
 instance (Val x, Integral x) => Val (Attr x) where
   dataWidth Attr {value} = dataWidth value
   serialize = toInteger
+  attrSerialize Attr {invalid = True} = 1
+  attrSerialize Attr {invalid = False} = 0
   verilogLiteral Attr {value} = verilogLiteral value
   attrLiteral x@Attr {invalid} =
     show (attrWidth x) <> "'b000" <> if invalid then "1" else "0"
@@ -137,12 +139,16 @@ class
     Eq x,
     Num x,
     Bits x,
-    FixedPointCompatible x
+    FixedPointCompatible x,
+    Enum x
   ) =>
   Val x
   where
   -- | Serialize value and attributes into binary form inside Integer type
   serialize :: x -> Integer
+
+  attrSerialize :: x -> Integer
+  attrSerialize _ = 0
 
   -- | Convert value to applicable for Verilog literal
   verilogLiteral :: x -> String

@@ -1,4 +1,7 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
 
@@ -47,10 +50,22 @@ tests =
       --     , loop 10 "b" ["a"]
       --     ]
       finitePUSynthesisProp "finite synthesis properties" u fsGen,
-      puCoSimProp "co simulation properties" u fsGen
+      puCoSimProp "co simulation properties" u fsGen,
+      puCoSimTestCase
+        "buffer function with Attr"
+        u2
+        [("a", Attr 42 True)]
+        [reg "a" ["b"]],
+      puCoSimTestCase
+        "constant function with Attr"
+        u2
+        []
+        [constant (Attr 42 True) ["a"]],
+      puCoSimProp "co simulation properties with attr" u2 fsGen
     ]
   where
     u = def :: Fram String Int Int
+    u2 = def :: Fram String (Attr (IntX 32)) Int
     fsGen =
       algGen
         [ fmap packF (arbitrary :: Gen (Constant _ _)),

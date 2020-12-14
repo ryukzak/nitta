@@ -162,7 +162,7 @@ algGen fsGen = fmap avoidDupVariables $ listOf1 $ oneof fsGen
 
 initialCycleCntxGen fs = do
     let vs = elems $ unionsMap inputs fs
-    xs <- infiniteListOf $ choose (0, 1000)
+    xs <- infiniteListOf arbitrary
     let vxs = M.fromList $ zip vs xs
         cntx0 = simulateAlg 5 (CycleCntx vxs) [] fs
     return cntx0
