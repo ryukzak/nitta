@@ -327,6 +327,8 @@ instance ( Var v ) => FunctionSimulation (Constant v x) v x where
 
 
 -- TODO: separete into two different functions
+
+-- |Functional unit that implements logic shift operations
 data ShiftLR v x = ShiftL Int (I v) (O v)
                  | ShiftR Int (I v) (O v)
                 deriving ( Typeable, Eq )

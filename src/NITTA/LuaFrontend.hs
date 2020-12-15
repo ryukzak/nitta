@@ -150,11 +150,11 @@ data AlgBuilderItem x
     | Alias{ aFrom :: Text, aTo :: Text }
     | Renamed{ rFrom :: Text, rTo :: Text }
     | Function
-        { fIn        :: [Text]
-        , fOut       :: [Text]
-        , fName      :: String
-        , fValues    :: [x]
-        , fInt :: [Int]
+        { fIn     :: [Text]
+        , fOut    :: [Text]
+        , fName   :: String
+        , fValues :: [x]
+        , fInt    :: [Int]
         }
     | TraceFunction
         { tVars :: [ Text ]
@@ -165,18 +165,18 @@ data AlgBuilderItem x
 
 
 -- *Translate AlgBuiler functions to nitta functions
-function2nitta Function{ fName="loop",     fIn=[i],    fOut=[o],    fValues=[x] } = F.loop x <$> input i <*> output o
-function2nitta Function{ fName="reg",      fIn=[i],    fOut=[o],    fValues=[]  } = F.reg <$> input i <*> output o
-function2nitta Function{ fName="brokenReg",fIn=[i],    fOut=[o],    fValues=[]  } = F.brokenReg <$> input i <*> output o
-function2nitta Function{ fName="constant", fIn=[],     fOut=[o],    fValues=[x] } = F.constant x <$> output o
-function2nitta Function{ fName="send",     fIn=[i],    fOut=[],     fValues=[]  } = F.send <$> input i
-function2nitta Function{ fName="add",      fIn=[a, b], fOut=[c],    fValues=[]  } = F.add <$> input a <*> input b <*> output c
-function2nitta Function{ fName="sub",      fIn=[a, b], fOut=[c],    fValues=[]  } = F.sub <$> input a <*> input b <*> output c
-function2nitta Function{ fName="multiply", fIn=[a, b], fOut=[c],    fValues=[]  } = F.multiply <$> input a <*> input b <*> output c
-function2nitta Function{ fName="divide",   fIn=[d, n], fOut=[q, r], fValues=[]  } = F.division <$> input d <*> input n <*> output q <*> output r
-function2nitta Function{ fName="receive",  fIn=[],     fOut=[o],    fValues=[]  } = F.receive <$> output o
-function2nitta Function{ fName="shiftL",   fIn=[a],    fOut=[c],    fValues=[], fInt=[s]  } = F.shiftL s <$> input a <*> output c
-function2nitta Function{ fName="shiftR",   fIn=[a],    fOut=[c],    fValues=[], fInt=[s]  } = F.shiftR s <$> input a <*> output c
+function2nitta Function{ fName="loop",     fIn=[i],    fOut=[o],    fValues=[x], fInt=[]  } = F.loop x <$> input i <*> output o
+function2nitta Function{ fName="reg",      fIn=[i],    fOut=[o],    fValues=[],  fInt=[]  } = F.reg <$> input i <*> output o
+function2nitta Function{ fName="brokenReg",fIn=[i],    fOut=[o],    fValues=[],  fInt=[]  } = F.brokenReg <$> input i <*> output o
+function2nitta Function{ fName="constant", fIn=[],     fOut=[o],    fValues=[x], fInt=[]  } = F.constant x <$> output o
+function2nitta Function{ fName="send",     fIn=[i],    fOut=[],     fValues=[],  fInt=[]  } = F.send <$> input i
+function2nitta Function{ fName="add",      fIn=[a, b], fOut=[c],    fValues=[],  fInt=[]  } = F.add <$> input a <*> input b <*> output c
+function2nitta Function{ fName="sub",      fIn=[a, b], fOut=[c],    fValues=[],  fInt=[]  } = F.sub <$> input a <*> input b <*> output c
+function2nitta Function{ fName="multiply", fIn=[a, b], fOut=[c],    fValues=[],  fInt=[]  } = F.multiply <$> input a <*> input b <*> output c
+function2nitta Function{ fName="divide",   fIn=[d, n], fOut=[q, r], fValues=[],  fInt=[]  } = F.division <$> input d <*> input n <*> output q <*> output r
+function2nitta Function{ fName="receive",  fIn=[],     fOut=[o],    fValues=[],  fInt=[]  } = F.receive <$> output o
+function2nitta Function{ fName="shiftL",   fIn=[a],    fOut=[c],    fValues=[],  fInt=[s] } = F.shiftL s <$> input a <*> output c
+function2nitta Function{ fName="shiftR",   fIn=[a],    fOut=[c],    fValues=[],  fInt=[s] } = F.shiftR s <$> input a <*> output c
 function2nitta f = error $ "frontend don't known function: " ++ show f
 
 

@@ -12,7 +12,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 {-|
-Module      : NITTA.Model.ProcessorUnits.Serial.Accum
+Module      : NITTA.Model.ProcessorUnits.Accum
 Description : Accumulator processor unit implementation
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3

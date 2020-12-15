@@ -12,7 +12,7 @@
 
 
 {-|
-Module      : NITTA.Model.ProcessorUnits.Serial.Shift
+Module      : NITTA.Model.ProcessorUnits.Shift
 Description : Shift Processor Unit
 Copyright   : (c) Daniil Prohorov, 2020
 License     : BSD3
@@ -43,15 +43,15 @@ import           Prelude hiding ( init )
 import           Text.InterpolatedString.Perl6 ( qc )
 
 data Shift v x t = Shift
-    { remain               :: [ F v x ] -- ^list of FU, that will be binded
-    , target               :: Maybe v -- ^current input value
-    , sources              :: [ v ] -- ^output values
+    { remain               :: [ F v x ] -- ^list of FU, that will be binded later
+    , target               :: Maybe v -- ^current input value, that we want to shift
+    , sources              :: [ v ] -- ^list of output values
     , sRight               :: Bool -- ^True -> shift right; False -> shift left
-    , byteShiftDiv         :: Int -- ^shift div 8
-    , byteShiftMod         :: Int -- ^shift mod 8
-    , currentWork          :: Maybe ( t, F v x ) -- ^current work function and tick
-    , currentWorkEndpoints :: [ ProcessStepID ] -- ^list of 
-    , process_             :: Process v x t -- ^Description of target computation process
+    , byteShiftDiv         :: Int -- ^shift div 8 (is used for byte shift)
+    , byteShiftMod         :: Int -- ^shift mod 8 (is used for bit shift)
+    , currentWork          :: Maybe ( t, F v x ) -- ^tick and current function in PU
+    , currentWorkEndpoints :: [ ProcessStepID ] -- ^list of endpoints
+    , process_             :: Process v x t -- ^description of target computation process
     } deriving (Show)
 
 instance ( Var v ) => Locks (Shift v x t) v where

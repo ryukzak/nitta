@@ -2,7 +2,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 
 {-|
-Module      : NITTA.Model.ProcessorUnits.Serial.Shift.Tests
+Module      : NITTA.Model.ProcessorUnits.Shift.Tests
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2020
 License     : BSD3
