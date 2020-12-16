@@ -71,16 +71,17 @@ puCoSimTestCase ::
     ) => String -> pu String x Int -> [(String, x)] -> [F String x] -> TestTree
 puCoSimTestCase name u cntxCycle alg
     = testCase name $ do
+        wd <- getCurrentDirectory
         let mname = toModuleName name
+            pPath = joinPath [wd, "gen", mname]
             prj = Project
                 { pName=mname
                 , pLibPath=joinPath ["..", "..", "hdl"]
-                , pPath=joinPath ["gen", mname]
+                , pPath
                 , pUnit=naiveSynthesis alg u
                 , pTestCntx=simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
                 }
-        (tbStatus <$> writeAndRunTestbench prj) @? name
-
+        (tbStatus <$> writeAndRunTestbench prj) @? (name <> " in " <> pPath)
 
 -- |Bind all functions to processor unit and synthesis process with endpoint
 -- decisions.
