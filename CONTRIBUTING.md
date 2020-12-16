@@ -11,7 +11,7 @@ When contributing to this repository, please first discuss the change you wish t
 
 ## Use a Consistent Coding Style
 
-* For Haskell you should use [stylish-haskell](https://github.com/jaspervdj/stylish-haskell) and [hlint](https://hackage.haskell.org/package/hlint);
+* For Haskell you should use [fourmolu](https://hackage.haskell.org/package/fourmolu) and [hlint](https://hackage.haskell.org/package/hlint);
 * For TypeScript, HTML and CSS you should use [Prettier](https://prettier.io);
 * For Verilog:
   * non-blocking assginment is more prefferable (`<=`);
