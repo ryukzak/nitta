@@ -1,3 +1,4 @@
+{- FOURMOLU_DISABLE -}
 module NITTA.Model.Problems
     ( module NITTA.Model.Problems.Binding
     , module NITTA.Model.Problems.Dataflow

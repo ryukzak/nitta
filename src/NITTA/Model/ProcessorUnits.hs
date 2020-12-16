@@ -1,3 +1,4 @@
+{- FOURMOLU_DISABLE -}
 {-|
 Module      : NITTA.Model.ProcessorUnits
 Description : Library of processor unit models
