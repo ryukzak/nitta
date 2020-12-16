@@ -84,6 +84,7 @@ library:
     - transformers
     - unordered-containers
     - utility-ht
+    - validity
     - wai-cors
     - warp
 

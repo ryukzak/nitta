@@ -140,6 +140,7 @@ library
     , transformers
     , unordered-containers
     , utility-ht
+    , validity
     , wai-cors
     , warp
   default-language: Haskell2010

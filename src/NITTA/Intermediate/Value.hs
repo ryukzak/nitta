@@ -13,14 +13,13 @@
 -- TODO: instance Bounded (FX m b w)
 -- TODO: instance Arbitrary (IntX w), Arbitrary (FX m b w), validity
 
-{- |
- Module      : NITTA.Intermediate.Value
- Description : Transferable over nets values.
- Copyright   : (c) Aleksandr Penskoi, 2019
- License     : BSD3
- Maintainer  : aleksandr.penskoi@gmail.com
- Stability   : experimental
--}
+-- |
+-- Module      : NITTA.Intermediate.Value
+-- Description : Transferable over nets values.
+-- Copyright   : (c) Aleksandr Penskoi, 2019
+-- License     : BSD3
+-- Maintainer  : aleksandr.penskoi@gmail.com
+-- Stability   : experimental
 module NITTA.Intermediate.Value (
     -- * Type classes
     Val (..),
@@ -44,6 +43,7 @@ import Data.Maybe
 import Data.Proxy
 import Data.Ratio
 import Data.Typeable
+import Data.Validity hiding (invalid)
 import GHC.Generics
 import GHC.TypeLits
 import Numeric
@@ -56,13 +56,14 @@ class
     ( Typeable x
     , Show x
     , Read x
-    , Default x
     , PrintfArg x
+    , Default x
+    , Enum x
     , Eq x
     , Num x
     , Bits x
+    , Validity x
     , FixedPointCompatible x
-    , Enum x
     ) =>
     Val x
     where
@@ -159,13 +160,25 @@ endtask // assertWithAttr
                 , "var: ([^ \t\n]+)"
                 ]
 
+minMaxRaw x =
+    let n = dataWidth x
+        maxRaw = 2 ^ (n - 1) - 1
+        minRaw = negate (maxRaw + 1)
+     in (minRaw, maxRaw)
+
+zeroOnOverflow x
+    | let raw = toInteger x
+          (minRaw, maxRaw) = minMaxRaw x
+      , minRaw <= raw && raw <= maxRaw =
+        x
+    | otherwise = 0
+
 class (Default x) => DefaultX u x | u -> x where
     defX :: u -> x
     defX _ = def
 
-{- | Type class for values, which contain information about fractional part of
-  value (for fixed point arithmetics).
--}
+-- | Type class for values, which contain information about fractional part of
+--  value (for fixed point arithmetics).
 class FixedPointCompatible a where
     scalingFactorPower :: a -> Integer
     fractionalBitSize :: a -> Int
@@ -175,17 +188,24 @@ scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 -- | All values with attributes
 data Attr x = Attr {value :: x, invalid :: Bool} deriving (Eq, Ord)
 
-instance (Show x) => Show (Attr x) where
-    show Attr{invalid = True} = "NaN"
-    show Attr{value, invalid = False} = show value
+instance (Validity x) => Validity (Attr x) where
+    validate Attr{value} = validate value
+
+setInvalidAttr Attr{value, invalid} = Attr{value, invalid = invalid || isInvalid value}
 
 instance Functor Attr where
     fmap f Attr{value, invalid} = Attr{value = f value, invalid}
 
 instance Applicative Attr where
     pure x = Attr{value = x, invalid = False}
+
     liftA2 f Attr{value = x, invalid = x'} Attr{value = y, invalid = y'} =
-        Attr{value = f x y, invalid = x' && y'}
+        let value = f x y
+         in Attr{value, invalid = x' || y'}
+
+instance (Show x) => Show (Attr x) where
+    show Attr{invalid = True} = "NaN"
+    show Attr{value, invalid = False} = show value
 
 instance (Read x) => Read (Attr x) where
     readsPrec d r = case readsPrec d r of
@@ -198,34 +218,34 @@ instance (PrintfArg x) => PrintfArg (Attr x) where
 instance (Default x) => Default (Attr x) where
     def = pure def
 
-instance (Enum x) => Enum (Attr x) where
-    toEnum = pure . toEnum
+instance (Enum x, Validity x) => Enum (Attr x) where
+    toEnum = setInvalidAttr . pure . toEnum
     fromEnum Attr{value} = fromEnum value
 
-instance (Num x) => Num (Attr x) where
-    (+) = liftA2 (+)
-    (*) = liftA2 (*)
-    abs = fmap abs
-    signum = fmap signum
-    fromInteger = pure . fromInteger
-    negate = fmap negate
+instance (Num x, Validity x) => Num (Attr x) where
+    a + b = setInvalidAttr $ liftA2 (+) a b
+    a * b = setInvalidAttr $ liftA2 (*) a b
+    abs = setInvalidAttr . fmap abs
+    signum = setInvalidAttr . fmap signum
+    fromInteger = setInvalidAttr . pure . fromInteger
+    negate = setInvalidAttr . fmap negate
 
-instance (Ord x, Real x) => Real (Attr x) where
+instance (Ord x, Real x, Validity x) => Real (Attr x) where
     toRational Attr{value} = toRational value
 
-instance (Integral x) => Integral (Attr x) where
+instance (Integral x, Validity x) => Integral (Attr x) where
     toInteger Attr{value} = toInteger value
     Attr{value = a} `quotRem` Attr{value = b} =
         let (a', b') = a `quotRem` b
-         in (pure a', pure b')
+         in (setInvalidAttr $ pure a', setInvalidAttr $ pure b')
 
-instance (Bits x) => Bits (Attr x) where
-    (.&.) = liftA2 (.&.)
-    (.|.) = liftA2 (.|.)
-    xor = liftA2 xor
-    complement = fmap complement
-    shift Attr{value} i = pure $ shift value i
-    rotate Attr{value} i = pure $ rotate value i
+instance (Bits x, Validity x) => Bits (Attr x) where
+    a .&. b = setInvalidAttr $ liftA2 (.&.) a b
+    a .|. b = setInvalidAttr $ liftA2 (.|.) a b
+    xor a b = setInvalidAttr $ liftA2 xor a b
+    complement = setInvalidAttr . fmap complement
+    shift Attr{value} i = setInvalidAttr $ pure $ shift value i
+    rotate Attr{value} i = setInvalidAttr $ pure $ rotate value i
     bitSize Attr{value} = fromMaybe undefined $ bitSizeMaybe value
     bitSizeMaybe Attr{value} = bitSizeMaybe value
     isSigned Attr{value} = isSigned value
@@ -248,7 +268,12 @@ instance (FixedPointCompatible x) => FixedPointCompatible (Attr x) where
     scalingFactorPower Attr{value} = scalingFactorPower value
     fractionalBitSize Attr{value} = fractionalBitSize value
 
--- for Int
+-- * Integer
+
+instance FixedPointCompatible Int where
+    scalingFactorPower _ = 0
+    fractionalBitSize _ = 0
+
 instance Val Int where
     dataWidth x = finiteBitSize x
 
@@ -256,13 +281,14 @@ instance Val Int where
 
     dataLiteral = show
 
-instance FixedPointCompatible Int where
-    scalingFactorPower _ = 0
-    fractionalBitSize _ = 0
-
 -- | Integer number with specific bit width.
-newtype IntX (w :: Nat) = IntX Integer
+newtype IntX (w :: Nat) = IntX {intX :: Integer}
     deriving (Show, Eq, Ord)
+
+instance (KnownNat m) => Validity (IntX m) where
+    validate x@(IntX raw) =
+        let (minRaw, maxRaw) = minMaxRaw x
+         in check (minRaw <= raw && raw <= maxRaw) "value is not out of range"
 
 instance Read (IntX w) where
     readsPrec d r = case readsPrec d r of
@@ -322,16 +348,22 @@ instance FixedPointCompatible (IntX w) where
     scalingFactorPower _ = 0
     fractionalBitSize _ = 0
 
-{- | Number with fixed point. FX m b where
-    - m the number of magnitude or integer bits
-    - b the total number of bits
+-- * Fixed point
 
-  fxm.b: The "fx" prefix is similar to the above, but uses the word length as
-  the second item in the dotted pair. For example, fx1.16 describes a number
-  with 1 magnitude bit and 15 fractional bits in a 16 bit word.[3]
--}
+-- | Number with fixed point. FX m b where
+--    - m the number of magnitude or integer bits
+--    - b the total number of bits
+--
+--  fxm.b: The "fx" prefix is similar to the above, but uses the word length as
+--  the second item in the dotted pair. For example, fx1.16 describes a number
+--  with 1 magnitude bit and 15 fractional bits in a 16 bit word.[3]
 newtype FX (m :: Nat) (b :: Nat) = FX {rawFX :: Integer}
     deriving (Eq, Ord, Generic)
+
+instance (KnownNat b, KnownNat m) => Validity (FX m b) where
+    validate t@(FX raw) =
+        let (minRaw, maxRaw) = minMaxRaw t
+         in check (minRaw <= raw && raw <= maxRaw) "value is not out of range"
 
 instance (KnownNat m, KnownNat b) => Read (FX m b) where
     readsPrec d r =
@@ -361,18 +393,6 @@ instance (KnownNat m, KnownNat b) => Num (FX m b) where
     signum (FX a) = fromInteger $ signum a
     fromInteger x = FX $ shiftL x $ fromInteger $ scalingFactorPower (def :: FX m b)
     negate (FX a) = FX $ negate a
-
-minMaxRaw t@FX{} =
-    let n = dataWidth t
-        maxRaw = 2 ^ (n - 1) - 1
-        minRaw = negate (maxRaw + 1)
-     in (minRaw, maxRaw)
-
-zeroOnOverflow t@FX{rawFX}
-    | let (minRaw, maxRaw) = minMaxRaw t
-      , minRaw <= rawFX && rawFX <= maxRaw =
-        t
-    | otherwise = 0
 
 instance (KnownNat m, KnownNat b) => Integral (FX m b) where
     toInteger t = toInteger $ fromEnum t
