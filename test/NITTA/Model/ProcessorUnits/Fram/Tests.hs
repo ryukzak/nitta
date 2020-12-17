@@ -1,3 +1,4 @@
+{- FOURMOLU_DISABLE -}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
 
