@@ -1,8 +1,7 @@
 module pu_accum
   #( parameter DATA_WIDTH = 4
    , parameter ATTR_WIDTH = 4
-   , parameter SIGN       = 0
-   , parameter OVERFLOW   = 1
+   , parameter OVERFLOW   = 0
    )
   ( input  wire                  clk
   , input  wire                  rst
@@ -64,7 +63,6 @@ always @(posedge clk)
     { attr_out, data_out } <= 0;
   else begin
     data_out           <= acc[DATA_WIDTH-1:0];
-    attr_out[SIGN]     <= acc[DATA_WIDTH];
     attr_out[OVERFLOW] <= overflow;
   end
 
