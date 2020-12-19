@@ -51,6 +51,11 @@ tests =
                 u2
                 [("a", Attr{value = 42, invalid = True})]
                 [brokenReg "a" ["b"]]
+            , puCoSimTestCase
+                "unknown output with invalid flag"
+                u2{unknownDataOut = True}
+                [("a", Attr{value = 42, invalid = True})]
+                [brokenReg "a" ["b"]]
             , nittaCoSimTestCase "with attr" (maBroken u2) alg
             ]
         , testGroup
@@ -60,6 +65,12 @@ tests =
                     "invalid value with broken attr"
                     u2{wrongAttr = True}
                     [("a", Attr{value = 42, invalid = True})]
+                    [brokenReg "a" ["b"]]
+            , expectFail $
+                puCoSimTestCase
+                    "unknown output without invalid flag"
+                    u2{unknownDataOut = True}
+                    [("a", Attr{value = 42, invalid = False})]
                     [brokenReg "a" ["b"]]
             , expectFail $ nittaCoSimTestCase "with broken attr" (maBroken u2{wrongAttr = True}) alg
             ]

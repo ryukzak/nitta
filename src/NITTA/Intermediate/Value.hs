@@ -141,7 +141,9 @@ task assertWithAttr;
         $write("actual: %d %d\t", actualData, actualAttr);
         $write("expect: %d %d\t", expectData, expectAttr);
         $write("var: %0s\t", var);
-        if ( actualData !== expectData || actualAttr != expectAttr ) $write("FAIL");
+        if ( actualData != expectData || actualAttr != expectAttr
+            || ( actualData === 'dx && !actualAttr[0] )
+            ) $write("FAIL");
         $display();
     end
 endtask // assertWithAttr
@@ -260,6 +262,7 @@ instance (Val x, Integral x) => Val (Attr x) where
     attrSerialize Attr{invalid = True} = 1
     attrSerialize Attr{invalid = False} = 0
 
+    dataLiteral Attr{value, invalid = True} = show (dataWidth value) <> "'dx"
     dataLiteral Attr{value} = dataLiteral value
     attrLiteral x@Attr{invalid} =
         show (attrWidth x) <> "'b000" <> if invalid then "1" else "0"

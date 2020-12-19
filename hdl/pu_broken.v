@@ -3,6 +3,7 @@ module pu_broken
    , parameter ATTR_WIDTH = 4
    , parameter IS_BROKEN = 0
    , parameter WRONG_ATTR = 0
+   , parameter UNKNOWN_DATA_OUT = 0
    )
   ( input  wire                  clk
 
@@ -21,12 +22,12 @@ reg [ATTR_WIDTH-1:0] attr_buf;
 always @(posedge clk)
   if ( signal_wr ) begin
     data_buf <= data_in + IS_BROKEN;
-    attr_buf <= { WRONG_ATTR ? ~attr_in : attr_in };
+    attr_buf <= WRONG_ATTR ? ~attr_in : attr_in;
   end
 
 always @(posedge clk)
   if ( signal_oe ) begin
-    data_out <= data_buf;
+    data_out <= UNKNOWN_DATA_OUT ? 'dx : data_buf;
     attr_out <= attr_buf;
   end else begin
     { attr_out, data_out } <= 0;

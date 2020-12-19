@@ -61,6 +61,7 @@ data Broken v x t = Broken
     , -- |lost source endpoint due synthesis
       lostEndpointSource :: Bool
     , wrongAttr :: Bool
+    , unknownDataOut :: Bool
     }
 
 deriving instance (VarValTime v x t) => Show (Broken v x t)
@@ -205,6 +206,7 @@ instance (Time t) => Default (Broken v x t) where
             , lostEndpointTarget = False
             , lostEndpointSource = False
             , wrongAttr = False
+            , unknownDataOut = False
             }
 
 instance Default x => DefaultX (Broken v x t) x
@@ -239,7 +241,7 @@ instance
 
     hardwareInstance
         tag
-        pu@Broken{brokeVerilog, wrongVerilogSimulationValue, wrongAttr}
+        pu@Broken{brokeVerilog, wrongVerilogSimulationValue, wrongAttr, unknownDataOut}
         TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk}
         BrokenPorts{..}
         BrokenIO =
@@ -250,6 +252,7 @@ instance
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .IS_BROKEN( { bool2verilog wrongVerilogSimulationValue } )
                     , .WRONG_ATTR( { bool2verilog wrongAttr } )
+                    , .UNKNOWN_DATA_OUT( { bool2verilog unknownDataOut } )
                     ) { tag }
                 ( .clk( { signalClk } )
 

@@ -45,8 +45,8 @@ tests =
             u2
             [ ("a", Attr (IntX 1) True)
             , ("b", Attr (IntX 2) False)
-            , ("d", Attr (IntX 256) False)
-            , ("e", Attr (IntX 256) False)
+            , ("d", Attr (IntX 258) False)
+            , ("e", Attr (IntX 258) False)
             ]
             [multiply "a" "b" ["c"], multiply "d" "e" ["f"]]
         , luaTestCase
