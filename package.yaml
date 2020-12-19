@@ -144,4 +144,5 @@ tests:
       - tasty-expected-failure
       - tasty-hunit
       - tasty-quickcheck
+      - tasty-rerun
       - tasty-th

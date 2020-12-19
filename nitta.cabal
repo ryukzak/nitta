@@ -241,6 +241,7 @@ test-suite nitta-test
     , tasty-expected-failure
     , tasty-hunit
     , tasty-quickcheck
+    , tasty-rerun
     , tasty-th
     , text
   default-language: Haskell2010

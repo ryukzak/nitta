@@ -30,12 +30,13 @@ import qualified NITTA.Tests
 import qualified NITTA.Utils.CodeFormat.Tests
 import qualified NITTA.Utils.Tests
 import System.Environment (lookupEnv, setEnv)
-import Test.Tasty (defaultMain, testGroup)
+import Test.Tasty (testGroup)
+import Test.Tasty.Ingredients.Rerun
 
 main = do
     qtests <- fromMaybe "10" <$> lookupEnv "TASTY_QUICKCHECK_TESTS"
     setEnv "TASTY_QUICKCHECK_TESTS" qtests
-    defaultMain $
+    defaultMainWithRerun $
         testGroup
             "NITTA"
             [ NITTA.Intermediate.Functions.Accum.Tests.tests
