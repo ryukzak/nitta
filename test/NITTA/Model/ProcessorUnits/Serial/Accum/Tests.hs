@@ -1,4 +1,5 @@
-{- FOURMOLU_DISABLE -}
+{- ORMOLU_DISABLE -}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
@@ -28,7 +29,6 @@ import           NITTA.Model.Tests.Microarchitecture
 import           Test.QuickCheck
 import           Test.Tasty ( testGroup )
 import           Text.InterpolatedString.Perl6 ( qc )
-
 
 tests = testGroup "Accum PU"
     [ nittaCoSimTestCase "simple" march
@@ -71,6 +71,9 @@ tests = testGroup "Accum PU"
     , puCoSimTestCase "as register" accumDef [("a", 99)]
         [ accFromStr "+a = c;"
         ]
+    , puCoSimTestCase "add with overflow" u2 [("a", 100), ("b", 100)]
+        [ accFromStr "+a +b = c;"
+        ]
     , puCoSimTestCase "as add" accumDef [("a", 1), ("b", 2)]
         [ accFromStr "+a +b = c;"
         ]
@@ -108,4 +111,5 @@ tests = testGroup "Accum PU"
     ]
         where
             accumDef = def :: Accum String Int Int
+            u2 = def :: Accum String (Attr (IntX 8)) Int
             fsGen = algGen [packF <$> (arbitrary :: Gen (Acc _ _))]
