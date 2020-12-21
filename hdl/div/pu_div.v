@@ -49,19 +49,24 @@ end
 reg [PIPELINE-1:0] attr_wait;
 reg                comm_attr;
 
+wire [DATA_WIDTH/2-1:0] denom_high_part, zero;
+assign denom_high_part = arg[1][DATA_WIDTH-1:DATA_WIDTH/2-1];
+assign denom_is_zero = arg[1] == 0;
+assign zero = {DATA_WIDTH/2{1'b0}};
+assign denom_out_of_range = !(denom_high_part == zero ^ ~denom_high_part == zero);
+
 always @(posedge clk) begin
     if ( rst ) begin
         attr_wait <= 0;
         comm_attr <= 0;
     end else begin
-        attr_wait[0] <= attr[0] || attr[1] || arg[1] == 0 || arg[1][DATA_WIDTH-1:DATA_WIDTH/2] != 0;
+        attr_wait[0] <= attr[0] || attr[1] || denom_is_zero || denom_out_of_range;
         attr_wait[ PIPELINE-1 : 1 ] <= attr_wait[ PIPELINE-2 : 0];
     end
 end
 
 wire [DATA_WIDTH-1:0]         quotient_result;
 wire [DATA_WIDTH-1:0]         remain_result;
-
 
 
 generate
@@ -90,26 +95,7 @@ generate
     end
 endgenerate
 
-
-reg                  invalid_result;
-reg [DATA_WIDTH-1:0] quotient;
-reg [DATA_WIDTH-1:0] remain;
-
-always @(posedge clk) begin
-    if ( rst ) begin
-        quotient <= 0;
-        remain <= 0;
-        invalid_result <= 0;
-    end else begin
-        quotient <= quotient_result;
-        remain <= remain_result;
-        invalid_result <= attr_wait[ PIPELINE - 1 ];
-    end
-end
-
 assign data_out = signal_oe ? (signal_oe_sel ? remain_result : quotient_result <<< SCALING_FACTOR_POWER) : 0;
-assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INVALID)
-                            | {(ATTR_WIDTH-1){1'b0}}
-                            : 0;
+assign attr_out = { {ATTR_WIDTH-1{1'b0}}, signal_oe ? attr_wait[ PIPELINE - 1 ] : 1'b0 };
 
 endmodule

@@ -86,7 +86,7 @@ class
 
     -- | сonvert a value to Verilog literal with attributes
     attrLiteral :: x -> String
-    attrLiteral x = show (attrWidth x) <> "'dx"
+    attrLiteral x = show (attrWidth x) <> "'d0000"
 
     -- | helper functions to work with values in Verilog (trace and assert)
     verilogHelper :: x -> String
@@ -411,10 +411,11 @@ instance (KnownNat m, KnownNat b) => Val (FX m b) where
     dataWidth _ = fromInteger $ natVal (Proxy :: Proxy b)
 
     rawData (FX x) = fromIntegral x
-    rawAttr x = if isValid x then 1 else 0
+    rawAttr x = if isInvalid x then 1 else 0
     fromRaw x _ = FX x
 
     dataLiteral (FX x) = show x
+    attrLiteral x = show (attrWidth x) <> "'d000" <> show (rawAttr x)
 
     verilogHelper x =
         [qc|
@@ -440,8 +441,8 @@ task assertWithAttr;
     input [256*8-1:0] var; // string
     begin
         $write("%0d:%0d\t", cycle, tick);
-        $write("actual: %.3f\t", fxtor(actualData), actualAttr);
-        $write("expect: %.3f\t", fxtor(expectData), expectAttr);
+        $write("actual: %.3f %d \t", fxtor(actualData), actualAttr);
+        $write("expect: %.3f %d \t", fxtor(expectData), expectAttr);
         $write("var: %0s\t", var);
         if ( actualData !== expectData || actualAttr != expectAttr ) $write("FAIL");
         $display();
