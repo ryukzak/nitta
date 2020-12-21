@@ -1,3 +1,4 @@
+{- FOURMOLU_DISABLE -}
 {-|
 Module      : NITTA.Utils.CodeFormat
 Description : Functions for output code. Examples in Test.CodeBlock.hs

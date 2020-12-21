@@ -1,3 +1,4 @@
+{- FOURMOLU_DISABLE -}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}

@@ -1,3 +1,4 @@
+{- FOURMOLU_DISABLE -}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
@@ -10,7 +11,7 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Serial.Accum.Tests
+module NITTA.Model.ProcessorUnits.Accum.Tests
     ( tests
     ) where
 

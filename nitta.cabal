@@ -68,6 +68,7 @@ library
       NITTA.Model.Problems.Refactor.Types
       NITTA.Model.Problems.Whole
       NITTA.Model.ProcessorUnits
+      NITTA.Model.ProcessorUnits.Accum
       NITTA.Model.ProcessorUnits.Broken
       NITTA.Model.ProcessorUnits.Divider
       NITTA.Model.ProcessorUnits.Fram
@@ -75,9 +76,7 @@ library
       NITTA.Model.ProcessorUnits.IO.SimpleIO
       NITTA.Model.ProcessorUnits.IO.SPI
       NITTA.Model.ProcessorUnits.Multiplier
-      NITTA.Model.ProcessorUnits.Serial.Accum
-      NITTA.Model.ProcessorUnits.Serial.Generic
-      NITTA.Model.ProcessorUnits.Serial.Shift
+      NITTA.Model.ProcessorUnits.Shift
       NITTA.Model.ProcessorUnits.Types
       NITTA.Model.TargetSystem
       NITTA.Model.Types
@@ -202,13 +201,13 @@ test-suite nitta-test
       NITTA.LuaFrontend.Tests.Utils
       NITTA.Model.Problems.Refactor.Accum.Tests
       NITTA.Model.Problems.Refactor.Tests
+      NITTA.Model.ProcessorUnits.Accum.Tests
       NITTA.Model.ProcessorUnits.Broken.Tests
       NITTA.Model.ProcessorUnits.Divider.Tests
       NITTA.Model.ProcessorUnits.Fram.Tests
       NITTA.Model.ProcessorUnits.IO.SPI.Tests
       NITTA.Model.ProcessorUnits.Multiplier.Tests
-      NITTA.Model.ProcessorUnits.Serial.Accum.Tests
-      NITTA.Model.ProcessorUnits.Serial.Shift.Tests
+      NITTA.Model.ProcessorUnits.Shift.Tests
       NITTA.Model.ProcessorUnits.Tests.Utils
       NITTA.Model.Tests.Microarchitecture
       NITTA.Tests

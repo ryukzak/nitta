@@ -1,3 +1,4 @@
+{- FOURMOLU_DISABLE -}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -45,6 +46,7 @@ import qualified Data.Bits as B
 import           Data.Default
 import qualified Data.Map as M
 import           Data.Set ( elems, fromList, union )
+import qualified Data.String.Utils as S
 import           Data.Typeable
 import           NITTA.Intermediate.Functions.Accum
 import           NITTA.Intermediate.Types
@@ -326,36 +328,40 @@ instance ( Var v ) => FunctionSimulation (Constant v x) v x where
 
 
 -- TODO: separete into two different functions
-data ShiftLR v x = ShiftL (I v) (O v)
-                 | ShiftR (I v) (O v)
+
+-- |Functional unit that implements logic shift operations
+data ShiftLR v x = ShiftL Int (I v) (O v)
+                 | ShiftR Int (I v) (O v)
                 deriving ( Typeable, Eq )
 instance ( Show v ) => Show (ShiftLR v x) where
-    show (ShiftL (I k1) (O k2)) = show k1 <> " << 1 = " <> showOut k2
-    show (ShiftR (I k1) (O k2)) = show k1 <> " >> 1 = " <> showOut k2
+    show (ShiftL s (I i) (O o)) = show i <> " << " <> show s <> " = " <> S.join " = " (map show $ elems o)
+    show (ShiftR s (I i) (O o)) = show i <> " >> " <> show s <> " = " <> S.join " = " (map show $ elems o)
 instance ( Show v ) => Label (ShiftLR v x) where label = show
 
-shiftL :: ( Var v, Val x ) => v -> [v] -> F v x
-shiftL a b = packF $ ShiftL (I a) $ O $ fromList b
-shiftR :: ( Var v, Val x ) => v -> [v] -> F v x
-shiftR a b = packF $ ShiftR (I a) $ O $ fromList b
+shiftL :: ( Var v, Val x ) => Int -> v -> [v] -> F v x
+shiftL s i o = packF $ ShiftL s (I i) $ O $ fromList o
+shiftR :: ( Var v, Val x ) => Int -> v -> [v] -> F v x
+shiftR s i o = packF $ ShiftR s (I i) $ O $ fromList o
 
 instance ( Ord v ) => Function (ShiftLR v x) v where
-    outputs (ShiftL i o) = variables i `union` variables o
-    outputs (ShiftR i o) = variables i `union` variables o
+    inputs (ShiftL _ i _) = variables i
+    inputs (ShiftR _ i _) = variables i
+    outputs (ShiftL _ _ o) = variables o
+    outputs (ShiftR _ _ o) = variables o
 instance ( Ord v ) => Patch (ShiftLR v x) (v, v) where
-    patch diff (ShiftL a b) = ShiftL (patch diff a) (patch diff b)
-    patch diff (ShiftR a b) = ShiftR (patch diff a) (patch diff b)
+    patch diff (ShiftL s i o) = ShiftL s (patch diff i) (patch diff o)
+    patch diff (ShiftR s i o) = ShiftR s (patch diff i) (patch diff o)
 instance ( Var v ) => Locks (ShiftLR v x) v where
     locks = inputsLockOutputs
 instance ( Var v, B.Bits x ) => FunctionSimulation (ShiftLR v x) v x where
-    simulate cntx (ShiftL (I v1) (O vs)) = do
-        x <- cntx `getX` v1
-        let x' = x `B.shiftL` 1
-        setZipX cntx vs x'
-    simulate cntx (ShiftR (I v1) (O vs)) = do
-        x <- cntx `getX` v1
-        let x' = x `B.shiftR` 1
-        setZipX cntx vs x'
+    simulate cntx (ShiftL s (I i) (O o)) = do
+        x <- cntx `getX` i
+        let x' = x `B.shiftL` s
+        setZipX cntx o x'
+    simulate cntx (ShiftR s (I i) (O o)) = do
+        x <- cntx `getX` i
+        let x' = x `B.shiftR` s
+        setZipX cntx o x'
 
 
 newtype Send v x = Send (I v) deriving ( Typeable, Eq )

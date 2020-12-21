@@ -1,3 +1,4 @@
+{- FOURMOLU_DISABLE -}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -25,8 +26,8 @@ import qualified NITTA.Model.ProcessorUnits.Divider.Tests
 import qualified NITTA.Model.ProcessorUnits.Fram.Tests
 import qualified NITTA.Model.ProcessorUnits.IO.SPI.Tests
 import qualified NITTA.Model.ProcessorUnits.Multiplier.Tests
-import qualified NITTA.Model.ProcessorUnits.Serial.Accum.Tests
-import qualified NITTA.Model.ProcessorUnits.Serial.Shift.Tests
+import qualified NITTA.Model.ProcessorUnits.Accum.Tests
+import qualified NITTA.Model.ProcessorUnits.Shift.Tests
 import qualified NITTA.Tests
 import qualified NITTA.Utils.CodeFormat.Tests
 import qualified NITTA.Utils.Tests
@@ -48,8 +49,8 @@ main = do
         , NITTA.Model.ProcessorUnits.Fram.Tests.tests
         , NITTA.Model.ProcessorUnits.IO.SPI.Tests.tests
         , NITTA.Model.ProcessorUnits.Multiplier.Tests.tests
-        , NITTA.Model.ProcessorUnits.Serial.Accum.Tests.tests
-        , NITTA.Model.ProcessorUnits.Serial.Shift.Tests.tests
+        , NITTA.Model.ProcessorUnits.Accum.Tests.tests
+        , NITTA.Model.ProcessorUnits.Shift.Tests.tests
         , NITTA.Tests.tests
         , NITTA.Utils.CodeFormat.Tests.tests
         , NITTA.Utils.Tests.tests

@@ -1,3 +1,4 @@
+{- FOURMOLU_DISABLE -}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -12,14 +13,14 @@
 {-# LANGUAGE TypeFamilies #-}
 
 {-|
-Module      : NITTA.Model.ProcessorUnits.Serial.Accum
+Module      : NITTA.Model.ProcessorUnits.Accum
 Description : Accumulator processor unit implementation
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.ProcessorUnits.Serial.Accum
+module NITTA.Model.ProcessorUnits.Accum
   ( Accum
   , Ports(..), IOPorts(..)
   ) where
