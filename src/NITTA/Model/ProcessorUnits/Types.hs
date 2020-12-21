@@ -267,7 +267,7 @@ class UnambiguouslyDecode pu where
 data SignalValue
     = Undef     -- ^undefined by design (`x`)
     | Bool Bool -- ^boolean (`0` or `1`)
-    | Unknown   -- ^unknown value (`x`) by data colision
+    | BrokenSignal -- ^broken value (`x`) by data colision
     deriving ( Eq )
 
 instance Default SignalValue where
@@ -277,11 +277,11 @@ instance Show SignalValue where
     show Undef        = "x"
     show (Bool True)  = "1"
     show (Bool False) = "0"
-    show Unknown      = "B"
+    show BrokenSignal = "B"
 
 Undef +++ v = v
 v +++ Undef = v
-_ +++ _ = Unknown
+_ +++ _ = BrokenSignal
 
 
 ------------------------------------------------------------

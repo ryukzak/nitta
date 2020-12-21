@@ -21,15 +21,19 @@ module pu_shift
   , output reg  [ATTR_WIDTH-1:0] attr_out
   );
 
-wire n = signal_step ? 8 : 1;
-
 reg signed [DATA_WIDTH-1:0] data;
 reg [ATTR_WIDTH-1:0] attr;
 always @(posedge clk) begin
     if ( signal_init ) { attr, data } <= { attr_in, data_in };
     else if ( signal_work ) begin
-      if ( signal_direction ) data <= signal_mode ? data <<< n : data << n;
-      else                    data <= signal_mode ? data >>> n : data >> n;
+	    if ( signal_step ) begin
+	      if ( signal_direction ) data <= signal_mode ? data <<< 8 : data << 8;
+	      else                    data <= signal_mode ? data >>> 8 : data >> 8;
+	    end
+	    else begin
+	      if ( signal_direction ) data <= signal_mode ? data <<< 1 : data << 1;
+	      else                    data <= signal_mode ? data >>> 1 : data >> 1;
+            end
     end
   end
 
