@@ -118,13 +118,12 @@ finitePUSynthesisProp name pu0 fsGen
         (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
         return $ isProcessComplete pu fs
             && null (endpointOptions pu)
-            || trace (incompleteProcessMsg pu fs) False
 
 isProcessComplete pu fs = unionsMap variables fs == processedVars pu
 
 incompleteProcessMsg pu fs
     = "expected: " <> show (elems $ unionsMap variables fs)
-    <> "actual: " <> show (elems $ processedVars pu)
+    <> " actual: " <> show (elems $ processedVars pu)
 
 processedVars pu = unionsMap variables $ getEndpoints $ process pu
 

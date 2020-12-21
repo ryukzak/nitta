@@ -38,7 +38,7 @@ tests =
         "Broken PU and negative tests"
         [ testGroup
             "positive tests"
-            [ puCoSimTestCase "invalid value" u [("a", 42)] [brokenReg "a" ["b"]]
+            [ puCoSimTestCase "broken reg" u [("a", 42)] [brokenReg "a" ["b"]]
             , puCoSimProp "puCoSimProp" u fsGen
             , nittaCoSimTestCase "nittaCoSimTestCase" (maBroken u) alg
             , finitePUSynthesisProp "finitePUSynthesisProp" u fsGen
