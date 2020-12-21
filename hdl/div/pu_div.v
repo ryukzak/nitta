@@ -54,7 +54,7 @@ always @(posedge clk) begin
         attr_wait <= 0;
         comm_attr <= 0;
     end else begin
-        attr_wait[0] <= attr[0] || attr[1] || arg[1] == 0;
+        attr_wait[0] <= attr[0] || attr[1] || arg[1] == 0 || arg[1][DATA_WIDTH-1:DATA_WIDTH/2] != 0;
         attr_wait[ PIPELINE-1 : 1 ] <= attr_wait[ PIPELINE-2 : 0];
     end
 end
@@ -109,7 +109,7 @@ end
 
 assign data_out = signal_oe ? (signal_oe_sel ? remain_result : quotient_result <<< SCALING_FACTOR_POWER) : 0;
 assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INVALID)
-                              | {(ATTR_WIDTH-1){1'b0}}
+                            | {(ATTR_WIDTH-1){1'b0}}
                             : 0;
 
 endmodule

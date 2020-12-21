@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -27,6 +28,8 @@ module NITTA.Intermediate.Value (
     FixedPointCompatible (..),
     scalingFactor,
     minMaxRaw,
+    minMaxRaw',
+    invalidRaw,
 
     -- * Compositional type
     Attr (..),
@@ -75,6 +78,8 @@ class
 
     -- | Serialize value and attributes into binary form inside Integer type
     dataSerialize :: x -> Integer
+
+    dataDeserialize :: Integer -> x
 
     attrSerialize :: x -> Integer
     attrSerialize _ = 0
@@ -164,7 +169,10 @@ endtask // assertWithAttr
 
 minMaxRaw x =
     let n = dataWidth x
-        maxRaw = 2 ^ (n - 1) - 1
+     in minMaxRaw' n
+
+minMaxRaw' n =
+    let maxRaw = 2 ^ (n - 1) - 1
         minRaw = negate (maxRaw + 1)
      in (minRaw, maxRaw)
 
@@ -174,6 +182,8 @@ zeroOnOverflow x
       , minRaw <= raw && raw <= maxRaw =
         x
     | otherwise = 0
+
+invalidRaw x = snd (minMaxRaw x) + 1
 
 class (Default x) => DefaultX u x | u -> x where
     defX :: u -> x
@@ -235,10 +245,14 @@ instance (Num x, Validity x) => Num (Attr x) where
 instance (Ord x, Real x, Validity x) => Real (Attr x) where
     toRational Attr{value} = toRational value
 
-instance (Integral x, Validity x) => Integral (Attr x) where
+instance (Integral x, Validity x, Val x) => Integral (Attr x) where
     toInteger Attr{value} = toInteger value
     Attr{value = a} `quotRem` Attr{value = b} =
-        let (a', b') = a `quotRem` b
+        let (minB, maxB) = minMaxRaw (dataWidth b `shiftR` 1)
+            (a', b') =
+                if b == 0 || minB <= b && b <= maxB
+                    then (dataDeserialize $ invalidRaw b, dataDeserialize $ invalidRaw b)
+                    else a `quotRem` b
          in (setInvalidAttr $ pure a', setInvalidAttr $ pure b')
 
 instance (Bits x, Validity x) => Bits (Attr x) where
@@ -259,6 +273,7 @@ instance (Val x, Integral x) => Val (Attr x) where
     dataWidth Attr{value} = dataWidth value
 
     dataSerialize = toInteger
+    dataDeserialize = pure . dataDeserialize
     attrSerialize Attr{invalid = True} = 1
     attrSerialize Attr{invalid = False} = 0
 
@@ -281,6 +296,7 @@ instance Val Int where
     dataWidth x = finiteBitSize x
 
     dataSerialize = fromIntegral
+    dataDeserialize = fromEnum
 
     dataLiteral = show
 
@@ -344,6 +360,7 @@ instance (KnownNat w) => Val (IntX w) where
     dataWidth _ = fromInteger $ natVal (Proxy :: Proxy w)
 
     dataSerialize (IntX x) = fromIntegral x
+    dataDeserialize = IntX
 
     dataLiteral (IntX x) = show x
 
@@ -422,6 +439,7 @@ instance (KnownNat m, KnownNat b) => Val (FX m b) where
     dataWidth _ = fromInteger $ natVal (Proxy :: Proxy b)
 
     dataSerialize (FX x) = fromIntegral x
+    dataDeserialize = FX
 
     dataLiteral (FX x) = show x
 
