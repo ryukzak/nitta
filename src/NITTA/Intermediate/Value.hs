@@ -92,33 +92,6 @@ class
     verilogHelper :: x -> String
     verilogHelper x =
         [qc|
-task trace;
-    input integer cycle;
-    input integer tick;
-    input [{ dataWidth x }-1:0] actual;
-    begin
-        $write("%0d:%0d\t", cycle, tick);
-        $write("actual: %d\t", actual);
-        $display();
-    end
-endtask // trace
-
-task assert;
-    input integer cycle;
-    input integer tick;
-    input [{ dataWidth x }-1:0] actual;
-    input [{ dataWidth x }-1:0] expect;
-    input [256*8-1:0] var; // string
-    begin
-        $write("%0d:%0d\t", cycle, tick);
-        $write("actual: %d\t", actual);
-        $write("expect: %d\t", expect);
-        $write("var: %0s\t", var);
-        if ( !( actual === expect ) ) $write("FAIL");
-        $display();
-    end
-endtask // assert
-
 task traceWithAttr;
     input integer cycle;
     input integer tick;
@@ -445,33 +418,6 @@ instance (KnownNat m, KnownNat b) => Val (FX m b) where
 
     verilogHelper x =
         [qc|
-task trace;
-    input integer cycle;
-    input integer tick;
-    input [{ dataWidth x }-1:0] actual;
-    begin
-        $write("%0d:%0d\t", cycle, tick);
-        $write("actual: %.3f\t", fxtor(actual));
-        $display();
-    end
-endtask // trace
-
-task assert;
-    input integer cycle;
-    input integer tick;
-    input [{ dataWidth x }-1:0] actual;
-    input [{ dataWidth x }-1:0] expect;
-    input [256*8-1:0] var; // string
-    begin
-        $write("%0d:%0d\t", cycle, tick);
-        $write("actual: %.3f\t", fxtor(actual));
-        $write("expect: %.3f\t", fxtor(expect));
-        $write("var: %0s\t", var);
-        if ( !( actual === expect ) ) $write("FAIL");
-        $display();
-    end
-endtask // assert
-
 task traceWithAttr;
     input integer cycle;
     input integer tick;
