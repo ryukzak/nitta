@@ -161,20 +161,20 @@ instance
                             (0, _) ->
                                 scheduleInstruction
                                     (inf epAt + 1 ... sup epAt + numByteShiftMod)
-                                    (Work sRight False Logic)
+                                    Work{shiftRight = sRight, stepByte = False, shiftType = Logic}
                             (_, 0) ->
                                 scheduleInstruction
                                     (startByteShift ... endByteShift)
-                                    (Work sRight True Logic)
+                                    Work{shiftRight = sRight, stepByte = True, shiftType = Logic}
                             _ ->
                                 do
                                     _ <-
                                         scheduleInstruction
                                             (startByteShift ... endByteShift)
-                                            (Work sRight True Logic)
+                                            Work{shiftRight = sRight, stepByte = True, shiftType = Logic}
                                     scheduleInstruction
                                         (endByteShift + 1 ... endByteShift + numByteShiftMod)
-                                        (Work sRight False Logic)
+                                        Work{shiftRight = sRight, stepByte = False, shiftType = Logic}
              in pu
                     { process_ = process_'
                     , target = Nothing
@@ -219,7 +219,11 @@ data Mode = Logic | Arithmetic deriving (Show, Eq)
 instance Controllable (Shift v x t) where
     data Instruction (Shift v x t)
         = Init
-        | Work Bool Bool Mode
+        | Work
+            { shiftRight :: Bool
+            , stepByte :: Bool
+            , shiftType :: Mode
+            }
         | Out
         deriving (Show)
 
