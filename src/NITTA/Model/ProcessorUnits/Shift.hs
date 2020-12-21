@@ -1,4 +1,3 @@
-{- ORMOLU_ENABLE -}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
