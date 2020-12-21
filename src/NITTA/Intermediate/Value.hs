@@ -10,14 +10,10 @@
 
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
--- TODO: instance Bounded (IntX w)
--- TODO: instance Bounded (FX m b w)
--- TODO: instance Arbitrary (IntX w), Arbitrary (FX m b w), validity
-
 -- |
 -- Module      : NITTA.Intermediate.Value
--- Description : Transferable over nets values.
--- Copyright   : (c) Aleksandr Penskoi, 2019
+-- Description : Processed value representation
+-- Copyright   : (c) Aleksandr Penskoi, 2020
 -- License     : BSD3
 -- Maintainer  : aleksandr.penskoi@gmail.com
 -- Stability   : experimental
@@ -28,8 +24,7 @@ module NITTA.Intermediate.Value (
     FixedPointCompatible (..),
     scalingFactor,
     minMaxRaw,
-    minMaxRaw',
-    invalidRaw,
+    invalidValue,
 
     -- * Compositional type
     Attr (..),
@@ -54,7 +49,7 @@ import Text.InterpolatedString.Perl6 (qc)
 import Text.Printf
 import Text.Regex
 
--- | Type class for Value types.
+-- | Type class for representation of processing values. A value should include two parts: data and attribute.
 class
     ( Typeable x
     , Show x
@@ -70,27 +65,30 @@ class
     ) =>
     Val x
     where
-    -- | Data bus width.
+    -- | data bus width
     dataWidth :: x -> Int
 
+    -- | attribute bus width
     attrWidth :: x -> Int
     attrWidth _ = 4
 
-    -- | Serialize value and attributes into binary form inside Integer type
-    dataSerialize :: x -> Integer
+    -- | raw representation of data (@Integer@)
+    rawData :: x -> Integer
 
-    dataDeserialize :: Integer -> x
+    -- | raw representation of attributes (@Integer@)
+    rawAttr :: x -> Integer
 
-    attrSerialize :: x -> Integer
-    attrSerialize _ = 0
+    -- | construct a value from raw data and attributes
+    fromRaw :: Integer -> Integer -> x
 
-    -- | Convert value to applicable for Verilog literal
+    -- | сonvert a value to Verilog literal with data
     dataLiteral :: x -> String
 
+    -- | сonvert a value to Verilog literal with attributes
     attrLiteral :: x -> String
     attrLiteral x = show (attrWidth x) <> "'dx"
 
-    -- | Helper functions to work with values in verilog (trace and assert)
+    -- | helper functions to work with values in Verilog (trace and assert)
     verilogHelper :: x -> String
     verilogHelper x =
         [qc|
@@ -167,6 +165,7 @@ endtask // assertWithAttr
                 , "var: ([^ \t\n]+)"
                 ]
 
+-- | Minimal and maximal raw value.
 minMaxRaw x =
     let n = dataWidth x
      in minMaxRaw' n
@@ -176,12 +175,8 @@ minMaxRaw' n =
         minRaw = negate (maxRaw + 1)
      in (minRaw, maxRaw)
 
-zeroOnOverflow x
-    | let raw = toInteger x
-          (minRaw, maxRaw) = minMaxRaw x
-      , minRaw <= raw && raw <= maxRaw =
-        x
-    | otherwise = 0
+-- | Generate the invalid value of a specific type.
+invalidValue x = fromRaw (invalidRaw x) def
 
 invalidRaw x = snd (minMaxRaw x) + 1
 
@@ -197,7 +192,7 @@ class FixedPointCompatible a where
 
 scalingFactor x = 2 ** fromIntegral (scalingFactorPower x)
 
--- | All values with attributes
+-- | All values with attributes.
 data Attr x = Attr {value :: x, invalid :: Bool} deriving (Eq, Ord)
 
 instance (Validity x) => Validity (Attr x) where
@@ -251,7 +246,7 @@ instance (Integral x, Validity x, Val x) => Integral (Attr x) where
         let (minB, maxB) = minMaxRaw (dataWidth b `shiftR` 1)
             (a', b') =
                 if b == 0 || minB <= b && b <= maxB
-                    then (dataDeserialize $ invalidRaw b, dataDeserialize $ invalidRaw b)
+                    then (fromRaw (invalidRaw b) def, fromRaw (invalidRaw b) def)
                     else a `quotRem` b
          in (setInvalidAttr $ pure a', setInvalidAttr $ pure b')
 
@@ -272,10 +267,11 @@ instance (Bits x, Validity x) => Bits (Attr x) where
 instance (Val x, Integral x) => Val (Attr x) where
     dataWidth Attr{value} = dataWidth value
 
-    dataSerialize = toInteger
-    dataDeserialize = pure . dataDeserialize
-    attrSerialize Attr{invalid = True} = 1
-    attrSerialize Attr{invalid = False} = 0
+    rawData = toInteger
+    rawAttr Attr{invalid = True} = 1
+    rawAttr Attr{invalid = False} = 0
+
+    fromRaw x a = setInvalidAttr $ pure $ fromRaw x a
 
     dataLiteral Attr{value, invalid = True} = show (dataWidth value) <> "'dx"
     dataLiteral Attr{value} = dataLiteral value
@@ -295,8 +291,9 @@ instance FixedPointCompatible Int where
 instance Val Int where
     dataWidth x = finiteBitSize x
 
-    dataSerialize = fromIntegral
-    dataDeserialize = fromEnum
+    rawData x = fromIntegral x
+    rawAttr _ = 0
+    fromRaw x _ = fromEnum x
 
     dataLiteral = show
 
@@ -359,8 +356,10 @@ instance Bits (IntX w) where
 instance (KnownNat w) => Val (IntX w) where
     dataWidth _ = fromInteger $ natVal (Proxy :: Proxy w)
 
-    dataSerialize (IntX x) = fromIntegral x
-    dataDeserialize = IntX
+    rawData (IntX x) = fromIntegral x
+    rawAttr x = if isInvalid x then 1 else 0
+
+    fromRaw x _ = IntX x
 
     dataLiteral (IntX x) = show x
 
@@ -407,7 +406,7 @@ instance (KnownNat m, KnownNat b) => Enum (FX m b) where
     fromEnum t@(FX x) = truncate (fromIntegral x / scalingFactor t :: Double)
 
 instance (KnownNat m, KnownNat b) => Num (FX m b) where
-    (FX a) + (FX b) = zeroOnOverflow $ FX (a + b)
+    (FX a) + (FX b) = FX (a + b)
     t@(FX a) * (FX b) = FX ((a * b) `shiftR` fromInteger (scalingFactorPower t))
     abs (FX a) = FX $ abs a
     signum (FX a) = fromInteger $ signum a
@@ -438,8 +437,9 @@ instance (KnownNat m, KnownNat b) => Bits (FX m b) where
 instance (KnownNat m, KnownNat b) => Val (FX m b) where
     dataWidth _ = fromInteger $ natVal (Proxy :: Proxy b)
 
-    dataSerialize (FX x) = fromIntegral x
-    dataDeserialize = FX
+    rawData (FX x) = fromIntegral x
+    rawAttr x = if isValid x then 1 else 0
+    fromRaw x _ = FX x
 
     dataLiteral (FX x) = show x
 
