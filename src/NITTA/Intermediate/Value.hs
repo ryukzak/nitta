@@ -223,9 +223,9 @@ instance (Ord x, Real x, Validity x) => Real (Attr x) where
 instance (Integral x, Validity x, Val x) => Integral (Attr x) where
     toInteger Attr{value} = toInteger value
     Attr{value = a} `quotRem` Attr{value = b} =
-        let (minB, maxB) = minMaxRaw (dataWidth b `shiftR` 1)
+        let (minB, maxB) = minMaxRaw' (dataWidth b `shiftR` 1)
             (a', b') =
-                if b == 0 || minB <= b && b <= maxB
+                if b == 0 || b < minB || maxB < b
                     then (fromRaw (invalidRaw b) def, fromRaw (invalidRaw b) def)
                     else a `quotRem` b
          in (setInvalidAttr $ pure a', setInvalidAttr $ pure b')
