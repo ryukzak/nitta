@@ -106,7 +106,7 @@ tests =
             -- , testProperty "coSimulation" $ fmap (coSimulation "prop_simulation_divider") $ initialCycleCntxGen =<< dividerGen
         ]
     where
-        u2 = def :: Divider String (Attr (IntX 8)) Int
+        u2 = def :: Divider String (Attr (IntX 16)) Int
 
 -- where
 -- _gen = processAlgOnEndpointGen (divider 4 True :: Divider String Int Int)

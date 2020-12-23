@@ -153,6 +153,13 @@ invalidValue x = fromRaw (invalidRaw x) def
 
 invalidRaw x = snd (minMaxRaw x) + 1
 
+crop x
+    | abs x == x = x .&. valueMask x
+    | otherwise = x .|. complement (valueMask x)
+
+valueMask :: Val x => x -> x
+valueMask x = fromRaw (setBit (0 :: Integer) (dataWidth x - 1) - 1) 0
+
 class (Default x) => DefaultX u x | u -> x where
     defX :: u -> x
     defX _ = def
@@ -311,13 +318,13 @@ instance Integral (IntX w) where
         let (a', b') = a `quotRem` b
          in (IntX a', IntX b')
 
-instance Bits (IntX w) where
+instance (KnownNat w) => Bits (IntX w) where
     (IntX a) .&. (IntX b) = IntX (a .&. b)
     (IntX a) .|. (IntX b) = IntX (a .|. b)
     (IntX a) `xor` (IntX b) = IntX (a `xor` b)
     complement (IntX a) = IntX $ complement a
-    shift (IntX a) i = IntX $ shift a i
-    rotate (IntX a) i = IntX $ rotate a i
+    shift (IntX a) i = crop $ IntX $ shift a i
+    rotate (IntX a) i = crop $ IntX $ rotate a i
 
     bitSize (IntX a) = fromMaybe undefined $ bitSizeMaybe a
     bitSizeMaybe (IntX a) = bitSizeMaybe a
@@ -398,8 +405,8 @@ instance (KnownNat m, KnownNat b) => Bits (FX m b) where
     (FX a) .|. (FX b) = FX (a .|. b)
     (FX a) `xor` (FX b) = FX (a `xor` b)
     complement (FX a) = FX $ complement a
-    shift (FX a) i = FX $ shift a i
-    rotate (FX a) i = FX $ rotate a i
+    shift (FX a) i = crop $ FX $ shift a i
+    rotate (FX a) i = crop $ FX $ rotate a i
     bitSize = dataWidth
     bitSizeMaybe = Just . dataWidth
     isSigned (FX a) = isSigned a

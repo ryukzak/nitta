@@ -27,6 +27,7 @@ module NITTA.Model.Tests.Microarchitecture
     , runTargetSynthesisWithUniqName
     , microarch, IOUnit(..)
     , pInt, pIntX32, pIntX48, pIntX64, pIntX128, pFX32_32, pFX22_32, pFX42_64
+    , pAttrIntX32
     ) where
 
 import           Control.Monad ( void )
@@ -48,6 +49,7 @@ import           Test.Tasty.HUnit
 {-# ANN module "HLint: ignore Reduce duplication" #-}
 
 pInt = Proxy :: Proxy Int
+pAttrIntX32 = Proxy :: Proxy (Attr (IntX 32))
 pIntX32 = Proxy :: Proxy (IntX 32)
 pIntX48 = Proxy :: Proxy (IntX 48)
 pIntX64 = Proxy :: Proxy (IntX 64)
