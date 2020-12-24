@@ -56,6 +56,7 @@ class
     , Read x
     , PrintfArg x
     , Default x
+    , Integral x
     , Enum x
     , Eq x
     , Num x
@@ -125,16 +126,14 @@ task assertWithAttr;
 endtask // assertWithAttr
 |]
 
-    -- FIXME:
-
     -- | RE for extraction assertion data from a testbench log
     verilogAssertRE :: x -> Regex
     verilogAssertRE _ =
         mkRegex $
             concat
-                [ "([[:digit:]]+):([[:digit:]]+)\t"
-                , "actual: (-?[[:digit:]]+)\t"
-                , "expect: (-?[[:digit:]]+)\t"
+                [ "([[:digit:]]+):([[:digit:]]+)[\t ]+"
+                , "actual:[\t ]+(-?[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+"
+                , "expect:[\t ]+(-?[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+"
                 , "var: ([^ \t\n]+)"
                 ]
 
@@ -257,6 +256,9 @@ instance (Val x, Integral x) => Val (Attr x) where
     dataLiteral Attr{value} = dataLiteral value
     attrLiteral x@Attr{invalid} =
         show (attrWidth x) <> "'b000" <> if invalid then "1" else "0"
+
+    verilogHelper Attr{value} = verilogHelper value
+    verilogAssertRE Attr{value} = verilogAssertRE value
 
 instance (FixedPointCompatible x) => FixedPointCompatible (Attr x) where
     scalingFactorPower Attr{value} = scalingFactorPower value
@@ -463,13 +465,12 @@ function real fxtor(input integer x);
 endfunction // fxtor
 |]
 
-    -- FIXME:
     verilogAssertRE _ =
         mkRegex $
             concat
-                [ "([[:digit:]]+):([[:digit:]]+)\t"
-                , "actual: (-?[[:digit:]]+\\.[[:digit:]]+)\t"
-                , "expect: (-?[[:digit:]]+\\.[[:digit:]]+)\t"
+                [ "([[:digit:]]+):([[:digit:]]+)[\t ]"
+                , "actual:[\t ](-?[[:digit:]]+\\.[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+"
+                , "expect:[\t ](-?[[:digit:]]+\\.[[:digit:]]+)[\t ]+[x[:digit:]]+[\t ]+"
                 , "var: ([^ \t\n]+)"
                 ]
 

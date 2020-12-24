@@ -292,7 +292,7 @@ instance (Show v) => Show (Division v x) where
         let q = show k1 <> " / " <> show k2 <> " = " <> showOut k3
             r = show k1 <> " mod " <> show k2 <> " = " <> showOut k4
          in q <> "; " <> r
-division :: (Var v, Val x, Integral x) => v -> v -> [v] -> [v] -> F v x
+division :: (Var v, Val x) => v -> v -> [v] -> [v] -> F v x
 division d n q r =
     packF $
         Division
