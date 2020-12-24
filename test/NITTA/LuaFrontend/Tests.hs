@@ -315,6 +315,11 @@ test_examples =
         "teacup io drop"
         $(embedStringFile "examples/teacup.lua")
     , typedLuaTestCase
+        (microarch ASync SlaveSPI)
+        pAttrFX22_32
+        "teacup io drop with attr FX"
+        $(embedStringFile "examples/teacup.lua")
+    , typedLuaTestCase
         (microarch Sync SlaveSPI)
         pFX22_32
         "fibonacci io wait"

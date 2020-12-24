@@ -247,7 +247,7 @@ instance (Bits x, Validity x) => Bits (Attr x) where
 instance (Val x, Integral x) => Val (Attr x) where
     dataWidth Attr{value} = dataWidth value
 
-    rawData = toInteger
+    rawData Attr{value} = rawData value
     rawAttr Attr{invalid = True} = 1
     rawAttr Attr{invalid = False} = 0
 
@@ -417,7 +417,7 @@ instance (KnownNat m, KnownNat b) => Bits (FX m b) where
 instance (KnownNat m, KnownNat b) => Val (FX m b) where
     dataWidth _ = fromInteger $ natVal (Proxy :: Proxy b)
 
-    rawData (FX x) = fromIntegral x
+    rawData (FX x) = x
     rawAttr x = if isInvalid x then 1 else 0
     fromRaw x _ = FX x
 
