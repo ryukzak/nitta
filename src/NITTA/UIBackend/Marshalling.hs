@@ -547,6 +547,9 @@ instance ToJSONKey (FX m b) where
 instance ToJSON (FX m b) where
     toJSON (FX x) = toJSON $ show x
 
+instance (ToJSON x) => ToJSON (Attr x) where
+    toJSON Attr{value} = toJSON value
+
 -- *System
 newtype IntervalView = IntervalView String
     deriving (Generic)

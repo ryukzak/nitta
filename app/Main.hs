@@ -86,7 +86,7 @@ main = do
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
                 -- data for sin_ident
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
-                ma = (microarch io_sync :: BusNetwork String String (FX m b) Int)
+                ma = (microarch io_sync :: BusNetwork String String (Attr (FX m b)) Int)
 
             when verbose $ putStr $ "> will trace: \n" ++ unlines (map ((">  " ++) . show) frTrace)
 
