@@ -35,6 +35,7 @@ module NITTA.Model.Tests.Microarchitecture (
     pFX22_32,
     pFX42_64,
     pAttrIntX32,
+    pAttrFX22_32,
 ) where
 
 import Control.Monad (void)
@@ -57,6 +58,7 @@ import Test.Tasty.HUnit
 
 pInt = Proxy :: Proxy Int
 pAttrIntX32 = Proxy :: Proxy (Attr (IntX 32))
+pAttrFX22_32 = Proxy :: Proxy (Attr (FX 22 32))
 pIntX32 = Proxy :: Proxy (IntX 32)
 pIntX48 = Proxy :: Proxy (IntX 48)
 pIntX64 = Proxy :: Proxy (IntX 64)

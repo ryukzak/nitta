@@ -62,8 +62,7 @@ test_multiple_receives =
                     }
     ]
 
--- TODO: proof test work
-test_different_type =
+test_SPI_slave =
     [ typedIOLuaTestCase
         (microarch Sync SlaveSPI)
         pIntX32
@@ -89,6 +88,21 @@ test_different_type =
         received
         alg
     , typedIOLuaTestCase
+        (microarch Sync SlaveSPI)
+        pAttrIntX32
+        "pAttrIntX32 IO by sync slave"
+        received
+        alg
+    , typedIOLuaTestCase
+        (microarch Sync SlaveSPI)
+        pAttrFX22_32
+        "pAttrFX22_32 IO by sync slave"
+        received
+        alg
+    ]
+
+test_SPI_master =
+    [ typedIOLuaTestCase
         (microarch Sync MasterSPI)
         pIntX32
         "pIntX32 IO by sync master"
@@ -113,13 +127,14 @@ test_different_type =
         received
         alg
     ]
-    where
-        received =
-            [ ("a:0", [10 .. 15])
-            , ("b:0", [20 .. 25])
-            ]
-        alg =
-            [qc|
+
+received =
+    [ ("a:0", [10 .. 15])
+    , ("b:0", [20 .. 25])
+    ]
+
+alg =
+    [qc|
             function sum()
                 local a = receive()
                 local b = receive()
