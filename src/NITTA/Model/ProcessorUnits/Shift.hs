@@ -24,7 +24,6 @@ module NITTA.Model.ProcessorUnits.Shift (
 ) where
 
 import Control.Monad (when)
-import Data.Bits (finiteBitSize)
 import Data.Default
 import Data.List (find, (\\))
 import Data.Set (elems, fromList, member)
@@ -288,8 +287,8 @@ instance (Val x) => TargetSystemComponent (Shift v x t) where
         codeBlock
             [qc|
             pu_shift #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( { show parameterAttrWidth } )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) { tag }
                 ( .clk( { signalClk } )
                 , .signal_work( { signal work } ), .signal_direction( { signal direction } )

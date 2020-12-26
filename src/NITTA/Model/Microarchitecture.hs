@@ -57,8 +57,7 @@ puEnv tag =
         , inoutPort        = inoutPortTag
         , unitEnv =
             ProcessUnitEnv
-                { parameterAttrWidth = InlineParam "ATTR_WIDTH"
-                , dataIn             = "data_bus"
+                { dataIn             = "data_bus"
                 , dataOut            = tag ++ "_data_out"
                 , attrIn             = "attr_bus"
                 , attrOut            = tag ++ "_attr_out"

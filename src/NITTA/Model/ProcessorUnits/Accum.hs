@@ -26,7 +26,6 @@ module NITTA.Model.ProcessorUnits.Accum
   ) where
 
 import           Control.Monad ( when )
-import           Data.Bits ( finiteBitSize )
 import           Data.Default
 import           Data.List ( find, partition, (\\) )
 import           Data.Maybe ( fromMaybe )
@@ -291,8 +290,8 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Accum v x t) where
     hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } AccumPorts{..} AccumIO
         = codeBlock [qc|
             pu_accum #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( { show parameterAttrWidth } )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) { tag }
                 ( .clk( { signalClk } )
                 , .rst( { signalRst } )
@@ -342,7 +341,6 @@ instance ( VarValTime v x t ) => Testable (Accum v x t) v x where
                     , tbcIOPorts=AccumIO
                     , tbcSignalConnect=signal
                     , tbcCtrl=showMicrocode
-                    , tbDataBusWidth=finiteBitSize (def :: x)
                     }
         in Immediate (moduleName pName pUnit ++ "_tb.v") $ snippetTestBench prj conf
 

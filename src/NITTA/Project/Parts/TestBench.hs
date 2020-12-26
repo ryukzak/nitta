@@ -5,6 +5,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-|
@@ -137,11 +138,10 @@ data SnippetTestBenchConf m
         , tbcIOPorts       :: IOPorts m
         , tbcSignalConnect :: SignalTag -> String
         , tbcCtrl          :: Microcode m -> String
-        , tbDataBusWidth   :: Int
         }
 
 -- |Function for testBench PU test
-snippetTestBench ::
+snippetTestBench :: forall m v x t.
     ( VarValTime v x t
     , Show (EndpointRole v)
     , WithFunctions m (F v x)
@@ -150,7 +150,7 @@ snippetTestBench ::
     ) => Project m v x -> SnippetTestBenchConf m -> String
 snippetTestBench
         Project{ pName, pUnit, pTestCntx=Cntx{ cntxProcess } }
-        SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcIOPorts, tbcCtrl, tbDataBusWidth }
+        SnippetTestBenchConf{ tbcSignals, tbcSignalConnect, tbcPorts, tbcIOPorts, tbcCtrl }
     = let
         cycleCntx:_ = cntxProcess
         name = moduleName pName pUnit
@@ -168,8 +168,7 @@ snippetTestBench
                 , outputPort=undefined
                 , inoutPort=undefined
                 , unitEnv=ProcessUnitEnv
-                    { parameterAttrWidth=IntParam 4
-                    , dataIn="data_in"
+                    { dataIn="data_in"
                     , attrIn="attr_in"
                     , dataOut="data_out"
                     , attrOut="attr_out"
@@ -179,32 +178,34 @@ snippetTestBench
             tbcPorts
             tbcIOPorts
 
-        controlSignals = S.join "\n" $ map (\t -> tbcCtrl (microcodeAt pUnit t) ++ [qc|data_in <= { targetVal t }; attr_in <= 0; @(posedge clk);|]) [ 0 .. nextTick + 1 ]
+        controlSignals = S.join "\n" $ map
+            ( \t -> let x = targetVal t
+                in tbcCtrl (microcodeAt pUnit t)
+                    <> [qc| data_in <= { dataLiteral x }; attr_in <= { attrLiteral x };|]
+                    <> " @(posedge clk);" )
+            [ 0 .. nextTick + 1 ]
         targetVal t
             | Just (Target v) <- endpointAt t p
-            = either error id $ getX cycleCntx v
+            = getCntx cycleCntx v
             | otherwise = 0
         busCheck = concatMap busCheck' [ 0 .. nextTick + 1 ]
             where
                 busCheck' t
                     | Just (Source vs) <- endpointAt t p
                     , let v = oneOf vs
-                    , let x = either error id $ getX cycleCntx v
+                    , let x = getCntx cycleCntx v
                     = codeBlock [qc|
-                        @(posedge clk);
-                            $write( "data_out: %d == %d    (%s)", data_out, { x }, { v } );
-                            if ( !( data_out === { x } ) ) $display(" FAIL");
-                            else $display();
+                        @(posedge clk); assertWithAttr(0, 0, data_out, attr_out, { dataLiteral x }, { attrLiteral x }, { v });
                         |]
                     | otherwise
-                    = codeLine [qc|@(posedge clk); $display( "data_out: %d", data_out );|]
+                    = codeLine [qc|@(posedge clk); traceWithAttr(0, 0, data_out, attr_out);|]
         tbcSignals' = map (\x -> "reg " ++ x ++ ";") tbcSignals
 
     in codeBlock [qc|
         {"module"} {name}_tb();
 
-        parameter DATA_WIDTH = { tbDataBusWidth };
-        parameter ATTR_WIDTH = 4;
+        parameter DATA_WIDTH = { dataWidth (def :: x) };
+        parameter ATTR_WIDTH = { attrWidth (def :: x) };
 
         /*
         Algorithm:
@@ -238,5 +239,8 @@ snippetTestBench
             {inline busCheck}
             $finish;
         end
+
+        { inline $ verilogHelper (def :: x) }
+
         endmodule
         |] :: String

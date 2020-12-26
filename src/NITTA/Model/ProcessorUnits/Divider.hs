@@ -25,7 +25,6 @@ module NITTA.Model.ProcessorUnits.Divider
     ) where
 
 import           Control.Monad ( void, when )
-import           Data.Bits ( finiteBitSize )
 import           Data.Default
 import           Data.List ( partition, sortBy )
 import           Data.Maybe ( fromMaybe )
@@ -81,6 +80,7 @@ divider pipeline mock = Divider
 instance ( Time t ) => Default (Divider v x t) where
     def = divider 4 True
 
+instance Default x => DefaultX (Divider v x t) x
 
 instance ( Ord t ) => WithFunctions (Divider v x t) (F v x) where
     functions Divider{ process_, remains, jobs }
@@ -336,7 +336,7 @@ instance ( Val x, Show t
                 { unitEnv=ProcessUnitEnv
                     { signal
                     , dataIn, dataOut
-                    , parameterAttrWidth, attrIn, attrOut
+                    , attrIn, attrOut
                     }
                 , signalClk
                 , signalRst
@@ -345,8 +345,8 @@ instance ( Val x, Show t
             DividerIO
         = codeBlock [qc|
             pu_div #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( { parameterAttrWidth } )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .INVALID( 0 )
                     , .PIPELINE( { pipeline } )
                     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
@@ -391,5 +391,4 @@ instance ( VarValTime v x t ) => Testable (Divider v x t) v x where
                     _ -> error "testBenchImplementation wrong signal"
                 , tbcCtrl= \Microcode{ oeSignal, oeSelSignal, wrSignal, wrSelSignal } ->
                     [qc|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]
-                , tbDataBusWidth=finiteBitSize (def :: x)
                 }

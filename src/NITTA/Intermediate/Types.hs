@@ -29,7 +29,7 @@ module NITTA.Intermediate.Types
     , FunctionSimulation(..)
     , CycleCntx(..), Cntx(..)
     , showCntx, cntx2table
-    , getX, setZipX, cntxReceivedBySlice
+    , cntxReceivedBySlice, getCntx, updateCntx
       -- *Patch
     , Patch(..), Changeset(..), reverseDiff
     , module NITTA.Intermediate.Value
@@ -47,7 +47,7 @@ import           Data.Typeable
 import           GHC.Generics
 import           NITTA.Intermediate.Value
 import           NITTA.Intermediate.Variable
-import           Text.PrettyPrint.Boxes
+import           Text.PrettyPrint.Boxes hiding ( (<>) )
 
 
 -- |Input variable.
@@ -221,7 +221,10 @@ castF F{ fun } = cast fun
 class FunctionSimulation f v x | f -> v x where
     -- FIXME: CycleCntx - problem, because its prevent Receive simulation with
     -- data drop (how implement that?).
-    simulate :: CycleCntx v x -> f -> Either String (CycleCntx v x)
+
+    -- |Receive a computational context and return changes (list of varible
+    -- names and its new values).
+    simulate :: CycleCntx v x -> f -> [ (v, x) ]
 
 
 newtype CycleCntx v x = CycleCntx{ cycleCntx :: M.Map v x }
@@ -294,17 +297,14 @@ cntxReceivedBySlice' received
     in slice : cntxReceivedBySlice' received'
     | otherwise = repeat M.empty
 
-getX (CycleCntx cntx) v = case cntx M.!? v of
-        Just x  -> Right x
-        Nothing -> Left $ "variable value not defined: " ++ show v
+getCntx (CycleCntx cntx) v = case cntx M.!? v of
+        Just x  -> x
+        Nothing -> error $ "variable not defined: " <> show v
 
-setX cycleCntx vxs = setX' cycleCntx vxs
-setZipX cycleCntx vs x = setX cycleCntx $ zip (S.elems vs) $ repeat x
-
-setX' cycleCntx [] = Right cycleCntx
-setX' (CycleCntx cntx) ((v, x):vxs)
-    | M.member v cntx = Left $ "variable value already defined: " ++ show v
-    | otherwise = setX' (CycleCntx $ M.insert v x cntx) vxs
+updateCntx cycleCntx [] = cycleCntx
+updateCntx (CycleCntx cntx) ((v, x):vxs)
+    | M.member v cntx = error $ "variable value already defined: " <> show v
+    | otherwise = updateCntx (CycleCntx $ M.insert v x cntx) vxs
 
 
 -----------------------------------------------------------

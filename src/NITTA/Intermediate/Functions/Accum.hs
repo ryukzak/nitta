@@ -133,16 +133,11 @@ instance ( Var v ) => Locks (Acc v x) v where
             ]) allLocks
 
 instance ( Var v, Num x ) => FunctionSimulation (Acc v x) v x where
-    simulate cntx (Acc lst) = let
-            operation v s accum context
-                | Right x <- getX context v = case s of
-                    Plus  -> (accum + x, Right context)
-                    Minus -> (accum - x, Right context)
-                | otherwise = (accum, Left "Error in accum Push value to context")
-
-            select (accum, Right context) (Push s (I v)) = operation v s accum context
-            select (accum, Right context) (Pull (O vs))  = (accum, setZipX context vs accum)
-            select (accum, Left err) _                   = (accum, Left err)
-
-            (_, eitherContext) = foldl select (0, Right cntx) lst
-        in eitherContext
+    simulate cntx (Acc ops) = snd $ foldl eval ( 0, [] ) ops
+        where
+            eval (buf, changes) (Push sign (I v))
+                | x <- getCntx cntx v
+                = case sign of
+                    Plus  -> ( buf + x, changes )
+                    Minus -> ( buf - x, changes )
+            eval (buf, changes) (Pull (O vs)) = ( buf, [ (v, buf) | v <- elems vs ] ++ changes )

@@ -24,7 +24,6 @@ module NITTA.Model.ProcessorUnits.IO.SPI
     , Ports(..), IOPorts(..)
     ) where
 
-import           Data.Bits ( finiteBitSize )
 import           Data.Default
 import qualified Data.Map.Strict as M
 import           Data.Maybe ( fromMaybe, mapMaybe )
@@ -112,8 +111,8 @@ instance ( VarValTime v x t ) => TargetSystemComponent (SPI v x t) where
             ioPorts
         = codeBlock [qc|
             { module_ ioPorts } #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( { show parameterAttrWidth } )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .BOUNCE_FILTER( { show bounceFilter } )
                     , .DISABLED( { if sendN == 0 && receiveN == 0 then (1 :: Int) else 0 } )
                     ) { tag }
@@ -168,7 +167,7 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                     _ -> Nothing
                 ) $ getEndpoints process_
             sendedVarsValues = take cntxCycleNumber $ map cycleCntx cntxProcess
-            wordWidth = finiteBitSize (def :: x)
+            wordWidth = dataWidth (def :: x)
             frameWordCount = max (length receivedVariablesSeq) $ length sendedVariableSeq
             frameWidth = frameWordCount * wordWidth
             timeLag = 10 :: Int
@@ -181,8 +180,8 @@ instance ( VarValTime v x t, Num x ) => IOTestBench (SPI v x t) v x where
                     placeholder = replicate (frameWordCount - length xs) [qc|{ wordWidth }'d00|]
                 in S.join ", " (xs' ++ placeholder)
             toVerilogLiteral' x
-                | abs x /= x = [qc|-{ wordWidth }'sd{ toVerilogLit (-x) }|]
-                | otherwise = [qc|{ wordWidth }'sd{ toVerilogLit x }|]
+                | abs x /= x = [qc|-{ wordWidth }'sd{ dataLiteral (-x) }|]
+                | otherwise = [qc|{ wordWidth }'sd{ dataLiteral x }|]
 
             disable = codeBlock [qc|
                 initial begin

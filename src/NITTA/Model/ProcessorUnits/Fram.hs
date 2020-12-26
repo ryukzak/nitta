@@ -29,7 +29,7 @@ import           Control.Applicative ( (<|>) )
 import           Control.Monad
 import qualified Data.Array as A
 import           Data.Array.Base ( numElements )
-import           Data.Bits ( finiteBitSize, testBit )
+import           Data.Bits ( testBit )
 import           Data.Default
 import qualified Data.List as L
 import           Data.Maybe
@@ -497,11 +497,10 @@ instance ( VarValTime v x t ) => Testable (Fram v x t) v x where
             width = addrWidth pUnit
             tbcSignalsConst = ["oe", "wr", "[3:0] addr"]
 
-            showMicrocode Microcode{ oeSignal, wrSignal, addrSignal } = codeBlock [qc|
-                oe   <= { bool2verilog oeSignal };
-                wr   <= { bool2verilog wrSignal };
-                addr <= { maybe "0" show addrSignal };
-                |]
+            showMicrocode Microcode{ oeSignal, wrSignal, addrSignal }
+                =  [qc|oe <= { bool2verilog oeSignal };|]
+                <> [qc| wr <= { bool2verilog wrSignal };|]
+                <> [qc| addr <= { maybe "0" show addrSignal };|]
 
             signal (SignalTag i) = case i of
                 0 -> "oe"
@@ -519,7 +518,6 @@ instance ( VarValTime v x t ) => Testable (Fram v x t) v x where
                     , tbcIOPorts=FramIO
                     , tbcSignalConnect= signal
                     , tbcCtrl=showMicrocode
-                    , tbDataBusWidth=finiteBitSize (def :: x)
                     }
 
 softwareFile tag pu = moduleName tag pu ++ "." ++ tag ++ ".dump"
@@ -536,8 +534,8 @@ instance ( VarValTime v x t ) => TargetSystemComponent (Fram v x t) where
     hardwareInstance tag fram@Fram{ memory } TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk } FramPorts{..} FramIO
         = codeBlock [qc|
             pu_fram #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( { parameterAttrWidth } )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .RAM_SIZE( { numElements memory } )
                     , .FRAM_DUMP( "$path${ softwareFile tag fram }" )
                     ) { tag }

@@ -42,7 +42,7 @@ module NITTA.Utils
     ) where
 
 import           Control.Monad.State ( State, get, modify', put, runState )
-import           Data.Bits ( finiteBitSize, setBit, testBit )
+import           Data.Bits ( setBit, testBit )
 import           Data.List ( sortOn )
 import           Data.Maybe ( isJust, mapMaybe )
 import qualified Data.String.Utils as S
@@ -83,9 +83,8 @@ values2dump vs
 
 hdlValDump x
     = let
-        v = toVerilogLit x
-        w = finiteBitSize x
-        bins = map (testBit v) $ reverse [0 .. w - 1]
+        bins = map (testBit $ rawAttr x) (reverse [0 .. attrWidth x - 1])
+            ++ map (testBit $ rawData x) (reverse [0 .. dataWidth x - 1])
 
         lMod = length bins `mod` 4
         bins' = groupBy4 $ if lMod == 0

@@ -21,8 +21,8 @@ module NITTA.Model.ProcessorUnits.IO.I2C
     , Ports(..), IOPorts(..)
     ) where
 
-import           Data.Bits ( finiteBitSize )
 import           Data.Default
+import           NITTA.Intermediate.Value
 import           NITTA.Model.ProcessorUnits.IO.SimpleIO
 import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.Types
@@ -96,8 +96,8 @@ instance ( VarValTime v x t ) => TargetSystemComponent (I2C v x t) where
             ioPorts
         = codeBlock [qc|
             { module_ ioPorts } #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( { show parameterAttrWidth } )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .BOUNCE_FILTER( { show bounceFilter } )
                     ) { tag }
                 ( .clk( { signalClk } )

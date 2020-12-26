@@ -30,7 +30,6 @@ module NITTA.Model.Networks.Bus
 import           Control.Monad.State
 import qualified Data.Array as A
 import           Data.Bifunctor
-import           Data.Bits ( FiniteBits (..) )
 import           Data.Default
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
@@ -108,8 +107,7 @@ busNetwork signalBusWidth ioSync pus = BusNetwork
             }
         puEnv tag = bnEnv
             { unitEnv=ProcessUnitEnv
-                { parameterAttrWidth=InlineParam "ATTR_WIDTH"
-                , dataIn="data_bus"
+                { dataIn="data_bus"
                 , dataOut=tag ++ "_data_out"
                 , attrIn="attr_bus"
                 , attrOut=tag ++ "_attr_out"
@@ -411,8 +409,8 @@ instance ( VarValTime v x t
             mn = moduleName tag pu
             iml = codeBlock [qc|
                     {"module"} { mn } #
-                            ( parameter DATA_WIDTH = { finiteBitSize (def :: x) }
-                            , parameter ATTR_WIDTH = 4
+                            ( parameter DATA_WIDTH = { dataWidth (def :: x) }
+                            , parameter ATTR_WIDTH = { attrWidth (def :: x) }
                             )
                         ( input                     clk
                         , input                     rst
@@ -505,8 +503,8 @@ instance ( VarValTime v x t
             os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts
         = codeBlock [qc|
             { tag } #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( 4 )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) net
                 ( .rst( { signalRst } )
                 , .clk( { signalClk } )
@@ -575,9 +573,9 @@ instance ( VarValTime v x t
             assertions = concatMap (\cycleTickTransfer -> posedgeCycle ++ concatMap assertion cycleTickTransfer ) tickWithTransfers
 
             assertion ( cycleI, t, Nothing )
-                = codeLine [qc|@(posedge clk); trace({ cycleI }, { t }, net.data_bus);|]
+                = codeLine [qc|@(posedge clk); traceWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus);|]
             assertion ( cycleI, t, Just (v, x) )
-                = codeLine [qc|@(posedge clk); assert({ cycleI }, { t }, net.data_bus, { toVerilogLit x }, { v });|]
+                = codeLine [qc|@(posedge clk); assertWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus, { dataLiteral x }, { attrLiteral x }, { v });|]
 
         in Immediate (moduleName pName n ++ "_tb.v") $ codeBlock [qc|
             `timescale 1 ps / 1 ps
@@ -623,8 +621,8 @@ instance ( VarValTime v x t
             // unit under test
 
             { moduleName pName n } #
-                    ( .DATA_WIDTH( { finiteBitSize (def :: x) } )
-                    , .ATTR_WIDTH( 4 )
+                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) net
                 ( .clk( clk )
                 , .rst( rst )
@@ -674,7 +672,7 @@ instance ( VarValTime v x t
 
             cntxToTransfer cycleCntx t
                 = case extractInstructionAt n t of
-                    Transport v _ _ : _ -> Just (v, either error id $ getX cycleCntx v)
+                    Transport v _ _ : _ -> Just (v, getCntx cycleCntx v)
                     _                   -> Nothing
 
             posedgeCycle = codeBlock [qc|

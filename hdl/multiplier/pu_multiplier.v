@@ -33,18 +33,6 @@ always @(posedge clk) begin
 end
 
 
-function invalid_value1;
-    input [DATA_WIDTH-1:0] data_arg1;
-    input [DATA_WIDTH-1:0] data_arg2;
-    input attr_arg1;
-    input attr_arg2;
-    begin
-        invalid_value1 = !((data_arg1[DATA_WIDTH-1:DATA_WIDTH/2-1] == 0)^(~data_arg1[DATA_WIDTH-1:DATA_WIDTH/2-1] == {(DATA_WIDTH/2+1){1'b0}}))
-                    || !((data_arg2[DATA_WIDTH-1:DATA_WIDTH/2-1] == 0)^(~data_arg2[DATA_WIDTH-1:DATA_WIDTH/2-1] == {(DATA_WIDTH/2+1){1'b0}}))
-                    || attr_arg1
-                    || attr_arg2;
-    end
-endfunction
 
 wire signed [DATA_WIDTH-1:0]         mult_result;
 mult_inner #
@@ -59,8 +47,16 @@ reg f;
 reg write_multresult;
 reg invalid_value;
 
+wire [DATA_WIDTH/2-1:0] arg1_high_part, arg2_high_part, zero;
+assign zero = {DATA_WIDTH/2{1'b0}};
+assign arg1_high_part = arg[0][DATA_WIDTH-1:DATA_WIDTH/2-1];
+assign arg2_high_part = arg[1][DATA_WIDTH-1:DATA_WIDTH/2-1];
+
+
 always @(posedge clk) begin
-    invalid_value <= invalid_value1(arg[0], arg[1], arg_invalid[0], arg_invalid[1]);
+    invalid_value <= arg_invalid[0] || arg_invalid[1]
+                || !( arg1_high_part == zero ^ ~arg1_high_part == zero )
+                || !( arg2_high_part == zero ^ ~arg2_high_part == zero );
     if ( rst ) begin
         f <= 0;
         write_multresult <= 0;
@@ -87,8 +83,6 @@ always @(posedge clk) begin
 end
 
 assign data_out = signal_oe ? data_multresult : 0;
-assign attr_out = signal_oe ? ({ {(ATTR_WIDTH-1){1'b0}}, invalid_result } << INVALID)
-                              | {(ATTR_WIDTH-1){1'b0}}
-                            : 0;
+assign attr_out = { {ATTR_WIDTH-1{1'b0}}, signal_oe ? invalid_result : 1'b0 };
 
 endmodule

@@ -51,7 +51,7 @@ traceLuaSimulationTestCase _ name src expect = testCase name $ let
 
 
 luaTestCase :: HasCallStack => String -> T.Text -> TestTree
-luaTestCase name = typedIOLuaTestCase (microarch ASync SlaveSPI) pInt name def
+luaTestCase name = typedIOLuaTestCase (microarch ASync SlaveSPI) pAttrIntX32 name def
 
 
 typedLuaTestCase ::

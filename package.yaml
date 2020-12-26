@@ -84,6 +84,7 @@ library:
     - transformers
     - unordered-containers
     - utility-ht
+    - validity
     - wai-cors
     - warp
 
@@ -143,4 +144,5 @@ tests:
       - tasty-expected-failure
       - tasty-hunit
       - tasty-quickcheck
+      - tasty-rerun
       - tasty-th
