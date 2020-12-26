@@ -127,7 +127,7 @@ instance
         | not $ null sources
           , byteShiftDiv == 0 =
             let timeConstrain = TimeConstrain (startTime ... maxBound) (1 ... maxBound)
-                startTime = (nextTick process_) + fromIntegral byteShiftMod + 2
+                startTime = nextTick process_ + fromIntegral byteShiftMod + 2
              in [EndpointSt (Source $ fromList sources) timeConstrain]
         | not $ null sources =
             let endByteShift = nextTick process_ + fromIntegral byteShiftDiv
