@@ -74,7 +74,7 @@ data SynthesisNodeView = SynthesisNodeView
     , svIsComplete :: Bool
     , svIsEdgesProcessed :: Bool
     , svDuration :: Int
-    , svCharacteristic :: Float -- FIXME:
+    , svCharacteristic :: Float
     , svOptionType :: String
     }
     deriving (Generic)
