@@ -336,14 +336,8 @@ data Multiplier v x t = Multiplier
       -- function evaluation. Pull order is arbitrary. All pulled variables
       -- correspond to the same value (same result).
       sources :: [v]
-    , -- TODO: Establish vertical relationships between function and endpoints
-      -- without these fields (doneAt, currenctWork, currentWorkEndpoints).
+    , -- |Current work, if some function is executed.
       currentWork :: Maybe (F v x)
-    , -- |While planning of execution of function necessary to define
-      -- undefined value of uploading / downloading of data to / from mUnit,
-      -- to then set up vertical behavior between information about executing
-      -- function and this send.
-      currentWorkEndpoints :: [ProcessStepID]
     , -- |Description of scheduled computation process
       -- ('NITTA.Model.ProcessorUnits.Types').
       process_ :: Process v x t
@@ -365,7 +359,6 @@ multiplier mock =
         , targets = []
         , sources = []
         , currentWork = Nothing
-        , currentWorkEndpoints = []
         , process_ = def
         , isMocked = mock
         }
@@ -500,14 +493,14 @@ instance
              in [EndpointSt (Source $ S.fromList sources) $ TimeConstrain at duration]
     endpointOptions pu@Multiplier{remain} = concatMap (endpointOptions . execution pu) remain
 
-    endpointDecision pu@Multiplier{targets, currentWorkEndpoints} d@EndpointSt{epRole = Target v, epAt}
+    endpointDecision pu@Multiplier{targets} d@EndpointSt{epRole = Target v, epAt}
         | not $ null targets
           , ([_], targets') <- partition (== v) targets
           , -- @sel@ veriable is used for uploading queuing of variable to hardware block, that is
             -- requred because of realisation.
             let sel = if null targets' then B else A
           , --  Computation process planning is carried out.
-            let (newEndpoints, process_') = runSchedule pu $ do
+            let (_, process_') = runSchedule pu $ do
                     -- this is required for correct work of automatically generated tests,
                     -- that takes information about time from Process
                     updateTick (sup epAt)
@@ -516,21 +509,18 @@ instance
                 { process_ = process_'
                 , -- The remainder of the work is saved for the next loop
                   targets = targets'
-                , -- We save information about events that describe sending or recieving data for
-                  -- current functionatl unit.
-                  currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
                 }
-    endpointDecision pu@Multiplier{targets = [], sources, currentWork = Just f, currentWorkEndpoints, process_} d@EndpointSt{epRole = Source v, epAt}
+    endpointDecision pu@Multiplier{targets = [], sources, currentWork = Just f, process_} d@EndpointSt{epRole = Source v, epAt}
         | not $ null sources
           , let sources' = sources \\ S.elems v
           , sources' /= sources
           , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
           , -- Compututation process planning is carring on.
-            let (newEndpoints, process_') = runSchedule pu $ do
+            let (_, process_') = runSchedule pu $ do
                     endpoints <- scheduleEndpoint d $ scheduleInstruction epAt Out
                     when (null sources') $ do
                         high <- scheduleFunction (a ... sup epAt) f
-                        let low = endpoints ++ currentWorkEndpoints
+                        let low = endpoints ++ (map sKey $ relatedEndpoints process_ $ variables f)
                         -- Set up the vertical relantions between functional unit
                         -- and related to that data sending.
                         establishVerticalRelations high low
@@ -545,10 +535,6 @@ instance
                 , -- if all of works is done, then time when result is ready,
                   -- current work and data transfering, what is done is the current function is reset.
                   currentWork = if null sources' then Nothing else Just f
-                , currentWorkEndpoints =
-                    if null sources'
-                        then []
-                        else newEndpoints ++ currentWorkEndpoints
                 }
     endpointDecision pu@Multiplier{targets = [], sources = [], remain} d
         | let v = oneOf $ variables d
