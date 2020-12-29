@@ -37,6 +37,8 @@ module NITTA.Utils (
     getEndpoints,
     transferred,
     inputsPushedAt,
+    stepsInterval,
+    relatedEndpoints,
     isFB,
     isInstruction,
     isTarget,
@@ -56,7 +58,7 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
 import NITTA.Utils.CodeFormat
 import Numeric (readInt, showHex)
-import Numeric.Interval (sup, (...))
+import Numeric.Interval (inf, sup, (...))
 import qualified Numeric.Interval as I
 import Text.StringTemplate
 
@@ -135,16 +137,20 @@ getEndpoint _ = Nothing
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 transferred pu = unionsMap variables $ getEndpoints $ process pu
 
-inputsPushedAt pr f =
-    let vs = inputs f
-     in maximum $
-            map (sup . sTime) $
-                filter
-                    ( \s -> case s of
-                        Step{sDesc = EndpointRoleStep role} -> not $ null (variables role `S.intersection` vs)
-                        _ -> False
-                    )
-                    $ steps pr
+inputsPushedAt process_ f = sup $ stepsInterval $ relatedEndpoints process_ $ inputs f
+
+stepsInterval ss =
+    let a = minimum $ map (inf . sTime) ss
+        b = maximum $ map (sup . sTime) ss
+     in a ... b
+
+relatedEndpoints process_ vs =
+    filter
+        ( \s -> case s of
+            Step{sDesc = EndpointRoleStep role} -> not $ null (variables role `S.intersection` vs)
+            _ -> False
+        )
+        $ steps process_
 
 isTarget (EndpointSt (Target _) _) = True
 isTarget _ = False

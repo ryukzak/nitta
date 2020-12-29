@@ -313,7 +313,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval (sup, (...))
+import Numeric.Interval (inf, sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 
 -- |It is a PU model state representation, which describes each state of
@@ -338,7 +338,7 @@ data Multiplier v x t = Multiplier
       sources :: [v]
     , -- TODO: Establish vertical relationships between function and endpoints
       -- without these fields (doneAt, currenctWork, currentWorkEndpoints).
-      currentWork :: Maybe (t, F v x)
+      currentWork :: Maybe (F v x)
     , -- |While planning of execution of function necessary to define
       -- undefined value of uploading / downloading of data to / from mUnit,
       -- to then set up vertical behavior between information about executing
@@ -383,9 +383,7 @@ instance (Ord t) => WithFunctions (Multiplier v x t) (F v x) where
     functions Multiplier{process_, remain, currentWork} =
         functions process_
             ++ remain
-            ++ case currentWork of
-                Just (_, f) -> [f]
-                Nothing -> []
+            ++ maybe [] (: []) currentWork
 
 -- |Tracking internal dependencies on the processed variables. It includes:
 --
@@ -436,11 +434,11 @@ instance
     process = process_
 
 -- | Execute function (set as current and remove from remain).
-execution pu@Multiplier{targets = [], sources = [], remain, process_} f
+execution pu@Multiplier{targets = [], sources = [], remain} f
     | Just (F.Multiply (I a) (I b) (O c)) <- castF f =
         pu
             { targets = [a, b]
-            , currentWork = Just (nextTick process_ + 1, f)
+            , currentWork = Just f
             , sources = S.elems c
             , remain = remain \\ [f]
             }
@@ -494,7 +492,7 @@ instance
             let at = nextTick process_ + 1 ... maxBound
                 duration = 1 ... maxBound
              in map (\v -> EndpointSt (Target v) $ TimeConstrain at duration) targets
-    endpointOptions Multiplier{sources, currentWork = Just (_, f), process_}
+    endpointOptions Multiplier{sources, currentWork = Just f, process_}
         | not $ null sources =
             let doneAt = inputsPushedAt process_ f + 3
                 at = max doneAt (nextTick process_ + 1) ... maxBound
@@ -522,10 +520,11 @@ instance
                   -- current functionatl unit.
                   currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
                 }
-    endpointDecision pu@Multiplier{targets = [], sources, currentWork = Just (a, f), currentWorkEndpoints} d@EndpointSt{epRole = Source v, epAt}
+    endpointDecision pu@Multiplier{targets = [], sources, currentWork = Just f, currentWorkEndpoints, process_} d@EndpointSt{epRole = Source v, epAt}
         | not $ null sources
           , let sources' = sources \\ S.elems v
           , sources' /= sources
+          , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
           , -- Compututation process planning is carring on.
             let (newEndpoints, process_') = runSchedule pu $ do
                     endpoints <- scheduleEndpoint d $ scheduleInstruction epAt Out
@@ -545,7 +544,7 @@ instance
                   sources = sources'
                 , -- if all of works is done, then time when result is ready,
                   -- current work and data transfering, what is done is the current function is reset.
-                  currentWork = if null sources' then Nothing else Just (a, f)
+                  currentWork = if null sources' then Nothing else Just f
                 , currentWorkEndpoints =
                     if null sources'
                         then []
