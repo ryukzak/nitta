@@ -499,12 +499,12 @@ instance
             [EndpointSt (Source $ fromList sources) $ TimeConstrain (max at (nextTick process_ + 1) ... maxBound) (1 ... maxBound)]
     endpointOptions pu@Multiplier{remain} = concatMap (endpointOptions . execution pu) remain
 
-    endpointDecision pu@Multiplier{targets = vs, currentWorkEndpoints} d@EndpointSt{epRole = Target v, epAt}
-        | not $ null vs
-          , ([_], xs) <- partition (== v) vs
+    endpointDecision pu@Multiplier{targets, currentWorkEndpoints} d@EndpointSt{epRole = Target v, epAt}
+        | not $ null targets
+          , ([_], targets') <- partition (== v) targets
           , -- @sel@ veriable is used for uploading queuing of variable to hardware block, that is
             -- requred because of realisation.
-            let sel = if null xs then B else A
+            let sel = if null targets' then B else A
           , --  Computation process planning is carried out.
             let (newEndpoints, process_') = runSchedule pu $ do
                     -- this is required for correct work of automatically generated tests,
@@ -514,7 +514,7 @@ instance
             pu
                 { process_ = process_'
                 , -- The remainder of the work is saved for the next loop
-                  targets = xs
+                  targets = targets'
                 , -- We save information about events that describe sending or recieving data for
                   -- current functionatl unit.
                   currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
