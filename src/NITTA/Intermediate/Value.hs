@@ -159,6 +159,7 @@ crop x
 valueMask :: Val x => x -> x
 valueMask x = fromRaw (setBit (0 :: Integer) (dataWidth x - 1) - 1) 0
 
+-- TODO: try to avoid this class
 class (Default x) => DefaultX u x | u -> x where
     defX :: u -> x
     defX _ = def

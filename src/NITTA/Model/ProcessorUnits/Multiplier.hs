@@ -1,4 +1,3 @@
-{- FOURMOLU_DISABLE -}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -12,682 +11,672 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{-|
-Module      : NITTA.Model.ProcessorUnits.Multiplier
-Description :
-Copyright   : (c) Aleksandr Penskoi, 2019
-License     : BSD3
-Maintainer  : aleksandr.penskoi@gmail.com
-Stability   : experimental
-
-Multiplier mUnit can evaluate the following function type:
-
-- 'NITTA.Intermediate.Functions.Multiply'.
-
-In one moment of time only one function can be processing, and its execution
-cannot be interrupted.
-
-This module should be considered as a template of development another models of
-computational blocks. Its source code is written almost literally, so we
-recommend to continue reading within the source code.
-
-= Work example
-
-We will consider the example of computation process planning for one function.
-For do this, we will start up GHCI interpreter with execution @stack repl@
-process from the project directory. It is the high probability that output of
-products actual version will differ.
-
-Connect necessary modules and set up terminals prompt string.
-
-@
-> :l NITTA.Model.ProcessorUnits.Multiplier
-[ 1 of 30] Compiling NITTA.Intermediate.Value ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Intermediate/Value.hs, interpreted )
-[ 2 of 30] Compiling NITTA.Intermediate.Variable ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Intermediate/Variable.hs, interpreted )
-[ 3 of 30] Compiling NITTA.Intermediate.Types ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Intermediate/Types.hs, interpreted )
-[ 4 of 30] Compiling NITTA.Model.Problems.Binding ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems/Binding.hs, interpreted )
-[ 5 of 30] Compiling NITTA.Model.Types ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Types.hs, interpreted )
-[ 6 of 30] Compiling NITTA.Model.Problems.Endpoint ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems/Endpoint.hs, interpreted )
-[ 7 of 30] Compiling NITTA.Model.Problems.Dataflow ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems/Dataflow.hs, interpreted )
-[ 8 of 30] Compiling NITTA.Project.Types ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Types.hs, interpreted )
-[ 9 of 30] Compiling NITTA.Utils.Base ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Utils/Base.hs, interpreted )
-[10 of 30] Compiling NITTA.Intermediate.Functions.Accum ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Intermediate/Functions/Accum.hs, interpreted )
-[11 of 30] Compiling NITTA.Intermediate.Functions ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Intermediate/Functions.hs, interpreted )
-[12 of 30] Compiling NITTA.Model.Problems.Refactor ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems/Refactor.hs, interpreted )
-[13 of 30] Compiling NITTA.Model.Problems.Whole ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems/Whole.hs, interpreted )
-[14 of 30] Compiling NITTA.Model.Problems ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Problems.hs, interpreted )
-[15 of 30] Compiling NITTA.Utils.CodeFormat ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Utils/CodeFormat.hs, interpreted )
-[16 of 30] Compiling NITTA.Model.ProcessorUnits.Types ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/ProcessorUnits/Types.hs, interpreted )
-[17 of 30] Compiling NITTA.Utils      ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Utils.hs, interpreted )
-[18 of 30] Compiling NITTA.Project.Snippets ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Snippets.hs, interpreted )
-[19 of 30] Compiling NITTA.Project.Implementation ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Implementation.hs, interpreted )
-[20 of 30] Compiling NITTA.Project.Parts.Utils ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Parts/Utils.hs, interpreted )
-[21 of 30] Compiling NITTA.Project.Parts.TestBench ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Parts/TestBench.hs, interpreted )
-[22 of 30] Compiling NITTA.Project.Parts.TargetSystem ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Parts/TargetSystem.hs, interpreted )
-[23 of 30] Compiling NITTA.Project.Parts.Icarus ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Parts/Icarus.hs, interpreted )
-[24 of 30] Compiling NITTA.Model.Networks.Types ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Networks/Types.hs, interpreted )
-[25 of 30] Compiling NITTA.Utils.ProcessDescription ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Utils/ProcessDescription.hs, interpreted )
-[26 of 30] Compiling NITTA.Model.Networks.Bus ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/Networks/Bus.hs, interpreted )
-[27 of 30] Compiling NITTA.Project.Parts.Quartus ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Parts/Quartus.hs, interpreted )
-[28 of 30] Compiling NITTA.Project.Utils ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project/Utils.hs, interpreted )
-[29 of 30] Compiling NITTA.Project    ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Project.hs, interpreted )
-[30 of 30] Compiling NITTA.Model.ProcessorUnits.Multiplier ( /Users/penskoi/Documents/nitta-corp/nitta/src/NITTA/Model/ProcessorUnits/Multiplier.hs, interpreted )
-Ok, 30 modules loaded.
-> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval Data.Set
-> :set prompt "\ESC[34mλ> \ESC[m"
-@
-
-Now create the function and multiplier initial state. Unfortunately, it is not
-enough information for GHC deduction of its type, so let's define its
-implicitly.
-
->>> let f = F.multiply "a" "b" ["c", "d"] :: F String Int
->>> f
-a * b = c = d
->>> let st0 = multiplier True :: Multiplier String Int Int
->>> st0
-Multiplier {remain = [], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
-    steps     =
-<BLANKLINE>
-    relations =
-<BLANKLINE>
-    nextTick  = 0
-    nextUid   = 0
-, tick = 0, isMocked = True}
->>> endpointOptions st0
-[]
-
-Bind a function to the multiplier. This operation could be executed at any time
-of working with the model, including when a computation process is fully planned
-(new work can be added). The main rule is: if work is fully planned, then it is
-necessary to perform it and any part of it cannot be "lost" inside the model. If
-a mUnit has his own interior resources, there should be enough to finish
-planning, even it is inefficient.
-
->>> let Right st1 = tryBind f st0
->>> st1
-Multiplier {remain = [a * b = c = d], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
-    steps     =
-<BLANKLINE>
-    relations =
-<BLANKLINE>
-    nextTick  = 0
-    nextUid   = 0
-, tick = 0, isMocked = True}
->>> endpointOptions st1
-[?Target "a"@(1..∞ /P 1..∞),?Target "b"@(1..∞ /P 1..∞)]
-
-As we can see, after binding we have two different options of computational
-process planning, that match different argument loading sequences: @a@ or @b@.
-We can see that they are similar from an execution time point of view: loading
-can be started from 0 tick or after an arbitrary delay; for loading of one
-argument needed only one tick, but it can continue for an arbitrary time. Choose
-the variant (note, that if decision matches to proposed options then it cannot
-cause a mistake or block another function).
-
->>> let st2 = endpointDecision st1 $ EndpointSt (Target "a") (0...2)
->>> st2
-Multiplier {remain = [], targets = ["b"], sources = ["c","d"], doneAt = Nothing, currentWork = Just (1,a * b = c = d), currentWorkEndpoints = [0], process_ = Process
-    steps     =
-        0) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
-        1) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
-    relations =
-        0) Vertical 0 1
-    nextTick  = 2
-    nextUid   = 2
-, tick = 2, isMocked = True}
->>> mapM_ print $ endpointOptions st2
-?Target "b"@(3..∞ /P 1..∞)
->>> let st3 = endpointDecision st2 $ EndpointSt (Target "b") (3...3)
->>> st3
-Multiplier {remain = [], targets = [], sources = ["c","d"], doneAt = Just 6, currentWork = Just (1,a * b = c = d), currentWorkEndpoints = [2,0], process_ = Process
-    steps     =
-        0) Step {sKey = 3, sTime = 3 ... 3, sDesc = Load B}
-        1) Step {sKey = 2, sTime = 3 ... 3, sDesc = Target "b"}
-        2) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
-        3) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
-    relations =
-        0) Vertical 2 3
-        1) Vertical 0 1
-    nextTick  = 3
-    nextUid   = 4
-, tick = 3, isMocked = True}
->>> mapM_ print $ endpointOptions st3
-?Source "c","d"@(6..∞ /P 1..∞)
-
-After loading of all arguments, we can see that the next option is unloading @c@
-and @d@ variables. Note, these variables can be unloaded ether concurrently or
-sequentially (for details, see how the multiplier works). Consider the second
-option:
-
->>> let st4 = endpointDecision st3 $ EndpointSt (Source $ fromList ["c"]) (6...6)
->>> st4
-Multiplier {remain = [], targets = [], sources = ["d"], doneAt = Just 6, currentWork = Just (1,a * b = c = d), currentWorkEndpoints = [4,2,0], process_ = Process
-    steps     =
-        0) Step {sKey = 5, sTime = 6 ... 6, sDesc = Out}
-        1) Step {sKey = 4, sTime = 6 ... 6, sDesc = Source "c"}
-        2) Step {sKey = 3, sTime = 3 ... 3, sDesc = Load B}
-        3) Step {sKey = 2, sTime = 3 ... 3, sDesc = Target "b"}
-        4) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
-        5) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
-    relations =
-        0) Vertical 4 5
-        1) Vertical 2 3
-        2) Vertical 0 1
-    nextTick  = 6
-    nextUid   = 6
-, tick = 6, isMocked = True}
->>> mapM_ print $ endpointOptions st4
-?Source "d"@(7..∞ /P 1..∞)
->>> let st5 = endpointDecision st4 $ EndpointSt (Source $ fromList ["d"]) (7...7)
->>> st5
-Multiplier {remain = [], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
-    steps     =
-        0) Step {sKey = 8, sTime = 1 ... 7, sDesc = "a" * "b" = "c" = "d"}
-        1) Step {sKey = 7, sTime = 7 ... 7, sDesc = Out}
-        2) Step {sKey = 6, sTime = 7 ... 7, sDesc = Source "d"}
-        3) Step {sKey = 5, sTime = 6 ... 6, sDesc = Out}
-        4) Step {sKey = 4, sTime = 6 ... 6, sDesc = Source "c"}
-        5) Step {sKey = 3, sTime = 3 ... 3, sDesc = Load B}
-        6) Step {sKey = 2, sTime = 3 ... 3, sDesc = Target "b"}
-        7) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
-        8) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
-    relations =
-        0) Vertical 8 6
-        1) Vertical 8 4
-        2) Vertical 8 2
-        3) Vertical 8 0
-        4) Vertical 6 7
-        5) Vertical 4 5
-        6) Vertical 2 3
-        7) Vertical 0 1
-    nextTick  = 7
-    nextUid   = 9
-, tick = 7, isMocked = True}
->>> endpointOptions st5
-[]
-
-All options of computing process planning are run out. All bound functions
-planned. Further microcode can be generated, which can be organizing the
-described computational process on the multiplier.
--}
-
--- FIXME: A promising direction for the improvement is the implementation of the
+-- TODO: A promising direction for the improvement is the implementation of the
 -- accumulator into it. It allows multiplying an arbitrary number of arguments,
 -- which will reduce the number of data transactions on the bus when multiplying
 -- more than two variables by one function.
 
-module NITTA.Model.ProcessorUnits.Multiplier
-    ( multiplier
-    , Multiplier
-    , Ports(..), IOPorts(..)
-    ) where
-
-import           Control.Monad ( when )
-import           Data.Default
-import           Data.List ( find, partition, (\\) )
-import           Data.Set ( elems, fromList, member )
-import qualified NITTA.Intermediate.Functions as F
-import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Types
-import           NITTA.Model.Types
-import           NITTA.Project
-import           NITTA.Utils
-import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval ( sup, (...) )
-import           Text.InterpolatedString.Perl6 ( qc )
-
-{-
-= Processor (or process unit in an early version)
-
-A mUnit with any type can be used for:
-
-- data storage and processing;
-- interaction with the periphery;
-- control of a NITTA mUnit.
-
-Wherein, they are characterized by complicated behavior, that is expressed in:
-
-- multifunctionality
-- internal parallelism
-- superscalar
-- pipelining
-- availability of internal resources
-
-The multiplier is one of the easiest processors from this point of view because
-it realizes only data processing by only one function
-('NITTA.Intermediate.Functions.Multiply'). Processor behavior in a specific application
-determined by the applied algorithm (composition of function with data
-dependencies).
-
-Any mUnit may have three components:
-
-- hardware - set of prepared or automatically generated hardware descriptions
-  (@/hdl/multiplier@);
-- software - set of binary files, that determines:
-    - mUnit's initial state and setting (optional) ;
-    - a control program for the specific mUnit;
-- CAD model - CAD component, that realizes mUnit support (hardware and
-  software generation, instance generation, computation process planning and
-  etc).
-
-Wherein all of three components are hardly related to each other and needed to
-strictly comply to each other. For a deeper understanding, mUnit developer
-should understand all of its components. Multiplier model will be described
-above.
--}
-
-{-
-*CAD mUnit model
-
-A mUnit model purpose is "teaching" CAD how to work with the mUnit:
-
-- which functions could be evaluated (see 'NITTA.Types', class @ProcessorUnit@,
-  function @tryBind@);
-- how to controlling of the mUnit for evaluating specific function (see
-  'NITTA.Type', class @ProcessorUnit@ and @Controllable@);
-- how to translating instructions to microcode (see 'NITTA.Type', class
-  @UnambiguouslyDecode@);
-- which options of mUnit computation process are available (see
-  'NITTA.Model.Problems.Types', class @ProcessorUnit@, function @options@ and @EndpointDT@):
-  - push variable to the mUnit (@Target@);
-  - pull at least one variable from the mUnit (@Source@);
-- computation process planning ('NITTA.Model.Problems.Types', class @ProcessorUnit@,
-  function @decision@ and @EndpointDT@).
--}
-
-{-|
-The basis of a mUnit model is a data structure, that represents:
-
-- mUnit state while computation process planning;
-- process description (fully or fragmentary), which can be translated to
-  software.
-
-Exactly around this data structure, all algorithmic part of mUnit model is
-developed. The data structure is parametrized by the following variables types:
-- v - variable id (usually @String@);
-- x - a type of value (see 'NITTA.Types', @IntX@ and @FX@), with which
-  multiplier works;
-- t - time moment id (usually @Int@).
--}
-
--- FIXME: Add assertion, which checks that all synthesis decision compliant
+-- TODO: Add assertion, which checks that all synthesis decision compliant
 -- available options.
 
+-- |
+-- Module      : NITTA.Model.ProcessorUnits.Multiplier
+-- Description :
+-- Copyright   : (c) Aleksandr Penskoi, 2020
+-- License     : BSD3
+-- Maintainer  : aleksandr.penskoi@gmail.com
+-- Stability   : experimental
+--
+-- = Processor unit
+--
+-- A processor unit (PU) can be used for:
+--
+-- - data storage and processing;
+-- - interaction with the periphery (IO);
+-- - control of a NITTA processor (special case).
+--
+-- There are characterized by complicated behavior with:
+--
+-- - multifunctionality;
+-- - internal parallelism;
+-- - superscalar;
+-- - pipelining;
+-- - availability of internal resources.
+--
+-- The multiplier PU is one of the simplest processors because it realizes only
+-- one function with sequence evaluation
+-- ('NITTA.Intermediate.Functions.Multiply'). Processor behavior in a specific
+-- application is determined by the applied algorithm
+-- ('NITTA.Intermediate.DataFlow').
+--
+-- Any PU may include three components:
+--
+-- - hardware - set of prepared or automatically generated hardware descriptions
+--   (@\/hdl\/multiplier@);
+--
+-- - software - set of binary files that determine:
+--
+--     - initial state and setting ;
+--
+--     - a control program;
+--
+-- - PU model - CAD component that implements PU support (hardware and software
+--   generation, instance generation, computation process scheduling, testing
+--   environment, etc.).
+--
+-- All three components are hardly related to each other and needed to comply
+-- with each other strictly. For a deeper understanding, a PU developer should
+-- understand all of its components. The multiplier model will be described
+-- above.
+--
+-- == Processor unit model
+--
+-- A model purpose is "teaching" CAD how to work with the PU:
+--
+-- - Which functions can be evaluated by PU? (see
+--   'NITTA.Model.ProcessorUnits.Types.ProcessorUnit')?
+--
+-- - How to control PU for evaluating specific functions (see
+--   'NITTA.Model.ProcessorUnits.Types.ProcessorUnit',
+--   'NITTA.Model.ProcessorUnits.Types.Controllable')?
+--
+-- - How to translating instructions to microcode (see
+--   'NITTA.Model.ProcessorUnits.Types.UnambiguouslyDecode')?
+--
+-- - What are the options of PU synthesis decision available? (see
+--   'NITTA.Model.Problems.Types.ProcessorUnit',
+--   'NITTA.Model.Problems.Types.EndpointDT'):
+--
+--     - push variable to the PU ('NITTA.Model.Problems.Endpoint.Target');
+--
+--     - pull at least one variable from the PU ('NITTA.Model.Problems.Endpoint.Source').
+--
+-- The basis of a PU model is a data structure that represents:
+--
+-- - PU state during computation process scheduling;
+--
+-- - process description (full or fragment), which can be translated to microcode.
+--
+-- Exactly around this data structure, all algorithmic part of the PU model is
+-- developed. The types of the following variables parametrize the data structure:
+--
+-- - @v@ - variable id (usually 'String');
+--
+-- - @x@ - a type of processed value (see 'NITTA.Intermediate.Value.Val');
+--
+-- - @t@ - time moment id (usually 'Int').
+--
+-- = Multiplier processor unit
+--
+-- The multiplier processor unit can evaluate the following function type:
+--
+-- - 'NITTA.Intermediate.Functions.Multiply'.
+--
+-- Only one function can be processed in one moment, and its execution cannot be
+-- interrupted.
+--
+-- This module should be considered as a tutorial for the development of other
+-- models of processor units. Its source code is written almost in literature
+-- style, so we recommend to continue reading within the source code.
+--
+-- == Interaction with multiplier processor unit
+--
+-- We will consider the example of the computation process scheduling for one
+-- function. To do this, we need to start GHCi interpreter by executing `stack
+-- repl` command from the project directory. After that:
+--
+-- @
+-- > :l NITTA.Model.ProcessorUnits.Multiplier
+-- [ 1 of 30] Compiling NITTA.Intermediate.Value ( UserspenskoiDocumentsnitta-corpnittasrcNITTAIntermediate/Value.hs, interpreted )
+-- [ 2 of 30] Compiling NITTA.Intermediate.Variable ( UserspenskoiDocumentsnitta-corpnittasrcNITTAIntermediate/Variable.hs, interpreted )
+-- [ 3 of 30] Compiling NITTA.Intermediate.Types ( UserspenskoiDocumentsnitta-corpnittasrcNITTAIntermediate/Types.hs, interpreted )
+-- [ 4 of 30] Compiling NITTA.Model.Problems.Binding ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProblemsBinding.hs, interpreted )
+-- [ 5 of 30] Compiling NITTA.Model.Types ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModel/Types.hs, interpreted )
+-- [ 6 of 30] Compiling NITTA.Model.Problems.Endpoint ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProblemsEndpoint.hs, interpreted )
+-- [ 7 of 30] Compiling NITTA.Model.Problems.Dataflow ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProblemsDataflow.hs, interpreted )
+-- [ 8 of 30] Compiling NITTA.Project.Types ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject/Types.hs, interpreted )
+-- [ 9 of 30] Compiling NITTA.Utils.Base ( UserspenskoiDocumentsnitta-corpnittasrcNITTAUtils/Base.hs, interpreted )
+-- [10 of 30] Compiling NITTA.Intermediate.Functions.Accum ( UserspenskoiDocumentsnitta-corpnittasrcNITTAIntermediateFunctionsAccum.hs, interpreted )
+-- [11 of 30] Compiling NITTA.Intermediate.Functions ( UserspenskoiDocumentsnitta-corpnittasrcNITTAIntermediate/Functions.hs, interpreted )
+-- [12 of 30] Compiling NITTA.Model.Problems.Refactor ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProblemsRefactor.hs, interpreted )
+-- [13 of 30] Compiling NITTA.Model.Problems.Whole ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProblemsWhole.hs, interpreted )
+-- [14 of 30] Compiling NITTA.Model.Problems ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModel/Problems.hs, interpreted )
+-- [15 of 30] Compiling NITTA.Utils.CodeFormat ( UserspenskoiDocumentsnitta-corpnittasrcNITTAUtils/CodeFormat.hs, interpreted )
+-- [16 of 30] Compiling NITTA.Model.ProcessorUnits.Types ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProcessorUnitsTypes.hs, interpreted )
+-- [17 of 30] Compiling NITTA.Utils      ( UserspenskoiDocumentsnitta-corpnittasrcNITTAUtils.hs, interpreted )
+-- [18 of 30] Compiling NITTA.Project.Snippets ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject/Snippets.hs, interpreted )
+-- [19 of 30] Compiling NITTA.Project.Implementation ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject/Implementation.hs, interpreted )
+-- [20 of 30] Compiling NITTA.Project.Parts.Utils ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProjectPartsUtils.hs, interpreted )
+-- [21 of 30] Compiling NITTA.Project.Parts.TestBench ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProjectPartsTestBench.hs, interpreted )
+-- [22 of 30] Compiling NITTA.Project.Parts.TargetSystem ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProjectPartsTargetSystem.hs, interpreted )
+-- [23 of 30] Compiling NITTA.Project.Parts.Icarus ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProjectPartsIcarus.hs, interpreted )
+-- [24 of 30] Compiling NITTA.Model.Networks.Types ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelNetworksTypes.hs, interpreted )
+-- [25 of 30] Compiling NITTA.Utils.ProcessDescription ( UserspenskoiDocumentsnitta-corpnittasrcNITTAUtils/ProcessDescription.hs, interpreted )
+-- [26 of 30] Compiling NITTA.Model.Networks.Bus ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelNetworksBus.hs, interpreted )
+-- [27 of 30] Compiling NITTA.Project.Parts.Quartus ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProjectPartsQuartus.hs, interpreted )
+-- [28 of 30] Compiling NITTA.Project.Utils ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject/Utils.hs, interpreted )
+-- [29 of 30] Compiling NITTA.Project    ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject.hs, interpreted )
+-- [30 of 30] Compiling NITTA.Model.ProcessorUnits.Multiplier ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProcessorUnitsMultiplier.hs, interpreted )
+-- Ok, 30 modules loaded.
+-- > :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval Data.Set
+-- > :set prompt "ESC[34mλ> ESC[m"
+-- @
+--
+-- Now create the function and multiplier model initial state. Unfortunately, it
+-- is not enough information for GHC deduction of its type, so let's define its
+-- implicitly.
+--
+-- >>> let f = F.multiply "a" "b" ["c", "d"] :: F String Int
+-- >>> f
+-- a * b = c = d
+-- >>> let st0 = multiplier True :: Multiplier String Int Int
+-- >>> st0
+-- Multiplier {remain = [], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
+--     steps     =
+-- <BLANKLINE>
+--     relations =
+-- <BLANKLINE>
+--     nextTick  = 0
+--     nextUid   = 0
+-- , tick = 0, isMocked = True}
+-- >>> endpointOptions st0
+-- []
+--
+-- Bind a function to the multiplier unit. This operation could be executed at
+-- any time of working with a model, including when a computation process is
+-- fully scheduled (new work can be added). The main rules are: 1) if work is
+-- fully scheduled, then it is necessary to perform it, and any part of it
+-- cannot be "lost" inside the model; 2) if a unit has its internal resources,
+-- there should be enough to finish schedule, even it is inefficient.
+--
+-- >>> let Right st1 = tryBind f st0
+-- >>> st1
+-- Multiplier {remain = [a * b = c = d], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
+--     steps     =
+-- <BLANKLINE>
+--     relations =
+-- <BLANKLINE>
+--     nextTick  = 0
+--     nextUid   = 0
+-- , tick = 0, isMocked = True}
+-- >>> endpointOptions st1
+-- [?Target "a"@(1..∞ /P 1..∞),?Target "b"@(1..∞ /P 1..∞)]
+--
+-- As we can see, after binding, we have two different options of computational
+-- process scheduling that match different argument loading sequences: @a@ or
+-- @b@. We can see that they are similar from an execution sequence point of
+-- view: loading can be started from 0 tick or after an arbitrary delay; for
+-- loading of one argument needed only one tick, but it can continue for an
+-- arbitrary time. Choose the variant.
+--
+-- >>> let st2 = endpointDecision st1 $ EndpointSt (Target "a") (0...2)
+-- >>> st2
+-- Multiplier {remain = [], targets = ["b"], sources = ["c","d"], doneAt = Nothing, currentWork = Just (1,a * b = c = d), currentWorkEndpoints = [0], process_ = Process
+--     steps     =
+--         0) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
+--         1) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
+--     relations =
+--         0) Vertical 0 1
+--     nextTick  = 2
+--     nextUid   = 2
+-- , tick = 2, isMocked = True}
+-- >>> mapM_ print $ endpointOptions st2
+-- ?Target "b"@(3..∞ /P 1..∞)
+-- >>> let st3 = endpointDecision st2 $ EndpointSt (Target "b") (3...3)
+-- >>> st3
+-- Multiplier {remain = [], targets = [], sources = ["c","d"], doneAt = Just 6, currentWork = Just (1,a * b = c = d), currentWorkEndpoints = [2,0], process_ = Process
+--     steps     =
+--         0) Step {sKey = 3, sTime = 3 ... 3, sDesc = Load B}
+--         1) Step {sKey = 2, sTime = 3 ... 3, sDesc = Target "b"}
+--         2) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
+--         3) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
+--     relations =
+--         0) Vertical 2 3
+--         1) Vertical 0 1
+--     nextTick  = 3
+--     nextUid   = 4
+-- , tick = 3, isMocked = True}
+-- >>> mapM_ print $ endpointOptions st3
+-- ?Source "c","d"@(6..∞ /P 1..∞)
+--
+-- After loading both arguments, we can see that the next option is unloading
+-- @c@ and @d@ variables. Note, these variables can be unloaded either
+-- concurrently or sequentially (for details, see how the multiplier works
+-- inside). Consider the second option:
+--
+-- >>> let st4 = endpointDecision st3 $ EndpointSt (Source $ fromList ["c"]) (6...6)
+-- >>> st4
+-- Multiplier {remain = [], targets = [], sources = ["d"], doneAt = Just 6, currentWork = Just (1,a * b = c = d), currentWorkEndpoints = [4,2,0], process_ = Process
+--     steps     =
+--         0) Step {sKey = 5, sTime = 6 ... 6, sDesc = Out}
+--         1) Step {sKey = 4, sTime = 6 ... 6, sDesc = Source "c"}
+--         2) Step {sKey = 3, sTime = 3 ... 3, sDesc = Load B}
+--         3) Step {sKey = 2, sTime = 3 ... 3, sDesc = Target "b"}
+--         4) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
+--         5) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
+--     relations =
+--         0) Vertical 4 5
+--         1) Vertical 2 3
+--         2) Vertical 0 1
+--     nextTick  = 6
+--     nextUid   = 6
+-- , tick = 6, isMocked = True}
+-- >>> mapM_ print $ endpointOptions st4
+-- ?Source "d"@(7..∞ /P 1..∞)
+-- >>> let st5 = endpointDecision st4 $ EndpointSt (Source $ fromList ["d"]) (7...7)
+-- >>> st5
+-- Multiplier {remain = [], targets = [], sources = [], doneAt = Nothing, currentWork = Nothing, currentWorkEndpoints = [], process_ = Process
+--     steps     =
+--         0) Step {sKey = 8, sTime = 1 ... 7, sDesc = "a" * "b" = "c" = "d"}
+--         1) Step {sKey = 7, sTime = 7 ... 7, sDesc = Out}
+--         2) Step {sKey = 6, sTime = 7 ... 7, sDesc = Source "d"}
+--         3) Step {sKey = 5, sTime = 6 ... 6, sDesc = Out}
+--         4) Step {sKey = 4, sTime = 6 ... 6, sDesc = Source "c"}
+--         5) Step {sKey = 3, sTime = 3 ... 3, sDesc = Load B}
+--         6) Step {sKey = 2, sTime = 3 ... 3, sDesc = Target "b"}
+--         7) Step {sKey = 1, sTime = 0 ... 2, sDesc = Load A}
+--         8) Step {sKey = 0, sTime = 0 ... 2, sDesc = Target "a"}
+--     relations =
+--         0) Vertical 8 6
+--         1) Vertical 8 4
+--         2) Vertical 8 2
+--         3) Vertical 8 0
+--         4) Vertical 6 7
+--         5) Vertical 4 5
+--         6) Vertical 2 3
+--         7) Vertical 0 1
+--     nextTick  = 7
+--     nextUid   = 9
+-- , tick = 7, isMocked = True}
+-- >>> endpointOptions st5
+-- []
+--
+-- All options of computing process scheduling are run out. All bound functions
+-- are planned. Further microcode can be generated, which can be organizing the
+-- described computational process on the multiplier.
+module NITTA.Model.ProcessorUnits.Multiplier (
+    multiplier,
+    Multiplier,
+    Ports (..),
+    IOPorts (..),
+) where
+
+import Control.Monad (when)
+import Data.Default
+import Data.List (find, partition, (\\))
+import Data.Set (elems, fromList, member)
+import qualified NITTA.Intermediate.Functions as F
+import NITTA.Intermediate.Types
+import NITTA.Model.Problems
+import NITTA.Model.ProcessorUnits.Types
+import NITTA.Model.Types
+import NITTA.Project
+import NITTA.Utils
+import NITTA.Utils.ProcessDescription
+import Numeric.Interval (sup, (...))
+import Text.InterpolatedString.Perl6 (qc)
+
+-- |It is a PU model state representation, which describes each state of
+-- synthesis model for that PU.
 data Multiplier v x t = Multiplier
-    {
-    -- |List of the assigned, but not processed functions. Functions execution
-    -- starts with:
-    --
-    -- - removing functions from this list;
-    -- - transfering information from function to 'targets' and 'sources'
-    --   fields.
-    --
-    -- Assigned function can be executed in a random order.
-      remain               :: [ F v x ]
-    -- |List of variables, which are needed to upload to mUnit for current
-    -- function computation.
-    , targets              :: [ v ]
-    -- |List of variables, which are needed to download from mUnit for
-    -- current function computation. Download order is arbitrary. Necessary
-    -- to notice that all downloading variables match to one value -
-    -- multiplying result.
-    , sources              :: [ v ]
-    -- Actual process of multiplying will be finished in the specified
-    -- moment and its result will be available for download. Value is
-    -- established after uploading of all arguments.
-    , doneAt               :: Maybe t
-    , currentWork          :: Maybe ( t, F v x )
-    -- |While planning of execution of function necessary to define
-    -- undefined value of uploading / downloading of data to / from mUnit,
-    -- to then set up vertical behavior between information about executing
-    -- function and this send.
-    , currentWorkEndpoints :: [ ProcessStepID ]
-    -- |Description of target computation process
-    -- ('NITTA.Model.ProcessorUnits.Time')
-    , process_             :: Process v x t
-    , tick                 :: t
-    -- |HDL implementation of PU contains multiplier IP core from Altera
-    -- Quartus. This can not be simulated by Icarus Verilog. If `isMocked`
-    -- is marked, a target system will be contained non-synthesizable
-    -- implementation of that IP-core.
-    , isMocked             :: Bool
+    { -- |List of the assigned but not processed functions. To execute a
+      -- function:
+      --
+      -- - removing the function from this list;
+      --
+      -- - transfering information from function to 'targets' and 'sources'
+      --   fields.
+      --
+      -- An assigned function can be executed in random order.
+      remain :: [F v x]
+    , -- |List of variables, which is needed to push to the PU for current
+      -- function evaluation.
+      targets :: [v]
+    , -- |List of variables, which is needed to pull from PU for current
+      -- function evaluation. Pull order is arbitrary. All pulled variables
+      -- correspond to the same value (same result).
+      sources :: [v]
+    , -- TODO: Establish vertical relationships between function and endpoints
+      -- without these fields (doneAt, currenctWork, currentWorkEndpoints).
+      doneAt :: Maybe t
+    , currentWork :: Maybe (t, F v x)
+    , -- |While planning of execution of function necessary to define
+      -- undefined value of uploading / downloading of data to / from mUnit,
+      -- to then set up vertical behavior between information about executing
+      -- function and this send.
+      currentWorkEndpoints :: [ProcessStepID]
+    , -- |Description of scheduled computation process
+      -- ('NITTA.Model.ProcessorUnits.Types').
+      process_ :: Process v x t
+    , -- TODO: avoid this field
+      tick :: t
+    , -- |HDL implementation of PU contains a multiplier IP core from Altera.
+      -- Icarus Verilog can not simulate it. If `isMocked` is set, a target
+      -- system will be contained non-synthesizable implementation of that
+      -- IP-core.
+      isMocked :: Bool
     }
 
-deriving instance ( VarValTime v x t ) => Show (Multiplier v x t)
+deriving instance (VarValTime v x t) => Show (Multiplier v x t)
 
+-- | Multiplier PU model constructor. Argument defines the computation unit's
+-- internal organization: using multiplier IP kernel (False) or mock (True). For
+-- more information, look hardware function in 'TargetSystemComponent' class.
+multiplier mock =
+    Multiplier
+        { remain = []
+        , targets = []
+        , sources = []
+        , doneAt = Nothing
+        , currentWork = Nothing
+        , currentWorkEndpoints = []
+        , process_ = def
+        , tick = def
+        , isMocked = mock
+        }
 
--- |Tracking internal dependencies on the data generated by the mUnit.
-instance ( Var v ) => Locks (Multiplier v x t) v where
-    locks Multiplier{ remain, sources, targets } =
-        -- The dependence of the output of the loaded arguments. If @ sources @ is an empty list,
-        -- then there will be no dependencies.
-        [ Lock{ lockBy, locked }
+-- |Default initial state of multiplier PU model.
+instance (Time t) => Default (Multiplier v x t) where
+    def = multiplier True
+
+instance Default x => DefaultX (Multiplier v x t) x
+
+-- |This class is allowed to extract all bound functions. It has a very simple
+-- implementation: we take process description (all planned functions), and
+-- function in progress, if it is.
+instance (Ord t) => WithFunctions (Multiplier v x t) (F v x) where
+    functions Multiplier{process_, remain, currentWork} =
+        functions process_
+            ++ remain
+            ++ case currentWork of
+                Just (_, f) -> [f]
+                Nothing -> []
+
+-- |Tracking internal dependencies on the processed variables. It includes:
+--
+-- - dependencies between inputs and outputs of currently evaluated function;
+--
+-- - dependencies of all remain functions from the currently evaluated function
+--   (if it is).
+instance (Var v) => Locks (Multiplier v x t) v where
+    locks Multiplier{remain, sources, targets} =
+        [ Lock{lockBy, locked}
         | locked <- sources
         , lockBy <- targets
         ]
-        ++
-        -- The dependencies of the functions in the queue on the current moment.
-        [ Lock{ lockBy, locked }
-        | locked <- concatMap (elems . variables) remain
-        , lockBy <- sources ++ targets
-        ]
+            ++ [ Lock{lockBy, locked}
+               | locked <- concatMap (elems . variables) remain
+               , lockBy <- sources ++ targets
+               ]
 
+-- |That type class describes the possibility of PU to modify an algorithm.
+-- Empty implementation means that multiplier PU doesn't have such
+-- possibilities.
 instance RefactorProblem (Multiplier v x t) v x
 
-
--- |Multiplier mUnit construction. Argument define inner organisation of the computation
--- unit:  using of multiplier IP kernel (False) or mock (True). For more information look hardware function
--- in 'TargetSystemComponent' class.
-multiplier mock = Multiplier
-    { remain=[]
-    , targets=[]
-    , sources=[]
-    , doneAt=Nothing
-    , currentWork=Nothing
-    , currentWorkEndpoints=[]
-    , process_=def
-    , tick=def
-    , isMocked=mock
-    }
-
-
--- This type class carry out binding of functions to computational blocks. It lets to check,
--- can function be computated by this mUnit and if can - carry out functuons assignment.
--- Within it binding renouncement can be related  either to that type of functions doesn't supporting
--- or with that inner resources of mUnit are empty.
+-- | This type class specifies how to bind functions to the PU. If it is
+-- possible, @tryBind@ function will return @Right@ value with a new PU model
+-- state. If not, @Left@ value with reason description. And also specify how to
+-- get computation process description.
 --
--- From CAD point of view bind looks like: CAD aks models from all available instances of
--- mUnit and get list of instances ready to start work with considered function. After this, based
--- on the different metrics (for example, uploading of processors, number and types of still not binded functions)
--- the best variant is choosed. Binding can be done either gradully while computation process planning or
--- at the same time on the start for all functions.
-instance ( VarValTime v x t
-         ) => ProcessorUnit (Multiplier v x t) v x t where
-    -- Binding to mUnit is carried out by this function.
-    tryBind f pu@Multiplier{ remain }
-        -- To do this, it is checked whether the function type is reduced to one of the supported
-        -- by ('NITTA.FunctionalBlocks.castF')  and in case of success model conditions is returned
-        -- after binding with 'Right' mark.
-        --
-        -- Important to notice, that "binding" doesn't mean actually beginning of work, that
-        -- allows firstly make bindings of all tasks and after plan computation process.
-        | Just F.Multiply{} <- castF f = Right pu{ remain=f : remain }
-        -- In case of impossibility of binding string with short description of renouncement
-        --cause and 'Left' is returned.
+-- From the CAD point of view, bind looks like:
+--
+-- - CAD asks PU models: "Who can evaluate this function?" and get the list of
+--   possible bindings.
+--
+-- - CAD, based on the different metrics (see 'NITTA.Synthesis.Estimate'), the
+--   best variant is chosen.
+--
+-- Binding can be done either gradually due synthesis process at the start.
+instance
+    ( VarValTime v x t
+    ) =>
+    ProcessorUnit (Multiplier v x t) v x t
+    where
+    tryBind f pu@Multiplier{remain}
+        | Just F.Multiply{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
-    -- Unificate interface for get computation process description.
+
+    -- Unified interface for getting computation process description.
     process = process_
 
-
--- |This function carry out actual take functional block to work.
-execution pu@Multiplier{ targets=[], sources=[], remain, tick } f
-    | Just (F.Multiply (I a) (I b) (O c)) <- castF f
-    = pu
-        { targets=[a, b]
-        , currentWork=Just (tick + 1, f)
-        , sources=elems c
-        , remain=remain \\ [ f ]
-        }
+-- | Execute function (set as current and remove from remain).
+execution pu@Multiplier{targets = [], sources = [], remain, tick} f
+    | Just (F.Multiply (I a) (I b) (O c)) <- castF f =
+        pu
+            { targets = [a, b]
+            , currentWork = Just (tick + 1, f)
+            , sources = elems c
+            , remain = remain \\ [f]
+            }
 execution _ _ = error "Multiplier: internal execution error."
 
+-- | A computational process of PU from a hardware architectural perspective can
+-- be described as a sequence of pushing and pulling values. From a synthesis
+-- perspective, it is represented by 'EndpointProblem', which describes when PU
+-- is a 'Source' or 'Target' of data transfers.
+--
+-- Work with endpoint problem implemented by only two functions:
+--
+-- __endpointOptions__ define what the possible synthesis decision is. It
+-- includes three cases:
+--
+-- - Not a function is executed. That means that we have options to push any
+--   input variables of remain functions.
+--
+-- - The function is executed, and not all arguments are received. We have
+--   options to push remain variables.
+--
+-- - The function is executed, and all arguments are received. We have options
+--   to pull the result from the multiplier, which can include several
+--   variables. These variables can be got one by one or all at once because the
+--   value will be written to the bus and read by several processor units on the
+--   hardware level.
+--
+-- Note: an option don't specify moment for action but specify an available
+-- interval ('NITTA.Model.Types.TimeConstrain'). That describes the interval for
+-- action start and restriction on process duration.
+--
+-- __endpointDecision__ defines how to apply synthesis decision to the PU model.
+-- It includes three cases:
+--
+-- - Push an input variable of the executed function. We need to schedule
+--   instruction for endpoint action and modify the model state.
+--
+-- - Pull an output variable or variables of the executed function. We need to
+--   schedule instruction for endpoint action and modify the model state.
+--
+-- - Push an input variable of a not executed function. In this case, we need to
+--   find the selected function, 'execute' it, and do a recursive call with the
+--   same decision.
+instance
+    ( VarValTime v x t
+    ) =>
+    EndpointProblem (Multiplier v x t) v t
+    where
+    endpointOptions Multiplier{targets, tick}
+        | not $ null targets =
+            map (\v -> EndpointSt (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) targets
+    endpointOptions Multiplier{sources, doneAt = Just at, tick}
+        | not $ null sources =
+            [EndpointSt (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound)]
+    endpointOptions pu@Multiplier{remain} = concatMap (endpointOptions . execution pu) remain
 
-
-{-
-Result of planning is description of one computation cycle, which later can be translated to microcode,
-directly control mUnit. From NITTA architecture point of view, process can be described as
-consistent execution two roles by processoe:
-
-- data source ('Source');
-- data target ('Target');
-
-The planning process itself consists of two operations performed in a cycle:
--}
-instance ( VarValTime v x t
-        ) => EndpointProblem (Multiplier v x t) v t
-        where
-    --1. Processors is asked about roles it can realise (in the other words, how computation
-    --process can develop). It is realised by @options@ functions, result of which is
-    --one of the further list:
-
-    --list of variants of uploading to mUnit variables, which are needed to function
-    --that is in work;
-    endpointOptions Multiplier{ targets=vs@(_:_), tick }
-        = map (\v -> EndpointSt (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) vs
-
-     --   list of variants of downloading from mUnit variables;
-    endpointOptions Multiplier{ sources, doneAt=Just at, tick }
+    endpointDecision pu@Multiplier{targets = vs, currentWorkEndpoints} d@EndpointSt{epRole = Target v, epAt}
+        | not $ null vs
+          , ([_], xs) <- partition (== v) vs
+          , -- @sel@ veriable is used for uploading queuing of variable to hardware block, that is
+            -- requred because of realisation.
+            let sel = if null xs then B else A
+          , --  Computation process planning is carried out.
+            let (newEndpoints, process_') = runSchedule pu $ do
+                    -- this is required for correct work of automatically generated tests,
+                    -- that takes information about time from Process
+                    updateTick (sup epAt)
+                    scheduleEndpoint d $ scheduleInstruction epAt $ Load sel =
+            pu
+                { process_ = process_'
+                , -- The remainder of the work is saved for the next loop
+                  targets = xs
+                , -- We save information about events that describe sending or recieving data for
+                  -- current functionatl unit.
+                  currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
+                , -- If all required arguments are upload (@null xs@), then the moment of time
+                  -- when we get a result is saved.
+                  doneAt =
+                    if null xs
+                        then Just $ sup epAt + 3
+                        else Nothing
+                , -- Model time is running
+                  tick = sup epAt
+                }
+    endpointDecision pu@Multiplier{targets = [], sources, doneAt, currentWork = Just (a, f), currentWorkEndpoints} d@EndpointSt{epRole = Source v, epAt}
         | not $ null sources
-        = [ EndpointSt (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound) ]
-
-    -- list of variables of uploading to mUnit variables, upload any one of that
-    -- will cause to actual start of working with mathched function.
-    endpointOptions pu@Multiplier{ remain } = concatMap (endpointOptions . execution pu) remain
-
-    -- Note, that options provided by this function require clarification, because:
-
-    --	1.	They point to not specific moment for work, but to available interval
-    --		('NITTA.Types.Base.TimeConstrain'), that describe from and to which time
-    -- 		uploading and downloading can be done, and how much time the process can continue.
-    -- 	2.	One value can be download from mUnit as several different variables. This can
-    --		be done either all at once (on the hardware level the value writed to the bus and
-    -- 		read by several processors), as a consistent (firstly value on the bus can be writed for
-    --		one mUnit, and after for next one), what should be specified too.
-
-
-    -- 2. 	Process planning or making decision about compuatation process development to
-    --	  	mUnit model state is carried out by @decision@. Variant transformation
-    --		from got from @options@ is carried out by CAD outside the mUnit model.
-    --		We can distinguish the following solutions:
-    --
-    --		1. If model wait variable uploading:
-    endpointDecision pu@Multiplier{ targets=vs, currentWorkEndpoints } d@EndpointSt{ epRole=Target v, epAt }
-           -- From the list of uploading value we get a needed value, and remainder is saved
-           -- for the next steps.
-        | ([_], xs) <- partition (== v) vs
-             -- @sel@ veriable is used for uploading queuing of variable to hardware block, that is
-             -- requred because of realisation.
-        , let sel = if null xs then B else A
-             --  Computation process planning is carried out.
-        , let (newEndpoints, process_') = runSchedule pu $ do
-                -- this is required for correct work of automatically generated tests,
-                -- that takes information about time from Process
-                updateTick (sup epAt)
-                scheduleEndpoint d $ scheduleInstruction epAt $ Load sel
-        = pu
-            { process_=process_'
-            -- The remainder of the work is saved for the next loop
-            , targets=xs
-            -- We save information about events that describe sending or recieving data for
-            -- current functionatl unit.
-            , currentWorkEndpoints=newEndpoints ++ currentWorkEndpoints
-            -- If all required arguments are upload (@null xs@), then the moment of time
-            -- when we get a result is saved.
-             , doneAt=if null xs
-                then Just $ sup epAt + 3
-                else Nothing
-            -- Model time is running
-             , tick=sup epAt
-            }
---	2. If model is waiting, that we will download variables from it.
-    endpointDecision pu@Multiplier{ targets=[], sources, doneAt, currentWork=Just (a, f), currentWorkEndpoints } d@EndpointSt{ epRole=Source v, epAt }
-        | not $ null sources
-        , let sources' = sources \\ elems v
-        , sources' /= sources
-        -- Compututation process planning is carring on.
-        , let (newEndpoints, process_') = runSchedule pu $ do
-                endpoints <- scheduleEndpoint d $ scheduleInstruction epAt Out
-                when (null sources') $ do
-                    high <- scheduleFunction (a ... sup epAt) f
-                    let low = endpoints ++ currentWorkEndpoints
-                    -- Set up the vertical relantions between functional unit
-                    -- and related to that data sending.
-                    establishVerticalRelations high low
-                -- this is needed to correct work of automatically generated tests
-                -- that takes time about time from Process
-                updateTick (sup epAt)
-                return endpoints
-        = pu
-            { process_=process_'
-              -- In case if not all variables what asked - remaining are saved.
-            , sources=sources'
-              -- if all of works is done, then time when result is ready,
-              -- current work and data transfering, what is done is the current function is reset.
-            , doneAt=if null sources' then Nothing else doneAt
-            , currentWork=if null sources' then Nothing else Just (a, f)
-            , currentWorkEndpoints=if null sources' then [] else newEndpoints ++ currentWorkEndpoints
-              -- Model time is running up
-            , tick=sup epAt
-            }
-    --    3. If no function is executed at the moment, then we need to find function in the list
-    --    of assigned function, executed it to work and only then make decision
-    --    and plan a fragment of computation process with call recursion in situation 1.
-    endpointDecision pu@Multiplier{ targets=[], sources=[], remain } d
+          , let sources' = sources \\ elems v
+          , sources' /= sources
+          , -- Compututation process planning is carring on.
+            let (newEndpoints, process_') = runSchedule pu $ do
+                    endpoints <- scheduleEndpoint d $ scheduleInstruction epAt Out
+                    when (null sources') $ do
+                        high <- scheduleFunction (a ... sup epAt) f
+                        let low = endpoints ++ currentWorkEndpoints
+                        -- Set up the vertical relantions between functional unit
+                        -- and related to that data sending.
+                        establishVerticalRelations high low
+                    -- this is needed to correct work of automatically generated tests
+                    -- that takes time about time from Process
+                    updateTick (sup epAt)
+                    return endpoints =
+            pu
+                { process_ = process_'
+                , -- In case if not all variables what asked - remaining are saved.
+                  sources = sources'
+                , -- if all of works is done, then time when result is ready,
+                  -- current work and data transfering, what is done is the current function is reset.
+                  doneAt = if null sources' then Nothing else doneAt
+                , currentWork = if null sources' then Nothing else Just (a, f)
+                , currentWorkEndpoints = if null sources' then [] else newEndpoints ++ currentWorkEndpoints
+                , -- Model time is running up
+                  tick = sup epAt
+                }
+    endpointDecision pu@Multiplier{targets = [], sources = [], remain} d
         | let v = oneOf $ variables d
-        , Just f <- find (\f -> v `member` variables f) remain
-        = endpointDecision (execution pu f) d
-    -- If smth went wrong.
+          , Just f <- find (\f -> v `member` variables f) remain =
+            endpointDecision (execution pu f) d
+    -- If something went wrong.
     endpointDecision pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d
 
-
+-- TODO: optimize ArgumentSelector
 
 -- |Multiplications argument id
 --
--- As we said before, because of some hardware organisation features, we need to take in
--- mind operators boot sequence in planned process on instruction level. This type os defined to do it.
--- But instide of this we need to notice, that from algorhytm and model  way of view
--- argument order doesn't mean, that is represented in class computation process'
--- planning responding  that realised above.
+-- As we said before, because of some hardware organisation features, we need to
+-- take in mind operators sequence in planned process on instruction level. This
+-- type os defined to do it. But instide of this we need to notice, that from
+-- algorhytm and model way of view argument order doesn't mean, that is
+-- represented in class computation process' planning responding that realised
+-- above.
 data ArgumentSelector = A | B
-    deriving ( Show, Eq )
+    deriving (Show, Eq)
 
-
-
--- |Now we will consider questions of computation process planning organisation on hardware level.
--- For do this on model level two levels of view is defined:
+-- |For each PU, we can specify the instruction set and microcode, which allows
+-- us to control the PU at the hardware level.
 --
--- - instructions level, where  describes computation process in
--- convienment to develover form.
--- - microcode level, where describes structure of processors controls  signals and
--- values.
+-- - instructions set describes a computation process from a programmer point of
+--   view;
+--
+-- - microcode describes the structure of processors that controls signals.
 instance Controllable (Multiplier v x t) where
-    -- |Instructions for multiplier mUnit controlling. Multiplier can only
-    -- upload arguments A and B, and download multiplication result. This construction
-    -- are used in computation process planning by 'schedule' function. Instead of them,
-    -- there is a @nop@ function - when no actions execute.
     data Instruction (Multiplier v x t)
         = Load ArgumentSelector
         | Out
         deriving (Show)
 
-    -- Set of signals for mUnit control and microcode view for
-    -- the mUnit
-    data Microcode (Multiplier v x t)
-        = Microcode
-          { -- | Write to mUnit signal.
-              wrSignal :: Bool
-              -- |Uploading to mUnit argument selector.
-            , selSignal :: Bool
-              -- |Downloading from mUnit signal.
-            , oeSignal :: Bool
-            }
-        deriving ( Show, Eq, Ord )
-
-    mapMicrocodeToPorts Microcode{..} MultiplierPorts{..}
-        =
-            [ (wr, Bool wrSignal)
-            , (wrSel, Bool selSignal)
-            , (oe, Bool oeSignal)
-            ]
-
-    portsToSignals MultiplierPorts{ wr, wrSel, oe } = [wr, wrSel, oe]
-
-    signalsToPorts (wr:wrSel:oe:_) _ = MultiplierPorts wr wrSel oe
-    signalsToPorts _               _ = error "pattern match error in signalsToPorts MultiplierPorts"
-
--- |Also we need to define default state for microcode (that is match to implicit @nop@ function)
--- This state mean that mUnit is in inaction state, but doesn't busy the bus and storage
--- inner state in predictable view. In multiplier case - it doesn't reset multiplication result and
--- doesn't work with bus. Default state is using for mUnit stop, pause or waiting
-
-instance Default (Microcode (Multiplier v x t)) where
-    def = Microcode
-        { wrSignal=False
-        , selSignal=False
-        , oeSignal=False
+    data Microcode (Multiplier v x t) = Microcode
+        { -- | Write to mUnit signal.
+          wrSignal :: Bool
+        , -- |Uploading to mUnit argument selector.
+          selSignal :: Bool
+        , -- |Downloading from mUnit signal.
+          oeSignal :: Bool
         }
+        deriving (Show, Eq, Ord)
 
+    mapMicrocodeToPorts Microcode{..} MultiplierPorts{..} =
+        [ (wr, Bool wrSignal)
+        , (wrSel, Bool selSignal)
+        , (oe, Bool oeSignal)
+        ]
 
-instance ( Time t ) => Default (Multiplier v x t) where
-    def = multiplier True
+    portsToSignals MultiplierPorts{wr, wrSel, oe} = [wr, wrSel, oe]
 
+    signalsToPorts (wr : wrSel : oe : _) _ = MultiplierPorts wr wrSel oe
+    signalsToPorts _ _ = error "pattern match error in signalsToPorts MultiplierPorts"
 
-instance Default x => DefaultX (Multiplier v x t) x
+-- |Default microcode state should be equal to @nop@ function, which should be a
+-- safe way to do nothing (not take a bus, not change internal PU state, etc.).
+instance Default (Microcode (Multiplier v x t)) where
+    def =
+        Microcode
+            { wrSignal = False
+            , selSignal = False
+            , oeSignal = False
+            }
 
-
--- |Instruction and microcode binding is carried up by this class, which requires their
--- unambiguous matching, as well as regardless of the status and settings of the model.
+-- |Instruction and microcode should have exact matching, which allows us to
+-- translate PU instructions to microcode value.
 instance UnambiguouslyDecode (Multiplier v x t) where
-    decodeInstruction (Load A) = def{ wrSignal=True, selSignal=False }
-    decodeInstruction (Load B) = def{ wrSignal=True, selSignal=True }
-    decodeInstruction Out      = def{ oeSignal=True }
+    decodeInstruction (Load A) = def{wrSignal = True, selSignal = False}
+    decodeInstruction (Load B) = def{wrSignal = True, selSignal = True}
+    decodeInstruction Out = def{oeSignal = True}
 
--- |Processor signals. In @BusNetwork@ this signal directly connecting to ControlUnit.
+-- |Processor unit control signal ports. In
+-- 'NITTA.Model.Networks.Bus.BusNetwork', these ports are directly connecting to
+-- @ControlUnit@.
 instance Connected (Multiplier v x t) where
     data Ports (Multiplier v x t) = MultiplierPorts
-        { wr    :: SignalTag -- ^get data from the bus (data_in)
-        , wrSel :: SignalTag -- ^determine argument on the bus (A | B)
-        , oe    :: SignalTag -- ^send result to the bus
-        } deriving ( Show )
+        { -- |get data from the bus (data_in)
+          wr :: SignalTag
+        , -- |determine argument on the bus (A | B)
+          wrSel :: SignalTag
+        , -- |send result to the bus
+          oe :: SignalTag
+        }
+        deriving (Show)
 
 instance IOConnected (Multiplier v x t) where
-  data IOPorts (Multiplier v x t) = MultiplierIO
-        deriving ( Show )
+    data IOPorts (Multiplier v x t) = MultiplierIO
+        deriving (Show)
 
-
--- | We use functions that is realized below to generate processors and tests, that use this
--- mUnit. These methods are called while generation of project with net, that include this
--- mUnit or also with tests generation.
-instance ( VarValTime v x t
-         ) => TargetSystemComponent (Multiplier v x t) where
-    -- | Naming of hardwawre module, instance of which is creting for embedding to mUnit.
-    -- In this case it is defined in @/hdl/multiplier/pu_multiplier.v@.
+-- | Usage of PU requires some artifacts of a synthesis process:
+--
+-- - Hardware implementation, which depends from 'isMocked' value:
+--
+-- - Software (not needed for the multiplier because it does not have any
+--   configuration and is controlled from the network level).
+--
+-- - Hardware instance in the upper structure element.
+instance
+    ( VarValTime v x t
+    ) =>
+    TargetSystemComponent (Multiplier v x t)
+    where
     moduleName _title _pu = "pu_multiplier"
 
-    -- | Processors software generator. In case of multiplier this is no software.
-    --Let's figure it out. Before we said, that software has two components:
-    --
-    -- 1. Setting and begin states. In case of multiplier there is no specific settings
-    --    for the applied algorhytm.
-    -- 2. Microprogram. Processor cannot be user not in mUnit ner sructure, we needn't to
-    --    determine software in context of separate unit. Besides, signal lines of separated
-    --    processors can be multiplexed. Thereby, microprogram is formed for
-    --    processors net just at once in way of merge of the microprogramms, that are
-    --    generated on the base of computational planning description
-    --    (look. 'NITTA.Model.Networks.Bus').
-    software _ _ = Empty
-
-    --	|Processor hardware generator. In case of multiplier, there is no generation.
-    --	Multiplier is described by two files: (1) directly multiplier, that is realized
-    --	by IP kernel or functional stub. (2) module. that realize interface between
-    --	multuplier and processors infostructure.
-    hardware tag pu@Multiplier{ isMocked }
-        = Aggregate Nothing
+    hardware tag pu@Multiplier{isMocked} =
+        Aggregate
+            Nothing
             [ if isMocked
                 then FromLibrary "multiplier/mult_mock.v"
                 else FromLibrary "multiplier/mult_inner.v"
             , FromLibrary $ "multiplier/" ++ moduleName tag pu ++ ".v"
             ]
 
-    --	|Source code fragment generation for create mUnit instance within the processorю
-    -- 	The main task of the function is to include mUnit to mUnit infostructure correctly.
-    --	and set uo all parameters, names and wires.
-    --
-    -- Take attention to function @codeBlock@. This function allows a programmer to use
-    -- normal code block indentation.
-    hardwareInstance tag _pu TargetEnvironment{ unitEnv=ProcessUnitEnv{..}, signalClk, signalRst } MultiplierPorts{..} MultiplierIO
-        = codeBlock [qc|
+    software _ _ = Empty
+
+    hardwareInstance tag _pu TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk, signalRst} MultiplierPorts{..} MultiplierIO =
+        codeBlock
+            [qc|
             pu_multiplier #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
@@ -705,61 +694,50 @@ instance ( VarValTime v x t
                 , .attr_out( { attrOut } )
                 );
             |]
-    hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
-        = error "Should be defined in network."
+    hardwareInstance _title _pu TargetEnvironment{unitEnv = NetworkEnv{}} _ports _io =
+        error "Should be defined in network."
 
-
--- As you can see ahead, this class uses to get data bus width from the type level (@x@ type variable).
+-- |Empty implementation of 'NITTA.Project.Parts.TestBench.IOTestBench' class
+-- means that multiplier, as expected, doesn't have any IO.
 instance IOTestBench (Multiplier v x t) v x
 
-
--- | This class is service and used to extract all functions binding to mUnit.
--- This class is easy realized: we take process description
--- (all planned functions) from mUnit, and function in progress,
--- if it is.
-instance ( Ord t ) => WithFunctions (Multiplier v x t) (F v x) where
-    functions Multiplier{ process_, remain, currentWork }
-        = functions process_
-        ++ remain
-        ++ case currentWork of
-            Just (_, f) -> [f]
-            Nothing     -> []
-
-
--- The main purpose of this class is to generate auto tests isolated to the mUnit.
--- In case of this it allows to generate test bench for computational unit according to its model
--- and planned computational process. Use can see tests in 'Spec'.
+-- |The main purpose of this class is to generate autotests for PU. It allows to
+-- generate testbench for the PU according to its model and scheduled
+-- computational process. You can see tests in @test/Spec.hs@. Testbench
+-- contains:
 --
--- Testing is carried out as follows: om the base of mUnit description it generate sequence
--- of outer influence o mUnit (signals and input data), and also check sequence of output signals
--- and data. Output data is compared with results of functional simulations and if they doesn't match
--- then error message is displaing.
-instance ( VarValTime v x t ) => Testable (Multiplier v x t) v x where
-    testBenchImplementation prj@Project{ pName, pUnit }
-        -- Test bech is one file described below. We use ready snippet for it generation, because
-        -- in most cases they will be similar. The data structure 'NITTA.Project.Parts.SnippetTestBenchConf' has the
-        -- key role and describes this module specific.
-        = Immediate (moduleName pName pUnit ++ "_tb.v")
-            $ snippetTestBench prj SnippetTestBenchConf
-            -- List of control signals. It is needed to initialize registers with the same names.
-                { tbcSignals=["oe", "wr", "wrSel"]
-             --Processor to environment connect function and signal lines IDs. In @tbcPorts@ describes
-             -- to what connect signal lines of test block. In @tbcSignalConnect@  how abstract numbers
-             -- is displays to generated source code.
-                , tbcPorts=MultiplierPorts
-                    { oe=SignalTag 0
-                    , wr=SignalTag 1
-                    , wrSel=SignalTag 2
+-- - The sequence of control signals that implement the already scheduled
+--   process.
+--
+-- - The sequence of bus state checks in which we compare actual values with the
+--   results of the functional simulation.
+instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
+    testBenchImplementation prj@Project{pName, pUnit} =
+        Immediate (moduleName pName pUnit ++ "_tb.v") $
+            snippetTestBench
+                prj
+                SnippetTestBenchConf
+                    { -- List of control signals. It is needed to initialize
+                      -- registers with the same names.
+                      tbcSignals = ["oe", "wr", "wrSel"]
+                    , -- A processor unit connects to the environment by signal
+                      -- lines. In 'NITTA.Project.Parts.TestBench.tbcPorts'
+                      -- describes IDs signal lines of testbench. In
+                      -- 'NITTA.Project.Parts.TestBench.tbcSignalConnect' how
+                      -- abstract numbers are translate to source code.
+                      tbcPorts =
+                        MultiplierPorts
+                            { oe = SignalTag 0
+                            , wr = SignalTag 1
+                            , wrSel = SignalTag 2
+                            }
+                    , tbcIOPorts = MultiplierIO
+                    , tbcSignalConnect = \case
+                        (SignalTag 0) -> "oe"
+                        (SignalTag 1) -> "wr"
+                        (SignalTag 2) -> "wrSel"
+                        _ -> error "testBenchImplementation wrong signal"
+                    , -- Map microcode to registers in the testbench.
+                      tbcCtrl = \Microcode{oeSignal, wrSignal, selSignal} ->
+                        [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
                     }
-                , tbcIOPorts=MultiplierIO
-                , tbcSignalConnect= \case
-                    (SignalTag 0) -> "oe"
-                    (SignalTag 1) -> "wr"
-                    (SignalTag 2) -> "wrSel"
-                    _ -> error "testBenchImplementation wrong signal"
-                  -- While test bench generation know how processors control signal is defined.
-                  -- This is described below. Notice, that work with data bus is realized in snippet.
-                , tbcCtrl= \Microcode{ oeSignal, wrSignal, selSignal } ->
-                    [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
-                }
-
