@@ -178,7 +178,7 @@
 -- <BLANKLINE>
 --     nextTick  = 0
 --     nextUid   = 0
--- , tick = 0, isMocked = True}
+-- , isMocked = True}
 -- >>> endpointOptions st0
 -- []
 --
@@ -198,7 +198,7 @@
 -- <BLANKLINE>
 --     nextTick  = 0
 --     nextUid   = 0
--- , tick = 0, isMocked = True}
+-- , isMocked = True}
 -- >>> endpointOptions st1
 -- [?Target "a"@(1..∞ /P 1..∞),?Target "b"@(1..∞ /P 1..∞)]
 --
@@ -219,7 +219,7 @@
 --         0) Vertical 0 1
 --     nextTick  = 2
 --     nextUid   = 2
--- , tick = 2, isMocked = True}
+-- , isMocked = True}
 -- >>> mapM_ print $ endpointOptions st2
 -- ?Target "b"@(3..∞ /P 1..∞)
 -- >>> let st3 = endpointDecision st2 $ EndpointSt (Target "b") (3...3)
@@ -235,7 +235,7 @@
 --         1) Vertical 0 1
 --     nextTick  = 3
 --     nextUid   = 4
--- , tick = 3, isMocked = True}
+-- , isMocked = True}
 -- >>> mapM_ print $ endpointOptions st3
 -- ?Source "c","d"@(6..∞ /P 1..∞)
 --
@@ -260,7 +260,7 @@
 --         2) Vertical 0 1
 --     nextTick  = 6
 --     nextUid   = 6
--- , tick = 6, isMocked = True}
+-- , isMocked = True}
 -- >>> mapM_ print $ endpointOptions st4
 -- ?Source "d"@(7..∞ /P 1..∞)
 -- >>> let st5 = endpointDecision st4 $ EndpointSt (Source $ fromList ["d"]) (7...7)
@@ -287,7 +287,7 @@
 --         7) Vertical 0 1
 --     nextTick  = 7
 --     nextUid   = 9
--- , tick = 7, isMocked = True}
+-- , isMocked = True}
 -- >>> endpointOptions st5
 -- []
 --
@@ -348,8 +348,6 @@ data Multiplier v x t = Multiplier
     , -- |Description of scheduled computation process
       -- ('NITTA.Model.ProcessorUnits.Types').
       process_ :: Process v x t
-    , -- TODO: avoid this field
-      tick :: t
     , -- |HDL implementation of PU contains a multiplier IP core from Altera.
       -- Icarus Verilog can not simulate it. If `isMocked` is set, a target
       -- system will be contained non-synthesizable implementation of that
@@ -371,7 +369,6 @@ multiplier mock =
         , currentWork = Nothing
         , currentWorkEndpoints = []
         , process_ = def
-        , tick = def
         , isMocked = mock
         }
 
@@ -441,11 +438,11 @@ instance
     process = process_
 
 -- | Execute function (set as current and remove from remain).
-execution pu@Multiplier{targets = [], sources = [], remain, tick} f
+execution pu@Multiplier{targets = [], sources = [], remain, process_} f
     | Just (F.Multiply (I a) (I b) (O c)) <- castF f =
         pu
             { targets = [a, b]
-            , currentWork = Just (tick + 1, f)
+            , currentWork = Just (nextTick process_ + 1, f)
             , sources = elems c
             , remain = remain \\ [f]
             }
@@ -494,12 +491,12 @@ instance
     ) =>
     EndpointProblem (Multiplier v x t) v t
     where
-    endpointOptions Multiplier{targets, tick}
+    endpointOptions Multiplier{targets, process_}
         | not $ null targets =
-            map (\v -> EndpointSt (Target v) $ TimeConstrain (tick + 1 ... maxBound) (1 ... maxBound)) targets
-    endpointOptions Multiplier{sources, doneAt = Just at, tick}
+            map (\v -> EndpointSt (Target v) $ TimeConstrain (nextTick process_ + 1 ... maxBound) (1 ... maxBound)) targets
+    endpointOptions Multiplier{sources, doneAt = Just at, process_}
         | not $ null sources =
-            [EndpointSt (Source $ fromList sources) $ TimeConstrain (max at (tick + 1) ... maxBound) (1 ... maxBound)]
+            [EndpointSt (Source $ fromList sources) $ TimeConstrain (max at (nextTick process_ + 1) ... maxBound) (1 ... maxBound)]
     endpointOptions pu@Multiplier{remain} = concatMap (endpointOptions . execution pu) remain
 
     endpointDecision pu@Multiplier{targets = vs, currentWorkEndpoints} d@EndpointSt{epRole = Target v, epAt}
@@ -527,8 +524,6 @@ instance
                     if null xs
                         then Just $ sup epAt + 3
                         else Nothing
-                , -- Model time is running
-                  tick = sup epAt
                 }
     endpointDecision pu@Multiplier{targets = [], sources, doneAt, currentWork = Just (a, f), currentWorkEndpoints} d@EndpointSt{epRole = Source v, epAt}
         | not $ null sources
@@ -555,9 +550,10 @@ instance
                   -- current work and data transfering, what is done is the current function is reset.
                   doneAt = if null sources' then Nothing else doneAt
                 , currentWork = if null sources' then Nothing else Just (a, f)
-                , currentWorkEndpoints = if null sources' then [] else newEndpoints ++ currentWorkEndpoints
-                , -- Model time is running up
-                  tick = sup epAt
+                , currentWorkEndpoints =
+                    if null sources'
+                        then []
+                        else newEndpoints ++ currentWorkEndpoints gf
                 }
     endpointDecision pu@Multiplier{targets = [], sources = [], remain} d
         | let v = oneOf $ variables d
