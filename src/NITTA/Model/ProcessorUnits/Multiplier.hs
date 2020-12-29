@@ -304,7 +304,7 @@ module NITTA.Model.ProcessorUnits.Multiplier (
 import Control.Monad (when)
 import Data.Default
 import Data.List (find, partition, (\\))
-import Data.Set (elems, fromList, member)
+import qualified Data.Set as S
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
@@ -338,8 +338,7 @@ data Multiplier v x t = Multiplier
       sources :: [v]
     , -- TODO: Establish vertical relationships between function and endpoints
       -- without these fields (doneAt, currenctWork, currentWorkEndpoints).
-      doneAt :: Maybe t
-    , currentWork :: Maybe (t, F v x)
+      currentWork :: Maybe (t, F v x)
     , -- |While planning of execution of function necessary to define
       -- undefined value of uploading / downloading of data to / from mUnit,
       -- to then set up vertical behavior between information about executing
@@ -365,7 +364,6 @@ multiplier mock =
         { remain = []
         , targets = []
         , sources = []
-        , doneAt = Nothing
         , currentWork = Nothing
         , currentWorkEndpoints = []
         , process_ = def
@@ -402,7 +400,7 @@ instance (Var v) => Locks (Multiplier v x t) v where
         , lockBy <- targets
         ]
             ++ [ Lock{lockBy, locked}
-               | locked <- concatMap (elems . variables) remain
+               | locked <- concatMap (S.elems . variables) remain
                , lockBy <- sources ++ targets
                ]
 
@@ -443,7 +441,7 @@ execution pu@Multiplier{targets = [], sources = [], remain, process_} f
         pu
             { targets = [a, b]
             , currentWork = Just (nextTick process_ + 1, f)
-            , sources = elems c
+            , sources = S.elems c
             , remain = remain \\ [f]
             }
 execution _ _ = error "Multiplier: internal execution error."
@@ -493,10 +491,15 @@ instance
     where
     endpointOptions Multiplier{targets, process_}
         | not $ null targets =
-            map (\v -> EndpointSt (Target v) $ TimeConstrain (nextTick process_ + 1 ... maxBound) (1 ... maxBound)) targets
-    endpointOptions Multiplier{sources, doneAt = Just at, process_}
+            let at = nextTick process_ + 1 ... maxBound
+                duration = 1 ... maxBound
+             in map (\v -> EndpointSt (Target v) $ TimeConstrain at duration) targets
+    endpointOptions Multiplier{sources, currentWork = Just (_, f), process_}
         | not $ null sources =
-            [EndpointSt (Source $ fromList sources) $ TimeConstrain (max at (nextTick process_ + 1) ... maxBound) (1 ... maxBound)]
+            let doneAt = inputsPushedAt process_ f + 3
+                at = max doneAt (nextTick process_ + 1) ... maxBound
+                duration = 1 ... maxBound
+             in [EndpointSt (Source $ S.fromList sources) $ TimeConstrain at duration]
     endpointOptions pu@Multiplier{remain} = concatMap (endpointOptions . execution pu) remain
 
     endpointDecision pu@Multiplier{targets, currentWorkEndpoints} d@EndpointSt{epRole = Target v, epAt}
@@ -518,16 +521,10 @@ instance
                 , -- We save information about events that describe sending or recieving data for
                   -- current functionatl unit.
                   currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
-                , -- If all required arguments are upload (@null xs@), then the moment of time
-                  -- when we get a result is saved.
-                  doneAt =
-                    if null xs
-                        then Just $ sup epAt + 3
-                        else Nothing
                 }
-    endpointDecision pu@Multiplier{targets = [], sources, doneAt, currentWork = Just (a, f), currentWorkEndpoints} d@EndpointSt{epRole = Source v, epAt}
+    endpointDecision pu@Multiplier{targets = [], sources, currentWork = Just (a, f), currentWorkEndpoints} d@EndpointSt{epRole = Source v, epAt}
         | not $ null sources
-          , let sources' = sources \\ elems v
+          , let sources' = sources \\ S.elems v
           , sources' /= sources
           , -- Compututation process planning is carring on.
             let (newEndpoints, process_') = runSchedule pu $ do
@@ -548,16 +545,15 @@ instance
                   sources = sources'
                 , -- if all of works is done, then time when result is ready,
                   -- current work and data transfering, what is done is the current function is reset.
-                  doneAt = if null sources' then Nothing else doneAt
-                , currentWork = if null sources' then Nothing else Just (a, f)
+                  currentWork = if null sources' then Nothing else Just (a, f)
                 , currentWorkEndpoints =
                     if null sources'
                         then []
-                        else newEndpoints ++ currentWorkEndpoints gf
+                        else newEndpoints ++ currentWorkEndpoints
                 }
     endpointDecision pu@Multiplier{targets = [], sources = [], remain} d
         | let v = oneOf $ variables d
-          , Just f <- find (\f -> v `member` variables f) remain =
+          , Just f <- find (\f -> v `S.member` variables f) remain =
             endpointDecision (execution pu f) d
     -- If something went wrong.
     endpointDecision pu d = error $ "Multiplier decision error\npu: " ++ show pu ++ ";\n decison:" ++ show d

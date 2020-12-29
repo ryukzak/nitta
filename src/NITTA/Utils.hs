@@ -36,6 +36,7 @@ module NITTA.Utils (
     endpointAt,
     getEndpoints,
     transferred,
+    inputsPushedAt,
     isFB,
     isInstruction,
     isTarget,
@@ -47,6 +48,7 @@ import Control.Monad.State (State, get, modify', put, runState)
 import Data.Bits (setBit, testBit)
 import Data.List (sortOn)
 import Data.Maybe (isJust, mapMaybe)
+import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Endpoint
@@ -54,7 +56,7 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
 import NITTA.Utils.CodeFormat
 import Numeric (readInt, showHex)
-import Numeric.Interval ((...))
+import Numeric.Interval (sup, (...))
 import qualified Numeric.Interval as I
 import Text.StringTemplate
 
@@ -132,6 +134,17 @@ getEndpoint _ = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
 transferred pu = unionsMap variables $ getEndpoints $ process pu
+
+inputsPushedAt pr f =
+    let vs = inputs f
+     in maximum $
+            map (sup . sTime) $
+                filter
+                    ( \s -> case s of
+                        Step{sDesc = EndpointRoleStep role} -> not $ null (variables role `S.intersection` vs)
+                        _ -> False
+                    )
+                    $ steps pr
 
 isTarget (EndpointSt (Target _) _) = True
 isTarget _ = False
