@@ -27,7 +27,7 @@ import           NITTA.Intermediate.DataFlow
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.Types
 import           NITTA.Utils
 

@@ -10,13 +10,14 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- |
---Module      : NITTA.Model.ProcessorUnits.Shift
---Description : Shift Processor Unit
---Copyright   : (c) Daniil Prohorov, 2020
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : NITTA.Model.ProcessorUnits.Shift
+Description : Shift Processor Unit
+Copyright   : (c) Daniil Prohorov, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Model.ProcessorUnits.Shift (
     Shift,
     Ports (..),
@@ -127,7 +128,7 @@ instance
         | not $ null sources
           , byteShiftDiv == 0 =
             let timeConstrain = TimeConstrain (startTime ... maxBound) (1 ... maxBound)
-                startTime = (nextTick process_) + fromIntegral byteShiftMod + 2
+                startTime = nextTick process_ + fromIntegral byteShiftMod + 2
              in [EndpointSt (Source $ fromList sources) timeConstrain]
         | not $ null sources =
             let endByteShift = nextTick process_ + fromIntegral byteShiftDiv

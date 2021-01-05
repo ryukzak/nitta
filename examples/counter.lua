@@ -1,7 +1,6 @@
 function counter(x)
-    local y = reg(0.7)
-    x = y + x
-    debug.trace("%.7f", y)
+    send(x)
+    x = x + 1
     counter(x)
 end
 counter(0)

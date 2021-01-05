@@ -11,16 +11,16 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- |
---Module      : NITTA.Model.ProcessorUnits.Broken
---Description : Process Unit for negative tests
---Copyright   : (c) Aleksandr Penskoi, 2020
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : NITTA.Model.ProcessorUnits.Broken
+Description : Process Unit for negative tests
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Model.ProcessorUnits.Broken (
     Broken (..),
-    broken,
     Ports (..),
     IOPorts (..),
 ) where
@@ -78,9 +78,6 @@ instance (Var v) => Locks (Broken v x t) v where
                ]
 
 instance RefactorProblem (Broken v x t) v x
-
-broken :: (VarValTime v x t) => Broken v x t
-broken = def
 
 instance
     ( VarValTime v x t

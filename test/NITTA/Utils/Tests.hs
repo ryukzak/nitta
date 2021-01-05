@@ -19,7 +19,7 @@ module NITTA.Utils.Tests
 import           Data.Set ( fromList )
 import           NITTA.Intermediate.Functions ()
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits
 import           NITTA.Utils
 import           Test.Tasty
 import           Test.Tasty.HUnit

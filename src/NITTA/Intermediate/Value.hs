@@ -10,13 +10,14 @@
 
 {-# OPTIONS -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures #-}
 
--- |
--- Module      : NITTA.Intermediate.Value
--- Description : Processed value representation
--- Copyright   : (c) Aleksandr Penskoi, 2020
--- License     : BSD3
--- Maintainer  : aleksandr.penskoi@gmail.com
--- Stability   : experimental
+{- |
+Module      : NITTA.Intermediate.Value
+Description : Processed value representation
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Intermediate.Value (
     -- * Type classes
     Val (..),
@@ -24,7 +25,6 @@ module NITTA.Intermediate.Value (
     FixedPointCompatible (..),
     scalingFactor,
     minMaxRaw,
-    invalidValue,
 
     -- * Compositional type
     Attr (..),
@@ -147,9 +147,6 @@ minMaxRaw' n =
         minRaw = negate (maxRaw + 1)
      in (minRaw, maxRaw)
 
--- | Generate the invalid value of a specific type.
-invalidValue x = fromRaw (invalidRaw x) def
-
 invalidRaw x = snd (minMaxRaw x) + 1
 
 crop x
@@ -159,12 +156,14 @@ crop x
 valueMask :: Val x => x -> x
 valueMask x = fromRaw (setBit (0 :: Integer) (dataWidth x - 1) - 1) 0
 
+-- TODO: try to avoid this class
 class (Default x) => DefaultX u x | u -> x where
     defX :: u -> x
     defX _ = def
 
--- | Type class for values, which contain information about fractional part of
---  value (for fixed point arithmetics).
+{- | Type class for values, which contain information about fractional part of
+value (for fixed point arithmetics).
+-}
 class FixedPointCompatible a where
     scalingFactorPower :: a -> Integer
     fractionalBitSize :: a -> Int
@@ -351,13 +350,15 @@ instance FixedPointCompatible (IntX w) where
 
 -- * Fixed point
 
--- | Number with fixed point. FX m b where
---    - m the number of magnitude or integer bits
---    - b the total number of bits
---
---  fxm.b: The "fx" prefix is similar to the above, but uses the word length as
---  the second item in the dotted pair. For example, fx1.16 describes a number
---  with 1 magnitude bit and 15 fractional bits in a 16 bit word.[3]
+{- | Number with fixed point. FX m b where
+
+- m the number of magnitude or integer bits
+- b the total number of bits
+
+fxm.b: The "fx" prefix is similar to the above, but uses the word length as
+the second item in the dotted pair. For example, fx1.16 describes a number
+with 1 magnitude bit and 15 fractional bits in a 16 bit word.
+-}
 newtype FX (m :: Nat) (b :: Nat) = FX {rawFX :: Integer}
     deriving (Eq, Ord, Generic)
 

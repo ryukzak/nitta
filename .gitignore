@@ -17,3 +17,4 @@ gen/*
 web/api.txt
 .#*
 .tasty-rerun-log
+hie.yaml

@@ -32,7 +32,6 @@ import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits
-import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Model.TargetSystem ()
 import           NITTA.Model.Tests.Microarchitecture
 import           NITTA.TargetSynthesis

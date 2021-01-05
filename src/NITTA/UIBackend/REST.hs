@@ -34,7 +34,7 @@ import           NITTA.Intermediate.Simulation
 import           NITTA.Intermediate.Types
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Project ( Project (..), writeAndRunTestbench )

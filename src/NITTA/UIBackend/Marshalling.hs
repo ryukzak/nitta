@@ -11,15 +11,16 @@
 
 {-# OPTIONS -fno-warn-orphans #-}
 
--- |
---Module      : NITTA.UIBackend.Marshalling
---Description : Marshalling data for REST API
---Copyright   : (c) Aleksandr Penskoi, 2019
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
---
---Marshaling data for JSON REST API.
+{- |
+Module      : NITTA.UIBackend.Marshalling
+Description : Marshalling data for REST API
+Copyright   : (c) Aleksandr Penskoi, 2019
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
+Marshaling data for JSON REST API.
+-}
 module NITTA.UIBackend.Marshalling (
     Viewable (..),
     SynthesisNodeView,
@@ -52,7 +53,7 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems
-import NITTA.Model.ProcessorUnits.Types
+import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Project (TestbenchReport (..))

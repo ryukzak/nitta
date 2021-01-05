@@ -10,13 +10,14 @@
 
 {-# OPTIONS -Wall -fno-warn-missing-signatures -fno-warn-type-defaults -fno-warn-orphans #-}
 
--- |
---Module      : NITTA.Intermediate.Value.Tests
---Description :
---Copyright   : (c) Aleksandr Penskoi, 2020
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : NITTA.Intermediate.Value.Tests
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Intermediate.Value.Tests (
     tests,
 ) where
@@ -87,21 +88,22 @@ case_fx_Num = do
 
 prop_fx_add_commutative = commutative ((+) @(FX 4 8))
 
-prop_fx_fromInteger_0_additive_identity = forAllValid (\(x :: FX 4 8) -> x + fromInteger 0 == x)
+prop_fx_fromInteger_0_additive_identity = forAllValid (\(x :: FX 4 8) -> x + 0 == x)
 
-prop_fx_negate_additive_inverse = forAllValid (\(x :: FX 4 8) -> x + negate x == fromInteger 0)
+prop_fx_negate_additive_inverse = forAllValid (\(x :: FX 4 8) -> x - x == 0)
 
 -- prop_fx_mul_associativity = associativeOnValids ((*) @(FX 4 8))
 
 prop_fx_mul_commutative = commutative ((*) @(FX 4 8))
 
-prop_fx_fromInteger_1_muliplicative_identity = forAllValid (\(x :: FX 4 8) -> x * fromInteger 1 == x)
+prop_fx_fromInteger_1_muliplicative_identity = forAllValid (\(x :: FX 4 8) -> x * 1 == x)
 
--- |prop_fx_distributivity, corner case:
---
--- - `7 * (7 + 7) -> 98` require 8 bits for result
---
--- - `-8 * (-8 + -8) -> 128` require 9 bits for result
+{- |prop_fx_distributivity, corner case:
+
+- `7 * (7 + 7) -> 98` require 8 bits for result
+
+- `-8 * (-8 + -8) -> 128` require 9 bits for result
+-}
 prop_fx_distributivity = forAllValid $ num_distributivity (Proxy :: Proxy (FX 4 4)) (Proxy :: Proxy (FX 9 9))
 
 num_distributivity ::

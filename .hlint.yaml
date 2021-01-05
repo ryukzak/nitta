@@ -8,3 +8,5 @@
 - ignore: {name: "Use tuple-section"}
 - ignore: {name: "Redundant map", within: "NITTA.Model.ProcessorUnits.Fram"}
 - ignore: {name: "Redundant map", within: "NITTA.Model.ProcessorUnits.Fram"}
+- ignore: {name: "Use camelCase", within: "NITTA.Intermediate.Value.Tests"}
+- ignore: {name: "Evaluate", within: "NITTA.Intermediate.Value.Tests"}

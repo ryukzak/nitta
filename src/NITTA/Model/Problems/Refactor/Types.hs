@@ -1,15 +1,13 @@
-{- FOURMOLU_DISABLE -}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{-|
+{- |
 Module      : NITTA.Model.Problems.Refactor.Types
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2020
@@ -17,18 +15,17 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.Problems.Refactor.Types
-    ( Refactor(..), RefactorProblem(..)
-    ) where
+module NITTA.Model.Problems.Refactor.Types (
+    Refactor (..),
+    RefactorProblem (..),
+) where
 
 import qualified Data.Set as S
-import           GHC.Generics
-import           NITTA.Intermediate.Types
-
+import GHC.Generics
+import NITTA.Intermediate.Types
 
 data Refactor v x
-    = ResolveDeadlock (S.Set v)
-      -- ^ResolveDeadlock example:
+    = -- |ResolveDeadlock example:
       --
       -- > ResolveDeadlock [a, b]
       --
@@ -48,8 +45,8 @@ data Refactor v x
       -- > reg :: a@buf -> ([a, b])
       -- > f2 :: (a, ...) -> (...)
       -- > f3 :: (b, ...) -> (...)
-    | BreakLoop
-      -- ^BreakLoop example:
+      ResolveDeadlock (S.Set v)
+    | -- |BreakLoop example:
       --
       -- > BreakLoop x o i
       --
@@ -61,15 +58,15 @@ data Refactor v x
       --
       -- > LoopIn l (I i)
       -- > LoopOut l (O o)
-        { loopX :: x       -- ^initial looped value
-        , loopO :: S.Set v -- ^output variables
-        , loopI :: v       -- ^input variable
+      BreakLoop
+        { -- |initial looped value
+          loopX :: x
+        , -- |output variables
+          loopO :: S.Set v
+        , -- |input variable
+          loopI :: v
         }
-    | OptimizeAccum
-        { refOld :: [ F v x ]
-        , refNew :: [ F v x ]
-        }
-      -- ^OptimizeAccum example:
+    | -- |OptimizeAccum example:
       --
       -- > OptimizeAccum [+a +tmp_1 => d; +b +c => tmp_1] [+a +b +c => d]
       --
@@ -80,11 +77,14 @@ data Refactor v x
       -- after:
       --
       -- > [+a +b +c => d]
-    deriving ( Generic, Show, Eq )
-
+      OptimizeAccum
+        { refOld :: [F v x]
+        , refNew :: [F v x]
+        }
+    deriving (Generic, Show, Eq)
 
 class RefactorProblem u v x | u -> v x where
-    refactorOptions :: u -> [ Refactor v x ]
+    refactorOptions :: u -> [Refactor v x]
     refactorOptions _ = []
 
     refactorDecision :: u -> Refactor v x -> u

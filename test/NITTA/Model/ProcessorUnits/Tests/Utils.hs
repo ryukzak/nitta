@@ -9,13 +9,14 @@
 
 {-# OPTIONS -fno-warn-redundant-constraints #-}
 
--- |
---Module      : NITTA.Model.ProcessorUnits.Tests.Utils
---Description : Utils for processor unit testing
---Copyright   : (c) Aleksandr Penskoi, 2020
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : NITTA.Model.ProcessorUnits.Tests.Utils
+Description : Utils for processor unit testing
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Model.ProcessorUnits.Tests.Utils (
     puCoSimTestCase,
     nittaCoSimTestCase,
@@ -39,7 +40,7 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Problems hiding (Bind, Refactor)
-import NITTA.Model.ProcessorUnits.Types
+import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem ()
 import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
@@ -84,8 +85,9 @@ puCoSimTestCase name u cntxCycle alg =
                     }
         (tbStatus <$> writeAndRunTestbench prj) @? (name <> " in " <> pPath)
 
--- |Bind all functions to processor unit and synthesis process with endpoint
--- decisions.
+{- |Bind all functions to processor unit and synthesis process with endpoint
+decisions.
+-}
 naiveSynthesis alg u0 = naiveSynthesis' $ foldl (flip bind) u0 alg
     where
         naiveSynthesis' u
@@ -135,8 +137,9 @@ incompleteProcessMsg pu fs =
 
 processedVars pu = unionsMap variables $ getEndpoints $ process pu
 
--- |A computational process of functional (Haskell) and logical (Verilog) simulation
--- should be identical for any correct algorithm.
+{- |A computational process of functional (Haskell) and logical (Verilog)
+simulation should be identical for any correct algorithm.
+-}
 puCoSimProp name pu0 fsGen =
     testProperty name $ do
         (pu, fs) <- processAlgOnEndpointGen pu0 fsGen
@@ -181,8 +184,9 @@ initialCycleCntxGen fs = do
         cntx0 = simulateAlg 5 (CycleCntx vxs) [] fs
     return cntx0
 
--- |Automatic synthesis evaluation process with random decisions.
--- If we can't bind function to PU then we skip it.
+{- |Automatic synthesis evaluation process with random decisions. If we can't bind
+function to PU then we skip it.
+-}
 processAlgOnEndpointGen pu0 algGen' = do
     alg <- algGen'
     algSynthesisGen alg [] pu0

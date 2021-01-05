@@ -1,4 +1,4 @@
-{- FOURMOLU_DISABLE -}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
@@ -8,132 +8,160 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
-{-|
+{- |
 Module      : NITTA.Synthesis.Method
 Description : Synthesis method implementation.
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Synthesis.Method
-    ( simpleSynthesisIO
-    , smartBindSynthesisIO
-    , obviousBindThreadIO
-    , allBestThreadIO
-    , stateOfTheArtSynthesisIO
-    , allBindsAndRefsIO
-    , bestStepIO
-    ) where
+module NITTA.Synthesis.Method (
+    DefaultNode,
+    SynthesisMethod,
+    simpleSynthesisIO,
+    smartBindSynthesisIO,
+    obviousBindThreadIO,
+    allBestThreadIO,
+    stateOfTheArtSynthesisIO,
+    allBindsAndRefsIO,
+    bestStepIO,
+) where
 
-import           Data.List ( find, sortOn )
-import           Data.Ord ( Down (..) )
-import           Debug.Trace
-import           NITTA.Model.TargetSystem
-import           NITTA.Synthesis.Estimate
-import           NITTA.Synthesis.Tree
-import           NITTA.Utils ( maximumOn, minimumOn )
-import           Safe
+import Data.List (find, sortOn)
+import Data.Ord (Down (..))
+import Debug.Trace
+import NITTA.Model.Networks.Bus
+import NITTA.Model.Problems
+import NITTA.Model.ProcessorUnits
+import NITTA.Model.TargetSystem
+import NITTA.Model.Types
+import NITTA.Synthesis.Estimate
+import NITTA.Synthesis.Tree
+import NITTA.Utils (maximumOn, minimumOn)
+import Numeric.Interval (Interval)
+import Safe
 
-
--- |The constant, which restricts the maximum number of synthesis steps. Avoids
--- the endless synthesis process.
+{- |The constant, which restricts the maximum number of synthesis steps. Avoids
+the endless synthesis process.
+-}
 stepLimit = 750 :: Int
 
-
 -- |The most complex synthesis method, which embedded all another. That all.
+stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 stateOfTheArtSynthesisIO node = do
     n1 <- simpleSynthesisIO node
     n2 <- smartBindSynthesisIO node
     n3 <- bestThreadIO stepLimit node
     n4 <- bestThreadIO stepLimit =<< allBindsAndRefsIO node
-    return $ getBestNode node [ n1, n2, n3, n4 ]
+    return $ getBestNode node [n1, n2, n3, n4]
 
+-- |Default synthesis node type.
+type DefaultNode tag v x t =
+    Node
+        (TargetSystem (BusNetwork tag v x t) v x)
+        (SynthesisStatement tag v x (TimeConstrain t))
+        (SynthesisStatement tag v x (Interval t))
+
+{- |The synthesis method is a function, which manipulates a synthesis tree. It
+receives a node and explores it deeply by IO.
+-}
+type SynthesisMethod tag v x t = DefaultNode tag v x t -> IO (DefaultNode tag v x t)
 
 -- |Schedule process by simple synthesis.
+simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 simpleSynthesisIO root = do
     lastObliviousNode <- obviousBindThreadIO root
     allBestThreadIO 1 lastObliviousNode
 
-
+smartBindSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 smartBindSynthesisIO root = do
     node <- smartBindThreadIO root
     allBestThreadIO 1 node
 
-
+bestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag v x t
 bestThreadIO 0 node = return $ trace "bestThreadIO reach step limit!" node
 bestThreadIO limit node = do
     edges <- getPositiveEdgesIO node
     case edges of
         [] -> return node
-        _  -> bestThreadIO (limit - 1) $ eTarget $ maximumOn eObjectiveFunctionValue edges
+        _ -> bestThreadIO (limit - 1) $ eTarget $ maximumOn eObjectiveFunctionValue edges
 
+bestStepIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 bestStepIO node = do
     edges <- getPositiveEdgesIO node
     case edges of
         [] -> error "all step is over"
-        _  -> return $ eTarget $ maximumOn eObjectiveFunctionValue edges
+        _ -> return $ eTarget $ maximumOn eObjectiveFunctionValue edges
 
-
+obviousBindThreadIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 obviousBindThreadIO node = do
     edges <- getPositiveEdgesIO node
-    let obliousBind = find
-            ((\case
-                BindEdgeParameter{ pPossibleDeadlock=True } -> False
-                BindEdgeParameter{ pAlternative=1 } -> True
-                _ -> False
-            ) . eParameters)
-            edges
+    let obliousBind =
+            find
+                ( ( \case
+                        BindEdgeParameter{pPossibleDeadlock = True} -> False
+                        BindEdgeParameter{pAlternative = 1} -> True
+                        _ -> False
+                  )
+                    . eParameters
+                )
+                edges
     case obliousBind of
-        Just Edge{ eTarget } -> obviousBindThreadIO eTarget
-        Nothing              -> return node
+        Just Edge{eTarget} -> obviousBindThreadIO eTarget
+        Nothing -> return node
 
-
+allBindsAndRefsIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 allBindsAndRefsIO node = do
-    edges <- filter
-        ( \Edge{ eParameters } -> case eParameters of BindEdgeParameter{} -> True; RefactorEdgeParameter{} -> True; _ -> False )
-        <$> getPositiveEdgesIO node
+    edges <-
+        filter
+            (\Edge{eParameters} -> case eParameters of BindEdgeParameter{} -> True; RefactorEdgeParameter{} -> True; _ -> False)
+            <$> getPositiveEdgesIO node
     if null edges
         then return node
         else allBindsAndRefsIO $ eTarget $ minimumOn eObjectiveFunctionValue edges
 
-
 refactorThreadIO node = do
     edges <- getPositiveEdgesIO node
-    let refEdge = find
-            ((\case
-                RefactorEdgeParameter{} -> True
-                _ -> False
-            ) . eParameters)
-            edges
+    let refEdge =
+            find
+                ( ( \case
+                        RefactorEdgeParameter{} -> True
+                        _ -> False
+                  )
+                    . eParameters
+                )
+                edges
     case refEdge of
-        Just Edge{ eTarget } -> refactorThreadIO eTarget
-        Nothing              -> return node
-
+        Just Edge{eTarget} -> refactorThreadIO eTarget
+        Nothing -> return node
 
 smartBindThreadIO node = do
     node' <- refactorThreadIO node
     edges <- getPositiveEdgesIO node'
-    let binds = sortOn (Down . eObjectiveFunctionValue) $ filter
-            ((\case
-                BindEdgeParameter{} -> True
-                _ -> False
-            ) . eParameters)
-            edges
+    let binds =
+            sortOn (Down . eObjectiveFunctionValue) $
+                filter
+                    ( ( \case
+                            BindEdgeParameter{} -> True
+                            _ -> False
+                      )
+                        . eParameters
+                    )
+                    edges
     case binds of
-        Edge{ eTarget }:_ -> smartBindThreadIO eTarget
-        []                -> return node'
+        Edge{eTarget} : _ -> smartBindThreadIO eTarget
+        [] -> return node'
 
-
+allBestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag v x t
 allBestThreadIO (0 :: Int) node = bestThreadIO stepLimit node
 allBestThreadIO n node = do
     edges <- getPositiveEdgesIO node
-    sythesizedNodes <- mapM (\Edge{ eTarget } -> allBestThreadIO (n-1) eTarget) edges
+    sythesizedNodes <- mapM (\Edge{eTarget} -> allBestThreadIO (n -1) eTarget) edges
     return $ getBestNode node sythesizedNodes
 
-
-getBestNode node nodes = let
-        successNodes = filter nIsComplete nodes
-    in case successNodes of
-        _:_ -> minimumOn (processDuration . nModel) successNodes
-        []  -> headDef node nodes
+getBestNode node nodes =
+    let successNodes = filter nIsComplete nodes
+     in case successNodes of
+            _ : _ -> minimumOn (processDuration . nModel) successNodes
+            [] -> headDef node nodes
