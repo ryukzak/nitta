@@ -53,7 +53,7 @@ jobs:
         run: yarn build
 
 
-  nitta-doctest:
+  doctest:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -79,6 +79,21 @@ jobs:
         run: |
           stack build --fast
           find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
+
+
+  hlint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: 'Set up HLint'
+      uses: rwe/actions-hlint-setup@v1
+
+    - name: 'Run HLint'
+      uses: rwe/actions-hlint-run@v2
+      with:
+        path: .
+        fail-on: warning
 
 
   nitta-hdl:
