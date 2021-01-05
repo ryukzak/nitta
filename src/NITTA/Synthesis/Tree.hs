@@ -47,7 +47,7 @@ import           Data.List.Split
 import           GHC.Generics
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Types
+import           NITTA.Model.ProcessorUnits
 import           NITTA.Model.TargetSystem
 import           NITTA.Model.Types
 import           NITTA.Synthesis.Estimate

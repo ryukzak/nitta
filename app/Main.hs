@@ -9,13 +9,14 @@
 
 {-# OPTIONS -fno-warn-orphans #-}
 
--- |
---Module      : Main
---Description : NITTA CAD executable
---Copyright   : (c) Aleksandr Penskoi, 2019
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : Main
+Description : NITTA CAD executable
+Copyright   : (c) Aleksandr Penskoi, 2019
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module Main (main) where
 
 import Control.Exception
@@ -33,7 +34,6 @@ import NITTA.Model.Microarchitecture
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.ProcessorUnits.Types
 import NITTA.Project.Parts.TestBench
 import NITTA.TargetSynthesis (TargetSynthesis (..), mkModelWithOneNetwork, runTargetSynthesis)
 import NITTA.UIBackend

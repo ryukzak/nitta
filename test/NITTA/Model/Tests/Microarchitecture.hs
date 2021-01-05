@@ -9,13 +9,14 @@
 
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
 
--- |
---Module      : NITTA.Model.Tests.Microarchitecture
---Description :
---Copyright   : (c) Aleksandr Penskoi, 2020
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : NITTA.Model.Tests.Microarchitecture
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Model.Tests.Microarchitecture (
     march,
     marchSPI,
@@ -48,7 +49,6 @@ import NITTA.Model.Microarchitecture
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem ()
 import NITTA.TargetSynthesis
 import System.IO.Unsafe (unsafePerformIO)

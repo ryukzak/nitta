@@ -1,5 +1,4 @@
-{- FOURMOLU_DISABLE -}
-{-|
+{- |
 Module      : NITTA.Model.ProcessorUnits
 Description : Library of processor unit models
 Copyright   : (c) Aleksandr Penskoi, 2020
@@ -117,20 +116,23 @@ Acceptable port types: input, output, and input.
 The composition of ports is determined individually by the type of I/O
 interface.
 -}
-module NITTA.Model.ProcessorUnits
-    ( module NITTA.Model.ProcessorUnits.Broken
-    , module NITTA.Model.ProcessorUnits.Divider
-    , module NITTA.Model.ProcessorUnits.Fram
-    , module NITTA.Model.ProcessorUnits.IO.SPI
-    , module NITTA.Model.ProcessorUnits.Multiplier
-    , module NITTA.Model.ProcessorUnits.Accum
-    , module NITTA.Model.ProcessorUnits.Shift
-    ) where
+module NITTA.Model.ProcessorUnits (
+    module NITTA.Model.ProcessorUnits.Types,
+    module NITTA.Model.ProcessorUnits.Accum,
+    module NITTA.Model.ProcessorUnits.Broken,
+    module NITTA.Model.ProcessorUnits.Divider,
+    module NITTA.Model.ProcessorUnits.Fram,
+    module NITTA.Model.ProcessorUnits.IO.SPI,
+    module NITTA.Model.ProcessorUnits.Multiplier,
+    module NITTA.Model.ProcessorUnits.Shift,
+) where
 
-import           NITTA.Model.ProcessorUnits.Broken
-import           NITTA.Model.ProcessorUnits.Divider
-import           NITTA.Model.ProcessorUnits.Fram
-import           NITTA.Model.ProcessorUnits.IO.SPI
-import           NITTA.Model.ProcessorUnits.Multiplier
-import           NITTA.Model.ProcessorUnits.Accum
-import           NITTA.Model.ProcessorUnits.Shift
+import NITTA.Model.ProcessorUnits.Types
+
+import NITTA.Model.ProcessorUnits.Accum
+import NITTA.Model.ProcessorUnits.Broken
+import NITTA.Model.ProcessorUnits.Divider
+import NITTA.Model.ProcessorUnits.Fram
+import NITTA.Model.ProcessorUnits.IO.SPI
+import NITTA.Model.ProcessorUnits.Multiplier
+import NITTA.Model.ProcessorUnits.Shift

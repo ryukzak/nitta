@@ -29,7 +29,6 @@ import           Data.Default ( def )
 import           NITTA.Model.Networks.Bus
 import           NITTA.Model.Networks.Types
 import           NITTA.Model.ProcessorUnits
-import           NITTA.Model.ProcessorUnits.Types
 import           NITTA.Project
 
 

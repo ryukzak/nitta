@@ -32,8 +32,8 @@ import Data.List (find, sortOn)
 import Data.Ord (Down (..))
 import Debug.Trace
 import NITTA.Model.Networks.Bus
-import NITTA.Model.Problems.Whole
-import NITTA.Model.ProcessorUnits.Types
+import NITTA.Model.Problems
+import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Synthesis.Estimate

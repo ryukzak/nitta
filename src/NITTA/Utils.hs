@@ -54,7 +54,7 @@ import Data.Maybe (isJust, mapMaybe)
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import NITTA.Intermediate.Types
-import NITTA.Model.Problems.Endpoint
+import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
 import NITTA.Utils.CodeFormat
