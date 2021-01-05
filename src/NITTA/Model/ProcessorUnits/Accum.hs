@@ -171,7 +171,7 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
         d@EndpointSt{epRole = Target v, epAt}
             | not (null tasks) && toTarget tasks =
                 let job@Job{tasks = tasks', current = (((neg, _) : _) : _)} = endpointDecisionJob j v
-                    sel = if isInit then Init neg else Load neg
+                    sel = if isInit then ResetAndLoad neg else Load neg
                     (newEndpoints, process_') = runSchedule pu $ do
                         updateTick (sup epAt)
                         scheduleEndpoint d $ scheduleInstruction epAt sel
@@ -217,7 +217,7 @@ instance IOConnected (Accum v x t) where
     data IOPorts (Accum v x t) = AccumIO deriving (Show)
 
 instance Controllable (Accum v x t) where
-    data Instruction (Accum v x t) = Init Bool | Load Bool | Out deriving (Show)
+    data Instruction (Accum v x t) = ResetAndLoad Bool | Load Bool | Out deriving (Show)
 
     data Microcode (Accum v x t) = Microcode
         { oeSignal :: Bool
@@ -249,7 +249,7 @@ instance Default (Microcode (Accum v x t)) where
             }
 
 instance UnambiguouslyDecode (Accum v x t) where
-    decodeInstruction (Init neg) = def{resetAccSignal = True, loadSignal = True, negSignal = Just neg}
+    decodeInstruction (ResetAndLoad neg) = def{resetAccSignal = True, loadSignal = True, negSignal = Just neg}
     decodeInstruction (Load neg) = def{resetAccSignal = False, loadSignal = True, negSignal = Just neg}
     decodeInstruction Out = def{oeSignal = True}
 
