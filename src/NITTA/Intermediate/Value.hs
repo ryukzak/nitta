@@ -25,7 +25,6 @@ module NITTA.Intermediate.Value (
     FixedPointCompatible (..),
     scalingFactor,
     minMaxRaw,
-    invalidValue,
 
     -- * Compositional type
     Attr (..),
@@ -147,9 +146,6 @@ minMaxRaw' n =
     let maxRaw = 2 ^ (n - 1) - 1
         minRaw = negate (maxRaw + 1)
      in (minRaw, maxRaw)
-
--- | Generate the invalid value of a specific type.
-invalidValue x = fromRaw (invalidRaw x) def
 
 invalidRaw x = snd (minMaxRaw x) + 1
 

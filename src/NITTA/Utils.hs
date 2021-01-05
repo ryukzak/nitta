@@ -14,7 +14,6 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Utils (
-    shift,
     shiftI,
     modify'_,
 
@@ -26,12 +25,6 @@ module NITTA.Utils (
 
     -- *HDL generation (deprecated)
     renderST,
-
-    -- *Process construction (deprecated)
-    modifyProcess,
-    addStep,
-    bindFB,
-    setProcessTime,
 
     -- *Process inspection
     endpointAt,
@@ -47,7 +40,7 @@ module NITTA.Utils (
     module NITTA.Utils.CodeFormat,
 ) where
 
-import Control.Monad.State (State, get, modify', put, runState)
+import Control.Monad.State (State, modify')
 import Data.Bits (setBit, testBit)
 import Data.List (sortOn)
 import Data.Maybe (isJust, mapMaybe)
@@ -66,7 +59,6 @@ import Text.StringTemplate
 modify'_ :: (s -> s) -> State s ()
 modify'_ = modify'
 
-shift offset d@EndpointSt{epAt} = d{epAt = shiftI offset epAt}
 shiftI offset i = (I.inf i + offset) ... (I.sup i + offset)
 
 bool2verilog True = "1'b1"
@@ -103,23 +95,6 @@ hdlValDump x =
 toModuleName = S.replace " " "_"
 
 renderST st attrs = render $ setManyAttrib attrs $ newSTMP st
-
-modifyProcess p st = runState st p
-
-addStep placeInTime info = do
-    p@Process{nextUid, steps} <- get
-    put
-        p
-            { nextUid = succ nextUid
-            , steps = Step nextUid placeInTime info : steps
-            }
-    return nextUid
-
-setProcessTime t = do
-    p <- get
-    put p{nextTick = t}
-
-bindFB fb t = addStep (I.singleton t) $ CADStep $ "bind: " ++ show fb
 
 endpointAt t p =
     case mapMaybe getEndpoint $ whatsHappen t p of
