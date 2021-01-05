@@ -7,13 +7,14 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- |
---Module      : NITTA.Model.Problems.Refactor.Types
---Description :
---Copyright   : (c) Aleksandr Penskoi, 2020
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : NITTA.Model.Problems.Refactor.Types
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Model.Problems.Refactor.Types (
     Refactor (..),
     RefactorProblem (..),

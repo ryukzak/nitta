@@ -5,13 +5,14 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- |
---Module      : NITTA.Utils
---Description :
---Copyright   : (c) Aleksandr Penskoi, 2019
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : NITTA.Utils
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2019
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Utils (
     shift,
     shiftI,

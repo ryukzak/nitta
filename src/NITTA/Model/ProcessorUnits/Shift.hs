@@ -10,13 +10,14 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- |
---Module      : NITTA.Model.ProcessorUnits.Shift
---Description : Shift Processor Unit
---Copyright   : (c) Daniil Prohorov, 2020
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : NITTA.Model.ProcessorUnits.Shift
+Description : Shift Processor Unit
+Copyright   : (c) Daniil Prohorov, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Model.ProcessorUnits.Shift (
     Shift,
     Ports (..),
