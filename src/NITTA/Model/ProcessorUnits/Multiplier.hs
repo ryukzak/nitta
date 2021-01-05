@@ -305,6 +305,7 @@ module NITTA.Model.ProcessorUnits.Multiplier (
 import Control.Monad (when)
 import Data.Default
 import Data.List (find, partition, (\\))
+import Data.Maybe
 import qualified Data.Set as S
 import qualified NITTA.Intermediate.Functions as F
 import NITTA.Intermediate.Types
@@ -380,7 +381,7 @@ instance (Ord t) => WithFunctions (Multiplier v x t) (F v x) where
     functions Multiplier{process_, remain, currentWork} =
         functions process_
             ++ remain
-            ++ maybe [] (: []) currentWork
+            ++ maybeToList currentWork
 
 {- |Tracking internal dependencies on the processed variables. It includes:
 
@@ -528,7 +529,7 @@ instance
                     endpoints <- scheduleEndpoint d $ scheduleInstruction epAt Out
                     when (null sources') $ do
                         high <- scheduleFunction (a ... sup epAt) f
-                        let low = endpoints ++ (map sKey $ relatedEndpoints process_ $ variables f)
+                        let low = endpoints ++ map sKey (relatedEndpoints process_ $ variables f)
                         -- Set up the vertical relantions between functional unit
                         -- and related to that data sending.
                         establishVerticalRelations high low

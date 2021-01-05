@@ -122,7 +122,7 @@ stepsInterval ss =
 
 relatedEndpoints process_ vs =
     filter
-        ( \s -> case s of
+        ( \case
             Step{sDesc = EndpointRoleStep role} -> not $ null (variables role `S.intersection` vs)
             _ -> False
         )
