@@ -328,7 +328,7 @@ instance
             let vsRemain = vs' L.\\ S.elems vs
                 ((), process_') = runSchedule fram $ do
                     updateTick (sup epAt + 1)
-                    endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ ReadCell addr
+                    endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $ do
                         fPID <- scheduleFunction (0 ... sup epAt) function
                         establishVerticalRelations binds fPID
@@ -359,7 +359,7 @@ instance
             let vsRemain = vs' L.\\ S.elems vs
                 (endpoints', process_) = runSchedule fram $ do
                     updateTick (sup epAt + 1)
-                    eps <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ ReadCell addr
+                    eps <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $ do
                         fPID <- scheduleFunction (0 ... sup epAt) function
                         establishVerticalRelations binds fPID
@@ -382,7 +382,7 @@ instance
         | Just (addr, cell@Cell{job = Just Job{function, binds, endpoints}}) <-
             L.find (\case (_, Cell{state = DoLoopTarget v'}) -> v == v'; _ -> False) $ A.assocs memory =
             let ((), process_) = runSchedule fram $ do
-                    endpoints' <- scheduleEndpoint d $ scheduleInstruction epAt $ WriteCell addr
+                    endpoints' <- scheduleEndpoint d $ scheduleInstruction epAt $ Write addr
                     updateTick (sup epAt + 1)
                     fPID <- scheduleFunction epAt function
                     establishVerticalRelations binds fPID
@@ -402,7 +402,7 @@ instance
           , ([(Reg (I _) (O vs), j@Job{function})], remainRegs') <- L.partition (\(Reg (I v') (O _), _) -> v' == v) remainRegs =
             let (endpoints, process_) = runSchedule fram $ do
                     updateTick (sup epAt + 1)
-                    scheduleEndpoint d $ scheduleInstruction epAt $ WriteCell addr
+                    scheduleEndpoint d $ scheduleInstruction epAt $ Write addr
                 cell' =
                     cell
                         { job = Just j{startAt = Just $ inf epAt, endpoints}
@@ -426,7 +426,7 @@ instance
             let vsRemain = vs' L.\\ S.elems vs
                 ((), process_) = runSchedule fram $ do
                     updateTick (sup epAt + 1)
-                    endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ ReadCell addr
+                    endpoints' <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) $ PrepareRead addr
                     when (null vsRemain) $ do
                         fPID <- scheduleFunction (fBegin ... sup epAt) function
                         establishVerticalRelations binds fPID
@@ -456,8 +456,8 @@ instance
 
 instance Controllable (Fram v x t) where
     data Instruction (Fram v x t)
-        = ReadCell Int
-        | WriteCell Int
+        = PrepareRead Int
+        | Write Int
         deriving (Show)
 
     data Microcode (Fram v x t) = Microcode
@@ -505,8 +505,8 @@ instance Default (Microcode (Fram v x t)) where
     def = Microcode False False Nothing
 
 instance UnambiguouslyDecode (Fram v x t) where
-    decodeInstruction (ReadCell addr) = Microcode True False $ Just addr
-    decodeInstruction (WriteCell addr) = Microcode False True $ Just addr
+    decodeInstruction (PrepareRead addr) = Microcode True False $ Just addr
+    decodeInstruction (Write addr) = Microcode False True $ Just addr
 
 instance (VarValTime v x t) => Testable (Fram v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
