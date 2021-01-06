@@ -8,7 +8,7 @@ import {
   haskellApiService,
   UnitEndpoints,
   IntermediateGraph,
-  SynthesisNode
+  SynthesisNode,
 } from "../../../services/HaskellApiService";
 
 import "./IntermediateView.scss";
@@ -29,7 +29,7 @@ interface Endpoints {
   targets: string[];
 }
 
-export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
+export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
   const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
 
   const [algorithmGraph, setAlgorithmGraph] = React.useState<IntermediateGraph | null>(null);
@@ -52,12 +52,12 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
               nodeColor: "",
               nodeShape: "",
               fontSize: "",
-              nodeSize: ""
+              nodeSize: "",
             };
           }),
           edges: graphData.edges.map((edgeData: GraphEdge) => {
             return edgeData;
-          })
+          }),
         };
         setAlgorithmGraph(newGraph);
       })
@@ -87,7 +87,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
       .getEndpoints(selectedNodeId)
       .then((response: AxiosResponse<UnitEndpoints>) => {
         let result: Endpoints = { sources: [], targets: [] };
-        response.data.forEach(e => {
+        response.data.forEach((e) => {
           let role = e.endpoints.epRole;
           if (role.tag === "Source") {
             result.sources.push(...role.contents);
@@ -146,20 +146,20 @@ function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endp
     // "rankdir=LR"
   ];
 
-  let nodes: string[] = json.nodes.map(node => {
+  let nodes: string[] = json.nodes.map((node) => {
     return (
       node.id +
       " " +
       renderDotOptions({
         label: node.label,
-        style: isFunctionBinded(state.bindeFuns, node) ? "line" : "dashed"
+        style: isFunctionBinded(state.bindeFuns, node) ? "line" : "dashed",
       })
     );
   });
   function isTransfered(v: string): boolean {
     return state.transferedVars.indexOf(v) >= 0;
   }
-  let edges = json.edges.map(edge => {
+  let edges = json.edges.map((edge) => {
     return (
       `${edge.from} -> ${edge.to} ` +
       renderDotOptions({
@@ -167,7 +167,7 @@ function renderGraphJsonToDot(json: IntermediateGraph, state: ProcessState, endp
         style: isTransfered(edge.label) ? "line" : "dashed",
         dir: "both",
         arrowhead: endpoints.targets.indexOf(edge.label) >= 0 || isTransfered(edge.label) ? "" : "o",
-        arrowtail: endpoints.sources.indexOf(edge.label) >= 0 || isTransfered(edge.label) ? "dot" : "odot"
+        arrowtail: endpoints.sources.indexOf(edge.label) >= 0 || isTransfered(edge.label) ? "dot" : "odot",
       })
     );
   });

@@ -17,7 +17,7 @@ export const EdgesView: React.FC = () => {
       .then((response: AxiosResponse<Edge[]>) => {
         setEdges(response.data);
       })
-      .catch(err => console.log(err));
+      .catch((err) => console.log(err));
   }, [appContext.selectedNodeId]);
 
   if (edges === undefined || edges === null) {
