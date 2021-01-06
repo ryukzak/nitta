@@ -8,6 +8,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-# OPTIONS -fno-warn-orphans #-}
+
 {- |
 Module      : NITTA.UIBackend.REST
 Description : REST API description for NITTA backend
@@ -19,7 +21,7 @@ Stability   : experimental
 module NITTA.UIBackend.REST (
     SynthesisAPI,
     synthesisServer,
-    BackendCntx (..),
+    BackendCtx (..),
 ) where
 
 import Control.Monad.Except
@@ -29,7 +31,6 @@ import Data.Default
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import GHC.Generics
-import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
@@ -48,7 +49,7 @@ import Servant
 import Servant.Docs
 import System.FilePath (joinPath)
 
-data BackendCntx tag v x t = BackendCntx
+data BackendCtx tag v x t = BackendCtx
     { -- |root synthesis node
       root :: G Node tag v x t
     , -- |lists of received by IO values
@@ -56,67 +57,129 @@ data BackendCntx tag v x t = BackendCntx
     }
 
 type SynthesisAPI tag v x t =
-    "synthesisTree" :> Get '[JSON] (TreeView SynthesisNodeView)
-        :<|> "synthesis" :> Capture "nId" NId :> GetSynthesis tag v x t
-        :<|> "synthesis" :> Capture "nId" NId :> PostSynthesis tag v x t
-        :<|> "testbench" :> Capture "nId" NId
-            :> QueryParam' '[Required] "name" String
-            :> Post '[JSON] (TestbenchReportView v x)
+    ( Description "Get whole synthesis tree"
+        :> "synthesisTree"
+        :> Get '[JSON] (TreeView SynthesisNodeView)
+    )
+        :<|> ( "node" :> Capture "nId" NId
+                :> ( SynthesisTreeNavigationAPI tag v x t
+                        :<|> NodeInspectionAPI tag v x t
+                        :<|> TestBenchAPI v x
+                        :<|> SynthesisMethodsAPI tag v x t
+                        :<|> SynthesisPracticesAPI tag v x t
+                   )
+             )
 
-synthesisServer cntx@BackendCntx{root} =
+synthesisServer ctx@BackendCtx{root} =
     liftIO (viewNodeTree root)
-        :<|> (\nId -> getSynthesis cntx nId)
-        :<|> (\nId -> postSynthesis cntx nId)
-        :<|> testBench cntx
+        :<|> \nid ->
+            synthesisTreeNavigation ctx nid
+                :<|> nodeInspection ctx nid
+                :<|> testBench ctx nid
+                :<|> synthesisMethods ctx nid
+                :<|> synthesisPractices ctx nid
 
-type GetSynthesis tag v x t =
-    Get '[JSON] (G Node tag v x t) -- FIXME: TypeScriptDeclaration
-        :<|> ( Description "Get list of all previous nodes."
-                :> "path"
+type SynthesisTreeNavigationAPI tag v x t =
+    Summary "Synthesis tree navigation"
+        :> ( ( Description "Get list of synthesis nodes from the root to the specific node"
+                :> "rootPath"
                 :> Get '[JSON] [NodeView tag v x t]
              )
-        :<|> "originEdge" :> Get '[JSON] (Maybe (G Edge tag v x t)) -- FIXME: TypeScriptDeclaration
-        :<|> "edges" :> Get '[JSON] [EdgeView tag v x t]
-        :<|> "intermediateView" :> Get '[JSON] VisJS
-        :<|> "timelines" :> Get '[JSON] (ProcessTimelines t) -- FIXME: TypeScriptDeclaration
-        :<|> ( Description
-                "Debuging interface to fast access to internal state \
-                \(see NITTA.UIBackend.REST.Debug)"
-                :> "debug"
-                :> Get '[JSON] (Debug tag v t)
+                :<|> ( Description "Get edge to the parent"
+                        :> "parentEdge"
+                        :> Get '[JSON] (Maybe (G Edge tag v x t)) -- FIXME: TypeScriptDeclaration
+                     )
+                :<|> ( Description "Get edges to all childs with static indexes"
+                        :> "childEdges"
+                        :> Get '[JSON] [EdgeView tag v x t]
+                     )
+           )
+
+synthesisTreeNavigation BackendCtx{root} nid =
+    liftIO (map view <$> getNodePathIO root nid)
+        :<|> liftIO (nOrigin <$> getNodeIO root nid)
+        :<|> liftIO (map view <$> (getEdgesIO =<< getNodeIO root nid))
+
+type NodeInspectionAPI tag v x t =
+    Summary "Synthesis node inspection"
+        :> ( Get '[JSON] (G Node tag v x t) -- FIXME: TypeScriptDeclaration
+                :<|> ( Description "Intermidiate reperesentation of the algorithm"
+                        :> "intermediateView"
+                        :> Get '[JSON] VisJS
+                     )
+                :<|> ( Description "Computational process representation"
+                        :> "processTimelines"
+                        :> Get '[JSON] (ProcessTimelines t) -- FIXME: TypeScriptDeclaration
+                     )
+                :<|> ( Description "Enpoint options for all process units"
+                        :> "endpoints"
+                        :> Get '[JSON] [UnitEndpointView tag v]
+                     )
+                :<|> ("debug" :> DebugAPI tag v t)
+           )
+
+nodeInspection ctx@BackendCtx{root} nid =
+    liftIO (getNodeIO root nid)
+        :<|> liftIO (algToVizJS . functions . mDataFlowGraph . nModel <$> getNodeIO root nid)
+        :<|> liftIO (processTimelines . process . mUnit . nModel <$> getNodeIO root nid)
+        :<|> liftIO (dbgEndpointOptions <$> debug ctx nid)
+        :<|> debug ctx nid
+
+type SynthesisMethodsAPI tag v x t =
+    Summary
+        "Synthesis methods is a method for full synthesis tree exploration. \
+        \Usually, it is more complicated than synthesis practice, but it is \
+        \not an essential difference."
+        :> ( ( Description "Composition of all available synthesis methods"
+                :> "stateOfTheArtSynthesisIO"
+                :> Post '[JSON] NId
              )
-        :<|> "puEndpoints" :> Get '[JSON] [UnitEndpointView tag v]
+                :<|> "simpleSynthesis" :> Post '[JSON] NId
+                :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
+           )
 
-getSynthesis BackendCntx{root} nId =
-    liftIO (getNodeIO root nId)
-        :<|> liftIO (map view <$> getNodePathIO root nId)
-        :<|> liftIO (nOrigin <$> getNodeIO root nId)
-        :<|> liftIO (map view <$> (getEdgesIO =<< getNodeIO root nId))
-        :<|> liftIO (algToVizJS . extractFuns . nModel <$> getNodeIO root nId)
-        :<|> liftIO (processTimelines . process . mUnit . nModel <$> getNodeIO root nId)
-        :<|> liftIO (debug root nId)
-        :<|> liftIO (dbgEndpointOptions <$> debug root nId)
+synthesisMethods BackendCtx{root} nid =
+    liftIO (nId <$> (stateOfTheArtSynthesisIO =<< getNodeIO root nid))
+        :<|> liftIO (nId <$> (simpleSynthesisIO =<< getNodeIO root nid))
+        :<|> liftIO (nId <$> (smartBindSynthesisIO =<< getNodeIO root nid))
 
-type PostSynthesis tag v x t =
-    "stateOfTheArtSynthesisIO" :> Post '[JSON] NId
-        :<|> "simpleSynthesis" :> Post '[JSON] NId
-        :<|> "smartBindSynthesisIO" :> Post '[JSON] NId
-        :<|> "bestStep" :> Post '[JSON] NId
-        :<|> "obviousBindThread" :> Post '[JSON] NId
-        :<|> "allBindsAndRefsIO" :> Post '[JSON] NId
-        :<|> "allBestThread" :> QueryParam' '[Required] "n" Int :> Post '[JSON] NId
+type SynthesisPracticesAPI tag v x t =
+    Summary "SynthesisPractice is a set of small elements of the synthesis process."
+        :> ( ( Description "Make the best synthesis step by the objective function"
+                :> "bestStep"
+                :> Post '[JSON] NId
+             )
+                :<|> ( Description "Make all possible oblivious binds"
+                        :> "obviousBindThread"
+                        :> Post '[JSON] NId
+                     )
+                :<|> ( Description "Make all possible binds and refactorings"
+                        :> "allBindsAndRefsIO"
+                        :> Post '[JSON] NId
+                     )
+                :<|> ( Description
+                        "Explore all best synthesis threads from current \
+                        \and `deep` nested levels."
+                        :> "allBestThreads"
+                        :> QueryParam' '[Required] "deep" Int
+                        :> Post '[JSON] NId
+                     )
+           )
 
-postSynthesis BackendCntx{root} n =
-    liftIO (nId <$> (stateOfTheArtSynthesisIO =<< getNodeIO root n))
-        :<|> liftIO (nId <$> (simpleSynthesisIO =<< getNodeIO root n))
-        :<|> liftIO (nId <$> (smartBindSynthesisIO =<< getNodeIO root n))
-        :<|> liftIO (nId <$> (bestStepIO =<< getNodeIO root n))
-        :<|> liftIO (nId <$> (obviousBindThreadIO =<< getNodeIO root n))
-        :<|> liftIO (nId <$> (allBindsAndRefsIO =<< getNodeIO root n))
-        :<|> (\deep -> liftIO (nId <$> (allBestThreadIO deep =<< getNodeIO root n)))
+synthesisPractices BackendCtx{root} nid =
+    liftIO (nId <$> (bestStepIO =<< getNodeIO root nid))
+        :<|> liftIO (nId <$> (obviousBindThreadIO =<< getNodeIO root nid))
+        :<|> liftIO (nId <$> (allBindsAndRefsIO =<< getNodeIO root nid))
+        :<|> (\deep -> liftIO (nId <$> (allBestThreadIO deep =<< getNodeIO root nid)))
 
-testBench BackendCntx{root, receivedValues} nId pName = liftIO $ do
-    node <- getNodeIO root nId
+type TestBenchAPI v x =
+    Summary "Get report of testbench execution for the current node."
+        :> "testbench"
+        :> QueryParam' '[Required] "pName" String
+        :> Post '[JSON] (TestbenchReportView v x)
+
+testBench BackendCtx{root, receivedValues} nid pName = liftIO $ do
+    node <- getNodeIO root nid
     let TargetSystem{mDataFlowGraph} = nModel node
     unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
     view
@@ -132,10 +195,6 @@ testBench BackendCntx{root, receivedValues} nId pName = liftIO $ do
 
 ------------------------------------------------------------
 
-extractFuns TargetSystem{mDataFlowGraph = DFCluster nodes} =
-    map (\(DFLeaf f) -> f) nodes
-extractFuns _ = error "unsupported algorithm structure"
-
 -- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
     { dbgEndpointOptions :: [UnitEndpointView tag v]
@@ -147,14 +206,20 @@ data Debug tag v t = Debug
 
 instance (ToJSON tag, ToJSON t, Time t) => ToJSON (Debug tag String t)
 
-instance ToSample (Debug String String Int) -- where toSamples _ = noSamples
+instance ToSample (Debug String String Int)
 instance ToSample Char where toSamples _ = noSamples
 
 instance {-# OVERLAPS #-} ToSample [(String, [Lock String])] where
     toSamples _ = singleSample [("PU or function tag", [Lock{locked = "b", lockBy = "a"}])]
 
-debug root nId = do
-    node <- getNodeIO root nId
+type DebugAPI tag v t =
+    Description
+        "Debuging interface to fast access to internal state \
+        \(see NITTA.UIBackend.REST.Debug)"
+        :> Get '[JSON] (Debug tag v t)
+
+debug BackendCtx{root} nid = liftIO $ do
+    node <- getNodeIO root nid
     let dbgFunctionLocks = map (\f -> (show f, locks f)) $ functions $ mDataFlowGraph $ nModel node
         already = transferred $ mUnit $ nModel node
     return

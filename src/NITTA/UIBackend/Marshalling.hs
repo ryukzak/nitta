@@ -570,20 +570,20 @@ instance (Show a, Bounded a) => ToJSON (Interval a) where
 instance ToCapture (Capture "nId" NId) where
     toCapture _ = DocCapture "nId" "Synthesis node ID (see NITTA.Synthesis.Tree.NId)"
 
-instance ToParam (QueryParam' mods "n" Int) where
+instance ToParam (QueryParam' mods "deep" Int) where
     toParam _ =
         DocQueryParam
-            "n"
+            "deep"
             ["numeric"]
-            "How many times apply"
+            "How many levels need to be explore."
             Normal
 
-instance ToParam (QueryParam' mods "name" String) where
+instance ToParam (QueryParam' mods "pName" String) where
     toParam _ =
         DocQueryParam
-            "n"
-            ["numeric"]
-            "How many times apply"
+            "pName"
+            ["string"]
+            "Project name"
             Normal
 
 instance {-# OVERLAPS #-} ToSample [NodeView String String Int Int] where
@@ -628,7 +628,7 @@ instance ToSample (TimelineWithViewPoint Int) where
     toSamples _ = noSamples
 
 instance ToSample ProcessStepID where
-    toSamples _ = noSamples
+    toSamples _ = samples [1, 2, 3]
 
 instance ToSample NId where
-    toSamples _ = noSamples
+    toSamples _ = [("The synthesis node path from the root by edge indexes.", NId [1, 1, 3])]
