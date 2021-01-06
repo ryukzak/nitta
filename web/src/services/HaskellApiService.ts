@@ -24,7 +24,7 @@ export const haskellApiService = {
 
   // Synthesis tree navigation
   getRootPath: (nid: NodeId): AxiosPromise<SynthesisNode[]> => api.getNodeByNIdRootPath(nid),
-  getParentEdge: (nid: NodeId): AxiosPromise<any> => api.getNodeByNIdParentEdge(nid),
+  getParentEdge: (nid: NodeId): AxiosPromise<Edge> => api.getNodeByNIdParentEdge(nid),
   getChildEdges: (nid: NodeId): AxiosPromise<Edge[]> => api.getNodeByNIdChildEdges(nid),
 
   // Synthesis node inspections

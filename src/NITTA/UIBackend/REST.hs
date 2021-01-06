@@ -87,7 +87,7 @@ type SynthesisTreeNavigationAPI tag v x t =
              )
                 :<|> ( Description "Get edge to the parent"
                         :> "parentEdge"
-                        :> Get '[JSON] (Maybe (G Edge tag v x t)) -- FIXME: TypeScriptDeclaration
+                        :> Get '[JSON] (Maybe (EdgeView tag v x t))
                      )
                 :<|> ( Description "Get edges to all childs with static indexes"
                         :> "childEdges"
@@ -97,7 +97,7 @@ type SynthesisTreeNavigationAPI tag v x t =
 
 synthesisTreeNavigation BackendCtx{root} nid =
     liftIO (map view <$> getNodePathIO root nid)
-        :<|> liftIO (nOrigin <$> getNodeIO root nid)
+        :<|> liftIO (fmap view . nOrigin <$> getNodeIO root nid)
         :<|> liftIO (map view <$> (getEdgesIO =<< getNodeIO root nid))
 
 type NodeInspectionAPI tag v x t =
