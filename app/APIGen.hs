@@ -139,3 +139,5 @@ main = do
                         ts ++ "\n" ++ "type NId = string\n"
 
     putStrLn "Generate typescript interface...OK"
+
+    writeFile (joinPath [opath, "rest_api.markdown"]) $ restDocs port

@@ -82,6 +82,7 @@ library:
     - split
     - stm
     - transformers
+    - servant-docs
     - unordered-containers
     - utility-ht
     - validity

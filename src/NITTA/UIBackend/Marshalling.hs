@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -60,9 +61,11 @@ import NITTA.Project (TestbenchReport (..))
 import NITTA.Synthesis.Estimate
 import NITTA.Synthesis.Tree
 import NITTA.UIBackend.Timeline
+import NITTA.UIBackend.VisJS
 import NITTA.Utils (transferred)
 import Numeric.Interval
 import Servant
+import Servant.Docs
 
 -- *Intermediate representation between raw haskell representation and JSON
 
@@ -562,3 +565,70 @@ instance ToJSON IntervalView
 
 instance (Show a, Bounded a) => ToJSON (Interval a) where
     toJSON = String . T.pack . S.replace (show (maxBound :: a)) "∞" . show
+
+-- *Docs
+instance ToCapture (Capture "nId" NId) where
+    toCapture _ = DocCapture "nId" "Synthesis node ID (see NITTA.Synthesis.Tree.NId)"
+
+instance ToParam (QueryParam' mods "n" Int) where
+    toParam _ =
+        DocQueryParam
+            "n"
+            ["numeric"]
+            "How many times apply"
+            Normal
+
+instance ToParam (QueryParam' mods "name" String) where
+    toParam _ =
+        DocQueryParam
+            "n"
+            ["numeric"]
+            "How many times apply"
+            Normal
+
+instance {-# OVERLAPS #-} ToSample [NodeView String String Int Int] where
+    toSamples _ =
+        [ ("On synthesis start", [NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing}])
+        ]
+
+instance ToSample (NodeView String String Int Int) where
+    toSamples _ = noSamples
+
+instance ToSample (EdgeView String String Int Int) where
+    toSamples _ = noSamples
+
+instance ToSample (G Node String String Int Int) where
+    toSamples _ = noSamples
+
+instance ToSample (G Edge String String Int Int) where
+    toSamples _ = noSamples
+
+instance ToSample (UnitEndpointView String String) where
+    toSamples _ = noSamples
+
+instance ToSample (TestbenchReportView String Int) where
+    toSamples _ = noSamples
+
+instance ToSample (TreeView SynthesisNodeView) where
+    toSamples _ = noSamples
+
+instance ToSample (GraphStructure GraphEdge) where
+    toSamples _ = noSamples
+
+instance ToSample GraphEdge where
+    toSamples _ = noSamples
+
+instance ToSample GraphNode where
+    toSamples _ = noSamples
+
+instance ToSample (ProcessTimelines Int) where
+    toSamples _ = noSamples
+
+instance ToSample (TimelineWithViewPoint Int) where
+    toSamples _ = noSamples
+
+instance ToSample ProcessStepID where
+    toSamples _ = noSamples
+
+instance ToSample NId where
+    toSamples _ = noSamples

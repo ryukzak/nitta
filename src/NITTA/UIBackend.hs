@@ -19,6 +19,7 @@ Stability   : experimental
 module NITTA.UIBackend (
     backendServer,
     prepareJSAPI,
+    restDocs,
 ) where
 
 import Control.Exception (SomeException, try)
@@ -32,9 +33,20 @@ import Network.Simple.TCP (connect)
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.Cors (simpleCors)
 import Servant
+import Servant.Docs hiding (path)
 import qualified Servant.JS as SJS
 import System.FilePath.Posix (joinPath)
 import Text.InterpolatedString.Perl6 (qq)
+
+restDocs port =
+    markdown $
+        docsWithIntros
+            [ DocIntro
+                "NITTA UI REST API description"
+                [ "Expected port: " <> show port
+                ]
+            ]
+            $ pretty (Proxy :: Proxy (SynthesisAPI String String Int Int))
 
 prepareJSAPI port path = do
     let prefix =

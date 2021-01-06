@@ -4,13 +4,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
 {- |
 Module      : NITTA.UIBackend.REST
 Description : REST API description for NITTA backend
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -44,6 +45,7 @@ import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.VisJS (VisJS, algToVizJS)
 import NITTA.Utils
 import Servant
+import Servant.Docs
 import System.FilePath (joinPath)
 
 data BackendCntx tag v x t = BackendCntx
@@ -69,12 +71,20 @@ synthesisServer cntx@BackendCntx{root} =
 
 type GetSynthesis tag v x t =
     Get '[JSON] (G Node tag v x t) -- FIXME: TypeScriptDeclaration
-        :<|> "path" :> Get '[JSON] [NodeView tag v x t]
+        :<|> ( Description "Get list of all previous nodes."
+                :> "path"
+                :> Get '[JSON] [NodeView tag v x t]
+             )
         :<|> "originEdge" :> Get '[JSON] (Maybe (G Edge tag v x t)) -- FIXME: TypeScriptDeclaration
         :<|> "edges" :> Get '[JSON] [EdgeView tag v x t]
         :<|> "intermediateView" :> Get '[JSON] VisJS
         :<|> "timelines" :> Get '[JSON] (ProcessTimelines t) -- FIXME: TypeScriptDeclaration
-        :<|> "debug" :> Get '[JSON] (Debug tag v t)
+        :<|> ( Description
+                "Debuging interface to fast access to internal state \
+                \(see NITTA.UIBackend.REST.Debug)"
+                :> "debug"
+                :> Get '[JSON] (Debug tag v t)
+             )
         :<|> "puEndpoints" :> Get '[JSON] [UnitEndpointView tag v]
 
 getSynthesis BackendCntx{root} nId =
@@ -136,6 +146,12 @@ data Debug tag v t = Debug
     deriving (Generic)
 
 instance (ToJSON tag, ToJSON t, Time t) => ToJSON (Debug tag String t)
+
+instance ToSample (Debug String String Int) -- where toSamples _ = noSamples
+instance ToSample Char where toSamples _ = noSamples
+
+instance {-# OVERLAPS #-} ToSample [(String, [Lock String])] where
+    toSamples _ = singleSample [("PU or function tag", [Lock{locked = "b", lockBy = "a"}])]
 
 debug root nId = do
     node <- getNodeIO root nId
