@@ -132,12 +132,14 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy UnitEndpointView)
                     ]
     writeFile (joinPath [opath, "types.ts"]) $
-        S.replace "type " "export type " $ -- export all types
-            S.replace "interface " "export interface " $ -- export all interfaces
-                S.replace "[k: T1]" "[k: string]" $ -- dirty hack for fixing map types for TestbenchReport
-                    S.replace "[k: T2]" "[k: string]" $ -- dirty hack for fixing map types for TestbenchReport
-                        ts ++ "\n" ++ "type NId = string\n"
-
+        foldl
+            (\st (old, new) -> S.replace old new st)
+            (ts ++ "\n" ++ "type NId = string\n")
+            [ ("type ", "export type ") -- export all types
+            , ("interface ", "export interface ") -- export all interfaces
+            , ("[k: T1]", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
+            , ("[k: T2]", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
+            ]
     putStrLn "Generate typescript interface...OK"
 
     putStrLn "Generate REST API description..."
