@@ -28,7 +28,7 @@ export const haskellApiService = {
   getChildEdges: (nid: NodeId): AxiosPromise<Edge[]> => api.getNodeByNIdChildEdges(nid),
 
   // Synthesis node inspections
-  getNode: (nid: NodeId): AxiosPromise<any> => api.getNodeByNId(nid),
+  getNode: (nid: NodeId): AxiosPromise<SynthesisNode> => api.getNodeByNId(nid),
   getIntermediateView: (nid: NodeId): AxiosPromise<IntermediateGraph> => api.getNodeByNIdIntermediateView(nid),
   getTimelines: (nid: NodeId): AxiosPromise<any> => api.getNodeByNIdProcessTimelines(nid),
   getEndpoints: (nid: NodeId): AxiosPromise<UnitEndpoints> => api.getNodeByNIdEndpoints(nid),

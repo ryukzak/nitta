@@ -102,7 +102,9 @@ synthesisTreeNavigation BackendCtx{root} nid =
 
 type NodeInspectionAPI tag v x t =
     Summary "Synthesis node inspection"
-        :> ( Get '[JSON] (G Node tag v x t) -- FIXME: TypeScriptDeclaration
+        :> ( ( Description "Get node info\n(see: NITTA.Synthesis.Tree.Node)"
+                :> Get '[JSON] (NodeView tag v x t)
+             )
                 :<|> ( Description "Intermidiate reperesentation of the algorithm"
                         :> "intermediateView"
                         :> Get '[JSON] VisJS
@@ -119,7 +121,7 @@ type NodeInspectionAPI tag v x t =
            )
 
 nodeInspection ctx@BackendCtx{root} nid =
-    liftIO (getNodeIO root nid)
+    liftIO (view <$> getNodeIO root nid)
         :<|> liftIO (algToVizJS . functions . mDataFlowGraph . nModel <$> getNodeIO root nid)
         :<|> liftIO (processTimelines . process . mUnit . nModel <$> getNodeIO root nid)
         :<|> liftIO (dbgEndpointOptions <$> debug ctx nid)

@@ -235,6 +235,15 @@ instance
             , nvOrigin = fmap view nOrigin
             }
 
+instance {-# OVERLAPS #-} ToSample [NodeView String String Int Int] where
+    toSamples _ =
+        [ ("root", [NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing}])
+        -- , ("root", [NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing}])
+        ]
+
+instance ToSample (NodeView String String Int Int) where
+    toSamples _ = [("root", NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing})]
+
 data EdgeView tag v x t = EdgeView
     { nid :: String
     , option :: SynthesisDecisionView tag v x (TimeConstrain t)
@@ -455,18 +464,6 @@ instance FromJSON NId where
 instance FromHttpApiData NId where
     parseUrlPiece = Right . read . T.unpack
 
-instance
-    ( VarValTimeJSON v x t
-    ) =>
-    ToJSON (G Node String v x t)
-    where
-    toJSON Node{nId, nModel, nIsComplete} =
-        object
-            [ "nModel" .= nModel
-            , "nIsComplete" .= nIsComplete
-            , "nId" .= nId
-            ]
-
 instance (ToJSONKey v, ToJSON v, ToJSON x) => ToJSON (CycleCntx v x)
 
 data TestbenchReportView v x = TestbenchReportView
@@ -585,20 +582,6 @@ instance ToParam (QueryParam' mods "pName" String) where
             ["string"]
             "Project name"
             Normal
-
-instance {-# OVERLAPS #-} ToSample [NodeView String String Int Int] where
-    toSamples _ =
-        [ ("On synthesis start", [NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing}])
-        ]
-
-instance ToSample (NodeView String String Int Int) where
-    toSamples _ = noSamples
-
-instance ToSample (EdgeView String String Int Int) where
-    toSamples _ = noSamples
-
-instance ToSample (G Node String String Int Int) where
-    toSamples _ = noSamples
 
 instance ToSample (G Edge String String Int Int) where
     toSamples _ = noSamples
