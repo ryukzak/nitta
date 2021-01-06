@@ -140,4 +140,6 @@ main = do
 
     putStrLn "Generate typescript interface...OK"
 
+    putStrLn "Generate REST API description..."
     writeFile (joinPath [opath, "rest_api.markdown"]) $ restDocs port
+    putStrLn "Generate REST API description...ok"
