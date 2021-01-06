@@ -8,7 +8,7 @@ import {
   EdgeView,
   TreeView,
   SynthesisNodeView,
-  TestbenchReportView
+  TestbenchReportView,
 } from "../gen/types";
 import { AxiosPromise } from "axios";
 
@@ -20,30 +20,30 @@ export type Edge = EdgeView<string, string, number, number>;
 export type TestBenchReport = TestbenchReportView<string, number>;
 
 export const haskellApiService = {
-  // SynthesisAPI
   getSynthesisTree: (): AxiosPromise<TreeView<SynthesisNodeView>> => api.getSynthesisTree(),
 
-  // GetSynthesis
-  getNode: (nid: NodeId): AxiosPromise<any> => api.getSynthesisByNId(nid),
-  getPath: (nid: NodeId): AxiosPromise<SynthesisNode[]> => api.getSynthesisByNIdPath(nid),
-  getOriginEdge: (nid: NodeId): AxiosPromise<any> => api.getSynthesisByNIdOriginEdge(nid),
-  getEdges: (nid: NodeId): AxiosPromise<Edge[]> => api.getSynthesisByNIdEdges(nid),
+  // Synthesis tree navigation
+  getRootPath: (nid: NodeId): AxiosPromise<SynthesisNode[]> => api.getNodeByNIdRootPath(nid),
+  getParentEdge: (nid: NodeId): AxiosPromise<any> => api.getNodeByNIdParentEdge(nid),
+  getChildEdges: (nid: NodeId): AxiosPromise<Edge[]> => api.getNodeByNIdChildEdges(nid),
 
-  getIntermediateView: (nid: NodeId): AxiosPromise<IntermediateGraph> => api.getSynthesisByNIdIntermediateView(nid),
-  getTimelines: (nid: NodeId): AxiosPromise<any> => api.getSynthesisByNIdTimelines(nid),
+  // Synthesis node inspections
+  getNode: (nid: NodeId): AxiosPromise<any> => api.getNodeByNId(nid),
+  getIntermediateView: (nid: NodeId): AxiosPromise<IntermediateGraph> => api.getNodeByNIdIntermediateView(nid),
+  getTimelines: (nid: NodeId): AxiosPromise<any> => api.getNodeByNIdProcessTimelines(nid),
+  getEndpoints: (nid: NodeId): AxiosPromise<UnitEndpoints> => api.getNodeByNIdEndpoints(nid),
+  getDebugInfo: (nid: NodeId): AxiosPromise<any> => api.getNodeByNIdDebug(nid),
+  runTestBench: (nid: NodeId, name: string): AxiosPromise<TestBenchReport | null> =>
+    api.postNodeByNIdTestbench(nid, name),
 
-  getDebugOptions: (nid: NodeId): AxiosPromise<any> => api.getSynthesisByNIdDebug(nid),
-  getPUEndpoints: (nid: NodeId): AxiosPromise<UnitEndpoints> => api.getSynthesisByNIdPuEndpoints(nid),
+  // Synthesis methods
+  stateOfTheArtSynthesis: (nid: NodeId): AxiosPromise<NodeId> => api.postNodeByNIdStateOfTheArtSynthesisIO(nid),
+  simpleSynthesis: (nid: NodeId): AxiosPromise<NodeId> => api.postNodeByNIdSimpleSynthesis(nid),
+  smartBindSynthesisIO: (nid: NodeId): AxiosPromise<NodeId> => api.postNodeByNIdSmartBindSynthesisIO(nid),
 
-  // PostSynthesis
-  stateOfTheArtSynthesis: (nid: NodeId): AxiosPromise<NodeId> => api.postSynthesisByNIdStateOfTheArtSynthesisIO(nid),
-  simpleSynthesis: (nid: NodeId): AxiosPromise<NodeId> => api.postSynthesisByNIdSimpleSynthesis(nid),
-  bestStep: (nid: NodeId): AxiosPromise<NodeId> => api.postSynthesisByNIdBestStep(nid),
-  allBestThread: (nid: NodeId, n: number): AxiosPromise<NodeId> => api.postSynthesisByNIdAllBestThread(nid, n),
-  obviousBindThread: (nid: NodeId): AxiosPromise<NodeId> => api.postSynthesisByNIdObviousBindThread(nid),
-  allBindsAndRefsIO: (nid: NodeId): AxiosPromise<NodeId> => api.postSynthesisByNIdAllBindsAndRefsIO(nid),
-  smartBindSynthesisIO: (nid: NodeId): AxiosPromise<NodeId> => api.postSynthesisByNIdSmartBindSynthesisIO(nid),
-
-  // testbench
-  runTestBench: (nid: NodeId, name: string): AxiosPromise<TestBenchReport | null> => api.postTestbenchByNId(nid, name)
+  // Synthesis practice
+  bestStep: (nid: NodeId): AxiosPromise<NodeId> => api.postNodeByNIdBestStep(nid),
+  allBestThread: (nid: NodeId, n: number): AxiosPromise<NodeId> => api.postNodeByNIdAllBestThreads(nid, n),
+  obviousBindThread: (nid: NodeId): AxiosPromise<NodeId> => api.postNodeByNIdObviousBindThread(nid),
+  allBindsAndRefsIO: (nid: NodeId): AxiosPromise<NodeId> => api.postNodeByNIdAllBindsAndRefsIO(nid),
 };

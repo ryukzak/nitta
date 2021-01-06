@@ -15,7 +15,7 @@ export const DebugView: React.FC<IDebugViewProps> = props => {
   // TODO: generalize/leave what's needed
   React.useEffect(() => {
     haskellApiService
-      .getDebugOptions(selectedNodeId)
+      .getDebugInfo(selectedNodeId)
       .then((response: any) => setDebugData(response.data))
       .catch((err: any) => console.error(err));
   }, [selectedNodeId]);

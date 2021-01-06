@@ -22,7 +22,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props
 
   useEffect(() => {
     haskellApiService
-      .getPath(appContext.selectedNodeId)
+      .getRootPath(appContext.selectedNodeId)
       .then((response: AxiosResponse<Node[]>) => {
         let result = response.data;
         if (props.reverse) {

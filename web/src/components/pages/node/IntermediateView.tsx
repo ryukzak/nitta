@@ -64,7 +64,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
       .catch((err: AxiosError) => console.error(err));
 
     haskellApiService
-      .getPath(selectedNodeId)
+      .getRootPath(selectedNodeId)
       .then((response: AxiosResponse<SynthesisNode[]>) => {
         let result: ProcessState = { bindeFuns: [], transferedVars: [] };
         response.data.forEach((n: SynthesisNode) => {
@@ -84,7 +84,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = props => {
       .catch((err: AxiosError) => console.log(err));
 
     haskellApiService
-      .getPUEndpoints(selectedNodeId)
+      .getEndpoints(selectedNodeId)
       .then((response: AxiosResponse<UnitEndpoints>) => {
         let result: Endpoints = { sources: [], targets: [] };
         response.data.forEach(e => {

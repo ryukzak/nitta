@@ -13,7 +13,7 @@ export const EdgesView: React.FC = () => {
 
   React.useEffect(() => {
     haskellApiService
-      .getEdges(appContext.selectedNodeId)
+      .getChildEdges(appContext.selectedNodeId)
       .then((response: AxiosResponse<Edge[]>) => {
         setEdges(response.data);
       })
