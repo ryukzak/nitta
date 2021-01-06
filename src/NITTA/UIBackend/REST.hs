@@ -109,9 +109,10 @@ type NodeInspectionAPI tag v x t =
                         :> "intermediateView"
                         :> Get '[JSON] VisJS
                      )
+                -- TODO: Replace by raw process fetching or add typescript types.
                 :<|> ( Description "Computational process representation"
                         :> "processTimelines"
-                        :> Get '[JSON] (ProcessTimelines t) -- FIXME: TypeScriptDeclaration
+                        :> Get '[JSON] (ProcessTimelines t)
                      )
                 :<|> ( Description "Enpoint options for all process units"
                         :> "endpoints"
