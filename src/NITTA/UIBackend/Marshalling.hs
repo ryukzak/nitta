@@ -265,6 +265,94 @@ instance (VarValTimeJSON v x t, Hashable v) => Viewable (G Edge tag v x t) (Edge
             , objectiveFunctionValue = eObjectiveFunctionValue
             }
 
+dataflowViewSample =
+    EdgeView
+        { nid = show $ NId [3, 4, 3, 2, 0, 1]
+        , option =
+            DataflowView
+                { source = DataflowEndpointView "PU1" $ TimeConstrain (1 ... maxBound) (1 ... maxBound)
+                , targets = HM.fromList [("a1", Nothing), ("a2", Just $ DataflowEndpointView "PU2" $ TimeConstrain (1 ... maxBound) (1 ... 1))]
+                }
+        , decision =
+            DataflowView
+                { source = DataflowEndpointView "PU1" (1 ... 1)
+                , targets = HM.fromList [("a1", Nothing), ("a2", Just $ DataflowEndpointView "PU2" (1 ... 1))]
+                }
+        , parameters =
+            DataFlowEdgeParameterView
+                { pWaitTime = 1
+                , pRestrictedTime = False
+                , pNotTransferableInputs = [0, 0]
+                }
+        , objectiveFunctionValue = 1999
+        }
+
+bindingViewSample =
+    EdgeView
+        { nid = show $ NId [3, 4, 3, 2, 0, 1]
+        , option =
+            BindingView
+                { function = FView "reg(a) = b" []
+                , pu = "PU1"
+                , vars = ["a", "b"]
+                }
+        , decision =
+            BindingView
+                { function = FView "reg(a) = b" []
+                , pu = "PU1"
+                , vars = ["a", "b"]
+                }
+        , parameters =
+            BindEdgeParameterView
+                { pCritical = True
+                , pAlternative = 1
+                , pRestless = 1
+                , pOutputNumber = 1
+                , pAllowDataFlow = 1
+                , pPossibleDeadlock = False
+                , pNumberOfBindedFunctions = 1
+                , pPercentOfBindedInputs = 1
+                , pWave = Just 1
+                }
+        , objectiveFunctionValue = 19
+        }
+
+refactorViewSample =
+    EdgeView
+        { nid = show $ NId [3, 4, 3, 2, 0, 1]
+        , option =
+            BindingView
+                { function = FView "reg(a) = b" []
+                , pu = "PU1"
+                , vars = ["a", "b"]
+                }
+        , decision =
+            BindingView
+                { function = FView "reg(a) = b" []
+                , pu = "PU1"
+                , vars = ["a", "b"]
+                }
+        , parameters =
+            RefactorEdgeParameterView
+                { pRefactorType = ResolveDeadlockView ["c"]
+                , pNumberOfLockedVariables = 1
+                , pBufferCount = 1
+                , pNStepBackRepeated = Just 1
+                , pNumberOfTransferableVariables = 1
+                }
+        , objectiveFunctionValue = 10000
+        }
+
+instance {-# OVERLAPS #-} ToSample [EdgeView String String Int Int] where
+    toSamples _ = singleSample [dataflowViewSample, bindingViewSample, refactorViewSample]
+
+instance ToSample (EdgeView String String Int Int) where
+    toSamples _ =
+        [ ("dataflow edge", dataflowViewSample)
+        , ("bind edge", bindingViewSample)
+        , ("refactor edge", refactorViewSample)
+        ]
+
 data ParametersView
     = BindEdgeParameterView
         { pCritical :: Bool
