@@ -114,13 +114,32 @@ Compiled successfully.
 ✨  Done in 63.36s.
 ```
 
-### Build haddock:
-``` sh
-stack build --haddock
+### Build documentation
+``` console
+$ stack build --haddock # for nitta CAD
+nitta        > configure (lib + exe)
+Configuring nitta-0.0.0.1...
+nitta        > build (lib + exe)
+Preprocessing library for nitta-0.0.0.1..
+Building library for nitta-0.0.0.1..
+[ 1 of 56] Compiling NITTA.Intermediate.Value [Optimisation flags changed]
+[ 2 of 56] Compiling NITTA.Intermediate.Variable [Optimisation flags changed]
+...
+Updating Haddock index for snapshot packages in
+/Users/penskoi/.stack/snapshots/x86_64-osx/a990dab32eefe0e44a7cadd683796493ee842f521c2ece5efa1f067d05ae22a6/8.8.4/doc/index.html
+$ stack exec nitta-api-gen # for REST API description
+Create output directory...
+Create output directory...OK
+Expected nitta server port: 8080
+Generate rest_api.js library...
+Generate rest_api.js library...OK
+Generate typescript interface...
+Generate typescript interface...OK
+Generate REST API description...
+Generate REST API description...ok
 ```
 
 For the fast rebuild, the project adds `--fast` flag.
-
 
 ## Usage
 
@@ -187,30 +206,22 @@ Running NITTA server at http://localhost:8080
 
 #### Testing
 ``` console
-$ stack test
-nitta-0.0.0.1: unregistering (local file changes: test/NITTA/Model/ProcessorUnits/Tests/Utils.hs)
+$ stack build --test
+nitta-0.0.0.1: unregistering (dependencies changed)
 nitta> configure (lib + exe + test)
 Configuring nitta-0.0.0.1...
 nitta> build (lib + exe + test)
 Preprocessing library for nitta-0.0.0.1..
 Building library for nitta-0.0.0.1..
-Preprocessing executable 'nitta' for nitta-0.0.0.1..
-Building executable 'nitta' for nitta-0.0.0.1..
-Preprocessing executable 'nitta-api-gen' for nitta-0.0.0.1..
-Building executable 'nitta-api-gen' for nitta-0.0.0.1..
-Preprocessing test suite 'nitta-test' for nitta-0.0.0.1..
-Building test suite 'nitta-test' for nitta-0.0.0.1..
-[14 of 20] Compiling NITTA.Model.ProcessorUnits.Tests.Utils
-[17 of 20] Compiling NITTA.Model.ProcessorUnits.Serial.Accum.Tests [TH]
-
+[ 1 of 56] Compiling NITTA.Intermediate.Value
+[ 2 of 56] Compiling NITTA.Intermediate.Variable
 ...
-
   NITTA.Utils.Tests
     values2dump:                                                 OK
     endpoint role equality:                                      OK
 
-All 138 tests passed (8.81s)
+All 190 tests passed (27.89s)
 
-nitta               > Test suite nitta-test passed
-Completed 22 action(s).
+nitta> Test suite nitta-test passed
+Completed 2 action(s).
 ```
