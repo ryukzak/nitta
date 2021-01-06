@@ -16,7 +16,7 @@ export const TestBenchPage: React.FC = () => {
 
   useEffect(() => {
     haskellApiService
-      .runTestBench(appContext.selectedNodeId, "web_ui")
+      .runTestBench(appContext.selectedNodeId, "web_ui", 5)
       .then((response: AxiosResponse<TestBenchReport | null>) => {
         setTestBenchDump(response.data);
         setRequestSuccess(true);

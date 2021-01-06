@@ -33,8 +33,8 @@ export const haskellApiService = {
   getTimelines: (nid: NodeId): AxiosPromise<any> => api.getNodeByNIdProcessTimelines(nid),
   getEndpoints: (nid: NodeId): AxiosPromise<UnitEndpoints> => api.getNodeByNIdEndpoints(nid),
   getDebugInfo: (nid: NodeId): AxiosPromise<any> => api.getNodeByNIdDebug(nid),
-  runTestBench: (nid: NodeId, name: string): AxiosPromise<TestBenchReport | null> =>
-    api.postNodeByNIdTestbench(nid, name),
+  runTestBench: (nid: NodeId, name: string, loopsNumber: number): AxiosPromise<TestBenchReport | null> =>
+    api.postNodeByNIdTestbench(nid, name, loopsNumber),
 
   // Synthesis methods
   stateOfTheArtSynthesis: (nid: NodeId): AxiosPromise<NodeId> => api.postNodeByNIdStateOfTheArtSynthesisIO(nid),

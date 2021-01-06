@@ -671,6 +671,9 @@ instance ToParam (QueryParam' mods "pName" String) where
             "Project name"
             Normal
 
+instance ToParam (QueryParam' mods "loopsNumber" Int) where
+    toParam _ = DocQueryParam "loopsNumber" ["number"] "How many computation cycles need to simulate." Normal
+
 instance ToSample (G Edge String String Int Int) where
     toSamples _ = noSamples
 

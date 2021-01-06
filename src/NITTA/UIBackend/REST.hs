@@ -179,9 +179,10 @@ type TestBenchAPI v x =
     Summary "Get report of testbench execution for the current node."
         :> "testbench"
         :> QueryParam' '[Required] "pName" String
+        :> QueryParam' '[Required] "loopsNumber" Int
         :> Post '[JSON] (TestbenchReportView v x)
 
-testBench BackendCtx{root, receivedValues} nid pName = liftIO $ do
+testBench BackendCtx{root, receivedValues} nid pName loopsNumber = liftIO $ do
     node <- getNodeIO root nid
     let TargetSystem{mDataFlowGraph} = nModel node
     unless (nIsComplete node) $ error "test bench not allow for non complete synthesis"
@@ -192,8 +193,7 @@ testBench BackendCtx{root, receivedValues} nid pName = liftIO $ do
                 , pLibPath = joinPath ["..", "..", "hdl"]
                 , pPath = joinPath ["gen", pName]
                 , pUnit = mUnit $ nModel node
-                , -- TODO: extract 5 to parameter
-                  pTestCntx = simulateDataFlowGraph 5 def receivedValues mDataFlowGraph
+                , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues mDataFlowGraph
                 }
 
 ------------------------------------------------------------
