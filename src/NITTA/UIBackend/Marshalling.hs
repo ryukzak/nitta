@@ -691,15 +691,97 @@ instance ToParam (QueryParam' mods "loopsNumber" Int) where
     toParam _ = DocQueryParam "loopsNumber" ["number"] "How many computation cycles need to simulate." Normal
 
 instance ToSample (TestbenchReportView String Int) where
-    toSamples _ = noSamples
+    toSamples _ =
+        singleSample
+            TestbenchReportView
+                { tbStatus = True
+                , tbCompilerDump = ["stdout:", "stderr:"]
+                , tbSimulationDump =
+                    [ "stdout:"
+                    , "VCD info: dumpfile web_ui_net_tb.vcd opened for output."
+                    , "0:0\tactual: 0.000  0\t"
+                    , "0:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t"
+                    , "0:2\tactual: 0.000  0\t"
+                    , "0:3\tactual: 0.000  0\t"
+                    , "0:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t"
+                    , "0:5\tactual: 0.000  0\t"
+                    , "1:0\tactual: 0.000  0\t"
+                    , "1:1\tactual: 0.000  0 \texpect: 0.000  0 \tvar: x#0\t"
+                    , "1:2\tactual: 0.000  0\t"
+                    , "1:3\tactual: 0.000  0\t"
+                    , "1:4\tactual: 0.000  0 \texpect: 0.000  0 \tvar: tmp_0#0\t"
+                    , "1:5\tactual: 0.000  0\t"
+                    , "stderr:"
+                    ]
+                , tbPath = "/Users/penskoi/Documents/nitta-corp/nitta/gen/web_ui"
+                , tbFiles =
+                    [ "web_ui_net/web_ui_net.v"
+                    , "lib/pu_simple_control.v"
+                    , "lib/pu_accum.v"
+                    , "lib/div_mock.v"
+                    , "lib/pu_div.v"
+                    , "lib/pu_fram.v"
+                    , "lib/mult_mock.v"
+                    , "lib/pu_multiplier.v"
+                    , "lib/pu_shift.v"
+                    , "lib/pu_slave_spi_driver.v"
+                    , "lib/spi_slave_driver.v"
+                    , "lib/i2n_splitter.v"
+                    , "lib/buffer.v"
+                    , "lib/bounce_filter.v"
+                    , "lib/spi_master_driver.v"
+                    , "lib/n2i_splitter.v"
+                    , "lib/pu_slave_spi.v"
+                    , "lib/pu_master_spi.v"
+                    , "web_ui_net_tb.v"
+                    ]
+                , tbFunctions =
+                    [ "reg(x#0) = tmp_0#0"
+                    , "LoopIn (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)"
+                    , "LoopOut (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])"
+                    ]
+                , tbSynthesisSteps =
+                    [ "Step {sKey = 19, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 0, sTime = 0 ... 0, sDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}"
+                    , "Step {sKey = 18, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 1, sTime = 0 ... 0, sDesc = revoke Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}"
+                    , "Step {sKey = 17, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 2, sTime = 0 ... 0, sDesc = bind LoopOut (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}"
+                    , "Step {sKey = 16, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 3, sTime = 0 ... 0, sDesc = bind LoopIn (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}"
+                    , "Step {sKey = 15, sTime = 1 ... 1, sDesc = Nested fram2: Step {sKey = 4, sTime = 1 ... 1, sDesc = Source x#0}}"
+                    , "Step {sKey = 14, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 5, sTime = 0 ... 0, sDesc = PrepareRead 0}}"
+                    , "Step {sKey = 13, sTime = 0 ... 1, sDesc = Nested fram2: Step {sKey = 6, sTime = 0 ... 1, sDesc = LoopOut (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}"
+                    , "Step {sKey = 12, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 7, sTime = 4 ... 4, sDesc = Target tmp_0#0}}"
+                    , "Step {sKey = 11, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 8, sTime = 4 ... 4, sDesc = Write 0}}"
+                    , "Step {sKey = 10, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 9, sTime = 4 ... 4, sDesc = LoopIn (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}"
+                    , "Step {sKey = 9, sTime = 0 ... 0, sDesc = Nested fram1: Step {sKey = 0, sTime = 0 ... 0, sDesc = bind reg(x#0) = tmp_0#0}}"
+                    , "Step {sKey = 8, sTime = 1 ... 1, sDesc = Nested fram1: Step {sKey = 1, sTime = 1 ... 1, sDesc = Target x#0}}"
+                    , "Step {sKey = 7, sTime = 1 ... 1, sDesc = Nested fram1: Step {sKey = 2, sTime = 1 ... 1, sDesc = Write 0}}"
+                    , "Step {sKey = 6, sTime = 4 ... 4, sDesc = Nested fram1: Step {sKey = 3, sTime = 4 ... 4, sDesc = Source tmp_0#0}}"
+                    , "Step {sKey = 5, sTime = 3 ... 3, sDesc = Nested fram1: Step {sKey = 4, sTime = 3 ... 3, sDesc = PrepareRead 0}}"
+                    , "Step {sKey = 4, sTime = 1 ... 4, sDesc = Nested fram1: Step {sKey = 5, sTime = 1 ... 4, sDesc = reg(x#0) = tmp_0#0}}"
+                    , "Step {sKey = 3, sTime = 4 ... 4, sDesc = Transport \"tmp_0#0\" \"fram1\" \"fram2\"}"
+                    , "Step {sKey = 2, sTime = 1 ... 1, sDesc = Transport \"x#0\" \"fram2\" \"fram1\"}"
+                    , "Step {sKey = 1, sTime = 0 ... 0, sDesc = bind reg(x#0) = tmp_0#0}"
+                    , "Step {sKey = 0, sTime = 0 ... 0, sDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}"
+                    ]
+                , tbFunctionalSimulationCntx =
+                    replicate 2 $
+                        HM.fromList
+                            [ ("tmp_0#0", 0)
+                            , ("u#0", 0)
+                            , ("x#0", 0)
+                            ]
+                , tbLogicalSimulationCntx =
+                    replicate 2 $
+                        HM.fromList
+                            [ ("tmp_0#0", 0)
+                            , ("u#0", 0)
+                            , ("x#0", 0)
+                            ]
+                }
 
 instance ToSample (TreeView SynthesisNodeView) where
     toSamples _ = noSamples
 
 instance ToSample (ProcessTimelines Int) where
-    toSamples _ = noSamples
-
-instance ToSample (TimelineWithViewPoint Int) where
     toSamples _ = noSamples
 
 instance ToSample ProcessStepID where
