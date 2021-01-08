@@ -85,9 +85,6 @@ export const SynthesisGraphView: React.FC = () => {
             ch: dNode.rootLabel.svDuration + " / " + dNode.rootLabel.svCharacteristic,
           };
           gNode.status = dNode.rootLabel.svIsComplete;
-          dNode.rootLabel.svCntx.forEach((e: string, i: number) => {
-            gNode.attributes![i] = e;
-          });
           gNode.children = [];
           var notProcessedCount = 0;
           dNode.subForest.forEach((e: TreeView<SynthesisNodeView>) => {

@@ -73,7 +73,6 @@ class Viewable t v | t -> v where
 
 data SynthesisNodeView = SynthesisNodeView
     { svNnid :: NId
-    , svCntx :: [String]
     , svIsComplete :: Bool
     , svIsEdgesProcessed :: Bool
     , svDuration :: Int
@@ -102,7 +101,6 @@ viewNodeTree Node{nId, nIsComplete, nModel, nEdges, nOrigin} = do
             { rootLabel =
                 SynthesisNodeView
                     { svNnid = nId
-                    , svCntx = []
                     , svIsComplete = nIsComplete
                     , svIsEdgesProcessed = isJust nodesM
                     , svDuration = fromEnum $ processDuration nModel
@@ -785,7 +783,6 @@ instance ToSample (TreeView SynthesisNodeView) where
                 { rootLabel =
                     SynthesisNodeView
                         { svNnid = NId []
-                        , svCntx = []
                         , svIsComplete = False
                         , svIsEdgesProcessed = True
                         , svDuration = 0
@@ -797,7 +794,6 @@ instance ToSample (TreeView SynthesisNodeView) where
                         { rootLabel =
                             SynthesisNodeView
                                 { svNnid = NId [0]
-                                , svCntx = []
                                 , svIsComplete = False
                                 , svIsEdgesProcessed = False
                                 , svDuration = 0
@@ -810,7 +806,6 @@ instance ToSample (TreeView SynthesisNodeView) where
                         { rootLabel =
                             SynthesisNodeView
                                 { svNnid = NId [1]
-                                , svCntx = []
                                 , svIsComplete = False
                                 , svIsEdgesProcessed = False
                                 , svDuration = 0
