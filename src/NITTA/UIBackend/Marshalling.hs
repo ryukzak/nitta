@@ -76,7 +76,7 @@ data SynthesisNodeView = SynthesisNodeView
     , svIsComplete :: Bool
     , svIsEdgesProcessed :: Bool
     , svDuration :: Int
-    , svCharacteristic :: Float
+    , svCharacteristic :: Float -- FIXME: Maybe?
     , svOptionType :: String
     }
     deriving (Generic)
@@ -210,8 +210,7 @@ instance (Show v, Show x) => Viewable (Refactor v x) RefactorView where
 
 data NodeView tag v x t = NodeView
     { nvId :: NId
-    , --, nvModel      :: ModelState (BusNetwork tag v x t) v x
-      nvIsComplete :: Bool
+    , nvIsComplete :: Bool
     , nvOrigin :: Maybe (EdgeView tag v x t)
     }
     deriving (Generic)
@@ -227,8 +226,7 @@ instance
     view Node{nId, nOrigin, nIsComplete} =
         NodeView
             { nvId = nId
-            , --, nvModel=nModel
-              nvIsComplete = nIsComplete
+            , nvIsComplete = nIsComplete
             , nvOrigin = fmap view nOrigin
             }
 
@@ -673,7 +671,7 @@ instance ToParam (QueryParam' mods "deep" Int) where
     toParam _ =
         DocQueryParam
             "deep"
-            ["numeric"]
+            ["number"]
             "How many levels need to be explore."
             Normal
 
@@ -819,9 +817,6 @@ instance ToSample (TreeView SynthesisNodeView) where
 
 instance ToSample (ProcessTimelines Int) where
     toSamples _ = noSamples
-
-instance ToSample ProcessStepID where
-    toSamples _ = samples [1, 2, 3]
 
 instance ToSample NId where
     toSamples _ = [("The synthesis node path from the root by edge indexes.", NId [1, 1, 3])]
