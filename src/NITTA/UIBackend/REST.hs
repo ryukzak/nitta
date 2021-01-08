@@ -105,7 +105,7 @@ type NodeInspectionAPI tag v x t =
         :> ( ( Description "Get node info\n(see: NITTA.Synthesis.Tree.Node)"
                 :> Get '[JSON] (NodeView tag v x t)
              )
-                :<|> ( Description "Intermidiate reperesentation of the algorithm"
+                :<|> ( Description "Intermidiate reperesentation of the current version of the algorithm"
                         :> "intermediateView"
                         :> Get '[JSON] VisJS
                      )

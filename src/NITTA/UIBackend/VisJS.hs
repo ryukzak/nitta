@@ -13,7 +13,7 @@
 {- |
 Module      : NITTA.UIBackend.VisJS
 Description : Graph of intermediate view.
-Copyright   : (c) Dmitriy Anoshchenkov, Aleksandr Penskoi, 2019
+Copyright   : (c) Dmitriy Anoshchenkov, Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -27,10 +27,12 @@ module NITTA.UIBackend.VisJS (
 ) where
 
 import Data.Aeson
+import Data.Default
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
-import GHC.Generics
+import GHC.Generics hiding (from, to)
 import qualified NITTA.Intermediate.Types as F
+import Servant.Docs
 import Prelude hiding (id)
 
 type VisJS = GraphStructure GraphEdge
@@ -43,6 +45,16 @@ data GraphEdge = GraphEdge
     , fontAllign :: String
     }
     deriving (Generic)
+
+instance Default GraphEdge where
+    def =
+        GraphEdge
+            { to = 0
+            , from = 0
+            , label = ""
+            , edgeWidth = "2"
+            , fontAllign = "bottom"
+            }
 
 data GraphStructure v = GraphStructure
     { nodes :: [GraphNode]
@@ -61,6 +73,19 @@ data GraphNode = GraphNode
     , nodeSize :: String
     }
     deriving (Generic)
+
+instance Default GraphNode where
+    def =
+        GraphNode
+            { id = -1
+            , label = ""
+            , function = ""
+            , history = []
+            , nodeColor = "#cbbeb5"
+            , nodeShape = "box"
+            , fontSize = "20"
+            , nodeSize = "30"
+            }
 
 data VertexType
     = InVertex
@@ -99,15 +124,7 @@ algToVizJS fbs =
              in concatMap
                     ( \(GraphVertex _ name inId) ->
                         map
-                            ( \(GraphVertex _ _ outId) ->
-                                GraphEdge
-                                    { to = inId
-                                    , from = outId
-                                    , label = name
-                                    , edgeWidth = "2"
-                                    , fontAllign = "bottom"
-                                    }
-                            )
+                            (\(GraphVertex _ _ outId) -> def{to = inId, from = outId, label = name})
                             $ filter ((name ==) . vertexName) outVertexes
                     )
                     inVertexes
@@ -115,22 +132,31 @@ algToVizJS fbs =
 toVizJS F.F{fun, funHistory} =
     GraphStructure
         { nodes =
-            [ GraphNode
-                { id = 1
-                , label = S.replace "\"" "" $ F.label fun
+            [ def
+                { label = S.replace "\"" "" $ F.label fun
                 , function = S.replace "\"" "" $ show fun
                 , history = map (S.replace "\"" "" . show) funHistory
-                , nodeColor = "#cbbeb5"
-                , nodeShape = "box"
-                , fontSize = "20"
-                , nodeSize = "30"
                 }
             ]
         , edges = mkEdges InVertex (F.inputs fun) ++ mkEdges OutVertex (F.outputs fun)
         }
     where
         mkEdges t = map (\v -> GraphVertex t (F.label v) 1) . S.elems
--- *JSON Marshaling
-instance ToJSON (GraphStructure GraphEdge)
+
+instance ToJSON VisJS
 instance ToJSON GraphNode
 instance ToJSON GraphEdge
+
+instance ToSample VisJS where
+    toSamples _ =
+        singleSample
+            GraphStructure
+                { nodes =
+                    [ def{id = 1, label = "r", function = "reg(x#0) = tmp_0#0"}
+                    , def{id = 2, label = "loop(0.000000, tmp_0#0) = x#0", function = "Loop (X 0.000000) (O [x#0]) (I tmp_0#0)"}
+                    ]
+                , edges =
+                    [ def{from = 2, to = 1, label = "x#0"}
+                    , def{from = 1, to = 2, label = "tmp_0#0"}
+                    ]
+                }

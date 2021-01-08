@@ -61,7 +61,6 @@ import NITTA.Project (TestbenchReport (..))
 import NITTA.Synthesis.Estimate
 import NITTA.Synthesis.Tree
 import NITTA.UIBackend.Timeline
-import NITTA.UIBackend.VisJS
 import NITTA.Utils (transferred)
 import Numeric.Interval
 import Servant
@@ -237,12 +236,23 @@ instance
 
 instance {-# OVERLAPS #-} ToSample [NodeView String String Int Int] where
     toSamples _ =
-        [ ("root", [NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing}])
-        -- , ("root", [NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing}])
-        ]
+        samples
+            [ []
+            , [NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing}]
+            ]
 
 instance ToSample (NodeView String String Int Int) where
-    toSamples _ = [("root", NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing})]
+    toSamples _ =
+        [ ("root", NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing})
+        ,
+            ( "final"
+            , NodeView
+                { nvId = NId [1, 1, 2, 3, 1, 2, 4, 5, 6]
+                , nvIsComplete = True
+                , nvOrigin = fmap (\e -> e{nid = show $ NId [1, 1, 2, 3, 1, 2, 4, 5]}) $ toSample Proxy
+                }
+            )
+        ]
 
 data EdgeView tag v x t = EdgeView
     { nid :: String
@@ -465,11 +475,17 @@ instance (ToJSON v) => ToJSON (EndpointSt v TimeConstrainView)
 
 data UnitEndpointView tag v = UnitEndpointView
     { unitTag :: tag
-    , endpoints :: EndpointSt v TimeConstrainView
+    , endpoints :: EndpointSt v TimeConstrainView -- FIXME:
     }
     deriving (Generic)
 
 instance (ToJSON tag, ToJSON v) => ToJSON (UnitEndpointView tag v)
+
+instance ToSample (UnitEndpointView String String) where
+    toSamples _ =
+        [ ("target", UnitEndpointView "PU1" $ view $ EndpointSt{epRole = Target "a", epAt = TimeConstrain{tcAvailable = (0 :: Int) ... maxBound, tcDuration = 1 ... maxBound}})
+        , ("source", UnitEndpointView "PU2" $ view $ EndpointSt{epRole = Source $ S.singleton "a", epAt = TimeConstrain{tcAvailable = (0 :: Int) ... maxBound, tcDuration = 1 ... 1}})
+        ]
 
 -- *Process units
 instance
@@ -674,25 +690,10 @@ instance ToParam (QueryParam' mods "pName" String) where
 instance ToParam (QueryParam' mods "loopsNumber" Int) where
     toParam _ = DocQueryParam "loopsNumber" ["number"] "How many computation cycles need to simulate." Normal
 
-instance ToSample (G Edge String String Int Int) where
-    toSamples _ = noSamples
-
-instance ToSample (UnitEndpointView String String) where
-    toSamples _ = noSamples
-
 instance ToSample (TestbenchReportView String Int) where
     toSamples _ = noSamples
 
 instance ToSample (TreeView SynthesisNodeView) where
-    toSamples _ = noSamples
-
-instance ToSample (GraphStructure GraphEdge) where
-    toSamples _ = noSamples
-
-instance ToSample GraphEdge where
-    toSamples _ = noSamples
-
-instance ToSample GraphNode where
     toSamples _ = noSamples
 
 instance ToSample (ProcessTimelines Int) where
