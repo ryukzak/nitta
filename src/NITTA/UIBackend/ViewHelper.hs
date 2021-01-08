@@ -27,7 +27,7 @@ manually.
 module NITTA.UIBackend.ViewHelper (
     Viewable (..),
     SynthesisNodeView,
-    SynthesisDecisionView,
+    SynthesisStatementView,
     RefactorView,
     ParametersView,
     DataflowEndpointView,
@@ -197,8 +197,8 @@ instance ToSample (NodeView String String Int Int) where
 
 data EdgeView tag v x t = EdgeView
     { nid :: String
-    , option :: SynthesisDecisionView tag v x (TimeConstrain t)
-    , decision :: SynthesisDecisionView tag v x (Interval t)
+    , option :: SynthesisStatementView tag v x (TimeConstrain t)
+    , decision :: SynthesisStatementView tag v x (Interval t)
     , parameters :: ParametersView
     , objectiveFunctionValue :: Float
     }
@@ -306,7 +306,7 @@ instance ToSample (EdgeView String String Int Int) where
 
 -- Problems
 
-data SynthesisDecisionView tag v x tp
+data SynthesisStatementView tag v x tp
     = BindingView
         { function :: FView
         , pu :: tag
@@ -326,7 +326,7 @@ instance
     ) =>
     Viewable
         (NId, SynthesisStatement tag v x tp)
-        (NId, SynthesisDecisionView tag v x tp)
+        (NId, SynthesisStatementView tag v x tp)
     where
     view (nid, st) = (nid, view st)
 
@@ -335,7 +335,7 @@ instance
     , Show x
     , Hashable v
     ) =>
-    Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp)
+    Viewable (SynthesisStatement tag v x tp) (SynthesisStatementView tag v x tp)
     where
     view (Binding f pu) =
         BindingView
@@ -361,7 +361,7 @@ instance
     , ToJSON tp
     , ToJSON tag
     ) =>
-    ToJSON (SynthesisDecisionView tag v x tp)
+    ToJSON (SynthesisStatementView tag v x tp)
 
 data DataflowEndpointView tag tp = DataflowEndpointView
     { pu :: tag

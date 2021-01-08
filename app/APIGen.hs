@@ -70,7 +70,7 @@ $(deriveTypeScript defaultOptions ''TreeView)
 $(deriveTypeScript defaultOptions ''SynthesisNodeView)
 
 $(deriveTypeScript defaultOptions ''DataflowEndpointView)
-$(deriveTypeScript defaultOptions ''SynthesisDecisionView)
+$(deriveTypeScript defaultOptions ''SynthesisStatementView)
 $(deriveTypeScript defaultOptions ''NodeView)
 $(deriveTypeScript defaultOptions ''EdgeView)
 
@@ -84,7 +84,7 @@ $(deriveTypeScript defaultOptions ''EndpointRole)
 $(deriveTypeScript defaultOptions ''EndpointSt)
 $(deriveTypeScript defaultOptions ''UnitEndpointView)
 
-data HistoryStep tag v x tp = HistoryStep NId (SynthesisDecisionView tag v x tp)
+data HistoryStep tag v x tp = HistoryStep NId (SynthesisStatementView tag v x tp)
 $(deriveTypeScript defaultOptions ''HistoryStep)
 
 main = do
@@ -119,7 +119,7 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy DataflowEndpointView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy SynthesisDecisionView)
+                    , getTypeScriptDeclarations (Proxy :: Proxy SynthesisStatementView)
                     , getTypeScriptDeclarations (Proxy :: Proxy HistoryStep)
                     , getTypeScriptDeclarations (Proxy :: Proxy NodeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy EdgeView)
