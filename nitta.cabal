@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1e204afa77500033dedcc871f0a343304e6229dfa0700299686e0e80bb4b65fb
+-- hash: 3f19e3eba7a430aa519e778ead46611f38c40da02461616c90799b9b0f524d02
 
 name:           nitta
 version:        0.0.0.1
@@ -97,9 +97,10 @@ library
       NITTA.Synthesis.Tree
       NITTA.TargetSynthesis
       NITTA.UIBackend
-      NITTA.UIBackend.Marshalling
+      NITTA.UIBackend.Orphans
       NITTA.UIBackend.REST
       NITTA.UIBackend.Timeline
+      NITTA.UIBackend.ViewHelper
       NITTA.UIBackend.VisJS
       NITTA.Utils
       NITTA.Utils.Base
@@ -133,6 +134,7 @@ library
     , regex-compat
     , safe
     , servant
+    , servant-docs
     , servant-js
     , servant-server
     , split

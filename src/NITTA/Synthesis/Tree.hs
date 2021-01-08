@@ -141,6 +141,8 @@ getNodeIO node nId@(NId (i:is)) = do
 -----------------------------------------------------------
 -- *Edge
 
+-- TODO: Edge contain three strong connected fields: eOption, eSource,
+-- eParameter. Maybe we need to merge them?
 data Edge m o d
     = Edge
         { eTarget                 :: Node m o d

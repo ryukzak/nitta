@@ -6,20 +6,18 @@ import { JsonView } from "../node/JsonView";
 
 export interface IDebugViewProps {}
 
-export const DebugView: React.FC<IDebugViewProps> = props => {
+export const DebugView: React.FC<IDebugViewProps> = (props) => {
   const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
 
-  const [debugData, setDebugData] = React.useState<any | null>(null);
-  const [synthesisNodeData, setSynthesisNodeData] = React.useState<any | null>(null);
-
-  // TODO: generalize/leave what's needed
+  const [debugInfo, setDebugInfo] = React.useState<any | null>(null);
   React.useEffect(() => {
     haskellApiService
-      .getDebugOptions(selectedNodeId)
-      .then((response: any) => setDebugData(response.data))
+      .getDebugInfo(selectedNodeId)
+      .then((response: any) => setDebugInfo(response.data))
       .catch((err: any) => console.error(err));
   }, [selectedNodeId]);
 
+  const [synthesisNodeData, setSynthesisNodeData] = React.useState<any | null>(null);
   React.useEffect(() => {
     haskellApiService
       .getNode(selectedNodeId)
@@ -32,8 +30,10 @@ export const DebugView: React.FC<IDebugViewProps> = props => {
       {selectedNodeId ? (
         synthesisNodeData ? (
           <div className="d-flex flex-column">
-            <JsonView src={debugData} />
+            <h3>Current node</h3>
             <JsonView src={synthesisNodeData} />
+            <h3>Debug info</h3>
+            <JsonView src={debugInfo} />
           </div>
         ) : (
           <pre> Updating... </pre>
