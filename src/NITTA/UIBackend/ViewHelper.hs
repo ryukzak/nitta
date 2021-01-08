@@ -26,20 +26,20 @@ manually.
 -}
 module NITTA.UIBackend.ViewHelper (
     Viewable (..),
+    viewNodeTree,
+    TreeView,
+    NodeView,
+    EdgeView,
     SynthesisNodeView,
     SynthesisStatementView,
     RefactorView,
     ParametersView,
+    EndpointStView (..),
     DataflowEndpointView,
-    NodeView,
-    EdgeView,
-    FView,
-    TreeView,
-    viewNodeTree,
-    IntervalView,
-    TimeConstrainView,
-    UnitEndpointView (..),
     TestbenchReportView (..),
+    FView,
+    TimeConstrainView,
+    IntervalView,
 ) where
 
 import Control.Concurrent.STM
@@ -474,23 +474,23 @@ instance Viewable Parameters ParametersView where
 
 instance ToJSON ParametersView
 
--- Other
+-- Endpoint
 
-data UnitEndpointView tag v = UnitEndpointView
+data EndpointStView tag v = EndpointStView
     { unitTag :: tag
-    , endpoints :: EndpointSt v TimeConstrainView -- FIXME:
+    , endpoint :: EndpointSt v TimeConstrainView
     }
     deriving (Generic)
 
 instance (Viewable tp tp') => Viewable (EndpointSt v tp) (EndpointSt v tp') where
     view EndpointSt{epRole, epAt} = EndpointSt{epRole, epAt = view epAt}
 
-instance (ToJSON tag, ToJSON v) => ToJSON (UnitEndpointView tag v)
+instance (ToJSON tag, ToJSON v) => ToJSON (EndpointStView tag v)
 
-instance ToSample (UnitEndpointView String String) where
+instance ToSample (EndpointStView String String) where
     toSamples _ =
-        [ ("target", UnitEndpointView "PU1" $ view $ EndpointSt{epRole = Target "a", epAt = TimeConstrain{tcAvailable = (0 :: Int) ... maxBound, tcDuration = 1 ... maxBound}})
-        , ("source", UnitEndpointView "PU2" $ view $ EndpointSt{epRole = Source $ S.singleton "a", epAt = TimeConstrain{tcAvailable = (0 :: Int) ... maxBound, tcDuration = 1 ... 1}})
+        [ ("target", EndpointStView "PU1" $ view $ EndpointSt{epRole = Target "a", epAt = TimeConstrain{tcAvailable = (0 :: Int) ... maxBound, tcDuration = 1 ... maxBound}})
+        , ("source", EndpointStView "PU2" $ view $ EndpointSt{epRole = Source $ S.singleton "a", epAt = TimeConstrain{tcAvailable = (0 :: Int) ... maxBound, tcDuration = 1 ... 1}})
         ]
 
 -- Testbench

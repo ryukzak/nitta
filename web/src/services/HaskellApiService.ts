@@ -1,7 +1,7 @@
 import api from "../gen/rest_api.js";
 import { NodeId } from "../components/app/AppContext.js";
 import {
-  UnitEndpointView,
+  EndpointStView,
   GraphStructure,
   GraphEdge,
   NodeView,
@@ -13,7 +13,7 @@ import {
 import { AxiosPromise } from "axios";
 
 // TODO: argument typing
-export type UnitEndpoints = UnitEndpointView<string, string>[];
+export type EndpointSts = EndpointStView<string, string>[];
 export type IntermediateGraph = GraphStructure<GraphEdge>;
 export type SynthesisNode = NodeView<string, string, string, string>;
 export type Edge = EdgeView<string, string, number, number>;
@@ -31,7 +31,7 @@ export const haskellApiService = {
   getNode: (nid: NodeId): AxiosPromise<SynthesisNode> => api.getNodeByNId(nid),
   getIntermediateView: (nid: NodeId): AxiosPromise<IntermediateGraph> => api.getNodeByNIdIntermediateView(nid),
   getTimelines: (nid: NodeId): AxiosPromise<any> => api.getNodeByNIdProcessTimelines(nid),
-  getEndpoints: (nid: NodeId): AxiosPromise<UnitEndpoints> => api.getNodeByNIdEndpoints(nid),
+  getEndpoints: (nid: NodeId): AxiosPromise<EndpointSts> => api.getNodeByNIdEndpoints(nid),
   getDebugInfo: (nid: NodeId): AxiosPromise<any> => api.getNodeByNIdDebug(nid),
   runTestBench: (nid: NodeId, name: string, loopsNumber: number): AxiosPromise<TestBenchReport | null> =>
     api.postNodeByNIdTestbench(nid, name, loopsNumber),

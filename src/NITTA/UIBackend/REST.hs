@@ -117,7 +117,7 @@ type NodeInspectionAPI tag v x t =
                      )
                 :<|> ( Description "Enpoint options for all process units"
                         :> "endpoints"
-                        :> Get '[JSON] [UnitEndpointView tag v]
+                        :> Get '[JSON] [EndpointStView tag v]
                      )
                 :<|> ("debug" :> DebugAPI tag v t)
            )
@@ -201,7 +201,7 @@ testBench BackendCtx{root, receivedValues} nid pName loopsNumber = liftIO $ do
 
 -- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
-    { dbgEndpointOptions :: [UnitEndpointView tag v]
+    { dbgEndpointOptions :: [EndpointStView tag v]
     , dbgFunctionLocks :: [(String, [Lock v])]
     , dbgCurrentStateFunctionLocks :: [(String, [Lock v])]
     , dbgPULocks :: [(String, [Lock v])]
@@ -240,7 +240,7 @@ debug BackendCtx{root} nid = liftIO $ do
     where
         endpointOptions' BusNetwork{bnPus} =
             let f (tag, pu) =
-                    map (\(t, ep) -> UnitEndpointView t $ view ep) $ zip (repeat tag) $ endpointOptions pu
+                    map (\(t, ep) -> EndpointStView t $ view ep) $ zip (repeat tag) $ endpointOptions pu
              in concatMap f $ M.assocs bnPus
 
 -- API Description

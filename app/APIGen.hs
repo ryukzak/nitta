@@ -82,7 +82,7 @@ $(deriveTypeScript defaultOptions ''IntervalView)
 $(deriveTypeScript defaultOptions ''TimeConstrainView)
 $(deriveTypeScript defaultOptions ''EndpointRole)
 $(deriveTypeScript defaultOptions ''EndpointSt)
-$(deriveTypeScript defaultOptions ''UnitEndpointView)
+$(deriveTypeScript defaultOptions ''EndpointStView)
 
 data HistoryStep tag v x tp = HistoryStep NId (SynthesisStatementView tag v x tp)
 $(deriveTypeScript defaultOptions ''HistoryStep)
@@ -130,7 +130,7 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy TimeConstrainView)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointRole)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointSt)
-                    , getTypeScriptDeclarations (Proxy :: Proxy UnitEndpointView)
+                    , getTypeScriptDeclarations (Proxy :: Proxy EndpointStView)
                     ]
     writeFile (joinPath [opath, "types.ts"]) $
         foldl

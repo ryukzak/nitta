@@ -4,12 +4,7 @@ import { Graphviz } from "graphviz-react";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { AxiosResponse, AxiosError } from "axios";
 import { GraphNode, GraphEdge } from "../../../gen/types";
-import {
-  haskellApiService,
-  UnitEndpoints,
-  IntermediateGraph,
-  SynthesisNode,
-} from "../../../services/HaskellApiService";
+import { haskellApiService, EndpointSts, IntermediateGraph, SynthesisNode } from "../../../services/HaskellApiService";
 
 import "./IntermediateView.scss";
 
@@ -85,10 +80,10 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
 
     haskellApiService
       .getEndpoints(selectedNodeId)
-      .then((response: AxiosResponse<UnitEndpoints>) => {
+      .then((response: AxiosResponse<EndpointSts>) => {
         let result: Endpoints = { sources: [], targets: [] };
         response.data.forEach((e) => {
-          let role = e.endpoints.epRole;
+          let role = e.endpoint.epRole;
           if (role.tag === "Source") {
             result.sources.push(...role.contents);
           }
