@@ -27,7 +27,6 @@ import Control.Monad (unless)
 import Data.Either
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import NITTA.Synthesis.Tree
-import NITTA.UIBackend.Marshalling ()
 import NITTA.UIBackend.REST
 import Network.Simple.TCP (connect)
 import Network.Wai.Handler.Warp (run)

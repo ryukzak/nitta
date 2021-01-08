@@ -9,20 +9,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-
-{-# OPTIONS -fno-warn-orphans #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {- |
-Module      : NITTA.UIBackend.Marshalling
-Description : Marshalling data for REST API
-Copyright   : (c) Aleksandr Penskoi, 2019
+Module      : NITTA.UIBackend.ViewHelper
+Description : Types for marshaling data for REST API
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 
-Marshaling data for JSON REST API.
+We can not autogenerate ToJSON implementation for some types, so we add helper
+types for doing that automatically. Why do we need to generate `ToJSON`
+automatically? We don't want to achieve consistency between client and server
+manually.
 -}
-module NITTA.UIBackend.Marshalling (
+module NITTA.UIBackend.ViewHelper (
     Viewable (..),
     SynthesisNodeView,
     SynthesisDecisionView,
@@ -48,28 +50,73 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
-import qualified Data.Text as T
 import GHC.Generics
-import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Types
-import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems
-import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Project (TestbenchReport (..))
 import NITTA.Synthesis.Estimate
 import NITTA.Synthesis.Tree
-import NITTA.UIBackend.Timeline
-import NITTA.Utils (transferred)
+import NITTA.UIBackend.Orphans
 import Numeric.Interval
 import Servant
 import Servant.Docs
 
--- *Intermediate representation between raw haskell representation and JSON
-
+-- |Type class of view helper
 class Viewable t v | t -> v where
     view :: t -> v
+
+-- Synthesis tree
+
+data TreeView a = TreeNodeView
+    { rootLabel :: a
+    , subForest :: [TreeView a]
+    }
+    deriving (Generic)
+
+instance (ToJSON a) => ToJSON (TreeView a)
+
+instance ToSample (TreeView SynthesisNodeView) where
+    toSamples _ =
+        singleSample $
+            TreeNodeView
+                { rootLabel =
+                    SynthesisNodeView
+                        { svNnid = NId []
+                        , svIsComplete = False
+                        , svIsEdgesProcessed = True
+                        , svDuration = 0
+                        , svCharacteristic = 0 / 0
+                        , svOptionType = "-"
+                        }
+                , subForest =
+                    [ TreeNodeView
+                        { rootLabel =
+                            SynthesisNodeView
+                                { svNnid = NId [0]
+                                , svIsComplete = False
+                                , svIsEdgesProcessed = False
+                                , svDuration = 0
+                                , svCharacteristic = 4052
+                                , svOptionType = "Bind"
+                                }
+                        , subForest = []
+                        }
+                    , TreeNodeView
+                        { rootLabel =
+                            SynthesisNodeView
+                                { svNnid = NId [1]
+                                , svIsComplete = False
+                                , svIsEdgesProcessed = False
+                                , svDuration = 0
+                                , svCharacteristic = 3021
+                                , svOptionType = "Bind"
+                                }
+                        , subForest = []
+                        }
+                    ]
+                }
 
 data SynthesisNodeView = SynthesisNodeView
     { svNnid :: NId
@@ -82,14 +129,6 @@ data SynthesisNodeView = SynthesisNodeView
     deriving (Generic)
 
 instance ToJSON SynthesisNodeView
-
-data TreeView a = TreeNodeView
-    { rootLabel :: a
-    , subForest :: [TreeView a]
-    }
-    deriving (Generic)
-
-instance (ToJSON a) => ToJSON (TreeView a)
 
 viewNodeTree Node{nId, nIsComplete, nModel, nEdges, nOrigin} = do
     nodesM <- readTVarIO nEdges
@@ -114,108 +153,12 @@ viewNodeTree Node{nId, nIsComplete, nModel, nEdges, nOrigin} = do
             , subForest = nodes
             }
 
-data DataflowEndpointView tag tp = DataflowEndpointView
-    { pu :: tag
-    , time :: tp
-    }
-    deriving (Generic)
-
-instance (ToJSON tp, ToJSON tag) => ToJSON (DataflowEndpointView tag tp)
-
-data SynthesisDecisionView tag v x tp
-    = BindingView
-        { function :: FView
-        , pu :: tag
-        , vars :: [String]
-        }
-    | DataflowView
-        { source :: DataflowEndpointView tag tp
-        , targets :: HM.HashMap v (Maybe (DataflowEndpointView tag tp))
-        }
-    | RefactorView RefactorView
-    deriving (Generic)
-
-instance
-    ( Show x
-    , Show v
-    , ToJSON v
-    , ToJSONKey v
-    , ToJSON tp
-    , ToJSON tag
-    ) =>
-    ToJSON (SynthesisDecisionView tag v x tp)
-
-instance
-    ( Var v
-    , Hashable v
-    , Show x
-    ) =>
-    Viewable
-        (NId, SynthesisStatement tag v x tp)
-        (NId, SynthesisDecisionView tag v x tp)
-    where
-    view (nid, st) = (nid, view st)
-
-instance
-    ( Var v
-    , Show x
-    , Hashable v
-    ) =>
-    Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp)
-    where
-    view (Binding f pu) =
-        BindingView
-            { function = view f
-            , pu
-            , vars = map (S.replace "\"" "" . show) $ S.elems $ variables f
-            }
-    view Dataflow{dfSource = (stag, st), dfTargets} =
-        DataflowView
-            { source = DataflowEndpointView stag st
-            , targets =
-                HM.map
-                    (fmap $ uncurry DataflowEndpointView)
-                    $ HM.fromList $ M.assocs dfTargets
-            }
-    view (Refactor ref) = RefactorView $ view ref
-
-data RefactorView
-    = ResolveDeadlockView [String]
-    | BreakLoopView
-        { -- |initial looped value
-          loopX :: String
-        , -- |output variables
-          loopO :: [String]
-        , -- |input variable
-          loopI :: String
-        }
-    | OptimizeAccumView
-        { oldSubGraph :: [FView]
-        , newSubGraph :: [FView]
-        }
-    deriving (Generic, Show)
-
-instance ToJSON RefactorView
-
-instance (Show v, Show x) => Viewable (Refactor v x) RefactorView where
-    view (ResolveDeadlock set) = ResolveDeadlockView $ map show $ S.toList set
-    view BreakLoop{loopX, loopO, loopI} =
-        BreakLoopView
-            { loopX = show loopX
-            , loopO = map show (S.toList loopO)
-            , loopI = show loopI
-            }
-    view OptimizeAccum{refOld, refNew} =
-        OptimizeAccumView (map view refOld) (map view refNew)
-
 data NodeView tag v x t = NodeView
     { nvId :: NId
     , nvIsComplete :: Bool
     , nvOrigin :: Maybe (EdgeView tag v x t)
     }
     deriving (Generic)
-
-instance (VarValTimeJSON v x t, Hashable v, ToJSON tag) => ToJSON (NodeView tag v x t)
 
 instance
     ( VarValTimeJSON v x t
@@ -229,6 +172,8 @@ instance
             , nvIsComplete = nIsComplete
             , nvOrigin = fmap view nOrigin
             }
+
+instance (VarValTimeJSON v x t, Hashable v, ToJSON tag) => ToJSON (NodeView tag v x t)
 
 instance {-# OVERLAPS #-} ToSample [NodeView String String Int Int] where
     toSamples _ =
@@ -259,8 +204,6 @@ data EdgeView tag v x t = EdgeView
     }
     deriving (Generic)
 
-instance (VarValTimeJSON v x t, Hashable v, ToJSON tag) => ToJSON (EdgeView tag v x t)
-
 instance (VarValTimeJSON v x t, Hashable v) => Viewable (G Edge tag v x t) (EdgeView tag v x t) where
     view Edge{eTarget, eOption, eDecision, eParameters, eObjectiveFunctionValue} =
         EdgeView
@@ -270,6 +213,8 @@ instance (VarValTimeJSON v x t, Hashable v) => Viewable (G Edge tag v x t) (Edge
             , parameters = view eParameters
             , objectiveFunctionValue = eObjectiveFunctionValue
             }
+
+instance (VarValTimeJSON v x t, Hashable v, ToJSON tag) => ToJSON (EdgeView tag v x t)
 
 dataflowViewSample =
     EdgeView
@@ -359,6 +304,102 @@ instance ToSample (EdgeView String String Int Int) where
         , ("refactor edge", refactorViewSample)
         ]
 
+-- Problems
+
+data SynthesisDecisionView tag v x tp
+    = BindingView
+        { function :: FView
+        , pu :: tag
+        , vars :: [String]
+        }
+    | DataflowView
+        { source :: DataflowEndpointView tag tp
+        , targets :: HM.HashMap v (Maybe (DataflowEndpointView tag tp))
+        }
+    | RefactorView RefactorView
+    deriving (Generic)
+
+instance
+    ( Var v
+    , Hashable v
+    , Show x
+    ) =>
+    Viewable
+        (NId, SynthesisStatement tag v x tp)
+        (NId, SynthesisDecisionView tag v x tp)
+    where
+    view (nid, st) = (nid, view st)
+
+instance
+    ( Var v
+    , Show x
+    , Hashable v
+    ) =>
+    Viewable (SynthesisStatement tag v x tp) (SynthesisDecisionView tag v x tp)
+    where
+    view (Binding f pu) =
+        BindingView
+            { function = view f
+            , pu
+            , vars = map (S.replace "\"" "" . show) $ S.elems $ variables f
+            }
+    view Dataflow{dfSource = (stag, st), dfTargets} =
+        DataflowView
+            { source = DataflowEndpointView stag st
+            , targets =
+                HM.map
+                    (fmap $ uncurry DataflowEndpointView)
+                    $ HM.fromList $ M.assocs dfTargets
+            }
+    view (Refactor ref) = RefactorView $ view ref
+
+instance
+    ( Show x
+    , Show v
+    , ToJSON v
+    , ToJSONKey v
+    , ToJSON tp
+    , ToJSON tag
+    ) =>
+    ToJSON (SynthesisDecisionView tag v x tp)
+
+data DataflowEndpointView tag tp = DataflowEndpointView
+    { pu :: tag
+    , time :: tp
+    }
+    deriving (Generic)
+
+instance (ToJSON tp, ToJSON tag) => ToJSON (DataflowEndpointView tag tp)
+
+data RefactorView
+    = ResolveDeadlockView [String]
+    | BreakLoopView
+        { -- |initial looped value
+          loopX :: String
+        , -- |output variables
+          loopO :: [String]
+        , -- |input variable
+          loopI :: String
+        }
+    | OptimizeAccumView
+        { oldSubGraph :: [FView]
+        , newSubGraph :: [FView]
+        }
+    deriving (Generic, Show)
+
+instance (Show v, Show x) => Viewable (Refactor v x) RefactorView where
+    view (ResolveDeadlock set) = ResolveDeadlockView $ map show $ S.toList set
+    view BreakLoop{loopX, loopO, loopI} =
+        BreakLoopView
+            { loopX = show loopX
+            , loopO = map show (S.toList loopO)
+            , loopI = show loopI
+            }
+    view OptimizeAccum{refOld, refNew} =
+        OptimizeAccumView (map view refOld) (map view refNew)
+
+instance ToJSON RefactorView
+
 data ParametersView
     = BindEdgeParameterView
         { pCritical :: Bool
@@ -384,8 +425,6 @@ data ParametersView
         , pNumberOfTransferableVariables :: Float
         }
     deriving (Show, Generic)
-
-instance ToJSON ParametersView
 
 instance Viewable Parameters ParametersView where
     view
@@ -433,47 +472,18 @@ instance Viewable Parameters ParametersView where
                 , pNumberOfTransferableVariables = pNumberOfTransferableVariables
                 }
 
-type VarValTimeJSON v x t = (Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t)
+instance ToJSON ParametersView
 
--- *Option/Decision
-instance (VarValTimeJSON v x t) => ToJSON (SynthesisStatement String v x (TimeConstrain t))
-instance (VarValTimeJSON v x t) => ToJSON (SynthesisStatement String v x (Interval t))
-instance (ToJSON v, Show v, Show x) => ToJSON (Refactor v x) where
-    toJSON = toJSON . show
-instance (Time t) => ToJSON (EndpointSt String (TimeConstrain t)) where
-    toJSON EndpointSt{epRole = Source vs, epAt} = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epAt)
-    toJSON EndpointSt{epRole = Target v, epAt} = toJSON ("Target: " ++ v ++ " at " ++ show epAt)
-instance (ToJSON v) => ToJSON (EndpointRole v)
-
-data TimeConstrainView = TimeConstrainView
-    { vAvailable :: IntervalView
-    , vDuration :: IntervalView
-    }
-    deriving (Generic)
-
-instance ToJSON TimeConstrainView
-instance (Show t, Bounded t) => Viewable (TimeConstrain t) TimeConstrainView where
-    view TimeConstrain{tcAvailable, tcDuration} =
-        TimeConstrainView
-            { vAvailable = view tcAvailable
-            , vDuration = view tcDuration
-            }
-
-instance
-    ( Show t
-    , Bounded t
-    ) =>
-    Viewable (EndpointSt v (TimeConstrain t)) (EndpointSt v TimeConstrainView)
-    where
-    view EndpointSt{epRole, epAt} = EndpointSt{epRole, epAt = view epAt}
-
-instance (ToJSON v) => ToJSON (EndpointSt v TimeConstrainView)
+-- Other
 
 data UnitEndpointView tag v = UnitEndpointView
     { unitTag :: tag
     , endpoints :: EndpointSt v TimeConstrainView -- FIXME:
     }
     deriving (Generic)
+
+instance (Viewable tp tp') => Viewable (EndpointSt v tp) (EndpointSt v tp') where
+    view EndpointSt{epRole, epAt} = EndpointSt{epRole, epAt = view epAt}
 
 instance (ToJSON tag, ToJSON v) => ToJSON (UnitEndpointView tag v)
 
@@ -483,88 +493,7 @@ instance ToSample (UnitEndpointView String String) where
         , ("source", UnitEndpointView "PU2" $ view $ EndpointSt{epRole = Source $ S.singleton "a", epAt = TimeConstrain{tcAvailable = (0 :: Int) ... maxBound, tcDuration = 1 ... 1}})
         ]
 
--- *Process units
-instance
-    ( VarValTimeJSON v x t
-    ) =>
-    ToJSON (BusNetwork String v x t)
-    where
-    toJSON n@BusNetwork{..} =
-        object
-            [ "width" .= bnSignalBusWidth
-            , "remain" .= bnRemains
-            , "forwardedVariables" .= map (String . T.pack . show) (S.elems $ transferred n)
-            , "binds" .= bnBinded
-            , "processLength" .= nextTick (process n)
-            , "processUnits" .= M.keys bnPus
-            , "process" .= process n
-            ]
-
--- *Model
-instance (Var v, ToJSON v, ToJSON x) => ToJSON (DataFlowGraph v x)
-instance (ToJSON v) => ToJSON (Lock v)
-
-instance ToJSON Relation where
-    toJSON (Vertical a b) = toJSON [a, b]
-
-instance
-    ( VarValTimeJSON v x t
-    ) =>
-    ToJSON (TargetSystem (BusNetwork String v x t) v x)
-
-instance
-    ( VarValTimeJSON v x t
-    ) =>
-    ToJSON (Process v x t)
-    where
-    toJSON Process{steps, nextTick, relations} =
-        object
-            [ "steps" .= steps
-            , "nextTick" .= nextTick
-            , "relations" .= relations
-            ]
-
-instance
-    ( VarValTimeJSON v x t
-    ) =>
-    ToJSON (Step v x t)
-    where
-    toJSON Step{sKey, sTime, sDesc} =
-        object
-            [ "sKey" .= sKey
-            , "sDesc" .= show sDesc
-            , "sTime" .= sTime
-            , "sLevel" .= levelName sDesc
-            , "sPU" .= showPU sDesc
-            ]
-
-showPU si = S.replace "\"" "" $ S.join "." $ showPU' si
-    where
-        showPU' (NestedStep tag Step{sDesc}) = show tag : showPU' sDesc
-        showPU' _ = []
-
-levelName CADStep{} = "CAD" :: String
-levelName FStep{} = "Function"
-levelName EndpointRoleStep{} = "Endpoint"
-levelName InstructionStep{} = "Instruction"
-levelName (NestedStep _ step) = levelName $ sDesc step
-
-instance ToJSON ViewPointID
-instance (Time t, ToJSON t) => ToJSON (TimelinePoint t)
-instance (Time t, ToJSON t) => ToJSON (TimelineWithViewPoint t)
-instance (Time t, ToJSON t) => ToJSON (ProcessTimelines t)
-
--- *Synthesis
-instance ToJSON NId where
-    toJSON nId = toJSON $ show nId
-
-instance FromJSON NId where
-    parseJSON v = read <$> parseJSON v
-
-instance FromHttpApiData NId where
-    parseUrlPiece = Right . read . T.unpack
-
-instance (ToJSONKey v, ToJSON v, ToJSON x) => ToJSON (CycleCntx v x)
+-- Testbench
 
 data TestbenchReportView v x = TestbenchReportView
     { tbStatus :: Bool
@@ -579,8 +508,6 @@ data TestbenchReportView v x = TestbenchReportView
     }
     deriving (Generic)
 
-instance (ToJSONKey v, ToJSON x) => ToJSON (TestbenchReportView v x)
-
 instance (Eq v, Hashable v) => Viewable (TestbenchReport v x) (TestbenchReportView v x) where
     view TestbenchReport{tbLogicalSimulationCntx, ..} =
         TestbenchReportView
@@ -588,103 +515,7 @@ instance (Eq v, Hashable v) => Viewable (TestbenchReport v x) (TestbenchReportVi
             , ..
             }
 
--- *Simple synthesis
-instance ToJSON ObjectiveFunctionConf
-instance ToJSON Parameters
-
-instance
-    ( VarValTimeJSON v x t
-    ) =>
-    ToJSON (G Edge String v x t)
-    where
-    toJSON Edge{eObjectiveFunctionValue, eParameters, eOption, eDecision} =
-        object
-            [ "eObjectiveFunctionValue" .= eObjectiveFunctionValue
-            , "eParameters" .= eParameters
-            , "eOption" .= eOption
-            , "eDecision" .= eDecision
-            ]
-
--- *Basic data
-instance (ToJSON tag, ToJSON t) => ToJSON (TaggedTime tag t)
-
-data FView = FView
-    { fvFun :: String
-    , fvHistory :: [String]
-    }
-    deriving (Generic, Show)
-
-instance ToJSON FView
-instance Viewable (F v x) FView where
-    view F{fun, funHistory} =
-        FView
-            { fvFun = S.replace "\"" "" $ show fun
-            , fvHistory = map (S.replace "\"" "" . show) funHistory
-            }
-
-instance (Show v) => ToJSON (F v x) where
-    toJSON = String . T.pack . show
-
-instance (ToJSON t, Time t) => ToJSON (TimeConstrain t) where
-    toJSON TimeConstrain{..} =
-        object
-            [ "available" .= tcAvailable
-            , "duration" .= tcDuration
-            ]
-
-instance ToJSONKey (IntX w) where
-    toJSONKey =
-        let ToJSONKeyText f g = toJSONKey
-         in ToJSONKeyText (\(IntX x) -> f x) (\(IntX x) -> g x)
-
-instance ToJSON (IntX w) where
-    toJSON (IntX x) = toJSON x
-
-instance ToJSONKey (FX m b) where
-    toJSONKey =
-        let ToJSONKeyText f g = toJSONKey
-         in ToJSONKeyText (\(FX x) -> f $ show x) (\(FX x) -> g $ show x)
-
-instance ToJSON (FX m b) where
-    toJSON (FX x) = toJSON $ show x
-
-instance (ToJSON x) => ToJSON (Attr x) where
-    toJSON Attr{value} = toJSON value
-
--- *System
-newtype IntervalView = IntervalView String
-    deriving (Generic)
-
-instance (Show a, Bounded a) => Viewable (Interval a) IntervalView where
-    view = IntervalView . S.replace (show (maxBound :: a)) "∞" . show
-
-instance ToJSON IntervalView
-
-instance (Show a, Bounded a) => ToJSON (Interval a) where
-    toJSON = String . T.pack . S.replace (show (maxBound :: a)) "∞" . show
-
--- *Docs
-instance ToCapture (Capture "nId" NId) where
-    toCapture _ = DocCapture "nId" "Synthesis node ID (see NITTA.Synthesis.Tree.NId)"
-
-instance ToParam (QueryParam' mods "deep" Int) where
-    toParam _ =
-        DocQueryParam
-            "deep"
-            ["number"]
-            "How many levels need to be explore."
-            Normal
-
-instance ToParam (QueryParam' mods "pName" String) where
-    toParam _ =
-        DocQueryParam
-            "pName"
-            ["string"]
-            "Project name"
-            Normal
-
-instance ToParam (QueryParam' mods "loopsNumber" Int) where
-    toParam _ = DocQueryParam "loopsNumber" ["number"] "How many computation cycles need to simulate." Normal
+instance (ToJSONKey v, ToJSON x) => ToJSON (TestbenchReportView v x)
 
 instance ToSample (TestbenchReportView String Int) where
     toSamples _ =
@@ -774,49 +605,42 @@ instance ToSample (TestbenchReportView String Int) where
                             ]
                 }
 
-instance ToSample (TreeView SynthesisNodeView) where
-    toSamples _ =
-        singleSample $
-            TreeNodeView
-                { rootLabel =
-                    SynthesisNodeView
-                        { svNnid = NId []
-                        , svIsComplete = False
-                        , svIsEdgesProcessed = True
-                        , svDuration = 0
-                        , svCharacteristic = 0 / 0
-                        , svOptionType = "-"
-                        }
-                , subForest =
-                    [ TreeNodeView
-                        { rootLabel =
-                            SynthesisNodeView
-                                { svNnid = NId [0]
-                                , svIsComplete = False
-                                , svIsEdgesProcessed = False
-                                , svDuration = 0
-                                , svCharacteristic = 4052
-                                , svOptionType = "Bind"
-                                }
-                        , subForest = []
-                        }
-                    , TreeNodeView
-                        { rootLabel =
-                            SynthesisNodeView
-                                { svNnid = NId [1]
-                                , svIsComplete = False
-                                , svIsEdgesProcessed = False
-                                , svDuration = 0
-                                , svCharacteristic = 3021
-                                , svOptionType = "Bind"
-                                }
-                        , subForest = []
-                        }
-                    ]
-                }
+-- other
 
-instance ToSample (ProcessTimelines Int) where
-    toSamples _ = noSamples
+data FView = FView
+    { fvFun :: String
+    , fvHistory :: [String]
+    }
+    deriving (Generic, Show)
 
-instance ToSample NId where
-    toSamples _ = [("The synthesis node path from the root by edge indexes.", NId [1, 1, 3])]
+instance Viewable (F v x) FView where
+    view F{fun, funHistory} =
+        FView
+            { fvFun = S.replace "\"" "" $ show fun
+            , fvHistory = map (S.replace "\"" "" . show) funHistory
+            }
+
+instance ToJSON FView
+
+data TimeConstrainView = TimeConstrainView
+    { vAvailable :: IntervalView
+    , vDuration :: IntervalView
+    }
+    deriving (Generic)
+
+instance (Show t, Bounded t) => Viewable (TimeConstrain t) TimeConstrainView where
+    view TimeConstrain{tcAvailable, tcDuration} =
+        TimeConstrainView
+            { vAvailable = view tcAvailable
+            , vDuration = view tcDuration
+            }
+
+instance ToJSON TimeConstrainView
+
+newtype IntervalView = IntervalView String
+    deriving (Generic)
+
+instance (Show a, Bounded a) => Viewable (Interval a) IntervalView where
+    view = IntervalView . S.replace (show (maxBound :: a)) "∞" . show
+
+instance ToJSON IntervalView

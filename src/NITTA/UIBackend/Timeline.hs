@@ -25,13 +25,16 @@ module NITTA.UIBackend.Timeline (
     TimelineWithViewPoint (..),
 ) where
 
+import Data.Aeson
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.String.Utils as S
 import GHC.Generics
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.Types
+import NITTA.UIBackend.Orphans ()
 import Numeric.Interval
+import Servant.Docs
 
 data ProcessTimelines t = ProcessTimelines
     { timelines :: [TimelineWithViewPoint t]
@@ -133,3 +136,11 @@ timeline a b steps = map findSteps [a .. b]
                     NestedStep{nTitle, nStep = Step{sDesc = subDesc}} -> show nTitle ++ " do " ++ show subDesc
                     _ -> show sDesc
                 }
+
+instance ToJSON ViewPointID
+instance (Time t, ToJSON t) => ToJSON (TimelinePoint t)
+instance (Time t, ToJSON t) => ToJSON (TimelineWithViewPoint t)
+instance (Time t, ToJSON t) => ToJSON (ProcessTimelines t)
+
+instance ToSample (ProcessTimelines Int) where
+    toSamples _ = noSamples

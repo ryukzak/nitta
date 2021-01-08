@@ -41,8 +41,9 @@ import NITTA.Model.Types
 import NITTA.Project (Project (..), writeAndRunTestbench)
 import NITTA.Synthesis.Method
 import NITTA.Synthesis.Tree
-import NITTA.UIBackend.Marshalling
+import NITTA.UIBackend.Orphans ()
 import NITTA.UIBackend.Timeline
+import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS (VisJS, algToVizJS)
 import NITTA.Utils
 import Servant
@@ -196,7 +197,7 @@ testBench BackendCtx{root, receivedValues} nid pName loopsNumber = liftIO $ do
                 , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues mDataFlowGraph
                 }
 
-------------------------------------------------------------
+-- Debug
 
 -- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
@@ -210,6 +211,7 @@ data Debug tag v t = Debug
 instance (ToJSON tag, ToJSON t, Time t) => ToJSON (Debug tag String t)
 
 instance ToSample (Debug String String Int)
+
 instance ToSample Char where toSamples _ = noSamples
 
 instance {-# OVERLAPS #-} ToSample [(String, [Lock String])] where
@@ -238,6 +240,29 @@ debug BackendCtx{root} nid = liftIO $ do
     where
         endpointOptions' BusNetwork{bnPus} =
             let f (tag, pu) =
-                    map (\(t, ep) -> UnitEndpointView t $ view ep) $
-                        zip (repeat tag) $ endpointOptions pu
+                    map (\(t, ep) -> UnitEndpointView t $ view ep) $ zip (repeat tag) $ endpointOptions pu
              in concatMap f $ M.assocs bnPus
+
+-- API Description
+
+instance ToCapture (Capture "nId" NId) where
+    toCapture _ = DocCapture "nId" "Synthesis node ID (see NITTA.Synthesis.Tree.NId)"
+
+instance ToParam (QueryParam' mods "deep" Int) where
+    toParam _ =
+        DocQueryParam
+            "deep"
+            ["number"]
+            "How many levels need to be explore."
+            Normal
+
+instance ToParam (QueryParam' mods "pName" String) where
+    toParam _ =
+        DocQueryParam
+            "pName"
+            ["string"]
+            "Project name"
+            Normal
+
+instance ToParam (QueryParam' mods "loopsNumber" Int) where
+    toParam _ = DocQueryParam "loopsNumber" ["number"] "How many computation cycles need to simulate." Normal

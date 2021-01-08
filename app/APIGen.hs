@@ -32,8 +32,9 @@ import NITTA.Model.Problems
 import NITTA.Model.Types
 import NITTA.Synthesis.Tree
 import NITTA.UIBackend
-import NITTA.UIBackend.Marshalling
+import NITTA.UIBackend.Orphans ()
 import NITTA.UIBackend.Timeline
+import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS
 import Numeric.Interval
 import System.Console.CmdArgs
