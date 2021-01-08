@@ -779,7 +779,48 @@ instance ToSample (TestbenchReportView String Int) where
                 }
 
 instance ToSample (TreeView SynthesisNodeView) where
-    toSamples _ = noSamples
+    toSamples _ =
+        singleSample $
+            TreeNodeView
+                { rootLabel =
+                    SynthesisNodeView
+                        { svNnid = NId []
+                        , svCntx = []
+                        , svIsComplete = False
+                        , svIsEdgesProcessed = True
+                        , svDuration = 0
+                        , svCharacteristic = 0 / 0
+                        , svOptionType = "-"
+                        }
+                , subForest =
+                    [ TreeNodeView
+                        { rootLabel =
+                            SynthesisNodeView
+                                { svNnid = NId [0]
+                                , svCntx = []
+                                , svIsComplete = False
+                                , svIsEdgesProcessed = False
+                                , svDuration = 0
+                                , svCharacteristic = 4052
+                                , svOptionType = "Bind"
+                                }
+                        , subForest = []
+                        }
+                    , TreeNodeView
+                        { rootLabel =
+                            SynthesisNodeView
+                                { svNnid = NId [1]
+                                , svCntx = []
+                                , svIsComplete = False
+                                , svIsEdgesProcessed = False
+                                , svDuration = 0
+                                , svCharacteristic = 3021
+                                , svOptionType = "Bind"
+                                }
+                        , subForest = []
+                        }
+                    ]
+                }
 
 instance ToSample (ProcessTimelines Int) where
     toSamples _ = noSamples
