@@ -8,7 +8,7 @@ define test
 	$(shell which vvp) $(PWD)/$(3).out
 endef
 
-all: pu_accum pu_fram pu_mux pu_fifo pu_shift pu_control pu_div pu_multiplier pu_i2c pu_spi
+all: pu_accum pu_fram pu_mux pu_fifo pu_shift pu_div pu_multiplier pu_i2c pu_spi
 
 clean:
 	$(RM) -r $(PWD)/*.vcd $(PWD)/*.out
@@ -31,9 +31,6 @@ pu_fifo:
 
 pu_shift:
 	$(call test,pu_shift.v,pu_shift_tb.v,test_pu_shift_tb)
-
-pu_control:
-	$(call test,pu_control.v,pu_control_tb.v,test_pu_control_tb)
 
 pu_div:
 	$(MAKE) -C $(PWD)/div
