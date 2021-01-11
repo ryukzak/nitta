@@ -22,6 +22,7 @@ module NITTA.Synthesis.Refactor (
     RefactorType (..),
 ) where
 
+import Data.Aeson (ToJSON)
 import Data.Default
 import qualified Data.Set as S
 import GHC.Generics
@@ -43,7 +44,11 @@ data RefactorMetrics = RefactorMetrics
     }
     deriving (Generic)
 
+instance ToJSON RefactorMetrics
+
 data RefactorType = ResolveDeadlockT | BreakLoopT | OptimizeAccumT deriving (Generic)
+
+instance ToJSON RefactorType
 
 instance
     (UnitTag tag, VarValTime v x t) =>

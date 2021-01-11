@@ -42,7 +42,6 @@ import NITTA.Project (Project (..), writeAndRunTestbench)
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Method
 import NITTA.Synthesis.Types
-import NITTA.UIBackend.Orphans ()
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS (VisJS, algToVizJS)
@@ -267,3 +266,6 @@ instance ToParam (QueryParam' mods "pName" String) where
 
 instance ToParam (QueryParam' mods "loopsNumber" Int) where
     toParam _ = DocQueryParam "loopsNumber" ["number"] "How many computation cycles need to simulate." Normal
+
+instance ToSample SID where
+    toSamples _ = [("The synthesis node path from the root by edge indexes.", SID [1, 1, 3])]

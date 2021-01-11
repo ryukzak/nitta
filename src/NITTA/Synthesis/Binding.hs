@@ -20,6 +20,7 @@ module NITTA.Synthesis.Binding (
     BindMetrics (..),
 ) where
 
+import Data.Aeson (ToJSON)
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -56,6 +57,8 @@ data BindMetrics = BindMetrics
     , pWave :: Maybe Float
     }
     deriving (Generic)
+
+instance ToJSON BindMetrics
 
 instance
     (UnitTag tag, VarValTime v x t) =>

@@ -20,6 +20,7 @@ module NITTA.Synthesis.Dataflow (
     DataflowMetrics (..),
 ) where
 
+import Data.Aeson (ToJSON)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import GHC.Generics
@@ -40,6 +41,8 @@ data DataflowMetrics = DataflowMetrics
       pNotTransferableInputs :: [Float]
     }
     deriving (Generic)
+
+instance ToJSON DataflowMetrics
 
 instance
     (UnitTag tag, VarValTime v x t) =>

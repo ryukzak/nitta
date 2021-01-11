@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a49f63b97b394804ab7ce8ab2ef7446702968fe50f2f2afe78f692e7bf904323
+-- hash: 04b06f356bb2dcf888941dac108043fe3425c8aeeb55cefc5ccf4838143c2676
 
 name:           nitta
 version:        0.0.0.1
@@ -100,7 +100,6 @@ library
       NITTA.Synthesis.Types
       NITTA.TargetSynthesis
       NITTA.UIBackend
-      NITTA.UIBackend.Orphans
       NITTA.UIBackend.REST
       NITTA.UIBackend.Timeline
       NITTA.UIBackend.ViewHelper

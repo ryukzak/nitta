@@ -117,6 +117,8 @@ data Lock v = Lock
     }
     deriving (Show, Eq, Ord, Generic)
 
+instance (ToJSON v) => ToJSON (Lock v)
+
 -- |All input variables locks all output variables.
 inputsLockOutputs f =
     [ Lock{locked = y, lockBy = x}

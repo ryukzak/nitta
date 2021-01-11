@@ -7,6 +7,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+{-# OPTIONS -fno-warn-orphans #-}
+
 {- |
 Module      : NITTA.Model.Types
 Description : Types for time description
@@ -22,7 +24,10 @@ module NITTA.Model.Types (
     TaggedTime (..),
 ) where
 
+import Data.Aeson
 import Data.Default
+import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Types
@@ -33,6 +38,9 @@ type VarValTime v x t = (Var v, Val x, Time t)
 
 -- |Shortcut for time type constrain.
 type Time t = (Default t, Num t, Bounded t, Ord t, Show t, Typeable t, Enum t, Integral t)
+
+instance (Time t) => ToJSON (Interval t) where
+    toJSON = String . T.pack . S.replace (show (maxBound :: t)) "∞" . show
 
 -- |Time constrain for processor activity.
 data TimeConstrain t = TimeConstrain

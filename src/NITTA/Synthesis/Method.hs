@@ -39,7 +39,6 @@ import NITTA.Synthesis.Binding
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Refactor
 import NITTA.Synthesis.Types
-import NITTA.UIBackend.Orphans ()
 import NITTA.Utils (maximumOn, minimumOn)
 import Safe
 

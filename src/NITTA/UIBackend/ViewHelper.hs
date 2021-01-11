@@ -62,10 +62,11 @@ import NITTA.Synthesis.Dataflow
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Refactor
 import NITTA.Synthesis.Types
-import NITTA.UIBackend.Orphans
 import NITTA.UIBackend.ViewHelperCls
 import Numeric.Interval
 import Servant.Docs
+
+type VarValTimeJSON v x t = (Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t)
 
 -- Synthesis tree
 

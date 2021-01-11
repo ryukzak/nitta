@@ -38,11 +38,12 @@ module NITTA.Synthesis.Types (
 ) where
 
 import Control.Concurrent.STM (TMVar)
-import Data.Aeson (ToJSON)
+import Data.Aeson (ToJSON, toJSON)
 import Data.Default
 import Data.List.Split
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import qualified Data.Text as T
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
@@ -53,6 +54,7 @@ import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.UIBackend.ViewHelperCls
+import Servant
 
 -- |Default synthesis tree type.
 type DefTree tag v x t =
@@ -96,6 +98,12 @@ instance Semigroup SID where
 instance Monoid SID where
     mempty = SID []
     mappend = (<>)
+
+instance ToJSON SID where
+    toJSON sid = toJSON $ show sid
+
+instance FromHttpApiData SID where
+    parseUrlPiece = Right . read . T.unpack
 
 -- |Synthesis tree
 data Tree m tag v x t = Tree
