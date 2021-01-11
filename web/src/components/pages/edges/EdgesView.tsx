@@ -1,6 +1,6 @@
 import * as React from "react";
 import { AppContext, IAppContext } from "../../app/AppContext";
-import { haskellApiService, Edge } from "../../../services/HaskellApiService";
+import { haskellApiService, Node } from "../../../services/HaskellApiService";
 import { IntermediateView } from "../node/IntermediateView";
 import { SynthesisHistoryView } from "../history/SynthesisHistoryView";
 import { TablesView } from "./EdgeTablesView";
@@ -9,12 +9,12 @@ import { AxiosResponse } from "axios";
 
 export const EdgesView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
-  const [edges, setEdges] = React.useState<Edge[] | null>(null);
+  const [edges, setEdges] = React.useState<Node[] | null>(null);
 
   React.useEffect(() => {
     haskellApiService
       .getChildEdges(appContext.selectedNodeId)
-      .then((response: AxiosResponse<Edge[]>) => {
+      .then((response: AxiosResponse<Node[]>) => {
         setEdges(response.data);
       })
       .catch((err) => console.log(err));

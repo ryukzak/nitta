@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3f19e3eba7a430aa519e778ead46611f38c40da02461616c90799b9b0f524d02
+-- hash: a49f63b97b394804ab7ce8ab2ef7446702968fe50f2f2afe78f692e7bf904323
 
 name:           nitta
 version:        0.0.0.1
@@ -68,7 +68,7 @@ library
       NITTA.Model.Problems.Refactor
       NITTA.Model.Problems.Refactor.Accum
       NITTA.Model.Problems.Refactor.Types
-      NITTA.Model.Problems.Whole
+      NITTA.Model.Problems.ViewHelper
       NITTA.Model.ProcessorUnits
       NITTA.Model.ProcessorUnits.Accum
       NITTA.Model.ProcessorUnits.Broken
@@ -92,15 +92,19 @@ library
       NITTA.Project.Snippets
       NITTA.Project.Types
       NITTA.Project.Utils
-      NITTA.Synthesis.Estimate
+      NITTA.Synthesis.Binding
+      NITTA.Synthesis.Dataflow
+      NITTA.Synthesis.Explore
       NITTA.Synthesis.Method
-      NITTA.Synthesis.Tree
+      NITTA.Synthesis.Refactor
+      NITTA.Synthesis.Types
       NITTA.TargetSynthesis
       NITTA.UIBackend
       NITTA.UIBackend.Orphans
       NITTA.UIBackend.REST
       NITTA.UIBackend.Timeline
       NITTA.UIBackend.ViewHelper
+      NITTA.UIBackend.ViewHelperCls
       NITTA.UIBackend.VisJS
       NITTA.Utils
       NITTA.Utils.Base

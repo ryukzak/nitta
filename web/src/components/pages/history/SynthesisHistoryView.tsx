@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import ReactTable, { Column } from "react-table";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { NodeView, NId } from "../../../gen/types";
+import { NodeView, NId, IBindDecisionView } from "../../../gen/types";
 import { AxiosResponse, AxiosError } from "axios";
 import { AppContext, IAppContext } from "../../app/AppContext";
 
@@ -59,15 +59,15 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props
     return props.reverse ? synthesisHistory!.length - row.index : row.index + 1;
   }
 
-  function stepColumn(onUpdateNid: (nid: NId) => void) {
+  function stepColumn(onUpdateNid: (sid: NId) => void) {
     return {
       Header: "step",
       maxWidth: 40,
       Cell: (row: Row) => {
-        let nid = row.original.nvId;
-        if (nid === appContext.selectedNodeId) return <>{stepNumber(row)}</>;
+        let sid = row.original.sid;
+        if (sid === appContext.selectedNodeId) return <>{stepNumber(row)}</>;
         return (
-          <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(nid)}>
+          <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(sid)}>
             {stepNumber(row)}
           </button>
         );
@@ -99,22 +99,16 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props
         history={synthesisHistory}
         columns={[
           stepColumn(appContext.selectNode),
-          textColumn(
-            "decision type",
-            (n: Node) => {
-              if (n.nvOrigin === null) return "";
-              return n.nvOrigin!.decision.tag;
-            },
-            100
-          ),
+          textColumn("decision type", (n: Node) => n.decision.tag, 100),
           textColumn("description", (n: Node) => {
-            if (n.nvId === "-") return <>INITIAL STATE</>;
-            let decision = n.nvOrigin!.decision;
+            if (n.sid === "-") return <>INITIAL STATE</>;
+            let decision = n.decision.tag;
             return (
               <>
-                {decision.tag === "BindingView" && decision.pu + " <- " + decision.function.fvFun}
-                {decision.tag === "RefactorView" && JSON.stringify(decision.contents)}
-                {decision.tag === "DataflowView" && JSON.stringify(decision)}
+                {decision === "BindDecisionView" &&
+                  (n.decision as IBindDecisionView).pu + " <- " + (n.decision as IBindDecisionView).function.fvFun}
+                {decision === "DataflowDecisionView" && JSON.stringify(n.decision)}
+                {decision === "RefactorDecisionView" && JSON.stringify(n.decision)}
               </>
             );
           }),

@@ -82,16 +82,3 @@ instance ( UnitTag tag, VarValTime v x t
             { mDataFlowGraph=refactorDecision mDataFlowGraph d
             , mUnit=refactorDecision mUnit d
             }
-
-
-instance ( UnitTag tag, VarValTime v x t
-         ) => SynthesisProblem (TargetSystem (BusNetwork tag v x t) v x) tag v x t where
-    synthesisOptions m@TargetSystem{ mUnit } = concat
-        [ map generalizeBinding $ bindOptions m
-        , map generalizeDataflow $ dataflowOptions mUnit
-        , map Refactor $ refactorOptions m
-        ]
-
-    synthesisDecision m (Binding f tag) = bindDecision m $ Bind f tag
-    synthesisDecision m@TargetSystem{ mUnit } (Dataflow src trg) = m{ mUnit=dataflowDecision mUnit $ DataflowSt src trg }
-    synthesisDecision m (Refactor d) = refactorDecision m d

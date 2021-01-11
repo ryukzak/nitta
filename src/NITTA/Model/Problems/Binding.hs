@@ -23,8 +23,11 @@ import NITTA.Intermediate.Types
 
 data Bind tag v x
     = Bind (F v x) tag
-    deriving (Generic)
+    deriving (Generic, Show)
 
 class BindProblem u tag v x | u -> tag v x where
     bindOptions :: u -> [Bind tag v x]
     bindDecision :: u -> Bind tag v x -> u
+
+instance (Var v) => Variables (Bind tab v x) v where
+    variables (Bind f _tag) = variables f

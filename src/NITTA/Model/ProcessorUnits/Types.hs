@@ -15,7 +15,7 @@
 {- |
 Module      : NITTA.Model.ProcessorUnits.Types
 Description : Set of types for process unit description
-Copyright   : (c) Aleksandr Penskoi, 2020
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -76,7 +76,9 @@ type UnitTag tag = (Typeable tag, Ord tag, Show tag)
 intermediate representation:
 
 1. get function for execution ('tryBind');
+
 2. store computational process description ('process');
+
 3. other features implemented by different type classes (see above and in
    "NITTA.Model.Problems").
 -}

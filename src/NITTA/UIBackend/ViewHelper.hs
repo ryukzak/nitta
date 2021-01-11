@@ -4,12 +4,15 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+{-# OPTIONS -fno-warn-orphans #-}
 
 {- |
 Module      : NITTA.UIBackend.ViewHelper
@@ -28,12 +31,8 @@ module NITTA.UIBackend.ViewHelper (
     Viewable (..),
     viewNodeTree,
     TreeView,
-    NodeView,
-    EdgeView,
     SynthesisNodeView,
-    SynthesisStatementView,
-    RefactorView,
-    ParametersView,
+    NodeView,
     EndpointStView (..),
     DataflowEndpointView,
     TestbenchReportView (..),
@@ -49,23 +48,24 @@ import Data.Hashable
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
-import qualified Data.String.Utils as S
+import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
+import NITTA.Model.Problems.ViewHelper
+import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Project (TestbenchReport (..))
-import NITTA.Synthesis.Estimate
-import NITTA.Synthesis.Tree
+import NITTA.Synthesis.Binding
+import NITTA.Synthesis.Dataflow
+import NITTA.Synthesis.Explore
+import NITTA.Synthesis.Refactor
+import NITTA.Synthesis.Types
 import NITTA.UIBackend.Orphans
+import NITTA.UIBackend.ViewHelperCls
 import Numeric.Interval
-import Servant
 import Servant.Docs
-
--- |Type class of view helper
-class Viewable t v | t -> v where
-    view :: t -> v
 
 -- Synthesis tree
 
@@ -83,7 +83,7 @@ instance ToSample (TreeView SynthesisNodeView) where
             TreeNodeView
                 { rootLabel =
                     SynthesisNodeView
-                        { svNnid = NId []
+                        { svNnid = show $ SID []
                         , svIsComplete = False
                         , svIsEdgesProcessed = True
                         , svDuration = 0
@@ -94,7 +94,7 @@ instance ToSample (TreeView SynthesisNodeView) where
                     [ TreeNodeView
                         { rootLabel =
                             SynthesisNodeView
-                                { svNnid = NId [0]
+                                { svNnid = show $ SID [0]
                                 , svIsComplete = False
                                 , svIsEdgesProcessed = False
                                 , svDuration = 0
@@ -106,7 +106,7 @@ instance ToSample (TreeView SynthesisNodeView) where
                     , TreeNodeView
                         { rootLabel =
                             SynthesisNodeView
-                                { svNnid = NId [1]
+                                { svNnid = show $ SID [1]
                                 , svIsComplete = False
                                 , svIsEdgesProcessed = False
                                 , svDuration = 0
@@ -119,7 +119,7 @@ instance ToSample (TreeView SynthesisNodeView) where
                 }
 
 data SynthesisNodeView = SynthesisNodeView
-    { svNnid :: NId
+    { svNnid :: String
     , svIsComplete :: Bool
     , svIsEdgesProcessed :: Bool
     , svDuration :: Int
@@ -130,232 +130,65 @@ data SynthesisNodeView = SynthesisNodeView
 
 instance ToJSON SynthesisNodeView
 
-viewNodeTree Node{nId, nIsComplete, nModel, nEdges, nOrigin} = do
-    nodesM <- readTVarIO nEdges
-    nodes <- case nodesM of
-        Just ns -> mapM (viewNodeTree . eTarget) ns
-        Nothing -> return []
+viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
+    subForestM <- atomically $ tryReadTMVar sSubForestVar
+    subForest <- maybe (return []) (mapM viewNodeTree) subForestM
     return
         TreeNodeView
             { rootLabel =
                 SynthesisNodeView
-                    { svNnid = nId
-                    , svIsComplete = nIsComplete
-                    , svIsEdgesProcessed = isJust nodesM
-                    , svDuration = fromEnum $ processDuration nModel
-                    , svCharacteristic = maybe (read "NaN") eObjectiveFunctionValue nOrigin
-                    , svOptionType = case nOrigin of
-                        Just Edge{eOption = Binding{}} -> "Bind"
-                        Just Edge{eOption = Dataflow{}} -> "Transport"
-                        Just Edge{eOption = Refactor{}} -> "Refactor"
-                        Nothing -> "-"
+                    { svNnid = show sid
+                    , svIsComplete = isComplete tree
+                    , svIsEdgesProcessed = isJust subForestM
+                    , svDuration = fromEnum $ processDuration sTarget
+                    , svCharacteristic = read "NaN" -- maybe (read "NaN") eObjectiveFunctionValue nOrigin
+                    , svOptionType = case sDecision of
+                        Root{} -> "root"
+                        SynthesisDecision{metrics}
+                            | Just BindMetrics{} <- cast metrics -> "Bind"
+                            | Just DataflowMetrics{} <- cast metrics -> "Transport"
+                            | Just RefactorMetrics{} <- cast metrics -> "Refactor"
+                        _ -> "?"
                     }
-            , subForest = nodes
+            , subForest = subForest
             }
 
 data NodeView tag v x t = NodeView
-    { nvId :: NId
-    , nvIsComplete :: Bool
-    , nvOrigin :: Maybe (EdgeView tag v x t)
-    }
-    deriving (Generic)
-
-instance
-    (VarValTimeJSON v x t) =>
-    Viewable (G Node tag v x t) (NodeView tag v x t)
-    where
-    view Node{nId, nOrigin, nIsComplete} =
-        NodeView
-            { nvId = nId
-            , nvIsComplete = nIsComplete
-            , nvOrigin = fmap view nOrigin
-            }
-
-instance (VarValTimeJSON v x t, ToJSON tag) => ToJSON (NodeView tag v x t)
-
-instance {-# OVERLAPS #-} ToSample [NodeView String String Int Int] where
-    toSamples _ =
-        samples
-            [ []
-            , [NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing}]
-            ]
-
-instance ToSample (NodeView String String Int Int) where
-    toSamples _ =
-        [ ("root", NodeView{nvId = NId [], nvIsComplete = False, nvOrigin = Nothing})
-        ,
-            ( "final"
-            , NodeView
-                { nvId = NId [1, 1, 2, 3, 1, 2, 4, 5, 6]
-                , nvIsComplete = True
-                , nvOrigin = fmap (\e -> e{nid = show $ NId [1, 1, 2, 3, 1, 2, 4, 5]}) $ toSample Proxy
-                }
-            )
-        ]
-
-data EdgeView tag v x t = EdgeView
-    { nid :: String
-    , option :: SynthesisStatementView tag v x (TimeConstrain t)
-    , decision :: SynthesisStatementView tag v x (Interval t)
-    , parameters :: ParametersView
+    { sid :: String
+    , -- TODO: naming
+      complete :: Bool
+    , parameters :: Value
+    , decision :: DecisionView
     , objectiveFunctionValue :: Float
     }
     deriving (Generic)
 
-instance (VarValTimeJSON v x t) => Viewable (G Edge tag v x t) (EdgeView tag v x t) where
-    view Edge{eTarget, eOption, eDecision, eParameters, eObjectiveFunctionValue} =
-        EdgeView
-            { nid = show $ nId eTarget
-            , option = view eOption
-            , decision = view eDecision
-            , parameters = view eParameters
-            , objectiveFunctionValue = eObjectiveFunctionValue
+instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (NodeView tag v x t) where
+    view tree@Tree{sID, sDecision} =
+        NodeView
+            { sid = show sID
+            , complete = isComplete tree
+            , decision =
+                ( \case
+                    SynthesisDecision{decision} -> view decision
+                    _ -> RootView
+                )
+                    sDecision
+            , parameters =
+                ( \case
+                    SynthesisDecision{metrics} -> toJSON metrics
+                    _ -> String "root"
+                )
+                    sDecision
+            , objectiveFunctionValue = score sDecision
             }
 
-instance (VarValTimeJSON v x t, ToJSON tag) => ToJSON (EdgeView tag v x t)
+instance (VarValTimeJSON v x t, ToJSON tag) => ToJSON (NodeView tag v x t)
 
-dataflowViewSample =
-    EdgeView
-        { nid = show $ NId [3, 4, 3, 2, 0, 1]
-        , option =
-            DataflowView
-                { source = DataflowEndpointView "PU1" $ TimeConstrain (1 ... maxBound) (1 ... maxBound)
-                , targets = HM.fromList [("a1", Nothing), ("a2", Just $ DataflowEndpointView "PU2" $ TimeConstrain (1 ... maxBound) (1 ... 1))]
-                }
-        , decision =
-            DataflowView
-                { source = DataflowEndpointView "PU1" (1 ... 1)
-                , targets = HM.fromList [("a1", Nothing), ("a2", Just $ DataflowEndpointView "PU2" (1 ... 1))]
-                }
-        , parameters =
-            DataFlowEdgeParameterView
-                { pWaitTime = 1
-                , pRestrictedTime = False
-                , pNotTransferableInputs = [0, 0]
-                }
-        , objectiveFunctionValue = 1999
-        }
-
-bindingViewSample =
-    EdgeView
-        { nid = show $ NId [3, 4, 3, 2, 0, 1]
-        , option =
-            BindingView
-                { function = FView "reg(a) = b" []
-                , pu = "PU1"
-                , vars = ["a", "b"]
-                }
-        , decision =
-            BindingView
-                { function = FView "reg(a) = b" []
-                , pu = "PU1"
-                , vars = ["a", "b"]
-                }
-        , parameters =
-            BindEdgeParameterView
-                { pCritical = True
-                , pAlternative = 1
-                , pRestless = 1
-                , pOutputNumber = 1
-                , pAllowDataFlow = 1
-                , pPossibleDeadlock = False
-                , pNumberOfBindedFunctions = 1
-                , pPercentOfBindedInputs = 1
-                , pWave = Just 1
-                }
-        , objectiveFunctionValue = 19
-        }
-
-refactorViewSample =
-    EdgeView
-        { nid = show $ NId [3, 4, 3, 2, 0, 1]
-        , option =
-            BindingView
-                { function = FView "reg(a) = b" []
-                , pu = "PU1"
-                , vars = ["a", "b"]
-                }
-        , decision =
-            BindingView
-                { function = FView "reg(a) = b" []
-                , pu = "PU1"
-                , vars = ["a", "b"]
-                }
-        , parameters =
-            RefactorEdgeParameterView
-                { pRefactorType = ResolveDeadlockView ["c"]
-                , pNumberOfLockedVariables = 1
-                , pBufferCount = 1
-                , pNStepBackRepeated = Just 1
-                , pNumberOfTransferableVariables = 1
-                }
-        , objectiveFunctionValue = 10000
-        }
-
-instance {-# OVERLAPS #-} ToSample [EdgeView String String Int Int] where
-    toSamples _ = singleSample [dataflowViewSample, bindingViewSample, refactorViewSample]
-
-instance ToSample (EdgeView String String Int Int) where
-    toSamples _ =
-        [ ("dataflow edge", dataflowViewSample)
-        , ("bind edge", bindingViewSample)
-        , ("refactor edge", refactorViewSample)
-        ]
+instance ToSample (NodeView tag v x t) where
+    toSamples _ = noSamples
 
 -- Problems
-
-data SynthesisStatementView tag v x tp
-    = BindingView
-        { function :: FView
-        , pu :: tag
-        , vars :: [String]
-        }
-    | DataflowView
-        { source :: DataflowEndpointView tag tp
-        , targets :: HM.HashMap v (Maybe (DataflowEndpointView tag tp))
-        }
-    | RefactorView RefactorView
-    deriving (Generic)
-
-instance
-    ( Var v
-    , Show x
-    ) =>
-    Viewable
-        (NId, SynthesisStatement tag v x tp)
-        (NId, SynthesisStatementView tag v x tp)
-    where
-    view (nid, st) = (nid, view st)
-
-instance
-    (Var v, Show x) =>
-    Viewable (SynthesisStatement tag v x tp) (SynthesisStatementView tag v x tp)
-    where
-    view (Binding f pu) =
-        BindingView
-            { function = view f
-            , pu
-            , vars = map (S.replace "\"" "" . show) $ S.elems $ variables f
-            }
-    view Dataflow{dfSource = (stag, st), dfTargets} =
-        DataflowView
-            { source = DataflowEndpointView stag st
-            , targets =
-                HM.map
-                    (fmap $ uncurry DataflowEndpointView)
-                    $ HM.fromList $ M.assocs dfTargets
-            }
-    view (Refactor ref) = RefactorView $ view ref
-
-instance
-    ( Show x
-    , Show v
-    , ToJSON v
-    , ToJSONKey v
-    , ToJSON tp
-    , ToJSON tag
-    ) =>
-    ToJSON (SynthesisStatementView tag v x tp)
 
 data DataflowEndpointView tag tp = DataflowEndpointView
     { pu :: tag
@@ -364,109 +197,6 @@ data DataflowEndpointView tag tp = DataflowEndpointView
     deriving (Generic)
 
 instance (ToJSON tp, ToJSON tag) => ToJSON (DataflowEndpointView tag tp)
-
-data RefactorView
-    = ResolveDeadlockView [String]
-    | BreakLoopView
-        { -- |initial looped value
-          loopX :: String
-        , -- |output variables
-          loopO :: [String]
-        , -- |input variable
-          loopI :: String
-        }
-    | OptimizeAccumView
-        { oldSubGraph :: [FView]
-        , newSubGraph :: [FView]
-        }
-    deriving (Generic, Show)
-
-instance (Show v, Show x) => Viewable (Refactor v x) RefactorView where
-    view (ResolveDeadlock set) = ResolveDeadlockView $ map show $ S.toList set
-    view BreakLoop{loopX, loopO, loopI} =
-        BreakLoopView
-            { loopX = show loopX
-            , loopO = map show (S.toList loopO)
-            , loopI = show loopI
-            }
-    view OptimizeAccum{refOld, refNew} =
-        OptimizeAccumView (map view refOld) (map view refNew)
-
-instance ToJSON RefactorView
-
-data ParametersView
-    = BindEdgeParameterView
-        { pCritical :: Bool
-        , pAlternative :: Float
-        , pRestless :: Float
-        , pOutputNumber :: Float
-        , pAllowDataFlow :: Float
-        , pPossibleDeadlock :: Bool
-        , pNumberOfBindedFunctions :: Float
-        , pPercentOfBindedInputs :: Float
-        , pWave :: Maybe Float
-        }
-    | DataFlowEdgeParameterView
-        { pWaitTime :: Float
-        , pRestrictedTime :: Bool
-        , pNotTransferableInputs :: [Float]
-        }
-    | RefactorEdgeParameterView
-        { pRefactorType :: RefactorView
-        , pNumberOfLockedVariables :: Float
-        , pBufferCount :: Float
-        , pNStepBackRepeated :: Maybe Int
-        , pNumberOfTransferableVariables :: Float
-        }
-    deriving (Show, Generic)
-
-instance Viewable Parameters ParametersView where
-    view
-        BindEdgeParameter
-            { pCritical
-            , pAlternative
-            , pRestless
-            , pOutputNumber
-            , pAllowDataFlow
-            , pPossibleDeadlock
-            , pNumberOfBindedFunctions
-            , pPercentOfBindedInputs
-            , pWave
-            } =
-            BindEdgeParameterView
-                { pCritical = pCritical
-                , pAlternative = pAlternative
-                , pRestless = pRestless
-                , pOutputNumber = pOutputNumber
-                , pAllowDataFlow = pAllowDataFlow
-                , pPossibleDeadlock = pPossibleDeadlock
-                , pNumberOfBindedFunctions = pNumberOfBindedFunctions
-                , pPercentOfBindedInputs = pPercentOfBindedInputs
-                , pWave = pWave
-                }
-    view DataFlowEdgeParameter{pWaitTime, pRestrictedTime, pNotTransferableInputs} =
-        DataFlowEdgeParameterView
-            { pWaitTime = pWaitTime
-            , pRestrictedTime = pRestrictedTime
-            , pNotTransferableInputs
-            }
-    view
-        RefactorEdgeParameter
-            { pRefactorType
-            , pNumberOfLockedVariables
-            , pBufferCount
-            , pNStepBackRepeated
-            , pNumberOfTransferableVariables
-            } =
-            RefactorEdgeParameterView
-                { pRefactorType = view pRefactorType
-                , pNumberOfLockedVariables = pNumberOfLockedVariables
-                , pBufferCount = pBufferCount
-                , pNStepBackRepeated = pNStepBackRepeated
-                , pNumberOfTransferableVariables = pNumberOfTransferableVariables
-                }
-
-instance ToJSON ParametersView
 
 -- Endpoint
 
@@ -601,28 +331,13 @@ instance ToSample (TestbenchReportView String Int) where
 
 -- other
 
-data FView = FView
-    { fvFun :: String
-    , fvHistory :: [String]
-    }
-    deriving (Generic, Show)
-
-instance Viewable (F v x) FView where
-    view F{fun, funHistory} =
-        FView
-            { fvFun = S.replace "\"" "" $ show fun
-            , fvHistory = map (S.replace "\"" "" . show) funHistory
-            }
-
-instance ToJSON FView
-
 data TimeConstrainView = TimeConstrainView
     { vAvailable :: IntervalView
     , vDuration :: IntervalView
     }
     deriving (Generic)
 
-instance (Show t, Bounded t) => Viewable (TimeConstrain t) TimeConstrainView where
+instance (Time t) => Viewable (TimeConstrain t) TimeConstrainView where
     view TimeConstrain{tcAvailable, tcDuration} =
         TimeConstrainView
             { vAvailable = view tcAvailable
@@ -630,11 +345,3 @@ instance (Show t, Bounded t) => Viewable (TimeConstrain t) TimeConstrainView whe
             }
 
 instance ToJSON TimeConstrainView
-
-newtype IntervalView = IntervalView String
-    deriving (Generic)
-
-instance (Show a, Bounded a) => Viewable (Interval a) IntervalView where
-    view = IntervalView . S.replace (show (maxBound :: a)) "∞" . show
-
-instance ToJSON IntervalView

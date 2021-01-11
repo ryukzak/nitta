@@ -26,7 +26,7 @@ import Control.Exception (SomeException, try)
 import Control.Monad (unless)
 import Data.Either
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
-import NITTA.Synthesis.Tree
+import NITTA.Synthesis.Explore
 import NITTA.UIBackend.REST
 import Network.Simple.TCP (connect)
 import Network.Wai.Handler.Warp (run)
@@ -66,7 +66,7 @@ export default api;
     SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI String String Int Int)) ((prefix <>) . axios') $ joinPath [path, "rest_api.js"]
 
 application receivedValues model = do
-    root <- mkRootNodeIO model
+    root <- synthesisTreeRootIO model
     return $
         serve
             ( Proxy ::

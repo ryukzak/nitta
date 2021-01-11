@@ -4,7 +4,14 @@ import { Graphviz } from "graphviz-react";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import { AxiosResponse, AxiosError } from "axios";
 import { GraphNode, GraphEdge } from "../../../gen/types";
-import { haskellApiService, EndpointSts, IntermediateGraph, SynthesisNode } from "../../../services/HaskellApiService";
+import {
+  haskellApiService,
+  EndpointSts,
+  IntermediateGraph,
+  Dataflow,
+  Bind,
+  Node,
+} from "../../../services/HaskellApiService";
 
 import "./IntermediateView.scss";
 
@@ -60,17 +67,17 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
 
     haskellApiService
       .getRootPath(selectedNodeId)
-      .then((response: AxiosResponse<SynthesisNode[]>) => {
+      .then((response: AxiosResponse<Node[]>) => {
         let result: ProcessState = { bindeFuns: [], transferedVars: [] };
-        response.data.forEach((n: SynthesisNode) => {
-          if (n.nvOrigin !== null && n.nvOrigin!.decision.tag === "DataflowView") {
-            let targets = n.nvOrigin!.decision.targets;
+        response.data.forEach((n: Node) => {
+          if (n.decision.tag === "DataflowDecisionView") {
+            let targets = (n.decision as Dataflow).targets;
             Object.keys(targets).forEach((v: string) => {
               if (targets[v] !== null) result.transferedVars.push(v);
             });
           }
-          if (n.nvOrigin !== null && n.nvOrigin!.decision.tag === "BindingView") {
-            let d = n.nvOrigin!.decision;
+          if (n.decision.tag === "BindDecisionView") {
+            let d = n.decision as Bind;
             result.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
           }
         });

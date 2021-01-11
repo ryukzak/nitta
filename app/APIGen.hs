@@ -21,7 +21,6 @@ Stability   : experimental
 -}
 module APIGen (
     main,
-    HistoryStep (..), -- only for suppress warning
 ) where
 
 import Data.Aeson
@@ -29,8 +28,12 @@ import Data.Aeson.TypeScript.TH
 import Data.Proxy
 import qualified Data.String.Utils as S
 import NITTA.Model.Problems
+import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.Types
-import NITTA.Synthesis.Tree
+import NITTA.Synthesis.Binding
+import NITTA.Synthesis.Dataflow
+import NITTA.Synthesis.Refactor
+import NITTA.Synthesis.Types
 import NITTA.UIBackend
 import NITTA.UIBackend.Orphans ()
 import NITTA.UIBackend.Timeline
@@ -61,18 +64,19 @@ $(deriveTypeScript defaultOptions ''TimelineWithViewPoint)
 $(deriveTypeScript defaultOptions ''ProcessTimelines)
 $(deriveTypeScript defaultOptions ''TestbenchReportView)
 
-$(deriveTypeScript defaultOptions ''RefactorView)
-$(deriveTypeScript defaultOptions ''ParametersView)
-
-$(deriveTypeScript defaultOptions ''NId) -- in according to custom ToJSON instance, the real type description is hardcoded.
+$(deriveTypeScript defaultOptions ''SID) -- in according to custom ToJSON instance, the real type description is hardcoded.
 $(deriveTypeScript defaultOptions ''FView)
 $(deriveTypeScript defaultOptions ''TreeView)
 $(deriveTypeScript defaultOptions ''SynthesisNodeView)
 
 $(deriveTypeScript defaultOptions ''DataflowEndpointView)
-$(deriveTypeScript defaultOptions ''SynthesisStatementView)
+
 $(deriveTypeScript defaultOptions ''NodeView)
-$(deriveTypeScript defaultOptions ''EdgeView)
+$(deriveTypeScript defaultOptions ''DecisionView)
+$(deriveTypeScript defaultOptions ''BindMetrics)
+$(deriveTypeScript defaultOptions ''DataflowMetrics)
+$(deriveTypeScript defaultOptions ''RefactorType)
+$(deriveTypeScript defaultOptions ''RefactorMetrics)
 
 $(deriveTypeScript defaultOptions ''GraphEdge)
 $(deriveTypeScript defaultOptions ''GraphNode)
@@ -83,9 +87,6 @@ $(deriveTypeScript defaultOptions ''TimeConstrainView)
 $(deriveTypeScript defaultOptions ''EndpointRole)
 $(deriveTypeScript defaultOptions ''EndpointSt)
 $(deriveTypeScript defaultOptions ''EndpointStView)
-
-data HistoryStep tag v x tp = HistoryStep NId (SynthesisStatementView tag v x tp)
-$(deriveTypeScript defaultOptions ''HistoryStep)
 
 main = do
     APIGen{port, opath} <- cmdArgs apiGenArgs
@@ -113,16 +114,18 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy TimelineWithViewPoint)
                     , getTypeScriptDeclarations (Proxy :: Proxy ProcessTimelines)
                     , getTypeScriptDeclarations (Proxy :: Proxy TestbenchReportView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy RefactorView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy ParametersView)
+                    , -- synthesis tree
+                      getTypeScriptDeclarations (Proxy :: Proxy DecisionView)
+                    , -- metrics
+                      getTypeScriptDeclarations (Proxy :: Proxy BindMetrics)
+                    , getTypeScriptDeclarations (Proxy :: Proxy DataflowMetrics)
+                    , getTypeScriptDeclarations (Proxy :: Proxy RefactorType)
+                    , getTypeScriptDeclarations (Proxy :: Proxy RefactorMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy FView)
                     , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy DataflowEndpointView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy SynthesisStatementView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy HistoryStep)
                     , getTypeScriptDeclarations (Proxy :: Proxy NodeView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy EdgeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphNode)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)

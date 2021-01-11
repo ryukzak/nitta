@@ -3,30 +3,29 @@ import ReactTable, { Column } from "react-table";
 import { nidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn } from "./Table";
 import { AppContext, IAppContext } from "../../app/AppContext";
 import {
-  EdgeView,
-  IBindingView,
-  FView,
-  IBindEdgeParameterView,
-  IRefactorView,
-  IOptimizeAccumView,
-  IDataflowView,
-  IDataFlowEdgeParameterView,
-  Interval,
-  IRefactorEdgeParameterView,
+  NodeView,
+  DecisionView,
+  IRootView,
+  IBindDecisionView,
+  IDataflowDecisionView,
+  IRefactorDecisionView,
+  BindMetrics,
+  DataflowMetrics,
+  RefactorMetrics,
 } from "../../../gen/types";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
 
-type Edge = EdgeView<string, string, number, number>;
-type Binding = IBindingView<string, string, number, number>;
-type BindingParam = IBindEdgeParameterView;
-type Refactor = IRefactorView<string, string, number, number>;
-type Dataflow = IDataflowView<string, string, number, Interval<number>>;
-type DataflowParam = IDataFlowEdgeParameterView;
-type RefactorParam = IRefactorEdgeParameterView;
+type Node = NodeView<string, string, number, number>;
+type Decision = DecisionView;
+
+type Root = IRootView;
+type Bind = IBindDecisionView;
+type Dataflow = IDataflowDecisionView;
+type Refactor = IRefactorDecisionView;
 
 type EdgesProps = {
-  edges: Edge[];
+  edges: Node[];
 };
 
 export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
@@ -34,66 +33,65 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
   const style = {
     fontWeight: 600,
   };
-
+  let known = ["RootView", "BindDecisionView", "DataflowDecisionView", "RefactorDecisionView"];
   return (
     <>
       <Table
         name="Binding"
-        edges={edges.filter((e) => e.decision.tag === "BindingView")}
+        edges={edges.filter((e: Node) => e.decision.tag === "BindDecisionView")}
         columns={[
           nidColumn(appContext.selectNode),
           objectiveColumn(),
 
-          textColumn("function", (e: Edge) => (e.decision as Binding).function.fvFun),
-          textColumn("pu", (e: Edge) => (e.decision as Binding).pu, 50),
+          textColumn("function", (e: Node) => (e.decision as Bind).function.fvFun),
+          textColumn("pu", (e: Node) => (e.decision as Bind).pu, 50),
 
-          textColumn("crit", (e: Edge) => String((e.parameters as BindingParam).pCritical), 50),
-          textColumn("lock", (e: Edge) => String((e.parameters as BindingParam).pPossibleDeadlock), 50),
+          textColumn("crit", (e: Node) => String((e.parameters as BindMetrics).pCritical), 50),
+          textColumn("lock", (e: Node) => String((e.parameters as BindMetrics).pPossibleDeadlock), 50),
           textColumn(
             "wave",
-            (e: Edge) => {
-              let x = (e.parameters as BindingParam).pWave;
+            (e: Node) => {
+              let x = (e.parameters as BindMetrics).pWave;
               return x === undefined || x === null ? "null" : (x as number).toString();
             },
             50
           ),
-          textColumn("outputs", (e: Edge) => (e.parameters as BindingParam).pOutputNumber, 70),
-          textColumn("alt", (e: Edge) => (e.parameters as BindingParam).pAlternative, 50),
-          textColumn("rest", (e: Edge) => (e.parameters as BindingParam).pRestless, 50),
+          textColumn("outputs", (e: Node) => (e.parameters as BindMetrics).pOutputNumber, 70),
+          textColumn("alt", (e: Node) => (e.parameters as BindMetrics).pAlternative, 50),
+          textColumn("rest", (e: Node) => (e.parameters as BindMetrics).pRestless, 50),
 
-          textColumn("newDF", (e: Edge) => (e.parameters as BindingParam).pAllowDataFlow, 70),
-          textColumn("newBind", (e: Edge) => (e.parameters as BindingParam).pNumberOfBindedFunctions, 70),
-          textColumn("|inputs|", (e: Edge) => (e.parameters as BindingParam).pPercentOfBindedInputs, 70),
+          textColumn("newDF", (e: Node) => (e.parameters as BindMetrics).pAllowDataFlow, 70),
+          textColumn("newBind", (e: Node) => (e.parameters as BindMetrics).pNumberOfBindedFunctions, 70),
+          textColumn("|inputs|", (e: Node) => (e.parameters as BindMetrics).pPercentOfBindedInputs, 70),
         ]}
       />
       <Table
         name="Refactor"
-        edges={edges.filter((e: Edge) => e.decision.tag === "RefactorView")}
+        edges={edges.filter((e) => e.decision.tag === "RefactorDecisionView")}
         columns={[
           nidColumn(appContext.selectNode),
           objectiveColumn(),
-          textColumn("description", (e: Edge) => {
-            let dt = (e.decision as Refactor).contents;
-            if (dt.tag === "OptimizeAccumView") {
-              let sub = dt as IOptimizeAccumView;
-              return (
-                sub.oldSubGraph.map((f: FView) => f.fvFun).join(", ") +
-                " -> " +
-                sub.newSubGraph.map((f: FView) => f.fvFun).join(", ")
-              );
+          textColumn("description", (e: Node) => {
+            if ((e.parameters as RefactorMetrics).pRefactorType === "OptimizeAccumT") {
+              return (e.decision as Refactor).contents;
+              // return (
+              //   sub.oldSubGraph.map((f: FView) => f.fvFun).join(", ") +
+              //   " -> " +
+              //   sub.newSubGraph.map((f: FView) => f.fvFun).join(", ")
+              // );
             }
             return JSON.stringify((e.decision as Refactor).contents);
           }),
           textColumn(
             "pNumberOfLockedVariables",
-            (e: Edge) => (e.parameters as RefactorParam).pNumberOfLockedVariables,
+            (e: Node) => (e.parameters as RefactorMetrics).pNumberOfLockedVariables,
             50
           ),
-          textColumn("pBufferCount", (e: Edge) => (e.parameters as RefactorParam).pBufferCount, 50),
+          textColumn("pBufferCount", (e: Node) => (e.parameters as RefactorMetrics).pBufferCount, 50),
           textColumn(
             "pNStepBackRepeated",
-            (e: Edge) => {
-              let n = (e.parameters as RefactorParam).pNStepBackRepeated;
+            (e: Node) => {
+              let n = (e.parameters as RefactorMetrics).pNStepBackRepeated;
               return n === undefined || n === null ? "null" : (n as number).toString();
             },
             50
@@ -102,17 +100,17 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       />
       <Table
         name="Dataflow"
-        edges={edges.filter((e: Edge) => e.decision.tag === "DataflowView")}
+        edges={edges.filter((e: Node) => e.decision.tag === "DataflowDecisionView")}
         columns={[
           nidColumn(appContext.selectNode),
           objectiveColumn(),
-          textColumn("at", (e: Edge) => (e.decision as Dataflow).source.time),
-          textColumn("source", (e: Edge) => (e.decision as Dataflow).source.pu),
+          // textColumn("at", (e: Node) => (e.decision as Dataflow).source.time),
+          textColumn("source", (e: Node) => (e.decision as Dataflow).source),
           textColumn(
             "targets",
-            (e: Edge) => {
-              let targets = ((e.decision as any) as Dataflow).targets;
-              let lst = Object.keys(targets).map((k: string) => k + " -> " + (targets[k] ? targets[k].pu : ""));
+            (e: Node) => {
+              let targets = (e.decision as Dataflow).targets;
+              let lst = Object.keys(targets).map((k: string) => k + " -> " + (targets[k] ? targets[k][0] : ""));
               return (
                 <div>
                   {lst.map((k: string, i: number) => (
@@ -124,25 +122,23 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
             undefined,
             true
           ),
-          textColumn("wait", (e: Edge) => (e.parameters as DataflowParam).pWaitTime),
-          textColumn("not transferable input", (e: Edge) =>
-            JSON.stringify((e.parameters as DataflowParam).pNotTransferableInputs)
+          textColumn("wait", (e: Node) => (e.parameters as DataflowMetrics).pWaitTime),
+          textColumn("not transferable input", (e: Node) =>
+            JSON.stringify((e.parameters as DataflowMetrics).pNotTransferableInputs)
           ),
-          textColumn("restricted", (e: Edge) => String((e.parameters as DataflowParam).pRestrictedTime)),
+          textColumn("restricted", (e: Node) => String((e.parameters as DataflowMetrics).pRestrictedTime)),
         ]}
       />
       <Table
         name="Other"
-        edges={edges.filter(
-          (e: Edge) => ["BindingView", "RefactorView", "DataflowView"].indexOf(e.decision.tag) === -1
-        )}
+        edges={edges.filter((e: Node) => known.indexOf(e.decision.tag) === -1)}
         columns={[nidColumn(appContext.selectNode), objectiveColumn(), decisionColumn(), parametersColumn()]}
       />
     </>
   );
 
   // FIXME: shouldn't it be in Table.tsx?
-  function Table(props: { name: string; columns: Column[]; edges: Edge[] }) {
+  function Table(props: { name: string; columns: Column[]; edges: Node[] }) {
     if (props.edges.length === 0)
       return (
         <small>

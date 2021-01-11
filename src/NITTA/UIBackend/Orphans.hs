@@ -5,7 +5,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
@@ -25,16 +24,15 @@ module NITTA.UIBackend.Orphans (
 ) where
 
 import Data.Aeson
-import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import qualified Data.Text as T
-import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
-import NITTA.Model.ProcessorUnits
 import NITTA.Model.Types
-import NITTA.Synthesis.Estimate
-import NITTA.Synthesis.Tree
+import NITTA.Synthesis.Binding
+import NITTA.Synthesis.Dataflow
+import NITTA.Synthesis.Refactor
+import NITTA.Synthesis.Types
 import Numeric.Interval
 import Servant
 import Servant.Docs
@@ -44,58 +42,35 @@ type VarValTimeJSON v x t = (Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON
 
 -- *Problems
 
-instance (VarValTimeJSON v x t) => ToJSON (SynthesisStatement String v x (TimeConstrain t))
-instance (VarValTimeJSON v x t) => ToJSON (SynthesisStatement String v x (Interval t))
-
-instance (ToJSON v, Show v, Show x) => ToJSON (Refactor v x) where
-    toJSON = toJSON . show
-
 instance (ToJSON v, ToJSON tp) => ToJSON (EndpointSt v tp)
-
-instance {-# OVERLAPS #-} (Time t) => ToJSON (EndpointSt String (TimeConstrain t)) where
-    toJSON EndpointSt{epRole = Source vs, epAt} = toJSON ("Source: " ++ S.join ", " (S.elems vs) ++ " at " ++ show epAt)
-    toJSON EndpointSt{epRole = Target v, epAt} = toJSON ("Target: " ++ v ++ " at " ++ show epAt)
 
 instance (ToJSON v) => ToJSON (EndpointRole v)
 
-instance (ToJSON t, Time t) => ToJSON (TimeConstrain t) where
-    toJSON TimeConstrain{..} =
-        object
-            [ "available" .= tcAvailable
-            , "duration" .= tcDuration
-            ]
-
-instance (Show a, Bounded a) => ToJSON (Interval a) where
-    toJSON = String . T.pack . S.replace (show (maxBound :: a)) "∞" . show
+instance (Time t) => ToJSON (Interval t) where
+    toJSON = String . T.pack . S.replace (show (maxBound :: t)) "∞" . show
 
 -- *Model
 
-instance (Show v) => ToJSON (F v x) where
-    toJSON = String . T.pack . show
-
-instance (Var v, ToJSON v, ToJSON x) => ToJSON (DataFlowGraph v x)
-
 instance (ToJSON v) => ToJSON (Lock v)
-
-instance ToJSON Relation where
-    toJSON (Vertical a b) = toJSON [a, b]
 
 -- *Synthesis
 
-instance ToJSON NId where
-    toJSON nId = toJSON $ show nId
+instance ToJSON SID where
+    toJSON sid = toJSON $ show sid
 
-instance FromJSON NId where
+instance FromJSON SID where
     parseJSON v = read <$> parseJSON v
 
-instance FromHttpApiData NId where
+instance FromHttpApiData SID where
     parseUrlPiece = Right . read . T.unpack
 
-instance ToSample NId where
-    toSamples _ = [("The synthesis node path from the root by edge indexes.", NId [1, 1, 3])]
+instance ToSample SID where
+    toSamples _ = [("The synthesis node path from the root by edge indexes.", SID [1, 1, 3])]
 
-instance ToJSON ObjectiveFunctionConf
-instance ToJSON Parameters
+instance ToJSON BindMetrics
+instance ToJSON RefactorMetrics
+instance ToJSON RefactorType
+instance ToJSON DataflowMetrics
 
 -- *Values
 

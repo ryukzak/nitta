@@ -17,7 +17,7 @@ interface GraphAttributes {
 
 interface Graph {
   name?: string;
-  nid?: NId;
+  sid?: NId;
   attributes?: GraphAttributes;
   status?: boolean;
   children?: Graph[];
@@ -33,15 +33,15 @@ export const SynthesisGraphView: React.FC = () => {
   const [currentSelectedNodeId, setCurrentSelectedNodeId] = React.useState<NodeId>("");
 
   const markNode = React.useCallback(
-    (nid: NodeId, nidArray?: Ids, color?: string) => {
+    (sid: NodeId, nidArray?: Ids, color?: string) => {
       if (color === undefined) color = "blue";
       if (nidArray === undefined) nidArray = nIds;
       if (nidArray === null) return;
 
       if (color === "blue") {
-        nidArray[nid].nodeSvgShapeOriginal = nidArray[nid].nodeSvgShape;
+        nidArray[sid].nodeSvgShapeOriginal = nidArray[sid].nodeSvgShape;
       }
-      nidArray[nid].nodeSvgShape = {
+      nidArray[sid].nodeSvgShape = {
         shape: "circle",
         shapeProps: {
           r: 10,
@@ -55,18 +55,18 @@ export const SynthesisGraphView: React.FC = () => {
   );
 
   const unmarkNode = React.useCallback(
-    (nid: NodeId) => {
-      if (nid === null) return;
-      let tmp: string = nIds[nid].nodeSvgShapeOriginal;
+    (sid: NodeId) => {
+      if (sid === null) return;
+      let tmp: string = nIds[sid].nodeSvgShapeOriginal;
       let nids = nIds;
-      nids[nid].nodeSvgShape = tmp;
+      nids[sid].nodeSvgShape = tmp;
       setNIds(nids);
     },
     [nIds]
   );
 
   const reloadSynthesisGraph = React.useCallback(() => {
-    let nid = appContext.selectedNodeId;
+    let sid = appContext.selectedNodeId;
 
     haskellApiService
       .getSynthesisTree()
@@ -76,7 +76,7 @@ export const SynthesisGraphView: React.FC = () => {
         let buildGraph = (gNode: Graph, dNode: TreeView<SynthesisNodeView>) => {
           let strNid: string = dNode.rootLabel.svNnid;
           gNode.name = reLastNidStep.exec(strNid)![0];
-          gNode.nid = dNode.rootLabel.svNnid;
+          gNode.sid = dNode.rootLabel.svNnid;
           nidArray[strNid] = gNode;
           if (dNode.rootLabel.svIsEdgesProcessed) markNode(strNid, nidArray, "black");
           if (dNode.rootLabel.svIsComplete) markNode(strNid, nidArray, "lime");
@@ -108,7 +108,7 @@ export const SynthesisGraphView: React.FC = () => {
 
         let graph = buildGraph({}, response.data);
         nidArray["."] = graph;
-        if (nid !== null) markNode(nid, nidArray);
+        if (sid !== null) markNode(sid, nidArray);
         setDataGraph([graph]);
         setNIds(nidArray);
       })
@@ -184,7 +184,7 @@ export const SynthesisGraphView: React.FC = () => {
           },
         }}
         onClick={(node: any) => {
-          appContext.selectNode(node.nid);
+          appContext.selectNode(node.sid);
         }}
       />
     </div>
