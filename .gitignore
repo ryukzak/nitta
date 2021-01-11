@@ -18,3 +18,4 @@ web/api.txt
 .#*
 .tasty-rerun-log
 hie.yaml
+*.hie
