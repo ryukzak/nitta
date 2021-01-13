@@ -1,4 +1,3 @@
-{- FOURMOLU_DISABLE -}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -7,7 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
 
-{-|
+{- |
 Module      : NITTA.Model.Networks.Types
 Description : Types for processor unit network description.
 Copyright   : (c) Aleksandr Penskoi, 2019
@@ -15,23 +14,22 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.Networks.Types
-    ( PU(..)
-    , PUClasses
-    , IOSynchronization(..)
-    ) where
+module NITTA.Model.Networks.Types (
+    PU (..),
+    PUClasses,
+    IOSynchronization (..),
+) where
 
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import           Data.Typeable
-import           NITTA.Intermediate.Types
-import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits.Types
-import           NITTA.Model.Types
-import           NITTA.Project.Implementation
-import           NITTA.Project.Parts.TestBench
-
+import Data.Typeable
+import NITTA.Intermediate.Types
+import NITTA.Model.Problems
+import NITTA.Model.ProcessorUnits.Types
+import NITTA.Model.Types
+import NITTA.Project.Implementation
+import NITTA.Project.Parts.TestBench
 
 type PUClasses pu v x t =
     ( ByTime pu t
@@ -49,97 +47,110 @@ type PUClasses pu v x t =
     , Locks pu v
     )
 
-
 -- |Existential container for a processor unit .
 data PU v x t where
-    PU :: ( PUClasses pu v x t ) =>
-            { diff :: Changeset v -- FIXME: move to end of record
-            , unit :: pu
-            , ports :: Ports pu
-            , ioPorts :: IOPorts pu
-            , systemEnv :: TargetEnvironment
-            } -> PU v x t
+    PU ::
+        (PUClasses pu v x t) =>
+        { diff :: Changeset v -- FIXME: move to end of record
+        , unit :: pu
+        , ports :: Ports pu
+        , ioPorts :: IOPorts pu
+        , systemEnv :: TargetEnvironment
+        } ->
+        PU v x t
 
+instance (Ord v) => EndpointProblem (PU v x t) v t where
+    endpointOptions PU{diff, unit} =
+        map (patch diff) $ endpointOptions unit
 
-instance ( Ord v ) => EndpointProblem (PU v x t) v t where
-    endpointOptions PU{ diff, unit }
-        = map (patch diff) $ endpointOptions unit
-
-    endpointDecision PU{ diff, unit, ports, ioPorts, systemEnv } d
-        = PU
+    endpointDecision PU{diff, unit, ports, ioPorts, systemEnv} d =
+        PU
             { diff
-            , unit=endpointDecision unit $ patch (reverseDiff diff) d
-            , ports, ioPorts
+            , unit = endpointDecision unit $ patch (reverseDiff diff) d
+            , ports
+            , ioPorts
             , systemEnv
             }
 
 instance RefactorProblem (PU v x t) v x where
-    refactorOptions PU{ unit } = refactorOptions unit
-    refactorDecision PU{ diff, unit, ports, ioPorts, systemEnv } d
-        = PU{ diff, unit=refactorDecision unit d, ports, ioPorts, systemEnv }
+    refactorOptions PU{unit} = refactorOptions unit
+    refactorDecision PU{diff, unit, ports, ioPorts, systemEnv} d =
+        PU{diff, unit = refactorDecision unit d, ports, ioPorts, systemEnv}
 
-instance ( VarValTime v x t ) => ProcessorUnit (PU v x t) v x t where
-    tryBind fb PU{ diff, unit, ports, ioPorts, systemEnv }
-        = case tryBind fb unit of
-            Right unit' -> Right PU{ diff, unit=unit', ports, ioPorts, systemEnv }
-            Left err    -> Left err
-    process PU{ diff, unit } = let
-            p = process unit
-        in p{ steps=map (patch diff) $ steps p }
+instance (VarValTime v x t) => ProcessorUnit (PU v x t) v x t where
+    tryBind fb PU{diff, unit, ports, ioPorts, systemEnv} =
+        case tryBind fb unit of
+            Right unit' -> Right PU{diff, unit = unit', ports, ioPorts, systemEnv}
+            Left err -> Left err
+    process PU{diff, unit} =
+        let p = process unit
+         in p{steps = map (patch diff) $ steps p}
 
-instance ( Ord v ) => Patch (PU v x t) (Changeset v) where
-    patch diff' PU{ diff, unit, ports, ioPorts, systemEnv }
-        = PU
-            { diff=Changeset
-                { changeI=changeI diff' `M.union` changeI diff
-                , changeO=changeO diff' `M.union` changeO diff
-                }
-            , unit, ports, ioPorts, systemEnv
+instance (Ord v) => Patch (PU v x t) (Changeset v) where
+    patch diff' PU{diff, unit, ports, ioPorts, systemEnv} =
+        PU
+            { diff =
+                Changeset
+                    { changeI = changeI diff' `M.union` changeI diff
+                    , changeO = changeO diff' `M.union` changeO diff
+                    }
+            , unit
+            , ports
+            , ioPorts
+            , systemEnv
             }
 
-instance ( Ord v ) => Patch (PU v x t) (I v, I v) where
-    patch (I v, I v') pu@PU{ diff=diff@Changeset{ changeI } } = pu{ diff=diff{ changeI=M.insert v v' changeI }}
+instance (Ord v) => Patch (PU v x t) (I v, I v) where
+    patch (I v, I v') pu@PU{diff = diff@Changeset{changeI}} = pu{diff = diff{changeI = M.insert v v' changeI}}
 
-instance ( Ord v ) => Patch (PU v x t) (O v, O v) where
-    patch (O vs, O vs') pu@PU{ diff=diff@Changeset{ changeO } }
-        = pu{ diff=diff
-                { changeO=foldl (\s (v, v') -> M.insert v (S.singleton v') s)
-                    changeO
-                    $ [ (a, b) | b <- S.elems vs', a <- S.elems vs ]
-                }
+instance (Ord v) => Patch (PU v x t) (O v, O v) where
+    patch (O vs, O vs') pu@PU{diff = diff@Changeset{changeO}} =
+        pu
+            { diff =
+                diff
+                    { changeO =
+                        foldl
+                            (\s (v, v') -> M.insert v (S.singleton v') s)
+                            changeO
+                            $ [(a, b) | b <- S.elems vs', a <- S.elems vs]
+                    }
             }
 
-instance ( Var v ) => Locks (PU v x t) v where
-    locks PU{ unit, diff=Changeset{ changeI, changeO } }
+instance (Var v) => Locks (PU v x t) v where
+    locks PU{unit, diff = Changeset{changeI, changeO}}
         | not $ M.null changeI = error $ "Locks (PU v x t) with non empty changeI: " ++ show changeI
-        | otherwise = let
-                (locked', locks') = L.partition (\Lock{ locked } -> locked `M.member` changeO) $ locks unit
-                (lockBy', locks'') = L.partition (\Lock{ lockBy } -> lockBy `M.member` changeO) locks'
-            in concat
-                [ locks''
-                , L.nub $ concatMap
-                    ( \Lock{ locked, lockBy } -> [ Lock{ locked, lockBy=v } | v <- S.elems (changeO M.! lockBy) ] )
-                    lockBy'
-                , L.nub $ concatMap
-                    ( \Lock{ locked, lockBy } -> [ Lock{ locked=v, lockBy } | v <- S.elems (changeO M.! locked) ] )
-                    locked'
-                ]
+        | otherwise =
+            let (locked', locks') = L.partition (\Lock{locked} -> locked `M.member` changeO) $ locks unit
+                (lockBy', locks'') = L.partition (\Lock{lockBy} -> lockBy `M.member` changeO) locks'
+             in concat
+                    [ locks''
+                    , L.nub $
+                        concatMap
+                            (\Lock{locked, lockBy} -> [Lock{locked, lockBy = v} | v <- S.elems (changeO M.! lockBy)])
+                            lockBy'
+                    , L.nub $
+                        concatMap
+                            (\Lock{locked, lockBy} -> [Lock{locked = v, lockBy} | v <- S.elems (changeO M.! locked)])
+                            locked'
+                    ]
 
 instance TargetSystemComponent (PU v x t) where
-    moduleName name PU{ unit } = moduleName name unit
-    hardware name PU{ unit } = hardware name unit
-    software name PU{ unit } = software name unit
+    moduleName name PU{unit} = moduleName name unit
+    hardware name PU{unit} = hardware name unit
+    software name PU{unit} = software name unit
     hardwareInstance name pu = hardwareInstance name pu
 
 instance IOTestBench (PU v x t) v x where
-    testEnvironmentInitFlag tag PU{ unit } = testEnvironmentInitFlag tag unit
+    testEnvironmentInitFlag tag PU{unit} = testEnvironmentInitFlag tag unit
 
-    testEnvironment tag PU{ unit, systemEnv, ports, ioPorts } _systemEnv _ _ cntxs
-        = testEnvironment tag unit systemEnv ports ioPorts cntxs
-
+    testEnvironment tag PU{unit, systemEnv, ports, ioPorts} _systemEnv _ _ cntxs =
+        testEnvironment tag unit systemEnv ports ioPorts cntxs
 
 data IOSynchronization
-    = Sync  -- ^IO cycle synchronously to process cycle
-    | ASync -- ^if IO cycle lag behiend - ignore them
-    | OnBoard -- ^defined by onboard signal (sync - false, async - true)
-    deriving ( Show, Read, Typeable )
+    = -- |IO cycle synchronously to process cycle
+      Sync
+    | -- |if IO cycle lag behiend - ignore them
+      ASync
+    | -- |defined by onboard signal (sync - false, async - true)
+      OnBoard
+    deriving (Show, Read, Typeable)
