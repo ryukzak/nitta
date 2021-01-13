@@ -9,13 +9,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
--- |
---Module      : NITTA.LuaFrontend.Tests
---Description :
---Copyright   : (c) Aleksandr Penskoi, 2020
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : NITTA.LuaFrontend.Tests
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.LuaFrontend.Tests (
     tests,
 ) where
