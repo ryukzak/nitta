@@ -77,7 +77,9 @@ instance (Var v) => Locks (Broken v x t) v where
                , lockBy <- sources ++ targets
                ]
 
-instance RefactorProblem (Broken v x t) v x
+instance BreakLoopProblem (Broken v x t) v x
+instance OptimizeAccumProblem (Broken v x t) v x
+instance ResolveDeadlockProblem (Broken v x t) v x
 
 instance
     ( VarValTime v x t

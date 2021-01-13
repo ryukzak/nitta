@@ -8,7 +8,6 @@ import {
   IRootView,
   IBindDecisionView,
   IDataflowDecisionView,
-  IRefactorDecisionView,
   TreeView,
   SynthesisNodeView,
   TestbenchReportView,
@@ -24,7 +23,6 @@ export type TestBenchReport = TestbenchReportView<string, number>;
 export type Root = IRootView;
 export type Bind = IBindDecisionView;
 export type Dataflow = IDataflowDecisionView;
-export type Refactor = IRefactorDecisionView;
 
 export const haskellApiService = {
   getSynthesisTree: (): AxiosPromise<TreeView<SynthesisNodeView>> => api.getSynthesisTree(),

@@ -107,8 +107,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props
               <>
                 {decision === "BindDecisionView" &&
                   (n.decision as IBindDecisionView).pu + " <- " + (n.decision as IBindDecisionView).function.fvFun}
-                {decision === "DataflowDecisionView" && JSON.stringify(n.decision)}
-                {decision === "RefactorDecisionView" && JSON.stringify(n.decision)}
+                {decision !== "BindDecisionView" && JSON.stringify(n.decision)}
               </>
             );
           }),

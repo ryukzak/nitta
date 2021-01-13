@@ -291,11 +291,27 @@ instance ( UnitTag tag, VarValTime v x t
             , bnRemains=filter (/= f) bnRemains
             }
 
+instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x t) v x where
+    breakLoopOptions BusNetwork{ bnPus } =  concatMap breakLoopOptions $ M.elems bnPus
 
+    breakLoopDecision bn@BusNetwork{ bnBinded, bnPus } bl@BreakLoop{} = let
+            Just (puTag, bindedToPU) = L.find (elem (recLoop bl) . snd) $ M.assocs bnBinded
+            bindedToPU' = recLoopIn bl : recLoopOut bl : ( bindedToPU L.\\ [ recLoop bl ] )
+        in bn
+            { bnPus=M.adjust (`breakLoopDecision` bl) puTag bnPus
+            , bnBinded=M.insert puTag bindedToPU' bnBinded
+            }
+
+instance ( VarValTime v x t
+        ) => OptimizeAccumProblem (BusNetwork tag v x t) v x where
+    optimizeAccumOptions BusNetwork{ bnRemains } = optimizeAccumOptions $ fsToDataFlowGraph bnRemains
+
+    optimizeAccumDecision bn@BusNetwork{ bnRemains } oa@OptimizeAccum{}
+        = bn{ bnRemains=functions $ optimizeAccumDecision (fsToDataFlowGraph bnRemains) oa }
 
 instance ( UnitTag tag, VarValTime v x t
-        ) => RefactorProblem (BusNetwork tag v x t) v x where
-    refactorOptions bn@BusNetwork{ bnPus, bnBinded, bnRemains } = let
+        ) => ResolveDeadlockProblem  (BusNetwork tag v x t) v x where
+    resolveDeadlockOptions bn@BusNetwork{ bnPus, bnBinded } = let
             sources tag = M.fromList
                 [ (s, ss `S.difference` S.singleton s)
                 | EndpointSt{ epRole } <- endpointOptions ( bnPus M.! tag )
@@ -319,6 +335,7 @@ instance ( UnitTag tag, VarValTime v x t
                 | bufferSuffix v `S.notMember` variables bn = True
                 | otherwise = isBufferRepetionOK (n-1) (bufferSuffix v)
 
+            -- FIXME: not depricated, but why? It is should be a deadlock
             selfSending = map ResolveDeadlock $ concat
                 [ allPossibleOutputs tag v
                 | (tag, fs) <- M.assocs bnBinded
@@ -341,14 +358,9 @@ instance ( UnitTag tag, VarValTime v x t
                 , lockBy `S.member` maybeSended
                 , isBufferRepetionOK maxBufferStack lockBy
                 ]
-        in concat
-            [ concatMap refactorOptions $ M.elems bnPus
-            , selfSending  -- FIXME: not depricated, but why? It is should be a deadlock
-            , resolveDeadlock
-            , optimizeAccumOptions $ fsToDataFlowGraph bnRemains
-            ]
+        in selfSending ++ resolveDeadlock
 
-    refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(ResolveDeadlock vs) = let
+    resolveDeadlockDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(ResolveDeadlock vs) = let
             (buffer, diff) = prepareBuffer r
             Just (tag, _) = L.find
                 (\(_, f) -> not $ null $ S.intersection vs $ unionsMap outputs f)
@@ -362,18 +374,6 @@ instance ( UnitTag tag, VarValTime v x t
             , bnPus=bnPus'
             , bnBinded=bnBinded'
             }
-
-    refactorDecision bn@BusNetwork{ bnBinded, bnPus } bl@BreakLoop{} = let
-            Just (puTag, bindedToPU) = L.find (elem (recLoop bl) . snd) $ M.assocs bnBinded
-            bindedToPU' = recLoopIn bl : recLoopOut bl : ( bindedToPU L.\\ [ recLoop bl ] )
-        in bn
-            { bnPus=M.adjust (`refactorDecision` bl) puTag bnPus
-            , bnBinded=M.insert puTag bindedToPU' bnBinded
-            }
-
-    refactorDecision bn@BusNetwork{ bnRemains } oa@OptimizeAccum{}
-        = bn{ bnRemains=functions $ optimizeAccumDecision (fsToDataFlowGraph bnRemains) oa }
-
 
 --------------------------------------------------------------------------
 -- |Add binding to Map tag [F v x] dict

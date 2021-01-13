@@ -401,11 +401,15 @@ instance (Var v) => Locks (Multiplier v x t) v where
                , lockBy <- sources ++ targets
                ]
 
-{- |That type class describes the possibility of PU to modify an algorithm.
-Empty implementation means that multiplier PU doesn't have such
+{- |That type classes ('BreakLoopProblem', 'OptimizeAccumProblem',
+'ResolveDeadlockProblem') describes the possibility of PU to modify an
+algorithm. Empty implementation means that multiplier PU doesn't have such
 possibilities.
 -}
-instance RefactorProblem (Multiplier v x t) v x
+instance BreakLoopProblem (Multiplier v x t) v x
+
+instance OptimizeAccumProblem (Multiplier v x t) v x
+instance ResolveDeadlockProblem (Multiplier v x t) v x
 
 {- | This type class specifies how to bind functions to the PU. If it is
 possible, @tryBind@ function will return @Right@ value with a new PU model

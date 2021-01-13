@@ -88,18 +88,38 @@ subForest (objective function value less than zero).
 positiveSubForestIO tree = filter ((> 0) . score . sDecision) <$> subForestIO tree
 
 -- |Is synthesis tree completed
-isComplete Tree{sState = SynthesisState{sBindOptions = [], sRefactorOptions = [], sDataflowOptions = [], sTarget}}
-    | isSynthesisFinish sTarget = True
+isComplete
+    Tree
+        { sState =
+            SynthesisState
+                { sBindOptions = []
+                , sDataflowOptions = []
+                , sBreakLoopOptions = []
+                , sResolveDeadlockOptions = []
+                , sOptimizeAccumOptions = []
+                , sTarget
+                }
+        }
+        | isSynthesisFinish sTarget = True
 isComplete _ = False
 
 -- *Internal
 
-exploreSubForestVar parent@Tree{sID, sState = SynthesisState{sBindOptions, sRefactorOptions, sDataflowOptions}} =
-    let edges =
+exploreSubForestVar parent@Tree{sID, sState} =
+    let SynthesisState
+            { sBindOptions
+            , sDataflowOptions
+            , sBreakLoopOptions
+            , sResolveDeadlockOptions
+            , sOptimizeAccumOptions
+            } = sState
+        edges =
             concat
-                ( map (decisonAndContext parent) sRefactorOptions
-                    ++ map (decisonAndContext parent) sBindOptions
+                ( map (decisonAndContext parent) sBindOptions
                     ++ map (decisonAndContext parent) sDataflowOptions
+                    ++ map (decisonAndContext parent) sBreakLoopOptions
+                    ++ map (decisonAndContext parent) sResolveDeadlockOptions
+                    ++ map (decisonAndContext parent) sOptimizeAccumOptions
                 )
      in forM (zip [0 ..] edges) $ \(i, (desc, ctx')) -> do
             sSubForestVar <- newEmptyTMVar
@@ -120,14 +140,15 @@ decisonAndContext parent@Tree{sState = ctx} o =
 
 nodeCtx parent nModel =
     let sBindOptions = bindOptions nModel
-        sRefactorOptions = refactorOptions nModel
         sDataflowOptions = dataflowOptions nModel
      in SynthesisState
             { sTarget = nModel
             , sParent = parent
             , sBindOptions
-            , sRefactorOptions
             , sDataflowOptions
+            , sResolveDeadlockOptions = resolveDeadlockOptions nModel
+            , sBreakLoopOptions = breakLoopOptions nModel
+            , sOptimizeAccumOptions = optimizeAccumOptions nModel
             , bindingAlternative =
                 foldl
                     (\st (Bind f tag) -> M.alter (return . maybe [tag] (tag :)) f st)

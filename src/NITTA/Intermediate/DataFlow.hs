@@ -10,7 +10,7 @@
 {- |
 Module      : NITTA.Intermediate.DataFlow
 Description : DataFlow graph
-Copyright   : (c) Aleksandr Penskoi, 2020
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -21,10 +21,12 @@ module NITTA.Intermediate.DataFlow (
 ) where
 
 import Control.Exception (assert)
+import qualified Data.List as L
 import qualified Data.Set as S
 import GHC.Generics
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
+import NITTA.Model.Problems.Refactor
 import NITTA.Utils.Base
 
 {- |Data flow graph - intermediate representation of application algorithm.
@@ -58,6 +60,31 @@ instance (Var v, Val x) => Patch (DataFlowGraph v x) (v, v) where
     patch diff@(v, _) n@(DFLeaf f)
         | v `S.member` inputs f = DFLeaf $ patch diff f
         | otherwise = n
+
+instance (Var v, Val x) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
+    resolveDeadlockOptions _dfg = []
+
+    resolveDeadlockDecision dfg r@ResolveDeadlock{} =
+        let (buffer, diff) = prepareBuffer r
+            fs' = buffer : map (patch diff) (functions dfg)
+         in fsToDataFlowGraph fs'
+
+instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where
+    optimizeAccumOptions dfg = optimizeAccumOptions $ functions dfg
+
+    optimizeAccumDecision dfg ref@OptimizeAccum{} =
+        fsToDataFlowGraph $ optimizeAccumDecision (functions dfg) ref
+
+instance (Var v, Val x) => BreakLoopProblem (DataFlowGraph v x) v x where
+    breakLoopOptions _dfg = []
+
+    breakLoopDecision (DFCluster leafs) bl =
+        let origin = recLoop bl
+         in DFCluster $
+                DFLeaf (recLoopIn bl){funHistory = [origin]} :
+                DFLeaf (recLoopOut bl){funHistory = [origin]} :
+                (leafs L.\\ [DFLeaf origin])
+    breakLoopDecision _ _ = undefined
 
 -- |Convert @[ F v x ]@ to 'DataFlowGraph'.
 fsToDataFlowGraph alg = DFCluster $ map DFLeaf alg

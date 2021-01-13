@@ -49,41 +49,48 @@ instance WithFunctions (TargetSystem (BusNetwork tag v x t) v x) (F v x) where
 
 processDuration TargetSystem{mUnit} = nextTick $ process mUnit
 
--- |Synthesis process is finish when all variable from data flow are transferred.
+{- |Synthesis process is finish when all variable from data flow are
+transferred.
+-}
 isSynthesisFinish :: (ProcessorUnit u v x t) => TargetSystem u v x -> Bool
 isSynthesisFinish TargetSystem{mUnit, mDataFlowGraph} =
     let inWork = transferred mUnit
         inAlg = variables mDataFlowGraph
      in inWork == inAlg
 
-instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
-    BindProblem (TargetSystem (BusNetwork tag v x t) v x) tag v x
-    where
+instance (UnitTag tag, VarValTime v x t) => BindProblem (TargetSystem (BusNetwork tag v x t) v x) tag v x where
     bindOptions TargetSystem{mUnit} = bindOptions mUnit
+
     bindDecision f@TargetSystem{mUnit} d = f{mUnit = bindDecision mUnit d}
 
-instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
-    DataflowProblem (TargetSystem (BusNetwork tag v x t) v x) tag v t
-    where
+instance (UnitTag tag, VarValTime v x t) => DataflowProblem (TargetSystem (BusNetwork tag v x t) v x) tag v t where
     dataflowOptions TargetSystem{mUnit} = dataflowOptions mUnit
+
     dataflowDecision f@TargetSystem{mUnit} d = f{mUnit = dataflowDecision mUnit d}
 
-instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
-    RefactorProblem (TargetSystem (BusNetwork tag v x t) v x) v x
-    where
-    refactorOptions TargetSystem{mUnit} = refactorOptions mUnit
+instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+    breakLoopOptions TargetSystem{mUnit} = breakLoopOptions mUnit
 
-    refactorDecision TargetSystem{mUnit, mDataFlowGraph} d =
+    breakLoopDecision TargetSystem{mUnit, mDataFlowGraph} d =
         TargetSystem
-            { mDataFlowGraph = refactorDecision mDataFlowGraph d
-            , mUnit = refactorDecision mUnit d
+            { mDataFlowGraph = breakLoopDecision mDataFlowGraph d
+            , mUnit = breakLoopDecision mUnit d
+            }
+
+instance (VarValTime v x t) => OptimizeAccumProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+    optimizeAccumOptions TargetSystem{mUnit} = optimizeAccumOptions mUnit
+
+    optimizeAccumDecision TargetSystem{mUnit, mDataFlowGraph} d =
+        TargetSystem
+            { mDataFlowGraph = optimizeAccumDecision mDataFlowGraph d
+            , mUnit = optimizeAccumDecision mUnit d
+            }
+
+instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+    resolveDeadlockOptions TargetSystem{mUnit} = resolveDeadlockOptions mUnit
+
+    resolveDeadlockDecision TargetSystem{mUnit, mDataFlowGraph} d =
+        TargetSystem
+            { mDataFlowGraph = resolveDeadlockDecision mDataFlowGraph d
+            , mUnit = resolveDeadlockDecision mUnit d
             }

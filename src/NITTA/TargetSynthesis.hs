@@ -77,7 +77,6 @@ module NITTA.TargetSynthesis (
     mkModelWithOneNetwork,
     TargetSynthesis (..),
     runTargetSynthesis,
-    simpleRefactor,
 ) where
 
 import Control.Monad (when)
@@ -88,7 +87,6 @@ import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
 import NITTA.Model.Networks.Bus (BusNetwork)
-import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
@@ -99,7 +97,7 @@ import NITTA.Synthesis.Types
 import System.FilePath (joinPath)
 
 {- |Description of synthesis task. Applicable for target system synthesis and
- testing purpose.
+testing purpose.
 -}
 data TargetSynthesis tag v x t = TargetSynthesis
     { -- |target name, used for top level module name and project path
@@ -226,9 +224,3 @@ mkModelWithOneNetwork arch dfg =
         { mUnit = foldl (flip bind) arch $ functions dfg
         , mDataFlowGraph = dfg
         }
-
--- |Apply all refactor options untill they exist
-simpleRefactor dfg =
-    case refactorOptions dfg of
-        [] -> dfg
-        (r : _) -> simpleRefactor $ refactorDecision dfg r

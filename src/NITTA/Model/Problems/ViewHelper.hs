@@ -16,6 +16,7 @@ module NITTA.Model.Problems.ViewHelper (
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import GHC.Generics
 import NITTA.Intermediate.Types
@@ -43,7 +44,16 @@ data DecisionView
         { source :: String
         , targets :: HM.HashMap String (Maybe (String, IntervalView))
         }
-    | RefactorDecisionView String
+    | BreakLoopView
+        { value :: String
+        , outputs :: [String]
+        , input :: String
+        }
+    | OptimizeAccumView
+        { old :: [FView]
+        , new :: [FView]
+        }
+    | ResolveDeadlockView [String]
     deriving (Generic)
 
 instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
@@ -67,7 +77,22 @@ instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)
                         $ M.assocs dfTargets
             }
 
-instance (Show v, Show x) => Viewable (Refactor v x) DecisionView where
-    view ref = RefactorDecisionView $ show ref
+instance (Show v, Show x) => Viewable (BreakLoop v x) DecisionView where
+    view BreakLoop{loopX, loopO, loopI} =
+        BreakLoopView
+            { value = show loopX
+            , outputs = map show $ S.elems loopO
+            , input = show loopI
+            }
+
+instance Viewable (OptimizeAccum v x) DecisionView where
+    view OptimizeAccum{refOld, refNew} =
+        OptimizeAccumView
+            { old = map view refOld
+            , new = map view refNew
+            }
+
+instance (Show v) => Viewable (ResolveDeadlock v) DecisionView where
+    view (ResolveDeadlock vs) = ResolveDeadlockView $ map show $ S.elems vs
 
 instance ToJSON DecisionView

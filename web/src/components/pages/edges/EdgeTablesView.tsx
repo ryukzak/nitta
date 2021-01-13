@@ -8,10 +8,8 @@ import {
   IRootView,
   IBindDecisionView,
   IDataflowDecisionView,
-  IRefactorDecisionView,
   BindMetrics,
   DataflowMetrics,
-  RefactorMetrics,
 } from "../../../gen/types";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
@@ -22,7 +20,6 @@ type Decision = DecisionView;
 type Root = IRootView;
 type Bind = IBindDecisionView;
 type Dataflow = IDataflowDecisionView;
-type Refactor = IRefactorDecisionView;
 
 type EdgesProps = {
   edges: Node[];
@@ -67,31 +64,16 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       />
       <Table
         name="Refactor"
-        edges={edges.filter((e) => e.decision.tag === "RefactorDecisionView")}
+        edges={edges.filter((e) => e.decision.tag !== "DataflowDecisionView" && e.decision.tag !== "BindDecisionView")}
         columns={[
           nidColumn(appContext.selectNode),
           objectiveColumn(),
-          textColumn("description", (e: Node) => {
-            if ((e.parameters as RefactorMetrics).pRefactorType === "OptimizeAccumT") {
-              return (e.decision as Refactor).contents;
-              // return (
-              //   sub.oldSubGraph.map((f: FView) => f.fvFun).join(", ") +
-              //   " -> " +
-              //   sub.newSubGraph.map((f: FView) => f.fvFun).join(", ")
-              // );
-            }
-            return JSON.stringify((e.decision as Refactor).contents);
-          }),
-          textColumn(
-            "pNumberOfLockedVariables",
-            (e: Node) => (e.parameters as RefactorMetrics).pNumberOfLockedVariables,
-            50
-          ),
-          textColumn("pBufferCount", (e: Node) => (e.parameters as RefactorMetrics).pBufferCount, 50),
+          textColumn("description", (e: Node) => JSON.stringify(e.decision)),
+          textColumn("parameters", (e: Node) => JSON.stringify(e.parameters), 50),
           textColumn(
             "pNStepBackRepeated",
             (e: Node) => {
-              let n = (e.parameters as RefactorMetrics).pNStepBackRepeated;
+              let n = e.parameters.pNStepBackRepeated;
               return n === undefined || n === null ? "null" : (n as number).toString();
             },
             50

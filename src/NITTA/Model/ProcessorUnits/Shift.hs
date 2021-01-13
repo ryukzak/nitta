@@ -83,7 +83,9 @@ instance Default t => Default (Shift v x t) where
             , process_ = def
             }
 
-instance RefactorProblem (Shift v x t) v x
+instance BreakLoopProblem (Shift v x t) v x
+instance OptimizeAccumProblem (Shift v x t) v x
+instance ResolveDeadlockProblem (Shift v x t) v x
 
 instance
     ( VarValTime v x t

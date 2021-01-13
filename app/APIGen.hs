@@ -14,7 +14,7 @@
 {- |
 Module      : APIGen
 Description :
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -74,8 +74,9 @@ $(deriveTypeScript defaultOptions ''NodeView)
 $(deriveTypeScript defaultOptions ''DecisionView)
 $(deriveTypeScript defaultOptions ''BindMetrics)
 $(deriveTypeScript defaultOptions ''DataflowMetrics)
-$(deriveTypeScript defaultOptions ''RefactorType)
-$(deriveTypeScript defaultOptions ''RefactorMetrics)
+$(deriveTypeScript defaultOptions ''BreakLoopMetrics)
+$(deriveTypeScript defaultOptions ''OptimizeAccumMetrics)
+$(deriveTypeScript defaultOptions ''ResolveDeadlockMetrics)
 
 $(deriveTypeScript defaultOptions ''GraphEdge)
 $(deriveTypeScript defaultOptions ''GraphNode)
@@ -118,9 +119,11 @@ main = do
                     , -- metrics
                       getTypeScriptDeclarations (Proxy :: Proxy BindMetrics)
                     , getTypeScriptDeclarations (Proxy :: Proxy DataflowMetrics)
-                    , getTypeScriptDeclarations (Proxy :: Proxy RefactorType)
-                    , getTypeScriptDeclarations (Proxy :: Proxy RefactorMetrics)
-                    , getTypeScriptDeclarations (Proxy :: Proxy FView)
+                    , getTypeScriptDeclarations (Proxy :: Proxy BreakLoopMetrics)
+                    , getTypeScriptDeclarations (Proxy :: Proxy OptimizeAccumMetrics)
+                    , getTypeScriptDeclarations (Proxy :: Proxy ResolveDeadlockMetrics)
+                    , -- other
+                      getTypeScriptDeclarations (Proxy :: Proxy FView)
                     , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy DataflowEndpointView)

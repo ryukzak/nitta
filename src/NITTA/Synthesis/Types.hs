@@ -131,8 +131,9 @@ data SynthesisState m tag v x t = SynthesisState
     , sTarget :: m
     , -- |bind options cache
       sBindOptions :: [Bind tag v x]
-    , -- |refactor options cache
-      sRefactorOptions :: [Refactor v x]
+    , sResolveDeadlockOptions :: [ResolveDeadlock v]
+    , sOptimizeAccumOptions :: [OptimizeAccum v x]
+    , sBreakLoopOptions :: [BreakLoop v x]
     , -- |dataflow options cache
       sDataflowOptions :: [DataflowSt tag v (TimeConstrain t)]
     , -- |a map from functions to possible processor unit tags

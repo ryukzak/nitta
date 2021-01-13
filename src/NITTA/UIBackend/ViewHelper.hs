@@ -148,7 +148,9 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
                         SynthesisDecision{metrics}
                             | Just BindMetrics{} <- cast metrics -> "Bind"
                             | Just DataflowMetrics{} <- cast metrics -> "Transport"
-                            | Just RefactorMetrics{} <- cast metrics -> "Refactor"
+                            | Just BreakLoopMetrics{} <- cast metrics -> "Refactor"
+                            | Just OptimizeAccumMetrics{} <- cast metrics -> "Refactor"
+                            | Just ResolveDeadlockMetrics{} <- cast metrics -> "Refactor"
                         _ -> "?"
                     }
             , subForest = subForest
@@ -181,7 +183,12 @@ instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (No
                     _ -> String "root"
                 )
                     sDecision
-            , objectiveFunctionValue = score sDecision
+            , objectiveFunctionValue =
+                ( \case
+                    SynthesisDecision{score} -> score
+                    _ -> 0
+                )
+                    sDecision
             }
 
 instance (VarValTimeJSON v x t, ToJSON tag) => ToJSON (NodeView tag v x t)

@@ -18,6 +18,7 @@ Stability   : experimental
 -}
 module NITTA.Synthesis.Binding (
     BindMetrics (..),
+    isBind,
 ) where
 
 import Data.Aeson (ToJSON)
@@ -25,6 +26,7 @@ import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
+import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
@@ -125,3 +127,7 @@ optionsAfterBind f tag TargetSystem{mUnit = BusNetwork{bnPus}} =
         _ -> []
     where
         act `optionOf` f' = not $ S.null (variables act `S.intersection` variables f')
+
+isBind SynthesisDecision{metrics}
+    | isJust (cast metrics :: Maybe BindMetrics) = True
+isBind _ = False

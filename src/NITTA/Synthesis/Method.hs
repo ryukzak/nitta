@@ -29,7 +29,6 @@ module NITTA.Synthesis.Method (
 ) where
 
 import qualified Data.List as L
-import Data.Maybe
 import Data.Typeable
 import Debug.Trace
 import NITTA.Model.ProcessorUnits
@@ -100,10 +99,7 @@ obviousBindThreadIO tree = do
 allBindsAndRefsIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 allBindsAndRefsIO tree = do
     subForest <-
-        filter
-            ( (\SynthesisDecision{metrics} -> isJust (cast metrics :: Maybe BindMetrics) || isJust (cast metrics :: Maybe RefactorMetrics))
-                . sDecision
-            )
+        filter ((\d -> isBind d || isRefactor d) . sDecision)
             <$> positiveSubForestIO tree
     -- FIXME: safe
     if null subForest
@@ -113,19 +109,12 @@ allBindsAndRefsIO tree = do
 refactorThreadIO tree = do
     subForest <- positiveSubForestIO tree
     maybe (return tree) refactorThreadIO $
-        L.find
-            ( (\SynthesisDecision{metrics} -> isJust (cast metrics :: Maybe RefactorMetrics))
-                . sDecision
-            )
-            subForest
+        L.find (isRefactor . sDecision) subForest
 
 smartBindThreadIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 smartBindThreadIO tree = do
     subForest <-
-        filter
-            ( (\SynthesisDecision{metrics} -> isJust (cast metrics :: Maybe BindMetrics) || isJust (cast metrics :: Maybe RefactorMetrics))
-                . sDecision
-            )
+        filter ((\d -> isBind d || isRefactor d) . sDecision)
             <$> (positiveSubForestIO =<< refactorThreadIO tree)
     if null subForest
         then return tree
