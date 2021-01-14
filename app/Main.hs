@@ -54,7 +54,7 @@ data Nitta = Nitta
     , fsim :: Bool
     , lsim :: Bool
     , verbose :: Bool
-    , target_path :: String
+    , output_path :: String
     }
     deriving (Show, Data, Typeable)
 
@@ -70,7 +70,7 @@ nittaArgs =
         , fsim = False &= help "Functional simulation with trace"
         , lsim = False &= help "Logical (HDL) simulation with trace"
         , verbose = False &= help "Verbose"
-        , target_path = joinPath [ "gen" ] &= help "A directory where CAD stores generated targets"
+        , output_path = "gen" &= help "Place the output into specified directory"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - CAD for reconfigurable real-time ASIP")
 
@@ -81,7 +81,7 @@ parseFX input =
      in (convert m, convert b)
 
 main = do
-    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, target_path} <- cmdArgs nittaArgs
+    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, output_path} <- cmdArgs nittaArgs
     src <- readSourceCode verbose filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
             let FrontendResult{frDataFlow, frTrace, frPrettyCntx} = lua2functions src
@@ -114,7 +114,7 @@ main = do
             TestbenchReport
                 { tbLogicalSimulationCntx
                 } <-
-                synthesizeAndTest verbose ma n frDataFlow received target_path
+                synthesizeAndTest verbose ma n frDataFlow received output_path
 
             when lsim $ do
                 putCntx $ frPrettyCntx tbLogicalSimulationCntx
@@ -135,12 +135,12 @@ functionalSimulation verbose n received src = do
     putStr $ cntx2table $ frPrettyCntx cntx
     when verbose $ putStrLn "> run functional simulation...ok"
 
-synthesizeAndTest verbose ma n dataflow received target_path = do
+synthesizeAndTest verbose ma n dataflow received outputPath = do
     Right report <-
         runTargetSynthesis
             def
                 { tName = "main"
-                , tPath = target_path
+                , tPath = outputPath
                 , tMicroArch = ma
                 , tDFG = dataflow
                 , tVerbose = verbose

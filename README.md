@@ -160,6 +160,8 @@ Common flags:
   -f     --fsim                       Functional simulation with trace
   -l     --lsim                       Logical (HDL) simulation with trace
   -v     --verbose                    Verbose
+  -o     --output-path=ITEM           Place the output into specified
+                                      directory
   -?     --help                       Display help message
   -V     --version                    Print version information
          --numeric-version            Print just the version number
