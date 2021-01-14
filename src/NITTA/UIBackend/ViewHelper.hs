@@ -161,9 +161,7 @@ data NodeView tag v x t = NodeView
     deriving (Generic)
 
 instance
-    ( VarValTimeJSON v x t
-    , Hashable v
-    ) =>
+    (VarValTimeJSON v x t) =>
     Viewable (G Node tag v x t) (NodeView tag v x t)
     where
     view Node{nId, nOrigin, nIsComplete} =
@@ -173,7 +171,7 @@ instance
             , nvOrigin = fmap view nOrigin
             }
 
-instance (VarValTimeJSON v x t, Hashable v, ToJSON tag) => ToJSON (NodeView tag v x t)
+instance (VarValTimeJSON v x t, ToJSON tag) => ToJSON (NodeView tag v x t)
 
 instance {-# OVERLAPS #-} ToSample [NodeView String String Int Int] where
     toSamples _ =
@@ -204,7 +202,7 @@ data EdgeView tag v x t = EdgeView
     }
     deriving (Generic)
 
-instance (VarValTimeJSON v x t, Hashable v) => Viewable (G Edge tag v x t) (EdgeView tag v x t) where
+instance (VarValTimeJSON v x t) => Viewable (G Edge tag v x t) (EdgeView tag v x t) where
     view Edge{eTarget, eOption, eDecision, eParameters, eObjectiveFunctionValue} =
         EdgeView
             { nid = show $ nId eTarget
@@ -214,7 +212,7 @@ instance (VarValTimeJSON v x t, Hashable v) => Viewable (G Edge tag v x t) (Edge
             , objectiveFunctionValue = eObjectiveFunctionValue
             }
 
-instance (VarValTimeJSON v x t, Hashable v, ToJSON tag) => ToJSON (EdgeView tag v x t)
+instance (VarValTimeJSON v x t, ToJSON tag) => ToJSON (EdgeView tag v x t)
 
 dataflowViewSample =
     EdgeView
@@ -321,7 +319,6 @@ data SynthesisStatementView tag v x tp
 
 instance
     ( Var v
-    , Hashable v
     , Show x
     ) =>
     Viewable
@@ -331,10 +328,7 @@ instance
     view (nid, st) = (nid, view st)
 
 instance
-    ( Var v
-    , Show x
-    , Hashable v
-    ) =>
+    (Var v, Show x) =>
     Viewable (SynthesisStatement tag v x tp) (SynthesisStatementView tag v x tp)
     where
     view (Binding f pu) =
