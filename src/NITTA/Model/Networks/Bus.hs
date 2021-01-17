@@ -354,15 +354,11 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
                     ]
          in L.nub $ selfSending ++ resolveLocks
         where
-            endPointRoles =
-                M.fromList $
-                    map (\(tag, pu) -> (tag, map epRole $ endpointOptions pu)) $
-                        M.assocs bnPus
+            endPointRoles = M.map (\pu -> map epRole $ endpointOptions pu) bnPus
 
             puOutputs tag =
-                S.unions $
-                    map variables $
-                        filter (\case Source{} -> True; _ -> False) $ endPointRoles M.! tag
+                unionsMap variables $
+                    filter (\case Source{} -> True; _ -> False) $ endPointRoles M.! tag
 
             var2endpointRole =
                 M.fromList $

@@ -100,10 +100,9 @@ allBindsAndRefsIO tree = do
     subForest <-
         filter ((\d -> isBind d || isRefactor d) . sDecision)
             <$> positiveSubForestIO tree
-    -- FIXME: safe
-    if null subForest
-        then return tree
-        else allBindsAndRefsIO $ minimumOn (score . sDecision) subForest
+    case subForest of
+        [] -> return tree
+        _ -> allBindsAndRefsIO $ minimumOn (score . sDecision) subForest
 
 refactorThreadIO tree = do
     subForest <- positiveSubForestIO tree
@@ -115,9 +114,9 @@ smartBindThreadIO tree = do
     subForest <-
         filter ((\d -> isBind d || isRefactor d) . sDecision)
             <$> (positiveSubForestIO =<< refactorThreadIO tree)
-    if null subForest
-        then return tree
-        else smartBindThreadIO $ maximumOn (score . sDecision) subForest
+    case subForest of
+        [] -> return tree
+        _ -> smartBindThreadIO $ maximumOn (score . sDecision) subForest
 
 allBestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag v x t
 allBestThreadIO (0 :: Int) tree = bestThreadIO stepLimit tree

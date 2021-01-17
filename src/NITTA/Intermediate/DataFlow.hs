@@ -62,7 +62,7 @@ instance (Var v, Val x) => Patch (DataFlowGraph v x) (v, v) where
         | v `S.member` inputs f = DFLeaf $ patch diff f
         | otherwise = n
 
-instance (Var v, Val x) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
+instance (Var v) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
     resolveDeadlockOptions _dfg = []
 
     resolveDeadlockDecision dfg ResolveDeadlock{buffer, changeset} =

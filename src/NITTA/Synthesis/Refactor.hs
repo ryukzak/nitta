@@ -25,7 +25,6 @@ module NITTA.Synthesis.Refactor (
 ) where
 
 import Data.Aeson (ToJSON)
-import Data.Default
 import Data.Maybe
 import qualified Data.Set as S
 import Data.Typeable
@@ -61,7 +60,6 @@ instance
 data ResolveDeadlockMetrics = ResolveDeadlockMetrics
     { pNumberOfLockedVariables :: Float
     , pBufferCount :: Float
-    , pNStepBackRepeated :: Int
     , pNumberOfTransferableVariables :: Float
     }
     deriving (Generic)
@@ -84,14 +82,13 @@ instance
          in ResolveDeadlockMetrics
                 { pNumberOfLockedVariables = fromIntegral $ S.size buffered
                 , pBufferCount = fromIntegral $ sum $ map countSuffix $ S.elems buffered
-                , pNStepBackRepeated = def -- FIXME:
                 , pNumberOfTransferableVariables = fromIntegral (S.size $ buffered `S.intersection` transferableVars)
                 }
 
     estimate SynthesisState{sParent} _o d _ | 0 < decisionRepeats d sParent = -2
     estimate SynthesisState{} _o _d ResolveDeadlockMetrics{pNumberOfLockedVariables, pBufferCount, pNumberOfTransferableVariables} =
         1000 + pNumberOfLockedVariables - pBufferCount * 1000
-            - 20 * pNumberOfTransferableVariables -- + trace (show (decisionRepeats d sParent) <> "  " <> show d <> "   " <> show (toRootDecisionStrings sParent)) 0
+            - 20 * pNumberOfTransferableVariables
 
 data BreakLoopMetrics = BreakLoopMetrics
     deriving (Generic)
