@@ -1,8 +1,7 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
 
-import { haskellApiService as api } from "services/HaskellApiService";
-import { requestNidBy } from "utils/componentUtils";
+import { synthesize, haskellApiService as api } from "services/HaskellApiService";
 
 import { SynthesisGraphView } from "./SynthesisGraphView";
 import { AppContext, IAppContext, reLastSID, sidSeparator } from "components/app/AppContext";
@@ -45,7 +44,7 @@ export const SynthesisGraphContainer: React.FC = () => {
           <Button {...buttonAttrs} onClick={() => backNavigation()}>
             Back
           </Button>
-          <Button {...buttonAttrs} onClick={requestNidBy(appContext, api.bestStep, appContext.selectedSID)}>
+          <Button {...buttonAttrs} onClick={synthesize(appContext, api.bestStep, appContext.selectedSID)}>
             Forward
           </Button>
         </div>
