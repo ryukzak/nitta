@@ -368,7 +368,7 @@ instance ( UnitTag tag, VarValTime v x t
 
             bnRemains' = buffer : patch diff bnRemains
             bnPus'     = M.adjust (patch diff) tag bnPus
-            bnBinded'  = registerBinding tag buffer $ M.map (patch diff) bnBinded
+            bnBinded'  = M.map (patch diff) bnBinded
         in bn
             { bnRemains=bnRemains'
             , bnPus=bnPus'
