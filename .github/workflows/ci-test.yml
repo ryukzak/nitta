@@ -104,8 +104,7 @@ jobs:
       - run: |
           make -C hdl > make_hdl.log
           cat make_hdl.log
-          grep ERROR make_hdl.log
-          # test "$(grep -c ERROR make_hdl.log)" -eq 0
+          test "$(grep -ci error make_hdl.log)" -eq 0
 
 
 defaults:
