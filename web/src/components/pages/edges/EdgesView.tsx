@@ -1,10 +1,12 @@
 import * as React from "react";
-import { AppContext, IAppContext } from "../../app/AppContext";
-import { haskellApiService, Node } from "../../../services/HaskellApiService";
-import { IntermediateView } from "../node/IntermediateView";
-import { SynthesisHistoryView } from "../history/SynthesisHistoryView";
-import { TablesView } from "./EdgeTablesView";
 import { AxiosResponse } from "axios";
+
+import { haskellApiService, Node } from "services/HaskellApiService";
+
+import { AppContext, IAppContext } from "components/app/AppContext";
+import { IntermediateView } from "components/pages/node/IntermediateView";
+import { SynthesisHistoryView } from "components/pages/history/SynthesisHistoryView";
+import { TablesView } from "./EdgeTablesView";
 
 export const EdgesView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;

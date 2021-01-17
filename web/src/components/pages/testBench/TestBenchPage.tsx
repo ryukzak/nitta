@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { haskellApiService, TestBenchReport } from "../../../services/HaskellApiService";
-import { TestbenchReportView } from "../../../gen/types";
+import { haskellApiService, TestBenchReport } from "services/HaskellApiService";
+import { TestbenchReportView } from "gen/types";
 import { AxiosResponse, AxiosError } from "axios";
-import { AppContext, IAppContext } from "../../app/AppContext";
+import { AppContext, IAppContext } from "components/app/AppContext";
 import { useContext } from "react";
 import { SimulationDataView } from "./SimulationDataView";
 

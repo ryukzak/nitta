@@ -1,8 +1,8 @@
 import * as React from "react";
 import { DropdownButton, Dropdown } from "react-bootstrap";
-import { haskellApiService as api } from "../../services/HaskellApiService";
+import { haskellApiService as api } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "./AppContext";
-import { requestNidBy } from "../../utils/componentUtils";
+import { requestNidBy } from "utils/componentUtils";
 
 import "./AppNavbar.scss";
 
@@ -10,7 +10,7 @@ export const AppNavbarButtons: React.FC = () => {
   const ctx = React.useContext(AppContext) as IAppContext;
 
   const btnAttrs = {
-    className: "mr-1 btn-sm btn-secondary appNavbarButton"
+    className: "mr-1 btn-sm btn-secondary appNavbarButton",
   };
 
   return (

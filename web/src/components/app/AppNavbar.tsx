@@ -26,8 +26,8 @@ export const AppNavbar: React.FC<IAppNavbarProps> = (props) => {
           <Nav.Link as={RouterNavLink} exact to="/node">
             Node
           </Nav.Link>
-          <Nav.Link as={RouterNavLink} exact to="/edges">
-            Edges
+          <Nav.Link as={RouterNavLink} exact to="/subforest">
+            Subforest
           </Nav.Link>
           <Nav.Link as={RouterNavLink} exact to="/process">
             Process

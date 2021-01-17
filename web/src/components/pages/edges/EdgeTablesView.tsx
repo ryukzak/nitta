@@ -1,7 +1,7 @@
 import * as React from "react";
 import ReactTable, { Column } from "react-table";
 import { nidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn } from "./Table";
-import { AppContext, IAppContext } from "../../app/AppContext";
+import { AppContext, IAppContext } from "components/app/AppContext";
 import {
   NodeView,
   DecisionView,
@@ -10,7 +10,7 @@ import {
   IDataflowDecisionView,
   BindMetrics,
   DataflowMetrics,
-} from "../../../gen/types";
+} from "gen/types";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
 

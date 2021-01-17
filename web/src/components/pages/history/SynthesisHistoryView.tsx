@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useContext } from "react";
 import ReactTable, { Column } from "react-table";
-import { haskellApiService } from "../../../services/HaskellApiService";
-import { NodeView, NId, IBindDecisionView } from "../../../gen/types";
+import { haskellApiService } from "services/HaskellApiService";
+import { NodeView, NId, IBindDecisionView } from "gen/types";
 import { AxiosResponse, AxiosError } from "axios";
-import { AppContext, IAppContext } from "../../app/AppContext";
+import { AppContext, IAppContext } from "components/app/AppContext";
 
 type Row = { original: Node; index: number };
 type Node = NodeView<string, string, string, string>;

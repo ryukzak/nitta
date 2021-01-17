@@ -1,6 +1,7 @@
 import * as React from "react";
-import { NodeView, Interval } from "../../../gen/types";
-import { sidSeparator } from "../../app/AppContext";
+
+import { NodeView, Interval } from "gen/types";
+import { sidSeparator } from "components/app/AppContext";
 
 type Node = NodeView<string, string, number, number>;
 

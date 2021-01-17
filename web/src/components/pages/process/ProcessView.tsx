@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { haskellApiService } from "../../../services/HaskellApiService";
-import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } from "../../../gen/types";
+import { haskellApiService } from "services/HaskellApiService";
+import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } from "gen/types";
 
 import "./ProcessView.scss";
 import { TimelineView } from "./TimelineView";
-import { AppContext, IAppContext } from "../../app/AppContext";
+import { AppContext, IAppContext } from "components/app/AppContext";
 import { useContext } from "react";
 import { AxiosError } from "axios";
 

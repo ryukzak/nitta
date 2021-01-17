@@ -1,8 +1,8 @@
 import * as React from "react";
 import "react-table/react-table.css";
-import { haskellApiService } from "../../../services/HaskellApiService";
-import { AppContext, IAppContext } from "../../app/AppContext";
-import { JsonView } from "../node/JsonView";
+import { haskellApiService } from "services/HaskellApiService";
+import { AppContext, IAppContext } from "components/app/AppContext";
+import { JsonView } from "components/pages/node/JsonView";
 
 export interface IDebugViewProps {}
 

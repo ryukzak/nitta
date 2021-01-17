@@ -1,7 +1,7 @@
 import * as React from "react";
 import "react-table/react-table.css";
 import { IntermediateView } from "./IntermediateView";
-import { AppContext, IAppContext } from "../../app/AppContext";
+import { AppContext, IAppContext } from "components/app/AppContext";
 
 export interface INodeViewProps {}
 

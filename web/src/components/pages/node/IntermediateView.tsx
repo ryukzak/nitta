@@ -1,9 +1,9 @@
 import * as React from "react";
 import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
-import { AppContext, IAppContext } from "../../app/AppContext";
+import { AppContext, IAppContext } from "components/app/AppContext";
 import { AxiosResponse, AxiosError } from "axios";
-import { GraphNode, GraphEdge } from "../../../gen/types";
+import { GraphNode, GraphEdge } from "gen/types";
 import {
   haskellApiService,
   EndpointSts,
@@ -11,7 +11,7 @@ import {
   Dataflow,
   Bind,
   Node,
-} from "../../../services/HaskellApiService";
+} from "services/HaskellApiService";
 
 import "./IntermediateView.scss";
 

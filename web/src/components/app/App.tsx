@@ -1,16 +1,16 @@
 import React from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
 
-import NotFoundErrorPage from "../pages/errors/NotFoundErrorPage";
-import { NodeView } from "../pages/node/NodeView";
-import { EdgesView } from "../pages/edges/EdgesView";
-import { TestBenchPage } from "../pages/testBench/TestBenchPage";
-
 import { IAppContext, AppContextProvider, SID, sidSeparator } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
-import { ProcessView } from "../pages/process/ProcessView";
-import { SynthesisGraphContainer } from "../pages/synthesis/SynthesisGraphContainer";
-import { DebugView } from "../pages/debug/DebugView";
+import NotFoundErrorPage from "components/pages/errors/NotFoundErrorPage";
+
+import { SynthesisGraphContainer } from "components/pages/synthesis/SynthesisGraphContainer";
+import { NodeView } from "components/pages/node/NodeView";
+import { EdgesView } from "components/pages/edges/EdgesView";
+import { TestBenchPage } from "components/pages/testBench/TestBenchPage";
+import { ProcessView } from "components/pages/process/ProcessView";
+import { DebugView } from "components/pages/debug/DebugView";
 
 export interface IAppProps {}
 
@@ -51,7 +51,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
             <Route exact path="/node">
               <NodeView />
             </Route>
-            <Route exact path="/edges">
+            <Route exact path="/subforest">
               <EdgesView />
             </Route>
             <Route exact path="/process">

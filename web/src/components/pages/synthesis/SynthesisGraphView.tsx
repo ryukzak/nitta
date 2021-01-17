@@ -1,8 +1,8 @@
 import * as React from "react";
 import Tree from "react-d3-tree";
-import { haskellApiService } from "../../../services/HaskellApiService";
-import { AppContext, IAppContext, SID, reLastSID } from "../../app/AppContext";
-import { SynthesisNodeView, TreeView } from "../../../gen/types";
+import { haskellApiService } from "services/HaskellApiService";
+import { AppContext, IAppContext, SID, reLastSID } from "components/app/AppContext";
+import { SynthesisNodeView, TreeView } from "gen/types";
 import { AxiosResponse, AxiosError } from "axios";
 
 // FIXME: review, refactor (naming!)
