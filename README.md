@@ -42,11 +42,11 @@ Papers about the project you can find here (English and Russian): <https://nitta
 
 ### Mac OS X
 
-Install [Stack](https://github.com/commercialhaskell/stack) and required dependencies.
+Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools.
 
 ``` console
 $ brew install stack
-$ stack install hlint stylish-haskell
+$ stack install hlint fourmolu
 ```
 > Make sure that PATH contains $HOME/.local/bin.
 
@@ -57,17 +57,17 @@ $ brew tap homebrew/cask
 $ brew cask install gtkwave
 ```
 
-Install [npm](https://github.com/npm/cli) and required dependencies.
+Install [npm](https://github.com/npm/cli) and required developer tools.
 ``` console
 $ brew install npm
 $ npm install --global tern prettier
 ```
 
 ### Ubuntu
-Install [Stack](https://github.com/commercialhaskell/stack) and required dependencies.
+Install [Stack](https://github.com/commercialhaskell/stack) and required developer tools.
 ``` console
 $ sudo apt-get install haskell-stack
-$ stack install hlint stylish-haskell
+$ stack install hlint fourmolu
 ```
 > Make sure that PATH contains $HOME/.local/bin.
 
@@ -77,7 +77,7 @@ $ sudo apt-get install iverilog
 $ sudo apt-get install gtkwave
 ```
 
-Install [npm](https://github.com/npm/cli) and required dependencies.
+Install [npm](https://github.com/npm/cli) and required developer tools.
 ``` console
 $ sudo apt-get install npm
 $ npm install --global tern prettier yarn
