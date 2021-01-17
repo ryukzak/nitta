@@ -236,6 +236,41 @@ instance ToSample (NodeView tag v x t) where
                         }
                 , objectiveFunctionValue = 1999
                 }
+            , NodeView
+                { sid = show $ SID [0, 1, 3, 1, 6]
+                , complete = False
+                , parameters = toJSON $ BreakLoopMetrics
+                , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
+                , objectiveFunctionValue = 5000
+                }
+            , NodeView
+                { sid = show $ SID [0, 1, 3, 1, 5]
+                , complete = False
+                , parameters = toJSON $ OptimizeAccumMetrics
+                , decision =
+                    OptimizeAccumView
+                        { old = [FView "a + b = c" [], FView "c + d = e" []]
+                        , new = [FView "a + b + d = e" []]
+                        }
+                , objectiveFunctionValue = 1999
+                }
+            , NodeView
+                { sid = show $ SID [0, 1, 3, 1, 5]
+                , complete = False
+                , parameters =
+                    toJSON $
+                        ResolveDeadlockMetrics
+                            { pNumberOfLockedVariables = 1
+                            , pBufferCount = 0
+                            , pNumberOfTransferableVariables = 0
+                            }
+                , decision =
+                    ResolveDeadlockView
+                        { buffer = "reg(x#0@buf) = x#0"
+                        , changeset = "Changeset {changeI = fromList [], changeO = fromList [(\"x#0\",fromList [\"x#0@buf\"])]}"
+                        }
+                , objectiveFunctionValue = 1999
+                }
             ]
 
 -- Problems
