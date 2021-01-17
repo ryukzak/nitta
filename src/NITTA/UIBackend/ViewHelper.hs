@@ -239,14 +239,14 @@ instance ToSample (NodeView tag v x t) where
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 6]
                 , complete = False
-                , parameters = toJSON $ BreakLoopMetrics
+                , parameters = toJSON BreakLoopMetrics
                 , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
                 , objectiveFunctionValue = 5000
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
                 , complete = False
-                , parameters = toJSON $ OptimizeAccumMetrics
+                , parameters = toJSON OptimizeAccumMetrics
                 , decision =
                     OptimizeAccumView
                         { old = [FView "a + b = c" [], FView "c + d = e" []]
