@@ -183,7 +183,7 @@ instance (Var v) => FunctionSimulation (LoopOut v x) v x where
 
 data LoopIn v x = LoopIn (Loop v x) (I v) deriving (Typeable, Eq, Show)
 instance (Show v) => Label (LoopIn v x) where
-    label (LoopIn (Loop _ (O vs) _) (I v)) = "loopIn(" <> show v <> ") = " <> showOut vs
+    label (LoopIn (Loop _ (O vs) _) (I v)) = "loopIn(" <> show v <> ") pair out: " <> showOut vs
 instance (Ord v) => Function (LoopIn v x) v where
     inputs (LoopIn _ o) = variables o
     isInternalLockPossible _ = True
