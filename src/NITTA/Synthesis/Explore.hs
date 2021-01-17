@@ -62,7 +62,7 @@ getTreeIO tree (SID (i : is)) = do
     getTreeIO (subForest !! i) (SID is)
 
 -- |Get list of all nodes from root to selected.
-getTreePathIO tree (SID []) = return [tree]
+getTreePathIO _ (SID []) = return []
 getTreePathIO tree (SID (i : is)) = do
     h <- getTreeIO tree $ SID [i]
     t <- getTreePathIO h $ SID is
