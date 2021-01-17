@@ -131,7 +131,7 @@ data SynthesisState m tag v x t = SynthesisState
     , sTarget :: m
     , -- |bind options cache
       sBindOptions :: [Bind tag v x]
-    , sResolveDeadlockOptions :: [ResolveDeadlock v]
+    , sResolveDeadlockOptions :: [ResolveDeadlock v x]
     , sOptimizeAccumOptions :: [OptimizeAccum v x]
     , sBreakLoopOptions :: [BreakLoop v x]
     , -- |dataflow options cache

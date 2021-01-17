@@ -310,9 +310,9 @@ instance (VarValTime v x t) => OptimizeAccumProblem (BusNetwork tag v x t) v x w
 
 instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork tag v x t) v x where
     resolveDeadlockOptions bn@BusNetwork{bnPus, bnBinded} =
-        let prepareResolve :: S.Set v -> [ResolveDeadlock v]
+        let prepareResolve :: S.Set v -> [ResolveDeadlock v x]
             prepareResolve =
-                map ResolveDeadlock
+                map resolveDeadlock
                     . S.elems
                     . S.filter (not . S.null)
                     . ( \lockedVs ->
@@ -343,7 +343,7 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
 
             allPULocks = map (second locks) $ M.assocs bnPus
 
-            resolveDeadlock =
+            resolveLocks =
                 concat
                     [ prepareResolve $ S.singleton lockBy
                     | (tag, ls) <- allPULocks
@@ -352,7 +352,7 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
                     , let reversedLock = Lock{lockBy = locked, locked = lockBy}
                     , any (\(t, puLocks) -> tag /= t && reversedLock `elem` puLocks) allPULocks
                     ]
-         in L.nub $ selfSending ++ resolveDeadlock
+         in L.nub $ selfSending ++ resolveLocks
         where
             endPointRoles =
                 M.fromList $
@@ -375,20 +375,15 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
 
             maybeSended = M.keysSet var2endpointRole
 
-    resolveDeadlockDecision bn@BusNetwork{bnRemains, bnBinded, bnPus} r@ResolveDeadlock{bufferOut} =
-        let (buffer, diff) = prepareBuffer r
-            Just (tag, _) =
+    resolveDeadlockDecision bn@BusNetwork{bnRemains, bnBinded, bnPus} ResolveDeadlock{buffer, changeset} =
+        let Just (tag, _) =
                 L.find
-                    (\(_, f) -> not $ null $ S.intersection bufferOut $ unionsMap outputs f)
+                    (\(_, f) -> not $ null $ S.intersection (outputs buffer) $ unionsMap outputs f)
                     $ M.assocs bnBinded
-
-            bnRemains' = buffer : patch diff bnRemains
-            bnPus' = M.adjust (patch diff) tag bnPus
-            bnBinded' = M.map (patch diff) bnBinded
          in bn
-                { bnRemains = bnRemains'
-                , bnPus = bnPus'
-                , bnBinded = bnBinded'
+                { bnRemains = buffer : patch changeset bnRemains
+                , bnPus = M.adjust (patch changeset) tag bnPus
+                , bnBinded = M.map (patch changeset) bnBinded
                 }
 
 --------------------------------------------------------------------------

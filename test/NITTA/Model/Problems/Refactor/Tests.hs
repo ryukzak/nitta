@@ -33,7 +33,7 @@ tests =
         "Refactor problem"
         [ testCase "self sending 1" $
             let df = fsToDataFlowGraph ([reg "a" ["b"], reg "b" ["c"]] :: [F String Int])
-                df' = resolveDeadlockDecision df (ResolveDeadlock $ S.fromList ["b"])
+                df' = resolveDeadlockDecision df (resolveDeadlock $ S.fromList ["b"])
              in df'
                     @?= DFCluster
                         [ DFLeaf $ reg "a" ["b@buf"]
@@ -42,7 +42,7 @@ tests =
                         ]
         , testCase "self sending 2" $
             let df = fsToDataFlowGraph ([reg "a" ["b1", "b2"], reg "b1" ["c1"], reg "b2" ["c2"]] :: [F String Int])
-                df' = resolveDeadlockDecision df (ResolveDeadlock $ S.fromList ["b1"])
+                df' = resolveDeadlockDecision df (resolveDeadlock $ S.fromList ["b1"])
              in df'
                     @?= DFCluster
                         [ DFLeaf $ reg "a" ["b1@buf", "b2"]
@@ -52,7 +52,7 @@ tests =
                         ]
         , testCase "self sending 3" $
             let df = fsToDataFlowGraph ([reg "a" ["b1", "b2"], reg "b1" ["c1"], reg "b2" ["c2"]] :: [F String Int])
-                df' = resolveDeadlockDecision df (ResolveDeadlock $ S.fromList ["b1", "b2"])
+                df' = resolveDeadlockDecision df (resolveDeadlock $ S.fromList ["b1", "b2"])
              in df'
                     @?= DFCluster
                         [ DFLeaf $ reg "a" ["b1@buf"]

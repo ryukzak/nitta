@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -64,10 +65,8 @@ instance (Var v, Val x) => Patch (DataFlowGraph v x) (v, v) where
 instance (Var v, Val x) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
     resolveDeadlockOptions _dfg = []
 
-    resolveDeadlockDecision dfg r@ResolveDeadlock{} =
-        let (buffer, diff) = prepareBuffer r
-            fs' = buffer : map (patch diff) (functions dfg)
-         in fsToDataFlowGraph fs'
+    resolveDeadlockDecision dfg ResolveDeadlock{buffer, changeset} =
+        fsToDataFlowGraph (buffer : map (patch changeset) (functions dfg))
 
 instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where
     optimizeAccumOptions dfg = optimizeAccumOptions $ functions dfg

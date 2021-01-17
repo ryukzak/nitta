@@ -39,7 +39,7 @@ after:
 module NITTA.Model.Problems.Refactor.ResolveDeadlock (
     ResolveDeadlock (..),
     ResolveDeadlockProblem (..),
-    prepareBuffer,
+    resolveDeadlock,
     maxBufferStack,
 ) where
 
@@ -51,24 +51,28 @@ import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
 
-data ResolveDeadlock v = ResolveDeadlock
-    { bufferOut :: S.Set v
+data ResolveDeadlock v x = ResolveDeadlock
+    { buffer :: F v x
+    , changeset :: Changeset v
     }
     deriving (Generic, Show, Eq)
 
 class ResolveDeadlockProblem u v x | u -> v x where
-    resolveDeadlockOptions :: u -> [ResolveDeadlock v]
+    resolveDeadlockOptions :: u -> [ResolveDeadlock v x]
     resolveDeadlockOptions _ = []
 
-    resolveDeadlockDecision :: u -> ResolveDeadlock v -> u
+    resolveDeadlockDecision :: u -> ResolveDeadlock v x -> u
     resolveDeadlockDecision _ _ = error "not supported"
 
-prepareBuffer :: (Var v, Val x) => ResolveDeadlock v -> (F v x, Changeset v)
-prepareBuffer ResolveDeadlock{bufferOut} =
-    let bufferI = bufferSuffix $ oneOf bufferOut
-        bufferO = S.elems bufferOut
+resolveDeadlock :: (Var v, Val x) => S.Set v -> ResolveDeadlock v x
+resolveDeadlock buffered =
+    let bufferI = bufferSuffix $ oneOf buffered
+        bufferO = S.elems buffered
         diff = def{changeO = M.fromList $ map (\o -> (o, S.singleton bufferI)) bufferO}
-     in (reg bufferI bufferO, diff)
+     in ResolveDeadlock
+            { buffer = reg bufferI bufferO
+            , changeset = diff
+            }
 
 -- |The constant, which restrict maximum length of a buffer sequence.
 maxBufferStack = 2 :: Int

@@ -53,7 +53,10 @@ data DecisionView
         { old :: [FView]
         , new :: [FView]
         }
-    | ResolveDeadlockView [String]
+    | ResolveDeadlockView
+        { buffer :: String
+        , changeset :: String
+        }
     deriving (Generic)
 
 instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
@@ -92,7 +95,11 @@ instance Viewable (OptimizeAccum v x) DecisionView where
             , new = map view refNew
             }
 
-instance (Show v) => Viewable (ResolveDeadlock v) DecisionView where
-    view ResolveDeadlock{bufferOut} = ResolveDeadlockView $ map show $ S.elems bufferOut
+instance (Show v) => Viewable (ResolveDeadlock v x) DecisionView where
+    view ResolveDeadlock{buffer, changeset} =
+        ResolveDeadlockView
+            { buffer = show buffer
+            , changeset = show changeset
+            }
 
 instance ToJSON DecisionView

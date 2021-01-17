@@ -73,19 +73,20 @@ instance
     SynthesisDecisionCls
         (SynthesisState (TargetSystem (BusNetwork tag v x t) v x) tag v x t)
         (TargetSystem (BusNetwork tag v x t) v x)
-        (ResolveDeadlock v)
-        (ResolveDeadlock v)
+        (ResolveDeadlock v x)
+        (ResolveDeadlock v x)
         ResolveDeadlockMetrics
     where
     decisions SynthesisState{sTarget} o = [(o, resolveDeadlockDecision sTarget o)]
 
-    parameters SynthesisState{transferableVars} ResolveDeadlock{bufferOut} _ =
-        ResolveDeadlockMetrics
-            { pNumberOfLockedVariables = fromIntegral $ S.size bufferOut
-            , pBufferCount = fromIntegral $ sum $ map countSuffix $ S.elems bufferOut
-            , pNStepBackRepeated = def
-            , pNumberOfTransferableVariables = fromIntegral (S.size $ bufferOut `S.intersection` transferableVars)
-            }
+    parameters SynthesisState{transferableVars} ResolveDeadlock{buffer} _ =
+        let buffered = outputs buffer
+         in ResolveDeadlockMetrics
+                { pNumberOfLockedVariables = fromIntegral $ S.size buffered
+                , pBufferCount = fromIntegral $ sum $ map countSuffix $ S.elems buffered
+                , pNStepBackRepeated = def -- FIXME:
+                , pNumberOfTransferableVariables = fromIntegral (S.size $ buffered `S.intersection` transferableVars)
+                }
 
     estimate SynthesisState{sParent} _o d _ | 0 < decisionRepeats d sParent = -2
     estimate SynthesisState{} _o _d ResolveDeadlockMetrics{pNumberOfLockedVariables, pBufferCount, pNumberOfTransferableVariables} =
