@@ -41,34 +41,44 @@ Papers about the project you can find here (English and Russian): <https://nitta
 ## Install development dependency
 
 ### Mac OS X
+
+Install [Stack](https://github.com/commercialhaskell/stack) and required dependencies.
+
 ``` console
-# The Haskell Tool Stack
 $ brew install stack
 $ stack install hlint stylish-haskell
-$ echo PATH should contain $HOME/.local/bin
+```
+> Make sure that PATH contains $HOME/.local/bin.
 
-# Verilog tools
+Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
+``` console
 $ brew install icarus-verilog
 $ brew tap homebrew/cask
 $ brew cask install gtkwave
+```
 
-# Frontend tools
+Install [npm](https://github.com/npm/cli) and required dependencies.
+``` console
 $ brew install npm
 $ npm install --global tern prettier
 ```
 
 ### Ubuntu
+Install [Stack](https://github.com/commercialhaskell/stack) and required dependencies.
 ``` console
-# The Haskell Tool Stack
 $ sudo apt-get install haskell-stack
 $ stack install hlint stylish-haskell
-$ echo PATH should contain $HOME/.local/bin
+```
+> Make sure that PATH contains $HOME/.local/bin.
 
-# Verilog tools
+Install [icarus-verilog](https://github.com/steveicarus/iverilog/) and [gtkwave](https://github.com/gtkwave/gtkwave).
+``` console
 $ sudo apt-get install iverilog
 $ sudo apt-get install gtkwave
+```
 
-# Frontend tools
+Install [npm](https://github.com/npm/cli) and required dependencies.
+``` console
 $ sudo apt-get install npm
 $ npm install --global tern prettier yarn
 ```
@@ -81,62 +91,19 @@ Inside the project path:
 
 ``` console
 $ stack build
-Building all executables for 'nitta' once. After a successful build of all of them, only specified executables will be rebuilt.
-nitta> configure (lib + exe)
-
-...
-
-Registering library for nitta-0.0.0.1..
-
 ```
 
 ### Build frontend
 ``` console
 $ stack exec nitta-api-gen
-Expected nitta server port: 8080
-Create output directory...
-Create output directory...OK
-Generate rest_api.js library...
-Generate rest_api.js library...OK
-Generate typescript interface...
-Generate typescript interface...OK
 $ yarn --cwd web install
-yarn install v1.22.10
-[1/4] 🔍  Resolving packages...
-success Already up-to-date.
-✨  Done in 0.61s.
 $ yarn --cwd web run build
-yarn run v1.22.10
-$ react-scripts --max_old_space_size=4096 build
-Creating an optimized production build...
-Compiled successfully.
-...
-✨  Done in 63.36s.
 ```
 
 ### Build documentation
 ``` console
 $ stack build --haddock # for nitta CAD
-nitta        > configure (lib + exe)
-Configuring nitta-0.0.0.1...
-nitta        > build (lib + exe)
-Preprocessing library for nitta-0.0.0.1..
-Building library for nitta-0.0.0.1..
-[ 1 of 56] Compiling NITTA.Intermediate.Value [Optimisation flags changed]
-[ 2 of 56] Compiling NITTA.Intermediate.Variable [Optimisation flags changed]
-...
-Updating Haddock index for snapshot packages in
-/Users/penskoi/.stack/snapshots/x86_64-osx/a990dab32eefe0e44a7cadd683796493ee842f521c2ece5efa1f067d05ae22a6/8.8.4/doc/index.html
 $ stack exec nitta-api-gen # for REST API description
-Create output directory...
-Create output directory...OK
-Expected nitta server port: 8080
-Generate rest_api.js library...
-Generate rest_api.js library...OK
-Generate typescript interface...
-Generate typescript interface...OK
-Generate REST API description...
-Generate REST API description...ok
 ```
 
 For the fast rebuild, the project adds `--fast` flag.
