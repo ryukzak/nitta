@@ -376,11 +376,10 @@ instance ( UnitTag tag, VarValTime v x t
             }
 
 --------------------------------------------------------------------------
+
 -- |Add binding to Map tag [F v x] dict
-registerBinding tag f dict = M.alter
-    (\case  Just fs -> Just $ f : fs
-            Nothing     -> Just [f]
-    ) tag dict
+registerBinding tag f dict =
+    M.alter (maybe (Just [f]) (Just . (f :))) tag dict
 
 programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 
