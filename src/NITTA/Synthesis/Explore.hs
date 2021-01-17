@@ -23,7 +23,7 @@ module NITTA.Synthesis.Explore (
 ) where
 
 import Control.Concurrent.STM
-import Control.Monad (forM, unless)
+import Control.Monad (forM, unless, when)
 import Data.Default
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
@@ -39,6 +39,7 @@ import NITTA.Synthesis.Dataflow ()
 import NITTA.Synthesis.Refactor ()
 import NITTA.Synthesis.Types
 import NITTA.Utils
+import System.Log.Logger
 
 -- |Make synthesis tree
 synthesisTreeRootIO = atomically . rootSynthesisTreeSTM
@@ -73,14 +74,32 @@ call.
 subForestIO
     tree@Tree
         { sSubForestVar
+        , sID
+        , sDecision
         } = do
-        atomically $
-            tryReadTMVar sSubForestVar >>= \case
-                Just subForest -> return subForest
-                Nothing -> do
-                    subForest <- exploreSubForestVar tree
-                    putTMVar sSubForestVar subForest
-                    return subForest
+        (firstTime, subForest) <-
+            atomically $
+                tryReadTMVar sSubForestVar >>= \case
+                    Just subForest -> return (False, subForest)
+                    Nothing -> do
+                        subForest <- exploreSubForestVar tree
+                        putTMVar sSubForestVar subForest
+                        return (True, subForest)
+        when firstTime $ do
+            infoM "NITTA.Synthesis" $
+                "explore: " <> show sID
+                    <> " score: "
+                    <> ( case sDecision of
+                            SynthesisDecision{score} -> show score
+                            _ -> "-"
+                       )
+                    <> " decision: "
+                    <> ( case sDecision of
+                            SynthesisDecision{decision} -> show decision
+                            _ -> "-"
+                       )
+
+        return subForest
 
 {- |For synthesis method is more usefull, because throw away all useless trees in
 subForest (objective function value less than zero).

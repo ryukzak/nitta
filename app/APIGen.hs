@@ -42,10 +42,16 @@ import Numeric.Interval
 import System.Console.CmdArgs
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath.Posix (joinPath)
+import System.IO (stdout)
+import System.Log.Formatter
+import System.Log.Handler (setFormatter)
+import System.Log.Handler.Simple
+import System.Log.Logger
 
 data APIGen = APIGen
     { port :: Int
     , opath :: FilePath
+    , verbose :: Bool
     }
     deriving (Show, Data, Typeable)
 
@@ -53,6 +59,7 @@ apiGenArgs =
     APIGen
         { port = 8080 &= help "nitta server port"
         , opath = "./web/src/gen" &= typ "output path"
+        , verbose = False &= help "Verbose"
         }
 
 $(deriveTypeScript defaultOptions ''ViewPointID)
@@ -89,20 +96,29 @@ $(deriveTypeScript defaultOptions ''EndpointSt)
 $(deriveTypeScript defaultOptions ''EndpointStView)
 
 main = do
-    APIGen{port, opath} <- cmdArgs apiGenArgs
+    APIGen{port, opath, verbose} <- cmdArgs apiGenArgs
 
-    putStrLn "Create output directory..."
+    let level = if verbose then DEBUG else NOTICE
+    h <-
+        streamHandler stdout level >>= \lh ->
+            return $
+                setFormatter lh (simpleLogFormatter "[$prio : $loggername] $msg")
+
+    removeAllHandlers
+    updateGlobalLogger "NITTA" (setLevel level . addHandler h)
+
+    infoM "NITTA.APIGen" "Create output directory..."
     createDirectoryIfMissing True opath
-    putStrLn "Create output directory...OK"
+    infoM "NITTA.APIGen" "Create output directory...OK"
 
-    putStrLn $ "Expected nitta server port: " <> show port
+    infoM "NITTA.APIGen" $ "Expected nitta server port: " <> show port
     writeFile (joinPath [opath, "PORT"]) $ show port
 
-    putStrLn "Generate rest_api.js library..."
+    infoM "NITTA.APIGen" "Generate rest_api.js library..."
     prepareJSAPI port opath
-    putStrLn "Generate rest_api.js library...OK"
+    infoM "NITTA.APIGen" "Generate rest_api.js library...OK"
 
-    putStrLn "Generate typescript interface..."
+    infoM "NITTA.APIGen" "Generate typescript interface..."
     let ts =
             formatTSDeclarations $
                 foldl1
@@ -146,8 +162,8 @@ main = do
             , ("[k: T1]", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
             , ("[k: T2]", "[k: string]") -- dirty hack for fixing map types for TestbenchReport
             ]
-    putStrLn "Generate typescript interface...OK"
+    infoM "NITTA.APIGen" "Generate typescript interface...OK"
 
-    putStrLn "Generate REST API description..."
+    infoM "NITTA.APIGen" "Generate REST API description..."
     writeFile (joinPath [opath, "rest_api.markdown"]) $ restDocs port
-    putStrLn "Generate REST API description...ok"
+    infoM "NITTA.APIGen" "Generate REST API description...ok"

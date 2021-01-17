@@ -69,6 +69,7 @@ library:
     - directory
     - file-embed
     - hashable
+    - hslogger
     - http-api-data
     - intervals
     - language-lua
@@ -77,12 +78,12 @@ library:
     - process
     - safe
     - servant
+    - servant-docs
     - servant-js
     - servant-server
     - split
     - stm
     - transformers
-    - servant-docs
     - unordered-containers
     - utility-ht
     - validity
@@ -102,6 +103,7 @@ executables:
       - '-with-rtsopts=-N'
     dependencies:
       - cmdargs
+      - hslogger
       - nitta
       
   nitta-api-gen:
@@ -118,6 +120,7 @@ executables:
       - aeson-typescript
       - cmdargs
       - directory
+      - hslogger
       - intervals
       - nitta
 

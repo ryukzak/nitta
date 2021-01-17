@@ -12,7 +12,7 @@
 {- |
 Module      : Main
 Description : NITTA CAD executable
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -24,6 +24,7 @@ import Control.Monad (when)
 import Data.Default (def)
 import Data.Maybe
 import Data.Proxy
+import qualified Data.String.Utils as S
 import qualified Data.Text.IO as T
 import Data.Version
 import GHC.TypeLits
@@ -41,6 +42,11 @@ import Paths_nitta
 import System.Console.CmdArgs hiding (def)
 import System.Exit
 import System.FilePath.Posix (joinPath)
+import System.IO (stdout)
+import System.Log.Formatter
+import System.Log.Handler (setFormatter)
+import System.Log.Handler.Simple
+import System.Log.Logger
 import Text.Read
 import Text.Regex
 
@@ -80,7 +86,17 @@ parseFX input =
 
 main = do
     Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose} <- cmdArgs nittaArgs
-    src <- readSourceCode verbose filename
+
+    let level = if verbose then DEBUG else NOTICE
+    h <-
+        streamHandler stdout level >>= \lh ->
+            return $
+                setFormatter lh (simpleLogFormatter "[$prio : $loggername] $msg")
+
+    removeAllHandlers
+    updateGlobalLogger "NITTA" (setLevel level . addHandler h)
+
+    src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
             let FrontendResult{frDataFlow, frTrace, frPrettyCntx} = lua2functions src
                 -- FIXME: https://nitta.io/nitta-corp/nitta/-/issues/50
@@ -88,7 +104,7 @@ main = do
                 received = [("u#0", map (\i -> read $ show $ sin ((2 :: Double) * 3.14 * 50 * 0.001 * i)) [0 .. toEnum n])]
                 ma = (microarch io_sync :: BusNetwork String String (Attr (FX m b)) Int)
 
-            when verbose $ putStr $ "> will trace: \n" ++ unlines (map ((">  " ++) . show) frTrace)
+            infoM "NITTA" $ "will trace: " <> S.join ", " (map (show . tvVar) frTrace)
 
             when (port > 0) $ do
                 buf <- try $ readFile $ joinPath ["web", "src", "gen", "PORT"]
@@ -96,7 +112,7 @@ main = do
                         Right p -> readMaybe p
                         Left (_ :: IOError) -> Nothing
                 when (expect /= Just port) $
-                    putStrLn $
+                    warningM "NITTA.UI" $
                         concat
                             [ "WARNING: expected backend port: "
                             , show expect
@@ -107,40 +123,39 @@ main = do
                 backendServer port received $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
 
-            when fsim $ functionalSimulation verbose n received src
+            when fsim $ functionalSimulation n received src
 
             TestbenchReport
                 { tbLogicalSimulationCntx
                 } <-
-                synthesizeAndTest verbose ma n frDataFlow received
+                synthesizeAndTest ma n frDataFlow received
 
             when lsim $ do
                 putCntx $ frPrettyCntx tbLogicalSimulationCntx
         )
         $ parseFX type_
 
-readSourceCode verbose filename = do
-    when verbose $ putStrLn $ "> read source code from: " ++ show filename ++ "..."
+readSourceCode filename = do
+    infoM "NITTA" $ "read source code from: " <> show filename <> "..."
     when (null filename) $ error "no input files"
     src <- T.readFile filename
-    when verbose $ putStrLn $ "> read source code from: " ++ show filename ++ "...ok"
+    infoM "NITTA" $ "read source code from: " <> show filename <> "...ok"
     return src
 
-functionalSimulation verbose n received src = do
+functionalSimulation n received src = do
     let FrontendResult{frDataFlow, frPrettyCntx} = lua2functions src
         cntx = simulateDataFlowGraph n def received frDataFlow
-    when verbose $ putStrLn "> run functional simulation..."
-    putStr $ cntx2table $ frPrettyCntx cntx
-    when verbose $ putStrLn "> run functional simulation...ok"
+    infoM "NITTA" "run functional simulation..."
+    putCntx $ frPrettyCntx cntx
+    infoM "NITTA" "run functional simulation...ok"
 
-synthesizeAndTest verbose ma n dataflow received = do
+synthesizeAndTest ma n dataflow received = do
     Right report <-
         runTargetSynthesis
             def
                 { tName = "main"
                 , tMicroArch = ma
                 , tDFG = dataflow
-                , tVerbose = verbose
                 , tReceivedValues = received
                 , tSimulationCycleN = n
                 }

@@ -35,6 +35,7 @@ import Servant
 import Servant.Docs hiding (path)
 import qualified Servant.JS as SJS
 import System.FilePath.Posix (joinPath)
+import System.Log.Logger
 import Text.InterpolatedString.Perl6 (qq)
 
 restDocs port =
@@ -86,7 +87,7 @@ isLocalPortFree port =
 
 -- |Run backend server.
 backendServer port receivedValues modelState = do
-    putStrLn $ "> Running NITTA server at http://localhost:" ++ show port ++ " ..."
+    noticeM "NITTA.UI" $ "Running NITTA server at http://localhost:" <> show port <> " ..."
     -- on OS X, if we run system with busy port - application ignore that.
     -- see: https://nitta.io/nitta-corp/nitta/issues/9
     isFree <- isLocalPortFree port

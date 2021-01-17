@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a1e5f82ea68b7f11addf36aa06c1d9a75bf8a16b66800c5c53addaf241070dfa
+-- hash: 7fc81579b883bc7bccb2adbc7166bc947a342e4e521ba42903bfecf3fdbe9ca1
 
 name:           nitta
 version:        0.0.0.1
@@ -128,6 +128,7 @@ library
     , file-embed
     , filepath
     , hashable
+    , hslogger
     , http-api-data
     , interpolatedstring-perl6
     , intervals
@@ -167,6 +168,7 @@ executable nitta
     , containers
     , data-default
     , filepath
+    , hslogger
     , interpolatedstring-perl6
     , nitta
     , regex-compat
@@ -191,6 +193,7 @@ executable nitta-api-gen
     , data-default
     , directory
     , filepath
+    , hslogger
     , interpolatedstring-perl6
     , intervals
     , nitta

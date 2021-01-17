@@ -95,6 +95,7 @@ import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Method
 import NITTA.Synthesis.Types
 import System.FilePath (joinPath)
+import System.Log.Logger
 
 {- |Description of synthesis task. Applicable for target system synthesis and
 testing purpose.
@@ -111,8 +112,6 @@ data TargetSynthesis tag v x t = TargetSynthesis
       tDFG :: DataFlowGraph v x
     , -- |values from input interface for testing purpose
       tReceivedValues :: [(v, [x])]
-    , -- |verbose standard output (dumps, progress info, etc).
-      tVerbose :: Bool
     , -- |synthesis method
       tSynthesisMethod :: SynthesisMethod tag v x t
     , -- |project writer, which defines necessary project part
@@ -133,7 +132,6 @@ instance (VarValTime v x t) => Default (TargetSynthesis String v x t) where
             , tSourceCode = Nothing
             , tDFG = undefined
             , tReceivedValues = def
-            , tVerbose = False
             , tSynthesisMethod = stateOfTheArtSynthesisIO
             , tWriteProject = writeWholeProject
             , tLibPath = "../../hdl"
@@ -149,7 +147,6 @@ runTargetSynthesis
         , tDFG
         , tReceivedValues
         , tSynthesisMethod
-        , tVerbose
         , tWriteProject
         , tLibPath
         , tPath
@@ -168,17 +165,16 @@ runTargetSynthesis
                 return $ Right report
         where
             translateToIntermediate src = do
-                when tVerbose $ putStrLn "> lua transpiler..."
+                infoM "NITTA" "Lua transpiler..."
                 let tmp = frDataFlow $ lua2functions src
-                when tVerbose $ putStrLn "> lua transpiler...ok"
+                infoM "NITTA" "Lua transpiler...ok"
                 return tmp
 
             synthesise root = do
-                when tVerbose $ putStrLn "> synthesis process..."
+                infoM "NITTA" "synthesis process..."
                 leaf <- tSynthesisMethod root
                 let complete = isComplete leaf
-                when (tVerbose && complete) $ putStrLn "> synthesis process...ok"
-                when (tVerbose && not complete) $ putStrLn "> synthesis process...fail"
+                infoM "NITTA" $ "synthesis process..." <> if complete then "ok" else "fail"
                 return $
                     if complete
                         then Right leaf
@@ -196,24 +192,23 @@ runTargetSynthesis
                     }
 
             write prj@Project{pPath} = do
-                when tVerbose $ putStrLn $ "> write target project to: \"" ++ pPath ++ "\"..."
+                infoM "NITTA" $ "write target project to: \"" <> pPath <> "\"..."
                 tWriteProject prj
-                when tVerbose $ putStrLn $ "> write target project to: \"" ++ pPath ++ "\"...ok"
+                infoM "NITTA" $ "write target project to: \"" <> pPath <> "\"...ok"
 
             testbench prj = do
-                when tVerbose $ putStrLn "> run logical synthesis..."
+                infoM "NITTA" "run logical synthesis..."
                 report@TestbenchReport{tbStatus, tbCompilerDump, tbSimulationDump} <- runTestbench prj
-                when tVerbose $
-                    if tbStatus
-                        then putStrLn "> run logical simulation...ok"
-                        else do
-                            putStrLn "> run logical simulation...fail"
-                            putStrLn "-----------------------------------------------------------"
-                            putStrLn "testbench compiler dump:"
-                            putStrLn $ unlines tbCompilerDump
-                            putStrLn "-----------------------------------------------------------"
-                            putStrLn "testbench simulation dump:"
-                            putStrLn $ unlines tbSimulationDump
+                if tbStatus
+                    then infoM "NITTA" "run logical simulation...ok"
+                    else do
+                        infoM "NITTA" "run logical simulation...fail"
+                        infoM "NITTA" "-----------------------------------------------------------"
+                        infoM "NITTA" "testbench compiler dump:"
+                        infoM "NITTA" $ unlines tbCompilerDump
+                        infoM "NITTA" "-----------------------------------------------------------"
+                        infoM "NITTA" "testbench simulation dump:"
+                        infoM "NITTA" $ unlines tbSimulationDump
                 return report
 
 {- |Make a model of NITTA process with one network and a specific algorithm. All

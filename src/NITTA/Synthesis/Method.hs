@@ -39,6 +39,7 @@ import NITTA.Synthesis.Refactor
 import NITTA.Synthesis.Types
 import NITTA.Utils (maximumOn, minimumOn)
 import Safe
+import System.Log.Logger
 
 {- |The constant, which restricts the maximum number of synthesis steps. Avoids
 the endless synthesis process.
@@ -48,6 +49,7 @@ stepLimit = 750 :: Int
 -- |The most complex synthesis method, which embedded all another. That all.
 stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 stateOfTheArtSynthesisIO tree = do
+    noticeM "NITTA.Synthesis" $ "stateOfTheArtSynthesisIO: " <> show (sID tree)
     l1 <- simpleSynthesisIO tree
     l2 <- smartBindSynthesisIO tree
     l3 <- bestThreadIO stepLimit tree
@@ -57,11 +59,13 @@ stateOfTheArtSynthesisIO tree = do
 -- |Schedule process by simple synthesis.
 simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 simpleSynthesisIO root = do
+    noticeM "NITTA.Synthesis" $ "simpleSynthesisIO: " <> show (sID root)
     lastObliviousNode <- obviousBindThreadIO root
     allBestThreadIO 1 lastObliviousNode
 
 smartBindSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 smartBindSynthesisIO tree = do
+    noticeM "NITTA.Synthesis" $ "smartBindSynthesisIO: " <> show (sID tree)
     tree' <- smartBindThreadIO tree
     allBestThreadIO 1 tree'
 
