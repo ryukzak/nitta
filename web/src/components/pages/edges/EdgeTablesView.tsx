@@ -30,7 +30,14 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
   const style = {
     fontWeight: 600,
   };
-  let known = ["RootView", "BindDecisionView", "DataflowDecisionView", "RefactorDecisionView"];
+  let known = [
+    "RootView",
+    "BindDecisionView",
+    "DataflowDecisionView",
+    "BreakLoopView",
+    "OptimizeAccumView",
+    "ResolveDeadlockView",
+  ];
   return (
     <>
       <Table

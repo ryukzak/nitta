@@ -93,6 +93,6 @@ instance Viewable (OptimizeAccum v x) DecisionView where
             }
 
 instance (Show v) => Viewable (ResolveDeadlock v) DecisionView where
-    view (ResolveDeadlock vs) = ResolveDeadlockView $ map show $ S.elems vs
+    view ResolveDeadlock{bufferOut} = ResolveDeadlockView $ map show $ S.elems bufferOut
 
 instance ToJSON DecisionView

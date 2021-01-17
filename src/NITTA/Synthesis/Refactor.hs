@@ -79,12 +79,12 @@ instance
     where
     decisions SynthesisState{sTarget} o = [(o, resolveDeadlockDecision sTarget o)]
 
-    parameters SynthesisState{transferableVars} (ResolveDeadlock vs) _ =
+    parameters SynthesisState{transferableVars} ResolveDeadlock{bufferOut} _ =
         ResolveDeadlockMetrics
-            { pNumberOfLockedVariables = fromIntegral $ S.size vs
-            , pBufferCount = fromIntegral $ sum $ map countSuffix $ S.elems vs
+            { pNumberOfLockedVariables = fromIntegral $ S.size bufferOut
+            , pBufferCount = fromIntegral $ sum $ map countSuffix $ S.elems bufferOut
             , pNStepBackRepeated = def
-            , pNumberOfTransferableVariables = fromIntegral (S.size $ vs `S.intersection` transferableVars)
+            , pNumberOfTransferableVariables = fromIntegral (S.size $ bufferOut `S.intersection` transferableVars)
             }
 
     estimate SynthesisState{sParent} _o d _ | 0 < decisionRepeats d sParent = -2
