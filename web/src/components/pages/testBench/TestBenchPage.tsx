@@ -1,18 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { haskellApiService, TestBenchReport } from "services/HaskellApiService";
-import { TestbenchReportView } from "gen/types";
+import React, { useState, useEffect, useContext } from "react";
 import { AxiosResponse, AxiosError } from "axios";
-import { AppContext, IAppContext } from "components/app/AppContext";
-import { useContext } from "react";
-import { SimulationDataView } from "./SimulationDataView";
 
-// FIXME: review, refactor
+import { haskellApiService, TestBenchReport } from "services/HaskellApiService";
+
+import { AppContext, IAppContext } from "components/app/AppContext";
+import { SimulationDataView } from "./SimulationDataView";
 
 export const TestBenchPage: React.FC = () => {
   const appContext = useContext(AppContext) as IAppContext;
 
   const [requestSuccess, setRequestSuccess] = useState<boolean | null>(null);
-  const [testBenchDump, setTestBenchDump] = useState<TestbenchReportView<string, number> | null>(null);
+  const [testBenchDump, setTestBenchDump] = useState<TestBenchReport | null>(null);
 
   useEffect(() => {
     haskellApiService
