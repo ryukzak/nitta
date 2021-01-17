@@ -1,8 +1,8 @@
 import * as React from "react";
 import Tree from "react-d3-tree";
 import { haskellApiService } from "../../../services/HaskellApiService";
-import { AppContext, IAppContext, NodeId, reLastNidStep } from "../../app/AppContext";
-import { SynthesisNodeView, TreeView, NId } from "../../../gen/types";
+import { AppContext, IAppContext, SID, reLastSID } from "../../app/AppContext";
+import { SynthesisNodeView, TreeView } from "../../../gen/types";
 import { AxiosResponse, AxiosError } from "axios";
 
 // FIXME: review, refactor (naming!)
@@ -17,7 +17,7 @@ interface GraphAttributes {
 
 interface Graph {
   name?: string;
-  sid?: NId;
+  sid?: SID;
   attributes?: GraphAttributes;
   status?: boolean;
   children?: Graph[];
@@ -30,10 +30,10 @@ export const SynthesisGraphView: React.FC = () => {
 
   const [dataGraph, setDataGraph] = React.useState<Graph[]>([] as Graph[]);
   const [nIds, setNIds] = React.useState<Ids>({});
-  const [currentSelectedNodeId, setCurrentSelectedNodeId] = React.useState<NodeId>("");
+  const [currentSelectedNodeId, setCurrentSelectedNodeId] = React.useState<SID>("");
 
   const markNode = React.useCallback(
-    (sid: NodeId, nidArray?: Ids, color?: string) => {
+    (sid: SID, nidArray?: Ids, color?: string) => {
       if (color === undefined) color = "blue";
       if (nidArray === undefined) nidArray = nIds;
       if (nidArray === null) return;
@@ -55,7 +55,7 @@ export const SynthesisGraphView: React.FC = () => {
   );
 
   const unmarkNode = React.useCallback(
-    (sid: NodeId) => {
+    (sid: SID) => {
       if (sid === null) return;
       let tmp: string = nIds[sid].nodeSvgShapeOriginal;
       let nids = nIds;
@@ -66,7 +66,7 @@ export const SynthesisGraphView: React.FC = () => {
   );
 
   const reloadSynthesisGraph = React.useCallback(() => {
-    let sid = appContext.selectedNodeId;
+    let sid = appContext.selectedSID;
 
     haskellApiService
       .getSynthesisTree()
@@ -75,7 +75,7 @@ export const SynthesisGraphView: React.FC = () => {
 
         let buildGraph = (gNode: Graph, dNode: TreeView<SynthesisNodeView>) => {
           let strNid: string = dNode.rootLabel.svNnid;
-          gNode.name = reLastNidStep.exec(strNid)![0];
+          gNode.name = reLastSID.exec(strNid)![0];
           gNode.sid = dNode.rootLabel.svNnid;
           nidArray[strNid] = gNode;
           if (dNode.rootLabel.svIsEdgesProcessed) markNode(strNid, nidArray, "black");
@@ -113,29 +113,29 @@ export const SynthesisGraphView: React.FC = () => {
         setNIds(nidArray);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedNodeId, markNode]);
+  }, [appContext.selectedSID, markNode]);
 
   React.useEffect(() => {
-    if (currentSelectedNodeId === appContext.selectedNodeId && currentSelectedNodeId.length !== 0) return;
-    if (appContext.selectedNodeId === "-" || currentSelectedNodeId.length === 0) {
-      setCurrentSelectedNodeId(appContext.selectedNodeId);
+    if (currentSelectedNodeId === appContext.selectedSID && currentSelectedNodeId.length !== 0) return;
+    if (appContext.selectedSID === "-" || currentSelectedNodeId.length === 0) {
+      setCurrentSelectedNodeId(appContext.selectedSID);
       reloadSynthesisGraph();
       return;
     }
-    if (!(appContext.selectedNodeId in nIds)) {
-      setCurrentSelectedNodeId(appContext.selectedNodeId);
+    if (!(appContext.selectedSID in nIds)) {
+      setCurrentSelectedNodeId(appContext.selectedSID);
       reloadSynthesisGraph();
       return;
     }
 
     unmarkNode(currentSelectedNodeId);
-    markNode(appContext.selectedNodeId);
-    setCurrentSelectedNodeId(appContext.selectedNodeId);
+    markNode(appContext.selectedSID);
+    setCurrentSelectedNodeId(appContext.selectedSID);
     setDataGraph([dataGraph[0]]);
     return;
   }, [
-    appContext.selectedNodeId,
-    appContext.selectNode,
+    appContext.selectedSID,
+    appContext.setSID,
     currentSelectedNodeId,
     reloadSynthesisGraph,
     dataGraph,
@@ -184,7 +184,7 @@ export const SynthesisGraphView: React.FC = () => {
           },
         }}
         onClick={(node: any) => {
-          appContext.selectNode(node.sid);
+          appContext.setSID(node.sid);
         }}
       />
     </div>

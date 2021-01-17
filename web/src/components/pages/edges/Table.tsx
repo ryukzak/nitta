@@ -1,6 +1,6 @@
 import * as React from "react";
 import { NodeView, Interval } from "../../../gen/types";
-import { nInSeparator } from "../../app/AppContext";
+import { sidSeparator } from "../../app/AppContext";
 
 type Node = NodeView<string, string, number, number>;
 
@@ -13,7 +13,7 @@ export function nidColumn(onUpdateNid: (sid: string) => void) {
     Header: "sid",
     maxWidth: 30,
     Cell: (row: { original: Node }) => {
-      let sid: string[] = row.original.sid.split(nInSeparator);
+      let sid: string[] = row.original.sid.split(sidSeparator);
       return (
         <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(row.original.sid)}>
           {sid[sid.length - 1]} {">"}

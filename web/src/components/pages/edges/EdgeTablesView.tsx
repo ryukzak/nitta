@@ -44,7 +44,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
         name="Binding"
         edges={edges.filter((e: Node) => e.decision.tag === "BindDecisionView")}
         columns={[
-          nidColumn(appContext.selectNode),
+          nidColumn(appContext.setSID),
           objectiveColumn(),
 
           textColumn("function", (e: Node) => (e.decision as Bind).function.fvFun),
@@ -73,7 +73,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
         name="Refactor"
         edges={edges.filter((e) => e.decision.tag !== "DataflowDecisionView" && e.decision.tag !== "BindDecisionView")}
         columns={[
-          nidColumn(appContext.selectNode),
+          nidColumn(appContext.setSID),
           objectiveColumn(),
           textColumn("description", (e: Node) => JSON.stringify(e.decision)),
           textColumn("parameters", (e: Node) => JSON.stringify(e.parameters), 50),
@@ -91,7 +91,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
         name="Dataflow"
         edges={edges.filter((e: Node) => e.decision.tag === "DataflowDecisionView")}
         columns={[
-          nidColumn(appContext.selectNode),
+          nidColumn(appContext.setSID),
           objectiveColumn(),
           // textColumn("at", (e: Node) => (e.decision as Dataflow).source.time),
           textColumn("source", (e: Node) => (e.decision as Dataflow).source),
@@ -121,7 +121,7 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       <Table
         name="Other"
         edges={edges.filter((e: Node) => known.indexOf(e.decision.tag) === -1)}
-        columns={[nidColumn(appContext.selectNode), objectiveColumn(), decisionColumn(), parametersColumn()]}
+        columns={[nidColumn(appContext.setSID), objectiveColumn(), decisionColumn(), parametersColumn()]}
       />
     </>
   );

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
 import { SynthesisGraphView } from "./SynthesisGraphView";
-import { AppContext, IAppContext, reLastNidStep, nInSeparator } from "../../app/AppContext";
+import { AppContext, IAppContext, reLastSID, sidSeparator } from "../../app/AppContext";
 import { haskellApiService as api } from "../../../services/HaskellApiService";
 import { requestNidBy } from "../../../utils/componentUtils";
 
@@ -14,7 +14,7 @@ export const SynthesisGraphContainer: React.FC = () => {
 
   const buttonAttrs = {
     className: "btn btn-sm mr-3",
-    variant: "link" as any
+    variant: "link" as any,
   };
 
   const expandSynthesisGraphView = () => setHeight(height + step);
@@ -22,9 +22,9 @@ export const SynthesisGraphContainer: React.FC = () => {
   const reduceSynthesisGraphView = () => (height > minHeight ? setHeight(height - step) : null);
 
   const backNavigation = () => {
-    let newId = appContext.selectedNodeId.replace(reLastNidStep, "");
-    if (newId != null && newId.length !== 0) appContext.selectNode(newId);
-    else appContext.selectNode(nInSeparator);
+    let newId = appContext.selectedSID.replace(reLastSID, "");
+    if (newId != null && newId.length !== 0) appContext.setSID(newId);
+    else appContext.setSID(sidSeparator);
   };
 
   return (
@@ -37,13 +37,13 @@ export const SynthesisGraphContainer: React.FC = () => {
           <Button {...buttonAttrs} onClick={() => reduceSynthesisGraphView()}>
             Reduce
           </Button>
-          <Button {...buttonAttrs} onClick={() => appContext.reloadSelectedNode()}>
+          <Button {...buttonAttrs} onClick={() => appContext.resetSID()}>
             Refresh
           </Button>
           <Button {...buttonAttrs} onClick={() => backNavigation()}>
             Back
           </Button>
-          <Button {...buttonAttrs} onClick={requestNidBy(appContext, api.bestStep, appContext.selectedNodeId)}>
+          <Button {...buttonAttrs} onClick={requestNidBy(appContext, api.bestStep, appContext.selectedSID)}>
             Forward
           </Button>
         </div>

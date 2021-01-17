@@ -1,14 +1,13 @@
 import React from "react";
 
-export const nInSeparator = "-";
-export const reLastNidStep = /-[^-]*$/;
-
-export type NodeId = string;
+export type SID = string;
+export const sidSeparator = "-";
+export const reLastSID = /-[^-]*$/;
 
 export interface IAppContext {
-  selectedNodeId: NodeId;
-  selectNode: (id: NodeId) => void;
-  reloadSelectedNode: () => void;
+  selectedSID: SID;
+  setSID: (sid: SID) => void;
+  resetSID: () => void;
 }
 
 // exported to use with useContext hook in functional components

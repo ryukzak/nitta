@@ -28,7 +28,7 @@ export const ProcessView: React.FC = () => {
     setDetail([]);
     setHighlight({ up: [], current: [], down: [] });
     haskellApiService
-      .getTimelines(appContext.selectedNodeId)
+      .getTimelines(appContext.selectedSID)
       .then((response: { data: ProcessTimelines<number> }) => {
         console.log("> ProcessView.requestTimelines - done");
         let pIdIndex: Record<number, TimelinePoint<number>> = {};
@@ -45,7 +45,7 @@ export const ProcessView: React.FC = () => {
         setPIdIndex(pIdIndex);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedNodeId]);
+  }, [appContext.selectedSID]);
 
   if (!data) return <pre>LOADING</pre>;
 

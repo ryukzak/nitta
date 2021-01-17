@@ -42,7 +42,7 @@ export const AppNavbar: React.FC<IAppNavbarProps> = (props) => {
         <AppNavbarButtons />
       </Navbar.Collapse>
       {/* <Navbar.Text className="mr-5 text-white">
-              Selected Node ID: {appContext.selectedNodeId || "None"}
+              Selected Node ID: {appContext.selectedSID || "None"}
               </Navbar.Text> */}
       <Navbar.Toggle aria-controls="navbar-nav" />
     </Navbar>

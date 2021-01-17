@@ -17,32 +17,32 @@ export const AppNavbarButtons: React.FC = () => {
     <div className="d-flex">
       <div className="mr-3">
         <DropdownButton id="dropdown-basic-button" title="Synthesis methods" size="sm">
-          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.stateOfTheArtSynthesis, ctx.selectedNodeId)}>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.stateOfTheArtSynthesis, ctx.selectedSID)}>
             state-of-the-art
           </Dropdown.Item>
-          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.simpleSynthesis, ctx.selectedNodeId)}>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.simpleSynthesis, ctx.selectedSID)}>
             simple
           </Dropdown.Item>
-          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.smartBindSynthesisIO, ctx.selectedNodeId)}>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.smartBindSynthesisIO, ctx.selectedSID)}>
             with-smart-bind
           </Dropdown.Item>
-          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBindsAndRefsIO, ctx.selectedNodeId)}>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBindsAndRefsIO, ctx.selectedSID)}>
             bind-and-refactors
           </Dropdown.Item>
         </DropdownButton>
       </div>
       <div className="mr-3">
         <DropdownButton id="dropdown-basic-button" title="Synthesis step" size="sm">
-          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBestThread, ctx.selectedNodeId, 2)}>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBestThread, ctx.selectedSID, 2)}>
             ∀-best-thread-2
           </Dropdown.Item>
-          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBestThread, ctx.selectedNodeId, 1)}>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBestThread, ctx.selectedSID, 1)}>
             ∀-best-thread-1
           </Dropdown.Item>
-          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBestThread, ctx.selectedNodeId, 0)}>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.allBestThread, ctx.selectedSID, 0)}>
             best-thread
           </Dropdown.Item>
-          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.obviousBindThread, ctx.selectedNodeId)}>
+          <Dropdown.Item {...btnAttrs} onClick={requestNidBy(ctx, api.obviousBindThread, ctx.selectedSID)}>
             obvious-bind-thread
           </Dropdown.Item>
         </DropdownButton>

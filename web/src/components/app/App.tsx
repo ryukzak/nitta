@@ -6,7 +6,7 @@ import { NodeView } from "../pages/node/NodeView";
 import { EdgesView } from "../pages/edges/EdgesView";
 import { TestBenchPage } from "../pages/testBench/TestBenchPage";
 
-import { IAppContext, AppContextProvider, NodeId, nInSeparator } from "./AppContext";
+import { IAppContext, AppContextProvider, SID, sidSeparator } from "./AppContext";
 import { AppNavbar } from "./AppNavbar";
 import { ProcessView } from "../pages/process/ProcessView";
 import { SynthesisGraphContainer } from "../pages/synthesis/SynthesisGraphContainer";
@@ -24,14 +24,14 @@ export default class App extends React.Component<IAppProps, IAppState> {
     super(props);
 
     this.state = {
-      selectedNodeId: nInSeparator,
+      selectedSID: sidSeparator,
 
-      selectNode: (id: NodeId) => {
-        this.setState({ selectedNodeId: id });
+      setSID: (sid: SID) => {
+        this.setState({ selectedSID: sid });
       },
 
-      reloadSelectedNode: () => {
-        this.setState({ selectedNodeId: nInSeparator });
+      resetSID: () => {
+        this.setState({ selectedSID: sidSeparator });
       },
     };
   }

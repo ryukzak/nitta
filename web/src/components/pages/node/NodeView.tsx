@@ -6,11 +6,11 @@ import { AppContext, IAppContext } from "../../app/AppContext";
 export interface INodeViewProps {}
 
 export const NodeView: React.FC<INodeViewProps> = props => {
-  const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
+  const { selectedSID } = React.useContext(AppContext) as IAppContext;
 
   return (
     <>
-      {selectedNodeId ? (
+      {selectedSID ? (
         <div className="my-3">
           <IntermediateView />
         </div>

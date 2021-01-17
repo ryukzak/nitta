@@ -4,7 +4,6 @@ import { haskellApiService, Node } from "../../../services/HaskellApiService";
 import { IntermediateView } from "../node/IntermediateView";
 import { SynthesisHistoryView } from "../history/SynthesisHistoryView";
 import { TablesView } from "./EdgeTablesView";
-import {} from "../../../gen/types";
 import { AxiosResponse } from "axios";
 
 export const EdgesView: React.FC = () => {
@@ -13,12 +12,12 @@ export const EdgesView: React.FC = () => {
 
   React.useEffect(() => {
     haskellApiService
-      .getChildEdges(appContext.selectedNodeId)
+      .getChildEdges(appContext.selectedSID)
       .then((response: AxiosResponse<Node[]>) => {
         setEdges(response.data);
       })
       .catch((err) => console.log(err));
-  }, [appContext.selectedNodeId]);
+  }, [appContext.selectedSID]);
 
   if (edges === undefined || edges === null) {
     return (

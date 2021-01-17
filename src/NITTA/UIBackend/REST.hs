@@ -177,7 +177,7 @@ synthesisPractices BackendCtx{root} sid =
         :<|> (\deep -> liftIO (sID <$> (allBestThreadIO deep =<< getTreeIO root sid)))
 
 type TestBenchAPI v x =
-    Summary "Get report of testbench execution for the current node."
+    Summary "Get the report of testbench execution for the current node."
         :> "testbench"
         :> QueryParam' '[Required] "pName" String
         :> QueryParam' '[Required] "loopsNumber" Int

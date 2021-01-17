@@ -32,7 +32,7 @@ interface Endpoints {
 }
 
 export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
-  const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
+  const { selectedSID } = React.useContext(AppContext) as IAppContext;
 
   const [algorithmGraph, setAlgorithmGraph] = React.useState<IntermediateGraph | null>(null);
   const [procState, setProcState] = React.useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
@@ -41,7 +41,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
   // Updating graph
   React.useEffect(() => {
     haskellApiService
-      .getIntermediateView(selectedNodeId)
+      .getIntermediateView(selectedSID)
       .then((response: AxiosResponse<IntermediateGraph>) => {
         const graphData = response.data;
         const newGraph: IntermediateGraph = {
@@ -66,7 +66,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
       .catch((err: AxiosError) => console.error(err));
 
     haskellApiService
-      .getRootPath(selectedNodeId)
+      .getRootPath(selectedSID)
       .then((response: AxiosResponse<Node[]>) => {
         let result: ProcessState = { bindeFuns: [], transferedVars: [] };
         response.data.forEach((n: Node) => {
@@ -86,7 +86,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
       .catch((err: AxiosError) => console.log(err));
 
     haskellApiService
-      .getEndpoints(selectedNodeId)
+      .getEndpoints(selectedSID)
       .then((response: AxiosResponse<EndpointSts>) => {
         let result: Endpoints = { sources: [], targets: [] };
         response.data.forEach((e) => {
@@ -101,7 +101,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
         setEndpoints(result);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [selectedNodeId]);
+  }, [selectedSID]);
 
   return (
     <div className="bg-light border edgeGraphContainer">
