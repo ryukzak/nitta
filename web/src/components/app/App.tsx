@@ -7,7 +7,7 @@ import NotFoundErrorPage from "components/pages/errors/NotFoundErrorPage";
 
 import { SynthesisGraphContainer } from "components/pages/synthesis/SynthesisGraphContainer";
 import { NodeView } from "components/pages/node/NodeView";
-import { EdgesView } from "components/pages/edges/EdgesView";
+import { SubforestView } from "components/pages/subforest/SubforestView";
 import { TestBenchPage } from "components/pages/testBench/TestBenchPage";
 import { ProcessView } from "components/pages/process/ProcessView";
 import { DebugView } from "components/pages/debug/DebugView";
@@ -52,7 +52,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
               <NodeView />
             </Route>
             <Route exact path="/subforest">
-              <EdgesView />
+              <SubforestView />
             </Route>
             <Route exact path="/process">
               <ProcessView />

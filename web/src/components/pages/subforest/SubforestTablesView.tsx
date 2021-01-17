@@ -5,7 +5,7 @@ import { AppContext, IAppContext } from "components/app/AppContext";
 import { Node, Bind, Dataflow } from "services/HaskellApiService";
 import { BindMetrics, DataflowMetrics } from "gen/types";
 
-import { sidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn } from "./Table";
+import { sidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn } from "./Columns";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
 
@@ -13,7 +13,7 @@ type EdgesProps = {
   nodes: Node[];
 };
 
-export const TablesView: React.FC<EdgesProps> = ({ nodes }) => {
+export const SubforestTablesView: React.FC<EdgesProps> = ({ nodes }) => {
   const appContext = React.useContext(AppContext) as IAppContext;
   const style = {
     fontWeight: 600,

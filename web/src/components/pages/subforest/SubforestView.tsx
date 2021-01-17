@@ -6,9 +6,9 @@ import { haskellApiService, Node } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "components/app/AppContext";
 import { IntermediateView } from "components/pages/node/IntermediateView";
 import { SynthesisHistoryView } from "components/pages/history/SynthesisHistoryView";
-import { TablesView } from "./EdgeTablesView";
+import { SubforestTablesView } from "./SubforestTablesView";
 
-export const EdgesView: React.FC = () => {
+export const SubforestView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
   const [subforest, setSubforest] = React.useState<Node[] | null>(null);
 
@@ -36,7 +36,7 @@ export const EdgesView: React.FC = () => {
           <IntermediateView />
         </div>
         <div className="col-8">
-          <TablesView nodes={subforest} />
+          <SubforestTablesView nodes={subforest} />
         </div>
       </div>
       <div className="row mt-1">
