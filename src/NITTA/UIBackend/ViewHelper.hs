@@ -194,7 +194,49 @@ instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (No
 instance (VarValTimeJSON v x t, ToJSON tag) => ToJSON (NodeView tag v x t)
 
 instance ToSample (NodeView tag v x t) where
-    toSamples _ = noSamples
+    toSamples _ =
+        samples
+            [ NodeView
+                { sid = show $ SID [0, 1, 3, 1]
+                , complete = False
+                , parameters =
+                    toJSON $
+                        BindMetrics
+                            { pCritical = False
+                            , pAlternative = 1
+                            , pRestless = 0
+                            , pOutputNumber = 2
+                            , pAllowDataFlow = 1
+                            , pPossibleDeadlock = False
+                            , pNumberOfBindedFunctions = 1
+                            , pPercentOfBindedInputs = 0.2
+                            , pWave = Just 2
+                            }
+                , decision = BindDecisionView (FView "reg(a) = b = c" []) "pu"
+                , objectiveFunctionValue = 1032
+                }
+            , NodeView
+                { sid = show $ SID [0, 1, 3, 1, 5]
+                , complete = False
+                , parameters =
+                    toJSON $
+                        DataflowMetrics
+                            { pWaitTime = 1
+                            , pRestrictedTime = False
+                            , pNotTransferableInputs = [0, 0]
+                            }
+                , decision =
+                    DataflowDecisionView
+                        { source = "PU1"
+                        , targets =
+                            HM.fromList
+                                [ ("a1", Nothing)
+                                , ("a2", Just ("PU2", IntervalView "1 ... 1"))
+                                ]
+                        }
+                , objectiveFunctionValue = 1999
+                }
+            ]
 
 -- Problems
 

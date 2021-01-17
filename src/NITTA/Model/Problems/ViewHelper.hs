@@ -9,8 +9,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module NITTA.Model.Problems.ViewHelper (
-    DecisionView (RootView),
-    IntervalView,
+    DecisionView (..),
+    IntervalView (..),
 ) where
 
 import Data.Aeson
