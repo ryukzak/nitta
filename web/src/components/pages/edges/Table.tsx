@@ -1,15 +1,14 @@
 import * as React from "react";
 
-import { NodeView, Interval } from "gen/types";
 import { sidSeparator } from "components/app/AppContext";
-
-type Node = NodeView<string, string, number, number>;
+import { Node } from "services/HaskellApiService";
+import { Interval } from "gen/types";
 
 const style = {
   fontWeight: 600,
 };
 
-export function nidColumn(onUpdateNid: (sid: string) => void) {
+export function sidColumn(onUpdateNid: (sid: string) => void) {
   return {
     Header: "sid",
     maxWidth: 30,

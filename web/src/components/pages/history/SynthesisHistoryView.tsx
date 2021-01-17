@@ -1,12 +1,12 @@
+import { AxiosResponse, AxiosError } from "axios";
 import React, { useEffect, useState, useContext } from "react";
 import ReactTable, { Column } from "react-table";
-import { haskellApiService } from "services/HaskellApiService";
-import { NodeView, NId, IBindDecisionView } from "gen/types";
-import { AxiosResponse, AxiosError } from "axios";
+
+import { SID } from "components/app/AppContext.js";
+import { haskellApiService, Node, Bind } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "components/app/AppContext";
 
 type Row = { original: Node; index: number };
-type Node = NodeView<string, string, string, string>;
 
 export interface ISynthesisHistoryViewProps {
   reverse: boolean;
@@ -59,7 +59,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props
     return props.reverse ? synthesisHistory!.length - row.index : row.index + 1;
   }
 
-  function stepColumn(onUpdateNid: (sid: NId) => void) {
+  function stepColumn(onUpdateNid: (sid: SID) => void) {
     return {
       Header: "step",
       maxWidth: 40,
@@ -106,7 +106,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props
             return (
               <>
                 {decision === "BindDecisionView" &&
-                  (n.decision as IBindDecisionView).pu + " <- " + (n.decision as IBindDecisionView).function.fvFun}
+                  (n.decision as Bind).pu + " <- " + (n.decision as Bind).function.fvFun}
                 {decision !== "BindDecisionView" && JSON.stringify(n.decision)}
               </>
             );

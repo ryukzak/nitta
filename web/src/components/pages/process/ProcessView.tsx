@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
+import { AxiosError } from "axios";
+import React, { useEffect, useState, useContext } from "react";
+
 import { haskellApiService } from "services/HaskellApiService";
 import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } from "gen/types";
 
-import "./ProcessView.scss";
-import { TimelineView } from "./TimelineView";
 import { AppContext, IAppContext } from "components/app/AppContext";
-import { useContext } from "react";
-import { AxiosError } from "axios";
+import { TimelineView } from "./TimelineView";
+import "./ProcessView.scss";
 
 export interface Highlight {
   up: number[];
@@ -14,6 +14,7 @@ export interface Highlight {
   down: number[];
 }
 
+// depricated
 // TODO: diff from previous synthesis process step
 // TODO: highlight point by click on info part
 export const ProcessView: React.FC = () => {
@@ -32,9 +33,9 @@ export const ProcessView: React.FC = () => {
       .then((response: { data: ProcessTimelines<number> }) => {
         console.log("> ProcessView.requestTimelines - done");
         let pIdIndex: Record<number, TimelinePoint<number>> = {};
-        response.data.timelines.forEach(vt => {
-          vt.timelinePoints.forEach(point => {
-            point.forEach(e => {
+        response.data.timelines.forEach((vt) => {
+          vt.timelinePoints.forEach((point) => {
+            point.forEach((e) => {
               const x: number = e.pID;
               pIdIndex[x] = e;
             });
@@ -57,8 +58,8 @@ export const ProcessView: React.FC = () => {
         timelines={data.timelines}
         highlight={highlight}
         data={data}
-        onHighlightChange={h => setHighlight(h)}
-        onDetailChange={d => setDetail(d)}
+        onHighlightChange={(h) => setHighlight(h)}
+        onDetailChange={(d) => setDetail(d)}
       />
       <div className="ml-2 flex-grow-1" style={{ minWidth: "30%" }}>
         <hr />
@@ -77,14 +78,14 @@ export const ProcessView: React.FC = () => {
         <hr />
         <div className="squeeze current">current:</div>
         <div className="x-scrollable">
-          {detail.map(e => (
+          {detail.map((e) => (
             <div className="squeeze">- {e.pInfo}</div>
           ))}
         </div>
         <hr />
         <div className="squeeze downRelation">bottom related:</div>
         <div className="x-scrollable">
-          {highlight.down.map(e =>
+          {highlight.down.map((e) =>
             pIdIndex != null && pIdIndex[e] != null ? <div className="squeeze">-- {pIdIndex[e].pInfo}</div> : ""
           )}
         </div>
@@ -96,7 +97,7 @@ export const ProcessView: React.FC = () => {
 function resortTimeline(data: ProcessTimelines<number>) {
   let result: ProcessTimelines<number> = {
     timelines: [],
-    verticalRelations: data.verticalRelations
+    verticalRelations: data.verticalRelations,
   };
   function cmp(a: TimelineWithViewPoint<number>, b: TimelineWithViewPoint<number>) {
     if (a.timelineViewpoint.component < b.timelineViewpoint.component) return -1;
@@ -106,7 +107,7 @@ function resortTimeline(data: ProcessTimelines<number>) {
   let tmp: TimelineWithViewPoint<number>[] = data.timelines.sort(cmp);
   function extract(p: (id: ViewPointID) => boolean) {
     let newTmp: TimelineWithViewPoint<number>[] = [];
-    tmp.forEach(e => {
+    tmp.forEach((e) => {
       if (p(e.timelineViewpoint)) {
         result.timelines.push(e);
       } else {
@@ -118,19 +119,19 @@ function resortTimeline(data: ProcessTimelines<number>) {
   function section(msg: string) {
     result.timelines.push({
       timelineViewpoint: { level: msg, component: [] },
-      timelinePoints: []
+      timelinePoints: [],
     });
   }
 
   section("# CADs:");
-  extract(e => e.level === "CAD");
+  extract((e) => e.level === "CAD");
   section("# Functions:");
-  extract(e => e.level === "Fun");
+  extract((e) => e.level === "Fun");
   section("# Dataflow:");
-  extract(e => e.level === "INST" && e.component.length === 0);
-  extract(e => e.level === "EndPoint");
+  extract((e) => e.level === "INST" && e.component.length === 0);
+  extract((e) => e.level === "EndPoint");
   section("# Intructions:");
-  extract(e => e.component.length === 0);
-  extract(e => true);
+  extract((e) => e.component.length === 0);
+  extract((e) => true);
   return result;
 }

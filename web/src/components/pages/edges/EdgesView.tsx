@@ -10,18 +10,18 @@ import { TablesView } from "./EdgeTablesView";
 
 export const EdgesView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
-  const [edges, setEdges] = React.useState<Node[] | null>(null);
+  const [subforest, setSubforest] = React.useState<Node[] | null>(null);
 
   React.useEffect(() => {
     haskellApiService
-      .getChildEdges(appContext.selectedSID)
+      .getSubforest(appContext.selectedSID)
       .then((response: AxiosResponse<Node[]>) => {
-        setEdges(response.data);
+        setSubforest(response.data);
       })
       .catch((err) => console.log(err));
   }, [appContext.selectedSID]);
 
-  if (edges === undefined || edges === null) {
+  if (subforest === undefined || subforest === null) {
     return (
       <div className="m-3 text-black-50">
         <h5>Empty EdgesView</h5>
@@ -36,7 +36,7 @@ export const EdgesView: React.FC = () => {
           <IntermediateView />
         </div>
         <div className="col-8">
-          <TablesView edges={edges} />
+          <TablesView nodes={subforest} />
         </div>
       </div>
       <div className="row mt-1">

@@ -1,17 +1,11 @@
+import { AxiosResponse, AxiosError } from "axios";
 import * as React from "react";
 import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
+
 import { AppContext, IAppContext } from "components/app/AppContext";
-import { AxiosResponse, AxiosError } from "axios";
 import { GraphNode, GraphEdge } from "gen/types";
-import {
-  haskellApiService,
-  EndpointSts,
-  IntermediateGraph,
-  Dataflow,
-  Bind,
-  Node,
-} from "services/HaskellApiService";
+import { haskellApiService, EndpointSts, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
 
 import "./IntermediateView.scss";
 

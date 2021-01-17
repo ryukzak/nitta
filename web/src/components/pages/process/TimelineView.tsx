@@ -1,4 +1,5 @@
 import React from "react";
+
 import { TimelineWithViewPoint, TimelinePoint, ViewPointID, ProcessTimelines } from "gen/types";
 import { Highlight } from "./ProcessView";
 
@@ -17,11 +18,11 @@ export const TimelineView: React.FC<TimelineProps> = ({
   highlight,
   data,
   onHighlightChange,
-  onDetailChange
+  onDetailChange,
 }) => {
   let viewColumnHead = "view point";
   let viewColumnLength: number = viewColumnHead.length;
-  timelines.forEach(e => {
+  timelines.forEach((e) => {
     let l: number = viewpoint2string(e.timelineViewpoint, 0).length;
     if (l > viewColumnLength) {
       viewColumnLength = l;
@@ -30,10 +31,10 @@ export const TimelineView: React.FC<TimelineProps> = ({
 
   function selectPoint(point: TimelinePoint<number>[]) {
     let highlight_tmp: Highlight = { up: [], current: [], down: [] };
-    point.forEach(p => {
+    point.forEach((p) => {
       let id: number = p.pID;
       highlight_tmp.current.push(p.pID);
-      data!.verticalRelations.forEach(e => {
+      data!.verticalRelations.forEach((e) => {
         let up = e[0],
           down = e[1];
         if (highlight_tmp.up.indexOf(up) === -1) {

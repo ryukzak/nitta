@@ -1,31 +1,19 @@
 import * as React from "react";
 import ReactTable, { Column } from "react-table";
-import { nidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn } from "./Table";
+
 import { AppContext, IAppContext } from "components/app/AppContext";
-import {
-  NodeView,
-  DecisionView,
-  IRootView,
-  IBindDecisionView,
-  IDataflowDecisionView,
-  BindMetrics,
-  DataflowMetrics,
-} from "gen/types";
+import { Node, Bind, Dataflow } from "services/HaskellApiService";
+import { BindMetrics, DataflowMetrics } from "gen/types";
+
+import { sidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn } from "./Table";
 
 // FIXME: Type hell. There should be a nicer way to organize this whole thing.
 
-type Node = NodeView<string, string, number, number>;
-type Decision = DecisionView;
-
-type Root = IRootView;
-type Bind = IBindDecisionView;
-type Dataflow = IDataflowDecisionView;
-
 type EdgesProps = {
-  edges: Node[];
+  nodes: Node[];
 };
 
-export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
+export const TablesView: React.FC<EdgesProps> = ({ nodes }) => {
   const appContext = React.useContext(AppContext) as IAppContext;
   const style = {
     fontWeight: 600,
@@ -42,9 +30,9 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
     <>
       <Table
         name="Binding"
-        edges={edges.filter((e: Node) => e.decision.tag === "BindDecisionView")}
+        nodes={nodes.filter((e: Node) => e.decision.tag === "BindDecisionView")}
         columns={[
-          nidColumn(appContext.setSID),
+          sidColumn(appContext.setSID),
           objectiveColumn(),
 
           textColumn("function", (e: Node) => (e.decision as Bind).function.fvFun),
@@ -71,9 +59,9 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       />
       <Table
         name="Refactor"
-        edges={edges.filter((e) => e.decision.tag !== "DataflowDecisionView" && e.decision.tag !== "BindDecisionView")}
+        nodes={nodes.filter((e) => e.decision.tag !== "DataflowDecisionView" && e.decision.tag !== "BindDecisionView")}
         columns={[
-          nidColumn(appContext.setSID),
+          sidColumn(appContext.setSID),
           objectiveColumn(),
           textColumn("description", (e: Node) => JSON.stringify(e.decision)),
           textColumn("parameters", (e: Node) => JSON.stringify(e.parameters), 50),
@@ -89,9 +77,9 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       />
       <Table
         name="Dataflow"
-        edges={edges.filter((e: Node) => e.decision.tag === "DataflowDecisionView")}
+        nodes={nodes.filter((e: Node) => e.decision.tag === "DataflowDecisionView")}
         columns={[
-          nidColumn(appContext.setSID),
+          sidColumn(appContext.setSID),
           objectiveColumn(),
           // textColumn("at", (e: Node) => (e.decision as Dataflow).source.time),
           textColumn("source", (e: Node) => (e.decision as Dataflow).source),
@@ -120,15 +108,15 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       />
       <Table
         name="Other"
-        edges={edges.filter((e: Node) => known.indexOf(e.decision.tag) === -1)}
-        columns={[nidColumn(appContext.setSID), objectiveColumn(), decisionColumn(), parametersColumn()]}
+        nodes={nodes.filter((e: Node) => known.indexOf(e.decision.tag) === -1)}
+        columns={[sidColumn(appContext.setSID), objectiveColumn(), decisionColumn(), parametersColumn()]}
       />
     </>
   );
 
   // FIXME: shouldn't it be in Table.tsx?
-  function Table(props: { name: string; columns: Column[]; edges: Node[] }) {
-    if (props.edges.length === 0)
+  function Table(props: { name: string; columns: Column[]; nodes: Node[] }) {
+    if (props.nodes.length === 0)
       return (
         <small>
           <pre style={style}>{props.name}: NOTHING</pre>
@@ -138,11 +126,11 @@ export const TablesView: React.FC<EdgesProps> = ({ edges }) => {
       <small style={style}>
         <pre>{props.name}</pre>
         <ReactTable
-          defaultPageSize={props.edges.length}
-          minRows={props.edges.length}
+          defaultPageSize={props.nodes.length}
+          minRows={props.nodes.length}
           showPagination={false}
           columns={props.columns}
-          data={props.edges}
+          data={props.nodes}
         />
         <br />
       </small>
