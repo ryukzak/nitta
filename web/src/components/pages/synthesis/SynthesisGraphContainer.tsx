@@ -1,9 +1,11 @@
 import * as React from "react";
 import { Button } from "react-bootstrap";
-import { SynthesisGraphView } from "./SynthesisGraphView";
-import { AppContext, IAppContext, reLastSID, sidSeparator } from "components/app/AppContext";
+
 import { haskellApiService as api } from "services/HaskellApiService";
 import { requestNidBy } from "utils/componentUtils";
+
+import { SynthesisGraphView } from "./SynthesisGraphView";
+import { AppContext, IAppContext, reLastSID, sidSeparator } from "components/app/AppContext";
 
 export const SynthesisGraphContainer: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;

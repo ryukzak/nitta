@@ -3,10 +3,11 @@ import { AxiosPromise } from "axios";
 import api from "../gen/rest_api.js";
 import { SID } from "../components/app/AppContext.js";
 
-import { TreeView, NodeView, IRootView, IBindDecisionView, IDataflowDecisionView } from "../gen/types";
+import { TreeView, SynthesisNodeView } from "../gen/types";
+import { NodeView, IRootView, IBindDecisionView, IDataflowDecisionView } from "../gen/types";
+import { EndpointStView, GraphStructure, GraphEdge, TestbenchReportView } from "../gen/types";
 
-import { EndpointStView, GraphStructure, GraphEdge, SynthesisNodeView, TestbenchReportView } from "../gen/types";
-
+export type SynthesisTree = TreeView<SynthesisNodeView>;
 export type Node = NodeView<string, string, number, number>;
 
 export type Root = IRootView;
