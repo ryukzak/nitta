@@ -6,14 +6,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |
-Module      : NITTA.Model.Problems.Binding
+Module      : NITTA.Model.Problems.Bind
 Description : Function distribution between processor units
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Model.Problems.Binding (
+module NITTA.Model.Problems.Bind (
     Bind (..),
     BindProblem (..),
 ) where

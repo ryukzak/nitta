@@ -9,14 +9,14 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 {- |
-Module      : NITTA.Synthesis.Binding
+Module      : NITTA.Synthesis.Bind
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Synthesis.Binding (
+module NITTA.Synthesis.Bind (
     BindMetrics (..),
     isBind,
 ) where
@@ -30,7 +30,7 @@ import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
-import NITTA.Model.Problems.Binding
+import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.ProcessorUnits

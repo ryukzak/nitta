@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f5e9d65f3d0776b18245fc45b8107486d866c351fefb4761d9605aaf127b2a28
+-- hash: c764af69d2271b83fb8a2af39d796f51aa0fd409d4b8f0791469a1a783fce96e
 
 name:           nitta
 version:        0.0.0.1
@@ -62,7 +62,7 @@ library
       NITTA.Model.Networks.Bus
       NITTA.Model.Networks.Types
       NITTA.Model.Problems
-      NITTA.Model.Problems.Binding
+      NITTA.Model.Problems.Bind
       NITTA.Model.Problems.Dataflow
       NITTA.Model.Problems.Endpoint
       NITTA.Model.Problems.Refactor
@@ -94,7 +94,7 @@ library
       NITTA.Project.Types
       NITTA.Project.Utils
       NITTA.Synthesis
-      NITTA.Synthesis.Binding
+      NITTA.Synthesis.Bind
       NITTA.Synthesis.Dataflow
       NITTA.Synthesis.Explore
       NITTA.Synthesis.Method

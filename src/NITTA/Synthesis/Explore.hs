@@ -30,11 +30,11 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
-import NITTA.Model.Problems.Binding
+import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.TargetSystem
-import NITTA.Synthesis.Binding ()
+import NITTA.Synthesis.Bind ()
 import NITTA.Synthesis.Dataflow ()
 import NITTA.Synthesis.Refactor ()
 import NITTA.Synthesis.Types

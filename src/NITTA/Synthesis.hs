@@ -7,7 +7,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Synthesis (
-    module NITTA.Synthesis.Binding,
+    module NITTA.Synthesis.Bind,
     module NITTA.Synthesis.Dataflow,
     module NITTA.Synthesis.Explore,
     module NITTA.Synthesis.Method,
@@ -15,7 +15,7 @@ module NITTA.Synthesis (
     module NITTA.Synthesis.Types,
 ) where
 
-import NITTA.Synthesis.Binding
+import NITTA.Synthesis.Bind
 import NITTA.Synthesis.Dataflow
 import NITTA.Synthesis.Explore
 import NITTA.Synthesis.Method

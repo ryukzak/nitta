@@ -47,7 +47,7 @@ import qualified Data.Text as T
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
-import NITTA.Model.Problems.Binding
+import NITTA.Model.Problems.Bind
 import NITTA.Model.Problems.Dataflow
 import NITTA.Model.Problems.Refactor
 import NITTA.Model.Problems.ViewHelper
