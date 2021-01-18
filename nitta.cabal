@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7fc81579b883bc7bccb2adbc7166bc947a342e4e521ba42903bfecf3fdbe9ca1
+-- hash: f5e9d65f3d0776b18245fc45b8107486d866c351fefb4761d9605aaf127b2a28
 
 name:           nitta
 version:        0.0.0.1
@@ -93,6 +93,7 @@ library
       NITTA.Project.Snippets
       NITTA.Project.Types
       NITTA.Project.Utils
+      NITTA.Synthesis
       NITTA.Synthesis.Binding
       NITTA.Synthesis.Dataflow
       NITTA.Synthesis.Explore

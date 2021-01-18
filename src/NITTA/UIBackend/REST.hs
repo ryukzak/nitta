@@ -39,9 +39,7 @@ import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Project (Project (..), writeAndRunTestbench)
-import NITTA.Synthesis.Explore
-import NITTA.Synthesis.Method
-import NITTA.Synthesis.Types
+import NITTA.Synthesis
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS (VisJS, algToVizJS)

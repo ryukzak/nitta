@@ -57,11 +57,7 @@ import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Project (TestbenchReport (..))
-import NITTA.Synthesis.Binding
-import NITTA.Synthesis.Dataflow
-import NITTA.Synthesis.Explore
-import NITTA.Synthesis.Refactor
-import NITTA.Synthesis.Types
+import NITTA.Synthesis
 import NITTA.UIBackend.ViewHelperCls
 import Numeric.Interval
 import Servant.Docs

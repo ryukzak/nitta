@@ -421,8 +421,8 @@ From the CAD point of view, bind looks like:
 - CAD asks PU models: "Who can evaluate this function?" and get the list of
   possible bindings.
 
-- CAD, based on the different metrics (see 'NITTA.Synthesis.Estimate'), the
-  best variant is chosen.
+- CAD, based on the different metrics (see 'NITTA.Synthesis'), the best variant
+  is chosen.
 
 Binding can be done either gradually due synthesis process at the start.
 -}

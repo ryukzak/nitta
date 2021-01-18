@@ -91,9 +91,7 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Project (Project (..), TestbenchReport (..), runTestbench, writeWholeProject)
-import NITTA.Synthesis.Explore
-import NITTA.Synthesis.Method
-import NITTA.Synthesis.Types
+import NITTA.Synthesis
 import System.FilePath (joinPath)
 import System.Log.Logger
 

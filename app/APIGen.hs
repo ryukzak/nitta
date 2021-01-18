@@ -31,10 +31,7 @@ import Data.Version
 import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.Types
-import NITTA.Synthesis.Binding
-import NITTA.Synthesis.Dataflow
-import NITTA.Synthesis.Refactor
-import NITTA.Synthesis.Types
+import NITTA.Synthesis
 import NITTA.UIBackend
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper

@@ -26,7 +26,7 @@ import Control.Exception (SomeException, try)
 import Control.Monad (unless)
 import Data.Either
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
-import NITTA.Synthesis.Explore
+import NITTA.Synthesis
 import NITTA.UIBackend.REST
 import Network.Simple.TCP (connect)
 import Network.Wai.Handler.Warp (run)
