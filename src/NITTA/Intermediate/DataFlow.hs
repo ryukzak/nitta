@@ -21,11 +21,9 @@ module NITTA.Intermediate.DataFlow (
     fsToDataFlowGraph,
 ) where
 
-import Control.Exception (assert)
 import qualified Data.List as L
 import qualified Data.Set as S
 import GHC.Generics
-import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Refactor
 import NITTA.Utils.Base
@@ -40,6 +38,7 @@ data DataFlowGraph v x
     deriving (Show, Generic)
 
 instance Eq (DataFlowGraph v x) where
+    -- `show` used for avoid `Ord (DataFlowGraph v x)`
     (DFCluster c1) == (DFCluster c2) = S.fromList (map show c1) == S.fromList (map show c2)
     (DFLeaf f1) == (DFLeaf f2) = f1 == f2
     _ == _ = False
@@ -52,21 +51,15 @@ instance WithFunctions (DataFlowGraph v x) (F v x) where
     functions (DFLeaf f) = [f]
     functions (DFCluster g) = concatMap functions g
 
-instance (Var v, Val x) => Patch (DataFlowGraph v x) (v, v) where
-    patch diff@(v, v') (DFCluster cluster) =
-        let newReg = DFLeaf $ reg v [v']
-            cluster' = map (patch diff) cluster
-         in assert (all (\case DFLeaf _ -> True; _ -> False) cluster) $ -- patch DataFlowGraph with subclusters is not support
-                DFCluster $ newReg : cluster'
-    patch diff@(v, _) n@(DFLeaf f)
-        | v `S.member` inputs f = DFLeaf $ patch diff f
-        | otherwise = n
+instance (Var v, Val x) => BreakLoopProblem (DataFlowGraph v x) v x where
+    breakLoopOptions _dfg = []
 
-instance (Var v) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
-    resolveDeadlockOptions _dfg = []
-
-    resolveDeadlockDecision dfg ResolveDeadlock{buffer, changeset} =
-        fsToDataFlowGraph (buffer : map (patch changeset) (functions dfg))
+    breakLoopDecision dfg bl =
+        let origin = recLoop bl
+         in fsToDataFlowGraph $
+                (recLoopIn bl){funHistory = [origin]} :
+                (recLoopOut bl){funHistory = [origin]} :
+                (functions dfg L.\\ [origin])
 
 instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where
     optimizeAccumOptions dfg = optimizeAccumOptions $ functions dfg
@@ -74,16 +67,11 @@ instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where
     optimizeAccumDecision dfg ref@OptimizeAccum{} =
         fsToDataFlowGraph $ optimizeAccumDecision (functions dfg) ref
 
-instance (Var v, Val x) => BreakLoopProblem (DataFlowGraph v x) v x where
-    breakLoopOptions _dfg = []
+instance (Var v) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
+    resolveDeadlockOptions _dfg = []
 
-    breakLoopDecision (DFCluster leafs) bl =
-        let origin = recLoop bl
-         in DFCluster $
-                DFLeaf (recLoopIn bl){funHistory = [origin]} :
-                DFLeaf (recLoopOut bl){funHistory = [origin]} :
-                (leafs L.\\ [DFLeaf origin])
-    breakLoopDecision _ _ = undefined
+    resolveDeadlockDecision dfg ResolveDeadlock{buffer, changeset} =
+        fsToDataFlowGraph (buffer : map (patch changeset) (functions dfg))
 
 -- |Convert @[ F v x ]@ to 'DataFlowGraph'.
-fsToDataFlowGraph alg = DFCluster $ map DFLeaf alg
+fsToDataFlowGraph fs = DFCluster $ map DFLeaf fs
