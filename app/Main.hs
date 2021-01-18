@@ -86,15 +86,7 @@ parseFX input =
 
 main = do
     Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose} <- cmdArgs nittaArgs
-
-    let level = if verbose then DEBUG else NOTICE
-    h <-
-        streamHandler stdout level >>= \lh ->
-            return $
-                setFormatter lh (simpleLogFormatter "[$prio : $loggername] $msg")
-
-    removeAllHandlers
-    updateGlobalLogger "NITTA" (setLevel level . addHandler h)
+    setupLogger verbose
 
     src <- readSourceCode filename
     ( \(SomeNat (_ :: Proxy m), SomeNat (_ :: Proxy b)) -> do
@@ -126,6 +118,16 @@ main = do
                 putCntx $ frPrettyCntx tbLogicalSimulationCntx
         )
         $ parseFX type_
+
+setupLogger verbose = do
+    let level = if verbose then DEBUG else NOTICE
+    h <-
+        streamHandler stdout level >>= \lh ->
+            return $
+                setFormatter lh (simpleLogFormatter "[$prio : $loggername] $msg")
+
+    removeAllHandlers
+    updateGlobalLogger "NITTA" (setLevel level . addHandler h)
 
 readSourceCode filename = do
     infoM "NITTA" $ "read source code from: " <> show filename <> "..."
