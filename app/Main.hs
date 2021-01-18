@@ -111,15 +111,7 @@ main = do
                 let expect = case buf of
                         Right p -> readMaybe p
                         Left (_ :: IOError) -> Nothing
-                when (expect /= Just port) $
-                    warningM "NITTA.UI" $
-                        concat
-                            [ "WARNING: expected backend port: "
-                            , show expect
-                            , " actual: "
-                            , show port
-                            , " (maybe you need regenerate API by nitta-api-gen)"
-                            ]
+                warningIfUnexpectedPort expect port
                 backendServer port received $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
 
@@ -177,3 +169,14 @@ microarch ioSync = evalNetwork ioSync $ do
             , slave_sclk = InputPortTag "sclk"
             , slave_cs = InputPortTag "cs"
             }
+
+warningIfUnexpectedPort expect port =
+    when (expect /= Just port) $
+        warningM "NITTA.UI" $
+            concat
+                [ "WARNING: expected backend port: "
+                , show expect
+                , " actual: "
+                , show port
+                , " (maybe you need regenerate API by nitta-api-gen)"
+                ]
