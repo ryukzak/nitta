@@ -158,7 +158,7 @@ data NodeView tag v x t = NodeView
       complete :: Bool
     , parameters :: Value
     , decision :: DecisionView
-    , objectiveFunctionValue :: Float
+    , score :: Float
     }
     deriving (Generic)
 
@@ -179,7 +179,7 @@ instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (No
                     _ -> String "root"
                 )
                     sDecision
-            , objectiveFunctionValue =
+            , score =
                 ( \case
                     SynthesisDecision{score} -> score
                     _ -> 0
@@ -209,7 +209,7 @@ instance ToSample (NodeView tag v x t) where
                             , pWave = Just 2
                             }
                 , decision = BindDecisionView (FView "reg(a) = b = c" []) "pu"
-                , objectiveFunctionValue = 1032
+                , score = 1032
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
@@ -230,14 +230,14 @@ instance ToSample (NodeView tag v x t) where
                                 , ("a2", Just ("PU2", IntervalView "1 ... 1"))
                                 ]
                         }
-                , objectiveFunctionValue = 1999
+                , score = 1999
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 6]
                 , complete = False
                 , parameters = toJSON BreakLoopMetrics
                 , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
-                , objectiveFunctionValue = 5000
+                , score = 5000
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
@@ -248,7 +248,7 @@ instance ToSample (NodeView tag v x t) where
                         { old = [FView "a + b = c" [], FView "c + d = e" []]
                         , new = [FView "a + b + d = e" []]
                         }
-                , objectiveFunctionValue = 1999
+                , score = 1999
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
@@ -265,7 +265,7 @@ instance ToSample (NodeView tag v x t) where
                         { buffer = "reg(x#0@buf) = x#0"
                         , changeset = "Changeset {changeI = fromList [], changeO = fromList [(\"x#0\",fromList [\"x#0@buf\"])]}"
                         }
-                , objectiveFunctionValue = 1999
+                , score = 1999
                 }
             ]
 

@@ -61,6 +61,6 @@ export function objectiveColumn() {
     Header: "Z(d)",
     maxWidth: 50,
     style: style,
-    Cell: (row: { original: Node }) => row.original.objectiveFunctionValue,
+    Cell: (row: { original: Node }) => row.original.score,
   };
 }
