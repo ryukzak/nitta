@@ -332,4 +332,5 @@ instance IOTestBench (Accum v x t) v x
 
 instance BreakLoopProblem (Accum v x t) v x
 instance OptimizeAccumProblem (Accum v x t) v x
+instance CompileTimeEvalProblem (Accum v x t) v x
 instance ResolveDeadlockProblem (Accum v x t) v x

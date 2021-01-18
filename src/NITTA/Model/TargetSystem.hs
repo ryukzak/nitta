@@ -88,10 +88,16 @@ instance
             , mUnit = optimizeAccumDecision mUnit d
             }
 
-instance
-    (Var v, ResolveDeadlockProblem u v x) =>
-    ResolveDeadlockProblem (TargetSystem u tag v x t) v x
-    where
+instance (VarValTime v x t) => CompileTimeEvalProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+    compileTimeEvalOptions TargetSystem{mUnit} = compileTimeEvalOptions mUnit
+
+    compileTimeEvalDecision TargetSystem{mUnit, mDataFlowGraph} d =
+        TargetSystem
+            { mDataFlowGraph = compileTimeEvalDecision mDataFlowGraph d
+            , mUnit = compileTimeEvalDecision mUnit d
+            }
+
+instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
     resolveDeadlockOptions TargetSystem{mUnit} = resolveDeadlockOptions mUnit
 
     resolveDeadlockDecision TargetSystem{mUnit, mDataFlowGraph} d =

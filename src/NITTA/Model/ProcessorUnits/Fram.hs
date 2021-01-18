@@ -275,6 +275,7 @@ instance (VarValTime v x t) => BreakLoopProblem (Fram v x t) v x where
                 }
 
 instance OptimizeAccumProblem (Fram v x t) v x
+instance CompileTimeEvalProblem (Fram v x t) v x
 instance ResolveDeadlockProblem (Fram v x t) v x
 
 instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where

@@ -66,6 +66,12 @@ instance (Var v, Val x) => OptimizeAccumProblem (DataFlowGraph v x) v x where
     optimizeAccumDecision dfg ref@OptimizeAccum{} =
         fsToDataFlowGraph $ optimizeAccumDecision (functions dfg) ref
 
+instance (Var v, Val x) => CompileTimeEvalProblem (DataFlowGraph v x) v x where
+    compileTimeEvalOptions dfg = compileTimeEvalOptions $ functions dfg
+
+    compileTimeEvalDecision dfg ref@CompileTimeEval{} =
+        fsToDataFlowGraph $ compileTimeEvalDecision (functions dfg) ref
+
 instance (Var v) => ResolveDeadlockProblem (DataFlowGraph v x) v x where
     resolveDeadlockOptions _dfg = []
 

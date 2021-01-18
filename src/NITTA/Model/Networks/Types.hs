@@ -44,6 +44,7 @@ type PUClasses pu v x t =
     , EndpointProblem pu v t
     , BreakLoopProblem pu v x
     , OptimizeAccumProblem pu v x
+    , CompileTimeEvalProblem pu v x
     , ResolveDeadlockProblem pu v x
     , ProcessorUnit pu v x t
     , Show (Instruction pu)

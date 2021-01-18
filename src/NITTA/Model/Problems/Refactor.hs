@@ -18,8 +18,10 @@ module NITTA.Model.Problems.Refactor (
     module NITTA.Model.Problems.Refactor.BreakLoop,
     module NITTA.Model.Problems.Refactor.OptimizeAccum,
     module NITTA.Model.Problems.Refactor.ResolveDeadlock,
+    module NITTA.Model.Problems.Refactor.CompileTimeEval,
 ) where
 
 import NITTA.Model.Problems.Refactor.BreakLoop
 import NITTA.Model.Problems.Refactor.OptimizeAccum
 import NITTA.Model.Problems.Refactor.ResolveDeadlock
+import NITTA.Model.Problems.Refactor.CompileTimeEval
