@@ -226,6 +226,7 @@ test-suite nitta-test
       NITTA.LuaFrontend.Tests
       NITTA.LuaFrontend.Tests.Utils
       NITTA.Model.Problems.Refactor.Accum.Tests
+      NITTA.Model.Problems.Refactor.CompileTimeEval.Tests
       NITTA.Model.Problems.Refactor.Tests
       NITTA.Model.ProcessorUnits.Accum.Tests
       NITTA.Model.ProcessorUnits.Broken.Tests

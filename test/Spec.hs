@@ -19,6 +19,7 @@ import qualified NITTA.Intermediate.Simulation.Tests
 import qualified NITTA.Intermediate.Value.Tests
 import qualified NITTA.LuaFrontend.Tests
 import qualified NITTA.Model.Problems.Refactor.Accum.Tests
+import qualified NITTA.Model.Problems.Refactor.CompileTimeEval.Tests
 import qualified NITTA.Model.Problems.Refactor.Tests
 import qualified NITTA.Model.ProcessorUnits.Accum.Tests
 import qualified NITTA.Model.ProcessorUnits.Broken.Tests
@@ -45,6 +46,7 @@ main = do
             , NITTA.LuaFrontend.Tests.tests
             , NITTA.Model.Problems.Refactor.Tests.tests
             , NITTA.Model.Problems.Refactor.Accum.Tests.tests
+            , NITTA.Model.Problems.Refactor.CompileTimeEval.Tests.tests
             , NITTA.Model.ProcessorUnits.Broken.Tests.tests
             , NITTA.Model.ProcessorUnits.Divider.Tests.tests
             , NITTA.Model.ProcessorUnits.Fram.Tests.tests

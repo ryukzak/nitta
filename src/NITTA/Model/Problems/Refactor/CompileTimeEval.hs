@@ -80,7 +80,7 @@ deleteExtraF fs =
         , not $ null (variables f1 `S.intersection` variables f2)
         ]
 
-apply [] clusters = []
+apply [] _ = []
 apply ((cluster, evCluster) : clustersTuple) clusters = deleteExtraF newFs : apply clustersTuple clusters
     where
         (h, (_ : t)) = L.span (/= cluster) clusters
