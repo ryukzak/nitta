@@ -9,7 +9,7 @@
 {- |
 Module      : NITTA.Model.TargetSystem
 Description : Model of target system for synthesis and so on.
-Copyright   : (c) Aleksandr Penskoi, 2020
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -54,9 +54,7 @@ transferred.
 -}
 isSynthesisFinish :: (ProcessorUnit u v x t) => TargetSystem u v x -> Bool
 isSynthesisFinish TargetSystem{mUnit, mDataFlowGraph} =
-    let inWork = transferred mUnit
-        inAlg = variables mDataFlowGraph
-     in inWork == inAlg
+    transferred mUnit == variables mDataFlowGraph
 
 instance (UnitTag tag, VarValTime v x t) => BindProblem (TargetSystem (BusNetwork tag v x t) v x) tag v x where
     bindOptions TargetSystem{mUnit} = bindOptions mUnit

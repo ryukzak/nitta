@@ -12,6 +12,8 @@ module NITTA.UIBackend.ViewHelperCls (
     Viewable (..),
 ) where
 
--- |Type class of view helper
+{- |Type class of helpers required for autogeneration of ToJSON and typescript
+ types.
+-}
 class Viewable t v | t -> v where
     view :: t -> v

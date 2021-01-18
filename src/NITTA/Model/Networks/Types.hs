@@ -9,7 +9,7 @@
 {- |
 Module      : NITTA.Model.Networks.Types
 Description : Types for processor unit network description.
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental

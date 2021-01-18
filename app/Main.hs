@@ -11,7 +11,7 @@
 
 {- |
 Module      : Main
-Description : NITTA CAD executable
+Description : NITTA entry point
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com

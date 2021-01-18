@@ -125,20 +125,13 @@ isComplete _ = False
 -- *Internal
 
 exploreSubForestVar parent@Tree{sID, sState} =
-    let SynthesisState
-            { sBindOptions
-            , sDataflowOptions
-            , sBreakLoopOptions
-            , sResolveDeadlockOptions
-            , sOptimizeAccumOptions
-            } = sState
-        edges =
+    let edges =
             concat
-                ( map (decisonAndContext parent) sBindOptions
-                    ++ map (decisonAndContext parent) sDataflowOptions
-                    ++ map (decisonAndContext parent) sBreakLoopOptions
-                    ++ map (decisonAndContext parent) sResolveDeadlockOptions
-                    ++ map (decisonAndContext parent) sOptimizeAccumOptions
+                ( map (decisonAndContext parent) (sBindOptions sState)
+                    ++ map (decisonAndContext parent) (sDataflowOptions sState)
+                    ++ map (decisonAndContext parent) (sBreakLoopOptions sState)
+                    ++ map (decisonAndContext parent) (sResolveDeadlockOptions sState)
+                    ++ map (decisonAndContext parent) (sOptimizeAccumOptions sState)
                 )
      in forM (zip [0 ..] edges) $ \(i, (desc, ctx')) -> do
             sSubForestVar <- newEmptyTMVar

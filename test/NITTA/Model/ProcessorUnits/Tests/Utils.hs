@@ -39,7 +39,7 @@ import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
-import NITTA.Model.Problems hiding (Bind)
+import NITTA.Model.Problems hiding (Bind, BreakLoop)
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem ()
 import NITTA.Model.Tests.Microarchitecture
@@ -192,13 +192,13 @@ processAlgOnEndpointGen pu0 algGen' = do
     algSynthesisGen alg [] pu0
 
 -- FIXME: support new synthesis/refactor style
-data PUSynthesisTask r f e = Refactor r | Bind f | Transport e
+data PUSynthesisTask r f e = BreakLoop r | Bind f | Transport e
 
 algSynthesisGen fRemain fPassed pu = select tasksList
     where
         tasksList =
             concat
-                [ map Refactor $ breakLoopOptions pu
+                [ map BreakLoop $ breakLoopOptions pu
                 , map Bind fRemain
                 , map Transport $ endpointOptions pu
                 ]
@@ -206,7 +206,7 @@ algSynthesisGen fRemain fPassed pu = select tasksList
         select [] = return (pu, fPassed)
         select tasks = taskPattern =<< elements tasks
 
-        taskPattern (Refactor r) = algSynthesisGen fRemain fPassed $ breakLoopDecision pu r
+        taskPattern (BreakLoop r) = algSynthesisGen fRemain fPassed $ breakLoopDecision pu r
         taskPattern (Bind f) = case tryBind f pu of
             (Right pu') -> algSynthesisGen fRemain' (f : fPassed) pu'
             (Left _err) -> algSynthesisGen fRemain' fPassed pu
