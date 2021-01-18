@@ -327,15 +327,6 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
                 | bufferSuffix v `S.notMember` variables bn = True
                 | otherwise = isBufferRepetionOK (n -1) (bufferSuffix v)
 
-            -- Possible buffers: b1, b2, b3
-            -- @
-            --                source1
-            -- DoubleLoopOut--b1--+--b2--> DoubleLoopIn
-            --            |       \------> Send
-            --            |
-            --            \------b3------> DoubleLoopIn
-            --                 source2
-            -- @
             selfSending =
                 concatMap
                     (\(tag, fs) -> prepareResolve (unionsMap inputs fs `S.intersection` puOutputs tag))
