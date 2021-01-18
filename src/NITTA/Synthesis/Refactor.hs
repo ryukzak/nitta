@@ -21,9 +21,9 @@ module NITTA.Synthesis.Refactor (
 import Data.Maybe
 import Data.Typeable
 import NITTA.Synthesis.BreakLoop
+import NITTA.Synthesis.CompileTimeEval
 import NITTA.Synthesis.OptimizeAccum
 import NITTA.Synthesis.ResolveDeadlock
-import NITTA.Synthesis.CompileTimeEval
 import NITTA.Synthesis.Types
 
 isRefactor SynthesisDecision{metrics}

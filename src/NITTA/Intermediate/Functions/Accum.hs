@@ -1,3 +1,4 @@
+{- ORMOLU_DISABLE -}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -15,28 +16,22 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Intermediate.Functions.Accum (
-    Acc (..),
-    Action (..),
-    Sign (..),
+module NITTA.Intermediate.Functions.Accum
+    ( Acc(..), Action(..), Sign(..)
+      -- * Acc to function
+    , acc, accFromStr
+      -- * Utils functions
+    , isPull, isPush
+    ) where
 
-    -- * Acc to function
-    acc,
-    accFromStr,
-
-    -- * Utils functions
-    isPull,
-    isPush,
-) where
-
-import Data.List (partition)
-import Data.List.Split (splitWhen)
-import Data.Set (elems, fromList)
-import qualified Data.String.Utils as S
-import Data.Typeable
-import NITTA.Intermediate.Types
-import NITTA.Utils.Base
-import Text.Regex
+import           Data.List ( partition )
+import           Data.List.Split ( splitWhen )
+import           Data.Set ( elems, fromList )
+import           Data.Typeable
+import           NITTA.Intermediate.Types
+import           NITTA.Utils.Base
+import           Text.InterpolatedString.Perl6 ( qc )
+import           Text.Regex
 
 data Sign = Plus | Minus deriving (Typeable, Eq)
 
@@ -79,15 +74,12 @@ instance (Ord v) => Function (Acc v x) v where
     inputs (Acc lst) = fromList $ map fromPush $ filter isPush lst
     outputs (Acc lst) = unionsMap fromPull $ filter isPull lst
 
-instance (Ord v) => Patch (Acc v x) (v, v) where
-    patch diff (Acc lst) =
-        Acc $
-            map
-                ( \case
-                    Push s v -> Push s (patch diff v)
-                    Pull vs -> Pull (patch diff vs)
-                )
-                lst
+instance ( Ord v ) => Patch (Acc v x) (v, v) where
+    patch diff (Acc lst) = Acc $ map
+        (\case
+            Push s v -> Push s (patch diff v)
+            Pull vs  -> Pull (patch diff vs)
+        ) lst
 
 exprPattern = mkRegex "[+,=,-]*[a-zA-Z0-9]+|;"
 toBlocksSplit exprInput =

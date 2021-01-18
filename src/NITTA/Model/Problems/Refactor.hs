@@ -22,6 +22,6 @@ module NITTA.Model.Problems.Refactor (
 ) where
 
 import NITTA.Model.Problems.Refactor.BreakLoop
+import NITTA.Model.Problems.Refactor.CompileTimeEval
 import NITTA.Model.Problems.Refactor.OptimizeAccum
 import NITTA.Model.Problems.Refactor.ResolveDeadlock
-import NITTA.Model.Problems.Refactor.CompileTimeEval
