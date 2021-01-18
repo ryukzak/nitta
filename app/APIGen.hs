@@ -13,7 +13,7 @@
 
 {- |
 Module      : APIGen
-Description :
+Description : Generate REST API files for NITTA UI Backend
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -27,6 +27,7 @@ import Data.Aeson
 import Data.Aeson.TypeScript.TH
 import Data.Proxy
 import qualified Data.String.Utils as S
+import Data.Version
 import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.Types
@@ -39,6 +40,7 @@ import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS
 import Numeric.Interval
+import Paths_nitta (version)
 import System.Console.CmdArgs
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath.Posix (joinPath)
@@ -50,17 +52,19 @@ import System.Log.Logger
 
 data APIGen = APIGen
     { port :: Int
-    , opath :: FilePath
+    , output_path :: FilePath
     , verbose :: Bool
     }
     deriving (Show, Data, Typeable)
 
 apiGenArgs =
     APIGen
-        { port = 8080 &= help "nitta server port"
-        , opath = "./web/src/gen" &= typ "output path"
+        { port = 8080 &= help "NITTA UI Backend will start on this port"
+        , output_path = "./web/src/gen" &= help "Place the output into specified directory (default: ./web/src/gen)"
         , verbose = False &= help "Verbose"
         }
+        &= program "nitta-api-gen"
+        &= summary ("nitta-api-gen v" ++ showVersion version ++ " - Generate REST API files for NITTA UI Backend")
 
 $(deriveTypeScript defaultOptions ''ViewPointID)
 $(deriveTypeScript defaultOptions ''TimelinePoint)
@@ -96,8 +100,7 @@ $(deriveTypeScript defaultOptions ''EndpointSt)
 $(deriveTypeScript defaultOptions ''EndpointStView)
 
 main = do
-    APIGen{port, opath, verbose} <- cmdArgs apiGenArgs
-
+    APIGen{port, output_path, verbose} <- cmdArgs apiGenArgs
     let level = if verbose then DEBUG else NOTICE
     h <-
         streamHandler stdout level >>= \lh ->
@@ -108,14 +111,14 @@ main = do
     updateGlobalLogger "NITTA" (setLevel level . addHandler h)
 
     infoM "NITTA.APIGen" "Create output directory..."
-    createDirectoryIfMissing True opath
+    createDirectoryIfMissing True output_path
     infoM "NITTA.APIGen" "Create output directory...OK"
 
     infoM "NITTA.APIGen" $ "Expected nitta server port: " <> show port
-    writeFile (joinPath [opath, "PORT"]) $ show port
+    writeFile (joinPath [output_path, "PORT"]) $ show port
 
     infoM "NITTA.APIGen" "Generate rest_api.js library..."
-    prepareJSAPI port opath
+    prepareJSAPI port output_path
     infoM "NITTA.APIGen" "Generate rest_api.js library...OK"
 
     infoM "NITTA.APIGen" "Generate typescript interface..."
@@ -153,7 +156,7 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointSt)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointStView)
                     ]
-    writeFile (joinPath [opath, "types.ts"]) $
+    writeFile (joinPath [output_path, "types.ts"]) $
         foldl
             (\st (old, new) -> S.replace old new st)
             (ts ++ "\n" ++ "type NId = string\n")
@@ -165,5 +168,5 @@ main = do
     infoM "NITTA.APIGen" "Generate typescript interface...OK"
 
     infoM "NITTA.APIGen" "Generate REST API description..."
-    writeFile (joinPath [opath, "rest_api.markdown"]) $ restDocs port
+    writeFile (joinPath [output_path, "rest_api.markdown"]) $ restDocs port
     infoM "NITTA.APIGen" "Generate REST API description...ok"
