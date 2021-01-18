@@ -154,8 +154,7 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
 
 data NodeView tag v x t = NodeView
     { sid :: String
-    , -- TODO: naming
-      complete :: Bool
+    , isLeaf :: Bool
     , parameters :: Value
     , decision :: DecisionView
     , score :: Float
@@ -166,7 +165,7 @@ instance (UnitTag tag, VarValTimeJSON v x t) => Viewable (DefTree tag v x t) (No
     view tree@Tree{sID, sDecision} =
         NodeView
             { sid = show sID
-            , complete = isComplete tree
+            , isLeaf = isComplete tree
             , decision =
                 ( \case
                     SynthesisDecision{decision} -> view decision
@@ -194,7 +193,7 @@ instance ToSample (NodeView tag v x t) where
         samples
             [ NodeView
                 { sid = show $ SID [0, 1, 3, 1]
-                , complete = False
+                , isLeaf = False
                 , parameters =
                     toJSON $
                         BindMetrics
@@ -213,7 +212,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , complete = False
+                , isLeaf = False
                 , parameters =
                     toJSON $
                         DataflowMetrics
@@ -234,14 +233,14 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 6]
-                , complete = False
+                , isLeaf = False
                 , parameters = toJSON BreakLoopMetrics
                 , decision = BreakLoopView{value = "12.5", outputs = ["a", "b"], input = "c"}
                 , score = 5000
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , complete = False
+                , isLeaf = False
                 , parameters = toJSON OptimizeAccumMetrics
                 , decision =
                     OptimizeAccumView
@@ -252,7 +251,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
-                , complete = False
+                , isLeaf = False
                 , parameters =
                     toJSON $
                         ResolveDeadlockMetrics

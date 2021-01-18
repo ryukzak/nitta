@@ -171,10 +171,10 @@ runTargetSynthesis
             synthesise root = do
                 infoM "NITTA" "synthesis process..."
                 leaf <- tSynthesisMethod root
-                let complete = isComplete leaf
-                infoM "NITTA" $ "synthesis process..." <> if complete then "ok" else "fail"
+                let isLeaf = isComplete leaf
+                infoM "NITTA" $ "synthesis process..." <> if isLeaf then "ok" else "fail"
                 return $
-                    if complete
+                    if isLeaf
                         then Right leaf
                         else Left "synthesis process...fail"
 
