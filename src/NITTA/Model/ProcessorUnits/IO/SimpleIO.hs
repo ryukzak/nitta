@@ -104,7 +104,9 @@ instance
 
     process = process_
 
-instance RefactorProblem (SimpleIO i v x t) v x
+instance BreakLoopProblem (SimpleIO i v x t) v x
+instance OptimizeAccumProblem (SimpleIO i v x t) v x
+instance ResolveDeadlockProblem (SimpleIO i v x t) v x
 
 instance
     ( VarValTime v x t

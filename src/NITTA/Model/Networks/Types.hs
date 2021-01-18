@@ -9,7 +9,7 @@
 {- |
 Module      : NITTA.Model.Networks.Types
 Description : Types for processor unit network description.
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -36,7 +36,9 @@ type PUClasses pu v x t =
     , Connected pu
     , IOConnected pu
     , EndpointProblem pu v t
-    , RefactorProblem pu v x
+    , BreakLoopProblem pu v x
+    , OptimizeAccumProblem pu v x
+    , ResolveDeadlockProblem pu v x
     , ProcessorUnit pu v x t
     , Show (Instruction pu)
     , Typeable pu
@@ -51,10 +53,10 @@ type PUClasses pu v x t =
 data PU v x t where
     PU ::
         (PUClasses pu v x t) =>
-        { diff :: Changeset v -- FIXME: move to end of record
-        , unit :: pu
+        { unit :: pu
         , ports :: Ports pu
         , ioPorts :: IOPorts pu
+        , diff :: Changeset v
         , systemEnv :: TargetEnvironment
         } ->
         PU v x t
@@ -72,10 +74,20 @@ instance (Ord v) => EndpointProblem (PU v x t) v t where
             , systemEnv
             }
 
-instance RefactorProblem (PU v x t) v x where
-    refactorOptions PU{unit} = refactorOptions unit
-    refactorDecision PU{diff, unit, ports, ioPorts, systemEnv} d =
-        PU{diff, unit = refactorDecision unit d, ports, ioPorts, systemEnv}
+instance BreakLoopProblem (PU v x t) v x where
+    breakLoopOptions PU{unit} = breakLoopOptions unit
+    breakLoopDecision PU{diff, unit, ports, ioPorts, systemEnv} d =
+        PU{diff, unit = breakLoopDecision unit d, ports, ioPorts, systemEnv}
+
+instance OptimizeAccumProblem (PU v x t) v x where
+    optimizeAccumOptions PU{unit} = optimizeAccumOptions unit
+    optimizeAccumDecision PU{diff, unit, ports, ioPorts, systemEnv} d =
+        PU{diff, unit = optimizeAccumDecision unit d, ports, ioPorts, systemEnv}
+
+instance ResolveDeadlockProblem (PU v x t) v x where
+    resolveDeadlockOptions PU{unit} = resolveDeadlockOptions unit
+    resolveDeadlockDecision PU{diff, unit, ports, ioPorts, systemEnv} d =
+        PU{diff, unit = resolveDeadlockDecision unit d, ports, ioPorts, systemEnv}
 
 instance (VarValTime v x t) => ProcessorUnit (PU v x t) v x t where
     tryBind fb PU{diff, unit, ports, ioPorts, systemEnv} =

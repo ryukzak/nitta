@@ -1,12 +1,12 @@
+import { AxiosResponse, AxiosError } from "axios";
 import React, { useEffect, useState, useContext } from "react";
 import ReactTable, { Column } from "react-table";
-import { haskellApiService } from "../../../services/HaskellApiService";
-import { NodeView, NId } from "../../../gen/types";
-import { AxiosResponse, AxiosError } from "axios";
-import { AppContext, IAppContext } from "../../app/AppContext";
+
+import { SID } from "components/app/AppContext.js";
+import { haskellApiService, Node, Bind } from "services/HaskellApiService";
+import { AppContext, IAppContext } from "components/app/AppContext";
 
 type Row = { original: Node; index: number };
-type Node = NodeView<string, string, string, string>;
 
 export interface ISynthesisHistoryViewProps {
   reverse: boolean;
@@ -22,7 +22,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props
 
   useEffect(() => {
     haskellApiService
-      .getRootPath(appContext.selectedNodeId)
+      .getRootPath(appContext.selectedSID)
       .then((response: AxiosResponse<Node[]>) => {
         let result = response.data;
         if (props.reverse) {
@@ -31,7 +31,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props
         setHistory(result);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedNodeId, props.reverse]);
+  }, [appContext.selectedSID, props.reverse]);
 
   function Table(props: { name: string; columns: Column[]; history: Node[] }) {
     if (props.history.length === 0)
@@ -59,15 +59,15 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props
     return props.reverse ? synthesisHistory!.length - row.index : row.index + 1;
   }
 
-  function stepColumn(onUpdateNid: (nid: NId) => void) {
+  function stepColumn(onUpdateNid: (sid: SID) => void) {
     return {
       Header: "step",
       maxWidth: 40,
       Cell: (row: Row) => {
-        let nid = row.original.nvId;
-        if (nid === appContext.selectedNodeId) return <>{stepNumber(row)}</>;
+        let sid = row.original.sid;
+        if (sid === appContext.selectedSID) return <>{stepNumber(row)}</>;
         return (
-          <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(nid)}>
+          <button className="btn-link bg-transparent p-0 border-0" onClick={() => onUpdateNid(sid)}>
             {stepNumber(row)}
           </button>
         );
@@ -98,23 +98,16 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props
         name="History"
         history={synthesisHistory}
         columns={[
-          stepColumn(appContext.selectNode),
-          textColumn(
-            "decision type",
-            (n: Node) => {
-              if (n.nvOrigin === null) return "";
-              return n.nvOrigin!.decision.tag;
-            },
-            100
-          ),
+          stepColumn(appContext.setSID),
+          textColumn("decision type", (n: Node) => n.decision.tag, 100),
           textColumn("description", (n: Node) => {
-            if (n.nvId === "-") return <>INITIAL STATE</>;
-            let decision = n.nvOrigin!.decision;
+            if (n.sid === "-") return <>INITIAL STATE</>;
+            let decision = n.decision.tag;
             return (
               <>
-                {decision.tag === "BindingView" && decision.pu + " <- " + decision.function.fvFun}
-                {decision.tag === "RefactorView" && JSON.stringify(decision.contents)}
-                {decision.tag === "DataflowView" && JSON.stringify(decision)}
+                {decision === "BindDecisionView" &&
+                  (n.decision as Bind).pu + " <- " + (n.decision as Bind).function.fvFun}
+                {decision !== "BindDecisionView" && JSON.stringify(n.decision)}
               </>
             );
           }),

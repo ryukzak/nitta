@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3f19e3eba7a430aa519e778ead46611f38c40da02461616c90799b9b0f524d02
+-- hash: b3eeeb0aa85d4670a1d8dd09ff77f57054af5bd720fc397bdb81592615b74d3f
 
 name:           nitta
 version:        0.0.0.1
@@ -62,13 +62,14 @@ library
       NITTA.Model.Networks.Bus
       NITTA.Model.Networks.Types
       NITTA.Model.Problems
-      NITTA.Model.Problems.Binding
+      NITTA.Model.Problems.Bind
       NITTA.Model.Problems.Dataflow
       NITTA.Model.Problems.Endpoint
       NITTA.Model.Problems.Refactor
-      NITTA.Model.Problems.Refactor.Accum
-      NITTA.Model.Problems.Refactor.Types
-      NITTA.Model.Problems.Whole
+      NITTA.Model.Problems.Refactor.BreakLoop
+      NITTA.Model.Problems.Refactor.OptimizeAccum
+      NITTA.Model.Problems.Refactor.ResolveDeadlock
+      NITTA.Model.Problems.ViewHelper
       NITTA.Model.ProcessorUnits
       NITTA.Model.ProcessorUnits.Accum
       NITTA.Model.ProcessorUnits.Broken
@@ -92,15 +93,22 @@ library
       NITTA.Project.Snippets
       NITTA.Project.Types
       NITTA.Project.Utils
-      NITTA.Synthesis.Estimate
+      NITTA.Synthesis
+      NITTA.Synthesis.Bind
+      NITTA.Synthesis.BreakLoop
+      NITTA.Synthesis.Dataflow
+      NITTA.Synthesis.Explore
       NITTA.Synthesis.Method
-      NITTA.Synthesis.Tree
+      NITTA.Synthesis.OptimizeAccum
+      NITTA.Synthesis.Refactor
+      NITTA.Synthesis.ResolveDeadlock
+      NITTA.Synthesis.Types
       NITTA.TargetSynthesis
       NITTA.UIBackend
-      NITTA.UIBackend.Orphans
       NITTA.UIBackend.REST
       NITTA.UIBackend.Timeline
       NITTA.UIBackend.ViewHelper
+      NITTA.UIBackend.ViewHelperCls
       NITTA.UIBackend.VisJS
       NITTA.Utils
       NITTA.Utils.Base
@@ -124,6 +132,7 @@ library
     , file-embed
     , filepath
     , hashable
+    , hslogger
     , http-api-data
     , interpolatedstring-perl6
     , intervals
@@ -163,6 +172,7 @@ executable nitta
     , containers
     , data-default
     , filepath
+    , hslogger
     , interpolatedstring-perl6
     , nitta
     , regex-compat
@@ -187,6 +197,7 @@ executable nitta-api-gen
     , data-default
     , directory
     , filepath
+    , hslogger
     , interpolatedstring-perl6
     , intervals
     , nitta

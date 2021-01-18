@@ -1,47 +1,46 @@
+import { AxiosResponse, AxiosError } from "axios";
 import * as React from "react";
 import Tree from "react-d3-tree";
-import { haskellApiService } from "../../../services/HaskellApiService";
-import { AppContext, IAppContext, NodeId, reLastNidStep } from "../../app/AppContext";
-import { SynthesisNodeView, TreeView, NId } from "../../../gen/types";
-import { AxiosResponse, AxiosError } from "axios";
 
-// FIXME: review, refactor (naming!)
+import { SynthesisTree, haskellApiService } from "services/HaskellApiService";
+import { AppContext, IAppContext, SID, reLastSID } from "components/app/AppContext";
 
-interface Ids {
-  [key: string]: Graph;
+interface Paths {
+  // SID -> Tree
+  [key: string]: Tree;
+}
+
+interface Tree {
+  name?: string;
+  sid?: SID;
+  attributes?: GraphAttributes;
+  status?: boolean;
+  children?: Tree[];
+  nodeSvgShape?: any;
+  nodeSvgShapeOriginal?: any;
 }
 
 interface GraphAttributes {
   [key: string]: any;
 }
 
-interface Graph {
-  name?: string;
-  nid?: NId;
-  attributes?: GraphAttributes;
-  status?: boolean;
-  children?: Graph[];
-  nodeSvgShape?: any;
-  nodeSvgShapeOriginal?: any;
-}
-
 export const SynthesisGraphView: React.FC = () => {
   const appContext = React.useContext(AppContext) as IAppContext;
 
-  const [dataGraph, setDataGraph] = React.useState<Graph[]>([] as Graph[]);
-  const [nIds, setNIds] = React.useState<Ids>({});
-  const [currentSelectedNodeId, setCurrentSelectedNodeId] = React.useState<NodeId>("");
+  const [dataGraph, setDataGraph] = React.useState<Tree[]>([] as Tree[]);
+  const [paths, setPaths] = React.useState<Paths>({});
+  const [currentSelectedNodeId, setCurrentSelectedNodeId] = React.useState<SID>("");
 
   const markNode = React.useCallback(
-    (nid: NodeId, nidArray?: Ids, color?: string) => {
+    (sid: SID, nidArray?: Paths, color?: string) => {
       if (color === undefined) color = "blue";
-      if (nidArray === undefined) nidArray = nIds;
+      if (nidArray === undefined) nidArray = paths;
       if (nidArray === null) return;
 
       if (color === "blue") {
-        nidArray[nid].nodeSvgShapeOriginal = nidArray[nid].nodeSvgShape;
+        nidArray[sid].nodeSvgShapeOriginal = nidArray[sid].nodeSvgShape;
       }
-      nidArray[nid].nodeSvgShape = {
+      nidArray[sid].nodeSvgShape = {
         shape: "circle",
         shapeProps: {
           r: 10,
@@ -51,32 +50,32 @@ export const SynthesisGraphView: React.FC = () => {
         },
       };
     },
-    [nIds]
+    [paths]
   );
 
   const unmarkNode = React.useCallback(
-    (nid: NodeId) => {
-      if (nid === null) return;
-      let tmp: string = nIds[nid].nodeSvgShapeOriginal;
-      let nids = nIds;
-      nids[nid].nodeSvgShape = tmp;
-      setNIds(nids);
+    (sid: SID) => {
+      if (sid === null) return;
+      let tmp: string = paths[sid].nodeSvgShapeOriginal;
+      let nids = paths;
+      nids[sid].nodeSvgShape = tmp;
+      setPaths(nids);
     },
-    [nIds]
+    [paths]
   );
 
   const reloadSynthesisGraph = React.useCallback(() => {
-    let nid = appContext.selectedNodeId;
+    let sid = appContext.selectedSID;
 
     haskellApiService
       .getSynthesisTree()
-      .then((response: AxiosResponse<TreeView<SynthesisNodeView>>) => {
-        let nidArray: Ids = {};
+      .then((response: AxiosResponse<SynthesisTree>) => {
+        let nidArray: Paths = {};
 
-        let buildGraph = (gNode: Graph, dNode: TreeView<SynthesisNodeView>) => {
+        let buildGraph = (gNode: Tree, dNode: SynthesisTree) => {
           let strNid: string = dNode.rootLabel.svNnid;
-          gNode.name = reLastNidStep.exec(strNid)![0];
-          gNode.nid = dNode.rootLabel.svNnid;
+          gNode.name = reLastSID.exec(strNid)![0];
+          gNode.sid = dNode.rootLabel.svNnid;
           nidArray[strNid] = gNode;
           if (dNode.rootLabel.svIsEdgesProcessed) markNode(strNid, nidArray, "black");
           if (dNode.rootLabel.svIsComplete) markNode(strNid, nidArray, "lime");
@@ -87,9 +86,9 @@ export const SynthesisGraphView: React.FC = () => {
           gNode.status = dNode.rootLabel.svIsComplete;
           gNode.children = [];
           var notProcessedCount = 0;
-          dNode.subForest.forEach((e: TreeView<SynthesisNodeView>) => {
+          dNode.subForest.forEach((e: SynthesisTree) => {
             if (e.rootLabel.svIsEdgesProcessed) {
-              var tmp: Graph = {};
+              var tmp: Tree = {};
               if (gNode.children != null) {
                 gNode.children.push(tmp);
                 buildGraph(tmp, e);
@@ -99,7 +98,7 @@ export const SynthesisGraphView: React.FC = () => {
             }
           });
           if (notProcessedCount > 0) {
-            var tmp: Graph = {};
+            var tmp: Tree = {};
             tmp.name = "..." + notProcessedCount;
             gNode.children.push(tmp);
           }
@@ -108,39 +107,39 @@ export const SynthesisGraphView: React.FC = () => {
 
         let graph = buildGraph({}, response.data);
         nidArray["."] = graph;
-        if (nid !== null) markNode(nid, nidArray);
+        if (sid !== null) markNode(sid, nidArray);
         setDataGraph([graph]);
-        setNIds(nidArray);
+        setPaths(nidArray);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [appContext.selectedNodeId, markNode]);
+  }, [appContext.selectedSID, markNode]);
 
   React.useEffect(() => {
-    if (currentSelectedNodeId === appContext.selectedNodeId && currentSelectedNodeId.length !== 0) return;
-    if (appContext.selectedNodeId === "-" || currentSelectedNodeId.length === 0) {
-      setCurrentSelectedNodeId(appContext.selectedNodeId);
+    if (currentSelectedNodeId === appContext.selectedSID && currentSelectedNodeId.length !== 0) return;
+    if (appContext.selectedSID === "-" || currentSelectedNodeId.length === 0) {
+      setCurrentSelectedNodeId(appContext.selectedSID);
       reloadSynthesisGraph();
       return;
     }
-    if (!(appContext.selectedNodeId in nIds)) {
-      setCurrentSelectedNodeId(appContext.selectedNodeId);
+    if (!(appContext.selectedSID in paths)) {
+      setCurrentSelectedNodeId(appContext.selectedSID);
       reloadSynthesisGraph();
       return;
     }
 
     unmarkNode(currentSelectedNodeId);
-    markNode(appContext.selectedNodeId);
-    setCurrentSelectedNodeId(appContext.selectedNodeId);
+    markNode(appContext.selectedSID);
+    setCurrentSelectedNodeId(appContext.selectedSID);
     setDataGraph([dataGraph[0]]);
     return;
   }, [
-    appContext.selectedNodeId,
-    appContext.selectNode,
+    appContext.selectedSID,
+    appContext.setSID,
     currentSelectedNodeId,
     reloadSynthesisGraph,
     dataGraph,
     markNode,
-    nIds,
+    paths,
     unmarkNode,
   ]);
 
@@ -184,7 +183,7 @@ export const SynthesisGraphView: React.FC = () => {
           },
         }}
         onClick={(node: any) => {
-          appContext.selectNode(node.nid);
+          appContext.setSID(node.sid);
         }}
       />
     </div>

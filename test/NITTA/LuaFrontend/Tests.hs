@@ -12,7 +12,7 @@
 {- |
 Module      : NITTA.LuaFrontend.Tests
 Description :
-Copyright   : (c) Aleksandr Penskoi, 2020
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental

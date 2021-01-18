@@ -22,7 +22,7 @@ import qualified Data.Set as S
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
-import NITTA.TargetSynthesis
+import NITTA.Model.Problems.Refactor
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit
 
@@ -31,6 +31,11 @@ refactorTo startFs resultFs = dfRefactored @?= dfRes
         df = fsToDataFlowGraph (startFs :: [F String Int])
         dfRes = fsToDataFlowGraph (resultFs :: [F String Int])
         dfRefactored = simpleRefactor df
+
+simpleRefactor dfg =
+    case optimizeAccumOptions dfg of
+        [] -> dfg
+        (r : _) -> simpleRefactor $ optimizeAccumDecision dfg r
 
 tests =
     testGroup

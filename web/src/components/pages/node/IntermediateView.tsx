@@ -1,10 +1,11 @@
+import { AxiosResponse, AxiosError } from "axios";
 import * as React from "react";
 import "react-table/react-table.css";
 import { Graphviz } from "graphviz-react";
-import { AppContext, IAppContext } from "../../app/AppContext";
-import { AxiosResponse, AxiosError } from "axios";
-import { GraphNode, GraphEdge } from "../../../gen/types";
-import { haskellApiService, EndpointSts, IntermediateGraph, SynthesisNode } from "../../../services/HaskellApiService";
+
+import { AppContext, IAppContext } from "components/app/AppContext";
+import { GraphNode, GraphEdge } from "gen/types";
+import { haskellApiService, EndpointSts, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
 
 import "./IntermediateView.scss";
 
@@ -25,7 +26,7 @@ interface Endpoints {
 }
 
 export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
-  const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
+  const { selectedSID } = React.useContext(AppContext) as IAppContext;
 
   const [algorithmGraph, setAlgorithmGraph] = React.useState<IntermediateGraph | null>(null);
   const [procState, setProcState] = React.useState<ProcessState>({ bindeFuns: [], transferedVars: [] });
@@ -34,7 +35,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
   // Updating graph
   React.useEffect(() => {
     haskellApiService
-      .getIntermediateView(selectedNodeId)
+      .getIntermediateView(selectedSID)
       .then((response: AxiosResponse<IntermediateGraph>) => {
         const graphData = response.data;
         const newGraph: IntermediateGraph = {
@@ -59,18 +60,18 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
       .catch((err: AxiosError) => console.error(err));
 
     haskellApiService
-      .getRootPath(selectedNodeId)
-      .then((response: AxiosResponse<SynthesisNode[]>) => {
+      .getRootPath(selectedSID)
+      .then((response: AxiosResponse<Node[]>) => {
         let result: ProcessState = { bindeFuns: [], transferedVars: [] };
-        response.data.forEach((n: SynthesisNode) => {
-          if (n.nvOrigin !== null && n.nvOrigin!.decision.tag === "DataflowView") {
-            let targets = n.nvOrigin!.decision.targets;
+        response.data.forEach((n: Node) => {
+          if (n.decision.tag === "DataflowDecisionView") {
+            let targets = (n.decision as Dataflow).targets;
             Object.keys(targets).forEach((v: string) => {
               if (targets[v] !== null) result.transferedVars.push(v);
             });
           }
-          if (n.nvOrigin !== null && n.nvOrigin!.decision.tag === "BindingView") {
-            let d = n.nvOrigin!.decision;
+          if (n.decision.tag === "BindDecisionView") {
+            let d = n.decision as Bind;
             result.bindeFuns.push(d.function.fvFun, ...d.function.fvHistory);
           }
         });
@@ -79,7 +80,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
       .catch((err: AxiosError) => console.log(err));
 
     haskellApiService
-      .getEndpoints(selectedNodeId)
+      .getEndpoints(selectedSID)
       .then((response: AxiosResponse<EndpointSts>) => {
         let result: Endpoints = { sources: [], targets: [] };
         response.data.forEach((e) => {
@@ -94,7 +95,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
         setEndpoints(result);
       })
       .catch((err: AxiosError) => console.log(err));
-  }, [selectedNodeId]);
+  }, [selectedSID]);
 
   return (
     <div className="bg-light border edgeGraphContainer">

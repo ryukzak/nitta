@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -17,7 +16,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Synthesis.Method (
-    DefaultNode,
+    DefTree,
     SynthesisMethod,
     simpleSynthesisIO,
     smartBindSynthesisIO,
@@ -28,19 +27,19 @@ module NITTA.Synthesis.Method (
     bestStepIO,
 ) where
 
-import Data.List (find, sortOn)
-import Data.Ord (Down (..))
+import qualified Data.List as L
+import Data.Typeable
 import Debug.Trace
-import NITTA.Model.Networks.Bus
-import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
-import NITTA.Synthesis.Estimate
-import NITTA.Synthesis.Tree
+import NITTA.Synthesis.Bind
+import NITTA.Synthesis.Explore
+import NITTA.Synthesis.Refactor
+import NITTA.Synthesis.Types
 import NITTA.Utils (maximumOn, minimumOn)
-import Numeric.Interval (Interval)
 import Safe
+import System.Log.Logger
 
 {- |The constant, which restricts the maximum number of synthesis steps. Avoids
 the endless synthesis process.
@@ -49,119 +48,90 @@ stepLimit = 750 :: Int
 
 -- |The most complex synthesis method, which embedded all another. That all.
 stateOfTheArtSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-stateOfTheArtSynthesisIO node = do
-    n1 <- simpleSynthesisIO node
-    n2 <- smartBindSynthesisIO node
-    n3 <- bestThreadIO stepLimit node
-    n4 <- bestThreadIO stepLimit =<< allBindsAndRefsIO node
-    return $ getBestNode node [n1, n2, n3, n4]
-
--- |Default synthesis node type.
-type DefaultNode tag v x t =
-    Node
-        (TargetSystem (BusNetwork tag v x t) v x)
-        (SynthesisStatement tag v x (TimeConstrain t))
-        (SynthesisStatement tag v x (Interval t))
-
-{- |The synthesis method is a function, which manipulates a synthesis tree. It
-receives a node and explores it deeply by IO.
--}
-type SynthesisMethod tag v x t = DefaultNode tag v x t -> IO (DefaultNode tag v x t)
+stateOfTheArtSynthesisIO tree = do
+    noticeM "NITTA.Synthesis" $ "stateOfTheArtSynthesisIO: " <> show (sID tree)
+    l1 <- simpleSynthesisIO tree
+    l2 <- smartBindSynthesisIO tree
+    l3 <- bestThreadIO stepLimit tree
+    l4 <- bestThreadIO stepLimit =<< allBindsAndRefsIO tree
+    return $ bestLeaf tree [l1, l2, l3, l4]
 
 -- |Schedule process by simple synthesis.
 simpleSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
 simpleSynthesisIO root = do
+    noticeM "NITTA.Synthesis" $ "simpleSynthesisIO: " <> show (sID root)
     lastObliviousNode <- obviousBindThreadIO root
     allBestThreadIO 1 lastObliviousNode
 
 smartBindSynthesisIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-smartBindSynthesisIO root = do
-    node <- smartBindThreadIO root
-    allBestThreadIO 1 node
+smartBindSynthesisIO tree = do
+    noticeM "NITTA.Synthesis" $ "smartBindSynthesisIO: " <> show (sID tree)
+    tree' <- smartBindThreadIO tree
+    allBestThreadIO 1 tree'
 
 bestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag v x t
 bestThreadIO 0 node = return $ trace "bestThreadIO reach step limit!" node
-bestThreadIO limit node = do
-    edges <- getPositiveEdgesIO node
-    case edges of
-        [] -> return node
-        _ -> bestThreadIO (limit - 1) $ eTarget $ maximumOn eObjectiveFunctionValue edges
+bestThreadIO limit tree = do
+    subForest <- positiveSubForestIO tree
+    case subForest of
+        [] -> return tree
+        _ -> bestThreadIO (limit -1) $ maximumOn (score . sDecision) subForest
 
 bestStepIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-bestStepIO node = do
-    edges <- getPositiveEdgesIO node
-    case edges of
+bestStepIO tree = do
+    subForest <- positiveSubForestIO tree
+    case subForest of
         [] -> error "all step is over"
-        _ -> return $ eTarget $ maximumOn eObjectiveFunctionValue edges
+        _ -> return $ maximumOn (score . sDecision) subForest
 
 obviousBindThreadIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-obviousBindThreadIO node = do
-    edges <- getPositiveEdgesIO node
-    let obliousBind =
-            find
-                ( ( \case
-                        BindEdgeParameter{pPossibleDeadlock = True} -> False
-                        BindEdgeParameter{pAlternative = 1} -> True
-                        _ -> False
-                  )
-                    . eParameters
-                )
-                edges
-    case obliousBind of
-        Just Edge{eTarget} -> obviousBindThreadIO eTarget
-        Nothing -> return node
+obviousBindThreadIO tree = do
+    subForest <- positiveSubForestIO tree
+    maybe (return tree) obviousBindThreadIO $
+        L.find
+            ( ( \case
+                    Just BindMetrics{pPossibleDeadlock = True} -> False
+                    Just BindMetrics{pAlternative = 1} -> True
+                    _ -> False
+              )
+                . cast
+                . sDecision
+            )
+            subForest
 
 allBindsAndRefsIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
-allBindsAndRefsIO node = do
-    edges <-
-        filter
-            (\Edge{eParameters} -> case eParameters of BindEdgeParameter{} -> True; RefactorEdgeParameter{} -> True; _ -> False)
-            <$> getPositiveEdgesIO node
-    if null edges
-        then return node
-        else allBindsAndRefsIO $ eTarget $ minimumOn eObjectiveFunctionValue edges
+allBindsAndRefsIO tree = do
+    subForest <-
+        filter ((\d -> isBind d || isRefactor d) . sDecision)
+            <$> positiveSubForestIO tree
+    case subForest of
+        [] -> return tree
+        _ -> allBindsAndRefsIO $ minimumOn (score . sDecision) subForest
 
-refactorThreadIO node = do
-    edges <- getPositiveEdgesIO node
-    let refEdge =
-            find
-                ( ( \case
-                        RefactorEdgeParameter{} -> True
-                        _ -> False
-                  )
-                    . eParameters
-                )
-                edges
-    case refEdge of
-        Just Edge{eTarget} -> refactorThreadIO eTarget
-        Nothing -> return node
+refactorThreadIO tree = do
+    subForest <- positiveSubForestIO tree
+    maybe (return tree) refactorThreadIO $
+        L.find (isRefactor . sDecision) subForest
 
-smartBindThreadIO node = do
-    node' <- refactorThreadIO node
-    edges <- getPositiveEdgesIO node'
-    let binds =
-            sortOn (Down . eObjectiveFunctionValue) $
-                filter
-                    ( ( \case
-                            BindEdgeParameter{} -> True
-                            _ -> False
-                      )
-                        . eParameters
-                    )
-                    edges
-    case binds of
-        Edge{eTarget} : _ -> smartBindThreadIO eTarget
-        [] -> return node'
+smartBindThreadIO :: (VarValTime v x t, UnitTag tag) => SynthesisMethod tag v x t
+smartBindThreadIO tree = do
+    subForest <-
+        filter ((\d -> isBind d || isRefactor d) . sDecision)
+            <$> (positiveSubForestIO =<< refactorThreadIO tree)
+    case subForest of
+        [] -> return tree
+        _ -> smartBindThreadIO $ maximumOn (score . sDecision) subForest
 
 allBestThreadIO :: (VarValTime v x t, UnitTag tag) => Int -> SynthesisMethod tag v x t
-allBestThreadIO (0 :: Int) node = bestThreadIO stepLimit node
-allBestThreadIO n node = do
-    edges <- getPositiveEdgesIO node
-    sythesizedNodes <- mapM (\Edge{eTarget} -> allBestThreadIO (n -1) eTarget) edges
-    return $ getBestNode node sythesizedNodes
+allBestThreadIO (0 :: Int) tree = bestThreadIO stepLimit tree
+allBestThreadIO n tree = do
+    subForest <- positiveSubForestIO tree
+    leafs <- mapM (allBestThreadIO (n -1)) subForest
+    return $ bestLeaf tree leafs
 
-getBestNode node nodes =
-    let successNodes = filter nIsComplete nodes
-     in case successNodes of
-            _ : _ -> minimumOn (processDuration . nModel) successNodes
-            [] -> headDef node nodes
+bestLeaf :: (VarValTime v x t, UnitTag tag) => DefTree tag v x t -> [DefTree tag v x t] -> DefTree tag v x t
+bestLeaf tree leafs =
+    let successLeafs = filter isComplete leafs
+     in case successLeafs of
+            _ : _ -> minimumOn (processDuration . sTarget . sState) successLeafs
+            [] -> headDef tree leafs

@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 {- |
@@ -76,7 +77,6 @@ module NITTA.TargetSynthesis (
     mkModelWithOneNetwork,
     TargetSynthesis (..),
     runTargetSynthesis,
-    simpleRefactor,
 ) where
 
 import Control.Monad (when)
@@ -87,17 +87,16 @@ import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
 import NITTA.Model.Networks.Bus (BusNetwork)
-import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Project (Project (..), TestbenchReport (..), runTestbench, writeWholeProject)
-import NITTA.Synthesis.Method
-import NITTA.Synthesis.Tree
+import NITTA.Synthesis
 import System.FilePath (joinPath)
+import System.Log.Logger
 
 {- |Description of synthesis task. Applicable for target system synthesis and
- testing purpose.
+testing purpose.
 -}
 data TargetSynthesis tag v x t = TargetSynthesis
     { -- |target name, used for top level module name and project path
@@ -111,10 +110,8 @@ data TargetSynthesis tag v x t = TargetSynthesis
       tDFG :: DataFlowGraph v x
     , -- |values from input interface for testing purpose
       tReceivedValues :: [(v, [x])]
-    , -- |verbose standard output (dumps, progress info, etc).
-      tVerbose :: Bool
     , -- |synthesis method
-      tSynthesisMethod :: G Node tag v x t -> IO (G Node tag v x t)
+      tSynthesisMethod :: SynthesisMethod tag v x t
     , -- |project writer, which defines necessary project part
       tWriteProject :: Project (BusNetwork tag v x t) v x -> IO ()
     , -- |IP-core library directory
@@ -133,7 +130,6 @@ instance (VarValTime v x t) => Default (TargetSynthesis String v x t) where
             , tSourceCode = Nothing
             , tDFG = undefined
             , tReceivedValues = def
-            , tVerbose = False
             , tSynthesisMethod = stateOfTheArtSynthesisIO
             , tWriteProject = writeWholeProject
             , tLibPath = "../../hdl"
@@ -149,7 +145,6 @@ runTargetSynthesis
         , tDFG
         , tReceivedValues
         , tSynthesisMethod
-        , tVerbose
         , tWriteProject
         , tLibPath
         , tPath
@@ -158,9 +153,8 @@ runTargetSynthesis
         -- TODO: check that tName is a valid verilog module name
         when (' ' `elem` tName) $ error "TargetSynthesis name contain wrong symbols"
         tDFG' <- maybe (return tDFG) translateToIntermediate tSourceCode
-        rootNode <- mkRootNodeIO (mkModelWithOneNetwork tMicroArch tDFG')
-        synthesisResult <- synthesis rootNode
-        case synthesisResult of
+        root <- synthesisTreeRootIO (mkModelWithOneNetwork tMicroArch tDFG')
+        synthesise root >>= \case
             Left err -> return $ Left err
             Right leafNode -> do
                 let prj = project leafNode
@@ -169,65 +163,57 @@ runTargetSynthesis
                 return $ Right report
         where
             translateToIntermediate src = do
-                when tVerbose $ putStrLn "> lua transpiler..."
+                infoM "NITTA" "Lua transpiler..."
                 let tmp = frDataFlow $ lua2functions src
-                when tVerbose $ putStrLn "> lua transpiler...ok"
+                infoM "NITTA" "Lua transpiler...ok"
                 return tmp
 
-            synthesis rootNode = do
-                when tVerbose $ putStrLn "> synthesis process..."
-                leafNode <- tSynthesisMethod rootNode
-                let isComplete = isSynthesisFinish $ nModel leafNode
-                when (tVerbose && isComplete) $ putStrLn "> synthesis process...ok"
-                when (tVerbose && not isComplete) $ putStrLn "> synthesis process...fail"
+            synthesise root = do
+                infoM "NITTA" "synthesis process..."
+                leaf <- tSynthesisMethod root
+                let isLeaf = isComplete leaf
+                infoM "NITTA" $ "synthesis process..." <> if isLeaf then "ok" else "fail"
                 return $
-                    if isComplete
-                        then Right leafNode
+                    if isLeaf
+                        then Right leaf
                         else Left "synthesis process...fail"
 
-            project Node{nModel = TargetSystem{mUnit, mDataFlowGraph}} =
+            project tree =
                 Project
                     { pName = tName
                     , pLibPath = tLibPath
                     , pPath = joinPath [tPath, tName]
-                    , pUnit = mUnit
+                    , pUnit = targetModel tree
                     , -- because application algorithm can be refactored we need to use
                       -- synthesised version
-                      pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues mDataFlowGraph
+                      pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues $ targetDFG tree
                     }
 
             write prj@Project{pPath} = do
-                when tVerbose $ putStrLn $ "> write target project to: \"" ++ pPath ++ "\"..."
+                infoM "NITTA" $ "write target project to: \"" <> pPath <> "\"..."
                 tWriteProject prj
-                when tVerbose $ putStrLn $ "> write target project to: \"" ++ pPath ++ "\"...ok"
+                infoM "NITTA" $ "write target project to: \"" <> pPath <> "\"...ok"
 
             testbench prj = do
-                when tVerbose $ putStrLn "> run logical synthesis..."
+                infoM "NITTA" "run logical synthesis..."
                 report@TestbenchReport{tbStatus, tbCompilerDump, tbSimulationDump} <- runTestbench prj
-                when tVerbose $
-                    if tbStatus
-                        then putStrLn "> run logical simulation...ok"
-                        else do
-                            putStrLn "> run logical simulation...fail"
-                            putStrLn "-----------------------------------------------------------"
-                            putStrLn "testbench compiler dump:"
-                            putStrLn $ unlines tbCompilerDump
-                            putStrLn "-----------------------------------------------------------"
-                            putStrLn "testbench simulation dump:"
-                            putStrLn $ unlines tbSimulationDump
+                if tbStatus
+                    then infoM "NITTA" "run logical simulation...ok"
+                    else do
+                        infoM "NITTA" "run logical simulation...fail"
+                        infoM "NITTA" "-----------------------------------------------------------"
+                        infoM "NITTA" "testbench compiler dump:"
+                        infoM "NITTA" $ unlines tbCompilerDump
+                        infoM "NITTA" "-----------------------------------------------------------"
+                        infoM "NITTA" "testbench simulation dump:"
+                        infoM "NITTA" $ unlines tbSimulationDump
                 return report
 
 {- |Make a model of NITTA process with one network and a specific algorithm. All
- functions are already bound to the network.
+functions are already bound to the network.
 -}
 mkModelWithOneNetwork arch dfg =
     TargetSystem
         { mUnit = foldl (flip bind) arch $ functions dfg
         , mDataFlowGraph = dfg
         }
-
--- |Apply all refactor options untill they exist
-simpleRefactor dfg =
-    case refactorOptions dfg of
-        [] -> dfg
-        (r : _) -> simpleRefactor $ refactorDecision dfg r

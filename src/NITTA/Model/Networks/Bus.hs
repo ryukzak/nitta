@@ -33,7 +33,7 @@ import           Data.Bifunctor
 import           Data.Default
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
-import           Data.Maybe ( fromMaybe, isJust, mapMaybe )
+import           Data.Maybe (  isJust, mapMaybe )
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import           Data.Typeable
@@ -291,96 +291,93 @@ instance ( UnitTag tag, VarValTime v x t
             , bnRemains=filter (/= f) bnRemains
             }
 
+instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (BusNetwork tag v x t) v x where
+    breakLoopOptions BusNetwork{bnPus} = concatMap breakLoopOptions $ M.elems bnPus
 
+    breakLoopDecision bn@BusNetwork{bnBinded, bnPus} bl@BreakLoop{} =
+        let Just (puTag, bindedToPU) = L.find (elem (recLoop bl) . snd) $ M.assocs bnBinded
+            bindedToPU' = recLoopIn bl : recLoopOut bl : (bindedToPU L.\\ [recLoop bl])
+         in bn
+                { bnPus = M.adjust (`breakLoopDecision` bl) puTag bnPus
+                , bnBinded = M.insert puTag bindedToPU' bnBinded
+                }
 
-instance ( UnitTag tag, VarValTime v x t
-        ) => RefactorProblem (BusNetwork tag v x t) v x where
-    refactorOptions bn@BusNetwork{ bnPus, bnBinded, bnRemains } = let
-            sources tag = M.fromList
-                [ (s, ss `S.difference` S.singleton s)
-                | EndpointSt{ epRole } <- endpointOptions ( bnPus M.! tag )
-                , case epRole of Source{} -> True; _ -> False
-                , let Source ss = epRole
-                , s <- S.elems ss
-                ]
+instance (VarValTime v x t) => OptimizeAccumProblem (BusNetwork tag v x t) v x where
+    optimizeAccumOptions BusNetwork{bnRemains} = optimizeAccumOptions $ fsToDataFlowGraph bnRemains
 
-            allPossibleOutputs tag v
-                = map (S.union (S.singleton v)) $ S.elems $ S.powerSet
-                $ S.filter (isBufferRepetionOK maxBufferStack) -- avoid to many buffering
-                $ fromMaybe S.empty (sources tag M.!? v)
+    optimizeAccumDecision bn@BusNetwork{bnRemains} oa@OptimizeAccum{} =
+        bn{bnRemains = functions $ optimizeAccumDecision (fsToDataFlowGraph bnRemains) oa}
 
-            alreadyVs = transferred bn
-            fLocks = filter (\Lock{ lockBy } -> S.notMember lockBy alreadyVs) $ concatMap locks $ functions bn
-            allPULocks = map (second locks) $ M.assocs bnPus
-            maybeSended = unionsMap variables $ concatMap endpointOptions $ M.elems bnPus
+instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork tag v x t) v x where
+    resolveDeadlockOptions bn@BusNetwork{bnPus, bnBinded} =
+        let prepareResolve :: S.Set v -> [ResolveDeadlock v x]
+            prepareResolve =
+                map resolveDeadlock
+                    . S.elems
+                    . S.filter (not . S.null)
+                    . ( \lockedVs ->
+                            if S.null lockedVs
+                                then S.empty
+                                else S.filter (not . (lockedVs `S.disjoint`)) $ S.powerSet (var2endpointRole M.! oneOf lockedVs)
+                      )
+                    . S.filter (isBufferRepetionOK maxBufferStack)
 
             isBufferRepetionOK 0 _ = False
             isBufferRepetionOK n v
                 | bufferSuffix v `S.notMember` variables bn = True
-                | otherwise = isBufferRepetionOK (n-1) (bufferSuffix v)
+                | otherwise = isBufferRepetionOK (n -1) (bufferSuffix v)
 
-            selfSending = map ResolveDeadlock $ concat
-                [ allPossibleOutputs tag v
-                | (tag, fs) <- M.assocs bnBinded
-                , let
-                    sources' = sources tag
-                    allSources = S.fromList $ M.keys sources'
-                    selfSendedVs = unionsMap inputs fs `S.intersection` allSources
-                , not $ null selfSendedVs
-                , v <- S.elems selfSendedVs
-                , isBufferRepetionOK maxBufferStack v
-                ]
+            selfSending =
+                concatMap
+                    (\(tag, fs) -> prepareResolve (unionsMap inputs fs `S.intersection` puOutputs tag))
+                    $ M.assocs bnBinded
 
-            resolveDeadlock = map ResolveDeadlock $ concat
-                [ allPossibleOutputs tag lockBy
-                | ( tag, ls ) <- allPULocks
-                , Lock{ lockBy, locked } <- ls
-                , let reversedLock = Lock{ lockBy=locked, locked=lockBy }
-                , reversedLock `elem` fLocks
-                  || any ( \( t, puLocks ) -> tag /= t && reversedLock `elem` puLocks ) allPULocks
-                , lockBy `S.member` maybeSended
-                , isBufferRepetionOK maxBufferStack lockBy
-                ]
-        in concat
-            [ concatMap refactorOptions $ M.elems bnPus
-            , selfSending  -- FIXME: not depricated, but why? It is should be a deadlock
-            , resolveDeadlock
-            , optimizeAccumOptions $ fsToDataFlowGraph bnRemains
-            ]
+            allPULocks = map (second locks) $ M.assocs bnPus
 
-    refactorDecision bn@BusNetwork{ bnRemains, bnBinded, bnPus } r@(ResolveDeadlock vs) = let
-            (buffer, diff) = prepareBuffer r
-            Just (tag, _) = L.find
-                (\(_, f) -> not $ null $ S.intersection vs $ unionsMap outputs f)
-                $ M.assocs bnBinded
+            resolveLocks =
+                concat
+                    [ prepareResolve $ S.singleton lockBy
+                    | (tag, ls) <- allPULocks
+                    , Lock{lockBy, locked} <- ls
+                    , lockBy `S.member` maybeSended
+                    , let reversedLock = Lock{lockBy = locked, locked = lockBy}
+                    , any (\(t, puLocks) -> tag /= t && reversedLock `elem` puLocks) allPULocks
+                    ]
+         in L.nub $ selfSending ++ resolveLocks
+        where
+            endPointRoles = M.map (\pu -> map epRole $ endpointOptions pu) bnPus
 
-            bnRemains' = buffer : patch diff bnRemains
-            bnPus'     = M.adjust (patch diff) tag bnPus
-            bnBinded'  = registerBinding tag buffer $ M.map (patch diff) bnBinded
-        in bn
-            { bnRemains=bnRemains'
-            , bnPus=bnPus'
-            , bnBinded=bnBinded'
-            }
+            puOutputs tag =
+                unionsMap variables $
+                    filter (\case Source{} -> True; _ -> False) $ endPointRoles M.! tag
 
-    refactorDecision bn@BusNetwork{ bnBinded, bnPus } bl@BreakLoop{} = let
-            Just (puTag, bindedToPU) = L.find (elem (recLoop bl) . snd) $ M.assocs bnBinded
-            bindedToPU' = recLoopIn bl : recLoopOut bl : ( bindedToPU L.\\ [ recLoop bl ] )
-        in bn
-            { bnPus=M.adjust (`refactorDecision` bl) puTag bnPus
-            , bnBinded=M.insert puTag bindedToPU' bnBinded
-            }
+            var2endpointRole =
+                M.fromList $
+                    concatMap
+                        ( \case
+                            (Source vs) -> [(v, vs) | v <- S.elems vs]
+                            (Target v) -> [(v, S.singleton v)]
+                        )
+                        $ concat $ M.elems endPointRoles
 
-    refactorDecision bn@BusNetwork{ bnRemains } oa@OptimizeAccum{}
-        = bn{ bnRemains=functions $ optimizeAccumDecision (fsToDataFlowGraph bnRemains) oa }
+            maybeSended = M.keysSet var2endpointRole
 
+    resolveDeadlockDecision bn@BusNetwork{bnRemains, bnBinded, bnPus} ResolveDeadlock{buffer, changeset} =
+        let Just (tag, _) =
+                L.find
+                    (\(_, f) -> not $ null $ S.intersection (outputs buffer) $ unionsMap outputs f)
+                    $ M.assocs bnBinded
+         in bn
+                { bnRemains = buffer : patch changeset bnRemains
+                , bnPus = M.adjust (patch changeset) tag bnPus
+                , bnBinded = M.map (patch changeset) bnBinded
+                }
 
 --------------------------------------------------------------------------
+
 -- |Add binding to Map tag [F v x] dict
-registerBinding tag f dict = M.alter
-    (\case  Just fs -> Just $ f : fs
-            Nothing     -> Just [f]
-    ) tag dict
+registerBinding tag f dict =
+    M.alter (maybe (Just [f]) (Just . (f :))) tag dict
 
 programTicks BusNetwork{ bnProcess=Process{ nextTick } } = [ -1 .. nextTick ]
 

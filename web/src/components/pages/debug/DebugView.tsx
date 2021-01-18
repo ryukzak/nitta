@@ -1,33 +1,34 @@
 import * as React from "react";
 import "react-table/react-table.css";
-import { haskellApiService } from "../../../services/HaskellApiService";
-import { AppContext, IAppContext } from "../../app/AppContext";
-import { JsonView } from "../node/JsonView";
+
+import { haskellApiService } from "services/HaskellApiService";
+import { AppContext, IAppContext } from "components/app/AppContext";
+import { JsonView } from "components/pages/node/JsonView";
 
 export interface IDebugViewProps {}
 
 export const DebugView: React.FC<IDebugViewProps> = (props) => {
-  const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
+  const { selectedSID } = React.useContext(AppContext) as IAppContext;
 
   const [debugInfo, setDebugInfo] = React.useState<any | null>(null);
   React.useEffect(() => {
     haskellApiService
-      .getDebugInfo(selectedNodeId)
+      .getDebugInfo(selectedSID)
       .then((response: any) => setDebugInfo(response.data))
       .catch((err: any) => console.error(err));
-  }, [selectedNodeId]);
+  }, [selectedSID]);
 
   const [synthesisNodeData, setSynthesisNodeData] = React.useState<any | null>(null);
   React.useEffect(() => {
     haskellApiService
-      .getNode(selectedNodeId)
+      .getNode(selectedSID)
       .then((response: any) => setSynthesisNodeData(response.data))
       .catch((err: any) => console.error(err));
-  }, [selectedNodeId]);
+  }, [selectedSID]);
 
   return (
     <div className="m-3">
-      {selectedNodeId ? (
+      {selectedSID ? (
         synthesisNodeData ? (
           <div className="d-flex flex-column">
             <h3>Current node</h3>
