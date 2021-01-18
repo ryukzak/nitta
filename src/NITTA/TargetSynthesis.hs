@@ -178,15 +178,15 @@ runTargetSynthesis
                         then Right leaf
                         else Left "synthesis process...fail"
 
-            project Tree{sState = SynthesisState{sTarget = TargetSystem{mUnit, mDataFlowGraph}}} =
+            project tree =
                 Project
                     { pName = tName
                     , pLibPath = tLibPath
                     , pPath = joinPath [tPath, tName]
-                    , pUnit = mUnit
+                    , pUnit = targetModel tree
                     , -- because application algorithm can be refactored we need to use
                       -- synthesised version
-                      pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues mDataFlowGraph
+                      pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues $ targetDFG tree
                     }
 
             write prj@Project{pPath} = do

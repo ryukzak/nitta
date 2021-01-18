@@ -35,6 +35,8 @@ module NITTA.Synthesis.Types (
     DefTree,
     SynthesisMethod,
     (<?>),
+    targetModel,
+    targetDFG,
 ) where
 
 import Control.Concurrent.STM (TMVar)
@@ -113,6 +115,9 @@ data Tree m tag v x t = Tree
     , -- |lazy mutable field with different synthesis options and sub nodes
       sSubForestVar :: TMVar [Tree m tag v x t]
     }
+
+targetModel = mUnit . sTarget . sState
+targetDFG = mUnit . sTarget . sState
 
 data SynthesisDecision ctx m where
     Root :: SynthesisDecision ctx m

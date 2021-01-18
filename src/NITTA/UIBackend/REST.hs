@@ -122,8 +122,8 @@ type NodeInspectionAPI tag v x t =
 
 nodeInspection ctx@BackendCtx{root} sid =
     liftIO (view <$> getTreeIO root sid)
-        :<|> liftIO (algToVizJS . functions . mDataFlowGraph . sTarget . sState <$> getTreeIO root sid)
-        :<|> liftIO (processTimelines . process . mUnit . sTarget . sState <$> getTreeIO root sid)
+        :<|> liftIO (algToVizJS . functions . targetDFG <$> getTreeIO root sid)
+        :<|> liftIO (processTimelines . process . targetModel <$> getTreeIO root sid)
         :<|> liftIO (dbgEndpointOptions <$> debug ctx sid)
         :<|> debug ctx sid
 
@@ -183,7 +183,6 @@ type TestBenchAPI v x =
 
 testBench BackendCtx{root, receivedValues} sid pName loopsNumber = liftIO $ do
     tree <- getTreeIO root sid
-    let TargetSystem{mDataFlowGraph} = sTarget $ sState tree
     unless (isComplete tree) $ error "test bench not allow for non complete synthesis"
     view
         <$> writeAndRunTestbench
@@ -192,7 +191,7 @@ testBench BackendCtx{root, receivedValues} sid pName loopsNumber = liftIO $ do
                 , pLibPath = joinPath ["..", "..", "hdl"]
                 , pPath = joinPath ["gen", pName]
                 , pUnit = mUnit $ sTarget $ sState tree
-                , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues mDataFlowGraph
+                , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues $ targetDFG tree
                 }
 
 -- Debug
@@ -222,18 +221,18 @@ type DebugAPI tag v t =
         :> Get '[JSON] (Debug tag v t)
 
 debug BackendCtx{root} sid = liftIO $ do
-    node <- getTreeIO root sid
-    let dbgFunctionLocks = map (\f -> (show f, locks f)) $ functions $ mDataFlowGraph $ sTarget $ sState node
-        already = transferred $ mUnit $ sTarget $ sState node
+    tree <- getTreeIO root sid
+    let dbgFunctionLocks = map (\f -> (show f, locks f)) $ functions $ targetModel tree
+        already = transferred $ targetModel tree
     return
         Debug
-            { dbgEndpointOptions = endpointOptions' $ mUnit $ sTarget $ sState node
+            { dbgEndpointOptions = endpointOptions' $ targetModel tree
             , dbgFunctionLocks
             , dbgCurrentStateFunctionLocks =
                 [ (tag, filter (\Lock{lockBy, locked} -> S.notMember lockBy already && S.notMember locked already) ls)
                 | (tag, ls) <- dbgFunctionLocks
                 ]
-            , dbgPULocks = map (second locks) $ M.assocs $ bnPus $ mUnit $ sTarget $ sState node
+            , dbgPULocks = map (second locks) $ M.assocs $ bnPus $ targetModel tree
             }
     where
         endpointOptions' BusNetwork{bnPus} =
