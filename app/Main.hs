@@ -158,7 +158,7 @@ synthesizeAndTest ma n dataflow received = do
 putCntx cntx = putStr $ cntx2table cntx
 
 microarch ioSync = evalNetwork ioSync $ do
-    addManual "fram1" (PU def (framWithSize 16) FramPorts{oe = SignalTag 0, wr = SignalTag 1, addr = map SignalTag [2, 3, 4, 5]} FramIO)
+    addManual "fram1" (PU (framWithSize 16) FramPorts{oe = SignalTag 0, wr = SignalTag 1, addr = map SignalTag [2, 3, 4, 5]} FramIO def)
     addCustom "fram2" (framWithSize 32) FramIO
     add "shift" ShiftIO
     add "mul" MultiplierIO

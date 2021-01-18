@@ -53,10 +53,10 @@ type PUClasses pu v x t =
 data PU v x t where
     PU ::
         (PUClasses pu v x t) =>
-        { diff :: Changeset v -- FIXME: move to end of record
-        , unit :: pu
+        { unit :: pu
         , ports :: Ports pu
         , ioPorts :: IOPorts pu
+        , diff :: Changeset v
         , systemEnv :: TargetEnvironment
         } ->
         PU v x t

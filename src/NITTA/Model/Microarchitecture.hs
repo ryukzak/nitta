@@ -78,7 +78,7 @@ addCustom tag pu io = do
     (usedPorts, puBlocks) <- get
     let signals = freePins usedPorts
         ports = signalsToPorts signals pu
-        puBlock = (tag, PU def pu ports io)
+        puBlock = (tag, PU pu ports io def)
         used = portsToSignals ports
         puBlocks' = puBlock : puBlocks
         usedPorts' = usedPorts ++ used
@@ -124,8 +124,8 @@ addManual tag mkPU = do
 
 -- |__Example for architecture configuration__
 example ioSync = evalNetwork ioSync $ do
-    addManual "fram1_tag" (PU def def FramPorts{oe = SignalTag 0, wr = SignalTag 1, addr = map SignalTag [2, 3, 4, 5]} FramIO)
-    addManual "accum_tag" (PU def def AccumPorts{resetAcc = SignalTag 18, load = SignalTag 19, neg = SignalTag 20, oe = SignalTag 21} AccumIO)
+    addManual "fram1_tag" (PU def FramPorts{oe = SignalTag 0, wr = SignalTag 1, addr = map SignalTag [2, 3, 4, 5]} FramIO def)
+    addManual "accum_tag" (PU def AccumPorts{resetAcc = SignalTag 18, load = SignalTag 19, neg = SignalTag 20, oe = SignalTag 21} AccumIO def)
     addCustom "fram2_tag" (framWithSize 32) FramIO
     add "div_tag2" DividerIO
     add "mul_tag2" MultiplierIO
@@ -135,7 +135,6 @@ example ioSync = evalNetwork ioSync $ do
     addManual
         "spi_master"
         ( PU
-            def
             (anySPI 0)
             SimpleIOPorts
                 { wr = SignalTag 22
@@ -148,4 +147,5 @@ example ioSync = evalNetwork ioSync $ do
                 , master_sclk = OutputPortTag "sclk"
                 , master_cs = OutputPortTag "cs"
                 }
+            def
         )
