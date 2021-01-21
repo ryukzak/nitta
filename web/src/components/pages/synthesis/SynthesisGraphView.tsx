@@ -70,20 +70,30 @@ export const SynthesisGraphView: React.FC = () => {
     haskellApiService
       .getSynthesisTree()
       .then((response: AxiosResponse<SynthesisTree>) => {
-        let nidArray: Paths = {};
+        let sid2node: Paths = {};
 
         let buildGraph = (gNode: Tree, dNode: SynthesisTree) => {
-          let strNid: string = dNode.rootLabel.sid;
-          gNode.name = reLastSID.exec(strNid)![0];
-          gNode.sid = dNode.rootLabel.sid;
-          nidArray[strNid] = gNode;
-          if (dNode.rootLabel.isProcessed) markNode(strNid, nidArray, "black");
-          if (dNode.rootLabel.isLeaf) markNode(strNid, nidArray, "lime");
+          let label = dNode.rootLabel;
+          let sid: string = label.sid;
+          sid2node[sid] = gNode;
+
+          gNode.name = reLastSID.exec(sid)![0];
+          gNode.sid = label.sid;
+          gNode.status = label.isLeaf;
           gNode.attributes = {
-            dec: dNode.rootLabel.decsionType,
-            ch: dNode.rootLabel.duration + " / " + dNode.rootLabel.score,
+            dec: label.decsionType,
+            ch: label.duration + " / " + label.score,
           };
-          gNode.status = dNode.rootLabel.isLeaf;
+          gNode.nodeSvgShape = {
+            shape: "circle",
+            shapeProps: {
+              r: 10,
+              cx: 0,
+              cy: 0,
+              fill: label.isLeaf ? "lime" : label.isProcessed ? "black" : "white",
+            },
+          };
+
           gNode.children = [];
           var notProcessedCount = 0;
           dNode.subForest.forEach((e: SynthesisTree) => {
@@ -106,10 +116,10 @@ export const SynthesisGraphView: React.FC = () => {
         };
 
         let graph = buildGraph({}, response.data);
-        nidArray["."] = graph;
-        if (sid !== null) markNode(sid, nidArray);
+        sid2node["."] = graph;
+        if (sid !== null) markNode(sid, sid2node);
         setDataGraph([graph]);
-        setPaths(nidArray);
+        setPaths(sid2node);
       })
       .catch((err: AxiosError) => console.log(err));
   }, [appContext.selectedSID, markNode]);
