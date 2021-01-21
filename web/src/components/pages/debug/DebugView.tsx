@@ -1,7 +1,7 @@
 import * as React from "react";
 import "react-table/react-table.css";
 
-import { haskellApiService } from "services/HaskellApiService";
+import { api } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "components/app/AppContext";
 import { JsonView } from "components/pages/node/JsonView";
 
@@ -12,7 +12,7 @@ export const DebugView: React.FC<IDebugViewProps> = (props) => {
 
   const [debugInfo, setDebugInfo] = React.useState<any | null>(null);
   React.useEffect(() => {
-    haskellApiService
+    api
       .getDebugInfo(selectedSID)
       .then((response: any) => setDebugInfo(response.data))
       .catch((err: any) => console.error(err));
@@ -20,7 +20,7 @@ export const DebugView: React.FC<IDebugViewProps> = (props) => {
 
   const [synthesisNodeData, setSynthesisNodeData] = React.useState<any | null>(null);
   React.useEffect(() => {
-    haskellApiService
+    api
       .getNode(selectedSID)
       .then((response: any) => setSynthesisNodeData(response.data))
       .catch((err: any) => console.error(err));

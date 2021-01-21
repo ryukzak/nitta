@@ -5,15 +5,7 @@ import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "components/app/AppContext";
 import { GraphNode, GraphEdge } from "gen/types";
-import {
-  haskellApiService,
-  PUEndpoints,
-  Endpoint,
-  IntermediateGraph,
-  Dataflow,
-  Bind,
-  Node,
-} from "services/HaskellApiService";
+import { api, PUEndpoints, Endpoint, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
 
 import "./IntermediateView.scss";
 
@@ -42,7 +34,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
 
   // Updating graph
   React.useEffect(() => {
-    haskellApiService
+    api
       .getIntermediateView(selectedSID)
       .then((response: AxiosResponse<IntermediateGraph>) => {
         const graphData = response.data;
@@ -67,7 +59,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
       })
       .catch((err: AxiosError) => console.error(err));
 
-    haskellApiService
+    api
       .getRootPath(selectedSID)
       .then((response: AxiosResponse<Node[]>) => {
         let result: ProcessState = { bindeFuns: [], transferedVars: [] };
@@ -87,7 +79,7 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
       })
       .catch((err: AxiosError) => console.log(err));
 
-    haskellApiService
+    api
       .getEndpoints(selectedSID)
       .then((response: AxiosResponse<PUEndpoints[]>) => {
         let result: Endpoints = { sources: [], targets: [] };

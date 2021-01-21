@@ -1,6 +1,6 @@
 import * as React from "react";
 import { DropdownButton, Dropdown } from "react-bootstrap";
-import { synthesize, haskellApiService as api } from "services/HaskellApiService";
+import { synthesize, api } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "./AppContext";
 
 import "./AppNavbar.scss";

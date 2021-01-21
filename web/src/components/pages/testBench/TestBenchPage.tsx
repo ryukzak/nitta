@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AxiosResponse, AxiosError } from "axios";
 
-import { haskellApiService, TestBenchReport } from "services/HaskellApiService";
+import { api, TestBenchReport } from "services/HaskellApiService";
 
 import { AppContext, IAppContext } from "components/app/AppContext";
 import { SimulationDataView } from "./SimulationDataView";
@@ -13,7 +13,7 @@ export const TestBenchPage: React.FC = () => {
   const [testBenchDump, setTestBenchDump] = useState<TestBenchReport | null>(null);
 
   useEffect(() => {
-    haskellApiService
+    api
       .runTestBench(appContext.selectedSID, "web_ui", 5)
       .then((response: AxiosResponse<TestBenchReport | null>) => {
         setTestBenchDump(response.data);
