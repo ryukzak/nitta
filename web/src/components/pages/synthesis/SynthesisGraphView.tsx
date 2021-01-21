@@ -167,7 +167,7 @@ export const SynthesisGraphView: React.FC = () => {
         data={dataGraph}
         nodeSize={{ x: 160, y: 60 }}
         separation={{ siblings: 1, nonSiblings: 1 }}
-        pathFunc="straight"
+        pathFunc="diagonal"
         translate={{ x: 20, y: 40 }}
         collapsible={false}
         zoom={0.7}
