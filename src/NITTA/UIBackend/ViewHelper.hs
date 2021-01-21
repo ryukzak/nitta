@@ -33,12 +33,8 @@ module NITTA.UIBackend.ViewHelper (
     TreeView,
     SynthesisNodeView,
     NodeView,
-    EndpointStView (..),
-    DataflowEndpointView,
     TestbenchReportView (..),
     FView,
-    TimeConstrainView,
-    IntervalView,
 ) where
 
 import Control.Concurrent.STM
@@ -47,11 +43,9 @@ import qualified Data.HashMap.Strict as HM
 import Data.Hashable
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import qualified Data.Set as S
 import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Types
-import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
@@ -59,7 +53,7 @@ import NITTA.Model.Types
 import NITTA.Project (TestbenchReport (..))
 import NITTA.Synthesis
 import NITTA.UIBackend.ViewHelperCls
-import Numeric.Interval
+import Numeric.Interval.NonEmpty
 import Servant.Docs
 
 type VarValTimeJSON v x t = (Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t)
@@ -226,7 +220,7 @@ instance ToSample (NodeView tag v x t) where
                         , targets =
                             HM.fromList
                                 [ ("a1", Nothing)
-                                , ("a2", Just ("PU2", IntervalView "1 ... 1"))
+                                , ("a2", Just ("PU2", 1 ... 1))
                                 ]
                         }
                 , score = 1999
@@ -267,35 +261,6 @@ instance ToSample (NodeView tag v x t) where
                 , score = 1999
                 }
             ]
-
--- Problems
-
-data DataflowEndpointView tag tp = DataflowEndpointView
-    { pu :: tag
-    , time :: tp
-    }
-    deriving (Generic)
-
-instance (ToJSON tp, ToJSON tag) => ToJSON (DataflowEndpointView tag tp)
-
--- Endpoint
-
-data EndpointStView tag v = EndpointStView
-    { unitTag :: tag
-    , endpoint :: EndpointSt v TimeConstrainView
-    }
-    deriving (Generic)
-
-instance (Viewable tp tp') => Viewable (EndpointSt v tp) (EndpointSt v tp') where
-    view EndpointSt{epRole, epAt} = EndpointSt{epRole, epAt = view epAt}
-
-instance (ToJSON tag, ToJSON v) => ToJSON (EndpointStView tag v)
-
-instance ToSample (EndpointStView String String) where
-    toSamples _ =
-        [ ("target", EndpointStView "PU1" $ view $ EndpointSt{epRole = Target "a", epAt = TimeConstrain{tcAvailable = (0 :: Int) ... maxBound, tcDuration = 1 ... maxBound}})
-        , ("source", EndpointStView "PU2" $ view $ EndpointSt{epRole = Source $ S.singleton "a", epAt = TimeConstrain{tcAvailable = (0 :: Int) ... maxBound, tcDuration = 1 ... 1}})
-        ]
 
 -- Testbench
 

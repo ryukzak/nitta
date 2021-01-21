@@ -2,13 +2,14 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
 
--- |
---Module      : NITTA.Model.ProcessorUnits.Divider.Tests
---Description :
---Copyright   : (c) Aleksandr Penskoi, 2020
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : NITTA.Model.ProcessorUnits.Divider.Tests
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Model.ProcessorUnits.Divider.Tests (
     tests,
 ) where

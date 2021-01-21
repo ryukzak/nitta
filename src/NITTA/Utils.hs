@@ -52,8 +52,8 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Utils.Base
 import NITTA.Utils.CodeFormat
 import Numeric (readInt, showHex)
-import Numeric.Interval (inf, sup, (...))
-import qualified Numeric.Interval as I
+import Numeric.Interval.NonEmpty (inf, sup, (...))
+import qualified Numeric.Interval.NonEmpty as I
 import Text.StringTemplate
 
 modify'_ :: (s -> s) -> State s ()

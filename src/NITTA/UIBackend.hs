@@ -54,15 +54,15 @@ restDocs port =
 prepareJSAPI port path = do
     let prefix =
             [qq|import axios from 'axios';
-var api = \{\};
-export default api;
+var jsAPI = \{\};
+export default jsAPI;
 /* eslint no-useless-concat: "off" */|]
     let axios' =
             SJS.axiosWith
                 SJS.defAxiosOptions
                 SJS.defCommonGeneratorOptions
                     { SJS.urlPrefix = [qq|http://localhost:$port|]
-                    , SJS.moduleName = "api"
+                    , SJS.moduleName = "jsAPI"
                     }
     SJS.writeJSForAPI (Proxy :: Proxy (SynthesisAPI String String Int Int)) ((prefix <>) . axios') $ joinPath [path, "rest_api.js"]
 

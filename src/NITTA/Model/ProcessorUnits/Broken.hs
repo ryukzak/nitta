@@ -37,7 +37,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval (sup, (...))
+import Numeric.Interval.NonEmpty (sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 
 data Broken v x t = Broken

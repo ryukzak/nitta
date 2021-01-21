@@ -49,7 +49,7 @@ import           NITTA.Project.Snippets
 import           NITTA.Project.Types
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval ( inf, sup, width, (...) )
+import           Numeric.Interval.NonEmpty ( inf, sup, width, (...) )
 import           Text.InterpolatedString.Perl6 ( qc )
 
 

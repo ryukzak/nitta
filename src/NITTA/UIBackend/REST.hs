@@ -115,7 +115,7 @@ type NodeInspectionAPI tag v x t =
                      )
                 :<|> ( Description "Enpoint options for all process units"
                         :> "endpoints"
-                        :> Get '[JSON] [EndpointStView tag v]
+                        :> Get '[JSON] [(tag, [EndpointSt v (TimeConstrain t)])]
                      )
                 :<|> ("debug" :> DebugAPI tag v t)
            )
@@ -198,7 +198,7 @@ testBench BackendCtx{root, receivedValues} sid pName loopsNumber = liftIO $ do
 
 -- |Type for CAD debugging. Used for extracting internal information.
 data Debug tag v t = Debug
-    { dbgEndpointOptions :: [EndpointStView tag v]
+    { dbgEndpointOptions :: [(tag, [EndpointSt v (TimeConstrain t)])]
     , dbgFunctionLocks :: [(String, [Lock v])]
     , dbgCurrentStateFunctionLocks :: [(String, [Lock v])]
     , dbgPULocks :: [(String, [Lock v])]
@@ -208,6 +208,7 @@ data Debug tag v t = Debug
 instance (ToJSON tag, ToJSON t, Time t) => ToJSON (Debug tag String t)
 
 instance ToSample (Debug String String Int)
+instance ToSample (EndpointSt [Char] (TimeConstrain Int)) where toSamples _ = noSamples
 
 instance ToSample Char where toSamples _ = noSamples
 
@@ -235,10 +236,7 @@ debug BackendCtx{root} sid = liftIO $ do
             , dbgPULocks = map (second locks) $ M.assocs $ bnPus $ targetModel tree
             }
     where
-        endpointOptions' BusNetwork{bnPus} =
-            let f (tag, pu) =
-                    map (\(t, ep) -> EndpointStView t $ view ep) $ zip (repeat tag) $ endpointOptions pu
-             in concatMap f $ M.assocs bnPus
+        endpointOptions' BusNetwork{bnPus} = map (second endpointOptions) $ M.assocs bnPus
 
 -- API Description
 

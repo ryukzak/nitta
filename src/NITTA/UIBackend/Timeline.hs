@@ -32,7 +32,7 @@ import qualified Data.String.Utils as S
 import GHC.Generics
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.Types
-import Numeric.Interval
+import Numeric.Interval.NonEmpty
 import Servant.Docs
 
 data ProcessTimelines t = ProcessTimelines

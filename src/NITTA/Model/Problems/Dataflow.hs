@@ -26,7 +26,7 @@ import Data.Maybe
 import GHC.Generics
 import NITTA.Intermediate.Variable
 import NITTA.Model.Types
-import Numeric.Interval
+import Numeric.Interval.NonEmpty
 
 {- |Dataflow option (@tp ~ TimeConstrain t@) or decision (@tp Z Interval t@)
 statement. Describe sending data between processor units over a network. Any
