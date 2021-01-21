@@ -78,7 +78,7 @@ puCoSimTestCase name u cntxCycle alg =
             prj =
                 Project
                     { pName = mname
-                    , pLibPath = joinPath ["..", "..", "hdl"]
+                    , pLibPath = "hdl"
                     , pPath
                     , pUnit = naiveSynthesis alg u
                     , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
@@ -156,7 +156,7 @@ puCoSimProp name pu0 fsGen =
                         writeAndRunTestbench
                             Project
                                 { pName = toModuleName name
-                                , pLibPath = joinPath ["..", "..", "hdl"]
+                                , pLibPath = "hdl"
                                 , pPath
                                 , pUnit = pu
                                 , pTestCntx

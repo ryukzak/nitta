@@ -188,7 +188,7 @@ testBench BackendCtx{root, receivedValues} sid pName loopsNumber = liftIO $ do
         <$> writeAndRunTestbench
             Project
                 { pName
-                , pLibPath = joinPath ["..", "..", "hdl"]
+                , pLibPath = "hdl"
                 , pPath = joinPath ["gen", pName]
                 , pUnit = mUnit $ sTarget $ sState tree
                 , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues $ targetDFG tree

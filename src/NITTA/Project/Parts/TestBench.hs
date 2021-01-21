@@ -29,7 +29,6 @@ import           Data.Default
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import qualified Data.String.Utils as S
-import qualified Data.Text as T
 import           Data.Typeable
 import           GHC.Generics ( Generic )
 import           NITTA.Intermediate.Types
@@ -123,7 +122,7 @@ projectFiles prj@Project{ pName, pUnit }
         addPath p (Aggregate (Just p') subInstances) = concatMap (addPath $ joinPath [p, p']) subInstances
         addPath p (Aggregate Nothing subInstances) = concatMap (addPath $ joinPath [p]) subInstances
         addPath p (Immediate fn _) = [ joinPath [ p, fn ] ]
-        addPath _ (FromLibrary fn) = [ joinPath [ "lib", T.unpack $ L.last $ T.split (=='/') (T.pack fn) ] ]
+        addPath _ (FromLibrary fn) = [ joinPath [ "lib", fn ] ]
         addPath _ Empty = []
 
 
