@@ -35,7 +35,7 @@ import           Data.Proxy ( asProxyTypeOf )
 import           Data.Typeable
 import           NITTA.Model.Problems
 import           NITTA.Model.ProcessorUnits.Types
-import           Numeric.Interval ( singleton )
+import           Numeric.Interval.NonEmpty ( singleton )
 
 -- |Process builder state.
 data Schedule pu v x t

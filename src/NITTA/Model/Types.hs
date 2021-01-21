@@ -31,7 +31,7 @@ import qualified Data.Text as T
 import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Types
-import Numeric.Interval
+import Numeric.Interval.NonEmpty
 
 -- |Shortcut for variable ('v'), value ('x') and time ('t') type constrains.
 type VarValTime v x t = (Var v, Val x, Time t)

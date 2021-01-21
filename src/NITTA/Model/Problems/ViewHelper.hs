@@ -24,7 +24,7 @@ import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.Types
 import NITTA.UIBackend.ViewHelperCls
-import Numeric.Interval
+import Numeric.Interval.NonEmpty
 
 newtype IntervalView = IntervalView String
     deriving (Generic)

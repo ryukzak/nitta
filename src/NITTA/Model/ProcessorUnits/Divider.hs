@@ -1,4 +1,4 @@
-{- FOURMOLU_DISABLE -}
+{- ORMOLU_DISABLE -}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -27,7 +27,7 @@ module NITTA.Model.ProcessorUnits.Divider
 import           Control.Monad ( void, when )
 import           Data.Default
 import           Data.List ( partition, sortBy )
-import           Data.Maybe ( fromMaybe )
+import           Data.Maybe ( fromMaybe, isNothing )
 import           Data.Set ( Set, member )
 import qualified Data.Set as S
 import qualified NITTA.Intermediate.Functions as F
@@ -38,9 +38,8 @@ import           NITTA.Model.Types
 import           NITTA.Project
 import           NITTA.Utils
 import           NITTA.Utils.ProcessDescription
-import           Numeric.Interval ( Interval, inf, intersection, singleton, sup, width, (...) )
+import           Numeric.Interval.NonEmpty ( Interval, inf, intersection, singleton, sup, (...) )
 import           Text.InterpolatedString.Perl6 ( qc )
-
 
 data InputDesc
     = Numer
@@ -51,8 +50,6 @@ data OutputDesc
     = Quotient
     | Remain
     deriving ( Show, Eq )
-
-
 
 data Divider v x t
     = Divider
@@ -108,14 +105,11 @@ data Job v x t
         }
     deriving ( Eq, Show )
 
-
 nextTargetTick Divider{ targetIntervals=[] }  = 0
 nextTargetTick Divider{ targetIntervals=i:_ } = sup i + 1
 
 nextSourceTick Divider{ sourceIntervals=[] }  = 0
 nextSourceTick Divider{ sourceIntervals=i:_ } = sup i + 1
-
-
 
 findJob f jobs
     = case partition f jobs of
@@ -136,8 +130,6 @@ findNextInProgress jobs
         []     -> Nothing
         (j:js) -> Just (j, js ++ other)
 
-
-
 remain2input nextTick f
     | Just (F.Division (I n) (I d) (O _q) (O _r)) <- castF f
     = Input{ function=f, startAt=nextTick, inputSeq=[(Numer, n), (Denom, d)] }
@@ -148,15 +140,13 @@ inProgress2Output rottenAt InProgress{ function, startAt, finishAt }
     = Output{ function, rottenAt, startAt, finishAt, outputRnd=filter (not . null . snd) [(Quotient, q), (Remain, r)] }
 inProgress2Output _ _ = error "divider inProgress2Output internal error"
 
-
 resolveColisions [] opt = [ opt ]
 resolveColisions intervals opt@EndpointSt{ epAt=tc@TimeConstrain{ tcAvailable } }
-    | all ((0 ==) . width . intersection tcAvailable) intervals
+    | all (isNothing . intersection tcAvailable) intervals
     = [ opt ]
     | otherwise  -- FIXME: we must prick out work point from intervals
     , let from = maximum $ map sup intervals
     = [ opt{ epAt=tc{ tcAvailable=from ... inf tcAvailable } } ]
-
 
 rottenTime Divider{ pipeline, latency } jobs
     | Just (InProgress{ startAt }, _) <- findNextInProgress jobs
@@ -165,14 +155,11 @@ rottenTime Divider{ pipeline, latency } jobs
     = Just (startAt + pipeline + latency )
     | otherwise = Nothing
 
-
 pushOutput pu@Divider{ jobs }
     | Just _ <- findOutput jobs = pu
     | Just (ij, other) <- findNextInProgress jobs
     = pu{ jobs=inProgress2Output (rottenTime pu other) ij : other }
     | otherwise = pu
-
-
 
 instance ( VarValTime v x t
          ) => ProcessorUnit (Divider v x t) v x t where
@@ -183,7 +170,6 @@ instance ( VarValTime v x t
             }
         | otherwise = Left $ "Unknown functional block: " ++ show f
     process = process_
-
 
 instance ( Var v ) => Locks (Divider v x t) v where
     -- FIXME:
@@ -222,7 +208,6 @@ instance ( VarValTime v x t
                 | Just (ij, other) <- findNextInProgress jobs
                  = source $ inProgress2Output (rottenTime pu other) ij
                 | otherwise = []
-
 
     -- FIXME: vertical relations
     endpointDecision
@@ -271,8 +256,6 @@ instance ( VarValTime v x t
 
     endpointDecision _ _ = error "divider decision internal error"
 
-
-
 instance Controllable (Divider v x t) where
     data Instruction (Divider v x t)
         = Load InputDesc
@@ -311,7 +294,6 @@ instance UnambiguouslyDecode (Divider v x t) where
     decodeInstruction (Load Denom)   = def{ wrSignal=True, wrSelSignal=True }
     decodeInstruction (Out Quotient) = def{ oeSignal=True, oeSelSignal=False }
     decodeInstruction (Out Remain)   = def{ oeSignal=True, oeSelSignal=True }
-
 
 instance Connected (Divider v x t) where
     data Ports (Divider v x t)
@@ -368,9 +350,7 @@ instance ( Val x, Show t
     hardwareInstance _title _pu TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io
         = error "Should be defined in network."
 
-
 instance IOTestBench (Divider v x t) v x
-
 
 instance ( VarValTime v x t ) => Testable (Divider v x t) v x where
     testBenchImplementation prj@Project{ pName, pUnit }

@@ -36,7 +36,7 @@ import NITTA.UIBackend
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS
-import Numeric.Interval
+import Numeric.Interval.NonEmpty
 import Paths_nitta (version)
 import System.Console.CmdArgs
 import System.Directory (createDirectoryIfMissing)

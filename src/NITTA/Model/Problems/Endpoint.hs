@@ -31,7 +31,7 @@ import qualified Data.String.Utils as S
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Types
-import Numeric.Interval
+import Numeric.Interval.NonEmpty
 
 data EndpointSt v tp = EndpointSt
     { -- |use processor unit as source or target of data

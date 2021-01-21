@@ -59,7 +59,7 @@ import NITTA.Model.Types
 import NITTA.Project (TestbenchReport (..))
 import NITTA.Synthesis
 import NITTA.UIBackend.ViewHelperCls
-import Numeric.Interval
+import Numeric.Interval.NonEmpty
 import Servant.Docs
 
 type VarValTimeJSON v x t = (Var v, Val x, Time t, ToJSONKey v, ToJSON v, ToJSON x, ToJSON t)
