@@ -71,7 +71,6 @@ export const SynthesisGraphView: React.FC = () => {
       .getSynthesisTree()
       .then((response: AxiosResponse<SynthesisTree>) => {
         let sid2node: SID2Node = {};
-        var t0 = performance.now();
 
         let buildGraph = (dNode: SynthesisTree) => {
           let label = dNode.rootLabel;
