@@ -42,7 +42,7 @@ data DecisionView
         }
     | DataflowDecisionView
         { source :: String
-        , targets :: HM.HashMap String (Maybe (String, IntervalView))
+        , targets :: HM.HashMap String (Maybe (String, Interval Int))
         }
     | BreakLoopView
         { value :: String
@@ -74,7 +74,7 @@ instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)
                 HM.fromList $
                     map
                         ( \case
-                            (v, Just (target, i)) -> (show v, Just (show target, view i))
+                            (v, Just (target, i)) -> (show v, Just (show target, fromEnum (sup i) ... fromEnum (inf i)))
                             (v, Nothing) -> (show v, Nothing)
                         )
                         $ M.assocs dfTargets

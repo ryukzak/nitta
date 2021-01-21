@@ -76,8 +76,6 @@ $(deriveTypeScript defaultOptions ''FView)
 $(deriveTypeScript defaultOptions ''TreeView)
 $(deriveTypeScript defaultOptions ''SynthesisNodeView)
 
-$(deriveTypeScript defaultOptions ''DataflowEndpointView)
-
 $(deriveTypeScript defaultOptions ''NodeView)
 $(deriveTypeScript defaultOptions ''DecisionView)
 $(deriveTypeScript defaultOptions ''BindMetrics)
@@ -90,11 +88,8 @@ $(deriveTypeScript defaultOptions ''GraphEdge)
 $(deriveTypeScript defaultOptions ''GraphNode)
 $(deriveTypeScript defaultOptions ''GraphStructure)
 
-$(deriveTypeScript defaultOptions ''IntervalView)
-$(deriveTypeScript defaultOptions ''TimeConstrainView)
 $(deriveTypeScript defaultOptions ''EndpointRole)
 $(deriveTypeScript defaultOptions ''EndpointSt)
-$(deriveTypeScript defaultOptions ''EndpointStView)
 
 main = do
     APIGen{port, output_path, verbose} <- cmdArgs apiGenArgs
@@ -142,16 +137,12 @@ main = do
                       getTypeScriptDeclarations (Proxy :: Proxy FView)
                     , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy DataflowEndpointView)
                     , getTypeScriptDeclarations (Proxy :: Proxy NodeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphNode)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)
-                    , getTypeScriptDeclarations (Proxy :: Proxy IntervalView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TimeConstrainView)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointRole)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointSt)
-                    , getTypeScriptDeclarations (Proxy :: Proxy EndpointStView)
                     ]
     writeFile (joinPath [output_path, "types.ts"]) $
         foldl
