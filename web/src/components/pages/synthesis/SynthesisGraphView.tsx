@@ -73,21 +73,21 @@ export const SynthesisGraphView: React.FC = () => {
         let nidArray: Paths = {};
 
         let buildGraph = (gNode: Tree, dNode: SynthesisTree) => {
-          let strNid: string = dNode.rootLabel.svNnid;
+          let strNid: string = dNode.rootLabel.sid;
           gNode.name = reLastSID.exec(strNid)![0];
-          gNode.sid = dNode.rootLabel.svNnid;
+          gNode.sid = dNode.rootLabel.sid;
           nidArray[strNid] = gNode;
-          if (dNode.rootLabel.svIsEdgesProcessed) markNode(strNid, nidArray, "black");
-          if (dNode.rootLabel.svIsComplete) markNode(strNid, nidArray, "lime");
+          if (dNode.rootLabel.isProcessed) markNode(strNid, nidArray, "black");
+          if (dNode.rootLabel.isLeaf) markNode(strNid, nidArray, "lime");
           gNode.attributes = {
-            dec: dNode.rootLabel.svOptionType,
-            ch: dNode.rootLabel.svDuration + " / " + dNode.rootLabel.svCharacteristic,
+            dec: dNode.rootLabel.decsionType,
+            ch: dNode.rootLabel.duration + " / " + dNode.rootLabel.score,
           };
-          gNode.status = dNode.rootLabel.svIsComplete;
+          gNode.status = dNode.rootLabel.isLeaf;
           gNode.children = [];
           var notProcessedCount = 0;
           dNode.subForest.forEach((e: SynthesisTree) => {
-            if (e.rootLabel.svIsEdgesProcessed) {
+            if (e.rootLabel.isProcessed) {
               var tmp: Tree = {};
               if (gNode.children != null) {
                 gNode.children.push(tmp);

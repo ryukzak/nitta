@@ -2,11 +2,11 @@ import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
 import { SID, IAppContext } from "components/app/AppContext";
 
 import api from "gen/rest_api.js";
-import { TreeView, SynthesisNodeView } from "../gen/types";
+import { TreeView, ShortNodeView } from "../gen/types";
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "../gen/types";
 import { EndpointStView, GraphStructure, GraphEdge, TestbenchReportView } from "../gen/types";
 
-export type SynthesisTree = TreeView<SynthesisNodeView>;
+export type SynthesisTree = TreeView<ShortNodeView>;
 export type Node = NodeView<string, string, number, number>;
 export type Decision = DecisionView;
 export type Root = IRootView;
@@ -32,7 +32,7 @@ export function synthesize<T extends Array<any>>(
 }
 
 export const haskellApiService = {
-  getSynthesisTree: (): AxiosPromise<TreeView<SynthesisNodeView>> => api.getSynthesisTree(),
+  getSynthesisTree: (): AxiosPromise<TreeView<ShortNodeView>> => api.getSynthesisTree(),
 
   // Synthesis tree navigation
   getRootPath: (sid: SID): AxiosPromise<Node[]> => api.getNodeBySidRootPath(sid),

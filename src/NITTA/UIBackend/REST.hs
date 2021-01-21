@@ -58,7 +58,7 @@ data BackendCtx tag v x t = BackendCtx
 type SynthesisAPI tag v x t =
     ( Description "Get whole synthesis tree"
         :> "synthesisTree"
-        :> Get '[JSON] (TreeView SynthesisNodeView)
+        :> Get '[JSON] (TreeView ShortNodeView)
     )
         :<|> ( "node" :> Capture "sid" SID
                 :> ( SynthesisTreeNavigationAPI tag v x t
