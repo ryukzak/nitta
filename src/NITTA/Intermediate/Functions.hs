@@ -7,20 +7,21 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- |
---Module      : NITTA.Intermediate.Functions
---Description : Library of functions
---Copyright   : (c) Aleksandr Penskoi, 2019
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
---
---Library of functions for an intermediate algorithm representation. Execution
---relations between functions and process units are many-to-many.
---
---[@function (functional block)@] atomic operation in intermediate algorithm
---representation. Function has zero or many inputs and zero or many output.
---Function can contains state between process cycles.
+{- |
+Module      : NITTA.Intermediate.Functions
+Description : Library of functions
+Copyright   : (c) Aleksandr Penskoi, 2019
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+
+Library of functions for an intermediate algorithm representation. Execution
+relations between functions and process units are many-to-many.
+
+[@function (functional block)@] atomic operation in intermediate algorithm
+representation. Function has zero or many inputs and zero or many output.
+Function can contains state between process cycles.
+-}
 module NITTA.Intermediate.Functions (
     -- *Arithmetics
     Add (..),
@@ -68,79 +69,80 @@ import NITTA.Intermediate.Functions.Accum
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
 
--- |Loop -- function for transfer data between computational cycles.
--- Let see the simple example with the following implementation of the
--- Fibonacci algorithm.
---
--- Data flow graph:
---
--- @
---     +---------------------------------+
---     |                                 |
---     v                                 |
--- +------+                          b2  |
--- | Loop |      b1_1  +-----+    +------+
--- +------+----+------>|     |    |
---             | a1    | sum +----+
--- +------+----------->|     |
--- | Loop |    |       +-----+      b1_2
--- +------+    +-------------------------+
---     ^                                 |
---     |                                 |
---     +---------------------------------+
--- @
---
--- Lua source code:
---
--- @
--- function fib(a1, b1)
---     b2 = a1 + b1
---     fib(b1, b2)
--- end
--- fib(0, 1)
--- @
---
--- Data flow defines computation for a single computational cycle. But
--- a controller should repeat the algorithm infinite times, and
--- usually, it is required to transfer data between cycles. `Loop`
--- allows doing that. At first cycle, `Loop` function produces an
--- initial value (`X x`), after that on each cycle `Loop` produces a
--- variable value from the previous cycle, and consumes a new value at
--- the end of the cycle.
---
--- Computational process:
---
--- @
---          ][                 Cycle 1                 ][                Cycle 2                  ]
---          ][                                         ][                                         ]
--- initial  ][ ---+                          b2   +--- ][ ---+                          b2   +--- ]
---  value   ][ op |      b1_1  +-----+    +------>| Lo ][ op |      b1_1  +-----+    +------>| Lo ]
---  is a    ][ ---+----+------>|     |    |       +--- ][ ---+----+------>|     |    |       +--- ]
--- part of  ][         |       | sum +----+            ][         |       | sum +----+            ]
--- software ][ ---+----------->|     |            +--- ][ ---+----------->|     |            +--- ]
---          ][ op |    |       +-----+     b1_2   | Lo ][ op |    |       +-----+      b1_2  | Lo ]
---          ][ ---+    +------------------------->+--- ][ ---+    +------------------------->+--- ]
---          ][                                         ][                                         ]
--- @
---
--- Similation data:
---
--- +--------------+----+----+----+
--- | Cycle number | a1 | b1 | b2 |
--- +==============+====+====+====+
--- | 1            | 0  | 1  | 1  |
--- +--------------+----+----+----+
--- | 2            | 1  | 1  | 2  |
--- +--------------+----+----+----+
--- | 3            | 1  | 2  | 3  |
--- +--------------+----+----+----+
--- | 4            | 2  | 3  | 5  |
--- +--------------+----+----+----+
---
--- In practice, Loop function supported by Fram processor unit in the
--- following way: Loop function should be prepared before execution by
--- automatical refactor @BreakLoop@, which replace Loop by @LoopIn@
--- and @LoopOut@.
+{- |Loop -- function for transfer data between computational cycles.
+Let see the simple example with the following implementation of the
+Fibonacci algorithm.
+
+Data flow graph:
+
+@
+    +---------------------------------+
+    |                                 |
+    v                                 |
++------+                          b2  |
+| Loop |      b1_1  +-----+    +------+
++------+----+------>|     |    |
+            | a1    | sum +----+
++------+----------->|     |
+| Loop |    |       +-----+      b1_2
++------+    +-------------------------+
+    ^                                 |
+    |                                 |
+    +---------------------------------+
+@
+
+Lua source code:
+
+@
+function fib(a1, b1)
+    b2 = a1 + b1
+    fib(b1, b2)
+end
+fib(0, 1)
+@
+
+Data flow defines computation for a single computational cycle. But
+a controller should repeat the algorithm infinite times, and
+usually, it is required to transfer data between cycles. `Loop`
+allows doing that. At first cycle, `Loop` function produces an
+initial value (`X x`), after that on each cycle `Loop` produces a
+variable value from the previous cycle, and consumes a new value at
+the end of the cycle.
+
+Computational process:
+
+@
+         ][                 Cycle 1                 ][                Cycle 2                  ]
+         ][                                         ][                                         ]
+initial  ][ ---+                          b2   +--- ][ ---+                          b2   +--- ]
+ value   ][ op |      b1_1  +-----+    +------>| Lo ][ op |      b1_1  +-----+    +------>| Lo ]
+ is a    ][ ---+----+------>|     |    |       +--- ][ ---+----+------>|     |    |       +--- ]
+part of  ][         |       | sum +----+            ][         |       | sum +----+            ]
+software ][ ---+----------->|     |            +--- ][ ---+----------->|     |            +--- ]
+         ][ op |    |       +-----+     b1_2   | Lo ][ op |    |       +-----+      b1_2  | Lo ]
+         ][ ---+    +------------------------->+--- ][ ---+    +------------------------->+--- ]
+         ][                                         ][                                         ]
+@
+
+Similation data:
+
++--------------+----+----+----+
+| Cycle number | a1 | b1 | b2 |
++==============+====+====+====+
+| 1            | 0  | 1  | 1  |
++--------------+----+----+----+
+| 2            | 1  | 1  | 2  |
++--------------+----+----+----+
+| 3            | 1  | 2  | 3  |
++--------------+----+----+----+
+| 4            | 2  | 3  | 5  |
++--------------+----+----+----+
+
+In practice, Loop function supported by Fram processor unit in the
+following way: Loop function should be prepared before execution by
+automatical refactor @BreakLoop@, which replace Loop by @LoopIn@
+and @LoopOut@.
+-}
 data Loop v x = Loop (X x) (O v) (I v) deriving (Typeable, Eq, Show)
 
 instance (Show x, Show v) => Label (Loop v x) where
