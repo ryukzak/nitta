@@ -192,3 +192,18 @@ All 190 tests passed (27.89s)
 nitta> Test suite nitta-test passed
 Completed 2 action(s).
 ```
+
+#### Build command examples
+``` console
+# build only one target
+$ stack build nitta:nitta --fast && stack exec nitta -- -p=8080 -t=fx32.32 examples/pid.lua
+
+# rerun only failed test, if all test passed - run all test
+$ stack build nitta:nitta-test --fast --test --test-arguments --rerun
+
+# show profiler report
+$ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua +RTS -p && cat nitta.prof
+
+# show stack trace if application raise an error
+$ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua
+```
