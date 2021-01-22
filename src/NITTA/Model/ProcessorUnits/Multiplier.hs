@@ -158,7 +158,7 @@ repl` command from the project directory. After that:
 [29 of 30] Compiling NITTA.Project    ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject.hs, interpreted )
 [30 of 30] Compiling NITTA.Model.ProcessorUnits.Multiplier ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProcessorUnitsMultiplier.hs, interpreted )
 Ok, 30 modules loaded.
-> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval Data.Set
+> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval.NonEmpty Data.Set
 > :set prompt "ESC[34mλ> ESC[m"
 @
 
@@ -315,7 +315,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval (inf, sup, (...))
+import Numeric.Interval.NonEmpty (inf, sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 
 {- |It is a PU model state representation, which describes each state of

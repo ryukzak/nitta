@@ -1,7 +1,7 @@
 import { AxiosError } from "axios";
 import React, { useEffect, useState, useContext } from "react";
 
-import { haskellApiService } from "services/HaskellApiService";
+import { api } from "services/HaskellApiService";
 import { ProcessTimelines, TimelinePoint, TimelineWithViewPoint, ViewPointID } from "gen/types";
 
 import { AppContext, IAppContext } from "components/app/AppContext";
@@ -28,7 +28,7 @@ export const ProcessView: React.FC = () => {
   useEffect(() => {
     setDetail([]);
     setHighlight({ up: [], current: [], down: [] });
-    haskellApiService
+    api
       .getTimelines(appContext.selectedSID)
       .then((response: { data: ProcessTimelines<number> }) => {
         console.log("> ProcessView.requestTimelines - done");

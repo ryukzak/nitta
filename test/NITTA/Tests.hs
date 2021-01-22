@@ -1,4 +1,3 @@
-{- FOURMOLU_DISABLE -}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -8,9 +7,10 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
 
-{-|
+{- |
 Module      : NITTA.Tests
 Description :
 Copyright   : (c) Aleksandr Penskoi, 2019
@@ -18,33 +18,35 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Tests
-    ( tests
-    ) where
+module NITTA.Tests (
+    tests,
+) where
 
-import           Control.Monad ( void )
-import           Data.Default
-import           Data.Map.Strict ( fromList )
+import Control.Monad (void)
+import Data.Default
+import Data.Map.Strict (fromList)
 import qualified Data.Set as S
-import           NITTA.Intermediate.DataFlow
+import NITTA.Intermediate.DataFlow
 import qualified NITTA.Intermediate.Functions as F
-import           NITTA.Intermediate.Types
-import           NITTA.Model.Networks.Types
-import           NITTA.Model.Problems
-import           NITTA.Model.ProcessorUnits
-import           NITTA.Model.TargetSystem ()
-import           NITTA.Model.Tests.Microarchitecture
-import           NITTA.TargetSynthesis
-import           Test.Tasty ( TestTree, testGroup )
-import           Test.Tasty.HUnit
-import           Test.Tasty.TH
+import NITTA.Intermediate.Types
+import NITTA.Model.Networks.Types
+import NITTA.Model.Problems
+import NITTA.Model.ProcessorUnits
+import NITTA.Model.TargetSystem ()
+import NITTA.Model.Tests.Microarchitecture
+import NITTA.TargetSynthesis
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit
+import Test.Tasty.TH
 
 {-# ANN module "HLint: ignore Reduce duplication" #-}
 
 test_fibonacci =
-    [ algTestCase "simple" march
-        [ F.loop 0  "b2" ["a1"      ]
-        , F.loop 1  "c"  ["b1", "b2"]
+    [ algTestCase
+        "simple"
+        march
+        [ F.loop 0 "b2" ["a1"]
+        , F.loop 1 "c" ["b1", "b2"]
         , F.add "a1" "b1" ["c"]
         ]
     , algTestCase "io_drop_data" (marchSPIDropData True pInt) algWithSend
@@ -52,97 +54,98 @@ test_fibonacci =
     ]
     where
         algWithSend =
-            [ F.loop 0 "b2" ["a1"      ]
-            , F.loop 1 "c1"  ["b1", "b2"]
+            [ F.loop 0 "b2" ["a1"]
+            , F.loop 1 "c1" ["b1", "b2"]
             , F.add "a1" "b1" ["c1", "c2"]
             , F.send "c2"
             ]
 
-
 test_add_and_io =
-    [ testCase "receive 4 variables" $ void $ runTargetSynthesisWithUniqName (def :: TargetSynthesis _ _ _ Int)
-        { tName="receive_4_variables"
-        , tMicroArch=marchSPI True pInt
-        , tReceivedValues=[ ("a", [10..15]), ("b", [20..25]), ("e", [0..25]), ("f", [20..30])]
-        , tDFG=fsToDataFlowGraph
-            [ F.receive ["a"]
-            , F.receive ["b"]
-            , F.receive ["e"]
-            , F.receive ["f"]
-            , F.accFromStr "+a +b = c = d; +e - f = g = h"
-            , F.send "d"
-            , F.send "c"
-            , F.send "g"
-            , F.send "h"
-            ]
-        }
+    [ testCase "receive 4 variables" $
+        void $
+            runTargetSynthesisWithUniqName
+                (def :: TargetSynthesis _ _ _ Int)
+                    { tName = "receive_4_variables"
+                    , tMicroArch = marchSPI True pInt
+                    , tReceivedValues = [("a", [10 .. 15]), ("b", [20 .. 25]), ("e", [0 .. 25]), ("f", [20 .. 30])]
+                    , tDFG =
+                        fsToDataFlowGraph
+                            [ F.receive ["a"]
+                            , F.receive ["b"]
+                            , F.receive ["e"]
+                            , F.receive ["f"]
+                            , F.accFromStr "+a +b = c = d; +e - f = g = h"
+                            , F.send "d"
+                            , F.send "c"
+                            , F.send "g"
+                            , F.send "h"
+                            ]
+                    }
     ]
-
-
 
 f1 = F.add "a" "b" ["c", "d"] :: F String Int
 
 test_patchFunction =
     [ testCase "non-patched function" $
         show f1 @?= "a + b = c = d"
-
     , testCase "direct patched function input" $
         show (patch ("a", "a'") f1) @?= "a' + b = c = d"
     , testCase "direct patched function output" $
         show (patch ("c", "c'") f1) @?= "a + b = c' = d"
-
     , testCase "diff patched function input by input" $
-        show (patch def{ changeI=fromList [("a", "a'")] } f1) @?= "a' + b = c = d"
+        show (patch def{changeI = fromList [("a", "a'")]} f1) @?= "a' + b = c = d"
     , testCase "diff non patched function input by output" $
-        show (patch def{ changeO=fromList [("a", S.singleton "a'")] } f1) @?= "a + b = c = d"
-
+        show (patch def{changeO = fromList [("a", S.singleton "a'")]} f1) @?= "a + b = c = d"
     , testCase "diff patched function output by output" $
-        show (patch def{ changeO=fromList [("c", S.singleton "c'")] } f1) @?= "a + b = c' = d"
+        show (patch def{changeO = fromList [("c", S.singleton "c'")]} f1) @?= "a + b = c' = d"
     , testCase "diff non patched function output by input" $
-        show (patch def{ changeI=fromList [("c", "c'")] } f1) @?= "a + b = c = d"
-
+        show (patch def{changeI = fromList [("c", "c'")]} f1) @?= "a + b = c = d"
     , testCase "diff non patched function output by input" $
-        show (patch def
-                { changeI=fromList [("b", "b'"), ("d", "d!")]
-                , changeO=fromList [("d", S.singleton "d'"), ("b", S.singleton "b!")]
-                } f1) @?= "a + b' = c = d'"
+        show
+            ( patch
+                def
+                    { changeI = fromList [("b", "b'"), ("d", "d!")]
+                    , changeO = fromList [("d", S.singleton "d'"), ("b", S.singleton "b!")]
+                    }
+                f1
+            )
+            @?= "a + b' = c = d'"
     ]
 
-
-pu = let
-    Right pu' = tryBind f1 PU
-        { diff=def
-        , unit=def :: Accum String Int Int
-        , ports=undefined
-        , ioPorts=undefined
-        , systemEnv=undefined
-        }
-    in pu'
-
+pu =
+    let Right pu' =
+            tryBind
+                f1
+                PU
+                    { diff = def
+                    , unit = def :: Accum String Int Int
+                    , ports = undefined
+                    , ioPorts = undefined
+                    , systemEnv = undefined
+                    }
+     in pu'
 
 test_patchEndpointOptions =
     [ testCase "non-patched function options" $
         show' opts @?= "[Target a,Target b]"
     , testCase "patched function options input by input" $
-        show' (patch def{ changeI=fromList [("a", "a'")]} opts) @?= "[Target a',Target b]"
+        show' (patch def{changeI = fromList [("a", "a'")]} opts) @?= "[Target a',Target b]"
     , testCase "non-patched function options input by output" $
-        show' (patch def{ changeO=fromList [("a", S.singleton "a'")]} opts) @?= "[Target a,Target b]"
-
+        show' (patch def{changeO = fromList [("a", S.singleton "a'")]} opts) @?= "[Target a,Target b]"
     , testCase "patched function options output by output" $
-        show' (patch def{ changeO=fromList [("d", S.singleton "d'")]} opts') @?= "[Source c,d']"
+        show' (patch def{changeO = fromList [("d", S.singleton "d'")]} opts') @?= "[Source c,d']"
     , testCase "non-patched function options output by input" $
-        show' (patch def{ changeI=fromList [("d","d'")]} opts') @?= "[Source c,d]"
+        show' (patch def{changeI = fromList [("d", "d'")]} opts') @?= "[Source c,d]"
     ]
     where
         opts = endpointOptions pu
-        opts' = let
-                o1 = head opts
+        opts' =
+            let o1 = head opts
                 pu' = endpointDecision pu $ endpointOptionToDecision o1
                 o2 = head $ endpointOptions pu'
                 pu'' = endpointDecision pu' $ endpointOptionToDecision o2
-            in endpointOptions pu''
+             in endpointOptions pu''
         show' = show . map epRole
-
 
 test_patchPUone2one =
     [ testCase "options, PU patched" $
@@ -173,7 +176,6 @@ test_patchPUone2one =
 
         show' = show . map epRole
 
-
 test_patchPUmany2one =
     [ testCase "options, PU patched" $
         show' o1 @?= "[Target A,Target b]"
@@ -202,7 +204,6 @@ test_patchPUmany2one =
         o5 = endpointOptions pu5
 
         show' = show . map epRole
-
 
 tests :: TestTree
 tests = $(testGroupGenerator)

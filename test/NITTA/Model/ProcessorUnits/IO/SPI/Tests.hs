@@ -5,13 +5,14 @@
 
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
 
--- |
---Module      : NITTA.Model.ProcessorUnits.IO.SPI.Tests
---Description :
---Copyright   : (c) Aleksandr Penskoi, 2020
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : NITTA.Model.ProcessorUnits.IO.SPI.Tests
+Description :
+Copyright   : (c) Aleksandr Penskoi, 2020
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Model.ProcessorUnits.IO.SPI.Tests (
     tests,
 ) where

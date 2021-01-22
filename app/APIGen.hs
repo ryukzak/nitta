@@ -36,7 +36,7 @@ import NITTA.UIBackend
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS
-import Numeric.Interval
+import Numeric.Interval.NonEmpty
 import Paths_nitta (version)
 import System.Console.CmdArgs
 import System.Directory (createDirectoryIfMissing)
@@ -76,8 +76,6 @@ $(deriveTypeScript defaultOptions ''FView)
 $(deriveTypeScript defaultOptions ''TreeView)
 $(deriveTypeScript defaultOptions ''ShortNodeView)
 
-$(deriveTypeScript defaultOptions ''DataflowEndpointView)
-
 $(deriveTypeScript defaultOptions ''NodeView)
 $(deriveTypeScript defaultOptions ''DecisionView)
 $(deriveTypeScript defaultOptions ''BindMetrics)
@@ -90,11 +88,8 @@ $(deriveTypeScript defaultOptions ''GraphEdge)
 $(deriveTypeScript defaultOptions ''GraphNode)
 $(deriveTypeScript defaultOptions ''GraphStructure)
 
-$(deriveTypeScript defaultOptions ''IntervalView)
-$(deriveTypeScript defaultOptions ''TimeConstrainView)
 $(deriveTypeScript defaultOptions ''EndpointRole)
 $(deriveTypeScript defaultOptions ''EndpointSt)
-$(deriveTypeScript defaultOptions ''EndpointStView)
 
 main = do
     APIGen{port, output_path, verbose} <- cmdArgs apiGenArgs
@@ -147,11 +142,8 @@ main = do
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphNode)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphStructure)
-                    , getTypeScriptDeclarations (Proxy :: Proxy IntervalView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy TimeConstrainView)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointRole)
                     , getTypeScriptDeclarations (Proxy :: Proxy EndpointSt)
-                    , getTypeScriptDeclarations (Proxy :: Proxy EndpointStView)
                     ]
     writeFile (joinPath [output_path, "types.ts"]) $
         foldl
