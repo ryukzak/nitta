@@ -1,4 +1,4 @@
-{- FOURMOLU_DISABLE -}
+
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}

@@ -1,4 +1,4 @@
-{- FOURMOLU_DISABLE -}
+
 {-|
 Module      : NITTA.Utils.Base
 Description : Utils for external libraries

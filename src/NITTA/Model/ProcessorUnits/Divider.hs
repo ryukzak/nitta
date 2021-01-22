@@ -1,4 +1,4 @@
-{- FOURMOLU_DISABLE -}
+
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
