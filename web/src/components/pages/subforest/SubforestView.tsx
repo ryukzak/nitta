@@ -1,7 +1,7 @@
 import * as React from "react";
 import { AxiosResponse } from "axios";
 
-import { haskellApiService, Node } from "services/HaskellApiService";
+import { api, Node } from "services/HaskellApiService";
 
 import { AppContext, IAppContext } from "components/app/AppContext";
 import { IntermediateView } from "components/pages/node/IntermediateView";
@@ -13,7 +13,7 @@ export const SubforestView: React.FC = () => {
   const [subforest, setSubforest] = React.useState<Node[] | null>(null);
 
   React.useEffect(() => {
-    haskellApiService
+    api
       .getSubforest(appContext.selectedSID)
       .then((response: AxiosResponse<Node[]>) => {
         setSubforest(response.data);

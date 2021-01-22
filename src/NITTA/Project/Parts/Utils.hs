@@ -23,7 +23,7 @@ import qualified Data.String.Utils as S
 import           NITTA.Project.Implementation
 import           NITTA.Project.Types
 import           System.Directory
-import           System.FilePath.Posix ( joinPath, pathSeparator )
+import           System.FilePath.Posix ( joinPath, pathSeparator, takeDirectory )
 
 
 -- |Write 'Implementation' to the file system.
@@ -48,18 +48,16 @@ writeImplementation pwd = writeImpl ""
 -- |Copy library files to target path.
 copyLibraryFiles prj = mapM_ (copyLibraryFile prj) $ libraryFiles prj
     where
-        copyLibraryFile Project{ pPath } file = do
-            pLibPath' <- makeAbsolute $ joinPath [pPath, "lib"]
-            createDirectoryIfMissing True pLibPath'
-            let fileName = last $ S.split "/" file
-            from <- makeAbsolute $ joinPath [pPath, file]
-            to <- makeAbsolute $ joinPath [pPath, "lib", fileName]
-            copyFile from to
+        copyLibraryFile Project{ pPath, pLibPath } file = do
+            source <- makeAbsolute $ joinPath [ pLibPath, file ]
+            target <- makeAbsolute $ joinPath [ pPath, "lib", file ]
+            createDirectoryIfMissing True $ takeDirectory target
+            copyFile source target
 
-        libraryFiles Project{ pName, pLibPath, pUnit }
+        libraryFiles Project{ pName, pUnit }
             = L.nub $ concatMap (args "") [ hardware pName pUnit ]
             where
-                args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [p, p']) subInstances
-                args p (Aggregate Nothing subInstances)   = concatMap (args $ joinPath [p]) subInstances
-                args _ (FromLibrary fn)                   = [ joinPath [ pLibPath, fn ] ]
+                args p (Aggregate (Just p') subInstances) = concatMap (args $ joinPath [ p, p' ]) subInstances
+                args p (Aggregate Nothing subInstances)   = concatMap (args p) subInstances
+                args _ (FromLibrary fn)                   = [ fn ]
                 args _ _                                  = []

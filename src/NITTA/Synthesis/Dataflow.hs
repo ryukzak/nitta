@@ -31,7 +31,7 @@ import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Synthesis.Types
-import Numeric.Interval (Interval, inf, sup)
+import Numeric.Interval.NonEmpty (Interval, inf, sup)
 
 data DataflowMetrics = DataflowMetrics
     { pWaitTime :: Float

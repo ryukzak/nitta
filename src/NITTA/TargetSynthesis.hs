@@ -132,7 +132,7 @@ instance (VarValTime v x t) => Default (TargetSynthesis String v x t) where
             , tReceivedValues = def
             , tSynthesisMethod = stateOfTheArtSynthesisIO
             , tWriteProject = writeWholeProject
-            , tLibPath = "../../hdl"
+            , tLibPath = "hdl"
             , tPath = joinPath ["gen"]
             , tSimulationCycleN = 5
             }

@@ -2,7 +2,7 @@ import { AxiosResponse, AxiosError } from "axios";
 import * as React from "react";
 import Tree from "react-d3-tree";
 
-import { SynthesisTree, haskellApiService } from "services/HaskellApiService";
+import { SynthesisTree, api } from "services/HaskellApiService";
 import { AppContext, IAppContext, SID, reLastSID } from "components/app/AppContext";
 
 interface Paths {
@@ -67,7 +67,7 @@ export const SynthesisGraphView: React.FC = () => {
   const reloadSynthesisGraph = React.useCallback(() => {
     let sid = appContext.selectedSID;
 
-    haskellApiService
+    api
       .getSynthesisTree()
       .then((response: AxiosResponse<SynthesisTree>) => {
         let nidArray: Paths = {};

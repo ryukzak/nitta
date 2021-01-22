@@ -76,15 +76,15 @@ instance ( VarValTime v x t ) => TargetSystemComponent (I2C v x t) where
     moduleName _ _ = "pu_spi"
     hardware _tag _pu
         = Aggregate Nothing
-            [ FromLibrary "bounce_filter.v"
-            , FromLibrary "buffer.v"
-            , FromLibrary "i2c_master_driver.v"
-            , FromLibrary "i2c_to_nitta_splitter.v"
-            , FromLibrary "nitta_to_i2c_splitter.v"
-            , FromLibrary "pu_i2c_master_driver.v"
-            , FromLibrary "pu_i2c_slave_driver.v"
-            , FromLibrary "pu_master_i2c.v"
-            , FromLibrary "pu_slave_i2c.v"
+            [ FromLibrary "i2c/bounce_filter.v"
+            , FromLibrary "i2c/buffer.v"
+            , FromLibrary "i2c/i2c_master_driver.v"
+            , FromLibrary "i2c/i2c_to_nitta_splitter.v"
+            , FromLibrary "i2c/nitta_to_i2c_splitter.v"
+            , FromLibrary "i2c/pu_i2c_master_driver.v"
+            , FromLibrary "i2c/pu_i2c_slave_driver.v"
+            , FromLibrary "i2c/pu_master_i2c.v"
+            , FromLibrary "i2c/pu_slave_i2c.v"
             ]
     software _ pu = Immediate "transport.txt" $ show pu
     hardwareInstance _ _ TargetEnvironment{ unitEnv=NetworkEnv{} } _ports _io = error "wrong environment type, for pu_i2c it should be ProcessUnitEnv"

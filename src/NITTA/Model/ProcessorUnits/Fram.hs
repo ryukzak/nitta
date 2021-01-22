@@ -43,7 +43,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval (inf, sup, (...))
+import Numeric.Interval.NonEmpty (inf, sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 
 data Fram v x t = Fram

@@ -3,7 +3,7 @@ import React, { useEffect, useState, useContext } from "react";
 import ReactTable, { Column } from "react-table";
 
 import { SID } from "components/app/AppContext.js";
-import { haskellApiService, Node, Bind } from "services/HaskellApiService";
+import { api, Node, Bind } from "services/HaskellApiService";
 import { AppContext, IAppContext } from "components/app/AppContext";
 
 type Row = { original: Node; index: number };
@@ -21,7 +21,7 @@ export const SynthesisHistoryView: React.FC<ISynthesisHistoryViewProps> = (props
   };
 
   useEffect(() => {
-    haskellApiService
+    api
       .getRootPath(appContext.selectedSID)
       .then((response: AxiosResponse<Node[]>) => {
         let result = response.data;
