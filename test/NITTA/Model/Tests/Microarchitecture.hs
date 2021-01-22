@@ -57,14 +57,23 @@ import Test.Tasty.HUnit
 {-# ANN module "HLint: ignore Reduce duplication" #-}
 
 pInt = Proxy :: Proxy Int
+
 pAttrIntX32 = Proxy :: Proxy (Attr (IntX 32))
+
 pAttrFX22_32 = Proxy :: Proxy (Attr (FX 22 32))
+
 pIntX32 = Proxy :: Proxy (IntX 32)
+
 pIntX48 = Proxy :: Proxy (IntX 48)
+
 pIntX64 = Proxy :: Proxy (IntX 64)
+
 pIntX128 = Proxy :: Proxy (IntX 128)
+
 pFX22_32 = Proxy :: Proxy (FX 22 32)
+
 pFX32_32 = Proxy :: Proxy (FX 32 32)
+
 pFX42_64 = Proxy :: Proxy (FX 42 64)
 
 basic :: (Integral x, Val x) => Proxy x -> BusNetwork String String x Int
