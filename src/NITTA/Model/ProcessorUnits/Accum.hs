@@ -38,7 +38,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval (singleton, sup, (...))
+import Numeric.Interval.NonEmpty (singleton, sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 
 {- |Type that contains expression:

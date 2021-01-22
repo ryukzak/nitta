@@ -65,8 +65,8 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.Types
 import NITTA.Utils.CodeFormat
-import Numeric.Interval
-import qualified Numeric.Interval as I
+import Numeric.Interval.NonEmpty
+import qualified Numeric.Interval.NonEmpty as I
 import Text.InterpolatedString.Perl6 (qc)
 
 -- |Typeclass alias for processor unit tag or "name."

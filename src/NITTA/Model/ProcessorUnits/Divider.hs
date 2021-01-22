@@ -27,7 +27,7 @@ module NITTA.Model.ProcessorUnits.Divider (
 import Control.Monad (void, when)
 import Data.Default
 import Data.List (partition, sortBy)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Set (Set, member)
 import qualified Data.Set as S
 import qualified NITTA.Intermediate.Functions as F
@@ -38,7 +38,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval (Interval, inf, intersection, singleton, sup, width, (...))
+import Numeric.Interval.NonEmpty (Interval, inf, intersection, singleton, sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 
 data InputDesc
@@ -144,7 +144,7 @@ inProgress2Output _ _ = error "divider inProgress2Output internal error"
 
 resolveColisions [] opt = [opt]
 resolveColisions intervals opt@EndpointSt{epAt = tc@TimeConstrain{tcAvailable}}
-    | all ((0 ==) . width . intersection tcAvailable) intervals =
+    | all (isNothing . intersection tcAvailable) intervals =
         [opt]
     | otherwise -- FIXME: we must prick out work point from intervals
       , let from = maximum $ map sup intervals =
