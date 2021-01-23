@@ -137,7 +137,6 @@ main = do
                       getTypeScriptDeclarations (Proxy :: Proxy FView)
                     , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy ShortNodeView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy DataflowEndpointView)
                     , getTypeScriptDeclarations (Proxy :: Proxy NodeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphNode)
