@@ -1,7 +1,7 @@
 import { AxiosPromise, AxiosResponse, AxiosError } from "axios";
 import { SID, IAppContext } from "components/app/AppContext";
 
-import api from "gen/rest_api.js";
+import jsAPI from "gen/rest_api.js";
 import { TreeView, ShortNodeView } from "../gen/types";
 import { NodeView, DecisionView, IRootView, IBindDecisionView, IDataflowDecisionView } from "../gen/types";
 import { EndpointSt, GraphStructure, GraphEdge, TestbenchReportView } from "../gen/types";
