@@ -382,13 +382,13 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
 
             maybeSended = M.keysSet var2endpointRole
 
-    resolveDeadlockDecision bn@BusNetwork{bnRemains, bnBinded, bnPus} ResolveDeadlock{buffer, changeset} =
+    resolveDeadlockDecision bn@BusNetwork{bnRemains, bnBinded, bnPus} ResolveDeadlock{newBuffer, changeset} =
         let Just (tag, _) =
                 L.find
-                    (\(_, f) -> not $ null $ S.intersection (outputs buffer) $ unionsMap outputs f)
+                    (\(_, f) -> not $ null $ S.intersection (outputs newBuffer) $ unionsMap outputs f)
                     $ M.assocs bnBinded
          in bn
-                { bnRemains = buffer : patch changeset bnRemains
+                { bnRemains = newBuffer : patch changeset bnRemains
                 , bnPus = M.adjust (patch changeset) tag bnPus
                 , bnBinded = M.map (patch changeset) bnBinded
                 }

@@ -255,7 +255,7 @@ instance ToSample (NodeView tag v x t) where
                             }
                 , decision =
                     ResolveDeadlockView
-                        { buffer = "reg(x#0@buf) = x#0"
+                        { newBuffer = "reg(x#0@buf) = x#0"
                         , changeset = "Changeset {changeI = fromList [], changeO = fromList [(\"x#0\",fromList [\"x#0@buf\"])]}"
                         }
                 , score = 1999

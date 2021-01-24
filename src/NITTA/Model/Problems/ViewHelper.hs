@@ -54,7 +54,7 @@ data DecisionView
         , new :: [FView]
         }
     | ResolveDeadlockView
-        { buffer :: String
+        { newBuffer :: String
         , changeset :: String
         }
     deriving (Generic)
@@ -96,9 +96,9 @@ instance Viewable (OptimizeAccum v x) DecisionView where
             }
 
 instance (Show v) => Viewable (ResolveDeadlock v x) DecisionView where
-    view ResolveDeadlock{buffer, changeset} =
+    view ResolveDeadlock{newBuffer, changeset} =
         ResolveDeadlockView
-            { buffer = show buffer
+            { newBuffer = show newBuffer
             , changeset = show changeset
             }
 
