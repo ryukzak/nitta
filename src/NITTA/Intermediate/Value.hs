@@ -35,6 +35,7 @@ module NITTA.Intermediate.Value (
 ) where
 
 import Control.Applicative
+import Data.Aeson
 import Data.Bits
 import Data.Default
 import Data.Maybe
@@ -263,6 +264,9 @@ instance (FixedPointCompatible x) => FixedPointCompatible (Attr x) where
     scalingFactorPower Attr{value} = scalingFactorPower value
     fractionalBitSize Attr{value} = fractionalBitSize value
 
+instance (ToJSON x) => ToJSON (Attr x) where
+    toJSON Attr{value} = toJSON value
+
 -- * Integer
 
 instance FixedPointCompatible Int where
@@ -347,6 +351,9 @@ instance (KnownNat w) => Val (IntX w) where
 instance FixedPointCompatible (IntX w) where
     scalingFactorPower _ = 0
     fractionalBitSize _ = 0
+
+instance ToJSON (IntX w) where
+    toJSON (IntX x) = toJSON x
 
 -- * Fixed point
 
@@ -484,3 +491,6 @@ instance (KnownNat m, KnownNat b) => FixedPointCompatible (FX m b) where
 
 instance (KnownNat m, KnownNat b) => Real (FX m b) where
     toRational x@FX{rawFX} = rawFX % 2 ^ scalingFactorPower x
+
+instance ToJSON (FX m b) where
+    toJSON (FX x) = toJSON $ show x

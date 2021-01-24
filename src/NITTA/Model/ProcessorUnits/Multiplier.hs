@@ -158,7 +158,7 @@ repl` command from the project directory. After that:
 [29 of 30] Compiling NITTA.Project    ( UserspenskoiDocumentsnitta-corpnittasrcNITTAProject.hs, interpreted )
 [30 of 30] Compiling NITTA.Model.ProcessorUnits.Multiplier ( UserspenskoiDocumentsnitta-corpnittasrcNITTAModelProcessorUnitsMultiplier.hs, interpreted )
 Ok, 30 modules loaded.
-> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval Data.Set
+> :module +NITTA.Model.Types NITTA.Intermediate.Functions Numeric.Interval.NonEmpty Data.Set
 > :set prompt "ESC[34mλ> ESC[m"
 @
 
@@ -315,7 +315,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval (inf, sup, (...))
+import Numeric.Interval.NonEmpty (inf, sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 
 {- |It is a PU model state representation, which describes each state of
@@ -401,11 +401,15 @@ instance (Var v) => Locks (Multiplier v x t) v where
                , lockBy <- sources ++ targets
                ]
 
-{- |That type class describes the possibility of PU to modify an algorithm.
-Empty implementation means that multiplier PU doesn't have such
+{- |That type classes ('BreakLoopProblem', 'OptimizeAccumProblem',
+'ResolveDeadlockProblem') describes the possibility of PU to modify an
+algorithm. Empty implementation means that multiplier PU doesn't have such
 possibilities.
 -}
-instance RefactorProblem (Multiplier v x t) v x
+instance BreakLoopProblem (Multiplier v x t) v x
+
+instance OptimizeAccumProblem (Multiplier v x t) v x
+instance ResolveDeadlockProblem (Multiplier v x t) v x
 
 {- | This type class specifies how to bind functions to the PU. If it is
 possible, @tryBind@ function will return @Right@ value with a new PU model
@@ -417,8 +421,8 @@ From the CAD point of view, bind looks like:
 - CAD asks PU models: "Who can evaluate this function?" and get the list of
   possible bindings.
 
-- CAD, based on the different metrics (see 'NITTA.Synthesis.Estimate'), the
-  best variant is chosen.
+- CAD, based on the different metrics (see 'NITTA.Synthesis'), the best variant
+  is chosen.
 
 Binding can be done either gradually due synthesis process at the start.
 -}

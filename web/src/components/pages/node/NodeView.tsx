@@ -1,16 +1,17 @@
 import * as React from "react";
 import "react-table/react-table.css";
+
+import { AppContext, IAppContext } from "components/app/AppContext";
 import { IntermediateView } from "./IntermediateView";
-import { AppContext, IAppContext } from "../../app/AppContext";
 
 export interface INodeViewProps {}
 
-export const NodeView: React.FC<INodeViewProps> = props => {
-  const { selectedNodeId } = React.useContext(AppContext) as IAppContext;
+export const NodeView: React.FC<INodeViewProps> = (props) => {
+  const { selectedSID } = React.useContext(AppContext) as IAppContext;
 
   return (
     <>
-      {selectedNodeId ? (
+      {selectedSID ? (
         <div className="my-3">
           <IntermediateView />
         </div>

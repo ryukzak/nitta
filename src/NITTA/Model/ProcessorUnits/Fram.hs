@@ -43,7 +43,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval (inf, sup, (...))
+import Numeric.Interval.NonEmpty (inf, sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 
 data Fram v x t = Fram
@@ -255,13 +255,13 @@ instance (Var v) => Locks (Fram v x t) v where
     -- FIXME:
     locks _ = []
 
-instance (VarValTime v x t) => RefactorProblem (Fram v x t) v x where
-    refactorOptions Fram{memory} =
+instance (VarValTime v x t) => BreakLoopProblem (Fram v x t) v x where
+    breakLoopOptions Fram{memory} =
         [ BreakLoop x o i
         | (_, Cell{state = NotBrokenLoop, job = Just Job{function}}) <- A.assocs memory
         , let Just (Loop (X x) (O o) (I i)) = castF function
         ]
-    refactorDecision fram@Fram{memory} bl@BreakLoop{loopO} =
+    breakLoopDecision fram@Fram{memory} bl@BreakLoop{loopO} =
         let Just (addr, cell@Cell{history, job = Just Job{binds}}) =
                 L.find
                     ( \case
@@ -287,7 +287,9 @@ instance (VarValTime v x t) => RefactorProblem (Fram v x t) v x where
                 { memory = memory A.// [(addr, cell')]
                 , process_
                 }
-    refactorDecision _ d = error $ "fram not suport refactor: " ++ show d
+
+instance OptimizeAccumProblem (Fram v x t) v x
+instance ResolveDeadlockProblem (Fram v x t) v x
 
 instance
     ( VarValTime v x t

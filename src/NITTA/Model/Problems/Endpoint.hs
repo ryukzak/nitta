@@ -23,6 +23,7 @@ module NITTA.Model.Problems.Endpoint (
     endpointOptionToDecision,
 ) where
 
+import Data.Aeson (ToJSON)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as S
@@ -30,7 +31,7 @@ import qualified Data.String.Utils as S
 import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Types
-import Numeric.Interval
+import Numeric.Interval.NonEmpty
 
 data EndpointSt v tp = EndpointSt
     { -- |use processor unit as source or target of data
@@ -50,6 +51,8 @@ instance (Show v, Time t) => Show (EndpointSt v (Interval t)) where
 
 instance (Ord v) => Patch (EndpointSt v tp) (Changeset v) where
     patch diff ep@EndpointSt{epRole} = ep{epRole = patch diff epRole}
+
+instance (ToJSON v, ToJSON tp) => ToJSON (EndpointSt v tp)
 
 class EndpointProblem u v t | u -> v t where
     endpointOptions :: u -> [EndpointSt v (TimeConstrain t)]
@@ -78,6 +81,8 @@ instance (Ord v) => Patch (EndpointRole v) (Changeset v) where
 instance Variables (EndpointRole v) v where
     variables (Source vs) = vs
     variables (Target v) = S.singleton v
+
+instance (ToJSON v) => ToJSON (EndpointRole v)
 
 {- |The simplest way to convert an endpoint synthesis option to a endpoint
 decision.

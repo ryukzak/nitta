@@ -35,7 +35,7 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Types
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval (sup, (...))
+import Numeric.Interval.NonEmpty (sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 
 class (Typeable i) => SimpleIOInterface i
@@ -104,7 +104,9 @@ instance
 
     process = process_
 
-instance RefactorProblem (SimpleIO i v x t) v x
+instance BreakLoopProblem (SimpleIO i v x t) v x
+instance OptimizeAccumProblem (SimpleIO i v x t) v x
+instance ResolveDeadlockProblem (SimpleIO i v x t) v x
 
 instance
     ( VarValTime v x t

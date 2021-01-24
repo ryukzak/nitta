@@ -37,7 +37,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval (sup, (...))
+import Numeric.Interval.NonEmpty (sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 
 data Broken v x t = Broken
@@ -77,7 +77,9 @@ instance (Var v) => Locks (Broken v x t) v where
                , lockBy <- sources ++ targets
                ]
 
-instance RefactorProblem (Broken v x t) v x
+instance BreakLoopProblem (Broken v x t) v x
+instance OptimizeAccumProblem (Broken v x t) v x
+instance ResolveDeadlockProblem (Broken v x t) v x
 
 instance
     ( VarValTime v x t

@@ -36,7 +36,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval (inf, singleton, sup, (...))
+import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 import Prelude hiding (init)
 
@@ -83,7 +83,9 @@ instance Default t => Default (Shift v x t) where
             , process_ = def
             }
 
-instance RefactorProblem (Shift v x t) v x
+instance BreakLoopProblem (Shift v x t) v x
+instance OptimizeAccumProblem (Shift v x t) v x
+instance ResolveDeadlockProblem (Shift v x t) v x
 
 instance
     ( VarValTime v x t

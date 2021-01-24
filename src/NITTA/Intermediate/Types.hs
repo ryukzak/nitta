@@ -25,6 +25,7 @@ module NITTA.Intermediate.Types (
 
     -- *Function description
     F (..),
+    FView (..),
     packF,
     castF,
     Function (..),
@@ -52,6 +53,7 @@ module NITTA.Intermediate.Types (
     module NITTA.Intermediate.Variable,
 ) where
 
+import Data.Aeson
 import Data.Default
 import Data.List
 import qualified Data.Map.Strict as M
@@ -63,6 +65,7 @@ import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Value
 import NITTA.Intermediate.Variable
+import NITTA.UIBackend.ViewHelperCls
 import Text.PrettyPrint.Boxes hiding ((<>))
 
 -- |Input variable.
@@ -113,6 +116,8 @@ data Lock v = Lock
     , lockBy :: v
     }
     deriving (Show, Eq, Ord, Generic)
+
+instance (ToJSON v) => ToJSON (Lock v)
 
 -- |All input variables locks all output variables.
 inputsLockOutputs f =
@@ -227,6 +232,22 @@ instance (Var v) => Variables (F v x) v where
 -- |Helper for extraction function from existential container 'F'.
 castF :: (Typeable f, Typeable v, Typeable x) => F v x -> Maybe (f v x)
 castF F{fun} = cast fun
+
+-- |Helper for JSON serialization
+data FView = FView
+    { fvFun :: String
+    , fvHistory :: [String]
+    }
+    deriving (Generic, Show)
+
+instance Viewable (F v x) FView where
+    view F{fun, funHistory} =
+        FView
+            { fvFun = S.replace "\"" "" $ show fun
+            , fvHistory = map (S.replace "\"" "" . show) funHistory
+            }
+
+instance ToJSON FView
 
 -----------------------------------------------------------
 

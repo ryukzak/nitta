@@ -9,7 +9,7 @@
 {- |
 Module      : NITTA.Model.TargetSystem
 Description : Model of target system for synthesis and so on.
-Copyright   : (c) Aleksandr Penskoi, 2020
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -49,58 +49,46 @@ instance WithFunctions (TargetSystem (BusNetwork tag v x t) v x) (F v x) where
 
 processDuration TargetSystem{mUnit} = nextTick $ process mUnit
 
--- |Synthesis process is finish when all variable from data flow are transferred.
+{- |Synthesis process is finish when all variable from data flow are
+transferred.
+-}
 isSynthesisFinish :: (ProcessorUnit u v x t) => TargetSystem u v x -> Bool
 isSynthesisFinish TargetSystem{mUnit, mDataFlowGraph} =
-    let inWork = transferred mUnit
-        inAlg = variables mDataFlowGraph
-     in inWork == inAlg
+    transferred mUnit == variables mDataFlowGraph
 
-instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
-    BindProblem (TargetSystem (BusNetwork tag v x t) v x) tag v x
-    where
+instance (UnitTag tag, VarValTime v x t) => BindProblem (TargetSystem (BusNetwork tag v x t) v x) tag v x where
     bindOptions TargetSystem{mUnit} = bindOptions mUnit
+
     bindDecision f@TargetSystem{mUnit} d = f{mUnit = bindDecision mUnit d}
 
-instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
-    DataflowProblem (TargetSystem (BusNetwork tag v x t) v x) tag v t
-    where
+instance (UnitTag tag, VarValTime v x t) => DataflowProblem (TargetSystem (BusNetwork tag v x t) v x) tag v t where
     dataflowOptions TargetSystem{mUnit} = dataflowOptions mUnit
+
     dataflowDecision f@TargetSystem{mUnit} d = f{mUnit = dataflowDecision mUnit d}
 
-instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
-    RefactorProblem (TargetSystem (BusNetwork tag v x t) v x) v x
-    where
-    refactorOptions TargetSystem{mUnit} = refactorOptions mUnit
+instance (UnitTag tag, VarValTime v x t) => BreakLoopProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+    breakLoopOptions TargetSystem{mUnit} = breakLoopOptions mUnit
 
-    refactorDecision TargetSystem{mUnit, mDataFlowGraph} d =
+    breakLoopDecision TargetSystem{mUnit, mDataFlowGraph} d =
         TargetSystem
-            { mDataFlowGraph = refactorDecision mDataFlowGraph d
-            , mUnit = refactorDecision mUnit d
+            { mDataFlowGraph = breakLoopDecision mDataFlowGraph d
+            , mUnit = breakLoopDecision mUnit d
             }
 
-instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
-    SynthesisProblem (TargetSystem (BusNetwork tag v x t) v x) tag v x t
-    where
-    synthesisOptions m@TargetSystem{mUnit} =
-        concat
-            [ map generalizeBinding $ bindOptions m
-            , map generalizeDataflow $ dataflowOptions mUnit
-            , map Refactor $ refactorOptions m
-            ]
+instance (VarValTime v x t) => OptimizeAccumProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+    optimizeAccumOptions TargetSystem{mUnit} = optimizeAccumOptions mUnit
 
-    synthesisDecision m (Binding f tag) = bindDecision m $ Bind f tag
-    synthesisDecision m@TargetSystem{mUnit} (Dataflow src trg) = m{mUnit = dataflowDecision mUnit $ DataflowSt src trg}
-    synthesisDecision m (Refactor d) = refactorDecision m d
+    optimizeAccumDecision TargetSystem{mUnit, mDataFlowGraph} d =
+        TargetSystem
+            { mDataFlowGraph = optimizeAccumDecision mDataFlowGraph d
+            , mUnit = optimizeAccumDecision mUnit d
+            }
+
+instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (TargetSystem (BusNetwork tag v x t) v x) v x where
+    resolveDeadlockOptions TargetSystem{mUnit} = resolveDeadlockOptions mUnit
+
+    resolveDeadlockDecision TargetSystem{mUnit, mDataFlowGraph} d =
+        TargetSystem
+            { mDataFlowGraph = resolveDeadlockDecision mDataFlowGraph d
+            , mUnit = resolveDeadlockDecision mUnit d
+            }

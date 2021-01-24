@@ -15,7 +15,7 @@
 {- |
 Module      : NITTA.Model.ProcessorUnits.Types
 Description : Set of types for process unit description
-Copyright   : (c) Aleksandr Penskoi, 2020
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -62,11 +62,11 @@ import Data.Maybe
 import qualified Data.String.Utils as S
 import Data.Typeable
 import NITTA.Intermediate.Types
-import NITTA.Model.Problems
+import NITTA.Model.Problems.Endpoint
 import NITTA.Model.Types
 import NITTA.Utils.CodeFormat
-import Numeric.Interval
-import qualified Numeric.Interval as I
+import Numeric.Interval.NonEmpty
+import qualified Numeric.Interval.NonEmpty as I
 import Text.InterpolatedString.Perl6 (qc)
 
 -- |Typeclass alias for processor unit tag or "name."
@@ -76,7 +76,9 @@ type UnitTag tag = (Typeable tag, Ord tag, Show tag)
 intermediate representation:
 
 1. get function for execution ('tryBind');
+
 2. store computational process description ('process');
+
 3. other features implemented by different type classes (see above and in
    "NITTA.Model.Problems").
 -}

@@ -3,13 +3,14 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
--- |
---Module      : Spec
---Description : Test specification
---Copyright   : (c) Aleksandr Penskoi, 2019
---License     : BSD3
---Maintainer  : aleksandr.penskoi@gmail.com
---Stability   : experimental
+{- |
+Module      : Spec
+Description : Test specification
+Copyright   : (c) Aleksandr Penskoi, 2019
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module Spec where
 
 import Data.Maybe
@@ -19,12 +20,12 @@ import qualified NITTA.Intermediate.Value.Tests
 import qualified NITTA.LuaFrontend.Tests
 import qualified NITTA.Model.Problems.Refactor.Accum.Tests
 import qualified NITTA.Model.Problems.Refactor.Tests
+import qualified NITTA.Model.ProcessorUnits.Accum.Tests
 import qualified NITTA.Model.ProcessorUnits.Broken.Tests
 import qualified NITTA.Model.ProcessorUnits.Divider.Tests
 import qualified NITTA.Model.ProcessorUnits.Fram.Tests
 import qualified NITTA.Model.ProcessorUnits.IO.SPI.Tests
 import qualified NITTA.Model.ProcessorUnits.Multiplier.Tests
-import qualified NITTA.Model.ProcessorUnits.Accum.Tests
 import qualified NITTA.Model.ProcessorUnits.Shift.Tests
 import qualified NITTA.Tests
 import qualified NITTA.Utils.CodeFormat.Tests

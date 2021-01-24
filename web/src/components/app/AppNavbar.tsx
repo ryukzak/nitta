@@ -26,8 +26,8 @@ export const AppNavbar: React.FC<IAppNavbarProps> = (props) => {
           <Nav.Link as={RouterNavLink} exact to="/node">
             Node
           </Nav.Link>
-          <Nav.Link as={RouterNavLink} exact to="/edges">
-            Edges
+          <Nav.Link as={RouterNavLink} exact to="/subforest">
+            Subforest
           </Nav.Link>
           <Nav.Link as={RouterNavLink} exact to="/process">
             Process
@@ -42,7 +42,7 @@ export const AppNavbar: React.FC<IAppNavbarProps> = (props) => {
         <AppNavbarButtons />
       </Navbar.Collapse>
       {/* <Navbar.Text className="mr-5 text-white">
-              Selected Node ID: {appContext.selectedNodeId || "None"}
+              Selected Node ID: {appContext.selectedSID || "None"}
               </Navbar.Text> */}
       <Navbar.Toggle aria-controls="navbar-nav" />
     </Navbar>

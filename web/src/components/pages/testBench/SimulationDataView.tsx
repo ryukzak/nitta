@@ -1,14 +1,17 @@
 import * as React from "react";
 import ReactTable from "react-table";
 
-// FIXME: review, refactor
-
 export interface ISimulationDataViewProps {
   functional: { [k: string]: number }[];
   logical: { [k: string]: number }[];
 }
 
 export const SimulationDataView: React.FC<ISimulationDataViewProps> = ({ functional, logical }) => {
+  let columns: { Header: string; accessor: string }[] = [{ Header: "Cycle", accessor: "i" }];
+  for (let key in logical[0]) {
+    columns.push({ Header: key, accessor: key });
+  }
+
   let cntxs: Record<string, string>[] = [];
   for (let i = 0; i < functional.length; i++) {
     const funSim = functional[i];
@@ -20,10 +23,7 @@ export const SimulationDataView: React.FC<ISimulationDataViewProps> = ({ functio
     }
     cntxs.push(cntx);
   }
-  let columns: { Header: string; accessor: string }[] = [{ Header: "Cycle", accessor: "i" }];
-  for (let key in logical[0]) {
-    columns.push({ Header: key, accessor: key });
-  }
+
   return (
     <>
       <ReactTable
