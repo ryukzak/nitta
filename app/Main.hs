@@ -87,7 +87,7 @@ parseFX input =
      in (convert m, convert b)
 
 main = do
-    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose} <- cmdArgs nittaArgs
+    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, output_path} <- cmdArgs nittaArgs
     setupLogger verbose
 
     src <- readSourceCode filename
@@ -114,11 +114,7 @@ main = do
             TestbenchReport
                 { tbLogicalSimulationCntx
                 } <-
-<<<<<<< HEAD
-                synthesizeAndTest verbose ma n frDataFlow received output_path
-=======
-                synthesizeAndTest ma n frDataFlow received
->>>>>>> master
+                synthesizeAndTest ma n frDataFlow received output_path
 
             when lsim $ do
                 putCntx $ frPrettyCntx tbLogicalSimulationCntx
@@ -149,11 +145,7 @@ functionalSimulation n received src = do
     putCntx $ frPrettyCntx cntx
     infoM "NITTA" "run functional simulation...ok"
 
-<<<<<<< HEAD
-synthesizeAndTest verbose ma n dataflow received outputPath = do
-=======
-synthesizeAndTest ma n dataflow received = do
->>>>>>> master
+synthesizeAndTest ma n dataflow received outputPath = do
     Right report <-
         runTargetSynthesis
             def
