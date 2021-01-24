@@ -53,8 +53,8 @@ data Shift v x t = Shift
       byteShiftDiv :: Int
     , -- |shift mod 8 (is used for bit shift)
       byteShiftMod :: Int
-    , -- |tick and current function in PU
-      currentWork :: Maybe (t, F v x)
+    , -- |current function in PU
+      currentWork :: Maybe (F v x)
     , -- |list of endpoints
       currentWorkEndpoints :: [ProcessStepID]
     , -- |description of target computation process
@@ -101,7 +101,7 @@ instance
     process = process_
 
 -- |This function carry out actual take functional block to work.
-execution pu@Shift{target = Nothing, sources = [], remain, process_} f
+execution pu@Shift{target = Nothing, sources = [], remain} f
     | Just f' <- castF f =
         case f' of
             ShiftL s (I i) (O o) -> toPU i o False s
@@ -110,7 +110,7 @@ execution pu@Shift{target = Nothing, sources = [], remain, process_} f
         toPU inp out sRight step =
             pu
                 { target = Just inp
-                , currentWork = Just (nextTick process_, f)
+                , currentWork = Just f
                 , sources = elems out
                 , remain = remain \\ [f]
                 , sRight = sRight
@@ -185,8 +185,9 @@ instance
         pu@Shift
             { target = Nothing
             , sources
-            , currentWork = Just (a, f)
+            , currentWork = Just f
             , currentWorkEndpoints
+            , process_
             }
         d@EndpointSt
             { epRole = Source v
@@ -194,6 +195,7 @@ instance
             }
             | not $ null sources
               , let sources' = sources \\ elems v
+              , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
               , sources' /= sources =
                 let (newEndpoints, process_') = runSchedule pu $ do
                         updateTick (sup epAt)
@@ -206,7 +208,7 @@ instance
                  in pu
                         { process_ = process_'
                         , sources = sources'
-                        , currentWork = if null sources' then Nothing else Just (a + 1, f)
+                        , currentWork = if null sources' then Nothing else Just f
                         , currentWorkEndpoints = if null sources' then [] else newEndpoints ++ currentWorkEndpoints
                         }
     endpointDecision pu@Shift{target = Nothing, sources = [], remain} d
