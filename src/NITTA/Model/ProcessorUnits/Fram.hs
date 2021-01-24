@@ -12,7 +12,7 @@
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Fram
-Description : Register file
+Description : Buffers inside and across computational cycles
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -62,12 +62,7 @@ framWithSize size =
         , process_ = def
         }
 
-instance
-    ( Default t
-    , Default x
-    ) =>
-    Default (Fram v x t)
-    where
+instance (Default t, Default x) => Default (Fram v x t) where
     def =
         Fram
             { memory = A.listArray (0, defaultSize - 1) $ repeat def
@@ -79,19 +74,11 @@ instance
 
 instance Default x => DefaultX (Fram v x t) x
 
-instance
-    ( VarValTime v x t
-    ) =>
-    WithFunctions (Fram v x t) (F v x)
-    where
+instance (VarValTime v x t) => WithFunctions (Fram v x t) (F v x) where
     functions Fram{remainBuffers, memory} =
         map (packF . fst) remainBuffers ++ concatMap functions (A.elems memory)
 
-instance
-    ( VarValTime v x t
-    ) =>
-    Variables (Fram v x t) v
-    where
+instance (VarValTime v x t) => Variables (Fram v x t) v where
     variables fram = S.unions $ map variables $ functions fram
 
 -- |Memory cell
@@ -197,11 +184,7 @@ addrWidth Fram{memory} = log2 $ numElements memory
     where
         log2 = ceiling . (logBase 2 :: Double -> Double) . fromIntegral
 
-instance
-    ( VarValTime v x t
-    ) =>
-    ProcessorUnit (Fram v x t) v x t
-    where
+instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
     tryBind f fram
         | not $ null (variables f `S.intersection` variables fram) =
             Left "can not bind (self transaction)"
@@ -291,11 +274,7 @@ instance (VarValTime v x t) => BreakLoopProblem (Fram v x t) v x where
 instance OptimizeAccumProblem (Fram v x t) v x
 instance ResolveDeadlockProblem (Fram v x t) v x
 
-instance
-    ( VarValTime v x t
-    ) =>
-    EndpointProblem (Fram v x t) v t
-    where
+instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
     endpointOptions Fram{process_ = Process{nextTick}, remainBuffers, memory} =
         let target v = EndpointSt (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
             source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstrain (1 + 1 + nextTick ... maxBound) (1 ... maxBound)

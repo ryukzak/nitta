@@ -426,11 +426,7 @@ From the CAD point of view, bind looks like:
 
 Binding can be done either gradually due synthesis process at the start.
 -}
-instance
-    ( VarValTime v x t
-    ) =>
-    ProcessorUnit (Multiplier v x t) v x t
-    where
+instance (VarValTime v x t) => ProcessorUnit (Multiplier v x t) v x t where
     tryBind f pu@Multiplier{remain}
         | Just F.Multiply{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
@@ -488,11 +484,7 @@ It includes three cases:
   find the selected function, 'execute' it, and do a recursive call with the
   same decision.
 -}
-instance
-    ( VarValTime v x t
-    ) =>
-    EndpointProblem (Multiplier v x t) v t
-    where
+instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
     endpointOptions Multiplier{targets, process_}
         | not $ null targets =
             let at = nextTick process_ + 1 ... maxBound
@@ -652,11 +644,7 @@ instance IOConnected (Multiplier v x t) where
 
 - Hardware instance in the upper structure element.
 -}
-instance
-    ( VarValTime v x t
-    ) =>
-    TargetSystemComponent (Multiplier v x t)
-    where
+instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
     moduleName _title _pu = "pu_multiplier"
 
     hardware tag pu@Multiplier{isMocked} =

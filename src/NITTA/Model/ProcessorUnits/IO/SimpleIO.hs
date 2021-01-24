@@ -72,9 +72,7 @@ data Q v x = Q {vars :: [v], function :: F v x, cads :: [ProcessStepID]}
     deriving (Show)
 
 instance
-    ( VarValTime v x t
-    , SimpleIOInterface i
-    ) =>
+    (VarValTime v x t, SimpleIOInterface i) =>
     ProcessorUnit (SimpleIO i v x t) v x t
     where
     tryBind f sio@SimpleIO{sendQueue, receiveQueue, receiveN, sendN, bufferSize}
@@ -109,9 +107,7 @@ instance OptimizeAccumProblem (SimpleIO i v x t) v x
 instance ResolveDeadlockProblem (SimpleIO i v x t) v x
 
 instance
-    ( VarValTime v x t
-    , SimpleIOInterface i
-    ) =>
+    (VarValTime v x t, SimpleIOInterface i) =>
     EndpointProblem (SimpleIO i v x t) v t
     where
     endpointOptions SimpleIO{receiveQueue, sendQueue, process_ = Process{nextTick}} =

@@ -81,11 +81,7 @@ instance BreakLoopProblem (Broken v x t) v x
 instance OptimizeAccumProblem (Broken v x t) v x
 instance ResolveDeadlockProblem (Broken v x t) v x
 
-instance
-    ( VarValTime v x t
-    ) =>
-    ProcessorUnit (Broken v x t) v x t
-    where
+instance (VarValTime v x t) => ProcessorUnit (Broken v x t) v x t where
     tryBind f pu@Broken{remain}
         | Just F.BrokenBuffer{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by Broken: " ++ show f
@@ -101,11 +97,7 @@ execution pu@Broken{targets = [], sources = [], remain, process_} f
             }
 execution _ _ = error "Broken: internal execution error."
 
-instance
-    ( VarValTime v x t
-    ) =>
-    EndpointProblem (Broken v x t) v t
-    where
+instance (VarValTime v x t) => EndpointProblem (Broken v x t) v t where
     endpointOptions Broken{targets = [_], lostEndpointTarget = True} = []
     endpointOptions Broken{targets = [v], process_} =
         let start = nextTick process_ + 1 ... maxBound
@@ -225,11 +217,7 @@ instance IOConnected (Broken v x t) where
     data IOPorts (Broken v x t) = BrokenIO
         deriving (Show)
 
-instance
-    ( VarValTime v x t
-    ) =>
-    TargetSystemComponent (Broken v x t)
-    where
+instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
     moduleName _title _pu = "pu_broken"
     software _ _ = Empty
     hardware tag pu =

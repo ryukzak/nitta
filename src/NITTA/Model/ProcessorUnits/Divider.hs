@@ -163,11 +163,7 @@ pushOutput pu@Divider{jobs}
         pu{jobs = inProgress2Output (rottenTime pu other) ij : other}
     | otherwise = pu
 
-instance
-    ( VarValTime v x t
-    ) =>
-    ProcessorUnit (Divider v x t) v x t
-    where
+instance (VarValTime v x t) => ProcessorUnit (Divider v x t) v x t where
     tryBind f pu@Divider{remains}
         | Just (F.Division (I _n) (I _d) (O _q) (O _r)) <- castF f =
             Right
@@ -185,11 +181,7 @@ instance BreakLoopProblem (Divider v x t) v x
 instance OptimizeAccumProblem (Divider v x t) v x
 instance ResolveDeadlockProblem (Divider v x t) v x
 
-instance
-    ( VarValTime v x t
-    ) =>
-    EndpointProblem (Divider v x t) v t
-    where
+instance (VarValTime v x t) => EndpointProblem (Divider v x t) v t where
     endpointOptions pu@Divider{targetIntervals, sourceIntervals, remains, jobs} =
         concatMap (resolveColisions sourceIntervals) targets
             ++ concatMap (resolveColisions targetIntervals) sources
@@ -318,12 +310,7 @@ instance IOConnected (Divider v x t) where
     data IOPorts (Divider v x t) = DividerIO
         deriving (Show)
 
-instance
-    ( Val x
-    , Show t
-    ) =>
-    TargetSystemComponent (Divider v x t)
-    where
+instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
     moduleName _ _ = "pu_div"
     software _ _ = Empty
     hardware tag pu@Divider{mock} =
