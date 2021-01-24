@@ -152,7 +152,7 @@ instance ToSample VisJS where
         singleSample
             GraphStructure
                 { nodes =
-                    [ def{id = 1, label = "r", function = "reg(x#0) = tmp_0#0"}
+                    [ def{id = 1, label = "r", function = "buffer(x#0) = tmp_0#0"}
                     , def{id = 2, label = "loop(0.000000, tmp_0#0) = x#0", function = "Loop (X 0.000000) (O [x#0]) (I tmp_0#0)"}
                     ]
                 , edges =

@@ -87,12 +87,12 @@ instance
     ProcessorUnit (Broken v x t) v x t
     where
     tryBind f pu@Broken{remain}
-        | Just F.BrokenReg{} <- castF f = Right pu{remain = f : remain}
+        | Just F.BrokenBuffer{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by Broken: " ++ show f
     process = process_
 
 execution pu@Broken{targets = [], sources = [], remain, process_} f
-    | Just (F.BrokenReg (I x) (O y)) <- castF f =
+    | Just (F.BrokenBuffer (I x) (O y)) <- castF f =
         pu
             { targets = [x]
             , sources = elems y

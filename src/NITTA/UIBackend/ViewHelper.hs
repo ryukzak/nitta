@@ -201,7 +201,7 @@ instance ToSample (NodeView tag v x t) where
                             , pPercentOfBindedInputs = 0.2
                             , pWave = Just 2
                             }
-                , decision = BindDecisionView (FView "reg(a) = b = c" []) "pu"
+                , decision = BindDecisionView (FView "buffer(a) = b = c" []) "pu"
                 , score = 1032
                 }
             , NodeView
@@ -255,7 +255,7 @@ instance ToSample (NodeView tag v x t) where
                             }
                 , decision =
                     ResolveDeadlockView
-                        { newBuffer = "reg(x#0@buf) = x#0"
+                        { newBuffer = "buffer(x#0@buf) = x#0"
                         , changeset = "Changeset {changeI = fromList [], changeO = fromList [(\"x#0\",fromList [\"x#0@buf\"])]}"
                         }
                 , score = 1999
@@ -332,7 +332,7 @@ instance ToSample (TestbenchReportView String Int) where
                     , "web_ui_net_tb.v"
                     ]
                 , tbFunctions =
-                    [ "reg(x#0) = tmp_0#0"
+                    [ "buffer(x#0) = tmp_0#0"
                     , "LoopIn (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)"
                     , "LoopOut (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])"
                     ]
@@ -347,15 +347,15 @@ instance ToSample (TestbenchReportView String Int) where
                     , "Step {sKey = 12, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 7, sTime = 4 ... 4, sDesc = Target tmp_0#0}}"
                     , "Step {sKey = 11, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 8, sTime = 4 ... 4, sDesc = Write 0}}"
                     , "Step {sKey = 10, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 9, sTime = 4 ... 4, sDesc = LoopIn (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}"
-                    , "Step {sKey = 9, sTime = 0 ... 0, sDesc = Nested fram1: Step {sKey = 0, sTime = 0 ... 0, sDesc = bind reg(x#0) = tmp_0#0}}"
+                    , "Step {sKey = 9, sTime = 0 ... 0, sDesc = Nested fram1: Step {sKey = 0, sTime = 0 ... 0, sDesc = bind buffer(x#0) = tmp_0#0}}"
                     , "Step {sKey = 8, sTime = 1 ... 1, sDesc = Nested fram1: Step {sKey = 1, sTime = 1 ... 1, sDesc = Target x#0}}"
                     , "Step {sKey = 7, sTime = 1 ... 1, sDesc = Nested fram1: Step {sKey = 2, sTime = 1 ... 1, sDesc = Write 0}}"
                     , "Step {sKey = 6, sTime = 4 ... 4, sDesc = Nested fram1: Step {sKey = 3, sTime = 4 ... 4, sDesc = Source tmp_0#0}}"
                     , "Step {sKey = 5, sTime = 3 ... 3, sDesc = Nested fram1: Step {sKey = 4, sTime = 3 ... 3, sDesc = PrepareRead 0}}"
-                    , "Step {sKey = 4, sTime = 1 ... 4, sDesc = Nested fram1: Step {sKey = 5, sTime = 1 ... 4, sDesc = reg(x#0) = tmp_0#0}}"
+                    , "Step {sKey = 4, sTime = 1 ... 4, sDesc = Nested fram1: Step {sKey = 5, sTime = 1 ... 4, sDesc = buffer(x#0) = tmp_0#0}}"
                     , "Step {sKey = 3, sTime = 4 ... 4, sDesc = Transport \"tmp_0#0\" \"fram1\" \"fram2\"}"
                     , "Step {sKey = 2, sTime = 1 ... 1, sDesc = Transport \"x#0\" \"fram2\" \"fram1\"}"
-                    , "Step {sKey = 1, sTime = 0 ... 0, sDesc = bind reg(x#0) = tmp_0#0}"
+                    , "Step {sKey = 1, sTime = 0 ... 0, sDesc = bind buffer(x#0) = tmp_0#0}"
                     , "Step {sKey = 0, sTime = 0 ... 0, sDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}"
                     ]
                 , tbFunctionalSimulationCntx =

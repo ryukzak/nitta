@@ -32,33 +32,33 @@ tests =
     testGroup
         "Refactor problem"
         [ testCase "self sending 1" $
-            let df = fsToDataFlowGraph ([reg "a" ["b"], reg "b" ["c"]] :: [F String Int])
+            let df = fsToDataFlowGraph ([buffer "a" ["b"], buffer "b" ["c"]] :: [F String Int])
                 df' = resolveDeadlockDecision df (resolveDeadlock $ S.fromList ["b"])
              in df'
                     @?= DFCluster
-                        [ DFLeaf $ reg "a" ["b@buf"]
-                        , DFLeaf $ reg "b@buf" ["b"]
-                        , DFLeaf $ reg "b" ["c"]
+                        [ DFLeaf $ buffer "a" ["b@buf"]
+                        , DFLeaf $ buffer "b@buf" ["b"]
+                        , DFLeaf $ buffer "b" ["c"]
                         ]
         , testCase "self sending 2" $
-            let df = fsToDataFlowGraph ([reg "a" ["b1", "b2"], reg "b1" ["c1"], reg "b2" ["c2"]] :: [F String Int])
+            let df = fsToDataFlowGraph ([buffer "a" ["b1", "b2"], buffer "b1" ["c1"], buffer "b2" ["c2"]] :: [F String Int])
                 df' = resolveDeadlockDecision df (resolveDeadlock $ S.fromList ["b1"])
              in df'
                     @?= DFCluster
-                        [ DFLeaf $ reg "a" ["b1@buf", "b2"]
-                        , DFLeaf $ reg "b1@buf" ["b1"]
-                        , DFLeaf $ reg "b1" ["c1"]
-                        , DFLeaf $ reg "b2" ["c2"]
+                        [ DFLeaf $ buffer "a" ["b1@buf", "b2"]
+                        , DFLeaf $ buffer "b1@buf" ["b1"]
+                        , DFLeaf $ buffer "b1" ["c1"]
+                        , DFLeaf $ buffer "b2" ["c2"]
                         ]
         , testCase "self sending 3" $
-            let df = fsToDataFlowGraph ([reg "a" ["b1", "b2"], reg "b1" ["c1"], reg "b2" ["c2"]] :: [F String Int])
+            let df = fsToDataFlowGraph ([buffer "a" ["b1", "b2"], buffer "b1" ["c1"], buffer "b2" ["c2"]] :: [F String Int])
                 df' = resolveDeadlockDecision df (resolveDeadlock $ S.fromList ["b1", "b2"])
              in df'
                     @?= DFCluster
-                        [ DFLeaf $ reg "a" ["b1@buf"]
-                        , DFLeaf $ reg "b1@buf" ["b1", "b2"]
-                        , DFLeaf $ reg "b1" ["c1"]
-                        , DFLeaf $ reg "b2" ["c2"]
+                        [ DFLeaf $ buffer "a" ["b1@buf"]
+                        , DFLeaf $ buffer "b1@buf" ["b1", "b2"]
+                        , DFLeaf $ buffer "b1" ["c1"]
+                        , DFLeaf $ buffer "b2" ["c2"]
                         ]
         , testCase "patch source" $ do
             patch Changeset{changeO = M.fromList [("a1@buf", S.fromList ["a1", "a2"])], changeI = M.empty} (Source $ S.fromList ["a1@buf"])

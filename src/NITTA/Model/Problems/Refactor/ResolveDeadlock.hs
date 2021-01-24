@@ -48,12 +48,12 @@ before:
 > f3 :: (b, ...) -> (...)
 
 f1, f2 and f3 process on same process unit. In this case, we have deadlock,
-which can be fixed by insertion of buffer register between functions.
+which can be fixed by insertion of buffer between functions.
 
 after:
 
 > f1 :: (...) -> ([a@buf])
-> reg :: a@buf -> ([a, b])
+> buffer :: a@buf -> ([a, b])
 > f2 :: (a, ...) -> (...)
 > f3 :: (b, ...) -> (...)
 -}
@@ -91,7 +91,7 @@ resolveDeadlock buffered =
         bufferO = S.elems buffered
         diff = def{changeO = M.fromList $ map (\o -> (o, S.singleton bufferI)) bufferO}
      in ResolveDeadlock
-            { newBuffer = reg bufferI bufferO
+            { newBuffer = buffer bufferI bufferO
             , changeset = diff
             }
 

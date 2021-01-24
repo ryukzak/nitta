@@ -58,7 +58,7 @@ test_simple_recursion =
         "function call"
         [qc|
         function counter(x)
-            counter(reg(x))
+            counter(buffer(x))
         end
         counter(0)
         |]
@@ -96,7 +96,7 @@ test_assignment_and_reassignment =
         "assigment function result"
         [qc|
        function counter(x)
-            y = reg(x + 1)
+            y = buffer(x + 1)
             counter(y)
         end
         counter(0)
@@ -173,7 +173,7 @@ test_complex_examples =
         "fibonacci with registers"
         [qc|
         function fib(a, b)
-            a, b = b, reg(reg(a) + reg(b))
+            a, b = b, buffer(buffer(a) + buffer(b))
             fib(a, b)
         end
         fib(0, 1)
@@ -182,7 +182,7 @@ test_complex_examples =
         "fibonacci with registers and zeros"
         [qc|
         function fib(a, b)
-            a, b = b, reg(a + reg(b + 0)) + 0
+            a, b = b, buffer(a + buffer(b + 0)) + 0
             fib(a, b)
         end
         fib(0, 1)
