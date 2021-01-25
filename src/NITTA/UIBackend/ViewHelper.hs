@@ -373,20 +373,3 @@ instance ToSample (TestbenchReportView String Int) where
                             , ("x#0", 0)
                             ]
                 }
-
--- other
-
-data TimeConstrainView = TimeConstrainView
-    { vAvailable :: IntervalView
-    , vDuration :: IntervalView
-    }
-    deriving (Generic)
-
-instance (Time t) => Viewable (TimeConstrain t) TimeConstrainView where
-    view TimeConstrain{tcAvailable, tcDuration} =
-        TimeConstrainView
-            { vAvailable = view tcAvailable
-            , vDuration = view tcDuration
-            }
-
-instance ToJSON TimeConstrainView
