@@ -113,6 +113,16 @@ type NodeInspectionAPI tag v x t =
                         :> "processTimelines"
                         :> Get '[JSON] (ProcessTimelines t)
                      )
+                :<|> ( Description "Process Description for specific process unit"
+                        :> "process"
+                        :> Get '[JSON] (Process t StepInfoView)
+                     )
+                :<|> ( Description "Process Description for specific process unit"
+                        :> "microarchitecture"
+                        :> Capture "tag" tag
+                        :> "process"
+                        :> Get '[JSON] (Process t StepInfoView)
+                     )
                 :<|> ( Description "Enpoint options for all process units"
                         :> "endpoints"
                         :> Get '[JSON] [(tag, [EndpointSt v (TimeConstrain t)])]
@@ -124,6 +134,8 @@ nodeInspection ctx@BackendCtx{root} sid =
     liftIO (view <$> getTreeIO root sid)
         :<|> liftIO (algToVizJS . functions . targetDFG <$> getTreeIO root sid)
         :<|> liftIO (processTimelines . process . targetModel <$> getTreeIO root sid)
+        :<|> liftIO (view . process . targetModel <$> getTreeIO root sid)
+        :<|> (\tag -> liftIO (view . process . (M.! tag) . bnPus . targetModel <$> getTreeIO root sid))
         :<|> liftIO (dbgEndpointOptions <$> debug ctx sid)
         :<|> debug ctx sid
 
@@ -243,6 +255,9 @@ debug BackendCtx{root} sid = liftIO $ do
 instance ToCapture (Capture "sid" SID) where
     toCapture _ = DocCapture "nId" "Synthesis node ID (see NITTA.Synthesis.Tree.NId)"
 
+instance ToCapture (Capture "tag" tag) where
+    toCapture _ = DocCapture "tag" "Only process unit with specific tag"
+
 instance ToParam (QueryParam' mods "deep" Int) where
     toParam _ =
         DocQueryParam
@@ -264,3 +279,7 @@ instance ToParam (QueryParam' mods "loopsNumber" Int) where
 
 instance ToSample SID where
     toSamples _ = [("The synthesis node path from the root by edge indexes.", SID [1, 1, 3])]
+
+instance ToSample (Process t i) where
+    -- FIXME: add sample
+    toSamples _ = noSamples

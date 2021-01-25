@@ -53,6 +53,7 @@ module NITTA.Model.ProcessorUnits.Types (
     InoutPortTag (..),
 ) where
 
+import Data.Aeson (ToJSON)
 import Data.Default
 import Data.Either
 import Data.Ix
@@ -61,6 +62,7 @@ import qualified Data.List as L
 import Data.Maybe
 import qualified Data.String.Utils as S
 import Data.Typeable
+import GHC.Generics (Generic)
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.Types
@@ -117,6 +119,7 @@ data Process t i = Process
     , -- |Next process step ID
       nextUid :: ProcessStepID
     }
+    deriving (Generic)
 
 instance (Time t, Show i) => Show (Process t i) where
     show p =
@@ -132,6 +135,8 @@ instance (Time t, Show i) => Show (Process t i) where
         |]
         where
             listShow list = unlines $ map (\(i, value) -> [qc|{i}) {value}|]) $ zip [0 :: Integer ..] list
+
+instance (ToJSON t, ToJSON i) => ToJSON (Process t i)
 
 instance (Default t) => Default (Process t i) where
     def = Process{steps = [], relations = [], nextTick = def, nextUid = def}
@@ -154,7 +159,9 @@ data Step t i = Step
     , -- |step description
       sDesc :: i
     }
-    deriving (Show)
+    deriving (Show, Generic)
+
+instance (ToJSON t, ToJSON i) => ToJSON (Step t i)
 
 instance (Ord v) => Patch (Step t (StepInfo v x t)) (Changeset v) where
     patch diff step@Step{sDesc} = step{sDesc = patch diff sDesc}
@@ -197,7 +204,9 @@ data Relation
       -- execution) can be translated to a sequence of endpoint steps (receiving
       -- and sending variable), and process unit instructions.
       Vertical ProcessStepID ProcessStepID
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic)
+
+instance ToJSON Relation
 
 whatsHappen t Process{steps} = filter (atSameTime t . sTime) steps
     where
