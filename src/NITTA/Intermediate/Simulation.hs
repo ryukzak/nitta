@@ -1,4 +1,4 @@
-{- ORMOLU_DISABLE -}
+{- FOURMOLU_DISABLE -}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}

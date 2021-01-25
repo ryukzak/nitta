@@ -1,4 +1,4 @@
-{- ORMOLU_DISABLE -}
+{- FOURMOLU_DISABLE -}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
