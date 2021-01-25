@@ -106,7 +106,7 @@ main = do
                         Right p -> readMaybe p
                         Left (_ :: IOError) -> Nothing
                 warningIfUnexpectedPort expect port
-                backendServer port received $ mkModelWithOneNetwork ma frDataFlow
+                backendServer port received output_path $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
 
             when fsim $ functionalSimulation n received src
@@ -145,6 +145,7 @@ functionalSimulation n received src = do
     putCntx $ frPrettyCntx cntx
     infoM "NITTA" "run functional simulation...ok"
 
+synthesizeAndTest :: (NITTA.Project.Implementation.TargetSystemComponent (BusNetwork tag String x2 t), Testable (BusNetwork tag String x2 t) String x2, Val x2, Bounded t, Typeable tag, Typeable t, Show tag, Show t, data-default-class-0.1.2.0:Data.Default.Class.Default t, data-default-class-0.1.2.0:Data.Default.Class.Default (TargetSynthesis tag String x2 t), Integral t, Ord tag) => BusNetwork tag String x2 t -> Int -> NITTA.Intermediate.DataFlow.DataFlowGraph String x2 -> [(String, [x2])] -> String -> IO (TestbenchReport String x2)
 synthesizeAndTest ma n dataflow received outputPath = do
     Right report <-
         runTargetSynthesis
