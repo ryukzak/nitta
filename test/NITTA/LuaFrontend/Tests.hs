@@ -375,6 +375,11 @@ test_examples =
         pFX22_32
         "example spi3 lua"
         $(embedStringFile "examples/spi3.lua")
+    , typedLuaTestCase
+        (microarch Sync SlaveSPI)
+        pFX22_32
+        "example Compile time evaluation refactoring lua"
+        $(embedStringFile "examples/compileTimeEvaluation.lua")
     ]
 
 tests :: TestTree

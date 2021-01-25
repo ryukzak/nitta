@@ -8,7 +8,7 @@
 {- |
 Module      : NITTA.Model.Problems.Refactor.CompileTimeEval
 Description : Optimize an algorithm for Accum processor unit
-Copyright   : (c) Daniil Prohorov, 2020
+Copyright   : (c) Daniil Prohorov, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
@@ -85,14 +85,3 @@ apply ((cluster, evCluster) : clustersTuple) clusters = deleteExtraF newFs : app
     where
         (h, (_ : t)) = L.span (/= cluster) clusters
         newFs = deleteExtraF $ concat $ evCluster : h ++ t
-
--- compileEvalDecisions CompileTimeEvaluation {cRefOld, cRefNew } = fsToDataFlowGraph cRefNew
-
--- compileEvalOptions dfg = map (\fsNew -> CompileTimeEvaluation {cRefOld = fs, cRefNew = fsNew}) newFsListFiltered
---     where
---         fs = functions dfg
---         clusters = createClusters fs
---         evClusters = map evalCluster clusters
---         evClusters' = traceShow evClusters evClusters
---         newFsList = L.nub $ apply (zip clusters evClusters') clusters
---         newFsListFiltered = filter (\fs' -> not (null fs') && S.fromList fs' /=  S.fromList fs) $ trace ("newfsList = " ++ show newFsList) newFsList
