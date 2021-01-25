@@ -13,6 +13,10 @@ export const NodeView: React.FC<INodeViewProps> = (props) => {
     <>
       {selectedSID ? (
         <div className="my-3">
+          <h3>sid:</h3>
+          <pre>{selectedSID}</pre>
+
+          <h3>Dataflow graph</h3>
           <IntermediateView />
         </div>
       ) : (
