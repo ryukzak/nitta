@@ -94,7 +94,7 @@ class (VarValTime v x t) => ProcessorUnit u v x t | u -> v x t where
     -- contain process steps for all PUs.
     --
     -- 'ProcessStepID' may change from one call to another.
-    process :: u -> Process v x t
+    process :: u -> Process t (StepInfo v x t)
 
 bind f pu = case tryBind f pu of
     Right pu' -> pu'
@@ -107,9 +107,9 @@ allowToProcess f pu = isRight $ tryBind f pu
 {- |Computational process description. It was designed in ISO 15926 style, with
 separated data and relations storage.
 -}
-data Process v x t = Process
+data Process t i = Process
     { -- |All process steps desctiption.
-      steps :: [Step v x t]
+      steps :: [Step t i]
     , -- |List of relationships between process steps (see 'Relation').
       relations :: [Relation]
     , -- |Next free tick.
@@ -118,7 +118,7 @@ data Process v x t = Process
       nextUid :: ProcessStepID
     }
 
-instance (VarValTime v x t) => Show (Process v x t) where
+instance (Time t, Show i) => Show (Process t i) where
     show p =
         codeBlock
             [qc|
@@ -133,10 +133,10 @@ instance (VarValTime v x t) => Show (Process v x t) where
         where
             listShow list = unlines $ map (\(i, value) -> [qc|{i}) {value}|]) $ zip [0 :: Integer ..] list
 
-instance (Default t) => Default (Process v x t) where
+instance (Default t) => Default (Process t i) where
     def = Process{steps = [], relations = [], nextTick = def, nextUid = def}
 
-instance (Ord t) => WithFunctions (Process v x t) (F v x) where
+instance (Ord t) => WithFunctions (Process t (StepInfo v x t)) (F v x) where
     functions Process{steps} = mapMaybe get $ L.sortOn (I.inf . sTime) steps
         where
             get Step{sDesc} | FStep f <- descent sDesc = Just f
@@ -146,17 +146,17 @@ instance (Ord t) => WithFunctions (Process v x t) (F v x) where
 type ProcessStepID = Int
 
 -- |Process step representation
-data Step v x t = Step
+data Step t i = Step
     { -- |uniq (inside single the process unit) step ID
       sKey :: ProcessStepID
     , -- |step time
       sTime :: Interval t
     , -- |step description
-      sDesc :: StepInfo v x t
+      sDesc :: i
     }
     deriving (Show)
 
-instance (Ord v) => Patch (Step v x t) (Changeset v) where
+instance (Ord v) => Patch (Step t (StepInfo v x t)) (Changeset v) where
     patch diff step@Step{sDesc} = step{sDesc = patch diff sDesc}
 
 -- |Informative process step description at a specific process level.
@@ -173,12 +173,12 @@ data StepInfo v x t where
         Instruction pu ->
         StepInfo v x t
     -- |wrapper for nested process unit step (used for networks)
-    NestedStep :: (UnitTag tag) => {nTitle :: tag, nStep :: Step v x t} -> StepInfo v x t
+    NestedStep :: (UnitTag tag) => {nTitle :: tag, nStep :: Step t (StepInfo v x t)} -> StepInfo v x t
 
 descent (NestedStep _ step) = descent $ sDesc step
 descent desc = desc
 
-instance (Show (Step v x t), Show v) => Show (StepInfo v x t) where
+instance (Show (Step t (StepInfo v x t)), Show v) => Show (StepInfo v x t) where
     show (CADStep s) = s
     show (FStep F{fun}) = show fun
     show (EndpointRoleStep eff) = show eff
@@ -205,7 +205,7 @@ whatsHappen t Process{steps} = filter (atSameTime t . sTime) steps
 
 extractInstructionAt pu t = mapMaybe (inst pu) $ whatsHappen t $ process pu
     where
-        inst :: (Typeable (Instruction pu)) => pu -> Step v x t -> Maybe (Instruction pu)
+        inst :: (Typeable (Instruction pu)) => pu -> Step t (StepInfo v x t) -> Maybe (Instruction pu)
         inst _ Step{sDesc = InstructionStep instr} = cast instr
         inst _ _ = Nothing
 

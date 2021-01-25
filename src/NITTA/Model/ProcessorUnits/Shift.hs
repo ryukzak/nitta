@@ -58,7 +58,7 @@ data Shift v x t = Shift
     , -- |list of endpoints
       currentWorkEndpoints :: [ProcessStepID]
     , -- |description of target computation process
-      process_ :: Process v x t
+      process_ :: Process t (StepInfo v x t)
     }
     deriving (Show)
 

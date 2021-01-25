@@ -47,7 +47,7 @@ data Broken v x t = Broken
     , doneAt :: Maybe t
     , currentWork :: Maybe (t, F v x)
     , currentWorkEndpoints :: [ProcessStepID]
-    , process_ :: Process v x t
+    , process_ :: Process t (StepInfo v x t)
     , -- |generate verilog code with syntax error
       brokeVerilog :: Bool
     , -- |use process unit HW implementation with error

@@ -51,7 +51,7 @@ data Fram v x t = Fram
       memory :: A.Array Int (Cell v x t)
     , -- |register queue
       remainRegs :: [(Reg v x, Job v x t)]
-    , process_ :: Process v x t
+    , process_ :: Process t (StepInfo v x t)
     }
     deriving (Show)
 

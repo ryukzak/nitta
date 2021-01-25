@@ -343,7 +343,7 @@ data Multiplier v x t = Multiplier
       currentWork :: Maybe (F v x)
     , -- |Description of scheduled computation process
       -- ('NITTA.Model.ProcessorUnits.Types').
-      process_ :: Process v x t
+      process_ :: Process t (StepInfo v x t)
     , -- |HDL implementation of PU contains a multiplier IP core from Altera.
       -- Icarus Verilog can not simulate it. If `isMocked` is set, a target
       -- system will be contained non-synthesizable implementation of that
