@@ -1,8 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 {- |
@@ -40,29 +38,28 @@ class CompileTimeEvalProblem u v x | u -> v x where
     compileTimeEvalDecision _ _ = error "not implemented"
 
 instance (Var v, Val x) => CompileTimeEvalProblem [F v x] v x where
-    compileTimeEvalOptions fs = map (\fsNew -> CompileTimeEval{cRefOld = fs, cRefNew = fsNew}) newFsListFiltered
-        where
-            clusters = createClusters fs
-            evClusters = map evalCluster clusters
-            newFsList = L.nub $ apply (zip clusters evClusters) clusters
+    compileTimeEvalOptions fs =
+        let clusters = selectClusters fs
+            evaluatedClusters = map evalCluster clusters
+            newFsList = L.nub $ apply (zip clusters evaluatedClusters) clusters
             newFsListFiltered = filter (\fs' -> not (null fs') && S.fromList fs' /= S.fromList fs) newFsList
+         in map (\fsNew -> CompileTimeEval{cRefOld = fs, cRefNew = fsNew}) newFsListFiltered
 
-    compileTimeEvalDecision _ (CompileTimeEval _ cRefNew) = cRefNew
+    compileTimeEvalDecision _ (CompileTimeEval{cRefNew}) = cRefNew
 
 isConst f
     | Just Constant{} <- castF f = True
     | otherwise = False
 
-createClusters fs =
-    [ if inputsAreConst f
-        then f : getInputConsts f
-        else [f]
-    | f <- fs
-    ]
-    where
-        consts = filter isConst fs
+selectClusters fs =
+    let consts = filter isConst fs
         inputsAreConst f = inputs f `S.isSubsetOf` S.unions (map outputs consts)
         getInputConsts f = filter (\c -> outputs c `S.isSubsetOf` inputs f) consts
+        createCluster f =
+            if inputsAreConst f
+                then f : getInputConsts f
+                else [f]
+     in [createCluster f | f <- fs]
 
 evalCluster [f] = [f]
 evalCluster fs = constant x [v] : consts
@@ -83,5 +80,5 @@ deleteExtraF fs =
 apply [] _ = []
 apply ((cluster, evCluster) : clustersTuple) clusters = deleteExtraF newFs : apply clustersTuple clusters
     where
-        (h, (_ : t)) = L.span (/= cluster) clusters
+        (h, _ : t) = L.span (/= cluster) clusters
         newFs = deleteExtraF $ concat $ evCluster : h ++ t
