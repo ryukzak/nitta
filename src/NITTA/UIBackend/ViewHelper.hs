@@ -265,7 +265,7 @@ instance ToSample (NodeView tag v x t) where
                 }
             ]
 
-data StepInfoView = StepInfoView String
+newtype StepInfoView = StepInfoView String
     deriving (Generic)
 
 instance (Show t, Show v) => Viewable (StepInfo v x t) StepInfoView where
