@@ -207,5 +207,5 @@ $ stack build nitta:nitta-test --fast --test --test-arguments --rerun
 $ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua +RTS -p && cat nitta.prof
 
 # show stack trace if application raise an error
-$ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua
+$ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua +RTS -xc
 ```

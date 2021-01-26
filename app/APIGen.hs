@@ -74,7 +74,7 @@ $(deriveTypeScript defaultOptions ''TestbenchReportView)
 $(deriveTypeScript defaultOptions ''SID) -- in according to custom ToJSON instance, the real type description is hardcoded.
 $(deriveTypeScript defaultOptions ''FView)
 $(deriveTypeScript defaultOptions ''TreeView)
-$(deriveTypeScript defaultOptions ''SynthesisNodeView)
+$(deriveTypeScript defaultOptions ''ShortNodeView)
 
 $(deriveTypeScript defaultOptions ''NodeView)
 $(deriveTypeScript defaultOptions ''DecisionView)
@@ -136,7 +136,7 @@ main = do
                     , -- other
                       getTypeScriptDeclarations (Proxy :: Proxy FView)
                     , getTypeScriptDeclarations (Proxy :: Proxy TreeView)
-                    , getTypeScriptDeclarations (Proxy :: Proxy SynthesisNodeView)
+                    , getTypeScriptDeclarations (Proxy :: Proxy ShortNodeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy NodeView)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphEdge)
                     , getTypeScriptDeclarations (Proxy :: Proxy GraphNode)
