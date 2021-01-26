@@ -53,8 +53,7 @@ data BackendCtx tag v x t = BackendCtx
       root :: DefTree tag v x t
     , -- |lists of received by IO values
       receivedValues :: [(v, [x])]
-    ,
-      outputPath :: String
+    , outputPath :: String
     }
 
 type SynthesisAPI tag v x t =
