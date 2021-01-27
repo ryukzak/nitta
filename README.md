@@ -213,5 +213,5 @@ $ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examp
 $ find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
 
 # run formolu for all files
-$ find . -name '*.hs' | xargs fourmolu -m replace
+$ find . -name '*.hs' | xargs fourmolu -m inplace
 ```
