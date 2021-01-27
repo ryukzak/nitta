@@ -53,10 +53,8 @@ data Shift v x t = Shift
       byteShiftDiv :: Int
     , -- |shift mod 8 (is used for bit shift)
       byteShiftMod :: Int
-    , -- |tick and current function in PU
-      currentWork :: Maybe (t, F v x)
-    , -- |list of endpoints
-      currentWorkEndpoints :: [ProcessStepID]
+    , -- |current function in PU
+      currentWork :: Maybe (F v x)
     , -- |description of target computation process
       process_ :: Process t (StepInfo v x t)
     }
@@ -79,7 +77,6 @@ instance Default t => Default (Shift v x t) where
             , byteShiftDiv = 0
             , byteShiftMod = 0
             , currentWork = Nothing
-            , currentWorkEndpoints = []
             , process_ = def
             }
 
@@ -101,7 +98,7 @@ instance
     process = process_
 
 -- |This function carry out actual take functional block to work.
-execution pu@Shift{target = Nothing, sources = [], remain, process_} f
+execution pu@Shift{target = Nothing, sources = [], remain} f
     | Just f' <- castF f =
         case f' of
             ShiftL s (I i) (O o) -> toPU i o False s
@@ -110,7 +107,7 @@ execution pu@Shift{target = Nothing, sources = [], remain, process_} f
         toPU inp out sRight step =
             pu
                 { target = Just inp
-                , currentWork = Just (nextTick process_, f)
+                , currentWork = Just f
                 , sources = elems out
                 , remain = remain \\ [f]
                 , sRight = sRight
@@ -142,7 +139,6 @@ instance
     endpointDecision
         pu@Shift
             { target = (Just _)
-            , currentWorkEndpoints
             , sRight
             , byteShiftDiv
             , byteShiftMod
@@ -154,7 +150,7 @@ instance
             let startByteShift = inf epAt + 1
                 numByteShiftMod = fromIntegral byteShiftMod
                 endByteShift = sup epAt + fromIntegral byteShiftDiv
-                (newEndpoints, process_') = runSchedule pu $ do
+                (_, process_') = runSchedule pu $ do
                     updateTick (sup epAt)
                     scheduleEndpoint d $ do
                         _ <- scheduleInstruction epAt Init
@@ -179,14 +175,13 @@ instance
              in pu
                     { process_ = process_'
                     , target = Nothing
-                    , currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
                     }
     endpointDecision
         pu@Shift
             { target = Nothing
             , sources
-            , currentWork = Just (a, f)
-            , currentWorkEndpoints
+            , currentWork = Just f
+            , process_
             }
         d@EndpointSt
             { epRole = Source v
@@ -194,20 +189,20 @@ instance
             }
             | not $ null sources
               , let sources' = sources \\ elems v
+              , let a = inf $ stepsInterval $ relatedEndpoints process_ $ variables f
               , sources' /= sources =
-                let (newEndpoints, process_') = runSchedule pu $ do
+                let (_, process_') = runSchedule pu $ do
                         updateTick (sup epAt)
                         endpoints <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) Out
                         when (null sources') $ do
                             high <- scheduleFunction (a ... sup epAt) f
-                            let low = endpoints ++ currentWorkEndpoints
+                            let low = endpoints ++ map sKey (relatedEndpoints process_ $ variables f)
                             establishVerticalRelations high low
                         return endpoints
                  in pu
                         { process_ = process_'
                         , sources = sources'
-                        , currentWork = if null sources' then Nothing else Just (a + 1, f)
-                        , currentWorkEndpoints = if null sources' then [] else newEndpoints ++ currentWorkEndpoints
+                        , currentWork = if null sources' then Nothing else Just f
                         }
     endpointDecision pu@Shift{target = Nothing, sources = [], remain} d
         | let v = oneOf $ variables d

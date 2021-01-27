@@ -54,12 +54,13 @@ data BackendCtx tag v x t = BackendCtx
       root :: DefTree tag v x t
     , -- |lists of received by IO values
       receivedValues :: [(v, [x])]
+    , outputPath :: String
     }
 
 type SynthesisAPI tag v x t =
     ( Description "Get whole synthesis tree"
         :> "synthesisTree"
-        :> Get '[JSON] (TreeView SynthesisNodeView)
+        :> Get '[JSON] (TreeView ShortNodeView)
     )
         :<|> ( "node" :> Capture "sid" SID
                 :> ( SynthesisTreeNavigationAPI tag v x t
@@ -194,7 +195,7 @@ type TestBenchAPI v x =
         :> QueryParam' '[Required] "loopsNumber" Int
         :> Post '[JSON] (TestbenchReportView v x)
 
-testBench BackendCtx{root, receivedValues} sid pName loopsNumber = liftIO $ do
+testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = liftIO $ do
     tree <- getTreeIO root sid
     unless (isComplete tree) $ error "test bench not allow for non complete synthesis"
     view
@@ -202,7 +203,7 @@ testBench BackendCtx{root, receivedValues} sid pName loopsNumber = liftIO $ do
             Project
                 { pName
                 , pLibPath = "hdl"
-                , pPath = joinPath ["gen", pName]
+                , pPath = joinPath [outputPath, pName]
                 , pUnit = mUnit $ sTarget $ sState tree
                 , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues $ targetDFG tree
                 }
