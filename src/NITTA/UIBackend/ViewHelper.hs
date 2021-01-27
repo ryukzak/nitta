@@ -36,7 +36,7 @@ module NITTA.UIBackend.ViewHelper (
     TreeView,
     SynthesisNodeView,
     NodeView,
-    StepInfoView,
+    StepInfoView (..),
     TestbenchReportView (..),
 ) where
 

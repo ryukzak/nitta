@@ -44,6 +44,7 @@ import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS (VisJS, algToVizJS)
 import NITTA.Utils
+import Numeric.Interval.NonEmpty ((...))
 import Servant
 import Servant.Docs
 import System.FilePath (joinPath)
@@ -280,6 +281,30 @@ instance ToParam (QueryParam' mods "loopsNumber" Int) where
 instance ToSample SID where
     toSamples _ = [("The synthesis node path from the root by edge indexes.", SID [1, 1, 3])]
 
-instance ToSample (Process t i) where
-    -- FIXME: add sample
-    toSamples _ = noSamples
+instance (Time t) => ToSample (Process t StepInfoView) where
+    toSamples _ =
+        [
+            ( "for process unit"
+            , Process
+                { steps =
+                    [ Step{sKey = 6, sTime = 0 ... 5, sDesc = StepInfoView "Intermediate+x_0#0 +1@const#0 = x#0;"}
+                    , Step{sKey = 5, sTime = 4 ... 4, sDesc = StepInfoView "InstructionOut"}
+                    , Step{sKey = 4, sTime = 5 ... 5, sDesc = StepInfoView "EndpointSource x#0"}
+                    , Step{sKey = 3, sTime = 2 ... 2, sDesc = StepInfoView "InstructionLoad False"}
+                    , Step{sKey = 2, sTime = 2 ... 2, sDesc = StepInfoView "EndpointTarget 1@const#0"}
+                    , Step{sKey = 1, sTime = 1 ... 1, sDesc = StepInfoView "InstructionResetAndLoad False"}
+                    , Step{sKey = 0, sTime = 1 ... 1, sDesc = StepInfoView "EndpointTarget x_0#0"}
+                    ]
+                , relations =
+                    [ Vertical 6 4
+                    , Vertical 6 2
+                    , Vertical 6 0
+                    , Vertical 4 5
+                    , Vertical 2 3
+                    , Vertical 0 1
+                    ]
+                , nextTick = 5
+                , nextUid = 7
+                }
+            )
+        ]
