@@ -186,11 +186,11 @@ descent (NestedStep _ step) = descent $ sDesc step
 descent desc = desc
 
 instance (Show (Step t (StepInfo v x t)), Show v) => Show (StepInfo v x t) where
-    show (CADStep s) = s
-    show (FStep F{fun}) = show fun
-    show (EndpointRoleStep eff) = show eff
-    show (InstructionStep instr) = show instr
-    show NestedStep{nTitle, nStep} = S.replace "\"" "" ("Nested " ++ show nTitle ++ ": " ++ show nStep)
+    show (CADStep msg) = "CAD: " <> msg
+    show (FStep F{fun}) = "Intermediate: " <> S.replace "\"" "" (show fun)
+    show (EndpointRoleStep eff) = "Endpoint: " <> S.replace "\"" "" (show eff)
+    show (InstructionStep instr) = "Instruction: " <> S.replace "\"" "" (show instr)
+    show NestedStep{nTitle, nStep = Step{sDesc}} = S.replace "\"" "" ("@" <> show nTitle <> " " <> show sDesc)
 
 instance (Ord v) => Patch (StepInfo v x t) (Changeset v) where
     patch diff (FStep f) = FStep $ patch diff f
