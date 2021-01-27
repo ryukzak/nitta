@@ -175,6 +175,7 @@ data F v x where
 packF f = F{fun = f, funHistory = []}
 
 instance Eq (F v x) where
+    -- FIXME: may fail, because `fromList ['1', '2'] == fromList ['2', '1']`
     F{fun = a} == F{fun = b} = show a == show b
 
 instance Function (F v x) v where
