@@ -175,14 +175,14 @@ runTargetSynthesis
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."
                 let tmp = frDataFlow $ lua2functions src
-                infoM "NITTA" "Lua transpiler...ok"
+                noticeM "NITTA" "Lua transpiler...ok"
                 return tmp
 
             synthesise root = do
                 infoM "NITTA" "synthesis process..."
                 leaf <- tSynthesisMethod root
                 let isLeaf = isComplete leaf
-                infoM "NITTA" $ "synthesis process..." <> if isLeaf then "ok" else "fail"
+                noticeM "NITTA" $ "synthesis process..." <> if isLeaf then "ok" else "fail"
                 return $
                     if isLeaf
                         then Right leaf
