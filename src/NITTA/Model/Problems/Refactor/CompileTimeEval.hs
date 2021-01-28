@@ -26,7 +26,7 @@ import NITTA.Intermediate.Types
 data CompileTimeEval v x = CompileTimeEval
     { cRefOld :: [F v x]
     , cRefNew :: [F v x]
-    }
+    } deriving Show
 
 class CompileTimeEvalProblem u v x | u -> v x where
     -- |Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
@@ -43,9 +43,11 @@ instance (Var v, Val x) => CompileTimeEvalProblem [F v x] v x where
             evaluatedClusters = map evalCluster clusters
             newFsList = L.nub $ apply (zip clusters evaluatedClusters) clusters
             newFsListFiltered = filter (\fs' -> not (null fs') && S.fromList fs' /= S.fromList fs) newFsList
-         in map (\fsNew -> CompileTimeEval{cRefOld = fs, cRefNew = fsNew}) newFsListFiltered
+            options = map (\fsNew -> CompileTimeEval{cRefOld = fs, cRefNew = fsNew}) newFsListFiltered
+        in
+            options
 
-    compileTimeEvalDecision _ (CompileTimeEval{cRefNew}) = cRefNew
+    compileTimeEvalDecision _ CompileTimeEval{cRefNew} = cRefNew
 
 isConst f
     | Just Constant{} <- castF f = True
@@ -62,11 +64,11 @@ selectClusters fs =
      in [createCluster f | f <- fs]
 
 evalCluster [f] = [f]
-evalCluster fs = constant x [v] : consts
+evalCluster fs = map (\(v, x) -> constant x [v]) simulatedVals ++ consts
     where
         (consts, [f]) = L.partition isConst fs
         cntx = CycleCntx $ M.fromList $ concatMap (simulate def) consts
-        [(v, x)] = simulate cntx f
+        simulatedVals = simulate cntx f
 
 deleteExtraF fs =
     L.nub
