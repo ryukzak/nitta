@@ -1,5 +1,3 @@
-{-# LANGUAGE FunctionalDependencies #-}
-
 {- |
 Module      : NITTA.UIBackend.ViewHelperCls
 Description : Type class for marshaling helpers

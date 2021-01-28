@@ -42,9 +42,11 @@ extra-doc-files:
 
 default-extensions:
   - DeriveGeneric
+  - FunctionalDependencies
   - LambdaCase
   - NamedFieldPuns
   - QuasiQuotes
+  - ScopedTypeVariables
 
 ghc-options:
   - '-j'
