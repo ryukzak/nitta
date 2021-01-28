@@ -25,7 +25,7 @@ import NITTA.Intermediate.Tests.Functions ()
 import NITTA.LuaFrontend.Tests.Utils
 import NITTA.Model.Networks.Types
 import NITTA.Model.Tests.Microarchitecture
-import NITTA.TargetSynthesis
+import NITTA.Synthesis
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH

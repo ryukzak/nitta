@@ -34,7 +34,7 @@ import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem ()
 import NITTA.Model.Tests.Microarchitecture
-import NITTA.TargetSynthesis
+import NITTA.Synthesis
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
