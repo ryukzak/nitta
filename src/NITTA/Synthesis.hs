@@ -96,7 +96,7 @@ import NITTA.Model.Networks.Bus (BusNetwork)
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
-import NITTA.Project (Project (..), TestbenchReport (..), runTestbench, writeWholeProject)
+import NITTA.Project (Project (..), runTestbench, writeWholeProject)
 import NITTA.Synthesis.Bind
 import NITTA.Synthesis.Dataflow
 import NITTA.Synthesis.Explore
@@ -169,9 +169,8 @@ runTargetSynthesis
             Left err -> return $ Left err
             Right leafNode -> do
                 let prj = project leafNode
-                write prj
-                report <- testbench prj
-                return $ Right report
+                tWriteProject prj
+                Right <$> runTestbench prj
         where
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."
@@ -199,26 +198,6 @@ runTargetSynthesis
                       -- synthesised version
                       pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues $ targetDFG tree
                     }
-
-            write prj@Project{pPath} = do
-                infoM "NITTA" $ "write target project to: \"" <> pPath <> "\"..."
-                tWriteProject prj
-                infoM "NITTA" $ "write target project to: \"" <> pPath <> "\"...ok"
-
-            testbench prj = do
-                infoM "NITTA" "run logical synthesis..."
-                report@TestbenchReport{tbStatus, tbCompilerDump, tbSimulationDump} <- runTestbench prj
-                if tbStatus
-                    then infoM "NITTA" "run logical simulation...ok"
-                    else do
-                        infoM "NITTA" "run logical simulation...fail"
-                        infoM "NITTA" "-----------------------------------------------------------"
-                        infoM "NITTA" "testbench compiler dump:"
-                        infoM "NITTA" $ unlines tbCompilerDump
-                        infoM "NITTA" "-----------------------------------------------------------"
-                        infoM "NITTA" "testbench simulation dump:"
-                        infoM "NITTA" $ unlines tbSimulationDump
-                return report
 
 {- |Make a model of NITTA process with one network and a specific algorithm. All
 functions are already bound to the network.
