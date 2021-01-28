@@ -56,7 +56,7 @@ data Divider v x t = Divider
     , remains :: [F v x]
     , targetIntervals :: [Interval t]
     , sourceIntervals :: [Interval t]
-    , process_ :: Process v x t
+    , process_ :: Process t (StepInfo v x t)
     , latency :: t
     , pipeline :: t
     , mock :: Bool

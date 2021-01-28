@@ -67,7 +67,7 @@ data Accum v x t = Accum
     , -- |Current job
       currentWork :: Maybe (Job v x)
     , -- |Process
-      process_ :: Process v x t
+      process_ :: Process t (StepInfo v x t)
     , -- |Flag is indicated when new job starts
       isInit :: Bool
     }

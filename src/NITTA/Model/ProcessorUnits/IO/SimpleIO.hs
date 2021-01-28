@@ -50,7 +50,7 @@ data SimpleIO i v x t = SimpleIO
       isReceiveOver :: Bool
     , sendQueue :: [Q v x]
     , sendN :: Int
-    , process_ :: Process v x t
+    , process_ :: Process t (StepInfo v x t)
     }
 
 instance (VarValTime v x t, SimpleIOInterface i) => Show (SimpleIO i v x t) where

@@ -58,7 +58,7 @@ data BusNetwork tag v x t = BusNetwork
     , -- |Map process unit name to list of binded functions.
       bnBinded :: M.Map tag [F v x]
     , -- |Network process (bindings and transport instructions)
-      bnProcess :: Process v x t
+      bnProcess :: Process t (StepInfo v x t)
     , -- |Map of process units.
       bnPus :: M.Map tag (PU v x t)
     , -- |Controll bus width.

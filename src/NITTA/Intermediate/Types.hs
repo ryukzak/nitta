@@ -166,6 +166,7 @@ data F v x where
         , Label f
         , FunctionSimulation f v x
         , Typeable f
+        , Eq f
         ) =>
         { fun :: f
         , funHistory :: [F v x]
@@ -175,7 +176,9 @@ data F v x where
 packF f = F{fun = f, funHistory = []}
 
 instance Eq (F v x) where
-    F{fun = a} == F{fun = b} = show a == show b
+    F{fun = a} == F{fun = b}
+        | typeOf a == typeOf b = a == fromJust (cast b)
+        | otherwise = False
 
 instance Function (F v x) v where
     isInternalLockPossible F{fun} = isInternalLockPossible fun

@@ -56,7 +56,7 @@ data Shift v x t = Shift
     , -- |current function in PU
       currentWork :: Maybe (F v x)
     , -- |description of target computation process
-      process_ :: Process v x t
+      process_ :: Process t (StepInfo v x t)
     }
     deriving (Show)
 

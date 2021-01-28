@@ -28,13 +28,16 @@ automatically? We don't want to achieve consistency between client and server
 manually.
 -}
 module NITTA.UIBackend.ViewHelper (
+    module NITTA.UIBackend.ViewHelperCls,
+    module NITTA.Model.Problems.ViewHelper,
+    FView (..),
     Viewable (..),
     viewNodeTree,
     TreeView,
     ShortNodeView,
     NodeView,
+    StepInfoView (..),
     TestbenchReportView (..),
-    FView,
 ) where
 
 import Control.Concurrent.STM
@@ -262,6 +265,17 @@ instance ToSample (NodeView tag v x t) where
                 }
             ]
 
+newtype StepInfoView = StepInfoView String
+    deriving (Generic)
+
+instance (Show t, Show v) => Viewable (StepInfo v x t) StepInfoView where
+    view = StepInfoView . show
+
+instance ToJSON StepInfoView
+
+instance (Show t, Show v) => Viewable (Process t (StepInfo v x t)) (Process t StepInfoView) where
+    view p@Process{steps} = p{steps = map (\s@Step{sDesc} -> s{sDesc = view sDesc}) steps}
+
 -- Testbench
 
 data TestbenchReportView v x = TestbenchReportView
@@ -373,20 +387,3 @@ instance ToSample (TestbenchReportView String Int) where
                             , ("x#0", 0)
                             ]
                 }
-
--- other
-
-data TimeConstrainView = TimeConstrainView
-    { vAvailable :: IntervalView
-    , vDuration :: IntervalView
-    }
-    deriving (Generic)
-
-instance (Time t) => Viewable (TimeConstrain t) TimeConstrainView where
-    view TimeConstrain{tcAvailable, tcDuration} =
-        TimeConstrainView
-            { vAvailable = view tcAvailable
-            , vDuration = view tcDuration
-            }
-
-instance ToJSON TimeConstrainView
