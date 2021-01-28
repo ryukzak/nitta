@@ -40,6 +40,12 @@ homepage: 'https://nitta.io'
 extra-doc-files:
   - README.md
 
+default-extensions:
+  - DeriveGeneric
+  - LambdaCase
+  - NamedFieldPuns
+  - QuasiQuotes
+
 ghc-options:
   - '-j'
   - '-Wall'

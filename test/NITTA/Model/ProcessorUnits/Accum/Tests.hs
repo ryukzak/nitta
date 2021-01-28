@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 {-# OPTIONS -fno-warn-partial-type-signatures #-}
 

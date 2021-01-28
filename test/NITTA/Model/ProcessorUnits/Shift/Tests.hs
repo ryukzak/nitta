@@ -1,5 +1,4 @@
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Shift.Tests

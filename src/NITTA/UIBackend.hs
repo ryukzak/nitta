@@ -1,9 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeOperators #-}
 
 {-# OPTIONS -fno-warn-partial-type-signatures #-}

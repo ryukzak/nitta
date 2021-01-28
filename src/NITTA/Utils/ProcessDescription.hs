@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 
 {- |
 Module      : NITTA.Utils.ProcessDescription

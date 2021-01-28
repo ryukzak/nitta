@@ -1,11 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE IncoherentInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |

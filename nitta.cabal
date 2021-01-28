@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b3eeeb0aa85d4670a1d8dd09ff77f57054af5bd720fc397bdb81592615b74d3f
+-- hash: 6721ae1c77722df727e1811ac858ed8995a8d3acfdb82afc67c18ab5d0ef06bc
 
 name:           nitta
 version:        0.0.0.1
@@ -118,6 +118,7 @@ library
       Paths_nitta
   hs-source-dirs:
       src
+  default-extensions: DeriveGeneric LambdaCase NamedFieldPuns QuasiQuotes
   ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
       HStringTemplate
@@ -163,6 +164,7 @@ executable nitta
       Paths_nitta
   hs-source-dirs:
       app
+  default-extensions: DeriveGeneric LambdaCase NamedFieldPuns QuasiQuotes
   ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is Main
   build-depends:
       MissingH
@@ -185,6 +187,7 @@ executable nitta-api-gen
       Paths_nitta
   hs-source-dirs:
       app
+  default-extensions: DeriveGeneric LambdaCase NamedFieldPuns QuasiQuotes
   ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -main-is APIGen
   build-depends:
       MissingH
@@ -232,6 +235,7 @@ test-suite nitta-test
       Paths_nitta
   hs-source-dirs:
       test
+  default-extensions: DeriveGeneric LambdaCase NamedFieldPuns QuasiQuotes
   ghc-options: -j -Wall -Wcompat -Wredundant-constraints -fno-warn-missing-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -j -main-is Spec
   build-depends:
       MissingH
