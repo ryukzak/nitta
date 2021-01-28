@@ -17,14 +17,14 @@ TargetSynthesis is an entry point for synthesis process. TargetSynthesis flow sh
 @
 ====================================================================================================================
                                                                                                              Prepare
-NITTA.Project:TargetSynthesis                                                                       NITTA.Project...
+NITTA.Synthesis:TargetSynthesis                                                                     NITTA.Project...
     # tName                                                                                        NITTA.LuaFrontend
     # tMicroArch --------------------------\
     # tSourceCode ----+                    |     /--+-- mkModelWithOneNetwork
                       |                    |     |  |
                       *<--lua2functions    |     |  |
-                      |                    |     |  v    NITTA.Model.TargetSystem:TargetSystem--\
-    # tDFG <----------+                    +--------*------------> # mUnit        |             |    NITTA.Model...
+                      |                    |     |  v         NITTA.Model:TargetSystem----------\
+    # tDFG <----------+                    +--------*--------> # mUnit            |             |    NITTA.Model...
         |                                        |                                |             |     /-----------\
         |                                        v                                |             |     |  Target   |
         +----------------------------------------*-----------> # mDataFlowGraph   |             \-----+  System   |
@@ -36,19 +36,23 @@ NITTA.Project:TargetSynthesis                                                   
                                                          |                        |
 ===================================================================================================================
                                                          |                        |               Synthesis process
-        NITTA.Synthesis.Tree:Node                        |                        |            NITTA.Synthesis.Tree
-            # nModel <------------------------------------------------------------+          NITTA.Synthesis.Method
-            # ...                                        |
-            # nEdges                                     *<-- search for best synthesis path
-                |                                        |
-                +-----> NITTA.Synthesis.Tree:Edge        v
-                            # eNode ----------------- // * // -----\
-                            # ...                                  |
+        NITTA.Synthesis.Types:Tree                       |                        |           NITTA.Synthesis.Types
+            # sID                                        |                        |          NITTA.Synthesis.Method
+            # sState <------------------------------------------------------------+
+            # sDecision                                  |
+                # option                                 |
+                # decision                               *<-- search for best synthesis path
+                # metrics                                |
+                # score                                  v
+            # sSubForestVar ------------------------->// * // -----\
+                                                                   |
                                                                    v
-                                                            NITTA.Synthesis.Tree:Node
-                                                                # nModel
-                                       /--------------------------- # mUnit
-                                       |        /------------------ # mDataFlowGraph
+                                                            NITTA.Synthesis.Types:Tree
+                                                                # sState
+                                                                    # sTarget
+                                       /------------------------------- # mUnit
+                                       |        /---------------------- # mDataFlowGraph
+                                       |        |                   # ...
                                        |        |               # ...
                                        |        |
 ===================================================================================================================
