@@ -60,7 +60,7 @@ writeAndRunTestbench prj = do
     runTestbench prj
 
 runTestbench prj@Project{pPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do
-    infoM "NITTA" "run logical synthesis..."
+    infoM "NITTA" $ "run logical synthesis(" <> pPath <> ")..."
     let files = projectFiles prj
     wd <- getCurrentDirectory
 
@@ -77,9 +77,9 @@ runTestbench prj@Project{pPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNu
         tbSimulationDump = dump simOut simErr
 
     if tbStatus
-        then noticeM "NITTA" "run testbench...ok"
+        then noticeM "NITTA" $ "run testbench (" <> pPath <> ")...ok"
         else do
-            noticeM "NITTA" "run testbench...fail"
+            noticeM "NITTA" $ "run testbench (" <> pPath <> ")...fail"
             noticeM "NITTA" "-----------------------------------------------------------"
             noticeM "NITTA" "testbench compiler dump:"
             noticeM "NITTA" $ unlines tbCompilerDump
