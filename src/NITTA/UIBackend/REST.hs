@@ -288,13 +288,13 @@ instance (Time t) => ToSample (Process t StepInfoView) where
             ( "for process unit"
             , Process
                 { steps =
-                    [ Step{sKey = 6, sTime = 0 ... 5, sDesc = StepInfoView "Intermediate+x_0#0 +1@const#0 = x#0;"}
-                    , Step{sKey = 5, sTime = 4 ... 4, sDesc = StepInfoView "InstructionOut"}
-                    , Step{sKey = 4, sTime = 5 ... 5, sDesc = StepInfoView "EndpointSource x#0"}
-                    , Step{sKey = 3, sTime = 2 ... 2, sDesc = StepInfoView "InstructionLoad False"}
-                    , Step{sKey = 2, sTime = 2 ... 2, sDesc = StepInfoView "EndpointTarget 1@const#0"}
-                    , Step{sKey = 1, sTime = 1 ... 1, sDesc = StepInfoView "InstructionResetAndLoad False"}
-                    , Step{sKey = 0, sTime = 1 ... 1, sDesc = StepInfoView "EndpointTarget x_0#0"}
+                    [ Step{pID = 6, pInterval = 0 ... 5, pDesc = StepInfoView "Intermediate+x_0#0 +1@const#0 = x#0;"}
+                    , Step{pID = 5, pInterval = 4 ... 4, pDesc = StepInfoView "InstructionOut"}
+                    , Step{pID = 4, pInterval = 5 ... 5, pDesc = StepInfoView "EndpointSource x#0"}
+                    , Step{pID = 3, pInterval = 2 ... 2, pDesc = StepInfoView "InstructionLoad False"}
+                    , Step{pID = 2, pInterval = 2 ... 2, pDesc = StepInfoView "EndpointTarget 1@const#0"}
+                    , Step{pID = 1, pInterval = 1 ... 1, pDesc = StepInfoView "InstructionResetAndLoad False"}
+                    , Step{pID = 0, pInterval = 1 ... 1, pDesc = StepInfoView "EndpointTarget x_0#0"}
                     ]
                 , relations =
                     [ Vertical 6 4

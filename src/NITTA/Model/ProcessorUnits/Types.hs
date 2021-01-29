@@ -142,9 +142,9 @@ instance (Default t) => Default (Process t i) where
     def = Process{steps = [], relations = [], nextTick = def, nextUid = def}
 
 instance (Ord t) => WithFunctions (Process t (StepInfo v x t)) (F v x) where
-    functions Process{steps} = mapMaybe get $ L.sortOn (I.inf . sTime) steps
+    functions Process{steps} = mapMaybe get $ L.sortOn (I.inf . pInterval) steps
         where
-            get Step{sDesc} | FStep f <- descent sDesc = Just f
+            get Step{pDesc} | FStep f <- descent pDesc = Just f
             get _ = Nothing
 
 -- |Unique ID of a process step. Uniquity presented only inside PU.
@@ -153,18 +153,18 @@ type ProcessStepID = Int
 -- |Process step representation
 data Step t i = Step
     { -- |uniq (inside single the process unit) step ID
-      sKey :: ProcessStepID
+      pID :: ProcessStepID
     , -- |step time
-      sTime :: Interval t
+      pInterval :: Interval t
     , -- |step description
-      sDesc :: i
+      pDesc :: i
     }
     deriving (Show, Generic)
 
 instance (ToJSON t, ToJSON i) => ToJSON (Step t i)
 
 instance (Ord v) => Patch (Step t (StepInfo v x t)) (Changeset v) where
-    patch diff step@Step{sDesc} = step{sDesc = patch diff sDesc}
+    patch diff step@Step{pDesc} = step{pDesc = patch diff pDesc}
 
 -- |Informative process step description at a specific process level.
 data StepInfo v x t where
@@ -182,7 +182,7 @@ data StepInfo v x t where
     -- |wrapper for nested process unit step (used for networks)
     NestedStep :: (UnitTag tag) => {nTitle :: tag, nStep :: Step t (StepInfo v x t)} -> StepInfo v x t
 
-descent (NestedStep _ step) = descent $ sDesc step
+descent (NestedStep _ step) = descent $ pDesc step
 descent desc = desc
 
 instance (Show (Step t (StepInfo v x t)), Show v) => Show (StepInfo v x t) where
@@ -190,7 +190,7 @@ instance (Show (Step t (StepInfo v x t)), Show v) => Show (StepInfo v x t) where
     show (FStep F{fun}) = "Intermediate: " <> S.replace "\"" "" (show fun)
     show (EndpointRoleStep eff) = "Endpoint: " <> S.replace "\"" "" (show eff)
     show (InstructionStep instr) = "Instruction: " <> S.replace "\"" "" (show instr)
-    show NestedStep{nTitle, nStep = Step{sDesc}} = S.replace "\"" "" ("@" <> show nTitle <> " " <> show sDesc)
+    show NestedStep{nTitle, nStep = Step{pDesc}} = S.replace "\"" "" ("@" <> show nTitle <> " " <> show pDesc)
 
 instance (Ord v) => Patch (StepInfo v x t) (Changeset v) where
     patch diff (FStep f) = FStep $ patch diff f
@@ -200,22 +200,22 @@ instance (Ord v) => Patch (StepInfo v x t) (Changeset v) where
 
 -- |Relations between process steps.
 data Relation
-    = -- |Vertical relationships. For example, the intermediate step (function
-      -- execution) can be translated to a sequence of endpoint steps (receiving
-      -- and sending variable), and process unit instructions.
+    = -- |Vertical relationships (up and down). For example, the intermediate
+      -- step (function execution) can be translated to a sequence of endpoint
+      -- steps (receiving and sending variable), and process unit instructions.
       Vertical ProcessStepID ProcessStepID
     deriving (Show, Eq, Generic)
 
 instance ToJSON Relation
 
-whatsHappen t Process{steps} = filter (atSameTime t . sTime) steps
+whatsHappen t Process{steps} = filter (atSameTime t . pInterval) steps
     where
         atSameTime a ti = a `member` ti
 
 extractInstructionAt pu t = mapMaybe (inst pu) $ whatsHappen t $ process pu
     where
         inst :: (Typeable (Instruction pu)) => pu -> Step t (StepInfo v x t) -> Maybe (Instruction pu)
-        inst _ Step{sDesc = InstructionStep instr} = cast instr
+        inst _ Step{pDesc = InstructionStep instr} = cast instr
         inst _ _ = Nothing
 
 ---------------------------------------------------------------------

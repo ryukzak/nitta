@@ -104,10 +104,10 @@ endpointAt t p =
 
 isFB s = isJust $ getFB s
 
-getFB Step{sDesc} | FStep fb <- descent sDesc = Just fb
+getFB Step{pDesc} | FStep fb <- descent pDesc = Just fb
 getFB _ = Nothing
 
-getEndpoint Step{sDesc} | EndpointRoleStep role <- descent sDesc = Just role
+getEndpoint Step{pDesc} | EndpointRoleStep role <- descent pDesc = Just role
 getEndpoint _ = Nothing
 
 getEndpoints p = mapMaybe getEndpoint $ sortOn stepStart $ steps p
@@ -116,14 +116,14 @@ transferred pu = unionsMap variables $ getEndpoints $ process pu
 inputsPushedAt process_ f = sup $ stepsInterval $ relatedEndpoints process_ $ inputs f
 
 stepsInterval ss =
-    let a = minimum $ map (inf . sTime) ss
-        b = maximum $ map (sup . sTime) ss
+    let a = minimum $ map (inf . pInterval) ss
+        b = maximum $ map (sup . pInterval) ss
      in a ... b
 
 relatedEndpoints process_ vs =
     filter
         ( \case
-            Step{sDesc = EndpointRoleStep role} -> not $ null (variables role `S.intersection` vs)
+            Step{pDesc = EndpointRoleStep role} -> not $ null (variables role `S.intersection` vs)
             _ -> False
         )
         $ steps process_
@@ -134,4 +134,4 @@ isTarget _ = False
 isInstruction (InstructionStep _) = True
 isInstruction _ = False
 
-stepStart Step{sTime} = I.inf sTime
+stepStart Step{pInterval} = I.inf pInterval
