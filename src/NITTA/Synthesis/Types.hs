@@ -60,7 +60,7 @@ import Servant
 
 -- |Default synthesis tree type.
 type DefTree tag v x t =
-    Tree (TargetSystem (BusNetwork tag v x t) v x) tag v x t
+    Tree (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t
 
 {- |The synthesis method is a function, which manipulates a synthesis tree. It
 receives a node and explores it deeply by IO.

@@ -36,8 +36,8 @@ instance ToJSON OptimizeAccumMetrics
 instance
     (VarValTime v x t) =>
     SynthesisDecisionCls
-        (SynthesisState (TargetSystem (BusNetwork tag v x t) v x) tag v x t)
-        (TargetSystem (BusNetwork tag v x t) v x)
+        (SynthesisState (TargetSystem (BusNetwork tag v x t) tag v x t) tag v x t)
+        (TargetSystem (BusNetwork tag v x t) tag v x t)
         (OptimizeAccum v x)
         (OptimizeAccum v x)
         OptimizeAccumMetrics
