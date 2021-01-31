@@ -83,7 +83,7 @@ synthesisServer ctx@BackendCtx{root} =
 type SynthesisTreeNavigationAPI tag v x t =
     Summary "Synthesis tree navigation"
         :> ( ( Description "Get list of synthesis nodes from the root to the specific node"
-                :> "rootPath"
+                :> "history"
                 :> Get '[JSON] [NodeView tag v x t]
              )
                 :<|> ( Description "Get edge to the parent"
