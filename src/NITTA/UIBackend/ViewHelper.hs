@@ -28,13 +28,16 @@ automatically? We don't want to achieve consistency between client and server
 manually.
 -}
 module NITTA.UIBackend.ViewHelper (
+    module NITTA.UIBackend.ViewHelperCls,
+    module NITTA.Model.Problems.ViewHelper,
+    FView (..),
     Viewable (..),
     viewNodeTree,
     TreeView,
-    SynthesisNodeView,
+    ShortNodeView,
     NodeView,
+    StepInfoView (..),
     TestbenchReportView (..),
-    FView,
 ) where
 
 import Control.Concurrent.STM
@@ -68,58 +71,58 @@ data TreeView a = TreeNodeView
 
 instance (ToJSON a) => ToJSON (TreeView a)
 
-instance ToSample (TreeView SynthesisNodeView) where
+instance ToSample (TreeView ShortNodeView) where
     toSamples _ =
         singleSample $
             TreeNodeView
                 { rootLabel =
-                    SynthesisNodeView
-                        { svNnid = show $ SID []
-                        , svIsComplete = False
-                        , svIsEdgesProcessed = True
-                        , svDuration = 0
-                        , svCharacteristic = 0 / 0
-                        , svOptionType = "-"
+                    ShortNodeView
+                        { sid = show $ SID []
+                        , isLeaf = False
+                        , isProcessed = True
+                        , duration = 0
+                        , score = 0 / 0
+                        , decsionType = "-"
                         }
                 , subForest =
                     [ TreeNodeView
                         { rootLabel =
-                            SynthesisNodeView
-                                { svNnid = show $ SID [0]
-                                , svIsComplete = False
-                                , svIsEdgesProcessed = False
-                                , svDuration = 0
-                                , svCharacteristic = 4052
-                                , svOptionType = "Bind"
+                            ShortNodeView
+                                { sid = show $ SID [0]
+                                , isLeaf = False
+                                , isProcessed = False
+                                , duration = 0
+                                , score = 4052
+                                , decsionType = "Bind"
                                 }
                         , subForest = []
                         }
                     , TreeNodeView
                         { rootLabel =
-                            SynthesisNodeView
-                                { svNnid = show $ SID [1]
-                                , svIsComplete = False
-                                , svIsEdgesProcessed = False
-                                , svDuration = 0
-                                , svCharacteristic = 3021
-                                , svOptionType = "Bind"
+                            ShortNodeView
+                                { sid = show $ SID [1]
+                                , isLeaf = False
+                                , isProcessed = False
+                                , duration = 0
+                                , score = 3021
+                                , decsionType = "Bind"
                                 }
                         , subForest = []
                         }
                     ]
                 }
 
-data SynthesisNodeView = SynthesisNodeView
-    { svNnid :: String
-    , svIsComplete :: Bool
-    , svIsEdgesProcessed :: Bool
-    , svDuration :: Int
-    , svCharacteristic :: Float -- FIXME: Maybe?
-    , svOptionType :: String
+data ShortNodeView = ShortNodeView
+    { sid :: String
+    , isLeaf :: Bool
+    , isProcessed :: Bool
+    , duration :: Int
+    , score :: Float
+    , decsionType :: String
     }
     deriving (Generic)
 
-instance ToJSON SynthesisNodeView
+instance ToJSON ShortNodeView
 
 viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, sSubForestVar} = do
     subForestM <- atomically $ tryReadTMVar sSubForestVar
@@ -127,13 +130,13 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
     return
         TreeNodeView
             { rootLabel =
-                SynthesisNodeView
-                    { svNnid = show sid
-                    , svIsComplete = isComplete tree
-                    , svIsEdgesProcessed = isJust subForestM
-                    , svDuration = fromEnum $ processDuration sTarget
-                    , svCharacteristic = read "NaN" -- maybe (read "NaN") eObjectiveFunctionValue nOrigin
-                    , svOptionType = case sDecision of
+                ShortNodeView
+                    { sid = show sid
+                    , isLeaf = isComplete tree
+                    , isProcessed = isJust subForestM
+                    , duration = fromEnum $ processDuration sTarget
+                    , score = read "NaN" -- maybe (read "NaN") eObjectiveFunctionValue nOrigin
+                    , decsionType = case sDecision of
                         Root{} -> "root"
                         SynthesisDecision{metrics}
                             | Just BindMetrics{} <- cast metrics -> "Bind"
@@ -262,6 +265,17 @@ instance ToSample (NodeView tag v x t) where
                 }
             ]
 
+newtype StepInfoView = StepInfoView String
+    deriving (Generic)
+
+instance (Show t, Show v) => Viewable (StepInfo v x t) StepInfoView where
+    view = StepInfoView . show
+
+instance ToJSON StepInfoView
+
+instance (Show t, Show v) => Viewable (Process t (StepInfo v x t)) (Process t StepInfoView) where
+    view p@Process{steps} = p{steps = map (\s@Step{sDesc} -> s{sDesc = view sDesc}) steps}
+
 -- Testbench
 
 data TestbenchReportView v x = TestbenchReportView
@@ -373,20 +387,3 @@ instance ToSample (TestbenchReportView String Int) where
                             , ("x#0", 0)
                             ]
                 }
-
--- other
-
-data TimeConstrainView = TimeConstrainView
-    { vAvailable :: IntervalView
-    , vDuration :: IntervalView
-    }
-    deriving (Generic)
-
-instance (Time t) => Viewable (TimeConstrain t) TimeConstrainView where
-    view TimeConstrain{tcAvailable, tcDuration} =
-        TimeConstrainView
-            { vAvailable = view tcAvailable
-            , vDuration = view tcDuration
-            }
-
-instance ToJSON TimeConstrainView

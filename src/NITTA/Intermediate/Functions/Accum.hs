@@ -5,7 +5,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |
@@ -33,10 +32,10 @@ module NITTA.Intermediate.Functions.Accum (
 import Data.List (partition)
 import Data.List.Split (splitWhen)
 import Data.Set (elems, fromList)
+import qualified Data.String.Utils as S
 import Data.Typeable
 import NITTA.Intermediate.Types
 import NITTA.Utils.Base
-import Text.InterpolatedString.Perl6 (qc)
 import Text.Regex
 
 data Sign = Plus | Minus deriving (Typeable, Eq)
@@ -48,13 +47,13 @@ instance Show Sign where
 data Action v = Push Sign (I v) | Pull (O v) deriving (Typeable, Eq)
 
 instance (Show v) => Show (Action v) where
-    show (Push s (I v)) = [qc| { show s }{ show v }|]
-    show (Pull (O v)) = concatMap (\res -> [qc| = {show res}|]) (elems v) <> ";"
+    show (Push s (I v)) = show s <> show v
+    show (Pull (O vs)) = S.join " " (map (("= " <>) . show) $ elems vs) <> ";"
 
 newtype Acc v x = Acc {actions :: [Action v]} deriving (Typeable, Eq)
 
 instance (Show v) => Show (Acc v x) where
-    show (Acc lst) = concatMap show lst
+    show (Acc acts) = S.join " " $ map show acts
 
 instance Label (Acc v x) where label Acc{} = "Acc"
 

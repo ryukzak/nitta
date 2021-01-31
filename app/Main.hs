@@ -60,6 +60,7 @@ data Nitta = Nitta
     , fsim :: Bool
     , lsim :: Bool
     , verbose :: Bool
+    , output_path :: String
     }
     deriving (Show, Data, Typeable)
 
@@ -75,6 +76,7 @@ nittaArgs =
         , fsim = False &= help "Functional simulation with trace"
         , lsim = False &= help "Logical (HDL) simulation with trace"
         , verbose = False &= help "Verbose"
+        , output_path = "gen" &= help "Place the output into specified directory"
         }
         &= summary ("nitta v" ++ showVersion version ++ " - CAD for reconfigurable real-time ASIP")
 
@@ -85,7 +87,7 @@ parseFX input =
      in (convert m, convert b)
 
 main = do
-    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose} <- cmdArgs nittaArgs
+    Nitta{port, filename, type_, io_sync, fsim, lsim, n, verbose, output_path} <- cmdArgs nittaArgs
     setupLogger verbose
 
     src <- readSourceCode filename
@@ -104,7 +106,7 @@ main = do
                         Right p -> readMaybe p
                         Left (_ :: IOError) -> Nothing
                 warningIfUnexpectedPort expect port
-                backendServer port received $ mkModelWithOneNetwork ma frDataFlow
+                backendServer port received output_path $ mkModelWithOneNetwork ma frDataFlow
                 exitSuccess
 
             when fsim $ functionalSimulation n received src
@@ -112,7 +114,7 @@ main = do
             TestbenchReport
                 { tbLogicalSimulationCntx
                 } <-
-                synthesizeAndTest ma n frDataFlow received
+                synthesizeAndTest ma n frDataFlow received output_path
 
             when lsim $ do
                 putCntx $ frPrettyCntx tbLogicalSimulationCntx
@@ -143,11 +145,12 @@ functionalSimulation n received src = do
     putCntx $ frPrettyCntx cntx
     infoM "NITTA" "run functional simulation...ok"
 
-synthesizeAndTest ma n dataflow received = do
+synthesizeAndTest ma n dataflow received outputPath = do
     Right report <-
         runTargetSynthesis
             def
                 { tName = "main"
+                , tPath = outputPath
                 , tMicroArch = ma
                 , tDFG = dataflow
                 , tReceivedValues = received

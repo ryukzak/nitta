@@ -127,6 +127,8 @@ Common flags:
   -f     --fsim                       Functional simulation with trace
   -l     --lsim                       Logical (HDL) simulation with trace
   -v     --verbose                    Verbose
+  -o     --output-path=ITEM           Place the output into specified
+                                      directory
   -?     --help                       Display help message
   -V     --version                    Print version information
          --numeric-version            Print just the version number
@@ -205,5 +207,11 @@ $ stack build nitta:nitta-test --fast --test --test-arguments --rerun
 $ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua +RTS -p && cat nitta.prof
 
 # show stack trace if application raise an error
-$ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua
+$ stack build --fast --profile && stack exec nitta --profile -- -t=fx32.32 examples/counter.lua +RTS -xc
+
+# run doctest for all files
+$ find src -name '*.hs' -exec grep -l '>>>' {} \; | xargs -t -L 1 -P 4 stack exec doctest
+
+# run formolu for all files
+$ find . -name '*.hs' | xargs fourmolu -m inplace
 ```

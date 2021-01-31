@@ -49,9 +49,9 @@ import Text.InterpolatedString.Perl6 (qc)
 data Fram v x t = Fram
     { -- |memory cell array
       memory :: A.Array Int (Cell v x t)
-    , -- |buffer queue
+    , -- |register queue
       remainBuffers :: [(Buffer v x, Job v x t)]
-    , process_ :: Process v x t
+    , process_ :: Process t (StepInfo v x t)
     }
     deriving (Show)
 

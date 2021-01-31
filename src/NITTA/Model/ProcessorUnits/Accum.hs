@@ -38,7 +38,7 @@ import NITTA.Model.Types
 import NITTA.Project
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
-import Numeric.Interval.NonEmpty (singleton, sup, (...))
+import Numeric.Interval.NonEmpty (inf, singleton, sup, (...))
 import Text.InterpolatedString.Perl6 (qc)
 
 {- |Type that contains expression:
@@ -65,11 +65,9 @@ data Accum v x t = Accum
     { -- |List of jobs (expressions)
       work :: [Job v x]
     , -- |Current job
-      currentWork :: Maybe (t, Job v x)
-    , -- |Current endpoints
-      currentWorkEndpoints :: [ProcessStepID]
+      currentWork :: Maybe (Job v x)
     , -- |Process
-      process_ :: Process v x t
+      process_ :: Process t (StepInfo v x t)
     , -- |Flag is indicated when new job starts
       isInit :: Bool
     }
@@ -81,7 +79,6 @@ instance (VarValTime v x t) => Show (Accum v x t) where
         Accum:
             work                 = {work a}
             currentWork          = {currentWork a}
-            currentWorkEndpoints = {currentWorkEndpoints a}
             process_             = {process_ a}
             isInit               = {isInit a}|]
 
@@ -90,7 +87,6 @@ instance (VarValTime v x t) => Default (Accum v x t) where
         Accum
             { work = []
             , currentWork = Nothing
-            , currentWorkEndpoints = []
             , process_ = def
             , isInit = True
             }
@@ -154,7 +150,7 @@ instance (VarValTime v x t, Num x) => ProcessorUnit (Accum v x t) v x t where
     process = process_
 
 instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
-    endpointOptions Accum{currentWork = Just (_, a@Job{tasks, calcEnd}), process_ = Process{nextTick = tick}}
+    endpointOptions Accum{currentWork = Just a@Job{tasks, calcEnd}, process_ = Process{nextTick = tick}}
         | toTarget tasks = targets
         | toSource tasks = sources
         where
@@ -162,48 +158,47 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
             sources = [EndpointSt (Source $ fromList (endpointOptionsJob a)) $ TimeConstrain (max tick (tickSource calcEnd) ... maxBound) (1 ... maxBound)]
             tickSource True = tick + 1
             tickSource _ = tick + 3
-    endpointOptions p@Accum{work, currentWork = Nothing, process_ = Process{nextTick = tick}} =
-        concatMap (\a -> endpointOptions p{currentWork = Just (tick, a)}) work
+    endpointOptions p@Accum{work, currentWork = Nothing} =
+        concatMap (\a -> endpointOptions p{currentWork = Just a}) work
     endpointOptions _ = error "Error in matching in endpointOptions function"
 
     endpointDecision
-        pu@Accum{currentWork = Just (t, j@Job{tasks}), currentWorkEndpoints, isInit}
+        pu@Accum{currentWork = Just j@Job{tasks}, isInit}
         d@EndpointSt{epRole = Target v, epAt}
             | not (null tasks) && toTarget tasks =
                 let job@Job{tasks = tasks', current = (((neg, _) : _) : _)} = endpointDecisionJob j v
                     sel = if isInit then ResetAndLoad neg else Load neg
-                    (newEndpoints, process_') = runSchedule pu $ do
+                    (_, process_') = runSchedule pu $ do
                         updateTick (sup epAt)
                         scheduleEndpoint d $ scheduleInstruction epAt sel
                  in pu
                         { process_ = process_'
-                        , currentWork = Just (t, job{calcEnd = False})
-                        , currentWorkEndpoints = newEndpoints ++ currentWorkEndpoints
+                        , currentWork = Just job{calcEnd = False}
                         , isInit = null tasks'
                         }
     endpointDecision
-        pu@Accum{currentWork = Just (t, j@Job{tasks, current, func}), currentWorkEndpoints, process_ = Process{nextTick = tick}}
+        pu@Accum{currentWork = Just j@Job{tasks, current, func}, process_}
         d@EndpointSt{epRole = Source v, epAt}
             | not (null current) && toSource tasks =
                 let job@Job{tasks = tasks'} = foldl endpointDecisionJob j (elems v)
-                    (newEndpoints, process_') = runSchedule pu $ do
+                    a = inf $ stepsInterval $ relatedEndpoints process_ $ variables func
+                    (_, process_') = runSchedule pu $ do
                         endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt -1) Out
                         when (null tasks') $ do
-                            high <- scheduleFunction (t ... sup epAt) func
-                            let low = endpoints ++ currentWorkEndpoints
+                            high <- scheduleFunction (a ... sup epAt) func
+                            let low = endpoints ++ map sKey (relatedEndpoints process_ $ variables func)
                             establishVerticalRelations high low
 
                         updateTick (sup epAt)
                         return endpoints
                  in pu
                         { process_ = process_'
-                        , currentWork = if null tasks' then Nothing else Just (tick, job{calcEnd = True})
-                        , currentWorkEndpoints = if null tasks' then [] else newEndpoints ++ currentWorkEndpoints
+                        , currentWork = if null tasks' then Nothing else Just job{calcEnd = True}
                         , isInit = null tasks'
                         }
-    endpointDecision pu@Accum{work, currentWork = Nothing, process_ = Process{nextTick = tick}} d
+    endpointDecision pu@Accum{work, currentWork = Nothing} d
         | Just job <- getJob work =
-            endpointDecision pu{work = work \\ [job], currentWork = Just (tick, job{calcEnd = False}), isInit = True} d
+            endpointDecision pu{work = work \\ [job], currentWork = Just job{calcEnd = False}, isInit = True} d
         where
             getJob = find (\Job{func} -> d `isIn` func)
             e `isIn` f = oneOf (variables e) `member` variables f
@@ -255,7 +250,7 @@ instance UnambiguouslyDecode (Accum v x t) where
 
 instance (Var v) => Locks (Accum v x t) v where
     locks Accum{currentWork = Nothing} = []
-    locks Accum{currentWork = Just (_, job), work} = locks' job work
+    locks Accum{currentWork = Just job, work} = locks' job work
         where
             locks' Job{tasks = []} _ = []
             locks' Job{current = []} _ = []

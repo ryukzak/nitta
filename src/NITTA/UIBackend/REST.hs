@@ -44,6 +44,7 @@ import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
 import NITTA.UIBackend.VisJS (VisJS, algToVizJS)
 import NITTA.Utils
+import Numeric.Interval.NonEmpty ((...))
 import Servant
 import Servant.Docs
 import System.FilePath (joinPath)
@@ -53,12 +54,13 @@ data BackendCtx tag v x t = BackendCtx
       root :: DefTree tag v x t
     , -- |lists of received by IO values
       receivedValues :: [(v, [x])]
+    , outputPath :: String
     }
 
 type SynthesisAPI tag v x t =
     ( Description "Get whole synthesis tree"
         :> "synthesisTree"
-        :> Get '[JSON] (TreeView SynthesisNodeView)
+        :> Get '[JSON] (TreeView ShortNodeView)
     )
         :<|> ( "node" :> Capture "sid" SID
                 :> ( SynthesisTreeNavigationAPI tag v x t
@@ -113,6 +115,16 @@ type NodeInspectionAPI tag v x t =
                         :> "processTimelines"
                         :> Get '[JSON] (ProcessTimelines t)
                      )
+                :<|> ( Description "Process Description for specific process unit"
+                        :> "process"
+                        :> Get '[JSON] (Process t StepInfoView)
+                     )
+                :<|> ( Description "Process Description for specific process unit"
+                        :> "microarchitecture"
+                        :> Capture "tag" tag
+                        :> "process"
+                        :> Get '[JSON] (Process t StepInfoView)
+                     )
                 :<|> ( Description "Enpoint options for all process units"
                         :> "endpoints"
                         :> Get '[JSON] [(tag, [EndpointSt v (TimeConstrain t)])]
@@ -124,6 +136,8 @@ nodeInspection ctx@BackendCtx{root} sid =
     liftIO (view <$> getTreeIO root sid)
         :<|> liftIO (algToVizJS . functions . targetDFG <$> getTreeIO root sid)
         :<|> liftIO (processTimelines . process . targetModel <$> getTreeIO root sid)
+        :<|> liftIO (view . process . targetModel <$> getTreeIO root sid)
+        :<|> (\tag -> liftIO (view . process . (M.! tag) . bnPus . targetModel <$> getTreeIO root sid))
         :<|> liftIO (dbgEndpointOptions <$> debug ctx sid)
         :<|> debug ctx sid
 
@@ -181,7 +195,7 @@ type TestBenchAPI v x =
         :> QueryParam' '[Required] "loopsNumber" Int
         :> Post '[JSON] (TestbenchReportView v x)
 
-testBench BackendCtx{root, receivedValues} sid pName loopsNumber = liftIO $ do
+testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = liftIO $ do
     tree <- getTreeIO root sid
     unless (isComplete tree) $ error "test bench not allow for non complete synthesis"
     view
@@ -189,7 +203,7 @@ testBench BackendCtx{root, receivedValues} sid pName loopsNumber = liftIO $ do
             Project
                 { pName
                 , pLibPath = "hdl"
-                , pPath = joinPath ["gen", pName]
+                , pPath = joinPath [outputPath, pName]
                 , pUnit = mUnit $ sTarget $ sState tree
                 , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues $ targetDFG tree
                 }
@@ -243,6 +257,9 @@ debug BackendCtx{root} sid = liftIO $ do
 instance ToCapture (Capture "sid" SID) where
     toCapture _ = DocCapture "nId" "Synthesis node ID (see NITTA.Synthesis.Tree.NId)"
 
+instance ToCapture (Capture "tag" tag) where
+    toCapture _ = DocCapture "tag" "Only process unit with specific tag"
+
 instance ToParam (QueryParam' mods "deep" Int) where
     toParam _ =
         DocQueryParam
@@ -264,3 +281,31 @@ instance ToParam (QueryParam' mods "loopsNumber" Int) where
 
 instance ToSample SID where
     toSamples _ = [("The synthesis node path from the root by edge indexes.", SID [1, 1, 3])]
+
+instance (Time t) => ToSample (Process t StepInfoView) where
+    toSamples _ =
+        [
+            ( "for process unit"
+            , Process
+                { steps =
+                    [ Step{sKey = 6, sTime = 0 ... 5, sDesc = StepInfoView "Intermediate+x_0#0 +1@const#0 = x#0;"}
+                    , Step{sKey = 5, sTime = 4 ... 4, sDesc = StepInfoView "InstructionOut"}
+                    , Step{sKey = 4, sTime = 5 ... 5, sDesc = StepInfoView "EndpointSource x#0"}
+                    , Step{sKey = 3, sTime = 2 ... 2, sDesc = StepInfoView "InstructionLoad False"}
+                    , Step{sKey = 2, sTime = 2 ... 2, sDesc = StepInfoView "EndpointTarget 1@const#0"}
+                    , Step{sKey = 1, sTime = 1 ... 1, sDesc = StepInfoView "InstructionResetAndLoad False"}
+                    , Step{sKey = 0, sTime = 1 ... 1, sDesc = StepInfoView "EndpointTarget x_0#0"}
+                    ]
+                , relations =
+                    [ Vertical 6 4
+                    , Vertical 6 2
+                    , Vertical 6 0
+                    , Vertical 4 5
+                    , Vertical 2 3
+                    , Vertical 0 1
+                    ]
+                , nextTick = 5
+                , nextUid = 7
+                }
+            )
+        ]
