@@ -176,7 +176,7 @@ findForBufferCell Fram{memory} =
         Nothing -> L.find (isFree . snd) $ A.assocs memory
 
 oJobV Job{function}
-    | Just (LoopIn _ (I v)) <- castF function = v
+    | Just (LoopEnd _ (I v)) <- castF function = v
     | otherwise = undefined
 
 -- |Function for calculating width of array in Fram

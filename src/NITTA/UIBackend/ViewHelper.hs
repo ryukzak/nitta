@@ -347,20 +347,20 @@ instance ToSample (TestbenchReportView String Int) where
                     ]
                 , tbFunctions =
                     [ "buffer(x#0) = tmp_0#0"
-                    , "LoopIn (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)"
-                    , "LoopOut (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])"
+                    , "LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)"
+                    , "LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])"
                     ]
                 , tbSynthesisSteps =
                     [ "Step {sKey = 19, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 0, sTime = 0 ... 0, sDesc = bind Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}"
                     , "Step {sKey = 18, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 1, sTime = 0 ... 0, sDesc = revoke Loop (X 0.000000) (O [x#0]) (I tmp_0#0)}}"
-                    , "Step {sKey = 17, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 2, sTime = 0 ... 0, sDesc = bind LoopOut (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}"
-                    , "Step {sKey = 16, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 3, sTime = 0 ... 0, sDesc = bind LoopIn (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}"
+                    , "Step {sKey = 17, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 2, sTime = 0 ... 0, sDesc = bind LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}"
+                    , "Step {sKey = 16, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 3, sTime = 0 ... 0, sDesc = bind LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}"
                     , "Step {sKey = 15, sTime = 1 ... 1, sDesc = Nested fram2: Step {sKey = 4, sTime = 1 ... 1, sDesc = Source x#0}}"
                     , "Step {sKey = 14, sTime = 0 ... 0, sDesc = Nested fram2: Step {sKey = 5, sTime = 0 ... 0, sDesc = PrepareRead 0}}"
-                    , "Step {sKey = 13, sTime = 0 ... 1, sDesc = Nested fram2: Step {sKey = 6, sTime = 0 ... 1, sDesc = LoopOut (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}"
+                    , "Step {sKey = 13, sTime = 0 ... 1, sDesc = Nested fram2: Step {sKey = 6, sTime = 0 ... 1, sDesc = LoopBegin (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (O [x#0])}}"
                     , "Step {sKey = 12, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 7, sTime = 4 ... 4, sDesc = Target tmp_0#0}}"
                     , "Step {sKey = 11, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 8, sTime = 4 ... 4, sDesc = Write 0}}"
-                    , "Step {sKey = 10, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 9, sTime = 4 ... 4, sDesc = LoopIn (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}"
+                    , "Step {sKey = 10, sTime = 4 ... 4, sDesc = Nested fram2: Step {sKey = 9, sTime = 4 ... 4, sDesc = LoopEnd (Loop (X 0.000000) (O [x#0]) (I tmp_0#0)) (I tmp_0#0)}}"
                     , "Step {sKey = 9, sTime = 0 ... 0, sDesc = Nested fram1: Step {sKey = 0, sTime = 0 ... 0, sDesc = bind buffer(x#0) = tmp_0#0}}"
                     , "Step {sKey = 8, sTime = 1 ... 1, sDesc = Nested fram1: Step {sKey = 1, sTime = 1 ... 1, sDesc = Target x#0}}"
                     , "Step {sKey = 7, sTime = 1 ... 1, sDesc = Nested fram1: Step {sKey = 2, sTime = 1 ... 1, sDesc = Write 0}}"

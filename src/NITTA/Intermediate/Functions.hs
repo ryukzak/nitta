@@ -43,8 +43,8 @@ module NITTA.Intermediate.Functions (
     Loop (..),
     loop,
     isLoop,
-    LoopIn (..),
-    LoopOut (..),
+    LoopEnd (..),
+    LoopBegin (..),
     Buffer (..),
     buffer,
 
@@ -140,8 +140,8 @@ Similation data:
 
 In practice, Loop function supported by Fram processor unit in the
 following way: Loop function should be prepared before execution by
-automatical refactor @BreakLoop@, which replace Loop by @LoopIn@
-and @LoopOut@.
+automatical refactor @BreakLoop@, which replace Loop by @LoopEnd@
+and @LoopBegin@.
 -}
 data Loop v x = Loop (X x) (O v) (I v) deriving (Typeable, Eq, Show)
 
@@ -170,30 +170,30 @@ instance (Var v) => FunctionSimulation (Loop v x) v x where
             -- if output variables are not defined - set initial value
             Nothing -> [(v, x) | v <- elems vs]
 
-data LoopOut v x = LoopOut (Loop v x) (O v) deriving (Typeable, Eq, Show)
-instance (Show v) => Label (LoopOut v x) where
-    label (LoopOut _ (O vs)) = "loopOut() = " <> showOut vs
-instance (Ord v) => Function (LoopOut v x) v where
-    outputs (LoopOut _ o) = variables o
+data LoopBegin v x = LoopBegin (Loop v x) (O v) deriving (Typeable, Eq, Show)
+instance (Show v) => Label (LoopBegin v x) where
+    label (LoopBegin _ (O vs)) = "LoopBegin() = " <> showOut vs
+instance (Ord v) => Function (LoopBegin v x) v where
+    outputs (LoopBegin _ o) = variables o
     isInternalLockPossible _ = True
-instance (Ord v) => Patch (LoopOut v x) (v, v) where
-    patch diff (LoopOut l a) = LoopOut (patch diff l) $ patch diff a
-instance (Var v) => Locks (LoopOut v x) v where
+instance (Ord v) => Patch (LoopBegin v x) (v, v) where
+    patch diff (LoopBegin l a) = LoopBegin (patch diff l) $ patch diff a
+instance (Var v) => Locks (LoopBegin v x) v where
     locks _ = []
-instance (Var v) => FunctionSimulation (LoopOut v x) v x where
-    simulate cntx (LoopOut l _) = simulate cntx l
+instance (Var v) => FunctionSimulation (LoopBegin v x) v x where
+    simulate cntx (LoopBegin l _) = simulate cntx l
 
-data LoopIn v x = LoopIn (Loop v x) (I v) deriving (Typeable, Eq, Show)
-instance (Show v) => Label (LoopIn v x) where
-    label (LoopIn (Loop _ (O vs) _) (I v)) = "loopIn(" <> show v <> ") pair out: " <> showOut vs
-instance (Ord v) => Function (LoopIn v x) v where
-    inputs (LoopIn _ o) = variables o
+data LoopEnd v x = LoopEnd (Loop v x) (I v) deriving (Typeable, Eq, Show)
+instance (Show v) => Label (LoopEnd v x) where
+    label (LoopEnd (Loop _ (O vs) _) (I v)) = "LoopEnd(" <> show v <> ") pair out: " <> showOut vs
+instance (Ord v) => Function (LoopEnd v x) v where
+    inputs (LoopEnd _ o) = variables o
     isInternalLockPossible _ = True
-instance (Ord v) => Patch (LoopIn v x) (v, v) where
-    patch diff (LoopIn l a) = LoopIn (patch diff l) $ patch diff a
-instance (Var v) => Locks (LoopIn v x) v where locks (LoopIn l _) = locks l
-instance (Var v) => FunctionSimulation (LoopIn v x) v x where
-    simulate cntx (LoopIn l _) = simulate cntx l
+instance (Ord v) => Patch (LoopEnd v x) (v, v) where
+    patch diff (LoopEnd l a) = LoopEnd (patch diff l) $ patch diff a
+instance (Var v) => Locks (LoopEnd v x) v where locks (LoopEnd l _) = locks l
+instance (Var v) => FunctionSimulation (LoopEnd v x) v x where
+    simulate cntx (LoopEnd l _) = simulate cntx l
 
 data Buffer v x = Buffer (I v) (O v) deriving (Typeable, Eq)
 instance Label (Buffer v x) where label Buffer{} = "buf"
