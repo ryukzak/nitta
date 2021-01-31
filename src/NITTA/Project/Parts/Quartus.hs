@@ -16,13 +16,12 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Project.Parts.Quartus (
-    QuartusProject (..),
+    writeQuartusProject,
 ) where
 
 import Data.FileEmbed
 import qualified Data.String.Utils as S
 import NITTA.Model.Networks.Bus
-import NITTA.Model.Types
 import NITTA.Project.Implementation
 import NITTA.Project.Parts.TestBench
 import NITTA.Project.Types
@@ -30,17 +29,10 @@ import NITTA.Utils
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath.Posix (joinPath)
 
-data QuartusProject = QuartusProject
-
-instance
-    ( VarValTime v x t
-    ) =>
-    ProjectPart QuartusProject (Project (BusNetwork String v x t) v x)
-    where
-    writePart QuartusProject prj@Project{pPath} = do
-        createDirectoryIfMissing True pPath
-        writeModelsimDo prj
-        writeQuartus prj
+writeQuartusProject prj@Project{pPath} = do
+    createDirectoryIfMissing True pPath
+    writeModelsimDo prj
+    writeQuartus prj
 
 -- |Modelsim configuration. FIXME: Known problem: running modelsim from Quartus.
 writeModelsimDo prj@Project{pPath} = do

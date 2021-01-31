@@ -16,7 +16,6 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Project.Parts.TestBench (
-    TestBench (..),
     TestEnvironment (..),
     Testable (..),
     IOTestBench (..),
@@ -25,6 +24,7 @@ module NITTA.Project.Parts.TestBench (
     projectFiles,
     snippetTestBench,
     SnippetTestBenchConf (..),
+    writeTestBench,
 ) where
 
 import Data.Default
@@ -46,16 +46,9 @@ import System.Directory (createDirectoryIfMissing)
 import System.FilePath.Posix (joinPath)
 import Text.InterpolatedString.Perl6 (qc)
 
-data TestBench = TestBench
-
-instance
-    ( Testable (m v x t) v x
-    ) =>
-    ProjectPart TestBench (Project (m v x t) v x)
-    where
-    writePart TestBench prj@Project{pPath} = do
-        createDirectoryIfMissing True pPath
-        writeImplementation pPath $ testBenchImplementation prj
+writeTestBench prj@Project{pPath} = do
+    createDirectoryIfMissing True pPath
+    writeImplementation pPath $ testBenchImplementation prj
 
 -- |Type class for all testable parts of a target system.
 class Testable m v x | m -> v x where

@@ -13,7 +13,6 @@ Stability   : experimental
 -}
 module NITTA.Project.Types (
     Project (..),
-    ProjectPart (..),
 ) where
 
 import Data.Default
@@ -41,9 +40,3 @@ data Project m v x = Project
     deriving (Show)
 
 instance (Default x) => DefaultX (Project m v x) x
-
-{- |Target system project contain multiple parts for different applications. Usually, for any
-specific purpose you need several of them.
--}
-class ProjectPart pt m where
-    writePart :: pt -> m -> IO ()

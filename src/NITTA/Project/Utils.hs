@@ -41,17 +41,17 @@ import Text.Regex
 
 -- |Write project with @TargetSystem@, @TestBench@ and @IcarusMakefile@ parts.
 writeProjectForTest prj = do
-    writePart TargetSystem prj
-    writePart TestBench prj
-    writePart IcarusMakefile prj
+    writeTargetSystem prj
+    writeTestBench prj
+    writeIcarusMakefile prj
 
 -- |Write project with all available parts.
 writeWholeProject prj@Project{pPath} = do
     infoM "NITTA" $ "write target project to: \"" <> pPath <> "\"..."
-    writePart TargetSystem prj
-    writePart TestBench prj
-    writePart QuartusProject prj
-    writePart IcarusMakefile prj
+    writeTargetSystem prj
+    writeTestBench prj
+    writeQuartusProject prj
+    writeIcarusMakefile prj
     noticeM "NITTA" $ "write target project to: \"" <> pPath <> "\"...ok"
 
 -- |Write project and run testbench by Icarus verilog.

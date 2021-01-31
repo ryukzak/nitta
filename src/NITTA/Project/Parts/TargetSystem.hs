@@ -13,7 +13,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Project.Parts.TargetSystem (
-    TargetSystem (..),
+    writeTargetSystem,
 ) where
 
 import NITTA.Project.Implementation
@@ -21,15 +21,8 @@ import NITTA.Project.Parts.Utils
 import NITTA.Project.Types
 import System.Directory (createDirectoryIfMissing)
 
-data TargetSystem = TargetSystem
-
-instance
-    ( TargetSystemComponent (m v x t)
-    ) =>
-    ProjectPart TargetSystem (Project (m v x t) v x)
-    where
-    writePart TargetSystem prj@Project{pName, pPath, pUnit} = do
-        createDirectoryIfMissing True pPath
-        writeImplementation pPath $ hardware pName pUnit
-        writeImplementation pPath $ software pName pUnit
-        copyLibraryFiles prj
+writeTargetSystem prj@Project{pName, pPath, pUnit} = do
+    createDirectoryIfMissing True pPath
+    writeImplementation pPath $ hardware pName pUnit
+    writeImplementation pPath $ software pName pUnit
+    copyLibraryFiles prj
