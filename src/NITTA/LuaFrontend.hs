@@ -75,6 +75,7 @@ lua2functions src =
     let ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         AlgBuilder{algItems} = buildAlg ast
         fs = filter (\case Function{} -> True; _ -> False) algItems
+        addTraceIo = addTraceIoFunc algItems defaultFmt
         varDict :: VarDict
         varDict =
             M.fromList $
@@ -83,7 +84,6 @@ lua2functions src =
         alg = snd $ execState (mapM_ (store <=< function2nitta) fs) (varDict, [])
         frDataFlow = fsToDataFlowGraph alg
         traceFunctions = [tf | tf@TraceFunction{} <- algItems]
-
         frTrace =
             if not $ null traceFunctions
                 then
@@ -92,9 +92,10 @@ lua2functions src =
                     , v <- tVars
                     ]
                 else
-                    [ TraceVar defaultFmt iVar
-                    | InputVar{iVar} <- algItems
-                    ]
+                    addTraceIo
+                        <> [ TraceVar defaultFmt iVar
+                           | InputVar{iVar} <- algItems
+                           ]
      in FrontendResult
             { frDataFlow
             , frTrace
@@ -108,6 +109,11 @@ lua2functions src =
         f v i =
             let v' = unpack v
              in [qq|{v'}#{i}|]
+
+addTraceIoFunc algItems fmt = concatMap convToTraceVar filterIoFunc
+    where
+        convToTraceVar func = map (\x -> TraceVar fmt x) $ fIn func
+        filterIoFunc = filter (\case Function{fName = "send"} -> True; _ -> False) algItems
 
 buildAlg ast = flip execState st0 $ do
     addMainInputs mainFunDef mainCall
