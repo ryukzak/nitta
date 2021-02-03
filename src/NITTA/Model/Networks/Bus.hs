@@ -8,6 +8,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -33,7 +34,7 @@ import Data.Bifunctor
 import Data.Default
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
-import Data.Maybe (isJust, mapMaybe)
+import Data.Maybe (isNothing, mapMaybe)
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import Data.Typeable
@@ -126,33 +127,57 @@ instance
     DataflowProblem (BusNetwork tag v x t) tag v t
     where
     dataflowOptions BusNetwork{bnPus, bnProcess} =
-        notEmptyDestination $
-            concat
-                [ map (DataflowSt (source, fixConstrain pullAt)) $ targetOptionsFor $ S.elems vars
-                | (source, opts) <- puOptions
-                , EndpointSt (Source vars) pullAt <- opts
-                ]
+        let sources =
+                concatMap
+                    (\(tag, pu) -> map (\ep -> (tag, ep)) $ filter isSource $ endpointOptions pu)
+                    $ M.assocs bnPus
+            targets =
+                M.fromList $
+                    concatMap
+                        ( \(tag, pu) ->
+                            concatMap (\ep -> map (,(tag, ep)) $ S.elems $ variables ep) $
+                                filter isTarget $ endpointOptions pu
+                        )
+                        $ M.assocs bnPus
+         in filter (not . isEmptyDescination) $
+                concatMap
+                    ( \(src, sEndpoint) ->
+                        let dfSource = (src, fixConstrain $ epAt sEndpoint)
+                            -- collsion example (can not be sended at the same time):
+                            -- fram1
+                            --   x1 -> accum
+                            --   x2 -> accum
+                            (hold, sendWithColisions) =
+                                L.partition (\v -> isNothing $ targets M.!? v) $
+                                    S.elems $ variables sEndpoint
+                            sends =
+                                sequence $
+                                    M.elems $
+                                        foldr
+                                            (\v -> M.alter (Just . maybe ([v]) ((:) v)) (fst $ targets M.! v))
+                                            def
+                                            sendWithColisions
+                         in map
+                                ( \send ->
+                                    DataflowSt
+                                        { dfSource
+                                        , dfTargets =
+                                            M.fromList $
+                                                map
+                                                    (\v -> (v, fmap (second (fixConstrain . epAt)) (targets M.!? v)))
+                                                    $ send ++ hold
+                                        }
+                                )
+                                sends
+                    )
+                    sources
         where
-            puOptions = M.assocs $ M.map endpointOptions bnPus
-            targetOptionsFor vs =
-                let conflictableTargets =
-                        [ (pushVar, Just (target, fixConstrain pushAt))
-                        | (target, opts) <- puOptions
-                        , EndpointSt (Target pushVar) pushAt <- opts
-                        , pushVar `elem` vs
-                        ]
-                    targets = sequence $ L.groupBy (\a b -> tgr a == tgr b) $ L.sortOn tgr conflictableTargets
-                    zero = zip vs $ repeat Nothing
-                 in map (M.fromList . (++) zero) targets
-
             fixConstrain constrain@TimeConstrain{tcAvailable} =
                 let a = max (nextTick bnProcess) $ inf tcAvailable
                     b = sup tcAvailable
                  in constrain{tcAvailable = a ... b}
 
-            notEmptyDestination = filter $ \DataflowSt{dfTargets} -> any isJust $ M.elems dfTargets
-            tgr (_, Just (target, _)) = Just target
-            tgr _ = Nothing
+            isEmptyDescination DataflowSt{dfTargets} = all isNothing $ M.elems dfTargets
 
     dataflowDecision n@BusNetwork{bnProcess, bnPus} DataflowSt{dfSource = (srcTitle, pullAt), dfTargets}
         | nextTick bnProcess > inf pullAt =
