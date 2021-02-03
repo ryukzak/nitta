@@ -57,8 +57,8 @@ dataflowOption2decision :: (Time t) => DataflowSt tag v (TimeConstrain t) -> Dat
 dataflowOption2decision (DataflowSt (srcTag, srcEp) trgs) =
     let targetsAt = map (epAt . snd) $ catMaybes $ M.elems trgs
 
-        srcStart = maximum $ map (inf . tcAvailable) $ (epAt srcEp) : targetsAt
-        srcDuration = maximum $ map (inf . tcDuration) $ (epAt srcEp) : targetsAt
+        srcStart = maximum $ map (inf . tcAvailable) $ epAt srcEp : targetsAt
+        srcDuration = maximum $ map (inf . tcDuration) $ epAt srcEp : targetsAt
         srcEnd = srcStart + srcDuration - 1
      in DataflowSt
             { dfSource = (srcTag, setAt (srcStart ... srcEnd) srcEp)

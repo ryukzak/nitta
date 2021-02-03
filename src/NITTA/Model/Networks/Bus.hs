@@ -154,7 +154,7 @@ instance
                                 sequence $
                                     M.elems $
                                         foldr
-                                            (\v -> M.alter (Just . maybe ([v]) ((:) v)) (fst $ targets M.! v))
+                                            (\v -> M.alter (Just . maybe [v] (v :)) (fst $ targets M.! v))
                                             def
                                             sendWithColisions
                          in map
