@@ -24,7 +24,6 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
 import NITTA.Model.Problems
-import NITTA.TargetSynthesis ()
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit
 

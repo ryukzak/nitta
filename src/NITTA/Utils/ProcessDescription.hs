@@ -147,10 +147,10 @@ scheduleInstruction ti instr = do
     scheduleStep ti $ InstructionStep (instr `asProxyTypeOf` iProxy)
 
 -- |Add to the process description information about nested step.
-scheduleNestedStep tag step@Step{sTime} = do
-    sKey <- scheduleStep' (\uid -> Step uid sTime $ NestedStep tag step)
-    when (length sKey /= 1) $ error "scheduleNestedStep internal error."
-    return $ head sKey
+scheduleNestedStep tag step@Step{pInterval} = do
+    pID <- scheduleStep' (\uid -> Step uid pInterval $ NestedStep tag step)
+    when (length pID /= 1) $ error "scheduleNestedStep internal error."
+    return $ head pID
 
 -- |Get a current slice of the computational process.
 getProcessSlice :: State (Schedule pu v x t) (Process t (StepInfo v x t))

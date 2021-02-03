@@ -35,7 +35,7 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
-import NITTA.TargetSynthesis
+import NITTA.Synthesis
 import NITTA.Utils
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit

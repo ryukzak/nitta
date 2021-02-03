@@ -209,10 +209,10 @@ instance
     process net@BusNetwork{bnProcess, bnPus} =
         let v2transportStepKey =
                 M.fromList
-                    [ (v, sKey)
-                    | Step{sKey, sDesc} <- steps bnProcess
-                    , isInstruction sDesc
-                    , v <- case sDesc of
+                    [ (v, pID)
+                    | Step{pID, pDesc} <- steps bnProcess
+                    , isInstruction pDesc
+                    , v <- case pDesc of
                         (InstructionStep i) | Just (Transport var _ _) <- castInstruction net i -> [var]
                         _ -> []
                     ]
@@ -223,10 +223,10 @@ instance
                 -- Vertical relations between Transport and Endpoint
                 let enpointStepKeyVars =
                         concatMap
-                            ( \Step{sKey, sDesc} ->
-                                case sDesc of
-                                    NestedStep{nStep = Step{sDesc = EndpointRoleStep role}} ->
-                                        zip (repeat sKey) $ S.elems $ variables role
+                            ( \Step{pID, pDesc} ->
+                                case pDesc of
+                                    NestedStep{nStep = Step{pDesc = EndpointRoleStep role}} ->
+                                        zip (repeat pID) $ S.elems $ variables role
                                     _ -> []
                             )
                             steps
@@ -239,11 +239,11 @@ instance
 
                 -- Vertical relations between FB and Transport
                 mapM_
-                    ( \Step{sKey, sDesc = NestedStep{nStep = Step{sDesc = FStep f}}} ->
+                    ( \Step{pID, pDesc = NestedStep{nStep = Step{pDesc = FStep f}}} ->
                         mapM_
                             ( \v ->
                                 when (v `M.member` v2transportStepKey) $
-                                    establishVerticalRelation sKey (v2transportStepKey M.! v)
+                                    establishVerticalRelation pID (v2transportStepKey M.! v)
                             )
                             $ variables f
                     )
@@ -255,9 +255,9 @@ instance
                 pu2netKey <-
                     M.fromList
                         <$> mapM
-                            ( \step@Step{sKey} -> do
-                                sKey' <- scheduleNestedStep tag step
-                                return (sKey, sKey')
+                            ( \step@Step{pID} -> do
+                                pID' <- scheduleNestedStep tag step
+                                return (pID, pID')
                             )
                             steps
                 mapM_ (\(Vertical h l) -> establishVerticalRelation (pu2netKey M.! h) (pu2netKey M.! l)) relations
