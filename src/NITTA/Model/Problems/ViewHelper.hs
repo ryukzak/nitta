@@ -74,7 +74,10 @@ instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)
                 HM.fromList $
                     map
                         ( \case
-                            (v, Just (target, i)) -> (show v, Just (show target, fromEnum (sup i) ... fromEnum (inf i)))
+                            (v, Just (target, i)) ->
+                                let a = fromEnum $ sup $ epAt i
+                                    b = fromEnum $ inf $ epAt i
+                                 in (show v, Just (show target, a ... b))
                             (v, Nothing) -> (show v, Nothing)
                         )
                         $ M.assocs dfTargets

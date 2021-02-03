@@ -27,6 +27,7 @@ import GHC.Generics
 import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems.Dataflow
+import NITTA.Model.Problems.Endpoint
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
@@ -55,19 +56,14 @@ instance
     where
     decisions SynthesisState{sTarget} o = let d = dataflowOption2decision o in [(d, dataflowDecision sTarget d)]
 
-    parameters
-        SynthesisState
-            { transferableVars
-            , sTarget
-            }
-        (DataflowSt (_, TimeConstrain{tcAvailable, tcDuration}) target)
-        _ =
-            DataflowMetrics
+    parameters SynthesisState{transferableVars, sTarget} DataflowSt{dfSource, dfTargets} _ =
+        let TimeConstrain{tcAvailable, tcDuration} = epAt $ snd dfSource
+         in DataflowMetrics
                 { pWaitTime = fromIntegral (inf tcAvailable)
                 , pRestrictedTime = fromEnum (sup tcDuration) /= maxBound
                 , pNotTransferableInputs =
                     let fs = functions $ mUnit sTarget
-                        vs = S.fromList [v | (v, Just _) <- M.assocs target]
+                        vs = S.fromList [v | (v, Just _) <- M.assocs dfTargets]
                         affectedFunctions = filter (\f -> not $ null (inputs f `S.intersection` vs)) fs
                         notTransferableVars = map (\f -> inputs f S.\\ transferableVars) affectedFunctions
                      in map (fromIntegral . length) notTransferableVars

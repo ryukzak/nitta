@@ -116,8 +116,9 @@ instance
             + pOutputNumber * 2
 
 waitingTimeOfVariables net =
-    [ (variable, inf $ tcAvailable tc)
-    | DataflowSt{dfSource = (_, tc@TimeConstrain{}), dfTargets} <- dataflowOptions net
+    [ (variable, inf $ tcAvailable constrain)
+    | DataflowSt{dfSource, dfTargets} <- dataflowOptions net
+    , let constrain = epAt $ snd dfSource
     , (variable, Nothing) <- M.assocs dfTargets
     ]
 

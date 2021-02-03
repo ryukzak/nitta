@@ -23,6 +23,8 @@ module NITTA.Model.Problems.Endpoint (
     endpointOptionToDecision,
     isSource,
     isTarget,
+    setAt,
+    updAt,
 ) where
 
 import Data.Aeson (ToJSON)
@@ -61,6 +63,9 @@ isSource _ = False
 
 isTarget EndpointSt{epRole = Target{}} = True
 isTarget _ = False
+
+setAt epAt ep@EndpointSt{} = ep{epAt}
+updAt f ep@EndpointSt{epAt} = ep{epAt = f epAt}
 
 class EndpointProblem u v t | u -> v t where
     endpointOptions :: u -> [EndpointSt v (TimeConstrain t)]
