@@ -186,7 +186,7 @@ instance (VarValTime v x t, Num x) => EndpointProblem (Accum v x t) v t where
                         endpoints <- scheduleEndpoint d $ scheduleInstruction (epAt -1) Out
                         when (null tasks') $ do
                             high <- scheduleFunction (a ... sup epAt) func
-                            let low = endpoints ++ map sKey (relatedEndpoints process_ $ variables func)
+                            let low = endpoints ++ map pID (relatedEndpoints process_ $ variables func)
                             establishVerticalRelations high low
 
                         updateTick (sup epAt)

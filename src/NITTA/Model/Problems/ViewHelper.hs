@@ -63,19 +63,19 @@ instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
     view (Bind f pu) =
         BindDecisionView
             { function = view f
-            , pu = show pu
+            , pu = showNoQ pu
             }
 
 instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)) DecisionView where
     view DataflowSt{dfSource = (source, _st), dfTargets} =
         DataflowDecisionView
-            { source = show source
+            { source = showNoQ source
             , targets =
                 HM.fromList $
                     map
                         ( \case
-                            (v, Just (target, i)) -> (show v, Just (show target, fromEnum (sup i) ... fromEnum (inf i)))
-                            (v, Nothing) -> (show v, Nothing)
+                            (v, Just (target, i)) -> (showNoQ v, Just (showNoQ target, fromEnum (sup i) ... fromEnum (inf i)))
+                            (v, Nothing) -> (showNoQ v, Nothing)
                         )
                         $ M.assocs dfTargets
             }
@@ -83,9 +83,9 @@ instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)
 instance (Show v, Show x) => Viewable (BreakLoop v x) DecisionView where
     view BreakLoop{loopX, loopO, loopI} =
         BreakLoopView
-            { value = show loopX
-            , outputs = map show $ S.elems loopO
-            , input = show loopI
+            { value = showNoQ loopX
+            , outputs = map showNoQ $ S.elems loopO
+            , input = showNoQ loopI
             }
 
 instance Viewable (OptimizeAccum v x) DecisionView where
@@ -98,8 +98,11 @@ instance Viewable (OptimizeAccum v x) DecisionView where
 instance (Show v) => Viewable (ResolveDeadlock v x) DecisionView where
     view ResolveDeadlock{newBuffer, changeset} =
         ResolveDeadlockView
-            { newBuffer = show newBuffer
-            , changeset = show changeset
+            { newBuffer = showNoQ newBuffer
+            , changeset = showNoQ changeset
             }
 
 instance ToJSON DecisionView
+
+showNoQ :: (Show a) => a -> String
+showNoQ = S.replace "\"" "" . show

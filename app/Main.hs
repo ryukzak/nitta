@@ -36,7 +36,7 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
 import NITTA.Project.Parts.TestBench
-import NITTA.TargetSynthesis (TargetSynthesis (..), mkModelWithOneNetwork, runTargetSynthesis)
+import NITTA.Synthesis
 import NITTA.UIBackend
 import Paths_nitta
 import System.Console.CmdArgs hiding (def)

@@ -45,7 +45,7 @@ import NITTA.Model.TargetSystem ()
 import NITTA.Model.Tests.Microarchitecture
 import NITTA.Project
 import qualified NITTA.Project as P
-import NITTA.TargetSynthesis
+import NITTA.Synthesis
 import NITTA.Utils
 import System.Directory
 import System.FilePath.Posix (joinPath)

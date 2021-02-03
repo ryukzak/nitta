@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -72,11 +73,11 @@ data TimelinePoint t = TimelinePoint
 
 instance {-# OVERLAPS #-} (Time t) => Show [TimelinePoint t] where
     show [] = "."
-    -- show [TimelinePoint{ pInfo }] | EndpointRoleStep Source{} <- descent sDesc = "^"
-    -- show ( Single Step{ sDesc } ) | EndpointRoleStep Target{} <- descent sDesc = "v"
+    -- show [TimelinePoint{ pInfo }] | EndpointRoleStep Source{} <- descent pDesc = "^"
+    -- show ( Single Step{ pDesc } ) | EndpointRoleStep Target{} <- descent pDesc = "v"
 
     -- show [ TimelinePoint{ pInfo } ]
-    --     | InstructionStep i <- descent sDesc
+    --     | InstructionStep i <- descent pDesc
     --     , Just (_ :: Instruction (BusNetwork String v x t)) <- cast i
     --     = "-"
 
@@ -85,8 +86,8 @@ instance {-# OVERLAPS #-} (Time t) => Show [TimelinePoint t] where
 
 processTimelines Process{steps, relations} =
     let views = foldl appendToViews M.empty steps
-        a = minimum $ map (inf . sTime) $ concat $ concat $ M.elems views
-        b = maximum $ map (sup . sTime) $ concat $ concat $ M.elems views
+        a = minimum $ map (inf . pInterval) $ concat $ concat $ M.elems views
+        b = maximum $ map (sup . pInterval) $ concat $ concat $ M.elems views
      in ProcessTimelines
             { timelines =
                 concatMap
@@ -100,14 +101,14 @@ viewpoint FStep{} = ViewPointID{level = "Fun", component = []}
 viewpoint CADStep{} = ViewPointID{level = "CAD", component = []}
 viewpoint EndpointRoleStep{} = ViewPointID{level = "EndPoint", component = []}
 viewpoint InstructionStep{} = ViewPointID{level = "INST", component = []}
-viewpoint NestedStep{nTitle, nStep = Step{sDesc}} =
-    let ViewPointID{level, component} = viewpoint sDesc
+viewpoint NestedStep{nTitle, nStep = Step{pDesc}} =
+    let ViewPointID{level, component} = viewpoint pDesc
      in ViewPointID{level, component = S.replace "\"" "" (show nTitle) : component}
 
 appendToViews views step =
     M.alter
         (Just . appendToView step . fromMaybe [])
-        (viewpoint $ sDesc step)
+        (viewpoint $ pDesc step)
         views
 
 appendToView step (tl : tls)
@@ -115,7 +116,7 @@ appendToView step (tl : tls)
     | otherwise = (step : tl) : tls
 appendToView step [] = [[step]]
 
-isConflicted Step{sTime = a, sDesc = aD} Step{sTime = b, sDesc = bD}
+isConflicted Step{pInterval = a, pDesc = aD} Step{pInterval = b, pDesc = bD}
     -- we can hold a and b in one bucket, if both is a singleton
     | CADStep{} <- descent aD
       , CADStep{} <- descent bD
@@ -126,14 +127,14 @@ isConflicted Step{sTime = a, sDesc = aD} Step{sTime = b, sDesc = bD}
 
 timeline a b steps = map findSteps [a .. b]
     where
-        findSteps t = map foo $ filter (member t . sTime) steps
-        foo Step{sKey, sTime, sDesc} =
+        findSteps t = map foo $ filter (member t . pInterval) steps
+        foo Step{pID, pInterval, pDesc} =
             TimelinePoint
-                { pID = sKey
-                , pTime = sTime
-                , pInfo = S.replace "\"" "" $ case sDesc of
-                    NestedStep{nTitle, nStep = Step{sDesc = subDesc}} -> show nTitle ++ " do " ++ show subDesc
-                    _ -> show sDesc
+                { pID = pID
+                , pTime = pInterval
+                , pInfo = S.replace "\"" "" $ case pDesc of
+                    NestedStep{nTitle, nStep = Step{pDesc = subDesc}} -> show nTitle ++ " do " ++ show subDesc
+                    _ -> show pDesc
                 }
 
 instance ToJSON ViewPointID

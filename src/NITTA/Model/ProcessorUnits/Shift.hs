@@ -188,7 +188,7 @@ instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
                         endpoints <- scheduleEndpoint d $ scheduleInstruction (shiftI (-1) epAt) Out
                         when (null sources') $ do
                             high <- scheduleFunction (a ... sup epAt) f
-                            let low = endpoints ++ map sKey (relatedEndpoints process_ $ variables f)
+                            let low = endpoints ++ map pID (relatedEndpoints process_ $ variables f)
                             establishVerticalRelations high low
                         return endpoints
                  in pu

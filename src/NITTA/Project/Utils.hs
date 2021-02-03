@@ -35,6 +35,7 @@ import NITTA.Project.Types
 import System.Directory
 import System.Exit
 import System.FilePath.Posix
+import System.Log.Logger
 import System.Process
 import Text.Regex
 
@@ -45,11 +46,13 @@ writeProjectForTest prj = do
     writePart IcarusMakefile prj
 
 -- |Write project with all available parts.
-writeWholeProject prj = do
+writeWholeProject prj@Project{pPath} = do
+    infoM "NITTA" $ "write target project to: \"" <> pPath <> "\"..."
     writePart TargetSystem prj
     writePart TestBench prj
     writePart QuartusProject prj
     writePart IcarusMakefile prj
+    noticeM "NITTA" $ "write target project to: \"" <> pPath <> "\"...ok"
 
 -- |Write project and run testbench by Icarus verilog.
 writeAndRunTestbench prj = do
@@ -57,6 +60,7 @@ writeAndRunTestbench prj = do
     runTestbench prj
 
 runTestbench prj@Project{pPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do
+    infoM "NITTA" $ "run logical synthesis(" <> pPath <> ")..."
     let files = projectFiles prj
     wd <- getCurrentDirectory
 
@@ -68,15 +72,29 @@ runTestbench prj@Project{pPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNu
         readCreateProcessWithExitCode (shell "vvp a.out"){cwd = Just pPath} []
     let isSimOk = simExitCode == ExitSuccess && not ("FAIL" `L.isSubsequenceOf` simOut)
 
+    let tbStatus = isCompileOk && isSimOk
+        tbCompilerDump = dump compileOut compileErr
+        tbSimulationDump = dump simOut simErr
+
+    if tbStatus
+        then noticeM "NITTA" $ "run testbench (" <> pPath <> ")...ok"
+        else do
+            noticeM "NITTA" $ "run testbench (" <> pPath <> ")...fail"
+            noticeM "NITTA" "-----------------------------------------------------------"
+            noticeM "NITTA" "testbench compiler dump:"
+            noticeM "NITTA" $ unlines tbCompilerDump
+            noticeM "NITTA" "-----------------------------------------------------------"
+            noticeM "NITTA" "testbench simulation dump:"
+            noticeM "NITTA" $ unlines tbSimulationDump
     return
         TestbenchReport
-            { tbStatus = isCompileOk && isSimOk
+            { tbStatus
             , tbPath = joinPath [wd, pPath]
             , tbFiles = files
             , tbFunctions = map show $ functions pUnit
             , tbSynthesisSteps = map show $ steps $ process pUnit
-            , tbCompilerDump = dump compileOut compileErr
-            , tbSimulationDump = dump simOut simErr
+            , tbCompilerDump
+            , tbSimulationDump
             , tbFunctionalSimulationCntx = map (HM.fromList . M.assocs . cycleCntx) $ take cntxCycleNumber cntxProcess
             , tbLogicalSimulationCntx = log2cntx $ extractLogValues (defX pUnit) simOut
             }
