@@ -30,10 +30,10 @@ tests =
     testGroup
         "Fram PU"
         [ puCoSimTestCase
-            "register function"
+            "buffer function"
             u
             [("a", 42)]
-            [reg "a" ["b"]]
+            [buffer "a" ["b"]]
         , puCoSimTestCase
             "constant function"
             u
@@ -46,7 +46,7 @@ tests =
             [loop 10 "b" ["a"]]
         , -- TODO: not available, because needed self transaction
           -- , unitCoSimulationTestCase "loop_reg" u []
-          --     [ reg "a" ["b"]
+          --     [ buffer "a" ["b"]
           --     , loop 10 "b" ["a"]
           --     ]
           finitePUSynthesisProp "finite synthesis properties" u fsGen
@@ -55,7 +55,7 @@ tests =
             "buffer function with Attr"
             u2
             [("a", Attr 42 True)]
-            [reg "a" ["b"]]
+            [buffer "a" ["b"]]
         , puCoSimTestCase
             "constant function with Attr"
             u2
@@ -70,5 +70,5 @@ tests =
             algGen
                 [ fmap packF (arbitrary :: Gen (Constant _ _))
                 , fmap packF (arbitrary :: Gen (Loop _ _))
-                , fmap packF (arbitrary :: Gen (Reg _ _))
+                , fmap packF (arbitrary :: Gen (Buffer _ _))
                 ]

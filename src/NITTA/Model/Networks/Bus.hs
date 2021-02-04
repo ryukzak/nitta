@@ -119,12 +119,7 @@ busNetwork signalBusWidth ioSync pus =
 instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{bnRemains, bnBinded} = bnRemains ++ concat (M.elems bnBinded)
 
-instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
-    DataflowProblem (BusNetwork tag v x t) tag v t
-    where
+instance (UnitTag tag, VarValTime v x t) => DataflowProblem (BusNetwork tag v x t) tag v t where
     dataflowOptions BusNetwork{bnPus, bnProcess} =
         notEmptyDestination $
             concat
@@ -190,12 +185,7 @@ instance
         where
             applyDecision pus (trgTitle, d') = M.adjust (`endpointDecision` d') trgTitle pus
 
-instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
-    ProcessorUnit (BusNetwork tag v x t) v x t
-    where
+instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t) v x t where
     tryBind f net@BusNetwork{bnRemains, bnPus}
         | any (allowToProcess f) $ M.elems bnPus =
             Right net{bnRemains = f : bnRemains}
@@ -290,9 +280,7 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
 ----------------------------------------------------------------------
 
 instance
-    ( UnitTag tag
-    , VarValTime v x t
-    ) =>
+    (UnitTag tag, VarValTime v x t) =>
     BindProblem (BusNetwork tag v x t) tag v x
     where
     bindOptions BusNetwork{bnRemains, bnPus} = concatMap optionsFor bnRemains
@@ -382,13 +370,13 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
 
             maybeSended = M.keysSet var2endpointRole
 
-    resolveDeadlockDecision bn@BusNetwork{bnRemains, bnBinded, bnPus} ResolveDeadlock{buffer, changeset} =
+    resolveDeadlockDecision bn@BusNetwork{bnRemains, bnBinded, bnPus} ResolveDeadlock{newBuffer, changeset} =
         let Just (tag, _) =
                 L.find
-                    (\(_, f) -> not $ null $ S.intersection (outputs buffer) $ unionsMap outputs f)
+                    (\(_, f) -> not $ null $ S.intersection (outputs newBuffer) $ unionsMap outputs f)
                     $ M.assocs bnBinded
          in bn
-                { bnRemains = buffer : patch changeset bnRemains
+                { bnRemains = newBuffer : patch changeset bnRemains
                 , bnPus = M.adjust (patch changeset) tag bnPus
                 , bnBinded = M.map (patch changeset) bnBinded
                 }
@@ -421,11 +409,7 @@ externalPortsDecl ports =
             )
             ports
 
-instance
-    ( VarValTime v x t
-    ) =>
-    TargetSystemComponent (BusNetwork String v x t)
-    where
+instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) where
     moduleName tag BusNetwork{..} = tag ++ "_net"
 
     hardware tag pu@BusNetwork{..} =
@@ -561,9 +545,7 @@ instance IOConnected (BusNetwork tag v x t) where
     outputPorts = extOutputs
 
 instance
-    ( VarValTime v x t
-    , TargetSystemComponent (BusNetwork String v x t)
-    ) =>
+    (VarValTime v x t, TargetSystemComponent (BusNetwork String v x t)) =>
     Testable (BusNetwork String v x t) v x
     where
     testBenchImplementation

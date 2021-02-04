@@ -12,7 +12,7 @@
 
 {- |
 Module      : NITTA.Model.ProcessorUnits.Fram
-Description : Register file
+Description : Buffers inside and across computational cycles
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -50,7 +50,7 @@ data Fram v x t = Fram
     { -- |memory cell array
       memory :: A.Array Int (Cell v x t)
     , -- |register queue
-      remainRegs :: [(Reg v x, Job v x t)]
+      remainBuffers :: [(Buffer v x, Job v x t)]
     , process_ :: Process t (StepInfo v x t)
     }
     deriving (Show)
@@ -58,20 +58,15 @@ data Fram v x t = Fram
 framWithSize size =
     Fram
         { memory = A.listArray (0, size - 1) $ repeat def
-        , remainRegs = []
+        , remainBuffers = []
         , process_ = def
         }
 
-instance
-    ( Default t
-    , Default x
-    ) =>
-    Default (Fram v x t)
-    where
+instance (Default t, Default x) => Default (Fram v x t) where
     def =
         Fram
             { memory = A.listArray (0, defaultSize - 1) $ repeat def
-            , remainRegs = []
+            , remainBuffers = []
             , process_ = def
             }
         where
@@ -79,19 +74,11 @@ instance
 
 instance Default x => DefaultX (Fram v x t) x
 
-instance
-    ( VarValTime v x t
-    ) =>
-    WithFunctions (Fram v x t) (F v x)
-    where
-    functions Fram{remainRegs, memory} =
-        map (packF . fst) remainRegs ++ concatMap functions (A.elems memory)
+instance (VarValTime v x t) => WithFunctions (Fram v x t) (F v x) where
+    functions Fram{remainBuffers, memory} =
+        map (packF . fst) remainBuffers ++ concatMap functions (A.elems memory)
 
-instance
-    ( VarValTime v x t
-    ) =>
-    Variables (Fram v x t) v
-    where
+instance (VarValTime v x t) => Variables (Fram v x t) v where
     variables fram = S.unions $ map variables $ functions fram
 
 -- |Memory cell
@@ -134,7 +121,7 @@ instance (Default x) => Default (Cell v x t) where
             , initialValue = def
             }
 
-{- |Memory cell states. Add Loop&Reg for optimisation.
+{- |Memory cell states. Add Loop&Buffer for optimisation.
 @
                bind                    source
     NotUsed ----------> DoConstant ------------+----> Done
@@ -143,14 +130,14 @@ instance (Default x) => Default (Cell v x t) where
      |                        \----------------/
      |
      |    bind
-     +-------------------> ForReg <-------------\
+     +-------------------> ForBuffer <----------\
      |                         |                |
      |                         |                |
      |                  target |                |
      |                         |     /----------+
      |                         |     |          |
      |    target               v     v  source  |
-     +-------------------> DoReg ---------------/
+     +-------------------> DoBuffer ------------/
      |
      |              refactor              source                      target
      \-- NotBrokenLoop --> DoLoopSource ----------+---> DoLoopTarget --------> Done
@@ -163,8 +150,8 @@ data CellState v x t
     = NotUsed
     | Done
     | DoConstant [v]
-    | DoReg [v]
-    | ForReg
+    | DoBuffer [v]
+    | ForBuffer
     | NotBrokenLoop
     | DoLoopSource [v] (Job v x t)
     | DoLoopTarget v
@@ -173,23 +160,23 @@ data CellState v x t
 isFree Cell{state = NotUsed} = True
 isFree _ = False
 
-isForReg Cell{state = ForReg} = True
-isForReg _ = False
+isForBuffer Cell{state = ForBuffer} = True
+isForBuffer _ = False
 
-lockableNotUsedCell Fram{memory, remainRegs} =
+lockableNotUsedCell Fram{memory, remainBuffers} =
     let free = filter (isFree . snd) $ A.assocs memory
         n = length free
-     in if null remainRegs && n >= 1 || not (null remainRegs) && n >= 2
+     in if null remainBuffers && n >= 1 || not (null remainBuffers) && n >= 2
             then Just $ head free
             else Nothing
 
-findForRegCell Fram{memory} =
-    case L.find (isForReg . snd) $ A.assocs memory of
+findForBufferCell Fram{memory} =
+    case L.find (isForBuffer . snd) $ A.assocs memory of
         x@(Just _) -> x
         Nothing -> L.find (isFree . snd) $ A.assocs memory
 
 oJobV Job{function}
-    | Just (LoopIn _ (I v)) <- castF function = v
+    | Just (LoopEnd _ (I v)) <- castF function = v
     | otherwise = undefined
 
 -- |Function for calculating width of array in Fram
@@ -197,15 +184,11 @@ addrWidth Fram{memory} = log2 $ numElements memory
     where
         log2 = ceiling . (logBase 2 :: Double -> Double) . fromIntegral
 
-instance
-    ( VarValTime v x t
-    ) =>
-    ProcessorUnit (Fram v x t) v x t
-    where
+instance (VarValTime v x t) => ProcessorUnit (Fram v x t) v x t where
     tryBind f fram
         | not $ null (variables f `S.intersection` variables fram) =
             Left "can not bind (self transaction)"
-    tryBind f fram@Fram{memory, remainRegs}
+    tryBind f fram@Fram{memory, remainBuffers}
         | Just (Constant (X x) (O vs)) <- castF f
           , Just (addr, _) <- lockableNotUsedCell fram =
             let (binds, process_) = runSchedule fram $ scheduleFunctionBind f
@@ -238,13 +221,13 @@ instance
                         { memory = memory A.// [(addr, cell)]
                         , process_
                         }
-        | Just r@Reg{} <- castF f
-          , any (\case ForReg{} -> True; DoReg{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory =
+        | Just r@Buffer{} <- castF f
+          , any (\case ForBuffer{} -> True; DoBuffer{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory =
             let (binds, process_) = runSchedule fram $ scheduleFunctionBind f
                 job = (defJob f){binds}
              in Right
                     fram
-                        { remainRegs = (r, job) : remainRegs
+                        { remainBuffers = (r, job) : remainBuffers
                         , process_
                         }
         | otherwise = Left $ "unsupport or cells over: " ++ show f
@@ -291,26 +274,22 @@ instance (VarValTime v x t) => BreakLoopProblem (Fram v x t) v x where
 instance OptimizeAccumProblem (Fram v x t) v x
 instance ResolveDeadlockProblem (Fram v x t) v x
 
-instance
-    ( VarValTime v x t
-    ) =>
-    EndpointProblem (Fram v x t) v t
-    where
-    endpointOptions Fram{process_ = Process{nextTick}, remainRegs, memory} =
+instance (VarValTime v x t) => EndpointProblem (Fram v x t) v t where
+    endpointOptions Fram{process_ = Process{nextTick}, remainBuffers, memory} =
         let target v = EndpointSt (Target v) $ TimeConstrain (nextTick ... maxBound) (1 ... maxBound)
             source True vs = EndpointSt (Source $ S.fromList vs) $ TimeConstrain (1 + 1 + nextTick ... maxBound) (1 ... maxBound)
             source False vs = EndpointSt (Source $ S.fromList vs) $ TimeConstrain (1 + nextTick ... maxBound) (1 ... maxBound)
 
             fromRemain =
-                if any (\case ForReg{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory
-                    then map ((\(Reg (I v) (O _)) -> target v) . fst) remainRegs
+                if any (\case ForBuffer{} -> True; NotUsed{} -> True; _ -> False) $ map state $ A.elems memory
+                    then map ((\(Buffer (I v) (O _)) -> target v) . fst) remainBuffers
                     else []
 
             foo Cell{state = NotUsed} = Nothing
             foo Cell{state = Done} = Nothing
             foo Cell{state = DoConstant vs} = Just $ source False vs
-            foo Cell{state = DoReg vs, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
-            foo Cell{state = ForReg} = Nothing
+            foo Cell{state = DoBuffer vs, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
+            foo Cell{state = ForBuffer} = Nothing
             foo Cell{state = NotBrokenLoop} = Nothing
             foo Cell{state = DoLoopSource vs _, lastWrite} = Just $ source (fromMaybe 0 lastWrite == nextTick - 1) vs
             foo Cell{state = DoLoopTarget v} = Just $ target v
@@ -398,30 +377,30 @@ instance
                     { memory = memory A.// [(addr, cell')]
                     , process_
                     }
-    -- Reg Target
-    endpointDecision fram@Fram{memory, remainRegs} d@EndpointSt{epRole = Target v, epAt}
-        | Just (addr, cell@Cell{history}) <- findForRegCell fram
-          , ([(Reg (I _) (O vs), j@Job{function})], remainRegs') <- L.partition (\(Reg (I v') (O _), _) -> v' == v) remainRegs =
+    -- Buffer Target
+    endpointDecision fram@Fram{memory, remainBuffers} d@EndpointSt{epRole = Target v, epAt}
+        | Just (addr, cell@Cell{history}) <- findForBufferCell fram
+          , ([(Buffer (I _) (O vs), j@Job{function})], remainBuffers') <- L.partition (\(Buffer (I v') (O _), _) -> v' == v) remainBuffers =
             let (endpoints, process_) = runSchedule fram $ do
                     updateTick (sup epAt + 1)
                     scheduleEndpoint d $ scheduleInstruction epAt $ Write addr
                 cell' =
                     cell
                         { job = Just j{startAt = Just $ inf epAt, endpoints}
-                        , state = DoReg $ S.elems vs
+                        , state = DoBuffer $ S.elems vs
                         , lastWrite = Just $ sup epAt
                         , history = function : history
                         }
              in fram
                     { memory = memory A.// [(addr, cell')]
-                    , remainRegs = remainRegs'
+                    , remainBuffers = remainBuffers'
                     , process_
                     }
     endpointDecision fram@Fram{memory} d@EndpointSt{epRole = Source vs, epAt}
-        | Just (addr, cell@Cell{state = DoReg vs', job = Just Job{function, startAt = Just fBegin, binds, endpoints}}) <-
+        | Just (addr, cell@Cell{state = DoBuffer vs', job = Just Job{function, startAt = Just fBegin, binds, endpoints}}) <-
             L.find
                 ( \case
-                    (_, Cell{state = DoReg vs'}) -> (vs' L.\\ S.elems vs) /= vs'
+                    (_, Cell{state = DoBuffer vs'}) -> (vs' L.\\ S.elems vs) /= vs'
                     _ -> False
                 )
                 $ A.assocs memory =
@@ -437,11 +416,11 @@ instance
                     [] ->
                         cell
                             { job = Nothing
-                            , state = ForReg
+                            , state = ForBuffer
                             }
                     _ ->
                         cell
-                            { state = DoReg vsRemain
+                            { state = DoBuffer vsRemain
                             }
              in fram
                     { memory = memory A.// [(addr, cell')]

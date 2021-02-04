@@ -54,7 +54,7 @@ tests =
             "geometric progression"
             [qc|
         function f(x)
-            local tmp = reg(2 * x)
+            local tmp = buffer(2 * x)
             f(tmp)
         end
         f(1)

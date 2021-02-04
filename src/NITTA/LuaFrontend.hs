@@ -168,8 +168,8 @@ data AlgBuilderItem x
 
 -- *Translate AlgBuiler functions to nitta functions
 function2nitta Function{fName = "loop", fIn = [i], fOut = [o], fValues = [x], fInt = []} = F.loop x <$> input i <*> output o
-function2nitta Function{fName = "reg", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.reg <$> input i <*> output o
-function2nitta Function{fName = "brokenReg", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.brokenReg <$> input i <*> output o
+function2nitta Function{fName = "buffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.buffer <$> input i <*> output o
+function2nitta Function{fName = "brokenBuffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.brokenBuffer <$> input i <*> output o
 function2nitta Function{fName = "constant", fIn = [], fOut = [o], fValues = [x], fInt = []} = F.constant x <$> output o
 function2nitta Function{fName = "send", fIn = [i], fOut = [], fValues = [], fInt = []} = F.send <$> input i
 function2nitta Function{fName = "add", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.add <$> input a <*> input b <*> output c
@@ -315,8 +315,8 @@ rightExp diff [a] (PrefixExp (PEVar (VarName (Name b)))) -- a = b
 rightExp diff out (PrefixExp (Paren e)) -- a = (...)
     =
     rightExp diff out e
-rightExp diff [a] n@(Number _ _) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "reg"))) (Args [n]))))
-rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "reg"))) (Args [Number numType $ T.cons '-' n]))))
+rightExp diff [a] n@(Number _ _) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "buffer"))) (Args [n]))))
+rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "buffer"))) (Args [Number numType $ T.cons '-' n]))))
 rightExp diff [a] (Unop Neg expr@(PrefixExp _)) =
     -- FIXME: add negative function
     let binop = Binop Sub (Number IntNum "0") expr
