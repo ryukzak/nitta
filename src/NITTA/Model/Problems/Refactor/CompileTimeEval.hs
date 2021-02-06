@@ -3,15 +3,6 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-{- |
-Module      : NITTA.Model.Problems.Refactor.CompileTimeEval
-Description : Optimize an algorithm for Accum processor unit
-Copyright   : (c) Daniil Prohorov, 2021
-License     : BSD3
-Maintainer  : aleksandr.penskoi@gmail.com
-Stability   : experimental
--}
-
 -- Before compile-time eval optimization
 
 --   +------------------+
@@ -36,6 +27,14 @@ Stability   : experimental
 --   |                  |         |              |
 --   +------------------+         +--------------+
 
+{- |
+Module      : NITTA.Model.Problems.Refactor.CompileTimeEval
+Description : Optimize an algorithm for Accum processor unit
+Copyright   : (c) Daniil Prohorov, 2021
+License     : BSD3
+Maintainer  : aleksandr.penskoi@gmail.com
+Stability   : experimental
+-}
 module NITTA.Model.Problems.Refactor.CompileTimeEval (
     CompileTimeEval (..),
     CompileTimeEvalProblem (..),
@@ -51,7 +50,8 @@ import NITTA.Intermediate.Types
 data CompileTimeEval v x = CompileTimeEval
     { cRefOld :: [F v x]
     , cRefNew :: [F v x]
-    } deriving Show
+    }
+    deriving (Show)
 
 class CompileTimeEvalProblem u v x | u -> v x where
     -- |Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
@@ -69,8 +69,7 @@ instance (Var v, Val x) => CompileTimeEvalProblem [F v x] v x where
             newFsList = L.nub $ apply (zip clusters evaluatedClusters) clusters
             newFsListFiltered = filter (\fs' -> not (null fs') && S.fromList fs' /= S.fromList fs) newFsList
             options = map (\fsNew -> CompileTimeEval{cRefOld = fs, cRefNew = fsNew}) newFsListFiltered
-        in
-            options
+         in options
 
     compileTimeEvalDecision _ CompileTimeEval{cRefNew} = cRefNew
 
