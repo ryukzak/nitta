@@ -11,6 +11,31 @@ License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
+
+-- Before compile-time eval optimization
+
+--   +------------------+
+--   |                  |         +-------------------------+
+--   | Constant 2 "2#1" |         |                         |
+--   |                  +-------->+                         |      +--------------+
+--   +------------------+         |                         |      |              |
+--                                | Add "2#1" "3#1" ["res"] +----->+    ......    |
+--   +------------------+         |                         |      |              |
+--   |                  +-------->+                         |      +--------------+
+--   | Constant 3 "3#1" |         |                         |
+--   |                  |         +-------------------------+
+--   +------------------+
+
+-- +--------------------------------------------------------------------------------+
+
+-- After compile-time eval optimization
+
+--   +------------------+         +--------------+
+--   |                  |         |              |
+--   | Constant 5 "res" +-------->+    ......    |
+--   |                  |         |              |
+--   +------------------+         +--------------+
+
 module NITTA.Model.Problems.Refactor.CompileTimeEval (
     CompileTimeEval (..),
     CompileTimeEvalProblem (..),
