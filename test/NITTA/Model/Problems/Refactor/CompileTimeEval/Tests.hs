@@ -53,7 +53,7 @@ tests =
                 a = constant 1 ["a"]
                 b = constant 2 ["b"]
                 tmp1 = add "a" "b" ["tmp1"]
-                res = reg "tmp1" ["res"]
+                res = buffer "tmp1" ["res"]
                 calcTmp = constant 3 ["tmp1"]
              in [a, b, tmp1, res] `refactorTo` [res, calcTmp]
         ]
