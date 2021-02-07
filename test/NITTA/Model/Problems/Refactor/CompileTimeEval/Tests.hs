@@ -54,6 +54,31 @@ tests =
                 b = constant 2 ["b"]
                 tmp1 = add "a" "b" ["tmp1"]
                 res = buffer "tmp1" ["res"]
-                calcTmp = constant 3 ["tmp1"]
-             in [a, b, tmp1, res] `refactorTo` [res, calcTmp]
+                loopRes = loop 1 "e" ["res"]
+                resRes = constant 3 ["res"]
+             in [a, b, tmp1, res, loopRes] `refactorTo` [loopRes, resRes]
+
+        -- [ testCase "sum 4 numbers" $
+        --     let -- Start algorithm:
+        --         -- a = 1
+        --         -- b = 2
+        --         -- c = 3
+        --         -- d = 4
+        --         -- tmp1 = a + b
+        --         -- tmp2 = c + d
+        --         -- res = tmp1 + tmp2
+        --         --
+        --         -- Result algorithm:
+        --         -- tmp1 = 3
+        --         -- res = tmp1
+        --         a = constant 1 ["a"]
+        --         b = constant 2 ["b"]
+        --         c = constant 3 ["c"]
+        --         d = constant 4 ["d"]
+        --         tmp1 = add "a" "b" ["tmp1"]
+        --         tmp2 = add "c" "d" ["tmp2"]
+        --         sum = add "tmp1" "tmp2" ["sum"]
+        --         res = buffer "sum" ["res"]
+        --         calcTmp = constant 10 ["sum"]
+        --      in [a, b, c, d, tmp1, tmp2, sum, res] `refactorTo` [res, calcTmp]
         ]

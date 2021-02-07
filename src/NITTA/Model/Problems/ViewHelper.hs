@@ -54,6 +54,10 @@ data DecisionView
         { old :: [FView]
         , new :: [FView]
         }
+    | CompileTimeEvalView
+        { cRefOld :: [FView]
+        , cRefNew :: [FView]
+        }
     | ResolveDeadlockView
         { newBuffer :: T.Text
         , changeset :: T.Text
@@ -96,6 +100,13 @@ instance Viewable (OptimizeAccum v x) DecisionView where
         OptimizeAccumView
             { old = map view refOld
             , new = map view refNew
+            }
+
+instance Viewable (CompileTimeEval v x) DecisionView where
+    view CompileTimeEval{cRefOld, cRefNew} =
+        CompileTimeEvalView
+            { cRefOld = map view cRefOld
+            , cRefNew = map view cRefNew
             }
 
 instance (Show v) => Viewable (ResolveDeadlock v x) DecisionView where

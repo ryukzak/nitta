@@ -138,6 +138,7 @@ data SynthesisState m tag v x t = SynthesisState
       sBindOptions :: [Bind tag v x]
     , sResolveDeadlockOptions :: [ResolveDeadlock v x]
     , sOptimizeAccumOptions :: [OptimizeAccum v x]
+    , sCompileTimeEvalOptions :: [CompileTimeEval v x]
     , sBreakLoopOptions :: [BreakLoop v x]
     , -- |dataflow options cache
       sDataflowOptions :: [DataflowSt tag v (TimeConstrain t)]

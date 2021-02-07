@@ -2,6 +2,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 -- Before compile-time eval optimization
 
@@ -46,12 +48,14 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
+import Debug.Trace
+import GHC.Generics
 
 data CompileTimeEval v x = CompileTimeEval
     { cRefOld :: [F v x]
     , cRefNew :: [F v x]
     }
-    deriving (Show)
+    deriving (Generic, Show, Eq)
 
 class CompileTimeEvalProblem u v x | u -> v x where
     -- |Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
@@ -65,13 +69,15 @@ class CompileTimeEvalProblem u v x | u -> v x where
 instance (Var v, Val x) => CompileTimeEvalProblem [F v x] v x where
     compileTimeEvalOptions fs =
         let clusters = selectClusters fs
-            evaluatedClusters = map evalCluster clusters
-            newFsList = L.nub $ apply (zip clusters evaluatedClusters) clusters
-            newFsListFiltered = filter (\fs' -> not (null fs') && S.fromList fs' /= S.fromList fs) newFsList
-            options = map (\fsNew -> CompileTimeEval{cRefOld = fs, cRefNew = fsNew}) newFsListFiltered
+            evaluatedClusters =  map evalCluster clusters
+            zipOfClusters = zip clusters evaluatedClusters
+            filteredZip = filter (\case ([_],_ ) -> False; _ -> True) zipOfClusters
+            options = [ CompileTimeEval{cRefOld = c, cRefNew = ec} | (c, ec) <- filteredZip]
          in options
 
-    compileTimeEvalDecision _ CompileTimeEval{cRefNew} = cRefNew
+    compileTimeEvalDecision fs CompileTimeEval{cRefOld, cRefNew}
+        | cRefOld == cRefNew = cRefNew
+        | otherwise = deleteExtraF $ (fs L.\\ cRefOld) <> cRefNew
 
 isConst f
     | Just Constant{} <- castF f = True
