@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -35,7 +36,9 @@ import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, mapMaybe)
 import qualified Data.Set as S
+import Data.String.Interpolate (i)
 import qualified Data.String.Utils as S
+import qualified Data.Text as T
 import Data.Typeable
 import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Types
@@ -45,12 +48,11 @@ import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Types
 import NITTA.Project.Implementation
 import NITTA.Project.Parts.TestBench
-import NITTA.Project.Snippets
+import NITTA.Project.SnippetsText
 import NITTA.Project.Types
-import NITTA.Utils
 import NITTA.Utils.ProcessDescription
+import NITTA.UtilsText
 import Numeric.Interval.NonEmpty (inf, sup, width, (...))
-import Text.InterpolatedString.Perl6 (qc)
 
 data BusNetwork tag v x t = BusNetwork
     { -- |List of functions binded to network, but not binded to any process unit.
@@ -109,7 +111,7 @@ busNetwork signalBusWidth ioSync pus =
                         , dataOut = tag ++ "_data_out"
                         , attrIn = "attr_bus"
                         , attrOut = tag ++ "_attr_out"
-                        , signal = \(SignalTag i) -> "control_bus[" ++ show i ++ "]"
+                        , signal = \(SignalTag sig) -> "control_bus[" ++ show sig ++ "]"
                         }
                 }
         pus' = map (\(tag, f) -> (tag, f $ puEnv tag)) pus
@@ -203,7 +205,7 @@ instance (UnitTag tag, VarValTime v x t) => ProcessorUnit (BusNetwork tag v x t)
                     | Step{pID, pDesc} <- steps bnProcess
                     , isInstruction pDesc
                     , v <- case pDesc of
-                        (InstructionStep i) | Just (Transport var _ _) <- castInstruction net i -> [var]
+                        (InstructionStep is) | Just (Transport var _ _) <- castInstruction net is -> [var]
                         _ -> []
                     ]
             wholeProcess = execScheduleWithProcess net bnProcess $ do
@@ -400,12 +402,12 @@ bnExternalPorts pus =
             pus
 
 externalPortsDecl ports =
-    unlines $
+    T.unlines $
         concatMap
             ( \(tag, (is, os)) ->
-                ("// external ports for: " ++ tag) :
-                map (", input " ++) is
-                    ++ map (", output " ++) os
+                ("// external ports for: " <> T.pack tag) :
+                map ((", input " <>) . T.pack) is
+                    ++ map ((", output " <>) . T.pack) os
             )
             ports
 
@@ -416,11 +418,12 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
         let (instances, valuesRegs) = renderInstance [] [] $ M.assocs bnPus
             mn = moduleName tag pu
             iml =
-                codeBlock
-                    [qc|
-                    {"module"} { mn } #
-                            ( parameter DATA_WIDTH = { dataWidth (def :: x) }
-                            , parameter ATTR_WIDTH = { attrWidth (def :: x) }
+                T.unpack $
+                    codeBlock
+                        [i|
+                    module #{ mn } #
+                            ( parameter DATA_WIDTH = #{ dataWidth (def :: x) }
+                            , parameter ATTR_WIDTH = #{ attrWidth (def :: x) }
                             )
                         ( input                     clk
                         , input                     rst
@@ -428,13 +431,13 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                         , output                    flag_cycle_begin
                         , output                    flag_in_cycle
                         , output                    flag_cycle_end
-                        { inline $ externalPortsDecl $ bnExternalPorts bnPus }
+                        #{ inline $ externalPortsDecl $ bnExternalPorts bnPus }
                         , output              [7:0] debug_status
                         , output              [7:0] debug_bus1
                         , output              [7:0] debug_bus2
                         );
 
-                    parameter MICROCODE_WIDTH = { bnSignalBusWidth };
+                    parameter MICROCODE_WIDTH = #{ bnSignalBusWidth };
 
                     wire start, stop;
 
@@ -443,7 +446,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                     wire [ATTR_WIDTH-1:0] attr_bus;
 
                     // Debug
-                    assign debug_status = \{ flag_cycle_begin, flag_in_cycle, flag_cycle_end, data_bus[4:0] };
+                    assign debug_status = { flag_cycle_begin, flag_in_cycle, flag_cycle_end, data_bus[4:0] };
                     assign debug_bus1 = data_bus[7:0];
                     assign debug_bus2 = data_bus[31:24] | data_bus[23:16] | data_bus[15:8] | data_bus[7:0];
 
@@ -452,13 +455,13 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
 
                     pu_simple_control #
                             ( .MICROCODE_WIDTH( MICROCODE_WIDTH )
-                            , .PROGRAM_DUMP( "$path${ mn }.dump" )
-                            , .MEMORY_SIZE( { length $ programTicks pu } ) // 0 - address for nop microcode
+                            , .PROGRAM_DUMP( "$path$#{ mn }.dump" )
+                            , .MEMORY_SIZE( #{ length $ programTicks pu } ) // 0 - address for nop microcode
                             ) control_unit
                         ( .clk( clk )
                         , .rst( rst )
 
-                        , .signal_cycle_start( { isDrowAllowSignal ioSync } || stop )
+                        , .signal_cycle_start( #{ isDrowAllowSignal ioSync } || stop )
 
                         , .signals_out( control_bus )
 
@@ -467,31 +470,32 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                         , .flag_cycle_end( flag_cycle_end )
                         );
 
-                    { inline $ S.join "\\n\\n" instances }
+                    #{ inline $ T.intercalate "\n\n" instances }
 
-                    assign data_bus = { S.join " | " $ map snd valuesRegs };
-                    assign attr_bus = { S.join " | " $ map fst valuesRegs };
+                    assign data_bus = #{ T.intercalate " | " $ map snd valuesRegs };
+                    assign attr_bus = #{ T.intercalate " | " $ map fst valuesRegs };
 
                     endmodule
                     |]
          in Aggregate (Just mn) $
-                [ Immediate (mn ++ ".v") iml
+                [ Immediate (mn <> ".v") iml
                 , FromLibrary "pu_simple_control.v"
                 ]
                     ++ map (uncurry hardware) (M.assocs bnPus)
         where
-            regInstance (t :: String) =
+            regInstance t =
                 codeBlock
-                    [qc|
-                    wire [DATA_WIDTH-1:0] {t}_data_out;
-                    wire [ATTR_WIDTH-1:0] {t}_attr_out;
+                    [i|
+                    wire [DATA_WIDTH-1:0] #{t}_data_out;
+                    wire [ATTR_WIDTH-1:0] #{t}_attr_out;
                     |]
 
             renderInstance insts regs [] = (reverse insts, reverse regs)
             renderInstance insts regs ((t, PU{unit, systemEnv, ports, ioPorts}) : xs) =
-                let inst = hardwareInstance t unit systemEnv ports ioPorts
+                -- TODO: 1S->T when will be possible rewrite without T.pack
+                let inst = T.pack $ hardwareInstance t unit systemEnv ports ioPorts
                     insts' = inst : regInstance t : insts
-                    regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
+                    regs' = (T.pack $ t <> "_attr_out", T.pack $ t <> "_data_out") : regs
                  in renderInstance insts' regs' xs
 
     software tag pu@BusNetwork{bnProcess = Process{..}, ..} =
@@ -507,21 +511,23 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
             values (BusNetworkMC arr) = reverse $ A.elems arr
 
     hardwareInstance tag BusNetwork{} TargetEnvironment{unitEnv = NetworkEnv, signalClk, signalRst} _ports ioPorts
-        | let io2v n = ", ." ++ n ++ "( " ++ n ++ " )"
-              is = map (\(InputPortTag n) -> io2v n) $ inputPorts ioPorts
-              os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts =
-            codeBlock
-                [qc|
-            { tag } #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
+        | let io2v n = ", ." <> n <> "( " <> n <> " )"
+              -- 1S->T rewrite without T.pack when ioPorts become Text
+              is = map (\(InputPortTag n) -> io2v $ T.pack n) $ inputPorts ioPorts
+              os = map (\(OutputPortTag n) -> io2v $ T.pack n) $ outputPorts ioPorts =
+            T.unpack $
+                codeBlock
+                    [i|
+            #{ tag } #
+                    ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
                     ) net
-                ( .rst( { signalRst } )
-                , .clk( { signalClk } )
+                ( .rst( #{ signalRst } )
+                , .clk( #{ signalClk } )
                 // inputs:
-                { inline $ S.join "\\n" is }
+                #{ inline $ T.intercalate "\\n" is }
                 // outputs:
-                { inline $ S.join "\\n" os }
+                #{ inline $ T.intercalate "\\n" os }
                 , .debug_status( debug_status ) // FIXME:
                 , .debug_bus1( debug_bus1 )     // FIXME:
                 , .debug_bus2( debug_bus2 )     // FIXME:
@@ -574,8 +580,9 @@ instance
                         , not $ null tbEnv
                         ]
 
+                -- TODO 1S->T if possibe transform map fields to Text
                 externalPortNames = concatMap (\(_tag, (is, os)) -> is ++ os) $ bnExternalPorts bnPus
-                externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") externalPortNames)
+                externalIO = T.intercalate ", " ("" : map (\p -> T.pack $ "." ++ p ++ "( " ++ p ++ " )") externalPortNames)
                 envInitFlags = mapMaybe (uncurry testEnvironmentInitFlag) $ M.assocs bnPus
 
                 tickWithTransfers =
@@ -587,26 +594,27 @@ instance
                         )
                         $ zip [0 :: Int ..] $ take cntxCycleNumber cntxProcess
 
-                assertions = concatMap (\cycleTickTransfer -> posedgeCycle ++ concatMap assertion cycleTickTransfer) tickWithTransfers
+                assertions = T.concat . map (\cycleTickTransfer -> posedgeCycle <> (T.concat . map assertion) cycleTickTransfer) $ tickWithTransfers
 
                 assertion (cycleI, t, Nothing) =
-                    codeLine [qc|@(posedge clk); traceWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus);|]
+                    codeLine [i|@(posedge clk); traceWithAttr(#{ cycleI }, #{ t }, net.data_bus, net.attr_bus);|]
                 assertion (cycleI, t, Just (v, x)) =
-                    codeLine [qc|@(posedge clk); assertWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus, { dataLiteral x }, { attrLiteral x }, { v });|]
+                    codeLine [i|@(posedge clk); assertWithAttr(#{ cycleI }, #{ t }, net.data_bus, net.attr_bus, #{ dataLiteral x }, #{ attrLiteral x }, #{ v });|]
              in Immediate (moduleName pName n ++ "_tb.v") $
-                    codeBlock
-                        [qc|
+                    T.unpack $
+                        codeBlock
+                            [i|
             `timescale 1 ps / 1 ps
-            module { moduleName pName n }_tb();
+            module #{ moduleName pName n }_tb();
 
             /*
             Functions:
-            { inline $ S.join "\\n" $ map show $ functions n }
+            #{ inline $ T.intercalate "\\n" $ map (T.pack . show) $ functions n }
             */
 
             /*
             Steps:
-            { inline $ S.join "\\n" $ map show $ reverse $ steps $ process n }
+            #{ inline $ T.intercalate "\\n" $ map (T.pack . show) $ reverse $ steps $ process n }
             */
 
             // system signals
@@ -614,10 +622,10 @@ instance
             wire cycle;
 
             // clk and rst generator
-            { inline snippetClkGen }
+            #{ inline $ snippetClkGen }
 
             // vcd dump
-            { inline $ snippetDumpFile $ moduleName pName n }
+            #{ inline $ snippetDumpFile $ T.pack $ moduleName pName n }
 
 
 
@@ -625,30 +633,30 @@ instance
             // test environment
 
             // external ports (IO)
-            { inline $ if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
+            #{ inline $ T.pack $ if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
 
             // initialization flags
-            { if null envInitFlags then "" else "reg " <> S.join ", " envInitFlags <> ";" }
-            assign env_init_flag = { defEnvInitFlag envInitFlags ioSync };
+            #{ if null envInitFlags then "" else "reg " <> S.join ", " envInitFlags <> ";" }
+            assign env_init_flag = #{ defEnvInitFlag envInitFlags ioSync };
 
-            { inline testEnv }
+            #{ inline $ T.pack testEnv }
 
 
 
             ////////////////////////////////////////////////////////////
             // unit under test
 
-            { moduleName pName n } #
-                    ( .DATA_WIDTH( { dataWidth (def :: x) } )
-                    , .ATTR_WIDTH( { attrWidth (def :: x) } )
+            #{ moduleName pName n } #
+                    ( .DATA_WIDTH( #{ dataWidth (def :: x) } )
+                    , .ATTR_WIDTH( #{ attrWidth (def :: x) } )
                     ) net
                 ( .clk( clk )
                 , .rst( rst )
                 , .flag_cycle_begin( cycle )
-                { externalIO }
+                #{ externalIO }
                 // if 1 - The process cycle are indipendent from a SPI.
                 // else - The process cycle are wait for the SPI.
-                , .is_drop_allow( { isDrowAllowSignal ioSync } )
+                , .is_drop_allow( #{ isDrowAllowSignal ioSync } )
                 );
 
 
@@ -661,8 +669,8 @@ instance
                     // Signals effect to mUnit state after first clk posedge.
                     @(posedge clk);
                     while (!env_init_flag) @(posedge clk);
-                    { inline assertions }
-                    repeat ( { 2 * nextTick bnProcess } ) @(posedge clk);
+                    #{ inline assertions }
+                    repeat ( #{ 2 * nextTick bnProcess } ) @(posedge clk);
                     $finish;
                 end
 
@@ -678,7 +686,7 @@ instance
 
             ////////////////////////////////////////////////////////////
             // Utils
-            { inline $ verilogHelper (def :: x) }
+            #{ inline $ T.pack $ verilogHelper (def :: x) }
 
             endmodule
             |]
@@ -694,7 +702,7 @@ instance
 
                 posedgeCycle =
                     codeBlock
-                        [qc|
+                        [i|
 
                 //-----------------------------------------------------------------
                 @(posedge cycle);

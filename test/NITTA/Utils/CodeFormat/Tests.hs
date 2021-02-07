@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -18,27 +19,33 @@ module NITTA.Utils.CodeFormat.Tests (
     tests,
 ) where
 
-import qualified Data.String.Utils as S
-import NITTA.Utils.CodeFormat
+import qualified Data.Text as T
+
+-- TODO refactor
+import Data.String.Interpolate (i)
+import NITTA.Utils.CodeFormatText
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit
 import Test.Tasty.TH
-import Text.InterpolatedString.Perl6 (qc)
 
-{-# ANN module "HLint: ignore Reduce duplication" #-}
+--
+{-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}
+
+n = "\n" :: T.Text
 
 case_justTextInCodeBlock = do
     let a =
-            S.join
-                "\n"
+            T.intercalate
+                n
                 [ "foo"
                 , "    bar"
                 , "    bar2"
                 , ""
-                ]
+                ] ::
+                T.Text
         b =
             codeBlock
-                [qc|
+                [i|
             foo
                 bar
                 bar2
@@ -47,139 +54,146 @@ case_justTextInCodeBlock = do
 
 case_codeBlockWithSubConst = do
     let a =
-            S.join
-                "\n"
+            T.intercalate
+                n
                 [ "foo"
                 , "    bar"
                 , "    bar2"
                 , ""
-                ]
+                ] ::
+                T.Text
         b =
             codeBlock
-                [qc|
+                [i|
             foo
                 bar
-                {"bar2"}
+                #{"bar2" :: T.Text}
             |]
+
     b @?= a
 
 case_codeBlockWithSubCodeBlock = do
     let a =
-            S.join
-                "\n"
+            T.intercalate
+                n
                 [ "foo"
                 , "    bar"
                 , "    bar2"
                 , ""
                 , ""
-                ]
+                ] ::
+                T.Text
         bar2 =
             codeBlock
-                [qc|
+                [i|
             bar2
             |]
         b =
             codeBlock
-                [qc|
+                [i|
             foo
                 bar
-                {bar2}
+                #{bar2}
             |]
 
     b @?= a
 
 case_codeBlockInOneLineW = do
     let a =
-            S.join
-                "\n"
+            T.intercalate
+                n
                 [ "foo"
                 , "    bar"
                 , "    foo bar2"
                 , ""
                 , ""
-                ]
+                ] ::
+                T.Text
         bar2 =
             codeBlock
-                [qc|
+                [i|
             bar2
             |]
         b =
             codeBlock
-                [qc|
+                [i|
             foo
                 bar
-                foo {bar2}
+                foo #{bar2}
             |]
 
     b @?= a
 
 case_codeLineInOneLine = do
     let a =
-            S.join
-                "\n"
+            T.intercalate
+                n
                 [ "foo"
                 , "    bar"
                 , "    foo bar2"
                 , ""
                 , ""
-                ]
-        bar2 = codeLine [qc|bar2|]
+                ] ::
+                T.Text
+        bar2 = codeLine [i|bar2|]
         b =
             codeBlock
-                [qc|
+                [i|
             foo
                 bar
-                foo {bar2}
+                foo #{bar2}
             |]
 
     b @?= a
 
 case_concatLinesWithSpaceLikeLineBefore = do
     let a =
-            S.join
-                "\n"
+            T.intercalate
+                n
                 [ "bar"
                 , "    bar2"
                 , ""
                 , "    123"
                 , "    456"
                 , ""
-                ]
+                ] ::
+                T.Text
         bar2 =
             codeBlock
-                [qc|
+                [i|
             bar2
             |]
-        nums1 = codeLine [qc|123|]
-        nums2 = codeLine [qc|456|]
-        nums = nums1 ++ nums2
+        nums1 = codeLine [i|123|]
+        nums2 = codeLine [i|456|]
+        nums = nums1 <> nums2
         b =
             codeBlock
-                [qc|
+                [i|
             bar
-                {bar2}
-                {inline nums}
+                #{bar2}
+                #{inline nums}
             |]
 
     b @?= a
 
 case_concatLinesWithSpaceWithoutBeforeLine = do
     let a =
-            S.join
-                "\n"
+            T.intercalate
+                n
                 [ "bar"
                 , "    123"
                 , "    456"
                 , ""
-                ]
-        nums1 = codeLine [qc|123|]
-        nums2 = codeLine [qc|456|]
-        nums = nums1 ++ nums2
+                ] ::
+                T.Text
+        nums1 = codeLine [i|123|]
+        nums2 = codeLine [i|456|]
+        nums = nums1 <> nums2
         b =
             codeBlock
-                [qc|
+                [i|
             bar
-                {inline nums}
+                #{inline nums}
             |]
 
     b @?= a
