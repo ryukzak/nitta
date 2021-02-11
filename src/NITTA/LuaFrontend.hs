@@ -55,6 +55,9 @@ defaultFmt = "%.3f"
 -- |Unique variable aliases for data flow.
 type VarDict = M.Map Text ([String], [String])
 
+-- |List contains IO Function names to be printed by default.
+listFuncIO = ["send", "recieve"]
+
 prettyCntx traceVars cntx =
     showCntx
         ( \v0 x -> do
@@ -75,7 +78,7 @@ lua2functions src =
     let ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         AlgBuilder{algItems} = buildAlg ast
         fs = filter (\case Function{} -> True; _ -> False) algItems
-        addTraceIO = addTraceIoFunc algItems defaultFmt
+        addTraceIO = addTraceFuncIO algItems defaultFmt
         varDict :: VarDict
         varDict =
             M.fromList $
@@ -111,10 +114,10 @@ lua2functions src =
             let v' = unpack v
              in [qq|{v'}#{i}|]
 
-addTraceIoFunc algItems fmt = concatMap convToTraceVar filterIoFunc
+addTraceFuncIO algItems fmt = concatMap convToTraceVar filterIoFunc
     where
         convToTraceVar func = map (TraceVar fmt) $ fIn func
-        filterIoFunc = filter (\case Function{fName = "send"} -> True; _ -> False) algItems
+        filterIoFunc = filter (\case item@Function{} -> fName item `elem` listFuncIO; _ -> False) algItems
 
 buildAlg ast = flip execState st0 $ do
     addMainInputs mainFunDef mainCall
