@@ -78,7 +78,7 @@ lua2functions src =
     let ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         AlgBuilder{algItems} = buildAlg ast
         fs = filter (\case Function{} -> True; _ -> False) algItems
-        addTraceIO = addTraceFuncIO algItems defaultFmt
+        ioVariables = getIOVariables defaultFmt algItems
         varDict :: VarDict
         varDict =
             M.fromList $
@@ -96,7 +96,7 @@ lua2functions src =
                     , v <- tVars
                     ]
                 else
-                    addTraceIO
+                    ioVariables
                         <> [ TraceVar defaultFmt iVar
                            | InputVar{iVar} <- algItems
                            ]
@@ -114,7 +114,7 @@ lua2functions src =
             let v' = unpack v
              in [qq|{v'}#{i}|]
 
-addTraceFuncIO algItems fmt = concatMap convToTraceVar filterIoFunc
+getIOVariables fmt algItems = concatMap convToTraceVar filterIoFunc
     where
         convToTraceVar func = map (TraceVar fmt) $ fIn func
         filterIoFunc = filter (\case item@Function{} -> fName item `elem` listFuncIO; _ -> False) algItems
