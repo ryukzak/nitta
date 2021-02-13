@@ -1,10 +1,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS -fno-warn-orphans #-}
 
@@ -14,6 +14,7 @@ module NITTA.Model.Problems.ViewHelper (
 ) where
 
 import Data.Aeson
+import Data.Bifunctor
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import GHC.Generics
@@ -65,19 +66,21 @@ instance (UnitTag tag) => Viewable (Bind tag v x) DecisionView where
             }
 
 instance (UnitTag tag, Var v, Time t) => Viewable (DataflowSt tag v (Interval t)) DecisionView where
-    view DataflowSt{dfSource = (source, sep), dfTargets} =
+    view DataflowSt{dfSource, dfTargets} =
         DataflowDecisionView
-            { source = (show source, epdView sep)
-            , targets = map (\(tag, tep) -> (show tag, epdView tep)) dfTargets
+            { source = view' dfSource
+            , targets = map view' dfTargets
             }
         where
+            view' = bimap show' epdView
             epdView EndpointSt{epRole, epAt} =
                 EndpointSt
                     { epRole = case epRole of
-                        Source vs -> Source $ S.map show vs
-                        Target v -> Target $ show v
+                        Source vs -> Source $ S.map show' vs
+                        Target v -> Target $ show' v
                     , epAt = fromEnum (sup epAt) ... fromEnum (inf epAt)
                     }
+            show' = S.replace "\"" "" . show
 
 instance (Show v, Show x) => Viewable (BreakLoop v x) DecisionView where
     view BreakLoop{loopX, loopO, loopI} =

@@ -162,10 +162,9 @@ instance
                                     DataflowSt
                                         { dfSource
                                         , dfTargets =
-                                            catMaybes $
-                                                map
-                                                    (\v -> fmap (second netConstrain) (targets M.!? v))
-                                                    $ send ++ hold
+                                            mapMaybe
+                                                (\v -> fmap (second netConstrain) (targets M.!? v))
+                                                $ send ++ hold
                                         }
                                 )
                                 sends
