@@ -34,7 +34,7 @@ import Data.Bifunctor
 import Data.Default
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
+import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.String.Utils as S
 import Data.Typeable
@@ -139,7 +139,7 @@ instance
                                 filter isTarget $ endpointOptions pu
                         )
                         $ M.assocs bnPus
-         in filter (not . isEmptyDescination) $
+         in filter (not . null . dfTargets) $
                 concatMap
                     ( \(src, sEndpoint) ->
                         let dfSource = (src, netConstrain sEndpoint)
@@ -162,9 +162,9 @@ instance
                                     DataflowSt
                                         { dfSource
                                         , dfTargets =
-                                            M.fromList $
+                                            catMaybes $
                                                 map
-                                                    (\v -> (v, fmap (second netConstrain) (targets M.!? v)))
+                                                    (\v -> fmap (second netConstrain) (targets M.!? v))
                                                     $ send ++ hold
                                         }
                                 )
@@ -178,34 +178,27 @@ instance
                         b = sup tcAvailable
                      in at{tcAvailable = a ... b}
 
-            isEmptyDescination DataflowSt{dfTargets} = all isNothing $ M.elems dfTargets
-
     dataflowDecision n@BusNetwork{bnProcess, bnPus} DataflowSt{dfSource = (srcTitle, src), dfTargets}
         | nextTick bnProcess > inf (epAt src) =
             error $ "BusNetwork wraping time! Time: " ++ show (nextTick bnProcess) ++ " Act start at: " ++ show src
         | otherwise =
-            let pushs = M.map (fromMaybe undefined) $ M.filter isJust dfTargets
-
-                srcStart = inf $ epAt src
-                srcDuration = maximum $ map ((\EndpointSt{epAt} -> (inf epAt - srcStart) + width epAt) . snd) $ M.elems pushs
+            let srcStart = inf $ epAt src
+                srcDuration = maximum $ map ((\EndpointSt{epAt} -> (inf epAt - srcStart) + width epAt) . snd) dfTargets
                 srcEnd = srcStart + srcDuration
 
                 subDecisions =
-                    (srcTitle, EndpointSt (Source $ S.fromList $ M.keys pushs) (epAt src)) :
-                        [ (trgTitle, EndpointSt (Target v) $ epAt ep)
-                        | (v, (trgTitle, ep)) <- M.assocs pushs
-                        ]
+                    (srcTitle, EndpointSt (Source $ unionsMap (variables . snd) dfTargets) (epAt src)) : dfTargets
              in n
                     { bnPus = foldl applyDecision bnPus subDecisions
                     , bnProcess = execScheduleWithProcess n bnProcess $ do
                         updateTick (sup (epAt src) + 1)
                         mapM_
-                            ( \(pushedValue, (targetTitle, _tc)) ->
+                            ( \(targetTitle, ep) ->
                                 scheduleInstruction
                                     (srcStart ... srcEnd)
-                                    (Transport pushedValue srcTitle targetTitle :: Instruction (BusNetwork tag v x t))
+                                    (Transport (oneOf $ variables ep) srcTitle targetTitle :: Instruction (BusNetwork tag v x t))
                             )
-                            $ M.assocs pushs
+                            dfTargets
                     }
         where
             applyDecision pus (trgTitle, d') = M.adjust (`endpointDecision` d') trgTitle pus

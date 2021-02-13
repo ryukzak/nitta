@@ -21,7 +21,6 @@ module NITTA.Synthesis.Dataflow (
 ) where
 
 import Data.Aeson (ToJSON)
-import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import GHC.Generics
 import NITTA.Intermediate.Types
@@ -32,6 +31,7 @@ import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
 import NITTA.Synthesis.Types
+import NITTA.Utils
 import Numeric.Interval.NonEmpty (Interval, inf, sup)
 
 data DataflowMetrics = DataflowMetrics
@@ -63,7 +63,7 @@ instance
                 , pRestrictedTime = fromEnum (sup tcDuration) /= maxBound
                 , pNotTransferableInputs =
                     let fs = functions $ mUnit sTarget
-                        vs = S.fromList [v | (v, Just _) <- M.assocs dfTargets]
+                        vs = unionsMap (variables . snd) dfTargets
                         affectedFunctions = filter (\f -> not $ null (inputs f `S.intersection` vs)) fs
                         notTransferableVars = map (\f -> inputs f S.\\ transferableVars) affectedFunctions
                      in map (fromIntegral . length) notTransferableVars

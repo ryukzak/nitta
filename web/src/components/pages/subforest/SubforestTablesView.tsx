@@ -2,7 +2,7 @@ import * as React from "react";
 import ReactTable, { Column } from "react-table";
 
 import { AppContext, IAppContext } from "components/app/AppContext";
-import { Node, Bind, Dataflow } from "services/HaskellApiService";
+import { Node, Bind, Dataflow, EndpointDecision } from "services/HaskellApiService";
 import { BindMetrics, DataflowMetrics } from "gen/types";
 
 import { sidColumn, textColumn, objectiveColumn, decisionColumn, parametersColumn } from "./Columns";
@@ -82,16 +82,15 @@ export const SubforestTablesView: React.FC<EdgesProps> = ({ nodes }) => {
           sidColumn(appContext.setSID),
           objectiveColumn(),
           // textColumn("at", (e: Node) => (e.decision as Dataflow).source.time),
-          textColumn("source", (e: Node) => (e.decision as Dataflow).source),
+          textColumn("source", (e: Node) => JSON.stringify((e.decision as Dataflow).source)),
           textColumn(
             "targets",
             (e: Node) => {
               let targets = (e.decision as Dataflow).targets;
-              let lst = Object.keys(targets).map((k: string) => k + " -> " + (targets[k] ? targets[k][0] : ""));
               return (
                 <div>
-                  {lst.map((k: string, i: number) => (
-                    <pre key={i}>{k}</pre>
+                  {targets.map((target: [string, EndpointDecision], i: number) => (
+                    <pre key={i}>{JSON.stringify(target)}</pre>
                   ))}
                 </div>
               );

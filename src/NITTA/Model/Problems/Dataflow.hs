@@ -21,9 +21,7 @@ module NITTA.Model.Problems.Dataflow (
     dataflowOption2decision,
 ) where
 
-import Control.Arrow (second)
-import qualified Data.Map.Strict as M
-import Data.Maybe
+import Control.Arrow
 import GHC.Generics
 import NITTA.Model.Problems.Endpoint
 import NITTA.Model.Types
@@ -37,9 +35,8 @@ data DataflowSt tag v tp = DataflowSt
     { -- |A source processor unit of data flow transaction, and it's time
       -- constrains which defines when data can be sended.
       dfSource :: (tag, EndpointSt v tp)
-    , -- |All possible targets of dataflow transaction. If some of targets
-      -- can be not available (Nothing).
-      dfTargets :: M.Map v (Maybe (tag, EndpointSt v tp))
+    , -- |All possible targets of dataflow transaction.
+      dfTargets :: [(tag, EndpointSt v tp)]
     }
     deriving (Generic)
 
@@ -55,12 +52,12 @@ class DataflowProblem u tag v t | u -> tag v t where
 -- |Convert dataflow option to decision.
 dataflowOption2decision :: (Time t) => DataflowSt tag v (TimeConstrain t) -> DataflowSt tag v (Interval t)
 dataflowOption2decision (DataflowSt (srcTag, srcEp) trgs) =
-    let targetsAt = map (epAt . snd) $ catMaybes $ M.elems trgs
+    let targetsAt = map (epAt . snd) trgs
 
         srcStart = maximum $ map (inf . tcAvailable) $ epAt srcEp : targetsAt
         srcDuration = maximum $ map (inf . tcDuration) $ epAt srcEp : targetsAt
         srcEnd = srcStart + srcDuration - 1
      in DataflowSt
             { dfSource = (srcTag, setAt (srcStart ... srcEnd) srcEp)
-            , dfTargets = M.map (fmap (second (updAt (\tc -> srcStart ... (srcStart + inf (tcDuration tc) - 1))))) trgs
+            , dfTargets = map (second (updAt (\tc -> srcStart ... (srcStart + inf (tcDuration tc) - 1)))) trgs
             }

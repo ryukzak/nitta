@@ -46,9 +46,11 @@ import qualified Data.HashMap.Strict as HM
 import Data.Hashable
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import qualified Data.Set as S
 import Data.Typeable
 import GHC.Generics
 import NITTA.Intermediate.Types
+import NITTA.Model.Problems
 import NITTA.Model.Problems.ViewHelper
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.TargetSystem
@@ -219,12 +221,9 @@ instance ToSample (NodeView tag v x t) where
                             }
                 , decision =
                     DataflowDecisionView
-                        { source = "PU1"
+                        { source = ("PU1", EndpointSt{epRole = Source $ S.fromList ["a1", "a2"], epAt = 1 ... 1})
                         , targets =
-                            HM.fromList
-                                [ ("a1", Nothing)
-                                , ("a2", Just ("PU2", 1 ... 1))
-                                ]
+                            [("PU2", EndpointSt{epRole = Target "a2", epAt = 1 ... 1})]
                         }
                 , score = 1999
                 }
