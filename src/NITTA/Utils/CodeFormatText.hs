@@ -30,30 +30,35 @@ inline txt = T.intercalate "\n" $ map (inlineMarker <>) $ T.lines txt
 comment txt = T.unlines $ map (commentMarker <>) $ T.lines txt
 
 -- |Function for more comfortable formatting code
-codeBlock txt = reformatLine linesList [] (minIndentCalc linesList)
+codeBlock txt = reformatLine lines_ [] Nothing
     where
-        reformatLine [] buff _ = delInline $ T.intercalate "\n" $ reverse buff
-        reformatLine (x : xs) buff minIndent = reformatLine xs buff' minIndent
+        reformatLine [] buff _indentM = delInline $ T.intercalate "\n" $ reverse buff
+        reformatLine (x : xs) buff indentM = reformatLine xs buff' indentM'
             where
                 buffHead = headDef T.empty buff
                 inlineSpacesCount = T.length $ T.takeWhile (== ' ') buffHead
                 inlineSpaces = T.replicate inlineSpacesCount " "
 
-                line
-                    | isInline x = inlineSpaces <> x
-                    | otherwise = T.drop minIndent x
+                indent = fromMaybe inlineSpaces indentM
+
+                (line, indentM') =
+                    if isInline x
+                        then (indent <> x, Just indent)
+                        else (T.drop minIndent x, Nothing)
 
                 buff' = line : buff
 
         isInline = T.isPrefixOf inlineMarker
         delInline = T.replace inlineMarker T.empty
 
-        minIndentCalc inp = fromMaybe 0 $ minimumMay spaces
-            where
-                spaces = filter (> 0) $ map (T.length . T.takeWhile (== ' ')) inlines
-                inlines = filter (not . isInline) inp
+        lines_ = drop 1 $ T.lines txt
 
-        linesList = drop 1 $ T.lines txt
+        minIndent =
+            let spaces =
+                    filter (> 0) $
+                        map (T.length . T.takeWhile (== ' ')) $
+                            filter (not . isInline) lines_
+             in fromMaybe 0 $ minimumMay spaces
 
 -- |Simple function for writing just one line of something
 codeLine txt = T.stripStart txt <> "\n"
