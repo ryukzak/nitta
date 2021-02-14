@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -35,7 +36,7 @@ import NITTA.Model.Microarchitecture
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Networks.Types
 import NITTA.Model.ProcessorUnits
-import NITTA.Project.Parts.TestBench
+import NITTA.Project (TestbenchReport (..), runTestbench)
 import NITTA.Synthesis
 import NITTA.UIBackend
 import Paths_nitta
@@ -111,12 +112,23 @@ main = do
 
             when fsim $ functionalSimulation n received src
 
-            TestbenchReport
-                { tbLogicalSimulationCntx
-                } <-
-                synthesizeAndTest ma n frDataFlow received output_path
+            prj <-
+                synthesizeTargetSystem
+                    def
+                        { tName = "main"
+                        , tPath = output_path
+                        , tMicroArch = ma
+                        , tDFG = frDataFlow
+                        , tReceivedValues = received
+                        , tSimulationCycleN = n
+                        }
+                    >>= \case
+                        Left msg -> error msg
+                        Right p -> return p
 
             when lsim $ do
+                TestbenchReport{tbLogicalSimulationCntx} <- runTestbench prj
+                putStrLn "Logical simulation (by IcarusVerilog):"
                 putCntx $ frPrettyCntx tbLogicalSimulationCntx
         )
         $ parseFX type_
@@ -142,21 +154,9 @@ functionalSimulation n received src = do
     let FrontendResult{frDataFlow, frPrettyCntx} = lua2functions src
         cntx = simulateDataFlowGraph n def received frDataFlow
     infoM "NITTA" "run functional simulation..."
+    putStrLn "Functional simulation:"
     putCntx $ frPrettyCntx cntx
     infoM "NITTA" "run functional simulation...ok"
-
-synthesizeAndTest ma n dataflow received outputPath = do
-    Right report <-
-        runTargetSynthesis
-            def
-                { tName = "main"
-                , tPath = outputPath
-                , tMicroArch = ma
-                , tDFG = dataflow
-                , tReceivedValues = received
-                , tSimulationCycleN = n
-                }
-    return report
 
 putCntx cntx = putStr $ cntx2table cntx
 

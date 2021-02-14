@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 92a8e80c683f6b6157a6aa7af2365375d6d56d29a74355a8de9fc4e9b67b5c9c
+-- hash: 061de8510684e3b17f6808113f02b17de2294812862770ac3338f70c6e75f58a
 
 name:           nitta
 version:        0.0.0.1
@@ -81,6 +81,7 @@ library
       NITTA.Model.ProcessorUnits.Multiplier
       NITTA.Model.ProcessorUnits.Shift
       NITTA.Model.ProcessorUnits.Types
+      NITTA.Model.ProcessorUnits.TypesText
       NITTA.Model.TargetSystem
       NITTA.Model.Types
       NITTA.Project
@@ -91,6 +92,7 @@ library
       NITTA.Project.Parts.TestBench
       NITTA.Project.Parts.Utils
       NITTA.Project.Snippets
+      NITTA.Project.SnippetsText
       NITTA.Project.Types
       NITTA.Project.Utils
       NITTA.Synthesis
@@ -112,7 +114,9 @@ library
       NITTA.Utils
       NITTA.Utils.Base
       NITTA.Utils.CodeFormat
+      NITTA.Utils.CodeFormatText
       NITTA.Utils.ProcessDescription
+      NITTA.UtilsText
   other-modules:
       Paths_nitta
   hs-source-dirs:
@@ -147,6 +151,7 @@ library
     , servant-server
     , split
     , stm
+    , string-interpolate
     , text
     , transformers
     , unordered-containers
@@ -175,6 +180,7 @@ executable nitta
     , interpolatedstring-perl6
     , nitta
     , regex-compat
+    , string-interpolate
     , text
   default-language: Haskell2010
 
@@ -201,6 +207,7 @@ executable nitta-api-gen
     , intervals
     , nitta
     , regex-compat
+    , string-interpolate
     , text
   default-language: Haskell2010
 
@@ -250,6 +257,7 @@ test-suite nitta-test
     , nitta
     , regex-compat
     , split
+    , string-interpolate
     , tasty
     , tasty-expected-failure
     , tasty-hunit
