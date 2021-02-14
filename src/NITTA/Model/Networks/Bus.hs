@@ -50,8 +50,9 @@ import NITTA.Project.Implementation
 import NITTA.Project.Parts.TestBench
 import NITTA.Project.SnippetsText
 import NITTA.Project.Types
+import NITTA.Utils hiding (codeBlock, codeLine, comment, inline)
+import NITTA.Utils.CodeFormatText
 import NITTA.Utils.ProcessDescription
-import NITTA.UtilsText
 import Numeric.Interval.NonEmpty (inf, sup, width, (...))
 
 data BusNetwork tag v x t = BusNetwork

@@ -19,7 +19,7 @@ module NITTA.Project.SnippetsText (
 
 import Data.String.Interpolate (i)
 import Data.Text
-import NITTA.UtilsText
+import NITTA.Utils.CodeFormatText
 
 snippetClkGen :: Text
 snippetClkGen =
