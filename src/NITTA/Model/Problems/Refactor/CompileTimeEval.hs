@@ -58,7 +58,7 @@ data CompileTimeEval v x = CompileTimeEval
     deriving (Generic, Show, Eq)
 
 class CompileTimeEvalProblem u v x | u -> v x where
-    -- |Function takes algorithm in 'DataFlowGraph' and return list of 'Refactor' that can be done
+    -- |Function takes algorithm in 'DataFlowGraph' and return list of optimizations that can be done
     compileTimeEvalOptions :: u -> [CompileTimeEval v x]
     compileTimeEvalOptions _ = []
 
@@ -87,11 +87,10 @@ selectClusters fs =
     let consts = filter isConst fs
         inputsAreConst f = inputs f `S.isSubsetOf` S.unions (map outputs consts)
         getInputConsts f = filter (\c -> outputs c `S.isSubsetOf` inputs f) consts
-        createCluster f =
-            if inputsAreConst f
-                then f : getInputConsts f
-                else [f]
-     in [createCluster f | f <- fs]
+        createCluster f
+            | inputsAreConst f = f : getInputConsts f
+            | otherwise = [f]
+     in map createCluster fs
 
 evalCluster [f] = [f]
 evalCluster fs = map (\(v, x) -> constant x [v]) simulatedVals ++ consts

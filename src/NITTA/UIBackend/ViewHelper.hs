@@ -143,10 +143,10 @@ viewNodeTree tree@Tree{sID = sid, sState = SynthesisState{sTarget}, sDecision, s
                         Root{} -> "root"
                         SynthesisDecision{metrics}
                             | Just BindMetrics{} <- cast metrics -> "Bind"
-                            | Just DataflowMetrics{} <- cast metrics -> "Transport"
                             | Just BreakLoopMetrics{} <- cast metrics -> "Refactor"
-                            | Just OptimizeAccumMetrics{} <- cast metrics -> "Refactor"
                             | Just CompileTimeEvalMetrics{} <- cast metrics -> "Refactor"
+                            | Just DataflowMetrics{} <- cast metrics -> "Transport"
+                            | Just OptimizeAccumMetrics{} <- cast metrics -> "Refactor"
                             | Just ResolveDeadlockMetrics{} <- cast metrics -> "Refactor"
                         _ -> "?"
                     }
