@@ -47,7 +47,6 @@ import Data.Default
 import qualified Data.List as L
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Debug.Trace
 import GHC.Generics
 import NITTA.Intermediate.Functions
 import NITTA.Intermediate.Types
@@ -113,9 +112,3 @@ deleteExtraF fs =
         , f1 /= f2
         , not $ null (variables f1 `S.intersection` variables f2)
         ]
-
-apply [] _ = []
-apply ((cluster, evCluster) : clustersTuple) clusters = deleteExtraF newFs : apply clustersTuple clusters
-    where
-        (h, _ : t) = L.span (/= cluster) clusters
-        newFs = deleteExtraF $ concat $ evCluster : h ++ t

@@ -4,6 +4,7 @@
 {-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
@@ -18,13 +19,15 @@ module NITTA.Model.Problems.Refactor.CompileTimeEval.Tests (
     tests,
 ) where
 
-import qualified Data.Set as S
 import NITTA.Intermediate.DataFlow
-import NITTA.Intermediate.Functions
-import NITTA.Intermediate.Types
 import NITTA.Model.Problems.Refactor
 import Test.Tasty (testGroup)
 import Test.Tasty.HUnit
+
+import NITTA.Intermediate.Functions
+import NITTA.Intermediate.Types
+import NITTA.LuaFrontend.Tests.Utils
+import Text.InterpolatedString.Perl6 (qc)
 
 refactorTo startFs resultFs = dfRefactored @?= dfRes
     where
@@ -76,9 +79,20 @@ tests =
                 d = constant 4 ["d"]
                 tmp1 = add "a" "b" ["tmp1"]
                 tmp2 = add "c" "d" ["tmp2"]
-                sum = add "tmp1" "tmp2" ["sum"]
+                summ = add "tmp1" "tmp2" ["sum"]
                 res = buffer "sum" ["res"]
                 calcTmp = constant 10 ["sum"]
                 loopRes = loop 1 "e" ["sum"]
-             in [a, b, c, d, tmp1, tmp2, sum, res, loopRes] `refactorTo` [calcTmp, loopRes]
+             in [a, b, c, d, tmp1, tmp2, summ, res, loopRes] `refactorTo` [calcTmp, loopRes]
+        , luaTestCase
+            "Constants folding optimisation"
+            [qc|
+            function compileTimeEvaluation(i)
+                local c = 3
+                local v = 1 + 2 + c
+                local res = i + v
+                compileTimeEvaluation(res)
+            end
+            compileTimeEvaluation(0)
+            |]
         ]
