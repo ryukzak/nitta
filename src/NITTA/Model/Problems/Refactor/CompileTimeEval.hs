@@ -1,9 +1,10 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ViewPatterns #-}
 
 -- Before compile-time eval optimization
 
@@ -46,10 +47,10 @@ import Data.Default
 import qualified Data.List as L
 import qualified Data.Map as M
 import qualified Data.Set as S
-import NITTA.Intermediate.Functions
-import NITTA.Intermediate.Types
 import Debug.Trace
 import GHC.Generics
+import NITTA.Intermediate.Functions
+import NITTA.Intermediate.Types
 
 data CompileTimeEval v x = CompileTimeEval
     { cRefOld :: [F v x]
@@ -69,11 +70,14 @@ class CompileTimeEvalProblem u v x | u -> v x where
 instance (Var v, Val x) => CompileTimeEvalProblem [F v x] v x where
     compileTimeEvalOptions fs =
         let clusters = selectClusters fs
-            evaluatedClusters =  map evalCluster clusters
+            evaluatedClusters = map evalCluster clusters
             zipOfClusters = zip clusters evaluatedClusters
-            filteredZip = filter (\case ([_],_ ) -> False; _ -> True) zipOfClusters
-            options = [ CompileTimeEval{cRefOld = c, cRefNew = ec} | (c, ec) <- filteredZip]
-         in options
+            filteredZip = filter (\case ([_], _) -> False; _ -> True) zipOfClusters
+            options = [CompileTimeEval{cRefOld = c, cRefNew = ec} | (c, ec) <- filteredZip, c /= ec]
+            optionsFiltered = filter blankOptions options
+            blankOptions (compileTimeEvalDecision fs -> []) = False
+            blankOptions (compileTimeEvalDecision fs -> _) = True
+         in optionsFiltered
 
     compileTimeEvalDecision fs CompileTimeEval{cRefOld, cRefNew}
         | cRefOld == cRefNew = cRefNew
@@ -93,11 +97,13 @@ selectClusters fs =
      in map createCluster fs
 
 evalCluster [f] = [f]
-evalCluster fs = map (\(v, x) -> constant x [v]) simulatedVals ++ consts
+evalCluster fs = outputResult
     where
         (consts, [f]) = L.partition isConst fs
         cntx = CycleCntx $ M.fromList $ concatMap (simulate def) consts
-        simulatedVals = simulate cntx f
+        outputResult
+            | Just Send{} <- castF f = fs
+            | otherwise = map (\(v, x) -> constant x [v]) (simulate cntx f) ++ consts
 
 deleteExtraF fs =
     L.nub

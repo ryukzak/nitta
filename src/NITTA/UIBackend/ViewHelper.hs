@@ -247,7 +247,6 @@ instance ToSample (NodeView tag v x t) where
                         }
                 , score = 1999
                 }
-
             , NodeView
                 { sid = show $ SID [0, 1, 3, 1, 5]
                 , isLeaf = False
