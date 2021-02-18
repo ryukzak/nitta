@@ -97,9 +97,6 @@ busNetwork signalBusWidth ioSync pus =
                 , signalCycleBegin = "flag_cycle_begin"
                 , signalInCycle = "flag_in_cycle"
                 , signalCycleEnd = "flag_cycle_end"
-                , inputPort = \(InputPortTag n) -> n
-                , outputPort = \(OutputPortTag n) -> n
-                , inoutPort = \(InoutPortTag n) -> n
                 , unitEnv = NetworkEnv
                 }
         puEnv tag =

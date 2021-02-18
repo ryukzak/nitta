@@ -108,8 +108,6 @@ instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
             , signalCycleBegin
             , signalInCycle
             , signalCycleEnd
-            , inputPort
-            , outputPort
             }
         SimpleIOPorts{..}
         ioPorts =
@@ -140,18 +138,18 @@ instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
                 extIO SPISlave{..} =
                     codeBlock
                         [qc|
-                        , .mosi( { inputPort slave_mosi } )
-                        , .miso( { outputPort slave_miso } )
-                        , .sclk( { inputPort slave_sclk } )
-                        , .cs( { inputPort slave_cs } )
+                        , .mosi( { slave_mosi } )
+                        , .miso( { slave_miso } )
+                        , .sclk( { slave_sclk } )
+                        , .cs( { slave_cs } )
                         |]
                 extIO SPIMaster{..} =
                     codeBlock
                         [qc|
-                        , .mosi( { outputPort master_mosi } )
-                        , .miso( { inputPort master_miso } )
-                        , .sclk( { outputPort master_sclk } )
-                        , .cs( { outputPort master_cs } )
+                        , .mosi( { master_mosi } )
+                        , .miso( { master_miso } )
+                        , .sclk( { master_sclk } )
+                        , .cs( { master_cs } )
                         |]
 
 instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
@@ -161,7 +159,7 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
     testEnvironment
         tag
         sio@SimpleIO{process_, bounceFilter}
-        TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk, signalRst, inputPort, outputPort}
+        TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk, signalRst}
         SimpleIOPorts{..}
         ioPorts
         TestEnvironment{teCntx = cntx@Cntx{cntxCycleNumber, cntxProcess}, teComputationDuration} =
@@ -253,10 +251,10 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                             , .data_in( { tag }_io_test_input )
                             , .data_out( { tag }_io_test_output )
                             , .ready( { tag }_io_test_ready )
-                            , .mosi( { inputPort slave_mosi } )
-                            , .miso( { outputPort slave_miso } )
-                            , .sclk( { inputPort slave_sclk } )
-                            , .cs( { inputPort slave_cs } )
+                            , .mosi( { slave_mosi } )
+                            , .miso( { slave_miso } )
+                            , .sclk( { slave_sclk } )
+                            , .cs( { slave_cs } )
                             );
                         initial { tag }_io_test.inner.shiftreg <= 0;
                         |]
@@ -353,10 +351,10 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                             , .data_in( { tag }_io_test_input )
                             , .data_out( { tag }_io_test_output )
                             , .ready( { tag }_io_test_ready )
-                            , .mosi( { outputPort master_mosi } )
-                            , .miso( { inputPort master_miso } )
-                            , .sclk( { outputPort master_sclk } )
-                            , .cs( { outputPort master_cs } )
+                            , .mosi( { master_mosi } )
+                            , .miso( { master_miso } )
+                            , .sclk( { master_sclk } )
+                            , .cs( { master_cs } )
                             );
                         |]
 

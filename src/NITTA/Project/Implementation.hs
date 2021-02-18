@@ -76,9 +76,6 @@ data TargetEnvironment = TargetEnvironment
       signalInCycle :: String
     , -- |posedge on computation cycle end
       signalCycleEnd :: String
-    , inputPort :: InputPortTag -> String
-    , outputPort :: OutputPortTag -> String
-    , inoutPort :: InoutPortTag -> String
     , unitEnv :: UnitEnv -- unit specific environment
     }
 

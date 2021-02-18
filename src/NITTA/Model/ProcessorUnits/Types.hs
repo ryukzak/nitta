@@ -318,6 +318,11 @@ class IOConnected pu where
     inoutPorts :: IOPorts pu -> [InoutPortTag]
     inoutPorts _ = []
 
-newtype InputPortTag = InputPortTag {inputPortTag :: String} deriving (Show, Eq, Ord)
-newtype OutputPortTag = OutputPortTag {outputPortTag :: String} deriving (Show, Eq, Ord)
-newtype InoutPortTag = InoutPortTag {inoutPortTag :: String} deriving (Show, Eq, Ord)
+newtype InputPortTag = InputPortTag {inputPortTag :: String} deriving (Eq, Ord)
+instance Show InputPortTag where show = inputPortTag
+
+newtype OutputPortTag = OutputPortTag {outputPortTag :: String} deriving (Eq, Ord)
+instance Show OutputPortTag where show = outputPortTag
+
+newtype InoutPortTag = InoutPortTag {inoutPortTag :: String} deriving (Eq, Ord)
+instance Show InoutPortTag where show = inoutPortTag

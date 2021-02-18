@@ -91,7 +91,7 @@ instance (VarValTime v x t) => TargetSystemComponent (I2C v x t) where
     hardwareInstance
         tag
         SimpleIO{bounceFilter}
-        TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk, signalRst, signalCycleBegin, inputPort, outputPort, inoutPort}
+        TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk, signalRst, signalCycleBegin}
         SimpleIOPorts{..}
         ioPorts =
             codeBlock
@@ -118,12 +118,12 @@ instance (VarValTime v x t) => TargetSystemComponent (I2C v x t) where
                 extIO I2CMaster{..} =
                     codeBlock
                         [qc|
-                    , .scl( { outputPort masterSCL } )
-                    , .sda( { inoutPort masterSDA } )
+                    , .scl( { masterSCL } )
+                    , .sda( { masterSDA } )
                     |]
                 extIO I2CSlave{..} =
                     codeBlock
                         [qc|
-                    , .scl( { inputPort slaveSCL } )
-                    , .sda( { inoutPort slaveSDA } )
+                    , .scl( { slaveSCL } )
+                    , .sda( { slaveSDA } )
                     |]

@@ -48,9 +48,6 @@ puEnv tag =
         , signalCycleBegin = "signal_cycle_begin"
         , signalInCycle = "signal_computation"
         , signalCycleEnd = "signal_cycle_end"
-        , inputPort = inputPortTag
-        , outputPort = outputPortTag
-        , inoutPort = inoutPortTag
         , unitEnv =
             ProcessUnitEnv
                 { dataIn = "data_bus"

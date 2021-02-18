@@ -174,9 +174,6 @@ snippetTestBench
                         , signalCycleBegin = "flag_cycle_begin"
                         , signalInCycle = "flag_in_cycle"
                         , signalCycleEnd = "flag_cycle_end"
-                        , inputPort = undefined
-                        , outputPort = undefined
-                        , inoutPort = undefined
                         , unitEnv =
                             ProcessUnitEnv
                                 { dataIn = "data_in"
