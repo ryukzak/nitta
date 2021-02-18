@@ -161,7 +161,7 @@ functionalSimulation n received src = do
 putCntx cntx = putStr $ cntx2table cntx
 
 microarch ioSync = evalNetwork ioSync $ do
-    addManual "fram1" (PU (framWithSize 16) FramPorts{oe = SignalTag 0, wr = SignalTag 1, addr = map SignalTag [2, 3, 4, 5]} FramIO def)
+    addCustom "fram1" (framWithSize 16) FramIO
     addCustom "fram2" (framWithSize 32) FramIO
     add "shift" ShiftIO
     add "mul" MultiplierIO

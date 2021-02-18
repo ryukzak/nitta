@@ -137,7 +137,6 @@ data SnippetTestBenchConf m = SnippetTestBenchConf
     { tbcSignals :: [String]
     , tbcPorts :: Ports m
     , tbcIOPorts :: IOPorts m
-    , tbcSignalConnect :: SignalTag -> String
     , tbcCtrl :: Microcode m -> String
     }
 
@@ -159,7 +158,7 @@ snippetTestBench ::
     String
 snippetTestBench
     Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}}
-    SnippetTestBenchConf{tbcSignals, tbcSignalConnect, tbcPorts, tbcIOPorts, tbcCtrl} =
+    SnippetTestBenchConf{tbcSignals, tbcPorts, tbcIOPorts, tbcCtrl} =
         let cycleCntx : _ = cntxProcess
             name = moduleName pName pUnit
             p@Process{steps, nextTick} = process pUnit
@@ -184,7 +183,6 @@ snippetTestBench
                                 , attrIn = "attr_in"
                                 , dataOut = "data_out"
                                 , attrOut = "attr_out"
-                                , signal = tbcSignalConnect
                                 }
                         }
                     tbcPorts

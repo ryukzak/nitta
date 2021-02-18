@@ -491,18 +491,11 @@ instance UnambiguouslyDecode (Fram v x t) where
 
 instance (VarValTime v x t) => Testable (Fram v x t) v x where
     testBenchImplementation prj@Project{pName, pUnit} =
-        let width = addrWidth pUnit
-            tbcSignalsConst = ["oe", "wr", "[3:0] addr"]
-
+        let tbcSignalsConst = ["oe", "wr", "[3:0] addr"]
             showMicrocode Microcode{oeSignal, wrSignal, addrSignal} =
                 [qc|oe <= { bool2verilog oeSignal };|]
                     <> [qc| wr <= { bool2verilog wrSignal };|]
                     <> [qc| addr <= { maybe "0" show addrSignal };|]
-
-            signal (SignalTag i) = case i of
-                0 -> "oe"
-                1 -> "wr"
-                j -> "addr[" ++ show (width - (j - 1)) ++ "]"
          in Immediate (moduleName pName pUnit ++ "_tb.v") $
                 snippetTestBench
                     prj
@@ -510,12 +503,11 @@ instance (VarValTime v x t) => Testable (Fram v x t) v x where
                         { tbcSignals = tbcSignalsConst
                         , tbcPorts =
                             FramPorts
-                                { oe = SignalTag 0
-                                , wr = SignalTag 1
-                                , addr = map SignalTag [2, 3, 4, 5]
+                                { oe = SignalTag "oe"
+                                , wr = SignalTag "wr"
+                                , addr = map SignalTag ["addr[3]", "addr[2]", "addr[1]", "addr[0]"]
                                 }
                         , tbcIOPorts = FramIO
-                        , tbcSignalConnect = signal
                         , tbcCtrl = showMicrocode
                         }
 
@@ -541,11 +533,11 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
                     , .FRAM_DUMP( "$path${ softwareFile tag fram }" )
                     ) { tag }
                 ( .clk( { signalClk } )
-                , .signal_addr( \{ { S.join ", " (map signal addr ) } } )
-                , .signal_wr( { signal wr } )
+                , .signal_addr( \{ { S.join ", " $ map show addr } } )
+                , .signal_wr( { wr } )
                 , .data_in( { dataIn } )
                 , .attr_in( { attrIn } )
-                , .signal_oe( { signal oe } )
+                , .signal_oe( { oe } )
                 , .data_out( { dataOut } )
                 , .attr_out( { attrOut } )
                 );

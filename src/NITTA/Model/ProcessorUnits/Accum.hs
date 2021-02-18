@@ -277,10 +277,10 @@ instance (VarValTime v x t) => TargetSystemComponent (Accum v x t) where
                     ) { tag }
                 ( .clk( { signalClk } )
                 , .rst( { signalRst } )
-                , .signal_resetAcc( { signal resetAcc } )
-                , .signal_load( { signal load } )
-                , .signal_neg( { signal neg } )
-                , .signal_oe( { signal oe } )
+                , .signal_resetAcc( { resetAcc } )
+                , .signal_load( { load } )
+                , .signal_neg( { neg } )
+                , .signal_oe( { oe } )
                 , .data_in( { dataIn } )
                 , .attr_in( { attrIn } )
                 , .data_out( { dataOut } )
@@ -307,24 +307,17 @@ instance (VarValTime v x t) => Testable (Accum v x t) v x where
                 neg        <= { bool2verilog $ fromMaybe False negSignal };
                 |]
 
-            signal (SignalTag i) = case i of
-                0 -> "resetAcc"
-                1 -> "load"
-                2 -> "oe"
-                3 -> "neg"
-                _ -> error "Can't match SignalTag in Accum testBenchImplementation"
             conf =
                 SnippetTestBenchConf
                     { tbcSignals = tbcSignalsConst
                     , tbcPorts =
                         AccumPorts
-                            { resetAcc = SignalTag 0
-                            , load = SignalTag 1
-                            , oe = SignalTag 2
-                            , neg = SignalTag 3
+                            { resetAcc = SignalTag "resetAcc"
+                            , load = SignalTag "load"
+                            , oe = SignalTag "oe"
+                            , neg = SignalTag "neg"
                             }
                     , tbcIOPorts = AccumIO
-                    , tbcSignalConnect = signal
                     , tbcCtrl = showMicrocode
                     }
          in Immediate (moduleName pName pUnit ++ "_tb.v") $ snippetTestBench prj conf

@@ -243,10 +243,10 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
                     ) { tag }
                 ( .clk( { signalClk } )
 
-                , .signal_wr( { signal wr } )
+                , .signal_wr( { wr } )
                 , .data_in( { dataIn } ), .attr_in( { attrIn } )
 
-                , .signal_oe( { signal oe } )
+                , .signal_oe( { oe } )
                 , .data_out( { dataOut } ), .attr_out( { attrOut } )
                 { if brokeVerilog then "WRONG VERILOG" else ""  }
                 );
@@ -273,14 +273,10 @@ instance (VarValTime v x t) => Testable (Broken v x t) v x where
                     { tbcSignals = ["oe", "wr"]
                     , tbcPorts =
                         BrokenPorts
-                            { oe = SignalTag 0
-                            , wr = SignalTag 1
+                            { oe = SignalTag "oe"
+                            , wr = SignalTag "wr"
                             }
                     , tbcIOPorts = BrokenIO
-                    , tbcSignalConnect = \case
-                        (SignalTag 0) -> "oe"
-                        (SignalTag 1) -> "wr"
-                        _ -> error "testBenchImplementation wrong signal"
                     , tbcCtrl = \Microcode{oeSignal, wrSignal} ->
                         [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal};|]
                     }

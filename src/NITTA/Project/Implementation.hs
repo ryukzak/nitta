@@ -80,8 +80,6 @@ data UnitEnv
           dataIn, attrIn :: String
         , -- |bus name
           dataOut, attrOut :: String
-        , -- |control signal
-          signal :: SignalTag -> String
         }
     | -- |Environment of network.
       NetworkEnv

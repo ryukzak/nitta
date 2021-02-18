@@ -669,11 +669,11 @@ instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
                     ) { tag }
                 ( .clk( {signalClk} )
                 , .rst( {signalRst} )
-                , .signal_wr( { signal wr } )
-                , .signal_sel( { signal wrSel } )
+                , .signal_wr( { wr } )
+                , .signal_sel( { wrSel } )
                 , .data_in( { dataIn } )
                 , .attr_in( { attrIn } )
-                , .signal_oe( { signal oe } )
+                , .signal_oe( { oe } )
                 , .data_out( { dataOut } )
                 , .attr_out( { attrOut } )
                 );
@@ -711,16 +711,11 @@ instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
                       -- abstract numbers are translate to source code.
                       tbcPorts =
                         MultiplierPorts
-                            { oe = SignalTag 0
-                            , wr = SignalTag 1
-                            , wrSel = SignalTag 2
+                            { oe = SignalTag "oe"
+                            , wr = SignalTag "wr"
+                            , wrSel = SignalTag "wrSel"
                             }
                     , tbcIOPorts = MultiplierIO
-                    , tbcSignalConnect = \case
-                        (SignalTag 0) -> "oe"
-                        (SignalTag 1) -> "wr"
-                        (SignalTag 2) -> "wrSel"
-                        _ -> error "testBenchImplementation wrong signal"
                     , -- Map microcode to registers in the testbench.
                       tbcCtrl = \Microcode{oeSignal, wrSignal, selSignal} ->
                         [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]

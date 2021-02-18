@@ -127,8 +127,8 @@ instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
                 , .signal_cycle_begin( { signalCycleBegin } )
                 , .signal_in_cycle( { signalInCycle  } )
                 , .signal_cycle_end( { signalCycleEnd } )
-                , .signal_oe( { signal oe } )
-                , .signal_wr( { signal wr } )
+                , .signal_oe( { oe } )
+                , .signal_wr( { wr } )
                 , .data_in( { dataIn } ), .attr_in( { attrIn } )
                 , .data_out( { dataOut } ), .attr_out( { attrOut } )
                 { inline $ extIO ioPorts }

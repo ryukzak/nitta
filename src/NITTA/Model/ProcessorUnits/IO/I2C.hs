@@ -105,8 +105,8 @@ instance (VarValTime v x t) => TargetSystemComponent (I2C v x t) where
                 , .rst( { signalRst } )
                 , .flag_stop( { stop } )
                 , .signal_cycle( { signalCycleBegin } )
-                , .signal_oe( { signal oe } )
-                , .signal_wr( { signal wr } )
+                , .signal_oe( { oe } )
+                , .signal_wr( { wr } )
                 , .data_in( { dataIn } ), .attr_in( { attrIn } )
                 , .data_out( { dataOut } ), .attr_out( { attrOut } )
                 { extIO ioPorts }

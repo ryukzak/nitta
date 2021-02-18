@@ -56,7 +56,6 @@ module NITTA.Model.ProcessorUnits.Types (
 import Data.Aeson (ToJSON)
 import Data.Default
 import Data.Either
-import Data.Ix
 import Data.Kind
 import qualified Data.List as L
 import Data.Maybe
@@ -260,7 +259,10 @@ instance
         [i] -> decodeInstruction i
         is -> error $ "instruction collision at " ++ show t ++ " tick: " ++ show is ++ show (process pu)
 
-newtype SignalTag = SignalTag {signalTag :: Int} deriving (Show, Eq, Ord, Ix)
+newtype SignalTag = SignalTag {signalTag :: String} deriving (Eq, Ord)
+
+instance Show SignalTag where
+    show = signalTag
 
 -- |Type class of processor units with control ports.
 class Connected pu where

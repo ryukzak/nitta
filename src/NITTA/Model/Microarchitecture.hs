@@ -57,13 +57,12 @@ puEnv tag =
                 , dataOut = tag ++ "_data_out"
                 , attrIn = "attr_bus"
                 , attrOut = tag ++ "_attr_out"
-                , signal = \(SignalTag i) -> "control_bus[" ++ show i ++ "]"
                 }
         }
 
 -- |Get free pins from infinity list of nums
 freePins used =
-    let infSignals = map SignalTag [0 ..]
+    let infSignals = map (SignalTag . controlSignalLiteral) [0 :: Int ..]
         freeSignals = filter (not . (`elem` used)) infSignals
      in freeSignals
 
@@ -122,10 +121,12 @@ addManual tag mkPU = do
         usedPorts' = usedPorts ++ intersPortsError puPorts usedPorts tag
     put (usedPorts', (tag, mkPU) : pus)
 
--- |__Example for architecture configuration__
+{- |__Example for architecture configuration__
+Be aware, wrong singnal tag
+-}
 example ioSync = evalNetwork ioSync $ do
-    addManual "fram1_tag" (PU def FramPorts{oe = SignalTag 0, wr = SignalTag 1, addr = map SignalTag [2, 3, 4, 5]} FramIO def)
-    addManual "accum_tag" (PU def AccumPorts{resetAcc = SignalTag 18, load = SignalTag 19, neg = SignalTag 20, oe = SignalTag 21} AccumIO def)
+    addManual "fram1_tag" (PU def FramPorts{oe = SignalTag "0", wr = SignalTag "1", addr = map SignalTag ["2", "3", "4", "5"]} FramIO def)
+    addManual "accum_tag" (PU def AccumPorts{resetAcc = SignalTag "18", load = SignalTag "19", neg = SignalTag "20", oe = SignalTag "21"} AccumIO def)
     addCustom "fram2_tag" (framWithSize 32) FramIO
     add "div_tag2" DividerIO
     add "mul_tag2" MultiplierIO
@@ -137,8 +138,8 @@ example ioSync = evalNetwork ioSync $ do
         ( PU
             (anySPI 0)
             SimpleIOPorts
-                { wr = SignalTag 22
-                , oe = SignalTag 23
+                { wr = SignalTag "22"
+                , oe = SignalTag "23"
                 , stop = "stop"
                 }
             SPIMaster

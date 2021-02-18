@@ -281,9 +281,9 @@ instance (Val x) => TargetSystemComponent (Shift v x t) where
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) { tag }
                 ( .clk( { signalClk } )
-                , .signal_work( { signal work } ), .signal_direction( { signal direction } )
-                , .signal_mode( { signal mode } ), .signal_step( { signal step } )
-                , .signal_init( { signal init } ), .signal_oe( { signal oe } )
+                , .signal_work( { work } ), .signal_direction( { direction } )
+                , .signal_mode( { mode } ), .signal_step( { step } )
+                , .signal_init( { init } ), .signal_oe( { oe } )
                 , .data_in( { dataIn } )
                 , .attr_in( { attrIn } )
                 , .data_out( { dataOut } )

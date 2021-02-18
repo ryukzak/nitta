@@ -327,8 +327,7 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
         TargetEnvironment
             { unitEnv =
                 ProcessUnitEnv
-                    { signal
-                    , dataIn
+                    { dataIn
                     , dataOut
                     , attrIn
                     , attrOut
@@ -350,12 +349,12 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
                     ) { tag }
                 ( .clk( { signalClk } )
                 , .rst( { signalRst } )
-                , .signal_wr( { signal wr } )
-                , .signal_wr_sel( { signal wrSel } )
+                , .signal_wr( { wr } )
+                , .signal_wr_sel( { wrSel } )
                 , .data_in( { dataIn } )
                 , .attr_in( { attrIn } )
-                , .signal_oe( { signal oe } )
-                , .signal_oe_sel( { signal oeSel } )
+                , .signal_oe( { oe } )
+                , .signal_oe_sel( { oeSel } )
                 , .data_out( { dataOut } )
                 , .attr_out( { attrOut } )
                 );
@@ -374,18 +373,12 @@ instance (VarValTime v x t) => Testable (Divider v x t) v x where
                     { tbcSignals = ["oe", "oeSel", "wr", "wrSel"]
                     , tbcPorts =
                         DividerPorts
-                            { oe = SignalTag 0
-                            , oeSel = SignalTag 1
-                            , wr = SignalTag 2
-                            , wrSel = SignalTag 3
+                            { oe = SignalTag "oe"
+                            , oeSel = SignalTag "oeSel"
+                            , wr = SignalTag "wr"
+                            , wrSel = SignalTag "wrSel"
                             }
                     , tbcIOPorts = DividerIO
-                    , tbcSignalConnect = \case
-                        (SignalTag 0) -> "oe"
-                        (SignalTag 1) -> "oeSel"
-                        (SignalTag 2) -> "wr"
-                        (SignalTag 3) -> "wrSel"
-                        _ -> error "testBenchImplementation wrong signal"
                     , tbcCtrl = \Microcode{oeSignal, oeSelSignal, wrSignal, wrSelSignal} ->
                         [qc|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]
                     }

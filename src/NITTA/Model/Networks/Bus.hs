@@ -25,10 +25,10 @@ module NITTA.Model.Networks.Bus (
     Ports (..),
     IOPorts (..),
     bindedFunctions,
+    controlSignalLiteral,
 ) where
 
 import Control.Monad.State
-import qualified Data.Array as A
 import Data.Bifunctor
 import Data.Default
 import qualified Data.List as L
@@ -51,6 +51,7 @@ import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, width, (...))
 import Text.InterpolatedString.Perl6 (qc)
+import Text.Regex
 
 data BusNetwork tag v x t = BusNetwork
     { -- |List of functions binded to network, but not binded to any process unit.
@@ -109,7 +110,6 @@ busNetwork signalBusWidth ioSync pus =
                         , dataOut = tag ++ "_data_out"
                         , attrIn = "attr_bus"
                         , attrOut = tag ++ "_attr_out"
-                        , signal = \(SignalTag i) -> "control_bus[" ++ show i ++ "]"
                         }
                 }
         pus' = map (\(tag, f) -> (tag, f $ puEnv tag)) pus
@@ -258,7 +258,7 @@ instance Controllable (BusNetwork tag v x t) where
         deriving (Typeable, Show)
 
     data Microcode (BusNetwork tag v x t)
-        = BusNetworkMC (A.Array SignalTag SignalValue)
+        = BusNetworkMC (M.Map SignalTag SignalValue)
 
     -- Right now, BusNetwork don't have external control (exclude rst signal and some hacks). All
     -- signals starts and ends inside network unit.
@@ -272,10 +272,12 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
     microcodeAt BusNetwork{..} t =
         BusNetworkMC $ foldl merge initSt $ M.elems bnPus
         where
-            initSt = A.listArray (SignalTag 0, SignalTag $ bnSignalBusWidth - 1) $ repeat def
+            initSt = M.fromList $ map (\i -> (SignalTag $ controlSignalLiteral i, def)) [0 .. bnSignalBusWidth - 1]
+
             merge st PU{unit, ports} =
                 foldl merge' st $ mapMicrocodeToPorts (microcodeAt unit t) ports
-            merge' st (s, x) = st A.// [(s, st A.! s +++ x)]
+
+            merge' st (signalTag, value) = M.adjust (+++ value) signalTag st
 
 ----------------------------------------------------------------------
 
@@ -382,6 +384,8 @@ instance (UnitTag tag, VarValTime v x t) => ResolveDeadlockProblem (BusNetwork t
                 }
 
 --------------------------------------------------------------------------
+
+controlSignalLiteral i = "control_bus[" <> show i <> "]"
 
 -- |Add binding to Map tag [F v x] dict
 registerBinding tag f dict =
@@ -504,7 +508,11 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
             -- safe state of the processor which is selected when rst signal is
             -- active.
             memoryDump = unlines $ map (values2dump . values . microcodeAt pu) $ programTicks pu
-            values (BusNetworkMC arr) = reverse $ A.elems arr
+            values (BusNetworkMC arr) =
+                reverse $
+                    map snd $
+                        L.sortOn ((\(Just [i]) -> read i :: Int) . matchRegex (mkRegex "([[:digit:]]+)") . signalTag . fst) $
+                            M.assocs arr
 
     hardwareInstance tag BusNetwork{} TargetEnvironment{unitEnv = NetworkEnv, signalClk, signalRst} _ports ioPorts
         | let io2v n = ", ." ++ n ++ "( " ++ n ++ " )"
