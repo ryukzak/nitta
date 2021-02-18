@@ -135,9 +135,9 @@ type NodeInspectionAPI tag v x t =
 nodeInspection ctx@BackendCtx{root} sid =
     liftIO (view <$> getTreeIO root sid)
         :<|> liftIO (algToVizJS . functions . targetDFG <$> getTreeIO root sid)
-        :<|> liftIO (processTimelines . process . targetModel <$> getTreeIO root sid)
-        :<|> liftIO (view . process . targetModel <$> getTreeIO root sid)
-        :<|> (\tag -> liftIO (view . process . (M.! tag) . bnPus . targetModel <$> getTreeIO root sid))
+        :<|> liftIO (processTimelines . process . targetUnit <$> getTreeIO root sid)
+        :<|> liftIO (view . process . targetUnit <$> getTreeIO root sid)
+        :<|> (\tag -> liftIO (view . process . (M.! tag) . bnPus . targetUnit <$> getTreeIO root sid))
         :<|> liftIO (dbgEndpointOptions <$> debug ctx sid)
         :<|> debug ctx sid
 
@@ -237,17 +237,17 @@ type DebugAPI tag v t =
 
 debug BackendCtx{root} sid = liftIO $ do
     tree <- getTreeIO root sid
-    let dbgFunctionLocks = map (\f -> (show f, locks f)) $ functions $ targetModel tree
-        already = transferred $ targetModel tree
+    let dbgFunctionLocks = map (\f -> (show f, locks f)) $ functions $ targetUnit tree
+        already = transferred $ targetUnit tree
     return
         Debug
-            { dbgEndpointOptions = endpointOptions' $ targetModel tree
+            { dbgEndpointOptions = endpointOptions' $ targetUnit tree
             , dbgFunctionLocks
             , dbgCurrentStateFunctionLocks =
                 [ (tag, filter (\Lock{lockBy, locked} -> S.notMember lockBy already && S.notMember locked already) ls)
                 | (tag, ls) <- dbgFunctionLocks
                 ]
-            , dbgPULocks = map (second locks) $ M.assocs $ bnPus $ targetModel tree
+            , dbgPULocks = map (second locks) $ M.assocs $ bnPus $ targetUnit tree
             }
     where
         endpointOptions' BusNetwork{bnPus} = map (second endpointOptions) $ M.assocs bnPus

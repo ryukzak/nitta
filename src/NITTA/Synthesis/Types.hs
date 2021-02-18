@@ -35,7 +35,7 @@ module NITTA.Synthesis.Types (
     DefTree,
     SynthesisMethod,
     (<?>),
-    targetModel,
+    targetUnit,
     targetDFG,
 ) where
 
@@ -116,8 +116,8 @@ data Tree m tag v x t = Tree
       sSubForestVar :: TMVar [Tree m tag v x t]
     }
 
-targetModel = mUnit . sTarget . sState
-targetDFG = mUnit . sTarget . sState
+targetUnit = mUnit . sTarget . sState
+targetDFG = mDataFlowGraph . sTarget . sState
 
 data SynthesisDecision ctx m where
     Root :: SynthesisDecision ctx m
