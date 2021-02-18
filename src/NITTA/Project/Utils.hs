@@ -14,10 +14,8 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Project.Utils (
-    writeAndRunTestbench,
-    runTestbench,
-    writeProjectForTest,
     writeWholeProject,
+    runTestbench,
 ) where
 
 import Data.Default
@@ -27,10 +25,9 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Project.Parts.Icarus
-import NITTA.Project.Parts.Quartus
 import NITTA.Project.Parts.TargetSystem
 import NITTA.Project.Parts.TestBench
+import NITTA.Project.Template
 import NITTA.Project.Types
 import System.Directory
 import System.Exit
@@ -39,25 +36,13 @@ import System.Log.Logger
 import System.Process
 import Text.Regex
 
--- |Write project with @TargetSystem@, @TestBench@ and @IcarusMakefile@ parts.
-writeProjectForTest prj = do
-    writeTargetSystem prj
-    writeTestBench prj
-    writeIcarusMakefile prj
-
 -- |Write project with all available parts.
 writeWholeProject prj@Project{pPath} = do
     infoM "NITTA" $ "write target project to: \"" <> pPath <> "\"..."
     writeTargetSystem prj
     writeTestBench prj
-    writeQuartusProject prj
-    writeIcarusMakefile prj
+    writeRenderedTemplates prj
     noticeM "NITTA" $ "write target project to: \"" <> pPath <> "\"...ok"
-
--- |Write project and run testbench by Icarus verilog.
-writeAndRunTestbench prj = do
-    writeProjectForTest prj
-    runTestbench prj
 
 runTestbench prj@Project{pPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do
     infoM "NITTA" $ "run logical synthesis(" <> pPath <> ")..."

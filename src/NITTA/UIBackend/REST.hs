@@ -37,7 +37,7 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.Types
-import NITTA.Project (Project (..), defProjectTemplates, writeAndRunTestbench)
+import NITTA.Project (Project (..), defProjectTemplates, runTestbench, writeWholeProject)
 import NITTA.Synthesis
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
@@ -197,8 +197,7 @@ type TestBenchAPI v x =
 testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = liftIO $ do
     tree <- getTreeIO root sid
     unless (isComplete tree) $ error "test bench not allow for non complete synthesis"
-    view
-        <$> writeAndRunTestbench
+    let prj =
             Project
                 { pName
                 , pLibPath = "hdl"
@@ -208,6 +207,8 @@ testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = l
                 , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues $ targetDFG tree
                 , pTemplates = defProjectTemplates
                 }
+    writeWholeProject prj
+    view <$> runTestbench prj
 
 -- Debug
 

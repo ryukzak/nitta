@@ -129,7 +129,6 @@ testBenchTopModuleName prj = S.replace ".v" "" $ last $ projectFiles prj
 data SnippetTestBenchConf m = SnippetTestBenchConf
     { tbcSignals :: [String]
     , tbcPorts :: Ports m
-    , tbcIOPorts :: IOPorts m
     , tbcMC2verilogLiteral :: Microcode m -> String
     }
 
@@ -150,29 +149,21 @@ snippetTestBench ::
     SnippetTestBenchConf m ->
     String
 snippetTestBench
-    Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}}
-    SnippetTestBenchConf{tbcSignals, tbcPorts, tbcIOPorts, tbcMC2verilogLiteral} =
+    Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}, pUnitEnv}
+    SnippetTestBenchConf{tbcSignals, tbcPorts, tbcMC2verilogLiteral} =
         let cycleCntx : _ = cntxProcess
             name = moduleName pName pUnit
             p@Process{steps, nextTick} = process pUnit
             fs = functions pUnit
-
             inst =
                 hardwareInstance
                     pName
                     pUnit
-                    UnitEnv
-                        { sigClk = "clk"
-                        , sigRst = "rst"
-                        , sigCycleBegin = "flag_cycle_begin"
-                        , sigInCycle = "flag_in_cycle"
-                        , sigCycleEnd = "flag_cycle_end"
-                        , ioPorts = Just tbcIOPorts
+                    pUnitEnv
+                        { ctrlPorts = Just tbcPorts
                         , valueIn = Just ("data_in", "attr_in")
                         , valueOut = Just ("data_out", "attr_out")
-                        , ctrlPorts = Just tbcPorts
                         }
-
             controlSignals =
                 S.join "\n" $
                     map

@@ -325,7 +325,6 @@ instance (VarValTime v x t) => Testable (Accum v x t) v x where
                             , oe = SignalTag "oe"
                             , neg = SignalTag "neg"
                             }
-                    , tbcIOPorts = AccumIO
                     , tbcMC2verilogLiteral = showMicrocode
                     }
          in Immediate (moduleName pName pUnit ++ "_tb.v") $ snippetTestBench prj conf

@@ -21,6 +21,7 @@ module NITTA.Project.Implementation (
     TargetSystemComponent (..),
 ) where
 
+import Data.Default
 import qualified Data.Text as T
 import NITTA.Model.ProcessorUnits.Types
 
@@ -84,6 +85,20 @@ data UnitEnv m = UnitEnv
     , ioPorts :: Maybe (IOPorts m)
     , valueIn, valueOut :: Maybe (String, String)
     }
+
+instance Default (UnitEnv m) where
+    def =
+        UnitEnv
+            { sigClk = "clk"
+            , sigRst = "rst"
+            , sigCycleBegin = "flag_cycle_begin"
+            , sigInCycle = "flag_in_cycle"
+            , sigCycleEnd = "flag_cycle_end"
+            , ctrlPorts = Nothing
+            , ioPorts = Nothing
+            , valueIn = Nothing
+            , valueOut = Nothing
+            }
 
 envInputPorts UnitEnv{ioPorts = Just ioports} = inputPorts ioports
 envInputPorts UnitEnv{ioPorts = Nothing} = []

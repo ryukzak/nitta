@@ -371,7 +371,6 @@ instance (VarValTime v x t) => Testable (Divider v x t) v x where
                             , wr = SignalTag "wr"
                             , wrSel = SignalTag "wrSel"
                             }
-                    , tbcIOPorts = DividerIO
                     , tbcMC2verilogLiteral = \Microcode{oeSignal, oeSelSignal, wrSignal, wrSelSignal} ->
                         [qc|oe <= {bool2verilog oeSignal}; oeSel <= {bool2verilog oeSelSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog wrSelSignal};|]
                     }

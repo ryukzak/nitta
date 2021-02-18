@@ -81,11 +81,12 @@ puCoSimTestCase name u cntxCycle alg =
                     , pLibPath = "hdl"
                     , pPath
                     , pUnit = naiveSynthesis alg u
-                    , pUnitEnv = undefined -- FIXME:
+                    , pUnitEnv = def
                     , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
-                    , pTemplates = defProjectTemplates
+                    , pTemplates = ["board/Icarus"]
                     }
-        (tbStatus <$> writeAndRunTestbench prj) @? (name <> " in " <> pPath)
+        writeWholeProject prj
+        (tbStatus <$> runTestbench prj) @? (name <> " in " <> pPath)
 
 {- |Bind all functions to processor unit and synthesis process with endpoint
 decisions.
@@ -154,17 +155,18 @@ puCoSimProp name pu0 fsGen =
                     i <- incrCounter 1 externalTestCntr
                     wd <- getCurrentDirectory
                     let pPath = joinPath [wd, "gen", toModuleName name ++ "_" ++ show i]
-                    res <-
-                        writeAndRunTestbench
+                        prj =
                             Project
                                 { pName = toModuleName name
                                 , pLibPath = "hdl"
                                 , pPath
                                 , pUnit = pu
-                                , pUnitEnv = undefined -- FIXME:
+                                , pUnitEnv = def
                                 , pTestCntx
-                                , pTemplates = ["Icarus"]
+                                , pTemplates = ["board/Icarus"]
                                 }
+                    writeWholeProject prj
+                    res <- runTestbench prj
                     unless (tbStatus res) $ error $ "Fail CoSim in: " <> pPath
 
 algGen fsGen = fmap avoidDupVariables $ listOf1 $ oneof fsGen

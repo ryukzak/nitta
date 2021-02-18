@@ -37,25 +37,13 @@ data BuilderSt tag v x t = BuilderSt
 
 -- |Define microarchitecture with BusNetwork
 defineNetwork ioSync builder =
-    let netEnv0 =
-            UnitEnv
-                { sigClk = "clk"
-                , sigRst = "rst"
-                , sigCycleBegin = "flag_cycle_begin"
-                , sigInCycle = "flag_in_cycle"
-                , sigCycleEnd = "flag_cycle_end"
-                , ctrlPorts = Nothing
-                , ioPorts = Nothing
-                , valueIn = Nothing
-                , valueOut = Nothing
-                }
-
+    let defEnv = def
         st0 =
             BuilderSt
                 { signalBusWidth = 0
                 , availPorts = map (SignalTag . controlSignalLiteral) [0 :: Int ..]
                 , puProtos = []
-                , netEnv = netEnv0
+                , netEnv = defEnv
                 }
         BuilderSt{signalBusWidth, puProtos} = flip execState st0 $ void builder
         netIOPorts =
@@ -71,7 +59,7 @@ defineNetwork ioSync builder =
             , bnPus = M.fromList puProtos
             , bnSignalBusWidth = signalBusWidth
             , ioSync
-            , bnEnv = netEnv0{ioPorts = Just netIOPorts}
+            , bnEnv = defEnv{ioPorts = Just netIOPorts}
             }
 
 -- |Add PU with the default initial state. Type specify by IOPorts.
