@@ -7,7 +7,7 @@
 {- |
 Module      : NITTA.Project.Parts.Utils
 Description : Utils for target system parts generation.
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental

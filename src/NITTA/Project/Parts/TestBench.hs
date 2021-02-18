@@ -24,7 +24,6 @@ module NITTA.Project.Parts.TestBench (
     projectFiles,
     snippetTestBench,
     SnippetTestBenchConf (..),
-    writeTestBench,
 ) where
 
 import Data.Default
@@ -38,17 +37,11 @@ import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Types
 import NITTA.Project.Implementation
-import NITTA.Project.Parts.Utils
 import NITTA.Project.Snippets
 import NITTA.Project.Types
 import NITTA.Utils
-import System.Directory (createDirectoryIfMissing)
 import System.FilePath.Posix (joinPath)
 import Text.InterpolatedString.Perl6 (qc)
-
-writeTestBench prj@Project{pPath} = do
-    createDirectoryIfMissing True pPath
-    writeImplementation pPath $ testBenchImplementation prj
 
 -- |Type class for all testable parts of a target system.
 class Testable m v x | m -> v x where
@@ -234,5 +227,4 @@ snippetTestBench
         { inline $ verilogHelper (def :: x) }
 
         endmodule
-        |] ::
-                String
+        |]

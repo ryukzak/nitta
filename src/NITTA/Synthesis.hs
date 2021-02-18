@@ -32,7 +32,7 @@ NITTA.Synthesis:TargetSynthesis                                                 
     # tReceivedValues                                                             |                   |   Model   |
     # tVerbose                                                                    |                   \-----------/
     # tSynthesisMethod ----------------------------------\                        |
-    # tWriteProject                                      |                        |
+                                                         |                        |
                                                          |                        |
 ===================================================================================================================
                                                          |                        |               Synthesis process
@@ -66,13 +66,12 @@ NITTA.Project.Types:Project            |        |                               
  |      # pTestCntx <---------------------------/
  |
  |
- *<---------- $tWriteProject by ProjectPart pt m
+ *<---------- $writeProject
  |                # TargetSystem
  |                    # hardware
  |                    # software
- |                # QuartusProject
  |                # TestBench
- |                # IcarusMakefile
+ |                # Templates
  |
  \---> filesystem
 @
@@ -128,8 +127,6 @@ data TargetSynthesis tag v x t = TargetSynthesis
       tReceivedValues :: [(v, [x])]
     , -- |synthesis method
       tSynthesisMethod :: SynthesisMethod tag v x t
-    , -- |project writer, which defines necessary project part
-      tWriteProject :: Project (BusNetwork tag v x t) v x -> IO ()
     , -- |IP-core library directory
       tLibPath :: String
     , -- |output directory, where CAD create project directory with 'tName' name
@@ -147,7 +144,6 @@ instance (VarValTime v x t) => Default (TargetSynthesis String v x t) where
             , tDFG = undefined
             , tReceivedValues = def
             , tSynthesisMethod = stateOfTheArtSynthesisIO
-            , tWriteProject = writeProject
             , tLibPath = "hdl"
             , tPath = joinPath ["gen"]
             , tSimulationCycleN = 5
@@ -166,7 +162,6 @@ synthesizeTargetSystem
         , tDFG
         , tReceivedValues
         , tSynthesisMethod
-        , tWriteProject
         , tLibPath
         , tPath
         , tSimulationCycleN
@@ -209,7 +204,7 @@ synthesizeTargetSystem
                               pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues $ targetDFG leaf
                             , pTemplates = defProjectTemplates
                             }
-                tWriteProject prj
+                writeProject prj
                 return prj
 
 {- |Make a model of NITTA process with one network and a specific algorithm. All

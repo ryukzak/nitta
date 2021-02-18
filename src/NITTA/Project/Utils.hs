@@ -25,8 +25,9 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import NITTA.Intermediate.Types
 import NITTA.Model.ProcessorUnits.Types
-import NITTA.Project.Parts.TargetSystem
+import NITTA.Project.Implementation
 import NITTA.Project.Parts.TestBench
+import NITTA.Project.Parts.Utils
 import NITTA.Project.Template
 import NITTA.Project.Types
 import System.Directory
@@ -43,6 +44,16 @@ writeProject prj@Project{pPath} = do
     writeTestBench prj
     writeRenderedTemplates prj
     noticeM "NITTA" $ "write target project to: \"" <> pPath <> "\"...ok"
+
+writeTargetSystem prj@Project{pName, pPath, pUnit} = do
+    createDirectoryIfMissing True pPath
+    writeImplementation pPath $ hardware pName pUnit
+    writeImplementation pPath $ software pName pUnit
+    copyLibraryFiles prj
+
+writeTestBench prj@Project{pPath} = do
+    createDirectoryIfMissing True pPath
+    writeImplementation pPath $ testBenchImplementation prj
 
 runTestbench prj@Project{pPath, pUnit, pTestCntx = Cntx{cntxProcess, cntxCycleNumber}} = do
     infoM "NITTA" $ "run logical synthesis(" <> pPath <> ")..."

@@ -17,7 +17,6 @@ module NITTA.Project.Implementation (
     envOutputPorts,
     envInOutPorts,
     Implementation (..),
-    Parameter (..),
     TargetSystemComponent (..),
 ) where
 
@@ -57,15 +56,6 @@ class TargetSystemComponent pu where
 
     hardwareInstanceT :: T.Text -> pu -> UnitEnv pu -> T.Text
     hardwareInstanceT n pu env = T.pack $ hardwareInstance (T.unpack n) pu env
-
-data Parameter
-    = InlineParam String
-    | IntParam Int
-    deriving (Eq, Ord)
-
-instance Show Parameter where
-    show (IntParam i) = show i
-    show (InlineParam s) = s
 
 {- |Resolve uEnv element to verilog source code. E.g. `dataIn` into
 `data_bus`, `dataOut` into `accum_data_out`.
