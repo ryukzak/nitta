@@ -61,7 +61,7 @@ writeQuartus prj@Project{pName, pPath, pUnit} = do
             $(embedStringFile "template/quartus/nitta.v")
             [
                 ( "top_level_module"
-                , hardwareInstance (moduleName pName pUnit) pUnit (bnEnv pUnit) BusNetworkPorts (bnIOPorts pUnit)
+                , hardwareInstance (moduleName pName pUnit) pUnit (bnEnv pUnit)
                 )
             ]
     writeFile

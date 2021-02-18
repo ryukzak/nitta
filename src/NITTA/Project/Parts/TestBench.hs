@@ -61,8 +61,8 @@ class IOTestBench pu v x | pu -> v x where
     testEnvironmentInitFlag :: String -> pu -> Maybe String
     testEnvironmentInitFlag _title _pu = Nothing
 
-    testEnvironment :: String -> pu -> TargetEnvironment -> Ports pu -> IOPorts pu -> TestEnvironment v x -> String
-    testEnvironment _title _pu _env _ports _io _tEnv = ""
+    testEnvironment :: String -> pu -> UnitEnv pu -> TestEnvironment v x -> String
+    testEnvironment _title _pu _env _tEnv = ""
 
 -- |Information required for testbench generation.
 data TestEnvironment v x = TestEnvironment
@@ -130,8 +130,7 @@ data SnippetTestBenchConf m = SnippetTestBenchConf
     { tbcSignals :: [String]
     , tbcPorts :: Ports m
     , tbcIOPorts :: IOPorts m
-    , tbcSignalConnect :: SignalTag -> String
-    , tbcCtrl :: Microcode m -> String
+    , tbcMC2verilogLiteral :: Microcode m -> String
     }
 
 -- |Function for testBench PU test
@@ -152,7 +151,7 @@ snippetTestBench ::
     String
 snippetTestBench
     Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}}
-    SnippetTestBenchConf{tbcSignals, tbcSignalConnect, tbcPorts, tbcIOPorts, tbcCtrl} =
+    SnippetTestBenchConf{tbcSignals, tbcPorts, tbcIOPorts, tbcMC2verilogLiteral} =
         let cycleCntx : _ = cntxProcess
             name = moduleName pName pUnit
             p@Process{steps, nextTick} = process pUnit
@@ -162,33 +161,24 @@ snippetTestBench
                 hardwareInstance
                     pName
                     pUnit
-                    TargetEnvironment
-                        { signalClk = "clk"
-                        , signalRst = "rst"
-                        , signalCycleBegin = "flag_cycle_begin"
-                        , signalInCycle = "flag_in_cycle"
-                        , signalCycleEnd = "flag_cycle_end"
-                        , inputPort = undefined
-                        , outputPort = undefined
-                        , inoutPort = undefined
-                        , unitEnv =
-                            ProcessUnitEnv
-                                { dataIn = "data_in"
-                                , attrIn = "attr_in"
-                                , dataOut = "data_out"
-                                , attrOut = "attr_out"
-                                , signal = tbcSignalConnect
-                                }
+                    UnitEnv
+                        { sigClk = "clk"
+                        , sigRst = "rst"
+                        , sigCycleBegin = "flag_cycle_begin"
+                        , sigInCycle = "flag_in_cycle"
+                        , sigCycleEnd = "flag_cycle_end"
+                        , ioPorts = Just tbcIOPorts
+                        , valueIn = Just ("data_in", "attr_in")
+                        , valueOut = Just ("data_out", "attr_out")
+                        , ctrlPorts = Just tbcPorts
                         }
-                    tbcPorts
-                    tbcIOPorts
 
             controlSignals =
                 S.join "\n" $
                     map
                         ( \t ->
                             let x = targetVal t
-                             in tbcCtrl (microcodeAt pUnit t)
+                             in tbcMC2verilogLiteral (microcodeAt pUnit t)
                                     <> [qc| data_in <= { dataLiteral x }; attr_in <= { attrLiteral x };|]
                                     <> " @(posedge clk);"
                         )

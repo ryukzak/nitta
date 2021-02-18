@@ -72,9 +72,7 @@ data Q v x = Q {vars :: [v], function :: F v x, cads :: [ProcessStepID]}
     deriving (Show)
 
 instance
-    ( VarValTime v x t
-    , SimpleIOInterface i
-    ) =>
+    (VarValTime v x t, SimpleIOInterface i) =>
     ProcessorUnit (SimpleIO i v x t) v x t
     where
     tryBind f sio@SimpleIO{sendQueue, receiveQueue, receiveN, sendN, bufferSize}
@@ -109,9 +107,7 @@ instance OptimizeAccumProblem (SimpleIO i v x t) v x
 instance ResolveDeadlockProblem (SimpleIO i v x t) v x
 
 instance
-    ( VarValTime v x t
-    , SimpleIOInterface i
-    ) =>
+    (VarValTime v x t, SimpleIOInterface i) =>
     EndpointProblem (SimpleIO i v x t) v t
     where
     endpointOptions SimpleIO{receiveQueue, sendQueue, process_ = Process{nextTick}} =
@@ -184,15 +180,15 @@ instance Controllable (SimpleIO i v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{..} SimpleIOPorts{..} =
+    zipSignalTagsAndValues SimpleIOPorts{..} Microcode{..} =
         [ (wr, Bool wrSignal)
         , (oe, Bool oeSignal)
         ]
 
-    portsToSignals SimpleIOPorts{wr, oe} = [wr, oe]
+    usedPortTags SimpleIOPorts{wr, oe} = [wr, oe]
 
-    signalsToPorts (wr : oe : _) _ = SimpleIOPorts wr oe "stop"
-    signalsToPorts _ _ = error "pattern match error in signalsToPorts SimpleIOPorts"
+    takePortTags (wr : oe : _) _ = SimpleIOPorts wr oe "stop"
+    takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Default (Microcode (SimpleIO i v x t)) where
     def =

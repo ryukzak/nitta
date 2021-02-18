@@ -6,15 +6,17 @@
 {- |
 Module      : NITTA.Project.Implementation
 Description : Types for target system implementation description.
-Copyright   : (c) Aleksandr Penskoi, 2019
+Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Project.Implementation (
-    TargetEnvironment (..),
-    Implementation (..),
     UnitEnv (..),
+    envInputPorts,
+    envOutputPorts,
+    envInOutPorts,
+    Implementation (..),
     Parameter (..),
     TargetSystemComponent (..),
 ) where
@@ -49,11 +51,11 @@ class TargetSystemComponent pu where
     hardware :: String -> pu -> Implementation
 
     -- |Generate code for making an instance of the hardware module
-    hardwareInstance :: String -> pu -> TargetEnvironment -> Ports pu -> IOPorts pu -> String
-    hardwareInstance n pu env p iop = T.unpack $ hardwareInstanceT (T.pack n) pu env p iop
+    hardwareInstance :: String -> pu -> UnitEnv pu -> String
+    hardwareInstance n pu env = T.unpack $ hardwareInstanceT (T.pack n) pu env
 
-    hardwareInstanceT :: T.Text -> pu -> TargetEnvironment -> Ports pu -> IOPorts pu -> T.Text
-    hardwareInstanceT n pu env p iop = T.pack $ hardwareInstance (T.unpack n) pu env p iop
+    hardwareInstanceT :: T.Text -> pu -> UnitEnv pu -> T.Text
+    hardwareInstanceT n pu env = T.pack $ hardwareInstance (T.unpack n) pu env
 
 data Parameter
     = InlineParam String
@@ -64,33 +66,30 @@ instance Show Parameter where
     show (IntParam i) = show i
     show (InlineParam s) = s
 
--- |Target mUnit environment, including IO ports, clk, rst and cycle signals.
-data TargetEnvironment = TargetEnvironment
-    { -- |clock
-      signalClk :: String
-    , -- |reset
-      signalRst :: String
+{- |Resolve uEnv element to verilog source code. E.g. `dataIn` into
+`data_bus`, `dataOut` into `accum_data_out`.
+-}
+data UnitEnv m = UnitEnv
+    { -- |clock signal
+      sigClk :: String
+    , -- |reset signal
+      sigRst :: String
     , -- |posedge on computation cycle begin
-      signalCycleBegin :: String
+      sigCycleBegin :: String
     , -- |positive on computation cycle
-      signalInCycle :: String
+      sigInCycle :: String
     , -- |posedge on computation cycle end
-      signalCycleEnd :: String
-    , inputPort :: InputPortTag -> String
-    , outputPort :: OutputPortTag -> String
-    , inoutPort :: InoutPortTag -> String
-    , unitEnv :: UnitEnv -- unit specific environment
+      sigCycleEnd :: String
+    , ctrlPorts :: Maybe (Ports m)
+    , ioPorts :: Maybe (IOPorts m)
+    , valueIn, valueOut :: Maybe (String, String)
     }
 
-data UnitEnv
-    = -- |Environment of process unit.
-      ProcessUnitEnv
-        { -- |bus name
-          dataIn, attrIn :: String
-        , -- |bus name
-          dataOut, attrOut :: String
-        , -- |control signal
-          signal :: SignalTag -> String
-        }
-    | -- |Environment of network.
-      NetworkEnv
+envInputPorts UnitEnv{ioPorts = Just ioports} = inputPorts ioports
+envInputPorts UnitEnv{ioPorts = Nothing} = []
+
+envOutputPorts UnitEnv{ioPorts = Just ioports} = outputPorts ioports
+envOutputPorts UnitEnv{ioPorts = Nothing} = []
+
+envInOutPorts UnitEnv{ioPorts = Just ioports} = inoutPorts ioports
+envInOutPorts UnitEnv{ioPorts = Nothing} = []

@@ -55,6 +55,9 @@ defaultFmt = "%.3f"
 -- |Unique variable aliases for data flow.
 type VarDict = M.Map Text ([String], [String])
 
+-- |List contains IO Function names to be printed by default.
+listFuncIO = ["send", "recieve"]
+
 prettyCntx traceVars cntx =
     showCntx
         ( \v0 x -> do
@@ -75,6 +78,7 @@ lua2functions src =
     let ast = either (\e -> error $ "can't parse lua src: " ++ show e) id $ parseText chunk src
         AlgBuilder{algItems} = buildAlg ast
         fs = filter (\case Function{} -> True; _ -> False) algItems
+        ioVariables = getIOVariables defaultFmt algItems
         varDict :: VarDict
         varDict =
             M.fromList $
@@ -92,9 +96,10 @@ lua2functions src =
                     , v <- tVars
                     ]
                 else
-                    [ TraceVar defaultFmt iVar
-                    | InputVar{iVar} <- algItems
-                    ]
+                    ioVariables
+                        <> [ TraceVar defaultFmt iVar
+                           | InputVar{iVar} <- algItems
+                           ]
      in FrontendResult
             { frDataFlow
             , frTrace
@@ -108,6 +113,11 @@ lua2functions src =
         f v i =
             let v' = unpack v
              in [qq|{v'}#{i}|]
+
+getIOVariables fmt algItems = concatMap convToTraceVar filterIoFunc
+    where
+        convToTraceVar func = map (TraceVar fmt) $ fIn func
+        filterIoFunc = filter (\case item@Function{} -> fName item `elem` listFuncIO; _ -> False) algItems
 
 buildAlg ast = flip execState st0 $ do
     addMainInputs mainFunDef mainCall
@@ -168,8 +178,8 @@ data AlgBuilderItem x
 
 -- *Translate AlgBuiler functions to nitta functions
 function2nitta Function{fName = "loop", fIn = [i], fOut = [o], fValues = [x], fInt = []} = F.loop x <$> input i <*> output o
-function2nitta Function{fName = "reg", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.reg <$> input i <*> output o
-function2nitta Function{fName = "brokenReg", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.brokenReg <$> input i <*> output o
+function2nitta Function{fName = "buffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.buffer <$> input i <*> output o
+function2nitta Function{fName = "brokenBuffer", fIn = [i], fOut = [o], fValues = [], fInt = []} = F.brokenBuffer <$> input i <*> output o
 function2nitta Function{fName = "constant", fIn = [], fOut = [o], fValues = [x], fInt = []} = F.constant x <$> output o
 function2nitta Function{fName = "send", fIn = [i], fOut = [], fValues = [], fInt = []} = F.send <$> input i
 function2nitta Function{fName = "add", fIn = [a, b], fOut = [c], fValues = [], fInt = []} = F.add <$> input a <*> input b <*> output c
@@ -315,8 +325,8 @@ rightExp diff [a] (PrefixExp (PEVar (VarName (Name b)))) -- a = b
 rightExp diff out (PrefixExp (Paren e)) -- a = (...)
     =
     rightExp diff out e
-rightExp diff [a] n@(Number _ _) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "reg"))) (Args [n]))))
-rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "reg"))) (Args [Number numType $ T.cons '-' n]))))
+rightExp diff [a] n@(Number _ _) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "buffer"))) (Args [n]))))
+rightExp diff [a] (Unop Neg (Number numType n)) = rightExp diff [a] (PrefixExp (PEFunCall (NormalFunCall (PEVar (VarName (Name "buffer"))) (Args [Number numType $ T.cons '-' n]))))
 rightExp diff [a] (Unop Neg expr@(PrefixExp _)) =
     -- FIXME: add negative function
     let binop = Binop Sub (Number IntNum "0") expr

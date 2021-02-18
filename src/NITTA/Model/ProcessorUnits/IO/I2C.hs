@@ -87,13 +87,19 @@ instance (VarValTime v x t) => TargetSystemComponent (I2C v x t) where
             , FromLibrary "i2c/pu_slave_i2c.v"
             ]
     software _ pu = Immediate "transport.txt" $ show pu
-    hardwareInstance _ _ TargetEnvironment{unitEnv = NetworkEnv{}} _ports _io = error "wrong environment type, for pu_i2c it should be ProcessUnitEnv"
+
     hardwareInstance
         tag
         SimpleIO{bounceFilter}
-        TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk, signalRst, signalCycleBegin, inputPort, outputPort, inoutPort}
-        SimpleIOPorts{..}
-        ioPorts =
+        UnitEnv
+            { sigClk
+            , sigRst
+            , sigCycleBegin
+            , ctrlPorts = Just SimpleIOPorts{..}
+            , ioPorts = Just ioPorts
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
             codeBlock
                 [qc|
             { module_ ioPorts } #
@@ -101,12 +107,12 @@ instance (VarValTime v x t) => TargetSystemComponent (I2C v x t) where
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .BOUNCE_FILTER( { show bounceFilter } )
                     ) { tag }
-                ( .clk( { signalClk } )
-                , .rst( { signalRst } )
+                ( .clk( { sigClk } )
+                , .rst( { sigRst } )
                 , .flag_stop( { stop } )
-                , .signal_cycle( { signalCycleBegin } )
-                , .signal_oe( { signal oe } )
-                , .signal_wr( { signal wr } )
+                , .signal_cycle( { sigCycleBegin } )
+                , .signal_oe( { oe } )
+                , .signal_wr( { wr } )
                 , .data_in( { dataIn } ), .attr_in( { attrIn } )
                 , .data_out( { dataOut } ), .attr_out( { attrOut } )
                 { extIO ioPorts }
@@ -118,12 +124,13 @@ instance (VarValTime v x t) => TargetSystemComponent (I2C v x t) where
                 extIO I2CMaster{..} =
                     codeBlock
                         [qc|
-                    , .scl( { outputPort masterSCL } )
-                    , .sda( { inoutPort masterSDA } )
+                    , .scl( { masterSCL } )
+                    , .sda( { masterSDA } )
                     |]
                 extIO I2CSlave{..} =
                     codeBlock
                         [qc|
-                    , .scl( { inputPort slaveSCL } )
-                    , .sda( { inoutPort slaveSDA } )
+                    , .scl( { slaveSCL } )
+                    , .sda( { slaveSDA } )
                     |]
+    hardwareInstance _title _pu _env = error "internal error"

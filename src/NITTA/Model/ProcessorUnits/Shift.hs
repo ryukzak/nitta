@@ -84,11 +84,7 @@ instance BreakLoopProblem (Shift v x t) v x
 instance OptimizeAccumProblem (Shift v x t) v x
 instance ResolveDeadlockProblem (Shift v x t) v x
 
-instance
-    ( VarValTime v x t
-    ) =>
-    ProcessorUnit (Shift v x t) v x t
-    where
+instance (VarValTime v x t) => ProcessorUnit (Shift v x t) v x t where
     tryBind f pu@Shift{remain}
         | Just f' <- castF f =
             case f' of
@@ -116,11 +112,7 @@ execution pu@Shift{target = Nothing, sources = [], remain} f
                 }
 execution _ _ = error "Not right arguments in execution function in shift module"
 
-instance
-    ( VarValTime v x t
-    ) =>
-    EndpointProblem (Shift v x t) v t
-    where
+instance (VarValTime v x t) => EndpointProblem (Shift v x t) v t where
     endpointOptions Shift{target = Just t, process_} =
         [EndpointSt (Target t) $ TimeConstrain (nextTick process_ ... maxBound) (singleton 1)]
     endpointOptions Shift{sources, process_, byteShiftDiv, byteShiftMod}
@@ -233,7 +225,7 @@ instance Controllable (Shift v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{..} ShiftPorts{..} =
+    zipSignalTagsAndValues ShiftPorts{..} Microcode{..} =
         [ (work, Bool workSignal)
         , (direction, Bool directionSignal)
         , (mode, Bool modeSignal)
@@ -242,11 +234,11 @@ instance Controllable (Shift v x t) where
         , (oe, Bool oeSignal)
         ]
 
-    portsToSignals ShiftPorts{work, direction, mode, step, init, oe} =
+    usedPortTags ShiftPorts{work, direction, mode, step, init, oe} =
         [work, direction, mode, step, init, oe]
 
-    signalsToPorts (work : direction : mode : step : init : oe : _) _ = ShiftPorts work direction mode step init oe
-    signalsToPorts _ _ = error "pattern match error in signalsToPorts ShiftPorts"
+    takePortTags (work : direction : mode : step : init : oe : _) _ = ShiftPorts work direction mode step init oe
+    takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Default (Microcode (Shift v x t)) where
     def =
@@ -281,24 +273,31 @@ instance (Val x) => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"
     hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
     software _ _ = Empty
-    hardwareInstance tag _pu TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk} ShiftPorts{..} ShiftIO =
-        codeBlock
-            [qc|
+    hardwareInstance
+        tag
+        _pu
+        UnitEnv
+            { sigClk
+            , ctrlPorts = Just ShiftPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            codeBlock
+                [qc|
             pu_shift #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) { tag }
-                ( .clk( { signalClk } )
-                , .signal_work( { signal work } ), .signal_direction( { signal direction } )
-                , .signal_mode( { signal mode } ), .signal_step( { signal step } )
-                , .signal_init( { signal init } ), .signal_oe( { signal oe } )
+                ( .clk( { sigClk } )
+                , .signal_work( { work } ), .signal_direction( { direction } )
+                , .signal_mode( { mode } ), .signal_step( { step } )
+                , .signal_init( { init } ), .signal_oe( { oe } )
                 , .data_in( { dataIn } )
                 , .attr_in( { attrIn } )
                 , .data_out( { dataOut } )
                 , .attr_out( { attrOut } )
                 );
             |]
-    hardwareInstance _title _pu TargetEnvironment{unitEnv = NetworkEnv{}} _ports _op =
-        error "Should be defined in network."
+    hardwareInstance _title _pu _env = error "internal error"
 
 instance IOTestBench (Shift v x t) v x

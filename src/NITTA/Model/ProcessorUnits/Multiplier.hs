@@ -426,11 +426,7 @@ From the CAD point of view, bind looks like:
 
 Binding can be done either gradually due synthesis process at the start.
 -}
-instance
-    ( VarValTime v x t
-    ) =>
-    ProcessorUnit (Multiplier v x t) v x t
-    where
+instance (VarValTime v x t) => ProcessorUnit (Multiplier v x t) v x t where
     tryBind f pu@Multiplier{remain}
         | Just F.Multiply{} <- castF f = Right pu{remain = f : remain}
         | otherwise = Left $ "The function is unsupported by Multiplier: " ++ show f
@@ -488,11 +484,7 @@ It includes three cases:
   find the selected function, 'execute' it, and do a recursive call with the
   same decision.
 -}
-instance
-    ( VarValTime v x t
-    ) =>
-    EndpointProblem (Multiplier v x t) v t
-    where
+instance (VarValTime v x t) => EndpointProblem (Multiplier v x t) v t where
     endpointOptions Multiplier{targets, process_}
         | not $ null targets =
             let at = nextTick process_ + 1 ... maxBound
@@ -594,16 +586,16 @@ instance Controllable (Multiplier v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{..} MultiplierPorts{..} =
+    zipSignalTagsAndValues MultiplierPorts{..} Microcode{..} =
         [ (wr, Bool wrSignal)
         , (wrSel, Bool selSignal)
         , (oe, Bool oeSignal)
         ]
 
-    portsToSignals MultiplierPorts{wr, wrSel, oe} = [wr, wrSel, oe]
+    usedPortTags MultiplierPorts{wr, wrSel, oe} = [wr, wrSel, oe]
 
-    signalsToPorts (wr : wrSel : oe : _) _ = MultiplierPorts wr wrSel oe
-    signalsToPorts _ _ = error "pattern match error in signalsToPorts MultiplierPorts"
+    takePortTags (wr : wrSel : oe : _) _ = MultiplierPorts wr wrSel oe
+    takePortTags _ _ = error "can not take port tags, tags are over"
 
 {- |Default microcode state should be equal to @nop@ function, which should be a
 safe way to do nothing (not take a bus, not change internal PU state, etc.).
@@ -652,11 +644,7 @@ instance IOConnected (Multiplier v x t) where
 
 - Hardware instance in the upper structure element.
 -}
-instance
-    ( VarValTime v x t
-    ) =>
-    TargetSystemComponent (Multiplier v x t)
-    where
+instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
     moduleName _title _pu = "pu_multiplier"
 
     hardware tag pu@Multiplier{isMocked} =
@@ -670,28 +658,36 @@ instance
 
     software _ _ = Empty
 
-    hardwareInstance tag _pu TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk, signalRst} MultiplierPorts{..} MultiplierIO =
-        codeBlock
-            [qc|
+    hardwareInstance
+        tag
+        _pu
+        UnitEnv
+            { sigClk
+            , sigRst
+            , ctrlPorts = Just MultiplierPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            codeBlock
+                [qc|
             pu_multiplier #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
                     , .INVALID( 0 )
                     ) { tag }
-                ( .clk( {signalClk} )
-                , .rst( {signalRst} )
-                , .signal_wr( { signal wr } )
-                , .signal_sel( { signal wrSel } )
+                ( .clk( {sigClk} )
+                , .rst( {sigRst} )
+                , .signal_wr( { wr } )
+                , .signal_sel( { wrSel } )
                 , .data_in( { dataIn } )
                 , .attr_in( { attrIn } )
-                , .signal_oe( { signal oe } )
+                , .signal_oe( { oe } )
                 , .data_out( { dataOut } )
                 , .attr_out( { attrOut } )
                 );
             |]
-    hardwareInstance _title _pu TargetEnvironment{unitEnv = NetworkEnv{}} _ports _io =
-        error "Should be defined in network."
+    hardwareInstance _title _pu _env = error "internal error"
 
 {- |Empty implementation of 'NITTA.Project.Parts.TestBench.IOTestBench' class
 means that multiplier, as expected, doesn't have any IO.
@@ -723,17 +719,12 @@ instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
                       -- abstract numbers are translate to source code.
                       tbcPorts =
                         MultiplierPorts
-                            { oe = SignalTag 0
-                            , wr = SignalTag 1
-                            , wrSel = SignalTag 2
+                            { oe = SignalTag "oe"
+                            , wr = SignalTag "wr"
+                            , wrSel = SignalTag "wrSel"
                             }
                     , tbcIOPorts = MultiplierIO
-                    , tbcSignalConnect = \case
-                        (SignalTag 0) -> "oe"
-                        (SignalTag 1) -> "wr"
-                        (SignalTag 2) -> "wrSel"
-                        _ -> error "testBenchImplementation wrong signal"
                     , -- Map microcode to registers in the testbench.
-                      tbcCtrl = \Microcode{oeSignal, wrSignal, selSignal} ->
+                      tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal, selSignal} ->
                         [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
                     }

@@ -39,7 +39,7 @@ tests =
         "Broken PU and negative tests"
         [ testGroup
             "positive tests"
-            [ puCoSimTestCase "broken reg" u [("a", 42)] [brokenReg "a" ["b"]]
+            [ puCoSimTestCase "broken buffer" u [("a", 42)] [brokenBuffer "a" ["b"]]
             , puCoSimProp "puCoSimProp" u fsGen
             , nittaCoSimTestCase "nittaCoSimTestCase" (maBroken u) alg
             , finitePUSynthesisProp "finitePUSynthesisProp" u fsGen
@@ -51,12 +51,12 @@ tests =
                 "invalid value"
                 u2
                 [("a", Attr{value = 42, invalid = True})]
-                [brokenReg "a" ["b"]]
+                [brokenBuffer "a" ["b"]]
             , puCoSimTestCase
                 "unknown output with invalid flag"
                 u2{unknownDataOut = True}
                 [("a", Attr{value = 42, invalid = True})]
-                [brokenReg "a" ["b"]]
+                [brokenBuffer "a" ["b"]]
             , nittaCoSimTestCase "with attr" (maBroken u2) alg
             ]
         , testGroup
@@ -66,13 +66,13 @@ tests =
                     "invalid value with broken attr"
                     u2{wrongAttr = True}
                     [("a", Attr{value = 42, invalid = True})]
-                    [brokenReg "a" ["b"]]
+                    [brokenBuffer "a" ["b"]]
             , expectFail $
                 puCoSimTestCase
                     "unknown output without invalid flag"
                     u2{unknownDataOut = True}
                     [("a", Attr{value = 42, invalid = False})]
-                    [brokenReg "a" ["b"]]
+                    [brokenBuffer "a" ["b"]]
             , expectFail $ nittaCoSimTestCase "with broken attr" (maBroken u2{wrongAttr = True}) alg
             ]
         , testGroup
@@ -117,16 +117,16 @@ tests =
     where
         u = def :: Broken String Int Int
         u2 = def :: Broken String (Attr (IntX 32)) Int
-        alg = [loop 1 "b" ["a"], brokenReg "a" ["b"]]
+        alg = [loop 1 "b" ["a"], brokenBuffer "a" ["b"]]
         lua =
             [qc|
             function foo(a)
-                b = brokenReg(a)
+                b = brokenBuffer(a)
                 foo(b)
             end
             foo(1)
         |]
         fsGen =
             algGen
-                [ fmap packF (arbitrary :: Gen (BrokenReg _ _))
+                [ fmap packF (arbitrary :: Gen (BrokenBuffer _ _))
                 ]

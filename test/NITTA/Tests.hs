@@ -119,9 +119,7 @@ pu =
                 PU
                     { diff = def
                     , unit = def :: Accum String Int Int
-                    , ports = undefined
-                    , ioPorts = undefined
-                    , systemEnv = undefined
+                    , uEnv = undefined
                     }
      in pu'
 

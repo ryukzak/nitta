@@ -87,6 +87,7 @@ module NITTA.Synthesis (
     mkModelWithOneNetwork,
     TargetSynthesis (..),
     runTargetSynthesis,
+    synthesizeTargetSystem,
 ) where
 
 import Control.Monad (when)
@@ -152,7 +153,12 @@ instance (VarValTime v x t) => Default (TargetSynthesis String v x t) where
             , tSimulationCycleN = 5
             }
 
-runTargetSynthesis
+runTargetSynthesis leaf =
+    synthesizeTargetSystem leaf >>= \case
+        Right prj -> Right <$> runTestbench prj
+        Left msg -> return $ Left msg
+
+synthesizeTargetSystem
     TargetSynthesis
         { tName
         , tMicroArch
@@ -172,9 +178,7 @@ runTargetSynthesis
         synthesise root >>= \case
             Left err -> return $ Left err
             Right leafNode -> do
-                let prj = project leafNode
-                tWriteProject prj
-                Right <$> runTestbench prj
+                Right <$> writeProject leafNode
         where
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."
@@ -192,16 +196,19 @@ runTargetSynthesis
                         then Right leaf
                         else Left "synthesis process...fail"
 
-            project tree =
-                Project
-                    { pName = tName
-                    , pLibPath = tLibPath
-                    , pPath = joinPath [tPath, tName]
-                    , pUnit = targetModel tree
-                    , -- because application algorithm can be refactored we need to use
-                      -- synthesised version
-                      pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues $ targetDFG tree
-                    }
+            writeProject leaf = do
+                let prj =
+                        Project
+                            { pName = tName
+                            , pLibPath = tLibPath
+                            , pPath = joinPath [tPath, tName]
+                            , pUnit = targetModel leaf
+                            , -- because application algorithm can be refactored we need to use
+                              -- synthesised version
+                              pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues $ targetDFG leaf
+                            }
+                tWriteProject prj
+                return prj
 
 {- |Make a model of NITTA process with one network and a specific algorithm. All
 functions are already bound to the network.

@@ -77,7 +77,7 @@ pFX32_32 = Proxy :: Proxy (FX 32 32)
 pFX42_64 = Proxy :: Proxy (FX 42 64)
 
 basic :: (Integral x, Val x) => Proxy x -> BusNetwork String String x Int
-basic _proxy = evalNetwork ASync $ do
+basic _proxy = defineNetwork ASync $ do
     add "fram1" FramIO
     add "fram2" FramIO
     add "shift" ShiftIO
@@ -89,7 +89,7 @@ march = basic pInt
 
 -- |Simple microarchitecture with broken PU for negative tests
 maBroken :: (Integral x, Val x) => Broken String x Int -> BusNetwork String String x Int
-maBroken brokenPU = evalNetwork ASync $ do
+maBroken brokenPU = defineNetwork ASync $ do
     add "fram1" FramIO
     add "fram2" FramIO
     add "accum" AccumIO
@@ -102,7 +102,7 @@ marchSPI ::
     Bool ->
     Proxy x ->
     BusNetwork String String x Int
-marchSPI isSlave _proxy = evalNetwork Sync $ do
+marchSPI isSlave _proxy = defineNetwork Sync $ do
     add "fram1" FramIO
     add "fram2" FramIO
     add "shift" ShiftIO
@@ -173,7 +173,7 @@ data IOUnit
     = MasterSPI
     | SlaveSPI
 
-microarch ioSync ioUnit = evalNetwork ioSync $ do
+microarch ioSync ioUnit = defineNetwork ioSync $ do
     add "fram1" FramIO
     add "fram2" FramIO
     add "shift" ShiftIO

@@ -36,7 +36,7 @@ export const api = {
   getSynthesisTree: (): AxiosPromise<TreeView<ShortNodeView>> => jsAPI.getSynthesisTree(),
 
   // Synthesis tree navigation
-  getRootPath: (sid: SID): AxiosPromise<Node[]> => jsAPI.getNodeBySidRootPath(sid),
+  getRootPath: (sid: SID): AxiosPromise<Node[]> => jsAPI.getNodeBySidHistory(sid),
   getParentEdge: (sid: SID): AxiosPromise<Node> => jsAPI.getNodeBySidParentEdge(sid),
   getSubforest: (sid: SID): AxiosPromise<Node[]> => jsAPI.getNodeBySidSubForest(sid),
 
