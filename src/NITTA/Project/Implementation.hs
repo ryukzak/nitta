@@ -19,6 +19,7 @@ module NITTA.Project.Implementation (
     TargetSystemComponent (..),
 ) where
 
+import qualified Data.Text as T
 import NITTA.Model.ProcessorUnits.Types
 
 -- |Element of target system implementation
@@ -36,6 +37,10 @@ data Implementation
 class TargetSystemComponent pu where
     -- |Name of the structural hardware module or Verilog module name (network or process unit)
     moduleName :: String -> pu -> String
+    moduleName n pu = T.unpack $ moduleNameT (T.pack n) pu
+
+    moduleNameT :: T.Text -> pu -> T.Text
+    moduleNameT n pu = T.pack $ moduleName (T.unpack n) pu
 
     -- |Software and other specification which depends on application algorithm
     software :: String -> pu -> Implementation
@@ -45,6 +50,10 @@ class TargetSystemComponent pu where
 
     -- |Generate code for making an instance of the hardware module
     hardwareInstance :: String -> pu -> TargetEnvironment -> Ports pu -> IOPorts pu -> String
+    hardwareInstance n pu env p iop = T.unpack $ hardwareInstanceT (T.pack n) pu env p iop
+
+    hardwareInstanceT :: T.Text -> pu -> TargetEnvironment -> Ports pu -> IOPorts pu -> T.Text
+    hardwareInstanceT n pu env p iop = T.pack $ hardwareInstance (T.unpack n) pu env p iop
 
 data Parameter
     = InlineParam String
