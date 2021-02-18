@@ -262,7 +262,7 @@ instance Controllable (BusNetwork tag v x t) where
 
     -- Right now, BusNetwork don't have external control (exclude rst signal and some hacks). All
     -- signals starts and ends inside network unit.
-    mapMicrocodeToPorts BusNetworkMC{} BusNetworkPorts = []
+    zipSignalTagsAndValues BusNetworkPorts BusNetworkMC{} = []
 
     portsToSignals _ = undefined
 
@@ -275,7 +275,7 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
             initSt = M.fromList $ map (\i -> (SignalTag $ controlSignalLiteral i, def)) [0 .. bnSignalBusWidth - 1]
 
             merge st PU{unit, ports} =
-                foldl merge' st $ mapMicrocodeToPorts (microcodeAt unit t) ports
+                foldl merge' st $ zipSignalTagsAndValues ports $microcodeAt unit t
 
             merge' st (signalTag, value) = M.adjust (+++ value) signalTag st
 

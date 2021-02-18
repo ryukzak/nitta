@@ -180,7 +180,7 @@ instance Controllable (SimpleIO i v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{..} SimpleIOPorts{..} =
+    zipSignalTagsAndValues SimpleIOPorts{..} Microcode{..} =
         [ (wr, Bool wrSignal)
         , (oe, Bool oeSignal)
         ]

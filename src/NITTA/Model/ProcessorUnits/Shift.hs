@@ -225,7 +225,7 @@ instance Controllable (Shift v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{..} ShiftPorts{..} =
+    zipSignalTagsAndValues ShiftPorts{..} Microcode{..} =
         [ (work, Bool workSignal)
         , (direction, Bool directionSignal)
         , (mode, Bool modeSignal)

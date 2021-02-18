@@ -586,7 +586,7 @@ instance Controllable (Multiplier v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{..} MultiplierPorts{..} =
+    zipSignalTagsAndValues MultiplierPorts{..} Microcode{..} =
         [ (wr, Bool wrSignal)
         , (wrSel, Bool selSignal)
         , (oe, Bool oeSignal)

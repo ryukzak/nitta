@@ -231,8 +231,8 @@ class Controllable pu where
     -- |Microcode desctibe controll signals on each mUnit cycle (without exclusion).
     data Microcode pu :: Type
 
-    -- |Map microcode to unit signal ports.
-    mapMicrocodeToPorts :: Microcode pu -> Ports pu -> [(SignalTag, SignalValue)]
+    -- |Zip port signal tags and value.
+    zipSignalTagsAndValues :: Ports pu -> Microcode pu -> [(SignalTag, SignalValue)]
 
     -- |Get list of signals from Ports pu
     portsToSignals :: Ports pu -> [SignalTag]

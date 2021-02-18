@@ -222,7 +222,7 @@ instance Controllable (Accum v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{..} AccumPorts{..} =
+    zipSignalTagsAndValues AccumPorts{..} Microcode{..} =
         [ (resetAcc, Bool resetAccSignal)
         , (load, Bool loadSignal)
         , (oe, Bool oeSignal)

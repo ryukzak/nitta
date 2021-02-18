@@ -448,7 +448,7 @@ instance Controllable (Fram v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{oeSignal, wrSignal, addrSignal} FramPorts{oe, wr, addr} =
+    zipSignalTagsAndValues FramPorts{oe, wr, addr} Microcode{oeSignal, wrSignal, addrSignal} =
         [ (oe, Bool oeSignal)
         , (wr, Bool wrSignal)
         ]

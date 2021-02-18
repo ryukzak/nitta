@@ -163,7 +163,7 @@ instance Controllable (Broken v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{..} BrokenPorts{..} =
+    zipSignalTagsAndValues BrokenPorts{..} Microcode{..} =
         [ (wr, Bool wrSignal)
         , (oe, Bool oeSignal)
         ]

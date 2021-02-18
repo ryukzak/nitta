@@ -276,7 +276,7 @@ instance Controllable (Divider v x t) where
         }
         deriving (Show, Eq, Ord)
 
-    mapMicrocodeToPorts Microcode{..} DividerPorts{..} =
+    zipSignalTagsAndValues DividerPorts{..} Microcode{..} =
         [ (wr, Bool wrSignal)
         , (wrSel, Bool wrSelSignal)
         , (oe, Bool oeSignal)
