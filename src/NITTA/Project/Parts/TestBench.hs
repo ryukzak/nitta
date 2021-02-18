@@ -68,8 +68,8 @@ class IOTestBench pu v x | pu -> v x where
     testEnvironmentInitFlag :: String -> pu -> Maybe String
     testEnvironmentInitFlag _title _pu = Nothing
 
-    testEnvironment :: String -> pu -> TargetEnvironment -> Ports pu -> IOPorts pu -> TestEnvironment v x -> String
-    testEnvironment _title _pu _env _ports _io _tEnv = ""
+    testEnvironment :: String -> pu -> UnitEnv pu -> TestEnvironment v x -> String
+    testEnvironment _title _pu _env _tEnv = ""
 
 -- |Information required for testbench generation.
 data TestEnvironment v x = TestEnvironment
@@ -168,22 +168,17 @@ snippetTestBench
                 hardwareInstance
                     pName
                     pUnit
-                    TargetEnvironment
-                        { signalClk = "clk"
-                        , signalRst = "rst"
-                        , signalCycleBegin = "flag_cycle_begin"
-                        , signalInCycle = "flag_in_cycle"
-                        , signalCycleEnd = "flag_cycle_end"
-                        , unitEnv =
-                            ProcessUnitEnv
-                                { dataIn = "data_in"
-                                , attrIn = "attr_in"
-                                , dataOut = "data_out"
-                                , attrOut = "attr_out"
-                                }
+                    UnitEnv
+                        { sigClk = "clk"
+                        , sigRst = "rst"
+                        , sigCycleBegin = "flag_cycle_begin"
+                        , sigInCycle = "flag_in_cycle"
+                        , sigCycleEnd = "flag_cycle_end"
+                        , ioPorts = Just tbcIOPorts
+                        , valueIn = Just ("data_in", "attr_in")
+                        , valueOut = Just ("data_out", "attr_out")
+                        , ctrlPorts = Just tbcPorts
                         }
-                    tbcPorts
-                    tbcIOPorts
 
             controlSignals =
                 S.join "\n" $

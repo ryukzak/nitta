@@ -324,19 +324,13 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
     hardwareInstance
         tag
         _pu@Divider{mock, pipeline}
-        TargetEnvironment
-            { unitEnv =
-                ProcessUnitEnv
-                    { dataIn
-                    , dataOut
-                    , attrIn
-                    , attrOut
-                    }
-            , signalClk
-            , signalRst
-            }
-        DividerPorts{oe, oeSel, wr, wrSel}
-        DividerIO =
+        UnitEnv
+            { sigClk
+            , sigRst
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            , ctrlPorts = Just DividerPorts{oe, oeSel, wr, wrSel}
+            } =
             codeBlock
                 [qc|
             pu_div #
@@ -347,8 +341,8 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
                     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
                     , .MOCK_DIV( { bool2verilog mock } )
                     ) { tag }
-                ( .clk( { signalClk } )
-                , .rst( { signalRst } )
+                ( .clk( { sigClk } )
+                , .rst( { sigRst } )
                 , .signal_wr( { wr } )
                 , .signal_wr_sel( { wrSel } )
                 , .data_in( { dataIn } )
@@ -359,8 +353,7 @@ instance (Val x, Show t) => TargetSystemComponent (Divider v x t) where
                 , .attr_out( { attrOut } )
                 );
             |]
-    hardwareInstance _title _pu TargetEnvironment{unitEnv = NetworkEnv{}} _ports _io =
-        error "Should be defined in network."
+    hardwareInstance _title _pu _env = error "internal error"
 
 instance IOTestBench (Divider v x t) v x
 

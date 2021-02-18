@@ -268,15 +268,24 @@ instance (VarValTime v x t) => TargetSystemComponent (Accum v x t) where
     moduleName _ _ = "pu_accum"
     hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
     software _ _ = Empty
-    hardwareInstance tag _pu TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk, signalRst} AccumPorts{..} AccumIO =
-        codeBlock
-            [qc|
+    hardwareInstance
+        tag
+        _pu
+        UnitEnv
+            { sigClk
+            , sigRst
+            , ctrlPorts = Just AccumPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            codeBlock
+                [qc|
             pu_accum #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) { tag }
-                ( .clk( { signalClk } )
-                , .rst( { signalRst } )
+                ( .clk( { sigClk } )
+                , .rst( { sigRst } )
                 , .signal_resetAcc( { resetAcc } )
                 , .signal_load( { load } )
                 , .signal_neg( { neg } )
@@ -287,8 +296,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Accum v x t) where
                 , .attr_out( { attrOut } )
                 );
             |]
-    hardwareInstance _title _pu TargetEnvironment{unitEnv = NetworkEnv{}} _ports _io =
-        error "Should be defined in network."
+    hardwareInstance _title _pu _env = error "internal error"
 
 instance (Ord t) => WithFunctions (Accum v x t) (F v x) where
     functions Accum{process_, work} =

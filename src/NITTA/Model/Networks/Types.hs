@@ -54,10 +54,8 @@ data PU v x t where
     PU ::
         (PUClasses pu v x t) =>
         { unit :: pu
-        , ports :: Ports pu
-        , ioPorts :: IOPorts pu
         , diff :: Changeset v
-        , systemEnv :: TargetEnvironment
+        , uEnv :: UnitEnv pu
         } ->
         PU v x t
 
@@ -65,51 +63,47 @@ instance (Ord v) => EndpointProblem (PU v x t) v t where
     endpointOptions PU{diff, unit} =
         map (patch diff) $ endpointOptions unit
 
-    endpointDecision PU{diff, unit, ports, ioPorts, systemEnv} d =
+    endpointDecision PU{unit, diff, uEnv} d =
         PU
-            { diff
-            , unit = endpointDecision unit $ patch (reverseDiff diff) d
-            , ports
-            , ioPorts
-            , systemEnv
+            { unit = endpointDecision unit $ patch (reverseDiff diff) d
+            , diff
+            , uEnv
             }
 
 instance BreakLoopProblem (PU v x t) v x where
     breakLoopOptions PU{unit} = breakLoopOptions unit
-    breakLoopDecision PU{diff, unit, ports, ioPorts, systemEnv} d =
-        PU{diff, unit = breakLoopDecision unit d, ports, ioPorts, systemEnv}
+    breakLoopDecision PU{diff, unit, uEnv} d =
+        PU{unit = breakLoopDecision unit d, diff, uEnv}
 
 instance OptimizeAccumProblem (PU v x t) v x where
     optimizeAccumOptions PU{unit} = optimizeAccumOptions unit
-    optimizeAccumDecision PU{diff, unit, ports, ioPorts, systemEnv} d =
-        PU{diff, unit = optimizeAccumDecision unit d, ports, ioPorts, systemEnv}
+    optimizeAccumDecision PU{diff, unit, uEnv} d =
+        PU{diff, unit = optimizeAccumDecision unit d, uEnv}
 
 instance ResolveDeadlockProblem (PU v x t) v x where
     resolveDeadlockOptions PU{unit} = resolveDeadlockOptions unit
-    resolveDeadlockDecision PU{diff, unit, ports, ioPorts, systemEnv} d =
-        PU{diff, unit = resolveDeadlockDecision unit d, ports, ioPorts, systemEnv}
+    resolveDeadlockDecision PU{diff, unit, uEnv} d =
+        PU{unit = resolveDeadlockDecision unit d, diff, uEnv}
 
 instance (VarValTime v x t) => ProcessorUnit (PU v x t) v x t where
-    tryBind fb PU{diff, unit, ports, ioPorts, systemEnv} =
+    tryBind fb PU{diff, unit, uEnv} =
         case tryBind fb unit of
-            Right unit' -> Right PU{diff, unit = unit', ports, ioPorts, systemEnv}
+            Right unit' -> Right PU{unit = unit', diff, uEnv}
             Left err -> Left err
-    process PU{diff, unit} =
+    process PU{unit, diff} =
         let p = process unit
          in p{steps = map (patch diff) $ steps p}
 
 instance (Ord v) => Patch (PU v x t) (Changeset v) where
-    patch diff' PU{diff, unit, ports, ioPorts, systemEnv} =
+    patch diff' PU{unit, diff, uEnv} =
         PU
-            { diff =
+            { unit
+            , diff =
                 Changeset
                     { changeI = changeI diff' `M.union` changeI diff
                     , changeO = changeO diff' `M.union` changeO diff
                     }
-            , unit
-            , ports
-            , ioPorts
-            , systemEnv
+            , uEnv
             }
 
 instance (Ord v) => Patch (PU v x t) (I v, I v) where
@@ -155,8 +149,7 @@ instance TargetSystemComponent (PU v x t) where
 instance IOTestBench (PU v x t) v x where
     testEnvironmentInitFlag tag PU{unit} = testEnvironmentInitFlag tag unit
 
-    testEnvironment tag PU{unit, systemEnv, ports, ioPorts} _systemEnv _ _ cntxs =
-        testEnvironment tag unit systemEnv ports ioPorts cntxs
+    testEnvironment tag PU{unit, uEnv} _env cntxs = testEnvironment tag unit uEnv cntxs
 
 data IOSynchronization
     = -- |IO cycle synchronously to process cycle

@@ -658,17 +658,26 @@ instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
 
     software _ _ = Empty
 
-    hardwareInstance tag _pu TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk, signalRst} MultiplierPorts{..} MultiplierIO =
-        codeBlock
-            [qc|
+    hardwareInstance
+        tag
+        _pu
+        UnitEnv
+            { sigClk
+            , sigRst
+            , ctrlPorts = Just MultiplierPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            codeBlock
+                [qc|
             pu_multiplier #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .SCALING_FACTOR_POWER( { fractionalBitSize (def :: x) } )
                     , .INVALID( 0 )
                     ) { tag }
-                ( .clk( {signalClk} )
-                , .rst( {signalRst} )
+                ( .clk( {sigClk} )
+                , .rst( {sigRst} )
                 , .signal_wr( { wr } )
                 , .signal_sel( { wrSel } )
                 , .data_in( { dataIn } )
@@ -678,8 +687,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Multiplier v x t) where
                 , .attr_out( { attrOut } )
                 );
             |]
-    hardwareInstance _title _pu TargetEnvironment{unitEnv = NetworkEnv{}} _ports _io =
-        error "Should be defined in network."
+    hardwareInstance _title _pu _env = error "internal error"
 
 {- |Empty implementation of 'NITTA.Project.Parts.TestBench.IOTestBench' class
 means that multiplier, as expected, doesn't have any IO.

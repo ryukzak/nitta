@@ -18,9 +18,10 @@ Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
+
+For creating BusNetwork see 'NITTA.Model.Microarchitecture'.
 -}
 module NITTA.Model.Networks.Bus (
-    busNetwork,
     BusNetwork (..),
     Ports (..),
     IOPorts (..),
@@ -65,8 +66,7 @@ data BusNetwork tag v x t = BusNetwork
     , -- |Controll bus width.
       bnSignalBusWidth :: Int
     , ioSync :: IOSynchronization
-    , bnEnv :: TargetEnvironment
-    , bnIOPorts :: IOPorts (BusNetwork tag v x t)
+    , bnEnv :: UnitEnv (BusNetwork tag v x t)
     }
 
 instance (Var v) => Variables (BusNetwork tag v x t) v where
@@ -77,41 +77,6 @@ bindedFunctions puTitle BusNetwork{bnBinded}
     | otherwise = []
 
 instance (Default x) => DefaultX (BusNetwork tag v x t) x
-
-busNetwork signalBusWidth ioSync pus =
-    BusNetwork
-        { bnRemains = []
-        , bnBinded = M.empty
-        , bnProcess = def
-        , bnPus = M.fromList pus'
-        , bnSignalBusWidth = signalBusWidth
-        , ioSync
-        , bnIOPorts = BusNetworkIO{extInputs, extOutputs}
-        , bnEnv
-        }
-    where
-        bnEnv =
-            TargetEnvironment
-                { signalClk = "clk"
-                , signalRst = "rst"
-                , signalCycleBegin = "flag_cycle_begin"
-                , signalInCycle = "flag_in_cycle"
-                , signalCycleEnd = "flag_cycle_end"
-                , unitEnv = NetworkEnv
-                }
-        puEnv tag =
-            bnEnv
-                { unitEnv =
-                    ProcessUnitEnv
-                        { dataIn = "data_bus"
-                        , dataOut = tag ++ "_data_out"
-                        , attrIn = "attr_bus"
-                        , attrOut = tag ++ "_attr_out"
-                        }
-                }
-        pus' = map (\(tag, f) -> (tag, f $ puEnv tag)) pus
-        extInputs = L.nub $ concatMap (\(_, PU{ioPorts}) -> inputPorts ioPorts) pus'
-        extOutputs = L.nub $ concatMap (\(_, PU{ioPorts}) -> outputPorts ioPorts) pus'
 
 instance WithFunctions (BusNetwork tag v x t) (F v x) where
     functions BusNetwork{bnRemains, bnBinded} = bnRemains ++ concat (M.elems bnBinded)
@@ -271,8 +236,9 @@ instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
         where
             initSt = M.fromList $ map (\i -> (SignalTag $ controlSignalLiteral i, def)) [0 .. bnSignalBusWidth - 1]
 
-            merge st PU{unit, ports} =
+            merge st PU{unit, uEnv = UnitEnv{ctrlPorts = Just ports}} =
                 foldl merge' st $ zipSignalTagsAndValues ports $microcodeAt unit t
+            merge _ _ = error "internal error"
 
             merge' st (signalTag, value) = M.adjust (+++ value) signalTag st
 
@@ -393,9 +359,10 @@ programTicks BusNetwork{bnProcess = Process{nextTick}} = [-1 .. nextTick]
 bnExternalPorts pus =
     M.assocs $
         M.map
-            ( \PU{ioPorts} ->
-                ( map inputPortTag $ inputPorts ioPorts
-                , map outputPortTag $ outputPorts ioPorts
+            ( \PU{uEnv} ->
+                ( map inputPortTag $ envInputPorts uEnv
+                , map outputPortTag $ envOutputPorts uEnv
+                , map inoutPortTag $ envInOutPorts uEnv
                 )
             )
             pus
@@ -403,10 +370,13 @@ bnExternalPorts pus =
 externalPortsDecl ports =
     unlines $
         concatMap
-            ( \(tag, (is, os)) ->
-                ("// external ports for: " ++ tag) :
-                map (", input " ++) is
-                    ++ map (", output " ++) os
+            ( \(tag, (is, os, ios)) ->
+                concat
+                    [ ["// external ports for: " <> tag]
+                    , map (", input " <>) is
+                    , map (", output " <>) os
+                    , map (", inout " <>) ios
+                    ]
             )
             ports
 
@@ -489,8 +459,8 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                     |]
 
             renderInstance insts regs [] = (reverse insts, reverse regs)
-            renderInstance insts regs ((t, PU{unit, systemEnv, ports, ioPorts}) : xs) =
-                let inst = hardwareInstance t unit systemEnv ports ioPorts
+            renderInstance insts regs ((t, PU{unit, uEnv}) : xs) =
+                let inst = hardwareInstance t unit uEnv
                     insts' = inst : regInstance t : insts
                     regs' = (t ++ "_attr_out", t ++ "_data_out") : regs
                  in renderInstance insts' regs' xs
@@ -511,7 +481,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                         L.sortOn ((\(Just [i]) -> read i :: Int) . matchRegex (mkRegex "([[:digit:]]+)") . signalTag . fst) $
                             M.assocs arr
 
-    hardwareInstance tag BusNetwork{} TargetEnvironment{unitEnv = NetworkEnv, signalClk, signalRst} _ports ioPorts
+    hardwareInstance tag BusNetwork{} UnitEnv{sigRst, sigClk, ioPorts = Just ioPorts}
         | let io2v n = ", ." ++ n ++ "( " ++ n ++ " )"
               is = map (\(InputPortTag n) -> io2v n) $ inputPorts ioPorts
               os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts =
@@ -521,8 +491,8 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) net
-                ( .rst( { signalRst } )
-                , .clk( { signalClk } )
+                ( .rst( { sigRst } )
+                , .clk( { sigClk } )
                 // inputs:
                 { inline $ S.join "\\n" is }
                 // outputs:
@@ -533,7 +503,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                 , .is_drop_allow( rendezvous )  // FIXME:
                 );
             |]
-    hardwareInstance _title _bn TargetEnvironment{unitEnv = ProcessUnitEnv{}} _ports _io =
+    hardwareInstance _title _bn _env =
         error "BusNetwork should be NetworkEnv"
 
 instance Connected (BusNetwork tag v x t) where
@@ -544,10 +514,12 @@ instance IOConnected (BusNetwork tag v x t) where
     data IOPorts (BusNetwork tag v x t) = BusNetworkIO
         { extInputs :: [InputPortTag]
         , extOutputs :: [OutputPortTag]
+        , extInOuts :: [InoutPortTag]
         }
         deriving (Show)
     inputPorts = extInputs
     outputPorts = extOutputs
+    inoutPorts = extInOuts
 
 instance
     (VarValTime v x t, TargetSystemComponent (BusNetwork String v x t)) =>
@@ -563,15 +535,13 @@ instance
                     S.join
                         "\\n\\n"
                         [ tbEnv
-                        | (t, PU{unit, systemEnv, ports, ioPorts}) <- M.assocs bnPus
+                        | (t, PU{unit, uEnv}) <- M.assocs bnPus
                         , let t' = filter (/= '"') $ show t
                         , let tbEnv =
                                 testEnvironment
                                     t'
                                     unit
-                                    systemEnv
-                                    ports
-                                    ioPorts
+                                    uEnv
                                     TestEnvironment
                                         { teCntx = pTestCntx
                                         , teComputationDuration = fromEnum $ nextTick bnProcess
@@ -579,7 +549,7 @@ instance
                         , not $ null tbEnv
                         ]
 
-                externalPortNames = concatMap (\(_tag, (is, os)) -> is ++ os) $ bnExternalPorts bnPus
+                externalPortNames = concatMap ((\(is, os, ios) -> is ++ os ++ ios) . snd) $ bnExternalPorts bnPus
                 externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") externalPortNames)
                 envInitFlags = mapMaybe (uncurry testEnvironmentInitFlag) $ M.assocs bnPus
 

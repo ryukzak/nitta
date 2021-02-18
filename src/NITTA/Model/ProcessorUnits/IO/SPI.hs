@@ -97,20 +97,21 @@ instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
             , FromLibrary "spi/pu_master_spi.v"
             ]
     software _ pu = Immediate "transport.txt" $ show pu
-    hardwareInstance _ _ TargetEnvironment{unitEnv = NetworkEnv{}} _ports _io = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
+
     hardwareInstance
         tag
         SimpleIO{bounceFilter, sendN, receiveN}
-        TargetEnvironment
-            { unitEnv = ProcessUnitEnv{..}
-            , signalClk
-            , signalRst
-            , signalCycleBegin
-            , signalInCycle
-            , signalCycleEnd
-            }
-        SimpleIOPorts{..}
-        ioPorts =
+        UnitEnv
+            { sigClk
+            , sigRst
+            , sigCycleBegin
+            , sigInCycle
+            , sigCycleEnd
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            , ctrlPorts = Just SimpleIOPorts{..}
+            , ioPorts = Just ioPorts
+            } =
             codeBlock
                 [qc|
             { module_ ioPorts } #
@@ -119,12 +120,12 @@ instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
                     , .BOUNCE_FILTER( { show bounceFilter } )
                     , .DISABLED( { if sendN == 0 && receiveN == 0 then (1 :: Int) else 0 } )
                     ) { tag }
-                ( .clk( { signalClk } )
-                , .rst( { signalRst } )
+                ( .clk( { sigClk } )
+                , .rst( { sigRst } )
                 , .flag_stop( { stop } )
-                , .signal_cycle_begin( { signalCycleBegin } )
-                , .signal_in_cycle( { signalInCycle  } )
-                , .signal_cycle_end( { signalCycleEnd } )
+                , .signal_cycle_begin( { sigCycleBegin } )
+                , .signal_in_cycle( { sigInCycle  } )
+                , .signal_cycle_end( { sigCycleEnd } )
                 , .signal_oe( { oe } )
                 , .signal_wr( { wr } )
                 , .data_in( { dataIn } ), .attr_in( { attrIn } )
@@ -151,17 +152,20 @@ instance (VarValTime v x t) => TargetSystemComponent (SPI v x t) where
                         , .sclk( { master_sclk } )
                         , .cs( { master_cs } )
                         |]
+    hardwareInstance _title _pu _env = error "internal error"
 
 instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
     testEnvironmentInitFlag tag _pu = Just $ tag ++ "_env_init_flag"
 
-    testEnvironment _ _ TargetEnvironment{unitEnv = NetworkEnv{}} _ _ _ = error "wrong environment type, for pu_spi it should be ProcessUnitEnv"
     testEnvironment
         tag
         sio@SimpleIO{process_, bounceFilter}
-        TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk, signalRst}
-        SimpleIOPorts{..}
-        ioPorts
+        UnitEnv
+            { sigClk
+            , sigRst
+            , ctrlPorts = Just SimpleIOPorts{..}
+            , ioPorts = Just ioPorts
+            }
         TestEnvironment{teCntx = cntx@Cntx{cntxCycleNumber, cntxProcess}, teComputationDuration} =
             let receivedVariablesSeq =
                     mapMaybe
@@ -200,7 +204,7 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                     codeBlock
                         [qc|
                 initial begin
-                    @(negedge { signalRst });
+                    @(negedge { sigRst });
                     { envInitFlagName } <= 1;
                 end
                 |]
@@ -214,9 +218,9 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                                         [qc|
                             $display( "set data for sending { xs } by { tag }_io_test_input" );
                             { tag }_io_test_input = \{ { toVerilogLiteral xs } }; // { xs }
-                            { tag }_io_test_start_transaction = 1;                           @(posedge { signalClk });
-                            { tag }_io_test_start_transaction = 0;                           @(posedge { signalClk });
-                            repeat( { sendingDuration } ) @(posedge { signalClk });
+                            { tag }_io_test_start_transaction = 1;                           @(posedge { sigClk });
+                            { tag }_io_test_start_transaction = 0;                           @(posedge { sigClk });
+                            repeat( { sendingDuration } ) @(posedge { sigClk });
 
                             |]
 
@@ -245,8 +249,8 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                                 ( .DATA_WIDTH( { frameWidth } )
                                 , .SCLK_HALFPERIOD( 1 )
                                 ) { tag }_io_test
-                            ( .clk( { signalClk } )
-                            , .rst( { signalRst } )
+                            ( .clk( { sigClk } )
+                            , .rst( { sigRst } )
                             , .start_transaction( { tag }_io_test_start_transaction )
                             , .data_in( { tag }_io_test_input )
                             , .data_out( { tag }_io_test_output )
@@ -265,8 +269,8 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                         initial begin
                             { tag }_io_test_start_transaction <= 0;
                             { tag }_io_test_input <= 0;
-                            @(negedge { signalRst });
-                            repeat({ timeLag }) @(posedge { signalClk });
+                            @(negedge { sigRst });
+                            repeat({ timeLag }) @(posedge { sigClk });
 
                             { inline $ concat $ map receiveCycle receivedVarsValues }
                             repeat ( 5 ) begin
@@ -280,7 +284,7 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                                 codeBlock
                                     [qc|
                         initial begin
-                            @(negedge { signalRst });
+                            @(negedge { sigRst });
                             repeat ( OUTPUT_LATENCY ) @(posedge { tag }_io_test_start_transaction); // latency
 
                             { inline $ concat $ map sendingAssert sendedVarsValues }
@@ -346,8 +350,8 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                         spi_slave_driver #
                                 ( .DATA_WIDTH( { frameWidth } )
                                 ) { tag }_io_test_slave
-                            ( .clk( { signalClk } )
-                            , .rst( { signalRst } )
+                            ( .clk( { sigClk } )
+                            , .rst( { sigRst } )
                             , .data_in( { tag }_io_test_input )
                             , .data_out( { tag }_io_test_output )
                             , .ready( { tag }_io_test_ready )
@@ -363,18 +367,18 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
                                     [qc|
                         // SPI Input signal generation
                         initial begin
-                            @(negedge { signalRst });
+                            @(negedge { sigRst });
                             { inline $ receiveCycle $ head receivedVarsValues }
                             { envInitFlagName } <= 1;
 
                             { inline $ concat $ map receiveCycle $ tail receivedVarsValues }
-                            repeat(70) @(posedge { signalClk });
+                            repeat(70) @(posedge { sigClk });
                             // $finish; // DON'T DO THAT (with this line test can pass without data checking)
                         end
 
                         // SPI Output signal checking
                         initial begin
-                            @(negedge { signalRst });
+                            @(negedge { sigRst });
                             repeat(2) @(posedge { tag }_io_test_ready);
                             { inline $ concat $ map sendingAssert sendedVarsValues }
                         end
@@ -385,3 +389,4 @@ instance (VarValTime v x t, Num x) => IOTestBench (SPI v x t) v x where
 
                     { inline $ if frameWordCount == 0 then disable else interactions }
                     |]
+    testEnvironment _title _pu _env _tEnv = error "internal error"

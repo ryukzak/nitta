@@ -273,14 +273,22 @@ instance (Val x) => TargetSystemComponent (Shift v x t) where
     moduleName _ _ = "pu_shift"
     hardware tag pu = FromLibrary $ moduleName tag pu ++ ".v"
     software _ _ = Empty
-    hardwareInstance tag _pu TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk} ShiftPorts{..} ShiftIO =
-        codeBlock
-            [qc|
+    hardwareInstance
+        tag
+        _pu
+        UnitEnv
+            { sigClk
+            , ctrlPorts = Just ShiftPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            codeBlock
+                [qc|
             pu_shift #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     ) { tag }
-                ( .clk( { signalClk } )
+                ( .clk( { sigClk } )
                 , .signal_work( { work } ), .signal_direction( { direction } )
                 , .signal_mode( { mode } ), .signal_step( { step } )
                 , .signal_init( { init } ), .signal_oe( { oe } )
@@ -290,7 +298,6 @@ instance (Val x) => TargetSystemComponent (Shift v x t) where
                 , .attr_out( { attrOut } )
                 );
             |]
-    hardwareInstance _title _pu TargetEnvironment{unitEnv = NetworkEnv{}} _ports _op =
-        error "Should be defined in network."
+    hardwareInstance _title _pu _env = error "internal error"
 
 instance IOTestBench (Shift v x t) v x

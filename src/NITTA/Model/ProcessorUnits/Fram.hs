@@ -523,16 +523,24 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
                 map
                     (\Cell{initialValue = initialValue} -> hdlValDump initialValue)
                     $ A.elems memory
-    hardwareInstance tag fram@Fram{memory} TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk} FramPorts{..} FramIO =
-        codeBlock
-            [qc|
+    hardwareInstance
+        tag
+        fram@Fram{memory}
+        UnitEnv
+            { sigClk
+            , ctrlPorts = Just FramPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
+            codeBlock
+                [qc|
             pu_fram #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
                     , .RAM_SIZE( { numElements memory } )
                     , .FRAM_DUMP( "$path${ softwareFile tag fram }" )
                     ) { tag }
-                ( .clk( { signalClk } )
+                ( .clk( { sigClk } )
                 , .signal_addr( \{ { S.join ", " $ map show addr } } )
                 , .signal_wr( { wr } )
                 , .data_in( { dataIn } )
@@ -542,7 +550,6 @@ instance (VarValTime v x t) => TargetSystemComponent (Fram v x t) where
                 , .attr_out( { attrOut } )
                 );
             |]
-    hardwareInstance _title _pu TargetEnvironment{unitEnv = NetworkEnv{}} _ports _io =
-        error "Should be defined in network."
+    hardwareInstance _title _pu _env = error "internal error"
 
 instance IOTestBench (Fram v x t) v x

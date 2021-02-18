@@ -229,9 +229,12 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
     hardwareInstance
         tag
         pu@Broken{brokeVerilog, wrongVerilogSimulationValue, wrongAttr, unknownDataOut}
-        TargetEnvironment{unitEnv = ProcessUnitEnv{..}, signalClk}
-        BrokenPorts{..}
-        BrokenIO =
+        UnitEnv
+            { sigClk
+            , ctrlPorts = Just BrokenPorts{..}
+            , valueIn = Just (dataIn, attrIn)
+            , valueOut = Just (dataOut, attrOut)
+            } =
             codeBlock
                 [qc|
             {  moduleName tag pu } #
@@ -241,7 +244,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
                     , .WRONG_ATTR( { bool2verilog wrongAttr } )
                     , .UNKNOWN_DATA_OUT( { bool2verilog unknownDataOut } )
                     ) { tag }
-                ( .clk( { signalClk } )
+                ( .clk( { sigClk } )
 
                 , .signal_wr( { wr } )
                 , .data_in( { dataIn } ), .attr_in( { attrIn } )
@@ -251,8 +254,7 @@ instance (VarValTime v x t) => TargetSystemComponent (Broken v x t) where
                 { if brokeVerilog then "WRONG VERILOG" else ""  }
                 );
             |]
-    hardwareInstance _title _pu TargetEnvironment{unitEnv = NetworkEnv{}} _ports _io =
-        error "Should be defined in network."
+    hardwareInstance _title _pu _env = error "internal error"
 
 instance IOTestBench (Broken v x t) v x
 
