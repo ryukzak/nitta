@@ -14,7 +14,7 @@ Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
 module NITTA.Project.Utils (
-    writeWholeProject,
+    writeProject,
     runTestbench,
 ) where
 
@@ -37,7 +37,7 @@ import System.Process
 import Text.Regex
 
 -- |Write project with all available parts.
-writeWholeProject prj@Project{pPath} = do
+writeProject prj@Project{pPath} = do
     infoM "NITTA" $ "write target project to: \"" <> pPath <> "\"..."
     writeTargetSystem prj
     writeTestBench prj

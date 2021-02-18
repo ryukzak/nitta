@@ -85,7 +85,7 @@ puCoSimTestCase name u cntxCycle alg =
                     , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
                     , pTemplates = ["board/Icarus"]
                     }
-        writeWholeProject prj
+        writeProject prj
         (tbStatus <$> runTestbench prj) @? (name <> " in " <> pPath)
 
 {- |Bind all functions to processor unit and synthesis process with endpoint
@@ -165,7 +165,7 @@ puCoSimProp name pu0 fsGen =
                                 , pTestCntx
                                 , pTemplates = ["board/Icarus"]
                                 }
-                    writeWholeProject prj
+                    writeProject prj
                     res <- runTestbench prj
                     unless (tbStatus res) $ error $ "Fail CoSim in: " <> pPath
 

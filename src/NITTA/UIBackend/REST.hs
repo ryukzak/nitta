@@ -37,7 +37,7 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
 import NITTA.Model.Types
-import NITTA.Project (Project (..), defProjectTemplates, runTestbench, writeWholeProject)
+import NITTA.Project (Project (..), defProjectTemplates, runTestbench, writeProject)
 import NITTA.Synthesis
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
@@ -207,7 +207,7 @@ testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = l
                 , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues $ targetDFG tree
                 , pTemplates = defProjectTemplates
                 }
-    writeWholeProject prj
+    writeProject prj
     view <$> runTestbench prj
 
 -- Debug

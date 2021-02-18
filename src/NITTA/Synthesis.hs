@@ -101,7 +101,7 @@ import NITTA.Model.Networks.Bus
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
-import NITTA.Project (Project (..), defProjectTemplates, runTestbench, writeWholeProject)
+import NITTA.Project (Project (..), defProjectTemplates, runTestbench, writeProject)
 import NITTA.Synthesis.Bind
 import NITTA.Synthesis.Dataflow
 import NITTA.Synthesis.Explore
@@ -147,7 +147,7 @@ instance (VarValTime v x t) => Default (TargetSynthesis String v x t) where
             , tDFG = undefined
             , tReceivedValues = def
             , tSynthesisMethod = stateOfTheArtSynthesisIO
-            , tWriteProject = writeWholeProject
+            , tWriteProject = writeProject
             , tLibPath = "hdl"
             , tPath = joinPath ["gen"]
             , tSimulationCycleN = 5
@@ -178,7 +178,7 @@ synthesizeTargetSystem
         synthesise root >>= \case
             Left err -> return $ Left err
             Right leafNode -> do
-                Right <$> writeProject leafNode
+                Right <$> writeProject' leafNode
         where
             translateToIntermediate src = do
                 infoM "NITTA" "Lua transpiler..."
@@ -196,7 +196,7 @@ synthesizeTargetSystem
                         then Right leaf
                         else Left "synthesis process...fail"
 
-            writeProject leaf = do
+            writeProject' leaf = do
                 let prj =
                         Project
                             { pName = tName
