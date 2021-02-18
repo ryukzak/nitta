@@ -81,7 +81,9 @@ puCoSimTestCase name u cntxCycle alg =
                     , pLibPath = "hdl"
                     , pPath
                     , pUnit = naiveSynthesis alg u
+                    , pUnitEnv = undefined -- FIXME:
                     , pTestCntx = simulateAlg 5 (CycleCntx $ M.fromList cntxCycle) [] alg
+                    , pTemplates = defProjectTemplates
                     }
         (tbStatus <$> writeAndRunTestbench prj) @? (name <> " in " <> pPath)
 
@@ -159,7 +161,9 @@ puCoSimProp name pu0 fsGen =
                                 , pLibPath = "hdl"
                                 , pPath
                                 , pUnit = pu
+                                , pUnitEnv = undefined -- FIXME:
                                 , pTestCntx
+                                , pTemplates = ["Icarus"]
                                 }
                     unless (tbStatus res) $ error $ "Fail CoSim in: " <> pPath
 

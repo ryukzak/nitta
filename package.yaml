@@ -55,8 +55,10 @@ dependencies:
   - containers
   - data-default
   - filepath
+  - ginger
   - interpolatedstring-perl6
   - regex-compat
+  - string-interpolate
   - text
 
 

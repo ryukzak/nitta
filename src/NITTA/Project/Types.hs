@@ -13,11 +13,13 @@ Stability   : experimental
 -}
 module NITTA.Project.Types (
     Project (..),
+    defProjectTemplates,
 ) where
 
 import Data.Default
 import NITTA.Intermediate.Types
 import NITTA.Intermediate.Value ()
+import NITTA.Project.Implementation
 
 {- |Target project for different purpose (testing, target system, etc). Should
 be writable to disk.
@@ -34,9 +36,16 @@ data Project m v x = Project
       pPath :: String
     , -- |'mUnit' model (a mUnit unit for testbench or network for complete NITTA mUnit)
       pUnit :: m
+    , pUnitEnv :: UnitEnv m
     , -- |testbench context with input values
       pTestCntx :: Cntx v x
+    , -- |Target platform templates
+      pTemplates :: [String]
     }
-    deriving (Show)
+
+defProjectTemplates =
+    [ "board/Icarus"
+    , "board/DE0-nano"
+    ]
 
 instance (Default x) => DefaultX (Project m v x) x

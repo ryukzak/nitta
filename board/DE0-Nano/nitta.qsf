@@ -1,0 +1,104 @@
+set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE22F17C6
+set_global_assignment -name TOP_LEVEL_ENTITY nitta
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 17.1.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:22:40  NOVEMBER 11, 2017"
+set_global_assignment -name LAST_QUARTUS_VERSION "17.1.0 Lite Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
+set_global_assignment -name PROJECT_IP_REGENERATION_POLICY ALWAYS_REGENERATE_IP
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+
+
+set_location_assignment PIN_R8 -to external_clk
+set_location_assignment PIN_M1 -to rst
+
+set_location_assignment PIN_J15 -to keys[0]
+set_location_assignment PIN_E1  -to keys[1]
+
+set_location_assignment PIN_M1  -to dips[0]
+set_location_assignment PIN_T8  -to dips[1]
+set_location_assignment PIN_B9  -to dips[2]
+set_location_assignment PIN_M15 -to dips[3]
+ 
+set_location_assignment PIN_A15 -to leds[0]
+set_location_assignment PIN_A13 -to leds[1]
+set_location_assignment PIN_B13 -to leds[2]
+set_location_assignment PIN_A11 -to leds[3]
+set_location_assignment PIN_D1  -to leds[4]
+set_location_assignment PIN_F3  -to leds[5]
+set_location_assignment PIN_B1  -to leds[6]
+set_location_assignment PIN_L3  -to leds[7]
+
+set_location_assignment PIN_E11 -to mosi
+set_location_assignment PIN_C11 -to miso
+set_location_assignment PIN_A12 -to sclk
+set_location_assignment PIN_D12 -to cs
+
+set_location_assignment PIN_E10 -to mosi_lg
+set_location_assignment PIN_B11 -to miso_lg
+set_location_assignment PIN_D11 -to sclk_lg
+set_location_assignment PIN_B12 -to cs_lg
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to external_clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to rst
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to keys[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to keys[1]
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to dips[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to dips[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to dips[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to dips[3]
+ 
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[7]
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to mosi
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to miso
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sclk
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to cs
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to mosi_lg
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to miso_lg
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sclk_lg
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to cs_lg
+
+
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (Verilog)"
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+
+{% for file in nitta.files %}
+set_global_assignment -name VERILOG_FILE {{ file }}
+{% endfor %}
+
+set_global_assignment -name SDC_FILE nitta.sdc
+
+set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
+set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS TEST_BENCH_MODE -section_id eda_simulation
+set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH {{ nitta.testbench.module_name }} -section_id eda_simulation
+set_global_assignment -name EDA_TEST_BENCH_NAME $testbench_module$ -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id {{ nitta.testbench.module_name }}
+
+{% for file in nitta.files %}
+set_global_assignment -name EDA_TEST_BENCH_FILE {{ file }} -section_id {{ nitta.testbench.module_name }}
+{% endfor %}
+
+set_global_assignment -name EDA_NATIVELINK_SIMULATION_SETUP_SCRIPT sim.do -section_id eda_simulation
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name EDA_NETLIST_WRITER_OUTPUT_DIR simulation/modelsim -section_id eda_simulation
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME $testbench_module$ -section_id {{ nitta.testbench.module_name }}
+set_global_assignment -name EDA_TEST_BENCH_FILE $testbench_module$.v -section_id {{ nitta.testbench.module_name }}

@@ -36,9 +36,8 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Networks.Bus
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits
-import NITTA.Model.TargetSystem
 import NITTA.Model.Types
-import NITTA.Project (Project (..), writeAndRunTestbench)
+import NITTA.Project (Project (..), defProjectTemplates, writeAndRunTestbench)
 import NITTA.Synthesis
 import NITTA.UIBackend.Timeline
 import NITTA.UIBackend.ViewHelper
@@ -204,8 +203,10 @@ testBench BackendCtx{root, receivedValues, outputPath} sid pName loopsNumber = l
                 { pName
                 , pLibPath = "hdl"
                 , pPath = joinPath [outputPath, pName]
-                , pUnit = mUnit $ sTarget $ sState tree
+                , pUnit = targetUnit tree
+                , pUnitEnv = bnEnv $ targetUnit tree
                 , pTestCntx = simulateDataFlowGraph loopsNumber def receivedValues $ targetDFG tree
+                , pTemplates = defProjectTemplates
                 }
 
 -- Debug

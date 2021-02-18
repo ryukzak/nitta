@@ -17,21 +17,7 @@ module NITTA.Project.Parts.Icarus (
     writeIcarusMakefile,
 ) where
 
-import qualified Data.String.Utils as S
-import NITTA.Project.Parts.TestBench
+import NITTA.Project.Template
 import NITTA.Project.Types
-import NITTA.Utils
-import System.Directory (createDirectoryIfMissing)
-import System.FilePath.Posix (joinPath)
-import Text.InterpolatedString.Perl6 (qc)
 
-writeIcarusMakefile prj@Project{pPath} = do
-    createDirectoryIfMissing True pPath
-    writeFile (joinPath [pPath, "Makefile"]) $
-        space2tab 4 $
-            codeBlock
-                [qc|
-        icarus:
-            iverilog { S.join " " $ projectFiles prj }
-            vvp a.out
-        |]
+writeIcarusMakefile prj = writeRenderedTemplates prj{pTemplates = ["board/Icarus"]}

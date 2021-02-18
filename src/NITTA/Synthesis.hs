@@ -97,11 +97,11 @@ import NITTA.Intermediate.DataFlow
 import NITTA.Intermediate.Simulation
 import NITTA.Intermediate.Types
 import NITTA.LuaFrontend
-import NITTA.Model.Networks.Bus (BusNetwork)
+import NITTA.Model.Networks.Bus
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.TargetSystem
 import NITTA.Model.Types
-import NITTA.Project (Project (..), runTestbench, writeWholeProject)
+import NITTA.Project (Project (..), defProjectTemplates, runTestbench, writeWholeProject)
 import NITTA.Synthesis.Bind
 import NITTA.Synthesis.Dataflow
 import NITTA.Synthesis.Explore
@@ -202,10 +202,12 @@ synthesizeTargetSystem
                             { pName = tName
                             , pLibPath = tLibPath
                             , pPath = joinPath [tPath, tName]
-                            , pUnit = targetModel leaf
+                            , pUnit = targetUnit leaf
+                            , pUnitEnv = bnEnv $ targetUnit leaf
                             , -- because application algorithm can be refactored we need to use
                               -- synthesised version
                               pTestCntx = simulateDataFlowGraph tSimulationCycleN def tReceivedValues $ targetDFG leaf
+                            , pTemplates = defProjectTemplates
                             }
                 tWriteProject prj
                 return prj

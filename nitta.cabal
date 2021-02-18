@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 92a8e80c683f6b6157a6aa7af2365375d6d56d29a74355a8de9fc4e9b67b5c9c
+-- hash: 3af1b132bef2919a5dacffc43e7f2c2c27f3f674ce06a51763a4cb6891944fca
 
 name:           nitta
 version:        0.0.0.1
@@ -91,6 +91,7 @@ library
       NITTA.Project.Parts.TestBench
       NITTA.Project.Parts.Utils
       NITTA.Project.Snippets
+      NITTA.Project.Template
       NITTA.Project.Types
       NITTA.Project.Utils
       NITTA.Synthesis
@@ -130,6 +131,7 @@ library
     , directory
     , file-embed
     , filepath
+    , ginger
     , hashable
     , hslogger
     , http-api-data
@@ -147,6 +149,7 @@ library
     , servant-server
     , split
     , stm
+    , string-interpolate
     , text
     , transformers
     , unordered-containers
@@ -171,10 +174,12 @@ executable nitta
     , containers
     , data-default
     , filepath
+    , ginger
     , hslogger
     , interpolatedstring-perl6
     , nitta
     , regex-compat
+    , string-interpolate
     , text
   default-language: Haskell2010
 
@@ -196,11 +201,13 @@ executable nitta-api-gen
     , data-default
     , directory
     , filepath
+    , ginger
     , hslogger
     , interpolatedstring-perl6
     , intervals
     , nitta
     , regex-compat
+    , string-interpolate
     , text
   default-language: Haskell2010
 
@@ -246,10 +253,12 @@ test-suite nitta-test
     , filepath
     , genvalidity
     , genvalidity-property
+    , ginger
     , interpolatedstring-perl6
     , nitta
     , regex-compat
     , split
+    , string-interpolate
     , tasty
     , tasty-expected-failure
     , tasty-hunit
