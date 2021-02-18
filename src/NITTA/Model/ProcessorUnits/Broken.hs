@@ -279,6 +279,6 @@ instance (VarValTime v x t) => Testable (Broken v x t) v x where
                             , wr = SignalTag "wr"
                             }
                     , tbcIOPorts = BrokenIO
-                    , tbcCtrl = \Microcode{oeSignal, wrSignal} ->
+                    , tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal} ->
                         [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal};|]
                     }

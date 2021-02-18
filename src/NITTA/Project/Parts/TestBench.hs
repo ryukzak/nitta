@@ -137,7 +137,7 @@ data SnippetTestBenchConf m = SnippetTestBenchConf
     { tbcSignals :: [String]
     , tbcPorts :: Ports m
     , tbcIOPorts :: IOPorts m
-    , tbcCtrl :: Microcode m -> String
+    , tbcMC2verilogLiteral :: Microcode m -> String
     }
 
 -- |Function for testBench PU test
@@ -158,7 +158,7 @@ snippetTestBench ::
     String
 snippetTestBench
     Project{pName, pUnit, pTestCntx = Cntx{cntxProcess}}
-    SnippetTestBenchConf{tbcSignals, tbcPorts, tbcIOPorts, tbcCtrl} =
+    SnippetTestBenchConf{tbcSignals, tbcPorts, tbcIOPorts, tbcMC2verilogLiteral} =
         let cycleCntx : _ = cntxProcess
             name = moduleName pName pUnit
             p@Process{steps, nextTick} = process pUnit
@@ -185,7 +185,7 @@ snippetTestBench
                     map
                         ( \t ->
                             let x = targetVal t
-                             in tbcCtrl (microcodeAt pUnit t)
+                             in tbcMC2verilogLiteral (microcodeAt pUnit t)
                                     <> [qc| data_in <= { dataLiteral x }; attr_in <= { attrLiteral x };|]
                                     <> " @(posedge clk);"
                         )

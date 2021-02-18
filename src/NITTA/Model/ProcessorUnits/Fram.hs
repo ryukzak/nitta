@@ -508,7 +508,7 @@ instance (VarValTime v x t) => Testable (Fram v x t) v x where
                                 , addr = map SignalTag ["addr[3]", "addr[2]", "addr[1]", "addr[0]"]
                                 }
                         , tbcIOPorts = FramIO
-                        , tbcCtrl = showMicrocode
+                        , tbcMC2verilogLiteral = showMicrocode
                         }
 
 softwareFile tag pu = moduleName tag pu ++ "." ++ tag ++ ".dump"

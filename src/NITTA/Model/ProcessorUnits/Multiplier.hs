@@ -725,6 +725,6 @@ instance (VarValTime v x t) => Testable (Multiplier v x t) v x where
                             }
                     , tbcIOPorts = MultiplierIO
                     , -- Map microcode to registers in the testbench.
-                      tbcCtrl = \Microcode{oeSignal, wrSignal, selSignal} ->
+                      tbcMC2verilogLiteral = \Microcode{oeSignal, wrSignal, selSignal} ->
                         [qc|oe <= {bool2verilog oeSignal}; wr <= {bool2verilog wrSignal}; wrSel <= {bool2verilog selSignal};|]
                     }
