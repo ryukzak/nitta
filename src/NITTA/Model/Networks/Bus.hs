@@ -226,9 +226,9 @@ instance Controllable (BusNetwork tag v x t) where
     -- signals starts and ends inside network unit.
     zipSignalTagsAndValues BusNetworkPorts BusNetworkMC{} = []
 
-    portsToSignals _ = undefined
+    usedPortTags _ = error "internal error"
 
-    signalsToPorts _ _ = undefined
+    takePortTags _ _ = error "internal error"
 
 instance {-# OVERLAPS #-} ByTime (BusNetwork tag v x t) t where
     microcodeAt BusNetwork{..} t =

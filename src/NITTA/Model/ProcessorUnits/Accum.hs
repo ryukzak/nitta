@@ -229,10 +229,10 @@ instance Controllable (Accum v x t) where
         , (neg, maybe Undef Bool negSignal)
         ]
 
-    portsToSignals AccumPorts{resetAcc, load, neg, oe} = [resetAcc, load, neg, oe]
+    usedPortTags AccumPorts{resetAcc, load, neg, oe} = [resetAcc, load, neg, oe]
 
-    signalsToPorts (resetAcc : load : neg : oe : _) _ = AccumPorts resetAcc load neg oe
-    signalsToPorts _ _ = error "pattern match error in signalsToPorts AccumPorts"
+    takePortTags (resetAcc : load : neg : oe : _) _ = AccumPorts resetAcc load neg oe
+    takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Default (Microcode (Accum v x t)) where
     def =

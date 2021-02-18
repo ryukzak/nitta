@@ -463,13 +463,13 @@ instance Controllable (Fram v x t) where
                     )
                     $ zip (reverse addr) [0 ..]
 
-    portsToSignals FramPorts{oe, wr, addr} = oe : wr : addr
+    usedPortTags FramPorts{oe, wr, addr} = oe : wr : addr
 
-    signalsToPorts (oe : wr : xs) pu = FramPorts oe wr addr
+    takePortTags (oe : wr : xs) pu = FramPorts oe wr addr
         where
             width = addrWidth pu
             addr = take width xs
-    signalsToPorts _ _ = error "pattern match error in signalsToPorts FramIOPorts"
+    takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Connected (Fram v x t) where
     data Ports (Fram v x t) = FramPorts

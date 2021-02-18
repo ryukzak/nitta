@@ -224,8 +224,7 @@ representation (see ahead).
 -}
 class Controllable pu where
     -- Instruction describe unit behaviour on each mUnit cycle. If instruction
-    -- not defined for some cycles - it should be interpreted as NOP. In future,
-    -- Instruction should be extracted, because
+    -- not defined for some cycles - it should be interpreted as NOP.
     data Instruction pu :: Type
 
     -- |Microcode desctibe controll signals on each mUnit cycle (without exclusion).
@@ -234,11 +233,11 @@ class Controllable pu where
     -- |Zip port signal tags and value.
     zipSignalTagsAndValues :: Ports pu -> Microcode pu -> [(SignalTag, SignalValue)]
 
-    -- |Get list of signals from Ports pu
-    portsToSignals :: Ports pu -> [SignalTag]
+    -- |Get list of used control signal tags.
+    usedPortTags :: Ports pu -> [SignalTag]
 
-    -- |Get Ports from list of signals
-    signalsToPorts :: [SignalTag] -> pu -> Ports pu
+    -- |Take signal tags from inifinite list of tags.
+    takePortTags :: [SignalTag] -> pu -> Ports pu
 
 -- |Getting microcode value at a specific time.
 class ByTime pu t | pu -> t where

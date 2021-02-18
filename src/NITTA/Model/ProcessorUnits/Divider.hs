@@ -283,10 +283,10 @@ instance Controllable (Divider v x t) where
         , (oeSel, Bool oeSelSignal)
         ]
 
-    portsToSignals DividerPorts{wr, wrSel, oe, oeSel} = [wr, wrSel, oe, oeSel]
+    usedPortTags DividerPorts{wr, wrSel, oe, oeSel} = [wr, wrSel, oe, oeSel]
 
-    signalsToPorts (wr : wrSel : oe : oeSel : _) _ = DividerPorts wr wrSel oe oeSel
-    signalsToPorts _ _ = error "pattern match error in signalsToPorts DividerPorts"
+    takePortTags (wr : wrSel : oe : oeSel : _) _ = DividerPorts wr wrSel oe oeSel
+    takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Default (Microcode (Divider v x t)) where
     def =

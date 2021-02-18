@@ -80,7 +80,7 @@ add tag ioport = addCustom tag def ioport
 -- |Add PU with the custom initial state. Type specify by IOPorts.
 addCustom tag pu ioports = do
     st@BuilderSt{signalBusWidth, availPorts, puProtos, netEnv} <- get
-    let ports = signalsToPorts availPorts pu
+    let ports = takePortTags availPorts pu
         pu' =
             PU
                 pu
@@ -91,7 +91,7 @@ addCustom tag pu ioports = do
                     , valueIn = Just ("data_bus", "attr_bus")
                     , valueOut = Just (tag <> "_data_out", tag <> "_attr_out")
                     }
-        usedPorts = portsToSignals ports
+        usedPorts = usedPortTags ports
     put
         st
             { signalBusWidth = signalBusWidth + length usedPorts

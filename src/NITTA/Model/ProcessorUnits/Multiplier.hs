@@ -592,10 +592,10 @@ instance Controllable (Multiplier v x t) where
         , (oe, Bool oeSignal)
         ]
 
-    portsToSignals MultiplierPorts{wr, wrSel, oe} = [wr, wrSel, oe]
+    usedPortTags MultiplierPorts{wr, wrSel, oe} = [wr, wrSel, oe]
 
-    signalsToPorts (wr : wrSel : oe : _) _ = MultiplierPorts wr wrSel oe
-    signalsToPorts _ _ = error "pattern match error in signalsToPorts MultiplierPorts"
+    takePortTags (wr : wrSel : oe : _) _ = MultiplierPorts wr wrSel oe
+    takePortTags _ _ = error "can not take port tags, tags are over"
 
 {- |Default microcode state should be equal to @nop@ function, which should be a
 safe way to do nothing (not take a bus, not change internal PU state, etc.).

@@ -168,10 +168,10 @@ instance Controllable (Broken v x t) where
         , (oe, Bool oeSignal)
         ]
 
-    portsToSignals BrokenPorts{wr, oe} = [wr, oe]
+    usedPortTags BrokenPorts{wr, oe} = [wr, oe]
 
-    signalsToPorts (wr : oe : _) _ = BrokenPorts wr oe
-    signalsToPorts _ _ = error "pattern match error in signalsToPorts MultiplierPorts"
+    takePortTags (wr : oe : _) _ = BrokenPorts wr oe
+    takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Default (Microcode (Broken v x t)) where
     def =

@@ -234,11 +234,11 @@ instance Controllable (Shift v x t) where
         , (oe, Bool oeSignal)
         ]
 
-    portsToSignals ShiftPorts{work, direction, mode, step, init, oe} =
+    usedPortTags ShiftPorts{work, direction, mode, step, init, oe} =
         [work, direction, mode, step, init, oe]
 
-    signalsToPorts (work : direction : mode : step : init : oe : _) _ = ShiftPorts work direction mode step init oe
-    signalsToPorts _ _ = error "pattern match error in signalsToPorts ShiftPorts"
+    takePortTags (work : direction : mode : step : init : oe : _) _ = ShiftPorts work direction mode step init oe
+    takePortTags _ _ = error "can not take port tags, tags are over"
 
 instance Default (Microcode (Shift v x t)) where
     def =
