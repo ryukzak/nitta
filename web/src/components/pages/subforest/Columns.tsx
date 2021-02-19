@@ -1,6 +1,8 @@
 import * as React from "react";
 
-import { Button, Popover, OverlayTrigger } from "react-bootstrap";
+import { Popover, OverlayTrigger } from "react-bootstrap";
+import * as Icon from "react-bootstrap-icons";
+
 import { sidSeparator } from "components/app/AppContext";
 import { Node } from "services/HaskellApiService";
 import { Interval } from "gen/types";
@@ -51,7 +53,7 @@ export function textColumn(
 
 export function detailColumn() {
   return textColumn(
-    "detail",
+    "",
     (e: Node) => {
       return (
         <OverlayTrigger
@@ -71,13 +73,11 @@ export function detailColumn() {
             </Popover>
           }
         >
-          <Button variant="secondary" size="sm">
-            detail
-          </Button>
+          <Icon.InfoCircle />
         </OverlayTrigger>
       );
     },
-    50
+    25
   );
 }
 
