@@ -18,7 +18,6 @@ module NITTA.Project.Template (
     writeRenderedTemplates,
 ) where
 
--- TODO: Improve error msg on bad template
 -- TODO: Improve error on undefined on wrong variable usage
 -- TODO: Fix work with subpath inside project template
 -- TODO: Add template config (where to put nitta project)
@@ -40,12 +39,13 @@ writeRenderedTemplates prj@Project{pPath, pTemplates} = do
         templates <- findAllFiles pTemplate
         mapM_ (writeRendedTemplate (projectContext prj) pPath) templates
 
-writeRendedTemplate context opath file = do
-    src <- readFile file
+writeRendedTemplate context opath filename = do
+    src <- readFile filename
+    let raiseError err = error $ filename <> ": " <> formatParserError (Just src) err
     template <-
-        either (error . show) return <$> runIdentity $
+        either raiseError return <$> runIdentity $
             parseGinger (const $ return Nothing) Nothing src
-    T.writeFile (joinPath [opath, takeFileName file]) $ runGinger context template
+    T.writeFile (joinPath [opath, takeFileName filename]) $ runGinger context template
 
 -- |List all files insede path
 findAllFiles path = do
