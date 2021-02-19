@@ -8,7 +8,7 @@
 
 {- |
 Module      : NITTA.Project.Template
-Description : Generate target project by specific template
+Description : Generate target project by specific templates
 Copyright   : (c) Aleksandr Penskoi, 2021
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
@@ -28,8 +28,7 @@ import Control.Monad.Identity (runIdentity)
 import Data.Foldable
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import NITTA.Project.Implementation
-import NITTA.Project.Parts.TestBench
+import NITTA.Project.TestBench
 import NITTA.Project.Types
 import System.Directory
 import System.FilePath

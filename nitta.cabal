@@ -4,7 +4,7 @@ cabal-version: 1.18
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7ab09e70c1665976bac0803e4be8aa5c8e72720c96284f79c1681ac4f529dc6b
+-- hash: b2cf7c77aa79c754e0093ad97fdf06fa016b9efbaee5c2103c70a832f55e86e6
 
 name:           nitta
 version:        0.0.0.1
@@ -84,13 +84,10 @@ library
       NITTA.Model.TargetSystem
       NITTA.Model.Types
       NITTA.Project
-      NITTA.Project.Implementation
-      NITTA.Project.Parts.TestBench
-      NITTA.Project.Parts.Utils
-      NITTA.Project.Snippets
       NITTA.Project.Template
+      NITTA.Project.TestBench
       NITTA.Project.Types
-      NITTA.Project.Utils
+      NITTA.Project.VerilogSnippets
       NITTA.Synthesis
       NITTA.Synthesis.Bind
       NITTA.Synthesis.BreakLoop

@@ -44,10 +44,9 @@ import NITTA.Model.Networks.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Types
-import NITTA.Project.Implementation
-import NITTA.Project.Parts.TestBench
-import NITTA.Project.Snippets
+import NITTA.Project.TestBench
 import NITTA.Project.Types
+import NITTA.Project.VerilogSnippets
 import NITTA.Utils
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, width, (...))

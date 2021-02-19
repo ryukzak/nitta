@@ -8,22 +8,22 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {- |
-Module      : NITTA.Project.Parts.TestBench
+Module      : NITTA.Project.TestBench
 Description : Generation a test bench for the target system.
 Copyright   : (c) Aleksandr Penskoi, 2019
 License     : BSD3
 Maintainer  : aleksandr.penskoi@gmail.com
 Stability   : experimental
 -}
-module NITTA.Project.Parts.TestBench (
-    TestEnvironment (..),
+module NITTA.Project.TestBench (
     Testable (..),
     IOTestBench (..),
+    TestEnvironment (..),
     TestbenchReport (..),
     testBenchTopModuleName,
     projectFiles,
-    snippetTestBench,
     SnippetTestBenchConf (..),
+    snippetTestBench,
 ) where
 
 import Data.Default
@@ -36,9 +36,8 @@ import NITTA.Intermediate.Types
 import NITTA.Model.Problems
 import NITTA.Model.ProcessorUnits.Types
 import NITTA.Model.Types
-import NITTA.Project.Implementation
-import NITTA.Project.Snippets
 import NITTA.Project.Types
+import NITTA.Project.VerilogSnippets
 import NITTA.Utils
 import System.FilePath.Posix (joinPath)
 import Text.InterpolatedString.Perl6 (qc)
@@ -105,6 +104,9 @@ instance (Show v, Show x) => Show (TestbenchReport v x) where
             where
                 showLst = unlines . map ("    " ++)
 
+-- |Get name of testbench top module.
+testBenchTopModuleName prj = S.replace ".v" "" $ last $ projectFiles prj
+
 -- |Generate list of project verilog files (including testbench).
 projectFiles prj@Project{pName, pUnit} =
     L.nub $ concatMap (addPath "") [hardware pName pUnit, testBenchImplementation prj]
@@ -114,9 +116,6 @@ projectFiles prj@Project{pName, pUnit} =
         addPath p (Immediate fn _) = [joinPath [p, fn]]
         addPath _ (FromLibrary fn) = [joinPath ["lib", fn]]
         addPath _ Empty = []
-
--- |Get name of testbench top module.
-testBenchTopModuleName prj = S.replace ".v" "" $ last $ projectFiles prj
 
 -- |Data Type for SnippetTestBench function
 data SnippetTestBenchConf m = SnippetTestBenchConf
