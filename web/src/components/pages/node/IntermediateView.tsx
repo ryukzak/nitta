@@ -5,7 +5,8 @@ import { Graphviz } from "graphviz-react";
 
 import { AppContext, IAppContext } from "components/app/AppContext";
 import { GraphNode, GraphEdge } from "gen/types";
-import { api, PUEndpoints, Endpoint, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
+import { api, IntermediateGraph, Dataflow, Bind, Node } from "services/HaskellApiService";
+import { PUEndpoints, Endpoint, EndpointDecision } from "services/HaskellApiService";
 
 import "./IntermediateView.scss";
 
@@ -66,8 +67,8 @@ export const IntermediateView: React.FC<IIntermediateViewProps> = (props) => {
         response.data.forEach((n: Node) => {
           if (n.decision.tag === "DataflowDecisionView") {
             let targets = (n.decision as Dataflow).targets;
-            Object.keys(targets).forEach((v: string) => {
-              if (targets[v] !== null) result.transferedVars.push(v);
+            targets.forEach((target: [string, EndpointDecision]) => {
+              result.transferedVars.push(target[1].epRole.contents as string);
             });
           }
           if (n.decision.tag === "BindDecisionView") {

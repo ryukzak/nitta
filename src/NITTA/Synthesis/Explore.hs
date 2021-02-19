@@ -179,10 +179,10 @@ nodeCtx parent nModel =
                     (S.elems (variables (mUnit nModel) S.\\ unionsMap variables sBindOptions))
             , numberOfDataflowOptions = length sDataflowOptions
             , transferableVars =
-                S.fromList
-                    [ v
+                S.unions
+                    [ variables ep
                     | (DataflowSt _ targets) <- sDataflowOptions
-                    , (v, Just _) <- M.assocs targets
+                    , (_, ep) <- targets
                     ]
             }
 
