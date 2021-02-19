@@ -51,7 +51,8 @@ import NITTA.Model.Types
 import NITTA.Project.TestBench
 import NITTA.Project.Types
 import NITTA.Project.VerilogSnippets
-import NITTA.Utils
+import NITTA.Utils hiding (codeBlock, codeLine, inline)
+import NITTA.Utils.CodeFormatText
 import NITTA.Utils.ProcessDescription
 import Numeric.Interval.NonEmpty (inf, sup, width, (...))
 import Text.InterpolatedString.Perl6 (qc)
@@ -417,7 +418,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                         , output                    flag_cycle_begin
                         , output                    flag_in_cycle
                         , output                    flag_cycle_end
-                        { inline $ externalPortsDecl $ bnExternalPorts bnPus }
+                        { inline $ T.pack $ externalPortsDecl $ bnExternalPorts bnPus }
                         , output              [7:0] debug_status
                         , output              [7:0] debug_bus1
                         , output              [7:0] debug_bus2
@@ -456,7 +457,7 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                         , .flag_cycle_end( flag_cycle_end )
                         );
 
-                    { inline $ S.join "\\n\\n" instances }
+                    { inline $ T.intercalate "\\n\\n" instances }
 
                     assign data_bus = { S.join " | " $ map snd valuesRegs };
                     assign attr_bus = { S.join " | " $ map fst valuesRegs };
@@ -464,21 +465,21 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                     endmodule
                     |]
          in Aggregate (Just mn) $
-                [ Immediate (mn <> ".v") $ T.pack iml
+                [ Immediate (mn <> ".v") iml
                 , FromLibrary "pu_simple_control.v"
                 ]
                     ++ map (uncurry hardware) (map (first T.pack) $ M.assocs bnPus)
         where
             regInstance t =
-                unlines
+                T.unlines
                     [ "wire [DATA_WIDTH-1:0] " <> t <> "_data_out;"
                     , "wire [ATTR_WIDTH-1:0] " <> t <> "_attr_out;"
                     ]
 
             renderInstance insts regs [] = (reverse insts, reverse regs)
             renderInstance insts regs ((t, PU{unit, uEnv}) : xs) =
-                let inst = T.unpack $ hardwareInstance (T.pack t) unit uEnv
-                    insts' = inst : regInstance t : insts
+                let inst = hardwareInstance (T.pack t) unit uEnv
+                    insts' = inst : regInstance (T.pack t) : insts
                     regs' = (t <> "_attr_out", t <> "_data_out") : regs
                  in renderInstance insts' regs' xs
 
@@ -500,11 +501,10 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
 
     hardwareInstance tag BusNetwork{} UnitEnv{sigRst, sigClk, ioPorts = Just ioPorts}
         | let io2v n = ", ." ++ n ++ "( " ++ n ++ " )"
-              is = map (\(InputPortTag n) -> io2v n) $ inputPorts ioPorts
-              os = map (\(OutputPortTag n) -> io2v n) $ outputPorts ioPorts =
-            T.pack $
-                codeBlock
-                    [qc|
+              is = map (\(InputPortTag n) -> T.pack $ io2v n) $ inputPorts ioPorts
+              os = map (\(OutputPortTag n) -> T.pack $ io2v n) $ outputPorts ioPorts =
+            codeBlock
+                [qc|
             { tag } #
                     ( .DATA_WIDTH( { dataWidth (def :: x) } )
                     , .ATTR_WIDTH( { attrWidth (def :: x) } )
@@ -512,9 +512,9 @@ instance (VarValTime v x t) => TargetSystemComponent (BusNetwork String v x t) w
                 ( .rst( { sigRst } )
                 , .clk( { sigClk } )
                 // inputs:
-                { inline $ S.join "\\n" is }
+                { inline $ T.unlines is }
                 // outputs:
-                { inline $ S.join "\\n" os }
+                { inline $ T.unlines os }
                 , .debug_status( debug_status ) // FIXME:
                 , .debug_bus1( debug_bus1 )     // FIXME:
                 , .debug_bus2( debug_bus2 )     // FIXME:
@@ -550,24 +550,25 @@ instance
             , pTestCntx = pTestCntx@Cntx{cntxProcess, cntxCycleNumber}
             } =
             let testEnv =
-                    S.join
+                    T.intercalate
                         "\\n\\n"
                         [ tbEnv
                         | (t, PU{unit, uEnv}) <- M.assocs bnPus
                         , let tbEnv =
-                                testEnvironment
-                                    (toString t)
-                                    unit
-                                    uEnv
-                                    TestEnvironment
-                                        { teCntx = pTestCntx
-                                        , teComputationDuration = fromEnum $ nextTick bnProcess
-                                        }
-                        , not $ null tbEnv
+                                T.pack $
+                                    testEnvironment
+                                        t
+                                        unit
+                                        uEnv
+                                        TestEnvironment
+                                            { teCntx = pTestCntx
+                                            , teComputationDuration = fromEnum $ nextTick bnProcess
+                                            }
+                        , not $ T.null tbEnv
                         ]
 
-                externalPortNames = concatMap ((\(is, os, ios) -> is ++ os ++ ios) . snd) $ bnExternalPorts bnPus
-                externalIO = S.join ", " ("" : map (\p -> "." ++ p ++ "( " ++ p ++ " )") externalPortNames)
+                externalPortNames = concatMap ((\(is, os, ios) -> is <> os <> ios) . snd) $ bnExternalPorts bnPus
+                externalIO = T.intercalate ", " ("" : map ((\p -> "." <> p <> "( " <> p <> " )") . T.pack) externalPortNames)
                 envInitFlags = mapMaybe (uncurry testEnvironmentInitFlag) $ M.assocs bnPus
 
                 tickWithTransfers =
@@ -579,27 +580,26 @@ instance
                         )
                         $ zip [0 :: Int ..] $ take cntxCycleNumber cntxProcess
 
-                assertions = concatMap (\cycleTickTransfer -> posedgeCycle ++ concatMap assertion cycleTickTransfer) tickWithTransfers
+                assertions = T.concat $ map (\cycleTickTransfer -> posedgeCycle <> T.concat (map assertion cycleTickTransfer)) tickWithTransfers
 
                 assertion (cycleI, t, Nothing) =
                     codeLine [qc|@(posedge clk); traceWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus);|]
                 assertion (cycleI, t, Just (v, x)) =
                     codeLine [qc|@(posedge clk); assertWithAttr({ cycleI }, { t }, net.data_bus, net.attr_bus, { dataLiteral x }, { attrLiteral x }, { v });|]
              in Immediate (moduleName pName n <> "_tb.v") $
-                    T.pack $
-                        codeBlock
-                            [qc|
+                    codeBlock
+                        [qc|
             `timescale 1 ps / 1 ps
             module { moduleName pName n }_tb();
 
             /*
             Functions:
-            { inline $ S.join "\\n" $ map show $ functions n }
+            { inline $ T.unlines $ map (T.pack . show) $ functions n }
             */
 
             /*
             Steps:
-            { inline $ S.join "\\n" $ map show $ reverse $ steps $ process n }
+            { inline $ T.unlines $ map (T.pack . show) $ reverse $ steps $ process n }
             */
 
             // system signals
@@ -607,10 +607,10 @@ instance
             wire cycle;
 
             // clk and rst generator
-            { inline $ T.unpack snippetClkGen }
+            { inline snippetClkGen }
 
             // vcd dump
-            { inline $ T.unpack $ snippetDumpFile $ moduleName pName n }
+            { inline $ snippetDumpFile $ moduleName pName n }
 
 
 
@@ -618,14 +618,13 @@ instance
             // test environment
 
             // external ports (IO)
-            { inline $ if null externalPortNames then "" else "wire " ++ S.join ", " externalPortNames ++ ";" }
+            { inline $ if null externalPortNames then "" else "wire " <> T.pack (S.join ", " externalPortNames) <> ";" }
 
             // initialization flags
             { if null envInitFlags then "" else "reg " <> S.join ", " envInitFlags <> ";" }
             assign env_init_flag = { defEnvInitFlag envInitFlags ioSync };
 
             { inline testEnv }
-
 
 
             ////////////////////////////////////////////////////////////
@@ -671,7 +670,7 @@ instance
 
             ////////////////////////////////////////////////////////////
             // Utils
-            { inline $ T.unpack $ verilogHelper (def :: x) }
+            { inline $ verilogHelper (def :: x) }
 
             endmodule
             |]
