@@ -4,6 +4,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
@@ -41,6 +42,7 @@ import Data.Default
 import Data.Maybe
 import Data.Proxy
 import Data.Ratio
+import qualified Data.Text as T
 import Data.Typeable
 import Data.Validity hiding (invalid)
 import GHC.Generics
@@ -84,14 +86,14 @@ class
     fromRaw :: Integer -> Integer -> x
 
     -- | сonvert a value to Verilog literal with data
-    dataLiteral :: x -> String
+    dataLiteral :: x -> T.Text
 
     -- | сonvert a value to Verilog literal with attributes
-    attrLiteral :: x -> String
-    attrLiteral x = show (attrWidth x) <> "'d0000"
+    attrLiteral :: x -> T.Text
+    attrLiteral x = T.pack $ show (attrWidth x) <> "'d0000"
 
     -- | helper functions to work with values in Verilog (trace and assert)
-    verilogHelper :: x -> String
+    verilogHelper :: x -> T.Text
     verilogHelper x =
         [qc|
 task traceWithAttr;
@@ -252,10 +254,10 @@ instance (Val x, Integral x) => Val (Attr x) where
 
     fromRaw x a = setInvalidAttr $ pure $ fromRaw x a
 
-    dataLiteral Attr{value, invalid = True} = show (dataWidth value) <> "'dx"
+    dataLiteral Attr{value, invalid = True} = T.pack $ show (dataWidth value) <> "'dx"
     dataLiteral Attr{value} = dataLiteral value
     attrLiteral x@Attr{invalid} =
-        show (attrWidth x) <> "'b000" <> if invalid then "1" else "0"
+        T.pack $ show (attrWidth x) <> "'b000" <> if invalid then "1" else "0"
 
     verilogHelper Attr{value} = verilogHelper value
     verilogAssertRE Attr{value} = verilogAssertRE value
@@ -280,7 +282,7 @@ instance Val Int where
     rawAttr _ = 0
     fromRaw x _ = fromEnum x
 
-    dataLiteral = show
+    dataLiteral = T.pack . show
 
 -- | Integer number with specific bit width.
 newtype IntX (w :: Nat) = IntX {intX :: Integer}
@@ -346,7 +348,7 @@ instance (KnownNat w) => Val (IntX w) where
 
     fromRaw x _ = IntX x
 
-    dataLiteral (IntX x) = show x
+    dataLiteral (IntX x) = T.pack $ show x
 
 instance FixedPointCompatible (IntX w) where
     scalingFactorPower _ = 0
@@ -431,8 +433,8 @@ instance (KnownNat m, KnownNat b) => Val (FX m b) where
     rawAttr x = if isInvalid x then 1 else 0
     fromRaw x _ = FX x
 
-    dataLiteral (FX x) = show x
-    attrLiteral x = show (attrWidth x) <> "'d000" <> show (rawAttr x)
+    dataLiteral (FX x) = T.pack $ show x
+    attrLiteral x = T.pack $ show (attrWidth x) <> "'d000" <> show (rawAttr x)
 
     verilogHelper x =
         [qc|

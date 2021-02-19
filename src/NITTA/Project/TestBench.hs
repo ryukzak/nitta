@@ -230,7 +230,7 @@ snippetTestBench
             $finish;
         end
 
-        { inline $ T.pack $ verilogHelper (def :: x) }
+        { inline $ verilogHelper (def :: x) }
 
         endmodule
         |]

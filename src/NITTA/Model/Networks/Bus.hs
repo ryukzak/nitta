@@ -670,7 +670,7 @@ instance
 
             ////////////////////////////////////////////////////////////
             // Utils
-            { inline $ verilogHelper (def :: x) }
+            { inline $ T.unpack $ verilogHelper (def :: x) }
 
             endmodule
             |]
