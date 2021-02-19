@@ -23,9 +23,6 @@ module NITTA.Utils (
     hdlValDump,
     toModuleName,
 
-    -- *HDL generation (deprecated)
-    renderST,
-
     -- *Process inspection
     endpointAt,
     getEndpoints,
@@ -52,7 +49,6 @@ import NITTA.Utils.CodeFormat
 import Numeric (readInt, showHex)
 import Numeric.Interval.NonEmpty (inf, sup, (...))
 import qualified Numeric.Interval.NonEmpty as I
-import Text.StringTemplate
 
 modify'_ :: (s -> s) -> State s ()
 modify'_ = modify'
@@ -91,8 +87,6 @@ hdlValDump x =
         groupBy4 xs = take 4 xs : groupBy4 (drop 4 xs)
 
 toModuleName = S.replace " " "_"
-
-renderST st attrs = render $ setManyAttrib attrs $ newSTMP st
 
 endpointAt t p =
     case mapMaybe getEndpoint $ whatsHappen t p of
