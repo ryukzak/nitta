@@ -41,8 +41,9 @@ export const TestBenchPage: React.FC = () => {
   }
 
   return (
-    <div className="mr-3">
-      Status: <pre> {JSON.stringify(testBenchDump!.tbStatus)} </pre>
+    <div className="m-3">
+      <h3>Status:</h3>
+      <pre> {JSON.stringify(testBenchDump!.tbStatus)} </pre>
       <hr />
       <h3>Compiler output:</h3>
       <pre className="squeeze">
@@ -63,7 +64,8 @@ export const TestBenchPage: React.FC = () => {
           </div>
         ))}
       </pre>
-      <h3>Data:</h3>
+      <hr />
+      <h3>Simulation data:</h3>
       <SimulationDataView
         functional={testBenchDump!.tbFunctionalSimulationCntx}
         logical={testBenchDump!.tbLogicalSimulationCntx}
